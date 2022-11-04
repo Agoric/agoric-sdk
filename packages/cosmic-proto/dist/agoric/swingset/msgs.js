@@ -537,7 +537,9 @@ export const MsgInstallBundleResponse = {
 };
 export class MsgClientImpl {
   rpc;
-  constructor(rpc) {
+  service;
+  constructor(rpc, opts) {
+    this.service = opts?.service || 'agoric.swingset.Msg';
     this.rpc = rpc;
     this.InstallBundle = this.InstallBundle.bind(this);
     this.DeliverInbound = this.DeliverInbound.bind(this);
@@ -547,83 +549,77 @@ export class MsgClientImpl {
   }
   InstallBundle(request) {
     const data = MsgInstallBundle.encode(request).finish();
-    const promise = this.rpc.request(
-      'agoric.swingset.Msg',
-      'InstallBundle',
-      data,
-    );
+    const promise = this.rpc.request(this.service, 'InstallBundle', data);
     return promise.then((data) =>
       MsgInstallBundleResponse.decode(new _m0.Reader(data)),
     );
   }
   DeliverInbound(request) {
     const data = MsgDeliverInbound.encode(request).finish();
-    const promise = this.rpc.request(
-      'agoric.swingset.Msg',
-      'DeliverInbound',
-      data,
-    );
+    const promise = this.rpc.request(this.service, 'DeliverInbound', data);
     return promise.then((data) =>
       MsgDeliverInboundResponse.decode(new _m0.Reader(data)),
     );
   }
   WalletAction(request) {
     const data = MsgWalletAction.encode(request).finish();
-    const promise = this.rpc.request(
-      'agoric.swingset.Msg',
-      'WalletAction',
-      data,
-    );
+    const promise = this.rpc.request(this.service, 'WalletAction', data);
     return promise.then((data) =>
       MsgWalletActionResponse.decode(new _m0.Reader(data)),
     );
   }
   WalletSpendAction(request) {
     const data = MsgWalletSpendAction.encode(request).finish();
-    const promise = this.rpc.request(
-      'agoric.swingset.Msg',
-      'WalletSpendAction',
-      data,
-    );
+    const promise = this.rpc.request(this.service, 'WalletSpendAction', data);
     return promise.then((data) =>
       MsgWalletSpendActionResponse.decode(new _m0.Reader(data)),
     );
   }
   Provision(request) {
     const data = MsgProvision.encode(request).finish();
-    const promise = this.rpc.request('agoric.swingset.Msg', 'Provision', data);
+    const promise = this.rpc.request(this.service, 'Provision', data);
     return promise.then((data) =>
       MsgProvisionResponse.decode(new _m0.Reader(data)),
     );
   }
 }
 var globalThis = (() => {
-  if (typeof globalThis !== 'undefined') return globalThis;
-  if (typeof self !== 'undefined') return self;
-  if (typeof window !== 'undefined') return window;
-  if (typeof global !== 'undefined') return global;
+  if (typeof globalThis !== 'undefined') {
+    return globalThis;
+  }
+  if (typeof self !== 'undefined') {
+    return self;
+  }
+  if (typeof window !== 'undefined') {
+    return window;
+  }
+  if (typeof global !== 'undefined') {
+    return global;
+  }
   throw 'Unable to locate global object';
 })();
-const atob =
-  globalThis.atob ||
-  ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
 function bytesFromBase64(b64) {
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i);
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, 'base64'));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
   }
-  return arr;
 }
-const btoa =
-  globalThis.btoa ||
-  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
 function base64FromBytes(arr) {
-  const bin = [];
-  arr.forEach((byte) => {
-    bin.push(String.fromCharCode(byte));
-  });
-  return btoa(bin.join(''));
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString('base64');
+  } else {
+    const bin = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(''));
+  }
 }
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long;
