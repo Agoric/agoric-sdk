@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E as defaultE } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeStore } from '@agoric/store';

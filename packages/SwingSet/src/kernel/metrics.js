@@ -1,5 +1,3 @@
-// @ts-check
-
 // All the kernel metrics we are prepared for.
 export const KERNEL_STATS_SUM_METRICS = /** @type {const} */ ([
   {

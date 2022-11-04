@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';

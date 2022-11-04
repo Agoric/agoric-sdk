@@ -1,4 +1,3 @@
-// @ts-check
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, details as X } from '@agoric/assert';

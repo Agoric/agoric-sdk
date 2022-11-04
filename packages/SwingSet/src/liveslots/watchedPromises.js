@@ -1,5 +1,3 @@
-// @ts-check
-
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 

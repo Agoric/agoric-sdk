@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert } from '@agoric/assert';
 
 export function foreverPolicy() {

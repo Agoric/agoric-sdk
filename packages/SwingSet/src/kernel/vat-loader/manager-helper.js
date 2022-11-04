@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from '@agoric/assert';
 import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';

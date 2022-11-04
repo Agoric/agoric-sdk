@@ -1,4 +1,3 @@
-// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
