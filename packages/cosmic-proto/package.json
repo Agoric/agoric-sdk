@@ -27,7 +27,7 @@
     "build": "echo Use yarn rebuild",
     "rebuild": "rm -rf gen && mkdir -p gen && yarn build:ts && yarn build:js && prettier -w .",
     "build:ts": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=true' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
-    "build:js": "tsc --build jsconfig.json",
+    "build:js": "tsc --build",
     "test": "node test/sanity-test.js",
     "test:xs": "exit 0",
     "lint": "exit 0",
