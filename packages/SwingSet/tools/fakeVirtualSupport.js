@@ -279,6 +279,7 @@ export function makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff) {
  *
  * @param {object} [options]
  * @param {boolean} [options.relaxDurabilityRules=true]
+ * @param {number} [options.cacheSize]
  */
 export function makeFakeVirtualStuff(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
