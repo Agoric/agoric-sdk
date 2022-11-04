@@ -1,9 +1,6 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 
 import { makeScalarStoreCoordinator } from './store.js';
-
-/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 
 /**
  * @typedef {{ [x: PropertyKey]: any } | string | symbol | bigint | null |

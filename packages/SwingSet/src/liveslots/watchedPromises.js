@@ -15,8 +15,8 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
  * @param {*} cm
  * @param {*} convertValToSlot
  * @param {*} convertSlotToVal
- * @param {*} revivePromise
- * @param {*} unserialize
+ * @param {*} [revivePromise]
+ * @param {*} [unserialize]
  */
 export function makeWatchedPromiseManager(
   syscall,

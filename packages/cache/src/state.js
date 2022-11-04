@@ -1,6 +1,8 @@
-// @ts-check
-
-/** @typedef {import('./types').State} State */
+/**
+ * @typedef {object} State
+ * @property {bigint} generation
+ * @property {any} value
+ */
 
 /**
  * The ground state for a cache key value is `undefined`.  It is impossible to
@@ -26,7 +28,7 @@ export const makeState = (value, priorState = GROUND_STATE) =>
 /**
  * Wrap a state store to have a default value using the GROUND_STATE
  *
- * @param {MapStore<string, import('./types').State>} stateStore
+ * @param {MapStore<string, import('./state').State>} stateStore
  */
 export const withGroundState = stateStore => ({
   ...stateStore,

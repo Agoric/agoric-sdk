@@ -22,7 +22,7 @@
     "@agoric/wallet-backend": "^0.13.3",
     "@endo/captp": "^2.0.17",
     "@endo/init": "^0.5.51",
-    "ava": "^4.3.1"
+    "ava": "^5.0.1"
   },
   "dependencies": {
     "@agoric/casting": "^0.3.2",
