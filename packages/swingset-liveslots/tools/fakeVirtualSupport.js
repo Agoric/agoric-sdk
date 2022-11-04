@@ -32,9 +32,9 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     FinalizationRegistry = FakeFinalizationRegistry,
     addToPossiblyDeadSet = () => {},
     addToPossiblyRetiredSet = () => {},
+    fakeStore = new Map(),
   } = options;
 
-  const fakeStore = new Map();
   let sortedKeys;
   let priorKeyReturned;
   let priorKeyIndex;
