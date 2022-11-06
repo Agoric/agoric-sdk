@@ -430,3 +430,18 @@ test('binary no quorum', async t => {
     reason: 'No quorum',
   });
 });
+test('binary too many positions', async t => {
+  t.notThrows(() =>
+    coerceQuestionSpec({
+      method: ChoiceMethod.UNRANKED,
+      issue: SIMPLE_ISSUE,
+      positions: [FISH, BAIT, harden({ text: 'sleep' })],
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: FAKE_CLOSING_RULE,
+      quorumRule: QuorumRule.NO_QUORUM,
+      tieOutcome: BAIT,
+    }),
+  );
+});

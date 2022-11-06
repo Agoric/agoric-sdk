@@ -252,7 +252,7 @@ export const VoteCounterPublicI = M.interface('VoteCounter PublicFacet', {
 export const VoteCounterAdminI = M.interface('VoteCounter AdminFacet', {
   submitVote: M.call(VoterHandle, M.arrayOf(PositionShape))
     .optional(M.nat())
-    .returns({ chosen: PositionShape, shares: M.nat() }),
+    .returns({ chosen: M.arrayOf(PositionShape), shares: M.nat() }),
 });
 
 export const VoteCounterCloseI = M.interface('VoteCounter CloseFacet', {

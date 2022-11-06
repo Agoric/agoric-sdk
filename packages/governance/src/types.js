@@ -90,9 +90,16 @@
 
 /**
  * @typedef {{ question: Handle<'Question'> } & (
- *   { outcome: 'win', position: Position | Position[] } |
+ *   { outcome: 'win', positions: Position } |
  *   { outcome: 'fail', reason: 'No quorum' }
  * )} OutcomeRecord
+ */
+
+/**
+ * @typedef {{ question: Handle<'Question'> } & (
+ *  { outcome: 'win', positions: Position[] } |
+ *  { outcome: 'fail', reason: 'No quorum' }
+ * )} MultiOutcomeRecord
  */
 
 /**
@@ -195,7 +202,7 @@
  * @typedef {object} VoteCounterPublicFacet
  * @property {() => boolean} isOpen
  * @property {() => Question} getQuestion
- * @property {() => Promise<Position | Position[]>} getOutcome
+ * @property {() => Promise<Position|Position[]>} getOutcome
  * @property {() => QuestionDetails} getDetails
  * @property {() => Promise<VoteStatistics>} getStats
  */
@@ -219,7 +226,7 @@
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
  *    converts that to a number that the counter can enforce.
  * @param {Instance} instance
- * @param {ERef<Publisher<OutcomeRecord>>} publisher
+ * @param {ERef<Publisher<OutcomeRecord|MultiOutcomeRecord>>} publisher
  * @returns {VoteCounterFacets}
  */
 

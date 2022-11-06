@@ -2,7 +2,6 @@
 
 import { keyEQ, makeHeapFarInstance, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
-import crypto from 'crypto';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   buildQuestion,
@@ -18,6 +17,7 @@ import {
   VoteCounterPublicI,
 } from './typeGuards.js';
 import { makeQuorumCounter } from './quorumCounter.js';
+import { breakTie } from './breakTie.js';
 
 const { details: X } = assert;
 
@@ -28,18 +28,12 @@ const validateQuestionSpec = questionSpec => {
     questionSpec.electionType === ElectionType.SURVEY ||
     assert.fail(X`${questionSpec.electionType} must be ELECTION or SURVEY`);
 
-  questionSpec.maxChoices === 1 ||
-    assert.fail(X`Can only choose 1 item on a multiple question`);
-
   questionSpec.method === ChoiceMethod.PLURALITY ||
     assert.fail(X`${questionSpec.method} must be PLURALITY`);
-
-  questionSpec.maxWinners > 1 ||
-    assert.fail(X`Max winners must be more than 1`);
 };
 
 /** @type {BuildVoteCounter} */
-const makeMultiPluralityVoteCounter = (
+const makeMultiCandidateVoteCounter = (
   questionSpec,
   threshold,
   instance,
@@ -52,15 +46,16 @@ const makeMultiPluralityVoteCounter = (
 
   let isOpen = true;
   const positions = questionSpec.positions;
+  const maxChoices = questionSpec.maxChoices;
 
-  /** @type { PromiseRecord<Position | Position[]> } */
+  /** @type { PromiseRecord<Position[]> } */
   const outcomePromise = makePromiseKit();
   /** @type { PromiseRecord<VoteStatistics> } */
   const tallyPromise = makePromiseKit();
 
   /**
    * @typedef {object} RecordedBallot
-   * @property {Position} chosen
+   * @property {Position[]} chosen
    * @property {bigint} shares
    */
   /** @type {Store<Handle<'Voter'>,RecordedBallot> } */
@@ -73,11 +68,13 @@ const makeMultiPluralityVoteCounter = (
     const tally = Array(positions.length).fill(0n);
 
     for (const { chosen, shares } of allBallots.values()) {
-      const positionIndex = positions.findIndex(p => keyEQ(p, chosen));
-      if (positionIndex < 0) {
-        spoiled += shares;
-      } else {
-        tally[positionIndex] += shares;
+      for (const position of chosen) {
+        const positionIndex = positions.findIndex(p => keyEQ(p, position));
+        if (positionIndex < 0) {
+          spoiled += shares;
+        } else {
+          tally[positionIndex] += shares;
+        }
       }
     }
 
@@ -111,7 +108,7 @@ const makeMultiPluralityVoteCounter = (
       return 0;
     });
 
-    const winningPositions = [];
+    let winningPositions = [];
     for (const position of sortedPositions) {
       if (position.total > 0n) {
         if (winningPositions.length < questionSpec.maxWinners) {
@@ -124,27 +121,38 @@ const makeMultiPluralityVoteCounter = (
       }
     }
 
+    const tieIndex = winningPositions.findIndex(
+      position =>
+        position.total === winningPositions[winningPositions.length - 1].total,
+    );
+
+    winningPositions = winningPositions.map(p => p.position);
+
+    // [8,5,5,5,5,5,3], n=5, [8,5,5,5,5,5]
+    // [5,4,4,4], n=3, [5,4,4,4]
+    // [6,5,4,4,2], n=3, [6,5,4,4]
+    // [6,6,4,4,4,4,4,2,2], n=3, [6,6,4,4,4,4,4]
+
     if (winningPositions.length === 0) {
-      outcomePromise.resolve(questionSpec.tieOutcome);
+      outcomePromise.resolve([questionSpec.tieOutcome]);
     } else if (winningPositions.length <= questionSpec.maxWinners) {
-      const outcome = winningPositions.map(p => p.position);
-      outcomePromise.resolve(outcome);
+      outcomePromise.resolve(winningPositions);
     } else {
-      const tieIndex = questionSpec.maxWinners - 1;
       const untiedPositions = winningPositions.slice(0, tieIndex);
-
       const tiedPositions = winningPositions.slice(tieIndex);
-      const tieWinner = tiedPositions[crypto.randomInt(tiedPositions.length)];
+      const tieWinners = breakTie(
+        tiedPositions,
+        questionSpec.maxWinners - untiedPositions.length,
+      );
 
-      const outcome = untiedPositions.concat(tieWinner).map(p => p.position);
-      outcomePromise.resolve(outcome);
+      outcomePromise.resolve(untiedPositions.concat(tieWinners));
     }
 
-    E.when(outcomePromise.promise, position => {
-      /** @type { OutcomeRecord } */
+    E.when(outcomePromise.promise, winPositions => {
+      /** @type { MultiOutcomeRecord } */
       const voteOutcome = {
         question: details.questionHandle,
-        position,
+        positions: winPositions,
         outcome: 'win',
       };
       return E(publisher).publish(voteOutcome);
@@ -167,14 +175,18 @@ const makeMultiPluralityVoteCounter = (
     VoteCounterAdminI,
     {
       submitVote(voterHandle, chosenPositions, shares = 1n) {
-        assert(chosenPositions.length === 1, 'only 1 position allowed');
-        const [position] = chosenPositions;
-        positionIncluded(positions, position) ||
-          assert.fail(
-            X`The specified choice is not a legal position: ${position}.`,
-          );
+        chosenPositions.length <= maxChoices ||
+          assert.fail(X`The number of choices exceeds the max choices.`);
 
-        const completedBallot = harden({ chosen: position, shares });
+        chosenPositions.forEach(position => {
+          positionIncluded(positions, position) ||
+            assert.fail(
+              X`The specified choice is not a legal position: ${position}.`,
+            );
+        });
+
+        const completedBallot = harden({ chosen: chosenPositions, shares });
+
         allBallots.has(voterHandle)
           ? allBallots.set(voterHandle, completedBallot)
           : allBallots.init(voterHandle, completedBallot);
@@ -224,7 +236,7 @@ const start = (zcf, { outcomePublisher }) => {
   const { questionSpec, quorumThreshold } = zcf.getTerms();
 
   const { publicFacet, creatorFacet, closeFacet } =
-    makeMultiPluralityVoteCounter(
+    makeMultiCandidateVoteCounter(
       questionSpec,
       quorumThreshold,
       zcf.getInstance(),
@@ -237,6 +249,6 @@ const start = (zcf, { outcomePublisher }) => {
 };
 
 harden(start);
-harden(makeMultiPluralityVoteCounter);
+harden(makeMultiCandidateVoteCounter);
 
-export { makeMultiPluralityVoteCounter, start };
+export { makeMultiCandidateVoteCounter, start };
