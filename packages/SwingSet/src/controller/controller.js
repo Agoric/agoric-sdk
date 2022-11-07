@@ -529,7 +529,7 @@ export async function makeSwingsetController(
  * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {Record<string, unknown> | string[]} argv
  * @param {{
  *   hostStorage?: HostStore;
  *   env?: Record<string, string>;

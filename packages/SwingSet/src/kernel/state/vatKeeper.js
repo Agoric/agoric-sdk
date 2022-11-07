@@ -61,7 +61,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  *
  * @param {KVStorePlus} kvStore  The keyValue store in which the persistent state will be kept
  * @param {StreamStore} streamStore  Accompanying stream store, for the transcripts
- * @param {*} kernelSlog
+ * @param {KernelSlog | undefined} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
  * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
  * mapping tables.
@@ -619,17 +619,19 @@ export function makeVatKeeper(
       JSON.stringify({ snapshotID, startPos: endPosition }),
     );
     addToSnapshot(snapshotID);
-    kernelSlog.write({
-      type: 'heap-snapshot-save',
-      vatID,
-      snapshotID,
-      newFile,
-      rawByteCount,
-      rawSaveSeconds,
-      compressedByteCount,
-      compressSeconds,
-      endPosition,
-    });
+    if (kernelSlog) {
+      kernelSlog.write({
+        type: 'heap-snapshot-save',
+        vatID,
+        snapshotID,
+        newFile,
+        rawByteCount,
+        rawSaveSeconds,
+        compressedByteCount,
+        compressSeconds,
+        endPosition,
+      });
+    }
     return true;
   }
 

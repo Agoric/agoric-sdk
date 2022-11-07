@@ -19,7 +19,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(hostStorage.kvStore);
 
-  const kernelSlog = null;
+  const kernelSlog = undefined;
   const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
 
   const wasInitialized = kernelKeeper.getInitialized();

@@ -352,8 +352,9 @@ export function exportKernelStats({
   );
 
   /**
-   * @param {any} policy
-   * @param {() => number} clock
+   * @template {RunPolicy} T
+   * @param {T} policy
+   * @param {() => number} [clock]
    */
   async function crankScheduler(policy, clock = () => Date.now()) {
     let now = clock();

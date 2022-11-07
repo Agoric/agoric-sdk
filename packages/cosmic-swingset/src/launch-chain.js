@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 /* eslint-disable @jessie.js/no-nested-await */
 import anylogger from 'anylogger';
@@ -36,6 +37,17 @@ import * as ActionType from './action-types.js';
 import { parseParams, serializeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
 
+/**
+ * @typedef {{
+ *  get(key: string): any;
+ *  set(key: string, value: any): void;
+ *  has(key: string): boolean;
+ *  delete(key: string): void;
+ *  commit: () => Promise<void>;
+ * }} MailboxStorage
+ * @typedef {Pick<Map<string, any>, 'forEach' | 'size'> & MailboxStorage} SoloMailboxStorage
+ */
+
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
@@ -53,17 +65,16 @@ async function buildSwingset(
   vatconfig,
   argv,
   env,
-  { debugName = undefined, slogCallbacks, slogSender },
+  { debugName, slogCallbacks, slogSender },
 ) {
   // FIXME: Find a better way to propagate the role.
   process.env.ROLE = argv.ROLE;
   env.ROLE = argv.ROLE;
 
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
-  let config = await loadSwingsetConfigFile(vatconfig);
-  if (config === null) {
-    config = loadBasedir(vatconfig);
-  }
+  const config = await loadSwingsetConfigFile(vatconfig).then(
+    cfg => cfg || loadBasedir(vatconfig),
+  );
 
   const mbs = buildMailboxStateMap(mailboxStorage);
   const timer = buildTimer();
@@ -102,21 +113,26 @@ async function buildSwingset(
         config.coreProposals,
         vatconfig,
       );
-      const bootVat = config.vats[config.bootstrap || 'bootstrap'];
+      const bootVat = config.vats?.[config.bootstrap || 'bootstrap'];
       config.bundles = { ...config.bundles, ...bundles };
+
+      if (!bootVat) {
+        assert.fail(`Config missing bootstrap vat`);
+      }
 
       // Tell the bootstrap code how to run the core proposals.
       bootVat.parameters = { ...bootVat.parameters, coreProposalCode: code };
     }
     config.pinBootstrapRoot = true;
 
-    await initializeSwingset(config, argv, hostStorage, { debugPrefix });
+    await initializeSwingset(config, argv, hostStorage);
   }
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
     hostStorage,
     deviceEndowments,
     {
+      debugPrefix,
       env,
       slogCallbacks,
       slogSender,
@@ -132,7 +148,7 @@ async function buildSwingset(
 /**
  * @typedef {import('@agoric/swingset-vat').RunPolicy & {
  *   shouldRun(): boolean;
- *   remainingBeans(): number;
+ *   remainingBeans(): bigint;
  * }} ChainRunPolicy
  */
 
@@ -181,7 +197,7 @@ function computronCounter({
       return shouldRun();
     },
     emptyCrank() {
-      return true;
+      return shouldRun();
     },
     shouldRun,
     remainingBeans,
@@ -198,6 +214,28 @@ function neverStop() {
   });
 }
 
+/**
+ * @param {object} options
+ * @param {import('./make-queue.js').Queue} options.actionQueue
+ * @param {string} options.kernelStateDBDir
+ * @param {MailboxStorage} options.mailboxStorage
+ * @param {() => [any[], any][]} options.clearChainSends
+ * @param {() => void} options.replayChainSends
+ * @param {(activityHash: string | undefined) => void} [options.setActivityhash]
+ * @param {(dstID: string, msg: any) => unknown} [options.bridgeOutbound]
+ * @param {() => Publisher<any>} [options.makeInstallationPublisher]
+ * @param {string} options.vatconfig
+ * @param {Record<string | number, unknown> & { ROLE: string; }} options.argv
+ * @param {Partial<Record<string, string | undefined>>} [options.env]
+ * @param {string} [options.debugName]
+ * @param {boolean} [options.verboseBlocks]
+ * @param {import('@opentelemetry/sdk-metrics-base').MeterProvider} [options.metricsProvider]
+ * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
+ * @param {number} [options.mapSize]
+ * @param {string} [options.swingStoreTraceFile]
+ * @param {boolean} [options.keepSnapshots]
+ * @param {() => Promise<Partial<Record<string, unknown>>>} [options.afterCommitCallback]
+ */
 export async function launch({
   actionQueue,
   kernelStateDBDir,
@@ -210,7 +248,7 @@ export async function launch({
   vatconfig,
   argv,
   env = process.env,
-  debugName = undefined,
+  debugName,
   verboseBlocks = false,
   metricsProvider = DEFAULT_METER_PROVIDER,
   slogSender,
@@ -287,6 +325,7 @@ export async function launch({
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
+    // @ts-expect-error Console compatible enough with Logger
     log: console,
     inboundQueueMetrics,
   });
@@ -374,6 +413,7 @@ export async function launch({
     // console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
+    // @ts-expect-error bridgeInbound will be defined if embedder passed bridgeOutbound
     bridgeInbound(source, body);
   }
 

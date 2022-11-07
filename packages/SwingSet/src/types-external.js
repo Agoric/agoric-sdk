@@ -209,6 +209,11 @@ export {};
  *                                  vatSourceBundle?: *,
  *                                  managerType?: string,
  *                                  vatParameters?: *) => VatSlog,
+ *              changeCList: (vatID: string,
+ *                            crank: BigInt,
+ *                            mode: string,
+ *                            kobj: string,
+ *                            vobj: string) => void,
  *              terminateVat: (vatID: string, shouldReject: boolean, info: SwingSetCapData) => void,
  *             } } KernelSlog
  * @typedef { * } VatSlog
@@ -253,7 +258,7 @@ export {};
  */
 
 /**
- * @typedef {object} SwingSetConfig a swingset config object
+ * @typedef {object} SwingSetBaseConfig a swingset config object
  * @property {string} [bootstrap]
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
@@ -270,19 +275,14 @@ export {};
  */
 
 /**
- * @typedef {object} SwingSetKernelConfig the config object passed to initializeKernel
- * @property {string} [bootstrap]
- * @property {boolean} [includeDevDependencies] indicates that
- * `devDependencies` of the surrounding `package.json` should be accessible to
- * bundles.
- * @property { ManagerType } [defaultManagerType]
- * @property {SwingSetConfigDescriptor} [vats]
- * @property {SwingSetConfigDescriptor} [bundles]
- * @property {Record<string, BundleID>} namedBundleIDs
- * @property {Record<BundleID, Bundle>} idToBundle
- * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
- * format.
- * @property {*} [devices]
+ * @typedef {SwingSetBaseConfig & Record<string, any>} SwingSetConfig
+ */
+
+/**
+ * @typedef {Omit<SwingSetBaseConfig, 'bundles'> & {
+ *  namedBundleIDs: Record<string, BundleID>;
+ *  idToBundle: Record<BundleID, Bundle>;
+ * }} SwingSetKernelConfig the config object passed to initializeKernel
  */
 
 /**

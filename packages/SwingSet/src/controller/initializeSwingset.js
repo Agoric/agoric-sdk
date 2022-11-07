@@ -281,7 +281,7 @@ function sortObjectProperties(obj, firsts = []) {
 
 /**
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {Record<string, unknown> | string[]} argv
  * @param {HostStore} hostStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
@@ -502,6 +502,7 @@ export async function initializeSwingset(
   const [nameToBundle, idToNamedBundle] = await processGroup('bundles');
   const [_1, idToVatBundle] = await processGroup('vats', nameToBundle);
   const [_2, idToDeviceBundle] = await processGroup('devices', nameToBundle);
+  delete config.bundles;
   /** @type { SwingSetKernelConfig } */
   const kconfig = {
     ...config,
@@ -515,7 +516,6 @@ export async function initializeSwingset(
   for (const name of Object.keys(nameToBundle)) {
     kconfig.namedBundleIDs[name] = nameToBundle[name].id;
   }
-  delete kconfig.bundles;
 
   if (verbose) {
     kdebugEnable(true);

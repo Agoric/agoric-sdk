@@ -8,6 +8,10 @@
  */
 
 /**
+ * @typedef {ReturnType<typeof makeQueue>} Queue
+ */
+
+/**
  * Create a queue backed by some sort of scoped storage.
  *
  * The queue writes the following bare keys, and expect any prefixing/scoping
@@ -38,7 +42,7 @@ export const makeQueue = storage => {
       storage.set(`${tail}`, obj);
       storage.commit();
     },
-    /** @type {Iterable<unknown>} */
+    /** @returns {Iterable<unknown>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
         let done = false;

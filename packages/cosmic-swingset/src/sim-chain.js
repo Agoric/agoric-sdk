@@ -1,3 +1,4 @@
+// @ts-check
 /* global process setTimeout clearTimeout */
 /* eslint-disable no-await-in-loop */
 import path from 'path';
@@ -28,8 +29,14 @@ const TELEMETRY_SERVICE_NAME = 'sim-cosmos';
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
 
+/**
+ * @param {string} file
+ * @returns {Promise<import('./launch-chain.js').MailboxStorage>}
+ */
 async function makeMapStorage(file) {
   let content;
+  /** @type {Map<string, any> & import('./launch-chain.js').MailboxStorage} */
+  // @ts-expect-error adding `commit` next line
   const map = new Map();
   map.commit = async () => {
     const obj = {};
@@ -40,10 +47,10 @@ async function makeMapStorage(file) {
 
   let obj = {};
   try {
-    content = await fs.promises.readFile(file);
+    content = await fs.promises.readFile(file, { encoding: 'utf-8' });
     obj = JSON.parse(content);
   } catch (e) {
-    return map;
+    // fall-through
   }
   Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v)));
 
@@ -101,12 +108,18 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   });
 
   let aqContents = [];
+  /** @type {import('./make-queue.js').Queue} */
   const actionQueue = {
-    /** @returns {Iterable<unknown>} */
+    size: () => {
+      return aqContents.length;
+    },
+    push: obj => {
+      aqContents.push(obj);
+    },
     consumeAll: () => {
       const iterable = aqContents;
       aqContents = [];
-      return iterable;
+      return iterable.values();
     },
   };
 
@@ -129,7 +142,8 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   let blockHeight = savedHeight;
   let blockTime = savedBlockTime || scaleBlockTime(Date.now());
   const intoChain = [];
-  let nextBlockTimeout = 0;
+  /** @type {NodeJS.Timeout | undefined} */
+  let nextBlockTimeout;
 
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
@@ -155,7 +169,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       const thisBlock = intoChain.splice(0, queueAllowed[QueueInbound]);
 
       for (const [newMessages, acknum] of thisBlock) {
-        aqContents.push({
+        actionQueue.push({
           type: 'DELIVER_INBOUND',
           peer: bootAddress,
           messages: newMessages,
@@ -170,7 +184,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       // Done processing, "commit the block".
       await blockingSend({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
 
-      clearTimeout(nextBlockTimeout);
+      nextBlockTimeout && clearTimeout(nextBlockTimeout);
       // eslint-disable-next-line no-use-before-define
       nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
@@ -195,7 +209,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     intoChain.push([newMessages, acknum]);
     // Only actually simulate a block if we're not in bootstrap.
     if (blockHeight && !delay) {
-      clearTimeout(nextBlockTimeout);
+      if (nextBlockTimeout) {
+        clearTimeout(nextBlockTimeout);
+        nextBlockTimeout = undefined;
+      }
       await simulateBlock();
     }
   }

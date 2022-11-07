@@ -1,3 +1,4 @@
+// @ts-check
 import path from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
@@ -99,8 +100,8 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
   };
   const {
     kvStore: buffered,
-    commit,
-    abort,
+    commit: syncCommit,
+    abort: syncAbort,
   } = makeBufferedStorage(storage, {
     // Enqueue a write of any retrieved value, to handle callers like mailbox.js
     // that expect local mutations to be automatically written back.
@@ -112,7 +113,11 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
     onCommit: resetCache,
     onAbort: resetCache,
   });
-  return { ...buffered, commit, abort };
+  return {
+    ...buffered,
+    commit: async () => syncCommit(),
+    abort: async () => syncAbort(),
+  };
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -195,6 +200,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
+  /** @type {[any[], any][]} */
   let savedChainSends = [];
 
   // Send a chain downcall, recording what we sent and received.
@@ -218,7 +224,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     // Just send all the things we saved.
     while (chainSends.length > 0) {
-      const [sendArgs, expectedRet] = chainSends.shift();
+      const [sendArgs, expectedRet] =
+        /** @type {(typeof chainSends)[number]} */ (chainSends.shift());
       const actualRet = agcc.send(...sendArgs);
 
       // Enforce that we got back what we expected.
