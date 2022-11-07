@@ -9,12 +9,43 @@ import {
   makeTagged,
 } from '@endo/marshal';
 import { ErrorHelper } from '@endo/marshal/src/helpers/error.js';
-import { recordParts } from './rankOrder.js';
 
 /** @typedef {import('@agoric/internal').Remotable} Remotable */
 
 const { details: X, quote: q } = assert;
-const { is, fromEntries } = Object;
+const { fromEntries, is } = Object;
+const { ownKeys } = Reflect;
+
+/**
+ * Assuming that `record` is a CopyRecord, we have only
+ * string-named own properties. `recordNames` returns those name *reverse*
+ * sorted, because that's how records are compared, encoded, and sorted.
+ *
+ * @template T
+ * @param {CopyRecord<T>} record
+ * @returns {string[]}
+ */
+export const recordNames = record =>
+  // https://github.com/endojs/endo/pull/1260#discussion_r1003657244
+  // compares two ways of reverse sorting, and shows that `.sort().reverse()`
+  // is currently faster on Moddable XS, while the other way,
+  // `.sort(reverseComparator)`, is faster on v8. We currently care more about
+  // XS performance, so we reverse sort using `.sort().reverse()`.
+  harden(/** @type {string[]} */ (ownKeys(record)).sort().reverse());
+harden(recordNames);
+
+/**
+ * Assuming that `record` is a CopyRecord and `names` is `recordNames(record)`,
+ * return the corresponding array of property values.
+ *
+ * @template T
+ * @param {CopyRecord<T>} record
+ * @param {string[]} names
+ * @returns {T[]}
+ */
+export const recordValues = (record, names) =>
+  harden(names.map(name => record[name]));
+harden(recordValues);
 
 export const zeroPad = (n, size) => {
   const nStr = `${n}`;
@@ -68,7 +99,8 @@ const encodeBinary64 = n => {
 };
 
 const decodeBinary64 = encoded => {
-  assert(encoded.startsWith('f'), X`Encoded number expected: ${encoded}`);
+  encoded.startsWith('f') ||
+    assert.fail(X`Encoded number expected: ${encoded}`);
   let bits = BigInt(`0x${encoded.substring(1)}`);
   if (encoded[1] < '8') {
     bits ^= 0xffffffffffffffffn;
@@ -77,7 +109,7 @@ const decodeBinary64 = encoded => {
   }
   asBits[0] = bits;
   const result = asNumber[0];
-  assert(!is(result, -0), X`Unexpected negative zero: ${encoded}`);
+  !is(result, -0) || assert.fail(X`Unexpected negative zero: ${encoded}`);
   return result;
 };
 
@@ -125,17 +157,18 @@ const encodeBigInt = n => {
 };
 
 const decodeBigInt = encoded => {
-  const typePrefix = encoded[0];
+  const typePrefix = encoded.charAt(0); // faster than encoded[0]
   let rem = encoded.slice(1);
   typePrefix === 'p' ||
     typePrefix === 'n' ||
     assert.fail(X`Encoded bigint expected: ${encoded}`);
 
   const lDigits = rem.search(/[0-9]/) + 1;
-  assert(lDigits >= 1, X`Digit count expected: ${encoded}`);
+  lDigits >= 1 || assert.fail(X`Digit count expected: ${encoded}`);
   rem = rem.slice(lDigits - 1);
 
-  assert(rem.length >= lDigits, X`Complete digit count expected: ${encoded}`);
+  rem.length >= lDigits ||
+    assert.fail(X`Complete digit count expected: ${encoded}`);
   const snDigits = rem.slice(0, lDigits);
   rem = rem.slice(lDigits);
   /^[0-9]+$/.test(snDigits) ||
@@ -147,7 +180,7 @@ const decodeBigInt = encoded => {
     nDigits = 10 ** lDigits - nDigits;
   }
 
-  assert(rem.startsWith(':'), X`Separator expected: ${encoded}`);
+  rem.startsWith(':') || assert.fail(X`Separator expected: ${encoded}`);
   rem = rem.slice(1);
   rem.length === nDigits ||
     assert.fail(X`Fixed-length digit sequence expected: ${encoded}`);
@@ -181,7 +214,7 @@ const encodeArray = (array, encodePassable) => {
 };
 
 const decodeArray = (encoded, decodePassable) => {
-  assert(encoded.startsWith('['), X`Encoded array expected: ${encoded}`);
+  encoded.startsWith('[') || assert.fail(X`Encoded array expected: ${encoded}`);
   const elements = [];
   const elemChars = [];
   for (let i = 1; i < encoded.length; i += 1) {
@@ -193,7 +226,8 @@ const decodeArray = (encoded, decodePassable) => {
       elements.push(element);
     } else if (c === '\u0001') {
       i += 1;
-      assert(i < encoded.length, X`unexpected end of encoding ${encoded}`);
+      i < encoded.length ||
+        assert.fail(X`unexpected end of encoding ${encoded}`);
       const c2 = encoded[i];
       c2 === '\u0000' ||
         c2 === '\u0001' ||
@@ -203,29 +237,31 @@ const decodeArray = (encoded, decodePassable) => {
       elemChars.push(c);
     }
   }
-  assert(elemChars.length === 0, X`encoding terminated early: ${encoded}`);
+  elemChars.length === 0 ||
+    assert.fail(X`encoding terminated early: ${encoded}`);
   return harden(elements);
 };
 
 const encodeRecord = (record, encodePassable) => {
-  const [names, values] = recordParts(record);
+  const names = recordNames(record);
+  const values = recordValues(record, names);
   return `(${encodeArray(harden([names, values]), encodePassable)}`;
 };
 
 const decodeRecord = (encoded, decodePassable) => {
   assert(encoded.startsWith('('));
   const keysvals = decodeArray(encoded.substring(1), decodePassable);
-  assert(keysvals.length === 2, X`expected keys,values pair: ${encoded}`);
+  keysvals.length === 2 ||
+    assert.fail(X`expected keys,values pair: ${encoded}`);
   const [keys, vals] = keysvals;
-  assert(
-    passStyleOf(keys) === 'copyArray' &&
-      passStyleOf(vals) === 'copyArray' &&
-      keys.length === vals.length &&
-      keys.every(key => typeof key === 'string'),
-    X`not a valid record encoding: ${encoded}`,
-  );
-  const entries = keys.map((key, i) => [key, vals[i]]);
-  const record = harden(fromEntries(entries));
+
+  (passStyleOf(keys) === 'copyArray' &&
+    passStyleOf(vals) === 'copyArray' &&
+    keys.length === vals.length &&
+    keys.every(key => typeof key === 'string')) ||
+    assert.fail(X`not a valid record encoding: ${encoded}`);
+  const mapEntries = keys.map((key, i) => [key, vals[i]]);
+  const record = harden(fromEntries(mapEntries));
   assertRecord(record, 'decoded record');
   return record;
 };
@@ -236,7 +272,8 @@ const encodeTagged = (tagged, encodePassable) =>
 const decodeTagged = (encoded, decodePassable) => {
   assert(encoded.startsWith(':'));
   const tagpayload = decodeArray(encoded.substring(1), decodePassable);
-  assert(tagpayload.length === 2, X`expected tag,payload pair: ${encoded}`);
+  tagpayload.length === 2 ||
+    assert.fail(X`expected tag,payload pair: ${encoded}`);
   const [tag, payload] = tagpayload;
   passStyleOf(tag) === 'string' ||
     assert.fail(X`not a valid tagged encoding: ${encoded}`);
@@ -244,33 +281,36 @@ const decodeTagged = (encoded, decodePassable) => {
 };
 
 /**
- * @typedef {object} EncodeOptionsRecord
+ * @typedef {object} EncodeOptions
  * @property {(
  *   remotable: Remotable,
  *   encodeRecur: (p: Passable) => string,
- * ) => string} encodeRemotable
+ * ) => string} [encodeRemotable]
  * @property {(
  *   promise: Promise,
  *   encodeRecur: (p: Passable) => string,
- * ) => string} encodePromise
+ * ) => string} [encodePromise]
  * @property {(
  *   error: Error,
  *   encodeRecur: (p: Passable) => string,
- * ) => string} encodeError
+ * ) => string} [encodeError]
  */
 
 /**
- * @typedef {Partial<EncodeOptionsRecord>} EncodeOptions
- */
-
-/**
- * @param {EncodeOptions=} encodeOptions
+ * @param {EncodeOptions} [encodeOptions]
  * @returns {(passable: Passable) => string}
  */
+// `yarn lint` complains here but not for equivalent code in agoric-sdk.
+// Also, vscode does not complain. Hence we're using at-ts-ignore rather than
+// at-ts-expect-error. Using at-ts-ignore should also generate a complaint
+// that we should be using at-expect-error, where we would normally need
+// to suppress that error as well. However, perhaps that second error currently
+// happens only in agoric-sdk, but not yet in endo. TODO figure out and fix.
+// @ ts-ignore
 export const makeEncodePassable = ({
-  encodeRemotable = rem => assert.fail(X`remotable unexpected: ${rem}`),
-  encodePromise = prom => assert.fail(X`promise unexpected: ${prom}`),
-  encodeError = err => assert.fail(X`error unexpected: ${err}`),
+  encodeRemotable = (rem, _) => assert.fail(X`remotable unexpected: ${rem}`),
+  encodePromise = (prom, _) => assert.fail(X`promise unexpected: ${prom}`),
+  encodeError = (err, _) => assert.fail(X`error unexpected: ${err}`),
 } = {}) => {
   const encodePassable = passable => {
     if (ErrorHelper.canBeValid(passable, x => x)) {
@@ -344,36 +384,39 @@ export const makeEncodePassable = ({
 harden(makeEncodePassable);
 
 /**
- * @typedef {object} DecodeOptionsRecord
+ * @typedef {object} DecodeOptions
  * @property {(
  *   encodedRemotable: string,
  *   decodeRecur: (e: string) => Passable
- * ) => Remotable} decodeRemotable
+ * ) => Remotable} [decodeRemotable]
  * @property {(
  *   encodedPromise: string,
  *   decodeRecur: (e: string) => Passable
- * ) => Promise} decodePromise
+ * ) => Promise} [decodePromise]
  * @property {(
  *   encodedError: string,
  *   decodeRecur: (e: string) => Passable
- * ) => Error} decodeError
+ * ) => Error} [decodeError]
  */
 
 /**
- * @typedef {Partial<DecodeOptionsRecord>} DecodeOptions
- */
-
-/**
- * @param {DecodeOptions=} decodeOptions
+ * @param {DecodeOptions} [decodeOptions]
  * @returns {(encoded: string) => Passable}
  */
+// `yarn lint` complains here but not for equivalent code in agoric-sdk.
+// Also, vscode does not complain. Hence we're using at-ts-ignore rather than
+// at-ts-expect-error. Using at-ts-ignore should also generate a complaint
+// that we should be using at-expect-error, where we would normally need
+// to suppress that error as well. However, perhaps that second error currently
+// happens only in agoric-sdk, but not yet in endo. TODO figure out and fix.
+// @ ts-ignore
 export const makeDecodePassable = ({
-  decodeRemotable = rem => assert.fail(X`remotable unexpected: ${rem}`),
-  decodePromise = prom => assert.fail(X`promise unexpected: ${prom}`),
-  decodeError = err => assert.fail(X`error unexpected: ${err}`),
+  decodeRemotable = (rem, _) => assert.fail(X`remotable unexpected: ${rem}`),
+  decodePromise = (prom, _) => assert.fail(X`promise unexpected: ${prom}`),
+  decodeError = (err, _) => assert.fail(X`error unexpected: ${err}`),
 } = {}) => {
   const decodePassable = encoded => {
-    switch (encoded[0]) {
+    switch (encoded.charAt(0)) {
       case 'v': {
         return null;
       }
@@ -423,5 +466,39 @@ export const makeDecodePassable = ({
 };
 harden(makeDecodePassable);
 
-export const isEncodedRemotable = encoded => encoded[0] === 'r';
+export const isEncodedRemotable = encoded => encoded.charAt(0) === 'r';
 harden(isEncodedRemotable);
+
+// /////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @type {Record<PassStyle, string>}
+ * The single prefix characters to be used for each PassStyle category.
+ * `bigint` is a two character string because each of those characters
+ * individually is a valid bigint prefix. `n` for "negative" and `p` for
+ * "positive". The ordering of these prefixes is the same as the
+ * rankOrdering of their respective PassStyles. This table is imported by
+ * randOrder.js for this purpose.
+ *
+ * In addition, `|` is the remotable->ordinal mapping prefix:
+ * This is not used in covers but it is
+ * reserved from the same set of strings. Note that the prefix is > any
+ * prefix used by any cover so that ordinal mapping keys are always outside
+ * the range of valid collection entry keys.
+ */
+export const passStylePrefixes = harden({
+  __proto__: null,
+  error: '!',
+  copyRecord: '(',
+  tagged: ':',
+  promise: '?',
+  copyArray: '[',
+  boolean: 'b',
+  number: 'f',
+  bigint: 'np',
+  remotable: 'r',
+  string: 's',
+  null: 'v',
+  symbol: 'y',
+  undefined: 'z',
+});

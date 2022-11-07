@@ -16,9 +16,9 @@ import {
   compareRank,
   getPassStyleCover,
   intersectRankCovers,
-  recordParts,
   unionRankCovers,
 } from './rankOrder.js';
+import { recordNames, recordValues } from './encodePassable.js';
 import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
 import {
   assertKey,
@@ -509,8 +509,8 @@ const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const [specimenNames, specimenValues] = recordParts(specimen);
-        const [pattNames, pattValues] = recordParts(patt);
+        const specimenNames = recordNames(specimen);
+        const pattNames = recordNames(patt);
         const missing = listDifference(pattNames, specimenNames);
         if (missing.length >= 1) {
           return check(
@@ -527,6 +527,8 @@ const makePatternKit = () => {
             )}`,
           );
         }
+        const specimenValues = recordValues(specimen, specimenNames);
+        const pattValues = recordValues(patt, pattNames);
         return pattNames.every((label, i) =>
           checkMatches(specimenValues[i], pattValues[i], check, label),
         );
