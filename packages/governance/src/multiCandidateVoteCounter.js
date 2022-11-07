@@ -128,11 +128,6 @@ const makeMultiCandidateVoteCounter = (
 
     winningPositions = winningPositions.map(p => p.position);
 
-    // [8,5,5,5,5,5,3], n=5, [8,5,5,5,5,5]
-    // [5,4,4,4], n=3, [5,4,4,4]
-    // [6,5,4,4,2], n=3, [6,5,4,4]
-    // [6,6,4,4,4,4,4,2,2], n=3, [6,6,4,4,4,4,4]
-
     if (winningPositions.length === 0) {
       outcomePromise.resolve([questionSpec.tieOutcome]);
     } else if (winningPositions.length <= questionSpec.maxWinners) {
