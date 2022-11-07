@@ -25,8 +25,8 @@ import './types-ambient.js';
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
  * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
- * in the middle of an atomic action (which btw should never happen), it
+ * @param {ShutdownWithFailure | undefined} optShutdownWithFailure If this issuer
+ * fails in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
  * larger unit of computation, like the enclosing vat, can be shutdown
