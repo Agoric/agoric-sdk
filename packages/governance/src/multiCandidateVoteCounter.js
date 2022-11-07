@@ -160,7 +160,7 @@ const makeMultiCandidateVoteCounter = (
   };
 
   const closeFacet = makeHeapFarInstance(
-    'MultiPluralityVoteCounter close',
+    'MultiCandidateVoteCounter close',
     VoteCounterCloseI,
     {
       closeVoting() {
@@ -171,7 +171,7 @@ const makeMultiCandidateVoteCounter = (
   );
 
   const creatorFacet = makeHeapFarInstance(
-    'MultiPluralityVoteCounter creator',
+    'MultiCandidateVoteCounter creator',
     VoteCounterAdminI,
     {
       submitVote(voterHandle, chosenPositions, shares = 1n) {
@@ -196,7 +196,7 @@ const makeMultiCandidateVoteCounter = (
   );
 
   const publicFacet = makeHeapFarInstance(
-    'MultiPluralityVoteCounter public',
+    'MultiCandidateVoteCounter public',
     VoteCounterPublicI,
     {
       getQuestion() {
