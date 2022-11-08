@@ -163,7 +163,8 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
       if (additions.has(key)) return additions.get(key);
       if (deletions.has(key)) return undefined;
       const value = kvStore.get(key);
-      // @ts-expect-error value may be undefined
+      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
+      // @ts-ignore value may be undefined
       if (onGet !== undefined) onGet(key, value);
       return value;
     },
