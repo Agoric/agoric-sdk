@@ -22,6 +22,7 @@ export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
   let flushed = Promise.resolve();
 
   const writeNewLine = () => {
+    /** @type {Promise<void>} */
     const written = new Promise((resolve, reject) => {
       stream.write('\n', err => {
         if (err) {

@@ -44,6 +44,7 @@ async function run() {
 
   let slogF = slogFile ? fs.createReadStream(slogFile) : process.stdin;
   if (slogFile && slogFile.endsWith('.gz')) {
+    // @ts-expect-error faulty pipe type
     slogF = slogF.pipe(zlib.createGunzip());
   }
 
