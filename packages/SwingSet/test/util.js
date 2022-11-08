@@ -45,7 +45,10 @@ export function dumpKT(kernel) {
   }
 }
 
-export function buildDispatch(onDispatchCallback = undefined) {
+/**
+ * @param {(d: unknown) => void} [onDispatchCallback ]
+ */
+export function buildDispatch(onDispatchCallback) {
   const log = [];
 
   const GC = ['dropExports', 'retireExports', 'retireImports'];
@@ -85,26 +88,51 @@ export function buildDispatch(onDispatchCallback = undefined) {
   return { log, dispatch };
 }
 
+/**
+ * @param {number} index
+ * @param {string} [iface]
+ */
 export function capSlot(index, iface = 'export') {
   iface = iface ? `Alleged: ${iface}` : undefined;
   return { '@qclass': 'slot', iface, index };
 }
 
+/**
+ * @param {string} method
+ * @param {string} slot
+ * @param {string} [iface]
+ */
 export function methargsOneSlot(method, slot, iface = 'export') {
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs([method, [{ '@qclass': 'slot', iface, index: 0 }]], [slot]);
 }
 
+/**
+ * @param {string} slot
+ * @param {string} [iface]
+ */
 export function capdataOneSlot(slot, iface = 'export') {
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs({ '@qclass': 'slot', iface, index: 0 }, [slot]);
 }
 
+/**
+ * @param {string} slot
+ * @param {string} [iface]
+ */
 export function capargsOneSlot(slot, iface = 'export') {
   iface = iface ? `Alleged: ${iface}` : undefined;
   return capargs([{ '@qclass': 'slot', iface, index: 0 }], [slot]);
 }
 
+/**
+ *
+ * @param {unknown} target
+ * @param {string} method
+ * @param {any[]} args
+ * @param {any[]} slots
+ * @param {unknown} result
+ */
 export function makeMessage(
   target,
   method,

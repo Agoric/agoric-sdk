@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeScalarMap, makeLegacyMap } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

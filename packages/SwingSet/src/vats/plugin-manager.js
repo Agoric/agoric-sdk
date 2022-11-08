@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeStore } from '@agoric/store';
 import { makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';

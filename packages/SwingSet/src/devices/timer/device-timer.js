@@ -147,7 +147,9 @@ function makeTimerMap(state = undefined) {
       } else {
         // Nothing prevents a particular handler from appearing more than once
         for (const { handler } of handlers) {
+          // @ts-expect-error xxx Waker vs IndexedHandler
           if (handler === targetHandler && handlers.indexOf(handler) !== -1) {
+            // @ts-expect-error xxx Waker vs IndexedHandler
             handlers.splice(handlers.indexOf(handler), 1);
             droppedTimes.push(time);
           }

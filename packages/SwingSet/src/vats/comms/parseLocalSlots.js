@@ -15,12 +15,13 @@ import { assert, details as X } from '@agoric/assert';
  *
  * @param {unknown} s  The string to be parsed, as described above.
  *
- * @returns {{type: 'object' | 'promise', id: number}} a local slot object corresponding to the parameter.
+ * @returns {{type: 'object' | 'promise', id: bigint}} a local slot object corresponding to the parameter.
  *
  * @throws {Error} if the given string is syntactically incorrect.
  */
 export function parseLocalSlot(s) {
   assert.typeof(s, 'string');
+  /** @type {'object' | 'promise' | undefined} */
   let type;
   let idSuffix;
   if (s.startsWith('lo')) {
@@ -40,7 +41,7 @@ export function parseLocalSlot(s) {
  * Generate a local slot reference string given a type and id.
  *
  * @param {'object' | 'promise'} type  The type
- * @param {number} id    The id, a Nat.
+ * @param {bigint} id    The id, a Nat.
  *
  * @returns {string} the corresponding local slot reference string.
  *

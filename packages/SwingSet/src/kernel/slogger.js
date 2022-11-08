@@ -98,6 +98,7 @@ export function makeDummySlogger(slogCallbacks, dummyConsole) {
     write: () => 0,
   });
   doneRegistering(`Unrecognized makeDummySlogger slogCallbacks names:`);
+  // @ts-expect-error xxx
   return dummySlogger;
 }
 
@@ -281,5 +282,6 @@ export function makeSlogger(slogCallbacks, writeObj) {
     write,
   });
   doneRegistering(`Unrecognized makeSlogger slogCallbacks names:`);
+  // @ts-expect-error xxx
   return slogger;
 }

@@ -1,5 +1,3 @@
-// @ts-check
-
 /** @typedef {'counter' | 'gauge'} KernelStatsMetricType */
 /**
  * @template {KernelStatsMetricType} [T=KernelStatsMetricType]

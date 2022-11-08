@@ -12,7 +12,7 @@ export function parseReachableAndVatSlot(value) {
   } else if (flag === '_') {
     isReachable = false;
   } else {
-    assert(`flag (${flag}) must be 'R' or '_'`);
+    assert.fail(`flag (${flag}) must be 'R' or '_'`);
   }
   return { isReachable, vatSlot };
 }

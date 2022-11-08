@@ -1,4 +1,3 @@
-// @ts-check
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';

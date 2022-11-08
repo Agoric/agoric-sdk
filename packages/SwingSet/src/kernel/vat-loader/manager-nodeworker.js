@@ -1,4 +1,3 @@
-// @ts-check
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert, details as X } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -68,6 +67,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       void workerP.then(worker => worker.postMessage(msg));
     }
 
+    /** @type {PromiseKit<void>} */
     const { promise: dispatchReadyP, resolve: dispatchIsReady } =
       makePromiseKit();
     let waiting;
@@ -81,7 +81,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       } else if (type === 'dispatchReady') {
         parentLog(`dispatch() ready`);
         // wait10ms().then(dispatchIsReady); // stall to let logs get printed
-        dispatchIsReady(undefined);
+        dispatchIsReady();
       } else if (type === 'syscall') {
         parentLog(`syscall`, args);
         const [vatSyscallObject] = args;

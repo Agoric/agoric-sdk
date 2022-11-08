@@ -1,4 +1,3 @@
-// @ts-check
 /* global globalThis, WeakRef, FinalizationRegistry */
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 

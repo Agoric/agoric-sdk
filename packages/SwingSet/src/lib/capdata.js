@@ -9,7 +9,7 @@ import { assert, details as X } from '@agoric/assert';
  * @param {any} capdata  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {asserts capdata is import('@endo/marshal').CapData<unknown>}
+ * @returns {asserts capdata is import('@endo/marshal').CapData<string>}
  */
 export function insistCapData(capdata) {
   assert.typeof(
@@ -26,8 +26,7 @@ export function insistCapData(capdata) {
  * Returns the slot of a presence if the provided capdata is composed
  * of a single presence, `null` otherwise
  *
- * @param {import('@endo/marshal').CapData<unknown>} data
- * @returns {string | undefined}
+ * @param {import('@endo/marshal').CapData<string>} data
  */
 export function extractSingleSlot(data) {
   const body = JSON.parse(data.body);

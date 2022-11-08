@@ -7,7 +7,11 @@ import { Transform } from 'stream';
 const COLON = 58;
 const COMMA = 44;
 
-// input is a Buffer, output is a netstring-wrapped Buffer
+/**
+ *
+ * @param {Buffer} data
+ * @returns {Buffer} netstring-wrapped
+ */
 export function encode(data) {
   const prefix = Buffer.from(`${data.length}:`);
   const suffix = Buffer.from(',');
@@ -16,6 +20,12 @@ export function encode(data) {
 
 // input is a sequence of strings, output is a byte pipe
 export function netstringEncoderStream() {
+  /**
+   *
+   * @param {Buffer} chunk
+   * @param {BufferEncoding} encoding
+   * @param {*} callback
+   */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
       throw Error('stream requires Buffers');
@@ -74,7 +84,12 @@ export function decode(data, optMaxChunkSize) {
 // input is a byte pipe, output is a sequence of Buffers
 export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
-
+  /**
+   *
+   * @param {Buffer} chunk
+   * @param {BufferEncoding} encoding
+   * @param {*} callback
+   */
   function transform(chunk, encoding, callback) {
     if (!Buffer.isBuffer(chunk)) {
       throw Error('stream requires Buffers');

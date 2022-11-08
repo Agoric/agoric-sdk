@@ -147,7 +147,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
   if (config.bootstrap) {
     const bootstrapVatID = kernelKeeper.getVatIDForName(config.bootstrap);
     logStartup(`=> queueing bootstrap()`);
-    bootstrapResultKpid = enqueueBootstrap(bootstrapVatID, kernelKeeper);
+    bootstrapResultKpid = enqueueBootstrap(bootstrapVatID);
     if (config.pinBootstrapRoot) {
       const kref = exportRootObject(kernelKeeper, bootstrapVatID);
       kernelKeeper.pinObject(kref);

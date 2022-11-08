@@ -1,4 +1,3 @@
-// @ts-check
 /* global globalThis */
 
 import { assert, details as X } from '@agoric/assert';

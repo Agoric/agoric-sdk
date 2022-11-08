@@ -1,5 +1,3 @@
-// @ts-check
-
 import { insistCapData } from '../lib/capdata.js';
 
 /**

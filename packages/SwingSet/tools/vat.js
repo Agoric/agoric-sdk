@@ -27,10 +27,12 @@ async function main() {
     argv[0] === '--' || argv[0] === undefined ? '.' : argv.shift();
   const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
 
+  assert(basedir);
   const config = await loadBasedir(basedir);
   const { loopboxSrcPath, loopboxEndowments } = buildLoopbox('immediate');
   config.devices = [['loopbox', loopboxSrcPath, loopboxEndowments]];
 
+  // @ts-expect-error expects string[], not boolean, in second position
   const controller = await buildVatController(config, withSES, vatArgv);
   if (command === 'run') {
     await controller.run();

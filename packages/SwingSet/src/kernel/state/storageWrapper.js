@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert } from '@agoric/assert';
 import { insistStorageAPI, makeBufferedStorage } from '../../lib/storageAPI.js';
 

@@ -1,4 +1,3 @@
-// @ts-check
 import { initSwingStore } from '@agoric/swing-store';
 
 /*

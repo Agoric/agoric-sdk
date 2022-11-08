@@ -1,4 +1,3 @@
-// @ts-check
 import { assert, details as X } from '@agoric/assert';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';

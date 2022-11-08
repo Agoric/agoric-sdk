@@ -24,7 +24,7 @@ const managerTypes = ['local', 'nodeWorker', 'node-subprocess', 'xs-worker'];
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
-  return [promise, { resolve, reject }];
+  return /** @type {const} */ ([promise, { resolve, reject }]);
 }
 
 export function buildRootObject(vatPowers, _vatParameters, baggage) {
@@ -531,7 +531,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   /**
    * the kernel queues this to us when a vat upgrade completes or fails
    *
-   * @param {UpgradeID} upgradeID
+   * @param {import('../../devices/vat-admin/device-vat-admin.js').UpgradeID} upgradeID
    * @param {boolean} success
    * @param {Error | undefined} error
    * @param {number} incarnationNumber
