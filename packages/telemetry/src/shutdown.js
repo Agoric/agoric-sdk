@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 import anylogger from 'anylogger';
 
 const console = anylogger('shutdown');

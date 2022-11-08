@@ -7,7 +7,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
   /** @type {unknown} */ (undefined)
 );
 
-// @ts-check
 /** @param {import('./index.js').MakeSlogSenderOptions} opts */
 export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
   if (!SLOGFILE) {

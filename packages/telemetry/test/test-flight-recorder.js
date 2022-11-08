@@ -1,4 +1,3 @@
-// @ts-check
 import tmp from 'tmp';
 import { test } from './prepare-test-env-ava.js';
 
