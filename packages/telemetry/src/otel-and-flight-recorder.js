@@ -1,3 +1,4 @@
+import { NonNullish } from '@agoric/assert';
 import { makeSlogSender as makeSlogSenderFromEnv } from './make-slog-sender.js';
 
 export const makeSlogSender = async opts => {
@@ -8,7 +9,7 @@ export const makeSlogSender = async opts => {
   );
 
   const senderModules = ['./otel-trace.js', './flight-recorder.js']
-    .map(identifier => import.meta.resolve(identifier))
+    .map(identifier => NonNullish(import.meta.resolve)(identifier))
     .join(',');
 
   return makeSlogSenderFromEnv({

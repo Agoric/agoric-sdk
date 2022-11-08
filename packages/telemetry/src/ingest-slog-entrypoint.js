@@ -60,7 +60,7 @@ async function run() {
     const progress = { virtualTimeOffset: 0, lastSlogTime: 0 };
     fs.writeFileSync(progressFileName, JSON.stringify(progress));
   }
-  const progress = JSON.parse(fs.readFileSync(progressFileName));
+  const progress = JSON.parse(fs.readFileSync(progressFileName).toString());
 
   let linesProcessedThisPeriod = 0;
   let startOfLastPeriod = 0;
