@@ -8,7 +8,7 @@ import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
 import { vivifyPaymentLedger } from './paymentLedger.js';
 
-import './types.js';
+import './types-ambient.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 

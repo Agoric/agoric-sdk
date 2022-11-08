@@ -4,7 +4,7 @@
 import { makeAgoricNames } from './rpc.js';
 
 // ambient types
-import '@agoric/ertp/src/types.js';
+import '@agoric/ertp/src/types-ambient.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 

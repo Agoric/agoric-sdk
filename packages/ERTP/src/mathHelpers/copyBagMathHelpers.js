@@ -8,7 +8,7 @@ import {
   bagUnion,
   bagDisjointSubtract,
 } from '@agoric/store';
-import '../types.js';
+import '../types-ambient.js';
 
 /** @type {CopyBagValue} */
 const empty = makeCopyBag([]);

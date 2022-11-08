@@ -1,6 +1,6 @@
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
-import './types.js';
+import './types-ambient.js';
 import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';

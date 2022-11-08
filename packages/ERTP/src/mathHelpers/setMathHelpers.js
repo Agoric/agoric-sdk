@@ -7,7 +7,7 @@ import {
   coerceToElements,
   elementsCompare,
 } from '@agoric/store';
-import '../types.js';
+import '../types-ambient.js';
 
 // Operations for arrays with unique objects identifying and providing
 // information about digital assets. Used for Zoe invites.

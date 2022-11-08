@@ -1,6 +1,6 @@
 import { Nat, isNat } from '@agoric/nat';
 
-import '../types.js';
+import '../types-ambient.js';
 
 const { details: X } = assert;
 const empty = 0n;

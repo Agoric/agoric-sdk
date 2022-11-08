@@ -1,9 +1,5 @@
-/// <reference types="ses"/>
-
-/**
- * @typedef {import('@endo/marshal').InterfaceSpec} InterfaceSpec
- * @typedef {import('@endo/marshal').MarshalGetInterfaceOf} GetInterfaceOf
- */
+// Ensure this is a module.
+export {};
 
 /**
  * @template {AssetKind} [K=AssetKind]
@@ -43,12 +39,6 @@
  * element of a bag can be present once or more times, i.e., some positive
  * bigint number of times, representing that quantity of the asset represented
  * by that key.
- */
-
-/**
- * @typedef {AmountValue} Value
- * "Value" is a deprecated alias for "AmountValue". Please use
- * "AmountValue" instead.
  */
 
 /**
