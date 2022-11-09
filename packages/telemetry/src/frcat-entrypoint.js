@@ -17,7 +17,7 @@ const main = async () => {
     // eslint-disable-next-line @jessie.js/no-nested-await
     const { readCircBuf } = await makeMemoryMappedCircularBuffer({
       circularBufferFilename: file,
-      circularBufferSize: null,
+      circularBufferSize: 0,
     });
 
     let offset = 0;

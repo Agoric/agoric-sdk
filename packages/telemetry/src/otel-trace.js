@@ -1,5 +1,4 @@
 /* globals process */
-// @ts-check
 import {
   BasicTracerProvider,
   BatchSpanProcessor,

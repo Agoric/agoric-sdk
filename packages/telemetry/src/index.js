@@ -1,4 +1,3 @@
-// @ts-check
 /* globals globalThis, process */
 import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';

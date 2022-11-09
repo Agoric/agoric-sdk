@@ -1,7 +1,11 @@
 import { assert } from '@agoric/assert';
-import { initEmpty } from '@agoric/store';
-import { provide, defineDurableKind, makeKindHandle } from '@agoric/vat-data';
-import { Far } from '@endo/marshal';
+import { initEmpty, makeHeapFarInstance } from '@agoric/store';
+import {
+  provide,
+  defineDurableFarClass,
+  makeKindHandle,
+} from '@agoric/vat-data';
+import { HandleI } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -18,7 +22,13 @@ export const defineDurableHandle = (baggage, handleType) => {
     `${handleType}KindHandle`,
     () => makeKindHandle(`${handleType}Handle`),
   );
-  const makeHandle = defineDurableKind(durableHandleKindHandle, initEmpty, {});
+  const makeHandle = defineDurableFarClass(
+    durableHandleKindHandle,
+    HandleI,
+    initEmpty,
+    {},
+  );
+  // @ts-expect-error Bit by our own opaque types.
   return /** @type {() => Handle<H>} */ (makeHandle);
 };
 harden(defineDurableHandle);
@@ -33,6 +43,9 @@ harden(defineDurableHandle);
 export const makeHandle = handleType => {
   assert.typeof(handleType, 'string', 'handleType must be a string');
   // Return the intersection type (really just an empty object).
-  return /** @type {Handle<H>} */ (Far(`${handleType}Handle`));
+  // @ts-expect-error Bit by our own opaque types.
+  return /** @type {Handle<H>} */ (
+    makeHeapFarInstance(`${handleType}Handle`, HandleI, {})
+  );
 };
 harden(makeHandle);

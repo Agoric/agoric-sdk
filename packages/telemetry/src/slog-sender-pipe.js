@@ -1,4 +1,3 @@
-// @ts-check
 import { fork } from 'child_process';
 import path from 'path';
 import anylogger from 'anylogger';

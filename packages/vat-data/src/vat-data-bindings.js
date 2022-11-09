@@ -44,11 +44,17 @@ if ('VatData' in globalThis) {
   };
 }
 
+/**
+ * @deprecated Use FarClasses/FarInstances instead of kinds
+ */
 export const {
   defineKind,
   defineKindMulti,
   defineDurableKind,
   defineDurableKindMulti,
+} = VatDataGlobal;
+
+export const {
   makeKindHandle,
   providePromiseWatcher,
   watchPromise,

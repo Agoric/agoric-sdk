@@ -96,12 +96,15 @@ type DefineKindOptions<C> = {
 
 export type VatData = {
   // virtual kinds
+  /** @deprecated Use defineVirtualFarClass instead */
   defineKind: <P, S, F>(
     tag: string,
     init: (...args: P) => S,
     facet: F,
     options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
+
+  /** @deprecated Use defineVirtualFarClassKit instead */
   defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
@@ -111,12 +114,16 @@ export type VatData = {
 
   // durable kinds
   makeKindHandle: (descriptionTag: string) => DurableKindHandle;
+
+  /** @deprecated Use defineDurableFarClass instead */
   defineDurableKind: <P, S, F>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     facet: F,
     options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
+
+  /** @deprecated Use defineDurableFarClassKit instead */
   defineDurableKindMulti: <P, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
@@ -166,6 +173,7 @@ interface PickFacet {
   ): (...args: Parameters<M>) => ReturnType<M>[F];
 }
 
+/** @deprecated Use vivifyFarClass instead */
 type VivifyKind = <P, S, F>(
   baggage: Baggage,
   tag: string,
@@ -174,6 +182,7 @@ type VivifyKind = <P, S, F>(
   options?: DefineKindOptions<KindContext<S, F>>,
 ) => (...args: P) => KindFacet<F>;
 
+/** @deprecated Use vivifyFarClassKit instead */
 type VivifyKindMulti = <P, S, B>(
   baggage: Baggage,
   tag: string,

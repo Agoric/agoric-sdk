@@ -1,4 +1,3 @@
-// @ts-check
 /// <reference types="ses" />
 
 // https://github.com/Agoric/agoric-sdk/issues/3742#issuecomment-1028451575

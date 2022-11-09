@@ -14,6 +14,8 @@ export const AmountPatternKeywordRecordShape = M.recordOf(
   M.pattern(),
 );
 
+export const HandleI = M.interface('Handle', {});
+
 export const makeHandleShape = name => M.remotable(`${name}Handle`);
 export const TimerShape = makeHandleShape('timer');
 

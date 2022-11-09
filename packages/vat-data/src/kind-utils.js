@@ -29,7 +29,10 @@ export const provideKindHandle = (baggage, kindName) =>
   provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
 harden(provideKindHandle);
 
-/** @type {import('./types.js').VivifyKind} */
+/**
+ * @deprecated Use vivifyFarClass instead
+ * @type {import('./types.js').VivifyKind}
+ */
 export const vivifyKind = (
   baggage,
   kindName,
@@ -45,7 +48,10 @@ export const vivifyKind = (
   );
 harden(vivifyKind);
 
-/** @type {import('./types.js').VivifyKindMulti} */
+/**
+ * @deprecated Use vivifyFarClassKit instead
+ * @type {import('./types.js').VivifyKindMulti}
+ */
 export const vivifyKindMulti = (
   baggage,
   kindName,

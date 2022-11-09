@@ -7,7 +7,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
   /** @type {unknown} */ (undefined)
 );
 
-// @ts-check
 /** @param {import('./index.js').MakeSlogSenderOptions} opts */
 export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
   if (!SLOGFILE) {
@@ -22,6 +21,7 @@ export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
   let flushed = Promise.resolve();
 
   const writeNewLine = () => {
+    /** @type {Promise<void>} */
     const written = new Promise((resolve, reject) => {
       stream.write('\n', err => {
         if (err) {
