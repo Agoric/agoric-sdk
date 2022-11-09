@@ -90,7 +90,7 @@
 
 /**
  * @typedef {{ question: Handle<'Question'> } & (
- *   { outcome: 'win', positions: Position } |
+ *   { outcome: 'win', position: Position } |
  *   { outcome: 'fail', reason: 'No quorum' }
  * )} OutcomeRecord
  */

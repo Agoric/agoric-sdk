@@ -135,8 +135,8 @@ test('multi candidate tie outcome', async t => {
   t.assert(outcome[0] === positions[3]);
 
   const tiedPositions = [GOAT, DUCK, MUTTON, PORK, BEEF];
-  // eslint-disable-next-line no-plusplus
-  for (let i = 1; i < outcome.length; i++) {
+
+  for (let i = 1; i < outcome.length; i += 1) {
     t.assert(tiedPositions.includes(outcome[i]));
   }
 
@@ -190,8 +190,8 @@ test('multi candidate tie outcome case #2', async t => {
   t.assert(outcome[1] === CHICKEN);
 
   const tiedPositions = [PORK, BEEF];
-  // eslint-disable-next-line no-plusplus
-  for (let i = 2; i < outcome.length; i++) {
+
+  for (let i = 2; i < outcome.length; i += 1) {
     t.assert(tiedPositions.includes(outcome[i]));
   }
 
