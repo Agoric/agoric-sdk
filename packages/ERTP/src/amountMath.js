@@ -1,6 +1,5 @@
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
-import './types-ambient.js';
 import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
@@ -214,7 +213,7 @@ const AmountMath = {
    * valid amount if so.
    *
    * @template {AssetKind} [K=AssetKind]
-   * @param {Brand} brand
+   * @param {Brand<K>} brand
    * @param {Amount<K>} allegedAmount
    * @returns {Amount<K>}
    */

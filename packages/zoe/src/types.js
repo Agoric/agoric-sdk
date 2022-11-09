@@ -37,7 +37,7 @@
  * @property {Brand<K>} brand
  * @property {Issuer<K>} issuer
  * @property {K} assetKind
- * @property {any} [displayInfo]
+ * @property {DisplayInfo<K>} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation
  */

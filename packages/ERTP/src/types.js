@@ -100,7 +100,7 @@ export {};
  * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer
  * Should be used with `issuer.getBrand` to ensure an issuer and brand match.
  * @property {() => string} getAllegedName
- * @property {() => DisplayInfo} getDisplayInfo
+ * @property {() => DisplayInfo<K>} getDisplayInfo
  * Give information to UI on how to display the amount.
  * @property {() => Pattern} getAmountShape
  */
@@ -151,6 +151,7 @@ export {};
  */
 
 /**
+ * @template {AssetKind} K
  * @callback IssuerClaim
  *
  * Transfer all digital assets from the payment to a new payment and
@@ -162,9 +163,9 @@ export {};
  * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
- * @param {ERef<Payment>} payment
+ * @param {ERef<Payment<K>>} payment
  * @param {Pattern=} optAmountShape
- * @returns {Promise<Payment>}
+ * @returns {Promise<Payment<K>>}
  */
 
 /**
@@ -238,7 +239,7 @@ export {};
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf<K>} getAmountOf
  * @property {IssuerBurn} burn
- * @property {IssuerClaim} claim
+ * @property {IssuerClaim<K>} claim
  * @property {IssuerCombine} combine
  * @property {IssuerSplit} split
  * @property {IssuerSplitMany} splitMany

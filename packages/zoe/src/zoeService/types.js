@@ -53,12 +53,12 @@
 
 /**
  * @callback GetInvitationIssuer
- * @returns {Promise<Issuer>}
+ * @returns {Promise<Issuer<'set'>>}
  */
 
 /**
  * @callback GetFeeIssuer
- * @returns {Promise<Issuer>}
+ * @returns {Promise<Issuer<'nat'>}
  */
 
 /**
