@@ -1,4 +1,3 @@
-// @ts-check
 import otel, { SpanStatusCode } from '@opentelemetry/api';
 
 import { makeLegacyMap } from '@agoric/store';

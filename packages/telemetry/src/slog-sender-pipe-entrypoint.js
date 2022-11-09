@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 import '@endo/init';
 
 import anylogger from 'anylogger';

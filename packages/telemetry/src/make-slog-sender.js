@@ -1,4 +1,3 @@
-// @ts-check
 import path from 'path';
 import tmp from 'tmp';
 import { PromiseAllOrErrors } from '@agoric/internal';
