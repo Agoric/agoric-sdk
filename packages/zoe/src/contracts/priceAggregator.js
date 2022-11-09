@@ -45,7 +45,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint>,
+ * quoteMint?: ERef<Mint<'set'>>,
  * storageNode: StorageNode,
  * }} privateArgs
  */
@@ -82,6 +82,8 @@ const start = async (zcf, privateArgs) => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
+    /** @type {Amount<'set'>} */
+    // xxx type should be inferred from brand and value
     const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
