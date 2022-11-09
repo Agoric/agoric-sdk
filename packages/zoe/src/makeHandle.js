@@ -2,11 +2,7 @@
 
 import { assert } from '@agoric/assert';
 import { initEmpty, makeHeapFarInstance } from '@agoric/store';
-import {
-  provide,
-  defineDurableFarClass,
-  makeKindHandle,
-} from '@agoric/vat-data';
+import { vivifyFarClass } from '@agoric/vat-data';
 import { HandleI } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -19,13 +15,9 @@ import { HandleI } from './typeGuards.js';
  */
 export const defineDurableHandle = (baggage, handleType) => {
   assert.typeof(handleType, 'string', 'handleType must be a string');
-  const durableHandleKindHandle = provide(
+  const makeHandle = vivifyFarClass(
     baggage,
-    `${handleType}KindHandle`,
-    () => makeKindHandle(`${handleType}Handle`),
-  );
-  const makeHandle = defineDurableFarClass(
-    durableHandleKindHandle,
+    `${handleType}Handle`,
     HandleI,
     initEmpty,
     {},
