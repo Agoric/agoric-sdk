@@ -407,6 +407,23 @@ export const PSM_MANIFEST = harden({
   },
 });
 
+export const getManifestForPsmGovernance = (
+  { restoreRef },
+  { installKeys },
+) => {
+  const { [installGovAndPSMContracts.name]: _toss, ...manifest } =
+    PSM_GOV_MANIFEST;
+  return {
+    manifest,
+    installations: {
+      psmCharter: restoreRef(installKeys.psmCharter),
+      contractGovernor: restoreRef(installKeys.contractGovernor),
+      committee: restoreRef(installKeys.committee),
+      binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),
+    },
+  };
+};
+
 export const getManifestForPsm = (
   { restoreRef },
   { installKeys, anchorOptions },
