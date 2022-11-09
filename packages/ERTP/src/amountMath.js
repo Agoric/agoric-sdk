@@ -241,18 +241,15 @@ const AmountMath = {
    * Return the amount representing an empty amount. This is the
    * identity element for MathHelpers.add and MatHelpers.subtract.
    *
-   * @template {AssetKind} [K='nat']
-   * @param {Brand<K>} brand
-   * @param {K} [assetKind]
-   * @returns {Amount<K>}
+   * @type {{
+   *   (brand: Brand<'nat'>): Amount<'nat'>;
+   *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
+   * }}
    */
-  // @ts-expect-error TS/jsdoc thinks 'nat' can't be assigned to K subclassing AssetKind
-  // If we were using TypeScript we'd simply overload the function definition for each case.
-  makeEmpty: (brand, assetKind = 'nat') => {
+  makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
     assertRemotable(brand, 'brand');
     assertAssetKind(assetKind);
     const value = helpers[assetKind].doMakeEmpty();
-    // @ts-expect-error TS/jsdoc thinks 'nat' can't be assigned to K subclassing AssetKind
     return harden({ brand, value });
   },
   /**
