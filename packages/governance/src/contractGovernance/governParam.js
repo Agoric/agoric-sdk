@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 import { fit, keyEQ } from '@agoric/store';

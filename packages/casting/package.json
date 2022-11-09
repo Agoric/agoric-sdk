@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@endo/ses-ava": "^0.2.35",
+    "@types/node-fetch": "^2.6.2",
     "ava": "^5.0.1",
     "c8": "^7.7.2",
     "express": "^4.17.1",

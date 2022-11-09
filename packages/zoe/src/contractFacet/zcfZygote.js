@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import { Far, Remotable, passStyleOf } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';

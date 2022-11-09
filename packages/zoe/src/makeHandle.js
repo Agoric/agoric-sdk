@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert } from '@agoric/assert';
 import { initEmpty, makeHeapFarInstance } from '@agoric/store';
 import {

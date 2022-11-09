@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 

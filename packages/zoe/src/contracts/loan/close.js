@@ -1,5 +1,3 @@
-// @ts-check
-
 import './types.js';
 
 import { assert, details as X } from '@agoric/assert';

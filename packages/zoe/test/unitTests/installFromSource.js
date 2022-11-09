@@ -1,5 +1,3 @@
-// @ts-check
-
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 

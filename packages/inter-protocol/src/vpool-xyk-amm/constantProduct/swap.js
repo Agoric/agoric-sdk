@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
 import { calculateFees, amountGT } from './calcFees.js';
 

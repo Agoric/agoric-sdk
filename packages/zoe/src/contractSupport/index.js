@@ -1,5 +1,3 @@
-// @ts-check
-
 export {
   getInputPrice,
   getOutputPrice,

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeStoredPublishKit } from '@agoric/notifier';
 import { makeStore, makeHeapFarInstance, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';

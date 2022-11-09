@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';

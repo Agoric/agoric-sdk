@@ -1,5 +1,3 @@
-// @ts-check
-
 // This does not support secondary to secondary. That has to happen at
 // a higher abstraction
 

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
 import { initEmpty } from '@agoric/store';
 import { vivifyKindMulti, provideDurableMapStore } from '@agoric/vat-data';

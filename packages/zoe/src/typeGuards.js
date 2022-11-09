@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';

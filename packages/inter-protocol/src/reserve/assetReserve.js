@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E, Far } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';

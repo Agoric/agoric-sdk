@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
  *
@@ -9,8 +7,10 @@
  * currently. When the brand has an assetKind itself, AmountMath will
  * validate that.
  */
+// Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
+import '@agoric/vats/exported.js';
 
 import '../../exported.js';
 import '../internal-types.js';

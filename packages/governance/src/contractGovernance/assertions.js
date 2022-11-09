@@ -1,5 +1,3 @@
-// @ts-check
-
 import { isRemotable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 

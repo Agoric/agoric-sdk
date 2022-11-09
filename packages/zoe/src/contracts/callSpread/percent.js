@@ -1,5 +1,3 @@
-// @ts-check
-
 // some tools to make treating ratios as percents easier
 
 import { makeRatio } from '../../contractSupport/index.js';

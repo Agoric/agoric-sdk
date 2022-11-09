@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 export const setupMintKits = () => {

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import {

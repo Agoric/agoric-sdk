@@ -1,5 +1,3 @@
-// @ts-check
-
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { BASIS_POINTS } from './constantProduct/defaults.js';

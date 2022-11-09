@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath.js';
 

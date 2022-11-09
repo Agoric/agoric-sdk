@@ -1,5 +1,3 @@
-// @ts-check
-
 import '../../../exported.js';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';

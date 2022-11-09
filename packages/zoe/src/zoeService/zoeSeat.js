@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';

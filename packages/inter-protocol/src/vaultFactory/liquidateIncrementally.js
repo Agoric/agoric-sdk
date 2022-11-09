@@ -1,6 +1,4 @@
 /* eslint-disable no-await-in-loop */
-// @ts-check
-
 import { E } from '@endo/eventual-send';
 import {
   getAmountOut,

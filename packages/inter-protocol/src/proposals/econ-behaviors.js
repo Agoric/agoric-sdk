@@ -1,5 +1,3 @@
-// @ts-check
-
 import '../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';

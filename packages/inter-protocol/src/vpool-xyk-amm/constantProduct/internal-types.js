@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * @typedef {object} ImprovedNoFeeSwapResult
  * @property {Amount<'nat'>} amountIn

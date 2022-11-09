@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeHeapFarInstance } from '@agoric/store';

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 
 export const POOL_FEE_KEY = 'PoolFee';

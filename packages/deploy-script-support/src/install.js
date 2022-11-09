@@ -1,5 +1,3 @@
-// @ts-check
-
 import './externalTypes.js';
 
 import { E } from '@endo/far';

@@ -1,5 +1,3 @@
-// @ts-check
-
 /** @param {ZCF} zcf */
 const start = zcf => {
   /** @type {OfferHandler} */

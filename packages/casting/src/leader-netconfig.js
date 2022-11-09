@@ -80,4 +80,3 @@ export const makeLeader = (bootstrap = DEFAULT_BOOTSTRAP, options) => {
   }
   return makeLeaderFromRpcAddresses([bootstrap], options);
 };
-/** @typedef {ReturnType<typeof makeLeader>} Leader */

@@ -1,5 +1,3 @@
-// @ts-check
-
 import '../../../exported.js';
 
 import { E } from '@endo/eventual-send';

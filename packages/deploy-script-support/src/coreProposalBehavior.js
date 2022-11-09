@@ -47,7 +47,7 @@ export const makeCoreProposalBehavior = ({
     return fromEntries(ents);
   };
 
-  /** @param {ChainBootstrapSpace} allPowers */
+  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateInstallation: any }} allPowers */
   const behavior = async allPowers => {
     const {
       consume: { board, agoricNamesAdmin },

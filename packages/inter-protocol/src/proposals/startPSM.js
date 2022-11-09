@@ -1,5 +1,3 @@
-// @ts-check
-
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';

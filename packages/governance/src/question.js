@@ -1,5 +1,3 @@
-// @ts-check
-
 import { makeHeapFarInstance, fit, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
