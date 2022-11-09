@@ -24,7 +24,8 @@ const PrivateArgsShape = harden(
 );
 
 /**
- * Make NameHub for this address and insert depositFacet
+ * Provide a NameHub for this address and insert depositFacet only if not
+ * already done.
  *
  * @param {string} address
  * @param {import('./smartWallet.js').SmartWallet} wallet
@@ -36,9 +37,18 @@ export const publishDepositFacet = async (
   namesByAddressAdmin,
 ) => {
   const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-  myAddressNameAdmin.update(WalletName.depositFacet, wallet.getDepositFacet());
+  myAddressNameAdmin.reserve(WalletName.depositFacet);
 
-  return E(namesByAddressAdmin).update(address, nameHub, myAddressNameAdmin);
+  // This may race against perAddress in makeAddressNameHubs, so we are careful
+  // not to clobber the first nameHub that is used to update
+  // namesByAddressAdmin.
+  await E(namesByAddressAdmin).default(address, nameHub, myAddressNameAdmin);
+
+  const actualAdmin = E(namesByAddressAdmin).lookupAdmin(address);
+  return E(actualAdmin).default(
+    WalletName.depositFacet,
+    wallet.getDepositFacet(),
+  );
 };
 
 /**
