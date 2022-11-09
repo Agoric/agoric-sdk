@@ -51,8 +51,11 @@ export const krefOf = obj => {
   if (fromMap) {
     return fromMap;
   }
-  if (obj.getKref) {
-    return obj.getKref();
+  if (obj && typeof obj === 'object') {
+    const getKref = obj.getKref;
+    if (typeof getKref === 'function') {
+      return getKref();
+    }
   }
   return null;
 };
