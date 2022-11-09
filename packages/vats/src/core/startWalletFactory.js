@@ -296,3 +296,16 @@ export const WALLET_FACTORY_MANIFEST = {
     },
   },
 };
+
+export const getManifestForWalletFactory = (
+  { restoreRef },
+  { installKeys },
+) => {
+  return {
+    manifest: WALLET_FACTORY_MANIFEST,
+    installations: {
+      provisionPool: restoreRef(installKeys.provisionPool),
+      walletFactory: restoreRef(installKeys.walletFactory),
+    },
+  };
+};
