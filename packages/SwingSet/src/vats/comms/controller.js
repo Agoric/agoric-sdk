@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 import { assert, details as X } from '@agoric/assert';
-import { kser, kunser, kslot } from '../../lib/kmarshal.js';
+import { kser, kunser, kslot, krefOf } from '../../lib/kmarshal.js';
 
 // deliverToController() is used for local vats which want to talk to us as a
 // vat, rather than as a conduit to talk to remote vats. The bootstrap
@@ -33,8 +33,8 @@ export function deliverToController(
     //  we then do setRx!setReceiver(rx)
 
     const name = args[0];
-    const transmitterID = `${args[1]}`;
-    const setReceiverID = `${args[2]}`;
+    const transmitterID = krefOf(args[1]);
+    const setReceiverID = krefOf(args[2]);
 
     const { receiverID } = state.addRemote(name, transmitterID);
 
@@ -53,7 +53,7 @@ export function deliverToController(
     const remoteID = state.getRemoteIDForName(remoteName);
     assert(remoteID, X`unknown remote name ${remoteName}`);
     const remoteRefID = args[1];
-    const localRef = provideLocalForKernel(`${args[2]}`);
+    const localRef = provideLocalForKernel(krefOf(args[2]));
     addEgress(remoteID, remoteRefID, localRef);
     syscall.resolve([[result, false, kser(undefined)]]);
   }

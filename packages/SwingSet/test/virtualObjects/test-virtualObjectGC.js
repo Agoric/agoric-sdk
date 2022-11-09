@@ -17,7 +17,7 @@ import {
   validateReturned,
 } from '../liveslots-helpers.js';
 import { validateCreateBuiltInTables } from '../gc-helpers.js';
-import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { krefOf, kser, kslot } from '../../src/lib/kmarshal.js';
 
 // Legs:
 //
@@ -167,7 +167,8 @@ function rcKey(what, slot = 0) {
 }
 
 function stateKey(what, slot = 0) {
-  return `vom.${base(kser(what).slots[slot])}`;
+  const ks = kser(what);
+  return `vom.${base(ks.slots[slot])}`;
 }
 
 const unfacetedThingKindID = '10';
@@ -392,8 +393,8 @@ function validateFauxCacheDisplacerDeletion(v) {
   validate(v, matchVatstoreGet(esKey(fCacheDisplacer), NONE));
   validate(v, matchVatstoreGet(stateKey(fCacheDisplacer), cacheObjValue));
   validateDelete(v, fCacheDisplacer);
-  validateCheckNoWeakKeys(v, `${base(`${fCacheDisplacer}`)}:0`);
-  validateCheckNoWeakKeys(v, `${base(`${fCacheDisplacer}`)}:1`);
+  validateCheckNoWeakKeys(v, `${base(krefOf(fCacheDisplacer))}:0`);
+  validateCheckNoWeakKeys(v, `${base(krefOf(fCacheDisplacer))}:1`);
 }
 
 function validateKindMetadata(v, kindID, tag) {
@@ -467,7 +468,7 @@ function validateDropStored(v, rp, what, esp, postCheck) {
 }
 
 function validateWeakCheck(v, vo) {
-  const what = `${vo}`;
+  const what = krefOf(vo);
   const whatb = base(what);
   if (whatb !== what) {
     validateCheckNoWeakKeys(v, `${whatb}:0`);
@@ -559,7 +560,7 @@ function validateDropHeldWithGCAndRetireFacets(v, rp, what, esp) {
   validateStatusCheck(v, what, NONE, esp, testObjValue);
   validateDelete(v, what);
   validateWeakCheck(v, what);
-  const baseRef = base(`${what}`);
+  const baseRef = base(krefOf(what));
   validate(v, matchRetireExports(`${baseRef}:0`, `${baseRef}:1`));
   validateDone(v);
 }
@@ -679,7 +680,7 @@ async function voLifeCycleTest2(t, isf) {
   validateDropHeld(v, rp, thing, esf(isf), '1', 'r');
 
   // lERV -> leRV  Drop the export
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), '1');
 
   // leRV -> LeRV  Fetch from storage
@@ -695,7 +696,7 @@ async function voLifeCycleTest2(t, isf) {
   validateLoad(v, rp, thing, testObjValue);
 
   // LeRV -> LerV  Retire the export
-  await dispatchRetireExports(`${thing}`);
+  await dispatchRetireExports(krefOf(thing));
   validateRetireExport(v, thing, esf(isf));
 }
 test.serial('VO lifecycle 2 unfaceted', async t => {
@@ -727,7 +728,7 @@ async function voLifeCycleTest3(t, isf) {
   validateExport(v, rp, thing, esf(isf));
 
   // LERV -> LeRV  Drop the export
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), '1');
 
   // LeRV -> leRV  Drop in-memory reference
@@ -735,7 +736,7 @@ async function voLifeCycleTest3(t, isf) {
   validateDropHeld(v, rp, thing, esf(isf), '1', 's');
 
   // leRV -> lerV  Retire the export
-  await dispatchRetireExports(`${thing}`);
+  await dispatchRetireExports(krefOf(thing));
   validateRetireExport(v, thing, esf(isf));
 
   // lerV -> lerv  Drop stored reference (gc and retire)
@@ -771,7 +772,7 @@ async function voLifeCycleTest4(t, isf) {
   validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), NONE);
 
   // LeRv -> lerv  Drop in-memory reference (gc and retire)
@@ -803,11 +804,11 @@ async function voLifeCycleTest5(t, isf) {
   validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), NONE);
 
   // LeRv -> Lerv  Retire the export
-  await dispatchRetireExports(`${thing}`);
+  await dispatchRetireExports(krefOf(thing));
   validateRetireExport(v, thing, esf(isf));
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
@@ -843,7 +844,7 @@ async function voLifeCycleTest6(t, isf) {
   validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), NONE);
 
   // LeRv -> LeRV  Store VO reference virtually
@@ -907,7 +908,7 @@ async function voLifeCycleTest7(t, isf) {
   validateDropHeld(v, rp, thing, esf(isf), NONE, 'r');
 
   // lERv -> lerv  Drop the export (gc and retire)
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExportWithGCAndRetire(v, thing, esf(isf), NONE);
 }
 test.serial('VO lifecycle 7 unfaceted', async t => {
@@ -959,7 +960,7 @@ async function voLifeCycleTest8(t, isf) {
   validateDropStored(v, rp, thing, esf(isf), true);
 
   // lERv -> lerv  Drop the export (gc and retire)
-  await dispatchDropExports(`${thing}`);
+  await dispatchDropExports(krefOf(thing));
   validateDropExportWithGCAndRetire(v, thing, esf(isf), '0');
 }
 test.serial('VO lifecycle 8 unfaceted', async t => {
@@ -1009,7 +1010,7 @@ test.serial('VO multifacet export 2a', async t => {
   validateExport(v, rp, thingA, '%n');
 
   // LE(A)R(A)v -> LeR(A)v  Drop the export of A
-  await dispatchDropExports(`${thingA}`);
+  await dispatchDropExports(krefOf(thingA));
   validateDropExport(v, thingA, '%n', NONE); // facetVrefA
 
   // LeR(A)v -> lerv  Drop in-memory reference to both facets (gc and retire)
@@ -1036,7 +1037,7 @@ test.serial('VO multifacet export 2b', async t => {
   validateExport(v, rp, thingB, 'n%');
 
   // LE(B)R(B)v -> LeR(B)v  Drop the export of B
-  await dispatchDropExports(`${thingB}`);
+  await dispatchDropExports(krefOf(thingB));
   validateDropExport(v, thingB, 'n%', NONE); // facetVrefB
 
   // LeR(B)v -> lerv  Drop in-memory reference to both facets (gc and retire)
@@ -1068,11 +1069,11 @@ test.serial('VO multifacet export 3abba', async t => {
   validateExport(v, rp, thingB, 'r%', true);
 
   // LE(AB)R(AB)v -> LE(A)R(AB)v  Drop the export of B
-  await dispatchDropExports(`${thingB}`);
+  await dispatchDropExports(krefOf(thingB));
   validateDropExport(v, thingB, 'r%', NONE);
 
   // L(A)R(AB)v -> LeR(AB)v  Drop the export of A
-  await dispatchDropExports(`${thingA}`);
+  await dispatchDropExports(krefOf(thingA));
   validateDropExport(v, thingB, '%s', NONE);
 
   // LeR(A)v -> lerv  Drop in-memory reference to both facets (gc and retire)
@@ -1104,11 +1105,11 @@ test.serial('VO multifacet export 3abab', async t => {
   validateExport(v, rp, thingB, 'r%', true);
 
   // LE(AB)R(AB)v -> LE(B)R(AB)v  Drop the export of A
-  await dispatchDropExports(`${thingA}`);
+  await dispatchDropExports(krefOf(thingA));
   validateDropExport(v, thingB, '%r', NONE);
 
   // L(B)R(AB)v -> LeR(AB)v  Drop the export of B
-  await dispatchDropExports(`${thingB}`);
+  await dispatchDropExports(krefOf(thingB));
   validateDropExport(v, thingB, 's%', NONE);
 
   // LeR(B)v -> lerv  Drop in-memory reference to both facets (gc and retire)
@@ -1363,8 +1364,8 @@ test.serial('presence refcount management 1', async t => {
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(rcKey(presence)));
   validateWeakCheck(v, presence);
-  validate(v, matchDropImports(`${presence}`));
-  validate(v, matchRetireImports(`${presence}`));
+  validate(v, matchDropImports(krefOf(presence)));
+  validate(v, matchRetireImports(krefOf(presence)));
   validateDone(v);
 });
 
@@ -1418,8 +1419,8 @@ test.serial('presence refcount management 2', async t => {
   validateWeakCheck(v, holder4);
   validate(v, matchVatstoreGet(rcKey(presence)));
   validateWeakCheck(v, presence);
-  validate(v, matchDropImports(`${presence}`));
-  validate(v, matchRetireImports(`${presence}`));
+  validate(v, matchDropImports(krefOf(presence)));
+  validate(v, matchRetireImports(krefOf(presence)));
   validateDone(v);
 });
 
@@ -1505,15 +1506,15 @@ async function voWeakKeyGCTest(t, isf) {
   // Create VO and hold onto it weakly
   let rp = await dispatchMessage('makeAndHoldAndKey', isf);
   validateSetupAndCreate(v, rp, thing);
-  t.is(testHooks.countCollectionsForWeakKey(`${thing}`), 2);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(thing)), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
   // Drop in-memory reference, GC should cause weak entries to disappear
   rp = await dispatchMessage('dropHeld');
-  validateCheckNoWeakKeys(v, thing);
+  validateCheckNoWeakKeys(v, krefOf(thing));
   validateDropHeldWithGC(v, rp, thing, NONE);
-  t.is(testHooks.countCollectionsForWeakKey(`${thing}`), 0);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(thing)), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
 }
@@ -1536,7 +1537,7 @@ test.serial('verify presence weak key GC', async t => {
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
-  t.is(testHooks.countCollectionsForWeakKey(`${presence}`), 2);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(presence)), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
@@ -1544,17 +1545,17 @@ test.serial('verify presence weak key GC', async t => {
   validateWeakCheck(v, presence);
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(rcKey(presence)));
-  validate(v, matchDropImports(`${presence}`));
+  validate(v, matchDropImports(krefOf(presence)));
   validateDone(v);
-  t.is(testHooks.countCollectionsForWeakKey(`${presence}`), 2);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(presence)), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
-  await dispatchRetireImports(`${presence}`);
+  await dispatchRetireImports(krefOf(presence));
   validateWeakCheck(v, presence); // XXX this is weird: why two?
   validateWeakCheck(v, presence);
   validateDone(v);
-  t.is(testHooks.countCollectionsForWeakKey(`${presence}`), 0);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(presence)), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
 });

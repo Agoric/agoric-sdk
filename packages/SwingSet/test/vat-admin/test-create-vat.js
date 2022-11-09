@@ -10,7 +10,7 @@ import {
   loadBasedir,
 } from '../../src/index.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
-import { kunser } from '../../src/lib/kmarshal.js';
+import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 import { extractMethod } from '../../src/lib/kdebug.js';
 
 function nonBundleFunction(_E) {
@@ -304,7 +304,7 @@ test('createVat holds refcount', async t => {
   const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', []);
   await c.run();
   const h1 = kunser(c.kpResolution(kpid1));
-  const held = `${h1}`;
+  const held = krefOf(h1);
   t.is(held, 'ko27'); // gleaned from the logs, unstable, update as needed
 
   // but `kpResolution()` does an incref on the results, making the refcount

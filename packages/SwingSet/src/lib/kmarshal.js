@@ -1,4 +1,5 @@
 import { Far, makeMarshal } from '@endo/marshal';
+import { assert } from '@agoric/assert';
 
 // Simple wrapper for serializing and unserializing marshalled values inside the
 // kernel, where we don't actually want to use clists nor actually allocate real
@@ -6,7 +7,7 @@ import { Far, makeMarshal } from '@endo/marshal';
 // used to enable syntactic manipulation of serialized values while remaining
 // agnostic about the internal details of the serialization encoding.
 
-const promiseMap = new WeakMap();
+const refMap = new WeakMap();
 
 export const kslot = (kref, iface) => {
   if (iface && iface.startsWith('Alleged: ')) {
@@ -34,22 +35,38 @@ export const kslot = (kref, iface) => {
     // the smallcaps encoding or to the marshal setup API to support the purely
     // manipulative use case.  In the meantime, this ugliness...
     const p = new Promise(() => undefined);
-    promiseMap.set(p, kref);
+    refMap.set(p, kref);
     return harden(p);
   } else {
-    return Far(iface, {
-      toString: () => `${kref}`,
+    const o = Far(iface, {
       iface: () => iface,
+      getKref: () => `${kref}`,
     });
+    return o;
   }
 };
 
-export const krefOf = obj => promiseMap.get(obj) || obj.toString();
+export const krefOf = obj => {
+  const fromMap = refMap.get(obj);
+  if (fromMap) {
+    return fromMap;
+  }
+  if (obj.getKref) {
+    return obj.getKref();
+  }
+  return null;
+};
 
 const kmarshal = makeMarshal(krefOf, kslot, {
   serializeBodyFormat: 'smallcaps',
+  errorTagging: 'off',
 });
 
 export const kser = value => kmarshal.serialize(harden(value));
 
 export const kunser = serializedValue => kmarshal.unserialize(serializedValue);
+
+export function makeError(message) {
+  assert.typeof(message, 'string');
+  return kser(Error(message));
+}

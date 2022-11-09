@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 import { assert } from '@agoric/assert';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
-import { kunser } from '../../src/lib/kmarshal.js';
+import { kunser, krefOf } from '../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -171,7 +171,7 @@ test('bundles', async t => {
   // check the shape of the waitForBundleCap bundlecap
   const d1 = c.kpResolution(waitKPID);
   const res1 = kunser(d1);
-  const dev1slot = `${res1}`;
+  const dev1slot = krefOf(res1);
   t.regex(dev1slot, /^kd\d+$/);
 
   // and make sure we can load it by ID
@@ -187,7 +187,7 @@ test('bundles', async t => {
   // check the shape of the getBundleCap bundlecap
   const [s2, d2] = await run('getBundleCap', [bid2]);
   t.is(s2, 'fulfilled');
-  const dev2slot = `${d2}`;
+  const dev2slot = krefOf(d2);
   t.regex(dev2slot, /^kd\d+$/);
 
   // and the shape of the bundle

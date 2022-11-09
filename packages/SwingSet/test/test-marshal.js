@@ -7,6 +7,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeMarshaller } from '../src/liveslots/liveslots.js';
+import { kser, makeError } from '../src/lib/kmarshal.js';
 
 const gcTools = harden({
   WeakRef,
@@ -141,4 +142,16 @@ test('unserialize promise', async t => {
   });
   t.deepEqual(log, ['subscribe-p-1']);
   t.truthy(p instanceof Promise);
+});
+
+test('kernel serialzation of errors', async t => {
+  const e1 = kser(Error('fake error'));
+  const ref = {
+    body: '#{"#error":"fake error","name":"Error"}',
+    slots: [],
+  };
+  t.deepEqual(e1, ref);
+
+  const e2 = makeError('fake error');
+  t.deepEqual(e2, ref);
 });

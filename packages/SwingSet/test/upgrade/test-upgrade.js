@@ -95,7 +95,7 @@ const testUpgrade = async (
   t.is(v1status, 'fulfilled');
   t.is(v1result.version, 'v1');
   t.is(v1result.youAre, 'v1');
-  t.is(`${v1result.marker}`, `${marker}`);
+  t.is(krefOf(v1result.marker), krefOf(marker));
   t.is(v1result.marker.iface(), 'marker');
   t.deepEqual(v1result.data, ['some', 'data']);
   // grab the promises that should be rejected
@@ -151,7 +151,7 @@ const testUpgrade = async (
   const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3';
   const retainedKrefs = {};
   for (const name of retainedNames.split(' ')) {
-    retainedKrefs[name] = `${v1result.retain[name]}`;
+    retainedKrefs[name] = krefOf(v1result.retain[name]);
   }
 
   if (doVatAdminRestart) {
@@ -166,7 +166,7 @@ const testUpgrade = async (
   t.is(v2status, 'fulfilled');
   t.deepEqual(v2result.version, 'v2');
   t.deepEqual(v2result.youAre, 'v2');
-  t.deepEqual(`${v2result.marker}`, `${marker}`);
+  t.deepEqual(krefOf(v2result.marker), krefOf(marker));
   t.deepEqual(v2result.data, ['some', 'data']);
   t.deepEqual(v2result.upgradeResult, { incarnationNumber: 2 });
   t.deepEqual(v2result.remoerr, Error('vat terminated'));
@@ -178,7 +178,7 @@ const testUpgrade = async (
   // instance created in vat-ulrik-1). And since it's durable, the
   // c-list entry will still exist, so we'll see the same kref as
   // before.
-  const newDurKref = `${v2result.newDur}`;
+  const newDurKref = krefOf(v2result.newDur);
   t.not(newDurKref, dur1Kref);
 
   // the old version's non-durable promises should be rejected

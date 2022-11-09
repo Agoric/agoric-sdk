@@ -31,11 +31,10 @@ export function makeVatAdminHooks(tools) {
     },
 
     createByID(argsCapData) {
-      // argsCapData is marshal([bundleID, options]), and options is {
-      // vatParameters, ...rest }, and 'rest' is JSON-serializable (no slots or
-      // bigints or undefined). We get the intermediate marshal representation,
-      // carve off vatParameters, then reassemble the rest. All slots will be
-      // associated with vatParameters.
+      // `argsCapData` is marshal([bundleID, options]), and `options` is {
+      // vatParameters, ...rest }, and `rest` is checked by vat-vat-admin.js to
+      // contain only known keys and types, none of which allow slots.  So any
+      // slots in `argsCapData` will be associated with `vatParameters`.
 
       // first, split off vatParameters
       const args = kunser(argsCapData);

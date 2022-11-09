@@ -10,14 +10,14 @@ import {
   makeSwingsetController,
 } from '../../../src/index.js';
 
-import { kunser } from '../../../src/lib/kmarshal.js';
+import { kunser, krefOf } from '../../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
 }
 
 function getImportSensorKref(impcapdata, i) {
-  return ['slot', `${kunser(impcapdata)[i]}`];
+  return ['slot', krefOf(kunser(impcapdata)[i])];
 }
 
 test('collection entry slots trigger doMoreGC', async t => {

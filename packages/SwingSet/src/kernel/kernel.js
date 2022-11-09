@@ -3,7 +3,7 @@ import { isNat } from '@agoric/nat';
 import { importBundle } from '@endo/import-bundle';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
-import { kser, kslot } from '../lib/kmarshal.js';
+import { kser, kslot, makeError } from '../lib/kmarshal.js';
 import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
@@ -39,11 +39,6 @@ function abbreviateReplacer(_, arg) {
     return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
   }
   return arg;
-}
-
-function makeError(message) {
-  assert.typeof(message, 'string');
-  return kser(Error(message));
 }
 
 /**

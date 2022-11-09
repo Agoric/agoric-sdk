@@ -1,6 +1,6 @@
 import { insistVatType } from '../../src/lib/parseVatSlots.js';
 import { extractMessage } from '../vat-util.js';
-import { kunser, kser, kslot } from '../../src/lib/kmarshal.js';
+import { kunser, kser, kslot, krefOf } from '../../src/lib/kmarshal.js';
 
 // to exercise the error we get when syscall.callNow() is given a promise
 // identifier, we must bypass liveslots, which would otherwise protect us
@@ -17,7 +17,7 @@ export default function setup(syscall, state, _helpers, vatPowers) {
         // find and stash the device slot
         const [_vats, devices] = kunser(args);
         d0 = devices.d0;
-        insistVatType('device', `${d0}`);
+        insistVatType('device', krefOf(d0));
         // resolve the bootstrap() promise now, so it won't be rejected later
         // when we're terminated
         syscall.resolve([[result, false, kser(0)]]);
@@ -26,7 +26,7 @@ export default function setup(syscall, state, _helpers, vatPowers) {
         testLog('sending Promise');
         try {
           // this will throw an exception, but is also (eventually) vat-fatal
-          callNow(`${d0}`, 'send', kser([kslot(vpid)]));
+          callNow(krefOf(d0), 'send', kser([kslot(vpid)]));
           testLog('oops: survived sending Promise');
         } catch (e) {
           testLog('good: callNow failed');
