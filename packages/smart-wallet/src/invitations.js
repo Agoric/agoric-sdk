@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath } from '@agoric/ertp';
 import { fit } from '@agoric/store';
 import { E } from '@endo/far';
