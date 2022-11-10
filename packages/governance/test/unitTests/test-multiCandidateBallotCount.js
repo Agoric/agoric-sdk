@@ -134,6 +134,7 @@ test('multi candidate tie outcome', async t => {
   t.assert(outcome.length === 5);
   t.assert(outcome[0] === positions[3]);
 
+  /** @type {Position[]} */
   const tiedPositions = [GOAT, DUCK, MUTTON, PORK, BEEF];
 
   for (let i = 1; i < outcome.length; i += 1) {
@@ -189,6 +190,7 @@ test('multi candidate tie outcome case #2', async t => {
   t.assert(outcome[0] === MUTTON);
   t.assert(outcome[1] === CHICKEN);
 
+  /** @type {Position[]} */
   const tiedPositions = [PORK, BEEF];
 
   for (let i = 2; i < outcome.length; i += 1) {

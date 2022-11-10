@@ -30,7 +30,7 @@ const validateQuestionSpec = questionSpec => {
     assert.fail(X`${questionSpec.method} must be PLURALITY`);
 };
 
-/** @type {BuildVoteCounter} */
+/** @type {BuildMultiVoteCounter} */
 const makeMultiCandidateVoteCounter = (
   questionSpec,
   threshold,
@@ -90,7 +90,7 @@ const makeMultiCandidateVoteCounter = (
 
     if (!makeQuorumCounter(threshold).check(stats)) {
       outcomePromise.reject('No quorum');
-      /** @type {OutcomeRecord} */
+      /** @type {MultiOutcomeRecord} */
       const voteOutcome = {
         question: details.questionHandle,
         outcome: 'fail',
@@ -221,7 +221,7 @@ const makeMultiCandidateVoteCounter = (
 /**
  *
  * @param {ZCF<{questionSpec: QuestionSpec, quorumThreshold: bigint }>} zcf
- * @param {{outcomePublisher: Publisher<OutcomeRecord>}} outcomePublisher
+ * @param {{outcomePublisher: Publisher<MultiOutcomeRecord>}} outcomePublisher
  */
 const start = (zcf, { outcomePublisher }) => {
   const { questionSpec, quorumThreshold } = zcf.getTerms();
