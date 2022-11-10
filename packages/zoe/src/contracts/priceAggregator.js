@@ -40,8 +40,8 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * @param {ZCF<{
  * timer: TimerService,
  * POLL_INTERVAL: bigint,
- * brandIn: Brand,
- * brandOut: Brand,
+ * brandIn: Brand<'nat'>,
+ * brandOut: Brand<'nat'>,
  * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {{
