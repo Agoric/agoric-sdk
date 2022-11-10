@@ -31,6 +31,7 @@ export const makePaymentsHelper = (purseForBrand, depositFacet) => {
         'withdrawPayments can be called once per helper',
       );
       keywordPaymentPromises = objectMap(give, amount => {
+        /** @type {import('./types').RemotePurse<any>} */
         const purse = purseForBrand(amount.brand);
         return E(purse)
           .withdraw(amount)
