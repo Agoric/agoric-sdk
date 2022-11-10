@@ -180,7 +180,7 @@
  * is not present in the allocation
  * @param {Keyword} keyword
  * @param {Brand=} brand
- * @returns {Amount}
+ * @returns {Amount<any>}
  */
 
 /**
