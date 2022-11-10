@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Randomly shuffle an array
  * https://stackoverflow.com/a/12646864

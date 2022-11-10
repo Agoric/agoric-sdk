@@ -1,5 +1,3 @@
-// @ts-check
-
 import { keyEQ, makeHeapFarInstance, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
