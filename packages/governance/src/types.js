@@ -1,5 +1,5 @@
 /**
- * @typedef { 'unranked' | 'order' } ChoiceMethod
+ * @typedef { 'unranked' | 'order' | 'plurality' } ChoiceMethod
  * * UNRANKED: "unranked voting" means that the voter specifies some number of
  *    positions, and is endorsing them equally.
  * * ORDER: The voter assigns ordinal numbers to some of the positions. The
@@ -96,6 +96,13 @@
  */
 
 /**
+ * @typedef {{ question: Handle<'Question'> } & (
+ *  { outcome: 'win', positions: Position[] } |
+ *  { outcome: 'fail', reason: 'No quorum' }
+ * )} MultiOutcomeRecord
+ */
+
+/**
  * Specification when requesting creation of a Question
  *
  * @template {Issue} [I=Issue]
@@ -105,6 +112,7 @@
  * @property {Position[]} positions
  * @property {ElectionType} electionType
  * @property {number} maxChoices
+ * @property {number} maxWinners
  * @property {ClosingRule} closingRule
  * @property {QuorumRule} quorumRule
  * @property {Position} tieOutcome
@@ -174,7 +182,7 @@
  */
 
 /**
- * @callback BuildUnrankedQuestion
+ * @callback BuildQuestion
  * @param {QuestionSpec} questionSpec
  * @param {Instance} instance - voteCounter instance
  * @returns {Question}
@@ -200,6 +208,15 @@
  */
 
 /**
+ * @typedef {object} MultiVoteCounterPublicFacet
+ * @property {() => boolean} isOpen
+ * @property {() => Question} getQuestion
+ * @property {() => Promise<Position[]>} getOutcome
+ * @property {() => QuestionDetails} getDetails
+ * @property {() => Promise<VoteStatistics>} getStats
+ */
+
+/**
  * @typedef {object} VoteCounterCloseFacet
  *   TEST ONLY: Should not be allowed to escape from contracts
  * @property {() => void} closeVoting
@@ -213,6 +230,13 @@
  */
 
 /**
+ * @typedef {object} MultiVoteCounterFacets
+ * @property {MultiVoteCounterPublicFacet} publicFacet
+ * @property {VoteCounterCreatorFacet} creatorFacet
+ * @property {VoteCounterCloseFacet} closeFacet
+ */
+
+/**
  * @callback BuildVoteCounter
  * @param {QuestionSpec} questionSpec
  * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
@@ -220,6 +244,16 @@
  * @param {Instance} instance
  * @param {ERef<Publisher<OutcomeRecord>>} publisher
  * @returns {VoteCounterFacets}
+ */
+
+/**
+ * @callback BuildMultiVoteCounter
+ * @param {QuestionSpec} questionSpec
+ * @param {bigint} threshold - questionSpec includes quorumRule; the electorate
+ *    converts that to a number that the counter can enforce.
+ * @param {Instance} instance
+ * @param {ERef<Publisher<MultiOutcomeRecord>>} publisher
+ * @returns {MultiVoteCounterFacets}
  */
 
 /**

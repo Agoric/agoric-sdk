@@ -9,7 +9,7 @@ export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 export const makeWalletStateCoalescer = () => {
   /** @type {Map<Brand, import('./smartWallet').BrandDescriptor>} */
   const brands = new Map();
-  /** @type {Map<number, import('./offers').OfferStatus>} */
+  /** @type {Map<import('./offers').OfferId, import('./offers').OfferStatus>} */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
@@ -20,7 +20,7 @@ export const makeWalletStateCoalescer = () => {
   /**
    * keyed by description; xxx assumes unique
    *
-   * @type {Map<string, { acceptedIn: number, description: string, instance: { boardId: string } }>}
+   * @type {Map<import('./offers').OfferId, { acceptedIn: import('./offers').OfferId, description: string, instance: { boardId: string } }>}
    */
   const invitationsReceived = new Map();
 

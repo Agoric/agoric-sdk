@@ -177,7 +177,6 @@ test('admin price', async t => {
 
   await offersFacet.executeOffer(proposalOfferSpec);
   await eventLoopIteration();
-  t.is(offersFacet.getLastOfferId(), 45);
 
   // Verify price result
 

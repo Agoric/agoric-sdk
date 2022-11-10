@@ -10,6 +10,7 @@ import {
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
 
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import {
   makeBinaryVoteCounter,
   ChoiceMethod,
@@ -18,7 +19,6 @@ import {
   coerceQuestionSpec,
   makeParamChangePositions,
 } from '../../src/index.js';
-import { makeMockChainStorageRoot } from '../../../vats/tools/storage-test-utils.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
@@ -60,6 +60,7 @@ test('binary question', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -96,6 +97,7 @@ test('binary spoiled', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
 
   const { publisher } = makePublisherFromFakes();
@@ -130,6 +132,7 @@ test('binary tied', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
 
   const { publisher, storageRoot } = makePublisherFromFakes();
@@ -164,6 +167,7 @@ test('binary bad vote', async t => {
     positions: [positive, negative],
     electionType: ElectionType.PARAM_CHANGE,
     maxChoices: 1,
+    maxWinners: 1,
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
@@ -204,6 +208,7 @@ test('binary no votes', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, closeFacet } = makeBinaryVoteCounter(
@@ -234,6 +239,7 @@ test('binary varying share weights', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -274,6 +280,7 @@ test('binary contested', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -313,6 +320,7 @@ test('binary revote', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.MAJORITY,
     tieOutcome: negative,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -343,7 +351,7 @@ test('binary revote', async t => {
   });
 });
 
-test('binary question too many', async t => {
+test('binary question too many positions', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
     issue: SIMPLE_ISSUE,
@@ -353,6 +361,7 @@ test('binary question too many', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -395,6 +404,7 @@ test('binary no quorum', async t => {
     closingRule: FAKE_CLOSING_RULE,
     quorumRule: QuorumRule.NO_QUORUM,
     tieOutcome: BAIT,
+    maxWinners: 1,
   });
   const { publisher, storageRoot } = makePublisherFromFakes();
   const { publicFacet, creatorFacet, closeFacet } = makeBinaryVoteCounter(
@@ -420,22 +430,18 @@ test('binary no quorum', async t => {
     reason: 'No quorum',
   });
 });
-
 test('binary too many positions', async t => {
-  t.throws(
-    () =>
-      coerceQuestionSpec({
-        method: ChoiceMethod.UNRANKED,
-        issue: SIMPLE_ISSUE,
-        positions: [FISH, BAIT, harden({ text: 'sleep' })],
-        electionType: ElectionType.SURVEY,
-        maxChoices: 1,
-        closingRule: FAKE_CLOSING_RULE,
-        quorumRule: QuorumRule.NO_QUORUM,
-        tieOutcome: BAIT,
-      }),
-    {
-      message: / - Must match one of /,
-    },
+  t.notThrows(() =>
+    coerceQuestionSpec({
+      method: ChoiceMethod.UNRANKED,
+      issue: SIMPLE_ISSUE,
+      positions: [FISH, BAIT, harden({ text: 'sleep' })],
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: FAKE_CLOSING_RULE,
+      quorumRule: QuorumRule.NO_QUORUM,
+      tieOutcome: BAIT,
+    }),
   );
 });

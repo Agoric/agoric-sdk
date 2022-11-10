@@ -16,6 +16,7 @@ import { QuestionI, QuestionSpecShape } from './typeGuards.js';
 const ChoiceMethod = /** @type {const} */ ({
   UNRANKED: 'unranked',
   ORDER: 'order',
+  PLURALITY: 'plurality',
 });
 
 const ElectionType = /** @type {const} */ ({
@@ -49,6 +50,7 @@ const coerceQuestionSpec = ({
   positions,
   electionType,
   maxChoices,
+  maxWinners,
   closingRule,
   quorumRule,
   tieOutcome,
@@ -58,6 +60,7 @@ const coerceQuestionSpec = ({
     issue,
     positions,
     maxChoices: Number(maxChoices),
+    maxWinners: Number(maxWinners),
     electionType,
     closingRule,
     quorumRule,
@@ -75,8 +78,8 @@ const coerceQuestionSpec = ({
   return question;
 };
 
-/** @type {BuildUnrankedQuestion} */
-const buildUnrankedQuestion = (questionSpec, counterInstance) => {
+/** @type {BuildQuestion} */
+const buildQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
   /** @type {Question} */
@@ -94,7 +97,7 @@ const buildUnrankedQuestion = (questionSpec, counterInstance) => {
   });
 };
 
-harden(buildUnrankedQuestion);
+harden(buildQuestion);
 harden(ChoiceMethod);
 harden(ElectionType);
 harden(coerceQuestionSpec);
@@ -102,7 +105,7 @@ harden(positionIncluded);
 harden(QuorumRule);
 
 export {
-  buildUnrankedQuestion,
+  buildQuestion,
   ChoiceMethod,
   ElectionType,
   coerceQuestionSpec,

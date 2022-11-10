@@ -5,7 +5,6 @@ import {
   BrandShape,
   PaymentShape,
 } from '@agoric/ertp';
-import { isNat } from '@agoric/nat';
 import {
   makeStoredPublishKit,
   observeIteration,
@@ -23,6 +22,8 @@ import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
 
 const { details: X, quote: q } = assert;
+
+const ERROR_LAST_OFFER_ID = -1;
 
 /**
  * @template K, V
@@ -91,7 +92,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {ImmutableState & MutableState} State
  * - `brandPurses` is precious and closely held. defined as late as possible to reduce its scope.
  * - `offerToInvitationMakers` is precious and closely held.
- * - `lastOfferId` is public. While it should survive upgrade, if it doesn't it can be determined from the last `offerStatus` notification.
  * - `brandDescriptors` will be precious. Currently it includes invitation brand and  what we've received from the bank manager.
  * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
@@ -99,8 +99,8 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *
  * @typedef {Readonly<HeldParams & {
  * paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
- * offerToInvitationMakers: MapStore<number, import('./types').RemoteInvitationMakers>,
- * offerToUsedInvitation: MapStore<number, Amount>,
+ * offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
+ * offerToUsedInvitation: MapStore<string, Amount>,
  * brandDescriptors: MapStore<Brand, BrandDescriptor>,
  * brandPurses: MapStore<Brand, RemotePurse>,
  * purseBalances: MapStore<RemotePurse, Amount>,
@@ -109,7 +109,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * }>} ImmutableState
  *
  * @typedef {{
- * lastOfferId: number,
  * }} MutableState
  */
 
@@ -181,9 +180,6 @@ export const initState = (unique, shared) => {
 
   const nonpreciousState = {
     brandDescriptors: makeScalarMapStore(),
-    // To ensure every offer ID is unique we require that each is a number greater
-    // than has ever been used. This high water mark is sufficient to track that.
-    lastOfferId: 0,
     // What purses have reported on construction and by getCurrentAmountNotifier updates.
     purseBalances: makeScalarMapStore(),
     updatePublishKit: harden(
@@ -274,7 +270,7 @@ const behavior = {
           balance: a,
         })),
         offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
-        lastOfferId: this.state.lastOfferId,
+        lastOfferId: ERROR_LAST_OFFER_ID,
       });
     },
 
@@ -381,13 +377,11 @@ const behavior = {
   },
   offers: {
     /**
-     * Contracts can use this to generate a valid (monotonic) offer ID by incrementing.
-     * In most cases it will be faster to get this from RPC query.
+     * @deprecated
+     * @returns {number} an error code, for backwards compatibility with clients expecting a number
      */
     getLastOfferId() {
-      /** @type {State} */
-      const { lastOfferId } = this.state;
-      return lastOfferId;
+      return ERROR_LAST_OFFER_ID;
     },
     /**
      * Take an offer description provided in capData, augment it with payments and call zoe.offer()
@@ -397,7 +391,7 @@ const behavior = {
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
     async executeOffer(offerSpec) {
-      const { facets, state } = this;
+      const { facets } = this;
       /** @type {State} */
       const {
         address,
@@ -406,7 +400,6 @@ const behavior = {
         invitationBrand,
         invitationPurse,
         invitationIssuer,
-        lastOfferId,
         offerToInvitationMakers,
         offerToUsedInvitation,
         updatePublishKit,
@@ -429,17 +422,6 @@ const behavior = {
             offerToInvitationMakers.get,
           ),
           purseForBrand: brandPurses.get,
-          lastOfferId: {
-            get: () => lastOfferId,
-            set(id) {
-              assert(isNat(id), 'offer id must be a positive number');
-              assert(
-                id > lastOfferId,
-                `offer id must be greater than previous (${lastOfferId})`,
-              );
-              state.lastOfferId = id;
-            },
-          },
           logger,
         },
         onStatusChange: offerStatus => {
@@ -449,7 +431,7 @@ const behavior = {
             status: offerStatus,
           });
         },
-        /** @type {(offerId: number, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
+        /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
         onNewContinuingOffer: (offerId, invitationAmount, invitationMakers) => {
           offerToUsedInvitation.init(offerId, invitationAmount);
           offerToInvitationMakers.init(offerId, invitationMakers);
