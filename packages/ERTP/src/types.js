@@ -169,6 +169,7 @@ export {};
  */
 
 /**
+ * @template {AssetKind} K
  * @callback IssuerCombine
  *
  * Combine multiple payments into one payment.
@@ -176,9 +177,9 @@ export {};
  * If any of the payments is a promise, the operation will proceed
  * upon resolution.
  *
- * @param {ERef<Payment>[]} paymentsArray
- * @param {Amount=} optTotalAmount
- * @returns {Promise<Payment>}
+ * @param {ERef<Payment<K>>[]} paymentsArray
+ * @param {Amount<K>=} optTotalAmount
+ * @returns {Promise<Payment<K>>}
  */
 
 /**
@@ -241,7 +242,7 @@ export {};
  * @property {IssuerGetAmountOf<K>} getAmountOf
  * @property {IssuerBurn} burn
  * @property {IssuerClaim<K>} claim
- * @property {IssuerCombine} combine
+ * @property {IssuerCombine<K>} combine
  * @property {IssuerSplit<K>} split
  * @property {IssuerSplitMany} splitMany
  */
