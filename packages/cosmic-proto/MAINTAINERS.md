@@ -1,6 +1,12 @@
-We check-in and publish the `gen` generated artifacts to npm.
+This package is updated rarely and so the build is checked into SCM. That is, part of `dist` is copied to root so they can be imported in consumers that don't yet support ESM. We also have symlink `./swingset` to the `dist/agoric/swingset` for local requires. (Note [NPM won't publish symlinks](https://github.com/npm/npm/issues/3310)).
+
+ We used to check in `gen` but they're redundant with `dist` output and include `.ts` which creates problems for downstream consumers using TypeScript ([ref](https://github.com/microsoft/TypeScript/issues/47387#issuecomment-1168711813)).
+
 To rebuild the generated artifacts, install `protoc` [1] and run `yarn rebuild` in
-this package.
+this package. Then force the `dist` changes over the gitignore,
+```
+git add -f dist/{agoric,cosmos}
+```
 
 Generating artifacts requires a `protoc` system dependency that we
 do not require for general development, so we do not regenerate artifacts with
@@ -46,3 +52,4 @@ To surface additional stubs:
    symbolic links for aliasing when necessary.
 
 [1] http://google.github.io/proto-lens/installing-protoc.html
+

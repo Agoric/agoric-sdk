@@ -388,9 +388,9 @@ const issuers = {
 };
 
 /**
- * @param {AmountValue} moolaValue
- * @param {AmountValue} simoleanValue
- * @param {AmountValue} bucksValue
+ * @param {bigint} moolaValue
+ * @param {bigint} simoleanValue
+ * @param {bigint} bucksValue
  * @returns {{ moolaPayment: Payment, simoleanPayment: Payment,
  * bucksPayment: Payment }}
  */

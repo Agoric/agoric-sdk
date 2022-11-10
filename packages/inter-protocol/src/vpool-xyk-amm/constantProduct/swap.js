@@ -10,9 +10,9 @@ const { details: X } = assert;
  * We return empty if the fee is larger because an empty amount indicates that
  * the trader didn't place a limit on the inputAmount.
  *
- * @param {Amount} amount
- * @param {Amount} fee
- * @returns {Amount}
+ * @param {Amount<'nat'>} amount
+ * @param {Amount<'nat'>} fee
+ * @returns {Amount<'nat'>}
  */
 const subtractRelevantFees = (amount, fee) => {
   if (amount.brand === fee.brand) {
@@ -29,9 +29,9 @@ const subtractRelevantFees = (amount, fee) => {
  * PoolFee and ProtocolFee each identify their brand. If either (or both) match
  * the brand of the Amount, subtract it/them from the amount.
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {FeePair} fee
- * @returns {Amount}
+ * @returns {Amount<'nat'>}
  */
 const subtractFees = (amount, { poolFee, protocolFee }) => {
   return subtractRelevantFees(
@@ -44,9 +44,9 @@ const subtractFees = (amount, { poolFee, protocolFee }) => {
  * The fee might not be in the same brand as the amount. If they are the same,
  * add the fee to the amount. Otherwise return the unadjusted amount.
  *
- * @param {Amount} amount
- * @param {Amount} fee
- * @returns {Amount}
+ * @param {Amount<'nat'>} amount
+ * @param {Amount<'nat'>} fee
+ * @returns {Amount<'nat'>}
  */
 const addRelevantFees = (amount, fee) => {
   if (amount.brand === fee.brand) {
@@ -59,9 +59,9 @@ const addRelevantFees = (amount, fee) => {
  * PoolFee and ProtocolFee each identify their brand. If either (or both) match
  * the brand of the Amount, add it/them to the amount.
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {FeePair} fee
- * @returns {Amount}
+ * @returns {Amount<'nat'>}
  */
 const addFees = (amount, { poolFee, protocolFee }) => {
   return addRelevantFees(addRelevantFees(amount, protocolFee), poolFee);
@@ -75,10 +75,10 @@ const addFees = (amount, { poolFee, protocolFee }) => {
  *
  * The first parameter specifies whether we're incrementing or decrementing from the pool
  *
- * @param {(amountLeft: Amount, amountRight: Amount, brand?: Brand) => Amount} addOrSub
+ * @param {(amountLeft: Amount<any>, amountRight: Amount<any>, brand?: Brand) => Amount<any>} addOrSub
  * @param {PoolAllocation} poolAllocation
- * @param {Amount} amount
- * @returns {Amount}
+ * @param {Amount<'nat'>} amount
+ * @returns {Amount<'nat'>}
  */
 const addOrSubtractFromPool = (addOrSub, poolAllocation, amount) => {
   if (poolAllocation.Central.brand === amount.brand) {
@@ -111,8 +111,8 @@ const isWantedAvailable = (poolAllocation, amountWanted) => {
  * requested, the proceeds would be empty, etc.) Return a result that says no
  * trade will take place and the pool balances won't change.
  *
- * @param {Amount} amountGiven
- * @param {Amount} amountWanted
+ * @param {Amount<'nat'>} amountGiven
+ * @param {Amount<'nat'>} amountWanted
  * @param {PoolAllocation} poolAllocation
  * @param {Ratio} poolFee
  */

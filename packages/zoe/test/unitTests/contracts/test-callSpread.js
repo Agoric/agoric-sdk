@@ -112,6 +112,8 @@ test('fundedCallSpread below Strike1', async t => {
     aliceProposal,
     alicePayments,
   );
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
   const { LongOption: bobLongOption, ShortOption: carolShortOption } =
     await aliceSeat.getPayouts();
 
@@ -211,6 +213,8 @@ test('fundedCallSpread above Strike2', async t => {
     aliceProposal,
     alicePayments,
   );
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
   const { LongOption: bobLongOption, ShortOption: carolShortOption } =
     await aliceSeat.getPayouts();
 
@@ -309,6 +313,8 @@ test('fundedCallSpread, mid-strike', async t => {
     aliceProposal,
     alicePayments,
   );
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
   const { LongOption: bobLongOption, ShortOption: carolShortOption } =
     await aliceSeat.getPayouts();
 
@@ -409,6 +415,8 @@ test('fundedCallSpread, late exercise', async t => {
     aliceProposal,
     alicePayments,
   );
+  /** @type {Record<string, Invitation>} */
+  // @ts-expect-error Payment is an Invitation
   const { LongOption: bobLongOption, ShortOption: carolShortOption } =
     await aliceSeat.getPayouts();
 

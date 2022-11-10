@@ -297,7 +297,7 @@ const machineBehavior = {
   // TODO move this under governance #3924
   /**
    * @param {MethodContext} context
-   * @param {Issuer} collateralIssuer
+   * @param {Issuer<'nat'>} collateralIssuer
    * @param {Keyword} collateralKeyword
    * @param {VaultManagerParamValues} initialParamValues
    */
@@ -394,6 +394,9 @@ const machineBehavior = {
     const factoryPowers = Far('vault factory powers', {
       getGovernedParams: () => ({
         ...vaultParamManager.readonly(),
+        /** @type {() => Amount<'nat'>} */
+        // @ts-expect-error cast
+        getDebtLimit: vaultParamManager.readonly().getDebtLimit,
         getChargingPeriod: () => loanTimingParams[CHARGING_PERIOD_KEY].value,
         getRecordingPeriod: () => loanTimingParams[RECORDING_PERIOD_KEY].value,
       }),

@@ -29,7 +29,7 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
  * @property {RelativeTime} [quoteInterval]
- * @property {ERef<Mint>} [quoteMint]
+ * @property {ERef<Mint<'set'>>} [quoteMint]
  * @property {Amount} [unitAmountIn]
  */
 

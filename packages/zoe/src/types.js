@@ -11,9 +11,9 @@
 /**
  * @typedef {string} Keyword
  * @typedef {Handle<'Invitation'>} InvitationHandle - an opaque handle for an invitation
- * @typedef {Record<Keyword,Issuer>} IssuerKeywordRecord
- * @typedef {Record<Keyword,ERef<Issuer>>} IssuerPKeywordRecord
- * @typedef {Record<Keyword,Brand>} BrandKeywordRecord
+ * @typedef {Record<Keyword, Issuer<any>>} IssuerKeywordRecord
+ * @typedef {Record<Keyword, ERef<Issuer<any>>>} IssuerPKeywordRecord
+ * @typedef {Record<Keyword, Brand<any>>} BrandKeywordRecord
  */
 
 /**
@@ -37,7 +37,7 @@
  * @property {Brand<K>} brand
  * @property {Issuer<K>} issuer
  * @property {K} assetKind
- * @property {any} [displayInfo]
+ * @property {DisplayInfo<K>} [displayInfo]
  *
  * @typedef {AmountKeywordRecord} Allocation
  */

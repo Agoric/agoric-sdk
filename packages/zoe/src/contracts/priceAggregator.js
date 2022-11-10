@@ -28,6 +28,7 @@ import {
 } from '../contractSupport/ratio.js';
 
 import '../../tools/types.js';
+import '@agoric/ertp/src/types-ambient.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -45,7 +46,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint>,
+ * quoteMint?: ERef<Mint<'set'>>,
  * storageNode: StorageNode,
  * }} privateArgs
  */
@@ -65,6 +66,8 @@ const start = async (zcf, privateArgs) => {
 
   const quoteMint =
     privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
+  /** @type {IssuerRecord<'set'>} */
+  // xxx saveIssuer not generic
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -82,6 +85,8 @@ const start = async (zcf, privateArgs) => {
    * @param {PriceQuoteValue} quote
    */
   const authenticateQuote = async quote => {
+    /** @type {Amount<'set'>} */
+    // xxx type should be inferred from brand and value
     const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
@@ -160,7 +165,7 @@ const start = async (zcf, privateArgs) => {
       }
 
       /**
-       * @param {Amount} amountIn the given amountIn
+       * @param {Amount<'nat'>} amountIn the given amountIn
        * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
@@ -168,7 +173,7 @@ const start = async (zcf, privateArgs) => {
       };
 
       /**
-       * @param {Amount} amountOut the wanted amountOut
+       * @param {Amount<'nat'>} amountOut the wanted amountOut
        * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {

@@ -8,7 +8,7 @@ const { details: X } = assert;
 /**
  * @typedef {object} FeeCollector
  *
- * @property {() => ERef<Payment>} collectFees
+ * @property {() => ERef<Payment<'nat'>>} collectFees
  */
 
 /**
@@ -107,8 +107,8 @@ export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
 /**
  * Split and deposit a payment given a share configuration.
  *
- * @param {Payment} payment
- * @param {ERef<Issuer>} issuer
+ * @param {Payment<'nat'>} payment
+ * @param {ERef<Issuer<'nat'>>} issuer
  * @param {ShareConfig} shareConfig
  */
 export const sharePayment = async (
@@ -158,7 +158,7 @@ export const sharePayment = async (
 };
 
 /**
- * @param {ERef<Issuer>} feeIssuer
+ * @param {ERef<Issuer<'nat'>>} feeIssuer
  * @param {{ keywordShares: Record<Keyword, bigint>, timerService: ERef<TimerService>, collectionInterval: RelativeTime}} terms
  */
 export const makeFeeDistributor = (feeIssuer, terms) => {
@@ -171,7 +171,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
   /** @type {SetStore<FeeCollector>} */
   const collectors = makeScalarSetStore();
 
-  /** @param {Payment} payment */
+  /** @param {Payment<'nat'>} payment */
   const distributeFees = payment =>
     sharePayment(payment, feeIssuer, shareConfig);
 

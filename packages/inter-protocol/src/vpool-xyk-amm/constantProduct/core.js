@@ -18,9 +18,9 @@ const assertSingleBrand = ratio => {
  * in favor of the amount brand. This is necessary because the ratio is produced
  * by dividing assets of the opposite brand.
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
- * @returns {Amount}
+ * @returns {Amount<'nat'>}
  */
 const floorMultiplyKeepBrand = (amount, ratio) => {
   assertSingleBrand(ratio);
@@ -36,9 +36,9 @@ const floorMultiplyKeepBrand = (amount, ratio) => {
  * in favor of the amount brand. This is necessary because the ratio is produced
  * by dividing assets of the opposite brand.
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
- * @returns {Amount}
+ * @returns {Amount<'nat'>}
  */
 const ceilMultiplyKeepBrand = (amount, ratio) => {
   assertSingleBrand(ratio);
@@ -59,10 +59,10 @@ const ceilMultiplyKeepBrand = (amount, ratio) => {
  * deltaY = (deltaXOverX/(1 + deltaXOverX))*y
  * Equivalently: (deltaX / (deltaX + x)) * y
  *
- * @param {Amount} x - the amount of Brand X in pool
- * @param {Amount} y - the amount of Brand Y the pool
- * @param {Amount} deltaX - the amount of Brand X to be added
- * @returns {Amount} deltaY - the amount of Brand Y to be taken out
+ * @param {Amount<'nat'>} x - the amount of Brand X in pool
+ * @param {Amount<'nat'>} y - the amount of Brand Y the pool
+ * @param {Amount<'nat'>} deltaX - the amount of Brand X to be added
+ * @returns {Amount<'nat'>} deltaY - the amount of Brand Y to be taken out
  */
 export const calcDeltaYSellingX = (x, y, deltaX) => {
   const deltaXPlusX = AmountMath.add(deltaX, x);
@@ -81,10 +81,10 @@ export const calcDeltaYSellingX = (x, y, deltaX) => {
  * deltaX = (deltaYOverY/(1 - deltaYOverY))*x
  * Equivalently: (deltaY / (Y - deltaY )) * x
  *
- * @param {Amount} x - the amount of Brand X in the pool
- * @param {Amount} y - the amount of Brand Y in the pool
- * @param {Amount} deltaY - the amount of Brand Y to be taken out
- * @returns {Amount} deltaX - the amount of Brand X to be added
+ * @param {Amount<'nat'>} x - the amount of Brand X in the pool
+ * @param {Amount<'nat'>} y - the amount of Brand Y in the pool
+ * @param {Amount<'nat'>} deltaY - the amount of Brand Y to be taken out
+ * @returns {Amount<'nat'>} deltaX - the amount of Brand X to be added
  */
 export const calcDeltaXSellingX = (x, y, deltaY) => {
   const yMinusDeltaY = AmountMath.subtract(y, deltaY);

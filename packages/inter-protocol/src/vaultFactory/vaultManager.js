@@ -164,7 +164,7 @@ const provideEphemera = makeEphemeraProvider(() => ({
  *
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand} collateralBrand
+ * @param {Brand<'nat'>} collateralBrand
  * @param {ERef<PriceAuthority>} priceAuthority
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {ERef<TimerService>} timerService
@@ -627,8 +627,8 @@ const managerBehavior = {
    * was type {MintAndReallocate}
    *
    * @param {MethodContext} context
-   * @param {Amount} toMint
-   * @param {Amount} fee
+   * @param {Amount<'nat'>} toMint
+   * @param {Amount<'nat'>} fee
    * @param {ZCFSeat} seat
    * @param {...ZCFSeat} otherSeats
    * @returns {void}

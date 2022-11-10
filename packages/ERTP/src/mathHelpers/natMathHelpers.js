@@ -1,6 +1,6 @@
 import { Nat, isNat } from '@agoric/nat';
 
-import '../types.js';
+import '../types-ambient.js';
 
 const { details: X } = assert;
 const empty = 0n;
@@ -15,7 +15,7 @@ const empty = 0n;
  * done with the smallest whole unit such that the NatMathHelpers never
  * deals with fractional parts.
  *
- * @type {NatMathHelpers}
+ * @type {import('../types').MathHelpers<import('../types').NatValue>}
  */
 export const natMathHelpers = harden({
   doCoerce: nat => {

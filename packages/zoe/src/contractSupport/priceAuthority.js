@@ -37,7 +37,7 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
 
 /**
  * @param {object} opts
- * @param {Issuer} opts.quoteIssuer
+ * @param {Issuer<'set'>} opts.quoteIssuer
  * @param {ERef<Notifier<unknown>>} opts.notifier
  * @param {ERef<TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote

@@ -28,7 +28,6 @@ const XLien = /** @type { const } */ ({
  */
 export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
   const { make: makeAmt } = AmountMath;
-  /** @param {string} numeral */
   const toStake = numeral => makeAmt(brand, BigInt(numeral));
   /**
    * @param {string} address

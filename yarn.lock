@@ -2935,6 +2935,11 @@
   resolved "https://registry.yarnpkg.com/@tsd/typescript/-/typescript-4.7.4.tgz#f1e4e6c3099a174a0cb7aa51cf53f34f6494e528"
   integrity sha512-jbtC+RgKZ9Kk65zuRZbKLTACf+tvFW4Rfq0JEMXrlmV3P3yme+Hm+pnb5fJRyt61SjIitcrC810wj7+1tgsEmg==
 
+"@tsd/typescript@~4.8.3":
+  version "4.8.4"
+  resolved "https://registry.yarnpkg.com/@tsd/typescript/-/typescript-4.8.4.tgz#96542c111c98f0ece27303a5e3fa7ca68428a37e"
+  integrity sha512-WMFNVstwWGyDuZP2LGPRZ+kPHxZLmhO+2ormstDvnXiyoBPtW1qq9XhhrkI4NVtxgs+2ZiUTl9AG7nNIRq/uCg==
+
 "@types/accepts@*":
   version "1.3.5"
   resolved "https://registry.yarnpkg.com/@types/accepts/-/accepts-1.3.5.tgz#c34bec115cfc746e04fe5a059df4ce7e7b391575"
@@ -5777,6 +5782,13 @@ dot-prop@^5.1.0:
   integrity sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q==
   dependencies:
     is-obj "^2.0.0"
+
+dprint-node@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/dprint-node/-/dprint-node-1.0.7.tgz#f571eaf61affb3a696cff1bdde78a021875ba540"
+  integrity sha512-NTZOW9A7ipb0n7z7nC3wftvsbceircwVHSgzobJsEQa+7RnOMbhrfX5IflA6CtC4GA63DSAiHYXa4JKEy9F7cA==
+  dependencies:
+    detect-libc "^1.0.3"
 
 duplexer@^0.1.1:
   version "0.1.2"
@@ -10707,7 +10719,7 @@ prettier-linter-helpers@^1.0.0:
   dependencies:
     fast-diff "^1.1.2"
 
-prettier@^2.5.1, prettier@^2.6.2:
+prettier@^2.6.2:
   version "2.7.1"
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.7.1.tgz#e235806850d057f97bb08368a4f7d899f7760c64"
   integrity sha512-ujppO+MkdPqoVINuDFDRLClm7D78qbDt0/NR+wp5FqEZOoTNAjPHWj17QRhu7geIHJfcNhRk1XVQmF8Bp3ye+g==
@@ -12599,13 +12611,12 @@ trim-off-newlines@^1.0.0:
   resolved "https://registry.yarnpkg.com/trim-off-newlines/-/trim-off-newlines-1.0.3.tgz#8df24847fcb821b0ab27d58ab6efec9f2fe961a1"
   integrity sha512-kh6Tu6GbeSNMGfrrZh6Bb/4ZEHV1QlB4xNDBeog8Y9/QwFlKTRyWvY3Fs9tRDAMZliVUwieMgEdIeL/FtqjkJg==
 
-ts-poet@^4.15.0:
-  version "4.15.0"
-  resolved "https://registry.yarnpkg.com/ts-poet/-/ts-poet-4.15.0.tgz#637145fa554d3b27c56541578df0ce08cd9eb328"
-  integrity sha512-sLLR8yQBvHzi9d4R1F4pd+AzQxBfzOSSjfxiJxQhkUoH5bL7RsAC6wgvtVUQdGqiCsyS9rT6/8X2FI7ipdir5g==
+ts-poet@^6.1.0:
+  version "6.1.0"
+  resolved "https://registry.yarnpkg.com/ts-poet/-/ts-poet-6.1.0.tgz#c5c3d679dfce1fe39acb5f5415275c5d6a598cb7"
+  integrity sha512-PFwbNJjGrb44wzHUGQicG2/nhjR+3+k7zYLDTa8D61NVUitl7K/JgIc9/P+8oMNenntKzLc8tjLDOkPrxIhm6A==
   dependencies:
-    lodash "^4.17.15"
-    prettier "^2.5.1"
+    dprint-node "^1.0.7"
 
 ts-proto-descriptors@1.7.1:
   version "1.7.1"
@@ -12615,16 +12626,16 @@ ts-proto-descriptors@1.7.1:
     long "^4.0.0"
     protobufjs "^6.8.8"
 
-ts-proto@^1.121.1:
-  version "1.121.1"
-  resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.121.1.tgz#4ffcfbd5fb7eabf64a36ff6068a61249a552d2b1"
-  integrity sha512-lO7rT+fmXT6HzfTtClAgjmBLU9bxb6fLsSSpWyYTZgsHbbmowC4zB5JO6PiTcVTKhW3jNlTekwgoSStJM7PrmQ==
+ts-proto@^1.131.0:
+  version "1.131.0"
+  resolved "https://registry.yarnpkg.com/ts-proto/-/ts-proto-1.131.0.tgz#bc5906c9d35755a086d7e47e8357bc7b858f9fc6"
+  integrity sha512-oj/kWrDz3JkkPQwumQDKfwHroH9iNz2alvrbCYzNYJlb/2MAUzFNfh9T+SZUPDfoXXK6oJoW1hGCHznj67yHNg==
   dependencies:
     "@types/object-hash" "^1.3.0"
     dataloader "^1.4.0"
     object-hash "^1.3.1"
     protobufjs "^6.11.3"
-    ts-poet "^4.15.0"
+    ts-poet "^6.1.0"
     ts-proto-descriptors "1.7.1"
 
 tsconfig-paths@^3.12.0:
@@ -12643,6 +12654,18 @@ tsd@^0.22.0:
   integrity sha512-NH+tfEDQ0Ze8gH7TorB6IxYybD+M68EYawe45YNVrbQcydNBfdQHP9IiD0QbnqmwNXrv+l9GAiULT68mo4q/xA==
   dependencies:
     "@tsd/typescript" "~4.7.4"
+    eslint-formatter-pretty "^4.1.0"
+    globby "^11.0.1"
+    meow "^9.0.0"
+    path-exists "^4.0.0"
+    read-pkg-up "^7.0.0"
+
+tsd@^0.24.1:
+  version "0.24.1"
+  resolved "https://registry.yarnpkg.com/tsd/-/tsd-0.24.1.tgz#10c596acf7278182d3ca142b902ca9a62b1f13ef"
+  integrity sha512-sD+s81/2aM4RRhimCDttd4xpBNbUFWnoMSHk/o8kC8Ek23jljeRNWjsxFJmOmYLuLTN9swRt1b6iXfUXTcTiIA==
+  dependencies:
+    "@tsd/typescript" "~4.8.3"
     eslint-formatter-pretty "^4.1.0"
     globby "^11.0.1"
     meow "^9.0.0"

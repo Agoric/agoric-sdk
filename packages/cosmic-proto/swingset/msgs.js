@@ -1,1 +1,0 @@
-../gen/agoric/swingset/msgs.js

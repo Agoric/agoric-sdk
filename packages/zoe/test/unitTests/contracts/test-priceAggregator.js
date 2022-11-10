@@ -441,6 +441,7 @@ test('oracle invitation', async t => {
   const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
   const oracleAdmin1 = E(or1).getOfferResult();
 
+  /** @type {Amount<'nat'>} */
   const amountIn = AmountMath.make(brandIn, 1000000n);
   const makeQuoteValue = (timestamp, valueOut) => [
     {

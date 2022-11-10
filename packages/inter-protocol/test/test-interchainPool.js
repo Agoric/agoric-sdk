@@ -157,7 +157,6 @@ test('make interchain pool', async t => {
       {
         Central: make(istKit.brand, 0n),
         Secondary: make(ibcBrand, 0n),
-        // @ts-expect-error proposal1.give.Central.value is Nat
         Liquidity: make(liqBrand, proposal1.give.Central.value - 1000n),
       },
       {

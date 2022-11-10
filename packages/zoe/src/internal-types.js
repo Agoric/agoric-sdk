@@ -101,7 +101,7 @@
  * @param {string} description
  * @param {Record<string, any>=} customProperties
  * @param {Pattern} [proposalShape]
- * @returns {Payment}
+ * @returns {Invitation}
  */
 
 /**

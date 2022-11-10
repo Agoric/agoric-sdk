@@ -111,7 +111,7 @@ export const start = async (zcf, privateArgs) => {
     );
 
   const { brand: poolBrand } = params.getPerAccountInitialAmount();
-  /** @type {ERef<Purse>} */
+  /** @type {ERef<Purse<'nat'>>} */
   // @ts-expect-error vbank purse is close enough for our use.
   const fundPurse = E(poolBank).getPurse(poolBrand);
 
@@ -138,12 +138,10 @@ export const start = async (zcf, privateArgs) => {
     publishMetrics();
 
     const metrics = harden({
-      /** @param {Amount} converted */
       onTrade: converted => {
         totalMintedConverted = AmountMath.add(totalMintedConverted, converted);
         publishMetrics();
       },
-      /** @param {Amount} provided */
       onSendFunds: provided => {
         totalMintedProvided = AmountMath.add(totalMintedProvided, provided);
         publishMetrics();
@@ -209,6 +207,8 @@ export const start = async (zcf, privateArgs) => {
    */
   const sendInitialPayment = async (address, destBank) => {
     console.log('sendInitialPayment', address);
+    /** @type {Amount<'nat'>} */
+    // @ts-expect-error xxx governance types
     const perAccountInitialAmount = params.getPerAccountInitialAmount();
     const initialPmt = await E(fundPurse).withdraw(perAccountInitialAmount);
 

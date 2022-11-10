@@ -135,7 +135,7 @@ test('attestations can be combined and split', async t => {
     AmountMath.add(stake50, stake25),
   );
 
-  /** @param {Payment} att */
+  /** @param {Payment<'copyBag'>} att */
   const returnAttestation = async att => {
     const invitation = E(publicFacet).makeReturnAttInvitation();
     const attestationAmount = await E(issuer).getAmountOf(att);

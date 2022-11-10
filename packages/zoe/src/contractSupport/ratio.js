@@ -78,6 +78,7 @@ export const makeRatio = (
       X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
     );
 
+  // @ts-expect-error cast to return type because make() ensures
   return harden({
     numerator: AmountMath.make(numeratorBrand, numerator),
     denominator: AmountMath.make(denominatorBrand, denominator),
@@ -101,6 +102,12 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
   );
 };
 
+/**
+ *
+ * @param {Amount} amount
+ * @param {Ratio} ratio
+ * @param {*} divideOp
+ */
 const multiplyHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
@@ -135,6 +142,12 @@ export const multiplyBy = (amount, ratio) => {
   return multiplyHelper(amount, ratio, bankersDivide);
 };
 
+/**
+ *
+ * @param {Amount} amount
+ * @param {Ratio} ratio
+ * @param {*} divideOp
+ */
 const divideHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);

@@ -1,136 +1,13 @@
 /* eslint-disable */
 import Long from 'long';
-import { Coin } from '../../cosmos/base/v1beta1/coin.js';
 import _m0 from 'protobufjs/minimal.js';
-
+import { Coin } from '../../cosmos/base/v1beta1/coin.js';
 export const protobufPackage = 'agoric.swingset';
-
-/**
- * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
- * core.
- * See `agoric-sdk/packages/vats/src/core/eval.js`.
- */
-export interface CoreEvalProposal {
-  title: string;
-  description: string;
-  /**
-   * Although evals are sequential, they may run concurrently, since they each
-   * can return a Promise.
-   */
-  evals: CoreEval[];
-}
-
-/**
- * CoreEval defines an individual SwingSet core evaluation, for use in
- * CoreEvalProposal.
- */
-export interface CoreEval {
-  /**
-   * Grant these JSON-stringified core bootstrap permits to the jsCode, as the
-   * `powers` endowment.
-   */
-  jsonPermits: string;
-  /**
-   * Evaluate this JavaScript code in a Compartment endowed with `powers` as
-   * well as some powerless helpers.
-   */
-  jsCode: string;
-}
-
-/** Params are the swingset configuration/governance parameters. */
-export interface Params {
-  /**
-   * Map from unit name to a value in SwingSet "beans".
-   * Must not be negative.
-   *
-   * These values are used by SwingSet to normalize named per-resource charges
-   * (maybe rent) in a single Nat usage unit, the "bean".
-   *
-   * There is no required order to this list of entries, but all the chain
-   * nodes must all serialize and deserialize the existing order without
-   * permuting it.
-   */
-  beansPerUnit: StringBeans[];
-  /**
-   * The price in Coins per the unit named "fee".  This value is used by
-   * cosmic-swingset JS code to decide how many tokens to charge.
-   *
-   * cost = beans_used * fee_unit_price / beans_per_unit["fee"]
-   */
-  feeUnitPrice: Coin[];
-  /**
-   * The SwingSet bootstrap vat configuration file.  Not usefully modifiable
-   * via governance as it is only referenced by the chain's initial
-   * construction.
-   */
-  bootstrapVatConfig: string;
-  /**
-   * If the provision submitter doesn't hold a provisionpass, their requested
-   * power flags are looked up in this fee menu (first match wins) and the sum
-   * is charged.  If any power flag is not found in this menu, the request is
-   * rejected.
-   */
-  powerFlagFees: PowerFlagFee[];
-  /**
-   * Maximum sizes for queues.
-   * These values are used by SwingSet to compute how many messages should be
-   * accepted in a block.
-   *
-   * There is no required order to this list of entries, but all the chain
-   * nodes must all serialize and deserialize the existing order without
-   * permuting it.
-   */
-  queueMax: QueueSize[];
-}
-
-/** The current state of the module. */
-export interface State {
-  /**
-   * The allowed number of items to add to queues, as determined by SwingSet.
-   * Transactions which attempt to enqueue more should be rejected.
-   */
-  queueAllowed: QueueSize[];
-}
-
-/** Map element of a string key to a Nat bean count. */
-export interface StringBeans {
-  /** What the beans are for. */
-  key: string;
-  /** The actual bean value. */
-  beans: string;
-}
-
-/** Map a provisioning power flag to its corresponding fee. */
-export interface PowerFlagFee {
-  powerFlag: string;
-  fee: Coin[];
-}
-
-/** Map element of a string key to a size. */
-export interface QueueSize {
-  /** What the size is for. */
-  key: string;
-  /** The actual size value. */
-  size: number;
-}
-
-/** Egress is the format for a swingset egress. */
-export interface Egress {
-  nickname: string;
-  peer: Uint8Array;
-  /** TODO: Remove these power flags as they are deprecated and have no effect. */
-  powerFlags: string[];
-}
-
-function createBaseCoreEvalProposal(): CoreEvalProposal {
+function createBaseCoreEvalProposal() {
   return { title: '', description: '', evals: [] };
 }
-
 export const CoreEvalProposal = {
-  encode(
-    message: CoreEvalProposal,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     if (message.title !== '') {
       writer.uint32(10).string(message.title);
     }
@@ -138,12 +15,11 @@ export const CoreEvalProposal = {
       writer.uint32(18).string(message.description);
     }
     for (const v of message.evals) {
-      CoreEval.encode(v!, writer.uint32(26).fork()).ldelim();
+      CoreEval.encode(v, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CoreEvalProposal {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCoreEvalProposal();
@@ -166,19 +42,17 @@ export const CoreEvalProposal = {
     }
     return message;
   },
-
-  fromJSON(object: any): CoreEvalProposal {
+  fromJSON(object) {
     return {
       title: isSet(object.title) ? String(object.title) : '',
       description: isSet(object.description) ? String(object.description) : '',
       evals: Array.isArray(object?.evals)
-        ? object.evals.map((e: any) => CoreEval.fromJSON(e))
+        ? object.evals.map((e) => CoreEval.fromJSON(e))
         : [],
     };
   },
-
-  toJSON(message: CoreEvalProposal): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     message.title !== undefined && (obj.title = message.title);
     message.description !== undefined &&
       (obj.description = message.description);
@@ -191,10 +65,7 @@ export const CoreEvalProposal = {
     }
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<CoreEvalProposal>, I>>(
-    object: I,
-  ): CoreEvalProposal {
+  fromPartial(object) {
     const message = createBaseCoreEvalProposal();
     message.title = object.title ?? '';
     message.description = object.description ?? '';
@@ -202,16 +73,11 @@ export const CoreEvalProposal = {
     return message;
   },
 };
-
-function createBaseCoreEval(): CoreEval {
+function createBaseCoreEval() {
   return { jsonPermits: '', jsCode: '' };
 }
-
 export const CoreEval = {
-  encode(
-    message: CoreEval,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     if (message.jsonPermits !== '') {
       writer.uint32(10).string(message.jsonPermits);
     }
@@ -220,8 +86,7 @@ export const CoreEval = {
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): CoreEval {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseCoreEval();
@@ -241,31 +106,27 @@ export const CoreEval = {
     }
     return message;
   },
-
-  fromJSON(object: any): CoreEval {
+  fromJSON(object) {
     return {
       jsonPermits: isSet(object.jsonPermits) ? String(object.jsonPermits) : '',
       jsCode: isSet(object.jsCode) ? String(object.jsCode) : '',
     };
   },
-
-  toJSON(message: CoreEval): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     message.jsonPermits !== undefined &&
       (obj.jsonPermits = message.jsonPermits);
     message.jsCode !== undefined && (obj.jsCode = message.jsCode);
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<CoreEval>, I>>(object: I): CoreEval {
+  fromPartial(object) {
     const message = createBaseCoreEval();
     message.jsonPermits = object.jsonPermits ?? '';
     message.jsCode = object.jsCode ?? '';
     return message;
   },
 };
-
-function createBaseParams(): Params {
+function createBaseParams() {
   return {
     beansPerUnit: [],
     feeUnitPrice: [],
@@ -274,31 +135,26 @@ function createBaseParams(): Params {
     queueMax: [],
   };
 }
-
 export const Params = {
-  encode(
-    message: Params,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     for (const v of message.beansPerUnit) {
-      StringBeans.encode(v!, writer.uint32(10).fork()).ldelim();
+      StringBeans.encode(v, writer.uint32(10).fork()).ldelim();
     }
     for (const v of message.feeUnitPrice) {
-      Coin.encode(v!, writer.uint32(18).fork()).ldelim();
+      Coin.encode(v, writer.uint32(18).fork()).ldelim();
     }
     if (message.bootstrapVatConfig !== '') {
       writer.uint32(26).string(message.bootstrapVatConfig);
     }
     for (const v of message.powerFlagFees) {
-      PowerFlagFee.encode(v!, writer.uint32(34).fork()).ldelim();
+      PowerFlagFee.encode(v, writer.uint32(34).fork()).ldelim();
     }
     for (const v of message.queueMax) {
-      QueueSize.encode(v!, writer.uint32(42).fork()).ldelim();
+      QueueSize.encode(v, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Params {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseParams();
@@ -331,29 +187,27 @@ export const Params = {
     }
     return message;
   },
-
-  fromJSON(object: any): Params {
+  fromJSON(object) {
     return {
       beansPerUnit: Array.isArray(object?.beansPerUnit)
-        ? object.beansPerUnit.map((e: any) => StringBeans.fromJSON(e))
+        ? object.beansPerUnit.map((e) => StringBeans.fromJSON(e))
         : [],
       feeUnitPrice: Array.isArray(object?.feeUnitPrice)
-        ? object.feeUnitPrice.map((e: any) => Coin.fromJSON(e))
+        ? object.feeUnitPrice.map((e) => Coin.fromJSON(e))
         : [],
       bootstrapVatConfig: isSet(object.bootstrapVatConfig)
         ? String(object.bootstrapVatConfig)
         : '',
       powerFlagFees: Array.isArray(object?.powerFlagFees)
-        ? object.powerFlagFees.map((e: any) => PowerFlagFee.fromJSON(e))
+        ? object.powerFlagFees.map((e) => PowerFlagFee.fromJSON(e))
         : [],
       queueMax: Array.isArray(object?.queueMax)
-        ? object.queueMax.map((e: any) => QueueSize.fromJSON(e))
+        ? object.queueMax.map((e) => QueueSize.fromJSON(e))
         : [],
     };
   },
-
-  toJSON(message: Params): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     if (message.beansPerUnit) {
       obj.beansPerUnit = message.beansPerUnit.map((e) =>
         e ? StringBeans.toJSON(e) : undefined,
@@ -386,8 +240,7 @@ export const Params = {
     }
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<Params>, I>>(object: I): Params {
+  fromPartial(object) {
     const message = createBaseParams();
     message.beansPerUnit =
       object.beansPerUnit?.map((e) => StringBeans.fromPartial(e)) || [];
@@ -401,20 +254,17 @@ export const Params = {
     return message;
   },
 };
-
-function createBaseState(): State {
+function createBaseState() {
   return { queueAllowed: [] };
 }
-
 export const State = {
-  encode(message: State, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     for (const v of message.queueAllowed) {
-      QueueSize.encode(v!, writer.uint32(10).fork()).ldelim();
+      QueueSize.encode(v, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): State {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseState();
@@ -431,17 +281,15 @@ export const State = {
     }
     return message;
   },
-
-  fromJSON(object: any): State {
+  fromJSON(object) {
     return {
       queueAllowed: Array.isArray(object?.queueAllowed)
-        ? object.queueAllowed.map((e: any) => QueueSize.fromJSON(e))
+        ? object.queueAllowed.map((e) => QueueSize.fromJSON(e))
         : [],
     };
   },
-
-  toJSON(message: State): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     if (message.queueAllowed) {
       obj.queueAllowed = message.queueAllowed.map((e) =>
         e ? QueueSize.toJSON(e) : undefined,
@@ -451,24 +299,18 @@ export const State = {
     }
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<State>, I>>(object: I): State {
+  fromPartial(object) {
     const message = createBaseState();
     message.queueAllowed =
       object.queueAllowed?.map((e) => QueueSize.fromPartial(e)) || [];
     return message;
   },
 };
-
-function createBaseStringBeans(): StringBeans {
+function createBaseStringBeans() {
   return { key: '', beans: '' };
 }
-
 export const StringBeans = {
-  encode(
-    message: StringBeans,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     if (message.key !== '') {
       writer.uint32(10).string(message.key);
     }
@@ -477,8 +319,7 @@ export const StringBeans = {
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): StringBeans {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseStringBeans();
@@ -498,50 +339,39 @@ export const StringBeans = {
     }
     return message;
   },
-
-  fromJSON(object: any): StringBeans {
+  fromJSON(object) {
     return {
       key: isSet(object.key) ? String(object.key) : '',
       beans: isSet(object.beans) ? String(object.beans) : '',
     };
   },
-
-  toJSON(message: StringBeans): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     message.key !== undefined && (obj.key = message.key);
     message.beans !== undefined && (obj.beans = message.beans);
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<StringBeans>, I>>(
-    object: I,
-  ): StringBeans {
+  fromPartial(object) {
     const message = createBaseStringBeans();
     message.key = object.key ?? '';
     message.beans = object.beans ?? '';
     return message;
   },
 };
-
-function createBasePowerFlagFee(): PowerFlagFee {
+function createBasePowerFlagFee() {
   return { powerFlag: '', fee: [] };
 }
-
 export const PowerFlagFee = {
-  encode(
-    message: PowerFlagFee,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     if (message.powerFlag !== '') {
       writer.uint32(10).string(message.powerFlag);
     }
     for (const v of message.fee) {
-      Coin.encode(v!, writer.uint32(18).fork()).ldelim();
+      Coin.encode(v, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PowerFlagFee {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBasePowerFlagFee();
@@ -561,18 +391,16 @@ export const PowerFlagFee = {
     }
     return message;
   },
-
-  fromJSON(object: any): PowerFlagFee {
+  fromJSON(object) {
     return {
       powerFlag: isSet(object.powerFlag) ? String(object.powerFlag) : '',
       fee: Array.isArray(object?.fee)
-        ? object.fee.map((e: any) => Coin.fromJSON(e))
+        ? object.fee.map((e) => Coin.fromJSON(e))
         : [],
     };
   },
-
-  toJSON(message: PowerFlagFee): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     message.powerFlag !== undefined && (obj.powerFlag = message.powerFlag);
     if (message.fee) {
       obj.fee = message.fee.map((e) => (e ? Coin.toJSON(e) : undefined));
@@ -581,26 +409,18 @@ export const PowerFlagFee = {
     }
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<PowerFlagFee>, I>>(
-    object: I,
-  ): PowerFlagFee {
+  fromPartial(object) {
     const message = createBasePowerFlagFee();
     message.powerFlag = object.powerFlag ?? '';
     message.fee = object.fee?.map((e) => Coin.fromPartial(e)) || [];
     return message;
   },
 };
-
-function createBaseQueueSize(): QueueSize {
+function createBaseQueueSize() {
   return { key: '', size: 0 };
 }
-
 export const QueueSize = {
-  encode(
-    message: QueueSize,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     if (message.key !== '') {
       writer.uint32(10).string(message.key);
     }
@@ -609,8 +429,7 @@ export const QueueSize = {
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): QueueSize {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseQueueSize();
@@ -630,40 +449,30 @@ export const QueueSize = {
     }
     return message;
   },
-
-  fromJSON(object: any): QueueSize {
+  fromJSON(object) {
     return {
       key: isSet(object.key) ? String(object.key) : '',
       size: isSet(object.size) ? Number(object.size) : 0,
     };
   },
-
-  toJSON(message: QueueSize): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     message.key !== undefined && (obj.key = message.key);
     message.size !== undefined && (obj.size = Math.round(message.size));
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<QueueSize>, I>>(
-    object: I,
-  ): QueueSize {
+  fromPartial(object) {
     const message = createBaseQueueSize();
     message.key = object.key ?? '';
     message.size = object.size ?? 0;
     return message;
   },
 };
-
-function createBaseEgress(): Egress {
+function createBaseEgress() {
   return { nickname: '', peer: new Uint8Array(), powerFlags: [] };
 }
-
 export const Egress = {
-  encode(
-    message: Egress,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
+  encode(message, writer = _m0.Writer.create()) {
     if (message.nickname !== '') {
       writer.uint32(10).string(message.nickname);
     }
@@ -671,12 +480,11 @@ export const Egress = {
       writer.uint32(18).bytes(message.peer);
     }
     for (const v of message.powerFlags) {
-      writer.uint32(26).string(v!);
+      writer.uint32(26).string(v);
     }
     return writer;
   },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Egress {
+  decode(input, length) {
     const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
     let end = length === undefined ? reader.len : reader.pos + length;
     const message = createBaseEgress();
@@ -699,21 +507,19 @@ export const Egress = {
     }
     return message;
   },
-
-  fromJSON(object: any): Egress {
+  fromJSON(object) {
     return {
       nickname: isSet(object.nickname) ? String(object.nickname) : '',
       peer: isSet(object.peer)
         ? bytesFromBase64(object.peer)
         : new Uint8Array(),
       powerFlags: Array.isArray(object?.powerFlags)
-        ? object.powerFlags.map((e: any) => String(e))
+        ? object.powerFlags.map((e) => String(e))
         : [],
     };
   },
-
-  toJSON(message: Egress): unknown {
-    const obj: any = {};
+  toJSON(message) {
+    const obj = {};
     message.nickname !== undefined && (obj.nickname = message.nickname);
     message.peer !== undefined &&
       (obj.peer = base64FromBytes(
@@ -726,8 +532,7 @@ export const Egress = {
     }
     return obj;
   },
-
-  fromPartial<I extends Exact<DeepPartial<Egress>, I>>(object: I): Egress {
+  fromPartial(object) {
     const message = createBaseEgress();
     message.nickname = object.nickname ?? '';
     message.peer = object.peer ?? new Uint8Array();
@@ -735,75 +540,48 @@ export const Egress = {
     return message;
   },
 };
-
-declare var self: any | undefined;
-declare var window: any | undefined;
-declare var global: any | undefined;
-var globalThis: any = (() => {
-  if (typeof globalThis !== 'undefined') return globalThis;
-  if (typeof self !== 'undefined') return self;
-  if (typeof window !== 'undefined') return window;
-  if (typeof global !== 'undefined') return global;
+var globalThis = (() => {
+  if (typeof globalThis !== 'undefined') {
+    return globalThis;
+  }
+  if (typeof self !== 'undefined') {
+    return self;
+  }
+  if (typeof window !== 'undefined') {
+    return window;
+  }
+  if (typeof global !== 'undefined') {
+    return global;
+  }
   throw 'Unable to locate global object';
 })();
-
-const atob: (b64: string) => string =
-  globalThis.atob ||
-  ((b64) => globalThis.Buffer.from(b64, 'base64').toString('binary'));
-function bytesFromBase64(b64: string): Uint8Array {
-  const bin = atob(b64);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; ++i) {
-    arr[i] = bin.charCodeAt(i);
+function bytesFromBase64(b64) {
+  if (globalThis.Buffer) {
+    return Uint8Array.from(globalThis.Buffer.from(b64, 'base64'));
+  } else {
+    const bin = globalThis.atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; ++i) {
+      arr[i] = bin.charCodeAt(i);
+    }
+    return arr;
   }
-  return arr;
 }
-
-const btoa: (bin: string) => string =
-  globalThis.btoa ||
-  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
-function base64FromBytes(arr: Uint8Array): string {
-  const bin: string[] = [];
-  arr.forEach((byte) => {
-    bin.push(String.fromCharCode(byte));
-  });
-  return btoa(bin.join(''));
+function base64FromBytes(arr) {
+  if (globalThis.Buffer) {
+    return globalThis.Buffer.from(arr).toString('base64');
+  } else {
+    const bin = [];
+    arr.forEach((byte) => {
+      bin.push(String.fromCharCode(byte));
+    });
+    return globalThis.btoa(bin.join(''));
+  }
 }
-
-type Builtin =
-  | Date
-  | Function
-  | Uint8Array
-  | string
-  | number
-  | boolean
-  | undefined;
-
-export type DeepPartial<T> = T extends Builtin
-  ? T
-  : T extends Long
-  ? string | number | Long
-  : T extends Array<infer U>
-  ? Array<DeepPartial<U>>
-  : T extends ReadonlyArray<infer U>
-  ? ReadonlyArray<DeepPartial<U>>
-  : T extends {}
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : Partial<T>;
-
-type KeysOfUnion<T> = T extends T ? keyof T : never;
-export type Exact<P, I extends P> = P extends Builtin
-  ? P
-  : P & { [K in keyof P]: Exact<P[K], I[K]> } & Record<
-        Exclude<keyof I, KeysOfUnion<P>>,
-        never
-      >;
-
 if (_m0.util.Long !== Long) {
-  _m0.util.Long = Long as any;
+  _m0.util.Long = Long;
   _m0.configure();
 }
-
-function isSet(value: any): boolean {
+function isSet(value) {
   return value !== null && value !== undefined;
 }

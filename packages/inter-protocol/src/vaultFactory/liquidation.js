@@ -62,7 +62,7 @@ const updateQuote = (quote, highestDebtRatio, liquidationMargin) => {
  * @param {ZCF} zcf
  * @param {Vault} vault
  * @param {Liquidator}  liquidator
- * @param {Brand} collateralBrand
+ * @param {Brand<'nat'>} collateralBrand
  * @param {Ratio} penaltyRate
  */
 const liquidate = async (
@@ -106,6 +106,7 @@ const liquidate = async (
   ]);
   // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
 
+  /** @type { [Amount<'nat'>, Amount<'nat'>] } */
   const [overage, shortfall] = AmountMath.isGTE(debt, proceeds.Minted)
     ? [
         AmountMath.makeEmptyFromAmount(debt),

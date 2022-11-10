@@ -1,11 +1,16 @@
 {
   "compilerOptions": {
     "noEmit": false,
+    "declaration": true,
     "target": "esnext",
     "module": "esnext",
+    "allowSyntheticDefaultImports": true,
     "downlevelIteration": true,
     "strictNullChecks": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "outDir": "dist"
   },
-  "include": ["gen/**/*.ts"]
+  "include": [
+    "gen/**/*.ts"
+  ]
 }

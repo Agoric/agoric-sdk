@@ -185,7 +185,7 @@ const run2places = f =>
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
- * @returns {Promise<Payment>}
+ * @returns {Promise<Payment<'nat'>>}
  */
 const mintRunPayment = async (
   value,
@@ -417,7 +417,7 @@ export const splitAllCentralPayments = async (
  * @param {string} issuerName
  * @param {typeof AMMDemoState['ATOM']} record
  * @param {Record<string, { issuer: ERef<Issuer>, brand: Brand }>} kits
- * @param {{ issuer: ERef<Issuer>, brand: Brand }} central
+ * @param {{ issuer: ERef<Issuer<'nat'>>, brand: Brand<'nat'> }} central
  */
 export const poolRates = (issuerName, record, kits, central) => {
   /** @param {bigint} n */
@@ -505,7 +505,10 @@ export const fundAMM = async ({
       },
     ),
   );
-  const central = kits[Stable.symbol];
+
+  const central = /** @type {Pick<IssuerKit<'nat'>, 'issuer' | 'brand'>} */ (
+    kits[Stable.symbol]
+  );
 
   /** @type {[ XYKAMMPublicFacet, TimerService]} */
   const [ammPublicFacet, timer] = await Promise.all([
@@ -547,9 +550,8 @@ export const fundAMM = async ({
         assert(secondaryPayment, X`no payment for ${q(issuerName)}`);
 
         assert(kit.issuer, X`No issuer for ${q(issuerName)}`);
-        const liquidityIssuer = E(ammPublicFacet).addIssuer(
-          kit.issuer,
-          issuerName,
+        const liquidityIssuer = /** @type {Promise<Issuer<'nat'>>} */ (
+          E(ammPublicFacet).addIssuer(kit.issuer, issuerName)
         );
         const [secondaryAmount, liquidityBrand] = await Promise.all([
           // Error: (an undefined) was not a live payment for brand

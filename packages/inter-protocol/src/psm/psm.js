@@ -73,7 +73,7 @@ const stageTransfer = (from, to, txFrom, txTo = txFrom) => {
  *    WantMintedFee: 'ratio',
  *    MintLimit: 'amount',
  *   }> & {
- *    anchorBrand: Brand,
+ *    anchorBrand: Brand<'nat'>,
  *    anchorPerMinted: Ratio,
  * }>} zcf
  * @param {{feeMintAccess: FeeMintAccess, initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs

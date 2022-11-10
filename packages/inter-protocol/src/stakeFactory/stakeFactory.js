@@ -181,6 +181,7 @@ export const start = async (
     zcf,
     debtMint,
     harden({ Attestation: attestBrand, debt: debtBrand, Stake: stakeBrand }),
+    // @ts-expect-error xxx governance types
     mintPowers,
     { timerService, chargingPeriod, recordingPeriod, startTimeStamp },
   );

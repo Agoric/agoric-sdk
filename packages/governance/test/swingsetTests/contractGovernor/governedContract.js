@@ -23,7 +23,7 @@ const makeTerms = (number, invitationAmount) => {
  * GovernanceTerms<{
  *   MalleableNumber: 'nat',
  * }>,
- * {initialPoserInvitation: Payment}>
+ * {initialPoserInvitation: Invitation}>
  */
 const start = async (zcf, privateArgs) => {
   const { augmentPublicFacet, makeGovernorFacet, params } =
