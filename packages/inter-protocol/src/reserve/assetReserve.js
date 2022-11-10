@@ -68,7 +68,7 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * >} zcf
  * @param {{
  *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Payment,
+ *   initialPoserInvitation: Invitation,
  *   marshaller: ERef<Marshaller>,
  *   storageNode: ERef<StorageNode>,
  * }} privateArgs

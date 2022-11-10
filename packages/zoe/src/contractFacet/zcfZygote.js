@@ -34,7 +34,7 @@ const { details: X, makeAssert } = assert;
  *
  * @param {VatPowers} powers
  * @param {ERef<ZoeService>} zoeService
- * @param {Issuer} invitationIssuer
+ * @param {Issuer<'set'>} invitationIssuer
  * @param {TestJigSetter} testJigSetter
  * @param {BundleCap} contractBundleCap
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
@@ -196,7 +196,6 @@ export const makeZCFZygote = async (
       }
 
       const invitationHandle = storeOfferHandler(offerHandler);
-      /** @type {Promise<Payment>} */
       const invitationP = E(zoeInstanceAdmin).makeInvitation(
         invitationHandle,
         description,

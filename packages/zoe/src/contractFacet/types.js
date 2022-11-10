@@ -34,7 +34,7 @@
  * @property {ShutdownWithFailure} shutdownWithFailure
  * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
- * @property {() => Issuer} getInvitationIssuer
+ * @property {() => Issuer<'set'>} getInvitationIssuer
  * @property {() => StandardTerms & CT} getTerms
  * @property {(issuer: Issuer) => Brand} getBrandForIssuer
  * @property {(brand: Brand) => Issuer} getIssuerForBrand

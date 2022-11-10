@@ -120,7 +120,7 @@ const makeParamManagerSync = (publisherKit, spec) => {
  * @template {ParamTypesMap} M Map of types of custom governed terms
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
- * @param {Payment} initialPoserInvitation
+ * @param {Invitation} initialPoserInvitation
  * @param {M} paramTypesMap
  * @returns {Promise<TypedParamManager<M & {Electorate: 'invitation'}>>}
  */
