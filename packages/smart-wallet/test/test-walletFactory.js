@@ -87,6 +87,42 @@ test('bridge handler', async t => {
   });
 });
 
+test('bridge with offerId string', async t => {
+  await t.context.simpleProvideWallet(mockAddress2);
+  const ctx = makeImportContext();
+
+  const board = await t.context.consume.board;
+  const someInstance = makeHandle('Instance');
+  ctx.ensureBoardId(board.getId(someInstance), someInstance);
+
+  // fund the wallet with anchor
+
+  /** @type {import('../src/offers.js').OfferSpec} */
+  const offerSpec = {
+    id: 'uniqueString',
+    invitationSpec: {
+      source: 'purse',
+      description: 'bogus',
+      instance: someInstance,
+    },
+    proposal: {},
+  };
+  assert(t.context.sendToBridge);
+  const res = await t.context.sendToBridge(BridgeId.WALLET, {
+    type: ActionType.WALLET_SPEND_ACTION,
+    owner: mockAddress2,
+    // consider a helper for each action type
+    spendAction: JSON.stringify(
+      ctx.fromBoard.serialize(
+        harden({ method: 'executeOffer', offer: offerSpec }),
+      ),
+    ),
+    blockTime: 0,
+    blockHeight: 0,
+  });
+  t.is(res, undefined);
+});
+
 test.todo('spend action over bridge');
 
 test('notifiers', async t => {

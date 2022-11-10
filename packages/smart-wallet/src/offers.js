@@ -4,8 +4,12 @@ import { E, passStyleOf } from '@endo/far';
 import { makePaymentsHelper } from './payments.js';
 
 /**
+ * @typedef {number | string} OfferId
+ */
+
+/**
  * @typedef {{
- *   id: number,
+ *   id: OfferId,
  *   invitationSpec: import('./invitations').InvitationSpec,
  *   proposal: Proposal,
  *   offerArgs?: unknown
@@ -35,7 +39,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: number, invitationAmount: Amount<'set'>, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
+ * @param {(offerId: OfferId, invitationAmount: Amount<'set'>, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,

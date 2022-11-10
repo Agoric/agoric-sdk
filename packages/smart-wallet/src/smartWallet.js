@@ -99,8 +99,8 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *
  * @typedef {Readonly<HeldParams & {
  * paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
- * offerToInvitationMakers: MapStore<number, import('./types').RemoteInvitationMakers>,
- * offerToUsedInvitation: MapStore<number, Amount>,
+ * offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
+ * offerToUsedInvitation: MapStore<string, Amount>,
  * brandDescriptors: MapStore<Brand, BrandDescriptor>,
  * brandPurses: MapStore<Brand, RemotePurse>,
  * purseBalances: MapStore<RemotePurse, Amount>,
@@ -431,7 +431,7 @@ const behavior = {
             status: offerStatus,
           });
         },
-        /** @type {(offerId: number, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
+        /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
         onNewContinuingOffer: (offerId, invitationAmount, invitationMakers) => {
           offerToUsedInvitation.init(offerId, invitationAmount);
           offerToInvitationMakers.init(offerId, invitationMakers);
