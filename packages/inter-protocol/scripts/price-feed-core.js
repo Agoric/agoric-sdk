@@ -71,9 +71,9 @@ export const createGov = async (homeP, endowments) => {
 
   const {
     AGORIC_INSTANCE_NAME,
-    IN_BRAND_DECIMALS,
+    IN_BRAND_DECIMALS = '6',
     IN_BRAND_LOOKUP = JSON.stringify(['wallet', 'brand', 'BLD']),
-    OUT_BRAND_DECIMALS,
+    OUT_BRAND_DECIMALS = '6',
     OUT_BRAND_LOOKUP = JSON.stringify(['agoricNames', 'oracleBrand', 'USD']),
     ORACLE_ADDRESSES,
   } = process.env;
