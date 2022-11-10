@@ -23,7 +23,7 @@ import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
  * @param {ERef<ZoeService>} zoe
  * @param {bigint} poolFeeBP
  * @param {bigint} protocolFeeBP
- * @param {Amount} minInitialLiquidity
+ * @param {Amount<'nat'>} minInitialLiquidity
  * @param {Invitation} poserInvitation - invitation for the question poser
  */
 const makeAmmParamManager = async (
@@ -62,7 +62,7 @@ const voPoolTest = async (t, mutation, postTest) => {
 
   const { brand: secondaryBrand, issuer: secondaryI } =
     makeIssuerKit('secondary');
-  const quoteIssuerKit = makeIssuerKit('Quotes');
+  const quoteIssuerKit = makeIssuerKit('Quotes', 'set');
   const liquidityZcfMint = await zcf.makeZCFMint('Liquidity');
   const { zcfSeat: poolSeatP } = zcf.makeEmptySeatKit();
   const { zcfSeat: protocolSeatP } = zcf.makeEmptySeatKit();

@@ -144,7 +144,7 @@ export const makeVoterTool = async (
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
- * @returns {Promise<Payment>}
+ * @returns {Promise<Payment<'nat'>>}
  */
 export const mintRunPayment = async (
   value,

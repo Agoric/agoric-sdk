@@ -48,7 +48,7 @@ const installContracts = async (zoe, cb) => {
 /**
  * Provide initial values for governed vault manager params.
  *
- * @param {Brand} debtBrand
+ * @param {Brand<'nat'>} debtBrand
  * @returns {VaultManagerParamValues}
  */
 const makeRates = debtBrand => {

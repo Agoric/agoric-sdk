@@ -92,7 +92,7 @@ export const Phase = /** @type {const} */ ({
 /**
  * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500
  *
- * @param {Brand} debtBrand
+ * @param {Brand<'nat'>} debtBrand
  */
 const defaultParamValues = debtBrand =>
   harden({
@@ -414,7 +414,7 @@ const setupServices = async (
     runKit: { issuer: run.issuer, brand: run.brand },
     priceAuthority,
     reserveFacets,
-    /** @param {Brand} baseBrand */
+    /** @param {Brand<'nat'>} baseBrand */
     getLiquidityBrand: baseBrand =>
       E(ammFacets.ammPublicFacet)
         .getLiquidityIssuer(baseBrand)

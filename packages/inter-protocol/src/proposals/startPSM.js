@@ -237,6 +237,8 @@ export const makeAnchorAsset = async (
       },
     }),
   );
+  /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
+  // @ts-expect-error cast
   const { creatorFacet: mint, publicFacet: issuerP } = E.get(
     E(zoe).startInstance(mintHolder, {}, terms),
   );

@@ -14,7 +14,7 @@ const DISPLAY_INFO = harden({ decimalPlaces: 6 });
  * @param {ZCF} zcf
  * @param {(Brand) => boolean} isInSecondaries
  * @param {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<Brand, ZCFMint>} brandToLiquidityMintProvider
- * @param {() => (secondaryBrand: Brand) => Promise<void>} getAddIssuerToReserve
+ * @param {() => (secondaryBrand: Brand<'nat'>) => Promise<void>} getAddIssuerToReserve
  */
 export const makeAddIssuer = (
   zcf,
@@ -66,7 +66,7 @@ export const makeAddIssuer = (
       });
     };
 
-    /** @type {(brand: Brand) => Promise<void>} */
+    /** @type {(brand: Brand<'nat'>) => Promise<void>} */
     const finish = brand => {
       // defer lookup until necessary. more aligned with governed
       // param we expect this to be eventually.
@@ -131,6 +131,8 @@ export const makeAddPoolInvitation = (
         .get(secondaryBrand)
         .getIssuerRecord();
 
+    /** @type {Amount<'nat'>} */
+    // @ts-expect-error cast governance types
     const minPoolLiquidity = ammPowers.params.getMinInitialPoolLiquidity();
 
     if (proposalWant.Liquidity) {
@@ -155,7 +157,6 @@ export const makeAddPoolInvitation = (
       );
     const minLiqAmount = AmountMath.make(
       liquidityBrand,
-      // @ts-expect-error known nat
       minPoolLiquidity.value,
     );
 

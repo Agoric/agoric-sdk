@@ -125,9 +125,9 @@ export const calculateCompoundedInterest = (
 
 /**
  *
- *
- * @param {ZCFMint} mint
- * @param {Amount} debt
+ * @template {AssetKind} K
+ * @param {ZCFMint<K>} mint
+ * @param {Amount<K>} debt
  */
 const validatedBrand = (mint, debt) => {
   const { brand: debtBrand } = debt;
@@ -143,7 +143,7 @@ const validatedBrand = (mint, debt) => {
  * Charge interest accrued between `latestInterestUpdate` and `accruedUntil`.
  *
  * @param {{
- *  mint: ZCFMint,
+ *  mint: ZCFMint<'nat'>,
  *  mintAndReallocateWithFee: MintAndReallocate,
  *  poolIncrementSeat: ZCFSeat,
  *  seatAllocationKeyword: Keyword }} powers
