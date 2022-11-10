@@ -15,19 +15,25 @@
   },
   "type": "module",
   "exports": {
-    "./swingset/msgs.js": "./gen/agoric/swingset/msgs.js",
-    "./swingset/msgs.ts": "./gen/agoric/swingset/msgs.ts",
-    "./swingset/query.js": "./gen/agoric/swingset/query.js",
-    "./swingset/query.ts": "./gen/agoric/swingset/query.ts",
-    "./swingset/swingset.js": "./gen/agoric/swingset/swingset.js",
-    "./swingset/swingset.ts": "./gen/agoric/swingset/swingset.ts",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./swingset/msgs.js": {
+      "types": "./swingset/msgs.d.ts",
+      "default": "./swingset/msgs.js"
+    },
+    "./swingset/query.js": {
+      "types": "./swingset/query.d.ts",
+      "default": "./swingset/query.js"
+    },
+    "./swingset/swingset.js": {
+      "types": "./swingset/swingset.d.ts",
+      "default": "./swingset/swingset.js"
+    }
   },
   "scripts": {
-    "build": "echo Use yarn rebuild",
-    "rebuild": "rm -rf gen && mkdir -p gen && yarn build:ts && yarn build:js && prettier -w .",
-    "build:ts": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=true' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
-    "build:js": "tsc --build jsconfig.json",
+    "build": "echo Use yarn rebuild to update dist output",
+    "rebuild": "rm -rf gen && mkdir -p gen && yarn generate && tsc --build && yarn prettier -w swingset",
+    "generate": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=messages' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
+    "prepack": "yarn rebuild",
     "test": "node test/sanity-test.js",
     "test:xs": "exit 0",
     "lint": "exit 0",
@@ -37,13 +43,12 @@
     "protobufjs": "^7.0.0"
   },
   "devDependencies": {
-    "ts-proto": "^1.121.1"
+    "ts-proto": "^1.131.0"
   },
   "files": [
-    "build",
+    "dist",
     "LICENSE*",
-    "swingset",
-    "gen"
+    "swingset"
   ],
   "publishConfig": {
     "access": "public"
