@@ -72,10 +72,10 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {Baggage} issuerBaggage
  * @param {string} name
  * @param {K} assetKind
- * @param {DisplayInfo} displayInfo
+ * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
  * @param {ShutdownWithFailure=} optShutdownWithFailure
- * @returns {PaymentLedger}
+ * @returns {import('./types.js').PaymentLedger<K>}
  */
 export const vivifyPaymentLedger = (
   issuerBaggage,
@@ -85,7 +85,7 @@ export const vivifyPaymentLedger = (
   elementShape,
   optShutdownWithFailure = undefined,
 ) => {
-  /** @type {Brand} */
+  /** @type {Brand<K>} */
   const brand = vivifyFarInstance(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
@@ -384,7 +384,7 @@ export const vivifyPaymentLedger = (
     }),
   );
 
-  /** @type {Issuer} */
+  /** @type {Issuer<K>} */
   const issuer = vivifyFarInstance(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
@@ -482,7 +482,7 @@ export const vivifyPaymentLedger = (
     },
   });
 
-  /** @type {Mint} */
+  /** @type {Mint<K>} */
   const mint = vivifyFarInstance(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;

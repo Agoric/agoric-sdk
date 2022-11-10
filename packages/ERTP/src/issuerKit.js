@@ -11,6 +11,7 @@ import { vivifyPaymentLedger } from './paymentLedger.js';
 import './types-ambient.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @typedef {import('./types').ShutdownWithFailure} ShutdownWithFailure */
 
 /**
  * @template {AssetKind} K
@@ -111,7 +112,7 @@ export const makeDurableIssuerKit = (
 harden(makeDurableIssuerKit);
 
 /**
- * @template {AssetKind} K
+ * @template {AssetKind} [K='nat']
  * The name becomes part of the brand in asset descriptions.
  * The name is useful for debugging and double-checking
  * assumptions, but should not be trusted wrt any external namespace.
@@ -126,7 +127,7 @@ harden(makeDurableIssuerKit);
  *  `displayInfo` gives information to the UI on how to display the amount.
  *
  * @param {string} name
- * @param {K} [assetKind=AssetKind.NAT]
+ * @param {K} [assetKind='nat']
  * @param {AdditionalDisplayInfo} [displayInfo={}]
  * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it

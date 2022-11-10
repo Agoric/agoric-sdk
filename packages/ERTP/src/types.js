@@ -119,7 +119,7 @@ export {};
  * @returns {Promise<boolean>}
  */
 /**
- * @template {AssetKind} [K=AssetKind]
+ * @template {AssetKind} K
  * @callback IssuerGetAmountOf
  *
  * Get the amount of digital assets in the payment. Because the
@@ -182,6 +182,7 @@ export {};
  */
 
 /**
+ * @template {AssetKind} K
  * @callback IssuerSplit
  *
  * Split a single payment into two payments,
@@ -190,9 +191,9 @@ export {};
  * If the payment is a promise, the operation will proceed upon
  * resolution.
  *
- * @param {ERef<Payment>} payment
- * @param {Amount} paymentAmountA
- * @returns {Promise<Payment[]>}
+ * @param {ERef<Payment<K>>} payment
+ * @param {Amount<K>} paymentAmountA
+ * @returns {Promise<Payment<K>[]>}
  */
 
 /**
@@ -241,7 +242,7 @@ export {};
  * @property {IssuerBurn} burn
  * @property {IssuerClaim<K>} claim
  * @property {IssuerCombine} combine
- * @property {IssuerSplit} split
+ * @property {IssuerSplit<K>} split
  * @property {IssuerSplitMany} splitMany
  */
 
@@ -320,10 +321,11 @@ export {};
  */
 
 /**
+ * @template {AssetKind} K
  * @callback PurseDeposit
- * @param {Payment} payment
+ * @param {Payment<K>} payment
  * @param {Pattern=} optAmountShape
- * @returns {Amount}
+ * @returns {Amount<K>}
  */
 
 /**
@@ -346,7 +348,7 @@ export {};
  * @property {() => Notifier<Amount<K>>} getCurrentAmountNotifier
  * Get a lossy notifier for changes to this purse's balance.
  *
- * @property {PurseDeposit} deposit
+ * @property {PurseDeposit<K>} deposit
  * Deposit all the contents of payment into this purse, returning the
  * amount. If the optional argument `optAmount` does not equal the
  * amount of digital assets in the payment, throw an error.
@@ -356,7 +358,7 @@ export {};
  * @property {() => DepositFacet} getDepositFacet
  * Return an object whose `receive` method deposits to the current Purse.
  *
- * @property {(amount: Amount<K>) => Payment} withdraw
+ * @property {(amount: Amount<K>) => Payment<K>} withdraw
  * Withdraw amount from this purse into a new Payment.
  *
  * @property {() => CopySet<Payment<K>>} getRecoverySet
@@ -469,10 +471,4 @@ export {};
 
 /**
  * @typedef {MathHelpers<CopyBagValue>} CopyBagMathHelpers
- */
-
-/**
- * @callback AssertAssetKind
- * @param {AssetKind} allegedAK
- * @returns {void}
  */

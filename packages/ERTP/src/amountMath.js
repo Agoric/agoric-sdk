@@ -21,7 +21,10 @@ const AssetKind = harden({
 });
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
-/** @type {AssertAssetKind} */
+/**
+ *
+ * @param {AssetKind} allegedAK
+ */
 const assertAssetKind = allegedAK => {
   assetKindNames.includes(allegedAK) ||
     assert.fail(
@@ -69,12 +72,6 @@ harden(assertAssetKind);
  * each other.
  */
 
-/** @type {{
- *   nat: NatMathHelpers,
- *   set: SetMathHelpers,
- *   copySet: CopySetMathHelpers,
- *   copyBag: CopyBagMathHelpers
- * }} */
 const helpers = {
   nat: natMathHelpers,
   set: setMathHelpers,
@@ -84,7 +81,7 @@ const helpers = {
 
 /**
  * @template {AmountValue} V
- * @type {(value: V) => AssetKindForValue<V>}
+ * @type {(value: V) => import('./types').AssetKindForValue<V>}
  */
 const assertValueGetAssetKind = value => {
   const passStyle = passStyleOf(value);
@@ -122,7 +119,7 @@ const assertValueGetAssetKind = value => {
  *
  * @template {AmountValue} V
  * @param {V} value
- * @returns {MathHelpers<V>}
+ * @returns {import('./types').MathHelpers<V>}
  */
 export const assertValueGetHelpers = value =>
   // @ts-expect-error cast
@@ -145,7 +142,7 @@ const optionalBrandCheck = (allegedBrand, brand) => {
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
  * @param {Brand<K> | undefined} brand
- * @returns {MathHelpers<*>}
+ * @returns {import('./types').MathHelpers<*>}
  */
 const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
   assertRecord(leftAmount, 'leftAmount');
@@ -173,7 +170,7 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
 
 /**
  * @template {AssetKind} K
- * @param {MathHelpers<AssetValueForKind<K>>} h
+ * @param {import('./types').MathHelpers<import('./types').AssetValueForKind<K>>} h
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
  * @returns {[K, K]}
@@ -198,7 +195,7 @@ const AmountMath = {
    *
    * @template {AssetKind} [K=AssetKind]
    * @param {Brand<K>} brand
-   * @param {AssetValueForKind<K>} allegedValue
+   * @param {import('./types').AssetValueForKind<K>} allegedValue
    * @returns {Amount<K>}
    */
   // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
@@ -234,7 +231,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Brand<K>} brand
    * @param {Amount<K>} amount
-   * @returns {AssetValueForKind<K>}
+   * @returns {import('./types').AssetValueForKind<K>}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   /**
@@ -242,8 +239,8 @@ const AmountMath = {
    * identity element for MathHelpers.add and MatHelpers.subtract.
    *
    * @type {{
-   *   (brand: Brand<'nat'>): Amount<'nat'>;
-   *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
+   *   (brand: Brand): Amount<'nat'>;
+   *   <K extends AssetKind>(brand: Brand, assetKind: K): Amount<K>;
    * }}
    */
   makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {

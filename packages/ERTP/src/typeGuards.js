@@ -84,7 +84,7 @@ export const AmountShape = harden({
  * Returns true if value is a Nat bigint.
  *
  * @param {AmountValue} value
- * @returns {value is NatValue}
+ * @returns {value is import('./types.js').NatValue}
  */
 export const isNatValue = value => matches(value, NatValueShape);
 harden(isNatValue);

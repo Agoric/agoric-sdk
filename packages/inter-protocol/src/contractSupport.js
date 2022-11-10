@@ -19,10 +19,11 @@ export const ratioPattern = harden({
  * on a proposal. We use two Amounts because an Amount cannot represent
  * a negative number (so we use a "loss" that will be subtracted).
  *
- * @param {Amount} base
- * @param {Amount} gain
- * @param {Amount} loss
- * @returns {Amount}
+ * @template {AssetKind} K
+ * @param {Amount<K>} base
+ * @param {Amount<K>} gain
+ * @param {Amount<K>} loss
+ * @returns {Amount<K>}
  */
 export const addSubtract = (base, gain, loss) =>
   AmountMath.subtract(AmountMath.add(base, gain), loss);
