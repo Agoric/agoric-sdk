@@ -102,11 +102,9 @@ const makeMultiCandidateVoteCounter = (
       return;
     }
 
-    const sortedPositions = stats.results.sort((a, b) => {
-      if (a.total < b.total) return 1;
-      if (a.total > b.total) return -1;
-      return 0;
-    });
+    const sortedPositions = stats.results.sort((a, b) =>
+      Number(b.total - a.total),
+    );
 
     let winningPositions = [];
     for (const position of sortedPositions) {
