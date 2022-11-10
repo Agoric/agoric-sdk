@@ -34,6 +34,7 @@ const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {
       positions,
       electionType,
       maxChoices: 1,
+      maxWinners: 1,
       closingRule,
       quorumRule,
       tieOutcome: positions[1],
