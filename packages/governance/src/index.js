@@ -7,7 +7,7 @@ export {
   QuorumRule,
   coerceQuestionSpec,
   positionIncluded,
-  buildUnrankedQuestion,
+  buildQuestion,
 } from './question.js';
 
 export {
