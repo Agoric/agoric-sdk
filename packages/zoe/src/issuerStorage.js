@@ -165,20 +165,24 @@ export const provideIssuerStorage = zcfBaggage => {
   };
 
   /**
-   * @param {Issuer} issuer
-   * @returns {Brand}
+   * @template {AssetKind} K
+   * @param {Issuer<K>} issuer
+   * @returns {Brand<K>}
    */
   const getBrandForIssuer = issuer => {
     assertInstantiated();
+    // @ts-expect-error cast
     return issuerToIssuerRecord.get(issuer).brand;
   };
 
   /**
-   * @param {Brand} brand
-   * @returns {Issuer}
+   * @template {AssetKind} K
+   * @param {Brand<K>} brand
+   * @returns {Issuer<K>}
    */
   const getIssuerForBrand = brand => {
     assertInstantiated();
+    // @ts-expect-error cast
     return brandToIssuerRecord.get(brand).issuer;
   };
 

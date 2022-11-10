@@ -335,9 +335,9 @@ const start = async zcf => {
    * `getOutputForGivenInput` calculates the result of a trade, given a certain
    * amount of digital assets in.
    *
-   * @param {Amount} amountIn - the amount of digital
+   * @param {Amount<'nat'>} amountIn - the amount of digital
    * assets to be sent in
-   * @param {Brand} brandOut - The brand of asset desired
+   * @param {Brand<'nat'>} brandOut - The brand of asset desired
    */
   const getOutputForGivenInput = (amountIn, brandOut) => {
     const inputReserve = getPoolAmount(amountIn.brand).value;
@@ -358,8 +358,8 @@ const start = async zcf => {
    * `getInputForGivenOutput` calculates the amount of assets required to be
    * provided in order to obtain a specified gain.
    *
-   * @param {Amount} amountOut - the amount of digital assets desired
-   * @param {Brand} brandIn - The brand of asset desired
+   * @param {Amount<'nat'>} amountOut - the amount of digital assets desired
+   * @param {Brand<'nat'>} brandIn - The brand of asset desired
    */
   const getInputForGivenOutput = (amountOut, brandIn) => {
     const inputReserve = getPoolAmount(brandIn).value;

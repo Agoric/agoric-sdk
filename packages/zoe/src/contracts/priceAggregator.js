@@ -28,6 +28,7 @@ import {
 } from '../contractSupport/ratio.js';
 
 import '../../tools/types.js';
+import '@agoric/ertp/src/types-ambient.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -65,6 +66,8 @@ const start = async (zcf, privateArgs) => {
 
   const quoteMint =
     privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
+  /** @type {IssuerRecord<'set'>} */
+  // xxx saveIssuer not generic
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -162,7 +165,7 @@ const start = async (zcf, privateArgs) => {
       }
 
       /**
-       * @param {Amount} amountIn the given amountIn
+       * @param {Amount<'nat'>} amountIn the given amountIn
        * @returns {Amount} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
@@ -170,7 +173,7 @@ const start = async (zcf, privateArgs) => {
       };
 
       /**
-       * @param {Amount} amountOut the wanted amountOut
+       * @param {Amount<'nat'>} amountOut the wanted amountOut
        * @returns {Amount} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {

@@ -12,7 +12,7 @@ export const setup = () => {
     simoleans: simoleanKit,
     bucks: bucksKit,
   };
-  /** @type {Store<string, Brand>} */
+  /** @type {Store<string, Brand<'nat'>>} */
   const brands = makeStore('brandName');
 
   for (const k of Object.getOwnPropertyNames(allIssuerKits)) {
@@ -22,24 +22,24 @@ export const setup = () => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
-  /** @type {(brand: Brand) => (value: AmountValue) => Amount} */
+  /** @type {<K extends AssetKind>(brand: Brand<K>) => (value: any) => Amount<K>} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
   /**
    * @typedef {object} BasicMints
-   * @property {Issuer} moolaIssuer
-   * @property {Mint} moolaMint
-   * @property {IssuerKit} moolaKit
-   * @property {Issuer} simoleanIssuer
-   * @property {Mint} simoleanMint
-   * @property {IssuerKit} simoleanKit
-   * @property {Issuer} bucksIssuer
-   * @property {Mint} bucksMint
-   * @property {IssuerKit} bucksKit
-   * @property {Store<string, Brand>} brands
-   * @property {(value: AmountValue) => Amount} moola
-   * @property {(value: AmountValue) => Amount} simoleans
-   * @property {(value: AmountValue) => Amount} bucks
+   * @property {Issuer<'nat'>} moolaIssuer
+   * @property {Mint<'nat'>} moolaMint
+   * @property {IssuerKit<'nat'>} moolaKit
+   * @property {Issuer<'nat'>} simoleanIssuer
+   * @property {Mint<'nat'>} simoleanMint
+   * @property {IssuerKit<'nat'>} simoleanKit
+   * @property {Issuer<'nat'>} bucksIssuer
+   * @property {Mint<'nat'>} bucksMint
+   * @property {IssuerKit<'nat'>} bucksKit
+   * @property {Store<string, Brand<'nat'>>} brands
+   * @property {(value: NatValue) => Amount<'nat'>} moola
+   * @property {(value: NatValue) => Amount<'nat'>} simoleans
+   * @property {(value: NatValue) => Amount<'nat'>} bucks
    * @property {ZoeService} zoe
    * @property {*} vatAdminState
    */

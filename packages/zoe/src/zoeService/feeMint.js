@@ -19,8 +19,8 @@ export const defaultFeeIssuerConfig = harden(
  * @returns {{
  *    getFeeMintAccess: () => FeeMintAccess,
  *    getFeeIssuerKit: GetFeeIssuerKit,
- *    getFeeIssuer: () => Issuer,
- *    getFeeBrand: () => Brand,
+ *    getFeeIssuer: () => Issuer<'nat'>,
+ *    getFeeBrand: () => Brand<'nat'>,
  * }}
  */
 const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {

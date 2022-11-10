@@ -11,6 +11,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
     want: { Ask: minBid },
   } = sellSeat.getProposal();
 
+  /** @type {Brand<'nat'>} */
   const bidBrand = minBid.brand;
   const emptyBid = AmountMath.makeEmpty(bidBrand);
 
@@ -21,6 +22,7 @@ export const calcWinnerAndClose = (zcf, sellSeat, bidSeats) => {
   bidSeats.forEach(bidSeat => {
     if (!bidSeat.hasExited()) {
       activeBidsCount += 1n;
+      /** @type {Amount<'nat'>} */
       const bid = bidSeat.getAmountAllocated('Bid', bidBrand);
       // bidSeat is added in time order, in case of a tie, we privilege the earlier.
       // So the later bidder will need a strictly greater bid to win the auction.

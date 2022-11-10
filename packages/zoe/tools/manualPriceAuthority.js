@@ -15,7 +15,7 @@ import {
  * @param {Brand} options.actualBrandOut
  * @param {Ratio} options.initialPrice
  * @param {TimerService} options.timer
- * @param {IssuerKit} [options.quoteIssuerKit]
+ * @param {IssuerKit<'set'>} [options.quoteIssuerKit]
  * @returns {PriceAuthority & { setPrice: (Ratio) => void }}
  */
 export function makeManualPriceAuthority(options) {

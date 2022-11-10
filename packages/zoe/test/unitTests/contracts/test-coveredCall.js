@@ -966,6 +966,7 @@ test('zoe - coveredCall non-fungible', async t => {
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
+  /** @type {Payment<any>} */
   const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   t.is(optionValue.installation, coveredCallInstallation);
@@ -1000,9 +1001,13 @@ test('zoe - coveredCall non-fungible', async t => {
     `The option was exercised. Please collect the assets in your payout.`,
   );
 
+  /** @type {Payment<any>} */
   const bobCcPayout = await E(bobSeat).getPayout('UnderlyingAsset');
+  /** @type {Payment<any>} */
   const bobRpgPayout = await E(bobSeat).getPayout('StrikePrice');
+  /** @type {Payment<any>} */
   const aliceCcPayout = await E(aliceSeat).getPayout('UnderlyingAsset');
+  /** @type {Payment<any>} */
   const aliceRpgPayout = await E(aliceSeat).getPayout('StrikePrice');
 
   // Alice gets what Alice wanted

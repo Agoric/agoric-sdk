@@ -36,8 +36,8 @@
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer<'set'>} getInvitationIssuer
  * @property {() => StandardTerms & CT} getTerms
- * @property {(issuer: Issuer) => Brand} getBrandForIssuer
- * @property {(brand: Brand) => Issuer} getIssuerForBrand
+ * @property {<K extends AssetKind>(issuer: Issuer<K>) => Brand<K>} getBrandForIssuer
+ * @property {<K extends AssetKind>(brand: Brand<K>) => Issuer<K>} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
  * @property {<K extends AssetKind = 'nat'>(keyword: Keyword, assetKind?: K, displayInfo?: AdditionalDisplayInfo) => Promise<ZCFMint<K>>} makeZCFMint
  * @property {ZCFRegisterFeeMint} registerFeeMint
@@ -81,7 +81,7 @@
  *
  * @param {ERef<Issuer>} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord>} Issuer is added and ready
+ * @returns {Promise<IssuerRecord<K>>} Issuer is added and ready
  */
 
 /**
