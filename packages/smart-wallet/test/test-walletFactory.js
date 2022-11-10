@@ -59,7 +59,8 @@ test('bridge handler', async t => {
     },
   });
   t.like(await headValue(current), {
-    lastOfferId: 0,
+    // error because it's deprecated
+    lastOfferId: -1,
   });
 
   assert(t.context.sendToBridge);
@@ -84,13 +85,6 @@ test('bridge handler', async t => {
       error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });
-  t.like(
-    await headValue(current),
-    {
-      lastOfferId: 0,
-    },
-    'offer ID didn’t update',
-  );
 });
 
 test.todo('spend action over bridge');

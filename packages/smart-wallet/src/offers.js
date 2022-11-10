@@ -31,7 +31,6 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {{ receive: (payment: *) => Promise<Amount> }} opts.depositFacet
  * @param {ERef<Issuer<'set'>>} opts.invitationIssuer
  * @param {object} opts.powers
- * @param {import('./types').Cell<number>} opts.powers.lastOfferId
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
@@ -46,7 +45,7 @@ export const makeOfferExecutor = ({
   onStatusChange,
   onNewContinuingOffer,
 }) => {
-  const { invitationFromSpec, lastOfferId, logger, purseForBrand } = powers;
+  const { invitationFromSpec, logger, purseForBrand } = powers;
 
   return {
     /**
@@ -88,9 +87,6 @@ export const makeOfferExecutor = ({
       try {
         // 1. Prepare values and validate synchronously.
         const { id, invitationSpec, proposal, offerArgs } = offerSpec;
-        // consume id immediately so that all errors can pertain to a particular offer id.
-        // This also serves to validate the new id.
-        lastOfferId.set(id);
 
         const invitation = invitationFromSpec(invitationSpec);
         const invitationAmount = await E(invitationIssuer).getAmountOf(
