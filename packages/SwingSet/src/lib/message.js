@@ -12,7 +12,7 @@ import { insistCapData } from './capdata.js';
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @returns {asserts message is Message}
+ * @returns {asserts message is import('../types-external.js').Message}
  */
 
 export function insistMessage(message) {

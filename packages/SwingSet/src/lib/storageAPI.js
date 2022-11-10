@@ -130,7 +130,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  * Create a StorageAPI object that buffers writes to a wrapped StorageAPI object
  * until told to commit (or abort) them.
  *
- * @param {KVStore} kvStore  The StorageAPI object to wrap
+ * @param {import('@agoric/swing-store').KVStore} kvStore  The StorageAPI object to wrap
  * @param {{
  *   onGet?: (key: string, value: string) => void, // a callback invoked after getting a value from kvStore
  *   onPendingSet?: (key: string, value: string) => void, // a callback invoked after a new uncommitted value is set
@@ -139,7 +139,7 @@ function* mergeUtf16SortedIterators(it1, it2) {
  *   onAbort?: () => void, // a callback invoked after pending operations have been aborted
  * }} listeners  Optional callbacks to be invoked when respective events occur
  *
- * @returns {{kvStore: KVStore, commit: () => void, abort: () => void}}
+ * @returns {{kvStore: import('@agoric/swing-store').KVStore, commit: () => void, abort: () => void}}
  */
 export function makeBufferedStorage(kvStore, listeners = {}) {
   insistStorageAPI(kvStore);
