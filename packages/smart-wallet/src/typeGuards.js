@@ -27,7 +27,7 @@ export const shape = {
   ContinuingInvitationSpec: M.split(
     {
       source: 'continuing',
-      previousOffer: M.number(),
+      previousOffer: M.or(M.number(), M.string()),
       invitationMakerName: M.string(),
     },
     M.partial({
@@ -43,7 +43,7 @@ export const shape = {
   // offers
   OfferSpec: M.split(
     {
-      id: M.number(),
+      id: M.or(M.number(), M.string()),
       // TODO M.unknown() to defer validation
       invitationSpec: M.any(),
       proposal: ProposalShape,

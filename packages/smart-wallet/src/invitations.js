@@ -30,7 +30,7 @@ import '@agoric/zoe/exported.js';
  * }} PurseInvitationSpec
  * @typedef {{
  * source: 'continuing',
- * previousOffer: number,
+ * previousOffer: import('./offers.js').OfferId,
  * invitationMakerName: string,
  * invitationArgs?: any[],
  * }} ContinuingInvitationSpec
@@ -45,7 +45,7 @@ import '@agoric/zoe/exported.js';
  * @param {ERef<ZoeService>} zoe
  * @param {Brand<'set'>} invitationBrand
  * @param {Purse<'set'>} invitationsPurse
- * @param {(fromOfferId: number) => import('./types').RemoteInvitationMakers} getInvitationContinuation
+ * @param {(fromOfferId: import('./offers.js').OfferId) => import('./types').RemoteInvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
   zoe,

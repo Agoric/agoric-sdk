@@ -133,7 +133,6 @@ test('want stable', async t => {
 
   const wallet = await t.context.simpleProvideWallet('agoric1wantstable');
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
-  const currentSub = E(wallet).getCurrentSubscriber();
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
@@ -141,7 +140,6 @@ test('want stable', async t => {
   await eventLoopIteration();
 
   t.is(purseBalance(computedState, anchor.brand), 0n);
-  t.like(await headValue(currentSub), { lastOfferId: 0 });
 
   t.log('Fund the wallet');
   assert(anchor.mint);
@@ -172,9 +170,6 @@ test('want stable', async t => {
   await eventLoopIteration();
   t.is(purseBalance(computedState, anchor.brand), 0n);
   t.is(purseBalance(computedState, stableBrand), swapSize); // assume 0% fee
-
-  const currentState = await headValue(currentSub);
-  t.like(currentState, { lastOfferId: 1 });
 });
 
 test('govern offerFilter', async t => {
@@ -349,7 +344,6 @@ test('govern offerFilter', async t => {
   await offersFacet.executeOffer(voteOffer);
   await eventLoopIteration();
 
-  t.is(offersFacet.getLastOfferId(), 47);
   // can't advance the clock, so the vote won't close. Call it enuf that the
   // vote didn't raise an error.
 });
