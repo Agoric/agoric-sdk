@@ -53,12 +53,12 @@
 
 /**
  * @callback GetInvitationIssuer
- * @returns {Promise<Issuer>}
+ * @returns {Promise<Issuer<'set'>>}
  */
 
 /**
  * @callback GetFeeIssuer
- * @returns {Promise<Issuer>}
+ * @returns {Promise<Issuer<'nat'>>}
  */
 
 /**
@@ -203,7 +203,7 @@
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
- * @property {(keyword: Keyword) => Promise<Payment>} getPayout
+ * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout
  * @property {() => Promise<OR>} getOfferResult
  * @property {() => void} [tryExit]
  * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
@@ -238,7 +238,7 @@
  */
 
 /**
- * @typedef {Record<Keyword,Amount>} AmountKeywordRecord
+ * @typedef {Record<Keyword, Amount<any>>} AmountKeywordRecord
  *
  * The keys are keywords, and the values are amounts. For example:
  * { Asset: AmountMath.make(assetBrand, 5n), Price:
@@ -307,8 +307,8 @@
  */
 
 /**
- * @typedef {Record<Keyword,ERef<Payment>>} PaymentPKeywordRecord
- * @typedef {Record<Keyword,Payment>} PaymentKeywordRecord
+ * @typedef {Record<Keyword,ERef<Payment<any>>>} PaymentPKeywordRecord
+ * @typedef {Record<Keyword,Payment<any>>} PaymentKeywordRecord
  */
 
 /**

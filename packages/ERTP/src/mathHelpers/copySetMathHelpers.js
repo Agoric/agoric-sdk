@@ -8,7 +8,7 @@ import {
   setDisjointUnion,
   setDisjointSubtract,
 } from '@agoric/store';
-import '../types.js';
+import '../types-ambient.js';
 
 /** @type {CopySetValue} */
 const empty = makeCopySet([]);

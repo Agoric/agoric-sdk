@@ -158,7 +158,6 @@ test('zoe with automaticRefund', async t => {
   const exclusBobInvitation = await E(invitationIssuer).claim(bobInvitation);
 
   const {
-    // @ts-expect-error poor typing of Payment
     value: [bobInvitationValue],
   } = await E(invitationIssuer).getAmountOf(exclusBobInvitation);
   t.is(bobInvitationValue.installation, installation);

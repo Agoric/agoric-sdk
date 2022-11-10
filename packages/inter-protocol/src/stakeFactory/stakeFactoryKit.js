@@ -20,9 +20,9 @@ const trace = makeTracer('R1');
  * Calculate the fee, the amount to mint and the resulting debt.
  *
  * @param {Ratio} feeCoeff fee coefficient
- * @param {Amount} currentDebt
- * @param {Amount} giveAmount
- * @param {Amount} wantAmount
+ * @param {Amount<'nat'>} currentDebt
+ * @param {Amount<'nat'>} giveAmount
+ * @param {Amount<'nat'>} wantAmount
  */
 const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
   const fee = ceilMultiplyBy(wantAmount, feeCoeff);
@@ -34,7 +34,7 @@ const calculateFee = (feeCoeff, currentDebt, giveAmount, wantAmount) => {
 /**
  * @typedef {Readonly<{
  *   collateralBrand: Brand,
- *   debtBrand: Brand,
+ *   debtBrand: Brand<'nat'>,
  *   manager: import('./stakeFactoryManager.js').StakeFactoryManager,
  *   subscriber: Subscriber<unknown>
  *   vaultSeat: ZCFSeat,
@@ -205,7 +205,7 @@ const helperBehavior = {
    * but not for interest accrual.
    *
    * @param {MethodContext} context
-   * @param {Amount} newDebt - principal and all accrued interest
+   * @param {Amount<'nat'>} newDebt - principal and all accrued interest
    */
   updateDebtSnapshot: ({ state }, newDebt) => {
     const { manager } = state;
@@ -219,8 +219,8 @@ const helperBehavior = {
    * maintain aggregate debt and liquidation order.
    *
    * @param {MethodContext} context
-   * @param {Amount} oldDebt - prior principal and all accrued interest
-   * @param {Amount} newDebt - actual principal and all accrued interest
+   * @param {Amount<'nat'>} oldDebt - prior principal and all accrued interest
+   * @param {Amount<'nat'>} newDebt - actual principal and all accrued interest
    */
   updateDebtAccounting: ({ state, facets }, oldDebt, newDebt) => {
     const { manager } = state;

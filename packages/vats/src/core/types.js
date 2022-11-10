@@ -157,11 +157,11 @@
  * @typedef {{
  *   issuer: {
  *     produce: Record<WellKnownName['issuer'], Producer<Issuer>>,
- *     consume: Record<WellKnownName['issuer'], Promise<Issuer>>,
+ *     consume: Record<WellKnownName['issuer'], Promise<Issuer>> & { BLD: Promise<Issuer<'nat'>>, IST: Promise<Issuer<'nat'>> },
  *   },
  *   brand: {
  *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
- *     consume: Record<WellKnownName['issuer'], Promise<Brand>>,
+ *     consume: Record<WellKnownName['issuer'], Promise<Brand>> & { BLD: Promise<Brand<'nat'>>, IST: Promise<Brand<'nat'>> },
  *   },
  *   oracleBrand: {
  *     produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>,
@@ -201,7 +201,7 @@
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: unknown,
  *   feeMintAccess: FeeMintAccess,
- *   initialSupply: Payment,
+ *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,

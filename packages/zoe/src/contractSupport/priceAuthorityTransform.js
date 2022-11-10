@@ -65,7 +65,6 @@ export const makePriceAuthorityTransform = async ({
       sourceBrandOut,
     );
 
-    /** @type {Amount<'set'>} */
     const { value: sourceQuoteValue } = await E(sourceQuoteIssuer).getAmountOf(
       sourceQuotePayment,
     );

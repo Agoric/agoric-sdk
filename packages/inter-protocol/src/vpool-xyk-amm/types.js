@@ -69,12 +69,12 @@
 /**
  * @typedef {object} XYKPool
  * @property {() => bigint} getLiquiditySupply
- * @property {() => Issuer} getLiquidityIssuer
+ * @property {() => Issuer<'nat'>} getLiquidityIssuer
  * @property {(seat: ZCFSeat) => string} addLiquidity
  * @property {(seat: ZCFSeat) => string} removeLiquidity
  * @property {() => ZCFSeat} getPoolSeat
- * @property {() => Amount} getSecondaryAmount
- * @property {() => Amount} getCentralAmount
+ * @property {() => Amount<'nat'>} getSecondaryAmount
+ * @property {() => Amount<'nat'>} getCentralAmount
  * @property {() => Subscriber<Record<string, Amount>>} getSubscriber
  * @property {() => void} updateState
  * @property {() => PriceAuthority} getToCentralPriceAuthority
@@ -100,7 +100,7 @@
  * @typedef {object} XYKAMMPublicFacet
  * @property {() => Promise<Invitation>} addPoolInvitation
  * add a new liquidity pool
- * @property {(secondaryIssuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer>} addIssuer
+ * @property {(secondaryIssuer: ERef<Issuer>, keyword: Keyword) => Promise<Issuer<'nat'>>} addIssuer
  * @property {() => Promise<Invitation>} makeSwapInvitation synonym for
  * makeSwapInInvitation
  * @property {() => Promise<Invitation>} makeSwapInInvitation make an invitation
@@ -116,24 +116,24 @@
  * ratio of collateral to Central.
  * @property {() => Promise<Invitation>} makeRemoveLiquidityInvitation make an
  * invitation that allows one to remove liquidity from the pool.
- * @property {(brand: Brand) => Issuer} getLiquidityIssuer
- * @property {(brand: Brand) => bigint} getLiquiditySupply get the current value of
+ * @property {(brand: Brand<'nat'>) => Issuer<'nat'>} getLiquidityIssuer
+ * @property {(brand: Brand<'nat'>) => bigint} getLiquiditySupply get the current value of
  * liquidity in the pool for brand held by investors.
- * @property {(brand: Brand) => Issuer} getSecondaryIssuer
+ * @property {(brand: Brand<'nat'>) => Issuer<'nat'>} getSecondaryIssuer
  * @property {(amountIn: Amount, amountOut: Amount) => VPoolPriceQuote} getInputPrice
  * calculate the amount of brandOut that will be returned if the amountIn is
  * offered using makeSwapInInvitation at the current price.
  * @property {(amountOut: Amount, amountIn: Amount) => VPoolPriceQuote} getOutputPrice
  * calculate the amount of brandIn that is required in order to get amountOut
  * using makeSwapOutInvitation at the current price
- * @property {(brand: Brand) => Record<string, Amount>} getPoolAllocation get an
+ * @property {(brand: Brand) => Record<string, Amount<'nat'>>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool for brand.
- * @property {() => Issuer} getQuoteIssuer - get the Issuer that attests to
+ * @property {() => Issuer<'nat'>} getQuoteIssuer - get the Issuer that attests to
  * the prices in the priceQuotes issued by the PriceAuthorities
  * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
  * Prices and notifications about changing prices.
- * @property {() => Brand[]} getAllPoolBrands
+ * @property {() => Brand<'nat'>[]} getAllPoolBrands
  * @property {() => Allocation} getProtocolPoolBalance
  * @property {() => StoredSubscription<MetricsNotification>} getMetrics
  * @property {(brand: Brand) => StoredSubscription<PoolMetricsNotification>} getPoolMetrics

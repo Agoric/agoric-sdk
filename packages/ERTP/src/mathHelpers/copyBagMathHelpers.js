@@ -8,13 +8,13 @@ import {
   bagUnion,
   bagDisjointSubtract,
 } from '@agoric/store';
-import '../types.js';
+import '../types-ambient.js';
 
 /** @type {CopyBagValue} */
 const empty = makeCopyBag([]);
 
 /**
- * @type {CopyBagMathHelpers}
+ * @type {import('../types.js').MathHelpers<CopyBagValue>}
  */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {

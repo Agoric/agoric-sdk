@@ -239,8 +239,8 @@ const manager = {
 
   /**
    * @param {MethodContext} context
-   * @param {Amount} toMint
-   * @param {Amount} fee
+   * @param {Amount<'nat'>} toMint
+   * @param {Amount<'nat'>} fee
    * @param {ZCFSeat} seat
    * @param {...ZCFSeat} otherSeats
    * @returns {void}

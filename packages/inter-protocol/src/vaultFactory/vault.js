@@ -257,7 +257,7 @@ const helperBehavior = {
    * but not for interest accrual.
    *
    * @param {MethodContext} context
-   * @param {Amount} newDebt - principal and all accrued interest
+   * @param {Amount<'nat'>} newDebt - principal and all accrued interest
    */
   updateDebtSnapshot: ({ state }, newDebt) => {
     // update local state
@@ -449,9 +449,9 @@ const helperBehavior = {
    * so the simple math works.
    *
    * @param {MethodContext} context
-   * @param {Amount} currentDebt
-   * @param {Amount} giveAmount
-   * @param {Amount} wantAmount
+   * @param {Amount<'nat'>} currentDebt
+   * @param {Amount<'nat'>} giveAmount
+   * @param {Amount<'nat'>} wantAmount
    */
   loanFee: ({ state }, currentDebt, giveAmount, wantAmount) => {
     const fee = ceilMultiplyBy(

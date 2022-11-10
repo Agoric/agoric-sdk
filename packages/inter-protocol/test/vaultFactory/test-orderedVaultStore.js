@@ -9,6 +9,7 @@ import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
 import { makeFakeVault } from './interestSupport.js';
 
+/** @type {Brand<'nat'>} */
 const brand = Far('brand');
 
 const mockVault = (vaultId, runCount, collateralCount) => {

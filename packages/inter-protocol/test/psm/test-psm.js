@@ -86,7 +86,7 @@ const makeTestContext = async () => {
   const { zoe, feeMintAccess } = setUpZoeForTest();
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
-  /** @type {IssuerKit} */
+  /** @type {IssuerKit<'nat'>} */
   // @ts-expect-error missing mint but it's not needed in the test
   const mintedKit = {
     issuer: mintedIssuer,

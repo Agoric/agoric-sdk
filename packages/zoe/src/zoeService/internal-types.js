@@ -124,7 +124,7 @@
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
- * @property {Issuer} invitationIssuer
+ * @property {Issuer<'set'>} invitationIssuer
  * @property {InstallBundle} installBundle
  * @property {InstallBundleID} installBundleID
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
@@ -151,5 +151,5 @@
 /**
  * @callback GetFeeIssuerKit
  * @param {FeeMintAccess} feeMintAccess
- * @returns {IssuerKit}
+ * @returns {IssuerKit<'nat'>}
  */

@@ -68,7 +68,7 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
  * >} zcf
  * @param {{
  *   feeMintAccess: FeeMintAccess,
- *   initialPoserInvitation: Payment,
+ *   initialPoserInvitation: Invitation,
  *   marshaller: ERef<Marshaller>,
  *   storageNode: ERef<StorageNode>,
  * }} privateArgs
@@ -93,7 +93,7 @@ const start = async (zcf, privateArgs, baggage) => {
    */
   const brandForKeyword = provideDurableMapStore(baggage, 'brandForKeyword');
   /**
-   * @type {MapStore<Brand, Brand>}
+   * @type {MapStore<Brand<'nat'>, Brand<'nat'>>}
    */
   const liquidityBrandForBrand = provideDurableMapStore(
     baggage,
@@ -112,7 +112,6 @@ const start = async (zcf, privateArgs, baggage) => {
     baggage.init('feeMint', feeMintTemp);
     return feeMintTemp;
   };
-  /** @type {ZCFMint} */
   const feeMint = await takeFeeMint();
   const feeKit = feeMint.getIssuerRecord();
   const emptyAmount = AmountMath.makeEmpty(feeKit.brand);
@@ -169,7 +168,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {MethodContext} _context
-   * @param {Issuer} baseIssuer on which the liquidity issuer is based
+   * @param {Issuer<'nat'>} baseIssuer on which the liquidity issuer is based
    */
   const addLiquidityIssuer = async (_context, baseIssuer) => {
     const getBrand = () => {
@@ -214,7 +213,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {MethodContext} context
-   * @param {Brand} ammSecondaryBrand
+   * @param {Brand<'nat'>} ammSecondaryBrand
    */
   const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
     assert(
@@ -317,8 +316,8 @@ const start = async (zcf, privateArgs, baggage) => {
    * to add Liquidity to a pool in the AMM.
    *
    * @param {MethodContext} context
-   * @param {Amount} collateral
-   * @param {Amount} fee
+   * @param {Amount<'nat'>} collateral
+   * @param {Amount<'nat'>} fee
    */
   const addLiquidityToAmmPool = async ({ state }, collateral, fee) => {
     // verify we have the funds

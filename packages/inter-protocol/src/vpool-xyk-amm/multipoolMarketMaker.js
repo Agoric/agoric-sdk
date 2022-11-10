@@ -56,7 +56,7 @@ const trace = makeTracer('XykAmm', false);
  * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint<'nat'>>,
  * centralBrand: Brand,
  * timer: TimerService,
- * quoteIssuerKit: IssuerKit,
+ * quoteIssuerKit: IssuerKit<'set'>,
  * params: import('@agoric/governance/src/contractGovernance/typedParamManager').Getters<import('./params.js').AmmParams>,
  * protocolSeat: ZCFSeat,
  * }>} AmmPowers
@@ -244,7 +244,7 @@ const start = async (zcf, privateArgs, baggage) => {
     : undefined;
 
   /**
-   * @param {Brand} secondaryBrand
+   * @param {Brand<'nat'>} secondaryBrand
    * @param {ZCFSeat} reserveLiquidityTokenSeat
    * @param {Keyword} liquidityKeyword
    * @returns {Promise<void>} up to caller whether to await or handle rejections

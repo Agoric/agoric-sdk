@@ -29,6 +29,7 @@ export const makeRatio = (
       X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
     );
 
+  // @ts-expect-error cast to return type because make() ensures
   return harden({
     numerator: AmountMath.make(numeratorBrand, numerator),
     denominator: AmountMath.make(denominatorBrand, denominator),

@@ -17,7 +17,7 @@ import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/ind
  * @param {Brand} actualBrandOut
  * @param {TimerService} timer
  * @param {Subscriber<import('./pool').NotificationState>} subscriber
- * @param {IssuerKit} quoteIssuerKit
+ * @param {IssuerKit<'set'>} quoteIssuerKit
  * @returns {PriceAuthority}
  */
 export const makePriceAuthority = (

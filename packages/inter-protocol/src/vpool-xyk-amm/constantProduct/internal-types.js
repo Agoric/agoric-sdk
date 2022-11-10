@@ -41,9 +41,9 @@
 
 /**
  * @callback CalculateFees
- * @param {Amount} amountGiven
+ * @param {Amount<'nat'>} amountGiven
  * @param {PoolAllocation} poolAllocation
- * @param {Amount} amountWanted
+ * @param {Amount<'nat'>} amountWanted
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
  * @param {NoFeeSwapFn} swapFn
@@ -52,9 +52,9 @@
 
 /**
  * @callback InternalSwap
- * @param {Amount} amountGiven
+ * @param {Amount<'nat'>} amountGiven
  * @param {PoolAllocation} poolAllocation
- * @param {Amount} amountWanted
+ * @param {Amount<'nat'>} amountWanted
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
  * @param {NoFeeSwapFn} swapFn
@@ -89,18 +89,18 @@
 
 /**
  * @typedef {object} GetXYResultDeltaX
- * @property {Amount} x
- * @property {Amount} y
- * @property {Amount} deltaX
- * @property {Amount|undefined} deltaY
+ * @property {Amount<'nat'>} x
+ * @property {Amount<'nat'>} y
+ * @property {Amount<'nat'>} deltaX
+ * @property {Amount<'nat'>|undefined} deltaY
  */
 
 /**
  * @typedef {object} GetXYResultDeltaY
- * @property {Amount} x
- * @property {Amount} y
- * @property {Amount} deltaY
- * @property {Amount|undefined} deltaX
+ * @property {Amount<'nat'>} x
+ * @property {Amount<'nat'>} y
+ * @property {Amount<'nat'>} deltaY
+ * @property {Amount<'nat'>|undefined} deltaX
  */
 
 /**

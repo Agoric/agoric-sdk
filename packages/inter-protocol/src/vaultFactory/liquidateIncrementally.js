@@ -154,6 +154,7 @@ const start = async zcf => {
       poolCentral.value,
       NatMath.floorDivide(k, postSaleCollateral.value),
     );
+    /** @type {Amount<'nat'>} */
     const estimateAmount = AmountMath.make(debt.brand, estimateCentral);
     const minAmmProceeds = ceilMultiplyBy(estimateAmount, oneMinus(maxSlip));
     trace('AMM estimate', {

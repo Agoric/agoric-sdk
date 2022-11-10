@@ -131,6 +131,7 @@ const makeMakeAddLiquidityAtRateInvitation = (
     });
 
     const giveAlloc = seat.getProposal().give;
+    /** @type {Amount<'nat'>} */
     const secondaryAmount = giveAlloc.Secondary;
     const secondaryBrand = secondaryAmount.brand;
     const centralBrand = giveAlloc.Central.brand;
