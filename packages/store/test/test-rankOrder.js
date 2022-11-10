@@ -1,4 +1,3 @@
-// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeTagged } from '@endo/marshal';
 import { fc } from '@fast-check/ava';

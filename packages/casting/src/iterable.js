@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { makeNotifier } from '@agoric/notifier';
 

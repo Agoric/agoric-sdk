@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { deeplyFulfilledObject } from '@agoric/internal';

@@ -1,4 +1,3 @@
-// @ts-check
 import '../../../exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';

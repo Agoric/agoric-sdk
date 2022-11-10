@@ -1,5 +1,3 @@
-// @ts-check
-
 /// <reference types="ses"/>
 
 /** @typedef {import('@endo/marshal').Passable} Passable */

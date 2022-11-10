@@ -1,4 +1,3 @@
-// @ts-check
 let debugInstance = 1;
 
 /**

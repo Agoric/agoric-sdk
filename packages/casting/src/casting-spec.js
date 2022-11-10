@@ -1,4 +1,3 @@
-// @ts-check
 import * as encodingStar from '@cosmjs/encoding';
 import { E, getInterfaceOf } from '@endo/far';
 

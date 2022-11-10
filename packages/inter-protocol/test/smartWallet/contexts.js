@@ -1,4 +1,3 @@
-// @ts-check
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';

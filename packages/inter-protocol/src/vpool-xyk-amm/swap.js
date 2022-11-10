@@ -1,4 +1,3 @@
-// @ts-check
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import '@agoric/zoe/exported.js';

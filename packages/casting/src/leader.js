@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { DEFAULT_RETRY_CALLBACK, DEFAULT_JITTER } from './defaults.js';
 import { shuffle } from './shuffle.js';

@@ -1,5 +1,4 @@
 /* eslint-disable no-bitwise */
-// @ts-check
 import {
   passStyleOf,
   nameForPassableSymbol,

@@ -1,4 +1,3 @@
-// @ts-check
 /// <reference types="ses"/>
 /* eslint-disable no-await-in-loop, no-continue, @jessie.js/no-nested-await */
 

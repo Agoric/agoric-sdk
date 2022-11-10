@@ -1,5 +1,3 @@
-// @ts-check
-
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeCopyBag } from '../src/keys/checkKey.js';
 

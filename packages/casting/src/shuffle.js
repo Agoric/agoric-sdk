@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Modern version of Fisher-Yates shuffle algorithm (in-place).
  *

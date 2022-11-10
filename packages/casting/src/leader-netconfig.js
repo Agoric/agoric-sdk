@@ -1,4 +1,3 @@
-// @ts-check
 /* global fetch */
 import { makeRoundRobinLeader } from './leader.js';
 import {

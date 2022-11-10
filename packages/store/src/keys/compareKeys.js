@@ -1,5 +1,3 @@
-// @ts-check
-
 /// <reference types="ses"/>
 
 import { passStyleOf, getTag } from '@endo/marshal';

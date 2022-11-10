@@ -1,4 +1,3 @@
-// @ts-check
 // @jessie-check
 
 import { AmountMath, AssetKind } from '@agoric/ertp';

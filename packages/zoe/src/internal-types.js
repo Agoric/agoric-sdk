@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @typedef {object} SeatData
  * @property {ProposalRecord} proposal

@@ -1,4 +1,3 @@
-// @ts-check
 /// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
 import { E } from '@endo/eventual-send';

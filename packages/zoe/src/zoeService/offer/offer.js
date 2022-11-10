@@ -1,4 +1,3 @@
-// @ts-check
 import { passStyleOf } from '@endo/marshal';
 import { fit } from '@agoric/store';
 

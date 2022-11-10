@@ -1,4 +1,3 @@
-// @ts-check
 // Must be first to set up globals
 import '@endo/init/debug.js';
 // Consider ses-ava once https://github.com/endojs/endo/issues/1235 is resolved

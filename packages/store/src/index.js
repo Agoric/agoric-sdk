@@ -1,5 +1,3 @@
-// @ts-check
-
 export {
   isKey,
   assertKey,

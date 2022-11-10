@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assertChecker, makeTagged, passStyleOf } from '@endo/marshal';
 import {
   compareAntiRank,

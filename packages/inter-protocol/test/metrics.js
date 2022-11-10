@@ -1,4 +1,3 @@
-// @ts-check
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';

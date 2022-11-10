@@ -1,4 +1,3 @@
-// @ts-check
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
 import { makeVaultHolder } from './vaultHolder.js';

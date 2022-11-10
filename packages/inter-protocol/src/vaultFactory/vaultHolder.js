@@ -1,7 +1,6 @@
 /**
  * @file Use-object for the owner of a vault
  */
-// @ts-check
 import '@agoric/zoe/exported.js';
 
 import { makeStoredPublishKit } from '@agoric/notifier';

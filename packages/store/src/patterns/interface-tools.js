@@ -1,4 +1,3 @@
-// @ts-check
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { listDifference, objectMap } from '@agoric/internal';

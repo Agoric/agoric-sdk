@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 import { getManifestForInviteCommittee } from '../src/proposals/committee-proposal.js';

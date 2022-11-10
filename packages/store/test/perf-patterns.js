@@ -1,4 +1,3 @@
-// @ts-check
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies

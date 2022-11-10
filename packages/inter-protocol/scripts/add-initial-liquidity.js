@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/far';

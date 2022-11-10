@@ -1,5 +1,4 @@
 /* eslint-disable consistent-return */
-// @ts-check
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
  *

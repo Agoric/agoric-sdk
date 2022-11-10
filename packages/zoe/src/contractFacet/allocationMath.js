@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath } from '@agoric/ertp';
 
 const { details: X, quote: q } = assert;

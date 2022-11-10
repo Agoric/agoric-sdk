@@ -1,4 +1,3 @@
-// @ts-check
 import { fromVaultKey, toVaultKey } from './storeUtils.js';
 
 /**

@@ -1,4 +1,3 @@
-// @ts-check
 /* global setTimeout */
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';

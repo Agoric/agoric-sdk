@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * @typedef {Readonly<{
  *   address: Address,

@@ -1,4 +1,3 @@
-// @ts-check
 import { Callable } from '@agoric/eventual-send';
 
 import type { Instance, IssuerKeywordRecord, Payment } from './types.js';

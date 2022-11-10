@@ -1,4 +1,3 @@
-// @ts-check
 import '@agoric/zoe/exported.js';
 
 import { E } from '@endo/eventual-send';
