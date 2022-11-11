@@ -59,7 +59,8 @@ test('bridge handler', async t => {
     },
   });
   t.like(await headValue(current), {
-    lastOfferId: 0,
+    // error because it's deprecated
+    lastOfferId: -1,
   });
 
   assert(t.context.sendToBridge);
@@ -84,13 +85,42 @@ test('bridge handler', async t => {
       error: 'Error: no invitation match (0 description and 0 instance)',
     },
   });
-  t.like(
-    await headValue(current),
-    {
-      lastOfferId: 0,
+});
+
+test('bridge with offerId string', async t => {
+  await t.context.simpleProvideWallet(mockAddress2);
+  const ctx = makeImportContext();
+
+  const board = await t.context.consume.board;
+  const someInstance = makeHandle('Instance');
+  ctx.ensureBoardId(board.getId(someInstance), someInstance);
+
+  // fund the wallet with anchor
+
+  /** @type {import('../src/offers.js').OfferSpec} */
+  const offerSpec = {
+    id: 'uniqueString',
+    invitationSpec: {
+      source: 'purse',
+      description: 'bogus',
+      instance: someInstance,
     },
-    'offer ID didn’t update',
-  );
+    proposal: {},
+  };
+  assert(t.context.sendToBridge);
+  const res = await t.context.sendToBridge(BridgeId.WALLET, {
+    type: ActionType.WALLET_SPEND_ACTION,
+    owner: mockAddress2,
+    // consider a helper for each action type
+    spendAction: JSON.stringify(
+      ctx.fromBoard.serialize(
+        harden({ method: 'executeOffer', offer: offerSpec }),
+      ),
+    ),
+    blockTime: 0,
+    blockHeight: 0,
+  });
+  t.is(res, undefined);
 });
 
 test.todo('spend action over bridge');

@@ -100,6 +100,7 @@ const setupParamGovernance = async (
       positions: [positive, negative],
       electionType: ElectionType.PARAM_CHANGE,
       maxChoices: 1,
+      maxWinners: 1,
       closingRule: { timer, deadline },
       quorumRule: QuorumRule.MAJORITY,
       tieOutcome: negative,

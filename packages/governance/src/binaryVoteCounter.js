@@ -1,10 +1,9 @@
-import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeHeapFarInstance, keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import {
-  buildUnrankedQuestion,
+  buildQuestion,
   ChoiceMethod,
   coerceQuestionSpec,
   positionIncluded,
@@ -15,20 +14,9 @@ import {
   BinaryVoteCounterCloseI,
   BinaryVoteCounterPublicI,
 } from './typeGuards.js';
+import { makeQuorumCounter } from './quorumCounter.js';
 
 const { details: X } = assert;
-
-const makeQuorumCounter = quorumThreshold => {
-  const check = stats => {
-    const votes = stats.results.reduce(
-      (runningTotal, { total }) => runningTotal + total,
-      0n,
-    );
-    return votes >= quorumThreshold;
-  };
-  /** @type {QuorumCounter} */
-  return Far('checker', { check });
-};
 
 const validateBinaryQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
@@ -60,7 +48,7 @@ const makeBinaryVoteCounter = (
 ) => {
   validateBinaryQuestionSpec(questionSpec);
 
-  const question = buildUnrankedQuestion(questionSpec, instance);
+  const question = buildQuestion(questionSpec, instance);
   const details = question.getDetails();
 
   let isOpen = true;

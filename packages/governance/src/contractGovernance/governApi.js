@@ -70,6 +70,7 @@ const setupApiGovernance = async (
       positions: [positive, negative],
       electionType: ElectionType.API_INVOCATION,
       maxChoices: 1,
+      maxWinners: 1,
       closingRule: { timer, deadline },
       quorumRule: QuorumRule.MAJORITY,
       tieOutcome: negative,
