@@ -151,8 +151,6 @@
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
  *
  * @typedef { import('./types-external.js').HostStore } HostStore
- *
- * @typedef { import('./types-external.js').KVStorePlus } KVStorePlus
  */
 
 /**

@@ -5,10 +5,13 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { createHash } from 'crypto';
 import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
-import { addHelpers } from '../src/kernel/state/storageWrapper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import { kser, kslot } from '../src/lib/kmarshal.js';
+import {
+  getPrefixedValues,
+  deletePrefixedKeys,
+} from '../src/kernel/state/storageHelper.js';
 
 const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
 
@@ -73,14 +76,14 @@ test('storageInMemory', async t => {
 
 test('storage helpers', t => {
   const store = initSwingStore(null);
-  const s = addHelpers(store.kvStore);
+  const kv = store.kvStore;
 
-  s.set('foo.0', 'f0');
-  s.set('foo.1', 'f1');
-  s.set('foo.2', 'f2');
-  s.set('foo.3', 'f3');
+  kv.set('foo.0', 'f0');
+  kv.set('foo.1', 'f1');
+  kv.set('foo.2', 'f2');
+  kv.set('foo.3', 'f3');
   // omit foo.4
-  s.set('foo.5', 'f5');
+  kv.set('foo.5', 'f5');
   checkState(t, () => getAllState(store).kvStuff, [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
@@ -89,36 +92,21 @@ test('storage helpers', t => {
     ['foo.5', 'f5'],
   ]);
 
-  t.deepEqual(Array.from(s.enumeratePrefixedKeys('foo.', 0)), [
-    'foo.0',
-    'foo.1',
-    'foo.2',
-    'foo.3',
-  ]);
-  t.deepEqual(Array.from(s.enumeratePrefixedKeys('foo.', 1)), [
-    'foo.1',
-    'foo.2',
-    'foo.3',
-  ]);
-  t.deepEqual(Array.from(s.getPrefixedValues('foo.', 0)), [
+  t.deepEqual(Array.from(getPrefixedValues(kv, 'foo.')), [
     'f0',
     'f1',
     'f2',
     'f3',
   ]);
-  t.deepEqual(Array.from(s.getPrefixedValues('foo.', 1)), ['f1', 'f2', 'f3']);
 
-  s.deletePrefixedKeys('foo.', 1);
-  t.truthy(s.has('foo.0'));
-  t.falsy(s.has('foo.1'));
-  t.falsy(s.has('foo.2'));
-  t.falsy(s.has('foo.3'));
-  t.falsy(s.has('foo.4'));
-  t.truthy(s.has('foo.5'));
-  checkState(t, () => getAllState(store).kvStuff, [
-    ['foo.0', 'f0'],
-    ['foo.5', 'f5'],
-  ]);
+  deletePrefixedKeys(kv, 'foo.');
+  t.falsy(kv.has('foo.0'));
+  t.falsy(kv.has('foo.1'));
+  t.falsy(kv.has('foo.2'));
+  t.falsy(kv.has('foo.3'));
+  t.falsy(kv.has('foo.4'));
+  t.truthy(kv.has('foo.5'));
+  checkState(t, () => getAllState(store).kvStuff, [['foo.5', 'f5']]);
 });
 
 function buildKeeperStorageInMemory() {

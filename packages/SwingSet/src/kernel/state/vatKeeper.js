@@ -14,7 +14,6 @@ import {
 
 /**
  * @typedef { import('../../types-external.js').KVStore } KVStore
- * @typedef { import('../../types-external.js').KVStorePlus } KVStorePlus
  * @typedef { import('../../types-external.js').ManagerOptions } ManagerOptions
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
@@ -59,7 +58,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
 /**
  * Produce a vat keeper for a vat.
  *
- * @param {KVStorePlus} kvStore  The keyValue store in which the persistent state will be kept
+ * @param {KVStore} kvStore  The keyValue store in which the persistent state will be kept
  * @param {StreamStore} streamStore  Accompanying stream store, for the transcripts
  * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question

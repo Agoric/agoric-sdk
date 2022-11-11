@@ -303,8 +303,6 @@ export {};
  *   commitCrank: () => { crankhash: string, activityhash: string },
  *   abortCrank: () => void,
  * }} HostStore
- *
- * @typedef { ReturnType<typeof import('./kernel/state/storageWrapper').addHelpers> } KVStorePlus
  */
 
 /**
