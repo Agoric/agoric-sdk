@@ -1,14 +1,10 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 import { Nat, isNat } from '@agoric/nat';
 import { assert, Fail } from '@agoric/assert';
-import { wrapStorage } from './storageWrapper.js';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';
-import {
-  insistStorageAPI,
-  insistEnhancedStorageAPI,
-} from '../../lib/storageAPI.js';
+import { insistStorageAPI } from '../../lib/storageAPI.js';
 import {
   insistKernelType,
   makeKernelSlot,
@@ -26,6 +22,7 @@ import {
 import { kdebug } from '../../lib/kdebug.js';
 import { KERNEL_STATS_METRICS } from '../metrics.js';
 import { makeKernelStats } from './stats.js';
+import { getPrefixedValues, deletePrefixedKeys } from './storageHelper.js';
 
 const enableKernelGC = true;
 
@@ -36,7 +33,6 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').HostStore } HostStore
  * @typedef { import('../../types-external.js').KernelOptions } KernelOptions
  * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
- * @typedef { import('../../types-external.js').KVStorePlus } KVStorePlus
  * @typedef { import('../../types-external.js').ManagerType } ManagerType
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').StreamPosition } StreamPosition
@@ -173,19 +169,16 @@ const FIRST_METER_ID = 1n;
 
 /**
  * @param {SwingStore} hostStorage
- * @param {KernelSlog} kernelSlog
+ * @param {KernelSlog|null} kernelSlog
  */
 export default function makeKernelKeeper(hostStorage, kernelSlog) {
-  // the kernelKeeper wraps the host's raw key-value store in a crank buffer
-  const rawKVStore = hostStorage.kvStore;
-  insistStorageAPI(rawKVStore);
+  const kvStore = hostStorage.kvStore;
+  insistStorageAPI(kvStore);
 
-  const kvStore = wrapStorage(rawKVStore);
-  insistEnhancedStorageAPI(kvStore);
   const { streamStore, snapStore } = hostStorage;
 
   function getActivityhash() {
-    return rawKVStore.get('activityhash');
+    return kvStore.get('activityhash');
   }
 
   /**
@@ -656,7 +649,7 @@ export default function makeKernelKeeper(hostStorage, kernelSlog) {
         p.policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
         p.subscribers = commaSplit(kvStore.get(`${kernelSlot}.subscribers`));
         p.queue = Array.from(
-          kvStore.getPrefixedValues(`${kernelSlot}.queue.`),
+          getPrefixedValues(kvStore, `${kernelSlot}.queue.`),
         ).map(s => JSON.parse(s));
         break;
       }
@@ -703,7 +696,7 @@ export default function makeKernelKeeper(hostStorage, kernelSlog) {
     kvStore.delete(`${kpid}.decider`);
     kvStore.delete(`${kpid}.subscribers`);
     kvStore.delete(`${kpid}.policy`);
-    kvStore.deletePrefixedKeys(`${kpid}.queue.`);
+    deletePrefixedKeys(kvStore, `${kpid}.queue.`);
     kvStore.delete(`${kpid}.queue.nextID`);
     kvStore.delete(`${kpid}.data.body`);
     kvStore.delete(`${kpid}.data.slots`);
@@ -748,7 +741,7 @@ export default function makeKernelKeeper(hostStorage, kernelSlog) {
     }
     decStat('promiseQueuesLength', p.queue.length);
 
-    kvStore.deletePrefixedKeys(`${kernelSlot}.queue.`);
+    deletePrefixedKeys(kvStore, `${kernelSlot}.queue.`);
     kvStore.set(`${kernelSlot}.queue.nextID`, `0`);
   }
 
