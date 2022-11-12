@@ -1,18 +1,16 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+import { getTag, nameForPassableSymbol, passStyleOf } from '@endo/marshal';
 import {
-  assertRecord,
-  getTag,
-  nameForPassableSymbol,
-  passStyleOf,
-} from '@endo/marshal';
+  passStylePrefixes,
+  recordNames,
+  recordValues,
+} from './encodePassable.js';
 
 /** @typedef {import('@endo/marshal').PassStyle} PassStyle */
 
-const { fromEntries, entries, setPrototypeOf, is } = Object;
-
-const { ownKeys } = Reflect;
+const { details: X, quote: q } = assert;
+const { entries, fromEntries, setPrototypeOf, is } = Object;
 
 /**
  * This is the equality comparison used by JavaScript's Map and Set
@@ -29,38 +27,52 @@ const { ownKeys } = Reflect;
  */
 const sameValueZero = (x, y) => x === y || is(x, y);
 
+const trivialComparator = (left, right) =>
+  // eslint-disable-next-line no-nested-ternary
+  left < right ? -1 : left === right ? 0 : 1;
+
 /**
- * @type {[PassStyle, RankCover][]}
+ * @typedef {Record<PassStyle, { index: number, cover: RankCover }>} PassStyleRanksRecord
  */
-const PassStyleRankAndCover = harden([
-  /* !  */ ['error', ['!', '!~']],
-  /* (  */ ['copyRecord', ['(', '(~']],
-  /* :  */ ['tagged', [':', ':~']],
-  /* ?  */ ['promise', ['?', '?~']],
-  /* [  */ ['copyArray', ['[', '[~']],
-  /* b  */ ['boolean', ['b', 'b~']],
-  /* f  */ ['number', ['f', 'f~']],
-  /* np */ ['bigint', ['n', 'p~']],
-  /* r  */ ['remotable', ['r', 'r~']],
-  /* s  */ ['string', ['s', 't']],
-  /* v  */ ['null', ['v', 'v~']],
-  /* y  */ ['symbol', ['y', 'z']],
-  /* z  */ ['undefined', ['z', '{']],
-  /* | remotable->ordinal mapping prefix: This is not used in covers but it is
-       reserved from the same set of strings. Note that the prefix is > any
-       prefix used by any cover so that ordinal mapping keys are always outside
-       the range of valid collection entry keys. */
-]);
 
-const PassStyleRank = fromEntries(
-  entries(PassStyleRankAndCover).map(([i, v]) => [v[0], Number(i)]),
+const passStyleRanks = /** @type {PassStyleRanksRecord} */ (
+  fromEntries(
+    entries(passStylePrefixes)
+      // Sort entries by ascending prefix.
+      .sort(([_leftStyle, leftPrefixes], [_rightStyle, rightPrefixes]) => {
+        return trivialComparator(leftPrefixes, rightPrefixes);
+      })
+      .map(([passStyle, prefixes], index) => {
+        // Cover all strings that start with any character in `prefixes`,
+        // verifying that it is sorted so that is
+        // all s such that prefixes.at(0) ≤ s < successor(prefixes.at(-1)).
+        prefixes === [...prefixes].sort().join('') ||
+          assert.fail(
+            X`unsorted prefixes for passStyle ${q(passStyle)}: ${q(prefixes)}`,
+          );
+        const cover = [
+          prefixes.charAt(0),
+          String.fromCharCode(prefixes.charCodeAt(prefixes.length - 1) + 1),
+        ];
+        return [passStyle, { index, cover }];
+      }),
+  )
 );
-setPrototypeOf(PassStyleRank, null);
-harden(PassStyleRank);
+setPrototypeOf(passStyleRanks, null);
+harden(passStyleRanks);
 
-/** @type {GetPassStyleCover} */
-export const getPassStyleCover = passStyle =>
-  PassStyleRankAndCover[PassStyleRank[passStyle]][1];
+/**
+ * Associate with each passStyle a RankCover that may be an overestimate,
+ * and whose results therefore need to be filtered down. For example, because
+ * there is not a smallest or biggest bigint, bound it by `NaN` (the last place
+ * number) and `''` (the empty string, which is the first place string). Thus,
+ * a range query using this range may include these values, which would then
+ * need to be filtered out.
+ *
+ * @param {PassStyle} passStyle
+ * @returns {RankCover}
+ */
+export const getPassStyleCover = passStyle => passStyleRanks[passStyle].cover;
 harden(getPassStyleCover);
 
 /**
@@ -72,18 +84,6 @@ const memoOfSorted = new WeakMap();
  * @type {WeakMap<RankCompare,RankCompare>}
  */
 const comparatorMirrorImages = new WeakMap();
-
-export const recordParts = record => {
-  assertRecord(record);
-  // TODO Measure which is faster: a reverse sort by sorting and
-  // reversing, or by sorting with an inverse comparison function.
-  // If it makes a significant difference, use the faster one.
-  const names = ownKeys(record).sort().reverse();
-  // @ts-expect-error It thinks name might be a symbol, which it doesn't like.
-  const vals = names.map(name => record[name]);
-  return harden([names, vals]);
-};
-harden(recordParts);
 
 /**
  * @param {RankCompare=} compareRemotables
@@ -102,7 +102,10 @@ export const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
     const leftStyle = passStyleOf(left);
     const rightStyle = passStyleOf(right);
     if (leftStyle !== rightStyle) {
-      return comparator(PassStyleRank[leftStyle], PassStyleRank[rightStyle]);
+      return trivialComparator(
+        passStyleRanks[leftStyle].index,
+        passStyleRanks[rightStyle].index,
+      );
     }
     switch (leftStyle) {
       case 'remotable': {
@@ -163,14 +166,17 @@ export const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
         // of these names, which we then compare lexicographically. This ensures
         // that if the names of record X are a subset of the names of record Y,
         // then record X will have an earlier rank and sort to the left of Y.
-        const [leftNames, leftValues] = recordParts(left);
-        const [rightNames, rightValues] = recordParts(right);
+        const leftNames = recordNames(left);
+        const rightNames = recordNames(right);
 
         const result = comparator(leftNames, rightNames);
         if (result !== 0) {
           return result;
         }
-        return comparator(leftValues, rightValues);
+        return comparator(
+          recordValues(left, leftNames),
+          recordValues(right, rightNames),
+        );
       }
       case 'copyArray': {
         // Lexicographic
@@ -243,8 +249,8 @@ harden(isRankSorted);
  * @param {RankCompare} compare
  */
 export const assertRankSorted = (sorted, compare) =>
-  assert(
-    isRankSorted(sorted, compare),
+  isRankSorted(sorted, compare) ||
+  assert.fail(
     // TODO assert on bug could lead to infinite recursion. Fix.
     // eslint-disable-next-line no-use-before-define
     X`Must be rank sorted: ${sorted} vs ${sortByRank(sorted, compare)}`,
@@ -312,7 +318,12 @@ const rankSearch = (sorted, compare, key, bias = 'leftMost') => {
   return bias === 'leftMost' ? left : right - 1;
 };
 
-/** @type {GetIndexCover} */
+/**
+ * @param {Passable[]} sorted
+ * @param {RankCompare} compare
+ * @param {RankCover} rankCover
+ * @returns {IndexCover}
+ */
 export const getIndexCover = (sorted, compare, [leftKey, rightKey]) => {
   assertRankSorted(sorted, compare);
   const leftIndex = rankSearch(sorted, compare, leftKey, 'leftMost');
@@ -324,7 +335,11 @@ harden(getIndexCover);
 /** @type {RankCover} */
 export const FullRankCover = harden(['', '{']);
 
-/** @type {CoveredEntries} */
+/**
+ * @param {Passable[]} sorted
+ * @param {IndexCover} indexCover
+ * @returns {Iterable<[number, Passable]>}
+ */
 export const coveredEntries = (sorted, [leftIndex, rightIndex]) => {
   /** @type {Iterable<[number, Passable]>} */
   const iterable = harden({

@@ -3,7 +3,8 @@
 /// <reference types="ses"/>
 
 import { passStyleOf, getTag } from '@endo/marshal';
-import { compareRank, recordParts } from '../patterns/rankOrder.js';
+import { compareRank } from '../patterns/rankOrder.js';
+import { recordNames, recordValues } from '../patterns/encodePassable.js';
 import { assertKey } from './checkKey.js';
 import { bagCompare } from './merge-bag-operators.js';
 import { setCompare } from './merge-set-operators.js';
@@ -70,8 +71,8 @@ export const compareKeys = (left, right) => {
     }
     case 'copyRecord': {
       // Pareto partial order comparison.
-      const [leftNames, leftValues] = recordParts(left);
-      const [rightNames, rightValues] = recordParts(right);
+      const leftNames = recordNames(left);
+      const rightNames = recordNames(right);
 
       // eslint-disable-next-line no-use-before-define
       if (!keyEQ(leftNames, rightNames)) {
@@ -82,6 +83,8 @@ export const compareKeys = (left, right) => {
         // to avoid more irrelevant ones.
         return NaN;
       }
+      const leftValues = recordValues(left, leftNames);
+      const rightValues = recordValues(right, rightNames);
       // Presume that both copyRecords have the same key order
       // until encountering a property disproving that hypothesis.
       let result = 0;

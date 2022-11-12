@@ -16,9 +16,9 @@ import {
   compareRank,
   getPassStyleCover,
   intersectRankCovers,
-  recordParts,
   unionRankCovers,
 } from './rankOrder.js';
+import { recordNames, recordValues } from './encodePassable.js';
 import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
 import {
   assertKey,
@@ -509,8 +509,13 @@ const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
-        const [specimenNames, specimenValues] = recordParts(specimen);
-        const [pattNames, pattValues] = recordParts(patt);
+        // TODO Detect and accumulate difference in one pass.
+        // Rather than using two calls to `listDifference` to detect and
+        // report if and how these lists differ, since they are already
+        // in sorted order, we should instead use an algorithm like
+        // `iterDisjointUnion` from merge-sort-operators.js
+        const specimenNames = recordNames(specimen);
+        const pattNames = recordNames(patt);
         const missing = listDifference(pattNames, specimenNames);
         if (missing.length >= 1) {
           return check(
@@ -527,6 +532,8 @@ const makePatternKit = () => {
             )}`,
           );
         }
+        const specimenValues = recordValues(specimen, specimenNames);
+        const pattValues = recordValues(patt, pattNames);
         return pattNames.every((label, i) =>
           checkMatches(specimenValues[i], pattValues[i], check, label),
         );
