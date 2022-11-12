@@ -509,6 +509,11 @@ const makePatternKit = () => {
             X`${specimen} - Must be a copyRecord to match a copyRecord pattern: ${patt}`,
           );
         }
+        // TODO Detect and accumulate difference in one pass.
+        // Rather than using two calls to `listDifference` to detect and
+        // report if and how these lists differ, since they are already
+        // in sorted order, we should instead use an algorithm like
+        // `iterDisjointUnion` from merge-sort-operators.js
         const specimenNames = recordNames(specimen);
         const pattNames = recordNames(patt);
         const missing = listDifference(pattNames, specimenNames);

@@ -313,7 +313,7 @@ export const makeEncodePassable = ({
   encodeError = (err, _) => assert.fail(X`error unexpected: ${err}`),
 } = {}) => {
   const encodePassable = passable => {
-    if (ErrorHelper.canBeValid(passable, x => x)) {
+    if (ErrorHelper.canBeValid(passable)) {
       return encodeError(passable, encodePassable);
     }
     const passStyle = passStyleOf(passable);
@@ -478,7 +478,7 @@ harden(isEncodedRemotable);
  * individually is a valid bigint prefix. `n` for "negative" and `p` for
  * "positive". The ordering of these prefixes is the same as the
  * rankOrdering of their respective PassStyles. This table is imported by
- * randOrder.js for this purpose.
+ * rankOrder.js for this purpose.
  *
  * In addition, `|` is the remotable->ordinal mapping prefix:
  * This is not used in covers but it is
