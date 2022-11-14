@@ -423,16 +423,12 @@ export async function main() {
     runtimeOptions.slogSender = slogSender;
   }
   let bootstrapResult;
-  const hostStorage = {
-    kvStore: swingStore.kvStore,
-    streamStore: swingStore.streamStore,
-  };
   if (forceReset) {
     // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       bootstrapArgv,
-      hostStorage,
+      swingStore,
       { verbose },
       runtimeOptions,
     );
@@ -445,7 +441,7 @@ export async function main() {
     }
   }
   const controller = await makeSwingsetController(
-    hostStorage,
+    swingStore,
     deviceEndowments,
     runtimeOptions,
   );

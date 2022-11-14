@@ -325,8 +325,12 @@ function makeSwingStore(dirPath, forceReset, options) {
   function set(key, value) {
     assert.typeof(key, 'string');
     assert.typeof(value, 'string');
+    // synchronous read after write within a transaction is safe
+    // The transaction's overall success will be awaited during commit
+    ensureTxn();
+    sqlKVSet.run(key, value);
     const keyType = getKeyType(key);
-    assert(keyType !== 'invalid');
+    // assert(keyType !== 'invalid');
     if (keyType === 'consensus') {
       crankhasher.add('add');
       crankhasher.add('\n');
@@ -335,10 +339,6 @@ function makeSwingStore(dirPath, forceReset, options) {
       crankhasher.add(value);
       crankhasher.add('\n');
     }
-    // synchronous read after write within a transaction is safe
-    // The transaction's overall success will be awaited during commit
-    ensureTxn();
-    sqlKVSet.run(key, value);
     trace('set', key, value);
   }
 
@@ -357,16 +357,16 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   function del(key) {
     assert.typeof(key, 'string');
+    ensureTxn();
+    sqlKVDel.run(key);
     const keyType = getKeyType(key);
-    assert(keyType !== 'invalid');
+    // assert(keyType !== 'invalid');
     if (keyType === 'consensus') {
       crankhasher.add('delete');
       crankhasher.add('\n');
       crankhasher.add(key);
       crankhasher.add('\n');
     }
-    ensureTxn();
-    sqlKVDel.run(key);
     trace('del', key);
   }
 
