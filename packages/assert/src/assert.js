@@ -51,13 +51,18 @@ if (missing.length > 0) {
   );
 }
 
-const { details, quote, makeAssert } = globalAssert;
+const { details, quote, makeAssert, Fail } = globalAssert;
 
-export { globalAssert as assert, details, quote };
-
-export { quote as q };
-
-export { makeAssert };
+export {
+  globalAssert as assert,
+  details,
+  quote,
+  makeAssert,
+  Fail,
+  // conventional aliases
+  details as X,
+  quote as q,
+};
 
 /**
  * @template T
