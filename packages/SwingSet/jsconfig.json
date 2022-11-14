@@ -9,7 +9,6 @@
     "moduleResolution": "node",
   },
   "include": [
-    "exported.js",
     "lib/**/*.js",
     "src/**/*.js",
     "src/**/*.ts",

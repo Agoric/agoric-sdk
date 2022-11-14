@@ -17,7 +17,6 @@
   },
   "include": [
     "*.js",
-    "exported.js",
     "src/**/*.js",
     "test/**/*.js",
   ],

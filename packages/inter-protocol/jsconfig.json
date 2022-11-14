@@ -10,7 +10,6 @@
     "moduleResolution": "node",
   },
   "include": [
-    "exported.js",
     "globals.d.ts",
     "scripts/**/*.js",
     "src/**/*.js",
