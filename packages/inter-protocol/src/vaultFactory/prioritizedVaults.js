@@ -1,4 +1,3 @@
-// @ts-check
 // @jessie-check
 
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';

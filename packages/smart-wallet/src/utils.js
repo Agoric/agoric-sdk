@@ -1,5 +1,4 @@
 /* eslint-disable no-undef-init */
-// @ts-check
 import { iterateReverse } from '@agoric/casting';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';

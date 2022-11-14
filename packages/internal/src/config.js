@@ -1,4 +1,3 @@
-// @ts-check
 /** @file
  *
  * Some of this config info may make more sense in a particular package. However

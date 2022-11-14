@@ -1,4 +1,3 @@
-// @ts-check
 /* global setImmediate */
 
 import './types.js';

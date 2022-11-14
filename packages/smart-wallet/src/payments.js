@@ -1,5 +1,3 @@
-// @ts-check
-
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { E } from '@endo/far';
 

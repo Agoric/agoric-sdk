@@ -94,7 +94,7 @@ const makeContinuingInvitation = async (
 /**
  * @param {InvitationMaker} invitationMaker
  * @param {string} instanceHandleBoardId
- * @param {Board} board
+ * @param {import('@agoric/vats').Board} board
  * @param {ZoeService} zoe
  * @returns {Promise<Invitation>}
  */

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far } from '@endo/marshal';
 
 const { details: X, quote: q } = assert;

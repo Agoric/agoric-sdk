@@ -1,4 +1,3 @@
-// @ts-check
 import { AmountMath } from '@agoric/ertp';
 import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far, assertPassable, passStyleOf } from '@endo/marshal';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 

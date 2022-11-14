@@ -1,4 +1,3 @@
-// @ts-check
 import { M } from '../src/patterns/patternMatchers.js';
 
 // The purpose of this module is to provide snapshotted (and possibly stale)

@@ -21,7 +21,7 @@ import process from 'process';
  * E(oa).pushResult('19.37')
  * E(qn).getUpdateSince()
  *
- * @typedef {{ board: Board, chainTimerService, scratch, zoe }} Home
+ * @typedef {{ board: import('@agoric/vats').Board, chainTimerService, scratch, zoe }} Home
  * @param {Promise<Home>} homePromise
  * @param {object} root0
  * @param {(...path: string[]) => Promise<any>} root0.lookup

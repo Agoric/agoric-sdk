@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far } from '@endo/far';
 import {
   mapAsyncIterable,

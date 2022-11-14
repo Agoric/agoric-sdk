@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 import { getManifestForAddAssetToVault } from '../src/proposals/addAssetToVault.js';

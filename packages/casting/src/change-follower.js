@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { DEFAULT_KEEP_POLLING } from './defaults.js';
 

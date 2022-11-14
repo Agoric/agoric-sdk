@@ -1,4 +1,3 @@
-// @ts-check
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
 

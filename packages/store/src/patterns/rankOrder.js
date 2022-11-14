@@ -1,5 +1,3 @@
-// @ts-check
-
 import { getTag, nameForPassableSymbol, passStyleOf } from '@endo/marshal';
 import {
   passStylePrefixes,

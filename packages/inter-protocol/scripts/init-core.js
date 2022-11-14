@@ -1,5 +1,4 @@
 /* global process */
-// @ts-check
 /**
  * @file can be run with `agoric deploy` after a chain is running (depends on chain state)
  * Only works with "local" chain and not sim-chain b/c it needs governance votes (n/a on sim-chain).

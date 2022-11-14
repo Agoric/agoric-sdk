@@ -1,4 +1,3 @@
-// @ts-check
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { E } from '@endo/far';
 import { reserveThenDeposit } from './utils.js';

@@ -1,6 +1,4 @@
 /* eslint-disable no-await-in-loop */
-// @ts-check
-
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { BridgeId } from '@agoric/internal';

@@ -1,5 +1,3 @@
-// @ts-check
-
 import { assert, details as X, q } from '@agoric/assert';
 
 /**

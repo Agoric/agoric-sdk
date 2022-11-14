@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-check
 import url from 'url';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { E } from '@endo/eventual-send';

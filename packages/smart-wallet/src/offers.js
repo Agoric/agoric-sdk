@@ -1,5 +1,3 @@
-// @ts-check
-
 import { E, passStyleOf } from '@endo/far';
 import { makePaymentsHelper } from './payments.js';
 

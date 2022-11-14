@@ -1,4 +1,3 @@
-// @ts-check
 // @jessie-check
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';

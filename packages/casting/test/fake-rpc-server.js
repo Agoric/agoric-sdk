@@ -1,4 +1,3 @@
-// @ts-check
 import { Buffer } from 'buffer';
 import './lockdown.js';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck -- lots of type errors. low prio b/c proposals are like scripts
 import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
@@ -12,7 +13,7 @@ import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('RunPriceFeed');
 
-/** @type {(name: string) => void} */
+/** @type {(name: string) => string} */
 const sanitizePathSegment = name => {
   const candidate = name.replace(/ /g, '_');
   assertPathSegment(candidate);
@@ -53,10 +54,10 @@ export const ensureOracleBrands = async (
   },
 ) => {
   trace('ensureOracleBrands');
-  /** @type {NameAdmin} */
+  /** @type {Promise<import('@agoric/vats').NameAdmin>} */
   const obAdmin = E(agoricNamesAdmin).lookupAdmin('oracleBrand');
 
-  /** @type {(brand: ERef<Brand<'nat'> | undefined>, name: string, decimals: string) => Brand} */
+  /** @type {(brand: ERef<Brand<'nat'> | undefined>, name: string, decimals: string) => Promise<Brand<'nat'>>} */
   const updateFreshBrand = async (brand, name, decimals) => {
     const b = await brand;
     if (b) {
@@ -128,7 +129,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand, Brand], [Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [

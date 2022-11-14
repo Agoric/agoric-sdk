@@ -1,4 +1,3 @@
-// @ts-check
 import '../../exported.js';
 
 import { fit, keyEQ } from '@agoric/store';

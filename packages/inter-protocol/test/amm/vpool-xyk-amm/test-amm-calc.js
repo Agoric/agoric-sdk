@@ -1,4 +1,3 @@
-// @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath as m, makeIssuerKit } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';

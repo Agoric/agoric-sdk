@@ -10,7 +10,7 @@ const bfile = name => new URL(name, import.meta.url).pathname;
 test('ertp service upgrade', async t => {
   const config = {
     // includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'local', // 'xs-worker',
+    defaultManagerType: /** @type {const} */ ('local'), // 'xs-worker',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,

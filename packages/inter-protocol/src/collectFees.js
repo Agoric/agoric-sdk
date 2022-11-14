@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Provide shared support for providing access to fees from a service contract.
  *

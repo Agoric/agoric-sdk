@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Far, filterIterable } from '@endo/marshal';
 import { compareRank } from '../patterns/rankOrder.js';
 import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';

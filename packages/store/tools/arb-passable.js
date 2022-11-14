@@ -1,4 +1,3 @@
-// @ts-check
 import { Far, makeTagged } from '@endo/marshal';
 import { fc } from '@fast-check/ava';
 import '../src/types.js';

@@ -1,4 +1,3 @@
-// @ts-check
 import { E, Far } from '@endo/far';
 import { addRemote } from '@agoric/vats/src/core/utils.js';
 

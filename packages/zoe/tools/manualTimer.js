@@ -1,4 +1,3 @@
-// @ts-check
 import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';

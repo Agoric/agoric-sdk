@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Module to improvise composite keys for orderedVaultStore until Collections
  * API supports them.
