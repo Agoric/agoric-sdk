@@ -198,15 +198,10 @@ const buildSwingset = async (
   const keepSnapshots =
     XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-    { traceFile: swingStoreTraceFile, keepSnapshots },
-  );
-  const hostStorage = {
-    kvStore,
-    streamStore,
-    snapStore,
-  };
+  const hostStorage = openSwingStore(kernelStateDBDir, {
+    traceFile: swingStoreTraceFile,
+    keepSnapshots,
+  });
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-solo');
@@ -240,7 +235,7 @@ const buildSwingset = async (
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
     await atomicReplaceFile(mailboxStateFile, ms);
-    await commit();
+    await hostStorage.commit();
   }
 
   function deliverOutbound() {

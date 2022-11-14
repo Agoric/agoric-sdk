@@ -220,15 +220,11 @@ export async function launch({
 }) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-    { traceFile: swingStoreTraceFile, keepSnapshots },
-  );
-  const hostStorage = {
-    kvStore,
-    streamStore,
-    snapStore,
-  };
+  const hostStorage = openSwingStore(kernelStateDBDir, {
+    traceFile: swingStoreTraceFile,
+    keepSnapshots,
+  });
+  const { kvStore, commit } = hostStorage;
 
   // makeQueue() thinks it should commit/abort, but the kvStore doesn't provide
   // those ('commit' is reserved for flushing the block buffer). Furthermore
