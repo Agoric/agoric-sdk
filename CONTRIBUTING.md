@@ -1,6 +1,6 @@
 # Contributing to the Agoric SDK
 
-Thanks for getting involved!
+Thanks for getting involved! Code contributions are welcome, though if they affect the design please consult with the core team before investing much effort. The core team manages the project, so please do not make project management suggestions as they will distract from the work.
 
 ## Platforms, Dev Tools and Testing
 
