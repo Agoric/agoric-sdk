@@ -2,75 +2,117 @@
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "snapshotInterval": 1000,
+  "coreProposals": [
+    "@agoric/vats/scripts/init-core.js",
+    {
+      "module": "@agoric/inter-protocol/scripts/init-core.js",
+      "entrypoint": "committeeProposalBuilder",
+      "args": [
+        {
+          "econCommitteeOptions": {
+            "committeeSize": 3
+          }
+        }
+      ]
+    },  
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmGovernanceBuilder",
+      "args": []
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdc1234",
+            "decimalPlaces": 6,
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdc5678",
+            "decimalPlaces": 6,
+            "keyword": "USDC_grv",
+            "proposedName": "USC Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdt1234",
+            "decimalPlaces": 6,
+            "keyword": "USDT_axl",
+            "proposedName": "Tether USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdt5678",
+            "decimalPlaces": 6,
+            "keyword": "USDT_grv",
+            "proposedName": "Tether USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyellie",
+            "decimalPlaces": 6,
+            "keyword": "AUSD",
+            "proposedName": "Anchor USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/invite-committee-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "voterAddresses": {
+            "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
+            "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
+          }
+        }
+      ]
+    }
+  ],  
   "vats": {
     "bootstrap": {
-      "sourceSpec": "@agoric/vats/src/core/boot-psm.js",
-      "parameters": {
-        "anchorAssets": [
-          {
-            "keyword": "USDC_axl",
-            "proposedName": "USD Coin",
-            "decimalPlaces": 6,
-            "denom": "ibc/usdc1234"
-          },
-          {
-            "keyword": "USDC_grv",
-            "proposedName": "USD Coin",
-            "decimalPlaces": 6,
-            "denom": "ibc/usdc5678"
-          },
-          {
-            "keyword": "USDT_axl",
-            "proposedName": "Tether USD",
-            "decimalPlaces": 6,
-            "denom": "ibc/usdt1234"
-          },
-          {
-            "keyword": "USDT_grv",
-            "proposedName": "Tether USD",
-            "decimalPlaces": 6,
-            "denom": "ibc/usdt5678"
-          },
-          {
-            "keyword": "AUSD",
-            "proposedName": "Anchor USD",
-            "decimalPlaces": 6,
-            "denom": "ibc/toyellie"
-          }
-        ],
-        "economicCommitteeAddresses": {
-          "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
-          "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
-          "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
-        }
-      },
+      "sourceSpec": "@agoric/vats/src/core/boot.js",
       "creationOptions": {
         "critical": true
       }
     }
   },
   "bundles": {
-    "walletFactory": {
-      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
-    },
-    "provisionPool": {
-      "sourceSpec": "@agoric/vats/src/provisionPool.js"
-    },
-    "committee": {
-      "sourceSpec": "@agoric/governance/src/committee.js"
-    },
-    "contractGovernor": {
-      "sourceSpec": "@agoric/governance/src/contractGovernor.js"
-    },
-    "binaryVoteCounter": {
-      "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
-    },
-    "psm": {
-      "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
-    },
-    "psmCharter": {
-      "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
-    },
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
@@ -82,6 +124,18 @@
     },
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "ibc": {
+      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
+    },
+    "network": {
+      "sourceSpec": "@agoric/vats/src/vat-network.js"
+    },
+    "priceAuthority": {
+      "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+    },
+    "provisioning": {
+      "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
     "chainStorage": {
       "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
