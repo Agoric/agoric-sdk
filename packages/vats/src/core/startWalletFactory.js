@@ -111,7 +111,8 @@ const startGovernedInstance = async (
  * }>} powers
  * @param {{
  *   options?: {
- *     perAccountInitialValue?: bigint
+ *     perAccountInitialValue?: bigint,
+ *     walletBridgeId?: string,
  *   },
  * }} [config]
  */
@@ -142,7 +143,12 @@ export const startWalletFactory = async (
       consume: { [Stable.symbol]: feeIssuerP },
     },
   },
-  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
+  {
+    options: {
+      perAccountInitialValue = (StableUnit * 25n) / 100n,
+      walletBridgeId = BRIDGE_ID.PROVISION_SMART_WALLET,
+    } = {},
+  } = {},
 ) => {
   const WALLET_STORAGE_PATH = 'wallet';
   const POOL_STORAGE_PATH = 'provisionPool';
@@ -232,7 +238,7 @@ export const startWalletFactory = async (
   });
 
   await Promise.all([
-    E(bridgeManager).register(BRIDGE_ID.PROVISION, handler),
+    E(bridgeManager).register(walletBridgeId, handler),
     // psmCharter was designed to govern PSM contracts,
     // but voteOnParamChanges should work just as well
     // for provisionPool perAccountInitialValue
@@ -242,6 +248,7 @@ export const startWalletFactory = async (
     ),
   ]);
 
+  // TODO: move to its own producer, omitted in some configurations
   client.resolve(
     Far('dummy client', {
       assignBundle: (propertyMakers = []) => {

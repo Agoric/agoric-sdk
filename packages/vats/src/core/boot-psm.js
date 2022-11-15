@@ -19,6 +19,7 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -178,7 +179,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
       }),
-      startWalletFactory(powersFor('startWalletFactory')),
+      startWalletFactory(powersFor('startWalletFactory'), {
+        options: { walletBridgeId: BRIDGE_ID.PROVISION },
+      }),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),

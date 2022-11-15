@@ -5,8 +5,7 @@ import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { deeplyFulfilledObject, WalletName } from '@agoric/internal';
-import { makeStorageNodeChild } from '../lib-chainStorage.js';
+import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -231,8 +230,16 @@ export const makeAddressNameHubs = async ({
   produce.namesByAddressAdmin.resolve(namesByAddressAdmin);
 
   const perAddress = address => {
-    const { myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-    return { agoricNames, namesByAddress, myAddressNameAdmin };
+    const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
+    myAddressNameAdmin.reserve(WalletName.depositFacet);
+
+    // This may race against walletFactory.js/publishDepositFacet, so we are
+    // careful not to clobber the first nameHub that is used to update
+    // namesByAddressAdmin.
+    namesByAddressAdmin.default(address, nameHub, myAddressNameAdmin);
+
+    const actualAdmin = namesByAddressAdmin.lookupAdmin(address);
+    return { agoricNames, namesByAddress, myAddressNameAdmin: actualAdmin };
   };
 
   return E(client).assignBundle([perAddress]);
@@ -242,42 +249,15 @@ harden(makeAddressNameHubs);
 /** @param {BootstrapSpace} powers */
 export const makeClientBanks = async ({
   consume: {
-    agoricNames,
-    board,
-    namesByAddress,
     namesByAddressAdmin,
     client,
-    chainStorage,
     bankManager,
-    bridgeManager: bridgeManagerP,
-    zoe,
-  },
-  installation: {
-    consume: { walletFactory },
+    walletFactoryStartResult,
   },
 }) => {
-  const STORAGE_PATH = 'wallet';
-
-  const [storageNode, bridgeManager] = await Promise.all([
-    makeStorageNodeChild(chainStorage, STORAGE_PATH),
-    bridgeManagerP,
-  ]);
-
-  /** @type {{agoricNames: ERef<NameHub>, namesByAddress: ERef<NameHub>, board: ERef<import('../types').Board> }} */
-  // @ts-expect-error cast
-  const terms = await deeplyFulfilledObject(
-    harden({
-      agoricNames,
-      namesByAddress,
-      board,
-    }),
-  );
-  const { creatorFacet } = await E(zoe).startInstance(
-    walletFactory,
-    {},
-    terms,
-    { storageNode, bridgeManager },
-  );
+  const walletFactoryCreatorFacet = E.get(
+    walletFactoryStartResult,
+  ).creatorFacet;
   return E(client).assignBundle([
     (address, powerFlags) => {
       const bank = E(bankManager).getBankForAddress(address);
@@ -291,7 +271,7 @@ export const makeClientBanks = async ({
       /** @type {ERef<import('../types').MyAddressNameAdmin>} */
       const myAddressNameAdmin = E(namesByAddressAdmin).lookupAdmin(address);
 
-      const smartWallet = E(creatorFacet).provideSmartWallet(
+      const smartWallet = E(walletFactoryCreatorFacet).provideSmartWallet(
         address,
         bank,
         myAddressNameAdmin,
@@ -310,14 +290,12 @@ export const installBootContracts = async ({
   devices: { vatAdmin },
   consume: { zoe },
   installation: {
-    produce: { centralSupply, mintHolder, walletFactory, provisionPool },
+    produce: { centralSupply, mintHolder },
   },
 }) => {
   for (const [name, producer] of Object.entries({
     centralSupply,
     mintHolder,
-    walletFactory,
-    provisionPool,
   })) {
     // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
     // good enough to do D(vatAdmin).getBundleIDByName
