@@ -71,7 +71,7 @@
 /**
  * @callback GetPublicFacet
  * @param {ERef<Instance>} instanceP
- * @returns {Promise<object>}
+ * @returns {Promise<any>}
  */
 
 /**
