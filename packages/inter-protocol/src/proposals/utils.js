@@ -63,8 +63,16 @@ export const reserveThenDeposit = async (
     [addr, DEPOSIT_FACET],
   ]);
   console.info('depositing to', debugName);
-  await Promise.all(payments.map(payment => E(depositFacet).receive(payment)));
-  console.info('confirmed deposit for', debugName);
+  await Promise.allSettled(
+    payments.map(async (paymentP, i) => {
+      const payment = await paymentP;
+      await E(depositFacet).receive(payment);
+      console.info(
+        `confirmed deposit ${i + 1}/${payments.length} for`,
+        debugName,
+      );
+    }),
+  );
 };
 
 /** @type {<T>(store: ERef<Map<string, T> | import('@agoric/solo/src/scratch').ScratchPad>, key: string, make: () => T) => Promise<T>} */

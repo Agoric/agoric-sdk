@@ -71,16 +71,15 @@ const installKeyGroups = {
  * @param {(m: string, b: string, opts?: any) => I} opts.install
  * @param {<T>(f: T) => T} [opts.wrapInstall]
  *
+ * @param {object} [options]
+ * @param {{ committeeName?: string, committeeSize?: number}} [options.econCommitteeOptions]
  * @template I
  * @template R
  */
-export const committeeProposalBuilder = async ({
-  publishRef,
-  install: install0,
-  wrapInstall,
-}) => {
-  const { ROLE = 'chain' } = process.env;
-
+export const committeeProposalBuilder = async (
+  { publishRef, install: install0, wrapInstall },
+  { econCommitteeOptions } = {},
+) => {
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   /** @param {Record<string, [string, string]>} group */
@@ -93,7 +92,7 @@ export const committeeProposalBuilder = async ({
     getManifestCall: [
       getManifestForEconCommittee.name,
       {
-        ROLE,
+        econCommitteeOptions,
         installKeys: {
           ...publishGroup(installKeyGroups.econCommittee),
         },

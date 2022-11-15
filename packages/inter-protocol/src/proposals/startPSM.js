@@ -38,6 +38,7 @@ export const startPSM = async (
       chainTimerService,
       psmFacets,
     },
+    produce: { psmFacets: producePsmFacets },
     installation: {
       consume: { contractGovernor, psm: psmInstall },
     },
@@ -164,6 +165,9 @@ export const startPSM = async (
     psmAdminFacet,
     psmGovernorCreatorFacet: governorFacets.creatorFacet,
   };
+
+  // Provide pattern with a promise.
+  producePsmFacets.resolve(makeScalarMapStore());
 
   /** @type {MapStore<Brand,PSMFacets>} */
   const psmFacetsMap = await psmFacets;
@@ -427,12 +431,6 @@ export const PSM_MANIFEST = harden({
   [makeAnchorAsset.name]: {
     consume: { agoricNamesAdmin: true, bankManager: 'bank', zoe: 'zoe' },
     installation: { consume: { mintHolder: 'zoe' } },
-    issuer: {
-      produce: { AUSD: true },
-    },
-    brand: {
-      produce: { AUSD: true },
-    },
     produce: { testFirstAnchorKit: true },
   },
   [startPSM.name]: {
@@ -448,6 +446,7 @@ export const PSM_MANIFEST = harden({
       chainTimerService: 'timer',
       psmFacets: true,
     },
+    produce: { psmFacets: 'true' },
     installation: {
       consume: { contractGovernor: 'zoe', psm: 'zoe' },
     },
@@ -455,10 +454,7 @@ export const PSM_MANIFEST = harden({
       consume: { economicCommittee: 'economicCommittee' },
     },
     brand: {
-      consume: { AUSD: 'bank', IST: 'zoe' },
-    },
-    issuer: {
-      consume: { AUSD: 'bank' },
+      consume: { [Stable.symbol]: 'zoe' },
     },
   },
 });
@@ -467,8 +463,7 @@ export const getManifestForPsmGovernance = (
   { restoreRef },
   { installKeys },
 ) => {
-  const { [installGovAndPSMContracts.name]: _toss, ...manifest } =
-    PSM_GOV_MANIFEST;
+  const { [installGovAndPSMContracts.name]: _, ...manifest } = PSM_GOV_MANIFEST;
   return {
     manifest,
     installations: {

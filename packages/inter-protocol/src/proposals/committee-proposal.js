@@ -17,6 +17,7 @@ export const inviteCommitteeMembers = async (
       zoe,
       agoricNames,
       namesByAddressAdmin,
+      psmCharterCreatorFacet,
       economicCommitteeCreatorFacet,
       reserveGovernorCreatorFacet,
       ammGovernorCreatorFacet,
@@ -42,6 +43,7 @@ export const inviteCommitteeMembers = async (
     reserve: reserveGovernorCreatorFacet,
     amm: ammGovernorCreatorFacet,
     vaults: vaultFactoryGovernorCreator,
+    psm: psmCharterCreatorFacet,
   };
   const { publicFacet: votingAPI } = E.get(
     E(zoe).startInstance(charterInstall, undefined, terms, privateFacets),
@@ -58,15 +60,19 @@ export const inviteCommitteeMembers = async (
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
-        const [voterInvitation, nullInvitation] = await Promise.all([
-          invitationP,
-          E(votingAPI).makeNullInvitation(),
-        ]);
         await reserveThenDeposit(
           `econ committee member ${addr}`,
           namesByAddressAdmin,
           addr,
-          [voterInvitation, nullInvitation],
+          [
+            invitationP,
+            // TODO(#6598): This null invitation is used just to identify the
+            // closely-held economy charter instance handle.  Instead, the
+            // economy charter should use continuing invitations like the PSM
+            // charter does for compatibility with the smart wallet.
+            E(votingAPI).makeNullInvitation(),
+            E(psmCharterCreatorFacet).makeCharterMemberInvitation(),
+          ],
         );
       }),
     );
@@ -91,6 +97,7 @@ export const getManifestForInviteCommittee = async (
           namesByAddressAdmin: t,
           economicCommitteeCreatorFacet: t,
           reserveGovernorCreatorFacet: t,
+          psmCharterCreatorFacet: t,
           ammGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
         },
