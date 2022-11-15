@@ -16,6 +16,7 @@ export const BridgeId = {
   DIBC: 'dibc',
   STORAGE: 'storage',
   PROVISION: 'provision',
+  PROVISION_SMART_WALLET: 'provisionWallet',
   WALLET: 'wallet',
 };
 harden(BridgeId);
