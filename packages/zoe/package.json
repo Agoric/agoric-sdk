@@ -52,17 +52,17 @@
     "@agoric/swingset-vat": "^0.30.2",
     "@agoric/vat-data": "^0.4.3",
     "@agoric/vats": "^0.13.0",
-    "@endo/bundle-source": "^2.4.1",
-    "@endo/eventual-send": "^0.16.7",
-    "@endo/far": "^0.2.13",
-    "@endo/import-bundle": "^0.2.55",
-    "@endo/marshal": "^0.8.0",
-    "@endo/promise-kit": "^0.2.51"
+    "@endo/bundle-source": "^2.4.2",
+    "@endo/eventual-send": "^0.16.8",
+    "@endo/far": "^0.2.14",
+    "@endo/import-bundle": "^0.3.0",
+    "@endo/marshal": "^0.8.1",
+    "@endo/promise-kit": "^0.2.52"
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.4",
-    "@endo/captp": "^2.0.17",
-    "@endo/init": "^0.5.51",
+    "@endo/captp": "^2.0.18",
+    "@endo/init": "^0.5.52",
     "ava": "^5.0.1",
     "c8": "^7.11.0",
     "import-meta-resolve": "^1.1.1"
