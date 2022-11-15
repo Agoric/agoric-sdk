@@ -143,12 +143,11 @@ scenario2-run-chain-economy: t1/decentral-economy-config.json
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
 		$(MAKE) scenario2-run-chain
 
-scenario2-run-chain-psm: ../vats/decentral-psm-config.json
-	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/../vats/decentral-psm-config.json" \
-		$(MAKE) scenario2-run-chain
-
-scenario2-run-chain:
-	OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
+# We want to use the same configuration that will be deployed to the next
+# devnet.agoric.net so that developers can test their code against it locally.
+scenario2-run-chain: ../vats/decentral-devnet-config.json
+	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/../vats/decentral-devnet-config.json" \
+		OTEL_EXPORTER_PROMETHEUS_PORT=$(OTEL_EXPORTER_PROMETHEUS_PORT) \
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
 # Run a chain with an explicit halt.

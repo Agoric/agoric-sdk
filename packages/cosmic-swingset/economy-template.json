@@ -1,4 +1,5 @@
 [
+  "@agoric/vats/scripts/init-core.js",
   {
     "module": "@agoric/inter-protocol/scripts/init-core.js",
     "entrypoint": "defaultProposalBuilder",
@@ -12,6 +13,11 @@
     ]
   },
   "@agoric/pegasus/scripts/init-core.js",
+  {
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+    "entrypoint": "psmGovernanceBuilder",
+    "args": []
+  },
   {
     "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
     "entrypoint": "defaultProposalBuilder",
@@ -34,6 +40,62 @@
       {
         "anchorOptions": {
           "denom": "ibc/usdc1234",
+          "decimalPlaces": 6,
+          "keyword": "USDC_axl",
+          "proposedName": "USD Coin"
+        }
+      }
+    ]
+  },
+  {
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+    "entrypoint": "psmProposalBuilder",
+    "args": [
+      {
+        "anchorOptions": {
+          "denom": "ibc/usdc5678",
+          "decimalPlaces": 6,
+          "keyword": "USDC_grv",
+          "proposedName": "USC Coin"
+        }
+      }
+    ]
+  },
+  {
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+    "entrypoint": "psmProposalBuilder",
+    "args": [
+      {
+        "anchorOptions": {
+          "denom": "ibc/usdt1234",
+          "decimalPlaces": 6,
+          "keyword": "USDT_axl",
+          "proposedName": "Tether USD"
+        }
+      }
+    ]
+  },
+  {
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+    "entrypoint": "psmProposalBuilder",
+    "args": [
+      {
+        "anchorOptions": {
+          "denom": "ibc/usdt5678",
+          "decimalPlaces": 6,
+          "keyword": "USDT_grv",
+          "proposedName": "Tether USD"
+        }
+      }
+    ]
+  },
+  {
+    "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+    "entrypoint": "psmProposalBuilder",
+    "args": [
+      {
+        "anchorOptions": {
+          "denom": "ibc/toyellie",
           "decimalPlaces": 6,
           "keyword": "AUSD",
           "proposedName": "Anchor USD"
@@ -70,7 +132,8 @@
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
-        "voterAddresses": { "someone": "@FIRST_SOLO_ADDRESS@" }      }
+        "voterAddresses": { "someone": "@FIRST_SOLO_ADDRESS@" }
+      }
     ]
   }
 ]
