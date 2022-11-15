@@ -9,8 +9,6 @@ import {
   assertNatAssetKind,
 } from '../contractSupport/index.js';
 
-import '../../exported.js';
-
 const { details: X } = assert;
 
 /**

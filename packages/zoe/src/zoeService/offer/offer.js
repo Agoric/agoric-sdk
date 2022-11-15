@@ -7,7 +7,6 @@ import { makeInvitationQueryFns } from '../invitationQueries.js';
 
 import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
-import '../../../exported.js';
 import '../internal-types.js';
 
 const { details: X, quote: q } = assert;

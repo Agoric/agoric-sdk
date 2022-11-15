@@ -1,5 +1,3 @@
-import '../../../exported.js';
-
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

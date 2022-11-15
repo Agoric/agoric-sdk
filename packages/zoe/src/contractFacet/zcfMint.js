@@ -10,7 +10,6 @@ import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
-import '../../exported.js';
 import '../internal-types.js';
 import './internal-types.js';
 import './types.js';

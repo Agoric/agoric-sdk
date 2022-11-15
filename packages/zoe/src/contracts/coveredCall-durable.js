@@ -1,6 +1,4 @@
 import { fit, M } from '@agoric/store';
-import '../../exported.js';
-
 import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';

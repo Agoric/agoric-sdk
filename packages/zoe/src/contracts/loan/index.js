@@ -1,5 +1,3 @@
-import '../../../exported.js';
-
 import { Nat } from '@agoric/nat';
 
 import {

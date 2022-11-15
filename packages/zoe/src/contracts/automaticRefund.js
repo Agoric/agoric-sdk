@@ -1,7 +1,5 @@
 import { Far } from '@endo/marshal';
 
-import '../../exported.js';
-
 /**
  * This is a very trivial contract to explain and test Zoe.
  * AutomaticRefund just gives you back what you put in.

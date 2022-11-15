@@ -1,6 +1,4 @@
 import { M, fit } from '@agoric/store';
-import '../../../exported.js';
-
 import { vivifyFarClass, vivifyFarInstance } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import {

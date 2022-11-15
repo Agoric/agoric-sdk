@@ -1,4 +1,3 @@
-import '../../../exported.js';
 import './types.js';
 
 import { AmountMath, isNatValue } from '@agoric/ertp';

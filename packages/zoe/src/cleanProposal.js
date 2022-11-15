@@ -5,7 +5,6 @@ import { assertKey, assertPattern, fit, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 import { arrayToObj } from './objArrayConversion.js';
 
-import '../exported.js';
 import './internal-types.js';
 
 const { ownKeys } = Reflect;

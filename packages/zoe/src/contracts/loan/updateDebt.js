@@ -1,4 +1,3 @@
-import '../../../exported.js';
 import { Far } from '@endo/marshal';
 import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
 import { assert, details as X } from '@agoric/assert';

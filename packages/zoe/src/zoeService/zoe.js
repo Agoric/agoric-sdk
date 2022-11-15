@@ -12,7 +12,6 @@ import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
 import '@agoric/vats/exported.js';
 
-import '../../exported.js';
 import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';

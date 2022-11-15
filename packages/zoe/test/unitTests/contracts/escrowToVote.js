@@ -10,8 +10,6 @@ import {
   assertNatAssetKind,
 } from '../../../src/contractSupport/index.js';
 
-import '../../../exported.js';
-
 const { details: X, quote: q } = assert;
 
 /**

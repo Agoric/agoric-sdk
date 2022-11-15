@@ -13,8 +13,6 @@ import {
   calcSecondaryRequired,
 } from '../contractSupport/index.js';
 
-import '../../exported.js';
-
 /**
  * Autoswap is a rewrite of Uniswap. Please see the documentation for
  * more https://agoric.com/documentation/zoe/guide/contracts/autoswap.html
