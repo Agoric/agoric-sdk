@@ -1,5 +1,9 @@
+// Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
+import '@agoric/swingset-vat/src/vats/network/types.js';
+import '@agoric/ertp/exported.js';
+import '@agoric/zoe/exported.js';
+
 import './types.js';
-import '@agoric/vats/src/core/types.js';
 
 export {
   ChoiceMethod,

@@ -81,7 +81,7 @@
  *
  * @param {ERef<Issuer>} issuerP Promise for issuer
  * @param {Keyword} keyword Keyword for added issuer
- * @returns {Promise<IssuerRecord<K>>} Issuer is added and ready
+ * @returns {Promise<IssuerRecord<*>>} Issuer is added and ready
  */
 
 /**
