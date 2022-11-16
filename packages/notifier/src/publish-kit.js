@@ -13,14 +13,14 @@ const { details: X, quote: q } = assert;
 const sink = () => {};
 const makeQuietRejection = reason => {
   const rejection = HandledPromise.reject(reason);
-  rejection.catch(sink);
-  return rejection;
+  void E.when(rejection, sink, sink);
+  return harden(rejection);
 };
 
 /**
- * Asyncronously iterates over the contents of a PublicationList as it appears.
- * As it proceeds, it must drop the parts of the list it no longer needs.
- * Thus, if no one else is holding on to those, it can be garbage collected.
+ * Asyncronously iterates over the contents of a PublicationList as they appear.
+ * This iteration must drop parts of publication records that are no longer
+ * needed so they can be garbage collected.
  *
  * @template T
  * @param {PublicationList<T>} pubList
@@ -227,6 +227,8 @@ const initDurablePublishKitState = (options = {}) => {
     status: 'live', // | 'finished' | 'failed'
 
     // persisted result data
+    // Note that in addition to non-terminal values from `publish`,
+    // value also holds the terminal value from `finish` or `fail`.
     hasValue: false,
     value: undefined,
   };
@@ -264,7 +266,6 @@ const provideDurablePublishKitEphemeralData = state => {
       tailR: undefined,
     };
   } else if (status === 'finished') {
-    // XXX Should we be harden()ing rejection-reason errors?
     const tailP = makeQuietRejection(
       new Error('Cannot read past end of iteration.'),
     );
@@ -281,6 +282,7 @@ const provideDurablePublishKitEphemeralData = state => {
     };
   } else if (status === 'live') {
     const { promise: tailP, resolve: tailR } = makePromiseKit();
+    void E.when(tailP, sink, sink);
     newData = {
       currentP: state.hasValue
         ? HandledPromise.resolve(
@@ -334,27 +336,25 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
     tailR = undefined;
   } else {
     ({ promise: tailP, resolve: tailR } = makePromiseKit());
+    void E.when(tailP, sink, sink);
   }
   durablePublishKitEphemeralData.set(state, harden({ currentP, tailP, tailR }));
 
   if (rejection) {
-    state.value = rejection;
     state.hasValue = true;
+    state.value = rejection;
     resolveCurrent(rejection);
   } else {
-    state.hasValue = false;
-    try {
-      if (done || valueDurability !== 'ignored') {
-        canBeDurable(value) ||
-          assert.fail(X`Cannot accept non-durable value: ${value}`);
-        state.value = value;
-        state.hasValue = true;
-      }
-    } catch (err) {
-      if (done || valueDurability === 'mandatory') {
-        throw err;
-      }
+    // Persist a terminal value, or a non-terminal value
+    // if configured as 'mandatory' or 'opportunistic'.
+    if (done || valueDurability !== 'ignored' && canBeDurable(value)) {
+      state.hasValue = true;
+      state.value = value;
+    } else {
+      state.hasValue = false;
+      state.value = undefined;
     }
+
     resolveCurrent(
       harden({
         head: { value, done },
