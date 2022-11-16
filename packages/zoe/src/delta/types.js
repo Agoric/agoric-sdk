@@ -2,14 +2,14 @@
 
 /**
  * @template S
- * @typedef {Object} AllocationIncr
+ * @typedef {object} AllocationIncr
  * @property {S} seat
  * @property {AmountKeywordRecord} add
  */
 
 /**
  * @template S
- * @typedef {Object} AllocationDecr
+ * @typedef {object} AllocationDecr
  * @property {S} seat
  * @property {AmountKeywordRecord} subtract
  */
@@ -31,7 +31,7 @@
 
 /**
  * @template S
- * @typedef {Object} ZoeSeatMgr
+ * @typedef {object} ZoeSeatMgr
  * @property {(uncleanAllocation: Allocation) => Allocation} cleanAllocation
  * @property {(seat: S) => boolean} hasExited
  * @property {(seat: S) => Allocation} getCurrentAllocation

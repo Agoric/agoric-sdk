@@ -1,4 +1,4 @@
-import { Far, passStyleOf } from '@agoric/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { getCopySetKeys, isCopySet } from '../keys/checkKey.js';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
