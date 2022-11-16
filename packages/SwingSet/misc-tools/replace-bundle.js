@@ -35,7 +35,9 @@ async function run() {
   const stateDBDir = argv.shift();
   const srcPath = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kernelStorage, hostStorage } = openSwingStore(stateDBDir);
+  const { kvStore } = kernelStorage;
+  const { commit } = hostStorage;
   log(`will use ${srcPath} in ${stateDBDir} for ${bundleName}`);
 
   if (bundleName === 'kernel') {

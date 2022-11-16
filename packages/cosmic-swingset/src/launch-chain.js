@@ -50,7 +50,7 @@ const getHostKey = path => `host.${path}`;
 async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
-  hostStorage,
+  kernelStorage,
   vatconfig,
   argv,
   env,
@@ -93,7 +93,7 @@ async function buildSwingset(
   }
 
   async function ensureSwingsetInitialized() {
-    if (swingsetIsInitialized(hostStorage)) {
+    if (swingsetIsInitialized(kernelStorage)) {
       return;
     }
 
@@ -111,11 +111,11 @@ async function buildSwingset(
     }
     config.pinBootstrapRoot = true;
 
-    await initializeSwingset(config, argv, hostStorage, { debugPrefix });
+    await initializeSwingset(config, argv, kernelStorage, { debugPrefix });
   }
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     deviceEndowments,
     {
       env,
@@ -221,7 +221,7 @@ export async function launch({
 }) {
   console.info('Launching SwingSet kernel');
 
-  const hostStorage = openSwingStore(kernelStateDBDir, {
+  const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
     traceFile: swingStoreTraceFile,
     keepSnapshots,
   });
@@ -259,7 +259,7 @@ export async function launch({
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
     bridgeOutbound,
-    hostStorage,
+    kernelStorage,
     vatconfig,
     argv,
     env,

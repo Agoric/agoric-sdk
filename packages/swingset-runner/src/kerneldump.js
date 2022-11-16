@@ -119,17 +119,17 @@ export function main() {
   if (!kernelStateDBDir) {
     fail(`can't find a database at ${target}`, false);
   }
-  const swingStore = openSwingStore(kernelStateDBDir);
+  const kernelStorage = openSwingStore(kernelStateDBDir).kernelStorage;
   if (justStats) {
-    const rawStats = JSON.parse(swingStore.kvStore.get('kernelStats'));
-    const cranks = Number(swingStore.kvStore.get('crankNumber'));
+    const rawStats = JSON.parse(kernelStorage.kvStore.get('kernelStats'));
+    const cranks = Number(kernelStorage.kvStore.get('crankNumber'));
     printMainStats(organizeMainStats(rawStats, cranks));
   } else {
     if (doDump) {
-      dumpStore(swingStore, outfile, rawMode, !wideMode);
+      dumpStore(kernelStorage, outfile, rawMode, !wideMode);
     }
     if (refCounts) {
-      auditRefCounts(swingStore.kvStore, refDump, doDump);
+      auditRefCounts(kernelStorage.kvStore, refDump, doDump);
     }
   }
 }

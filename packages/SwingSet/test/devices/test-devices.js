@@ -55,9 +55,9 @@ test.serial('d0', async t => {
     },
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   await c.run();
 
@@ -104,9 +104,9 @@ test.serial('d1', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -137,9 +137,9 @@ async function test2(t, mode) {
     },
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run(); // startup
@@ -211,7 +211,7 @@ test.serial('d2.5', async t => {
 });
 
 test.serial('device state', async t => {
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -230,8 +230,8 @@ test.serial('device state', async t => {
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   // The initial state should be missing (null). Then we set it with the call
   // from bootstrap, and read it back.
-  await initializeSwingset(config, ['write+read'], hostStorage, initOpts);
-  const c1 = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, ['write+read'], kernelStorage, initOpts);
+  const c1 = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c1.shutdown);
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
@@ -262,9 +262,9 @@ test.serial('command broadcast', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.queueToVatRoot('bootstrap', 'doCommand1', [], 'panic');
@@ -292,9 +292,9 @@ test.serial('command deliver', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.queueToVatRoot('bootstrap', 'doCommand2', [], 'panic');
@@ -335,9 +335,9 @@ test.serial('liveslots throws when D() gets promise', async t => {
     },
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
@@ -375,9 +375,9 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
     },
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -396,7 +396,7 @@ test.serial('syscall.callNow(promise) is vat-fatal', async t => {
 });
 
 test.serial('device errors cause vat-catchable D error', async t => {
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -416,10 +416,10 @@ test.serial('device errors cause vat-catchable D error', async t => {
   const bootstrapResult = await initializeSwingset(
     config,
     [],
-    hostStorage,
+    kernelStorage,
     initOpts,
   );
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   await c.run();
 
@@ -432,7 +432,7 @@ test.serial('device errors cause vat-catchable D error', async t => {
 });
 
 test.serial('foreign device nodes cause a catchable error', async t => {
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -456,10 +456,10 @@ test.serial('foreign device nodes cause a catchable error', async t => {
   const bootstrapResult = await initializeSwingset(
     config,
     [],
-    hostStorage,
+    kernelStorage,
     initOpts,
   );
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   await c.run();
 

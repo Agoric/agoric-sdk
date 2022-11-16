@@ -19,16 +19,16 @@ async function testTranscriptlessness(t, useTranscript) {
       },
     },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c1 = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
   t.teardown(c1.shutdown);
   await c1.run();
   t.deepEqual(c1.dump().log, ['ephemeralCounter=1 sturdyCounter=1']);
 
   const c2 = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
   t.teardown(c2.shutdown);
   c2.queueToVatRoot('bootstrap', 'go', [], 'panic');

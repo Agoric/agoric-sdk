@@ -149,7 +149,7 @@ function makeConsole(tag) {
 export function makeKernelEndowments() {
   return {
     waitUntilQuiescent,
-    hostStorage: initSwingStore(),
+    kernelStorage: initSwingStore().kernelStorage,
     runEndOfCrank: () => {},
     makeConsole,
     WeakRef,

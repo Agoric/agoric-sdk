@@ -46,7 +46,9 @@ async function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kernelStorage, hostStorage } = openSwingStore(stateDBDir);
+  const { kvStore } = kernelStorage;
+  const { commit } = hostStorage;
 
   if (range) {
     for (const k of kvStore.getKeys(`${key}.`, `${key}/`)) {

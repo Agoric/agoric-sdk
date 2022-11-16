@@ -57,7 +57,7 @@ function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { kvStore } = openSwingStore(stateDBDir);
+  const { kvStore } = openSwingStore(stateDBDir).kernelStorage;
 
   function pkv(k) {
     const value = kvStore.get(k);

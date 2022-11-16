@@ -20,8 +20,9 @@ test.before(async t => {
 
 test.skip('snapshots', async t => {
   const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
-  const { commit, ...hostStorage } = initSwingStore(swingStorePath);
-  const { snapStore, kvStore } = hostStorage;
+  const { kernelStorage, hostStorage } = initSwingStore(swingStorePath);
+  const { commit } = hostStorage;
+  const { snapStore, kvStore } = kernelStorage;
   const config = {
     defaultManagerType: 'xs-worker',
     snapshotInitial: 1,
@@ -37,8 +38,8 @@ test.skip('snapshots', async t => {
   initOpts.addComms = false;
   initOpts.addVattp = false;
   initOpts.addTimer = false;
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

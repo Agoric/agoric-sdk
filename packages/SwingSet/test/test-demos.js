@@ -25,10 +25,10 @@ async function main(basedir, argv) {
     loopbox: { ...loopboxEndowments },
   };
 
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, argv, hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, argv, kernelStorage);
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     deviceEndowments,
   );
   await controller.run();

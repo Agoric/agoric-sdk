@@ -41,10 +41,10 @@ test.serial('vattp', async t => {
   const deviceEndowments = {
     mailbox: { ...mb.endowments },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(config, ['1'], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, ['1'], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(s.exportToData(), {});
@@ -87,10 +87,10 @@ test.serial('vattp 2', async t => {
   const deviceEndowments = {
     mailbox: { ...mb.endowments },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(config, ['2'], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, ['2'], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

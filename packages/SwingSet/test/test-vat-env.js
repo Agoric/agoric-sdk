@@ -73,9 +73,9 @@ async function testForExpectedGlobals(t, workerType) {
     },
     defaultManagerType: workerType,
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
   t.teardown(c.shutdown);
   await c.run();

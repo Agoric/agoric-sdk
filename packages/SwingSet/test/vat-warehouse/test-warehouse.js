@@ -130,10 +130,10 @@ function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
 test('snapshot after deliveries', async t => {
   const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
-  const hostStorage = initSwingStore(swingStorePath);
+  const { kernelStorage, hostStorage } = initSwingStore(swingStorePath);
   const c = await makeController(
     'xs-worker',
-    { hostStorage, warehousePolicy: { maxVatsOnline } },
+    { kernelStorage, warehousePolicy: { maxVatsOnline } },
     1,
   );
   t.teardown(c.shutdown);
@@ -142,7 +142,7 @@ test('snapshot after deliveries', async t => {
   await hostStorage.commit();
 
   const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
-    hostStorage.kvStore,
+    kernelStorage.kvStore,
     `${swingStorePath}/xs-snapshots`,
   );
   t.log({ inUse, onDisk, extra });

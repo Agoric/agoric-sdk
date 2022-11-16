@@ -30,10 +30,10 @@ test('wake', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['timer'], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['timer'], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
@@ -47,10 +47,10 @@ test('repeater', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['repeater', 3, 2], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();
@@ -68,10 +68,10 @@ test('repeater2', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['repeater', 3, 2], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['repeater', 3, 2], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   timer.poll(1n);
   await c.run();
@@ -92,10 +92,10 @@ test('repeaterZero', async t => {
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  await initializeSwingset(timerConfig, ['repeater', 0, 3], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(timerConfig, ['repeater', 0, 3], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   timer.poll(1);
   await c.run();

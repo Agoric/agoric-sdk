@@ -20,10 +20,10 @@ test.serial('replay does not resurrect dead vat', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const hostStorage1 = initSwingStore();
+  const kernelStorage1 = initSwingStore().kernelStorage;
   {
     const c1 = await buildVatController(config, [], {
-      hostStorage: hostStorage1,
+      kernelStorage: kernelStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
@@ -32,13 +32,13 @@ test.serial('replay does not resurrect dead vat', async t => {
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }
 
-  const state1 = getAllState(hostStorage1);
-  const hostStorage2 = initSwingStore();
+  const state1 = getAllState(kernelStorage1);
+  const kernelStorage2 = initSwingStore().kernelStorage;
   // XXX TODO also copy transcripts
-  setAllState(hostStorage2, state1);
+  setAllState(kernelStorage2, state1);
   {
     const c2 = await buildVatController(config, [], {
-      hostStorage: hostStorage2,
+      kernelStorage: kernelStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
     await c2.run();

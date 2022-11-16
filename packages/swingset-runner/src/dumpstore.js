@@ -2,8 +2,8 @@ import fs from 'fs';
 import process from 'process';
 
 /* eslint-disable no-use-before-define */
-export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
-  const streamStore = swingStore.streamStore;
+export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
+  const streamStore = kernelStorage.streamStore;
   let out;
   if (outfile) {
     out = fs.createWriteStream(outfile);
@@ -12,8 +12,8 @@ export function dumpStore(swingStore, outfile, rawMode, truncate = true) {
   }
 
   const state = new Map();
-  for (const key of swingStore.kvStore.getKeys('', '~')) {
-    const value = swingStore.kvStore.get(key);
+  for (const key of kernelStorage.kvStore.getKeys('', '~')) {
+    const value = kernelStorage.kvStore.get(key);
     if (rawMode) {
       pkv(key, value);
     } else {

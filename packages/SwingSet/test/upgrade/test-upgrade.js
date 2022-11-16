@@ -24,8 +24,8 @@ test.before(async t => {
 });
 
 // eslint-disable-next-line no-unused-vars
-const dumpState = (hostStorage, vatID) => {
-  const s = getAllState(hostStorage).kvStuff;
+const dumpState = (kernelStorage, vatID) => {
+  const s = getAllState(kernelStorage).kvStuff;
   const keys = Array.from(Object.keys(s)).sort();
   for (const k of keys) {
     if (k.startsWith(`${vatID}.vs.`)) {
@@ -130,11 +130,11 @@ const testUpgrade = async (
     },
   };
 
-  const hostStorage = initSwingStore();
-  const { kvStore } = hostStorage;
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { kvStore } = kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -195,7 +195,7 @@ const testUpgrade = async (
     return kvStore.has(`${vatID}.vs.vom.${vref}`);
   };
 
-  // dumpState(hostStorage, vatID);
+  // dumpState(kernelStorage, vatID);
 
   // deduce exporter vrefs for all durable/virtual objects, and assert
   // that they're still in DB
@@ -261,7 +261,7 @@ const testUpgrade = async (
   t.is(c.kpStatus(v1p2Kref), 'rejected');
   t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
 
-  // dumpState(hostStorage, vatID);
+  // dumpState(kernelStorage, vatID);
 
   // all the merely-virtual exports should be gone
   // for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
@@ -359,10 +359,10 @@ test('vat upgrade - omit vatParameters', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -387,10 +387,10 @@ test('failed upgrade - relaxed durable rules', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -421,10 +421,10 @@ test('failed upgrade - lost kind', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -480,9 +480,9 @@ test('failed upgrade - explode', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   c.pinVatRoot('bootstrap');
   await c.run();
   const run = makeRun(c);
@@ -524,10 +524,10 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -607,10 +607,10 @@ test('failed upgrade - unknown options', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -638,9 +638,9 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   c.pinVatRoot('bootstrap');
   await c.run();
   const run = makeRun(c);

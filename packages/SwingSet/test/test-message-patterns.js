@@ -139,9 +139,9 @@ export async function runVatsInComms(t, name) {
     loopbox: { ...loopboxEndowments },
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [name], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [name], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
 
   // await runWithTrace(c);

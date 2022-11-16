@@ -31,10 +31,10 @@ const config = {
 };
 
 test('imported promises in vdata', async t => {
-  const hostStorage = initSwingStore();
-  const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { kvStore } = kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.pinVatRoot('target');
@@ -73,10 +73,10 @@ test('imported promises in vdata', async t => {
 });
 
 test('result promises in vdata', async t => {
-  const hostStorage = initSwingStore();
-  const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { kvStore } = kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.pinVatRoot('target');
@@ -115,10 +115,10 @@ test('result promises in vdata', async t => {
 });
 
 test('exported promises in vdata', async t => {
-  const hostStorage = initSwingStore();
-  const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { kvStore } = kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.pinVatRoot('target');

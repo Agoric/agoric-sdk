@@ -31,8 +31,8 @@ test.serial('exercise cache', async t => {
   const log = [];
 
   const expectedVatID = 'v1';
-  const hostStorage = initSwingStore();
-  const kvStore = hostStorage.kvStore;
+  const kernelStorage = initSwingStore().kernelStorage;
+  const kvStore = kernelStorage.kvStore;
   function vsKey(key) {
     // ignore everything except vatStores on the one vat under test
     // (especially ignore comms, which performs vatstore operations during
@@ -62,17 +62,17 @@ test.serial('exercise cache', async t => {
       kvStore.delete(key);
     },
   };
-  const loggingHostStorage = {
-    ...hostStorage,
+  const loggingKernelStorage = {
+    ...kernelStorage,
     kvStore: loggingKVStore,
   };
 
   const bootstrapResult = await initializeSwingset(
     config,
     [],
-    loggingHostStorage,
+    loggingKernelStorage,
   );
-  const c = await makeSwingsetController(loggingHostStorage, {});
+  const c = await makeSwingsetController(loggingKernelStorage, {});
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
@@ -351,9 +351,9 @@ test('virtual object gc', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  const c = await buildVatController(config, [], { hostStorage });
+  const c = await buildVatController(config, [], { kernelStorage });
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
@@ -361,8 +361,8 @@ test('virtual object gc', async t => {
   t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
-  for (const key of hostStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
-    remainingVOs[key] = hostStorage.kvStore.get(key);
+  for (const key of kernelStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
+    remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
   // prettier-ignore
   t.deepEqual(remainingVOs, {
@@ -420,9 +420,9 @@ async function orphanTest(t, mode) {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  const c = await buildVatController(config, [mode], { hostStorage });
+  const c = await buildVatController(config, [mode], { kernelStorage });
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 

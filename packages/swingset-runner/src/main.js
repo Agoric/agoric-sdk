@@ -375,6 +375,7 @@ export async function main() {
     default:
       fail(`invalid database mode ${dbMode}`, true);
   }
+  const { kernelStorage, hostStorage } = swingStore;
   const runtimeOptions = {};
   if (verbose) {
     runtimeOptions.verbose = true;
@@ -428,20 +429,20 @@ export async function main() {
     bootstrapResult = await initializeSwingset(
       config,
       bootstrapArgv,
-      swingStore,
+      kernelStorage,
       { verbose },
       runtimeOptions,
     );
     // eslint-disable-next-line @jessie.js/no-nested-await
-    await swingStore.commit();
+    await hostStorage.commit();
     if (initOnly) {
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await swingStore.close();
+      await hostStorage.close();
       return;
     }
   }
   const controller = await makeSwingsetController(
-    swingStore,
+    kernelStorage,
     deviceEndowments,
     runtimeOptions,
   );
@@ -494,9 +495,9 @@ export async function main() {
           log(`activityHash: ${controller.getActivityhash()}`);
         }
         // eslint-disable-next-line @jessie.js/no-nested-await
-        await swingStore.commit();
+        await hostStorage.commit();
         // eslint-disable-next-line @jessie.js/no-nested-await
-        await swingStore.close();
+        await hostStorage.close();
         log(`runner stepped ${steps} crank${steps === 1 ? '' : 's'}`);
       } catch (err) {
         kernelFailure(err);
@@ -509,13 +510,13 @@ export async function main() {
         replMode: repl.REPL_MODE_STRICT,
       });
       cli.on('exit', () => {
-        swingStore.close();
+        hostStorage.close();
       });
       cli.context.dump2 = () => controller.dump();
       cli.defineCommand('commit', {
         help: 'Commit current kernel state to persistent storage',
         action: async () => {
-          await swingStore.commit();
+          await hostStorage.commit();
           log('committed');
           cli.displayPrompt();
         },
@@ -585,12 +586,12 @@ export async function main() {
   controller.shutdown();
 
   function getCrankNumber() {
-    return Number(swingStore.kvStore.get('crankNumber'));
+    return Number(kernelStorage.kvStore.get('crankNumber'));
   }
 
   function kernelStateDump() {
     const dumpPath = `${dumpDir}/${dumpTag}${crankNumber}`;
-    dumpStore(swingStore, dumpPath, rawMode);
+    dumpStore(kernelStorage, dumpPath, rawMode);
   }
 
   async function runBenchmark(rounds) {
@@ -658,7 +659,7 @@ export async function main() {
         kernelStateDump();
       }
       if (doAudits) {
-        auditRefCounts(swingStore.kvStore);
+        auditRefCounts(kernelStorage.kvStore);
       }
       if (activityHash) {
         log(`activityHash: ${controller.getActivityhash()}`);
@@ -670,7 +671,7 @@ export async function main() {
     const commitStartTime = readClock();
     if (doCommit) {
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await swingStore.commit();
+      await hostStorage.commit();
     }
     const blockEndTime = readClock();
     controller.writeSlogObject({
@@ -702,7 +703,7 @@ export async function main() {
         ]);
       }
       if (logDisk) {
-        const diskUsage = dbMode === '--sqlite' ? swingStore.diskUsage() : 0;
+        const diskUsage = dbMode === '--sqlite' ? hostStorage.diskUsage() : 0;
         data.push(diskUsage);
       }
       if (logStats) {
@@ -740,13 +741,13 @@ export async function main() {
       kernelStateDump();
     }
     if (doAudits) {
-      auditRefCounts(swingStore.kvStore);
+      auditRefCounts(kernelStorage.kvStore);
     }
 
     let [totalSteps, deltaT] = await runBatch(stepLimit, runInBlockMode);
     if (!runInBlockMode) {
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await swingStore.commit();
+      await hostStorage.commit();
     }
     const cranks = getCrankNumber();
     const rawStats = controller.getStats();
@@ -775,7 +776,7 @@ export async function main() {
         bootstrapResult = null;
       }
     }
-    await swingStore.close();
+    await hostStorage.close();
     if (statsFile) {
       outputStats(statsFile, mainStats, benchmarkStats);
     }

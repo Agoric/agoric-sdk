@@ -198,7 +198,7 @@ const buildSwingset = async (
   const keepSnapshots =
     XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
-  const hostStorage = openSwingStore(kernelStateDBDir, {
+  const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
     traceFile: swingStoreTraceFile,
     keepSnapshots,
   });
@@ -209,11 +209,11 @@ const buildSwingset = async (
     metricMeter,
   });
 
-  if (!swingsetIsInitialized(hostStorage)) {
+  if (!swingsetIsInitialized(kernelStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
     }
-    await initializeSwingset(config, argv, hostStorage);
+    await initializeSwingset(config, argv, kernelStorage);
   }
   const slogSender = await makeSlogSender({
     stateDir: kernelStateDBDir,
@@ -221,7 +221,7 @@ const buildSwingset = async (
     env,
   });
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     deviceEndowments,
     { env, slogCallbacks, slogSender },
   );

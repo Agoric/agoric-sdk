@@ -55,8 +55,8 @@ async function main() {
     fail(`can't find a database at ${dbDir}`);
   }
 
-  const swingStore = openSwingStore(kernelStateDBDir);
-  const kvStore = swingStore.kvStore;
+  const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir);
+  const kvStore = kernelStorage.kvStore;
   assert(kvStore.get('initialized'), 'kernel store not initialized');
 
   const kernelBundle = await bundleSource(
@@ -64,8 +64,8 @@ async function main() {
   );
 
   kvStore.set('kernelBundle', JSON.stringify(kernelBundle));
-  await swingStore.commit();
-  await swingStore.close();
+  await hostStorage.commit();
+  await hostStorage.close();
 }
 
 main().then(
