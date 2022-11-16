@@ -104,6 +104,20 @@
 /**
  * @typedef {object} DurablePublishKitOptions
  * @property {'mandatory' | 'opportunistic' | 'ignored'} [valueDurability]
+ *
+ * valueDurability configures constraints on non-terminal values that can be
+ * published to a durable publish kit (terminal values sent to finish or fail
+ * must always be durable).
+ * - 'mandatory' means that each value must be durable, so it can be restored
+ *   on upgrade.
+ * - 'opportunistic' means that a durable value is persisted for post-upgrade
+ *   restoration, but a non-durable value is still accepted (and will result in
+ *   valueless restoration).
+ * - 'ignored' means that a value is not persisted for restoration even if it
+ *   is durable.
+ *
+ * 'mandatory' is the only currently-supported value, and others must not be
+ * enabled without test coverage.
  */
 
 // /////////////////////////////////////////////////////////////////////////////
