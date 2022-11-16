@@ -21,7 +21,7 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
  * via ratios.
  *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
- * @param {object} [root0]
+ * @param {object} root0
  * @param {ERef<Mint<'set'>>} [root0.quoteMint]
  */
 export const start = async (

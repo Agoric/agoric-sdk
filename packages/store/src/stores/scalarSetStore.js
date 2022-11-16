@@ -81,7 +81,7 @@ export const makeSetStoreMethods = (
  *
  * @template K
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} options
  * @returns {SetStore<K>}
  */
 export const makeScalarSetStore = (

@@ -1,5 +1,5 @@
 /**
- * @typedef {( {zcf: ZCF} ) => void} TestJigSetter
+ * @typedef {( jigs: {zcf: ZCF} ) => void} TestJigSetter
  */
 
 /**

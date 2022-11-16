@@ -306,7 +306,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
       /**
        * @param {string | [string, ...any]} key
-       * @param {object} [options]
+       * @param {object} options
        * @param {string} [options.kind]
        * @param {string} [options.name]
        * @param {Record<string, any>} [options.attributes]
@@ -334,7 +334,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
 
       /**
        * @param {string | [string, ...any]} [assertKindOrKey]
-       * @param {object} [options]
+       * @param {object} options
        * @param {Record<string, any>} [options.attributes]
        * @param {string} [options.errorMessage]
        */

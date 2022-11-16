@@ -63,7 +63,7 @@ export const makeWeakSetStoreMethods = (
  *
  * @template K
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} options
  * @returns {WeakSetStore<K>}
  */
 export const makeScalarWeakSetStore = (

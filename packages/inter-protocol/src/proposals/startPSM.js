@@ -16,7 +16,7 @@ const { values } = Object;
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {object} [config]
+ * @param {object} config
  * @param {bigint} [config.WantMintedFeeBP]
  * @param {bigint} [config.GiveMintedFeeBP]
  * @param {bigint} [config.MINT_LIMIT]
@@ -202,7 +202,7 @@ harden(startPSM);
  * USDC over IBC. Add it to BankManager.
  *
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
- * @param {{options?: { anchorOptions?: AnchorOptions } }} [config]
+ * @param {{options?: { anchorOptions?: AnchorOptions } }} config
  */
 export const makeAnchorAsset = async (
   {

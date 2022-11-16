@@ -296,7 +296,7 @@ const decodeTagged = (encoded, decodePassable) => {
  */
 
 /**
- * @param {EncodeOptions} [encodeOptions]
+ * @param {EncodeOptions} encodeOptions
  * @returns {(passable: Passable) => string}
  */
 // `yarn lint` complains here but not for equivalent code in agoric-sdk.
@@ -399,7 +399,7 @@ harden(makeEncodePassable);
  */
 
 /**
- * @param {DecodeOptions} [decodeOptions]
+ * @param {DecodeOptions} decodeOptions
  * @returns {(encoded: string) => Passable}
  */
 // `yarn lint` complains here but not for equivalent code in agoric-sdk.

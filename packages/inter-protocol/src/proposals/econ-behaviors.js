@@ -82,7 +82,7 @@ const MILLI = 1_000_000n;
  * @param {EconomyBootstrapPowers} powers
  * @param {{
  *   interchainPoolOptions?: { minimumCentral?: bigint }
- * }} [options]
+ * }} options
  */
 export const startInterchainPool = async (
   {
@@ -474,7 +474,7 @@ export const startVaultFactory = async (
  * to up to one user based on address.
  *
  * @param {EconomyBootstrapPowers} powers
- * @param {object} [root0]
+ * @param {object} root0
  * @param {object} [root0.options]
  * @param {string} [root0.options.vaultFactoryControllerAddress]
  */

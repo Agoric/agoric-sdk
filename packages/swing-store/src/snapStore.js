@@ -56,7 +56,7 @@ const sink = () => {};
  *   tmpName: typeof import('tmp').tmpName,
  *   unlink: typeof import('fs').promises.unlink,
  * }} io
- * @param {object} [options]
+ * @param {object} options
  * @param {boolean | undefined} [options.keepSnapshots]
  * @returns {SnapStore}
  */

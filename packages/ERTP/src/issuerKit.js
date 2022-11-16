@@ -91,7 +91,7 @@ harden(vivifyIssuerKit);
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {Partial<{elementShape: Pattern}>} [options]
+ * @param {Partial<{elementShape: Pattern}>} options
  * @returns {IssuerKit<K>}
  */
 export const makeDurableIssuerKit = (
@@ -136,7 +136,7 @@ harden(makeDurableIssuerKit);
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {Partial<{elementShape: Pattern}>} [options]
+ * @param {Partial<{elementShape: Pattern}>} options
  * @returns {IssuerKit<K>}
  */
 export const makeIssuerKit = (

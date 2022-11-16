@@ -81,7 +81,7 @@ export const makeWeakMapStoreMethods = (
  *
  * @template K,V
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} options
  * @returns {WeakMapStore<K,V>}
  */
 export const makeScalarWeakMapStore = (

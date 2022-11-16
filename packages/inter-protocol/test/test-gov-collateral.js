@@ -114,7 +114,7 @@ test.before(async t => {
 
 /**
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
- * @param {{ env?: Record<string, string|undefined> }} [io]
+ * @param {{ env?: Record<string, string|undefined> }} io
  */
 const makeScenario = async (t, { env = process.env } = {}) => {
   const space = await setupBootstrap(t);

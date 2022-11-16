@@ -123,7 +123,7 @@ export const makeMapStoreMethods = (
  *
  * @template K,V
  * @param {string} [tag='key'] - the column name for the key
- * @param {StoreOptions=} options
+ * @param {StoreOptions} options
  * @returns {MapStore<K,V>}
  */
 export const makeScalarMapStore = (

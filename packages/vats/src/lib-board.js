@@ -31,7 +31,7 @@ const calcCrc = (data, crcDigits) => {
  * Create a board to post things on.
  *
  * @param {bigint | number} [initSequence]
- * @param {object} [options]
+ * @param {object} options
  * @param {string} [options.prefix]
  * @param {number} [options.crcDigits]
  */

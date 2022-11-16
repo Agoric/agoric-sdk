@@ -832,7 +832,7 @@ export function makeCollectionManager(
    *
    * @template K,V
    * @param {string} [label='map'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} options
    * @returns {MapStore<K,V>}
    */
   function makeScalarBigMapStore(
@@ -874,7 +874,7 @@ export function makeCollectionManager(
    *
    * @template K,V
    * @param {string} [label='weakMap'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} options
    * @returns {WeakMapStore<K,V>}
    */
   function makeScalarBigWeakMapStore(
@@ -901,7 +901,7 @@ export function makeCollectionManager(
    *
    * @template K
    * @param {string} [label='set'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} options
    * @returns {SetStore<K>}
    */
   function makeScalarBigSetStore(
@@ -926,7 +926,7 @@ export function makeCollectionManager(
    *
    * @template K
    * @param {string} [label='weakSet'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} options
    * @returns {WeakSetStore<K>}
    */
   function makeScalarBigWeakSetStore(

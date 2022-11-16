@@ -113,7 +113,7 @@ const startGovernedInstance = async (
  *   options?: {
  *     perAccountInitialValue?: bigint
  *   },
- * }} [config]
+ * }} config
  */
 export const startWalletFactory = async (
   {

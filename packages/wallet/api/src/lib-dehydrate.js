@@ -90,7 +90,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   /**
    * @template T
    * @param {string} kind
-   * @param {{useLegacyMap?: boolean}=} legacyOptions
+   * @param {{useLegacyMap?: boolean}} legacyOptions
    * @returns {Mapping<T>}
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
