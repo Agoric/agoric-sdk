@@ -445,6 +445,7 @@ const behavior = {
      *
      * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
      * @param {boolean} [canSpend=false]
+     * @returns {Promise<void>}
      */
     handleBridgeAction(actionCapData, canSpend = false) {
       const { publicMarshaller } = this.state;
@@ -472,11 +473,11 @@ const behavior = {
     getOffersFacet() {
       return this.facets.offers;
     },
-
+    /** @returns {StoredSubscriber<CurrentWalletRecord>} */
     getCurrentSubscriber() {
       return this.state.currentPublishKit.subscriber;
     },
-
+    /** @returns {StoredSubscriber<UpdateRecord>} */
     getUpdatesSubscriber() {
       /** @type {{state: State}} */
       // @ts-expect-error
