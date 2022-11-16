@@ -1,0 +1,20 @@
+diff --git a/node_modules/@endo/netstring/reader.js b/node_modules/@endo/netstring/reader.js
+index ce06b91..e41c464 100644
+--- a/node_modules/@endo/netstring/reader.js
++++ b/node_modules/@endo/netstring/reader.js
+@@ -1,4 +1,4 @@
+-// @ts-check
++// @ts-nocheck
+ /// <reference types="ses"/>
+ 
+ const COLON = ':'.charCodeAt(0);
+diff --git a/node_modules/@endo/netstring/writer.js b/node_modules/@endo/netstring/writer.js
+index f7f67eb..7efda46 100644
+--- a/node_modules/@endo/netstring/writer.js
++++ b/node_modules/@endo/netstring/writer.js
+@@ -1,4 +1,4 @@
+-// @ts-check
++// @ts-nocheck
+ /// <reference types="ses"/>
+ 
+ const COMMA_BUFFER = new Uint8Array([','.charCodeAt(0)]);
