@@ -351,7 +351,7 @@ test('failed upgrade - relaxed durable rules', async t => {
   // upgrade should fail
   const [v2status, v2result] = await run('upgradeV2', []);
   t.is(v2status, 'rejected');
-  const e = kunser(kunser(v2result));
+  const e = kunser(v2result);
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
 });
@@ -405,7 +405,7 @@ test('failed upgrade - lost kind', async t => {
   // unwound.  Then the `E(ulrikAdmin).upgrade()` promise rejects,
   // pushing the error onto 'events'
 
-  const e = kunser(events[1]);
+  const e = events[1];
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
 
@@ -465,7 +465,7 @@ test('failed upgrade - explode', async t => {
   const [v2status, v2result] = await run('upgradeV2WhichExplodes', []);
   t.is(v2status, 'fulfilled');
   const events = kunser(v2result);
-  const e = kunser(events[0]);
+  const e = events[0];
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
   // bootstrap sends pingback() to the vat post-upgrade, which sends
@@ -522,7 +522,7 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
   const [v2status, v2result] = await run('upgradeV2Simple', [mode]);
   if (complaint) {
     t.is(v2status, 'rejected');
-    const e = kunser(kunser(v2result));
+    const e = kunser(v2result);
     t.truthy(e instanceof Error);
     t.regex(e.message, /vat-upgrade failure/);
     // TODO: who should see the details of what v2 did wrong? calling
@@ -649,7 +649,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   const kpid = c.upgradeStaticVat('vatAdmin', true, bundleID, {});
   await c.run();
   const vaUpgradeStatus = c.kpStatus(kpid);
-  const vaUpgradeResult = kunser(kunser(c.kpResolution(kpid)));
+  const vaUpgradeResult = kunser(c.kpResolution(kpid));
 
   t.is(vaUpgradeStatus, 'rejected');
   t.truthy(vaUpgradeResult instanceof Error);

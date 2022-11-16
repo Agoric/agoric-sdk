@@ -832,7 +832,7 @@ export default function buildKernel(
       insistCapData(_errorCD); // kser(Error)
       // const error = kunser(_errorCD)
       // actually we shouldn't reveal the details, so instead we do:
-      const error = kser(Error('vat-upgrade failure'));
+      const error = Error('vat-upgrade failure');
       return ['vatUpgradeCallback', [upgradeID, false, error]];
     }
 
