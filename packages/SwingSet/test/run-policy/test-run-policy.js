@@ -23,9 +23,9 @@ async function testCranks(t, mode) {
     },
     defaultManagerType: 'xs-worker',
   };
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('left');
   const rightKref = c.pinVatRoot('right');
@@ -55,9 +55,9 @@ async function testCranks(t, mode) {
     throw Error(`unknown mode ${mode}`);
   }
 
-  let oldCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
+  let oldCrankNum = parseInt(kernelStorage.kvStore.get('crankNumber'), 10);
   function elapsedCranks() {
-    const newCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
+    const newCrankNum = parseInt(kernelStorage.kvStore.get('crankNumber'), 10);
     const elapsed = newCrankNum - oldCrankNum;
     oldCrankNum = newCrankNum;
     return elapsed;

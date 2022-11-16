@@ -31,10 +31,10 @@ test.serial('replay dynamic vat', async t => {
   };
 
   // XXX TODO: also copy and check transcripts
-  const hostStorage1 = initSwingStore();
+  const kernelStorage1 = initSwingStore().kernelStorage;
   {
     const c1 = await buildVatController(copy(config), [], {
-      hostStorage: hostStorage1,
+      kernelStorage: kernelStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c1.shutdown);
@@ -48,12 +48,12 @@ test.serial('replay dynamic vat', async t => {
   // we could re-use the Storage object, but I'll be paranoid and create a
   // new one.
 
-  const state1 = getAllState(hostStorage1);
-  const hostStorage2 = initSwingStore();
-  setAllState(hostStorage2, state1);
+  const state1 = getAllState(kernelStorage1);
+  const kernelStorage2 = initSwingStore().kernelStorage;
+  setAllState(kernelStorage2, state1);
   {
     const c2 = await buildVatController(copy(config), [], {
-      hostStorage: hostStorage2,
+      kernelStorage: kernelStorage2,
     });
     t.teardown(c2.shutdown);
     const r2 = c2.queueToVatRoot('bootstrap', 'check', [], 'panic');

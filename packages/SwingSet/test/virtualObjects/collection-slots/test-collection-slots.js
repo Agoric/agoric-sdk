@@ -37,10 +37,10 @@ test('collection entry slots trigger doMoreGC', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
-  const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { kvStore } = kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   c.pinVatRoot('target');

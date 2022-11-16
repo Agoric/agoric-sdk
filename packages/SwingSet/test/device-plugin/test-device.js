@@ -12,7 +12,7 @@ import { buildBridge } from '../../src/devices/bridge/bridge.js';
 import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 
 test.before('initialize storage', t => {
-  t.context.hostStorage = initSwingStore();
+  t.context.kernelStorage = initSwingStore().kernelStorage;
 });
 
 async function setupVatController(t) {
@@ -36,7 +36,7 @@ async function setupVatController(t) {
     bridge: { ...bridge.endowments },
   };
 
-  if (!swingsetIsInitialized(t.context.hostStorage)) {
+  if (!swingsetIsInitialized(t.context.kernelStorage)) {
     const config = {
       bootstrap: 'bootstrap',
       vats: {
@@ -56,10 +56,10 @@ async function setupVatController(t) {
         },
       },
     };
-    await initializeSwingset(config, ['plugin'], t.context.hostStorage);
+    await initializeSwingset(config, ['plugin'], t.context.kernelStorage);
   }
   const c = await makeSwingsetController(
-    t.context.hostStorage,
+    t.context.kernelStorage,
     deviceEndowments,
   );
   t.teardown(c.shutdown);

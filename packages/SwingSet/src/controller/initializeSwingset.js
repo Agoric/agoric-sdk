@@ -255,8 +255,8 @@ export async function loadSwingsetConfigFile(configPath) {
   }
 }
 
-export function swingsetIsInitialized(hostStorage) {
-  return !!hostStorage.kvStore.get('initialized');
+export function swingsetIsInitialized(kernelStorage) {
+  return !!kernelStorage.kvStore.get('initialized');
 }
 
 /**
@@ -284,20 +284,20 @@ function sortObjectProperties(obj, firsts = []) {
 /**
  * @param {SwingSetConfig} config
  * @param {string[]} argv
- * @param {SwingStore} hostStorage
+ * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
   config,
   argv = [],
-  hostStorage,
+  kernelStorage,
   initializationOptions = {},
   runtimeOptions = {},
 ) {
-  const kvStore = hostStorage.kvStore;
+  const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
-  !swingsetIsInitialized(hostStorage) || Fail`kernel store already initialized`;
+  !swingsetIsInitialized(kernelStorage) || Fail`kernel store already initialized`;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));
@@ -344,7 +344,7 @@ export async function initializeSwingset(
 
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
   kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
-  hostStorage.resetCrankhash();
+  kernelStorage.resetCrankhash();
 
   if (config.bootstrap && argv) {
     const bootConfig = config.vats[config.bootstrap];
@@ -522,5 +522,5 @@ export async function initializeSwingset(
   if (verbose) {
     kdebugEnable(true);
   }
-  return initializeKernel(kconfig, hostStorage);
+  return initializeKernel(kconfig, kernelStorage);
 }

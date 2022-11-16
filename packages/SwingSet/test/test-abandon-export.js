@@ -9,8 +9,8 @@ import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
 function makeKernel() {
   const endowments = makeKernelEndowments();
-  const { kvStore } = endowments.hostStorage;
-  initializeKernel({}, endowments.hostStorage);
+  const { kvStore } = endowments.kernelStorage;
+  initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   return { kernel, kvStore };
 }

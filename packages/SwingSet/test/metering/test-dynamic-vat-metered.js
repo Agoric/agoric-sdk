@@ -36,9 +36,9 @@ async function meterObjectsTest(t, doVatAdminRestarts) {
       },
     },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);
@@ -168,10 +168,10 @@ async function overflowCrank(t, explosion) {
       },
     },
   };
-  const hostStorage = initSwingStore();
-  const kvStore = hostStorage.kvStore;
+  const kernelStorage = initSwingStore().kernelStorage;
+  const kvStore = kernelStorage.kvStore;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);
@@ -272,9 +272,9 @@ test('meter decrements', async t => {
       },
     },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);
@@ -375,9 +375,9 @@ async function unlimitedMeterTest(t, doVatAdminRestarts) {
       },
     },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);

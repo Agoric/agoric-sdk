@@ -158,7 +158,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
 
 /**
  *
- * @param {SwingStore} hostStorage
+ * @param {SwingStoreKernelStorage} kernelStorage
  * @param {Record<string, unknown>} deviceEndowments
  * @param {{
  *   verbose?: boolean,
@@ -174,11 +174,11 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
-  hostStorage = initSwingStore(),
+  kernelStorage = initSwingStore().kernelStorage,
   deviceEndowments = {},
   runtimeOptions = {},
 ) {
-  const kvStore = hostStorage.kvStore;
+  const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
 
   // Use ambient process.env only if caller did not specify.
@@ -292,14 +292,14 @@ export async function makeSwingsetController(
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, {
-    snapStore: hostStorage.snapStore,
+    snapStore: kernelStorage.snapStore,
     env,
     spawn,
   });
 
   const kernelEndowments = {
     waitUntilQuiescent,
-    hostStorage,
+    kernelStorage,
     debugPrefix,
     vatEndowments,
     makeConsole,
@@ -505,7 +505,7 @@ export async function makeSwingsetController(
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {{
- *   hostStorage?: SwingStore;
+ *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
  *   verbose?: boolean;
  *   kernelBundles?: Record<string, Bundle>;
@@ -523,7 +523,7 @@ export async function buildVatController(
   runtimeOptions = {},
 ) {
   const {
-    hostStorage = initSwingStore(),
+    kernelStorage = initSwingStore().kernelStorage,
     env,
     verbose,
     kernelBundles: kernelAndOtherBundles = {},
@@ -546,18 +546,18 @@ export async function buildVatController(
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
-  if (!swingsetIsInitialized(hostStorage)) {
+  if (!swingsetIsInitialized(kernelStorage)) {
     // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       argv,
-      hostStorage,
+      kernelStorage,
       initializationOptions,
       runtimeOptions,
     );
   }
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     {},
     actualRuntimeOptions,
   );

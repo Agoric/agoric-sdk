@@ -44,9 +44,9 @@ test('mailbox outbound', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, ['mailbox1'], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, ['mailbox1'], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   await c.run();
   // exportToData() provides plain Numbers to the host that needs to convey the messages
@@ -94,9 +94,9 @@ test('mailbox inbound', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, ['mailbox2'], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, ['mailbox2'], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   await c.run();
   const m1 = [1, 'msg1'];
@@ -150,24 +150,24 @@ async function initializeMailboxKernel(t) {
     },
   };
   const { initOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   await initializeSwingset(
     config,
     ['mailbox-determinism'],
-    hostStorage,
+    kernelStorage,
     initOpts,
   );
-  return hostStorage;
+  return kernelStorage;
 }
 
-async function makeMailboxKernel(t, hostStorage) {
+async function makeMailboxKernel(t, kernelStorage) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
   const devEndows = {
     mailbox: { ...mb.endowments },
   };
   const { runtimeOpts } = bundleOpts(t.context.data);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
@@ -176,10 +176,10 @@ async function makeMailboxKernel(t, hostStorage) {
 
 test('mailbox determinism', async t => {
   // we run two kernels in parallel
-  const hostStorage1 = await initializeMailboxKernel(t);
-  const hostStorage2 = await initializeMailboxKernel(t);
-  const [c1a, mb1a] = await makeMailboxKernel(t, hostStorage1);
-  const [c2, mb2] = await makeMailboxKernel(t, hostStorage2);
+  const kernelStorage1 = await initializeMailboxKernel(t);
+  const kernelStorage2 = await initializeMailboxKernel(t);
+  const [c1a, mb1a] = await makeMailboxKernel(t, kernelStorage1);
+  const [c2, mb2] = await makeMailboxKernel(t, kernelStorage2);
 
   // they get the same inbound message
   const msg1 = [[1, 'msg1']];
@@ -199,12 +199,12 @@ test('mailbox determinism', async t => {
 
   // both should have the same number of cranks
   t.is(
-    hostStorage1.kvStore.get('crankNumber'),
-    hostStorage2.kvStore.get('crankNumber'),
+    kernelStorage1.kvStore.get('crankNumber'),
+    kernelStorage2.kvStore.get('crankNumber'),
   );
 
   // then one is restarted, but the other keeps running
-  const [c1b, mb1b] = await makeMailboxKernel(t, hostStorage1);
+  const [c1b, mb1b] = await makeMailboxKernel(t, kernelStorage1);
 
   // Now we repeat delivery of that message to both. The mailbox should send
   // it to vattp, even though it's duplicate, because the mailbox doesn't
@@ -234,7 +234,7 @@ test('mailbox determinism', async t => {
   // Both should *still* have the same number of cranks. This is what bug
   // #3471 exposed.
   t.is(
-    hostStorage1.kvStore.get('crankNumber'),
-    hostStorage2.kvStore.get('crankNumber'),
+    kernelStorage1.kvStore.get('crankNumber'),
+    kernelStorage2.kvStore.get('crankNumber'),
   );
 });

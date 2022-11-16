@@ -77,7 +77,7 @@ export default function buildKernel(
 ) {
   const {
     waitUntilQuiescent,
-    hostStorage,
+    kernelStorage,
     debugPrefix,
     vatEndowments,
     slogCallbacks = {},
@@ -99,14 +99,14 @@ export default function buildKernel(
   } = kernelRuntimeOptions;
   const logStartup = verbose ? console.debug : () => 0;
 
-  const vatAdminRootKref = hostStorage.kvStore.get('vatAdminRootKref');
+  const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
   /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
-  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
 
   /** @type {ReturnType<makeVatWarehouse>} */
   let vatWarehouse;

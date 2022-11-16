@@ -17,12 +17,12 @@ test('timer vat', async t => {
     devices: { timer: { sourceSpec: timer.srcPath } },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const deviceEndowments = {
     timer: { ...timer.endowments },
   };
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   timer.poll(1n); // initial time

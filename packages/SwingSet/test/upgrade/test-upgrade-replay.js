@@ -45,10 +45,10 @@ test('replay after upgrade', async t => {
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
 
-  const hostStorage1 = initSwingStore();
+  const kernelStorage1 = initSwingStore().kernelStorage;
   {
-    await initializeSwingset(copy(config), [], hostStorage1, initOpts);
-    const c1 = await makeSwingsetController(hostStorage1, {}, runtimeOpts);
+    await initializeSwingset(copy(config), [], kernelStorage1, initOpts);
+    const c1 = await makeSwingsetController(kernelStorage1, {}, runtimeOpts);
     t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
@@ -66,11 +66,11 @@ test('replay after upgrade', async t => {
   }
 
   // copy the store just to be sure
-  const state1 = getAllState(hostStorage1);
-  const hostStorage2 = initSwingStore();
-  setAllState(hostStorage2, state1);
+  const state1 = getAllState(kernelStorage1);
+  const kernelStorage2 = initSwingStore().kernelStorage;
+  setAllState(kernelStorage2, state1);
   {
-    const c2 = await makeSwingsetController(hostStorage2, {}, runtimeOpts);
+    const c2 = await makeSwingsetController(kernelStorage2, {}, runtimeOpts);
     t.teardown(c2.shutdown);
     c2.pinVatRoot('bootstrap');
     await c2.run();

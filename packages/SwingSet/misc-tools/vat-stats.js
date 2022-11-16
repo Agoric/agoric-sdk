@@ -35,7 +35,7 @@ function fail(message, printUsage) {
 function run() {
   const argv = process.argv.slice(2);
   const stateDBDir = argv.shift();
-  const { kvStore: kv } = openSwingStore(stateDBDir);
+  const { kvStore: kv } = openSwingStore(stateDBDir).kernelStorage;
   const vatIDs = [];
   const vats = {};
   for (const name of JSON.parse(kv.get('vat.names'))) {

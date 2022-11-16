@@ -32,10 +32,10 @@ async function run() {
   const key = argv.shift();
   const value = argv.shift();
 
-  const { kvStore, commit } = openSwingStore(stateDBDir);
+  const { kernelStorage, hostStorage } = openSwingStore(stateDBDir);
 
-  kvStore.set(key, value);
-  await commit();
+  kernelStorage.kvStore.set(key, value);
+  await hostStorage.commit();
 }
 
 run().then(

@@ -7,8 +7,8 @@ import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSwingStore(null);
-  const kk = makeKernelKeeper(hostStorage, slog);
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  const kk = makeKernelKeeper(kernelStorage, slog);
   const s = kk.kvStore;
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
@@ -92,8 +92,8 @@ test(`clist reachability`, async t => {
 
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
-  const hostStorage = initSwingStore(null);
-  const kk = makeKernelKeeper(hostStorage, slog);
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  const kk = makeKernelKeeper(kernelStorage, slog);
 
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();

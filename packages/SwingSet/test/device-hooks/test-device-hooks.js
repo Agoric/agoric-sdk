@@ -51,7 +51,7 @@ test('add hook', async t => {
     },
   };
 
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const initOpts = {
     ...t.context.data,
     addComms: false,
@@ -60,8 +60,8 @@ test('add hook', async t => {
   };
   const { kernelBundle } = t.context.data.kernelBundles;
   const runtimeOpts = { kernelBundle };
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
 
   let hookreturn;

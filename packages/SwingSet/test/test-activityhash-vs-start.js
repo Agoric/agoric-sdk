@@ -38,10 +38,10 @@ test.serial('restarting kernel does not change activityhash', async t => {
   const deviceEndowments1 = {
     timer: { ...timer1.endowments },
   };
-  const hs1 = initSwingStore();
+  const ks1 = initSwingStore().kernelStorage;
   // console.log(`--c1 build`);
-  await initializeSwingset(config, [], hs1);
-  const c1 = await makeSwingsetController(hs1, deviceEndowments1);
+  await initializeSwingset(config, [], ks1);
+  const c1 = await makeSwingsetController(ks1, deviceEndowments1);
   c1.pinVatRoot('bootstrap');
   // console.log(`--c1 poll1`);
   timer1.poll(1);
@@ -49,7 +49,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   await c1.run();
 
   // console.log(`--c1 getAllState`);
-  const state = getAllState(hs1);
+  const state = getAllState(ks1);
   // console.log(`ah: ${c1.getActivityhash()}`);
 
   // console.log(`--c1 poll1`);
@@ -70,10 +70,10 @@ test.serial('restarting kernel does not change activityhash', async t => {
   const deviceEndowments2 = {
     timer: { ...timer2.endowments },
   };
-  const hs2 = initSwingStore();
-  setAllState(hs2, state);
+  const ks2 = initSwingStore().kernelStorage;
+  setAllState(ks2, state);
   // console.log(`--c2 build`);
-  const c2 = await makeSwingsetController(hs2, deviceEndowments2);
+  const c2 = await makeSwingsetController(ks2, deviceEndowments2);
   // console.log(`ah: ${c2.getActivityhash()}`);
 
   // console.log(`--c2 poll1`);
@@ -102,14 +102,14 @@ test.serial('comms initialize is deterministic', async t => {
   const config = {};
   config.bootstrap = 'bootstrap';
   config.vats = { bootstrap: { sourceSpec } };
-  const hs1 = initSwingStore();
-  await initializeSwingset(config, [], hs1);
-  const c1 = await makeSwingsetController(hs1, {});
+  const ks1 = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], ks1);
+  const c1 = await makeSwingsetController(ks1, {});
   c1.pinVatRoot('bootstrap');
   // the bootstrap message will cause comms to initialize itself
   await c1.run();
 
-  const state = getAllState(hs1);
+  const state = getAllState(ks1);
 
   // but the second message should not
   c1.queueToVatRoot('bootstrap', 'addRemote', ['remote2']);
@@ -118,9 +118,9 @@ test.serial('comms initialize is deterministic', async t => {
   await c1.shutdown();
 
   // a kernel restart is loading a new kernel from the same state
-  const hs2 = initSwingStore();
-  setAllState(hs2, state);
-  const c2 = await makeSwingsetController(hs2, {});
+  const ks2 = initSwingStore().kernelStorage;
+  setAllState(ks2, state);
+  const c2 = await makeSwingsetController(ks2, {});
 
   // the "am I already initialized?" check must be identical to the
   // non-restarted version

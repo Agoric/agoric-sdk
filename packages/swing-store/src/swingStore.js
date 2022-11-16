@@ -55,18 +55,27 @@ export function makeSnapStoreIO() {
  * }} StreamStore
  *
  * @typedef {{
- *   kvStore: KVStore, // a key-value StorageAPI object to load and store data
+ *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the kernel
  *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
  *   snapStore?: SnapStore,
- *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   commitCrank: () => { crankhash: string, activityhash: string },
  *   abortCrank: () => void,
+ *   resetCrankhash: () => void, // XXX temp
+ * }} SwingStoreKernelStorage
+ *
+ * @typedef {{
+ *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the host
+ *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
- *   resetCrankhash: () => void, // XXX temp
+ * }} SwingStoreHostStorage
+ *
+ * @typedef {{
+ *  kernelStorage: SwingStoreKernelStorage,
+ *  hostStorage: SwingStoreHostStorage,
  * }} SwingStore
  *
- * @typedef {SwingStore & { snapStore: ReturnType<typeof makeSnapStore> }} SwingAndSnapStore
+ * //at//typedef {KernelStore & { snapStore: SnapStore }} KernelAndSnapStore
  */
 
 /**
@@ -74,8 +83,9 @@ export function makeSnapStoreIO() {
  * actually several different stores of different types that travel as a flock
  * and are managed according to a shared transactional model.  Each component
  * store serves a different purpose and satisfies a different set of access
- * constraints and access patterns.  The individual stores, each with its own
- * API, are available from the object that `makeSwingStore` returns:
+ * constraints and access patterns.
+ *
+ * The individual stores are:
  *
  * kvStore - a key-value store used to hold the kernel's working state.  Keys
  *   and values are both strings.  Provides random access to a large number of
@@ -97,23 +107,29 @@ export function makeSnapStoreIO() {
  * substrates used for one or more of these may change (or be consolidated) as
  * our implementation evolves.
  *
+ * In addition, the operational affordances of these stores are collectively
+ * separated into two facets, one for use by the host application and the other
+ * for use by the swingset kernel itself, represented by the `hostStorage` and
+ * `kernelStorage` properties of the object that `makeSwingStore` returns.
+ *
  * The units of data consistency in the swingset are the crank and the block.  A
  * crank is the execution of a single delivery into the swingset, typically a
  * message delivered to a vat.  A block is a series of cranks (how many is a
  * host-determined parameter) that are considered to either all happen or not as
- * a unit.  Crank-to-crank transactionality is managed by the crank buffer, a
- * kernel abstraction that wraps the kvStore.  Block-to-block transactionality
- * is provided by the swing store directly.  It provides a 'commit' operation
- * which will commit all changes made up to the time it is called.  It is the
- * responsibility of the kvStore to maintain a consistent view of what is going
- * on in the streamStore and snapStore.
+ * a unit.  Crank-to-crank transactionality is managed via the kernel facet,
+ * while block-to-block transactionality is managed by the host facet.  Each
+ * facet provides commit and abort operations that commit or abort all changes
+ * relative the relevant transactional unit.
  */
 
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param {string|null} dirPath  Path to a directory in which database files may be kept.
- * @param {boolean} forceReset  If true, initialize the database to an empty state
+ * @param {string|null} dirPath  Path to a directory in which database files may
+ *   be kept.  If this is null, the database will be an in-memory ephemeral
+ *   database that evaporates when the process exits, which is useful for testing.
+ * @param {boolean} forceReset  If true, initialize the database to an empty
+ *   state if it already exists
  * @param {object} options  Configuration options
  *
  * @returns {SwingStore}
@@ -138,6 +154,7 @@ function makeSwingStore(dirPath, forceReset, options) {
           fs.rmdirSync(dirPath, { recursive: true });
         }
       } catch (e) {
+        // Attempting to delete a non-existent directory is allowed
         if (e.code !== 'ENOENT') {
           throw e;
         }
@@ -204,7 +221,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     if (key.startsWith('local.')) {
       return 'local';
     } else if (key.startsWith('host.')) {
-      return 'invalid';
+      return 'host';
     }
     return 'consensus';
   }
@@ -329,16 +346,6 @@ function makeSwingStore(dirPath, forceReset, options) {
     // The transaction's overall success will be awaited during commit
     ensureTxn();
     sqlKVSet.run(key, value);
-    const keyType = getKeyType(key);
-    // assert(keyType !== 'invalid');
-    if (keyType === 'consensus') {
-      crankhasher.add('add');
-      crankhasher.add('\n');
-      crankhasher.add(key);
-      crankhasher.add('\n');
-      crankhasher.add(value);
-      crankhasher.add('\n');
-    }
     trace('set', key, value);
   }
 
@@ -359,14 +366,6 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(key, 'string');
     ensureTxn();
     sqlKVDel.run(key);
-    const keyType = getKeyType(key);
-    // assert(keyType !== 'invalid');
-    if (keyType === 'consensus') {
-      crankhasher.add('delete');
-      crankhasher.add('\n');
-      crankhasher.add(key);
-      crankhasher.add('\n');
-    }
     trace('del', key);
   }
 
@@ -376,6 +375,50 @@ function makeSwingStore(dirPath, forceReset, options) {
     get,
     set,
     delete: del,
+  };
+
+  const kernelKVStore = {
+    ...kvStore,
+    set(key, value) {
+      assert.typeof(key, 'string');
+      const keyType = getKeyType(key);
+      assert(keyType !== 'host');
+      set(key, value);
+      if (keyType === 'consensus') {
+        crankhasher.add('add');
+        crankhasher.add('\n');
+        crankhasher.add(key);
+        crankhasher.add('\n');
+        crankhasher.add(value);
+        crankhasher.add('\n');
+      }
+    },
+    delete(key) {
+      assert.typeof(key, 'string');
+      const keyType = getKeyType(key);
+      assert(keyType !== 'host');
+      del(key);
+      if (keyType === 'consensus') {
+        crankhasher.add('delete');
+        crankhasher.add('\n');
+        crankhasher.add(key);
+        crankhasher.add('\n');
+      }
+    },
+  };
+
+  const hostKVStore = {
+    ...kvStore,
+    set(key, value) {
+      const keyType = getKeyType(key);
+      assert(keyType === 'host');
+      set(key, value);
+    },
+    delete(key) {
+      const keyType = getKeyType(key);
+      assert(keyType === 'host');
+      del(key);
+    },
   };
 
   const streamStore = makeSQLStreamStore(db, ensureTxn);
@@ -456,16 +499,24 @@ function makeSwingStore(dirPath, forceReset, options) {
     stopTrace();
   }
 
-  return harden({
-    kvStore,
+  const kernelStorage = {
+    kvStore: kernelKVStore,
     streamStore,
     snapStore,
-    commit,
-    close,
-    diskUsage,
     commitCrank,
     abortCrank,
     resetCrankhash,
+  };
+  const hostStorage = {
+    kvStore: hostKVStore,
+    commit,
+    close,
+    diskUsage,
+  };
+
+  return harden({
+    kernelStorage,
+    hostStorage,
   });
 }
 
@@ -539,15 +590,15 @@ export function isSwingStore(dirPath) {
  * way, hence it is likely to be a performance and memory hog if you attempt to
  * use it on anything real.
  *
- * @param {SwingStore} swingStore  The swing store whose state is to be extracted.
+ * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be extracted.
  *
  * @returns {{
  *   kvStuff: Record<string, string>,
  *   streamStuff: Map<string, Array<string>>,
- * }}  A crude representation of all of the state of `swingStore`
+ * }}  A crude representation of all of the state of `kernelStorage`
  */
-export function getAllState(swingStore) {
-  const { kvStore, streamStore } = swingStore;
+export function getAllState(kernelStorage) {
+  const { kvStore, streamStore } = kernelStorage;
   /** @type { Record<string, string> } */
   const kvStuff = {};
   for (const key of Array.from(kvStore.getKeys('', ''))) {
@@ -565,14 +616,14 @@ export function getAllState(swingStore) {
  * general store initialization mechanism.  In particular, note that it does not
  * bother to remove any pre-existing state from the store that it is given.
  *
- * @param {SwingStore} swingStore  The swing store whose state is to be set.
+ * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be set.
  * @param {{
  *   kvStuff: Record<string, string>,
  *   streamStuff: Map<string, Array<[number, *]>>,
- * }} stuff  The state to stuff into `swingStore`
+ * }} stuff  The state to stuff into `kernelStorage`
  */
-export function setAllState(swingStore, stuff) {
-  const { kvStore, streamStore } = swingStore;
+export function setAllState(kernelStorage, stuff) {
+  const { kvStore, streamStore, resetCrankhash } = kernelStorage;
   const { kvStuff, streamStuff } = stuff;
   for (const k of Object.getOwnPropertyNames(kvStuff)) {
     kvStore.set(k, kvStuff[k]);
@@ -584,5 +635,5 @@ export function setAllState(swingStore, stuff) {
     }
     streamStore.closeStream(streamName);
   }
-  swingStore.resetCrankhash();
+  resetCrankhash();
 }

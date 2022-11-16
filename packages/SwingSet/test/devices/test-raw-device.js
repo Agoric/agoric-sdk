@@ -49,9 +49,9 @@ test('d1', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

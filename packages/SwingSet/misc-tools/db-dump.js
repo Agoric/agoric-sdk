@@ -40,7 +40,7 @@ function run() {
   }
   const stateDBDir = argv.shift();
 
-  const { kvStore } = openSwingStore(stateDBDir);
+  const { kvStore } = openSwingStore(stateDBDir).kernelStorage;
 
   // we know all keys start with letters, so '@' is before all keys, and '{'
   // is after all keys

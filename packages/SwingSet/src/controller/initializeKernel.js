@@ -15,12 +15,12 @@ function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
 }
 
-export function initializeKernel(config, hostStorage, verbose = false) {
+export function initializeKernel(config, kernelStorage, verbose = false) {
   const logStartup = verbose ? console.debug : () => 0;
-  insistStorageAPI(hostStorage.kvStore);
+  insistStorageAPI(kernelStorage.kvStore);
 
   const kernelSlog = null;
-  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);

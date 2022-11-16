@@ -16,8 +16,8 @@ function bfile(name) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function dumpState(hostStorage, vatID) {
-  const s = getAllState(hostStorage).kvStuff;
+function dumpState(kernelStorage, vatID) {
+  const s = getAllState(kernelStorage).kvStuff;
   const keys = Array.from(Object.keys(s)).sort();
   for (const k of keys) {
     if (k.startsWith(`${vatID}.vs.`)) {
@@ -41,10 +41,10 @@ async function testPromiseWatcher(t) {
   const unhandledRejections = [];
   handleUnhandledRejections(rej => unhandledRejections.push(rej));
 
-  const hostStorage = initSwingStore();
-  // ? const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  // ? const { kvStore } = kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

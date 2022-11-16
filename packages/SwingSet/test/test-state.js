@@ -70,13 +70,18 @@ async function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', async t => {
-  const store = initSwingStore(null);
-  await testStorage(t, store.kvStore, () => getAllState(store).kvStuff, null);
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  await testStorage(
+    t,
+    kernelStorage.kvStore,
+    () => getAllState(kernelStorage).kvStuff,
+    null,
+  );
 });
 
 test('storage helpers', t => {
-  const store = initSwingStore(null);
-  const kv = store.kvStore;
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  const kv = kernelStorage.kvStore;
 
   kv.set('foo.0', 'f0');
   kv.set('foo.1', 'f1');
@@ -84,7 +89,7 @@ test('storage helpers', t => {
   kv.set('foo.3', 'f3');
   // omit foo.4
   kv.set('foo.5', 'f5');
-  checkState(t, () => getAllState(store).kvStuff, [
+  checkState(t, () => getAllState(kernelStorage).kvStuff, [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
     ['foo.2', 'f2'],
@@ -106,23 +111,26 @@ test('storage helpers', t => {
   t.falsy(kv.has('foo.3'));
   t.falsy(kv.has('foo.4'));
   t.truthy(kv.has('foo.5'));
-  checkState(t, () => getAllState(store).kvStuff, [['foo.5', 'f5']]);
+  checkState(t, () => getAllState(kernelStorage).kvStuff, [['foo.5', 'f5']]);
 });
 
 function buildKeeperStorageInMemory() {
-  const store = initSwingStore(null);
-  return { getState: () => getAllState(store).kvStuff, ...store };
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  return {
+    getState: () => getAllState(kernelStorage).kvStuff,
+    ...kernelStorage,
+  };
 }
 
 function duplicateKeeper(getState) {
-  const store = initSwingStore(null);
-  setAllState(store, { kvStuff: getState(), streamStuff: new Map() });
-  const kernelKeeper = makeKernelKeeper(store, null);
+  const kernelStorage = initSwingStore(null).kernelStorage;
+  setAllState(kernelStorage, { kvStuff: getState(), streamStuff: new Map() });
+  const kernelKeeper = makeKernelKeeper(kernelStorage, null);
   kernelKeeper.loadStats();
   return kernelKeeper;
 }
 
-test('hostStorage param guards', async t => {
+test('kernelStorage param guards', async t => {
   const { kvStore } = buildKeeperStorageInMemory();
   const exp = { message: /true must be a string/ };
   t.throws(() => kvStore.set('foo', true), exp);
@@ -691,7 +699,7 @@ test('crankhash - skip keys', t => {
     'local.v1234.lastSnapshot',
     '{"snapshotID":"XYZ","startPos":4}',
   );
-  // t.throws(() => k.kvStore.set('host.foo', 'bar')); XXX not currently an error
+  t.throws(() => k.kvStore.set('host.foo', 'bar'));
   t.is(k.commitCrank().crankhash, expCrankhash);
 });
 

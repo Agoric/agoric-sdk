@@ -27,12 +27,12 @@ async function vatSyscallFailure(t, beDynamic) {
       },
     },
   };
-  const hostStorage = initSwingStore();
+  const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
   });
   t.teardown(controller.shutdown);
-  const kvStore = hostStorage.kvStore;
+  const kvStore = kernelStorage.kvStore;
   const badVatID = kvStore.get('vat.name.badvatStatic');
   const badVatRootObject = kvStore.get(`${badVatID}.c.o+0`);
   if (!beDynamic) {

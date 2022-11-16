@@ -168,14 +168,14 @@ const FIRST_CRANK_NUMBER = 0n;
 const FIRST_METER_ID = 1n;
 
 /**
- * @param {SwingStore} hostStorage
+ * @param {SwingStoreKernelStorage} kernelStorage
  * @param {KernelSlog|null} kernelSlog
  */
-export default function makeKernelKeeper(hostStorage, kernelSlog) {
-  const kvStore = hostStorage.kvStore;
+export default function makeKernelKeeper(kernelStorage, kernelSlog) {
+  const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
 
-  const { streamStore, snapStore } = hostStorage;
+  const { streamStore, snapStore } = kernelStorage;
 
   function getActivityhash() {
     return kvStore.get('activityhash');
@@ -216,11 +216,11 @@ export default function makeKernelKeeper(hostStorage, kernelSlog) {
 
   function commitCrank() {
     saveStats();
-    return hostStorage.commitCrank();
+    return kernelStorage.commitCrank();
   }
 
   function abortCrank() {
-    const ret = hostStorage.abortCrank();
+    const ret = kernelStorage.abortCrank();
     loadStats();
     return ret;
   }

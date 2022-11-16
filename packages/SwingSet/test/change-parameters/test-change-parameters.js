@@ -13,8 +13,8 @@ function bfile(name) {
 }
 
 // eslint-disable-next-line no-unused-vars
-function dumpState(hostStorage, vatID) {
-  const s = getAllState(hostStorage).kvStuff;
+function dumpState(kernelStorage, vatID) {
+  const s = getAllState(kernelStorage).kvStuff;
   const keys = Array.from(Object.keys(s)).sort();
   for (const k of keys) {
     if (k.startsWith(`${vatID}.vs.`)) {
@@ -34,10 +34,10 @@ async function testChangeParameters(t) {
     },
   };
 
-  const hostStorage = initSwingStore();
-  const { kvStore } = hostStorage;
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage, null);
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { kvStore } = kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, null);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

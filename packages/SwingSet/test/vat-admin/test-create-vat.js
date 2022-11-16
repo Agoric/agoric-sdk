@@ -75,9 +75,9 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
     }
   }
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data, { slogSender });
-  const hostStorage = initSwingStore();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   const id44 = await c.validateAndInstallBundle(bundles.vat44Bundle);
   const idRC = await c.validateAndInstallBundle(bundles.vatRefcountBundle);
@@ -90,7 +90,7 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
   }
-  return { c, id44, idRC, vat13Bundle: bundles.vat13Bundle, hostStorage };
+  return { c, id44, idRC, vat13Bundle: bundles.vat13Bundle, kernelStorage };
 }
 
 async function testCreateVatByBundle(t, doVatAdminRestart) {
@@ -263,8 +263,8 @@ function findRefs(kvStore, koid) {
 
 test('createVat holds refcount', async t => {
   const printSlog = false; // set true to debug this test
-  const { c, idRC, hostStorage } = await doTestSetup(t, false, printSlog);
-  const { kvStore } = hostStorage;
+  const { c, idRC, kernelStorage } = await doTestSetup(t, false, printSlog);
+  const { kvStore } = kernelStorage;
 
   // The bootstrap vat starts by fetching 'held' from vat-export-held, during
   // doTestSetup(), and retains it throughout the entire test. When we send
