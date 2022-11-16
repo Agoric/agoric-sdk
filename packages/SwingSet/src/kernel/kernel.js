@@ -687,14 +687,6 @@ export default function buildKernel(
     vatKeeper.setSourceAndOptions(source, options);
     vatKeeper.initializeReapCountdown(options.reapInterval);
 
-    /**
-     * @param {*} arg
-     * @returns {RawMethargs}
-     */
-    function makeVatAdminMessage(arg) {
-      return ['newVatCallback', [vatID, arg]];
-    }
-
     // createDynamicVat makes the worker, installs lockdown and
     // supervisor, but does not load the vat bundle yet. It can fail
     // if the options are bad, worker cannot be launched, lockdown or
@@ -735,7 +727,8 @@ export default function buildKernel(
 
     const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
     const arg = { rootObject: kslot(kernelRootObjSlot) };
-    const vatAdminMethargs = makeVatAdminMessage(arg);
+    /** @type { RawMethargs } */
+    const vatAdminMethargs = ['newVatCallback', [vatID, arg]];
     return harden({ ...startResults, vatAdminMethargs });
   }
 
@@ -837,7 +830,7 @@ export default function buildKernel(
      */
     function makeFailure(_errorCD) {
       insistCapData(_errorCD); // kser(Error)
-      // const args = [upgradeID, false, kunser(errorCD)];
+      // const error = kunser(_errorCD)
       // actually we shouldn't reveal the details, so instead we do:
       const error = kser(Error('vat-upgrade failure'));
       return ['vatUpgradeCallback', [upgradeID, false, error]];

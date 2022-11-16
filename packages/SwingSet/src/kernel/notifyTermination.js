@@ -17,9 +17,7 @@ export function notifyTermination(
 ) {
   insistCapData(info);
 
-  // Embedding the info capdata into the arguments list, taking advantage of
-  // the fact that neither vatID (which is a string) nor shouldReject (which
-  // is a boolean) can contain any slots.
+  // Embed the info capdata into the arguments list
   queueToKref(
     vatAdminRootKref,
     'vatTerminated',

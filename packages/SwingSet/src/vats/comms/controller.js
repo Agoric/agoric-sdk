@@ -34,7 +34,9 @@ export function deliverToController(
 
     const name = args[0];
     const transmitterID = krefOf(args[1]);
+    assert(transmitterID, 'unexpected "transmitter" arg for addRemote()');
     const setReceiverID = krefOf(args[2]);
+    assert(setReceiverID, 'unexpected "setReceiver" arg for addRemote()');
 
     const { receiverID } = state.addRemote(name, transmitterID);
 
@@ -53,7 +55,9 @@ export function deliverToController(
     const remoteID = state.getRemoteIDForName(remoteName);
     assert(remoteID, X`unknown remote name ${remoteName}`);
     const remoteRefID = args[1];
-    const localRef = provideLocalForKernel(krefOf(args[2]));
+    const kernelRefID = krefOf(args[2]);
+    assert(kernelRefID, 'unexpected "obj0" arg for addEgress()');
+    const localRef = provideLocalForKernel(kernelRefID);
     addEgress(remoteID, remoteRefID, localRef);
     syscall.resolve([[result, false, kser(undefined)]]);
   }
@@ -66,6 +70,9 @@ export function deliverToController(
     assert(remoteID, X`unknown remote name ${remoteName}`);
     const remoteRefID = Nat(args[1]);
     const iface = args[2];
+    if (iface) {
+      assert.typeof(iface, 'string', 'unexpected iface type in addIngress()');
+    }
     const localRef = addIngress(remoteID, remoteRefID);
     const data = kser(kslot(provideKernelForLocal(localRef), iface));
     syscall.resolve([[result, false, data]]);

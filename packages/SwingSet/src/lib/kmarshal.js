@@ -10,6 +10,7 @@ import { assert } from '@agoric/assert';
 const refMap = new WeakMap();
 
 export const kslot = (kref, iface) => {
+  assert.typeof(kref, 'string');
   if (iface && iface.startsWith('Alleged: ')) {
     // Encoder prepends "Alleged: " to iface string, but the decoder doesn't strip it
     // Unclear whether it's the decoder or me who is wrong
