@@ -203,8 +203,6 @@ export const vivifyFarInstance = (
     options,
   );
 
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
-  // @ts-ignore could be instantiated with an arbitrary type
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
 harden(vivifyFarInstance);
