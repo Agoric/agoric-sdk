@@ -29,7 +29,8 @@ const PARAM_ISSUE = harden({
     paramPath: { key: 'something' },
     changes: { arbitrary: 37 },
   },
-  contract: Far('contract', {}),
+  // @ts-expect-error cast
+  contract: /** @type {Instance} */ (Far('contract', {})),
 });
 const { positive, negative } = makeParamChangePositions({ Arbitrary: 37 });
 const PARAM_CHANGE_ISSUE = harden({
@@ -272,7 +273,6 @@ test('binary varying share weights', async t => {
 test('binary contested', async t => {
   const questionSpec = coerceQuestionSpec({
     method: ChoiceMethod.UNRANKED,
-    // @ts-expect-error I dunno what's confusing it.
     issue: PARAM_ISSUE,
     positions: [positive, negative],
     electionType: ElectionType.PARAM_CHANGE,

@@ -52,10 +52,12 @@ const start = zcf => {
       harden({
         updateState: sellerSeatAllocation =>
           availableItemsUpdater.updateState(
+            // @ts-expect-error xxx
             sellerSeatAllocation && sellerSeatAllocation.Items,
           ),
         finish: sellerSeatAllocation => {
           availableItemsUpdater.finish(
+            // @ts-expect-error xxx
             sellerSeatAllocation && sellerSeatAllocation.Items,
           );
         },

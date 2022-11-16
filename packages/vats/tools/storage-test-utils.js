@@ -29,6 +29,8 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         if ('value' in message) {
           data.set(message.key, message.value);
         } else {
+          console.error('Unexpected StorageMessage without .value', message);
+          // @ts-expect-error unknown
           data.delete(message.key);
         }
         break;

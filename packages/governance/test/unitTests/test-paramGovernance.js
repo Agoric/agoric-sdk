@@ -241,7 +241,7 @@ test('change multiple params', async t => {
   const update1 = await notifier.getUpdateSince();
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
-    // @ts-expect-error reaching into unknown values
+    // @ts-expect-error xxx governance types
     update1.value.current.Electorate.value.value[0].description,
     'questionPoser',
   );

@@ -146,7 +146,7 @@ const makeParamManagerFromTerms = async (
     CONTRACT_ELECTORATE,
     [ParamTypes.INVITATION, initialPoserInvitation],
   ]);
-  // @ts-expect-error cast
+  // @ts-expect-error xxx governance types
   return makeParamManager(
     publisherKit,
     Object.fromEntries(makerSpecEntries),

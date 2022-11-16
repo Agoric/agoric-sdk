@@ -17,8 +17,11 @@ test('makeInstanceAdminStorage', async t => {
     deleteInstanceAdmin,
   } = makeInstanceAdminStorage();
 
+  /** @type {any} */
   const mockInstance1 = Far('mockInstance1', {});
+  /** @type {any} */
   const mockInstance2 = Far('mockInstance2', {});
+  /** @type {any} */
   const mockInstanceAdmin1 = Far('mockInstanceAdmin1', {
     getPublicFacet: () => 'publicFacet1',
     getBrands: () => 'brands1',
@@ -26,6 +29,7 @@ test('makeInstanceAdminStorage', async t => {
     getTerms: () => 'terms1',
     getInstallationForInstance: () => 'installation1',
   });
+  /** @type {any} */
   const mockInstanceAdmin2 = Far('mockInstanceAdmin2', {
     getPublicFacet: () => 'publicFacet2',
     getBrands: () => 'brands2',
@@ -34,16 +38,12 @@ test('makeInstanceAdminStorage', async t => {
     getInstallationForInstance: () => 'installation2',
   });
 
-  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
 
-  // @ts-expect-error instance is mocked
   initInstanceAdmin(mockInstance2, mockInstanceAdmin2);
 
-  // @ts-expect-error instance is mocked
   t.is(getInstanceAdmin(mockInstance1), mockInstanceAdmin1);
 
-  // @ts-expect-error instance is mocked
   t.is(await getPublicFacet(mockInstance1), 'publicFacet1');
 
   // @ts-expect-error instance is mocked
@@ -58,15 +58,12 @@ test('makeInstanceAdminStorage', async t => {
   // @ts-expect-error instance is mocked
   t.is(await getInstallationForInstance(mockInstance1), 'installation1');
 
-  // @ts-expect-error instance is mocked
   deleteInstanceAdmin(mockInstance2);
 
-  // @ts-expect-error instance is mocked
   t.throws(() => getInstanceAdmin(mockInstance2), {
     message: '"instance" not found: "[Alleged: mockInstance2]"',
   });
 
-  // @ts-expect-error instance is mocked
   await t.throwsAsync(() => getPublicFacet(mockInstance2), {
     message: '"instance" not found: "[Alleged: mockInstance2]"',
   });
