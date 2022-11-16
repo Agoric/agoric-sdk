@@ -15,5 +15,7 @@
     "strictNullChecks": true,
     "moduleResolution": "node",
   },
-  "include": ["src/**/*.js", "exported.js"],
+  "include": [
+    "src/**/*.js",
+  ],
 }

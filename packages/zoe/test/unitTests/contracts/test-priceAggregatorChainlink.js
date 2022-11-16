@@ -14,7 +14,6 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
-import '../../../exported.js';
 import '../../../src/contracts/exported.js';
 
 /** @type {import('ava').TestFn<any>} */

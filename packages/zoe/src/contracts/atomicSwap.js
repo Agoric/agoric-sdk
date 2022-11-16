@@ -5,8 +5,6 @@ import {
   assertProposalShape,
 } from '../contractSupport/index.js';
 
-import '../../exported.js';
-
 /**
  * Trade one item for another.
  * https://agoric.com/documentation/zoe/guide/contracts/atomic-swap.html

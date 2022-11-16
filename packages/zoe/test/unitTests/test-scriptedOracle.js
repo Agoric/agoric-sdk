@@ -12,7 +12,6 @@ import { assert } from '@agoric/assert';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 
-import '../../exported.js';
 import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../tools/eventLoopIteration.js';

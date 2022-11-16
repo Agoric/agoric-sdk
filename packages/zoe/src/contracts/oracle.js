@@ -2,8 +2,6 @@ import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
-
 import { E } from '@endo/eventual-send';
 
 /**

@@ -13,7 +13,6 @@ import { E } from '@endo/eventual-send';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
-import '../../../exported.js';
 import '../../../src/contracts/exported.js';
 
 /**

@@ -6,8 +6,6 @@ import {
   assertProposalShape,
 } from '../../../src/contractSupport/index.js';
 
-import '../../../exported.js';
-
 /**
  * This is an atomic swap contract to test Zoe handling contract failures.
  *

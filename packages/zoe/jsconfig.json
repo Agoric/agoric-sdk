@@ -10,7 +10,6 @@
   },
   "include": [
     "contractFacet.js",
-    "exported.js",
     "scripts/**/*.js",
     "src/**/*.js",
     "src/**/*.ts",

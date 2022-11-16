@@ -7,6 +7,9 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
 import { Stable } from '../tokens.js';
 
+// Ambient types (globals)
+import '@agoric/swingset-vat/src/vats/timer/types.js';
+
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Installation<import('@agoric/smart-wallet/src/walletFactory').start>} inst

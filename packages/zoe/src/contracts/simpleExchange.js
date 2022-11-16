@@ -1,7 +1,6 @@
 import { makeNotifierKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
 
-import '../../exported.js';
 import {
   swap,
   satisfies,

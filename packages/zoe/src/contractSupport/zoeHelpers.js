@@ -1,5 +1,3 @@
-import '../../exported.js';
-
 import { fit, keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';

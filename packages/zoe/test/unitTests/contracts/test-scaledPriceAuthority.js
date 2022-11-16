@@ -14,7 +14,6 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
-import '../../../exported.js';
 import '../../../src/contracts/exported.js';
 
 /**

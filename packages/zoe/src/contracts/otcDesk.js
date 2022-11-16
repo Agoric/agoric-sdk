@@ -7,8 +7,6 @@ import {
   assertProposalShape,
 } from '../contractSupport/index.js';
 
-import '../../exported.js';
-
 /**
  * This contract is inspired by the description of an OTC Desk smart
  * contract in this article:

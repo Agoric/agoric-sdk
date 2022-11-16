@@ -8,7 +8,6 @@
 import { Far } from '@endo/marshal';
 import { E } from '@endo/far';
 
-import '../../exported.js';
 import '../internal-types.js';
 
 import { makeZCFZygote } from './zcfZygote.js';

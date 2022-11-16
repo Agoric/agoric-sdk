@@ -1,8 +1,6 @@
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
-
 /**
  * This is a very simple contract that creates a new issuer and mints payments
  * from it, in order to give an example of how that can be done.  This contract

@@ -1,6 +1,4 @@
 import { M, fit } from '@agoric/store';
-import '../../exported.js';
-
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';

@@ -2,7 +2,6 @@ import { makeStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
-import '../../exported.js';
 import '../internal-types.js';
 
 /**

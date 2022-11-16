@@ -21,7 +21,6 @@ import { handlePKitWarning } from '../handleWarning.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
 import { makeZCFMintFactory } from './zcfMint.js';
 
-import '../../exported.js';
 import '../internal-types.js';
 import './internal-types.js';
 

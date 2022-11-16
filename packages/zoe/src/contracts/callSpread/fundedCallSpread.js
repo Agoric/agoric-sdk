@@ -1,4 +1,3 @@
-import '../../../exported.js';
 import './types.js';
 
 import { makePromiseKit } from '@endo/promise-kit';

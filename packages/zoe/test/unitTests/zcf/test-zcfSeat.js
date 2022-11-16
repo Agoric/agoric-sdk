@@ -10,8 +10,6 @@ import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import { setup } from '../setupBasicMints.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
-import '../../../exported.js';
-
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
