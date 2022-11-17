@@ -81,9 +81,10 @@ const testUpgrade = async (
   // fetch all the "importSensors": exported by bootstrap, imported by
   // the upgraded vat. We'll determine their krefs and later query the
   // upgraded vat to see if it's still importing them or not
-  const [impstatus /* , impresult */] = await run('getImportSensors', []);
+  const [impstatus, impresult] = await run('getImportSensors', []);
   t.is(impstatus, 'fulfilled');
-  // const impKrefs = kunser(impresult);
+  // eslint-disable-next-line no-unused-vars
+  const impKrefs = ['skip0', ...kunser(impresult).slice(1).map(krefOf)];
 
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
