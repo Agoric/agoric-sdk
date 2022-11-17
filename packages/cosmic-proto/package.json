@@ -17,16 +17,16 @@
   "exports": {
     "./package.json": "./package.json",
     "./swingset/msgs.js": {
-      "types": "./swingset/msgs.d.ts",
-      "default": "./swingset/msgs.js"
+      "types": "./dist/agoric/swingset/msgs.d.ts",
+      "default": "./dist/agoric/swingset/msgs.js"
     },
     "./swingset/query.js": {
-      "types": "./swingset/query.d.ts",
-      "default": "./swingset/query.js"
+      "types": "./dist/agoric/swingset/query.d.ts",
+      "default": "./dist/agoric/swingset/query.js"
     },
     "./swingset/swingset.js": {
-      "types": "./swingset/swingset.d.ts",
-      "default": "./swingset/swingset.js"
+      "types": "./dist/agoric/swingset/swingset.d.ts",
+      "default": "./dist/agoric/swingset/swingset.js"
     }
   },
   "scripts": {

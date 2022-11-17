@@ -1,4 +1,4 @@
-This package is updated rarely and so the build is checked into SCM. That is, part of `dist` is copied to root so they can be imported in consumers that don't yet support ESM. We also have symlink `./swingset` to the `dist/agoric/swingset` for local requires. (Note [NPM won't publish symlinks](https://github.com/npm/npm/issues/3310)).
+This package is updated rarely and so the build is checked into SCM. That is, part of `dist` is copied to root so they can be imported in consumers that don't yet support ESM. We used to have a symlink `./swingset` to the `dist/agoric/swingset` for local requires but [NPM won't publish symlinks](https://github.com/npm/npm/issues/3310)). So now we have modules there that import from `dist/`.
 
  We used to check in `gen` but they're redundant with `dist` output and include `.ts` which creates problems for downstream consumers using TypeScript ([ref](https://github.com/microsoft/TypeScript/issues/47387#issuecomment-1168711813)).
 
