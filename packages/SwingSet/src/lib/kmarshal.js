@@ -1,4 +1,4 @@
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far, makeMarshal, passStyleOf } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 
 // Simple wrapper for serializing and unserializing marshalled values inside the
@@ -52,13 +52,16 @@ export const krefOf = obj => {
   if (fromMap) {
     return fromMap;
   }
-  if (obj && typeof obj === 'object') {
-    const getKref = obj.getKref;
-    if (typeof getKref === 'function') {
-      return getKref();
-    }
-  }
-  return null;
+  // When krefOf() is called as part of kmarshal.serialize, marshal
+  // will only give it things that are 'remotable' (Promises and the
+  // Far objects created by kslot()).  When krefOf() is called by
+  // kernel code (as part of extractSingleSlot() or the vat-comms
+  // equivalent), it ought to throw if 'obj' is not one of the Far
+  // objects created by our kslot().
+  assert.equal(passStyleOf(obj), 'remotable', obj);
+  const getKref = obj.getKref;
+  assert.typeof(getKref, 'function');
+  return getKref();
 };
 
 const kmarshal = makeMarshal(krefOf, kslot, {

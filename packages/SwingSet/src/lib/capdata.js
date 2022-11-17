@@ -1,4 +1,5 @@
 import { assert, details as X } from '@agoric/assert';
+import { passStyleOf } from '@endo/marshal';
 import { kunser, krefOf } from './kmarshal.js';
 
 /* eslint-disable jsdoc/require-returns-check */
@@ -30,12 +31,10 @@ export function insistCapData(capdata) {
  * @param {import('@endo/marshal').CapData<string>} data
  */
 export function extractSingleSlot(data) {
-  if (data.slots.length === 1) {
-    const encValue = kunser(data);
-    const slotValue = data.slots[0];
-    if (krefOf(encValue) === slotValue) {
-      return slotValue;
-    }
+  const value = kunser(data);
+  const style = passStyleOf(value);
+  if (style === 'remotable' || style === 'promise') {
+    return krefOf(value);
   }
   return null;
 }
