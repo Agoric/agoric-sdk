@@ -3,10 +3,10 @@
     "target": "esnext",
     "module": "esnext",
     "checkJs": true,
-    "noImplicitThis": true,
     "noEmit": true,
     "downlevelIteration": true,
     "strictNullChecks": true,
+    "noImplicitThis": true,
     "moduleResolution": "node",
   },
   "include": [

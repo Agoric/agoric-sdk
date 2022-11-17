@@ -7,6 +7,7 @@ import { Transform } from 'stream';
 export function arrayEncoderStream() {
   /**
    *
+   * @this {{ push: (b: Buffer) => void }}
    * @param {*} object
    * @param {BufferEncoding} encoding
    * @param {*} callback
@@ -30,6 +31,7 @@ export function arrayEncoderStream() {
 export function arrayDecoderStream() {
   /**
    *
+   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} buf
    * @param {BufferEncoding} encoding
    * @param {*} callback

@@ -12,6 +12,7 @@
 */
     "downlevelIteration": true,
     "strictNullChecks": true,
+    "noImplicitThis": true,
     "moduleResolution": "node",
   },
   "include": [
