@@ -96,18 +96,26 @@ const testUpgrade = async (
   t.is(v1status, 'fulfilled');
   t.is(v1result.version, 'v1');
   t.is(v1result.youAre, 'v1');
+  t.truthy(krefOf(v1result.marker));
+  t.truthy(krefOf(marker));
   t.is(krefOf(v1result.marker), krefOf(marker));
   t.is(v1result.marker.iface(), 'marker');
   t.deepEqual(v1result.data, ['some', 'data']);
   // grab the promises that should be rejected
   const v1p1Kref = krefOf(v1result.p1);
   const v1p2Kref = krefOf(v1result.p2);
+  t.truthy(v1p1Kref);
+  t.truthy(v1p2Kref);
 
   // grab exports to deduce durable/virtual vrefs
   const dur1Kref = krefOf(v1result.retain.dur1);
   const vir2Kref = krefOf(v1result.retain.vir2);
   const vir5Kref = krefOf(v1result.retain.vir5);
   const vir7Kref = krefOf(v1result.retain.vir7);
+  t.truthy(dur1Kref);
+  t.truthy(vir2Kref);
+  t.truthy(vir5Kref);
+  t.truthy(vir7Kref);
 
   const vatID = kvStore.get(`${dur1Kref}.owner`); // probably v6
   const getVref = kref => {
