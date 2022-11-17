@@ -260,7 +260,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     },
     async generatePortID(_localAddr, _protocolHandler) {
       lastPortID += 1;
-      return `port-${lastPortID}`;
+      return `icacontroller-${lastPortID}`;
     },
     async onBind(port, localAddr, _protocolHandler) {
       const portID = localAddrToPortID(localAddr);
