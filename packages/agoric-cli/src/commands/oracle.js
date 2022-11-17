@@ -69,6 +69,7 @@ export const makeOracleCommand = async logger => {
     )
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const instance = lookupPriceAggregatorInstance(opts.pair);
@@ -104,6 +105,7 @@ export const makeOracleCommand = async logger => {
     )
     .requiredOption('--price [number]', 'price (format TODO)', String)
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       /** @type {import('../lib/psm.js').OfferSpec} */
@@ -136,6 +138,7 @@ export const makeOracleCommand = async logger => {
       ['ATOM', 'USD'],
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const { pair } = this.opts();
 
       const capDataStr = await vstorage.readLatest(

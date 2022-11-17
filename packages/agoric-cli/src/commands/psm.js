@@ -126,6 +126,7 @@ export const makePsmCommand = async logger => {
       ['IST', 'AUSD'],
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const { pair } = this.opts();
       const { governance } = await getGovernanceState(pair);
       console.log('psm governance params', Object.keys(governance));
@@ -159,6 +160,7 @@ export const makePsmCommand = async logger => {
     .option('--feePct [%]', 'Gas fee percentage', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
@@ -172,6 +174,7 @@ export const makePsmCommand = async logger => {
     .description('join the economic committee')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const { economicCommittee } = agoricNames.instance;
@@ -202,6 +205,7 @@ export const makePsmCommand = async logger => {
     .description('prepare an offer to accept the charter invitation')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const { psmCharter } = agoricNames.instance;
@@ -255,6 +259,7 @@ export const makePsmCommand = async logger => {
       1,
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const psmInstance = lookupPsmInstance(opts.pair);
@@ -312,6 +317,7 @@ export const makePsmCommand = async logger => {
       1,
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const psmInstance = lookupPsmInstance(opts.pair);
@@ -366,6 +372,7 @@ export const makePsmCommand = async logger => {
       Number,
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const questionHandleCapDataStr = await vstorage.readLatest(

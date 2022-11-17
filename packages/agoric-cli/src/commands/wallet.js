@@ -53,6 +53,7 @@ export const makeWalletCommand = async () => {
         spend,
         home,
         keyringBackend: backend,
+        // @ts-expect-error this implicit any
       } = this.opts();
       const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
       if (spend) {
@@ -102,6 +103,7 @@ export const makeWalletCommand = async () => {
         offer,
         home,
         keyringBackend: backend,
+        // @ts-expect-error this implicit any
       } = this.opts();
 
       execSwingsetTransaction(
@@ -131,6 +133,7 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
 
       const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({
@@ -176,6 +179,7 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .action(async function () {
+      // @ts-expect-error this implicit any
       const { from } = this.opts();
       const spec = `:published.wallet.${from}`;
 
