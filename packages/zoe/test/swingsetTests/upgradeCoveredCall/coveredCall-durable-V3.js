@@ -39,7 +39,6 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
     sellSeat => ({ sellSeat }),
     {
       handle(buySeat) {
-        // @ts-expect-error TS doesn't understand context
         const { state } = this;
         assert(!state.sellSeat.hasExited(), sellSeatExpiredMsg);
         try {

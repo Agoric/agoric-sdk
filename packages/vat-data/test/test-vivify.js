@@ -33,7 +33,6 @@ test('test vivifyFarClass', t => {
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
-        // @ts-expect-error TS doesn't know that `this` is a `Context`
         const { state } = this;
         state.x += y;
         return state.x;
@@ -90,6 +89,7 @@ test('test vivifyFarClassKit', t => {
     message:
       'In "decr" method of (Counter down) arg 0: string "foo" - Must be a number',
   });
+  // @ts-expect-error the type violation is what we're testing
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });

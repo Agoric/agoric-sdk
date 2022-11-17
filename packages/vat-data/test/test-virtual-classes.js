@@ -82,6 +82,7 @@ test('test defineVirtualFarClassKit', t => {
     message:
       'In "decr" method of (Counter down) arg 0: string "foo" - Must be a number',
   });
+  // @ts-expect-error the type violation is what we're testing
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });

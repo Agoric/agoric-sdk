@@ -45,11 +45,13 @@ harden(defineVirtualFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A,S,T
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T} facets
+ * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
  * @param {DefineKindOptions<unknown>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -71,11 +73,13 @@ harden(defineVirtualFarClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A,S,T
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T} methods
+ * @param {T & ThisType<T & { state: S }>} methods
  * @param {DefineKindOptions<unknown>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -97,11 +101,13 @@ harden(defineDurableFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A,S,T
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T} facets
+ * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
  * @param {DefineKindOptions<unknown>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -123,12 +129,14 @@ harden(defineDurableFarClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A,S,T
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T} methods
+ * @param {T & ThisType<T & { state: S }>} methods
  * @param {DefineKindOptions<unknown>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -151,12 +159,14 @@ harden(vivifyFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A,S,T
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T} facets
+ * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
  * @param {DefineKindOptions<unknown>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -179,7 +189,8 @@ harden(vivifyFarClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template T,M
+ * @template T
+ * @template {Record<string | symbol, CallableFunction>} M methods
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {any} interfaceGuard
@@ -211,7 +222,7 @@ harden(vivifyFarInstance);
 
 /**
  * @deprecated Use vivifyFarInstance instead.
- * @template T
+ * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {T} methods
