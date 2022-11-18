@@ -24,10 +24,10 @@ test('test defineHeapFarClass', t => {
   const makeUpCounter = defineHeapFarClass(
     'UpCounter',
     UpCounterI,
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
-        // @ts-expect-error TS doesn't know that `this` is a `Context`
         const { state } = this;
         state.x += y;
         return state.x;
@@ -51,11 +51,11 @@ test('test defineHeapFarClassKit', t => {
   const makeCounterKit = defineHeapFarClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       up: {
         incr(y = 1) {
-          // @ts-expect-error xxx this.state
           const { state } = this;
           state.x += y;
           return state.x;
@@ -63,7 +63,6 @@ test('test defineHeapFarClassKit', t => {
       },
       down: {
         decr(y = 1) {
-          // @ts-expect-error xxx this.state
           const { state } = this;
           state.x -= y;
           return state.x;

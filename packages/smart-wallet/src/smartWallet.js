@@ -232,9 +232,8 @@ const behaviorGuards = {
 const behavior = {
   helper: {
     /**
-     * @this {{ state: State, facets: typeof behavior }}
      * @param {RemotePurse} purse
-     * @param {Amount} balance
+     * @param {Amount<any>} balance
      * @param {'init'} [init]
      */
     updateBalance(purse, balance, init) {
@@ -252,9 +251,6 @@ const behavior = {
       helper.publishCurrentState();
     },
 
-    /**
-     * @this {{ state: State, facets: typeof behavior }}
-     */
     publishCurrentState() {
       const {
         brandDescriptors,
@@ -275,7 +271,6 @@ const behavior = {
 
     /** @type {(desc: Omit<BrandDescriptor, 'displayInfo'>, purse: RemotePurse) => Promise<void>} */
     async addBrand(desc, purseRef) {
-      /** @type {State} */
       const {
         address,
         brandDescriptors,
@@ -332,10 +327,7 @@ const behavior = {
       const payments = paymentQueues.has(desc.brand)
         ? paymentQueues.get(desc.brand)
         : [];
-      const deposits = payments.map(p =>
-        // @ts-expect-error deposit does take a FarRef<Payment>
-        E(purse).deposit(p),
-      );
+      const deposits = payments.map(p => E(purse).deposit(p));
       Promise.all(deposits).catch(err =>
         console.error('ERROR depositing queued payments', err),
       );
@@ -350,11 +342,11 @@ const behavior = {
      *
      * If the purse doesn't exist, we hold the payment until it does.
      *
+     * @this {SmartWalletThis}
      * @param {import('@endo/far').FarRef<Payment>} payment
      * @returns {Promise<Amount>} amounts for deferred deposits will be empty
      */
     async receive(payment) {
-      /** @type {State} */
       const { brandPurses, paymentQueues: queues } = this.state;
       const brand = await E(payment).getAllegedBrand();
 
@@ -385,13 +377,13 @@ const behavior = {
     /**
      * Take an offer description provided in capData, augment it with payments and call zoe.offer()
      *
+     * @this {SmartWalletThis}
      * @param {import('./offers.js').OfferSpec} offerSpec
      * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
      * @throws if any parts of the offer can be determined synchronously to be invalid
      */
     async executeOffer(offerSpec) {
       const { facets } = this;
-      /** @type {State} */
       const {
         address,
         zoe,
@@ -443,6 +435,7 @@ const behavior = {
   self: {
     /**
      *
+     * @this {SmartWalletThis}
      * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
      * @param {boolean} [canSpend=false]
      * @returns {Promise<void>}
@@ -465,29 +458,33 @@ const behavior = {
         },
       );
     },
-    /** @returns {SmartWalletBehavior['deposit']} */
+    /** @this {SmartWalletThis} */
     getDepositFacet() {
       return this.facets.deposit;
     },
-    /** @returns {SmartWalletBehavior['offers']} */
+    /** @this {SmartWalletThis} */
     getOffersFacet() {
       return this.facets.offers;
     },
-    /** @returns {StoredSubscriber<CurrentWalletRecord>} */
+    /** @this {SmartWalletThis} */
     getCurrentSubscriber() {
       return this.state.currentPublishKit.subscriber;
     },
-    /** @returns {StoredSubscriber<UpdateRecord>} */
+    /** @this {SmartWalletThis} */
     getUpdatesSubscriber() {
-      /** @type {{state: State}} */
-      // @ts-expect-error
-      const { state } = this;
-      return state.updatePublishKit.subscriber;
+      return this.state.updatePublishKit.subscriber;
     },
   },
 };
 /** @typedef {typeof behavior} SmartWalletBehavior */
+// XXX defineVirtualFarClassKit should infer this
+/** @typedef {{ facets: SmartWalletBehavior, state: State }} SmartWalletThis */
 
+// TODO type facets (runs into problems with 'this')
+/**
+ *
+ * @param {{ state: State, facets: * }} param0
+ */
 const finish = ({ state, facets }) => {
   /** @type {State} */
   const { invitationBrand, invitationIssuer, invitationPurse, bank } = state;

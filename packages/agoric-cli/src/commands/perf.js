@@ -45,6 +45,7 @@ export const makePerfCommand = async logger => {
     )
     .option('--home [string]', 'directory for config and data')
     .action(async function () {
+      // @ts-expect-error this implicit any
       const opts = this.opts();
       logger.warn({ opts });
       const payloadStr = await fs.readFileSync(opts.executeOffer).toString();

@@ -22,6 +22,7 @@ export function encode(data) {
 export function netstringEncoderStream() {
   /**
    *
+   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
    * @param {*} callback
@@ -86,6 +87,7 @@ export function netstringDecoderStream(optMaxChunkSize) {
   let buffered = Buffer.from('');
   /**
    *
+   * @this {{ push: (b: Buffer) => void }}
    * @param {Buffer} chunk
    * @param {BufferEncoding} encoding
    * @param {*} callback

@@ -137,7 +137,7 @@ const defendMethod = (method, methodGuard, label) => {
  *
  * @param {string} methodTag
  * @param {WeakMap} contextMap
- * @param {Method} behaviorMethod
+ * @param {CallableFunction} behaviorMethod
  * @param {boolean} [thisfulMethods]
  * @param {MethodGuard} [methodGuard]
  */
@@ -195,7 +195,7 @@ const bindMethod = (
 };
 
 /**
- * @template {Record<string | symbol, Method>} T
+ * @template {Record<string | symbol, CallableFunction>} T
  * @param {string} tag
  * @param {WeakMap} contextMap
  * @param {T} behaviorMethods
@@ -280,13 +280,13 @@ export const initEmpty = () => emptyRecord;
  */
 
 /**
- * @template A
- * @template S
- * @template {{}} T
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {string} tag
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T} methods
+ * @param {T & ThisType<T & { state: S }>} methods
  * @param {object} [options]
  * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
@@ -330,13 +330,13 @@ export const defineHeapFarClass = (
 harden(defineHeapFarClass);
 
 /**
- * @template A
- * @template S
- * @template {Record<string, any>} F
+ * @template A args to init
+ * @template S state from init
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} F methods
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {F} methodsKit
+ * @param {F & { [K in keyof F]: ThisType<F[K] & { state: S }> }} methodsKit
  * @param {object} [options]
  * @returns {(...args: A[]) => F}
  */
