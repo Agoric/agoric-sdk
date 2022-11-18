@@ -23,8 +23,8 @@ import {
  * @param {string} tag
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T} methods
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ self: T, state: S }>} methods
+ * @param {DefineKindOptions<{ self: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const defineVirtualFarClass = (
@@ -51,7 +51,7 @@ harden(defineVirtualFarClass);
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
+ * @param {T & ThisType<{ facets: T, state: S }> } facets
  * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -79,7 +79,7 @@ harden(defineVirtualFarClassKit);
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T & ThisType<T & { state: S }>} methods
+ * @param {T & ThisType<{ self: T, state: S }>} methods
  * @param {DefineKindOptions<{ self: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -107,7 +107,7 @@ harden(defineDurableFarClass);
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
+ * @param {T & ThisType<{ facets: T, state: S }> } facets
  * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -136,7 +136,7 @@ harden(defineDurableFarClassKit);
  * @param {string} kindName
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T & ThisType<T & { state: S }>} methods
+ * @param {T & ThisType<{ self: T, state: S }>} methods
  * @param {DefineKindOptions<{ self: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
@@ -166,7 +166,7 @@ harden(vivifyFarClass);
  * @param {string} kindName
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
+ * @param {T & ThisType<{ facets: T, state: S }> } facets
  * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */

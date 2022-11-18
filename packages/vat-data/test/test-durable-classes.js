@@ -32,6 +32,9 @@ test('test defineDurableFarClass', t => {
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
+        // @ts-expect-error does not exist
+        this.incr;
+        assert(this.self.incr);
         const { state } = this;
         state.x += y;
         return state.x;

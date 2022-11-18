@@ -25,10 +25,10 @@ test('test defineVirtualFarClass', t => {
   const makeUpCounter = defineVirtualFarClass(
     'UpCounter',
     UpCounterI,
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
-        // @ts-expect-error TS doesn't know that `this` is a `Context`
         const { state } = this;
         state.x += y;
         return state.x;
@@ -52,6 +52,7 @@ test('test defineVirtualFarClassKit', t => {
   const makeCounterKit = defineVirtualFarClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       up: {
