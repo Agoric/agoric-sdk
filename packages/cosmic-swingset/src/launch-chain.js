@@ -221,10 +221,36 @@ export async function launch({
 }) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-    { mapSize, traceFile: swingStoreTraceFile, keepSnapshots },
-  );
+  const {
+    kvStore: kvStoreOriginal,
+    streamStore,
+    snapStore,
+    commit,
+  } = openSwingStore(kernelStateDBDir, {
+    mapSize,
+    traceFile: swingStoreTraceFile,
+    keepSnapshots,
+  });
+
+  /** @type {Map<string, string | undefined>} */
+  const blockStoreChanges = new Map();
+
+  const kvStore = {
+    ...kvStoreOriginal,
+    set: (key, value) => {
+      if (!key.startsWith('local.')) {
+        blockStoreChanges.set(key, value);
+      }
+      return kvStoreOriginal.set(key, value);
+    },
+    delete: key => {
+      if (!key.startsWith('local.')) {
+        blockStoreChanges.set(key, undefined);
+      }
+      return kvStoreOriginal.delete(key);
+    },
+  };
+
   const hostStorage = {
     kvStore,
     streamStore,
@@ -341,16 +367,6 @@ export async function launch({
     kvStore.set(getHostKey('queueAllowed'), JSON.stringify(savedQueueAllowed));
 
     await commit();
-    void Promise.resolve()
-      .then(afterCommitCallback)
-      .then((afterCommitStats = {}) => {
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-after-commit-block',
-          blockHeight,
-          blockTime,
-          ...afterCommitStats,
-        });
-      });
   }
 
   async function deliverInbound(sender, messages, ack) {
@@ -418,6 +434,8 @@ export async function launch({
   let savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   let runTime = 0;
   let chainTime;
+  let saveTime = 0;
+  let endBlockFinish = 0;
   let blockParams;
   let decohered;
 
@@ -686,18 +704,40 @@ export async function launch({
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
         await saveOutsideState(savedHeight, blockTime);
-        const saveTime = Date.now() - start2;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
-          blockHeight,
-          blockTime,
-        });
+        saveTime = Date.now() - start2;
 
         blockParams = undefined;
 
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
+
+        return undefined;
+      }
+
+      case ActionType.AFTER_COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+
+        const fullSaveTime = Date.now() - endBlockFinish;
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-finish',
+          blockHeight,
+          blockTime,
+          saveTime,
+          fullSaveTime,
+        });
+
+        void Promise.resolve()
+          .then(afterCommitCallback)
+          .then((afterCommitStats = {}) => {
+            controller.writeSlogObject({
+              type: 'cosmic-swingset-after-commit-block',
+              blockHeight,
+              blockTime,
+              ...afterCommitStats,
+            });
+          });
 
         return undefined;
       }
@@ -780,7 +820,12 @@ export async function launch({
           blockTime,
         });
 
-        return undefined;
+        const swingstoreChanges = [];
+        blockStoreChanges.clear();
+
+        endBlockFinish = Date.now();
+
+        return { swingstoreChanges };
       }
 
       default: {

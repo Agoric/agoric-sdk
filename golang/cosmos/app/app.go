@@ -881,7 +881,15 @@ func (app *GaiaApp) Commit() abci.ResponseCommit {
 	if err != nil {
 		panic(err.Error())
 	}
-	return app.BaseApp.Commit()
+
+	res := app.BaseApp.Commit()
+
+	err = swingset.AfterCommitBlock(app.SwingSetKeeper)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return res
 }
 
 // LoadHeight loads a particular height

@@ -27,6 +27,12 @@ type beginBlockResult struct {
 	QueueAllowed []types.QueueSize `json:"queue_allowed"`
 }
 
+type StorageChange []string 
+
+type endBlockResult struct {
+	SwingstoreChanges []StorageChange `json:"swingstoreChanges"`
+}
+
 type endBlockAction struct {
 	Type        string `json:"type"`
 	BlockHeight int64  `json:"blockHeight"`
@@ -37,6 +43,18 @@ type commitBlockAction struct {
 	Type        string `json:"type"`
 	BlockHeight int64  `json:"blockHeight"`
 	BlockTime   int64  `json:"blockTime"`
+}
+
+func (sc StorageChange) IsDelete() bool {
+	return len(sc) == 1
+}
+
+func (sc StorageChange) Key() string {
+	return sc[0]
+}
+
+func (sc StorageChange) Value() string {
+	return sc[1]
 }
 
 func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
@@ -78,13 +96,34 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		BlockHeight: ctx.BlockHeight(),
 		BlockTime:   ctx.BlockTime().Unix(),
 	}
-	_, err := keeper.BlockingSend(ctx, action)
+	out , err := keeper.BlockingSend(ctx, action)
 
 	// fmt.Fprintf(os.Stderr, "END_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed END_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
 		panic(err)
+	}
+
+	if out != "" {
+		var result endBlockResult
+		err := json.Unmarshal([]byte(out), &result)
+		if err != nil {
+			panic(err)
+		}
+
+		vstoragekeeper := keeper.GetVStorageKeeper()
+		
+		for _, change := range result.SwingstoreChanges {
+			key := "swingstore." + change.Key()
+
+			val := ""
+			if !change.IsDelete() {
+				val = "=" + change.Value()
+			}
+
+			vstoragekeeper.SetStorage(ctx, key, val)
+		}
 	}
 
 	// Save our EndBlock status.
@@ -107,6 +146,26 @@ func CommitBlock(keeper Keeper) error {
 	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed COMMIT_BLOCK means that the SwingSet state is inconsistent.
+		// Panic here, in the hopes that a replay from scratch will fix the problem.
+		panic(err)
+	}
+	return err
+}
+
+
+func AfterCommitBlock(keeper Keeper) error {
+	// defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
+
+	action := &commitBlockAction{
+		Type:        "AFTER_COMMIT_BLOCK",
+		BlockHeight: endBlockHeight,
+		BlockTime:   endBlockTime,
+	}
+	_, err := keeper.BlockingSend(sdk.Context{}, action)
+
+	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
+	if err != nil {
+		// NOTE: A failed AFTER_COMMIT_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
 		panic(err)
 	}

@@ -77,6 +77,10 @@ func NewKeeper(
 	}
 }
 
+func (k Keeper) GetVStorageKeeper () vstoragekeeper.Keeper {
+	return k.vstorageKeeper
+}
+
 // PushAction appends an action to the controller's action queue.  This queue is
 // kept in the kvstore so that changes to it are properly reverted if the
 // kvstore is rolled back.  By the time the block manager runs, it can commit
