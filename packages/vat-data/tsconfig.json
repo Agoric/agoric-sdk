@@ -9,6 +9,7 @@
     "checkJs": true,
     "strict": true,
     "noImplicitAny": false, // for compat with peer packages using ambient types
+    "noImplicitThis": true,
 
     "noEmit": true,
   },
