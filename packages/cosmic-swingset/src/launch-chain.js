@@ -820,7 +820,7 @@ export async function launch({
           blockTime,
         });
 
-        const swingstoreChanges = [];
+        const swingstoreChanges = [...blockStoreChanges];
         blockStoreChanges.clear();
 
         endBlockFinish = Date.now();
