@@ -482,7 +482,9 @@ test('failed upgrade - explode', async t => {
   // ulrik-1 correctly, we'll get '2'. If we're still talking to
   // ulrik-2, we'd see '21'. If we somehow rewound ulrik-1 to the
   // beginning, we'd see '1'.
-  t.is(events[1], 'ping 2');
+  t.is(events[1], true); // e instanceof Error
+  t.is(events[2], true); // /vat-upgrade failure/.test(e.message)
+  t.is(events[3], 'ping 2');
 
   // TODO: who should see the details of what v2 did wrong? calling
   // vat? only the console?
