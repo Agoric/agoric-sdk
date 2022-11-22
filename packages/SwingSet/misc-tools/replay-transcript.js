@@ -48,7 +48,7 @@ const FORCED_RELOAD_FROM_SNAPSHOT = false;
 
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
-const USE_CUSTOM_SNAP_STORE = true;
+const USE_CUSTOM_SNAP_STORE = false;
 
 // Enable to output xsnap debug traces corresponding to the transcript replay
 const RECORD_XSNAP_TRACE = false;
@@ -154,7 +154,7 @@ async function replay(transcriptFile) {
           return loadRaw(snapFile);
         },
       }
-    : makeSnapStore(process.cwd(), makeSnapStoreIO());
+    : makeSnapStore(process.cwd(), makeSnapStoreIO(), { keepSnapshots: true });
   const testLog = undefined;
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -348,10 +348,10 @@ async function replay(transcriptFile) {
       lastTranscriptNum = transcriptNum;
       // syscalls = [{ d, response }, ..]
       // console.log(`replaying:`);
-      console.log(
-        `delivery ${transcriptNum} (L ${lineNumber}):`,
-        JSON.stringify(delivery).slice(0, 200),
-      );
+      // console.log(
+      //   `delivery ${transcriptNum} (L ${lineNumber}):`,
+      //   JSON.stringify(delivery).slice(0, 200),
+      // );
       // for (const s of syscalls) {
       //   // s.response = 'nope';
       //   console.log(
