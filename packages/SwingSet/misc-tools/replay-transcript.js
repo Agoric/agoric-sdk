@@ -137,9 +137,10 @@ async function replay(transcriptFile) {
         async save(saveRaw) {
           const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
           await saveRaw(snapFile);
-          const h = await fileHash(snapFile);
-          await fs.promises.rename(snapFile, `${h}.xss`);
-          return h;
+          const hash = await fileHash(snapFile);
+          const filePath = `${hash}.xss`;
+          await fs.promises.rename(snapFile, filePath);
+          return { hash, filePath };
         },
         async load(hash, loadRaw) {
           const snapFile = `${hash}.xss`;
@@ -283,17 +284,17 @@ async function replay(transcriptFile) {
     } else if (data.type === 'heap-snapshot-save') {
       if (!manager.makeSnapshot) continue; // eslint-disable-line no-continue
       saveSnapshotID = data.snapshotID;
-      const h = await manager.makeSnapshot(snapStore);
-      snapshotOverrideMap.set(saveSnapshotID, h);
-      if (h !== saveSnapshotID) {
-        const errorMessage = `Snapshot hash does not match. ${h} !== ${saveSnapshotID}`;
+      const { hash } = await manager.makeSnapshot(snapStore);
+      snapshotOverrideMap.set(saveSnapshotID, hash);
+      if (hash !== saveSnapshotID) {
+        const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID}`;
         if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
           console.warn(errorMessage);
         } else {
           throw new Error(errorMessage);
         }
       } else {
-        console.log(`made snapshot ${h}`);
+        console.log(`made snapshot ${hash}`);
       }
       saveSnapshotID = null;
     } else {
