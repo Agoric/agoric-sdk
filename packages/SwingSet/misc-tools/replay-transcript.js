@@ -44,6 +44,9 @@ const REBUILD_BUNDLES = false;
 // Enable to continue if snapshot hash doesn't match transcript
 const IGNORE_SNAPSHOT_HASH_DIFFERENCES = false;
 
+const FORCED_SNAPSHOT_INITIAL = 2;
+const FORCED_SNAPSHOT_INTERVAL = 1000;
+
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
 const USE_CUSTOM_SNAP_STORE = true;
@@ -387,17 +390,24 @@ async function replay(transcriptFile) {
       // console.log(`dr`, dr);
 
       // enable this to write periodic snapshots, for #5975 leak
-      if (false && transcriptNum % 10 === 8) {
-        console.log(`-- writing snapshot`, xsnapPID);
-        const fn = 'snapshot.xss';
-        const snapstore = {
-          save(thunk) {
-            return thunk(fn);
-          },
-        };
-        // @ts-expect-error to be removed
-        await manager.makeSnapshot(snapstore);
-        // const size = fs.statSync(fn).size;
+      if (
+        FORCED_SNAPSHOT_INTERVAL &&
+        (transcriptNum - FORCED_SNAPSHOT_INITIAL) % FORCED_SNAPSHOT_INTERVAL ===
+          0
+      ) {
+        const { hash } = await manager.makeSnapshot(snapStore);
+        fs.writeSync(
+          snapshotActivityFd,
+          `${JSON.stringify({
+            transcriptFile,
+            type: 'save',
+            xsnapPID,
+            vatID,
+            transcriptNum,
+            snapshotID: hash,
+          })}\n`,
+        );
+        console.log(`made snapshot ${hash} for delivery ${transcriptNum}`);
       }
     }
   }
