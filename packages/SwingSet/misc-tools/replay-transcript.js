@@ -13,6 +13,8 @@ import { pipeline } from 'stream';
 import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { file as tmpFile, tmpName } from 'tmp';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import sqlite3 from 'better-sqlite3';
 import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
@@ -116,19 +118,22 @@ async function replay(transcriptFile) {
   };
   const snapStore = USE_CUSTOM_SNAP_STORE
     ? {
-        async save(saveRaw) {
-          const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
+        async saveSnapshot(_vatID, endPos, saveRaw) {
+          const snapFile = `${vatID}-${endPos}-${
+            saveSnapshotID || 'unknown'
+          }.xss`;
           await saveRaw(snapFile);
-          const h = await fileHash(snapFile);
-          await fs.promises.rename(snapFile, `${h}.xss`);
-          return h;
+          const hash = await fileHash(snapFile);
+          const filePath = `${vatID}-${endPos}-${hash}.xss`;
+          await fs.promises.rename(snapFile, filePath);
+          return { hash };
         },
-        async load(hash, loadRaw) {
+        async loadSnapshot(hash, loadRaw) {
           const snapFile = `${hash}.xss`;
           return loadRaw(snapFile);
         },
       }
-    : makeSnapStore(process.cwd(), () => {}, makeSnapStoreIO());
+    : makeSnapStore(sqlite3(':memory:'), () => {}, makeSnapStoreIO());
   const testLog = undefined;
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -246,17 +251,17 @@ async function replay(transcriptFile) {
     } else if (data.type === 'heap-snapshot-save') {
       if (!manager.makeSnapshot) continue; // eslint-disable-line no-continue
       saveSnapshotID = data.snapshotID;
-      const h = await manager.makeSnapshot(snapStore);
-      snapshotOverrideMap.set(saveSnapshotID, h);
-      if (h !== saveSnapshotID) {
-        const errorMessage = `Snapshot hash does not match. ${h} !== ${saveSnapshotID}`;
+      const { hash } = await manager.makeSnapshot(deliveryNum, snapStore);
+      snapshotOverrideMap.set(saveSnapshotID, hash);
+      if (hash !== saveSnapshotID) {
+        const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID}`;
         if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
           console.warn(errorMessage);
         } else {
           throw new Error(errorMessage);
         }
       } else {
-        console.log(`made snapshot ${h}`);
+        console.log(`made snapshot ${hash}`);
       }
       saveSnapshotID = null;
     } else {
