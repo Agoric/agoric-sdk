@@ -54,6 +54,9 @@ if (!vatName) {
       )} ${len.padStart(10)} deliveries`,
     );
   }
+} else if (/(supervisor|lockdown)(B|-b)undle/.test(vatName)) {
+  const bundle = kvStore.get(vatName.replace('-bundle', 'Bundle'));
+  fs.writeFileSync(vatName.replace('Bundle', '-bundle'), bundle);
 } else {
   let vatID = vatName;
   if (allVatNames.indexOf(vatName) !== -1) {
