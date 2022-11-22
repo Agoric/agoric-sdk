@@ -46,6 +46,7 @@ const IGNORE_SNAPSHOT_HASH_DIFFERENCES = false;
 
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
+const FORCED_RELOAD_FROM_SNAPSHOT = false;
 
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
@@ -279,6 +280,36 @@ async function replay(transcriptFile) {
     );
   };
 
+  const loadSnapshot = async data => {
+    if (manager) {
+      await manager.shutdown();
+      manager = undefined;
+    }
+    loadSnapshotID = data.snapshotID;
+    if (snapshotOverrideMap.has(loadSnapshotID)) {
+      loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
+    }
+    if (data.vatID) {
+      vatID = data.vatID;
+    }
+    await createManager();
+    console.log(
+      `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
+    );
+    fs.writeSync(
+      snapshotActivityFd,
+      `${JSON.stringify({
+        transcriptFile,
+        type: 'load',
+        xsnapPID,
+        vatID,
+        snapshotID: data.snapshotID,
+        loadSnapshotID,
+      })}\n`,
+    );
+    loadSnapshotID = null;
+  };
+
   /** @type {import('stream').Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
@@ -293,33 +324,7 @@ async function replay(transcriptFile) {
     lineNumber += 1;
     const data = JSON.parse(line);
     if (data.type === 'heap-snapshot-load') {
-      if (manager) {
-        await manager.shutdown();
-        manager = undefined;
-      }
-      loadSnapshotID = data.snapshotID;
-      if (snapshotOverrideMap.has(loadSnapshotID)) {
-        loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
-      }
-      if (data.vatID) {
-        vatID = data.vatID;
-      }
-      await createManager();
-      console.log(
-        `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
-      );
-      fs.writeSync(
-        snapshotActivityFd,
-        `${JSON.stringify({
-          transcriptFile,
-          type: 'load',
-          xsnapPID,
-          vatID,
-          snapshotID: data.snapshotID,
-          loadSnapshotID,
-        })}\n`,
-      );
-      loadSnapshotID = null;
+      await loadSnapshot(data);
     } else if (!manager) {
       if (data.type !== 'create-vat') {
         throw Error(
@@ -368,6 +373,9 @@ async function replay(transcriptFile) {
         console.log(`made snapshot ${hash}`);
       }
       saveSnapshotID = null;
+      if (FORCED_RELOAD_FROM_SNAPSHOT) {
+        await loadSnapshot(data);
+      }
     } else {
       const { transcriptNum, d: delivery, syscalls } = data;
       lastTranscriptNum = transcriptNum;
@@ -408,6 +416,12 @@ async function replay(transcriptFile) {
           })}\n`,
         );
         console.log(`made snapshot ${hash} for delivery ${transcriptNum}`);
+        if (FORCED_RELOAD_FROM_SNAPSHOT) {
+          await loadSnapshot({
+            snapshotID: hash,
+            vatID,
+          });
+        }
       }
     }
   }
