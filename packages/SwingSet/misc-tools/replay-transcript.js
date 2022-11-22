@@ -124,6 +124,7 @@ async function replay(transcriptFile) {
 
   let loadSnapshotID = null;
   let saveSnapshotID = null;
+  let lastTranscriptNum;
   const snapshotOverrideMap = new Map();
 
   const fakeKernelKeeper =
@@ -279,7 +280,6 @@ async function replay(transcriptFile) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());
   }
   const lines = readline.createInterface({ input: transcriptF });
-  let deliveryNum = 0; // TODO is this aligned?
   let lineNumber = 1;
   for await (const line of lines) {
     if (lineNumber % 1000 === 0) {
@@ -296,7 +296,9 @@ async function replay(transcriptFile) {
       if (snapshotOverrideMap.has(loadSnapshotID)) {
         loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
       }
-      vatID = data.vatID;
+      if (data.vatID) {
+        vatID = data.vatID;
+      }
       await createManager();
       console.log(
         `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
@@ -330,11 +332,12 @@ async function replay(transcriptFile) {
       }
       saveSnapshotID = null;
     } else {
-      const { d: delivery, syscalls } = data;
+      const { transcriptNum, d: delivery, syscalls } = data;
+      lastTranscriptNum = transcriptNum;
       // syscalls = [{ d, response }, ..]
       // console.log(`replaying:`);
       console.log(
-        `delivery ${deliveryNum} (L ${lineNumber}):`,
+        `delivery ${transcriptNum} (L ${lineNumber}):`,
         JSON.stringify(delivery).slice(0, 200),
       );
       // for (const s of syscalls) {
@@ -346,12 +349,11 @@ async function replay(transcriptFile) {
       //     JSON.stringify(s.response[1]).slice(0, 200),
       //   );
       // }
-      await manager.replayOneDelivery(delivery, syscalls, deliveryNum);
-      deliveryNum += 1;
+      await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
       // console.log(`dr`, dr);
 
       // enable this to write periodic snapshots, for #5975 leak
-      if (false && deliveryNum % 10 === 8) {
+      if (false && transcriptNum % 10 === 8) {
         console.log(`-- writing snapshot`, xsnapPID);
         const fn = 'snapshot.xss';
         const snapstore = {
@@ -376,7 +378,7 @@ async function run() {
   const args = process.argv.slice(2);
   console.log(`argv`, args);
   if (args.length < 1) {
-    console.log(`replay-one-vat.js transcript.sst`);
+    console.log(`replay-transcript.js transcript.sst`);
     return;
   }
   const [transcriptFile] = args;
