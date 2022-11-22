@@ -111,6 +111,8 @@ async function replay(transcriptFile) {
   let lastTranscriptNum = 0;
   const snapshotOverrideMap = new Map();
 
+  const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
+
   const fakeKernelKeeper =
     /** @type {import('../src/types-external.js').KernelKeeper} */ ({
       provideVatKeeper: _vatID =>
@@ -278,6 +280,17 @@ async function replay(transcriptFile) {
       console.log(
         `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
       );
+      fs.writeSync(
+        snapshotActivityFd,
+        `${JSON.stringify({
+          transcriptFile,
+          type: 'load',
+          xsnapPID,
+          vatID,
+          snapshotID: data.snapshotID,
+          loadSnapshotID,
+        })}\n`,
+      );
       loadSnapshotID = null;
     } else if (!manager) {
       if (data.type !== 'create-vat') {
@@ -291,11 +304,32 @@ async function replay(transcriptFile) {
       console.log(
         `manager created from bundle source, worker PID: ${xsnapPID}`,
       );
+      fs.writeSync(
+        snapshotActivityFd,
+        `${JSON.stringify({
+          transcriptFile,
+          type: 'create',
+          xsnapPID,
+          vatID,
+        })}\n`,
+      );
     } else if (data.type === 'heap-snapshot-save') {
       if (!manager.makeSnapshot) continue; // eslint-disable-line no-continue
       saveSnapshotID = data.snapshotID;
       const { hash } = await manager.makeSnapshot(lastTranscriptNum, snapStore);
       snapshotOverrideMap.set(saveSnapshotID, hash);
+      fs.writeSync(
+        snapshotActivityFd,
+        `${JSON.stringify({
+          transcriptFile,
+          type: 'save',
+          xsnapPID,
+          vatID,
+          transcriptNum: lastTranscriptNum,
+          snapshotID: hash,
+          saveSnapshotID,
+        })}\n`,
+      );
       if (hash !== saveSnapshotID) {
         const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID}`;
         if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
@@ -345,6 +379,7 @@ async function replay(transcriptFile) {
   }
 
   lines.close();
+  fs.closeSync(snapshotActivityFd);
   if (manager) {
     await manager.shutdown();
   }
