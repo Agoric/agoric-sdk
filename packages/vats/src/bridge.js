@@ -62,6 +62,9 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     toBridge(dstID, obj) {
       return callOutbound(dstID, obj);
     },
+    fromBridge(srcID, obj) {
+      return bridgeHandler.inbound(srcID, obj);
+    },
     register(srcID, handler) {
       srcHandlers.init(srcID, handler);
     },
