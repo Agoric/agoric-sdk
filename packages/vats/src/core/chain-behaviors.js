@@ -151,7 +151,7 @@ export const bridgeProvisioner = async ({
           let provisionP;
           if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
             // Only provision a smart wallet.
-            provisionP = E(bridgeManager).toBridge(
+            provisionP = E(bridgeManager).fromBridge(
               BRIDGE_ID.PROVISION_SMART_WALLET,
               obj,
             );

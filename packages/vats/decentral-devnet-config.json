@@ -122,6 +122,9 @@
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
+    "mints": {
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
+    },
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
