@@ -2,7 +2,7 @@ import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { listDifference, objectMap } from '@agoric/internal';
 
-import { fit } from './patternMatchers.js';
+import { fit, M } from './patternMatchers.js';
 
 const { details: X, quote: q } = assert;
 const { apply, ownKeys } = Reflect;
@@ -10,38 +10,12 @@ const { defineProperties, seal, freeze } = Object;
 
 const defendSyncArgs = (args, methodGuard, label) => {
   const { argGuards, optionalArgGuards, restArgGuard } = methodGuard;
-  if (args.length < argGuards.length) {
-    assert.fail(
-      X`${label} args: ${args} - expected ${argGuards.length} arguments`,
-    );
-  }
-  for (let i = 0; i < args.length; i += 1) {
-    const arg = args[i];
-    const argLabel = `${label} arg ${i}`;
-    if (i < argGuards.length) {
-      fit(arg, argGuards[i], argLabel);
-    } else if (
-      optionalArgGuards &&
-      i < argGuards.length + optionalArgGuards.length
-    ) {
-      if (arg !== undefined) {
-        // In the optional section, an `undefined` arg succeeds
-        // unconditionally
-        fit(arg, optionalArgGuards[i - argGuards.length], argLabel);
-      }
-    } else if (restArgGuard) {
-      const restArg = harden(args.slice(i));
-      fit(restArg, restArgGuard, `${label} rest[${i}]`);
-      return;
-    } else {
-      assert.fail(
-        X`${argLabel}: ${args} - expected fewer than ${i + 1} arguments`,
-      );
-    }
-  }
-  if (restArgGuard) {
-    fit(harden([]), restArgGuard, `${label} rest[]`);
-  }
+  const paramsPattern = M.splitArray(
+    argGuards,
+    optionalArgGuards,
+    restArgGuard,
+  );
+  fit(harden(args), paramsPattern, label);
 };
 
 /**
