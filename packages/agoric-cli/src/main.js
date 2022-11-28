@@ -51,8 +51,6 @@ const main = async (progname, rawArgs, powers) => {
     );
   }
 
-  program.storeOptionsAsProperties(false);
-
   const pj = await fs.readFile(`${dirname}/../package.json`);
   const pkg = JSON.parse(pj);
   program.name(pkg.name).version(pkg.version);
@@ -72,7 +70,7 @@ const main = async (progname, rawArgs, powers) => {
   program
     .command('cosmos <command...>')
     .description('client for an Agoric Cosmos chain')
-    .action(async (command, cmd) => {
+    .action(async (command, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
@@ -98,7 +96,7 @@ const main = async (progname, rawArgs, powers) => {
         return value;
       },
     )
-    .action(async cmd => {
+    .action(async (_options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(walletMain, ['wallet'], opts);
     });
@@ -121,7 +119,7 @@ const main = async (progname, rawArgs, powers) => {
       'use this branch instead of the repository HEAD',
       DEFAULT_DAPP_BRANCH,
     )
-    .action(async (project, cmd) => {
+    .action(async (project, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(initMain, ['init', project], opts);
     });
@@ -154,7 +152,7 @@ const main = async (progname, rawArgs, powers) => {
       'set the config.toml p2p.unconditional_peer_ids value',
       '',
     )
-    .action(async (prog, configDir, cmd) => {
+    .action(async (prog, configDir, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
@@ -162,7 +160,7 @@ const main = async (progname, rawArgs, powers) => {
   program
     .command('install [force-sdk-version]')
     .description('install Dapp dependencies')
-    .action(async (forceSdkVersion, cmd) => {
+    .action(async (forceSdkVersion, _options, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(installMain, ['install', forceSdkVersion], opts);
@@ -237,7 +235,7 @@ const main = async (progname, rawArgs, powers) => {
       'show current block height when each value is reported',
     )
     .option('-B, --bootstrap <config>', 'network bootstrap configuration')
-    .action(async (pathSpecs, cmd) => {
+    .action(async (pathSpecs, _options, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(followMain, ['follow', ...pathSpecs], opts);
     });
@@ -271,7 +269,7 @@ const main = async (progname, rawArgs, powers) => {
       .description(
         'run a script with all your user privileges against the local Agoric VM',
       ),
-  ).action(async (script, scriptArgs, cmd) => {
+  ).action(async (script, scriptArgs, _options, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
     return subMain(deployMain, ['run', script], opts);
   });
@@ -287,7 +285,7 @@ const main = async (progname, rawArgs, powers) => {
       .description(
         'run multiple scripts with all your user privileges against the local Agoric VM',
       ),
-  ).action(async (scripts, cmd) => {
+  ).action(async (scripts, _options, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts() };
     return subMain(deployMain, ['deploy', ...scripts], opts);
   });
@@ -308,7 +306,7 @@ const main = async (progname, rawArgs, powers) => {
         'The ID of the destination chain, if not simply "agoric"',
       )
       .description('publish a bundle to a Cosmos chain'),
-  ).action(async (bundles, cmd) => {
+  ).action(async (bundles, _options, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts() };
     return subMain(publishMain, ['publish', ...bundles], opts);
   });
@@ -349,7 +347,7 @@ agoric start local-solo [portNum] [provisionPowers] - local solo VM
       'install the wallet from NPM package <package>',
       '@agoric/wallet-frontend',
     )
-    .action(async (profile, args, cmd) => {
+    .action(async (profile, args, _options, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(startMain, ['start', profile, ...args], opts);
