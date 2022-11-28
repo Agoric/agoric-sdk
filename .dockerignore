@@ -10,7 +10,6 @@ packages/stat-logger
 **/deployment.json
 **/vars.tf
 **/*.log
-**/dist
 **/build
 **/__pycache__
 **/*.egg-info
