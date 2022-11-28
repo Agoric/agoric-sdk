@@ -14,7 +14,7 @@ import '../types-ambient.js';
 const empty = makeCopyBag([]);
 
 /**
- * @type {import('../types.js').MathHelpers<CopyBagValue>}
+ * @type {MathHelpers<CopyBagValue>}
  */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {

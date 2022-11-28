@@ -68,14 +68,14 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * Make the paymentLedger, the source of truth for the balances of
  * payments. All minting and transfer authority originates here.
  *
- * @template {AssetKind} [K=AssetKind]
+ * @template {AssetKind} K
  * @param {Baggage} issuerBaggage
  * @param {string} name
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
  * @param {ShutdownWithFailure=} optShutdownWithFailure
- * @returns {import('./types.js').PaymentLedger<K>}
+ * @returns {PaymentLedger<K>}
  */
 export const vivifyPaymentLedger = (
   issuerBaggage,

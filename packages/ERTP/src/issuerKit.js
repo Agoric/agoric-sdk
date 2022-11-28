@@ -11,7 +11,6 @@ import { vivifyPaymentLedger } from './paymentLedger.js';
 import './types-ambient.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-/** @typedef {import('./types').ShutdownWithFailure} ShutdownWithFailure */
 
 /**
  * @template {AssetKind} K
@@ -30,6 +29,7 @@ export const vivifyIssuerKit = (
   optShutdownWithFailure = undefined,
 ) => {
   const name = issuerBaggage.get('name');
+  /** @type {K} */
   const assetKind = issuerBaggage.get('assetKind');
   const displayInfo = issuerBaggage.get('displayInfo');
   const elementShape = issuerBaggage.get('elementShape');
@@ -47,6 +47,8 @@ export const vivifyIssuerKit = (
   }
 
   // Attenuate the powerful authority to mint and change balances
+  /** @type {PaymentLedger<K>} */
+  // @ts-expect-error could be instantiated with different subtype of AssetKind
   const { issuer, mint, brand } = vivifyPaymentLedger(
     issuerBaggage,
     name,
