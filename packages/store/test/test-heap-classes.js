@@ -56,6 +56,11 @@ test('test defineHeapFarClassKit', t => {
     {
       up: {
         incr(y = 1) {
+          // @ts-expect-error methods not on this
+          this.incr;
+          // @ts-expect-error facets not on this
+          this.up;
+          assert(this.facets.up.incr, 'facets.up.incr exists');
           const { state } = this;
           state.x += y;
           return state.x;

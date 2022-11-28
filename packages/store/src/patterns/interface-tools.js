@@ -286,7 +286,7 @@ export const initEmpty = () => emptyRecord;
  * @param {string} tag
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T & ThisType<T & { state: S }>} methods
+ * @param {T & ThisType<{ self: T, state: S }>} methods
  * @param {object} [options]
  * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
@@ -336,7 +336,7 @@ harden(defineHeapFarClass);
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {F & { [K in keyof F]: ThisType<F[K] & { state: S }> }} methodsKit
+ * @param {F & ThisType<{ facets: F, state: S }> } methodsKit
  * @param {object} [options]
  * @returns {(...args: A[]) => F}
  */

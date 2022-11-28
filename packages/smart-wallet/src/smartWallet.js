@@ -76,10 +76,10 @@ const mapToRecord = map => Object.fromEntries(map.entries());
 
 /**
  * @typedef {{
- * brand: Brand,
- * displayInfo: DisplayInfo,
- * issuer: ERef<Issuer>,
- * petname: import('./types').Petname
+ *   brand: Brand,
+ *   displayInfo: DisplayInfo,
+ *   issuer: ERef<Issuer>,
+ *   petname: import('./types').Petname
  * }} BrandDescriptor
  * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
  */
@@ -88,23 +88,38 @@ const mapToRecord = map => Object.fromEntries(map.entries());
 /** @typedef {import('./types').RemotePurse} RemotePurse */
 
 /**
+ * @typedef {{
+ *   address: string,
+ *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
+ *   invitationPurse: Purse<'set'>,
+ * }} UniqueParams
+ *
+ * @typedef {{
+ *   agoricNames: ERef<import('@agoric/vats').NameHub>,
+ *   invitationIssuer: ERef<Issuer<'set'>>,
+ *   invitationBrand: Brand<'set'>,
+ *   publicMarshaller: Marshaller,
+ *   storageNode: ERef<StorageNode>,
+ *   zoe: ERef<ZoeService>,
+ * }} SharedParams
+ *
  * @typedef {ImmutableState & MutableState} State
  * - `brandPurses` is precious and closely held. defined as late as possible to reduce its scope.
  * - `offerToInvitationMakers` is precious and closely held.
  * - `brandDescriptors` will be precious. Currently it includes invitation brand and  what we've received from the bank manager.
  * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
- * @typedef {Parameters<initState>[0] & Parameters<initState>[1]} HeldParams
+ * @typedef {UniqueParams & SharedParams} HeldParams
  *
  * @typedef {Readonly<HeldParams & {
- * paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
- * offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
- * offerToUsedInvitation: MapStore<string, Amount>,
- * brandDescriptors: MapStore<Brand, BrandDescriptor>,
- * brandPurses: MapStore<Brand, RemotePurse>,
- * purseBalances: MapStore<RemotePurse, Amount>,
- * updatePublishKit: StoredPublishKit<UpdateRecord>,
- * currentPublishKit: StoredPublishKit<CurrentWalletRecord>,
+ *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
+ *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
+ *   offerToUsedInvitation: MapStore<string, Amount>,
+ *   brandDescriptors: MapStore<Brand, BrandDescriptor>,
+ *   brandPurses: MapStore<Brand, RemotePurse>,
+ *   purseBalances: MapStore<RemotePurse, Amount>,
+ *   updatePublishKit: StoredPublishKit<UpdateRecord>,
+ *   currentPublishKit: StoredPublishKit<CurrentWalletRecord>,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -113,19 +128,9 @@ const mapToRecord = map => Object.fromEntries(map.entries());
 
 /**
  *
- * @param {{
- * address: string,
- * bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
- * invitationPurse: Purse<'set'>,
- * }} unique
- * @param {{
- * agoricNames: ERef<import('@agoric/vats').NameHub>,
- * invitationIssuer: ERef<Issuer<'set'>>,
- * invitationBrand: Brand<'set'>,
- * publicMarshaller: Marshaller,
- * storageNode: ERef<StorageNode>,
- * zoe: ERef<ZoeService>,
- * }} shared
+ * @param {UniqueParams} unique
+ * @param {SharedParams} shared
+ * @returns {State}
  */
 export const initState = (unique, shared) => {
   // Some validation of inputs. "any" erefs because this synchronous call can't check more than that.
@@ -181,9 +186,11 @@ export const initState = (unique, shared) => {
     brandDescriptors: makeScalarMapStore(),
     // What purses have reported on construction and by getCurrentAmountNotifier updates.
     purseBalances: makeScalarMapStore(),
+    /** @type {StoredPublishKit<UpdateRecord>} */
     updatePublishKit: harden(
       makeStoredPublishKit(myWalletStorageNode, shared.publicMarshaller),
     ),
+    /** @type {StoredPublishKit<CurrentWalletRecord>} */
     currentPublishKit: harden(
       makeStoredPublishKit(myCurrentStateStorageNode, shared.publicMarshaller),
     ),
@@ -228,301 +235,288 @@ const behaviorGuards = {
   }),
 };
 
-// TOOD a utility type that ensures no behavior is defined that doesn't have a guard
-const behavior = {
-  helper: {
-    /**
-     * @param {RemotePurse} purse
-     * @param {Amount<any>} balance
-     * @param {'init'} [init]
-     */
-    updateBalance(purse, balance, init) {
-      const { purseBalances, updatePublishKit } = this.state;
-      if (init) {
-        purseBalances.init(purse, balance);
-      } else {
-        purseBalances.set(purse, balance);
-      }
-      updatePublishKit.publisher.publish({
-        updated: 'balance',
-        currentAmount: balance,
-      });
-      const { helper } = this.facets;
-      helper.publishCurrentState();
-    },
-
-    publishCurrentState() {
-      const {
-        brandDescriptors,
-        currentPublishKit,
-        offerToUsedInvitation,
-        purseBalances,
-      } = this.state;
-      currentPublishKit.publisher.publish({
-        brands: [...brandDescriptors.values()],
-        purses: [...purseBalances.values()].map(a => ({
-          brand: a.brand,
-          balance: a,
-        })),
-        offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
-        lastOfferId: ERROR_LAST_OFFER_ID,
-      });
-    },
-
-    /** @type {(desc: Omit<BrandDescriptor, 'displayInfo'>, purse: RemotePurse) => Promise<void>} */
-    async addBrand(desc, purseRef) {
-      const {
-        address,
-        brandDescriptors,
-        brandPurses,
-        paymentQueues,
-        updatePublishKit,
-      } = this.state;
-      // assert haven't received this issuer before.
-      const descriptorsHas = brandDescriptors.has(desc.brand);
-      const pursesHas = brandPurses.has(desc.brand);
-      assert(
-        !(descriptorsHas && pursesHas),
-        'repeated brand from bank asset subscription',
-      );
-      assert(
-        !(descriptorsHas || pursesHas),
-        'corrupted state; one store has brand already',
-      );
-
-      const [purse, displayInfo] = await Promise.all([
-        purseRef,
-        E(desc.brand).getDisplayInfo(),
-      ]);
-
-      // save all five of these in a collection (indexed by brand?) so that when
-      // it's time to take an offer description you know where to get the
-      // relevant purse. when it's time to make an offer, you know how to make
-      // payments. REMEMBER when doing that, need to handle every exception to
-      // put the money back in the purse if anything fails.
-      const descriptor = { ...desc, displayInfo };
-      brandDescriptors.init(desc.brand, descriptor);
-      brandPurses.init(desc.brand, purse);
-
-      const { helper } = this.facets;
-      // publish purse's balance and changes
-      E.when(
-        E(purse).getCurrentAmount(),
-        balance => helper.updateBalance(purse, balance, 'init'),
-        err =>
-          console.error(address, 'initial purse balance publish failed', err),
-      );
-      observeNotifier(E(purse).getCurrentAmountNotifier(), {
-        updateState(balance) {
-          helper.updateBalance(purse, balance);
-        },
-        fail(reason) {
-          console.error(address, `failed updateState observer`, reason);
-        },
-      });
-
-      updatePublishKit.publisher.publish({ updated: 'brand', descriptor });
-
-      // deposit queued payments
-      const payments = paymentQueues.has(desc.brand)
-        ? paymentQueues.get(desc.brand)
-        : [];
-      const deposits = payments.map(p => E(purse).deposit(p));
-      Promise.all(deposits).catch(err =>
-        console.error('ERROR depositing queued payments', err),
-      );
-    },
-  },
-  /**
-   * Similar to {DepositFacet} but async because it has to look up the purse.
-   */
-  deposit: {
-    /**
-     * Put the assets from the payment into the appropriate purse.
-     *
-     * If the purse doesn't exist, we hold the payment until it does.
-     *
-     * @this {SmartWalletThis}
-     * @param {import('@endo/far').FarRef<Payment>} payment
-     * @returns {Promise<Amount>} amounts for deferred deposits will be empty
-     */
-    async receive(payment) {
-      const { brandPurses, paymentQueues: queues } = this.state;
-      const brand = await E(payment).getAllegedBrand();
-
-      // When there is a purse deposit into it
-      if (brandPurses.has(brand)) {
-        const purse = brandPurses.get(brand);
-        // @ts-expect-error deposit does take a FarRef<Payment>
-        return E(purse).deposit(payment);
-      }
-
-      // When there is no purse, queue the payment
-      if (queues.has(brand)) {
-        queues.get(brand).push(payment);
-      } else {
-        queues.init(brand, harden([payment]));
-      }
-      return AmountMath.makeEmpty(brand);
-    },
-  },
-  offers: {
-    /**
-     * @deprecated
-     * @returns {number} an error code, for backwards compatibility with clients expecting a number
-     */
-    getLastOfferId() {
-      return ERROR_LAST_OFFER_ID;
-    },
-    /**
-     * Take an offer description provided in capData, augment it with payments and call zoe.offer()
-     *
-     * @this {SmartWalletThis}
-     * @param {import('./offers.js').OfferSpec} offerSpec
-     * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
-     * @throws if any parts of the offer can be determined synchronously to be invalid
-     */
-    async executeOffer(offerSpec) {
-      const { facets } = this;
-      const {
-        address,
-        zoe,
-        brandPurses,
-        invitationBrand,
-        invitationPurse,
-        invitationIssuer,
-        offerToInvitationMakers,
-        offerToUsedInvitation,
-        updatePublishKit,
-      } = this.state;
-
-      const logger = {
-        info: (...args) => console.info('wallet', address, ...args),
-        error: (...args) => console.log('wallet', address, ...args),
-      };
-
-      const executor = makeOfferExecutor({
-        zoe,
-        depositFacet: facets.deposit,
-        invitationIssuer,
-        powers: {
-          invitationFromSpec: makeInvitationsHelper(
-            zoe,
-            invitationBrand,
-            invitationPurse,
-            offerToInvitationMakers.get,
-          ),
-          purseForBrand: brandPurses.get,
-          logger,
-        },
-        onStatusChange: offerStatus => {
-          logger.info('offerStatus', offerStatus);
-          updatePublishKit.publisher.publish({
-            updated: 'offerStatus',
-            status: offerStatus,
-          });
-        },
-        /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
-        onNewContinuingOffer: (offerId, invitationAmount, invitationMakers) => {
-          offerToUsedInvitation.init(offerId, invitationAmount);
-          offerToInvitationMakers.init(offerId, invitationMakers);
-          facets.helper.publishCurrentState();
-        },
-      });
-      executor.executeOffer(offerSpec);
-    },
-  },
-  self: {
-    /**
-     *
-     * @this {SmartWalletThis}
-     * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
-     * @param {boolean} [canSpend=false]
-     * @returns {Promise<void>}
-     */
-    handleBridgeAction(actionCapData, canSpend = false) {
-      const { publicMarshaller } = this.state;
-      const { offers } = this.facets;
-
-      return E.when(
-        E(publicMarshaller).unserialize(actionCapData),
-        /** @param {BridgeAction} action */
-        action => {
-          switch (action.method) {
-            case 'executeOffer':
-              assert(canSpend, 'executeOffer requires spend authority');
-              return offers.executeOffer(action.offer);
-            default:
-              assert.fail(X`invalid handle bridge action ${q(action)}`);
-          }
-        },
-      );
-    },
-    /** @this {SmartWalletThis} */
-    getDepositFacet() {
-      return this.facets.deposit;
-    },
-    /** @this {SmartWalletThis} */
-    getOffersFacet() {
-      return this.facets.offers;
-    },
-    /** @this {SmartWalletThis} */
-    getCurrentSubscriber() {
-      return this.state.currentPublishKit.subscriber;
-    },
-    /** @this {SmartWalletThis} */
-    getUpdatesSubscriber() {
-      return this.state.updatePublishKit.subscriber;
-    },
-  },
-};
-/** @typedef {typeof behavior} SmartWalletBehavior */
-// XXX defineVirtualFarClassKit should infer this
-/** @typedef {{ facets: SmartWalletBehavior, state: State }} SmartWalletThis */
-
-// TODO type facets (runs into problems with 'this')
-/**
- *
- * @param {{ state: State, facets: * }} param0
- */
-const finish = ({ state, facets }) => {
-  /** @type {State} */
-  const { invitationBrand, invitationIssuer, invitationPurse, bank } = state;
-  const { helper } = facets;
-  // Ensure a purse for each issuer
-  helper.addBrand(
-    {
-      brand: invitationBrand,
-      issuer: invitationIssuer,
-      petname: 'invitations',
-    },
-    // @ts-expect-error cast to RemotePurse
-    /** @type {RemotePurse} */ (invitationPurse),
-  );
-  // watch the bank for new issuers to make purses out of
-  void observeIteration(E(bank).getAssetSubscription(), {
-    async updateState(desc) {
-      /** @type {RemotePurse} */
-      // @ts-expect-error cast to RemotePurse
-      const purse = await E(bank).getPurse(desc.brand);
-      await helper.addBrand(
-        {
-          brand: desc.brand,
-          issuer: desc.issuer,
-          petname: desc.issuerName,
-        },
-        purse,
-      );
-    },
-  });
-};
-
 const SmartWalletKit = defineVirtualFarClassKit(
   'SmartWallet',
   behaviorGuards,
   initState,
-  behavior,
-  { finish },
+  {
+    helper: {
+      /**
+       * @param {RemotePurse} purse
+       * @param {Amount<any>} balance
+       * @param {'init'} [init]
+       */
+      updateBalance(purse, balance, init) {
+        const { purseBalances, updatePublishKit } = this.state;
+        if (init) {
+          purseBalances.init(purse, balance);
+        } else {
+          purseBalances.set(purse, balance);
+        }
+        updatePublishKit.publisher.publish({
+          updated: 'balance',
+          currentAmount: balance,
+        });
+        const { helper } = this.facets;
+        helper.publishCurrentState();
+      },
+
+      publishCurrentState() {
+        const {
+          brandDescriptors,
+          currentPublishKit,
+          offerToUsedInvitation,
+          purseBalances,
+        } = this.state;
+        currentPublishKit.publisher.publish({
+          brands: [...brandDescriptors.values()],
+          purses: [...purseBalances.values()].map(a => ({
+            brand: a.brand,
+            balance: a,
+          })),
+          offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
+          lastOfferId: ERROR_LAST_OFFER_ID,
+        });
+      },
+
+      /** @type {(desc: Omit<BrandDescriptor, 'displayInfo'>, purse: RemotePurse) => Promise<void>} */
+      async addBrand(desc, purseRef) {
+        const {
+          address,
+          brandDescriptors,
+          brandPurses,
+          paymentQueues,
+          updatePublishKit,
+        } = this.state;
+        // assert haven't received this issuer before.
+        const descriptorsHas = brandDescriptors.has(desc.brand);
+        const pursesHas = brandPurses.has(desc.brand);
+        assert(
+          !(descriptorsHas && pursesHas),
+          'repeated brand from bank asset subscription',
+        );
+        assert(
+          !(descriptorsHas || pursesHas),
+          'corrupted state; one store has brand already',
+        );
+
+        const [purse, displayInfo] = await Promise.all([
+          purseRef,
+          E(desc.brand).getDisplayInfo(),
+        ]);
+
+        // save all five of these in a collection (indexed by brand?) so that when
+        // it's time to take an offer description you know where to get the
+        // relevant purse. when it's time to make an offer, you know how to make
+        // payments. REMEMBER when doing that, need to handle every exception to
+        // put the money back in the purse if anything fails.
+        const descriptor = { ...desc, displayInfo };
+        brandDescriptors.init(desc.brand, descriptor);
+        brandPurses.init(desc.brand, purse);
+
+        const { helper } = this.facets;
+        // publish purse's balance and changes
+        E.when(
+          E(purse).getCurrentAmount(),
+          balance => helper.updateBalance(purse, balance, 'init'),
+          err =>
+            console.error(address, 'initial purse balance publish failed', err),
+        );
+        observeNotifier(E(purse).getCurrentAmountNotifier(), {
+          updateState(balance) {
+            helper.updateBalance(purse, balance);
+          },
+          fail(reason) {
+            console.error(address, `failed updateState observer`, reason);
+          },
+        });
+
+        updatePublishKit.publisher.publish({ updated: 'brand', descriptor });
+
+        // deposit queued payments
+        const payments = paymentQueues.has(desc.brand)
+          ? paymentQueues.get(desc.brand)
+          : [];
+        // @ts-expect-error xxx with DataOnly / FarRef types
+        const deposits = payments.map(p => E(purse).deposit(p));
+        Promise.all(deposits).catch(err =>
+          console.error('ERROR depositing queued payments', err),
+        );
+      },
+    },
+    /**
+     * Similar to {DepositFacet} but async because it has to look up the purse.
+     */
+    deposit: {
+      /**
+       * Put the assets from the payment into the appropriate purse.
+       *
+       * If the purse doesn't exist, we hold the payment until it does.
+       *
+       * @param {import('@endo/far').FarRef<Payment>} payment
+       * @returns {Promise<Amount>} amounts for deferred deposits will be empty
+       */
+      async receive(payment) {
+        const { brandPurses, paymentQueues: queues } = this.state;
+        const brand = await E(payment).getAllegedBrand();
+
+        // When there is a purse deposit into it
+        if (brandPurses.has(brand)) {
+          const purse = brandPurses.get(brand);
+          // @ts-expect-error deposit does take a FarRef<Payment>
+          return E(purse).deposit(payment);
+        }
+
+        // When there is no purse, queue the payment
+        if (queues.has(brand)) {
+          queues.get(brand).push(payment);
+        } else {
+          queues.init(brand, harden([payment]));
+        }
+        return AmountMath.makeEmpty(brand);
+      },
+    },
+    offers: {
+      /**
+       * @deprecated
+       * @returns {number} an error code, for backwards compatibility with clients expecting a number
+       */
+      getLastOfferId() {
+        return ERROR_LAST_OFFER_ID;
+      },
+      /**
+       * Take an offer description provided in capData, augment it with payments and call zoe.offer()
+       *
+       * @param {import('./offers.js').OfferSpec} offerSpec
+       * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
+       * @throws if any parts of the offer can be determined synchronously to be invalid
+       */
+      async executeOffer(offerSpec) {
+        const { facets } = this;
+        const {
+          address,
+          zoe,
+          brandPurses,
+          invitationBrand,
+          invitationPurse,
+          invitationIssuer,
+          offerToInvitationMakers,
+          offerToUsedInvitation,
+          updatePublishKit,
+        } = this.state;
+
+        const logger = {
+          info: (...args) => console.info('wallet', address, ...args),
+          error: (...args) => console.log('wallet', address, ...args),
+        };
+
+        const executor = makeOfferExecutor({
+          zoe,
+          depositFacet: facets.deposit,
+          invitationIssuer,
+          powers: {
+            invitationFromSpec: makeInvitationsHelper(
+              zoe,
+              invitationBrand,
+              invitationPurse,
+              offerToInvitationMakers.get,
+            ),
+            purseForBrand: brandPurses.get,
+            logger,
+          },
+          onStatusChange: offerStatus => {
+            logger.info('offerStatus', offerStatus);
+            updatePublishKit.publisher.publish({
+              updated: 'offerStatus',
+              status: offerStatus,
+            });
+          },
+          /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
+          onNewContinuingOffer: (
+            offerId,
+            invitationAmount,
+            invitationMakers,
+          ) => {
+            offerToUsedInvitation.init(offerId, invitationAmount);
+            offerToInvitationMakers.init(offerId, invitationMakers);
+            facets.helper.publishCurrentState();
+          },
+        });
+        executor.executeOffer(offerSpec);
+      },
+    },
+    self: {
+      /**
+       *
+       * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
+       * @param {boolean} [canSpend=false]
+       * @returns {Promise<void>}
+       */
+      handleBridgeAction(actionCapData, canSpend = false) {
+        const { publicMarshaller } = this.state;
+        const { offers } = this.facets;
+
+        return E.when(
+          E(publicMarshaller).unserialize(actionCapData),
+          /** @param {BridgeAction} action */
+          action => {
+            switch (action.method) {
+              case 'executeOffer':
+                assert(canSpend, 'executeOffer requires spend authority');
+                return offers.executeOffer(action.offer);
+              default:
+                assert.fail(X`invalid handle bridge action ${q(action)}`);
+            }
+          },
+        );
+      },
+      getDepositFacet() {
+        return this.facets.deposit;
+      },
+      getOffersFacet() {
+        return this.facets.offers;
+      },
+      getCurrentSubscriber() {
+        return this.state.currentPublishKit.subscriber;
+      },
+      getUpdatesSubscriber() {
+        return this.state.updatePublishKit.subscriber;
+      },
+    },
+  },
+  {
+    finish: ({ state, facets }) => {
+      const { invitationBrand, invitationIssuer, invitationPurse, bank } =
+        state;
+      const { helper } = facets;
+      // Ensure a purse for each issuer
+      helper.addBrand(
+        {
+          brand: invitationBrand,
+          issuer: invitationIssuer,
+          petname: 'invitations',
+        },
+        // @ts-expect-error cast to RemotePurse
+        /** @type {RemotePurse} */ (invitationPurse),
+      );
+      // watch the bank for new issuers to make purses out of
+      void observeIteration(E(bank).getAssetSubscription(), {
+        async updateState(desc) {
+          /** @type {RemotePurse} */
+          // @ts-expect-error cast to RemotePurse
+          const purse = await E(bank).getPurse(desc.brand);
+          await helper.addBrand(
+            {
+              brand: desc.brand,
+              issuer: desc.issuer,
+              petname: desc.issuerName,
+            },
+            purse,
+          );
+        },
+      });
+    },
+  },
 );
 
 /**

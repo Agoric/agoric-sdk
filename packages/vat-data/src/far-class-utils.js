@@ -23,8 +23,8 @@ import {
  * @param {string} tag
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T} methods
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ self: T, state: S }>} methods
+ * @param {DefineKindOptions<{ self: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const defineVirtualFarClass = (
@@ -51,8 +51,8 @@ harden(defineVirtualFarClass);
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ facets: T, state: S }> } facets
+ * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const defineVirtualFarClassKit = (
@@ -79,8 +79,8 @@ harden(defineVirtualFarClassKit);
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T & ThisType<T & { state: S }>} methods
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ self: T, state: S }>} methods
+ * @param {DefineKindOptions<{ self: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const defineDurableFarClass = (
@@ -107,8 +107,8 @@ harden(defineDurableFarClass);
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ facets: T, state: S }> } facets
+ * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const defineDurableFarClassKit = (
@@ -136,8 +136,8 @@ harden(defineDurableFarClassKit);
  * @param {string} kindName
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
- * @param {T & ThisType<T & { state: S }>} methods
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ self: T, state: S }>} methods
+ * @param {DefineKindOptions<{ self: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const vivifyFarClass = (
@@ -166,8 +166,8 @@ harden(vivifyFarClass);
  * @param {string} kindName
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
- * @param {T & { [K in keyof T]: ThisType<T[K] & { facets: T, state: S }> }} facets
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {T & ThisType<{ facets: T, state: S }> } facets
+ * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
  * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
  */
 export const vivifyFarClassKit = (
@@ -195,7 +195,7 @@ harden(vivifyFarClassKit);
  * @param {string} kindName
  * @param {any} interfaceGuard
  * @param {M} methods
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {DefineKindOptions<{ self: M }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
 export const vivifyFarInstance = (
@@ -226,7 +226,7 @@ harden(vivifyFarInstance);
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {T} methods
- * @param {DefineKindOptions<unknown>} [options]
+ * @param {DefineKindOptions<{ self: T }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
 export const vivifySingleton = (
