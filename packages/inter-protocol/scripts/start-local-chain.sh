@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# run an Archive node to keep all history https://docs.desmos.network/fullnode/overview/
+# (the Makefile passes this to agd start)
+export AGC_START_ARGS="--pruning=nothing"
+
 # TODO make cross-platform https://stackoverflow.com/questions/52670836/standard-log-locations-for-a-cross-platform-application
 mkdir -p ~/Library/Logs/Agoric
 CHAIN_LOG=~/Library/Logs/Agoric/local-chain.log
@@ -34,12 +38,17 @@ echo SDK "$SDK"
 echo WALLET "$WALLET"
 echo WALLET_BECH32 "$WALLET_BECH32"
 
+cd "$SDK"/packages/cosmic-swingset || exit 1
+
+echo "Logs written to $CHAIN_LOG"
+# setup can be skipped if you know its up to date
+make scenario2-setup >>$CHAIN_LOG 2>&1
+
 # TODO detect it's already running, indicate when it started and offer to restart
 # e.g. killall node xsnap-worker
 echo "Starting the chain..."
-cd "$SDK"/packages/cosmic-swingset || exit 1
-make scenario2-setup scenario2-run-chain >>$CHAIN_LOG 2>&1 &
-echo "Logs written to $CHAIN_LOG"
+# disable pruning to keep all history https://docs.desmos.network/fullnode/overview/
+make AGC_START_ARGS="--pruning=nothing" scenario2-run-chain >>$CHAIN_LOG 2>&1 &
 make wait-for-cosmos
 
 echo "Funding the pool..."
