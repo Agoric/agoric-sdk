@@ -20,8 +20,8 @@
     "@agoric/cosmic-swingset": "^0.39.2",
     "@agoric/deploy-script-support": "^0.9.4",
     "@agoric/wallet-backend": "^0.13.3",
-    "@endo/captp": "^2.0.17",
-    "@endo/init": "^0.5.51",
+    "@endo/captp": "^2.0.18",
+    "@endo/init": "^0.5.52",
     "ava": "^5.0.1"
   },
   "dependencies": {
@@ -35,7 +35,7 @@
     "@agoric/vat-data": "^0.4.3",
     "@agoric/vats": "^0.13.0",
     "@agoric/zoe": "^0.25.3",
-    "@endo/far": "^0.2.13"
+    "@endo/far": "^0.2.14"
   },
   "files": [
     "src/"

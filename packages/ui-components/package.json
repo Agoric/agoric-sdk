@@ -8,8 +8,8 @@
     "@agoric/assert": "^0.5.1",
     "@agoric/ertp": "^0.15.3",
     "@agoric/nat": "^4.1.0",
-    "@endo/eventual-send": "^0.16.7",
-    "@endo/init": "^0.5.51",
+    "@endo/eventual-send": "^0.16.8",
+    "@endo/init": "^0.5.52",
     "clsx": "^1.1.1"
   },
   "peerDependencies": {
