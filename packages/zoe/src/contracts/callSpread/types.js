@@ -35,9 +35,9 @@
  * 100% reflecting the position of the price in the range from strikePrice1 to
  * strikePrice2.
  * @param {Brand} collateralBrand
- * @param {Amount} price
- * @param {Amount} strikePrice1
- * @param {Amount} strikePrice2
+ * @param {Amount<'nat'>} price
+ * @param {Amount<'nat'>} strikePrice1
+ * @param {Amount<'nat'>} strikePrice2
  * @returns {CalculateSharesReturn}
  */
 
