@@ -186,9 +186,10 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<Uint8Array>} tryGetPrefixedData
+   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<QueryAbciResponse>} tryGetPrefixedData
+   * @returns {Promise<QueryAbciResponse>}
    */
-  const retryGetDataAndStripPrefix = async tryGetPrefixedData => {
+  const retryGetPrefixedData = async tryGetPrefixedData => {
     const {
       storeName,
       storeSubkey,
@@ -223,75 +224,89 @@ export const makeCosmjsFollower = (
     }
     assert(result);
 
-    if (result.length === 0) {
-      // No data.
-      return result;
-    }
-    return stripPrefix(result, dataPrefixBytes);
-  };
+    const value =
+      result.value.length === 0
+        ? // No data.
+          result.value
+        : stripPrefix(result.value, dataPrefixBytes);
 
-  /**
-   * @param {number} [height]
-   * @returns {Promise<Uint8Array>}
-   */
-  const getProvenDataAtHeight = async height => {
-    return retryGetDataAndStripPrefix(
-      async (endpoint, storeName, storeSubkey) => {
-        const queryClient = await provideQueryClient(endpoint);
-        return E(queryClient).queryVerified(storeName, storeSubkey, height);
-      },
-    );
+    return { value, height: result.height };
   };
 
   /**
    * @param {number} height
+   * @returns {Promise<QueryAbciResponse>}
    */
-  const getUnprovenDataAtHeight = async height => {
-    return retryGetDataAndStripPrefix(
-      async (endpoint, storeName, storeSubkey) => {
-        const client = await provideTendermintClient(endpoint);
-        const response = await client.abciQuery({
-          path: `store/${storeName}/key`,
-          data: storeSubkey,
-          height,
-          prove: false,
-        });
-        if (response.code !== 0) {
-          throw new Error(`Tendermint ABCI query failed: ${response.log}`);
-        }
-        const { value } = response;
-        return value;
-      },
-    );
+  const getProvenDataAtHeight = async height => {
+    return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
+      const queryClient = await provideQueryClient(endpoint);
+      const value = await E(queryClient).queryVerified(
+        storeName,
+        storeSubkey,
+        height,
+      );
+      return { value, height };
+    });
   };
 
   /**
-   * @param {number} blockHeight
+   * @param {number} [height] desired height, or the latest height if not set
+   * @returns {Promise<QueryAbciResponse>}
+   */
+  const getUnprovenDataAtHeight = async height => {
+    return retryGetPrefixedData(async (endpoint, storeName, storeSubkey) => {
+      const client = await provideTendermintClient(endpoint);
+      const response = await client.abciQuery({
+        path: `store/${storeName}/key`,
+        data: storeSubkey,
+        height,
+        prove: false,
+      });
+      if (response.code !== 0) {
+        throw new Error(`Tendermint ABCI query failed: ${response.log}`);
+      }
+      if (!response.height) {
+        throw new Error('No query height returned');
+      }
+      return {
+        value: response.value,
+        height: response.height,
+      };
+    });
+  };
+
+  /**
+   * @param {number} [blockHeight] desired height, or the latest height if not set
+   * @returns {Promise<QueryAbciResponse>}
    */
   const tryGetDataAtHeight = async blockHeight => {
     if (proof === 'strict') {
+      // we have to know this in order to construct a valid return
+      if (blockHeight === undefined) {
+        blockHeight = await getBlockHeight();
+      }
       // Crash hard if we can't prove.
       return getProvenDataAtHeight(blockHeight).catch(crash);
     } else if (proof === 'none') {
       // Fast and loose.
       return getUnprovenDataAtHeight(blockHeight);
     } else if (proof === 'optimistic') {
-      const allegedData = await getUnprovenDataAtHeight(blockHeight);
+      const alleged = await getUnprovenDataAtHeight(blockHeight);
 
       // Prove later, since it may take time we say we can't afford.
-      getProvenDataAtHeight(blockHeight).then(provenData => {
-        if (arrayEqual(provenData, allegedData)) {
+      getProvenDataAtHeight(alleged.height).then(proven => {
+        if (arrayEqual(proven.value, alleged.value)) {
           return;
         }
         crash(
           assert.error(
-            X`Alleged value ${allegedData} did not match proof ${provenData}`,
+            X`Alleged value ${alleged.value} did not match proof ${proven.value}`,
           ),
         );
       }, crash);
 
       // Speculate that we got the right value.
-      return allegedData;
+      return alleged;
     }
 
     assert.fail(
@@ -302,10 +317,9 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {number} blockHeight
+   * @param {number} [blockHeight] desired height, or the latest height if not set
    */
   const getDataAtHeight = async blockHeight => {
-    assert.typeof(blockHeight, 'number');
     for (let attempt = 0; ; attempt += 1) {
       try {
         // AWAIT
@@ -431,7 +445,7 @@ export const makeCosmjsFollower = (
         continue;
       }
 
-      const currentData = await getDataAtHeight(currentBlockHeight);
+      const currentData = (await getDataAtHeight(currentBlockHeight)).value;
       if (currentData.length === 0) {
         // TODO Long-poll for block data change
         // https://github.com/Agoric/agoric-sdk/issues/6154
@@ -476,7 +490,7 @@ export const makeCosmjsFollower = (
     // If the block has no corresponding data, wait for the first block to
     // contain data.
     for (;;) {
-      cursorData = await getDataAtHeight(cursorBlockHeight);
+      cursorData = (await getDataAtHeight(cursorBlockHeight)).value;
       if (cursorData.length !== 0) {
         const cursorStreamCell = streamCellForData(
           cursorBlockHeight,
@@ -511,7 +525,7 @@ export const makeCosmjsFollower = (
       // This does imply accumulating a potentially large number of values if
       // the eachIterable gets sampled infrequently.
       let rightBlockHeight = currentBlockHeight;
-      let rightData = await getDataAtHeight(rightBlockHeight);
+      let rightData = (await getDataAtHeight(rightBlockHeight)).value;
       if (rightData.length === 0) {
         // TODO Long-poll for next block
         // https://github.com/Agoric/agoric-sdk/issues/6154
@@ -536,7 +550,7 @@ export const makeCosmjsFollower = (
         if (leftBlockHeight <= cursorBlockHeight) {
           break;
         }
-        const leftData = await getDataAtHeight(leftBlockHeight);
+        const leftData = (await getDataAtHeight(leftBlockHeight)).value;
         // Do not scan behind a cell with no data.
         // This should not happen but can be tolerated.
         if (leftData.length === 0) {
@@ -593,7 +607,7 @@ export const makeCosmjsFollower = (
     // of that cell.
     let cursorData;
     while (cursorBlockHeight > 0) {
-      cursorData = await getDataAtHeight(cursorBlockHeight);
+      cursorData = (await getDataAtHeight(cursorBlockHeight)).value;
       if (cursorData.length === 0) {
         // No data at the cursor height, so signal beginning of stream.
         return;
