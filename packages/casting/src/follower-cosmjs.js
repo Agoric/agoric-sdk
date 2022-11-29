@@ -476,11 +476,10 @@ export const makeCosmjsFollower = (
   }
 
   /**
-   * @param {number} cursorBlockHeight
+   * @param {number} [cursorBlockHeight]
    * @yields {ValueFollowerElement<T>}
    */
   async function* getEachIterableAtHeight(cursorBlockHeight) {
-    assert.typeof(cursorBlockHeight, 'number');
     // Track the data for the last emitted cell (the cell at the
     // cursorBlockHeight) so we know not to emit duplicates
     // of that cell.
@@ -490,7 +489,9 @@ export const makeCosmjsFollower = (
     // If the block has no corresponding data, wait for the first block to
     // contain data.
     for (;;) {
-      cursorData = (await getDataAtHeight(cursorBlockHeight)).value;
+      ({ value: cursorData, height: cursorBlockHeight } = await getDataAtHeight(
+        cursorBlockHeight,
+      ));
       if (cursorData.length !== 0) {
         const cursorStreamCell = streamCellForData(
           cursorBlockHeight,
@@ -502,7 +503,6 @@ export const makeCosmjsFollower = (
       // TODO Long-poll for next block
       // https://github.com/Agoric/agoric-sdk/issues/6154
       await E(leader).jitter(where);
-      cursorBlockHeight = await getBlockHeight();
     }
 
     // For each subsequent iteration, yield every value that has been
@@ -624,9 +624,6 @@ export const makeCosmjsFollower = (
       return getLatestIterable();
     },
     async getEachIterable({ height = undefined } = {}) {
-      if (height === undefined) {
-        height = await getBlockHeight();
-      }
       return getEachIterableAtHeight(height);
     },
     async getReverseIterable({ height = undefined } = {}) {
