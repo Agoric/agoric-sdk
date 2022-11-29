@@ -25,6 +25,7 @@ import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
+import { INVITATION_MAKERS_DESC } from '../src/econCommitteeCharter.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
 
@@ -454,7 +455,7 @@ test('voters get invitations', async t => {
       assert(Array.isArray(value));
 
       const instanceInv = value.find(
-        ({ description }) => description === 'econCommitteeCharter noop',
+        ({ description }) => description === INVITATION_MAKERS_DESC,
       );
       t.assert(instanceInv);
 
@@ -506,7 +507,7 @@ test('assets are in AMM, Vaults', async t => {
 test('Committee can raise debt limit', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
-  const purses = await s.provisionMembers();
+  const invitationPurses = await s.provisionMembers();
   await s.startRunPreview();
   // await s.benefactor.makePool(2000n, 1000n);
 
@@ -518,22 +519,36 @@ test('Committee can raise debt limit', async t => {
   const { agoricNames } = s.space.consume;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
   const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
+  const vaultsInstance = await E(agoricNames).lookup(
+    'instance',
+    'VaultFactory',
+  );
+  const economicCommittee = await E(agoricNames).lookup(
+    'instance',
+    'economicCommittee',
+  );
 
   const { zoe } = s.space.consume;
-  t.log({ purses });
+  t.log({ purses: invitationPurses });
 
-  const billsPurse = purses.get(voterAddresses.Bill);
-  assert(billsPurse);
+  const billsInvitationPurse = invitationPurses.get(voterAddresses.Bill);
+  assert(billsInvitationPurse);
 
-  const amt = await E(billsPurse).getCurrentAmount();
-  t.log('amt.value', amt.value);
+  const invitationsAmt = await E(billsInvitationPurse).getCurrentAmount();
+  t.log('amt.value', invitationsAmt.value);
 
-  const votingInv = /** @type {SetValue} */ (amt.value).find(
-    ({ description }) => description === 'econCommitteeCharter noop',
+  const charterInvDetail = /** @type {SetValue} */ (invitationsAmt.value).find(
+    ({ description }) => description === INVITATION_MAKERS_DESC,
   );
-  t.assert(votingInv);
+  t.assert(charterInvDetail);
 
-  const pf = await E(zoe).getPublicFacet(votingInv.instance);
+  const charterInv = await E(billsInvitationPurse).withdraw(
+    AmountMath.make(invitationsAmt.brand, harden([charterInvDetail])),
+  );
+  const charterInvitationMakers = await E.get(
+    E(E(zoe).offer(charterInv)).getOfferResult(),
+  ).invitationMakers;
+
   const params = { DebtLimit: AmountMath.make(runBrand, 100n) };
 
   // We happen to know how the timer is implemented.
@@ -542,23 +557,32 @@ test('Committee can raise debt limit', async t => {
 
   const now = await E(timer).getCurrentTimestamp();
   const deadline = TimeMath.addAbsRel(now, 3n);
-  const actual = await E(pf).voteOnVaultParamChanges(
-    params,
+  const startVotingSeat = E(zoe).offer(
+    await E(charterInvitationMakers).VoteOnParamChange(),
+    undefined,
+    undefined,
     {
-      collateralBrand: brand,
+      params,
+      instance: vaultsInstance,
+      deadline,
+      path: { paramPath: { key: { collateralBrand: brand } } },
     },
-    deadline,
   );
+  await E(startVotingSeat).getOfferResult();
+  await E(startVotingSeat).getPayouts();
 
-  t.deepEqual(actual, {
-    details: actual.details,
-    instance: votingInv.instance,
-    outcomeOfUpdate: actual.outcomeOfUpdate,
-  });
+  /** @type {ERef<CommitteeElectoratePublic>} */
+  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
+  const questions = await E(committeePublic).getOpenQuestions();
+  t.log({ questions });
+  t.true(questions.length > 0, 'question is open');
+  const question = E(committeePublic).getQuestion(questions[0]);
+  const { positions, questionHandle, counterInstance } = await E(
+    question,
+  ).getDetails();
 
-  const { questionHandle, positions } = await actual.details;
   await Promise.all(
-    [...purses.values()].map(async p => {
+    [...invitationPurses.values()].map(async p => {
       const amt2 = await E(p).getCurrentAmount();
 
       const item = /** @type {SetValue} */ (amt2.value).find(
@@ -580,7 +604,7 @@ test('Committee can raise debt limit', async t => {
   await E(timer).tick();
   await E(timer).tick();
 
-  const count = E(zoe).getPublicFacet(actual.instance);
+  const count = E(zoe).getPublicFacet(counterInstance);
   const outcome = await E(count).getOutcome();
   t.deepEqual(outcome, {
     changes: { DebtLimit: { brand: runBrand, value: 100n } },

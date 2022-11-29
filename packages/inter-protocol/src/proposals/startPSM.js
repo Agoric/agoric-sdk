@@ -32,7 +32,7 @@ export const startPSM = async (
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
-      psmCharterCreatorFacet,
+      econCharterStartResult,
       provisionPoolStartResult,
       chainStorage,
       chainTimerService,
@@ -174,7 +174,7 @@ export const startPSM = async (
 
   await Promise.all([
     E(instanceAdmin).update(instanceKey, newPsmFacets.psm),
-    E(psmCharterCreatorFacet).addInstance(
+    E(E.get(econCharterStartResult).creatorFacet).addInstance(
       psm,
       governorFacets.creatorFacet,
       instanceKey,
@@ -275,7 +275,7 @@ export const installGovAndPSMContracts = async ({
       committee,
       binaryVoteCounter,
       psm,
-      psmCharter,
+      econCommitteeCharter,
     },
   },
 }) => {
@@ -291,7 +291,7 @@ export const installGovAndPSMContracts = async ({
       committee,
       binaryVoteCounter,
       psm,
-      psmCharter,
+      econCommitteeCharter,
     }).map(async ([name, producer]) => {
       const bundleCap = D(vatAdmin).getNamedBundleCap(name);
       const bundle = D(bundleCap).getBundle();
@@ -302,15 +302,18 @@ export const installGovAndPSMContracts = async ({
   );
 };
 
-/** @param {EconomyBootstrapPowers} powers */
+/**
+ * @deprecated the PSM charter has been merged with the econ charter
+ * @param {EconomyBootstrapPowers} powers
+ */
 export const startPSMCharter = async ({
   consume: { zoe },
-  produce: { psmCharterCreatorFacet, psmCharterAdminFacet },
+  produce: { econCharterStartResult },
   installation: {
-    consume: { binaryVoteCounter, psmCharter: installP },
+    consume: { binaryVoteCounter, econCommitteeCharter: installP },
   },
   instance: {
-    produce: { psmCharter: instanceP },
+    produce: { econCommitteeCharter: instanceP },
   },
 }) => {
   const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
@@ -319,8 +322,7 @@ export const startPSMCharter = async ({
   const facets = await E(zoe).startInstance(charterR, {}, terms);
 
   instanceP.resolve(facets.instance);
-  psmCharterCreatorFacet.resolve(facets.creatorFacet);
-  psmCharterAdminFacet.resolve(facets.adminFacet);
+  econCharterStartResult.resolve(facets);
 };
 
 /**
@@ -342,21 +344,20 @@ export const PSM_GOV_MANIFEST = {
         committee: 'zoe',
         binaryVoteCounter: 'zoe',
         psm: 'zoe',
-        psmCharter: 'zoe',
+        econCommitteeCharter: 'zoe',
       },
     },
   },
   [startPSMCharter.name]: {
     consume: { zoe: 'zoe' },
     produce: {
-      psmCharterCreatorFacet: 'psmCharter',
-      psmCharterAdminFacet: 'psmCharter',
+      econCharterStartResult: 'econCommitteeCharter',
     },
     installation: {
-      consume: { binaryVoteCounter: 'zoe', psmCharter: 'zoe' },
+      consume: { binaryVoteCounter: 'zoe', econCommitteeCharter: 'zoe' },
     },
     instance: {
-      produce: { psmCharter: 'psmCharter' },
+      produce: { econCommitteeCharter: 'econCommitteeCharter' },
     },
   },
 };
@@ -373,7 +374,7 @@ export const invitePSMCommitteeMembers = async (
     consume: {
       namesByAddressAdmin,
       economicCommitteeCreatorFacet,
-      psmCharterCreatorFacet,
+      econCharterStartResult,
     },
   },
   { options: { voterAddresses = {} } },
@@ -391,7 +392,9 @@ export const invitePSMCommitteeMembers = async (
       addrInvitations.map(async ([addr, invitationP]) => {
         const [voterInvitation, charterMemberInvitation] = await Promise.all([
           invitationP,
-          E(psmCharterCreatorFacet).makeCharterMemberInvitation(),
+          E(
+            E.get(econCharterStartResult).creatorFacet,
+          ).makeCharterMemberInvitation(),
         ]);
         console.log('sending charter, voting invitations to', addr);
         await reserveThenDeposit(
@@ -415,7 +418,7 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden({
     consume: {
       namesByAddressAdmin: true,
       economicCommitteeCreatorFacet: true,
-      psmCharterCreatorFacet: true,
+      econCharterStartResult: true,
     },
   },
 });
@@ -443,7 +446,7 @@ export const PSM_MANIFEST = harden({
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
       provisionPoolStartResult: true,
-      psmCharterCreatorFacet: 'psmCharter',
+      econCharterStartResult: 'econCommitteeCharter',
       chainTimerService: 'timer',
       psmFacets: true,
     },

@@ -22,12 +22,17 @@ export const inviteCommitteeMembers = async (
       ammGovernorCreatorFacet,
       vaultFactoryGovernorCreator,
     },
+    produce: { econCharterStartResult },
     installation: {
       consume: { binaryVoteCounter: counterP },
+    },
+    instance: {
+      consume: { amm, reserve, VaultFactory },
     },
   },
   { options: { voterAddresses } },
 ) => {
+  // FIXME: why doesn't this use the promise space?
   /** @type {[Installation, Installation]} */
   const [charterInstall, counterInstall] = await Promise.all([
     E(agoricNames).lookup('installation', 'econCommitteeCharter'),
@@ -38,13 +43,25 @@ export const inviteCommitteeMembers = async (
       binaryVoteCounterInstallation: counterInstall,
     }),
   );
-  const privateFacets = {
-    reserve: reserveGovernorCreatorFacet,
-    amm: ammGovernorCreatorFacet,
-    vaults: vaultFactoryGovernorCreator,
-  };
-  const { publicFacet: votingAPI } = E.get(
-    E(zoe).startInstance(charterInstall, undefined, terms, privateFacets),
+  /** @type {Promise<import('./econ-behaviors').EconCharterStartResult>} */
+  const startResult = E(zoe).startInstance(charterInstall, undefined, terms);
+  const { creatorFacet } = E.get(startResult);
+  econCharterStartResult.resolve(startResult);
+
+  // Introduce charter to governed creator facets.
+  await Promise.all(
+    [
+      { instanceP: amm, facetP: ammGovernorCreatorFacet },
+      { instanceP: reserve, facetP: reserveGovernorCreatorFacet },
+      {
+        instanceP: VaultFactory,
+        facetP: vaultFactoryGovernorCreator,
+      },
+    ].map(async ({ instanceP, facetP }) => {
+      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+
+      return E(creatorFacet).addInstance(instance, govFacet);
+    }),
   );
 
   const invitations = await E(
@@ -60,7 +77,7 @@ export const inviteCommitteeMembers = async (
       addrInvitations.map(async ([addr, invitationP]) => {
         const [voterInvitation, nullInvitation] = await Promise.all([
           invitationP,
-          E(votingAPI).makeNullInvitation(),
+          E(creatorFacet).makeCharterMemberInvitation(),
         ]);
         await reserveThenDeposit(
           `econ committee member ${addr}`,
@@ -85,6 +102,7 @@ export const getManifestForInviteCommittee = async (
   return {
     manifest: {
       [inviteCommitteeMembers.name]: {
+        produce: { econCharterStartResult: t },
         consume: {
           zoe: t,
           agoricNames: t,
@@ -96,6 +114,9 @@ export const getManifestForInviteCommittee = async (
         },
         installation: {
           consume: { binaryVoteCounter: t },
+        },
+        instance: {
+          consume: { amm: t, reserve: t, VaultFactory: t },
         },
       },
     },

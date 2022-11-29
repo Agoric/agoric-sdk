@@ -1,100 +1,132 @@
 import '@agoric/governance/exported.js';
+import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-
-import { E, Far } from '@endo/far';
+import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
+import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { E } from '@endo/far';
 
 /**
  * @file
  *
- * This extremely quick and dirty contract simplifies the process of
- * calling for votes on changes to the economy by gathering the governor creator
- * facets in one place and invokes `voteOnParamChanges` and
- * `voteOnApiInvocation` on each when requested. A cleaner version would
- * validate parameters, constrain deadlines and probably split the ability to
- * call for vote into separate capabilities for finer grain encapsulation.
+ * This contract makes it possible for those who govern contracts to call for
+ * votes on changes. A more complete implementation would validate parameters,
+ * constrain deadlines and possibly split the ability to call for votes into
+ * separate capabilities for finer grain encapsulation.
  */
 
 /**
- * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
- * @param {{reserve:GovernedContractFacetAccess<{},{}>, amm:GovernedCreatorFacet<{}>, vaults:GovernedCreatorFacet<{}>}} privateArgs
+ * @typedef {object} ParamChangesOfferArgs
+ * @property {bigint} deadline
+ * @property {Instance} instance
+ * @property {Record<string, unknown>} params
+ * @property {{paramPath: { key: string }}} [path]
  */
-export const start = async (zcf, privateArgs) => {
+const ParamChangesOfferArgsShape = harden(
+  M.split(
+    {
+      deadline: TimestampShape,
+      instance: InstanceHandleShape,
+      params: M.recordOf(M.string(), M.any()),
+    },
+    M.partial({
+      path: { paramPath: { key: M.any() } },
+    }),
+  ),
+);
+
+/**
+ * @param {ZCF<{binaryVoteCounterInstallation:Installation}>} zcf
+ */
+export const start = async zcf => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
-  const { reserve, amm, vaults } = privateArgs;
+  /** @type {MapStore<Instance,GovernedContractFacetAccess<{},{}>>} */
+  const instanceToGovernor = makeScalarMapStore();
 
-  /**
-   * @param {*} target
-   * @param {Record<string, unknown>} params
-   * @param {bigint} deadline
-   * @param {{paramPath: { key: unknown }}} [path]
-   */
-  const voteOnParamChanges = (
-    target,
-    params,
-    deadline,
-    path = { paramPath: { key: 'governedApi' } },
-  ) => {
-    return E(target).voteOnParamChanges(counter, deadline, {
-      ...path,
-      changes: params,
-    });
+  const makeParamInvitation = () => {
+    /**
+     * @param {ZCFSeat} seat
+     * @param {ParamChangesOfferArgs} args
+     */
+    const voteOnParamChanges = (seat, args) => {
+      fit(args, ParamChangesOfferArgsShape);
+      seat.exit();
+
+      const {
+        params,
+        instance,
+        deadline,
+        path = { paramPath: { key: 'governedApi' } },
+      } = args;
+      const governor = instanceToGovernor.get(instance);
+      return E(governor).voteOnParamChanges(counter, deadline, {
+        ...path,
+        changes: params,
+      });
+    };
+
+    return zcf.makeInvitation(voteOnParamChanges, 'vote on param changes');
   };
 
-  /**
-   * @param {*} target
-   * @param {string} method
-   * @param {unknown[]} args
-   * @param {bigint} deadline
-   */
-  const voteOnApiInvocation = (target, method, args, deadline) => {
-    return E(target).voteOnApiInvocation(method, args, counter, deadline);
+  const makeOfferFilterInvitation = (instance, strings, deadline) => {
+    const voteOnOfferFilterHandler = seat => {
+      seat.exit();
+
+      const governor = instanceToGovernor.get(instance);
+      return E(governor).voteOnOfferFilter(counter, deadline, strings);
+    };
+
+    return zcf.makeInvitation(voteOnOfferFilterHandler, 'vote on offer filter');
   };
 
-  const makeNullInvitation = () => {
-    return zcf.makeInvitation(() => {}, 'econCommitteeCharter noop');
+  const MakerShape = M.interface('Charter InvitationMakers', {
+    VoteOnParamChange: M.call().returns(M.promise()),
+    VoteOnPauseOffers: M.call(
+      InstanceHandleShape,
+      M.arrayOf(M.string()),
+      TimestampShape,
+    ).returns(M.promise()),
+  });
+  const invitationMakers = makeHeapFarInstance(
+    'Charter Invitation Makers',
+    MakerShape,
+    {
+      VoteOnParamChange: makeParamInvitation,
+      VoteOnPauseOffers: makeOfferFilterInvitation,
+    },
+  );
+
+  const charterMemberHandler = seat => {
+    seat.exit();
+    return harden({ invitationMakers });
   };
 
-  const publicFacet = Far('votingAPI', {
-    /**
-     * @param {Record<string, unknown>} params
-     * @param {bigint} deadline
-     */
-    voteOnAmmParamChanges: (params, deadline) =>
-      voteOnParamChanges(amm, params, deadline),
-    /**
-     * @param {Record<string, unknown>} params
-     * @param {bigint} deadline
-     */
-    voteOnReserveParamChanges: (params, deadline) =>
-      voteOnParamChanges(reserve, params, deadline),
-    /**
-     * vote on param changes for a vaultManager
-     *
-     * @param {Record<string, unknown>} params
-     * @param {{collateralBrand: Brand}} brand
-     * @param {bigint} deadline
-     */
-    voteOnVaultParamChanges: (params, brand, deadline) =>
-      voteOnParamChanges(vaults, params, deadline, {
-        paramPath: { key: brand },
-      }),
-    /**
-     * vote on param changes across the vaultFactory
-     *
-     * @param {Record<string, unknown>} params
-     * @param {bigint} deadline
-     */
-    voteOnVaultFactoryParamChanges: (params, deadline) =>
-      voteOnParamChanges(vaults, params, deadline),
-    /**
-     * @param {Amount[]} amounts
-     * @param {bigint} deadline
-     */
-    voteOnReserveApiInvocation: (amounts, deadline) =>
-      voteOnApiInvocation(reserve, 'addLiquidityToAmmPool', amounts, deadline),
-    makeNullInvitation,
+  const charterCreatorI = M.interface('Charter creatorFacet', {
+    addInstance: M.call(InstanceHandleShape, M.any())
+      .optional(M.string())
+      .returns(),
+    makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
-  return harden({ publicFacet });
+  const creatorFacet = makeHeapFarInstance(
+    'Charter creatorFacet',
+    charterCreatorI,
+    {
+      /**
+       * @param {Instance} governedInstance
+       * @param {GovernedContractFacetAccess<{},{}>} governorFacet
+       * @param {string} [label] for diagnostic use only
+       */
+      addInstance: (governedInstance, governorFacet, label) => {
+        console.log('charter: adding instance', label);
+        instanceToGovernor.init(governedInstance, governorFacet);
+      },
+      makeCharterMemberInvitation: () =>
+        zcf.makeInvitation(charterMemberHandler, 'charter member invitation'),
+    },
+  );
+
+  return harden({ creatorFacet });
 };
+
+export const INVITATION_MAKERS_DESC = 'charter member invitation';

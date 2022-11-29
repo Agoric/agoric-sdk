@@ -25,7 +25,10 @@ await extractProposalBundles(
 await createBundles(
   [
     ['../src/psm/psm.js', '../bundles/bundle-psm.js'],
-    ['../src/psm/psmCharter.js', '../bundles/bundle-psmCharter.js'],
+    [
+      '../src/econCommitteeCharter.js',
+      '../bundles/bundle-econCommitteeCharter.js',
+    ],
   ],
   dirname,
 );
