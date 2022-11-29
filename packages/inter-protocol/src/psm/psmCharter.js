@@ -3,14 +3,13 @@ import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { BrandShape } from '@agoric/ertp';
 import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
 import { E } from '@endo/far';
 
 /**
  * @file
  *
- * This contract makes it possible for those who govern the PSM to call for
+ * This contract makes it possible for those who govern contracts to call for
  * votes on changes. A more complete implementation would validate parameters,
  * constrain deadlines and possibly split the ability to call for votes into
  * separate capabilities for finer grain encapsulation.
@@ -57,8 +56,8 @@ export const start = async zcf => {
         deadline,
         path = { paramPath: { key: 'governedApi' } },
       } = args;
-      const psmGovernor = instanceToGovernor.get(instance);
-      return E(psmGovernor).voteOnParamChanges(counter, deadline, {
+      const governor = instanceToGovernor.get(instance);
+      return E(governor).voteOnParamChanges(counter, deadline, {
         ...path,
         changes: params,
       });
@@ -71,14 +70,14 @@ export const start = async zcf => {
     const voteOnOfferFilterHandler = seat => {
       seat.exit();
 
-      const psmGovernor = instanceToGovernor.get(instance);
-      return E(psmGovernor).voteOnOfferFilter(counter, deadline, strings);
+      const governor = instanceToGovernor.get(instance);
+      return E(governor).voteOnOfferFilter(counter, deadline, strings);
     };
 
     return zcf.makeInvitation(voteOnOfferFilterHandler, 'vote on offer filter');
   };
 
-  const MakerShape = M.interface('PSM Charter InvitationMakers', {
+  const MakerShape = M.interface('Charter InvitationMakers', {
     VoteOnParamChange: M.call().returns(M.promise()),
     VoteOnPauseOffers: M.call(
       InstanceHandleShape,
@@ -87,7 +86,7 @@ export const start = async zcf => {
     ).returns(M.promise()),
   });
   const invitationMakers = makeHeapFarInstance(
-    'PSM Invitation Makers',
+    'Charter Invitation Makers',
     MakerShape,
     {
       VoteOnParamChange: makeParamInvitation,
@@ -100,36 +99,32 @@ export const start = async zcf => {
     return harden({ invitationMakers });
   };
 
-  const psmCharterCreatorI = M.interface('PSM Charter creatorFacet', {
+  const charterCreatorI = M.interface('Charter creatorFacet', {
     addInstance: M.call(InstanceHandleShape, M.any())
-      .optional(BrandShape, BrandShape)
+      .optional(M.string())
       .returns(),
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
   const creatorFacet = makeHeapFarInstance(
-    'PSM Charter creatorFacet',
-    psmCharterCreatorI,
+    'Charter creatorFacet',
+    charterCreatorI,
     {
       /**
-       * @param {Instance} psmInstance
-       * @param {GovernedContractFacetAccess<{},{}>} psmGovernorFacet
-       * @param {Brand} [anchor] for diagnostic use only
-       * @param {Brand} [minted] for diagnostic use only
+       * @param {Instance} governedInstance
+       * @param {GovernedContractFacetAccess<{},{}>} governorFacet
+       * @param {string} [label] for diagnostic use only
        */
-      addInstance: (psmInstance, psmGovernorFacet, anchor, minted) => {
-        console.log('psmCharter: adding instance', { minted, anchor });
-        instanceToGovernor.init(psmInstance, psmGovernorFacet);
+      addInstance: (governedInstance, governorFacet, label) => {
+        console.log('charter: adding instance', label);
+        instanceToGovernor.init(governedInstance, governorFacet);
       },
       makeCharterMemberInvitation: () =>
-        zcf.makeInvitation(
-          charterMemberHandler,
-          'PSM charter member invitation',
-        ),
+        zcf.makeInvitation(charterMemberHandler, 'charter member invitation'),
     },
   );
 
   return harden({ creatorFacet });
 };
 
-export const INVITATION_MAKERS_DESC = 'PSM charter member invitation';
+export const INVITATION_MAKERS_DESC = 'charter member invitation';

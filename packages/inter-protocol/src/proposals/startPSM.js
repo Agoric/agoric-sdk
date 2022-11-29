@@ -177,8 +177,7 @@ export const startPSM = async (
     E(psmCharterCreatorFacet).addInstance(
       psm,
       governorFacets.creatorFacet,
-      anchorBrand,
-      minted,
+      instanceKey,
     ),
     // @ts-expect-error TODO type for provisionPoolStartResult
     E(E.get(provisionPoolStartResult).creatorFacet).initPSM(
