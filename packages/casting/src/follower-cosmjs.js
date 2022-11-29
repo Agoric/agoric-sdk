@@ -544,7 +544,7 @@ export const makeCosmjsFollower = (
   }
 
   /**
-   * @param {number} cursorBlockHeight
+   * @param {number} [cursorBlockHeight]
    * @yields {ValueFollowerElement<T>}
    */
   async function* getReverseIterableAtHeight(cursorBlockHeight) {
@@ -552,8 +552,10 @@ export const makeCosmjsFollower = (
     // cursorBlockHeight) so we know not to emit duplicates
     // of that cell.
     let cursorData;
-    while (cursorBlockHeight > 0) {
-      cursorData = (await getDataAtHeight(cursorBlockHeight)).value;
+    while (cursorBlockHeight === undefined || cursorBlockHeight > 0) {
+      ({ value: cursorData, height: cursorBlockHeight } = await getDataAtHeight(
+        cursorBlockHeight,
+      ));
       if (cursorData.length === 0) {
         // No data at the cursor height, so signal beginning of stream.
         return;
@@ -573,9 +575,6 @@ export const makeCosmjsFollower = (
       return getEachIterableAtHeight(height);
     },
     async getReverseIterable({ height = undefined } = {}) {
-      if (height === undefined) {
-        height = await getBlockHeight();
-      }
       return getReverseIterableAtHeight(height);
     },
   });
