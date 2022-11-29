@@ -9,10 +9,18 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { reserveThenDeposit, reserveThenGetNamePaths } from './utils.js';
 
+import {
+  inviteCommitteeMembers,
+  startEconCharter,
+  inviteToEconCharter,
+} from './committee-proposal.js';
+
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
 
 const { values } = Object;
+
+export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
@@ -303,29 +311,6 @@ export const installGovAndPSMContracts = async ({
 };
 
 /**
- * @deprecated the PSM charter has been merged with the econ charter
- * @param {EconomyBootstrapPowers} powers
- */
-export const startPSMCharter = async ({
-  consume: { zoe },
-  produce: { econCharterStartResult },
-  installation: {
-    consume: { binaryVoteCounter, econCommitteeCharter: installP },
-  },
-  instance: {
-    produce: { econCommitteeCharter: instanceP },
-  },
-}) => {
-  const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
-
-  const terms = { binaryVoteCounterInstallation: counterR };
-  const facets = await E(zoe).startInstance(charterR, {}, terms);
-
-  instanceP.resolve(facets.instance);
-  econCharterStartResult.resolve(facets);
-};
-
-/**
  * PSM and gov contracts are available as
  * named swingset bundles only in
  * decentral-psm-config.json
@@ -348,7 +333,7 @@ export const PSM_GOV_MANIFEST = {
       },
     },
   },
-  [startPSMCharter.name]: {
+  [startEconCharter.name]: {
     consume: { zoe: 'zoe' },
     produce: {
       econCharterStartResult: 'econCommitteeCharter',
@@ -362,66 +347,23 @@ export const PSM_GOV_MANIFEST = {
   },
 };
 
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-
-/**
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
- * @param {{ options: { voterAddresses: Record<string, string> }}} param1
- */
-export const invitePSMCommitteeMembers = async (
-  {
-    consume: {
-      namesByAddressAdmin,
-      economicCommitteeCreatorFacet,
-      econCharterStartResult,
+export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
+  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
+  ({
+    [inviteCommitteeMembers.name]: {
+      consume: {
+        namesByAddressAdmin: true,
+        economicCommitteeCreatorFacet: true,
+      },
     },
-  },
-  { options: { voterAddresses = {} } },
-) => {
-  const invitations = await E(
-    economicCommitteeCreatorFacet,
-  ).getVoterInvitations();
-  assert.equal(invitations.length, values(voterAddresses).length);
-
-  /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
-   */
-  const distributeInvitations = async addrInvitations => {
-    await Promise.all(
-      addrInvitations.map(async ([addr, invitationP]) => {
-        const [voterInvitation, charterMemberInvitation] = await Promise.all([
-          invitationP,
-          E(
-            E.get(econCharterStartResult).creatorFacet,
-          ).makeCharterMemberInvitation(),
-        ]);
-        console.log('sending charter, voting invitations to', addr);
-        await reserveThenDeposit(
-          `econ committee member ${addr}`,
-          namesByAddressAdmin,
-          addr,
-          [voterInvitation, charterMemberInvitation],
-        );
-        console.log('sent charter, voting invitations to', addr);
-      }),
-    );
-  };
-
-  await distributeInvitations(zip(values(voterAddresses), invitations));
-};
-harden(invitePSMCommitteeMembers);
-
-/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
-export const INVITE_PSM_COMMITTEE_MANIFEST = harden({
-  [invitePSMCommitteeMembers.name]: {
-    consume: {
-      namesByAddressAdmin: true,
-      economicCommitteeCreatorFacet: true,
-      econCharterStartResult: true,
+    [inviteToEconCharter.name]: {
+      consume: {
+        namesByAddressAdmin: true,
+        econCharterStartResult: true,
+      },
     },
-  },
-});
+  }),
+);
 
 /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 export const PSM_MANIFEST = harden({
