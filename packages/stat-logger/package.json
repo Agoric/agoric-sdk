@@ -19,6 +19,17 @@
     "vega": "^5.10.0",
     "vega-canvas": "^1.2.1"
   },
+  "peerDependenciesMeta": {
+    "canvas": {
+      "optional": true
+    },
+    "vega": {
+      "optional": true
+    },
+    "vega-canvas": {
+      "optional": true
+    }
+  },
   "publishConfig": {
     "access": "public"
   },
