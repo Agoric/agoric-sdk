@@ -88,6 +88,9 @@ const makeFakeBridgeManager = () => {
     register(srcID, handler) {
       handlers[srcID] = handler;
     },
+    fromBridge(_dstID, _obj) {
+      assert.fail('expected fromBridge');
+    },
     toBridge(dstID, obj) {
       const handler = handlers[dstID];
       assert(handler, `No handler for ${dstID}`);

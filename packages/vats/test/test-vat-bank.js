@@ -32,6 +32,9 @@ test('communication', async t => {
       t.assert(handler);
       bankHandler = handler;
     },
+    fromBridge(_dstID, _obj) {
+      t.fail('unexpected fromBridge');
+    },
     toBridge(dstID, obj) {
       t.is(dstID, 'bank');
       let ret;
