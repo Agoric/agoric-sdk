@@ -283,6 +283,7 @@ export const makeCosmjsFollower = (
     if (proof === 'strict') {
       // we have to know this in order to construct a valid return
       if (blockHeight === undefined) {
+        // TODO eliminate this extra fetch once https://github.com/cosmos/cosmjs/pull/1278 is sorted out
         blockHeight = await getBlockHeight();
       }
       // Crash hard if we can't prove.
@@ -434,44 +435,43 @@ export const makeCosmjsFollower = (
    * @yields {ValueFollowerElement<T>}
    */
   async function* getLatestIterable() {
-    let blockHeight;
-    let data;
+    /** @type {number=} the last known latest height */
+    let lastHeight;
+    let lastValue;
     for (;;) {
-      const currentBlockHeight = await getBlockHeight();
-      if (currentBlockHeight === blockHeight) {
+      const latest = await getDataAtHeight();
+      if (lastHeight && latest.height <= lastHeight) {
+        // Wait for a fresh block
         // TODO Long-poll for next block
         // https://github.com/Agoric/agoric-sdk/issues/6154
         await E(leader).jitter(where);
         continue;
       }
 
-      const currentData = (await getDataAtHeight(currentBlockHeight)).value;
-      if (currentData.length === 0) {
+      if (latest.value.length === 0) {
+        // No value, so try again
         // TODO Long-poll for block data change
         // https://github.com/Agoric/agoric-sdk/issues/6154
         await E(leader).jitter(where);
         continue;
       }
-      const currentStreamCell = streamCellForData(
-        currentBlockHeight,
-        currentData,
-      );
+      const currentStreamCell = streamCellForData(latest.height, latest.value);
 
-      blockHeight = currentBlockHeight;
+      lastHeight = latest.height;
 
       // Ignore adjacent duplicates.
       // This can only occur for legacy cells.
       // It is possible that the data changed from and back to the last
       // sampled data, but ignoring intermediate changes is consistent with
       // the semantics of getLatestIterable.
-      if (data !== undefined && arrayEqual(data, currentData)) {
+      if (lastValue !== undefined && arrayEqual(lastValue, latest.value)) {
         continue;
       }
       // However, streamCells that vacillate will reemit, since each iteration
       // at a unique block height is considered distinct.
 
-      yield* lastValueFromCell(currentStreamCell, currentBlockHeight);
-      data = currentData;
+      yield* lastValueFromCell(currentStreamCell, latest.height);
+      lastValue = latest.value;
     }
   }
 
