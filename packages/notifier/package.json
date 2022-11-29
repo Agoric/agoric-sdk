@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build": "exit 0",
+    "prepack": "echo \"export {}; \" | cat - src/types-ambient.js > src/types.js && tsc --build jsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*' src/types.js",
     "test": "ava",
     "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
     "test:xs": "exit 0",

@@ -15,7 +15,7 @@ const empty = 0n;
  * done with the smallest whole unit such that the NatMathHelpers never
  * deals with fractional parts.
  *
- * @type {import('../types').MathHelpers<import('../types').NatValue>}
+ * @type {MathHelpers<NatValue>}
  */
 export const natMathHelpers = harden({
   doCoerce: nat => {
