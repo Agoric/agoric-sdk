@@ -15,6 +15,8 @@ import { E } from '@endo/far';
  * separate capabilities for finer grain encapsulation.
  */
 
+export const INVITATION_MAKERS_DESC = 'charter member invitation';
+
 /**
  * @typedef {object} ParamChangesOfferArgs
  * @property {bigint} deadline
@@ -122,11 +124,9 @@ export const start = async zcf => {
         instanceToGovernor.init(governedInstance, governorFacet);
       },
       makeCharterMemberInvitation: () =>
-        zcf.makeInvitation(charterMemberHandler, 'charter member invitation'),
+        zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
     },
   );
 
   return harden({ creatorFacet });
 };
-
-export const INVITATION_MAKERS_DESC = 'charter member invitation';

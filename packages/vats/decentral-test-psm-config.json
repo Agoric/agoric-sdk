@@ -44,8 +44,8 @@
     "psm": {
       "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
     },
-    "psmCharter": {
-      "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
+    "econCommitteeCharter": {
+      "sourceSpec": "@agoric/inter-protocol/src/econCommitteeCharter.js"
     },
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"

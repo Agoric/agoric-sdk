@@ -219,7 +219,7 @@ test('govern offerFilter', async t => {
   );
 
   t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_DESC);
-  t.is(proposeInvitationDetails[0].instance, econCharter, 'psmCharter');
+  t.is(proposeInvitationDetails[0].instance, econCharter, 'econCharter');
   t.is(
     // @ts-expect-error cast amount kind
     currentPurseBalance(await headValue(currentSub), invitationBrand).length,
