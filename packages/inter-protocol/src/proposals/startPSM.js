@@ -9,10 +9,14 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { reserveThenDeposit, reserveThenGetNamePaths } from './utils.js';
 
+import { inviteCommitteeMembers } from './committee-proposal.js';
+
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
 
 const { values } = Object;
+
+export { inviteCommitteeMembers };
 
 /**
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
@@ -366,64 +370,46 @@ export const PSM_GOV_MANIFEST = {
   },
 };
 
-/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-
 /**
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  * @param {{ options: { voterAddresses: Record<string, string> }}} param1
  */
-export const invitePSMCommitteeMembers = async (
-  {
-    consume: {
-      namesByAddressAdmin,
-      economicCommitteeCreatorFacet,
-      psmCharterCreatorFacet,
-    },
-  },
+export const inviteToPSMCharter = async (
+  { consume: { namesByAddressAdmin, psmCharterCreatorFacet } },
   { options: { voterAddresses = {} } },
 ) => {
-  const invitations = await E(
-    economicCommitteeCreatorFacet,
-  ).getVoterInvitations();
-  assert.equal(invitations.length, values(voterAddresses).length);
-
-  /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
-   */
-  const distributeInvitations = async addrInvitations => {
-    await Promise.all(
-      addrInvitations.map(async ([addr, invitationP]) => {
-        const [voterInvitation, charterMemberInvitation] = await Promise.all([
-          invitationP,
-          E(psmCharterCreatorFacet).makeCharterMemberInvitation(),
-        ]);
-        console.log('sending charter, voting invitations to', addr);
-        await reserveThenDeposit(
-          `econ committee member ${addr}`,
-          namesByAddressAdmin,
-          addr,
-          [voterInvitation, charterMemberInvitation],
-        );
-        console.log('sent charter, voting invitations to', addr);
-      }),
-    );
-  };
-
-  await distributeInvitations(zip(values(voterAddresses), invitations));
+  await Promise.all(
+    values(voterAddresses).map(async addr => {
+      console.log('sending charter, voting invitations to', addr);
+      await reserveThenDeposit(
+        `psm charter member ${addr}`,
+        namesByAddressAdmin,
+        addr,
+        [E(psmCharterCreatorFacet).makeCharterMemberInvitation()],
+      );
+      console.log('sent charter, voting invitations to', addr);
+    }),
+  );
 };
-harden(invitePSMCommitteeMembers);
+harden(inviteToPSMCharter);
 
-/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
-export const INVITE_PSM_COMMITTEE_MANIFEST = harden({
-  [invitePSMCommitteeMembers.name]: {
-    consume: {
-      namesByAddressAdmin: true,
-      economicCommitteeCreatorFacet: true,
-      psmCharterCreatorFacet: true,
+export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
+  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
+  ({
+    [inviteCommitteeMembers.name]: {
+      consume: {
+        namesByAddressAdmin: true,
+        economicCommitteeCreatorFacet: true,
+      },
     },
-  },
-});
+    [inviteToPSMCharter.name]: {
+      consume: {
+        namesByAddressAdmin: true,
+        psmCharterCreatorFacet: true,
+      },
+    },
+  }),
+);
 
 /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 export const PSM_MANIFEST = harden({

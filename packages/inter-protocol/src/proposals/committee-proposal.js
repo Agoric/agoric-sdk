@@ -12,13 +12,45 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
  * @param {{ options: { voterAddresses: Record<string, string> }}} param1
  */
 export const inviteCommitteeMembers = async (
+  { consume: { namesByAddressAdmin, economicCommitteeCreatorFacet } },
+  { options: { voterAddresses } },
+) => {
+  const invitations = await E(
+    economicCommitteeCreatorFacet,
+  ).getVoterInvitations();
+  assert.equal(invitations.length, values(voterAddresses).length);
+
+  /**
+   * @param {[string, Promise<Invitation>][]} addrInvitations
+   */
+  const distributeInvitations = async addrInvitations => {
+    await Promise.all(
+      addrInvitations.map(async ([addr, invitationP]) => {
+        await reserveThenDeposit(
+          `econ committee member ${addr}`,
+          namesByAddressAdmin,
+          addr,
+          [invitationP],
+        );
+      }),
+    );
+  };
+
+  await distributeInvitations(zip(values(voterAddresses), invitations));
+};
+
+harden(inviteCommitteeMembers);
+
+/**
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ */
+export const inviteToEconCharter = async (
   {
     consume: {
       zoe,
       agoricNames,
       namesByAddressAdmin,
-      psmCharterCreatorFacet,
-      economicCommitteeCreatorFacet,
       reserveGovernorCreatorFacet,
       ammGovernorCreatorFacet,
       vaultFactoryGovernorCreator,
@@ -39,49 +71,31 @@ export const inviteCommitteeMembers = async (
       binaryVoteCounterInstallation: counterInstall,
     }),
   );
+  // TODO: Add these facets dynamically when they are instantiated.
+  // TODO: Follow PSM continuing invitation charter style.
   const privateFacets = {
     reserve: reserveGovernorCreatorFacet,
     amm: ammGovernorCreatorFacet,
     vaults: vaultFactoryGovernorCreator,
-    psm: psmCharterCreatorFacet,
   };
-  const { publicFacet: votingAPI } = E.get(
+  // TODO(6034): be sure to save the result of startInstance, especially adminFacet
+  const { publicFacet: charterAPI } = E.get(
     E(zoe).startInstance(charterInstall, undefined, terms, privateFacets),
   );
 
-  const invitations = await E(
-    economicCommitteeCreatorFacet,
-  ).getVoterInvitations();
-  assert.equal(invitations.length, values(voterAddresses).length);
-
-  /**
-   * @param {[string, Promise<Invitation>][]} addrInvitations
-   */
-  const distributeInvitations = async addrInvitations => {
-    await Promise.all(
-      addrInvitations.map(async ([addr, invitationP]) => {
-        await reserveThenDeposit(
-          `econ committee member ${addr}`,
-          namesByAddressAdmin,
-          addr,
-          [
-            invitationP,
-            // TODO(#6598): This null invitation is used just to identify the
-            // closely-held economy charter instance handle.  Instead, the
-            // economy charter should use continuing invitations like the PSM
-            // charter does for compatibility with the smart wallet.
-            E(votingAPI).makeNullInvitation(),
-            E(psmCharterCreatorFacet).makeCharterMemberInvitation(),
-          ],
-        );
-      }),
-    );
-  };
-
-  await distributeInvitations(zip(values(voterAddresses), invitations));
+  await Promise.all(
+    values(voterAddresses).map(async addr =>
+      reserveThenDeposit(
+        `econ charter member ${addr}`,
+        namesByAddressAdmin,
+        addr,
+        [E(charterAPI).makeNullInvitation()],
+      ),
+    ),
+  );
 };
 
-harden(inviteCommitteeMembers);
+harden(inviteToEconCharter);
 
 export const getManifestForInviteCommittee = async (
   { restoreRef },
@@ -91,13 +105,14 @@ export const getManifestForInviteCommittee = async (
   return {
     manifest: {
       [inviteCommitteeMembers.name]: {
+        consume: { namesByAddressAdmin: t, economicCommitteeCreatorFacet: t },
+      },
+      [inviteToEconCharter.name]: {
         consume: {
           zoe: t,
           agoricNames: t,
           namesByAddressAdmin: t,
-          economicCommitteeCreatorFacet: t,
           reserveGovernorCreatorFacet: t,
-          psmCharterCreatorFacet: t,
           ammGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
         },

@@ -5,7 +5,8 @@ import {
   installGovAndPSMContracts,
   makeAnchorAsset,
   startPSM,
-  invitePSMCommitteeMembers,
+  inviteToPSMCharter,
+  inviteCommitteeMembers,
   PSM_MANIFEST,
   PSM_GOV_MANIFEST,
   startPSMCharter,
@@ -194,7 +195,10 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           },
         },
       }),
-      invitePSMCommitteeMembers(powersFor('invitePSMCommitteeMembers'), {
+      inviteCommitteeMembers(powersFor('inviteCommitteeMembers'), {
+        options: { voterAddresses: economicCommitteeAddresses },
+      }),
+      inviteToPSMCharter(powersFor('inviteToPSMCharter'), {
         options: { voterAddresses: economicCommitteeAddresses },
       }),
       ...anchorAssets.map(anchorOptions =>
