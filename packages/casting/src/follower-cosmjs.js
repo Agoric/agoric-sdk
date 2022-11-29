@@ -2,19 +2,28 @@
 /* eslint-disable no-await-in-loop, no-continue, @jessie.js/no-nested-await */
 
 import { E, Far } from '@endo/far';
-import * as tendermintRpcStar from '@cosmjs/tendermint-rpc';
-import * as stargateStar from '@cosmjs/stargate';
+import * as tendermint34 from '@cosmjs/tendermint-rpc';
 
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
-const { QueryClient } = stargateStar;
-const { Tendermint34Client } = tendermintRpcStar;
+const { Tendermint34Client } = tendermint34;
 const { details: X, quote: q } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
+
+// Copied from https://github.com/cosmos/cosmjs/pull/1328/files until release
+/**
+ * @typedef {{
+ *   readonly value: Uint8Array;
+ *   readonly height: number;
+ * }} QueryAbciResponse
+ * The response of an ABCI query to Tendermint.
+ * This is a subset of `tendermint34.AbciQueryResponse` in order
+ * to abstract away Tendermint versions.
+ */
 
 /**
  * This is an imperfect heuristic to navigate the migration from value cells to
@@ -116,7 +125,7 @@ export const makeCosmjsFollower = (
   const tendermintClientPs = new Map();
   /**
    * @param {string} endpoint
-   * @returns {tendermintRpcStar.Tendermint34Client}
+   * @returns {tendermint34.Tendermint34Client}
    */
   const provideTendermintClient = endpoint => {
     let clientP = tendermintClientPs.get(endpoint);
@@ -138,28 +147,9 @@ export const makeCosmjsFollower = (
     return collectSingle(values);
   };
 
-  /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
-  const endpointToQueryClient = new Map();
-
   /**
-   * @param {string} endpoint
-   */
-  const provideQueryClient = async endpoint => {
-    if (endpointToQueryClient.has(endpoint)) {
-      // Cache hit.
-      const queryClient = endpointToQueryClient.get(endpoint);
-      assert(queryClient);
-      return queryClient;
-    }
-    // Create a new client.  They retry automatically.
-    const rpcClient = await provideTendermintClient(endpoint);
-    const queryClient = QueryClient.withExtensions(rpcClient);
-    endpointToQueryClient.set(endpoint, queryClient);
-    return queryClient;
-  };
-
-  /**
-   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<Uint8Array>} tryGetPrefixedData
+   * @param {(endpoint: string, storeName: string, storeSubkey: Uint8Array) => Promise<QueryAbciResponse>} tryGetPrefixedData
+   * @returns {Promise<QueryAbciResponse>}
    */
   const retryGetDataAndStripPrefix = async tryGetPrefixedData => {
     const {
@@ -181,24 +171,25 @@ export const makeCosmjsFollower = (
     // mapEndpoints is our retry loop.
     const values = await E(leader).mapEndpoints(where, async endpoint =>
       tryGetPrefixedData(endpoint, storeName, storeSubkey).then(
-        result => {
-          return { result, error: null };
+        response => {
+          return { response, error: null };
         },
         error => {
-          return { result: null, error };
+          return { response: null, error };
         },
       ),
     );
 
-    const { result, error } = collectSingle(values);
+    const { response, error } = collectSingle(values);
     if (error !== null) {
       throw error;
     }
+    const result = response?.value;
     assert(result);
 
     if (result.length === 0) {
       // No data.
-      return result;
+      return response;
     }
 
     // Handle the data prefix if any.
@@ -210,26 +201,16 @@ export const makeCosmjsFollower = (
       arrayEqual(result.subarray(0, dataPrefixBytes.length), dataPrefixBytes),
       X`${result} doesn't start with data prefix ${dataPrefixBytes}`,
     );
-    return result.slice(dataPrefixBytes.length);
+    // truncate 'value' of response
+    return { ...response, value: result.slice(dataPrefixBytes.length) };
   };
 
   /**
-   * @param {number} [height]
-   * @returns {Promise<Uint8Array>}
+   * @param {number} [height] desired height, or the latest height if not set
+   * @param {boolean} [prove=false]
+   * @returns {Promise<QueryAbciResponse>}
    */
-  const getProvenDataAtHeight = async height => {
-    return retryGetDataAndStripPrefix(
-      async (endpoint, storeName, storeSubkey) => {
-        const queryClient = await provideQueryClient(endpoint);
-        return E(queryClient).queryVerified(storeName, storeSubkey, height);
-      },
-    );
-  };
-
-  /**
-   * @param {number} height
-   */
-  const getUnprovenDataAtHeight = async height => {
+  const getAvailableData = async (height, prove = false) => {
     return retryGetDataAndStripPrefix(
       async (endpoint, storeName, storeSubkey) => {
         const client = await provideTendermintClient(endpoint);
@@ -237,44 +218,47 @@ export const makeCosmjsFollower = (
           path: `store/${storeName}/key`,
           data: storeSubkey,
           height,
-          prove: false,
+          prove,
         });
         if (response.code !== 0) {
           throw new Error(`Tendermint ABCI query failed: ${response.log}`);
         }
-        const { value } = response;
-        return value;
+        if (!response.height) {
+          throw new Error('No query height returned');
+        }
+        return { value: response.value, height: response.height };
       },
     );
   };
 
   /**
-   * @param {number} blockHeight
+   * @param {number} [blockHeight]
+   * @returns {Promise<QueryAbciResponse>}
    */
   const tryGetDataAtHeight = async blockHeight => {
     if (proof === 'strict') {
       // Crash hard if we can't prove.
-      return getProvenDataAtHeight(blockHeight).catch(crash);
+      return getAvailableData(blockHeight, true).catch(crash);
     } else if (proof === 'none') {
       // Fast and loose.
-      return getUnprovenDataAtHeight(blockHeight);
+      return getAvailableData(blockHeight);
     } else if (proof === 'optimistic') {
-      const allegedData = await getUnprovenDataAtHeight(blockHeight);
+      const alleged = await getAvailableData(blockHeight);
 
       // Prove later, since it may take time we say we can't afford.
-      getProvenDataAtHeight(blockHeight).then(provenData => {
-        if (arrayEqual(provenData, allegedData)) {
+      getAvailableData(blockHeight, true).then(proven => {
+        if (arrayEqual(proven.value, alleged.value)) {
           return;
         }
         crash(
           assert.error(
-            X`Alleged value ${allegedData} did not match proof ${provenData}`,
+            X`Alleged value ${alleged.value} did not match proof ${proven.value}`,
           ),
         );
       }, crash);
 
       // Speculate that we got the right value.
-      return allegedData;
+      return alleged;
     }
 
     assert.fail(
@@ -285,10 +269,10 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {number} blockHeight
+   * @param {number} [blockHeight] desired height, or latest if not set
+   * @returns {Promise<QueryAbciResponse>}
    */
   const getDataAtHeight = async blockHeight => {
-    assert.typeof(blockHeight, 'number');
     for (let attempt = 0; ; attempt += 1) {
       try {
         // AWAIT
@@ -403,44 +387,35 @@ export const makeCosmjsFollower = (
    * @yields {ValueFollowerElement<T>}
    */
   async function* getLatestIterable() {
-    let blockHeight;
-    let data;
+    let lastData;
     for (;;) {
-      const currentBlockHeight = await getBlockHeight();
-      if (currentBlockHeight === blockHeight) {
-        // TODO Long-poll for next block
-        // https://github.com/Agoric/agoric-sdk/issues/6154
-        await E(leader).jitter(where);
-        continue;
-      }
-
-      const currentData = await getDataAtHeight(currentBlockHeight);
+      const { value: currentData, height: currentBlockHeight } =
+        await getDataAtHeight();
       if (currentData.length === 0) {
         // TODO Long-poll for block data change
         // https://github.com/Agoric/agoric-sdk/issues/6154
         await E(leader).jitter(where);
         continue;
       }
+      assert.typeof(currentBlockHeight, 'number');
       const currentStreamCell = streamCellForData(
         currentBlockHeight,
         currentData,
       );
-
-      blockHeight = currentBlockHeight;
 
       // Ignore adjacent duplicates.
       // This can only occur for legacy cells.
       // It is possible that the data changed from and back to the last
       // sampled data, but ignoring intermediate changes is consistent with
       // the semantics of getLatestIterable.
-      if (data !== undefined && arrayEqual(data, currentData)) {
+      if (lastData !== undefined && arrayEqual(lastData, currentData)) {
         continue;
       }
       // However, streamCells that vacillate will reemit, since each iteration
       // at a unique block height is considered distinct.
 
       yield* lastValueFromCell(currentStreamCell, currentBlockHeight);
-      data = currentData;
+      lastData = currentData;
     }
   }
 
@@ -459,7 +434,7 @@ export const makeCosmjsFollower = (
     // If the block has no corresponding data, wait for the first block to
     // contain data.
     for (;;) {
-      cursorData = await getDataAtHeight(cursorBlockHeight);
+      ({ value: cursorData } = await getDataAtHeight(cursorBlockHeight));
       if (cursorData.length !== 0) {
         const cursorStreamCell = streamCellForData(
           cursorBlockHeight,
@@ -494,7 +469,7 @@ export const makeCosmjsFollower = (
       // This does imply accumulating a potentially large number of values if
       // the eachIterable gets sampled infrequently.
       let rightBlockHeight = currentBlockHeight;
-      let rightData = await getDataAtHeight(rightBlockHeight);
+      let rightData = (await getDataAtHeight(rightBlockHeight)).value;
       if (rightData.length === 0) {
         // TODO Long-poll for next block
         // https://github.com/Agoric/agoric-sdk/issues/6154
@@ -519,7 +494,7 @@ export const makeCosmjsFollower = (
         if (leftBlockHeight <= cursorBlockHeight) {
           break;
         }
-        const leftData = await getDataAtHeight(leftBlockHeight);
+        const leftData = (await getDataAtHeight(leftBlockHeight)).value;
         // Do not scan behind a cell with no data.
         // This should not happen but can be tolerated.
         if (leftData.length === 0) {
@@ -576,7 +551,7 @@ export const makeCosmjsFollower = (
     // of that cell.
     let cursorData;
     while (cursorBlockHeight > 0) {
-      cursorData = await getDataAtHeight(cursorBlockHeight);
+      cursorData = (await getDataAtHeight(cursorBlockHeight)).value;
       if (cursorData.length === 0) {
         // No data at the cursor height, so signal beginning of stream.
         return;
