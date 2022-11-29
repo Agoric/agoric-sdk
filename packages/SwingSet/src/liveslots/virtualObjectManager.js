@@ -752,6 +752,9 @@ export function makeVirtualObjectManager(
         for (const name of facetNames) {
           const facet = harden({
             __proto__: prototypeTemplate[name],
+            ...(LABEL_REPRESENTATIVES
+              ? { [`${innerSelf.baseRef}|${name}`]: () => {} }
+              : {}),
           });
           contextMapTemplate[name].set(facet, context);
           facets[name] = facet;
