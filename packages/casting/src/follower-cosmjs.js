@@ -61,6 +61,22 @@ const arrayEqual = (a, b) => {
 const defaultDataPrefixBytes = new Uint8Array();
 
 /**
+ * @param {Uint8Array} prefixedData
+ * @param {Uint8Array} prefix
+ */
+const stripPrefix = (prefixedData, prefix) => {
+  assert(
+    prefixedData.length >= prefix.length,
+    X`result too short for data prefix ${prefix}`,
+  );
+  assert(
+    arrayEqual(prefixedData.subarray(0, prefix.length), prefix),
+    X`${prefixedData} doesn't start with data prefix ${prefix}`,
+  );
+  return prefixedData.slice(prefix.length);
+};
+
+/**
  * @template T
  * @param {Iterable<T>} values
  * @returns {T}
@@ -211,17 +227,7 @@ export const makeCosmjsFollower = (
       // No data.
       return result;
     }
-
-    // Handle the data prefix if any.
-    assert(
-      result.length >= dataPrefixBytes.length,
-      X`result too short for data prefix ${dataPrefixBytes}`,
-    );
-    assert(
-      arrayEqual(result.subarray(0, dataPrefixBytes.length), dataPrefixBytes),
-      X`${result} doesn't start with data prefix ${dataPrefixBytes}`,
-    );
-    return result.slice(dataPrefixBytes.length);
+    return stripPrefix(result, dataPrefixBytes);
   };
 
   /**
