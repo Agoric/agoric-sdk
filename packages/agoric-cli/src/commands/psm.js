@@ -208,8 +208,8 @@ export const makePsmCommand = async logger => {
       // @ts-expect-error this implicit any
       const opts = this.opts();
 
-      const { psmCharter } = agoricNames.instance;
-      assert(psmCharter, 'missing psmCharter');
+      const { econCommitteeCharter } = agoricNames.instance;
+      assert(econCommitteeCharter, 'missing econCommitteeCharter');
 
       /** @type {import('../lib/psm.js').OfferSpec} */
       const offer = {
@@ -217,8 +217,8 @@ export const makePsmCommand = async logger => {
         invitationSpec: {
           source: 'purse',
           // @ts-expect-error xxx RpcRemote
-          instance: psmCharter,
-          description: 'PSM charter member invitation',
+          instance: econCommitteeCharter,
+          description: 'charter member invitation',
         },
         proposal: {},
       };
