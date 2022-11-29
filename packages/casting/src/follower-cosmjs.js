@@ -2,7 +2,7 @@
 /* eslint-disable no-await-in-loop, no-continue, @jessie.js/no-nested-await */
 
 import { E, Far } from '@endo/far';
-import * as tendermintRpcStar from '@cosmjs/tendermint-rpc';
+import * as tendermint34 from '@cosmjs/tendermint-rpc';
 import * as stargateStar from '@cosmjs/stargate';
 
 import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
@@ -10,11 +10,22 @@ import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
 const { QueryClient } = stargateStar;
-const { Tendermint34Client } = tendermintRpcStar;
+const { Tendermint34Client } = tendermint34;
 const { details: X, quote: q } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
+
+// Copied from https://github.com/cosmos/cosmjs/pull/1328/files until release
+/**
+ * @typedef {{
+ *   readonly value: Uint8Array;
+ *   readonly height: number;
+ * }} QueryAbciResponse
+ * The response of an ABCI query to Tendermint.
+ * This is a subset of `tendermint34.AbciQueryResponse` in order
+ * to abstract away Tendermint versions.
+ */
 
 /**
  * This is an imperfect heuristic to navigate the migration from value cells to
@@ -116,7 +127,7 @@ export const makeCosmjsFollower = (
   const tendermintClientPs = new Map();
   /**
    * @param {string} endpoint
-   * @returns {tendermintRpcStar.Tendermint34Client}
+   * @returns {tendermint34.Tendermint34Client}
    */
   const provideTendermintClient = endpoint => {
     let clientP = tendermintClientPs.get(endpoint);
