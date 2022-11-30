@@ -6,7 +6,7 @@ import {
   loadBasedir,
   buildKernelBundles,
 } from '../src/index.js';
-import { capargs } from './util.js';
+import { kser, kslot } from '../src/lib/kmarshal.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -164,28 +164,19 @@ test('circular promise resolution data', async t => {
       id: 'kp40',
       state: 'fulfilled',
       refCount: 1,
-      data: {
-        body: '{"@qclass":"undefined"}',
-        slots: [],
-      },
+      data: kser(undefined),
     },
     {
       id: 'kp42',
       state: 'fulfilled',
       refCount: 1,
-      data: {
-        body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp44'],
-      },
+      data: kser([kslot('kp44')]),
     },
     {
       id: 'kp44',
       state: 'fulfilled',
       refCount: 1,
-      data: {
-        body: '[{"@qclass":"slot","index":0}]',
-        slots: ['kp42'],
-      },
+      data: kser([kslot('kp42')]),
     },
   ];
   t.deepEqual(c.dump().promises, expectedPromises);
@@ -219,5 +210,5 @@ test('refcount while queued', async t => {
   // will be delivered, with a new promise that is promptly resolved to '3'.
   const kpid4 = c.queueToVatRoot('right', 'three', [], 'ignore');
   await c.run();
-  t.deepEqual(c.kpResolution(kpid4), capargs([true, 3]));
+  t.deepEqual(c.kpResolution(kpid4), kser([true, 3]));
 });

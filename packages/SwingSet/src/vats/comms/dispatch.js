@@ -1,10 +1,10 @@
 import { assert, details as X } from '@agoric/assert';
-import { parse } from '@endo/marshal';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';
 import { deliverToController } from './controller.js';
 import { insistCapData } from '../../lib/capdata.js';
+import { kser, kunser } from '../../lib/kmarshal.js';
 
 import { makeCListKit } from './clist.js';
 import { makeDeliveryKit } from './delivery.js';
@@ -24,10 +24,7 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
     const seqNum = sendExplicitSeqNums ? remote.nextSendSeqNum() : '';
     remote.advanceSendSeqNum();
     const ackSeqNum = remote.lastReceivedSeqNum();
-    const methargs = harden({
-      body: JSON.stringify(['transmit', [`${seqNum}:${ackSeqNum}:${msg}`]]),
-      slots: [],
-    });
+    const methargs = kser(['transmit', [`${seqNum}:${ackSeqNum}:${msg}`]]);
     syscall.send(remote.transmitterID(), methargs); // sendOnly
   }
 
@@ -49,7 +46,7 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
   function doStartVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
     assert(vatParametersCapData.slots.length === 0, 'comms got slots');
-    const vatParameters = parse(vatParametersCapData.body) || {};
+    const vatParameters = kunser(vatParametersCapData) || {};
     const { identifierBase = 0, sendExplicitSeqNums } = vatParameters;
     state.initialize(controller, identifierBase);
     if (sendExplicitSeqNums !== undefined) {
@@ -89,8 +86,7 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
       // when it's not.  All of this should be fixed soon as practicable.
       // DANGER WILL ROBINSON CASE NIGHTMARE GREEN ELDRITCH HORRORS OH THE HUMANITY
       try {
-        const methargsdata = JSON.parse(methargs.body);
-        const [method, [message]] = methargsdata;
+        const [method, [message]] = kunser(methargs);
         assert(method === 'receive', X`unexpected method ${method}`);
         // the vat-tp integrity layer is a regular vat, so when they send the
         // received message to us, it will be embedded in a JSON array

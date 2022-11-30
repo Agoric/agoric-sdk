@@ -17,7 +17,7 @@ import {
   validateReturned,
 } from '../liveslots-helpers.js';
 import { validateCreateBuiltInTables } from '../gc-helpers.js';
-import { capargs } from '../util.js';
+import { krefOf, kser, kslot } from '../../src/lib/kmarshal.js';
 
 // Legs:
 //
@@ -150,8 +150,8 @@ function base(vref) {
   }
 }
 
-function esKey(vref) {
-  return `vom.es.${base(vref)}`;
+function esKey(what, slot = 0) {
+  return `vom.es.${base(kser(what).slots[slot])}`;
 }
 
 function esVal(es, patt) {
@@ -162,12 +162,13 @@ function esf(isf) {
   return isf ? 'n%' : '%';
 }
 
-function rcKey(vref) {
-  return `vom.rc.${base(vref)}`;
+function rcKey(what, slot = 0) {
+  return `vom.rc.${base(kser(what).slots[slot])}`;
 }
 
-function stateKey(vref) {
-  return `vom.${base(vref)}`;
+function stateKey(what, slot = 0) {
+  const ks = kser(what);
+  return `vom.${base(ks.slots[slot])}`;
 }
 
 const unfacetedThingKindID = '10';
@@ -189,9 +190,9 @@ function facetRef(isf, vref, facet) {
   return `${vref}${isf && facet ? `:${facet}` : ''}`;
 }
 
-const cacheDisplacerVref = thingVref(false, 1);
-const fCacheDisplacerVref = thingVref(true, 1);
-const virtualHolderVref = `${holderBaseRef}/1`;
+const cacheDisplacer = kslot(thingVref(false, 1));
+const fCacheDisplacer = kslot(thingVref(true, 1));
+const virtualHolder = kslot(`${holderBaseRef}/1`);
 
 function buildRootObject(vatPowers) {
   const { VatData, WeakMap, WeakSet } = vatPowers;
@@ -209,7 +210,7 @@ function buildRootObject(vatPowers) {
       getLabelB: ({ state }) => state.label,
     },
   });
-  const cacheDisplacer = makeThing('cacheDisplacer');
+  const cacheDisplacerObj = makeThing('cacheDisplacer');
   // This immediately goes out of scope and gets GC'd and deleted, but its
   // creation consumes the same subID in its kind as the `cacheDisplacer` that
   // we actually use consumes when *it* is created. This ensures that the
@@ -224,7 +225,7 @@ function buildRootObject(vatPowers) {
     },
     getValue: ({ state }) => state.held,
   });
-  const virtualHolder = makeVirtualHolder();
+  const virtualHolderObj = makeVirtualHolder();
 
   const makeDualMarkerThing = defineKindMulti(
     'marker',
@@ -247,7 +248,7 @@ function buildRootObject(vatPowers) {
   const holders = [];
 
   function displaceCache() {
-    return cacheDisplacer.getLabel();
+    return cacheDisplacerObj.getLabel();
   }
 
   function makeNextThing(isf) {
@@ -289,15 +290,15 @@ function buildRootObject(vatPowers) {
       displaceCache();
     },
     storeHeld() {
-      virtualHolder.setValue(heldThing);
+      virtualHolderObj.setValue(heldThing);
       displaceCache();
     },
     dropStored() {
-      virtualHolder.setValue(null);
+      virtualHolderObj.setValue(null);
       displaceCache();
     },
     fetchAndHold() {
-      heldThing = virtualHolder.getValue();
+      heldThing = virtualHolderObj.getValue();
       displaceCache();
     },
     exportHeld() {
@@ -353,60 +354,16 @@ function buildRootObject(vatPowers) {
   });
 }
 
-function capdata(data, slots = []) {
-  return { body: JSON.stringify(data), slots };
-}
-
-function thingSer(vref) {
-  if (vref) {
-    let tag = '';
-    if (vref.endsWith(':0')) {
-      tag = ' facetA';
-    } else if (vref.endsWith(':1')) {
-      tag = ' facetB';
-    }
-    const iface = `Alleged: thing${tag}`;
-    return capargs({ '@qclass': 'slot', iface, index: 0 }, [vref]);
-  } else {
-    return capargs(null, []);
-  }
-}
-
-function holderSer(vref) {
-  if (vref) {
-    return capargs({ '@qclass': 'slot', iface: 'Alleged: holder', index: 0 }, [
-      vref,
-    ]);
-  } else {
-    return capargs(null, []);
-  }
-}
-
-function thingArg(vref, isf) {
-  if (isf) {
-    return [
-      {
-        '@qclass': 'slot',
-        iface: 'Alleged: thing facetB',
-        index: 0,
-      },
-      `${vref}:1`,
-    ];
-  } else {
-    return [{ '@qclass': 'slot', iface: 'Alleged: thing', index: 0 }, vref];
-  }
-}
-
 function thingValue(label) {
-  return JSON.stringify({ label: capdata(label) });
+  return JSON.stringify({ label: kser(label) });
 }
 
-function heldThingValue(vref) {
-  return JSON.stringify({ held: thingSer(vref) });
+function heldThingValue(vo) {
+  return JSON.stringify({ held: kser(vo) });
 }
 
-function heldHolderValue(vref) {
-  return JSON.stringify({ held: holderSer(vref) });
+function heldHolderValue(vo) {
+  return JSON.stringify({ held: kser(vo) });
 }
 
 const testObjValue = thingValue('thing #0');
@@ -414,16 +371,16 @@ const cacheObjValue = thingValue('cacheDisplacer');
 
 const NONE = undefined; // mostly just shorter, to maintain legibility while making prettier shut up
 
-function validateDelete(v, vref) {
-  validate(v, matchVatstoreDelete(stateKey(vref)));
-  validate(v, matchVatstoreDelete(rcKey(vref)));
-  validate(v, matchVatstoreDelete(esKey(vref)));
+function validateDelete(v, vo) {
+  validate(v, matchVatstoreDelete(stateKey(vo)));
+  validate(v, matchVatstoreDelete(rcKey(vo)));
+  validate(v, matchVatstoreDelete(esKey(vo)));
 }
 
-function validateStatusCheck(v, vref, rc, es, value) {
-  validate(v, matchVatstoreGet(rcKey(vref), rc));
-  validate(v, matchVatstoreGet(esKey(vref), es));
-  validate(v, matchVatstoreGet(stateKey(vref), value));
+function validateStatusCheck(v, vo, rc, es, value) {
+  validate(v, matchVatstoreGet(rcKey(vo), rc));
+  validate(v, matchVatstoreGet(esKey(vo), es));
+  validate(v, matchVatstoreGet(stateKey(vo), value));
 }
 
 function validateCheckNoWeakKeys(v, ref) {
@@ -432,12 +389,12 @@ function validateCheckNoWeakKeys(v, ref) {
 
 function validateFauxCacheDisplacerDeletion(v) {
   validate(v, matchVatstoreSet('idCounters'));
-  validate(v, matchVatstoreGet(rcKey(fCacheDisplacerVref), NONE));
-  validate(v, matchVatstoreGet(esKey(fCacheDisplacerVref), NONE));
-  validate(v, matchVatstoreGet(stateKey(fCacheDisplacerVref), cacheObjValue));
-  validateDelete(v, fCacheDisplacerVref);
-  validateCheckNoWeakKeys(v, `${fCacheDisplacerVref}:0`);
-  validateCheckNoWeakKeys(v, `${fCacheDisplacerVref}:1`);
+  validate(v, matchVatstoreGet(rcKey(fCacheDisplacer), NONE));
+  validate(v, matchVatstoreGet(esKey(fCacheDisplacer), NONE));
+  validate(v, matchVatstoreGet(stateKey(fCacheDisplacer), cacheObjValue));
+  validateDelete(v, fCacheDisplacer);
+  validateCheckNoWeakKeys(v, `${base(krefOf(fCacheDisplacer))}:0`);
+  validateCheckNoWeakKeys(v, `${base(krefOf(fCacheDisplacer))}:1`);
 }
 
 function validateKindMetadata(v, kindID, tag) {
@@ -465,24 +422,20 @@ function validateSetup(v) {
   validateCreateBuiltInTables(v);
   validateKindMetadata(v, unfacetedThingKindID, 'thing');
   validateKindMetadata(v, facetedThingKindID, 'thing');
-  validate(v, matchVatstoreSet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(cacheDisplacer), cacheObjValue));
   validateKindMetadata(v, holderKindID, 'holder');
-  validate(v, matchVatstoreSet(stateKey(fCacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(fCacheDisplacer), cacheObjValue));
   validateKindMetadata(v, markerKindID, 'marker');
   validate(v, matchVatstoreGet('deadPromises', NONE));
   validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
-  validate(
-    v,
-    matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(null)),
-  );
+  validate(v, matchVatstoreSet(stateKey(virtualHolder), heldThingValue(null)));
 }
 
 function validateSetupAndCreate(v, rp, what, heldValue = testObjValue) {
   validateSetup(v);
-
   // create
   validate(v, matchVatstoreSet(stateKey(what), heldValue));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
 
   // cleanup
@@ -491,33 +444,21 @@ function validateSetupAndCreate(v, rp, what, heldValue = testObjValue) {
 }
 
 function validateStore(v, rp, what, rcBefore) {
-  validate(
-    v,
-    matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(null)),
-  );
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(null)));
   validate(v, matchVatstoreGet(rcKey(what), rcBefore));
   validate(v, matchVatstoreSet(rcKey(what), '1'));
-  validate(
-    v,
-    matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(what)),
-  );
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(virtualHolder), heldThingValue(what)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
 function validateDropStored(v, rp, what, esp, postCheck) {
-  validate(
-    v,
-    matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(what)),
-  );
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(what)));
   validate(v, matchVatstoreGet(rcKey(what), '1'));
   validate(v, matchVatstoreSet(rcKey(what), '0'));
-  validate(
-    v,
-    matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(null)),
-  );
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(virtualHolder), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   if (postCheck) {
     validate(v, matchVatstoreGet(rcKey(what), '0'));
@@ -526,7 +467,8 @@ function validateDropStored(v, rp, what, esp, postCheck) {
   validateDone(v);
 }
 
-function validateWeakCheck(v, what) {
+function validateWeakCheck(v, vo) {
+  const what = krefOf(vo);
   const whatb = base(what);
   if (whatb !== what) {
     validateCheckNoWeakKeys(v, `${whatb}:0`);
@@ -537,17 +479,11 @@ function validateWeakCheck(v, what) {
 }
 
 function validateDropStoredAndRetire(v, rp, what) {
-  validate(
-    v,
-    matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(what)),
-  );
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(what)));
   validate(v, matchVatstoreGet(rcKey(what), '1'));
   validate(v, matchVatstoreSet(rcKey(what), '0'));
-  validate(
-    v,
-    matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(null)),
-  );
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(virtualHolder), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateStatusCheck(v, what, '0', NONE, testObjValue);
   validateDelete(v, what);
@@ -556,22 +492,16 @@ function validateDropStoredAndRetire(v, rp, what) {
 }
 
 function validateDropStoredWithGCAndRetire(v, rp, what, esp) {
-  validate(
-    v,
-    matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(what)),
-  );
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(what)));
   validate(v, matchVatstoreGet(rcKey(what), '1'));
   validate(v, matchVatstoreSet(rcKey(what), '0'));
-  validate(
-    v,
-    matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(null)),
-  );
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(virtualHolder), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateStatusCheck(v, what, '0', esVal('s', esp), testObjValue);
   validateDelete(v, what);
   validateWeakCheck(v, what);
-  validate(v, matchRetireExports(what));
+  validate(v, matchRetireExports(kser(what).slots[0]));
   validateDone(v);
 }
 
@@ -582,24 +512,21 @@ function validateExport(v, rp, what, esp, second) {
     validate(v, matchVatstoreGet(esKey(what), esVal('n', esp)));
   }
   validate(v, matchVatstoreSet(esKey(what), esVal('r', esp)));
-  validate(v, matchResolveOne(rp, thingSer(what)));
+  validate(v, matchResolveOne(rp, kser(what)));
   validateDone(v);
 }
 
 function validateImport(v, rp, what, whatValue) {
   validate(v, matchVatstoreGet(stateKey(what), whatValue));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
 
 function validateLoad(v, rp, what, whatValue) {
-  validate(
-    v,
-    matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(what)),
-  );
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(what)));
   validate(v, matchVatstoreGet(stateKey(what), whatValue));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 }
@@ -624,7 +551,7 @@ function validateDropHeldWithGCAndRetire(v, rp, what, esp) {
   validateStatusCheck(v, what, NONE, esVal('s', esp), testObjValue);
   validateDelete(v, what);
   validateWeakCheck(v, what);
-  validate(v, matchRetireExports(what));
+  validate(v, matchRetireExports(kser(what).slots[0]));
   validateDone(v);
 }
 
@@ -632,8 +559,9 @@ function validateDropHeldWithGCAndRetireFacets(v, rp, what, esp) {
   validateReturned(v, rp);
   validateStatusCheck(v, what, NONE, esp, testObjValue);
   validateDelete(v, what);
-  validateWeakCheck(v, `${what}:0`);
-  validate(v, matchRetireExports(`${what}:0`, `${what}:1`));
+  validateWeakCheck(v, what);
+  const baseRef = base(krefOf(what));
+  validate(v, matchRetireExports(`${baseRef}:0`, `${baseRef}:1`));
   validateDone(v);
 }
 
@@ -651,7 +579,7 @@ function validateDropExportWithGCAndRetire(v, what, esp, rc) {
   validateStatusCheck(v, what, rc, esVal('s', esp), testObjValue);
   validateDelete(v, what);
   validateWeakCheck(v, what);
-  validate(v, matchRetireExports(what));
+  validate(v, matchRetireExports(kser(what).slots[0]));
   validateDone(v);
 }
 
@@ -673,24 +601,26 @@ async function voLifeCycleTest1(t, isf) {
     'bob',
     true,
   );
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LerV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf);
+  validateStore(v, rp, thing);
 
   // LerV -> Lerv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
-  validateDropStored(v, rp, thingf, esf(isf), false);
+  validateDropStored(v, rp, thing, esf(isf), false);
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thingf, '0');
+  validateDropHeldWithGC(v, rp, thing, '0');
 }
 test.serial('VO lifecycle 1 unfaceted', async t => {
   await voLifeCycleTest1(t, false);
@@ -704,16 +634,18 @@ test.serial('VO lifecycle 1 faceted', async t => {
 async function voLifeCycleTest2(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LerV  Store VO reference virtually (permanent for now)
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf);
+  validateStore(v, rp, thing);
 
   // LerV -> lerV  Drop in-memory reference, no GC because virtual reference
   rp = await dispatchMessage('dropHeld');
@@ -721,11 +653,11 @@ async function voLifeCycleTest2(t, isf) {
 
   // lerV -> LerV  Read virtual reference, now there's an in-memory reference again too
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf, testObjValue);
+  validateLoad(v, rp, thing, testObjValue);
 
   // LerV -> LERV  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERV -> lERV  Drop the in-memory reference again, but it's still exported and virtual referenced
   rp = await dispatchMessage('dropHeld');
@@ -733,28 +665,27 @@ async function voLifeCycleTest2(t, isf) {
 
   // lERV -> LERV  Reread from storage, all three legs again
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf, testObjValue);
+  validateLoad(v, rp, thing, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference (stepping stone to other states)
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, thing, esf(isf), '1', 'r');
 
   // lERV -> LERV  Reintroduce the in-memory reference via message
-  const [targ, tslot] = thingArg(thing, isf);
-  rp = await dispatchMessage('importAndHold', [targ], [tslot]);
-  validateImport(v, rp, thingf, testObjValue);
+  rp = await dispatchMessage('importAndHold', thing);
+  validateImport(v, rp, thing, testObjValue);
 
   // LERV -> lERV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, thing, esf(isf), '1', 'r');
 
   // lERV -> leRV  Drop the export
-  await dispatchDropExports(thingf);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), '1');
 
   // leRV -> LeRV  Fetch from storage
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf, testObjValue);
+  validateLoad(v, rp, thing, testObjValue);
 
   // LeRV -> leRV  Forget about it *again*
   rp = await dispatchMessage('dropHeld');
@@ -762,10 +693,10 @@ async function voLifeCycleTest2(t, isf) {
 
   // leRV -> LeRV  Fetch from storage *again*
   rp = await dispatchMessage('fetchAndHold');
-  validateLoad(v, rp, thingf, testObjValue);
+  validateLoad(v, rp, thing, testObjValue);
 
   // LeRV -> LerV  Retire the export
-  await dispatchRetireExports(thingf);
+  await dispatchRetireExports(krefOf(thing));
   validateRetireExport(v, thing, esf(isf));
 }
 test.serial('VO lifecycle 2 unfaceted', async t => {
@@ -779,23 +710,25 @@ test.serial('VO lifecycle 2 faceted', async t => {
 async function voLifeCycleTest3(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LerV  Store VO reference virtually (permanent for now)
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf);
+  validateStore(v, rp, thing);
 
   // LerV -> LERV  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERV -> LeRV  Drop the export
-  await dispatchDropExports(thingf);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), '1');
 
   // LeRV -> leRV  Drop in-memory reference
@@ -803,12 +736,12 @@ async function voLifeCycleTest3(t, isf) {
   validateDropHeld(v, rp, thing, esf(isf), '1', 's');
 
   // leRV -> lerV  Retire the export
-  await dispatchRetireExports(thingf);
+  await dispatchRetireExports(krefOf(thing));
   validateRetireExport(v, thing, esf(isf));
 
   // lerV -> lerv  Drop stored reference (gc and retire)
   rp = await dispatchMessage('dropStored');
-  validateDropStoredAndRetire(v, rp, thingf);
+  validateDropStoredAndRetire(v, rp, thing);
 }
 test.serial('VO lifecycle 3 unfaceted', async t => {
   await voLifeCycleTest3(t, false);
@@ -825,24 +758,26 @@ async function voLifeCycleTest4(t, isf) {
     'bob',
     true,
   );
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now two legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(thingf);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), NONE);
 
   // LeRv -> lerv  Drop in-memory reference (gc and retire)
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGCAndRetire(v, rp, thingf, esf(isf));
+  validateDropHeldWithGCAndRetire(v, rp, thing, esf(isf));
 }
 test.serial('VO lifecycle 4 unfaceted', async t => {
   await voLifeCycleTest4(t, false);
@@ -855,28 +790,30 @@ test.serial('VO lifecycle 4 faceted', async t => {
 async function voLifeCycleTest5(t, isf) {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
     await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(thingf);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), NONE);
 
   // LeRv -> Lerv  Retire the export
-  await dispatchRetireExports(thingf);
+  await dispatchRetireExports(krefOf(thing));
   validateRetireExport(v, thing, esf(isf));
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thingf, NONE);
+  validateDropHeldWithGC(v, rp, thing, NONE);
 }
 test.serial('VO lifecycle 5 unfaceted', async t => {
   await voLifeCycleTest5(t, false);
@@ -893,32 +830,34 @@ async function voLifeCycleTest6(t, isf) {
     'bob',
     true,
   );
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LeRv  Drop the export
-  await dispatchDropExports(thingf);
+  await dispatchDropExports(krefOf(thing));
   validateDropExport(v, thing, esf(isf), NONE);
 
   // LeRv -> LeRV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf);
+  validateStore(v, rp, thing);
 
   // LeRV -> LeRv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
-  validateDropStored(v, rp, thingf, esf(isf), false);
+  validateDropStored(v, rp, thing, esf(isf), false);
 
   // LeRv -> LeRV  Store VO reference virtually again
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf, '0');
+  validateStore(v, rp, thing, '0');
 
   // LeRV -> leRV  Drop in-memory reference
   rp = await dispatchMessage('dropHeld');
@@ -926,7 +865,7 @@ async function voLifeCycleTest6(t, isf) {
 
   // leRV -> lerv  Drop stored reference (gc and retire)
   rp = await dispatchMessage('dropStored');
-  validateDropStoredWithGCAndRetire(v, rp, thingf, esf(isf));
+  validateDropStoredWithGCAndRetire(v, rp, thing, esf(isf));
 }
 test.serial('VO lifecycle 6 unfaceted', async t => {
   await voLifeCycleTest6(t, false);
@@ -943,33 +882,34 @@ async function voLifeCycleTest7(t, isf) {
     'bob',
     true,
   );
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference, now all three legs hold it
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERv -> lERv  Drop in-memory reference, no GC because exported
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, thing, esf(isf), NONE, 'r');
 
   // lERv -> LERv  Reintroduce the in-memory reference via message
-  const [targ, tslot] = thingArg(thing, isf);
-  rp = await dispatchMessage('importAndHold', [targ], [tslot]);
-  validateImport(v, rp, thingf, testObjValue);
+  rp = await dispatchMessage('importAndHold', thing);
+  validateImport(v, rp, thing, testObjValue);
 
   // LERv -> lERv  Drop in-memory reference again, still no GC because exported
   rp = await dispatchMessage('dropHeld');
   validateDropHeld(v, rp, thing, esf(isf), NONE, 'r');
 
   // lERv -> lerv  Drop the export (gc and retire)
-  await dispatchDropExports(thingf);
-  validateDropExportWithGCAndRetire(v, thingf, esf(isf), NONE);
+  await dispatchDropExports(krefOf(thing));
+  validateDropExportWithGCAndRetire(v, thing, esf(isf), NONE);
 }
 test.serial('VO lifecycle 7 unfaceted', async t => {
   await voLifeCycleTest7(t, false);
@@ -986,28 +926,30 @@ async function voLifeCycleTest8(t, isf) {
     'bob',
     true,
   );
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(
+    facetRef(isf, thingVref(isf, 2), '1'),
+    isf ? 'thing facetB' : 'thing',
+  );
 
   // lerv -> Lerv  Create VO
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   // Lerv -> LERv  Export the reference
   rp = await dispatchMessage('exportHeld');
-  validateExport(v, rp, thingf, esf(isf));
+  validateExport(v, rp, thing, esf(isf));
 
   // LERv -> LERV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf, NONE);
+  validateStore(v, rp, thing, NONE);
 
   // LERV -> LERv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
-  validateDropStored(v, rp, thingf, esf(isf), false);
+  validateDropStored(v, rp, thing, esf(isf), false);
 
   // LERv -> LERV  Store VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validateStore(v, rp, thingf, '0');
+  validateStore(v, rp, thing, '0');
 
   // LERV -> lERV  Drop the in-memory reference
   rp = await dispatchMessage('dropHeld');
@@ -1015,11 +957,11 @@ async function voLifeCycleTest8(t, isf) {
 
   // lERV -> lERv  Overwrite virtual reference
   rp = await dispatchMessage('dropStored');
-  validateDropStored(v, rp, thingf, esf(isf), true);
+  validateDropStored(v, rp, thing, esf(isf), true);
 
   // lERv -> lerv  Drop the export (gc and retire)
-  await dispatchDropExports(thingf);
-  validateDropExportWithGCAndRetire(v, thingf, esf(isf), '0');
+  await dispatchDropExports(krefOf(thing));
+  validateDropExportWithGCAndRetire(v, thing, esf(isf), '0');
 }
 test.serial('VO lifecycle 8 unfaceted', async t => {
   await voLifeCycleTest8(t, false);
@@ -1036,8 +978,7 @@ test.serial('VO multifacet export 1', async t => {
     'bob',
     true,
   );
-  const thing = `${facetedThingBaseRef}/2`;
-  const thingf = `${thing}:0`;
+  const thing = kslot(facetRef(true, thingVref(true, 2), '1'), 'thing facetB');
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldFacets');
@@ -1045,7 +986,7 @@ test.serial('VO multifacet export 1', async t => {
 
   // Lerv -> lerv  Drop in-memory reference to both facets, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thingf, NONE);
+  validateDropHeldWithGC(v, rp, thing, NONE);
 
   validateDone(v);
 });
@@ -1058,20 +999,19 @@ test.serial('VO multifacet export 2a', async t => {
     'bob',
     true,
   );
-  const thing = `${facetedThingBaseRef}/2`;
-  const thingA = `${thing}:0`;
+  const thingA = kslot(facetRef(true, thingVref(true, 2), '0'), 'thing facetA');
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldFacets');
-  validateSetupAndCreate(v, rp, thing);
+  validateSetupAndCreate(v, rp, thingA);
 
   // Lerv -> LE(A)R(A)v  Export facet A
   rp = await dispatchMessage('exportHeldA');
   validateExport(v, rp, thingA, '%n');
 
   // LE(A)R(A)v -> LeR(A)v  Drop the export of A
-  await dispatchDropExports(thingA);
-  validateDropExport(v, thingA, '%n', NONE);
+  await dispatchDropExports(krefOf(thingA));
+  validateDropExport(v, thingA, '%n', NONE); // facetVrefA
 
   // LeR(A)v -> lerv  Drop in-memory reference to both facets (gc and retire)
   rp = await dispatchMessage('dropHeld');
@@ -1086,20 +1026,19 @@ test.serial('VO multifacet export 2b', async t => {
     'bob',
     true,
   );
-  const thing = `${facetedThingBaseRef}/2`;
-  const thingB = `${thing}:1`;
+  const thingB = kslot(facetRef(true, thingVref(true, 2), '1'), 'thing facetB');
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldFacets');
-  validateSetupAndCreate(v, rp, thing);
+  validateSetupAndCreate(v, rp, thingB);
 
   // Lerv -> LE(B)R(B)v  Export facet B
   rp = await dispatchMessage('exportHeldB');
   validateExport(v, rp, thingB, 'n%');
 
   // LE(B)R(B)v -> LeR(B)v  Drop the export of B
-  await dispatchDropExports(thingB);
-  validateDropExport(v, thingB, 'n%', NONE);
+  await dispatchDropExports(krefOf(thingB));
+  validateDropExport(v, thingB, 'n%', NONE); // facetVrefB
 
   // LeR(B)v -> lerv  Drop in-memory reference to both facets (gc and retire)
   rp = await dispatchMessage('dropHeld');
@@ -1114,13 +1053,12 @@ test.serial('VO multifacet export 3abba', async t => {
     'bob',
     true,
   );
-  const thing = `${facetedThingBaseRef}/2`;
-  const thingA = `${thing}:0`;
-  const thingB = `${thing}:1`;
+  const thingA = kslot(facetRef(true, thingVref(true, 2), '0'), 'thing facetA');
+  const thingB = kslot(facetRef(true, thingVref(true, 2), '1'), 'thing facetB');
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldFacets');
-  validateSetupAndCreate(v, rp, thing);
+  validateSetupAndCreate(v, rp, thingA);
 
   // Lerv -> LE(A)R(A)v  Export facet A
   rp = await dispatchMessage('exportHeldA');
@@ -1131,16 +1069,16 @@ test.serial('VO multifacet export 3abba', async t => {
   validateExport(v, rp, thingB, 'r%', true);
 
   // LE(AB)R(AB)v -> LE(A)R(AB)v  Drop the export of B
-  await dispatchDropExports(thingB);
+  await dispatchDropExports(krefOf(thingB));
   validateDropExport(v, thingB, 'r%', NONE);
 
   // L(A)R(AB)v -> LeR(AB)v  Drop the export of A
-  await dispatchDropExports(thingA);
+  await dispatchDropExports(krefOf(thingA));
   validateDropExport(v, thingB, '%s', NONE);
 
   // LeR(A)v -> lerv  Drop in-memory reference to both facets (gc and retire)
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGCAndRetireFacets(v, rp, thing, 'ss');
+  validateDropHeldWithGCAndRetireFacets(v, rp, thingA, 'ss');
 });
 
 // multifacet export test 3abab: export A, export B, drop A, drop B, retire
@@ -1151,13 +1089,12 @@ test.serial('VO multifacet export 3abab', async t => {
     'bob',
     true,
   );
-  const thing = `${facetedThingBaseRef}/2`;
-  const thingA = `${thing}:0`;
-  const thingB = `${thing}:1`;
+  const thingA = kslot(facetRef(true, thingVref(true, 2), '0'), 'thing facetA');
+  const thingB = kslot(facetRef(true, thingVref(true, 2), '1'), 'thing facetB');
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldFacets');
-  validateSetupAndCreate(v, rp, thing);
+  validateSetupAndCreate(v, rp, thingA);
 
   // Lerv -> LE(A)R(A)v  Export facet A
   rp = await dispatchMessage('exportHeldA');
@@ -1168,16 +1105,16 @@ test.serial('VO multifacet export 3abab', async t => {
   validateExport(v, rp, thingB, 'r%', true);
 
   // LE(AB)R(AB)v -> LE(B)R(AB)v  Drop the export of A
-  await dispatchDropExports(thingA);
+  await dispatchDropExports(krefOf(thingA));
   validateDropExport(v, thingB, '%r', NONE);
 
   // L(B)R(AB)v -> LeR(AB)v  Drop the export of B
-  await dispatchDropExports(thingB);
+  await dispatchDropExports(krefOf(thingB));
   validateDropExport(v, thingB, 's%', NONE);
 
   // LeR(B)v -> lerv  Drop in-memory reference to both facets (gc and retire)
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGCAndRetireFacets(v, rp, thing, 'ss');
+  validateDropHeldWithGCAndRetireFacets(v, rp, thingA, 'ss');
 });
 
 test.serial('VO multifacet markers only', async t => {
@@ -1187,32 +1124,37 @@ test.serial('VO multifacet markers only', async t => {
     'bob',
     true,
   );
-  const thing = `${markerBaseRef}/1`;
-  const thingf = `${markerBaseRef}/1:0`;
-  const thingCapdata = JSON.stringify({ unused: capdata('uncared for') });
+  const thing = kslot(
+    facetRef(true, `${markerBaseRef}/1`, '0'),
+    'thing facetA',
+  );
+  const thingData = JSON.stringify({ unused: kser('uncared for') });
 
   // lerv -> Lerv  Create facets
   let rp = await dispatchMessage('makeAndHoldDualMarkers');
-  validateSetupAndCreate(v, rp, thing, thingCapdata);
+  validateSetupAndCreate(v, rp, thing, thingData);
 
   // Lerv -> lerv  Drop in-memory reference, unreferenced VO gets GC'd
   rp = await dispatchMessage('dropHeld');
-  validateDropHeldWithGC(v, rp, thingf, NONE, thingCapdata);
+  validateDropHeldWithGC(v, rp, thing, NONE, thingData);
 });
 
 // prettier-ignore
 function validatePrepareStore3(v, rp, isf) {
-  const thing = facetRef(isf, thingVref(isf, 2), '1');
+  const thing = kslot(facetRef(isf, thingVref(isf, 2), '1'), isf ? 'thing facetB' : 'thing');
   validate(v, matchVatstoreGet(rcKey(thing)));
   validate(v, matchVatstoreSet(rcKey(thing), '1'));
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreSet(rcKey(thing), '2'));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/2`), heldThingValue(thing)));
+  const holder2 = kslot(`${holderBaseRef}/2`);
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(thing)));
   validate(v, matchVatstoreGet(rcKey(thing), '2'));
   validate(v, matchVatstoreSet(rcKey(thing), '3'));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/3`), heldThingValue(thing)));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/4`), heldThingValue(thing)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  const holder3 = kslot(`${holderBaseRef}/3`);
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(thing)));
+  const holder4 = kslot(`${holderBaseRef}/4`);
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(thing)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(rcKey(thing), '3'));
   validate(v, matchVatstoreGet(esKey(thing), NONE));
@@ -1222,33 +1164,35 @@ function validatePrepareStore3(v, rp, isf) {
 // prettier-ignore
 async function voRefcountManagementTest1(t, isf) {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(facetRef(isf, thingVref(isf, 2), '1'), isf ? 'thing facetB' : 'thing');
 
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   rp = await dispatchMessage('prepareStore3');
   validatePrepareStore3(v, rp, isf);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(stateKey(`${holderBaseRef}/2`), heldThingValue(thingf)));
+  const holder2 = kslot(`${holderBaseRef}/2`);
+  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(thing)));
   validate(v, matchVatstoreGet(rcKey(thing), '3'));
   validate(v, matchVatstoreSet(rcKey(thing), '2'));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/2`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderBaseRef}/3`), heldThingValue(thingf)));
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(null)));
+  const holder3 = kslot(`${holderBaseRef}/3`);
+  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(thing)));
   validate(v, matchVatstoreGet(rcKey(thing), '2'));
   validate(v, matchVatstoreSet(rcKey(thing), '1'));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/3`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderBaseRef}/4`), heldThingValue(thingf)));
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(null)));
+  const holder4 = kslot(`${holderBaseRef}/4`);
+  validate(v, matchVatstoreGet(stateKey(holder4), heldThingValue(thing)));
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreSet(rcKey(thing), '0'));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/4`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateStatusCheck(v, thing, '0', NONE, testObjValue);
   validateDelete(v, thing);
-  validateWeakCheck(v, thingf);
+  validateWeakCheck(v, thing);
   validateDone(v);
 }
 test.serial('VO refcount management 1 unfaceted', async t => {
@@ -1261,10 +1205,9 @@ test.serial('VO refcount management 1 faceted', async t => {
 // prettier-ignore
 async function voRefcountManagementTest2(t, isf) {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(facetRef(isf, thingVref(isf, 2), '1'), isf ? 'thing facetB' : 'thing');
 
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   rp = await dispatchMessage('prepareStore3');
@@ -1273,22 +1216,22 @@ async function voRefcountManagementTest2(t, isf) {
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
 
-  const holder2 = `${holderBaseRef}/2`;
-  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(thingf));
+  const holder2 = kslot(`${holderBaseRef}/2`);
+  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(thing));
   validate(v, matchVatstoreGet(rcKey(thing), '3'));
   validate(v, matchVatstoreSet(rcKey(thing), '2'));
   validateDelete(v, holder2);
   validateWeakCheck(v, holder2);
 
-  const holder3 = `${holderBaseRef}/3`;
-  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(thingf));
+  const holder3 = kslot(`${holderBaseRef}/3`);
+  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(thing));
   validate(v, matchVatstoreGet(rcKey(thing), '2'));
   validate(v, matchVatstoreSet(rcKey(thing), '1'));
   validateDelete(v, holder3);
   validateWeakCheck(v, holder3);
 
-  const holder4 = `${holderBaseRef}/4`;
-  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(thingf));
+  const holder4 = kslot(`${holderBaseRef}/4`);
+  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(thing));
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreSet(rcKey(thing), '0'));
   validateDelete(v, holder4);
@@ -1296,7 +1239,7 @@ async function voRefcountManagementTest2(t, isf) {
 
   validateStatusCheck(v, thing, '0', NONE, testObjValue);
   validateDelete(v, thing);
-  validateWeakCheck(v, thingf);
+  validateWeakCheck(v, thing);
 
   validateDone(v);
 }
@@ -1310,26 +1253,25 @@ test.serial('VO refcount management 2 faceted', async t => {
 // prettier-ignore
 async function voRefcountManagementTest3(t, isf) {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(facetRef(isf, thingVref(isf, 2), '1'), isf ? 'thing facetB' : 'thing');
 
-  let rp = await dispatchMessage('makeAndHold', [isf]);
+  let rp = await dispatchMessage('makeAndHold', isf);
   validateSetupAndCreate(v, rp, thing);
 
   rp = await dispatchMessage('prepareStoreLinked');
   validate(v, matchVatstoreGet(rcKey(thing)));
   validate(v, matchVatstoreSet(rcKey(thing), '1'));
-  const holder2 = `${holderBaseRef}/2`;
+  const holder2 = kslot(`${holderBaseRef}/2`, 'holder');
   validate(v, matchVatstoreGet(rcKey(holder2)));
   validate(v, matchVatstoreSet(rcKey(holder2), '1'));
-  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(thingf)));
-  const holder3 = `${holderBaseRef}/3`;
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(thing)));
+  const holder3 = kslot(`${holderBaseRef}/3`, 'holder');
   validate(v, matchVatstoreGet(rcKey(holder3)));
   validate(v, matchVatstoreSet(rcKey(holder3), '1'));
   validate(v, matchVatstoreSet(stateKey(holder3), heldHolderValue(holder2)));
-  const holder4 = `${holderBaseRef}/4`;
+  const holder4 = kslot(`${holderBaseRef}/4`, 'holder');
   validate(v, matchVatstoreSet(stateKey(holder4), heldHolderValue(holder3)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreGet(esKey(thing), NONE));
@@ -1355,7 +1297,7 @@ async function voRefcountManagementTest3(t, isf) {
   validateDelete(v, holder3);
   validateWeakCheck(v, holder3);
 
-  validateStatusCheck(v, holder2, '0', NONE, heldThingValue(thingf));
+  validateStatusCheck(v, holder2, '0', NONE, heldThingValue(thing));
   validate(v, matchVatstoreGet(rcKey(thing), '1'));
   validate(v, matchVatstoreSet(rcKey(thing), '0'));
   validateDelete(v, holder2);
@@ -1363,7 +1305,7 @@ async function voRefcountManagementTest3(t, isf) {
 
   validateStatusCheck(v, thing, '0', NONE, testObjValue);
   validateDelete(v, thing);
-  validateWeakCheck(v, thingf);
+  validateWeakCheck(v, thing);
 
   validateDone(v);
 }
@@ -1378,52 +1320,52 @@ test.serial('VO refcount management 3 faceted', async t => {
 test.serial('presence refcount management 1', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
-  const presRef = 'o-5';
-  const [targ, tslot] = thingArg(presRef);
-  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
+  const presence = kslot('o-5', 'thing');
+  let rp = await dispatchMessage('importAndHold', presence);
   validateSetup(v);
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validate(v, matchVatstoreGet(rcKey(presRef)));
-  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
-  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
-  const holder2 = `${holderBaseRef}/2`;
-  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '3'));
-  const holder3 = `${holderBaseRef}/3`;
-  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(presRef)));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/4`), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(rcKey(presence)));
+  validate(v, matchVatstoreSet(rcKey(presence), '1'));
+  validate(v, matchVatstoreGet(rcKey(presence), '1'));
+  validate(v, matchVatstoreSet(rcKey(presence), '2'));
+  const holder2 = kslot(`${holderBaseRef}/2`, 'holder');
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(rcKey(presence), '2'));
+  validate(v, matchVatstoreSet(rcKey(presence), '3'));
+  const holder3 = kslot(`${holderBaseRef}/3`);
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(presence)));
+  const holder4 = kslot(`${holderBaseRef}/4`);
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
+  validate(v, matchVatstoreGet(rcKey(presence), '3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
+  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(rcKey(presence), '3'));
+  validate(v, matchVatstoreSet(rcKey(presence), '2'));
   validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
+  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(rcKey(presence), '2'));
+  validate(v, matchVatstoreSet(rcKey(presence), '1'));
   validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(`${holderBaseRef}/4`), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '0'));
-  validate(v, matchVatstoreDelete(rcKey(presRef)));
-  validate(v, matchVatstoreSet(stateKey(`${holderBaseRef}/4`), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(holder4), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(rcKey(presence), '1'));
+  validate(v, matchVatstoreSet(rcKey(presence), '0'));
+  validate(v, matchVatstoreDelete(rcKey(presence)));
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(null)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey(presRef)));
-  validateWeakCheck(v, presRef);
-  validate(v, matchDropImports(presRef));
-  validate(v, matchRetireImports(presRef));
+  validate(v, matchVatstoreGet(rcKey(presence)));
+  validateWeakCheck(v, presence);
+  validate(v, matchDropImports(krefOf(presence)));
+  validate(v, matchRetireImports(krefOf(presence)));
   validateDone(v);
 });
 
@@ -1431,89 +1373,89 @@ test.serial('presence refcount management 1', async t => {
 test.serial('presence refcount management 2', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
-  const presRef = 'o-5';
-  const [targ, tslot] = thingArg(presRef);
-  let rp = await dispatchMessage('importAndHold', [targ], [tslot]);
+  const presence = kslot('o-5', 'thing');
+  let rp = await dispatchMessage('importAndHold', presence);
   validateSetup(v);
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  validate(v, matchVatstoreGet(rcKey(presRef)));
-  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
-  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
-  const holder2 = `${holderBaseRef}/2`;
-  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '3'));
-  const holder3 = `${holderBaseRef}/3`;
-  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(presRef)));
-  const holder4 = `${holderBaseRef}/4`;
-  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(presRef)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(rcKey(presence)));
+  validate(v, matchVatstoreSet(rcKey(presence), '1'));
+  validate(v, matchVatstoreGet(rcKey(presence), '1'));
+  validate(v, matchVatstoreSet(rcKey(presence), '2'));
+  const holder2 = kslot(`${holderBaseRef}/2`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(rcKey(presence), '2'));
+  validate(v, matchVatstoreSet(rcKey(presence), '3'));
+  const holder3 = kslot(`${holderBaseRef}/3`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(presence)));
+  const holder4 = kslot(`${holderBaseRef}/4`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(presence)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
+  validate(v, matchVatstoreGet(rcKey(presence), '3'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(presRef));
-  validate(v, matchVatstoreGet(rcKey(presRef), '3'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '2'));
+  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(presence));
+  validate(v, matchVatstoreGet(rcKey(presence), '3'));
+  validate(v, matchVatstoreSet(rcKey(presence), '2'));
   validateDelete(v, holder2);
   validateWeakCheck(v, holder2);
-  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(presRef));
-  validate(v, matchVatstoreGet(rcKey(presRef), '2'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '1'));
+  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(presence));
+  validate(v, matchVatstoreGet(rcKey(presence), '2'));
+  validate(v, matchVatstoreSet(rcKey(presence), '1'));
   validateDelete(v, holder3);
   validateWeakCheck(v, holder3);
-  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(presRef));
-  validate(v, matchVatstoreGet(rcKey(presRef), '1'));
-  validate(v, matchVatstoreSet(rcKey(presRef), '0'));
-  validate(v, matchVatstoreDelete(rcKey(presRef)));
+  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(presence));
+  validate(v, matchVatstoreGet(rcKey(presence), '1'));
+  validate(v, matchVatstoreSet(rcKey(presence), '0'));
+  validate(v, matchVatstoreDelete(rcKey(presence)));
   validateDelete(v, holder4);
   validateWeakCheck(v, holder4);
-  validate(v, matchVatstoreGet(rcKey(presRef)));
-  validateWeakCheck(v, presRef);
-  validate(v, matchDropImports(presRef));
-  validate(v, matchRetireImports(presRef));
+  validate(v, matchVatstoreGet(rcKey(presence)));
+  validateWeakCheck(v, presence);
+  validate(v, matchDropImports(krefOf(presence)));
+  validate(v, matchRetireImports(krefOf(presence)));
   validateDone(v);
 });
 
 // prettier-ignore
 test.serial('remotable refcount management 1', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const remotable = kslot(remotableID, 'thing');
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  const holder2 = `${holderBaseRef}/2`;
-  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(remotableID)));
-  const holder3 = `${holderBaseRef}/3`;
-  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(remotableID)));
-  const holder4 = `${holderBaseRef}/4`;
-  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(remotableID)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  const holder2 = kslot(`${holderBaseRef}/2`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(remotable)));
+  const holder3 = kslot(`${holderBaseRef}/3`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(remotable)));
+  const holder4 = kslot(`${holderBaseRef}/4`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(remotable)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishClearHolders');
-  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(remotableID)));
+  validate(v, matchVatstoreGet(stateKey(holder2), heldThingValue(remotable)));
   validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(remotableID)));
+  validate(v, matchVatstoreGet(stateKey(holder3), heldThingValue(remotable)));
   validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(holder4), heldThingValue(remotableID)));
+  validate(v, matchVatstoreGet(stateKey(holder4), heldThingValue(remotable)));
   validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(null)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 });
@@ -1521,35 +1463,36 @@ test.serial('remotable refcount management 1', async t => {
 // prettier-ignore
 test.serial('remotable refcount management 2', async t => {
   const { v, dispatchMessage } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const remotable = kslot(remotableID, 'thing');
 
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
 
   rp = await dispatchMessage('prepareStore3');
-  const holder2 = `${holderBaseRef}/2`;
-  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(remotableID)));
-  const holder3 = `${holderBaseRef}/3`;
-  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(remotableID)));
-  const holder4 = `${holderBaseRef}/4`;
-  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(remotableID)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  const holder2 = kslot(`${holderBaseRef}/2`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder2), heldThingValue(remotable)));
+  const holder3 = kslot(`${holderBaseRef}/3`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder3), heldThingValue(remotable)));
+  const holder4 = kslot(`${holderBaseRef}/4`, 'thing');
+  validate(v, matchVatstoreSet(stateKey(holder4), heldThingValue(remotable)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   rp = await dispatchMessage('finishDropHolders');
   validateReturned(v, rp);
-  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(remotableID));
+  validateStatusCheck(v, holder2, NONE, NONE, heldThingValue(remotable));
   validateDelete(v, holder2);
   validateWeakCheck(v, holder2);
-  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(remotableID));
+  validateStatusCheck(v, holder3, NONE, NONE, heldThingValue(remotable));
   validateDelete(v, holder3);
   validateWeakCheck(v, holder3);
-  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(remotableID));
+  validateStatusCheck(v, holder4, NONE, NONE, heldThingValue(remotable));
   validateDelete(v, holder4);
   validateWeakCheck(v, holder4);
   validateDone(v);
@@ -1558,21 +1501,20 @@ test.serial('remotable refcount management 2', async t => {
 // prettier-ignore
 async function voWeakKeyGCTest(t, isf) {
   const { v, dispatchMessage, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
-  const thing = thingVref(isf, 2);
-  const thingf = facetRef(isf, thing, '1');
+  const thing = kslot(facetRef(isf, thingVref(isf, 2), '1'), isf ? 'thing facetB' : 'thing');
 
   // Create VO and hold onto it weakly
-  let rp = await dispatchMessage('makeAndHoldAndKey', [isf]);
+  let rp = await dispatchMessage('makeAndHoldAndKey', isf);
   validateSetupAndCreate(v, rp, thing);
-  t.is(testHooks.countCollectionsForWeakKey(facetRef(isf, thing, '1')), 2);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(thing)), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
   // Drop in-memory reference, GC should cause weak entries to disappear
   rp = await dispatchMessage('dropHeld');
-  validateCheckNoWeakKeys(v, thingf);
-  validateDropHeldWithGC(v, rp, thingf, NONE);
-  t.is(testHooks.countCollectionsForWeakKey(facetRef(isf, thing, '1')), 0);
+  validateCheckNoWeakKeys(v, krefOf(thing));
+  validateDropHeldWithGC(v, rp, thing, NONE);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(thing)), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
 }
@@ -1588,32 +1530,32 @@ test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
         await setupTestLiveslots(t, buildRootObject, 'bob', true);
 
-  const [targ, tslot] = thingArg('o-5');
-  let rp = await dispatchMessage('importAndHoldAndKey', [targ], [tslot]);
+  const presence = kslot('o-5', 'thing');
+  let rp = await dispatchMessage('importAndHoldAndKey', presence);
   validateSetup(v);
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
-  t.is(testHooks.countCollectionsForWeakKey('o-5'), 2);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(presence)), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
   rp = await dispatchMessage('dropHeld');
-  validateWeakCheck(v, 'o-5');
+  validateWeakCheck(v, presence);
   validateReturned(v, rp);
-  validate(v, matchVatstoreGet(rcKey('o-5')));
-  validate(v, matchDropImports('o-5'));
+  validate(v, matchVatstoreGet(rcKey(presence)));
+  validate(v, matchDropImports(krefOf(presence)));
   validateDone(v);
-  t.is(testHooks.countCollectionsForWeakKey('o-5'), 2);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(presence)), 2);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 1);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 1);
 
-  await dispatchRetireImports('o-5');
-  validateWeakCheck(v, 'o-5'); // XXX this is weird: why two?
-  validateWeakCheck(v, 'o-5');
+  await dispatchRetireImports(krefOf(presence));
+  validateWeakCheck(v, presence); // XXX this is weird: why two?
+  validateWeakCheck(v, presence);
   validateDone(v);
-  t.is(testHooks.countCollectionsForWeakKey('o-5'), 0);
+  t.is(testHooks.countCollectionsForWeakKey(krefOf(presence)), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakMap), 0);
   t.is(testHooks.countWeakKeysForCollection(aWeakSet), 0);
 });
@@ -1634,41 +1576,42 @@ test.serial('verify presence weak key GC', async t => {
 test.serial('VO holding non-VO', async t => {
   const { v, dispatchMessage, dispatchDropExports, dispatchRetireExports } =
         await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const remotable = kslot(remotableID, 'thing');
 
   // lerv -> Lerv  Create non-VO
   let rp = await dispatchMessage('makeAndHoldRemotable');
   validateSetup(v);
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateFauxCacheDisplacerDeletion(v);
   validateDone(v);
 
   // Lerv -> LERv  Export non-VO
   rp = await dispatchMessage('exportHeld');
-  validate(v, matchResolveOne(rp, thingSer(remotableID)));
+  validate(v, matchResolveOne(rp, kser(remotable)));
   validate(v, matchVatstoreSet('idCounters'));
   validateDone(v);
 
   // LERv -> LERV  Store non-VO reference virtually
   rp = await dispatchMessage('storeHeld');
-  validate(v, matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(null)));
-  validate(v, matchVatstoreSet(stateKey(virtualHolderVref), heldThingValue(remotableID)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(null)));
+  validate(v, matchVatstoreSet(stateKey(virtualHolder), heldThingValue(remotable)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 
   // LERV -> LeRV  Drop the export
-  await dispatchDropExports(remotableID);
+  await dispatchDropExports(`${remotableID}`);
   validateDone(v);
 
   // LeRV -> LerV  Retire the export
-  await dispatchRetireExports(remotableID);
+  await dispatchRetireExports(`${remotableID}`);
   validateDone(v);
 
   // LerV -> LerV  Read non-VO reference from VO and expect it to deserialize successfully
   rp = await dispatchMessage('fetchAndHold');
-  validate(v, matchVatstoreGet(stateKey(virtualHolderVref), heldThingValue(remotableID)));
-  validate(v, matchVatstoreGet(stateKey(cacheDisplacerVref), cacheObjValue));
+  validate(v, matchVatstoreGet(stateKey(virtualHolder), heldThingValue(remotable)));
+  validate(v, matchVatstoreGet(stateKey(cacheDisplacer), cacheObjValue));
   validateReturned(v, rp);
   validateDone(v);
 });

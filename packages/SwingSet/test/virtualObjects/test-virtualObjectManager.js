@@ -5,9 +5,8 @@ import {
   makeFakeVirtualStuff,
 } from '../../tools/fakeVirtualSupport.js';
 
-function capdata(body, slots = []) {
-  return harden({ body, slots });
-}
+import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { vstr } from '../util.js';
 
 function initThing(label = 'thing', counter = 0) {
   return { counter, label, resetCounter: 0 };
@@ -35,16 +34,16 @@ const thingBehavior = {
 
 function thingVal(counter, label, resetCounter) {
   return JSON.stringify({
-    counter: capdata(JSON.stringify(counter)),
-    label: capdata(JSON.stringify(label)),
-    resetCounter: capdata(JSON.stringify(resetCounter)),
+    counter: kser(counter),
+    label: kser(label),
+    resetCounter: kser(resetCounter),
   });
 }
 
 function multiThingVal(name, count) {
   return JSON.stringify({
-    name: capdata(JSON.stringify(name)),
-    count: capdata(JSON.stringify(count)),
+    name: kser(name),
+    count: kser(count),
   });
 }
 
@@ -73,10 +72,10 @@ const zotBehavior = {
 
 function zotVal(arbitrary, name, tag, count) {
   return JSON.stringify({
-    arbitrary: capdata(JSON.stringify(arbitrary)),
-    name: capdata(JSON.stringify(name)),
-    tag: capdata(JSON.stringify(tag)),
-    count: capdata(JSON.stringify(count)),
+    arbitrary: kser(arbitrary),
+    name: kser(name),
+    tag: kser(tag),
+    count: kser(count),
   });
 }
 
@@ -548,16 +547,14 @@ test('durable kind IDs can be reanimated', t => {
   );
   t.deepEqual(log, []);
   const khid = `o+1/10`;
+  const kind = kslot(khid, 'kind');
 
   // Store it in the store without having used it
   placeToPutIt.init('savedKindID', kindHandle);
   t.is(log.shift(), 'get vc.1.ssavedKindID => undefined');
   t.is(log.shift(), `get vom.rc.${khid} => undefined`);
   t.is(log.shift(), `set vom.rc.${khid} 1`);
-  const kindBody =
-    '"{\\"@qclass\\":\\"slot\\",\\"iface\\":\\"Alleged: kind\\",\\"index\\":0}"';
-  const kindSer = `{"body":${kindBody},"slots":["${khid}"]}`;
-  t.is(log.shift(), `set vc.1.ssavedKindID ${kindSer}`);
+  t.is(log.shift(), `set vc.1.ssavedKindID ${vstr(kind)}`);
   t.is(log.shift(), 'get vc.1.|entryCount => 0');
   t.is(log.shift(), 'set vc.1.|entryCount 1');
   t.deepEqual(log, []);
@@ -572,7 +569,7 @@ test('durable kind IDs can be reanimated', t => {
 
   // Fetch it from the store, which should reanimate it
   const fetchedKindID = placeToPutIt.get('savedKindID');
-  t.is(log.shift(), `get vc.1.ssavedKindID => ${kindSer}`);
+  t.is(log.shift(), `get vc.1.ssavedKindID => ${vstr(kind)}`);
   t.is(
     log.shift(),
     'get vom.dkind.10 => {"kindID":"10","tag":"testkind","nextInstanceID":1}',
@@ -594,10 +591,7 @@ test('durable kind IDs can be reanimated', t => {
     log.shift(),
     'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2,"unfaceted":true}',
   );
-  t.is(
-    log.shift(),
-    'set vom.o+10/1 {"counter":{"body":"0","slots":[]},"label":{"body":"\\"laterThing\\"","slots":[]},"resetCounter":{"body":"0","slots":[]}}',
-  );
+  t.is(log.shift(), `set vom.o+10/1 ${thingVal(0, 'laterThing', 0)}`);
   t.deepEqual(log, []);
 });
 

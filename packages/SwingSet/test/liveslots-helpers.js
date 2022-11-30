@@ -6,13 +6,13 @@ import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeLiveSlots } from '../src/liveslots/liveslots.js';
 import {
-  capargs,
   makeMessage,
   makeDropExports,
   makeRetireImports,
   makeRetireExports,
   makeBringOutYourDead,
 } from './util.js';
+import { kser } from '../src/lib/kmarshal.js';
 
 /**
  * @param {boolean} [skipLogging = false]
@@ -145,7 +145,7 @@ export async function makeDispatch(
       return { buildRootObject: build };
     },
   );
-  await startVat(capargs());
+  await startVat(kser());
   if (returnTestHooks) {
     returnTestHooks[0] = testHooks;
   }
@@ -179,9 +179,9 @@ export async function setupTestLiveslots(
   );
   const [testHooks] = th;
 
-  async function dispatchMessage(message, args = [], slots = []) {
+  async function dispatchMessage(message, ...args) {
     const rp = nextRP();
-    await dispatch(makeMessage('o+0', message, args, slots, rp));
+    await dispatch(makeMessage('o+0', message, args, rp));
     if (forceGC) {
       // XXX TERRIBLE HACK WARNING XXX The following GC call is terrible but
       // apparently sometimes necessary.  Without it, certain tests in some
@@ -279,5 +279,5 @@ export function validateDone(v) {
 }
 
 export function validateReturned(v, rp) {
-  validate(v, matchResolveOne(rp, capargs({ '@qclass': 'undefined' })));
+  validate(v, matchResolveOne(rp, kser(undefined)));
 }

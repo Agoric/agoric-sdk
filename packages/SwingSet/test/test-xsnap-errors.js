@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeStartXSnap } from '../src/controller/controller.js';
-import { capargs } from './util.js';
+import { kser } from '../src/lib/kmarshal.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
   const makeb = rel =>
@@ -68,9 +68,9 @@ test('child termination distinguished from meter exhaustion', async t => {
     schandler,
   );
 
-  await m.deliver(['startVat', capargs()]);
+  await m.deliver(['startVat', kser()]);
 
-  const msg = { methargs: capargs(['hang', []]) };
+  const msg = { methargs: kser(['hang', []]) };
   /** @type { VatDeliveryObject } */
   const delivery = ['message', 'o+0', msg];
 

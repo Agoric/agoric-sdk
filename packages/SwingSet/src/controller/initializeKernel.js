@@ -1,10 +1,11 @@
 /* eslint-disable no-use-before-define */
 
-import { makeMarshal, Far, stringify } from '@endo/marshal';
+import { makeMarshal, Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';
+import { kser, kunser } from '../lib/kmarshal.js';
 import { makeVatSlot } from '../lib/parseVatSlots.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
@@ -97,9 +98,8 @@ export function initializeKernel(config, hostStorage, verbose = false) {
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
       vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
-      const vpCapData = { body: stringify(harden(vatParameters)), slots: [] };
       kernelKeeper.addToAcceptanceQueue(
-        harden({ type: 'startVat', vatID, vatParameters: vpCapData }),
+        harden({ type: 'startVat', vatID, vatParameters: kser(vatParameters) }),
       );
       if (name === 'vatAdmin') {
         // Create a kref for the vatAdmin root, so the kernel can tell it
@@ -207,14 +207,14 @@ export function initializeKernel(config, hostStorage, verbose = false) {
 
     const m = makeMarshal(convertValToSlot, undefined, {
       marshalName: 'kernel:bootstrap',
+      serializeBodyFormat: 'smallcaps',
       // TODO Temporary hack.
       // See https://github.com/Agoric/agoric-sdk/issues/2780
       errorIdNum: 60000,
     });
-    const methargs = harden(['bootstrap', [vatObj0s, deviceObj0s]]);
-    // doQueueToKref() takes kernel-refs (ko+NN, kd+NN) in s.slots
+    const args = kunser(m.serialize(harden([vatObj0s, deviceObj0s])));
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
-    const resultKpid = queueToKref(rootKref, m.serialize(methargs), 'panic');
+    const resultKpid = queueToKref(rootKref, 'bootstrap', args, 'panic');
     kernelKeeper.incrementRefCount(resultKpid, 'external');
     return resultKpid;
   }

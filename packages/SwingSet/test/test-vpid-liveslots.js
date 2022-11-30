@@ -6,7 +6,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
-import { makeMessage, makeResolve, makeReject, capargs } from './util.js';
+import { makeMessage, makeResolve, makeReject } from './util.js';
+import { kser, kslot } from '../src/lib/kmarshal.js';
 
 function hush(p) {
   p.then(
@@ -108,11 +109,9 @@ function resolvePR(pr, mode, targets) {
   }
 }
 
-function slotArg(iface, index) {
-  return { '@qclass': 'slot', iface, index };
+function presence(ref) {
+  return kslot(ref, `presence ${ref}`);
 }
-const slot0arg = { '@qclass': 'slot', index: 0 };
-const slot1arg = { '@qclass': 'slot', index: 1 };
 
 function resolutionOf(vpid, mode, targets) {
   const resolution = {
@@ -121,33 +120,27 @@ function resolutionOf(vpid, mode, targets) {
   };
   switch (mode) {
     case 'presence': {
-      const presenceBody = {
-        '@qclass': 'slot',
-        iface: `Alleged: presence ${targets.target2}`,
-        index: 0,
-      };
-      resolution.resolutions[0][2] = capargs(presenceBody, [targets.target2]);
+      resolution.resolutions[0][2] = kser(presence(targets.target2));
       break;
     }
     case 'local-object':
-      resolution.resolutions[0][2] = capargs(
-        slotArg('Alleged: local-object', 0),
-        [targets.localTarget],
+      resolution.resolutions[0][2] = kser(
+        kslot(targets.localTarget, 'local-object'),
       );
       break;
     case 'data':
-      resolution.resolutions[0][2] = capargs(4, []);
+      resolution.resolutions[0][2] = kser(4);
       break;
     case 'promise-data':
-      resolution.resolutions[0][2] = capargs([slot0arg], [targets.p1]);
+      resolution.resolutions[0][2] = kser([kslot(targets.p1)]);
       break;
     case 'reject':
       resolution.resolutions[0][1] = true;
-      resolution.resolutions[0][2] = capargs('error', []);
+      resolution.resolutions[0][2] = kser('error');
       break;
     case 'promise-reject':
       resolution.resolutions[0][1] = true;
-      resolution.resolutions[0][2] = capargs(slot0arg, [targets.p1]);
+      resolution.resolutions[0][2] = kser(kslot(targets.p1));
       break;
     default:
       assert.fail(X`unknown mode ${mode}`);
@@ -190,14 +183,14 @@ async function doVatResolveCase1(t, mode) {
   const expectedP4 = 'p+8';
 
   await dispatch(
-    makeMessage(rootA, 'run', [slot0arg, slot1arg], [target1, target2]),
+    makeMessage(rootA, 'run', [presence(target1), presence(target2)]),
   );
 
   // The vat should send 'one' and subscribe to the result promise
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['one', [slot0arg]], [expectedP1]),
+    methargs: kser(['one', [kslot(expectedP1)]]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -212,7 +205,7 @@ async function doVatResolveCase1(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['two', [slot0arg]], [expectedTwoArg]),
+    methargs: kser(['two', [kslot(expectedTwoArg)]]),
     resultSlot: expectedResultOfTwo,
   });
   const targets2 = { target2, localTarget, p1: expectedP3 };
@@ -348,16 +341,16 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   // doesn't allocate any IDs, so no flush.
 
   if (which === 2) {
-    await dispatch(makeMessage(rootA, 'result', [], [], p1));
+    await dispatch(makeMessage(rootA, 'result', [], p1));
     matchIDCounterSet(t, log);
     // the vat knows it is the decider, does not subscribe
-    await dispatch(makeMessage(rootA, 'promise', [slot0arg], [p1]));
+    await dispatch(makeMessage(rootA, 'promise', [kslot(p1)]));
   } else if (which === 3) {
-    await dispatch(makeMessage(rootA, 'promise', [slot0arg], [p1]));
+    await dispatch(makeMessage(rootA, 'promise', [kslot(p1)]));
     // the vat subscribes to p1, it cannot know the future
     t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
     matchIDCounterSet(t, log);
-    await dispatch(makeMessage(rootA, 'result', [], [], p1));
+    await dispatch(makeMessage(rootA, 'result', [], p1));
     // vat cannot unsubscribe, but is now the decider
   } else {
     assert.fail(X`bad which=${which}`);
@@ -367,7 +360,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log, []);
 
   await dispatch(
-    makeMessage(rootA, 'run', [slot0arg, slot1arg], [target1, target2]),
+    makeMessage(rootA, 'run', [presence(target1), presence(target2)]),
   );
 
   // console.log(`-- did run(), log: ->`, log.map(JSON.stringify), '<-');
@@ -400,7 +393,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['one', [slot0arg]], [p1]),
+    methargs: kser(['one', [kslot(p1)]]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -437,7 +430,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
-      methargs: capargs(['two', []], []),
+      methargs: kser(['two', []]),
       resultSlot: twoResult,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: twoResult });
@@ -479,7 +472,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['three', [slot0arg]], [expectedVPIDInThree]),
+    methargs: kser(['three', [kslot(expectedVPIDInThree)]]),
     resultSlot: expectedResultOfThree,
   });
   if (vpidRetired) {
@@ -500,7 +493,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
-      methargs: capargs(['four', []], []),
+      methargs: kser(['four', []]),
       resultSlot: expectedResultOfFour,
     });
     t.deepEqual(log.shift(), {
@@ -595,18 +588,18 @@ async function doVatResolveCase4(t, mode) {
   }
   const target2 = 'o-2';
 
-  await dispatch(makeMessage(rootA, 'get', [slot0arg], [p1]));
+  await dispatch(makeMessage(rootA, 'get', [kslot(p1)]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  await dispatch(makeMessage(rootA, 'first', [slot0arg], [target1]));
+  await dispatch(makeMessage(rootA, 'first', [kslot(target1)]));
 
   const expectedP2 = nextP();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['one', [slot0arg]], [p1]),
+    methargs: kser(['one', [kslot(p1)]]),
     resultSlot: expectedP2,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP2 });
@@ -615,7 +608,7 @@ async function doVatResolveCase4(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    methargs: capargs(['two', []], []),
+    methargs: kser(['two', []]),
     resultSlot: expectedP3,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP3 });
@@ -624,31 +617,31 @@ async function doVatResolveCase4(t, mode) {
 
   let r;
   if (mode === 'presence') {
-    r = makeResolve(p1, capargs(slot0arg, [target2]));
+    r = makeResolve(p1, kser(presence(target2)));
   } else if (mode === 'local-object') {
-    r = makeResolve(p1, capargs(slot0arg, [rootA]));
+    r = makeResolve(p1, kser(kslot(rootA)));
   } else if (mode === 'data') {
-    r = makeResolve(p1, capargs(4, []));
+    r = makeResolve(p1, kser(4));
   } else if (mode === 'promise-data') {
-    r = makeResolve(p1, capargs([slot0arg], [p1]));
+    r = makeResolve(p1, kser([kslot(p1)]));
   } else if (mode === 'reject') {
-    r = makeReject(p1, capargs('error', []));
+    r = makeReject(p1, kser('error'));
   } else if (mode === 'promise-reject') {
-    r = makeReject(p1, capargs(slot0arg, [p1]));
+    r = makeReject(p1, kser(kslot(p1)));
   } else {
     assert.fail(X`unknown mode ${mode}`);
   }
   await dispatch(r);
   t.deepEqual(log, []);
 
-  await dispatch(makeMessage(rootA, 'second', [slot0arg], [target1]));
+  await dispatch(makeMessage(rootA, 'second', [kslot(target1)]));
 
   const expectedP4 = nextP();
   const expectedP5 = nextP();
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['three', [slot0arg]], [expectedP4]),
+    methargs: kser(['three', [kslot(expectedP4)]]),
     resultSlot: expectedP5,
   });
   t.deepEqual(log.shift(), {
@@ -661,7 +654,7 @@ async function doVatResolveCase4(t, mode) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2, // this depends on #823 being fixed
-      methargs: capargs(['four', []], []),
+      methargs: kser(['four', []]),
       resultSlot: expectedP6,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP6 });
@@ -730,7 +723,7 @@ async function doVatResolveCase7(t, mode) {
 
   const rootA = 'o+0';
   const p1 = 'p-8';
-  await dispatch(makeMessage(rootA, 'acceptPromise', [slot0arg], [p1]));
+  await dispatch(makeMessage(rootA, 'acceptPromise', [kslot(p1)]));
   // the vat subscribes to p1, it cannot know the future
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
   matchIDCounterSet(t, log);
@@ -738,7 +731,7 @@ async function doVatResolveCase7(t, mode) {
   const target1 = 'o-1';
   const target2 = 'o-2';
   await dispatch(
-    makeMessage(rootA, 'send1', [slot0arg, slot1arg], [target1, target2]),
+    makeMessage(rootA, 'send1', [presence(target1), presence(target2)]),
   );
   // we expect to see one(), referencing the unresolved promise
 
@@ -746,7 +739,7 @@ async function doVatResolveCase7(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['one', [slot0arg]], [p1]),
+    methargs: kser(['one', [kslot(p1)]]),
     resultSlot: oneResultVPID,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: oneResultVPID });
@@ -756,7 +749,7 @@ async function doVatResolveCase7(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: p1,
-    methargs: capargs(['two', []], []),
+    methargs: kser(['two', []]),
     resultSlot: twoResultVPID,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: twoResultVPID });
@@ -766,12 +759,12 @@ async function doVatResolveCase7(t, mode) {
 
   // now use p1 as the result= of a message, transferring decider
   // authority to the vat
-  await dispatch(makeMessage(rootA, 'becomeDecider', [], [], p1));
+  await dispatch(makeMessage(rootA, 'becomeDecider', [], p1));
   t.deepEqual(log, []);
 
   // have the vat send some more messages
   await dispatch(
-    makeMessage(rootA, 'send2', [slot0arg, slot1arg], [target1, target2]),
+    makeMessage(rootA, 'send2', [presence(target1), presence(target2)]),
   );
   // we expect to see three(), referencing the unresolved promise
 
@@ -779,7 +772,7 @@ async function doVatResolveCase7(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['three', [slot0arg]], [p1]),
+    methargs: kser(['three', [kslot(p1)]]),
     resultSlot: threeResultVPID,
   });
   t.deepEqual(log.shift(), { type: 'subscribe', target: threeResultVPID });
@@ -788,7 +781,7 @@ async function doVatResolveCase7(t, mode) {
   t.deepEqual(log, []);
 
   // now tell the vat to resolve the promise
-  await dispatch(makeMessage(rootA, 'resolve', [slot0arg], [target2]));
+  await dispatch(makeMessage(rootA, 'resolve', [presence(target2)]));
 
   // that might release four()
   if (mode === 'presence') {
@@ -796,7 +789,7 @@ async function doVatResolveCase7(t, mode) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
-      methargs: capargs(['four', []], []),
+      methargs: kser(['four', []]),
       resultSlot: fourResultVPID,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: fourResultVPID });
@@ -818,7 +811,7 @@ async function doVatResolveCase7(t, mode) {
 
   // now send another batch of messages, after the VPID is retired
   await dispatch(
-    makeMessage(rootA, 'send3', [slot0arg, slot1arg], [target1, target2]),
+    makeMessage(rootA, 'send3', [presence(target1), presence(target2)]),
   );
 
   // five() will get a new VPID
@@ -827,7 +820,7 @@ async function doVatResolveCase7(t, mode) {
   t.deepEqual(log.shift(), {
     type: 'send',
     targetSlot: target1,
-    methargs: capargs(['five', [slot0arg]], [newP1VPID]),
+    methargs: kser(['five', [kslot(newP1VPID)]]),
     resultSlot: fiveResultVPID,
   });
   const targets2 = { target2, localTarget, p1: newP1VPID };
@@ -839,7 +832,7 @@ async function doVatResolveCase7(t, mode) {
     t.deepEqual(log.shift(), {
       type: 'send',
       targetSlot: target2,
-      methargs: capargs(['six', []], []),
+      methargs: kser(['six', []]),
       resultSlot: sixResultVPID,
     });
     t.deepEqual(log.shift(), { type: 'subscribe', target: sixResultVPID });
@@ -888,26 +881,26 @@ test('inter-vat circular promise references', async t => {
   // const pbB = 'p-18';
   // const paB = 'p-19';
 
-  await dispatchA(makeMessage(rootA, 'genPromise', [], [], paA));
+  await dispatchA(makeMessage(rootA, 'genPromise', [], paA));
   matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
-  // await dispatchB(makeMessage(rootB, 'genPromise', [], [], pbB));
+  // await dispatchB(makeMessage(rootB, 'genPromise', [], pbB));
   // t.deepEqual(log, []);
 
-  await dispatchA(makeMessage(rootA, 'usePromise', [[slot0arg]], [pbA]));
+  await dispatchA(makeMessage(rootA, 'usePromise', [[kslot(pbA)]]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: pbA });
   t.deepEqual(log.shift(), {
     type: 'resolve',
-    resolutions: [[paA, false, capargs([slot0arg], [pbA])]],
+    resolutions: [[paA, false, kser([kslot(pbA)])]],
   });
   t.deepEqual(log, []);
 
-  // await dispatchB(makeMessage(rootB, 'usePromise', [slot0arg], [paB]));
+  // await dispatchB(makeMessage(rootB, 'usePromise', [kslot(paB)]));
   // t.deepEqual(log.shift(), { type: 'subscribe', target: paB });
   // t.deepEqual(log.shift(), {
   //   type: 'resolve',
-  //   resoutions: [[pbB, false, capargs([slot0arg], [paB])]],
+  //   resolutions: [[pbB, false, kser(kslot(paB))]],
   // });
   // t.deepEqual(log, []);
 });

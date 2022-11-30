@@ -6,9 +6,10 @@ import bundleSource from '@endo/bundle-source';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { createSHA256 } from '../src/lib-nodejs/hasher.js';
-import { extractMessage, capdata, capargs, ignore } from './vat-util.js';
+import { extractMessage, ignore, vstr } from './vat-util.js';
+import { kser } from '../src/lib/kmarshal.js';
 
-export { extractMessage, capdata, capargs, ignore };
+export { extractMessage, ignore, vstr };
 
 function compareArraysOfStrings(a, b) {
   a = a.join(' ');
@@ -89,58 +90,14 @@ export function buildDispatch(onDispatchCallback) {
 }
 
 /**
- * @param {number} index
- * @param {string} [iface]
- */
-export function capSlot(index, iface = 'export') {
-  iface = iface ? `Alleged: ${iface}` : undefined;
-  return { '@qclass': 'slot', iface, index };
-}
-
-/**
- * @param {string} method
- * @param {string} slot
- * @param {string} [iface]
- */
-export function methargsOneSlot(method, slot, iface = 'export') {
-  iface = iface ? `Alleged: ${iface}` : undefined;
-  return capargs([method, [{ '@qclass': 'slot', iface, index: 0 }]], [slot]);
-}
-
-/**
- * @param {string} slot
- * @param {string} [iface]
- */
-export function capdataOneSlot(slot, iface = 'export') {
-  iface = iface ? `Alleged: ${iface}` : undefined;
-  return capargs({ '@qclass': 'slot', iface, index: 0 }, [slot]);
-}
-
-/**
- * @param {string} slot
- * @param {string} [iface]
- */
-export function capargsOneSlot(slot, iface = 'export') {
-  iface = iface ? `Alleged: ${iface}` : undefined;
-  return capargs([{ '@qclass': 'slot', iface, index: 0 }], [slot]);
-}
-
-/**
  *
  * @param {unknown} target
  * @param {string} method
  * @param {any[]} args
- * @param {any[]} slots
  * @param {unknown} result
  */
-export function makeMessage(
-  target,
-  method,
-  args = [],
-  slots = [],
-  result = null,
-) {
-  const methargs = capargs([method, args], slots);
+export function makeMessage(target, method, args = [], result = null) {
+  const methargs = kser([method, args]);
   const msg = { methargs, result };
   const vatDeliverObject = harden(['message', target, msg]);
   return vatDeliverObject;

@@ -55,8 +55,8 @@ async function testPromiseWatcher(t) {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   }
 
   // create initial version
@@ -89,7 +89,7 @@ async function testPromiseWatcher(t) {
   const [v2status /* , v2capdata */] = await run('upgradeV2', []);
   t.is(v2status, 'fulfilled');
   const doString =
-    '{"name":"vatUpgraded","upgradeMessage":"test upgrade","incarnationNumber":1}';
+    '{"incarnationNumber":1,"name":"vatUpgraded","upgradeMessage":"test upgrade"}';
   t.deepEqual(c.dump().log, [
     ...beforeReference,
     `lp3-pw rejected ${doString} version v2 via watcher []`,

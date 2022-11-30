@@ -1,6 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { buildVatController } from '../src/index.js';
+import { kunser, kslot, krefOf } from '../src/lib/kmarshal.js';
 
 async function beginning(t, mode) {
   const config = {
@@ -17,22 +18,25 @@ async function beginning(t, mode) {
   return controller;
 }
 
-async function bootstrapSuccessfully(t, mode, body, slots) {
+async function bootstrapSuccessfully(t, mode, expectedResult, compareRefs) {
   const controller = await beginning(t, mode);
   await controller.run();
   t.is(controller.kpStatus(controller.bootstrapResult), 'fulfilled');
-  t.deepEqual(controller.kpResolution(controller.bootstrapResult), {
-    body,
-    slots,
-  });
+  const actualResult = kunser(
+    controller.kpResolution(controller.bootstrapResult),
+  );
+  if (compareRefs) {
+    t.is(krefOf(actualResult), krefOf(expectedResult));
+  } else {
+    t.deepEqual(actualResult, expectedResult);
+  }
 }
 
 test('bootstrap returns data', async t => {
   await bootstrapSuccessfully(
     t,
     'data',
-    '"a big hello to all intelligent lifeforms everywhere"',
-    [],
+    'a big hello to all intelligent lifeforms everywhere',
   );
 });
 
@@ -41,13 +45,13 @@ test('bootstrap returns presence', async t => {
   await bootstrapSuccessfully(
     t,
     'presence',
-    '{"@qclass":"slot","iface":"Alleged: other","index":0}',
-    ['ko25'],
+    kslot('ko25', 'other'),
+    true,
   );
 });
 
 test('bootstrap returns void', async t => {
-  await bootstrapSuccessfully(t, 'void', '{"@qclass":"undefined"}', []);
+  await bootstrapSuccessfully(t, 'void', undefined);
 });
 
 async function testFailure(t) {
@@ -59,22 +63,22 @@ async function testFailure(t) {
     failureHappened = true;
     t.is(
       e.message,
-      'kernel panic kp40.policy panic: rejected {"body":"{\\"@qclass\\":\\"error\\",\\"errorId\\":\\"error:liveSlots:v1#70001\\",\\"message\\":\\"gratuitous error\\",\\"name\\":\\"Error\\"}","slots":[]}',
+      'kernel panic kp40.policy panic: rejected {"body":"#{\\"#error\\":\\"gratuitous error\\",\\"errorId\\":\\"error:liveSlots:v1#70001\\",\\"name\\":\\"Error\\"}","slots":[]}',
     );
   }
   t.truthy(failureHappened);
   t.is(controller.kpStatus(controller.bootstrapResult), 'rejected');
-  t.deepEqual(controller.kpResolution(controller.bootstrapResult), {
-    body: '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"gratuitous error","name":"Error"}',
-    slots: [],
-  });
+  t.deepEqual(
+    kunser(controller.kpResolution(controller.bootstrapResult)),
+    Error('gratuitous error'),
+  );
 }
 
 test('bootstrap failure', async t => {
   await testFailure(t);
 });
 
-async function extraMessage(t, mode, status, body, slots) {
+async function extraMessage(t, mode, status, expectedResult, compareRefs) {
   const controller = await beginning(t, 'data');
   controller.pinVatRoot('bootstrap');
   await controller.run();
@@ -86,10 +90,12 @@ async function extraMessage(t, mode, status, body, slots) {
   );
   await controller.run();
   t.is(controller.kpStatus(extraResult), status);
-  t.deepEqual(controller.kpResolution(extraResult), {
-    body,
-    slots,
-  });
+  const actualResult = kunser(controller.kpResolution(extraResult));
+  if (compareRefs) {
+    t.is(krefOf(actualResult), krefOf(expectedResult));
+  } else {
+    t.deepEqual(actualResult, expectedResult);
+  }
 }
 
 test('extra message returns data', async t => {
@@ -97,8 +103,7 @@ test('extra message returns data', async t => {
     t,
     'data',
     'fulfilled',
-    '"a big hello to all intelligent lifeforms everywhere"',
-    [],
+    'a big hello to all intelligent lifeforms everywhere',
   );
 });
 
@@ -108,21 +113,15 @@ test('extra message returns presence', async t => {
     t,
     'presence',
     'fulfilled',
-    '{"@qclass":"slot","iface":"Alleged: other","index":0}',
-    ['ko25'],
+    kslot('ko25', 'other'),
+    true,
   );
 });
 
 test('extra message returns void', async t => {
-  await extraMessage(t, 'void', 'fulfilled', '{"@qclass":"undefined"}', []);
+  await extraMessage(t, 'void', 'fulfilled', undefined);
 });
 
 test('extra message rejects', async t => {
-  await extraMessage(
-    t,
-    'reject',
-    'rejected',
-    '{"@qclass":"error","errorId":"error:liveSlots:v1#70001","message":"gratuitous error","name":"Error"}',
-    [],
-  );
+  await extraMessage(t, 'reject', 'rejected', Error('gratuitous error'));
 });

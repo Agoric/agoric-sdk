@@ -10,7 +10,7 @@ export function kdebug(...args) {
   }
 }
 
-export function legibilizeValue(val, slots) {
+export function legibilizeValue(val, slots, smallcaps) {
   try {
     if (Array.isArray(val)) {
       let result = '[';
@@ -18,13 +18,13 @@ export function legibilizeValue(val, slots) {
         if (result.length !== 1) {
           result += ', ';
         }
-        result += legibilizeValue(elem, slots);
+        result += legibilizeValue(elem, slots, smallcaps);
       }
       result += ']';
       return result;
     } else if (val && typeof val === 'object' && val.constructor === Object) {
       const qClass = val['@qclass'];
-      if (qClass) {
+      if (qClass && !smallcaps) {
         switch (qClass) {
           case 'undefined':
           case 'NaN':
@@ -51,10 +51,31 @@ export function legibilizeValue(val, slots) {
         if (result.length !== 1) {
           result += ', ';
         }
-        result += `${String(prop)}: ${legibilizeValue(val[prop], slots)}`;
+        // prettier-ignore
+        result += `${String(prop)}: ${legibilizeValue(val[prop], slots, smallcaps)}`;
       }
       result += '}';
       return result;
+    } else if (val && typeof val === 'string' && smallcaps) {
+      const prefix = val.charAt(0);
+      const rest = val.substring(1);
+      switch (prefix) {
+        case '!':
+          return `"${rest}"`;
+        case '%':
+          return `[${rest}]`;
+        case '#':
+        case '+':
+        case '-':
+          return rest;
+        case '$':
+        case '&': {
+          const idx = Number(rest.slice(0, rest.indexOf('.')));
+          return `@${slots[idx]}`;
+        }
+        default:
+          return JSON.stringify(val) || '<unintelligible value>';
+      }
     } else {
       return JSON.stringify(val) || '<unintelligible value>';
     }
@@ -63,15 +84,41 @@ export function legibilizeValue(val, slots) {
   }
 }
 
-export function legibilizeMethod(method) {
+export function legibilizeMethod(method, smallcaps) {
   try {
     if (typeof method === 'string') {
-      return method;
+      if (!smallcaps) {
+        return method;
+      }
+      const prefix = method.charAt(0);
+      const rest = method.substring(1);
+      switch (prefix) {
+        case '%':
+          return `[${rest}]`;
+        case '#':
+          if (rest === 'undefined') {
+            return '<funcall>';
+          } else {
+            return '<unintelligible method>';
+          }
+        case '!':
+          return rest;
+        case '+':
+        case '-':
+        case '$':
+        case '&':
+          return '<unintelligible method>';
+        default:
+          return method;
+      }
     } else if (typeof method === 'symbol') {
       return `[${method.toString()}]`;
     } else if (method === undefined) {
       return '<funcall>';
     } else if (typeof method === 'object') {
+      if (smallcaps) {
+        return '<unintelligible method>';
+      }
       const qclass = method['@qclass'];
       if (qclass === 'undefined') {
         return '<funcall>';
@@ -92,8 +139,14 @@ export function legibilizeMethod(method) {
 
 export function extractMethod(methargsCapdata) {
   try {
-    const methargs = JSON.parse(methargsCapdata.body);
-    return legibilizeMethod(methargs[0]);
+    let smallcaps = false;
+    let bodyString = methargsCapdata.body;
+    if (bodyString.charAt(0) === '#') {
+      smallcaps = true;
+      bodyString = bodyString.substring(1);
+    }
+    const methargs = JSON.parse(bodyString);
+    return legibilizeMethod(methargs[0], smallcaps);
   } catch {
     return '<unknown>';
   }
@@ -101,11 +154,17 @@ export function extractMethod(methargsCapdata) {
 
 export function legibilizeMessageArgs(methargsCapdata) {
   try {
-    const methargs = JSON.parse(methargsCapdata.body);
+    let smallcaps = false;
+    let bodyString = methargsCapdata.body;
+    if (bodyString.charAt(0) === '#') {
+      smallcaps = true;
+      bodyString = bodyString.substring(1);
+    }
+    const methargs = JSON.parse(bodyString);
     const [method, args] = methargs;
-    const methodStr = legibilizeMethod(method);
+    const methodStr = legibilizeMethod(method, smallcaps);
     const argsStrs = args.map(arg =>
-      legibilizeValue(arg, methargsCapdata.slots),
+      legibilizeValue(arg, methargsCapdata.slots, smallcaps),
     );
     return [methodStr, argsStrs.join(', ')];
   } catch {

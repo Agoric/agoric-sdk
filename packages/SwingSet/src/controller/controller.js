@@ -16,13 +16,13 @@ import { assert, details as X } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
-import { QCLASS } from '@endo/marshal';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import engineGC from '../lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
+import { kslot } from '../lib/kmarshal.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { provideHostStorage } from './hostStorage.js';
 import {
@@ -456,33 +456,12 @@ export async function makeSwingsetController(
      * @param {string} method
      * @param {unknown[]} args
      * @param {ResolutionPolicy} resultPolicy
-     * @param {string[]} [slots]
      */
-    queueToVatRoot(
-      vatName,
-      method,
-      args = [],
-      resultPolicy = 'ignore',
-      slots = [],
-    ) {
-      function replacer(_, arg) {
-        if (typeof arg === 'bigint') {
-          return { [QCLASS]: 'bigint', digits: String(arg) };
-        }
-        if (arg === undefined) {
-          return { [QCLASS]: 'undefined' };
-        }
-        return arg;
-      }
-
+    queueToVatRoot(vatName, method, args = [], resultPolicy = 'ignore') {
       const vatID = kernel.vatNameToID(vatName);
       assert.typeof(method, 'string');
       const kref = kernel.getRootObject(vatID);
-      const methargs = {
-        body: JSON.stringify([method, args], replacer),
-        slots,
-      };
-      const kpid = kernel.queueToKref(kref, methargs, resultPolicy);
+      const kpid = kernel.queueToKref(kref, method, args, resultPolicy);
       if (kpid) {
         kernel.kpRegisterInterest(kpid);
       }
@@ -491,11 +470,9 @@ export async function makeSwingsetController(
 
     upgradeStaticVat(vatName, shouldPauseFirst, bundleID, options = {}) {
       const vatID = kernel.vatNameToID(vatName);
-      let pauseTargetBody = null;
-      let pauseTargetSlots = [];
+      let pauseTarget = null;
       if (shouldPauseFirst) {
-        pauseTargetBody = { [QCLASS]: 'slot', index: 0 };
-        pauseTargetSlots = [kernel.getRootObject(vatID)];
+        pauseTarget = kslot(kernel.getRootObject(vatID));
       }
       if (!options.upgradeMessage) {
         options.upgradeMessage = `vat ${vatName} upgraded`;
@@ -503,9 +480,8 @@ export async function makeSwingsetController(
       return controller.queueToVatRoot(
         'vatAdmin',
         'upgradeStaticVat',
-        [vatID, pauseTargetBody, bundleID, options],
+        [vatID, pauseTarget, bundleID, options],
         'ignore',
-        pauseTargetSlots,
       );
     },
   });

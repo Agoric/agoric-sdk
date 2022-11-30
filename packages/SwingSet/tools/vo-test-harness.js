@@ -149,11 +149,11 @@ export async function runVOTest(t, prepare, makeTestObject, testTestObject) {
   );
 
   await dispatchMessage('makeAndHold');
-  await dispatchMessage('testHeld', ['before']);
+  await dispatchMessage('testHeld', 'before');
   await dispatchMessage('storeHeld');
   await dispatchMessage('dropHeld');
   await dispatchMessage('fetchAndHold');
-  await dispatchMessage('testHeld', ['after']);
+  await dispatchMessage('testHeld', 'after');
 }
 
 function bfile(name) {
@@ -163,6 +163,9 @@ function bfile(name) {
 const stupidM = makeMarshal(
   () => undefined,
   slot => `@${slot}`,
+  {
+    serializeBodyFormat: 'smallcaps',
+  },
 );
 const extractLog = capdata => stupidM.unserialize(capdata);
 
