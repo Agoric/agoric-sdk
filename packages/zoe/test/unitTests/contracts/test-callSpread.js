@@ -12,8 +12,9 @@ import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
 import {
-  assertPayoutDeposit,
+  assertGetPayoutAndDeposit,
   assertPayoutAmount,
+  assertPayoutDeposit,
 } from '../../zoeTestHelpers.js';
 import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 
@@ -426,14 +427,15 @@ test('fundedCallSpread, late exercise', async t => {
   await E(manualTimer).tick();
 
   const carolOptionSeat = await E(zoe).offer(carolShortOption);
-  const carolPayout = await carolOptionSeat.getPayout('Collateral');
-  const carolDepositAmount = await E(carolBucksPurse).deposit(carolPayout);
-  await t.deepEqual(
-    carolDepositAmount,
+  const carolDeposit = assertGetPayoutAndDeposit(
+    t,
+    carolOptionSeat,
+    'Collateral',
+    carolBucksPurse,
     bucks(75n),
-    `payout was ${carolDepositAmount.value}, expected 75`,
   );
-  await Promise.all([bobDeposit]);
+
+  await Promise.all([bobDeposit, carolDeposit]);
 });
 
 test('fundedCallSpread, sell options', async t => {
@@ -700,10 +702,10 @@ test('pricedCallSpread, mid-strike', async t => {
   const bobOption = await bobFundingSeat.getPayout('Option');
   const bobOptionSeat = await E(zoe).offer(bobOption);
 
-  const bobPayout = bobOptionSeat.getPayout('Collateral');
-  const bobDeposit = assertPayoutDeposit(
+  const bobDeposit = assertGetPayoutAndDeposit(
     t,
-    bobPayout,
+    bobOptionSeat,
+    'Collateral',
     bobBucksPurse,
     bucks(225n),
   );
@@ -728,10 +730,10 @@ test('pricedCallSpread, mid-strike', async t => {
   const carolOption = await carolFundingSeat.getPayout('Option');
   const carolOptionSeat = await E(zoe).offer(carolOption);
 
-  const carolPayout = carolOptionSeat.getPayout('Collateral');
-  const carolDeposit = assertPayoutDeposit(
+  const carolDeposit = assertGetPayoutAndDeposit(
     t,
-    carolPayout,
+    carolOptionSeat,
+    'Collateral',
     carolBucksPurse,
     bucks(75n),
   );

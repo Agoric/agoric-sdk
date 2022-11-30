@@ -16,7 +16,7 @@
  * before with `feeMintAccess`. In that case, we do not create a new
  * purse, but reuse the existing purse.
  *
- * @callback MakeLocalPurse
+ * @callback ProvideLocalPurse
  * @param {Issuer} issuer
  * @param {Brand} brand
  * @returns {Purse}

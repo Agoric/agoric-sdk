@@ -88,13 +88,13 @@
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => object} getTerms
  * @property {() => string[]} getOfferFilter
+ * @property {(strings: string[]) => void} setOfferFilter
  * @property {() => Installation} getInstallationForInstance
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
  * @property {(string: string) => boolean} isBlocked
  * @property {(handleOfferObj: HandleOfferObj, publicFacet: unknown) => void} initDelayedState
- * @property {(strings: string[]) => void} setOfferFilter
  */
 
 /**
@@ -131,9 +131,10 @@
  * @property {ShutdownWithFailure} failAllSeats
  * @property {(seatHandle: SeatHandle, completion: Completion) => void} exitSeat
  * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
- * @property {(seatHandle: SeatHandle) => Promise<Notifier<Allocation>>} getSeatNotifier
  * @property {() => void} stopAcceptingOffers
  * @property {(strings: Array<string>) => void} setOfferFilter
+ * @property {() => Promise<Array<string>>} getOfferFilter
+ * @property {(seatHandle: SeatHandle) => Subscriber<any>} getExitSubscriber
  */
 
 /**

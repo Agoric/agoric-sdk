@@ -21,8 +21,7 @@ const dirname = path.dirname(filename);
 test(`zoe.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  // @ts-expect-error
-  const invitation = zcf.makeInvitation(undefined, 'invite');
+  const invitation = zcf.makeInvitation(() => {}, 'invite');
 
   // A few basic tests that the invitation issuer acts like an issuer.
   // Not exhaustive.
@@ -105,10 +104,7 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   facetHasMethods(t, result.startInstanceResult.publicFacet, [
     'makeInvitation',
   ]);
-  t.deepEqual(
-    Object.getOwnPropertyNames(result.startInstanceResult.adminFacet).sort(),
-    ['getVatShutdownPromise', 'restartContract', 'upgradeContract'],
-  );
+  isEmptyFacet(t, result.startInstanceResult.adminFacet);
 });
 
 test(`E(zoe).startInstance promise for installation`, async t => {
@@ -146,7 +142,7 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
       ),
     {
       message:
-        /In "startInstance" method of \(ZoeService zoeService\) arg 1: something: \[1\]: number 2/,
+        /In "startInstance" method of \(ZoeService zoeService\) arg 1: something: \[1\]: 2/,
     },
   );
 });
@@ -373,8 +369,7 @@ test(`zoe.getInstallationForInstance`, async t => {
 
 test(`zoe.getInstance`, async t => {
   const { zoe, zcf, instance } = await setupZCFTest();
-  // @ts-expect-error
-  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const invitation = await E(zcf).makeInvitation(() => {}, 'invitation');
   const actualInstance = await E(zoe).getInstance(invitation);
   t.is(actualInstance, instance);
 });
@@ -388,8 +383,7 @@ test(`zoe.getInstance - no invitation`, async t => {
 
 test(`zoe.getInstallation`, async t => {
   const { zoe, zcf, installation } = await setupZCFTest();
-  // @ts-expect-error
-  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const invitation = await E(zcf).makeInvitation(() => {}, 'invitation');
   const actualInstallation = await E(zoe).getInstallation(invitation);
   t.is(actualInstallation, installation);
 });
@@ -403,15 +397,10 @@ test(`zoe.getInstallation - no invitation`, async t => {
 });
 
 test(`zoe.getInvitationDetails`, async t => {
-  const { zoe, zcf, installation, instance } = await setupZCFTest();
+  const { zcf } = await setupZCFTest();
   // @ts-expect-error
-  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
-  const details = await E(zoe).getInvitationDetails(invitation);
-  t.deepEqual(details, {
-    description: 'invitation',
-    handle: details.handle,
-    installation,
-    instance,
+  await t.throwsAsync(() => E(zcf).makeInvitation(undefined, 'invitation'), {
+    message: 'offerHandler must be provided',
   });
 });
 

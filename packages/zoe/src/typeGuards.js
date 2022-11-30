@@ -12,6 +12,8 @@ import {
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
 
+export const HandleI = M.interface('Handle', {});
+
 // keywords have an initial cap
 export const KeywordShape = M.string();
 
@@ -35,6 +37,10 @@ export const PaymentPKeywordRecordShape = M.recordOf(
   M.eref(PaymentShape),
 );
 export const IssuerKeywordRecordShape = M.recordOf(KeywordShape, IssuerShape);
+export const IssuerPKeywordRecordShape = M.recordOf(
+  KeywordShape,
+  M.eref(IssuerShape),
+);
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
 export const IssuerRecordShape = M.split(
@@ -87,7 +93,7 @@ export const FullProposalShape = harden({
 export const ProposalShape = M.partial(FullProposalShape);
 
 export const isOnDemandExitRule = exit => {
-  const [exitKey] = Object.getOwnPropertyNames(exit);
+  const [exitKey] = Object.keys(exit);
   return exitKey === 'onDemand';
 };
 
@@ -96,7 +102,7 @@ export const isOnDemandExitRule = exit => {
  * @returns {exit is WaivedExitRule}
  */
 export const isWaivedExitRule = exit => {
-  const [exitKey] = Object.getOwnPropertyNames(exit);
+  const [exitKey] = Object.keys(exit);
   return exitKey === 'waived';
 };
 
@@ -105,7 +111,7 @@ export const isWaivedExitRule = exit => {
  * @returns {exit is AfterDeadlineExitRule}
  */
 export const isAfterDeadlineExitRule = exit => {
-  const [exitKey] = Object.getOwnPropertyNames(exit);
+  const [exitKey] = Object.keys(exit);
   return exitKey === 'afterDeadline';
 };
 
@@ -139,11 +145,11 @@ export const ExitObjectShape = M.interface('Exit Object', {
 
 export const InstanceAdminShape = M.interface('InstanceAdmin', {
   makeInvitation: M.call(InvitationHandleShape, M.string())
-    .optional(M.any(), ProposalShape)
+    .optional(M.any(), M.pattern())
     .returns(M.promise()),
   saveIssuer: M.call(M.eref(IssuerShape), M.string()).returns(M.promise()),
   makeZoeMint: M.call(KeywordShape)
-    .optional(AssetKindShape, DisplayInfoShape, M.pattern)
+    .optional(AssetKindShape, DisplayInfoShape, M.pattern())
     .returns(M.remotable()),
   registerFeeMint: M.call(KeywordShape, M.remotable()).returns(M.remotable()),
   makeNoEscrowSeatKit: M.call(
@@ -160,6 +166,7 @@ export const InstanceAdminShape = M.interface('InstanceAdmin', {
   stopAcceptingOffers: M.call().returns(),
   setOfferFilter: M.call(M.arrayOf(M.string())).returns(),
   getOfferFilter: M.call().returns(M.string()),
+  getExitSubscriber: M.call(SeatShape).returns(M.any()),
 });
 
 export const InstanceStorageManagerGuard = M.interface(
@@ -173,7 +180,7 @@ export const InstanceStorageManagerGuard = M.interface(
 
     saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
     makeZoeMint: M.call(KeywordShape)
-      .optional(AssetKindShape, DisplayInfoShape, M.pattern)
+      .optional(AssetKindShape, DisplayInfoShape, M.pattern())
       .returns(M.or(ZoeMintShape, M.remotable(), M.promise())),
     registerFeeMint: M.call(KeywordShape, M.remotable()).returns(
       IssuerKitShape,
@@ -192,7 +199,7 @@ export const InstanceStorageManagerGuard = M.interface(
     ),
     deleteInstanceAdmin: M.call(InstanceAdminShape).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
-      .optional(M.any(), ProposalShape)
+      .optional(M.any(), M.pattern())
       .returns(M.promise()),
     getRoot: M.call().returns(M.promise()),
     getAdminNode: M.call().returns(M.remotable()),
@@ -214,18 +221,17 @@ export const ZoeStorageMangerInterface = {
     getInvitationIssuer: M.call().returns(IssuerShape),
 
     getBundleIDFromInstallation: M.call(M.any()).returns(M.promise()),
-    // TODO(cth) what should BundleID look like?
     installBundle: M.call(M.any()).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
 
     getPublicFacet: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
-    getOfferFilter: M.call(InstanceHandleShape).returns(M.promise()),
+    getOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
     setOfferFilter: M.call(
       InstanceHandleShape,
       M.arrayOf(M.string()),
     ).returns(),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-      M.or(ProposalShape, M.undefined()),
+      M.or(M.pattern(), M.undefined()),
     ),
   }),
   makeOfferAccess: M.interface('ZoeStorage makeOffer access', {
@@ -233,7 +239,7 @@ export const ZoeStorageMangerInterface = {
     installBundle: M.call(InstanceHandleShape).returns(),
     getInstanceAdmin: M.call(InstanceHandleShape).returns(M.remotable()),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-      M.or(ProposalShape, M.undefined()),
+      M.or(M.pattern(), M.undefined()),
     ),
     getInvitationIssuer: M.call().returns(IssuerShape),
     depositPayments: M.call(ProposalShape, PaymentPKeywordRecordShape).returns(
@@ -245,7 +251,7 @@ export const ZoeStorageMangerInterface = {
       M.any(),
       InstallationShape,
       M.any(),
-      IssuerKeywordRecordShape,
+      IssuerPKeywordRecordShape,
       InstanceHandleShape,
       BundleCapShape,
     ).returns(M.promise()),
@@ -258,12 +264,10 @@ export const ZoeStorageMangerInterface = {
 
 export const ZoeServiceInterface = {
   zoeService: M.interface('ZoeService', {
-    // TODO(cth) what should bundleID look like?
     install: M.call(M.any()).returns(M.promise()),
-    installBundleID: M.call(M.any()).returns(M.promise()),
-    // TODO(CTH) The rest is optional.  How do I say that?
+    installBundleID: M.call(M.string()).returns(M.promise()),
     startInstance: M.call(M.eref(InstallationShape))
-      .optional(IssuerKeywordRecordShape, M.any(), M.any())
+      .optional(IssuerPKeywordRecordShape, M.any(), M.any())
       .returns(M.promise()),
     offer: M.call(M.eref(InvitationShape))
       .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
@@ -272,7 +276,7 @@ export const ZoeServiceInterface = {
     getPublicFacet: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
     getBrands: M.call(InstanceHandleShape).returns(M.promise()),
     getIssuers: M.call(InstanceHandleShape).returns(M.promise()),
-    getOfferFilter: M.call(InstanceHandleShape).returns(M.promise()),
+    getOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
     setOfferFilter: M.call(
       InstanceHandleShape,
       M.arrayOf(M.string()),
@@ -305,7 +309,7 @@ export const ZoeServiceInterface = {
 };
 
 export const AdminFacetGuard = M.interface('ZcfAdminFacet', {
-  getVatShutdownPromise: M.call().returns(),
-  restartContract: M.call().returns(),
-  upgradeContract: M.call().returns(),
+  getVatShutdownPromise: M.call().returns(M.promise()),
+  restartContract: M.call().optional(M.any()).returns(M.promise()),
+  upgradeContract: M.call(M.string()).optional(M.any()).returns(M.promise()),
 });

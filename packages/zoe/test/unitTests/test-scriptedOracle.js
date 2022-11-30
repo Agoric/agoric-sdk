@@ -17,7 +17,7 @@ import '../../src/contracts/exported.js';
 import buildManualTimer from '../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../tools/eventLoopIteration.js';
 import { setup } from './setupBasicMints.js';
-import { assertPayoutAmount } from '../zoeTestHelpers.js';
+import { assertGetPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
 
 // This test shows how to set up a fake oracle and use it in a contract.
@@ -109,16 +109,18 @@ test.serial('pay bounty', async t => {
     }),
   );
   const bountyInvitation = await funderSeat.getOfferResult();
-  const promise1 = assertPayoutAmount(
+  const promise1 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    funderSeat.getPayout('Fee'),
+    funderSeat,
+    'Fee',
     moola(50n),
   );
-  const promise2 = assertPayoutAmount(
+  const promise2 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    funderSeat.getPayout('Bounty'),
+    funderSeat,
+    'Bounty',
     moola(0n),
   );
 
@@ -133,16 +135,18 @@ test.serial('pay bounty', async t => {
       Fee: moolaMint.mintPayment(moola(50n)),
     }),
   );
-  const promise3 = assertPayoutAmount(
+  const promise3 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    bountySeat.getPayout('Fee'),
+    bountySeat,
+    'Fee',
     moola(0n),
   );
-  const promise4 = assertPayoutAmount(
+  const promise4 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    bountySeat.getPayout('Bounty'),
+    bountySeat,
+    'Bounty',
     moola(200n),
   );
 
@@ -194,17 +198,19 @@ test.serial('pay no bounty', async t => {
     }),
   );
   const bountyInvitation = await funderSeat.getOfferResult();
-  const p1 = assertPayoutAmount(
+  const p1 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    funderSeat.getPayout('Fee'),
+    funderSeat,
+    'Fee',
     moola(50n),
   );
   // Alice gets the funds back.
-  const p2 = assertPayoutAmount(
+  const p2 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    funderSeat.getPayout('Bounty'),
+    funderSeat,
+    'Bounty',
     moola(200n),
   );
 
@@ -219,17 +225,19 @@ test.serial('pay no bounty', async t => {
       Fee: moolaMint.mintPayment(moola(50n)),
     }),
   );
-  const p3 = assertPayoutAmount(
+  const p3 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    bountySeat.getPayout('Fee'),
+    bountySeat,
+    'Fee',
     moola(0n),
   );
   // Bob doesn't receive the bounty
-  const p4 = assertPayoutAmount(
+  const p4 = assertGetPayoutAmount(
     t,
     moolaIssuer,
-    bountySeat.getPayout('Bounty'),
+    bountySeat,
+    'Bounty',
     moola(0n),
   );
 

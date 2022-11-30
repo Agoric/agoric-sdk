@@ -98,7 +98,7 @@ const defaultParamValues = debt =>
  * @returns {Promise<DriverContext>}
  */
 export const makeDriverContext = async () => {
-  const { zoe, feeMintAccessRetriever } = setUpZoeForTest();
+  const { zoe, feeMintAccessP } = setUpZoeForTest();
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
@@ -119,7 +119,8 @@ export const makeDriverContext = async () => {
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
-  const feeMintAccess = await E(feeMintAccessRetriever).get();
+
+  const feeMintAccess = await feeMintAccessP;
   const contextPs = {
     bundles,
     installation,

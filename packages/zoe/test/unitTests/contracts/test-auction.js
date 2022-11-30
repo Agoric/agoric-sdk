@@ -12,6 +12,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 import { setup } from '../setupBasicMints.js';
 import { setupMixed } from '../setupMixedMints.js';
+import { assertGetPayoutAndDeposit } from '../../zoeTestHelpers.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -868,27 +869,22 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
         return { seat, makeBidInvitationObj };
       },
       collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              moola(0n),
-              `Alice didn't get any of what she put in`,
-            ),
-          );
-
-        await E(seat)
-          .getPayout('Ask')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              simoleans(11n),
-              `Alice got the first price bid, which is Bob`,
-            ),
-          );
+        await assertGetPayoutAndDeposit(
+          t,
+          seat,
+          'Asset',
+          moolaPurse,
+          moola(0n),
+          `Alice didn't get any of what she put in`,
+        );
+        await assertGetPayoutAndDeposit(
+          t,
+          seat,
+          'Ask',
+          simoleanPurse,
+          simoleans(11n),
+          `Alice got the first price bid, which is Bob`,
+        );
       },
     };
   };
@@ -944,23 +940,22 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
         return seat;
       },
       collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(1n), `Bob wins the auction`),
-          );
-
-        await E(seat)
-          .getPayout('Bid')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(
-              amountDeposited,
-              simoleans(0n),
-              `Bob gets the difference between his bid back`,
-            ),
-          );
+        await assertGetPayoutAndDeposit(
+          t,
+          seat,
+          'Asset',
+          moolaPurse,
+          moola(1n),
+          `Bob wins the auction`,
+        );
+        await assertGetPayoutAndDeposit(
+          t,
+          seat,
+          'Bid',
+          simoleanPurse,
+          simoleans(0n),
+          `Bob gets the difference between his bid back`,
+        );
       },
     });
   };
@@ -988,19 +983,26 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
         return seat;
       },
       collectPayout: async seat => {
-        await E(seat)
-          .getPayout('Asset')
-          .then(payment => moolaPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, moola(0n), `didn't win the auction`),
-          );
+        const m = `didn't win the auction`;
+        await assertGetPayoutAndDeposit(
+          t,
+          seat,
+          'Asset',
+          moolaPurse,
+          moola(0n),
+          m,
+        );
 
-        await E(seat)
-          .getPayout('Bid')
-          .then(payment => simoleanPurse.deposit(payment))
-          .then(amountDeposited =>
-            t.deepEqual(amountDeposited, bidAmount, `full refund`),
-          );
+        const msg = `full refund`;
+        const simPurse = simoleanPurse;
+        await assertGetPayoutAndDeposit(
+          t,
+          seat,
+          'Bid',
+          simPurse,
+          bidAmount,
+          msg,
+        );
       },
     });
   };

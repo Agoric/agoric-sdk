@@ -14,7 +14,7 @@ import {
   depositToSeat,
   withdrawFromSeat,
 } from '../../src/contractSupport/index.js';
-import { assertPayoutAmount } from '../zoeTestHelpers.js';
+import { assertAmountsEqual } from '../zoeTestHelpers.js';
 import { makeOffer } from './makeOffer.js';
 
 const filename = new URL(import.meta.url).pathname;
@@ -106,7 +106,9 @@ test(`blockedOffers - allow empty`, async t => {
   await depositToSeat(zcf, zcfSeat, { C: bucks(2n) }, { C: newBucks });
   const promises = await withdrawFromSeat(zcf, zcfSeat, { C: bucks(2n) });
 
-  await assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2n), 'C is 2');
+  await E.when(E(bucksIssuer).getAmountOf(promises.C), amount =>
+    assertAmountsEqual(t, amount, bucks(2n), 'C is 2'),
+  );
 });
 
 test(`blockedOffers - allow`, async t => {
@@ -127,7 +129,9 @@ test(`blockedOffers - allow`, async t => {
   await depositToSeat(zcf, zcfSeat, { C: bucks(2n) }, { C: newBucks });
   const promises = await withdrawFromSeat(zcf, zcfSeat, { C: bucks(2n) });
 
-  await assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2n), 'C is 2');
+  await E.when(E(bucksIssuer).getAmountOf(promises.C), amount =>
+    assertAmountsEqual(t, amount, bucks(2n), 'C is 2'),
+  );
 });
 
 test(`blockedOffers - allow not blocked by incomplete prefix`, async t => {
@@ -148,5 +152,7 @@ test(`blockedOffers - allow not blocked by incomplete prefix`, async t => {
   await depositToSeat(zcf, zcfSeat, { C: bucks(2n) }, { C: newBucks });
   const promises = await withdrawFromSeat(zcf, zcfSeat, { C: bucks(2n) });
 
-  await assertPayoutAmount(t, bucksIssuer, promises.C, bucks(2n), 'C is 2');
+  await E.when(E(bucksIssuer).getAmountOf(promises.C), amount =>
+    assertAmountsEqual(t, amount, bucks(2n), 'C is 2'),
+  );
 });

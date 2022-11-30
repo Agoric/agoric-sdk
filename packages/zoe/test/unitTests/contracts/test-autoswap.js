@@ -17,7 +17,10 @@ import '../../../exported.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
-import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
+import {
+  assertOfferResult,
+  assertGetPayoutAmount,
+} from '../../zoeTestHelpers.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -25,7 +28,6 @@ const dirname = path.dirname(filename);
 const autoswap = `${dirname}/../../../src/contracts/autoswap.js`;
 
 test('autoSwap API interactions, no jig', async t => {
-  t.plan(20);
   const {
     moolaIssuer,
     simoleanIssuer,
@@ -86,11 +88,11 @@ test('autoSwap API interactions, no jig', async t => {
   );
 
   assertOfferResult(t, aliceSeat, 'Added liquidity.');
-  const liquidityPayout = await aliceSeat.getPayout('Liquidity');
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(
     t,
     liquidityIssuerP,
-    liquidityPayout,
+    aliceSeat,
+    'Liquidity',
     liquidity(10n),
   );
   t.deepEqual(
@@ -136,16 +138,8 @@ test('autoSwap API interactions, no jig', async t => {
   // Bob swaps
   assertOfferResult(t, bobSeat, 'Swap successfully completed.');
 
-  const { In: bobMoolaPayout1, Out: bobSimoleanPayout1 } =
-    await bobSeat.getPayouts();
-
-  await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout1, moola(0n));
-  await assertPayoutAmount(
-    t,
-    simoleanIssuer,
-    bobSimoleanPayout1,
-    simoleans(1n),
-  );
+  await assertGetPayoutAmount(t, moolaIssuer, bobSeat, 'In', moola(0n));
+  await assertGetPayoutAmount(t, simoleanIssuer, bobSeat, 'Out', simoleans(1n));
   t.deepEqual(
     await E(bobAutoswap).getPoolAllocation(),
     {
@@ -181,13 +175,12 @@ test('autoSwap API interactions, no jig', async t => {
 
   assertOfferResult(t, bobSeat, 'Swap successfully completed.');
 
-  const { Out: bobMoolaPayout2, In: bobSimoleanPayout2 } =
-    await bobSecondSeat.getPayouts();
-  await assertPayoutAmount(t, moolaIssuer, bobMoolaPayout2, moola(5n));
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(t, moolaIssuer, bobSecondSeat, 'Out', moola(5n));
+  await assertGetPayoutAmount(
     t,
     simoleanIssuer,
-    bobSimoleanPayout2,
+    bobSecondSeat,
+    'In',
     simoleans(0n),
   );
 
@@ -211,6 +204,7 @@ test('autoSwap API interactions, no jig', async t => {
     want: { Central: moola(0n), Secondary: simoleans(0n) },
   });
 
+  const liquidityPayout = await aliceSeat.getPayout('Liquidity');
   const aliceRmLiqSeat = await E(zoe).offer(
     aliceSecondInvitation,
     aliceRemoveLiquidityProposal,
@@ -218,22 +212,25 @@ test('autoSwap API interactions, no jig', async t => {
   );
 
   assertOfferResult(t, aliceRmLiqSeat, 'Liquidity successfully removed.');
-  const {
-    Central: aliceMoolaPayout,
-    Secondary: aliceSimoleanPayout,
-    Liquidity: aliceLiquidityPayout,
-  } = await aliceRmLiqSeat.getPayouts();
-  await assertPayoutAmount(t, moolaIssuer, aliceMoolaPayout, moola(8n));
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(
+    t,
+    moolaIssuer,
+    aliceRmLiqSeat,
+    'Central',
+    moola(8n),
+  );
+  await assertGetPayoutAmount(
     t,
     simoleanIssuer,
-    aliceSimoleanPayout,
+    aliceRmLiqSeat,
+    'Secondary',
     simoleans(7n),
   );
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(
     t,
     liquidityIssuerP,
-    aliceLiquidityPayout,
+    aliceRmLiqSeat,
+    'Liquidity',
     liquidity(0n),
   );
 
@@ -515,9 +512,8 @@ test('autoSwap - trade attempt before init, no jig', async t => {
     'The pool has not been initialized',
   );
 
-  const { In: mPayout, Out: sPayout } = await seat.getPayouts();
-  await assertPayoutAmount(t, moolaIssuer, mPayout, moola(100n));
-  await assertPayoutAmount(t, simoleanIssuer, sPayout, simoleans(0n));
+  await assertGetPayoutAmount(t, moolaIssuer, seat, 'In', moola(100n));
+  await assertGetPayoutAmount(t, simoleanIssuer, seat, 'Out', simoleans(0n));
 
   const poolPost = await E(publicFacet).getPoolAllocation();
   t.deepEqual({}, poolPost, `empty Pool still`);
@@ -666,9 +662,14 @@ test('autoSwap jig - swap varying amounts', async t => {
     'amountIn insufficient when want specified',
   );
 
-  const { In: moolaReturn, Out: noSimoleans } = await failedSeat.getPayouts();
-  await assertPayoutAmount(t, moolaIssuer, moolaReturn, moola(3n));
-  await assertPayoutAmount(t, simoleanIssuer, noSimoleans, simoleans(0n));
+  await assertGetPayoutAmount(t, moolaIssuer, failedSeat, 'In', moola(3n));
+  await assertGetPayoutAmount(
+    t,
+    simoleanIssuer,
+    failedSeat,
+    'Out',
+    simoleans(0n),
+  );
 
   // attempt a trade with bad numbers
 });

@@ -789,6 +789,8 @@ export const startStakeFactory = async (
       feeMintAccessP,
     ]);
 
+  console.log(`EB  p.all`, feeMintAccess);
+
   const stakeFactoryTerms = makeStakeFactoryTerms(
     {
       timerService: chainTimerService,

@@ -159,6 +159,7 @@ const start = async (zcf, privateArgs) => {
     electionManager: zcf.getInstance(),
   });
 
+  console.log(`CG  START `, privateArgs.governed.feeMintAccess);
   const {
     creatorFacet: governedCF,
     instance: governedInstance,

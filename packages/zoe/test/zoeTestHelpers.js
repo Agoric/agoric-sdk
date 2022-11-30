@@ -36,15 +36,26 @@ export const assertAmountsEqual = (t, amount, expected, label = '') => {
   }
 };
 
-export const assertPayoutAmount = async (
+export const assertPayoutAmount = (t, issuer, payout, expectedAmount, label) =>
+  E.when(E(issuer).getAmountOf(payout), amount =>
+    assertAmountsEqual(t, amount, expectedAmount, label),
+  );
+
+export const assertGetPayoutAmount = async (
   t,
   issuer,
-  payout,
+  seat,
+  keyword,
   expectedAmount,
   label = '',
 ) => {
-  const amount = await E(issuer).getAmountOf(payout);
-  assertAmountsEqual(t, amount, expectedAmount, label);
+  assertPayoutAmount(
+    t,
+    issuer,
+    E(seat).getPayout(keyword),
+    expectedAmount,
+    label,
+  );
 };
 
 // Returns a promise that can be awaited in tests to ensure the check completes.
@@ -61,6 +72,29 @@ export const assertPayoutDeposit = (t, payout, purse, amount) => {
         ),
       );
   });
+};
+
+// Returns a promise that can be awaited in tests to ensure the check completes.
+export const assertGetPayoutAndDeposit = (
+  t,
+  seat,
+  keyword,
+  purse,
+  amount,
+  msg,
+) => {
+  const assertDeposit = payment => {
+    return E.when(E(purse).deposit(payment), payoutAmount =>
+      assertAmountsEqual(
+        t,
+        payoutAmount,
+        amount,
+        msg || `payout was ${payoutAmount.value}, expected ${amount}.value`,
+      ),
+    );
+  };
+
+  return E.when(E(seat).getPayout(keyword), payout => assertDeposit(payout));
 };
 
 export const assertOfferResult = (t, seat, expected, msg = expected) => {

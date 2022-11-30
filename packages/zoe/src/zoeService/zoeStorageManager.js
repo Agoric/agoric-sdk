@@ -1,18 +1,19 @@
 // @ts-check
 
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
+import { AssetKind, makeDurableIssuerKit } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
   vivifyFarClassKit,
+  vivifyFarClass,
+  provideDurableSetStore,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 
 import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
-import { makeEscrowStorage } from './escrowStorage.js';
+import { provideEscrowStorage } from './escrowStorage.js';
 import { vivifyInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
@@ -21,6 +22,7 @@ import './types.js';
 import './internal-types.js';
 import {
   InstanceStorageManagerGuard,
+  ZoeMintShape,
   ZoeStorageMangerInterface,
 } from '../typeGuards.js';
 
@@ -41,7 +43,6 @@ import {
  * @param {GetBundleCapForID} getBundleCapForID
  * @param {ShutdownWithFailure} shutdownZoeVat
  * @param {{
- *    getFeeMintAccessToken: () => FeeMintAccess,
  *    getFeeIssuerKit: GetFeeIssuerKit,
  *    getFeeIssuer: () => Issuer,
  *    getFeeBrand: () => Brand,
@@ -64,7 +65,7 @@ export const makeZoeStorageManager = (
   // EscrowStorage holds the purses that Zoe uses for escrow. This
   // object should be closely held and tracked: all of the digital
   // assets that users escrow are contained within these purses.
-  const escrowStorage = makeEscrowStorage(zoeBaggage);
+  const escrowStorage = provideEscrowStorage(zoeBaggage);
 
   // Add a purse for escrowing user funds (not for fees). Create the
   // local, non-remote escrow purse for the fee mint immediately.
@@ -72,7 +73,11 @@ export const makeZoeStorageManager = (
   // would treat the feeIssuer as if it is remote, creating a promise
   // for a purse with E(issuer).makeEmptyPurse(). We need a local
   // purse, so we cannot allow that to happen.
-  escrowStorage.makeLocalPurse(feeMint.getFeeIssuer(), feeMint.getFeeBrand());
+
+  escrowStorage.provideLocalPurse(
+    feeMint.getFeeIssuer(),
+    feeMint.getFeeBrand(),
+  );
 
   // In order to participate in a contract, users must have
   // invitations, which are ERTP payments made by Zoe. This code
@@ -106,6 +111,54 @@ export const makeZoeStorageManager = (
     }
     return undefined;
   };
+
+  const zoeMintBaggageSet = provideDurableSetStore(
+    zoeBaggage,
+    'zoeMintBaggageSet',
+  );
+  for (const issuerBaggage of zoeMintBaggageSet.values()) {
+    zoeMintBaggageSet(issuerBaggage);
+  }
+
+  const makeZoeMint = vivifyFarClass(
+    zoeBaggage,
+    'ZoeMint',
+    ZoeMintShape,
+    (localMint, localPooledPurse, adminNode, localIssuerRecord) => ({
+      localMint,
+      localPooledPurse,
+      adminNode,
+      localIssuerRecord,
+    }),
+    {
+      getIssuerRecord() {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+        return state.localIssuerRecord;
+      },
+      mintAndEscrow(totalToMint) {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+        const payment = state.localMint.mintPayment(totalToMint);
+        // Note COMMIT POINT within deposit.
+        state.localPooledPurse.deposit(payment, totalToMint);
+      },
+      withdrawAndBurn(totalToBurn) {
+        // @ts-expect-error TS doesn't understand context
+        const { state } = this;
+        try {
+          // COMMIT POINT
+          const payment = state.localPooledPurse.withdraw(totalToBurn);
+          // Note redundant COMMIT POINT within burn.
+          state.localIssuerRecord.issuer.burn(payment, totalToBurn);
+        } catch (err) {
+          // eslint-disable-next-line no-use-before-define
+          state.adminNode.terminateWithFailure(err);
+          throw err;
+        }
+      },
+    },
+  );
 
   const makeZoeInstanceStorageManager = async (
     instanceBaggage,
@@ -144,8 +197,7 @@ export const makeZoeStorageManager = (
       brands,
     );
 
-    /** @type {WrapIssuerKitWithZoeMint} */
-    const wrapIssuerKitWithZoeMint = (keyword, localIssuerKit) => {
+    const wrapIssuerKitWithZoeMint = (keyword, localIssuerKit, adminNode) => {
       const {
         mint: localMint,
         issuer: localIssuer,
@@ -159,7 +211,7 @@ export const makeZoeStorageManager = (
         localDisplayInfo,
       );
       issuerStorage.storeIssuerRecord(localIssuerRecord);
-      const localPooledPurse = escrowStorage.makeLocalPurse(
+      const localPooledPurse = escrowStorage.provideLocalPurse(
         localIssuerRecord.issuer,
         localIssuerRecord.brand,
       );
@@ -168,30 +220,12 @@ export const makeZoeStorageManager = (
         localIssuerRecord,
       );
       /** @type {ZoeMint} */
-      const zoeMint = Far('ZoeMint', {
-        getIssuerRecord: () => {
-          return localIssuerRecord;
-        },
-        mintAndEscrow: totalToMint => {
-          const payment = localMint.mintPayment(totalToMint);
-          // Note COMMIT POINT within deposit.
-          localPooledPurse.deposit(payment, totalToMint);
-        },
-        withdrawAndBurn: totalToBurn => {
-          // eslint-disable-next-line no-use-before-define
-          try {
-            // COMMIT POINT
-            const payment = localPooledPurse.withdraw(totalToBurn);
-            // Note redundant COMMIT POINT within burn.
-            localIssuer.burn(payment, totalToBurn);
-          } catch (err) {
-            // eslint-disable-next-line no-use-before-define
-            adminNode.terminateWithFailure(err);
-            throw err;
-          }
-        },
-      });
-      return zoeMint;
+      return makeZoeMint(
+        localMint,
+        localPooledPurse,
+        adminNode,
+        localIssuerRecord,
+      );
     };
 
     const makeInvitationImpl = setupMakeInvitation(
@@ -241,19 +275,23 @@ export const makeZoeStorageManager = (
           ) {
             // Local indicates one that zoe itself makes from vetted code,
             // and so can be assumed correct and fresh by zoe.
-            const localIssuerKit = makeIssuerKit(
+            const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
+              durable: true,
+            });
+            const localIssuerKit = makeDurableIssuerKit(
+              issuerBaggage,
               keyword,
               assetKind,
               displayInfo,
-              // eslint-disable-next-line no-use-before-define
               adminNode.terminateWithFailure,
               { elementShape },
             );
-            return wrapIssuerKitWithZoeMint(keyword, localIssuerKit);
+            zoeMintBaggageSet.add(issuerBaggage);
+            return wrapIssuerKitWithZoeMint(keyword, localIssuerKit, adminNode);
           },
           registerFeeMint(keyword, allegedFeeMintAccess) {
             const feeIssuerKit = feeMint.getFeeIssuerKit(allegedFeeMintAccess);
-            return wrapIssuerKitWithZoeMint(keyword, feeIssuerKit);
+            return wrapIssuerKitWithZoeMint(keyword, feeIssuerKit, adminNode);
           },
           getInstanceRecord() {
             return instanceRecordManager.getInstanceRecord();

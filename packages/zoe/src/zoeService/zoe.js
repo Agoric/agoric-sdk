@@ -16,7 +16,11 @@ import '../../exported.js';
 import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
-import { makeScalarBigMapStore, vivifyFarClassKit } from '@agoric/vat-data';
+import {
+  makeScalarBigMapStore,
+  vivifyFarClassKit,
+  provide,
+} from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -49,7 +53,7 @@ const makeZoeKit = (
 ) => {
   let zoeService;
 
-  const feeMint = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
+  const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID =>
@@ -79,7 +83,7 @@ const makeZoeKit = (
     createZCFVat,
     getBundleCapForID,
     shutdownZoeVat,
-    feeMint,
+    feeMintKit.feeMint,
     zoeBaggage,
   );
 
@@ -136,7 +140,7 @@ const makeZoeKit = (
           return state.dataAccess.getInvitationIssuer();
         },
         async getFeeIssuer() {
-          return feeMint.getFeeIssuer();
+          return feeMintKit.feeMint.getFeeIssuer();
         },
 
         getBrands(instance) {
@@ -181,13 +185,16 @@ const makeZoeKit = (
       },
       feeMintAccessRetriever: {
         get() {
-          return feeMint.getFeeMintAccessToken();
+          console.log(`ZOE  fMAR`, feeMintKit.feeMintAccess);
+          return feeMintKit.feeMintAccess;
         },
       },
     },
   );
 
-  const zoeServices = makeZoeService(zoeServiceDataAccess);
+  const zoeServices = provide(zoeBaggage, 'zoe', () =>
+    makeZoeService(zoeServiceDataAccess),
+  );
   zoeService = zoeServices.zoeService;
   return zoeServices;
 };

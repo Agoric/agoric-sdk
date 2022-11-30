@@ -3,6 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { M, fit } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints.js';
 import {
@@ -13,7 +14,7 @@ import {
   assertNatAssetKind,
   saveAllIssuers,
 } from '../../../src/contractSupport/index.js';
-import { assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { assertGetPayoutAmount } from '../../zoeTestHelpers.js';
 import { setupZCFTest } from './setupZcfTest.js';
 import { makeOffer } from '../makeOffer.js';
 
@@ -46,22 +47,10 @@ test(`zoeHelper with zcf - swap`, async t => {
     message,
     'The offer has been accepted. Once the contract has been completed, please check your payout',
   );
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await aUserSeat.getPayout('A'),
-    moola(3n),
-  );
-  const seat1PayoutB = await aUserSeat.getPayout('B');
-  await assertPayoutAmount(t, simoleanIssuer, seat1PayoutB, simoleans(4n));
-  const seat2PayoutB = await bUserSeat.getPayout('B');
-  await assertPayoutAmount(t, simoleanIssuer, seat2PayoutB, simoleans(3n));
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await bUserSeat.getPayout('A'),
-    moola(2n),
-  );
+  await assertGetPayoutAmount(t, moolaIssuer, await aUserSeat, 'A', moola(3n));
+  await assertGetPayoutAmount(t, simoleanIssuer, aUserSeat, 'B', simoleans(4n));
+  await assertGetPayoutAmount(t, simoleanIssuer, bUserSeat, 'B', simoleans(3n));
+  await assertGetPayoutAmount(t, moolaIssuer, bUserSeat, 'A', moola(2n));
 });
 
 test(`zoeHelper with zcf - swap no match`, async t => {
@@ -96,22 +85,10 @@ test(`zoeHelper with zcf - swap no match`, async t => {
     },
     'mismatched offers',
   );
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await aUserSeat.getPayout('A'),
-    moola(0n),
-  );
-  const seat1PayoutB = await aUserSeat.getPayout('B');
-  await assertPayoutAmount(t, simoleanIssuer, seat1PayoutB, simoleans(3n));
-  const seat2PayoutB = await bUserSeat.getPayout('B');
-  await assertPayoutAmount(t, simoleanIssuer, seat2PayoutB, simoleans(0n));
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await bUserSeat.getPayout('A'),
-    moola(5n),
-  );
+  await assertGetPayoutAmount(t, moolaIssuer, aUserSeat, 'A', moola(0n));
+  await assertGetPayoutAmount(t, simoleanIssuer, aUserSeat, 'B', simoleans(3n));
+  await assertGetPayoutAmount(t, simoleanIssuer, bUserSeat, 'B', simoleans(0n));
+  await assertGetPayoutAmount(t, moolaIssuer, bUserSeat, 'A', moola(5n));
 });
 
 test(`zcf assertNatAssetKind`, async t => {
@@ -405,18 +382,8 @@ test(`zoeHelper w/zcf - swapExact`, async t => {
 
   t.truthy(swapMsg, 'swap succeeded');
   t.truthy(zcfSeatA.hasExited(), 'exit right');
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatA.getPayout('A'),
-    moola(20n),
-  );
-  await assertPayoutAmount(
-    t,
-    simoleanIssuer,
-    await userSeatA.getPayout('B'),
-    simoleans(0n),
-  );
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatA, 'A', moola(20n));
+  await assertGetPayoutAmount(t, simoleanIssuer, userSeatA, 'B', simoleans(0n));
   t.truthy(
     sameMembers(Object.getOwnPropertyNames(await userSeatA.getPayouts()), [
       'B',
@@ -424,18 +391,8 @@ test(`zoeHelper w/zcf - swapExact`, async t => {
     ]),
   );
   t.truthy(zcfSeatB.hasExited(), 'exit right');
-  await assertPayoutAmount(
-    t,
-    simoleanIssuer,
-    await userSeatB.getPayout('C'),
-    simoleans(3n),
-  );
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatB.getPayout('D'),
-    moola(0n),
-  );
+  await assertGetPayoutAmount(t, simoleanIssuer, userSeatB, 'C', simoleans(3n));
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatB, 'D', moola(0n));
   t.truthy(
     sameMembers(Object.getOwnPropertyNames(await userSeatB.getPayouts()), [
       'D',
@@ -474,31 +431,18 @@ test(`zoeHelper w/zcf - swapExact w/shortage`, async t => {
       'rights were not conserved for brand "[Alleged: moola brand]" "[15n]" != "[20n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatA.getPayout('A'),
-    moola(0n),
-  );
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatA, 'A', moola(0n));
+  await assertGetPayoutAmount(
     t,
     simoleanIssuer,
-    await userSeatA.getPayout('B'),
+    userSeatA,
+    'B',
     simoleans(10n),
   );
   t.truthy(zcfSeatB.hasExited(), 'fail right');
-  await assertPayoutAmount(
-    t,
-    simoleanIssuer,
-    await userSeatB.getPayout('C'),
-    simoleans(0n),
-  );
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatB.getPayout('D'),
-    moola(15n),
-  );
+
+  await assertGetPayoutAmount(t, simoleanIssuer, userSeatB, 'C', simoleans(0n));
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatB, 'D', moola(15n));
 });
 
 test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
@@ -531,31 +475,17 @@ test(`zoeHelper w/zcf - swapExact w/excess`, async t => {
       'rights were not conserved for brand "[Alleged: moola brand]" "[40n]" != "[20n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatA.getPayout('A'),
-    moola(0n),
-  );
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatA, 'A', moola(0n));
+  await assertGetPayoutAmount(
     t,
     simoleanIssuer,
-    await userSeatA.getPayout('B'),
+    userSeatA,
+    'B',
     simoleans(10n),
   );
   t.truthy(zcfSeatB.hasExited(), 'fail right');
-  await assertPayoutAmount(
-    t,
-    simoleanIssuer,
-    await userSeatB.getPayout('C'),
-    simoleans(0n),
-  );
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatB.getPayout('D'),
-    moola(40n),
-  );
+  await assertGetPayoutAmount(t, simoleanIssuer, userSeatB, 'C', simoleans(0n));
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatB, 'D', moola(40n));
 });
 
 test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
@@ -588,25 +518,16 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
       'rights were not conserved for brand "[Alleged: moola brand]" "[40n]" != "[0n]"',
   });
   t.truthy(zcfSeatA.hasExited(), 'fail right');
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(
     t,
     simoleanIssuer,
-    await userSeatA.getPayout('B'),
+    userSeatA,
+    'B',
     simoleans(10n),
   );
   t.truthy(zcfSeatB.hasExited(), 'fail right');
-  await assertPayoutAmount(
-    t,
-    simoleanIssuer,
-    await userSeatB.getPayout('C'),
-    simoleans(0n),
-  );
-  await assertPayoutAmount(
-    t,
-    moolaIssuer,
-    await userSeatB.getPayout('D'),
-    moola(40n),
-  );
+  await assertGetPayoutAmount(t, simoleanIssuer, userSeatB, 'C', simoleans(0n));
+  await assertGetPayoutAmount(t, moolaIssuer, userSeatB, 'D', moola(40n));
 });
 
 test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {

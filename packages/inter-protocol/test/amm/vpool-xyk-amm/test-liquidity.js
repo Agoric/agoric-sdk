@@ -5,7 +5,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
-import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { assertGetPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { subscriptionTracker } from '../../metrics.js';
@@ -117,7 +117,7 @@ const makeAssertPayouts = (
     sExpected,
   ) => {
     const lAmount = AmountMath.make(liquidityBrand, lExpected);
-    await assertPayoutAmount(
+    await assertGetPayoutAmount(
       t,
       moolaLiquidityIssuer,
       lPayment,
@@ -125,7 +125,7 @@ const makeAssertPayouts = (
       'Liquidity payout',
     );
     const cAmount = AmountMath.make(centralR.brand, cExpected);
-    await assertPayoutAmount(
+    await assertGetPayoutAmount(
       t,
       centralR.issuer,
       cPayment,
@@ -133,7 +133,7 @@ const makeAssertPayouts = (
       'central payout',
     );
     const sAmount = AmountMath.make(moolaKit.brand, sExpected);
-    await assertPayoutAmount(
+    await assertGetPayoutAmount(
       t,
       moolaKit.issuer,
       sPayment,

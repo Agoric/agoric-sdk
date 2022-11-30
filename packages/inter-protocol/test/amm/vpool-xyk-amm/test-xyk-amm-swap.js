@@ -19,7 +19,7 @@ import {
 } from '@agoric/zoe/test/autoswapJig.js';
 import {
   assertAmountsEqual,
-  assertPayoutAmount,
+  assertGetPayoutAmount,
 } from '@agoric/zoe/test/zoeTestHelpers.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
@@ -603,9 +603,13 @@ test('amm doubleSwap', async t => {
     undefined,
   );
 
-  const payout = await E(collectFeesSeat).getPayout('Fee');
-
-  await assertPayoutAmount(t, centralR.issuer, payout, runningFees);
+  await assertGetPayoutAmount(
+    t,
+    centralR.issuer,
+    collectFeesSeat,
+    'Fee',
+    runningFees,
+  );
 
   t.deepEqual(await E(amm.ammPublicFacet).getProtocolPoolBalance(), {
     Fee: AmountMath.makeEmpty(centralR.brand),
@@ -813,12 +817,11 @@ test('amm jig - swapOut uneven', async t => {
     undefined,
   );
 
-  const payout = await E(collectFeesSeat).getPayout('Fee');
-
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(
     t,
     centralR.issuer,
-    payout,
+    collectFeesSeat,
+    'Fee',
     AmountMath.make(centralR.brand, expectedPoolBalance),
     'payout of collectFeesSeat',
   );
@@ -944,14 +947,14 @@ test('zoe allow empty reallocations', async t => {
     undefined,
   );
 
-  const payout = await E(collectFeesSeat2).getPayout('Fee');
   const result = await E(collectFeesSeat2).getOfferResult();
 
   t.deepEqual(result, 'paid out 0');
-  await assertPayoutAmount(
+  await assertGetPayoutAmount(
     t,
     centralR.issuer,
-    payout,
+    collectFeesSeat2,
+    'Fee',
     AmountMath.makeEmpty(centralR.brand),
   );
 });

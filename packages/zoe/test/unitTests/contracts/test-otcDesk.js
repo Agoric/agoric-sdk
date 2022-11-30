@@ -11,7 +11,7 @@ import { Far } from '@endo/marshal';
 
 import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
-import { assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { assertGetPayoutAmount } from '../../zoeTestHelpers.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -159,17 +159,19 @@ const makeBob = (
         'The option was exercised. Please collect the assets in your payout.',
       );
 
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         moolaIssuer,
-        E(seat).getPayout('Whatever2'),
+        seat,
+        'Whatever2',
         moola(3n),
         'bob moola',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         simoleanIssuer,
-        E(seat).getPayout('Whatever1'),
+        seat,
+        'Whatever1',
         simoleans(0n),
         'bob simolean',
       );
@@ -213,17 +215,19 @@ const makeBob = (
         message: 'The covered call option is expired.',
       });
 
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         moolaIssuer,
-        E(offerExpiredSeat).getPayout('Whatever2'),
+        offerExpiredSeat,
+        'Whatever2',
         moola(0n),
         'bob moola',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         simoleanIssuer,
-        E(offerExpiredSeat).getPayout('Whatever1'),
+        offerExpiredSeat,
+        'Whatever1',
         simoleans(4n),
         'bob simolean',
       );
@@ -268,24 +272,27 @@ const makeBob = (
           'rights were not conserved for brand "[Alleged: simoleans brand]" "[15n]" != "[16n]"',
       });
 
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         bucksIssuer,
-        E(seat).getPayout('Whatever1'),
+        seat,
+        'Whatever1',
         bucks(500n),
         'bob bucks',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         moolaIssuer,
-        E(seat).getPayout('Whatever2'),
+        seat,
+        'Whatever2',
         moola(35n),
         'bob moola',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         simoleanIssuer,
-        E(seat).getPayout('Whatever3'),
+        seat,
+        'Whatever3',
         simoleans(0n),
         'bob simolean',
       );
@@ -336,24 +343,27 @@ const makeBob = (
 
       t.is(await E(publicFacet).getRating(), '66%');
 
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         bucksIssuer,
-        E(seat).getPayout('Whatever1'),
+        seat,
+        'Whatever1',
         bucks(500n),
         'bob bucks',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         moolaIssuer,
-        E(seat).getPayout('Whatever2'),
+        seat,
+        'Whatever2',
         moola(35n),
         'bob moola',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         simoleanIssuer,
-        E(seat).getPayout('Whatever3'),
+        seat,
+        'Whatever3',
         simoleans(0n),
         'bob simolean',
       );

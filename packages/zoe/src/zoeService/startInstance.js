@@ -1,7 +1,6 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
 import { passStyleOf } from '@endo/marshal';
 import {
   M,
@@ -12,9 +11,8 @@ import {
 import { initEmpty } from '@agoric/store';
 
 import { defineDurableHandle } from '../makeHandle.js';
-import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
-import { InstanceAdminShape, AdminFacetGuard } from '../typeGuards.js';
+import { AdminFacetGuard, InstanceAdminShape } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -97,6 +95,10 @@ const instanceAdminBehavior = {
   getOfferFilter() {
     const { state } = this;
     return state.instanceAdmin.getOfferFilter();
+  },
+  getExitSubscriber(seatHandle) {
+    const { state } = this;
+    return state.seatHandleToAdmin.get(seatHandle).getExitSubscriber();
   },
 };
 
@@ -238,10 +240,6 @@ export const makeStartInstance = (
     /** @type {ZCFRoot} */
     const zcfRoot = zoeInstanceStorageManager.getRoot();
 
-    /** @type {PromiseRecord<HandleOfferObj>} */
-    const handleOfferObjPromiseKit = makePromiseKit();
-    handlePKitWarning(handleOfferObjPromiseKit);
-
     /** @type {InstanceAdmin} */
     const instanceAdmin = instanceAdminMaker(
       instanceHandle,
@@ -260,7 +258,6 @@ export const makeStartInstance = (
       );
 
     /** @type {ZoeInstanceAdmin} */
-    // @ts-expect-error CTH Temp for notifiers
     const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
       zoeInstanceStorageManager,
       instanceAdmin,

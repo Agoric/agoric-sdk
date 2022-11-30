@@ -2,7 +2,11 @@
 
 import { makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
 import { initEmpty } from '@agoric/store';
-import { vivifyKindMulti, provideDurableMapStore } from '@agoric/vat-data';
+import {
+  vivifyKindMulti,
+  provideDurableMapStore,
+  provide,
+} from '@agoric/vat-data';
 
 const FEE_MINT_KIT = 'FeeMintKit';
 
@@ -18,14 +22,9 @@ export const defaultFeeIssuerConfig = harden(
  * @param {import('@agoric/vat-data').Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
- * @returns {{
- *    getFeeMintAccessToken: () => FeeMintAccess,
- *    getFeeIssuerKit: GetFeeIssuerKit,
- *    getFeeIssuer: () => Issuer,
- *    getFeeBrand: () => Brand,
- * }}
  */
 const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+  console.log(`FeeMint Vivify`);
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
   if (!zoeBaggage.has(FEE_MINT_KIT)) {
     /** @type {IssuerKit} */
@@ -40,6 +39,7 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   }
 
   const getFeeIssuerKit = ({ facets }, allegedFeeMintAccess) => {
+    console.log(`FeeMint`, facets.feeMintAccess, allegedFeeMintAccess);
     assert(
       facets.feeMintAccess === allegedFeeMintAccess,
       'The object representing access to the fee brand mint was not provided',
@@ -50,7 +50,6 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   const makeFeeMintKit = vivifyKindMulti(mintBaggage, 'FeeMint', initEmpty, {
     feeMint: {
       getFeeIssuerKit,
-      getFeeMintAccessToken: ({ facets }) => facets.feeMintAccess,
       getFeeIssuer: () => mintBaggage.get(FEE_MINT_KIT).issuer,
       getFeeBrand: () => mintBaggage.get(FEE_MINT_KIT).brand,
     },
@@ -59,8 +58,7 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
     feeMintAccess: {},
   });
 
-  const { feeMint } = makeFeeMintKit();
-  return feeMint;
+  return provide(zoeBaggage, 'theFeeMint', () => makeFeeMintKit());
 };
 
 export { vivifyFeeMint };

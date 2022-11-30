@@ -7,7 +7,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
-import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { assertGetPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
 import { makeFeeDistributor } from '../src/feeDistributor.js';
 
@@ -61,7 +61,7 @@ const assertPaymentArray = async (
   for (let i = 0; i < count; i += 1) {
     // XXX https://github.com/Agoric/agoric-sdk/issues/5527
     // eslint-disable-next-line no-await-in-loop
-    await assertPayoutAmount(
+    await assertGetPayoutAmount(
       t,
       issuer,
       payments[i],

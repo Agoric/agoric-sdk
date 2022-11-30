@@ -134,7 +134,7 @@ export const makeInstallationStorage = (
         });
       },
       async getBundleIDFromInstallation(allegedInstallationP) {
-        // TODO(cth) need a declaration of this that inlcudes state
+        // @ts-expect-error TS doesn't understand context
         const { self } = this;
         const { bundleID } = await self.unwrapInstallation(
           allegedInstallationP,

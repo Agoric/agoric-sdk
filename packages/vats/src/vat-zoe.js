@@ -15,7 +15,7 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
       );
       return harden({
         zoeService,
-        feeMintAccess,
+        feeMintAccessRetriever,
       });
     },
   });

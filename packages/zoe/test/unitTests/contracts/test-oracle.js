@@ -16,6 +16,7 @@ import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 import '../../../exported.js';
 import '../../../src/contracts/exported.js';
+import { assertGetPayoutAmount } from '../../zoeTestHelpers.js';
 
 /**
  * @typedef {object} TestContext
@@ -172,8 +173,11 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   t.deepEqual(await E(offer3).getOfferResult(), {
     pong: { kind: 'Paid', data: 'baz' },
   });
-  t.deepEqual(
-    await link.issuer.getAmountOf(E(offer3).getPayout('Fee')),
+  await assertGetPayoutAmount(
+    t,
+    link.issuer,
+    offer3,
+    'Fee',
     AmountMath.subtract(overAmount, feeAmount),
   );
 
@@ -192,10 +196,7 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
 
   await t.throwsAsync(() => E(offer2).getOfferResult(), { instanceOf: Error });
   await t.throwsAsync(() => E(offer4).getOfferResult(), { instanceOf: Error });
-  t.deepEqual(
-    await link.issuer.getAmountOf(E(offer4).getPayout('Fee')),
-    underAmount,
-  );
+  await assertGetPayoutAmount(t, link.issuer, offer4, 'Fee', underAmount);
 
   const withdrawSome = E(pingCreator).makeWithdrawInvitation();
   const withdrawOffer = E(zoe).offer(
@@ -239,8 +240,11 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
     message: `Oracle revoked`,
   });
 
-  t.deepEqual(
-    await link.issuer.getAmountOf(E(withdrawOffer).getPayout('Fee')),
+  await assertGetPayoutAmount(
+    t,
+    link.issuer,
+    withdrawOffer,
+    'Fee',
     AmountMath.make(link.brand, 201n),
   );
 });

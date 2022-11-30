@@ -1,7 +1,7 @@
 // @ts-check
 
 import { E } from '@endo/eventual-send';
-import { Far, passStyleOf, Remotable } from '@endo/marshal';
+import { passStyleOf, Remotable } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern } from '@agoric/store';
@@ -16,7 +16,7 @@ import {
 
 import { cleanProposal } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
-import { makeExitObj } from './exit.js';
+import { makeMakeExiter } from './exit.js';
 import { defineDurableHandle } from '../makeHandle.js';
 import { provideIssuerStorage } from '../issuerStorage.js';
 import { createSeatManager } from './zcfSeat.js';
@@ -65,6 +65,7 @@ export const makeZCFZygote = async (
   /** @type {ERef<ZoeInstanceAdmin>} */
   let zoeInstanceAdmin;
   let seatManager;
+  const makeExiter = makeMakeExiter(zcfBaggage);
 
   const {
     storeIssuerRecord,
@@ -113,9 +114,9 @@ export const makeZCFZygote = async (
     });
     const zcfSeat = seatManager.makeZCFSeat(seatData);
 
-    const exitObj = makeExitObj(seatData.proposal, zcfSeat);
+    const exiter = makeExiter(seatData.proposal, zcfSeat);
     E(zoeInstanceAdmin)
-      .makeNoEscrowSeatKit(initialAllocation, proposal, exitObj, seatHandle)
+      .makeNoEscrowSeatKit(initialAllocation, proposal, exiter, seatHandle)
       .then(({ userSeat }) => userSeatPromiseKit.resolve(userSeat));
 
     return { zcfSeat, userSeat: userSeatPromiseKit.promise };
@@ -172,8 +173,7 @@ export const makeZCFZygote = async (
       return record;
     },
     makeInvitation: (
-      // @ts-expect-error xxx arbitrary subtype
-      offerHandler = Far('default offer handler', () => {}),
+      offerHandler,
       description,
       customProperties = harden({}),
       proposalShape = undefined,
@@ -183,6 +183,9 @@ export const makeZCFZygote = async (
         'string',
         X`invitations must have a description string: ${description}`,
       );
+
+      offerHandler || assert(offerHandler, `offerHandler must be provided`);
+
       if (proposalShape !== undefined) {
         assertPattern(proposalShape);
       }
@@ -268,9 +271,9 @@ export const makeZCFZygote = async (
           }
           throw zcfSeat.fail(reason);
         });
-        const exitObj = makeExitObj(seatData.proposal, zcfSeat);
+        const exiter = makeExiter(seatData.proposal, zcfSeat);
         /** @type {HandleOfferResult} */
-        return harden({ offerResultPromise, exitObj });
+        return harden({ offerResultPromise, exitObj: exiter });
       },
     },
   );
@@ -322,6 +325,24 @@ export const makeZCFZygote = async (
 
   const contractBaggage = provideDurableMapStore(zcfBaggage, 'contractBaggage');
 
+  const initSeatMgrAndMintFactory = async () => {
+    let zcfMintReallocator;
+    ({ seatManager, zcfMintReallocator } = createSeatManager(
+      zoeInstanceAdmin,
+      getAssetKindByBrand,
+      shutdownWithFailure,
+      zcfBaggage,
+    ));
+
+    zcfMintFactory = await makeZCFMintFactory(
+      zcfBaggage,
+      recordIssuer,
+      getAssetKindByBrand,
+      makeEmptySeatKit,
+      zcfMintReallocator,
+    );
+  };
+
   /**
    * A zygote is a pre-image of a vat that can quickly be instantiated because
    * the code has already been evaluated. SwingSet doesn't support zygotes yet.
@@ -342,22 +363,7 @@ export const makeZCFZygote = async (
       privateArgs = undefined,
     ) => {
       zoeInstanceAdmin = instanceAdminFromZoe;
-      let zcfMintReallocator;
-
-      ({ seatManager, zcfMintReallocator } = createSeatManager(
-        zoeInstanceAdmin,
-        getAssetKindByBrand,
-        shutdownWithFailure,
-        zcfBaggage,
-      ));
-
-      zcfMintFactory = await makeZCFMintFactory(
-        zcfBaggage,
-        recordIssuer,
-        getAssetKindByBrand,
-        makeEmptySeatKit,
-        zcfMintReallocator,
-      );
+      initSeatMgrAndMintFactory();
 
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
       instantiateInstanceRecordStorage(instanceRecordFromZoe);
@@ -394,9 +400,10 @@ export const makeZCFZygote = async (
     },
 
     restartContract: async (privateArgs = undefined) => {
-      const instanceAdmin = zcfBaggage.get('instanceAdmin');
+      const instanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       zoeInstanceAdmin = instanceAdmin;
       assert(vivify, 'vivify must be defined to upgrade a contract');
+      initSeatMgrAndMintFactory();
 
       // restart an upgradeable contract
       return E.when(

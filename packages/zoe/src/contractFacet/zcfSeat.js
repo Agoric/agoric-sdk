@@ -7,6 +7,7 @@ import {
   provideDurableWeakMapStore,
   vivifyFarClassKit,
   vivifyKind,
+  provide,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -143,8 +144,12 @@ export const createSeatManager = (
     'zcfSeat',
     proposal => ({ proposal }),
     {
-      getNotifier: ({ self }) =>
-        E(zoeInstanceAdmin).getSeatNotifier(zcfSeatToSeatHandle.get(self)),
+      getSubscriber: context => {
+        const { self } = context;
+        return E(zoeInstanceAdmin).getExitSubscriber(
+          zcfSeatToSeatHandle.get(self),
+        );
+      },
       getProposal: ({ state }) => state.proposal,
       exit: ({ self }, completion) => {
         assertActive(self);
@@ -389,5 +394,5 @@ export const createSeatManager = (
     },
   );
 
-  return makeSeatManagerKit();
+  return provide(zcfBaggage, 'theSeatManagerKit', () => makeSeatManagerKit());
 };

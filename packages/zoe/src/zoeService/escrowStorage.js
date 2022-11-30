@@ -18,7 +18,7 @@ import { arrayToObj } from '../objArrayConversion.js';
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const makeEscrowStorage = baggage => {
+export const provideEscrowStorage = baggage => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
@@ -43,9 +43,9 @@ export const makeEscrowStorage = baggage => {
   };
 
   /**
-   * @type {MakeLocalPurse}
+   * @type {ProvideLocalPurse}
    */
-  const makeLocalPurse = (issuer, brand) => {
+  const provideLocalPurse = (issuer, brand) => {
     if (brandToPurse.has(brand)) {
       return /** @type {Purse} */ (brandToPurse.get(brand));
     } else {
@@ -134,7 +134,7 @@ export const makeEscrowStorage = baggage => {
 
   return {
     createPurse, // createPurse does not return a purse
-    makeLocalPurse,
+    provideLocalPurse,
     withdrawPayments,
     depositPayments,
   };

@@ -58,9 +58,10 @@ export const setUpZoeForTest = (setJig = () => {}) => {
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
+  console.log(`SUPP  setup`, feeMintAccessRetriever);
   return {
     zoe,
-    feeMintAccessP: feeMintAccessRetriever.get(),
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 harden(setUpZoeForTest);

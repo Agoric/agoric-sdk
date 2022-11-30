@@ -8,6 +8,7 @@ import {
   vivifyKindMulti,
   vivifyFarClassKit,
   M,
+  provide,
 } from '@agoric/vat-data';
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 import { defineDurableHandle } from '../makeHandle.js';
@@ -90,7 +91,7 @@ export const makeInstanceAdminStorage = baggage => {
       },
     },
   );
-  return makeIAS();
+  return provide(baggage, 'theInstanceAdminStorage', () => makeIAS());
 };
 harden(makeInstanceAdminStorage);
 
@@ -135,8 +136,6 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       proposal,
       offerArgs = undefined,
     ) => {
-      debugger;
-
       const { userSeat, zoeSeatAdmin } = makeZoeSeatAdminKit(
         initialAllocation,
         proposal,
@@ -182,6 +181,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
         helper,
         state.zoeInstanceStorageManager.getWithdrawFacet(),
         exitObj,
+        true,
       );
 
       state.zoeSeatAdmins.add(zoeSeatAdmin);
@@ -212,9 +212,8 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
 const helperBehavior = {
   exitZoeSeatAdmin: ({ state }, zoeSeatAdmin) =>
     state.zoeSeatAdmins.delete(zoeSeatAdmin),
-  hasExited: ({ state }, zoeSeatAdmin) => {
-    return !state.zoeSeatAdmins.has(zoeSeatAdmin);
-  },
+  hasExited: ({ state }, zoeSeatAdmin) =>
+    !state.zoeSeatAdmins.has(zoeSeatAdmin),
 };
 
 /**
@@ -239,6 +238,7 @@ export const makeInstanceAdminMaker = (
   zoeBaggage,
   seatHandleToZoeSeatAdmin,
 ) => {
+  const makeZoeSeatAdminKit = makeZoeSeatAdminFactory(zoeBaggage);
   const makeInstanceAdminMulti = vivifyKindMulti(
     zoeBaggage,
     'instanceAdmin',

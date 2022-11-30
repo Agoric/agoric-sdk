@@ -934,7 +934,7 @@ test('Add collateral - more BLD required (FAIL)', async t => {
   await d.checkBLDLiened(800n);
 });
 
-test('Lower collateral', async t => {
+test.only('Lower collateral', async t => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);

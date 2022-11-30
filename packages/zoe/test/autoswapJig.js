@@ -5,7 +5,7 @@ import { Remotable } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
-import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers.js';
+import { assertOfferResult, assertGetPayoutAmount } from './zoeTestHelpers.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide } = natSafeMath;
 
@@ -187,23 +187,27 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
     const { c: cPre, s: sPre, l: lPre } = priorPoolState;
 
     const scaleByAlpha = makeScaleFn(cPre, cPost);
-    const {
-      Central: cPayout,
-      Secondary: sPayout,
-      Liquidity: lPayout,
-    } = await E(seat).getPayouts();
-    await assertPayoutAmount(t, centralIssuer, cPayout, central(payoutC), '+c');
-    await assertPayoutAmount(
+    await assertGetPayoutAmount(
+      t,
+      centralIssuer,
+      seat,
+      'Central',
+      central(payoutC),
+      '+c',
+    );
+    await assertGetPayoutAmount(
       t,
       secondaryIssuer,
-      sPayout,
+      seat,
+      'Secondary',
       secondary(payoutS),
       '+s',
     );
-    await assertPayoutAmount(
+    await assertGetPayoutAmount(
       t,
       liquidityIssuer,
-      lPayout,
+      seat,
+      'Liquidity',
       liquidity(payoutL),
       '+l',
     );
@@ -291,18 +295,19 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         inAmount.brand === centralIssuer.getBrand()
           ? [centralIssuer, central, secondaryIssuer, secondary]
           : [secondaryIssuer, secondary, centralIssuer, central];
-      const { In: refund, Out: payout } = await E(seat).getPayouts();
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         outIssuer,
-        payout,
+        seat,
+        'Out',
         out(outExpected),
         'trade out',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         inIssuer,
-        refund,
+        seat,
+        'In',
         inMath(inExpected),
         'trade in',
       );
@@ -466,18 +471,19 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
       );
       assertOfferResult(t, seat, 'Liquidity successfully removed.');
 
-      const { Central: cPayout, Secondary: sPayout } = await seat.getPayouts();
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         centralIssuer,
-        cPayout,
+        seat,
+        'Central',
         central(payoutC),
         '+c',
       );
-      await assertPayoutAmount(
+      await assertGetPayoutAmount(
         t,
         secondaryIssuer,
-        sPayout,
+        seat,
+        'Secondary',
         secondary(payoutS),
         '+s',
       );
@@ -543,34 +549,37 @@ export const makeTrader = async (purses, zoe, publicFacet, centralIssuer) => {
         payment,
       );
       assertOfferResult(t, seat, 'Added liquidity.');
+      await assertGetPayoutAmount(
+        t,
+        centralIssuer,
+        seat,
+        'Central',
+        central(payoutC),
+        'init c',
+      );
+      const secondaryAmt = secondary(payoutS);
+      await assertGetPayoutAmount(
+        t,
+        secondaryIssuer,
+        seat,
+        'Secondary',
+        secondaryAmt,
+        'init s',
+      );
+      const liquidityAmt = liquidity(payoutL);
+      await assertGetPayoutAmount(
+        t,
+        liquidityIssuer,
+        seat,
+        'Liquidity',
+        liquidityAmt,
+        'init l',
+      );
       const {
         Central: cPayout,
         Secondary: sPayout,
         Liquidity: lPayout,
       } = await E(seat).getPayouts();
-      await assertPayoutAmount(
-        t,
-        centralIssuer,
-        cPayout,
-        central(payoutC),
-        'init c',
-      );
-      const secondaryAmt = secondary(payoutS);
-      await assertPayoutAmount(
-        t,
-        secondaryIssuer,
-        sPayout,
-        secondaryAmt,
-        'init s',
-      );
-      const liquidityAmt = liquidity(payoutL);
-      await assertPayoutAmount(
-        t,
-        liquidityIssuer,
-        lPayout,
-        liquidityAmt,
-        'init l',
-      );
 
       const poolPost = await getPoolAllocation(secondaryIssuer);
       t.deepEqual(poolPost.Central, central(cPost), `central after init`);

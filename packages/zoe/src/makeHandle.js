@@ -1,9 +1,9 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
 import { initEmpty } from '@agoric/store';
-import { provide, defineDurableKind, makeKindHandle } from '@agoric/vat-data';
+import { vivifyFarClass } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
+import { HandleI } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -15,12 +15,13 @@ import { Far } from '@endo/marshal';
  */
 export const defineDurableHandle = (baggage, handleType) => {
   assert.typeof(handleType, 'string', 'handleType must be a string');
-  const durableHandleKindHandle = provide(
+  const makeHandle = vivifyFarClass(
     baggage,
-    `${handleType}KindHandle`,
-    () => makeKindHandle(`${handleType}Handle`),
+    `${handleType}Handle`,
+    HandleI,
+    initEmpty,
+    {},
   );
-  const makeHandle = defineDurableKind(durableHandleKindHandle, initEmpty, {});
   return /** @type {() => Handle<H>} */ (makeHandle);
 };
 harden(defineDurableHandle);

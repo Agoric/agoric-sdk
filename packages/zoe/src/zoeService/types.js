@@ -94,6 +94,12 @@
  */
 
 /**
+ * @callback SetOfferFilter
+ * @param {Instance} instance
+ * @param {string[]} strings
+ */
+
+/**
  * @callback GetInstallationForInstance
  * @param {Instance} instance
  * @returns {Promise<Installation>}
@@ -198,7 +204,12 @@
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
+ * returns a KeywordPaymentRecord containing all the payouts from this seat. If
+ * called before the seat has exited, (check using getExitSubscriber()) it will
+ * throw an error.
  * @property {(keyword: Keyword) => Promise<Payment>} getPayout
+ * returns the Payment corresponding to the indicated keyword. If called before
+ * the seat has exited, (check using getExitSubscriber()) it will throw an error.
  * @property {() => Promise<OR>} getOfferResult
  * @property {() => void} [tryExit]
  * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
@@ -209,17 +220,18 @@
  * interact with the contract.
  * @property {() => Promise<boolean>} hasExited
  * Returns true if the seat has exited, false if it is still active.
- * @property {() => Promise<0|1>} numWantsSatisfied
- *
- * @property {() => Promise<Allocation>} getCurrentAllocationJig
- * Labelled "Jig" because it *should* only be used for tests, though
- * nothing prevents it from being used otherwise.
- * @property {() => Promise<Notifier<Allocation>>} getAllocationNotifierJig
- * Labelled "Jig" because it *should* only be used for tests, though
- * nothing prevents it from being used otherwise.
+ * @property {() => Promise<0|1>} numWantsSatisfied returns 1 if the proposal's
+ * want clause was satisfied by the final allocation, otherwise 0. This is
+ * numeric to support a planned enhancement called "multiples" which will allow
+ * the return value to be any non-negative number.  If called before the seat has
+ * exited, (check using getExitSubscriber()) it will throw an error.
  * @property {() => Promise<Allocation>} getFinalAllocation
- * return a promise for the final allocation. If called after the seat has
- * exited, it will promptly resolve to an Allocation.
+ * return the final allocation. If called before the seat has exited, (check
+ * using getExitSubscriber()) it will throw an error.
+ * @property {() => Subscriber<any>} getExitSubscriber returns a subscriber that
+ * will be notified when the seat has exited or failed. This subscriber should
+ * be used to find out when it is safe to call getFinalAllocation(),
+ * numWantsSatisfied(), getPayout(), or getPayouts().
  */
 
 /**
