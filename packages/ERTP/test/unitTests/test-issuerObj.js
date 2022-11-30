@@ -43,7 +43,7 @@ test('bad display info', t => {
   const displayInfo = harden({ somethingUnexpected: 3 });
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => makeIssuerKit('fungible', AssetKind.NAT, displayInfo), {
-    message: 'displayInfo: rest-parts: {"somethingUnexpected":3} - Must be: {}',
+    message: 'displayInfo: ...rest: {"somethingUnexpected":3} - Must be: {}',
   });
 });
 
@@ -199,7 +199,7 @@ test('purse.deposit promise', async t => {
     () => E(purse).deposit(exclusivePaymentP, fungible25),
     {
       message:
-        'In "deposit" method of (fungible Purse purse) arg 0: promise "[Promise]" - Must be a remotable (Payment)',
+        'In "deposit" method of (fungible Purse purse): arg 0: promise "[Promise]" - Must be a remotable (Payment)',
     },
     'failed to reject a promise for a payment',
   );
@@ -334,7 +334,7 @@ test('issuer.split bad amount', async t => {
     _ => E(issuer).split(payment, AmountMath.make(otherBrand, 10n)),
     {
       message:
-        'In "split" method of (fungible issuer) arg 1: brand: "[Alleged: other fungible brand]" - Must be: "[Alleged: fungible brand]"',
+        'In "split" method of (fungible issuer): arg 1: brand: "[Alleged: other fungible brand]" - Must be: "[Alleged: fungible brand]"',
     },
     'throws for bad amount',
   );

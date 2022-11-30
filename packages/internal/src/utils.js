@@ -11,8 +11,8 @@ const { details: X, quote: q } = assert;
 
 /**
  * Throws if multiple entries use the same property name. Otherwise acts
- * like `Object.fromEntries`. Use it to protect from property names
- * computed from user-provided data.
+ * like `Object.fromEntries` but hardens the result.
+ * Use it to protect from property names computed from user-provided data.
  *
  * @template K,V
  * @param {Iterable<[K,V]>} allEntries
@@ -20,7 +20,7 @@ const { details: X, quote: q } = assert;
  */
 export const fromUniqueEntries = allEntries => {
   const entriesArray = [...allEntries];
-  const result = fromEntries(entriesArray);
+  const result = harden(fromEntries(entriesArray));
   if (ownKeys(result).length === entriesArray.length) {
     return result;
   }

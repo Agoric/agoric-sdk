@@ -2516,7 +2516,7 @@ test('addVaultType: extra, unexpected params', async t => {
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
     {
       message:
-        /initialParamValues: required-parts: .* - Must have missing properties \["interestRate"\]/,
+        /initialParamValues: .* - Must have missing properties \["interestRate"\]/,
     },
   );
 
