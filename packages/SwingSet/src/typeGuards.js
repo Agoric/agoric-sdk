@@ -3,16 +3,17 @@ import { M } from '@agoric/store';
 
 export const ManagerType = M.or('xs-worker', 'local'); // TODO: others
 
-const Bundle = M.split({ moduleType: M.string() }, M.partial({}));
+const Bundle = M.splitRecord({ moduleType: M.string() });
 
-const p1 = M.and(
-  M.partial({ creationOptions: M.partial({ critial: M.boolean() }) }),
-  M.partial({ parameters: M.recordOf(M.string(), M.any()) }),
-);
+const SwingsetConfigOptions = harden({
+  creationOptions: M.splitRecord({}, { critial: M.boolean() }),
+  parameters: M.recordOf(M.string(), M.any()),
+});
+
 const SwingSetConfigProperties = M.or(
-  M.split({ sourceSpec: M.string() }, p1),
-  M.split({ bundleSpec: M.string() }, p1),
-  M.split({ bundle: Bundle }, p1),
+  M.splitRecord({ sourceSpec: M.string() }, SwingsetConfigOptions),
+  M.splitRecord({ bundleSpec: M.string() }, SwingsetConfigOptions),
+  M.splitRecord({ bundle: Bundle }, SwingsetConfigOptions),
 );
 const SwingSetConfigDescriptor = M.recordOf(
   M.string(),
@@ -30,11 +31,11 @@ const SwingSetConfigDescriptor = M.recordOf(
  * in ./types-external.js
  */
 export const SwingSetConfig = M.and(
-  M.partial({ defaultManagerType: ManagerType }),
-  M.partial({ includeDevDependencies: M.boolean() }),
-  M.partial({ defaultReapInterval: M.number() }), // not in type decl
-  M.partial({ snapshotInterval: M.number() }),
-  M.partial({ vats: SwingSetConfigDescriptor }),
-  M.partial({ bootstrap: M.string() }),
-  M.partial({ bundles: SwingSetConfigDescriptor }),
+  M.splitRecord({}, { defaultManagerType: ManagerType }),
+  M.splitRecord({}, { includeDevDependencies: M.boolean() }),
+  M.splitRecord({}, { defaultReapInterval: M.number() }), // not in type decl
+  M.splitRecord({}, { snapshotInterval: M.number() }),
+  M.splitRecord({}, { vats: SwingSetConfigDescriptor }),
+  M.splitRecord({}, { bootstrap: M.string() }),
+  M.splitRecord({}, { bundles: SwingSetConfigDescriptor }),
 );

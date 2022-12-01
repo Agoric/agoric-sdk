@@ -78,16 +78,13 @@ const makeVaultParamManager = (publisherKit, initial) =>
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
-export const vaultParamPattern = M.split(
-  {
-    liquidationMargin: ratioPattern,
-    liquidationPenalty: ratioPattern,
-    interestRate: ratioPattern,
-    loanFee: ratioPattern,
-    debtLimit: amountPattern,
-  },
-  M.any(),
-);
+export const vaultParamPattern = M.splitRecord({
+  liquidationMargin: ratioPattern,
+  liquidationPenalty: ratioPattern,
+  interestRate: ratioPattern,
+  loanFee: ratioPattern,
+  debtLimit: amountPattern,
+});
 
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit

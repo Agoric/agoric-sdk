@@ -124,18 +124,19 @@ export const MAX_ABSOLUTE_DECIMAL_PLACES = 100;
 
 export const AssetKindShape = M.or('nat', 'set', 'copySet', 'copyBag');
 
-export const DisplayInfoShape = M.partial(
-  harden({
+export const DisplayInfoShape = M.splitRecord(
+  {},
+  {
     decimalPlaces: M.and(
       M.gte(-MAX_ABSOLUTE_DECIMAL_PLACES),
       M.lte(MAX_ABSOLUTE_DECIMAL_PLACES),
     ),
     assetKind: AssetKindShape,
-  }),
-  harden({
+  },
+  {
     // Including this empty `rest` ensures that there are no other
     // properties beyond those in the `base` record.
-  }),
+  },
 );
 
 // //////////////////////// Interfaces /////////////////////////////////////////

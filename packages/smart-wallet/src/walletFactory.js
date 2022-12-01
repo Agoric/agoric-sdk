@@ -17,9 +17,9 @@ import { shape } from './typeGuards.js';
 import '@agoric/vats/exported.js';
 
 const PrivateArgsShape = harden(
-  M.split(
+  M.splitRecord(
     { storageNode: M.eref(M.any()) },
-    M.partial({ bridgeManager: M.eref(M.any()) }),
+    { bridgeManager: M.eref(M.any()) },
   ),
 );
 

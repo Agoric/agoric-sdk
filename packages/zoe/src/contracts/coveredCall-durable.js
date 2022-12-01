@@ -58,7 +58,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
   const makeOption = sellSeat => {
     fit(
       sellSeat.getProposal(),
-      M.split({ exit: { afterDeadline: M.any() } }),
+      M.splitRecord({ exit: { afterDeadline: M.any() } }),
       'exit afterDeadline',
     );
     const sellSeatExitRule = sellSeat.getProposal().exit;

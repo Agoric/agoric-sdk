@@ -12,25 +12,25 @@ export const shape = {
   },
 
   // invitations
-  ContractInvitationSpec: M.split(
+  ContractInvitationSpec: M.splitRecord(
     {
       source: 'contract',
       instance: InstanceHandleShape,
       publicInvitationMaker: M.string(),
     },
-    M.partial({
+    {
       invitationArgs: M.array(),
-    }),
+    },
   ),
-  ContinuingInvitationSpec: M.split(
+  ContinuingInvitationSpec: M.splitRecord(
     {
       source: 'continuing',
       previousOffer: M.or(M.number(), M.string()),
       invitationMakerName: M.string(),
     },
-    M.partial({
+    {
       invitationArgs: M.array(),
-    }),
+    },
   ),
   PurseInvitationSpec: {
     source: 'purse',
@@ -39,24 +39,25 @@ export const shape = {
   },
 
   // offers
-  OfferSpec: M.split(
+  OfferSpec: M.splitRecord(
     {
       id: M.or(M.number(), M.string()),
       // TODO M.unknown() to defer validation
       invitationSpec: M.any(),
       proposal: ProposalShape,
     },
-    M.partial({ offerArgs: M.any() }),
+    { offerArgs: M.any() },
   ),
 
   // walletFactory
-  WalletBridgeMsg: M.split(
+  WalletBridgeMsg: M.splitRecord(
     {
       owner: M.string(),
       type: M.string(),
       blockHeight: M.number(),
       blockTime: M.number(),
     },
+    {},
     M.or({ action: M.string() }, { spendAction: M.string() }),
   ),
 };
