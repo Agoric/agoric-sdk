@@ -4,7 +4,13 @@ import { isPromise } from '@endo/promise-kit';
 
 /** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
 
-const { getPrototypeOf, create, entries, fromEntries } = Object;
+const {
+  getPrototypeOf,
+  create,
+  entries,
+  fromEntries,
+  getOwnPropertyDescriptors,
+} = Object;
 const { ownKeys, apply } = Reflect;
 
 const { details: X, quote: q } = assert;
@@ -144,30 +150,53 @@ export const applyLabelingError = (func, args, label = undefined) => {
 harden(applyLabelingError);
 
 /**
- * @param {unknown} a
- * @param {unknown} b
+ * Prioritize symbols as earlier than strings.
+ *
+ * @param {string|symbol} a
+ * @param {string|symbol} b
  * @returns {-1 | 0 | 1}
  */
 const compareStringified = (a, b) => {
-  const left = String(a);
-  const right = String(b);
-  // eslint-disable-next-line no-nested-ternary
-  return left < right ? -1 : left > right ? 1 : 0;
+  if (typeof a === typeof b) {
+    const left = String(a);
+    const right = String(b);
+    // eslint-disable-next-line no-nested-ternary
+    return left < right ? -1 : left > right ? 1 : 0;
+  }
+  if (typeof a === 'symbol') {
+    assert(typeof b === 'string');
+    return -1;
+  }
+  assert(typeof a === 'string');
+  assert(typeof b === 'symbol');
+  return 1;
 };
 
 /**
- * @param {Record<string | symbol, unknown>} obj
+ * TODO Consolidate with the `getMethodNames` in `@endo/eventual-send`
+ *
+ * @param {any} val
  * @returns {(string|symbol)[]}
  */
-export const getMethodNames = obj => {
-  const result = [];
-  while (obj !== null && obj !== Object.prototype) {
-    const mNames = ownKeys(obj).filter(name => typeof obj[name] === 'function');
-    result.push(...mNames);
-    obj = getPrototypeOf(obj);
+export const getMethodNames = val => {
+  let layer = val;
+  const names = new Set(); // Set to deduplicate
+  while (layer !== null && layer !== Object.prototype) {
+    // be tolerant of non-objects
+    const descs = getOwnPropertyDescriptors(layer);
+    for (const name of ownKeys(descs)) {
+      // In case a method is overridden by a non-method,
+      // test `val[name]` rather than `layer[name]`
+      if (typeof val[name] === 'function') {
+        names.add(name);
+      }
+    }
+    if (!isObject(val)) {
+      break;
+    }
+    layer = getPrototypeOf(layer);
   }
-  result.sort(compareStringified);
-  return harden(result);
+  return harden([...names].sort(compareStringified));
 };
 harden(getMethodNames);
 
