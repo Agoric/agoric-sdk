@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { getAllState, setAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
-import { capargs } from '../util.js';
+import { kser } from '../../src/lib/kmarshal.js';
 
 function copy(data) {
   return JSON.parse(JSON.stringify(data));
@@ -42,7 +42,7 @@ test.serial('replay dynamic vat', async t => {
     c1.pinVatRoot('bootstrap');
     const r1 = c1.queueToVatRoot('bootstrap', 'createVat', [], 'panic');
     await c1.run();
-    t.deepEqual(c1.kpResolution(r1), capargs('created'));
+    t.deepEqual(c1.kpResolution(r1), kser('created'));
   }
 
   // Now we abandon that swingset and start a new one, with the same state.
@@ -59,6 +59,6 @@ test.serial('replay dynamic vat', async t => {
     t.teardown(c2.shutdown);
     const r2 = c2.queueToVatRoot('bootstrap', 'check', [], 'panic');
     await c2.run();
-    t.deepEqual(c2.kpResolution(r2), capargs('ok'));
+    t.deepEqual(c2.kpResolution(r2), kser('ok'));
   }
 });

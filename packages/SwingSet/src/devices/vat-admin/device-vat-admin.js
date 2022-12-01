@@ -2,6 +2,7 @@ import { Nat } from '@agoric/nat';
 import { assert } from '@agoric/assert';
 import { buildSerializationTools } from '../lib/deviceTools.js';
 import { insistVatID } from '../../lib/id.js';
+import { kunser } from '../../lib/kmarshal.js';
 
 /*
 
@@ -202,7 +203,7 @@ export function buildDevice(tools, endowments) {
         // D(devices.vatAdmin).createByBundle(bundle, options) -> vatID
         if (method === 'createByBundle') {
           const res = syscall.callKernelHook('createByBundle', argsCapdata);
-          const vatID = JSON.parse(res.body);
+          const vatID = kunser(res);
           assert.typeof(vatID, 'string', `createByBundle gave non-VatID`);
           return returnFromInvoke(vatID);
         }
@@ -210,14 +211,14 @@ export function buildDevice(tools, endowments) {
         // D(devices.vatAdmin).createByBundleID(bundleID, options) -> vatID
         if (method === 'createByBundleID') {
           const res = syscall.callKernelHook('createByID', argsCapdata);
-          const vatID = JSON.parse(res.body);
+          const vatID = kunser(res);
           assert.typeof(vatID, 'string', `createByID gave non-VatID`);
           return returnFromInvoke(vatID);
         }
 
         // D(devices.vatAdmin).upgradeVat(vatID, bundleID, vatParameters, upgradeMessage) -> upgradeID
         if (method === 'upgradeVat') {
-          const args = JSON.parse(argsCapdata.body);
+          const args = kunser(argsCapdata);
           assert(Array.isArray(args), 'upgradeVat() args array');
           assert.equal(args.length, 4, `upgradeVat() args length`);
           const [vatID, bundleID, _vatParameters, upgradeMessage] = args;
@@ -230,14 +231,14 @@ export function buildDevice(tools, endowments) {
           );
 
           const res = syscall.callKernelHook('upgrade', argsCapdata);
-          const upgradeID = JSON.parse(res.body);
+          const upgradeID = kunser(res);
           assert.typeof(upgradeID, 'string', 'upgradeVat gave non-upgradeID');
           return returnFromInvoke(upgradeID);
         }
 
         // D(devices.vatAdmin).terminateWithFailure(vatID, reason)
         if (method === 'terminateWithFailure') {
-          const args = JSON.parse(argsCapdata.body);
+          const args = kunser(argsCapdata);
           assert(Array.isArray(args), 'terminateWithFailure() args array');
           assert.equal(args.length, 2, `terminateWithFailure() args length`);
           const [vatID, _reason] = args;
@@ -249,7 +250,7 @@ export function buildDevice(tools, endowments) {
 
         // D(devices.vatAdmin).changeOptions(vatID, options)
         if (method === 'changeOptions') {
-          const args = JSON.parse(argsCapdata.body);
+          const args = kunser(argsCapdata);
           assert(Array.isArray(args), 'changeOptions() args array');
           assert.equal(args.length, 2, `changeOptions() args length`);
           const [vatID, _reason] = args;

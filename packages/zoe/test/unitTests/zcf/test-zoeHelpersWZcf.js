@@ -304,7 +304,7 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     () => fit(proposal, M.split({ want: { C: M.any() } })),
     {
       message:
-        'required-parts: want: {"A":{"brand":"[Alleged: moola brand]","value":"[20n]"}} - Must have missing properties ["C"]',
+        'want: {"A":{"brand":"[Alleged: moola brand]","value":"[20n]"}} - Must have missing properties ["C"]',
     },
     'empty keywordRecord does not match',
   );
@@ -314,14 +314,14 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     () => fit(proposal, M.split({ give: { c: M.any() } })),
     {
       message:
-        'required-parts: give: {"B":{"brand":"[Alleged: simoleans brand]","value":"[3n]"}} - Must have missing properties ["c"]',
+        'give: {"B":{"brand":"[Alleged: simoleans brand]","value":"[3n]"}} - Must have missing properties ["c"]',
     },
     'wrong key in keywordRecord does not match',
   );
   t.throws(
     () => fit(proposal, M.split({ exit: { onDemaind: M.any() } })),
     {
-      message: 'required-parts: {} - Must have missing properties ["exit"]',
+      message: '{} - Must have missing properties ["exit"]',
     },
     'missing exit rule',
   );

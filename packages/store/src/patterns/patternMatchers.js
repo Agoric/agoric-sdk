@@ -8,7 +8,11 @@ import {
   nameForPassableSymbol,
 } from '@endo/marshal';
 import { identChecker } from '@agoric/assert';
-import { applyLabelingError, listDifference } from '@agoric/internal';
+import {
+  applyLabelingError,
+  fromUniqueEntries,
+  listDifference,
+} from '@agoric/internal';
 
 import {
   compareRank,
@@ -630,8 +634,8 @@ const makePatternKit = () => {
         // const [leftEntriesLimit, rightEntriesLimit] =
         //   getRankCover(pattEntries);
         // return harden([
-        //   fromEntries(leftEntriesLimit),
-        //   fromEntries(rightEntriesLimit),
+        //   fromUniqueEntries(leftEntriesLimit),
+        //   fromUniqueEntries(rightEntriesLimit),
         // ]);
         break;
       }
@@ -768,6 +772,16 @@ const makePatternKit = () => {
           false,
           X`${specimen} - no pattern disjuncts to match: ${patts}`,
         );
+      }
+      if (
+        patts.length === 2 &&
+        !matches(specimen, patts[0]) &&
+        checkKind(patts[0], 'match:kind', identChecker) &&
+        patts[0].payload === 'undefined'
+      ) {
+        // Worth special casing the optional pattern for
+        // better error messages.
+        return checkMatches(specimen, patts[1], check);
       }
       if (patts.some(patt => matches(specimen, patt))) {
         return true;
@@ -1317,133 +1331,226 @@ const makePatternKit = () => {
       check(false, X`CopyMap not yet supported as keys`),
   });
 
+  /**
+   * @param {Passable[]} specimen
+   * @param {Pattern[]} requiredPatt
+   * @param {Pattern[]} optionalPatt
+   * @returns {{
+   *   requiredSpecimen: Passable[],
+   *   optionalSpecimen: Passable[],
+   *   restSpecimen: Passable[]
+   * }}
+   */
+  const splitArrayParts = (specimen, requiredPatt, optionalPatt) => {
+    const numRequired = requiredPatt.length;
+    const numOptional = optionalPatt.length;
+    const requiredSpecimen = specimen.slice(0, numRequired);
+    const optionalSpecimen = specimen.slice(
+      numRequired,
+      numRequired + numOptional,
+    );
+    const restSpecimen = specimen.slice(numRequired + numOptional);
+    return harden({ requiredSpecimen, optionalSpecimen, restSpecimen });
+  };
+
+  /**
+   * Optional specimen elements which are `undefined` pass unconditionally.
+   * We encode this with the `M.or` pattern so it also produces a good
+   * compression distinguishing `undefined` from absence.
+   *
+   * @param {Pattern[]} optionalPatt
+   * @param {number} length
+   * @returns {Pattern[]} The partialPatt
+   */
+  const adaptArrayPattern = (optionalPatt, length) =>
+    harden(optionalPatt.slice(0, length).map(patt => MM.opt(patt)));
+
   /** @type {MatchHelper} */
-  const matchSplitHelper = Far('match:split helper', {
-    checkMatches: (specimen, [base, rest = undefined], check) => {
-      const baseStyle = passStyleOf(base);
-      if (!checkKind(specimen, baseStyle, check)) {
+  const matchSplitArrayHelper = Far('match:splitArray helper', {
+    checkMatches: (
+      specimen,
+      [requiredPatt, optionalPatt = [], restPatt = MM.any()],
+      check,
+    ) => {
+      if (!checkKind(specimen, 'copyArray', check)) {
         return false;
       }
-      let specB;
-      let specR;
-      if (baseStyle === 'copyArray') {
-        const { length: baseLen } = base;
-        // Frozen below
-        specB = specimen.slice(0, baseLen);
-        specR = specimen.slice(baseLen);
-      } else {
-        assert(baseStyle === 'copyRecord');
-        // Not yet frozen! Mutated in place
-        specB = {};
-        specR = {};
-        for (const [name, value] of entries(specimen)) {
-          if (hasOwnPropertyOf(base, name)) {
-            specB[name] = value;
-          } else {
-            specR[name] = value;
-          }
-        }
-      }
-      harden(specB);
-      harden(specR);
+      const { requiredSpecimen, optionalSpecimen, restSpecimen } =
+        splitArrayParts(specimen, requiredPatt, optionalPatt);
+      const partialPatt = adaptArrayPattern(
+        optionalPatt,
+        optionalSpecimen.length,
+      );
+      let argNum = 0;
       return (
-        checkMatches(specB, base, check, 'required-parts') &&
-        (rest === undefined || checkMatches(specR, rest, check, 'rest-parts'))
+        (requiredSpecimen.length === requiredPatt.length ||
+          check(
+            false,
+            X`Expected at least ${q(
+              requiredPatt.length,
+            )} arguments: ${specimen}`,
+          )) &&
+        requiredPatt.every((p, i) =>
+          // eslint-disable-next-line no-plusplus
+          checkMatches(requiredSpecimen[i], p, check, `arg ${argNum++}`),
+        ) &&
+        partialPatt.every((p, i) =>
+          // eslint-disable-next-line no-plusplus
+          checkMatches(optionalSpecimen[i], p, check, `arg ${argNum++}?`),
+        ) &&
+        checkMatches(restSpecimen, restPatt, check, '...rest')
       );
     },
 
-    checkIsWellFormed: (splitArgs, check) => {
+    checkIsWellFormed: (splitArray, check) => {
       if (
-        passStyleOf(splitArgs) === 'copyArray' &&
-        (splitArgs.length === 1 || splitArgs.length === 2)
+        passStyleOf(splitArray) === 'copyArray' &&
+        (splitArray.length >= 1 || splitArray.length <= 3)
       ) {
-        const [base, rest = undefined] = splitArgs;
-        const baseStyle = passStyleOf(base);
+        const [requiredPatt, optionalPatt = undefined, restPatt = undefined] =
+          splitArray;
         if (
-          isPattern(base) &&
-          (baseStyle === 'copyArray' || baseStyle === 'copyRecord') &&
-          (rest === undefined || isPattern(rest))
+          isPattern(requiredPatt) &&
+          passStyleOf(requiredPatt) === 'copyArray' &&
+          (optionalPatt === undefined ||
+            (isPattern(optionalPatt) &&
+              passStyleOf(optionalPatt) === 'copyArray')) &&
+          (restPatt === undefined || isPattern(restPatt))
         ) {
           return true;
         }
       }
       return check(
         false,
-        X`Must be an array of a base structure and an optional rest pattern: ${splitArgs}`,
+        X`Must be an array of a requiredPatt array, an optional optionalPatt array, and an optional restPatt: ${q(
+          splitArray,
+        )}`,
       );
     },
 
-    getRankCover: ([base, _rest = undefined]) =>
-      getPassStyleCover(passStyleOf(base)),
+    getRankCover: ([
+      _requiredPatt,
+      _optionalPatt = undefined,
+      _restPatt = undefined,
+    ]) => getPassStyleCover('copyArray'),
 
-    checkKeyPattern: ([base, _rest = undefined], check) =>
-      check(false, X`${q(passStyleOf(base))} not yet supported as keys`),
+    checkKeyPattern: (
+      [_requiredPatt, _optionalPatt = undefined, _restPatt = undefined],
+      check,
+    ) => check(false, X`copyRecord not yet supported as keys`),
   });
 
+  /**
+   * @param {CopyRecord<Passable>} specimen
+   * @param {CopyRecord<Pattern>} requiredPatt
+   * @param {CopyRecord<Pattern>} optionalPatt
+   * @returns {{
+   *   requiredSpecimen: CopyRecord<Passable>,
+   *   optionalSpecimen: CopyRecord<Passable>,
+   *   restSpecimen: CopyRecord<Passable>
+   * }}
+   */
+  const splitRecordParts = (specimen, requiredPatt, optionalPatt) => {
+    // Not frozen! Mutated in place
+    /** @type {[string, Passable][]} */
+    const requiredEntries = [];
+    /** @type {[string, Passable][]} */
+    const optionalEntries = [];
+    /** @type {[string, Passable][]} */
+    const restEntries = [];
+    for (const [name, value] of entries(specimen)) {
+      if (hasOwnPropertyOf(requiredPatt, name)) {
+        requiredEntries.push([name, value]);
+      } else if (hasOwnPropertyOf(optionalPatt, name)) {
+        optionalEntries.push([name, value]);
+      } else {
+        restEntries.push([name, value]);
+      }
+    }
+    return harden({
+      requiredSpecimen: fromUniqueEntries(requiredEntries),
+      optionalSpecimen: fromUniqueEntries(optionalEntries),
+      restSpecimen: fromUniqueEntries(restEntries),
+    });
+  };
+
+  /**
+   * Optional specimen values which are `undefined` pass unconditionally.
+   * We encode this with the `M.or` pattern so it also produces a good
+   * compression distinguishing `undefined` from absence.
+   *
+   * @param {CopyRecord<Pattern>} optionalPatt
+   * @param {string[]} names
+   * @returns {CopyRecord<Pattern>} The partialPatt
+   */
+  const adaptRecordPattern = (optionalPatt, names) =>
+    fromUniqueEntries(names.map(name => [name, MM.opt(optionalPatt[name])]));
+
   /** @type {MatchHelper} */
-  const matchPartialHelper = Far('match:partial helper', {
-    checkMatches: (specimen, [base, rest = undefined], check) => {
-      const baseStyle = passStyleOf(base);
-      if (!checkKind(specimen, baseStyle, check)) {
+  const matchSplitRecordHelper = Far('match:splitRecord helper', {
+    checkMatches: (
+      specimen,
+      [requiredPatt, optionalPatt = {}, restPatt = MM.any()],
+      check,
+    ) => {
+      if (!checkKind(specimen, 'copyRecord', check)) {
         return false;
       }
-      let specB;
-      let specR;
-      let newBase;
-      if (baseStyle === 'copyArray') {
-        const { length: specimenLen } = specimen;
-        const { length: baseLen } = base;
-        if (specimenLen < baseLen) {
-          newBase = harden(base.slice(0, specimenLen));
-          specB = specimen;
-          // eslint-disable-next-line no-use-before-define
-          specR = [];
-        } else {
-          newBase = [...base];
-          specB = specimen.slice(0, baseLen);
-          specR = specimen.slice(baseLen);
-        }
-        for (let i = 0; i < newBase.length; i += 1) {
-          // For the optional base array parts, an undefined specimen element
-          // matches unconditionally.
-          if (specB[i] === undefined) {
-            // eslint-disable-next-line no-use-before-define
-            newBase[i] = M.any();
-          }
-        }
-      } else {
-        assert(baseStyle === 'copyRecord');
-        // Not yet frozen! Mutated in place
-        specB = {};
-        specR = {};
-        newBase = {};
-        for (const [name, value] of entries(specimen)) {
-          if (hasOwnPropertyOf(base, name)) {
-            // For the optional base record parts, an undefined specimen value
-            // matches unconditionally.
-            if (value !== undefined) {
-              specB[name] = value;
-              newBase[name] = base[name];
-            }
-          } else {
-            specR[name] = value;
-          }
-        }
-      }
-      harden(specB);
-      harden(specR);
-      harden(newBase);
+      const { requiredSpecimen, optionalSpecimen, restSpecimen } =
+        splitRecordParts(specimen, requiredPatt, optionalPatt);
+
+      const partialNames = /** @type {string[]} */ (ownKeys(optionalSpecimen));
+      const partialPatt = adaptRecordPattern(optionalPatt, partialNames);
       return (
-        checkMatches(specB, newBase, check, 'optional-parts') &&
-        (rest === undefined || checkMatches(specR, rest, check, 'rest-parts'))
+        checkMatches(requiredSpecimen, requiredPatt, check) &&
+        partialNames.every(name =>
+          checkMatches(
+            optionalSpecimen[name],
+            partialPatt[name],
+            check,
+            `${name}?`,
+          ),
+        ) &&
+        checkMatches(restSpecimen, restPatt, check, '...rest')
       );
     },
 
-    checkIsWellFormed: matchSplitHelper.checkIsWellFormed,
+    checkIsWellFormed: (splitArray, check) => {
+      if (
+        passStyleOf(splitArray) === 'copyArray' &&
+        (splitArray.length >= 1 || splitArray.length <= 3)
+      ) {
+        const [requiredPatt, optionalPatt = undefined, restPatt = undefined] =
+          splitArray;
+        if (
+          isPattern(requiredPatt) &&
+          passStyleOf(requiredPatt) === 'copyRecord' &&
+          (optionalPatt === undefined ||
+            (isPattern(optionalPatt) &&
+              passStyleOf(optionalPatt) === 'copyRecord')) &&
+          (restPatt === undefined || isPattern(restPatt))
+        ) {
+          return true;
+        }
+      }
+      return check(
+        false,
+        X`Must be an array of a requiredPatt record, an optional optionalPatt record, and an optional restPatt: ${q(
+          splitArray,
+        )}`,
+      );
+    },
 
-    getRankCover: matchSplitHelper.getRankCover,
+    getRankCover: ([
+      requiredPatt,
+      _optionalPatt = undefined,
+      _restPatt = undefined,
+    ]) => getPassStyleCover(passStyleOf(requiredPatt)),
 
-    checkKeyPattern: matchSplitHelper.checkKeyPattern,
+    checkKeyPattern: (
+      [_requiredPatt, _optionalPatt = undefined, _restPatt = undefined],
+      check,
+    ) => check(false, X`copyRecord not yet supported as keys`),
   });
 
   /** @type {Record<string, MatchHelper>} */
@@ -1473,8 +1580,8 @@ const makePatternKit = () => {
     'match:setOf': matchSetOfHelper,
     'match:bagOf': matchBagOfHelper,
     'match:mapOf': matchMapOfHelper,
-    'match:split': matchSplitHelper,
-    'match:partial': matchPartialHelper,
+    'match:splitArray': matchSplitArrayHelper,
+    'match:splitRecord': matchSplitRecordHelper,
   });
 
   const makeMatcher = (tag, payload) => {
@@ -1524,6 +1631,32 @@ const makePatternKit = () => {
     label === undefined
       ? RemotableShape
       : makeMatcher('match:remotable', harden({ label }));
+
+  /**
+   * @template T
+   * @param {T} empty
+   * @param {T} base
+   * @param {T} [optional]
+   * @param {T} [rest]
+   * @returns {T[]}
+   */
+  const makeSplitPayload = (
+    empty,
+    base,
+    optional = undefined,
+    rest = undefined,
+  ) => {
+    if (rest) {
+      if (optional) {
+        return [base, optional, rest];
+      }
+      return [base, empty, rest];
+    }
+    if (optional) {
+      return [base, optional];
+    }
+    return [base];
+  };
 
   /**
    * @param {'sync'|'async'} callKind
@@ -1630,13 +1763,35 @@ const makePatternKit = () => {
       makeLimitsMatcher('match:bagOf', [keyPatt, countPatt, limits]),
     mapOf: (keyPatt = M.any(), valuePatt = M.any(), limits = undefined) =>
       makeLimitsMatcher('match:mapOf', [keyPatt, valuePatt, limits]),
-    split: (base, rest = undefined) =>
-      makeMatcher('match:split', rest === undefined ? [base] : [base, rest]),
-    partial: (base, rest = undefined) =>
-      makeMatcher('match:partial', rest === undefined ? [base] : [base, rest]),
+    splitArray: (base, optional = undefined, rest = undefined) =>
+      makeMatcher(
+        'match:splitArray',
+        makeSplitPayload([], base, optional, rest),
+      ),
+    splitRecord: (base, optional = undefined, rest = undefined) =>
+      makeMatcher(
+        'match:splitRecord',
+        makeSplitPayload({}, base, optional, rest),
+      ),
+    split: (base, rest = undefined) => {
+      if (passStyleOf(harden(base)) === 'copyArray') {
+        // @ts-expect-error We know it should be an array
+        return M.splitArray(base, rest && [], rest);
+      } else {
+        return M.splitRecord(base, rest && {}, rest);
+      }
+    },
+    partial: (base, rest = undefined) => {
+      if (passStyleOf(harden(base)) === 'copyArray') {
+        // @ts-expect-error We know it should be an array
+        return M.splitArray([], base, rest);
+      } else {
+        return M.splitRecord({}, base, rest);
+      }
+    },
 
     eref: t => M.or(t, M.promise()),
-    opt: t => M.or(t, M.undefined()),
+    opt: t => M.or(M.undefined(), t),
 
     interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
       for (const [_, methodGuard] of entries(methodGuards)) {

@@ -74,6 +74,7 @@ export function buildSerializationTools(syscall, deviceName) {
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {
     marshalName: `device:${deviceName}`,
+    serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
     errorIdNum: 60000,

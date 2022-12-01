@@ -9,18 +9,14 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../../src/index.js';
+import { kunser, krefOf } from '../../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
 }
 
 function getImportSensorKref(impcapdata, i) {
-  const body = JSON.parse(impcapdata.body);
-  const value = body[i];
-  if (typeof value === 'object' && value['@qclass'] === 'slot') {
-    return ['slot', impcapdata.slots[value.index]];
-  }
-  return value;
+  return ['slot', krefOf(kunser(impcapdata)[i])];
 }
 
 test('VO property deletion is not short-circuited', async t => {
@@ -55,8 +51,8 @@ test('VO property deletion is not short-circuited', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, capdata];
+    const result = c.kpResolution(kpid);
+    return [status, result];
   }
 
   function has(kref) {

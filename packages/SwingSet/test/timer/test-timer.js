@@ -1,10 +1,10 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { parse } from '@endo/marshal';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildTimer } from '../../src/devices/timer/timer.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
@@ -33,75 +33,75 @@ test('timer vat', async t => {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    t.is(status, 'fulfilled', JSON.stringify([status, capdata]));
-    return capdata;
+    const result = c.kpResolution(kpid);
+    t.is(status, 'fulfilled', JSON.stringify([status, result]));
+    return result;
   };
 
   const cd1 = await run('installWakeup', [3n]); // baseTime=3
-  t.deepEqual(parse(cd1.body), 3n); // echoes the wakeup time
+  t.deepEqual(kunser(cd1), 3n); // echoes the wakeup time
 
   const cd2 = await run('getEvents');
-  t.deepEqual(parse(cd2.body), []); // no wakeups yet
+  t.deepEqual(kunser(cd2), []); // no wakeups yet
 
   timer.poll(2n); // time passes but not enough
   await c.run();
 
   const cd3 = await run('getEvents');
-  t.deepEqual(parse(cd3.body), []); // no wakeups yet
+  t.deepEqual(kunser(cd3), []); // no wakeups yet
 
   timer.poll(4n); // yes enough
   await c.run();
 
   const cd4 = await run('getEvents');
-  t.deepEqual(parse(cd4.body), [4n]); // current time
+  t.deepEqual(kunser(cd4), [4n]); // current time
 
   const cd5 = await run('installWakeup', [5n]);
-  t.deepEqual(parse(cd5.body), 5n);
+  t.deepEqual(kunser(cd5), 5n);
   const cd6 = await run('installWakeup', [6n]);
-  t.deepEqual(parse(cd6.body), 6n);
+  t.deepEqual(kunser(cd6), 6n);
   // you can cancel a wakeup if you provided a cancelToken
   const cd7 = await run('cancel');
-  t.deepEqual(parse(cd7.body), undefined);
+  t.deepEqual(kunser(cd7), undefined);
 
   timer.poll(7n);
   await c.run();
 
   const cd8 = await run('getEvents');
-  t.deepEqual(parse(cd8.body), []); // cancelled before wakeup
+  t.deepEqual(kunser(cd8), []); // cancelled before wakeup
 
   const cd9 = await run('banana', [10n]);
-  t.deepEqual(parse(cd9.body), 'bad setWakeup() handler');
+  t.deepEqual(kunser(cd9), 'bad setWakeup() handler');
 
   // start a repeater that should first fire at now+delay+interval, so
   // 7+20+10=27,37,47,57,..
   await run('goodRepeater', [20n, 10n]);
   timer.poll(25n);
   const cd10 = await run('getEvents');
-  t.deepEqual(parse(cd10.body), []);
+  t.deepEqual(kunser(cd10), []);
   timer.poll(35n); // fire 27, reschedules for 37
   const cd11 = await run('getEvents');
-  t.deepEqual(parse(cd11.body), [35n]);
+  t.deepEqual(kunser(cd11), [35n]);
   timer.poll(40n); // fire 37, reschedules for 47
   const cd12 = await run('getEvents');
-  t.deepEqual(parse(cd12.body), [40n]);
+  t.deepEqual(kunser(cd12), [40n]);
 
   // disabling the repeater at t=40 should unschedule the t=47 event
   await run('stopRepeater');
   timer.poll(50n);
   const cd13 = await run('getEvents');
-  t.deepEqual(parse(cd13.body), []);
+  t.deepEqual(kunser(cd13), []);
 
   // exercises #4282
   const cd14 = await run('repeaterBadSchedule', [60n, 10n]);
-  t.deepEqual(parse(cd14.body), 'bad repeater.schedule() handler');
+  t.deepEqual(kunser(cd14), 'bad repeater.schedule() handler');
   timer.poll(75n);
   await c.run();
   t.pass('survived timer.poll');
 
   // using cancel() with a bogus token is ignored
   const cd15 = await run('badCancel', []);
-  t.deepEqual(parse(cd15.body), undefined);
+  t.deepEqual(kunser(cd15), undefined);
 });
 
 // DONE+TESTED 1: deleting a repeater should cancel all wakeups for it, but the next wakeup happens anyways

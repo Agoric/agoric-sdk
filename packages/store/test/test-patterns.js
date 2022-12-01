@@ -82,13 +82,13 @@ const runTests = (successCase, failCase) => {
     failCase(
       specimen,
       M.split([3, 4, 5, 6]),
-      'required-parts: [3,4] - Must be: [3,4,5,6]',
+      'Expected at least 4 arguments: [3,4]',
     );
-    failCase(specimen, M.split([5]), 'required-parts: [3] - Must be: [5]');
+    failCase(specimen, M.split([5]), 'arg 0: 3 - Must be: 5');
     failCase(specimen, M.split({}), 'copyArray [3,4] - Must be a copyRecord');
-    failCase(specimen, M.split([3], 'x'), 'rest-parts: [4] - Must be: "x"');
+    failCase(specimen, M.split([3], 'x'), '...rest: [4] - Must be: "x"');
 
-    failCase(specimen, M.partial([5]), 'optional-parts: [3] - Must be: [5]');
+    failCase(specimen, M.partial([5]), 'arg 0?: 3 - Must be: 5');
 
     failCase(
       specimen,
@@ -196,11 +196,17 @@ const runTests = (successCase, failCase) => {
 
     failCase(
       specimen,
+      M.splitRecord({ foo: M.number() }, { bar: M.string(), baz: M.number() }),
+      'bar?: number 4 - Must be a string',
+    );
+
+    failCase(
+      specimen,
       M.split(
         { foo: M.number() },
         M.and(M.partial({ bar: M.string() }), M.partial({ baz: M.number() })),
       ),
-      'rest-parts: optional-parts: bar: number 4 - Must be a string',
+      '...rest: bar?: number 4 - Must be a string',
     );
 
     failCase(
@@ -211,22 +217,22 @@ const runTests = (successCase, failCase) => {
     failCase(
       specimen,
       M.split({ foo: 3, z: 4 }),
-      'required-parts: {"foo":3} - Must be: {"foo":3,"z":4}',
+      '{"foo":3} - Must be: {"foo":3,"z":4}',
     );
     failCase(
       specimen,
       M.split({ foo: 3 }, { foo: 3, bar: 4 }),
-      'rest-parts: {"bar":4} - Must be: {"foo":3,"bar":4}',
+      '...rest: {"bar":4} - Must be: {"foo":3,"bar":4}',
     );
     failCase(
       specimen,
       M.split({ foo: 3 }, { foo: M.any(), bar: 4 }),
-      'rest-parts: {"bar":4} - Must have missing properties ["foo"]',
+      '...rest: {"bar":4} - Must have missing properties ["foo"]',
     );
     failCase(
       specimen,
       M.partial({ foo: 7, zip: 5 }, { bar: 4 }),
-      'optional-parts: {"foo":3} - Must be: {"foo":7}',
+      'foo?: 3 - Must be: 7',
     );
 
     failCase(

@@ -27,10 +27,11 @@ export const TimerShape = makeHandleShape('timer');
 export const FullProposalShape = harden({
   want: AmountPatternKeywordRecordShape,
   give: AmountKeywordRecordShape,
-  // To accept only one, we could use M.or rather than M.partial,
+  // To accept only one, we could use M.or rather than M.splitRecord,
   // but the error messages would have been worse. Rather,
   // cleanProposal's assertExit checks that there's exactly one.
-  exit: M.partial(
+  exit: M.splitRecord(
+    {},
     {
       onDemand: null,
       waived: null,
@@ -43,7 +44,7 @@ export const FullProposalShape = harden({
   ),
 });
 /** @see {Proposal} type */
-export const ProposalShape = M.partial(FullProposalShape);
+export const ProposalShape = M.splitRecord({}, FullProposalShape, {});
 
 export const isOnDemandExitRule = exit => {
   const [exitKey] = Object.getOwnPropertyNames(exit);
@@ -68,7 +69,7 @@ export const isAfterDeadlineExitRule = exit => {
   return exitKey === 'afterDeadline';
 };
 
-export const InvitationElementShape = M.split({
+export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,
   instance: InstanceHandleShape,

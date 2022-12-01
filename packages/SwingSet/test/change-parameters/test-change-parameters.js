@@ -3,11 +3,10 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { parse } from '@endo/marshal';
-// eslint-disable-next-line import/order
 import { getAllState } from '@agoric/swing-store';
 import { provideHostStorage } from '../../src/controller/hostStorage.js';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
@@ -63,8 +62,8 @@ async function testChangeParameters(t) {
     const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
-    const capdata = c.kpResolution(kpid);
-    return [status, parse(capdata.body)];
+    const result = c.kpResolution(kpid);
+    return [status, kunser(result)];
   }
 
   // setup target vat

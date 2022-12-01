@@ -9,7 +9,7 @@ import {
   loadSwingsetConfigFile,
   buildKernelBundles,
 } from '../../../src/index.js';
-import { capargs } from '../../util.js';
+import { kser } from '../../../src/lib/kmarshal.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -28,7 +28,7 @@ test.serial('replay does not resurrect dead vat', async t => {
       kernelBundles: t.context.data.kernelBundles,
     });
     await c1.run();
-    t.deepEqual(c1.kpResolution(c1.bootstrapResult), capargs('bootstrap done'));
+    t.deepEqual(c1.kpResolution(c1.bootstrapResult), kser('bootstrap done'));
     // this comes from the dynamic vat...
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }

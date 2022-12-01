@@ -22,13 +22,8 @@ import {
   makeDropExports,
   makeRetireExports,
   makeRetireImports,
-  capargs,
-  capSlot,
-  capdataOneSlot,
-  methargsOneSlot,
 } from './util.js';
-
-const slot0 = capSlot(0);
+import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
 function makeConsole(tag) {
   const log = anylogger(tag);
@@ -138,13 +133,14 @@ async function prep(t, options = {}) {
       logA.push(vd);
       let method;
       if (vd[0] === 'message') {
-        method = JSON.parse(vd[2].methargs.body)[0];
+        const methargs = kunser(vd[2].methargs);
+        [method] = methargs;
       }
       if (vd[0] === 'message' && method === 'one-alice') {
         vrefs.aliceForAlice = vd[2].methargs.slots[0];
         syscall.send(
           vrefs.aliceForAlice,
-          methargsOneSlot('two', vrefs.amyForAlice),
+          kser(['two', [kslot(vrefs.amyForAlice)]]),
         );
       }
       if (vd[0] === 'message' && method === 'two') {
@@ -154,14 +150,14 @@ async function prep(t, options = {}) {
         vrefs.bobForAlice = vd[2].methargs.slots[0];
         syscall.send(
           vrefs.bobForAlice,
-          methargsOneSlot('two', vrefs.amyForAlice),
+          kser(['two', [kslot(vrefs.amyForAlice)]]),
         );
       }
       if (vd[0] === 'message' && method === 'one-carol') {
         vrefs.carolForAlice = vd[2].methargs.slots[0];
         syscall.send(
           vrefs.carolForAlice,
-          methargsOneSlot('two', vrefs.amyForAlice),
+          kser(['two', [kslot(vrefs.amyForAlice)]]),
         );
       }
       if (vd[0] === 'dropExports' && aliceRetiresImmediately) {
@@ -193,7 +189,7 @@ async function prep(t, options = {}) {
       // console.log(`dispatchB`, vd);
       let method;
       if (vd[0] === 'message') {
-        method = JSON.parse(vd[2].methargs.body)[0];
+        [method] = kunser(vd[2].methargs);
       }
       if (vd[0] === 'message' && method === 'two') {
         vrefs.amyForBob = vd[2].methargs.slots[0];
@@ -218,7 +214,7 @@ async function prep(t, options = {}) {
         vrefs.carolForBob = vd[2].methargs.slots[0];
         syscall.send(
           vrefs.carolForBob,
-          methargsOneSlot('two', vrefs.amyForBob),
+          kser(['two', [kslot(vrefs.amyForBob)]]),
         );
       }
 
@@ -228,7 +224,7 @@ async function prep(t, options = {}) {
         // promise we can resolve
         syscall.send(
           vrefs.carolForBob,
-          methargsOneSlot('get-promises', vrefs.promiseForBob),
+          kser(['get-promises', [kslot(vrefs.promiseForBob)]]),
           vrefs.resultPromiseForBob,
         );
         // we don't syscall.subscribe(), so we won't hear about the result
@@ -237,7 +233,7 @@ async function prep(t, options = {}) {
       if (vd[0] === 'message' && method === 'resolve-promise-to-amy') {
         // resolve the previously-sent promise to amy, and drop amy entirely
         syscall.resolve([
-          [vrefs.promiseForBob, false, capdataOneSlot(vrefs.amyForBob)],
+          [vrefs.promiseForBob, false, kser(kslot(vrefs.amyForBob))],
         ]);
         syscall.dropImports([vrefs.amyForBob]);
         syscall.retireImports([vrefs.amyForBob]);
@@ -247,7 +243,7 @@ async function prep(t, options = {}) {
         // send amy in a message that will get queued to the result promise
         syscall.send(
           vrefs.resultPromiseForBob,
-          methargsOneSlot('queued-message', vrefs.amyForBob),
+          kser(['queued-message', [kslot(vrefs.amyForBob)]]),
         );
         // and drop amy entirely
         syscall.dropImports([vrefs.amyForBob]);
@@ -270,7 +266,7 @@ async function prep(t, options = {}) {
       logC.push(vd);
       let method;
       if (vd[0] === 'message') {
-        method = JSON.parse(vd[2].methargs.body)[0];
+        [method] = kunser(vd[2].methargs);
       }
       if (vd[0] === 'message' && method === 'two') {
         vrefs.amyForCarol = vd[2].methargs.slots[0];
@@ -294,12 +290,12 @@ async function prep(t, options = {}) {
         const res0 = [
           vrefs.resultPromiseForCarol,
           false,
-          capdataOneSlot(vrefs.carolForCarol),
+          kser(kslot(vrefs.carolForCarol)),
         ];
         syscall.resolve([res0]);
       }
       if (vd[0] === 'message' && method === 'reject-result') {
-        const res0 = [vrefs.resultPromiseForCarol, true, capargs(0)];
+        const res0 = [vrefs.resultPromiseForCarol, true, kser(0)];
         syscall.resolve([res0]);
       }
       if (vd[0] === 'message' && method === 'queued-message') {
@@ -322,13 +318,13 @@ async function prep(t, options = {}) {
   const carol = kernel.addExport(vatC, vrefs.carolForCarol);
 
   if (sendToBob) {
-    kernel.queueToKref(alice, methargsOneSlot('one-bob', bob), 'none');
+    kernel.queueToKref(alice, 'one-bob', [kslot(bob)], 'none');
     await kernel.run();
 
     t.is(vrefs.bobForAlice, 'o-50'); // expected, but arbitrary
     t.deepEqual(
       logA.shift(),
-      makeMessage(vrefs.aliceForAlice, 'one-bob', [slot0], [vrefs.bobForAlice]),
+      makeMessage(vrefs.aliceForAlice, 'one-bob', [kslot(vrefs.bobForAlice)]),
     );
     // alice sends bob~.two(amy)
 
@@ -336,12 +332,12 @@ async function prep(t, options = {}) {
     t.is(vrefs.amyForBob, 'o-50'); // different vat, same starting point
     t.deepEqual(
       logB.shift(),
-      makeMessage(vrefs.bobForBob, 'two', [slot0], [vrefs.amyForBob]),
+      makeMessage(vrefs.bobForBob, 'two', [kslot(vrefs.amyForBob)]),
     );
   }
 
   if (sendToSelf) {
-    kernel.queueToKref(alice, methargsOneSlot('one-alice', alice), 'none');
+    kernel.queueToKref(alice, 'one-alice', [kslot(alice)], 'none');
     await kernel.step(); // acceptance
     await kernel.step(); // deliver
   }
@@ -357,20 +353,13 @@ async function prep(t, options = {}) {
   t.deepEqual(dumpObjects(kernel)[amy], [vatA, 1, 1]);
 
   if (sendPromiseToCarol) {
-    kernel.queueToKref(
-      bob,
-      methargsOneSlot('give-carol-promise', carol),
-      'none',
-    );
+    kernel.queueToKref(bob, 'give-carol-promise', [kslot(carol)], 'none');
     await kernel.run();
     t.deepEqual(
       logB.shift(),
-      makeMessage(
-        vrefs.bobForBob,
-        'give-carol-promise',
-        [slot0],
-        [vrefs.carolForBob],
-      ),
+      makeMessage(vrefs.bobForBob, 'give-carol-promise', [
+        kslot(vrefs.carolForBob),
+      ]),
     );
     t.deepEqual(logB, []);
     t.deepEqual(
@@ -378,8 +367,7 @@ async function prep(t, options = {}) {
       makeMessage(
         vrefs.carolForCarol,
         'get-promises',
-        [slot0],
-        [vrefs.promiseForCarol],
+        [kslot(vrefs.promiseForCarol)],
         vrefs.resultPromiseForCarol,
       ),
     );
@@ -387,21 +375,18 @@ async function prep(t, options = {}) {
   }
 
   if (addCarol) {
-    kernel.queueToKref(alice, methargsOneSlot('one-carol', carol), 'none');
+    kernel.queueToKref(alice, 'one-carol', [kslot(carol)], 'none');
     await kernel.run();
     t.deepEqual(
       logA.shift(),
-      makeMessage(
-        vrefs.aliceForAlice,
-        'one-carol',
-        [slot0],
-        [vrefs.carolForAlice],
-      ),
+      makeMessage(vrefs.aliceForAlice, 'one-carol', [
+        kslot(vrefs.carolForAlice),
+      ]),
     );
     t.deepEqual(dumpObjects(kernel)[amy], [vatA, 2, 2]);
     t.deepEqual(
       logC.shift(),
-      makeMessage(vrefs.carolForCarol, 'two', [slot0], [vrefs.amyForCarol]),
+      makeMessage(vrefs.carolForCarol, 'two', [kslot(vrefs.amyForCarol)]),
     );
   }
 
@@ -440,7 +425,7 @@ async function testDropAndRetire(t, mode) {
   const p = await prep(t, { aliceRetiresImmediately });
   const { amy, bob, vatA, vrefs } = p;
   // tell bob to both drop and retire amy
-  p.kernel.queueToKref(bob, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(bob, 'drop and retire', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.true(p.aliceClistPresent());
@@ -493,7 +478,7 @@ async function testDrop(t, mode) {
   const { amy, alice, bob, vatA, vatB, vrefs } = p;
 
   // tell bob to drop amy, but not retire
-  p.kernel.queueToKref(bob, capargs(['drop', []]), 'none');
+  p.kernel.queueToKref(bob, 'drop', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.true(p.aliceClistPresent());
@@ -523,7 +508,7 @@ async function testDrop(t, mode) {
     p.gcActionsAre([]);
     if (mode === '24A') {
       // 24A: alice emits retire first
-      p.kernel.queueToKref(alice, capargs(['retire', []]), 'none');
+      p.kernel.queueToKref(alice, 'retire', [], 'none');
       await p.kernel.step(); // acceptance
       await p.kernel.step(); // deliver
       // that deletes the kobj and queues a retire to the importers (bob)
@@ -534,7 +519,7 @@ async function testDrop(t, mode) {
     } else if (mode === '24B') {
       // 24B: bob emits retire first
       // console.log(`++ telling bob to retire first`);
-      p.kernel.queueToKref(bob, capargs(['retire', []]), 'none');
+      p.kernel.queueToKref(bob, 'retire', [], 'none');
       await p.kernel.step(); // acceptance
       await p.kernel.step(); // deliver
       // that was the last importer: queue a retire to the exporter
@@ -574,11 +559,11 @@ test('retire before drop is error', async t => {
       // console.log(`dispatchA`, vd);
       let method;
       if (vd[0] === 'message') {
-        method = JSON.parse(vd[2].methargs.body)[0];
+        [method] = kunser(vd[2].methargs);
       }
       if (vd[0] === 'message' && method === 'one') {
         const bobForAlice = vd[2].methargs.slots[0];
-        syscall.send(bobForAlice, methargsOneSlot('two', amyForAlice));
+        syscall.send(bobForAlice, kser(['two', [kslot(amyForAlice)]]));
       }
     }
     return dispatch;
@@ -595,7 +580,7 @@ test('retire before drop is error', async t => {
       // console.log(`dispatchB`, vd);
       let method;
       if (vd[0] === 'message') {
-        method = JSON.parse(vd[2].methargs.body)[0];
+        [method] = kunser(vd[2].methargs);
       }
       if (vd[0] === 'message' && method === 'two') {
         amyForBob = vd[2].methargs.slots[0];
@@ -622,14 +607,14 @@ test('retire before drop is error', async t => {
   const bob = kernel.addExport(vatB, bobForBob);
 
   // vatB will make a syscall error and be terminated
-  kernel.queueToKref(alice, methargsOneSlot('one', bob), 'none');
+  kernel.queueToKref(alice, 'one', [kslot(bob)], 'none');
   await kernel.run();
 
   let survivingVats = new Set();
   kernel.dump().vatTables.forEach(v => survivingVats.add(v.vatID));
   t.true(survivingVats.has(vatB));
 
-  kernel.queueToKref(bob, capargs(['retire', []]), 'none');
+  kernel.queueToKref(bob, 'retire', [], 'none');
   await kernel.run();
 
   t.truthy(syscallError);
@@ -649,7 +634,7 @@ test('two importers both drop+retire', async t => {
   const p = await prep(t, { addCarol: true });
   const { amy, bob, carol, vatA, vrefs } = p;
   // tell bob to drop+retire amy
-  p.kernel.queueToKref(bob, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(bob, 'drop and retire', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.deepEqual(p.logB.shift(), makeMessage(vrefs.bobForBob, 'drop and retire'));
@@ -660,7 +645,7 @@ test('two importers both drop+retire', async t => {
   t.deepEqual(dumpObjects(p.kernel)[amy], [vatA, 1, 1]);
   p.gcActionsAre([]);
   // carol drops+retires amy too
-  p.kernel.queueToKref(carol, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(carol, 'drop and retire', [], 'none');
   await p.kernel.run();
   t.deepEqual(
     p.logC.shift(),
@@ -680,7 +665,7 @@ test('two importers both drop but not retire', async t => {
   const p = await prep(t, { addCarol: true });
   const { amy, bob, carol, vatA, vatB, vatC, vrefs } = p;
   // tell bob to drop amy, but not retire
-  p.kernel.queueToKref(bob, capargs(['drop', []]), 'none');
+  p.kernel.queueToKref(bob, 'drop', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.deepEqual(p.logB.shift(), makeMessage(vrefs.bobForBob, 'drop'));
@@ -691,7 +676,7 @@ test('two importers both drop but not retire', async t => {
   t.deepEqual(dumpObjects(p.kernel)[amy], [vatA, 1, 2]);
   p.gcActionsAre([]);
   // carol drops amy too
-  p.kernel.queueToKref(carol, capargs(['drop', []]), 'none');
+  p.kernel.queueToKref(carol, 'drop', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.deepEqual(p.logC.shift(), makeMessage(vrefs.carolForCarol, 'drop'));
@@ -736,7 +721,7 @@ test('two importers: drop+retire, cross-import, drop+retire', async t => {
   // in the setup, both bob and carol are given a reference to amy
 
   // tell carol to drop+retire amy
-  p.kernel.queueToKref(carol, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(carol, 'drop and retire', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.deepEqual(
@@ -752,16 +737,16 @@ test('two importers: drop+retire, cross-import, drop+retire', async t => {
   p.gcActionsAre([]);
 
   // now tell bob to send amy to carol, re-incrementing the refcount
-  p.kernel.queueToKref(bob, methargsOneSlot('give-amy', carol), 'none');
+  p.kernel.queueToKref(bob, 'give-amy', [kslot(carol)], 'none');
   await p.kernel.run();
   t.deepEqual(
     p.logB.shift(),
-    makeMessage(vrefs.bobForBob, 'give-amy', [slot0], [vrefs.carolForBob]),
+    makeMessage(vrefs.bobForBob, 'give-amy', [kslot(vrefs.carolForBob)]),
   );
   t.deepEqual(p.logB, []);
   t.deepEqual(
     p.logC.shift(),
-    makeMessage(vrefs.carolForCarol, 'two', [slot0], [vrefs.amyForCarol]),
+    makeMessage(vrefs.carolForCarol, 'two', [kslot(vrefs.amyForCarol)]),
   );
   t.deepEqual(p.logC, []);
   t.true(p.carolClistPresent());
@@ -770,7 +755,7 @@ test('two importers: drop+retire, cross-import, drop+retire', async t => {
   p.gcActionsAre([]);
 
   // bob drops+retires
-  p.kernel.queueToKref(bob, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(bob, 'drop and retire', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.deepEqual(p.logB.shift(), makeMessage(vrefs.bobForBob, 'drop and retire'));
@@ -783,7 +768,7 @@ test('two importers: drop+retire, cross-import, drop+retire', async t => {
   p.gcActionsAre([]);
 
   // carol drops+retires amy too
-  p.kernel.queueToKref(carol, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(carol, 'drop and retire', [], 'none');
   await p.kernel.run();
   t.deepEqual(
     p.logC.shift(),
@@ -809,7 +794,7 @@ test('promise resolution holds the only reference', async t => {
 
   // The prepare step leaves carol holding a promise. Have bob resolve that
   // promise (to amy) and retire amy all in a single crank.
-  p.kernel.queueToKref(bob, capargs(['resolve-promise-to-amy', []]), 'none');
+  p.kernel.queueToKref(bob, 'resolve-promise-to-amy', [], 'none');
   // step far enough to retire the GC actions
 
   // there should be a notify(carol) on the queue, and no GC actions
@@ -840,16 +825,12 @@ test('promise resolution holds the only reference', async t => {
   t.false(p.amyRetired());
   t.deepEqual(dumpObjects(p.kernel)[amy], [vatA, 1, 1]);
   p.gcActionsAre([]);
-  const res0 = [
-    vrefs.promiseForCarol,
-    false,
-    capdataOneSlot(vrefs.amyForCarol),
-  ];
+  const res0 = [vrefs.promiseForCarol, false, kser(kslot(vrefs.amyForCarol))];
   t.deepEqual(p.logC.shift(), makeResolutions([res0]));
   t.deepEqual(p.logC, []);
 
   // now carol retires
-  p.kernel.queueToKref(carol, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(carol, 'drop and retire', [], 'none');
   await p.kernel.run();
   t.deepEqual(
     p.logC.shift(),
@@ -876,11 +857,7 @@ test('promise queue holds the only reference, resolved', async t => {
 
   // The prepare step leaves carol as the decider of a result promise. Have
   // bob queue a message (containing amy) to that result promise.
-  p.kernel.queueToKref(
-    bob,
-    capargs(['send-amy-to-result-promise', []]),
-    'none',
-  );
+  p.kernel.queueToKref(bob, 'send-amy-to-result-promise', [], 'none');
   // bob sends 'queued-message(amy)' to the promise, then drops amy
   await p.kernel.run();
   // amy should now be held alive by only the queued message
@@ -899,7 +876,7 @@ test('promise queue holds the only reference, resolved', async t => {
 
   // tell carol to resolve the promise (to herself), transferring
   // 'queued-message()' from the promise queue to the regular run-queue
-  p.kernel.queueToKref(carol, capargs(['resolve-result', []]), 'none');
+  p.kernel.queueToKref(carol, 'resolve-result', [], 'none');
   await p.kernel.step(); // acceptance
   await p.kernel.step(); // deliver
   t.deepEqual(
@@ -921,12 +898,9 @@ test('promise queue holds the only reference, resolved', async t => {
   t.deepEqual(p.logB, []);
   t.deepEqual(
     p.logC.shift(),
-    makeMessage(
-      vrefs.carolForCarol,
-      'queued-message',
-      [slot0],
-      [vrefs.amyForCarol],
-    ),
+    makeMessage(vrefs.carolForCarol, 'queued-message', [
+      kslot(vrefs.amyForCarol),
+    ]),
   );
   t.deepEqual(p.logC, []);
   t.true(p.aliceClistPresent());
@@ -937,7 +911,7 @@ test('promise queue holds the only reference, resolved', async t => {
   p.gcActionsAre([]);
 
   // now carol retires
-  p.kernel.queueToKref(carol, capargs(['drop and retire', []]), 'none');
+  p.kernel.queueToKref(carol, 'drop and retire', [], 'none');
   await p.kernel.run();
   t.deepEqual(
     p.logC.shift(),
@@ -958,11 +932,7 @@ test('promise queue holds the only reference, rejected', async t => {
 
   // The prepare step leaves carol as the decider of a result promise. Have
   // bob queue a message (containing amy) to that result promise.
-  p.kernel.queueToKref(
-    bob,
-    capargs(['send-amy-to-result-promise', []]),
-    'none',
-  );
+  p.kernel.queueToKref(bob, 'send-amy-to-result-promise', [], 'none');
   // bob sends 'queued-message(amy)' to the promise, then drops amy
   await p.kernel.run();
   // amy should now be held alive by only the queued message
@@ -981,7 +951,7 @@ test('promise queue holds the only reference, rejected', async t => {
 
   // tell carol to reject the promise, which should reject the queued message
   // and drop its arguments. we charge ahead and let everything retire.
-  p.kernel.queueToKref(carol, capargs(['reject-result', []]), 'none');
+  p.kernel.queueToKref(carol, 'reject-result', [], 'none');
   await p.kernel.run();
   t.deepEqual(
     p.logC.shift(),
@@ -1168,7 +1138,7 @@ test('terminated vat', async t => {
   // refcount without a matching decrement. See #3376.
   [refcounts, owners] = getRefCountsAndOwners();
   t.deepEqual(refcounts[doomedExport1Kref], [1, 1]);
-  t.deepEqual(c.kpResolution(r), capargs('good'));
+  t.deepEqual(kunser(c.kpResolution(r)), 'good');
 
   // Both objects stick around until bootstrap drops the orphan
   // doomedExport1Presence, and rejects the promise to which doomedExport2 is

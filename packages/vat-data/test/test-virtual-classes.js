@@ -39,12 +39,12 @@ test('test defineVirtualFarClass', t => {
   t.is(upCounter.incr(5), 8);
   t.is(upCounter.incr(1), 9);
   t.throws(() => upCounter.incr(-3), {
-    message: 'In "incr" method of (UpCounter) arg 0: -3 - Must be >= 0',
+    message: 'In "incr" method of (UpCounter): arg 0?: -3 - Must be >= 0',
   });
   // @ts-expect-error the type violation is what we're testing
   t.throws(() => upCounter.incr('foo'), {
     message:
-      'In "incr" method of (UpCounter) arg 0: string "foo" - Must be a number',
+      'In "incr" method of (UpCounter): arg 0?: string "foo" - Must be a number',
   });
 });
 
@@ -76,12 +76,12 @@ test('test defineVirtualFarClassKit', t => {
   t.is(downCounter.decr(), 7);
   t.is(upCounter.incr(3), 10);
   t.throws(() => upCounter.incr(-3), {
-    message: 'In "incr" method of (Counter up) arg 0: -3 - Must be >= 0',
+    message: 'In "incr" method of (Counter up): arg 0?: -3 - Must be >= 0',
   });
   // @ts-expect-error the type violation is what we're testing
   t.throws(() => downCounter.decr('foo'), {
     message:
-      'In "decr" method of (Counter down) arg 0: string "foo" - Must be a number',
+      'In "decr" method of (Counter down): arg 0?: string "foo" - Must be a number',
   });
   // @ts-expect-error the type violation is what we're testing
   t.throws(() => upCounter.decr(3), {
