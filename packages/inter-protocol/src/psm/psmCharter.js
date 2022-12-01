@@ -1,4 +1,4 @@
-import '@agoric/governance/src/exported.js';
+import '@agoric/governance/exported.js';
 import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';

@@ -1,4 +1,4 @@
-import '@agoric/governance/src/exported.js';
+import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 
