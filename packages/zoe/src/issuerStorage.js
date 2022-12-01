@@ -68,6 +68,8 @@ export const provideIssuerStorage = zcfBaggage => {
       return issuerToIssuerRecord.get(issuer);
     }
 
+    console.log(`ISS  store`, brand);
+
     brandToIssuerRecord.init(brand, issuerRecord);
     issuerToIssuerRecord.init(issuer, issuerRecord);
     return issuerToIssuerRecord.get(issuer);
@@ -75,6 +77,9 @@ export const provideIssuerStorage = zcfBaggage => {
 
   const getByBrand = brand => {
     assertInstantiated();
+
+    console.log(`Iss get`, brand);
+
     return brandToIssuerRecord.get(brand);
   };
 

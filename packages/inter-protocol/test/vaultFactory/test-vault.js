@@ -40,7 +40,8 @@ const { zoeService, feeMintAccessRetriever } = makeZoeKit(
   makeFakeVatAdmin(setJig, makeRemote).admin,
 );
 /** @type {ERef<ZoeService>} */
-const zoe = makeFar(zoeService);
+const zoe = zoeService;
+// const zoe = makeFar(zoeService);
 trace('makeZoe');
 const feeMintAccessP = feeMintAccessRetriever.get();
 
@@ -67,6 +68,7 @@ async function launch(zoeP, sourceRoot) {
     collateralKit: { mint: collateralMint, brand: collateralBrand },
   } = testJig;
   const { brand: runBrand } = runMint.getIssuerRecord();
+  console.log(`TV  launch   brand`, runBrand);
 
   const collateral50 = AmountMath.make(collateralBrand, 50n);
   const proposal = harden({
@@ -86,7 +88,7 @@ async function launch(zoeP, sourceRoot) {
 
 const helperContract = launch(zoe, vaultRoot);
 
-test('first', async t => {
+test.only('first', async t => {
   const { creatorSeat, creatorFacet } = await helperContract;
 
   // Our wrapper gives us a Vault which holds 50 Collateral, has lent out 70
