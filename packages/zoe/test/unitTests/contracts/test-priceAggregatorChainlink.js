@@ -1,4 +1,3 @@
-// @ts-nocheck
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -77,6 +76,8 @@ test.before(
       /** @type {OracleHandler} */
       const oracleHandler = Far('OracleHandler', {
         async onQuery({ increment }, _fee) {
+          assert(valueOut);
+          assert(increment);
           valueOut += increment;
           return harden({
             reply: `${valueOut}`,
