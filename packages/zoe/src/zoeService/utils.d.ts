@@ -102,3 +102,11 @@ export type StartInstance = <SF>(
 export type GetPublicFacet = <SF>(
   instance: Instance<SF> | PromiseLike<Instance<SF>>,
 ) => Promise<StartResult<SF>['publicFacet']>;
+
+export type GetTerms = <SF>(instance: Instance<SF>) => Promise<
+  // only type if 'terms' info is available
+  StartParams<SF>['terms'] extends {}
+    ? StartParams<SF>['terms']
+    : // XXX returning `any` in this case
+      any
+>;
