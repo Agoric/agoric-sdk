@@ -7,7 +7,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { AttKW as KW } from './constants.js';
 import { makeAttestationTool } from './attestationTool.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * @typedef {{
@@ -70,9 +70,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   /** @param {Amount<'copyBag'>} attestationAmount */
   const unwrapLienedAmount = attestationAmount => {
     attestationAmount.brand === attBrand ||
-      assert.fail(
-        X`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`,
-      );
+      Fail`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`;
     fit(
       attestationAmount.value.payload,
       harden([[M.string(), M.bigint()]]),
@@ -119,11 +117,9 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   // check that x <= hi - lo
   const checkDelta = (x, label, hi, lo) => {
     const bound = subtractOrZero(hi, lo);
-    assert(
-      isGTE(bound, coerce(stakeBrand, x)),
+    isGTE(bound, coerce(stakeBrand, x)) ||
       // TODO: X`...${raw(label)}...`
-      X`Only ${bound} was ${label}, but an attestation was attempted for ${x}`,
-    );
+      Fail`Only ${bound} was ${label}, but an attestation was attempted for ${x}`;
   };
   const assertAccountStateOK = async (address, toLien) => {
     const s = await getAccountState(address, stakeBrand);

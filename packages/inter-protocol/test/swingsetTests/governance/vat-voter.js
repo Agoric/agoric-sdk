@@ -6,7 +6,7 @@ import {
   assertBallotConcernsParam,
 } from '@agoric/governance';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const build = async (log, zoe) => {
   return Far('voter', {
@@ -82,13 +82,13 @@ const build = async (log, zoe) => {
             E(zoe).getInstallationForInstance(governedInstance),
           ]);
           counterInstallation === installations.counter ||
-            assert.fail(X`counterInstallation should match`);
+            Fail`counterInstallation should match`;
           governorInstallation === installations.governor ||
-            assert.fail(X`governor Installation should match`);
+            Fail`governor Installation should match`;
           electorateInstallation === installations.electorate ||
-            assert.fail(X`electorate Installation should match`);
+            Fail`electorate Installation should match`;
           governedInstallation === installations.vaultFactory ||
-            assert.fail(X`vaultFactory Installation should match`);
+            Fail`vaultFactory Installation should match`;
         },
       });
     },

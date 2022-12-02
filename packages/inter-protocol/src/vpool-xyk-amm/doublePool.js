@@ -6,7 +6,7 @@ import {
   pricesForStatedOutput,
 } from './constantProduct/calcSwapPrices.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 // Price calculations and swap using a pair of pools. Both pools map between RUN
 // and some collateral. We arrange the trades so collateralInPool will have
@@ -49,9 +49,7 @@ export const makeDoublePool = (
   const centralBrand = inCentral.brand;
   const emptyCentralAmount = AmountMath.makeEmpty(centralBrand);
   centralBrand === outCentral.brand ||
-    assert.fail(
-      X`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`,
-    );
+    Fail`The central brands on the two pools must match: ${centralBrand}, ${outCentral.brand}`;
 
   const allocateGainsAndLosses = (seat, prices) => {
     const inPoolSeat = collateralInPool.getPoolSeat();

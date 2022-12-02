@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import { makeManagerKit } from './manager-helper.js';
@@ -94,7 +94,7 @@ export function makeLocalVatManagerFactory(tools) {
     const makeLogMaker = source => {
       const makeLog = level => {
         const log = sourcedConsole[level];
-        assert.typeof(log, 'function', X`logger[${level}] must be a function`);
+        typeof log === 'function' || Fail`logger[${level}] must be a function`;
         return log.bind(sourcedConsole, source);
       };
       return makeLog;
@@ -126,7 +126,7 @@ export function makeLocalVatManagerFactory(tools) {
       // eslint-disable-next-line @jessie.js/no-nested-await
       const vatNS = await buildVatNamespace({}, {});
       const setup = vatNS.default;
-      assert(setup, X`vat source bundle lacks (default) setup() function`);
+      setup || Fail`vat source bundle lacks (default) setup() function`;
       assert.typeof(setup, 'function');
       const helpers = harden({}); // DEPRECATED, todo remove from setup()
       const state = null; // TODO remove from setup()

@@ -1,5 +1,5 @@
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import '../internal-types.js';
@@ -75,9 +75,7 @@ const assertEqualPerBrand = (leftSumsByBrand, rightSumsByBrand) => {
   allBrands.forEach(brand => {
     const { leftSum, rightSum } = getSums(brand);
     AmountMath.isEqual(leftSum, rightSum) ||
-      assert.fail(
-        X`rights were not conserved for brand ${brand} ${leftSum.value} != ${rightSum.value}`,
-      );
+      Fail`rights were not conserved for brand ${brand} ${leftSum.value} != ${rightSum.value}`;
   });
 };
 

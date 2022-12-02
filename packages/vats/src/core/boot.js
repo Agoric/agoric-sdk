@@ -17,7 +17,7 @@ import * as behaviors from './behaviors.js';
 import * as clientBehaviors from './client-behaviors.js';
 import * as utils from './utils.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 // Choose a manifest based on runtime configured argv.ROLE.
 const roleToManifest = harden({
@@ -59,8 +59,8 @@ const buildRootObject = (vatPowers, vatParameters) => {
 
   const bootManifest = bootstrapManifest || roleToManifest[ROLE];
   const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
-  assert(bootManifest, X`no configured bootstrapManifest for role ${ROLE}`);
-  assert(bootBehaviors, X`no configured bootstrapBehaviors for role ${ROLE}`);
+  bootManifest || Fail`no configured bootstrapManifest for role ${ROLE}`;
+  bootBehaviors || Fail`no configured bootstrapBehaviors for role ${ROLE}`;
 
   /**
    * Bootstrap vats and devices.

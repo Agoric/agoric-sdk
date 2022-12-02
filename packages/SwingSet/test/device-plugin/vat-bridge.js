@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, _vatParameters) {
   const log = vatPowers.testLog;
@@ -20,7 +20,7 @@ export function buildRootObject(vatPowers, _vatParameters) {
             break;
           }
           default: {
-            assert.fail(X`unknown bridge input ${msg}`);
+            Fail`unknown bridge input ${msg}`;
           }
         }
       } catch (e) {

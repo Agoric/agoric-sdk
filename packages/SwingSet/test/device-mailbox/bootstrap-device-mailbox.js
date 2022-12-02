@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;
@@ -45,7 +45,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         });
         await E(setReceiver).setReceiver(receiver);
       } else {
-        assert.fail(X`unknown argv mode '${argv[0]}'`);
+        Fail`unknown argv mode '${argv[0]}'`;
       }
     },
     ping() {

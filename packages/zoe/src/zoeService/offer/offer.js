@@ -9,7 +9,7 @@ import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
 import '../internal-types.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * @param {Issuer} invitationIssuer
@@ -41,7 +41,7 @@ export const makeOfferMethod = (
 
     const instanceAdmin = getInstanceAdmin(instance);
     !instanceAdmin.isBlocked(description) ||
-      assert.fail(X`not accepting offer with description ${q(description)}`);
+      Fail`not accepting offer with description ${q(description)}`;
     const { invitationHandle } = await burnInvitation(
       invitationIssuer,
       invitation,
@@ -58,12 +58,10 @@ export const makeOfferMethod = (
 
     if (offerArgs !== undefined) {
       const passStyle = passStyleOf(offerArgs);
-      assert(
-        passStyle === 'copyRecord',
-        X`offerArgs must be a pass-by-copy record, but instead was a ${q(
+      passStyle === 'copyRecord' ||
+        Fail`offerArgs must be a pass-by-copy record, but instead was a ${q(
           passStyle,
-        )}: ${offerArgs}`,
-      );
+        )}: ${offerArgs}`;
     }
 
     const initialAllocation = await depositPayments(

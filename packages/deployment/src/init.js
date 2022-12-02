@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { isObject } from '@endo/marshal';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup.js';
 import { shellEscape } from './run.js';
@@ -313,7 +313,7 @@ const doInit =
     if (!dir) {
       dir = setup.SETUP_HOME;
     }
-    assert(dir, X`Need: [dir] [[network name]]`);
+    dir || Fail`Need: [dir] [[network name]]`;
     await wr.mkdir(dir, { recursive: true });
     await chdir(dir);
 
@@ -513,7 +513,7 @@ const doInit =
       config.OFFSETS[PLACEMENT] = offset;
     }
     Object.values(ROLE_INSTANCE).some(i => i > 0) ||
-      assert.fail(X`Aborting due to no nodes configured!`);
+      Fail`Aborting due to no nodes configured!`;
 
     await wr.createFile(
       `vars.tf`,

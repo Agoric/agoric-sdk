@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { q, Fail } from '@agoric/assert';
 import '../types.js';
 
 /**
@@ -13,9 +13,9 @@ export const makeLegacyWeakMap = (tag = 'key') => {
   /** @type {WeakMap<K & object, V>} */
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
-    assert(!wm.has(key), X`${q(tag)} already registered: ${key}`);
+    !wm.has(key) || Fail`${q(tag)} already registered: ${key}`;
   const assertKeyExists = key =>
-    assert(wm.has(key), X`${q(tag)} not found: ${key}`);
+    wm.has(key) || Fail`${q(tag)} not found: ${key}`;
   return harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,

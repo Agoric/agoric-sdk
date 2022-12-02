@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 export function buildRootDeviceNode(tools) {
@@ -10,7 +10,7 @@ export function buildRootDeviceNode(tools) {
     return Far('sender', {
       add(peer, msgnum, body) {
         const oldDS = getDeviceState();
-        assert(oldDS.inboundHandlers[peer], X`unregistered peer '${peer}'`);
+        oldDS.inboundHandlers[peer] || Fail`unregistered peer '${peer}'`;
         const h = oldDS.inboundHandlers[peer];
         const newDS = { ...oldDS };
         if (deliverMode === 'immediate') {
@@ -89,7 +89,7 @@ export function buildRootDeviceNode(tools) {
   return Far('root', {
     registerInboundHandler(name, handler) {
       const oldDS = getDeviceState();
-      assert(!oldDS.inboundHandlers[name], X`already registered`);
+      !oldDS.inboundHandlers[name] || Fail`already registered`;
       const newDS = { ...oldDS };
       newDS.inboundHandlers = { ...newDS.inboundHandlers };
       newDS.inboundHandlers[name] = handler;

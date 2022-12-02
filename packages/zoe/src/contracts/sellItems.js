@@ -9,7 +9,7 @@ import {
   assertNatAssetKind,
 } from '../contractSupport/index.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * Sell items in exchange for money. Items may be fungible or
@@ -98,7 +98,7 @@ const start = zcf => {
 
     // Check that the money provided to pay for the items is greater than the totalCost.
     AmountMath.isGTE(providedMoney, totalCost) ||
-      assert.fail(X`More money (${totalCost}) is required to buy these items`);
+      Fail`More money (${totalCost}) is required to buy these items`;
 
     // Reallocate.
     sellerSeat.incrementBy(

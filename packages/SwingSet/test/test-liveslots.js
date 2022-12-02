@@ -5,7 +5,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
@@ -249,7 +249,7 @@ async function doOutboundPromise(t, mode) {
     resolution = 'reject';
     resolveSyscall.resolutions[0][1] = true;
   } else {
-    assert.fail(X`unknown mode ${mode}`);
+    Fail`unknown mode ${mode}`;
   }
   resolveSyscall.resolutions[0][2] = kser(resolution);
 
@@ -418,7 +418,7 @@ async function doResultPromise(t, mode) {
   } else if (mode === 'reject') {
     await dispatch(makeReject(expectedP1, kser('error')));
   } else {
-    assert.fail(X`unknown mode ${mode}`);
+    Fail`unknown mode ${mode}`;
   }
   t.deepEqual(log, []);
 
@@ -440,7 +440,7 @@ async function doResultPromise(t, mode) {
     // Resolving to a non-target means a locally-generated error, and no
     // send() call
   } else {
-    assert.fail(X`unknown mode ${mode}`);
+    Fail`unknown mode ${mode}`;
   }
   // #823 fails here for the non-presence cases: we expect no syscalls, but
   // instead we get a send to p+5

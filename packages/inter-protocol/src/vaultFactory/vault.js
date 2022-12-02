@@ -22,7 +22,7 @@ import {
   stageDelta,
 } from '../contractSupport.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 const trace = makeTracer('IV', false);
 
@@ -197,12 +197,10 @@ const checkRestart = (newCollateralPre, maxDebtPre, newCollateral, newDebt) => {
     );
     // `floorMultiply` because the debt ceiling should be tight
     const maxDebtAfter = floorMultiplyBy(newCollateral, debtPerCollateral);
-    assert(
-      AmountMath.isGTE(maxDebtAfter, newDebt),
-      X`The requested debt ${q(
+    AmountMath.isGTE(maxDebtAfter, newDebt) ||
+      Fail`The requested debt ${q(
         newDebt,
-      )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`,
-    );
+      )} is more than the collateralization ratio allows: ${q(maxDebtAfter)}`;
     // The `collateralAfter` can still cover the `newDebt`, so don't restart.
     return false;
   }
@@ -230,9 +228,7 @@ const helperBehavior = {
     const { phase } = state;
     const validNewPhases = validTransitions[phase];
     validNewPhases.includes(newPhase) ||
-      assert.fail(
-        X`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`,
-      );
+      Fail`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`;
     state.phase = newPhase;
   },
 
@@ -245,9 +241,7 @@ const helperBehavior = {
     const { phase } = state;
     phase === Phase.ACTIVE ||
       phase === Phase.LIQUIDATED ||
-      assert.fail(
-        X`to be closed a vault must be active or liquidated, not ${phase}`,
-      );
+      Fail`to be closed a vault must be active or liquidated, not ${phase}`;
   },
   // #endregion
 
@@ -304,7 +298,7 @@ const helperBehavior = {
   assertVaultHoldsNoMinted: ({ state, facets }) => {
     const { vaultSeat } = state;
     AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat)) ||
-      assert.fail(X`Vault should be empty of Minted`);
+      Fail`Vault should be empty of Minted`;
   },
 
   /**
@@ -319,12 +313,10 @@ const helperBehavior = {
     proposedRunDebt,
   ) => {
     const maxRun = await state.manager.maxDebtFor(collateralAmount);
-    assert(
-      AmountMath.isGTE(maxRun, proposedRunDebt, facets.helper.debtBrand()),
-      X`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)} for ${q(
+    AmountMath.isGTE(maxRun, proposedRunDebt, facets.helper.debtBrand()) ||
+      Fail`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)} for ${q(
         collateralAmount,
-      )} collateral`,
-    );
+      )} collateral`;
   },
 
   /**
@@ -403,9 +395,7 @@ const helperBehavior = {
       // you must pay off the entire remainder but if you offer too much, we won't
       // take more than you owe
       AmountMath.isGTE(given, debt) ||
-        assert.fail(
-          X`Offer ${given} is not sufficient to pay off debt ${debt}`,
-        );
+        Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
 
       // Return any overpayment
       seat.incrementBy(vaultSeat.decrementBy(vaultSeat.getCurrentAllocation()));
@@ -491,7 +481,7 @@ const helperBehavior = {
     // max debt supported by current Collateral as modified by proposal
     const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
     updaterPre === ephemera.outerUpdater ||
-      assert.fail(X`Transfer during vault adjustment`);
+      Fail`Transfer during vault adjustment`;
     helper.assertActive();
 
     // After the `await`, we retrieve the vault's allocations again,
@@ -598,11 +588,9 @@ const selfBehavior = {
 
     const normalizedDebtPre = self.getNormalizedDebt();
     const actualDebtPre = self.getCurrentDebt();
-    assert(
-      AmountMath.isEmpty(normalizedDebtPre) &&
-        AmountMath.isEmpty(actualDebtPre),
-      X`vault must be empty initially`,
-    );
+    (AmountMath.isEmpty(normalizedDebtPre) &&
+      AmountMath.isEmpty(actualDebtPre)) ||
+      Fail`vault must be empty initially`;
 
     const collateralPre = self.getCollateralAmount();
     trace('initVaultKit start: collateral', state.idInManager, {
@@ -623,10 +611,8 @@ const selfBehavior = {
       toMint,
     } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
     !AmountMath.isEmpty(fee) ||
-      assert.fail(
-        X`loan requested (${wantMinted}) is too small; cannot accrue interest`,
-      );
-    assert(AmountMath.isEqual(newDebtPre, toMint), X`fee mismatch for vault`);
+      Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
+    AmountMath.isEqual(newDebtPre, toMint) || Fail`fee mismatch for vault`;
     trace(
       'initVault',
       state.idInManager,

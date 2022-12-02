@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
@@ -24,14 +24,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
       installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
-      assert(
-        keyEQ(
-          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
-      );
+        Fail`wrong installation`;
+      keyEQ(
+        harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
+        issuerKeywordRecord,
+      ) || Fail`issuerKeywordRecord were not as expected`;
       assert(keyEQ(invitationValue[0].minimumBid, simoleans(3n)));
       assert(keyEQ(invitationValue[0].auctionedAssets, moola(1n)));
 
@@ -76,8 +73,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // const installation = await E(zoe).getInstallation(invitation);
       // const hash = await E(installation).getHash();
       // assert.is(hash, 'XXX');
-
-      assert(installation === installations.atomicSwap, X`wrong installation`);
+      installation === installations.atomicSwap || Fail`wrong installation`;
       assert(
         keyEQ(
           harden({ Asset: invitationIssuer, Price: bucksIssuer }),
@@ -89,11 +85,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       keyEQ(invitationValue[0].asset, optionAmounts) ||
-        assert.fail(X`asset is the option`);
-      assert(keyEQ(invitationValue[0].price, bucks(1n)), X`price is 1 buck`);
+        Fail`asset is the option`;
+      keyEQ(invitationValue[0].price, bucks(1n)) || Fail`price is 1 buck`;
       const optionValue = optionAmounts.value;
-      optionValue[0].description === 'exerciseOption' ||
-        assert.fail(X`wrong invitation`);
+      optionValue[0].description === 'exerciseOption' || Fail`wrong invitation`;
       assert(
         AmountMath.isEqual(
           optionValue[0].underlyingAssets.UnderlyingAsset,
@@ -108,8 +103,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
-      assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
+      optionValue[0].expirationDate === 100n || Fail`wrong expiration date`;
+      optionValue[0].timeAuthority === timer || Fail`wrong timer`;
 
       // Dave escrows his 1 buck with Zoe and forms his proposal
       const daveSwapProposal = harden({

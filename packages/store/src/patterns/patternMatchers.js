@@ -36,7 +36,7 @@ import {
 
 /// <reference types="ses"/>
 
-const { quote: q, details: X } = assert;
+const { quote: q, details: X, Fail } = assert;
 const { entries, values } = Object;
 const { ownKeys } = Reflect;
 
@@ -414,7 +414,7 @@ const makePatternKit = () => {
       default: {
         // Unexpected tags are just non-patterns, but an unexpected passStyle
         // is always an error.
-        assert.fail(X`unexpected passStyle ${q(passStyle)}: ${patt}`);
+        throw Fail`unexpected passStyle ${q(passStyle)}: ${patt}`;
       }
     }
   };
@@ -457,13 +457,13 @@ const makePatternKit = () => {
     const specimenKind = kindOf(specimen); // may be undefined
     switch (patternKind) {
       case undefined: {
-        return assert.fail(X`pattern expected: ${patt}`);
+        return Fail`pattern expected: ${patt}`;
       }
       case 'promise': {
-        return assert.fail(X`promises cannot be patterns: ${patt}`);
+        return Fail`promises cannot be patterns: ${patt}`;
       }
       case 'error': {
-        return assert.fail(X`errors cannot be patterns: ${patt}`);
+        return Fail`errors cannot be patterns: ${patt}`;
       }
       case 'undefined':
       case 'null':
@@ -570,7 +570,7 @@ const makePatternKit = () => {
         if (matchHelper) {
           return matchHelper.checkMatches(specimen, patt.payload, check);
         }
-        assert.fail(X`internal: should have recognized ${q(patternKind)} `);
+        throw Fail`internal: should have recognized ${q(patternKind)} `;
       }
     }
   };
@@ -597,7 +597,7 @@ const makePatternKit = () => {
     }
     // should only throw
     checkMatches(specimen, patt, assertChecker, label);
-    assert.fail(X`internal: ${label}: inconsistent pattern match: ${q(patt)}`);
+    Fail`internal: ${label}: inconsistent pattern match: ${q(patt)}`;
   };
 
   // /////////////////////// getRankCover //////////////////////////////////////
@@ -656,10 +656,10 @@ const makePatternKit = () => {
             // // Should already be validated by checkPattern. But because this
             // // is a check that may loosen over time, we also assert
             // // everywhere we still rely on the restriction.
-            // assert(
-            //   patt.payload.length === 1,
-            //   X`Non-singleton copySets with matcher not yet implemented: ${patt}`,
-            // );
+            // ```js
+            // patt.payload.length === 1 ||
+            //   Fail`Non-singleton copySets with matcher not yet implemented: ${patt}`;
+            // ```
             //
             // const [leftElementLimit, rightElementLimit] = getRankCover(
             //   patt.payload[0],
@@ -989,11 +989,10 @@ const makePatternKit = () => {
         return false;
       }
       const symbolName = nameForPassableSymbol(specimen);
-      assert.typeof(
-        symbolName,
-        'string',
-        X`internal: Passable symbol ${specimen} must have a passable name`,
-      );
+
+      if (typeof symbolName !== 'string') {
+        throw Fail`internal: Passable symbol ${specimen} must have a passable name`;
+      }
       return check(
         symbolName.length <= symbolNameLengthLimit,
         X`Symbol name ${q(
@@ -1674,13 +1673,13 @@ const makePatternKit = () => {
     harden({
       optional: (...optArgGuards) => {
         optionalArgGuards === undefined ||
-          assert.fail(X`Can only have one set of optional guards`);
+          Fail`Can only have one set of optional guards`;
         restArgGuard === undefined ||
-          assert.fail(X`optional arg guards must come before rest arg`);
+          Fail`optional arg guards must come before rest arg`;
         return makeMethodGuardMaker(callKind, argGuards, optArgGuards);
       },
       rest: rArgGuard => {
-        assert(restArgGuard === undefined, X`Can only have one rest arg`);
+        restArgGuard === undefined || Fail`Can only have one rest arg`;
         return makeMethodGuardMaker(
           callKind,
           argGuards,
@@ -1796,7 +1795,7 @@ const makePatternKit = () => {
     interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
       for (const [_, methodGuard] of entries(methodGuards)) {
         methodGuard.klass === 'methodGuard' ||
-          assert.fail(X`unrecognize method guard ${methodGuard}`);
+          Fail`unrecognize method guard ${methodGuard}`;
       }
       return harden({
         klass: 'Interface',

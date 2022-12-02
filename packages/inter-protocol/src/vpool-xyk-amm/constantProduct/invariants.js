@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
@@ -28,14 +28,12 @@ export const checkKInvariantSellingX = (x, y, deltaX, deltaY) => {
  * @param {Amount} deltaY - the amount of Brand Y to be taken out
  */
 export const assertKInvariantSellingX = (x, y, deltaX, deltaY) => {
-  assert(
-    checkKInvariantSellingX(x, y, deltaX, deltaY),
-    X`the constant product invariant was violated, with x=${x}, y=${y}, deltaX=${deltaX}, deltaY=${deltaY}, oldK=${natSafeMath.multiply(
+  checkKInvariantSellingX(x, y, deltaX, deltaY) ||
+    Fail`the constant product invariant was violated, with x=${x}, y=${y}, deltaX=${deltaX}, deltaY=${deltaY}, oldK=${natSafeMath.multiply(
       x.value,
       y.value,
     )}, newK=${natSafeMath.multiply(
       AmountMath.add(x, deltaX).value,
       AmountMath.subtract(y, deltaY).value,
-    )}`,
-  );
+    )}`;
 };

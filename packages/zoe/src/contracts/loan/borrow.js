@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -52,26 +52,20 @@ export const makeBorrowInvitation = (zcf, config) => {
     // Assert the required collateral was escrowed.
     const requiredMargin = ceilMultiplyBy(loanWanted, mmr);
     AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin) ||
-      assert.fail(
-        X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
-      );
+      Fail`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`;
 
     const timestamp = getTimestamp(quote);
 
     // Assert that the collateralGiven has not changed after the AWAIT
-    assert(
-      AmountMath.isEqual(
-        collateralGiven,
-        borrowerSeat.getAmountAllocated('Collateral'),
-      ),
-      `The collateral allocated changed during the borrow step, which should not have been possible`,
-    );
+    AmountMath.isEqual(
+      collateralGiven,
+      borrowerSeat.getAmountAllocated('Collateral'),
+    ) ||
+      Fail`The collateral allocated changed during the borrow step, which should not have been possible`;
 
     // Assert that loanWanted <= maxLoan
     AmountMath.isGTE(maxLoan, loanWanted) ||
-      assert.fail(
-        X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
-      );
+      Fail`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`;
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 

@@ -13,7 +13,7 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 
@@ -244,8 +244,7 @@ export async function launch({
       return val ? JSON.parse(val) : undefined;
     },
     set: (key, value) => {
-      value !== undefined ||
-        assert.fail(`value in inboundQueue must be defined`);
+      value !== undefined || Fail`value in inboundQueue must be defined`;
       kvStore.set(inboundQueuePrefix + key, JSON.stringify(value));
     },
     delete: key => kvStore.delete(inboundQueuePrefix + key),
@@ -354,7 +353,7 @@ export async function launch({
   }
 
   async function deliverInbound(sender, messages, ack) {
-    assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
+    Array.isArray(messages) || Fail`inbound given non-Array: ${messages}`;
     controller.writeSlogObject({
       type: 'cosmic-swingset-deliver-inbound',
       sender,
@@ -466,7 +465,7 @@ export async function launch({
       }
 
       default: {
-        assert.fail(X`${action.type} not recognized`);
+        Fail`${action.type} not recognized`;
       }
     }
     return p;
@@ -732,7 +731,7 @@ export async function launch({
           blockTime,
         });
 
-        blockParams || assert.fail(X`blockParams missing`);
+        blockParams || Fail`blockParams missing`;
 
         if (!blockNeedsExecution(blockHeight)) {
           // We are reevaluating, so send exactly the same downcalls to the chain.
@@ -784,9 +783,7 @@ export async function launch({
       }
 
       default: {
-        assert.fail(
-          X`Unrecognized action ${action}; are you sure you didn't mean to queue it?`,
-        );
+        throw Fail`Unrecognized action ${action}; are you sure you didn't mean to queue it?`;
       }
     }
   }

@@ -2,7 +2,7 @@
  * Kernel's keeper of persistent state for a vat.
  */
 import { Nat, isNat } from '@agoric/nat';
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
@@ -114,7 +114,7 @@ export function makeVatKeeper(
    */
   function setSourceAndOptions(source, options) {
     // take care with API change
-    assert(options.managerType, X`vat options missing managerType`);
+    options.managerType || Fail`vat options missing managerType`;
     assert(source);
     assert(
       'bundle' in source || 'bundleName' in source || 'bundleID' in source,
@@ -198,7 +198,7 @@ export function makeVatKeeper(
 
   function insistNotReachable(kernelSlot) {
     const isReachable = getReachableFlag(kernelSlot);
-    assert.equal(isReachable, false, X`${kernelSlot} was reachable, oops`);
+    isReachable === false || Fail`${kernelSlot} was reachable, oops`;
   }
 
   function setReachableFlag(kernelSlot, _tag) {
@@ -284,7 +284,7 @@ export function makeVatKeeper(
       !(required && requireNew),
       `'required' and 'requireNew' are mutually exclusive`,
     );
-    assert.typeof(vatSlot, 'string', X`non-string vatSlot: ${vatSlot}`);
+    typeof vatSlot === 'string' || Fail`non-string vatSlot: ${vatSlot}`;
     const { type, allocatedByVat } = parseVatSlot(vatSlot);
     const vatKey = `${vatID}.c.${vatSlot}`;
     if (!kvStore.has(vatKey)) {
@@ -295,11 +295,11 @@ export function makeVatKeeper(
           // this sets the initial refcount to reachable:0 recognizable:0
           kernelSlot = addKernelObject(vatID);
         } else if (type === 'device') {
-          assert.fail(X`normal vats aren't allowed to export device nodes`);
+          Fail`normal vats aren't allowed to export device nodes`;
         } else if (type === 'promise') {
           kernelSlot = addKernelPromiseForVat(vatID);
         } else {
-          assert.fail(X`unknown type ${type}`);
+          Fail`unknown type ${type}`;
         }
         // now increment the refcount with isExport=true and
         // onlyRecognizable=true, which will skip object exports (we only
@@ -326,10 +326,10 @@ export function makeVatKeeper(
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
-        assert.fail(X`unknown vatSlot ${q(vatSlot)}`);
+        Fail`unknown vatSlot ${q(vatSlot)}`;
       }
     } else if (requireNew) {
-      assert.fail(X`vref ${q(vatSlot)} is already allocated`);
+      Fail`vref ${q(vatSlot)} is already allocated`;
     }
     const kernelSlot = getRequired(vatKey);
 
@@ -340,7 +340,7 @@ export function makeVatKeeper(
       } else {
         // imports must be reachable
         const { isReachable } = getReachableAndVatSlot(vatID, kernelSlot);
-        assert(isReachable, X`vat tried to access unreachable import`);
+        isReachable || Fail`vat tried to access unreachable import`;
       }
     }
     return kernelSlot;
@@ -375,7 +375,7 @@ export function makeVatKeeper(
         id = Nat(BigInt(getRequired(`${vatID}.p.nextID`)));
         kvStore.set(`${vatID}.p.nextID`, `${id + 1n}`);
       } else {
-        assert.fail(X`unknown type ${type}`);
+        throw Fail`unknown type ${type}`;
       }
       // use isExport=false, since this is an import, and leave reachable
       // alone to defer to setReachableFlag below
@@ -409,7 +409,7 @@ export function makeVatKeeper(
       } else {
         // if the kernel is sending non-reachable exports back into
         // exporting vat, that's a kernel bug
-        assert(isReachable, X`kernel sent unreachable export ${kernelSlot}`);
+        isReachable || Fail`kernel sent unreachable export ${kernelSlot}`;
       }
     }
     return vatSlot;
@@ -576,7 +576,9 @@ export function makeVatKeeper(
   function removeFromSnapshot(snapshotID) {
     const key = `local.snapshot.${snapshotID}`;
     const consumersJSON = kvStore.get(key);
-    assert(consumersJSON, X`cannot remove ${vatID}: ${key} key not defined`);
+    if (!consumersJSON) {
+      throw Fail`cannot remove ${vatID}: ${key} key not defined`;
+    }
     const consumers = JSON.parse(consumersJSON);
     assert(Array.isArray(consumers));
     const ix = consumers.indexOf(vatID);

@@ -1,7 +1,7 @@
 // This does not support secondary to secondary. That has to happen at
 // a higher abstraction
 
-const { details: X } = assert;
+const { Fail } = assert;
 /**
  * The caller provides poolAllocation, which has balances for both Central and
  * Secondary, and at least one of amountGiven and amountWanted. getXY treats
@@ -21,9 +21,7 @@ export const getXY = ({ amountGiven, poolAllocation, amountWanted }) => {
   const centralBrand = poolAllocation.Central.brand;
   amountGiven ||
     amountWanted ||
-    assert.fail(
-      X`At least one of ${amountGiven} and ${amountWanted} must be specified`,
-    );
+    Fail`At least one of ${amountGiven} and ${amountWanted} must be specified`;
 
   const deltas = {
     deltaX: amountGiven,

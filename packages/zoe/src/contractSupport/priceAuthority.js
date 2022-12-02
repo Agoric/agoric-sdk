@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
@@ -224,11 +224,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
       actualBrandIn,
       X`Desired brandIn ${brandIn} must match ${actualBrandIn}`,
     );
-    assert.equal(
-      brandOut,
-      actualBrandOut,
-      X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
-    );
+    brandOut === actualBrandOut ||
+      Fail`Desired brandOut ${brandOut} must match ${actualBrandOut}`;
   };
 
   /** @type {PriceAuthority} */
@@ -296,9 +293,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
         const amountIn = calcAmountIn(amountOut);
         const actualAmountOut = calcAmountOut(amountIn);
         AmountMath.isGTE(actualAmountOut, amountOut) ||
-          assert.fail(
-            X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
-          );
+          Fail`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`;
         return { amountIn, amountOut };
       });
       assert(quote);

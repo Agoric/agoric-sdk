@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X, q, Fail } from '@agoric/assert';
 import {
   getRankCover,
   assertKeyPattern,
@@ -239,7 +239,7 @@ export function makeCollectionManager(
     const encodeRemotable = remotable => {
       // eslint-disable-next-line no-use-before-define
       const ordinal = getOrdinal(remotable);
-      assert(ordinal !== undefined, X`no ordinal for ${remotable}`);
+      ordinal !== undefined || Fail`no ordinal for ${remotable}`;
       const ordinalTag = zeroPad(ordinal, BIGINT_TAG_LEN);
       return `r${ordinalTag}:${convertValToSlot(remotable)}`;
     };
@@ -307,12 +307,12 @@ export function makeCollectionManager(
 
     function get(key) {
       matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+        Fail`invalid key type for collection ${q(label)}`;
       const result = syscall.vatstoreGet(keyToDBKey(key));
       if (result) {
         return unserialize(JSON.parse(result));
       }
-      assert.fail(X`key ${key} not found in collection ${q(label)}`);
+      throw Fail`key ${key} not found in collection ${q(label)}`;
     }
 
     function updateEntryCount(delta) {
@@ -327,12 +327,12 @@ export function makeCollectionManager(
 
     function init(key, value) {
       matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+        Fail`invalid key type for collection ${q(label)}`;
       !has(key) ||
-        assert.fail(X`key ${key} already registered in collection ${q(label)}`);
+        Fail`key ${key} already registered in collection ${q(label)}`;
       if (valueShape) {
         matches(value, valueShape) ||
-          assert.fail(X`invalid value type for collection ${q(label)}`);
+          Fail`invalid value type for collection ${q(label)}`;
       }
       currentGenerationNumber += 1;
       const serializedValue = serialize(value);
@@ -347,8 +347,7 @@ export function makeCollectionManager(
       if (passStyleOf(key) === 'remotable') {
         const vref = convertValToSlot(key);
         if (durable) {
-          vrm.isDurable(vref) ||
-            assert.fail(X`key (${key}) is not durable in ${value}`);
+          vrm.isDurable(vref) || Fail`key (${key}) is not durable in ${value}`;
         }
         generateOrdinal(key);
         if (hasWeakKeys) {
@@ -364,10 +363,10 @@ export function makeCollectionManager(
 
     function set(key, value) {
       matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+        Fail`invalid key type for collection ${q(label)}`;
       if (valueShape) {
         matches(value, valueShape) ||
-          assert.fail(X`invalid value type for collection ${q(label)}`);
+          Fail`invalid value type for collection ${q(label)}`;
       }
       const after = serialize(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
@@ -380,7 +379,7 @@ export function makeCollectionManager(
       }
       const dbKey = keyToDBKey(key);
       const rawBefore = syscall.vatstoreGet(dbKey);
-      assert(rawBefore, X`key ${key} not found in collection ${q(label)}`);
+      rawBefore || Fail`key ${key} not found in collection ${q(label)}`;
       const before = JSON.parse(rawBefore);
       vrm.updateReferenceCounts(before.slots, after.slots);
       syscall.vatstoreSet(dbKey, JSON.stringify(after));
@@ -388,10 +387,10 @@ export function makeCollectionManager(
 
     function deleteInternal(key) {
       matches(key, keyShape) ||
-        assert.fail(X`invalid key type for collection ${q(label)}`);
+        Fail`invalid key type for collection ${q(label)}`;
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
-      assert(rawValue, X`key ${key} not found in collection ${q(label)}`);
+      rawValue || Fail`key ${key} not found in collection ${q(label)}`;
       const value = JSON.parse(rawValue);
       const doMoreGC1 = value.slots.map(vrm.removeReachableVref).some(b => b);
       syscall.vatstoreDelete(dbKey);
@@ -435,7 +434,7 @@ export function makeCollectionManager(
         const generationAtStart = currentGenerationNumber;
         while (priorDBKey !== undefined) {
           generationAtStart === currentGenerationNumber ||
-            assert.fail(X`keys in store cannot be added to during iteration`);
+            Fail`keys in store cannot be added to during iteration`;
           const [dbKey, dbValue] = syscall.vatstoreGetAfter(
             priorDBKey,
             start,

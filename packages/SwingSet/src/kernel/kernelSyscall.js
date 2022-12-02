@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
@@ -257,7 +257,7 @@ export function makeKernelSyscallHandler(tools) {
     const deviceID = kernelKeeper.ownerOfKernelDevice(deviceSlot);
     insistDeviceID(deviceID);
     const dev = ephemeral.devices.get(deviceID);
-    assert(dev, X`unknown deviceRef ${deviceSlot}`);
+    dev || Fail`unknown deviceRef ${deviceSlot}`;
     const ki = harden([deviceSlot, method, args]);
     const di = dev.translators.kernelInvocationToDeviceInvocation(ki);
     /** @type { DeviceInvocationResult } */
@@ -290,19 +290,19 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   function dropImports(koids) {
-    assert(Array.isArray(koids), X`dropImports given non-Array ${koids}`);
+    Array.isArray(koids) || Fail`dropImports given non-Array ${koids}`;
     // all the work was done during translation, there's nothing to do here
     return OKNULL;
   }
 
   function retireImports(koids) {
-    assert(Array.isArray(koids), X`retireImports given non-Array ${koids}`);
+    Array.isArray(koids) || Fail`retireImports given non-Array ${koids}`;
     // all the work was done during translation, there's nothing to do here
     return OKNULL;
   }
 
   function retireExports(koids) {
-    assert(Array.isArray(koids), X`retireExports given non-Array ${koids}`);
+    Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
     const newActions = [];
     for (const koid of koids) {
       const importers = kernelKeeper.getImporters(koid);
@@ -317,7 +317,7 @@ export function makeKernelSyscallHandler(tools) {
   }
 
   function abandonExports(vatID, koids) {
-    assert(Array.isArray(koids), X`abandonExports given non-Array ${koids}`);
+    Array.isArray(koids) || Fail`abandonExports given non-Array ${koids}`;
     for (const koid of koids) {
       kernelKeeper.orphanKernelObject(koid, vatID);
     }
@@ -402,8 +402,9 @@ export function makeKernelSyscallHandler(tools) {
         const [_, ...args] = ksc;
         return callKernelHook(...args);
       }
-      default:
-        assert.fail(X`unknown vatSyscall type ${ksc[0]}`);
+      default: {
+        throw Fail`unknown vatSyscall type ${ksc[0]}`;
+      }
     }
   }
 

@@ -1,6 +1,6 @@
 import './types.js';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { assertProposalShape } from '../../contractSupport/index.js';
@@ -32,9 +32,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
 
     // All debt must be repaid.
     AmountMath.isGTE(repaid, debt) ||
-      assert.fail(
-        X`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`,
-      );
+      Fail`Not enough Loan assets have been repaid.  ${debt} is required, but only ${repaid} was repaid.`;
 
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.

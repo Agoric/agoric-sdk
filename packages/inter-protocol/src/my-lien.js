@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * per golang/cosmos/x/lien/lien.go
@@ -56,9 +56,7 @@ export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
     },
     getAccountState: async (address, wantedBrand) => {
       wantedBrand === brand ||
-        assert.fail(
-          X`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`,
-        );
+        Fail`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`;
       /** @type { AccountState<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
         bridgeManager,

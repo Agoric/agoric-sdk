@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 
 // Local object/promise references (in the comms vat) contain a two-tuple of
 // (type, index).  All object references point to entries in the Local Object
@@ -31,7 +31,7 @@ export function parseLocalSlot(s) {
     type = 'promise';
     idSuffix = s.slice(2);
   } else {
-    assert.fail(X`invalid localSlot ${s}`);
+    throw Fail`invalid localSlot ${s}`;
   }
   const id = Nat(BigInt(idSuffix));
   return { type, id };
@@ -54,7 +54,7 @@ export function makeLocalSlot(type, id) {
   if (type === 'promise') {
     return `lp${Nat(id)}`;
   }
-  assert.fail(X`unknown type ${type}`);
+  throw Fail`unknown type ${type}`;
 }
 
 /**
@@ -70,5 +70,5 @@ export function makeLocalSlot(type, id) {
  */
 export function insistLocalType(type, localSlot) {
   type === parseLocalSlot(localSlot).type ||
-    assert.fail(X`localSlot ${localSlot} is not of type ${type}`);
+    Fail`localSlot ${localSlot} is not of type ${type}`;
 }

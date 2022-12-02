@@ -12,7 +12,7 @@ import '../internal-types.js';
 
 import { makeZCFZygote } from './zcfZygote.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * @param {VatPowers & { testJigSetter: TestJigSetter }} powers
@@ -28,7 +28,7 @@ export async function buildRootObject(powers, vatParameters, baggage) {
   const { testJigSetter } = powers;
   const { contractBundleCap } = vatParameters;
   contractBundleCap ||
-    assert.fail(X`expected vatParameters.contractBundleCap ${vatParameters}`);
+    Fail`expected vatParameters.contractBundleCap ${vatParameters}`;
   let { zoeService, invitationIssuer } = vatParameters;
   const firstTime = !baggage.has('DidStart');
   if (firstTime) {

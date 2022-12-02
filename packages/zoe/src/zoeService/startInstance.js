@@ -11,7 +11,7 @@ import { handlePKitWarning } from '../handleWarning.js';
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * @param {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
@@ -53,12 +53,10 @@ export const makeStartInstance = (
 
     if (privateArgs !== undefined) {
       const passStyle = passStyleOf(privateArgs);
-      assert(
-        passStyle === 'copyRecord',
-        X`privateArgs must be a pass-by-copy record, but instead was a ${q(
+      passStyle === 'copyRecord' ||
+        Fail`privateArgs must be a pass-by-copy record, but instead was a ${q(
           passStyle,
-        )}: ${privateArgs}`,
-      );
+        )}: ${privateArgs}`;
     }
 
     const instance = makeInstanceHandle();
@@ -75,14 +73,12 @@ export const makeStartInstance = (
     };
 
     const setOfferFilter = strings => {
-      assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
+      Array.isArray(strings) || Fail`${q(strings)} must be an Array`;
       const proposedStrings = harden([...strings]);
       proposedStrings.every(s => typeof s === 'string') ||
-        assert.fail(
-          X`Blocked strings (${q(
-            proposedStrings,
-          )}) must be an Array of strings.`,
-        );
+        Fail`Blocked strings (${q(
+          proposedStrings,
+        )}) must be an Array of strings.`;
 
       offerFilterStrings = proposedStrings;
     };

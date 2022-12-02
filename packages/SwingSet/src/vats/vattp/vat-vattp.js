@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import {
   provide,
   defineDurableKindMulti,
@@ -62,8 +62,8 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     // The setReceiver facet is used to initialize the receiver object.
     setReceiver: {
       setReceiver: ({ state }, receiver) => {
-        assert(!state.inboundReceiver, X`setReceiver is call-once`);
-        assert(receiver, X`receiver must not be empty`);
+        !state.inboundReceiver || Fail`setReceiver is call-once`;
+        receiver || Fail`receiver must not be empty`;
         state.inboundReceiver = receiver;
       },
     },
@@ -132,7 +132,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
      * @param {string} name  Unique name identifying the remote for "deliverInbound" functions
      */
     addRemote: name => {
-      assert(!mailboxes.has(name), X`already have remote ${name}`);
+      !mailboxes.has(name) || Fail`already have remote ${name}`;
       const { transmitter, setReceiver } = provideMailbox(name);
       return harden({ transmitter, setReceiver });
     },
@@ -188,7 +188,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   );
   const initNetworkHostState = (allegedName, comms, console) => {
     !networkHostNames.has(allegedName) ||
-      assert.fail(X`already have host for ${allegedName}`);
+      Fail`already have host for ${allegedName}`;
     networkHostNames.add(allegedName);
     networkHostCounter += 1n;
     baggage.set(networkHostCounterBaggageKey, networkHostCounter);
@@ -229,8 +229,8 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
       },
       commsSetReceiver: {
         setReceiver: ({ state }, receiver) => {
-          assert(!state.receiver, X`setReceiver is call-once`);
-          assert(receiver, X`receiver must not be empty`);
+          !state.receiver || Fail`setReceiver is call-once`;
+          receiver || Fail`receiver must not be empty`;
           state.receiver = receiver;
         },
       },
@@ -248,7 +248,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
       handler: {
         onOpen: async ({ state, facets }, connection, ..._args) => {
           const name = state.connectionName;
-          assert(!state.connection, X`host ${name} already opened`);
+          !state.connection || Fail`host ${name} already opened`;
           state.connection = connection;
 
           const comms = state.comms;

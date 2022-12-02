@@ -9,7 +9,7 @@ import {
   coerceQuestionSpec,
 } from '../question.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * Make a pair of positions for a question about whether to invoke an API. If
@@ -55,7 +55,7 @@ const setupApiGovernance = async (
     deadline,
   ) => {
     governedNames.includes(apiMethodName) ||
-      assert.fail(X`${apiMethodName} is not a governed API.`);
+      Fail`${apiMethodName} is not a governed API.`;
 
     const { positive, negative } = makeApiInvocationPositions(
       apiMethodName,
@@ -96,12 +96,10 @@ const setupApiGovernance = async (
         /** @type {(outcome: Position) => ERef<Position>} */
         outcome => {
           if (keyEQ(positive, outcome)) {
-            assert(
-              keyEQ(outcome, harden({ apiMethodName, methodArgs })),
-              X`The question's method name (${q(
+            keyEQ(outcome, harden({ apiMethodName, methodArgs })) ||
+              Fail`The question's method name (${q(
                 apiMethodName,
-              )}) and args (${methodArgs}) didn't match the outcome ${outcome}`,
-            );
+              )}) and args (${methodArgs}) didn't match the outcome ${outcome}`;
 
             // E(remote)[name](args) invokes the method named 'name' on remote.
             return E(governedApis)

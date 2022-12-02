@@ -7,7 +7,7 @@ import {
   OfferHandlerI,
 } from '../../../src/typeGuards.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 
@@ -63,9 +63,7 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
     if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
       // TypeScript confused about `||` control flow so use `if` instead
       // https://github.com/microsoft/TypeScript/issues/50739
-      assert.fail(
-        X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
-      );
+      throw Fail`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`;
     }
     const exerciseOption = makeExerciser(sellSeat);
     const customProps = harden({

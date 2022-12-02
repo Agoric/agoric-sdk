@@ -16,20 +16,18 @@ import {
 } from './typeGuards.js';
 import { makeQuorumCounter } from './quorumCounter.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const validateBinaryQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
 
   const positions = questionSpec.positions;
   positions.length === 2 ||
-    assert.fail(
-      X`Binary questions must have exactly two positions. had ${positions.length}: ${positions}`,
-    );
+    Fail`Binary questions must have exactly two positions. had ${positions.length}: ${positions}`;
   questionSpec.maxChoices === 1 ||
-    assert.fail(X`Can only choose 1 item on a binary question`);
+    Fail`Can only choose 1 item on a binary question`;
   questionSpec.method === ChoiceMethod.UNRANKED ||
-    assert.fail(X`${questionSpec.method} must be UNRANKED`);
+    Fail`${questionSpec.method} must be UNRANKED`;
   // We don't check the quorumRule or quorumThreshold here. The quorumThreshold
   // is provided by the Electorate that creates this voteCounter, since only it
   // can translate the quorumRule to a required number of votes.
@@ -70,7 +68,7 @@ const makeBinaryVoteCounter = (
   const allBallots = makeStore('voterHandle');
 
   const countVotes = () => {
-    assert(!isOpen, X`can't count votes while the election is open`);
+    !isOpen || Fail`can't count votes while the election is open`;
 
     // question has position choices; Each ballot in allBallots should
     // match. count the valid ballots and report results.
@@ -154,9 +152,7 @@ const makeBinaryVoteCounter = (
         assert(chosenPositions.length === 1, 'only 1 position allowed');
         const [position] = chosenPositions;
         positionIncluded(positions, position) ||
-          assert.fail(
-            X`The specified choice is not a legal position: ${position}.`,
-          );
+          Fail`The specified choice is not a legal position: ${position}.`;
 
         // CRUCIAL: If the voter cast a valid ballot, we'll record it, but we need
         // to make sure that each voter's vote is recorded only once.

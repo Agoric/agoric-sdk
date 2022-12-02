@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
-const { quote: q, details: X } = assert;
+const { quote: q, Fail } = assert;
 
 const mintInto = (kit, purse, value) =>
   E(kit.mint)
@@ -53,9 +53,7 @@ const depositPayout = (seat, keyword, purse, expectedAmount) => {
     })
     .then(depositAmount => {
       AmountMath.isEqual(depositAmount, expectedAmount) ||
-        assert.fail(
-          X`amounts don't match: ${q(depositAmount)}, ${q(expectedAmount)}`,
-        );
+        Fail`amounts don't match: ${q(depositAmount)}, ${q(expectedAmount)}`;
     });
 };
 

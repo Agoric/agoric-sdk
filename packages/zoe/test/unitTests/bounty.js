@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 /**
@@ -55,7 +55,7 @@ const start = async zcf => {
       assertProposalShape(bountySeat, feeProposal);
       const feeAmount = bountySeat.getCurrentAllocation().Fee;
       AmountMath.isGTE(feeAmount, fee) ||
-        assert.fail(X`Fee was required to be at least ${fee}`);
+        Fail`Fee was required to be at least ${fee}`;
 
       // The funder gets the fee regardless of the outcome.
       funderSeat.incrementBy(

@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import { makeVatSlot } from '../src/lib/parseVatSlots.js';
@@ -124,7 +124,7 @@ test('vat store', async t => {
           syscall.vatstoreDelete('zot');
           break;
         default:
-          assert.fail(X`this can't happen`);
+          Fail`this can't happen`;
       }
     }
     return dispatch;

@@ -12,7 +12,7 @@ import * as secondPriceLogic from './secondPriceLogic.js';
 import * as firstPriceLogic from './firstPriceLogic.js';
 import { assertBidSeat } from './assertBidSeat.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const FIRST_PRICE = 'first-price';
 const SECOND_PRICE = 'second-price';
@@ -50,7 +50,7 @@ const start = zcf => {
   assert.typeof(bidDuration, 'bigint');
   winnerPriceOption === FIRST_PRICE ||
     winnerPriceOption === SECOND_PRICE ||
-    assert.fail(X`Only first and second price auctions are supported`);
+    Fail`Only first and second price auctions are supported`;
 
   let sellSeat;
   let isTimerStarted = false;

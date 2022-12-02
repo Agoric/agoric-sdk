@@ -1,7 +1,7 @@
 // @ts-check
 import path from 'path';
 import sqlite3ambient from 'better-sqlite3';
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 
 const STREAM_START = { itemCount: 0 };
 /**
@@ -19,7 +19,7 @@ function* empty() {
 
 function insistStreamName(streamName) {
   assert.typeof(streamName, 'string');
-  assert(streamName.match(/^[-\w]+$/), X`invalid stream name ${q(streamName)}`);
+  streamName.match(/^[-\w]+$/) || Fail`invalid stream name ${q(streamName)}`;
 }
 
 /**
@@ -83,15 +83,11 @@ export function sqlStreamStore(dbDir, io) {
   function readStream(streamName, startPosition, endPosition) {
     insistStreamName(streamName);
     !streamStatus.get(streamName) ||
-      assert.fail(
-        X`can't read stream ${q(streamName)} because it's already in use`,
-      );
+      Fail`can't read stream ${q(streamName)} because it's already in use`;
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
     startPosition.itemCount <= endPosition.itemCount ||
-      assert.fail(
-        X`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`,
-      );
+      Fail`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`;
 
     function* reader() {
       ensureTransaction();
@@ -107,15 +103,13 @@ export function sqlStreamStore(dbDir, io) {
         endPosition.itemCount,
       )) {
         streamStatus.get(streamName) === 'reading' ||
-          assert.fail(X`can't read stream ${q(streamName)}, it's been closed`);
+          Fail`can't read stream ${q(streamName)}, it's been closed`;
         yield item;
       }
       streamStatus.delete(streamName);
     }
     !streamStatus.has(streamName) ||
-      assert.fail(
-        X`can't read stream ${q(streamName)} because it's already in use`,
-      );
+      Fail`can't read stream ${q(streamName)} because it's already in use`;
 
     if (startPosition.itemCount === endPosition.itemCount) {
       return empty();
@@ -135,9 +129,7 @@ export function sqlStreamStore(dbDir, io) {
     insistStreamName(streamName);
     insistStreamPosition(position);
     !streamStatus.get(streamName) ||
-      assert.fail(
-        X`can't write stream ${q(streamName)} because it's already in use`,
-      );
+      Fail`can't write stream ${q(streamName)} because it's already in use`;
 
     ensureTransaction();
     db.prepare(

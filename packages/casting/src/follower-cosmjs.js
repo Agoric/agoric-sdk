@@ -11,7 +11,7 @@ import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
 const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermintRpcStar;
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 const textDecoder = new TextDecoder();
 
 /** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
@@ -100,12 +100,11 @@ export const makeCosmjsFollower = (
     if (crasher) {
       E(crasher)
         .crash(`PROOF VERIFICATION FAILURE; crashing follower`, err)
-        .catch(e => assert.fail(X`crashing follower failed: ${e}`));
+        .catch(e => Fail`crashing follower failed: ${e}`);
     }
     throw err;
   };
-
-  assert(proofs.includes(proof), X`unrecognized follower proof mode ${proof}`);
+  proofs.includes(proof) || Fail`unrecognized follower proof mode ${proof}`;
 
   const where = 'CosmJS follower';
   const castingSpecP = makeCastingSpec(sourceP);
@@ -168,15 +167,12 @@ export const makeCosmjsFollower = (
       dataPrefixBytes = defaultDataPrefixBytes,
     } = await castingSpecP;
 
-    assert.typeof(
-      storeName,
-      'string',
-      X`storeName must be a string, got ${storeName}`,
-    );
-    assert(
-      storeSubkey,
-      X`storeSubkey must be a Uint8Array, got ${storeSubkey}`,
-    );
+    if (typeof storeName !== 'string') {
+      throw Fail`storeName must be a string, got ${storeName}`;
+    }
+    if (!storeSubkey) {
+      throw Fail`storeSubkey must be a Uint8Array, got ${storeSubkey}`;
+    }
 
     // mapEndpoints is our retry loop.
     const values = await E(leader).mapEndpoints(where, async endpoint =>
@@ -202,14 +198,10 @@ export const makeCosmjsFollower = (
     }
 
     // Handle the data prefix if any.
-    assert(
-      result.length >= dataPrefixBytes.length,
-      X`result too short for data prefix ${dataPrefixBytes}`,
-    );
-    assert(
-      arrayEqual(result.subarray(0, dataPrefixBytes.length), dataPrefixBytes),
-      X`${result} doesn't start with data prefix ${dataPrefixBytes}`,
-    );
+    result.length >= dataPrefixBytes.length ||
+      Fail`result too short for data prefix ${dataPrefixBytes}`;
+    arrayEqual(result.subarray(0, dataPrefixBytes.length), dataPrefixBytes) ||
+      Fail`${result} doesn't start with data prefix ${dataPrefixBytes}`;
     return result.slice(dataPrefixBytes.length);
   };
 
@@ -277,11 +269,9 @@ export const makeCosmjsFollower = (
       return allegedData;
     }
 
-    assert.fail(
-      X`Unrecognized proof option ${q(
-        proof,
-      )}, must be one of strict, none, or optimistic`,
-    );
+    throw Fail`Unrecognized proof option ${q(
+      proof,
+    )}, must be one of strict, none, or optimistic`;
   };
 
   /**

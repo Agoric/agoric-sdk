@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X, q, Fail } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { makeStore } from '@agoric/store';
@@ -105,22 +105,17 @@ function makeBoard(
     },
     getValue: id => {
       assert.typeof(id, 'string', X`id must be string: ${id}`);
-      assert(id.startsWith(prefix), X`id must start with ${prefix}: ${id}`);
+      id.startsWith(prefix) || Fail`id must start with ${prefix}: ${id}`;
       const digits = id.slice(prefix.length);
       digits.match(DIGITS_REGEXP) ||
-        assert.fail(
-          X`id must end in at least ${q(crcDigits + 1)} digits: ${id}`,
-        );
+        Fail`id must end in at least ${q(crcDigits + 1)} digits: ${id}`;
       const seq = digits.slice(crcDigits);
       const allegedCrc = digits.slice(0, crcDigits);
       const crcInput = `${prefix}${seq}`;
       const crc = calcCrc(crcInput, crcDigits);
-      assert.equal(
-        allegedCrc,
-        crc,
-        X`id is probably a typo, cannot verify CRC: ${id}`,
-      );
-      assert(idToVal.has(id), X`board does not have id: ${id}`);
+      allegedCrc === crc ||
+        Fail`id is probably a typo, cannot verify CRC: ${id}`;
+      idToVal.has(id) || Fail`board does not have id: ${id}`;
       return idToVal.get(id);
     },
     // Adapter for lookup() protocol.

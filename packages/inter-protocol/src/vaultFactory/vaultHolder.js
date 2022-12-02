@@ -7,7 +7,7 @@ import { makeStoredPublishKit } from '@agoric/notifier';
 import { defineDurableKindMulti, makeKindHandle } from '@agoric/vat-data';
 import { makeEphemeraProvider } from '../contractSupport.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 // XXX durable key to an ephemeral object
 // UNTIL https://github.com/Agoric/agoric-sdk/issues/4567
@@ -64,7 +64,9 @@ const helper = {
    */
   owned: ({ state }) => {
     const { vault } = state;
-    assert(vault, X`Using vault holder after transfer`);
+    if (!vault) {
+      throw Fail`Using vault holder after transfer`;
+    }
     return vault;
   },
   /** @param {MethodContext} context */

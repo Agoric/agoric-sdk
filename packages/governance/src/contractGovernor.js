@@ -10,7 +10,7 @@ import { setupApiGovernance } from './contractGovernance/governApi.js';
 import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * Validate that the question details correspond to a parameter change question
@@ -148,9 +148,7 @@ const start = async (zcf, privateArgs) => {
     },
   } = zcf.getTerms();
   contractTerms.governedParams[CONTRACT_ELECTORATE] ||
-    assert.fail(
-      X`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`,
-    );
+    Fail`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`;
 
   const augmentedTerms = harden({
     ...contractTerms,

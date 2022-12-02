@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { defendPrototype } from '@agoric/store';
 import { Far } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
@@ -630,10 +630,12 @@ export function makeVirtualObjectManager(
         }
         break;
       }
-      case 'not':
-        assert.fail(X`invalid behavior specifier for ${q(tag)}`);
-      default:
-        assert.fail(X`unexepected facetiousness: ${q(facetiousness)}`);
+      case 'not': {
+        throw Fail`invalid behavior specifier for ${q(tag)}`;
+      }
+      default: {
+        throw Fail`unexepected facetiousness: ${q(facetiousness)}`;
+      }
     }
 
     if (durableKindDescriptor) {
@@ -675,7 +677,7 @@ export function makeVirtualObjectManager(
 
     function makeRepresentative(innerSelf, initializing) {
       innerSelf.repCount === 0 ||
-        assert.fail(X`${innerSelf.baseRef} already has a representative`);
+        Fail`${innerSelf.baseRef} already has a representative`;
       innerSelf.repCount += 1;
 
       function ensureState() {
@@ -703,12 +705,10 @@ export function makeVirtualObjectManager(
             assertAcceptableSyscallCapdataSize([after]);
             if (isDurable) {
               after.slots.forEach((vref, index) => {
-                assert(
-                  vrm.isDurable(vref),
-                  X`value for ${q(prop)} is not durable at slot ${q(
+                vrm.isDurable(vref) ||
+                  Fail`value for ${q(prop)} is not durable at slot ${q(
                     index,
-                  )} of ${after}`,
-                );
+                  )} of ${after}`;
               });
             }
             vrm.updateReferenceCounts(before.slots, after.slots);
@@ -796,7 +796,7 @@ export function makeVirtualObjectManager(
         assertAcceptableSyscallCapdataSize([data]);
         if (isDurable) {
           data.slots.forEach(vref => {
-            assert(vrm.isDurable(vref), X`value for ${q(prop)} is not durable`);
+            vrm.isDurable(vref) || Fail`value for ${q(prop)} is not durable`;
           });
         }
         data.slots.forEach(vrm.addReachableVref);
@@ -898,7 +898,7 @@ export function makeVirtualObjectManager(
   function reanimateDurableKindID(vobjID) {
     const kindID = `${parseVatSlot(vobjID).subid}`;
     const raw = syscall.vatstoreGet(`vom.dkind.${kindID}`);
-    assert(raw, X`unknown kind ID ${kindID}`);
+    raw || Fail`unknown kind ID ${kindID}`;
     const durableKindDescriptor = JSON.parse(raw);
     const kindHandle = Far('kind', {});
     linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);

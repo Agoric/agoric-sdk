@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
@@ -65,7 +65,7 @@ test.before(
           if (query.kind === 'Paid') {
             requiredFee = feeAmount;
             AmountMath.isGTE(fee, requiredFee) ||
-              assert.fail(X`Minimum fee of ${feeAmount} not met; have ${fee}`);
+              Fail`Minimum fee of ${feeAmount} not met; have ${fee}`;
           }
           const reply = { pong: query };
           return harden({ reply, requiredFee });

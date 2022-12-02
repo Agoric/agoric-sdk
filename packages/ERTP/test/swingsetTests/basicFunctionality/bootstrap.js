@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '../../../src/index.js';
 
@@ -23,7 +23,7 @@ export function buildRootObject(vatPowers, vatParameters) {
           return testBasicFunctionality(aliceMaker);
         }
         default: {
-          assert.fail(X`unrecognized argument value ${arg0}`);
+          throw Fail`unrecognized argument value ${arg0}`;
         }
       }
     },

@@ -4,7 +4,7 @@ import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { definePoolKind } from './pool.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 const DISPLAY_INFO = harden({ decimalPlaces: 6 });
 
@@ -37,12 +37,12 @@ export const makeAddIssuer = (
     ]);
     // AWAIT ///////////////
     secondaryAssetKind === AssetKind.NAT ||
-      assert.fail(X`${q(keyword)} asset not fungible (must use NAT math)`);
+      Fail`${q(keyword)} asset not fungible (must use NAT math)`;
 
     /** @type {(brand: Brand) => Promise<ZCFMint>} */
     const makeLiquidityMint = brand => {
       !isInSecondaries(brand) ||
-        assert.fail(X`issuer ${secondaryIssuer} already has a pool`);
+        Fail`issuer ${secondaryIssuer} already has a pool`;
 
       const liquidityKeyword = `${keyword}Liquidity`;
       zcf.assertUniqueKeyword(liquidityKeyword);
@@ -54,13 +54,13 @@ export const makeAddIssuer = (
         ]),
         ([issuer, mint]) => {
           console.log(
-            X`Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
+            `Saved issuer ${secondaryIssuer} to keyword ${keyword} and got back ${issuer}`,
           );
           return mint;
         },
       ).catch(e => {
         console.error(
-          X`Failure Saving issuer ${secondaryIssuer}. Not added to Reserve`,
+          `Failure Saving issuer ${secondaryIssuer}. Not added to Reserve`,
         );
         throw e;
       });
@@ -147,14 +147,10 @@ export const makeAddPoolInvitation = (
         centralAboveMinimum,
       );
       AmountMath.isGTE(funderLiquidityAmount, wantLiquidityAmount) ||
-        assert.fail(
-          X`Requested too many liquidity tokens (${wantLiquidityAmount}, max: ${funderLiquidityAmount}`,
-        );
+        Fail`Requested too many liquidity tokens (${wantLiquidityAmount}, max: ${funderLiquidityAmount}`;
     }
     AmountMath.isGTE(centralAmount, minPoolLiquidity) ||
-      assert.fail(
-        X`The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`,
-      );
+      Fail`The minimum initial liquidity is ${minPoolLiquidity}, rejecting ${centralAmount}`;
     const minLiqAmount = AmountMath.make(
       liquidityBrand,
       minPoolLiquidity.value,

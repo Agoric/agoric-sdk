@@ -4,7 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { makeRatio } from '../../../src/ratio.js';
 import { stringifyRatioAsFraction } from '../../../src/display/natValue/stringifyRatioAsFraction.js';
 import { stringifyRatio } from '../../../src/display/natValue/stringifyRatio.js';
@@ -43,7 +43,7 @@ test('stringifyRatio dollars for one eth', t => {
     if (dollarKit.brand === brand) {
       return 2;
     }
-    assert.fail(X`brand ${brand} was not recognized`);
+    throw Fail`brand ${brand} was not recognized`;
   };
 
   t.is(
@@ -92,7 +92,7 @@ test('stringifyApproxRatio - marketPrice for ETH in RUN', t => {
     if (RUNKit.brand === brand) {
       return 6;
     }
-    assert.fail(X`brand ${brand} was not recognized`);
+    throw Fail`brand ${brand} was not recognized`;
   };
 
   t.is(stringifyRatio(ethPrice, getDecimalPlaces), '1909.11');

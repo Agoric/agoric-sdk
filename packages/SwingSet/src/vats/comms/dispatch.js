@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';
@@ -87,7 +87,7 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
       // DANGER WILL ROBINSON CASE NIGHTMARE GREEN ELDRITCH HORRORS OH THE HUMANITY
       try {
         const [method, [message]] = kunser(methargs);
-        assert(method === 'receive', X`unexpected method ${method}`);
+        method === 'receive' || Fail`unexpected method ${method}`;
         // the vat-tp integrity layer is a regular vat, so when they send the
         // received message to us, it will be embedded in a JSON array
         return messageFromRemote(remoteID, message, result);
@@ -189,7 +189,7 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
         break;
       }
       default:
-        assert.fail(X`unknown delivery type ${type}`);
+        Fail`unknown delivery type ${type}`;
     }
     processGC();
   }

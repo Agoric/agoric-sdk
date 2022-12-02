@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
@@ -527,7 +527,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doOTCDesk(bobP);
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          throw Fail`testName ${testName} not recognized`;
         }
       }
     },

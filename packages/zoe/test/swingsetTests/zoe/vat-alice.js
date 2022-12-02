@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
@@ -579,7 +579,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
           return doBadTimer();
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          throw Fail`testName ${testName} not recognized`;
         }
       }
     },

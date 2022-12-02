@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import {
   makeScalarBigMapStore,
@@ -112,7 +112,7 @@ export const makeInstallationStorage = (
         const bundle = installationsBundle.get(installation);
         return { bundle, installation };
       } else {
-        assert.fail(X`${installation} was not a valid installation`);
+        throw Fail`${installation} was not a valid installation`;
       }
     });
   };

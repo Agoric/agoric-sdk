@@ -11,6 +11,8 @@ import { xsnap } from '../src/xsnap.js';
 
 import { options, loader } from './message-tools.js';
 
+const { Fail } = assert;
+
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
 const ld = loader(import.meta.url, fs.promises.readFile);
 
@@ -169,10 +171,8 @@ test('console - objects should include detail', async t => {
       new Promise(_r => null),
       new Error('oops!'),
     ];
-    const { details: X } = assert;
-
     try {
-      assert.fail(X`assertion text ${richStructure}`);
+      Fail`assertion text ${richStructure}`;
     } catch (e) {
       console.error(e);
     }

@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { calculateFees, amountGT } from './calcFees.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * The fee might not be in the same brand as the amount. If they are the same,
@@ -94,7 +94,7 @@ const isGreaterThanZero = amount => {
 
 const assertGreaterThanZero = (amount, name) => {
   (amount && isGreaterThanZero(amount)) ||
-    assert.fail(X`${name} must be greater than 0: ${amount}`);
+    Fail`${name} must be greater than 0: ${amount}`;
 };
 
 const isWantedAvailable = (poolAllocation, amountWanted) => {
