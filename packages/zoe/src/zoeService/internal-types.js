@@ -131,7 +131,7 @@
  * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
- * @property {GetTerms} getTerms
+ * @property {import('./utils').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin

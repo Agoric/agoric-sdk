@@ -22,7 +22,7 @@ export const makeInstanceAdminStorage = () => {
   const getIssuers = async instance =>
     instanceToInstanceAdmin.get(instance).getIssuers();
 
-  /** @type {GetTerms} */
+  /** @type {import('./utils.js').GetTerms} */
   const getTerms = instance => instanceToInstanceAdmin.get(instance).getTerms();
 
   /** @type {GetOfferFilter} */

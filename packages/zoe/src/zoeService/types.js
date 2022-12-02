@@ -31,7 +31,7 @@
  * @property {import('./utils').GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers
  * @property {GetBrands} getBrands
- * @property {GetTerms} getTerms
+ * @property {import('./utils').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
@@ -78,12 +78,6 @@
  * @callback GetBrands
  * @param {import('./utils').Instance<any>} instance
  * @returns {Promise<BrandKeywordRecord>}
- */
-
-/**
- * @callback GetTerms
- * @param {import('./utils').Instance<any>} instance
- * @returns {Promise<AnyTerms>}
  */
 
 /**
