@@ -19,6 +19,13 @@ const makeVoterVat = async (log, vats, zoe) => {
   return voterCreator;
 };
 
+/**
+ *
+ * @param {Pick<QuestionDetails, 'issue' | 'positions' | 'electionType'>} qDetails
+ * @param {TimestampValue} closingTime
+ * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: TimerService }} tools
+ * @param {*} quorumRule
+ */
 const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {
   const { electorateFacet, installations } = tools;
   const { issue, positions, electionType } = qDetails;

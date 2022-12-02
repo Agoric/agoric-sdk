@@ -68,13 +68,7 @@ const MILLI = 1_000_000n;
  * }>} EconomyBootstrapSpace
  */
 
-/**
- * @param {ERef<ZoeService>} zoe
- * @param {Installation<import('../econCommitteeCharter').start>} inst
- * @typedef {Awaited<ReturnType<typeof startCharterInstance>>} EconCharterStartResult
- */
-// eslint-disable-next-line no-unused-vars
-const startCharterInstance = (zoe, inst) => E(zoe).startInstance(inst);
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter').start>} EconCharterStartResult */
 
 /**
  * @file A collection of productions, each of which declares inputs and outputs.

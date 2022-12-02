@@ -13,7 +13,7 @@ import { HandleI } from './typeGuards.js';
  * @template {string} H
  * @param {Baggage} baggage
  * @param {H} handleType
- * @returns {() => Handle<H>}
+ * @returns {H extends 'Instance' ? () => Instance : () => Handle<H>}
  */
 export const defineDurableHandle = (baggage, handleType) => {
   assert.typeof(handleType, 'string', 'handleType must be a string');
@@ -38,7 +38,7 @@ harden(defineDurableHandle);
  *
  * @template {string} H
  * @param {H} handleType the string literal type of the handle
- * @returns {Handle<H>}
+ * @returns {H extends 'Instance' ? Instance : Handle<H>}
  */
 export const makeHandle = handleType => {
   assert.typeof(handleType, 'string', 'handleType must be a string');

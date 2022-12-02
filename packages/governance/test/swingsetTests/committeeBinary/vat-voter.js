@@ -40,8 +40,8 @@ const verify = async (log, issue, electoratePublicFacet, instances) => {
 const build = async (log, zoe) => {
   return Far('voter', {
     createVoter: async (name, invitation, choice) => {
+      /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('@agoric/governance/src/committee').start>} */
       const electorateInstance = await E(zoe).getInstance(invitation);
-      /** @type {Promise<CommitteeElectoratePublic>} electoratePublicFacet */
       const electoratePublicFacet = E(zoe).getPublicFacet(electorateInstance);
       const seat = E(zoe).offer(invitation);
       const { voter } = E.get(E(seat).getOfferResult());

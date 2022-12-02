@@ -337,7 +337,7 @@
  * @typedef {object} AddQuestionReturn
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
- * @property {Instance} instance
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('./binaryVoteCounter.js').start>} instance
  * @property {Timestamp} deadline
  * @property {Handle<'Question'>} questionHandle
  */
