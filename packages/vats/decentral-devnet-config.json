@@ -113,6 +113,27 @@
     }
   },
   "bundles": {
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
+    "committee": {
+      "sourceSpec": "@agoric/governance/src/committee.js"
+    },
+    "contractGovernor": {
+      "sourceSpec": "@agoric/governance/src/contractGovernor.js"
+    },
+    "binaryVoteCounter": {
+      "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
+    },
+    "psm": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
+    },
+    "econCommitteeCharter": {
+      "sourceSpec": "@agoric/inter-protocol/src/econCommitteeCharter.js"
+    },
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },

@@ -74,12 +74,12 @@ export const agoricNamesReserved = harden(
       committee: 'committee electorate',
       binaryVoteCounter: 'binary vote counter',
       psm: 'Parity Stability Module',
-      psmCharter: 'Governance Charter for PSM',
+      econCommitteeCharter: 'Econ Governance Charter',
     },
     instance: {
       economicCommittee: 'Economic Committee',
       'psm-IST-AUSD': 'Parity Stability Module: IST:AUSD',
-      psmCharter: 'Charter for the PSM',
+      econCommitteeCharter: 'Econ Governance Charter',
       walletFactory: 'Smart Wallet Factory',
       provisionPool: 'Provision Pool',
     },
@@ -94,19 +94,22 @@ export const agoricNamesReserved = harden(
  *   decimalPlaces?: number
  * }} AnchorOptions
  */
-const AnchorOptionsShape = M.split(
+const AnchorOptionsShape = M.splitRecord(
   { denom: M.string() },
-  M.partial({
+  {
     keyword: M.string(),
     proposedName: M.string(),
     decimalPlaces: M.number(),
-  }),
+  },
 );
 
-export const ParametersShape = M.partial({
-  anchorAssets: M.arrayOf(AnchorOptionsShape),
-  economicCommitteeAddresses: M.recordOf(M.string(), M.string()),
-});
+export const ParametersShape = M.splitRecord(
+  {},
+  {
+    anchorAssets: M.arrayOf(AnchorOptionsShape),
+    economicCommitteeAddresses: M.recordOf(M.string(), M.string()),
+  },
+);
 
 /**
  * Build root object of the PSM-only bootstrap vat.

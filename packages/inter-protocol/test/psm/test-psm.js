@@ -622,7 +622,7 @@ test('wrong give giveMintedInvitation', async t => {
       ),
     {
       message:
-        '"giveMinted" proposal: required-parts: give: In: brand: "[Alleged: aUSD brand]" - Must be: "[Alleged: IST brand]"',
+        '"giveMinted" proposal: give: In: brand: "[Alleged: aUSD brand]" - Must be: "[Alleged: IST brand]"',
     },
   );
 });
@@ -652,7 +652,7 @@ test('wrong give wantMintedInvitation', async t => {
       ),
     {
       message:
-        '"wantMinted" proposal: required-parts: give: In: brand: "[Alleged: IST brand]" - Must be: "[Alleged: aUSD brand]"',
+        '"wantMinted" proposal: give: In: brand: "[Alleged: IST brand]" - Must be: "[Alleged: aUSD brand]"',
     },
   );
 });
@@ -674,7 +674,7 @@ test('extra give wantMintedInvitation', async t => {
       ),
     {
       message:
-        '"wantMinted" proposal: required-parts: give: {"Extra":{"brand":"[Alleged: aUSD brand]","value":"[200000000n]"},"In":{"brand":"[Seen]","value":"[200000000n]"}} - Must not have unexpected properties: ["Extra"]',
+        '"wantMinted" proposal: give: {"Extra":{"brand":"[Alleged: aUSD brand]","value":"[200000000n]"},"In":{"brand":"[Seen]","value":"[200000000n]"}} - Must not have unexpected properties: ["Extra"]',
     },
   );
 });

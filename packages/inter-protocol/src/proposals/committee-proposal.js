@@ -55,8 +55,12 @@ export const inviteToEconCharter = async (
       ammGovernorCreatorFacet,
       vaultFactoryGovernorCreator,
     },
+    produce: { econCharterStartResult },
     installation: {
       consume: { binaryVoteCounter: counterP },
+    },
+    instance: {
+      consume: { amm, reserve, VaultFactory },
     },
   },
   { options: { voterAddresses } },
@@ -71,16 +75,26 @@ export const inviteToEconCharter = async (
       binaryVoteCounterInstallation: counterInstall,
     }),
   );
-  // TODO: Add these facets dynamically when they are instantiated.
-  // TODO: Follow PSM continuing invitation charter style.
-  const privateFacets = {
-    reserve: reserveGovernorCreatorFacet,
-    amm: ammGovernorCreatorFacet,
-    vaults: vaultFactoryGovernorCreator,
-  };
-  // TODO(6034): be sure to save the result of startInstance, especially adminFacet
-  const { publicFacet: charterAPI } = E.get(
-    E(zoe).startInstance(charterInstall, undefined, terms, privateFacets),
+
+  /** @type {Promise<import('./econ-behaviors').EconCharterStartResult>} */
+  const startResult = E(zoe).startInstance(charterInstall, undefined, terms);
+  const { creatorFacet } = E.get(startResult);
+  econCharterStartResult.resolve(startResult);
+
+  // Introduce charter to governed creator facets.
+  await Promise.all(
+    [
+      { instanceP: amm, facetP: ammGovernorCreatorFacet },
+      { instanceP: reserve, facetP: reserveGovernorCreatorFacet },
+      {
+        instanceP: VaultFactory,
+        facetP: vaultFactoryGovernorCreator,
+      },
+    ].map(async ({ instanceP, facetP }) => {
+      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+
+      return E(creatorFacet).addInstance(instance, govFacet);
+    }),
   );
 
   await Promise.all(
@@ -89,7 +103,7 @@ export const inviteToEconCharter = async (
         `econ charter member ${addr}`,
         namesByAddressAdmin,
         addr,
-        [E(charterAPI).makeNullInvitation()],
+        [E(creatorFacet).makeCharterMemberInvitation()],
       ),
     ),
   );
@@ -105,7 +119,10 @@ export const getManifestForInviteCommittee = async (
   return {
     manifest: {
       [inviteCommitteeMembers.name]: {
-        consume: { namesByAddressAdmin: t, economicCommitteeCreatorFacet: t },
+        consume: {
+          namesByAddressAdmin: t,
+          economicCommitteeCreatorFacet: t,
+        },
       },
       [inviteToEconCharter.name]: {
         consume: {
@@ -116,8 +133,12 @@ export const getManifestForInviteCommittee = async (
           ammGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
         },
+        produce: { econCharterStartResult: t },
         installation: {
           consume: { binaryVoteCounter: t },
+        },
+        instance: {
+          consume: { amm: t, reserve: t, VaultFactory: t },
         },
       },
     },

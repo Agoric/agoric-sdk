@@ -1,6 +1,6 @@
 import { Callable } from '@agoric/eventual-send';
 
-import type { Instance, IssuerKeywordRecord, Payment } from './types.js';
+import type { IssuerKeywordRecord, Payment } from './types.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -22,6 +22,10 @@ export type AdminFacet = {
 declare const StartFunction: unique symbol;
 export type Installation<SF> = {
   getBundle: () => SourceBundle;
+  // because TS is structural, without this the generic is ignored
+  [StartFunction]: SF;
+};
+export type Instance<SF> = Handle<'Instance'> & {
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
@@ -65,6 +69,12 @@ type StartContractInstance<C> = (
   adminFacet: AdminFacet;
 }>;
 
+/** The result of `startInstance` */
+export type StartedInstanceKit<SF> = {
+  instance: Instance;
+  adminFacet: AdminFacet;
+} & Awaited<ReturnType<SF>>;
+
 /**
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
@@ -87,9 +97,8 @@ export type StartInstance = <SF>(
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
   privateArgs?: StartParams<SF>['privateArgs'],
-) => Promise<
-  {
-    instance: Instance;
-    adminFacet: AdminFacet;
-  } & Awaited<ReturnType<SF>>
->;
+) => Promise<StartedInstanceKit<SF>>;
+
+export type GetPublicFacet = <SF>(
+  instance: Instance<SF> | PromiseLike<Instance<SF>>,
+) => Promise<StartResult<SF>['publicFacet']>;

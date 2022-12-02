@@ -32,8 +32,7 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
         harden({ decimalPlaces: 'hello' }),
       ),
     {
-      message:
-        'displayInfo: optional-parts: decimalPlaces: "hello" - Must be >= -100',
+      message: 'displayInfo: decimalPlaces?: "hello" - Must be >= -100',
     },
   );
 
@@ -61,8 +60,7 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: 101 })),
     {
-      message:
-        'displayInfo: optional-parts: decimalPlaces: 101 - Must be <= 100',
+      message: 'displayInfo: decimalPlaces?: 101 - Must be <= 100',
     },
   );
 
@@ -70,8 +68,7 @@ test('makeIssuerKit bad displayInfo.decimalPlaces', async t => {
     () =>
       makeIssuerKit('myTokens', AssetKind.NAT, harden({ decimalPlaces: -101 })),
     {
-      message:
-        'displayInfo: optional-parts: decimalPlaces: -101 - Must be >= -100',
+      message: 'displayInfo: decimalPlaces?: -101 - Must be >= -100',
     },
   );
 });
@@ -89,7 +86,7 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       ),
     {
       message:
-        'displayInfo: optional-parts: assetKind: "something" - Must match one of ["nat","set","copySet","copyBag"]',
+        'displayInfo: assetKind?: "something" - Must match one of ["nat","set","copySet","copyBag"]',
     },
   );
 });
@@ -106,8 +103,7 @@ test('makeIssuerKit bad displayInfo.whatever', async t => {
         }),
       ),
     {
-      message:
-        'displayInfo: rest-parts: {"whatever":"something"} - Must be: {}',
+      message: 'displayInfo: ...rest: {"whatever":"something"} - Must be: {}',
     },
   );
 });
@@ -144,7 +140,7 @@ test('brand.isMyIssuer bad issuer', async t => {
   // @ts-expect-error Intentional wrong type for testing
   t.throwsAsync(() => brand.isMyIssuer('not an issuer'), {
     message:
-      'In "isMyIssuer" method of (myTokens brand) arg 0: string "not an issuer" - Must be a remotable (Issuer)',
+      'In "isMyIssuer" method of (myTokens brand): arg 0: string "not an issuer" - Must be a remotable (Issuer)',
   });
   const fakeIssuer = /** @type {Issuer} */ (
     /** @type {unknown} */ (Far('myTokens issuer', {}))
@@ -187,7 +183,7 @@ test('issuer.combine bad payments array', async t => {
   // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray), {
     message:
-      'In "combine" method of (fungible issuer) arg 0: cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
+      'In "combine" method of (fungible issuer): cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
   });
 
   const notAnArray2 = Far('notAnArray2', {
@@ -197,7 +193,7 @@ test('issuer.combine bad payments array', async t => {
   // @ts-expect-error Intentional wrong type for testing
   await t.throwsAsync(() => E(issuer).combine(notAnArray2), {
     message:
-      'In "combine" method of (fungible issuer) arg 0: remotable "[Alleged: notAnArray2]" - Must be a copyArray',
+      'In "combine" method of (fungible issuer): arg 0: remotable "[Alleged: notAnArray2]" - Must be a copyArray',
   });
 });
 

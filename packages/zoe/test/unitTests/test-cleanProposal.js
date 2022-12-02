@@ -226,7 +226,7 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { onDemand: 'foo' } },
     'nat',
-    'proposal: exit: optional-parts: {"onDemand":"foo"} - Must be: {"onDemand":null}',
+    'proposal: exit: onDemand?: "foo" - Must be: null',
   );
   proposeBad(
     t,
@@ -238,43 +238,43 @@ test('cleanProposal - other wrong stuff', t => {
     t,
     { exit: { afterDeadline: { timer: 'foo', deadline: 3n } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: timer: "foo" - Must match one of ["[match:remotable]","[match:kind]"]',
+    'proposal: exit: afterDeadline?: timer: "foo" - Must match one of ["[match:remotable]","[match:kind]"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: 'foo' } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: deadline: string "foo" - Must be a bigint',
+    'proposal: exit: afterDeadline?: deadline: string "foo" - Must be a bigint',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: 3n, extra: 'foo' } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: {"timer":"[Alleged: ManualTimer]","deadline":"[3n]","extra":"foo"} - Must not have unexpected properties: ["extra"]',
+    'proposal: exit: afterDeadline?: {"timer":"[Alleged: ManualTimer]","deadline":"[3n]","extra":"foo"} - Must not have unexpected properties: ["extra"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: {"timer":"[Alleged: ManualTimer]"} - Must have missing properties ["deadline"]',
+    'proposal: exit: afterDeadline?: {"timer":"[Alleged: ManualTimer]"} - Must have missing properties ["deadline"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { deadline: 3n } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: {"deadline":"[3n]"} - Must have missing properties ["timer"]',
+    'proposal: exit: afterDeadline?: {"deadline":"[3n]"} - Must have missing properties ["timer"]',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: 3 } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: deadline: number 3 - Must be a bigint',
+    'proposal: exit: afterDeadline?: deadline: number 3 - Must be a bigint',
   );
   proposeBad(
     t,
     { exit: { afterDeadline: { timer, deadline: -3n } } },
     'nat',
-    'proposal: exit: optional-parts: afterDeadline: deadline: "[-3n]" - Must be non-negative',
+    'proposal: exit: afterDeadline?: deadline: "[-3n]" - Must be non-negative',
   );
   proposeBad(t, { exit: {} }, 'nat', /exit {} should only have one key/);
   proposeBad(

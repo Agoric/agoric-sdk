@@ -7,7 +7,7 @@
     "zoe": "zoe",
     "feeMintAccess": "zoe",
     "economicCommitteeCreatorFacet": "economicCommittee",
-    "psmCharterCreatorFacet": "psmCharter",
+    "econCharterStartResult": true,
     "provisionPoolStartResult": true,
     "psmFacets": true,
     "chainTimerService": "timer"

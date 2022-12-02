@@ -1,6 +1,6 @@
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-import '@agoric/governance/src/exported.js';
+import '@agoric/governance/exported.js';
 
 import { E } from '@endo/eventual-send';
 import {
@@ -276,7 +276,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         wantmintedHook,
         'wantMinted',
         undefined,
-        M.split({
+        M.splitRecord({
           give: { In: anchorAmountShape },
           want: M.or({ Out: stableAmountShape }, {}),
         }),
@@ -287,7 +287,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         giveMintedHook,
         'giveMinted',
         undefined,
-        M.split({
+        M.splitRecord({
           give: { In: stableAmountShape },
           want: M.or({ Out: anchorAmountShape }, {}),
         }),

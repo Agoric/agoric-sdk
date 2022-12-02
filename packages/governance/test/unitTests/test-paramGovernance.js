@@ -218,7 +218,7 @@ test('multiple params bad change', async t => {
       ),
     {
       message:
-        'In "getAmountOf" method of (Zoe Invitation issuer) arg 0: bigint "[13n]" - Must be a remotable (Payment)',
+        'In "getAmountOf" method of (Zoe Invitation issuer): arg 0: bigint "[13n]" - Must be a remotable (Payment)',
     },
   );
 });

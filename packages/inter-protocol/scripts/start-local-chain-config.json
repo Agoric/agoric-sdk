@@ -51,8 +51,8 @@
         "psm": {
             "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
         },
-        "psmCharter": {
-            "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
+        "econCommitteeCharter": {
+            "sourceSpec": "@agoric/inter-protocol/src/econCommitteeCharter.js"
         },
         "priceAggregator": {
             "sourceSpec": "@agoric/zoe/src/contracts/priceAggregator.js"

@@ -34,7 +34,7 @@ import { publicPrices } from './pool.js';
 import { makeMakeRemoveLiquidityInvitation } from './removeLiquidity.js';
 import { makeMakeSwapInvitation } from './swap.js';
 
-import '@agoric/governance/src/exported.js';
+import '@agoric/governance/exported.js';
 
 const { quote: q, details: X } = assert;
 

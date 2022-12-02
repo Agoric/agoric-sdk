@@ -27,7 +27,7 @@
  *
  * @typedef {object} InstanceRecord
  * @property {Installation} installation
- * @property {Instance} instance
+ * @property {import("./zoeService/utils.js").Instance<any>} instance
  * @property {AnyTerms} terms - contract parameters
  */
 

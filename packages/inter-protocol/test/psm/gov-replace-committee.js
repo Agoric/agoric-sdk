@@ -80,7 +80,7 @@ const invitePSMCommitteeMembers = async (
     consume: {
       namesByAddressAdmin,
       economicCommitteeCreatorFacet,
-      psmCharterCreatorFacet,
+      econCharterStartResult,
     },
   },
   { options: { voterAddresses = {} } },
@@ -98,7 +98,9 @@ const invitePSMCommitteeMembers = async (
       addrInvitations.map(async ([addr, invitationP]) => {
         const [voterInvitation, charterMemberInvitation] = await Promise.all([
           invitationP,
-          E(psmCharterCreatorFacet).makeCharterMemberInvitation(),
+          E(
+            E.get(econCharterStartResult).creatorFacet,
+          ).makeCharterMemberInvitation(),
         ]);
         console.log('sending charter, voting invitations to', addr);
         await reserveThenDeposit(

@@ -8,7 +8,7 @@ export const makeInstanceAdminStorage = () => {
   /** @type {WeakStore<Instance,InstanceAdmin>} */
   const instanceToInstanceAdmin = makeWeakStore('instance');
 
-  /** @type {GetPublicFacet} */
+  /** @type {import('./utils.js').GetPublicFacet} */
   const getPublicFacet = async instanceP =>
     E.when(instanceP, instance =>
       instanceToInstanceAdmin.get(instance).getPublicFacet(),

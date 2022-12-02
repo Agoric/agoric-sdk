@@ -566,15 +566,45 @@
  *             valuePatt?: Pattern,
  *             limits?: Limits
  * ) => Matcher} mapOf
- * @property {(base: CopyRecord<*> | CopyArray<*>,
+ *
+ * @property {(required: Pattern[],
+ *             optional?: Pattern[],
+ *             rest?: Pattern,
+ * ) => Matcher} splitArray
+ * Splits an array --- typically an arguments list --- into an initial
+ * portion that matches the `required` pattern, then the portion that matches
+ * the `optional` pattern, and the remainder which is matched against the
+ * `rest` pattern. The specimen must be at least as long as the `required`
+ * pattern, but the remainder can be shorter than the `optional` pattern.
+ * Within the optional portion, an `undefined` arg matches unconditionally.
+ * Any elements beyond the `optional` pattern are matched against the
+ * `rest` pattern.
+ * @property {(required: CopyRecord<Pattern>,
+ *             optional?: CopyRecord<Pattern>,
+ *             rest?: Pattern,
+ * ) => Matcher} splitRecord
+ * Splits a copyRecord into those properties that match the `required`
+ * pattern, the remainder which is matched against the `optional` pattern.
+ * Any properties not matched by either are gathered into a record that
+ * is matched against the `rest` pattern.
+ * The specimen must have all the properties that appear on the `required`
+ * pattern. It may omit properties that appear on the optional pattern.
+ * For these purposes, `undefined` is like omission --- such properties
+ * pass unconditionally.
+ *
+ * @property {(required: CopyRecord<*> | CopyArray<*>,
  *             rest?: Pattern,
  * ) => Matcher} split
+ * Deprecated. Use `M.splitArray` or `M.splitRecord` instead.
+ *
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.
  * @property {(base: CopyRecord<*> | CopyArray<*>,
  *             rest?: Pattern,
  * ) => Matcher} partial
+ * Deprecated. Use `M.splitArray` or `M.splitRecord` instead.
+ *
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.

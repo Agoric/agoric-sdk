@@ -3,7 +3,7 @@ import '@agoric/swingset-vat/src/vats/network/types.js';
 import '@agoric/ertp/exported.js';
 import '@agoric/zoe/exported.js';
 
-import './types.js';
+import './types-ambient.js';
 
 export {
   ChoiceMethod,
