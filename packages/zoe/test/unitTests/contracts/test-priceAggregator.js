@@ -19,6 +19,7 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
+import { start } from '../../../src/contracts/priceAggregator.js';
 
 import '../../../src/contracts/exported.js';
 import {
@@ -36,10 +37,29 @@ import {
  */
 
 /**
+ * Type to refine the `timer` term used in tests
+ *
+ * @param {ZCF<{
+ * timer: ManualTimer,
+ * POLL_INTERVAL: bigint,
+ * brandIn: Brand<'nat'>,
+ * brandOut: Brand<'nat'>,
+ * unitAmountIn: Amount<'nat'>,
+ * }>} zcf
+ * @param {{
+ * marshaller: Marshaller,
+ * quoteMint?: ERef<Mint<'set'>>,
+ * storageNode: StorageNode,
+ * }} privateArgs
+ */
+// eslint-disable-next-line no-unused-vars -- used for typedef
+const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
+
+/**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: Instance, mockStorageRoot: import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  */
