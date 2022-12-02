@@ -38,8 +38,8 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
  * @param {ERef<Notifier<unknown>>} opts.notifier
  * @param {ERef<TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote
- * @param {Brand} opts.actualBrandIn
- * @param {Brand} opts.actualBrandOut
+ * @param {Brand<'nat'>} opts.actualBrandIn
+ * @param {Brand<'nat'>} opts.actualBrandOut
  * @returns {PriceAuthorityKit}
  */
 export function makeOnewayPriceAuthorityKit(opts) {
@@ -86,7 +86,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
     /**
      * Return a quote when triggerWhen is true of the arguments.
      *
-     * @param {Amount} amountIn the input value to the calcAmountTrigger
+     * @param {Amount<'nat'>} amountIn the input value to the calcAmountTrigger
      * @param {Amount} amountOutLimit the value to compare with the output
      * of calcAmountTrigger
      */
@@ -145,8 +145,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
    */
   const makeMutableQuote = compareAmountsFn =>
     /**
-     * @param {Amount} amountIn
-     * @param {Amount} amountOutLimit
+     * @param {Amount<'nat'>} amountIn
+     * @param {Amount<'nat'>} amountOutLimit
      */
     async function mutableQuoteWhenOutTrigger(amountIn, amountOutLimit) {
       AmountMath.coerce(actualBrandIn, amountIn);
