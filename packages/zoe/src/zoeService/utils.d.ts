@@ -65,6 +65,12 @@ type StartContractInstance<C> = (
   adminFacet: AdminFacet;
 }>;
 
+/** The result of `startInstance` */
+export type StartedInstanceKit<SF> = {
+  instance: Instance;
+  adminFacet: AdminFacet;
+} & Awaited<ReturnType<SF>>;
+
 /**
  * Zoe is long-lived. We can use Zoe to create smart contract
  * instances by specifying a particular contract installation to use,
@@ -87,9 +93,4 @@ export type StartInstance = <SF>(
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
   privateArgs?: StartParams<SF>['privateArgs'],
-) => Promise<
-  {
-    instance: Instance;
-    adminFacet: AdminFacet;
-  } & Awaited<ReturnType<SF>>
->;
+) => Promise<StartedInstanceKit<SF>>;
