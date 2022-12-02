@@ -54,7 +54,7 @@ const trace = makeTracer('XykAmm', false);
  * zcf: ZCF<AmmTerms>,
  * secondaryBrandToPool: WeakMapStore<Brand,PoolFacets>,
  * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint<'nat'>>,
- * centralBrand: Brand,
+ * centralBrand: Brand<'nat'>,
  * timer: TimerService,
  * quoteIssuerKit: IssuerKit<'set'>,
  * params: import('@agoric/governance/src/contractGovernance/typedParamManager').Getters<import('./params.js').AmmParams>,
@@ -152,11 +152,9 @@ const start = async (zcf, privateArgs, baggage) => {
    * This contract must have a "Central" keyword and issuer in the
    * IssuerKeywordRecord.
    */
-  const {
-    brands: { Central: centralBrand },
-    timer,
-  } = zcf.getTerms();
+  const { brands, timer } = zcf.getTerms();
   assertIssuerKeywords(zcf, ['Central']);
+  const centralBrand = /** @type {Brand<'nat'>} */ (brands.Central);
   assert(centralBrand !== undefined, 'centralBrand must be present');
 
   const [

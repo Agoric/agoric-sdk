@@ -11,8 +11,8 @@ import {
 /**
  *
  * @param {object} options
- * @param {Brand} options.actualBrandIn
- * @param {Brand} options.actualBrandOut
+ * @param {Brand<'nat'>} options.actualBrandIn
+ * @param {Brand<'nat'>} options.actualBrandOut
  * @param {Ratio} options.initialPrice
  * @param {TimerService} options.timer
  * @param {IssuerKit<'set'>} [options.quoteIssuerKit]

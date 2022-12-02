@@ -13,8 +13,8 @@ import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/ind
  *
  * @param {*} getOutputForGivenInput
  * @param {*} getInputForWantedOutput
- * @param {Brand} actualBrandIn
- * @param {Brand} actualBrandOut
+ * @param {Brand<'nat'>} actualBrandIn
+ * @param {Brand<'nat'>} actualBrandOut
  * @param {TimerService} timer
  * @param {Subscriber<import('./pool').NotificationState>} subscriber
  * @param {IssuerKit<'set'>} quoteIssuerKit
