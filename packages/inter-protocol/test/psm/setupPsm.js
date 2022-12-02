@@ -24,7 +24,7 @@ import { startPSM, startPSMCharter } from '../../src/proposals/startPSM.js';
 import { allValues } from '../../src/collect.js';
 
 const psmRoot = './src/psm/psm.js'; // package relative
-const psmCharterRoot = './src/psm/psmCharter.js'; // package relative
+const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
 export const setUpZoeForTest = () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -110,8 +110,14 @@ export const setupPsm = async (
   const { consume, brand, issuer, installation, instance } = space;
   const psmBundle = await provideBundle(t, psmRoot, 'psm');
   installation.produce.psm.resolve(E(zoe).install(psmBundle));
-  const psmCharterBundle = await provideBundle(t, psmCharterRoot, 'psmCharter');
-  installation.produce.psmCharter.resolve(E(zoe).install(psmCharterBundle));
+  const charterBundle = await provideBundle(
+    t,
+    charterRoot,
+    'econCommitteeCharter',
+  );
+  installation.produce.econCommitteeCharter.resolve(
+    E(zoe).install(charterBundle),
+  );
 
   brand.produce.AUSD.resolve(knut.brand);
   issuer.produce.AUSD.resolve(knut.issuer);
@@ -150,7 +156,7 @@ export const setupPsm = async (
 
   const installs = await allValues({
     psm: installation.consume.psm,
-    psmCharter: installation.consume.psmCharter,
+    econCommitteeCharter: installation.consume.econCommitteeCharter,
     governor: installation.consume.contractGovernor,
     electorate: installation.consume.committee,
     counter: installation.consume.binaryVoteCounter,
@@ -178,7 +184,8 @@ export const setupPsm = async (
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
-  const psmCharterCreatorFacet = await consume.psmCharterCreatorFacet;
+  const { creatorFacet: econCharterCreatorFacet } =
+    await consume.econCharterStartResult;
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const poserInvitationAmount = await E(
@@ -193,7 +200,7 @@ export const setupPsm = async (
     electorateInstance,
     governor: g,
     psm,
-    psmCharterCreatorFacet,
+    econCharterCreatorFacet,
     invitationAmount: poserInvitationAmount,
     mockChainStorage: space.mockChainStorage,
     space,

@@ -13,7 +13,7 @@ import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { INVITATION_MAKERS_DESC } from '../../src/psm/psmCharter.js';
+import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { headValue, withAmountUtils } from '../supports.js';
 
@@ -183,7 +183,10 @@ test('govern offerFilter', async t => {
 
   const offersFacet = wallet.getOffersFacet();
 
-  const psmCharter = await E(agoricNames).lookup('instance', 'psmCharter');
+  const econCharter = await E(agoricNames).lookup(
+    'instance',
+    'econCommitteeCharter',
+  );
   const economicCommittee = await E(agoricNames).lookup(
     'instance',
     'economicCommittee',
@@ -216,7 +219,7 @@ test('govern offerFilter', async t => {
   );
 
   t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_DESC);
-  t.is(proposeInvitationDetails[0].instance, psmCharter, 'psmCharter');
+  t.is(proposeInvitationDetails[0].instance, econCharter, 'econCharter');
   t.is(
     // @ts-expect-error cast amount kind
     currentPurseBalance(await headValue(currentSub), invitationBrand).length,
@@ -229,7 +232,7 @@ test('govern offerFilter', async t => {
   /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
-    instance: psmCharter,
+    instance: econCharter,
     description: INVITATION_MAKERS_DESC,
   };
 
@@ -253,7 +256,7 @@ test('govern offerFilter', async t => {
   t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
   t.is(
     currentState.offerToUsedInvitation[44].value[0].description,
-    'PSM charter member invitation',
+    'charter member invitation',
   );
 
   // Call for a vote ////////////////////////////////

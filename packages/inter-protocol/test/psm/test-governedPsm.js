@@ -59,7 +59,7 @@ test('psm block offers w/charter', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { knut, zoe, psm, committeeCreator, psmCharterCreatorFacet } =
+  const { knut, zoe, psm, committeeCreator, econCharterCreatorFacet } =
     await setupPsm(t, electorateTerms, timer);
 
   // onchain, the invitations get sent to the committee member via their
@@ -67,7 +67,7 @@ test('psm block offers w/charter', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
 
   const cmInvitation = await E(
-    psmCharterCreatorFacet,
+    econCharterCreatorFacet,
   ).makeCharterMemberInvitation();
 
   const cmSeat = E(zoe).offer(cmInvitation);
@@ -114,7 +114,7 @@ test('psm block offers w/charter via invitationMakers', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { knut, zoe, psm, committeeCreator, psmCharterCreatorFacet } =
+  const { knut, zoe, psm, committeeCreator, econCharterCreatorFacet } =
     await setupPsm(t, electorateTerms, timer);
 
   // onchain, the invitations get sent to the committee member via their
@@ -122,7 +122,7 @@ test('psm block offers w/charter via invitationMakers', async t => {
   const invitations = await E(committeeCreator).getVoterInvitations();
 
   const cmInvitation = await E(
-    psmCharterCreatorFacet,
+    econCharterCreatorFacet,
   ).makeCharterMemberInvitation();
 
   const cmSeat = E(zoe).offer(cmInvitation);
