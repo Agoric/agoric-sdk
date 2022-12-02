@@ -6,11 +6,11 @@ if [ -z "$AGORIC_NET" ]; then
     echo "e.g. AGORIC_NET=ollinet (or export to save typing it each time)"
     echo
     echo "To test locally, AGORIC_NET=local and have the following running:
-# your key in governance
-sed -i '' s/agoric1ersatz/\"$KEY\" packages/vats/decentral-psm-config.json
+# freshen sdk
+yarn install && yarn build
 
 # local chain running with wallet provisioned
-packages/smart-wallet/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
+packages/inter-protocol/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
 "
     exit 1
 fi

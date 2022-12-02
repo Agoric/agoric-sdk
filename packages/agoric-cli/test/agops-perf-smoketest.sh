@@ -7,11 +7,10 @@ if [ -z "$AGORIC_NET" ]; then
   echo
   echo "To test locally, AGORIC_NET=local and have the following running:
 # freshen sdk
-cd agoric-sdk
 yarn install && yarn build
 
 # local chain running with wallet provisioned
-packages/smart-wallet/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
+packages/inter-protocol/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
 "
   exit 1
 fi
