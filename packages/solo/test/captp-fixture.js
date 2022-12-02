@@ -44,7 +44,7 @@ export async function makeFixture(PORT, noisy = false) {
       /** @type {() => void} */
       let abortCapTP;
       ws = new WebSocket(
-        `ws://localhost:${PORT}/private/captp?accessToken=${accessToken}`,
+        `ws://127.0.0.1:${PORT}/private/captp?accessToken=${accessToken}`,
         {
           origin: `http://localhost:${PORT}`,
         },
