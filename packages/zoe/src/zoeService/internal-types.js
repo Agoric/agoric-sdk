@@ -128,7 +128,7 @@
  * @property {InstallBundle} installBundle
  * @property {InstallBundleID} installBundleID
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {GetPublicFacet} getPublicFacet
+ * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
  * @property {GetTerms} getTerms

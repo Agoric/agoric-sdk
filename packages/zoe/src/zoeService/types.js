@@ -28,7 +28,7 @@
  * @property {InstallBundleID} installBundleID
  * @property {import('./utils').StartInstance} startInstance
  * @property {Offer} offer
- * @property {GetPublicFacet} getPublicFacet
+ * @property {import('./utils').GetPublicFacet} getPublicFacet
  * @property {GetIssuers} getIssuers
  * @property {GetBrands} getBrands
  * @property {GetTerms} getTerms
@@ -69,45 +69,39 @@
  */
 
 /**
- * @callback GetPublicFacet
- * @param {ERef<Instance>} instanceP
- * @returns {Promise<any>}
- */
-
-/**
  * @callback GetIssuers
- * @param {Instance} instance
+ * @param {import('./utils').Instance<any>} instance
  * @returns {Promise<IssuerKeywordRecord>}
  */
 
 /**
  * @callback GetBrands
- * @param {Instance} instance
+ * @param {import('./utils').Instance<any>} instance
  * @returns {Promise<BrandKeywordRecord>}
  */
 
 /**
  * @callback GetTerms
- * @param {Instance} instance
+ * @param {import('./utils').Instance<any>} instance
  * @returns {Promise<AnyTerms>}
  */
 
 /**
  * @callback GetOfferFilter
- * @param {Instance} instance
+ * @param {import('./utils').Instance<any>} instance
  * @returns {string[]}
  */
 
 /**
  * @callback GetInstallationForInstance
- * @param {Instance} instance
+ * @param {import('./utils').Instance<any>} instance
  * @returns {Promise<Installation>}
  */
 
 /**
  * @callback GetInstance
  * @param {ERef<Invitation>} invitation
- * @returns {Promise<Instance>}
+ * @returns {Promise<import('./utils').Instance<any>>}
  */
 
 /**
@@ -286,7 +280,7 @@
  */
 
 /**
- * @typedef {Handle<'Instance'>} Instance
+ * @typedef {import('./utils').Instance<any>} Instance
  */
 
 /**
@@ -314,7 +308,7 @@
 /**
  * @typedef {object} StandardInvitationDetails
  * @property {Installation} installation
- * @property {Instance} instance
+ * @property {import('./utils').Instance<any>} instance
  * @property {InvitationHandle} handle
  * @property {string} description
  */

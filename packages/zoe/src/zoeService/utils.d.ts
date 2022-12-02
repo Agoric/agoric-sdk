@@ -1,6 +1,6 @@
 import { Callable } from '@agoric/eventual-send';
 
-import type { Instance, IssuerKeywordRecord, Payment } from './types.js';
+import type { IssuerKeywordRecord, Payment } from './types.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -22,6 +22,10 @@ export type AdminFacet = {
 declare const StartFunction: unique symbol;
 export type Installation<SF> = {
   getBundle: () => SourceBundle;
+  // because TS is structural, without this the generic is ignored
+  [StartFunction]: SF;
+};
+export type Instance<SF> = Handle<'Instance'> & {
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };
@@ -94,3 +98,7 @@ export type StartInstance = <SF>(
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
   privateArgs?: StartParams<SF>['privateArgs'],
 ) => Promise<StartedInstanceKit<SF>>;
+
+export type GetPublicFacet = <SF>(
+  instance: Instance<SF> | PromiseLike<Instance<SF>>,
+) => Promise<StartResult<SF>['publicFacet']>;
