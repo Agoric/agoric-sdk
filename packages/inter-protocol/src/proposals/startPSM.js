@@ -370,6 +370,49 @@ export const PSM_GOV_MANIFEST = {
   },
 };
 
+/**
+ * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {{ options: { voterAddresses: Record<string, string> }}} param1
+ */
+export const inviteToPSMCharter = async (
+  { consume: { namesByAddressAdmin, econCharterStartResult } },
+  { options: { voterAddresses = {} } },
+) => {
+  const psmCharterCreatorFacet = E.get(econCharterStartResult).creatorFacet;
+
+  await Promise.all(
+    values(voterAddresses).map(async addr => {
+      console.log('sending charter, voting invitations to', addr);
+      await reserveThenDeposit(
+        `psm charter member ${addr}`,
+        namesByAddressAdmin,
+        addr,
+        [E(psmCharterCreatorFacet).makeCharterMemberInvitation()],
+      );
+      console.log('sent charter, voting invitations to', addr);
+    }),
+  );
+};
+harden(inviteToPSMCharter);
+
+export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
+  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
+  ({
+    [inviteCommitteeMembers.name]: {
+      consume: {
+        namesByAddressAdmin: true,
+        economicCommitteeCreatorFacet: true,
+      },
+    },
+    [inviteToPSMCharter.name]: {
+      consume: {
+        namesByAddressAdmin: true,
+        econCharterStartResult: true,
+      },
+    },
+  }),
+);
+
 /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 export const PSM_MANIFEST = harden({
   /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifestPermit} */
