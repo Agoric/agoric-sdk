@@ -38,7 +38,7 @@ jobs:
           go-version: 1.17
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 18.x
+          node-version: 16.x
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
           # TODO: key the node built cache on this env
