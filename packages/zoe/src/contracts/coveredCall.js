@@ -3,7 +3,7 @@ import { M, fit } from '@agoric/store';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * A call option is the right (but not the obligation) to buy digital
@@ -76,12 +76,11 @@ const start = zcf => {
       'exit afterDeadline',
     );
     const sellSeatExitRule = sellSeat.getProposal().exit;
-    assert(
-      isAfterDeadlineExitRule(sellSeatExitRule),
-      X`the seller must have an afterDeadline exitRule, but instead had ${q(
+    if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
+      throw Fail`the seller must have an afterDeadline exitRule, but instead had ${q(
         sellSeatExitRule,
-      )}`,
-    );
+      )}`;
+    }
 
     const exerciseOption = buySeat => {
       assert(!sellSeat.hasExited(), sellSeatExpiredMsg);

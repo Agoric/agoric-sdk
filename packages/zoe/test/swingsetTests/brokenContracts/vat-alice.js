@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 
 async function logCounter(log, publicAPI) {
@@ -48,7 +48,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(seat)
       .getOfferResult()
       .then(
-        () => assert(false, ' expected outcome to fail'),
+        () => Fail` expected outcome to fail`,
         e => log(`outcome correctly resolves to broken: ${e}`),
       );
     logCounter(log, publicFacet);
@@ -78,7 +78,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`Successful refund: ${o}`),
-        e => assert(false, X`Expected swap outcome to succeed ${e}`),
+        e => Fail`Expected swap outcome to succeed ${e}`,
       );
     const newPurse = await E(moolaIssuer).makeEmptyPurse();
     const swapMoolaPayout = await E(secondSeat).getPayout('Asset');
@@ -130,14 +130,14 @@ const build = async (log, zoe, issuers, payments, installations) => {
               return log(`Swap outcome is an invitation (${val}).`);
             });
         },
-        e => assert(false, X`expected outcome not to resolve yet ${e}`),
+        e => Fail`expected outcome not to resolve yet ${e}`,
       );
     logCounter(log, publicFacet);
 
     E(publicFacet)
       .throwSomething()
       .then(
-        () => assert(false, 'expecting this to throw'),
+        () => Fail`expecting this to throw`,
         e => log(`throwingAPI should throw ${e}`),
       );
     logCounter(log, publicFacet);
@@ -183,7 +183,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
       .getOfferResult()
       .then(
         o => log(`outcome correctly resolves: "${o}"`),
-        e => assert(false, X`expected outcome to succeed ${e}`),
+        e => Fail`expected outcome to succeed ${e}`,
       );
     const moolaSwapTwoPayout = await E(swapSeatTwo).getPayout('Asset');
     const simoleanSwapTwoPayout = await E(swapSeatTwo).getPayout('Price');
@@ -207,7 +207,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
     E(zoe)
       .startInstance(installId, issuerKeywordRecord, { throw: true })
       .then(
-        () => assert(false, 'contract should not finish creation'),
+        () => Fail`contract should not finish creation`,
         e => log(`contract creation failed: ${e}`),
       );
 
@@ -399,7 +399,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
           return doSadTermination();
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          throw Fail`testName ${testName} not recognized`;
         }
       }
     },

@@ -13,7 +13,7 @@ import { assertRightsConserved } from './rightsConservation.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -179,9 +179,7 @@ export const createSeatManager = (
     // Ensure that offer safety holds.
     seats.forEach(seat => {
       isOfferSafe(seat.getProposal(), seat.getStagedAllocation()) ||
-        assert.fail(
-          X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
-        );
+        Fail`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`;
     });
 
     // Keep track of seats used so far in this call, to prevent aliasing.
@@ -189,9 +187,9 @@ export const createSeatManager = (
 
     seats.forEach(seat => {
       zcfSeatToSeatHandle.has(seat) ||
-        assert.fail(X`The seat ${seat} was not recognized`);
+        Fail`The seat ${seat} was not recognized`;
       !zcfSeatsSoFar.has(seat) ||
-        assert.fail(X`Seat (${seat}) was already an argument to reallocate`);
+        Fail`Seat (${seat}) was already an argument to reallocate`;
       zcfSeatsSoFar.add(seat);
     });
 
@@ -226,11 +224,9 @@ export const createSeatManager = (
   /** @param {ZCFSeat} zcfSeat */
   const assertNoStagedAllocation = zcfSeat => {
     if (hasStagedAllocation(zcfSeat)) {
-      assert.fail(
-        X`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
-          zcfSeat,
-        )}. Please reallocate over this seat or clear the staged allocation.`,
-      );
+      Fail`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
+        zcfSeat,
+      )}. Please reallocate over this seat or clear the staged allocation.`;
     }
   };
 

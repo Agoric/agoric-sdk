@@ -10,7 +10,7 @@ import {
   assertNatAssetKind,
 } from '../../../src/contractSupport/index.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * This contract implements coin voting. There are two roles: the
@@ -40,7 +40,7 @@ const start = zcf => {
   const assertResponse = response => {
     response === 'NO' ||
       response === 'YES' ||
-      assert.fail(X`the answer ${q(response)} was not 'YES' or 'NO'`);
+      Fail`the answer ${q(response)} was not 'YES' or 'NO'`;
     // Throw an error if the response is not valid, but do not
     // exit the seat. We should allow the voter to recast their vote.
   };

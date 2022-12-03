@@ -15,7 +15,7 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;
@@ -23,9 +23,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
     case 'nat': {
       valueShape = M.nat();
       elementShape === undefined ||
-        assert.fail(
-          X`Fungible assets cannot have an elementShape: ${q(elementShape)}`,
-        );
+        Fail`Fungible assets cannot have an elementShape: ${q(elementShape)}`;
       break;
     }
     case 'set': {
@@ -53,7 +51,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
       break;
     }
     default: {
-      assert.fail(X`unexpected asset kind ${q(assetKind)}`);
+      Fail`unexpected asset kind ${q(assetKind)}`;
     }
   }
 
@@ -230,11 +228,9 @@ export const vivifyPaymentLedger = (
    */
   const assertLivePayment = payment => {
     paymentLedger.has(payment) ||
-      assert.fail(
-        X`${payment} was not a live payment for brand ${q(
-          brand,
-        )}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
-      );
+      Fail`${payment} was not a live payment for brand ${q(
+        brand,
+      )}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`;
   };
 
   /**
@@ -266,7 +262,7 @@ export const vivifyPaymentLedger = (
       const antiAliasingStore = new Set();
       payments.forEach(payment => {
         !antiAliasingStore.has(payment) ||
-          assert.fail(X`same payment ${payment} seen twice`);
+          Fail`same payment ${payment} seen twice`;
         antiAliasingStore.add(payment);
       });
     }
@@ -277,7 +273,7 @@ export const vivifyPaymentLedger = (
 
     // Invariant check
     isEqual(total, newTotal) ||
-      assert.fail(X`rights were not conserved: ${total} vs ${newTotal}`);
+      Fail`rights were not conserved: ${total} vs ${newTotal}`;
 
     let newPayments;
     try {
@@ -354,9 +350,7 @@ export const vivifyPaymentLedger = (
   ) => {
     amount = coerce(amount);
     AmountMath.isGTE(currentBalance, amount) ||
-      assert.fail(
-        X`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`,
-      );
+      Fail`Withdrawal of ${amount} failed because the purse only contained ${currentBalance}`;
     const newPurseBalance = subtract(currentBalance, amount);
 
     const payment = makePayment();

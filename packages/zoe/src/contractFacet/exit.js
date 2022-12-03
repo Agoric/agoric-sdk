@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -60,5 +60,5 @@ export const makeExitObj = (proposal, zcfSeat) => {
     });
   }
 
-  assert.fail(X`exit kind was not recognized: ${q(exit)}`);
+  throw Fail`exit kind was not recognized: ${q(exit)}`;
 };

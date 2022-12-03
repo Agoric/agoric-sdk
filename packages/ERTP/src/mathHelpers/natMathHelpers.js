@@ -2,7 +2,7 @@ import { Nat, isNat } from '@agoric/nat';
 
 import '../types-ambient.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 const empty = 0n;
 
 /**
@@ -21,7 +21,7 @@ export const natMathHelpers = harden({
   doCoerce: nat => {
     // TODO: tighten the definition of Nat in @agoric/nat to throw on `number`
     assert.typeof(nat, 'bigint');
-    assert(isNat(nat), X`value ${nat} must be a natural number`);
+    isNat(nat) || Fail`value ${nat} must be a natural number`;
     return Nat(nat);
   },
   doMakeEmpty: () => empty,
