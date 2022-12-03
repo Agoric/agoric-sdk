@@ -10,6 +10,7 @@
 /**
  * @callback BaseAssert
  * The `assert` function itself.
+ *
  * @param {*} flag The truthy/falsy value
  * @param {Details=} optDetails The details to throw
  * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
@@ -156,6 +157,7 @@
  * Annotate this error with these details, potentially to be used by an
  * augmented console, like the causal console of `console.js`, to
  * provide extra information associated with logged errors.
+ *
  * @param {Error} error
  * @param {Details} detailsNote
  * @returns {void}
@@ -229,6 +231,7 @@
  * callback, where that callback actually performs that larger termination.
  * If possible, the callback should also report its `reason` parameter as
  * the alleged reason for the termination.
+ *
  * @param {Error} reason
  */
 
@@ -248,6 +251,7 @@
  * that prevents execution from reaching the following throw. However, if
  * `optRaise` returns normally, which would be unusual, the throw following
  * `optRaise(reason)` would still happen.
+ *
  * @param {Raise=} optRaise
  * @param {boolean=} unredacted
  * @returns {Assert}
@@ -276,6 +280,64 @@
  */
 
 /**
+ * @typedef {(template: TemplateStringsArray | string[], ...args: any) => never} FailTag
+ * The `Fail` tamplate tag supports replacing patterns like
+ * ```js
+ * assert(cond, X`...complaint...`);
+ * ```
+ * or
+ * ```js
+ * cond || assert.fail(X`...complaint...`);
+ * ```
+ * with patterns like
+ * ```js
+ * cond || Fail`...complaint...`;
+ * ```
+ *
+ * However, due to [weakness in current
+ * TypeScript](https://github.com/microsoft/TypeScript/issues/51426), the `||`
+ * patterns are not as powerful as the `assert(...)` call at enabling static
+ * reasoning. Of the `||`, again due to weaknesses in current TypeScript,
+ * the
+ * ```js
+ * cond || Fail`...complaint...`
+ * ```
+ * pattern is not as powerful as the
+ * ```js
+ * cond || assert.fail(X`...complaint...`);
+ * ```
+ * at enabling static resoning. Despite these problems, we do not want to
+ * return to the
+ * ```js
+ * assert(cond, X`...complaint...`)
+ * ```
+ * style because of the substantial overhead in
+ * evaluating the `X` template in the typical `true` case where it is not
+ * needed. And we do not want to return to the
+ * ```js
+ * assert.fail(X`...complaint...`)`
+ * ```
+ * because of the verbosity and loss of readability. Instead, until/unless
+ * https://github.com/microsoft/TypeScript/issues/51426 is fixed, for those
+ * new-style assertions where this loss of static reasoning is a problem,
+ * instead express the assertion as
+ * ```js
+ *   if (!cond) {
+ *     Fail`...complaint...`;
+ *   }
+ * ```
+ * or, if needed,
+ * ```js
+ *   if (!cond) {
+ *     // `throw` is noop since `Fail` throws. But linter confused
+ *     throw Fail`...complaint...`;
+ *   }
+ * ```
+ * This avoid the TypeScript bugs that cause the loss of static reasoning,
+ * but with no loss of efficiency and little loss of readability.
+ */
+
+/**
  * assert that expr is truthy, with an optional details to describe
  * the assertion. It is a tagged template literal like
  * ```js
@@ -301,6 +363,7 @@
  *   string: AssertString,
  *   note: AssertNote,
  *   details: DetailsTag,
+ *   Fail: FailTag,
  *   quote: AssertQuote,
  *   makeAssert: MakeAssert,
  * } } Assert

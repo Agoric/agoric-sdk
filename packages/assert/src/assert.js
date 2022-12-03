@@ -40,6 +40,7 @@ const missing = [
   'string',
   'note',
   'details',
+  'Fail',
   'quote',
   'makeAssert',
 ].filter(name => globalAssert[name] === undefined);
@@ -51,13 +52,9 @@ if (missing.length > 0) {
   );
 }
 
-const { details, quote, makeAssert } = globalAssert;
+const { details, Fail, quote, makeAssert } = globalAssert;
 
-export { globalAssert as assert, details, quote };
-
-export { quote as q };
-
-export { makeAssert };
+export { globalAssert as assert, details, Fail, quote, quote as q, makeAssert };
 
 /**
  * @template T

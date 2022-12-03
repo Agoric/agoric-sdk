@@ -2,7 +2,7 @@ import '@endo/init';
 // eslint-disable-next-line import/no-unresolved -- lint error not worth solving; test passes
 import test from 'ava';
 
-import { NonNullish } from '../src/assert.js';
+import { NonNullish, Fail } from '../src/assert.js';
 
 test('NonNullish', t => {
   assert.equal(NonNullish('defined'), 'defined');
@@ -11,5 +11,12 @@ test('NonNullish', t => {
   });
   t.throws(() => NonNullish(undefined), {
     message: 'unexpected "[undefined]"',
+  });
+});
+
+test('Fail', t => {
+  t.notThrows(() => true || Fail`Should not be thrown`);
+  t.throws(() => false || Fail`Should be thrown`, {
+    message: 'Should be thrown',
   });
 });
