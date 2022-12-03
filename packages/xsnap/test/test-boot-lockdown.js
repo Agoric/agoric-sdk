@@ -169,10 +169,11 @@ test('console - objects should include detail', async t => {
       new Promise(_r => null),
       new Error('oops!'),
     ];
-    const { details: X } = assert;
+
+    const { Fail } = assert;
 
     try {
-      assert.fail(X`assertion text ${richStructure}`);
+      Fail`assertion text ${richStructure}`;
     } catch (e) {
       console.error(e);
     }

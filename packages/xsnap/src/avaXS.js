@@ -8,7 +8,7 @@ Usage:
 
 /* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 import '@endo/init';
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
@@ -274,7 +274,7 @@ async function avaConfig(args, options, { glob, readFile }) {
   const expected = ['files', 'require'];
   const unsupported = keys(pkgMeta.ava).filter(k => !expected.includes(k));
   if (unsupported.length > 0) {
-    console.warn(X`ava-xs does not support ava options: ${q(unsupported)}`);
+    console.warn(`ava-xs does not support ava options: ${q(unsupported)}`);
   }
   const { files: filePatterns, require = [] } = pkgMeta.ava;
   let { exclude } = pkgMeta['ava-xs'] || {};
@@ -283,15 +283,14 @@ async function avaConfig(args, options, { glob, readFile }) {
   }
   !exclude ||
     Array.isArray(exclude) ||
-    assert.fail(X`ava-xs.exclude: expected array or string: ${q(exclude)}`);
+    Fail`ava-xs.exclude: expected array or string: ${q(exclude)}`;
 
   if (!files.length) {
     Array.isArray(filePatterns) ||
-      assert.fail(X`ava.files: expected Array: ${q(filePatterns)}`);
+      Fail`ava.files: expected Array: ${q(filePatterns)}`;
     files = (await Promise.all(filePatterns.map(globFiles))).flat();
   }
-  Array.isArray(require) ||
-    assert.fail(X`ava.requires: expected Array: ${q(require)}`);
+  Array.isArray(require) || Fail`ava.requires: expected Array: ${q(require)}`;
   const config = { files, require, exclude, debug, verbose, titleMatch };
   return config;
 }
