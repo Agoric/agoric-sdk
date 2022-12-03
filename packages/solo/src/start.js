@@ -16,7 +16,7 @@ import anylogger from 'anylogger';
 // import connect from 'lotion-connect';
 // import djson from 'deterministic-json';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeSlogSender, getTelemetryProviders } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
@@ -128,7 +128,7 @@ const buildSwingset = async (
     // Ensure they can't traverse out of the plugins prefix.
     const pluginFile = path.resolve(pluginsPrefix, mod);
     pluginFile.startsWith(pluginsPrefix) ||
-      assert.fail(X`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`);
+      Fail`Cannot load ${pluginFile} plugin; outside of ${pluginDir}`;
 
     // TODO: Detect the module type and use the appropriate loader, just like
     // `agoric deploy`.
@@ -262,7 +262,7 @@ const buildSwingset = async (
   // other inbound messages.
   const queuedDeliverInboundToMbx = withInputQueue(
     async function deliverInboundToMbx(sender, messages, ack) {
-      assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
+      Array.isArray(messages) || Fail`inbound given non-Array: ${messages}`;
       // console.debug(`deliverInboundToMbx`, messages, ack);
       if (mb.deliverInbound(sender, messages, ack)) {
         await processKernel();
@@ -412,10 +412,8 @@ const start = async (basedir, argv) => {
   const rawConnections = JSON.parse(
     fs.readFileSync(rawConnectionsPath, 'utf8'),
   );
-  assert(
-    Array.isArray(rawConnections),
-    `Invalid connections.json: must be a JSON array, at ${rawConnectionsPath}`,
-  );
+  Array.isArray(rawConnections) ||
+    Fail`Invalid connections.json: must be a JSON array, at ${rawConnectionsPath}`;
   const homeDirectory = process.cwd();
   const connections = rawConnections.map(connection => {
     if (['chain-cosmos-sdk', 'fake-chain'].includes(connection.type)) {
@@ -518,7 +516,7 @@ const start = async (basedir, argv) => {
         }
         case 'http': {
           log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
-          assert(!broadcastJSON, X`duplicate type=http in connections.json`);
+          !broadcastJSON || Fail`duplicate type=http in connections.json`;
           hostport = `${c.host}:${c.port}`;
           broadcastJSON = await makeHTTPListener(
             basedir,
@@ -532,7 +530,7 @@ const start = async (basedir, argv) => {
           break;
         }
         default: {
-          assert.fail(X`unknown connection type in ${c}`);
+          Fail`unknown connection type in ${c}`;
         }
       }
     }),

@@ -1,5 +1,5 @@
 import { basename } from 'path';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import {
   finishCosmosApp,
   finishTendermintConfig,
@@ -12,7 +12,7 @@ export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
 
   const [prog, configDir] = rawArgs.slice(1);
   prog === 'ag-chain-cosmos' ||
-    assert.fail(X`<prog> must currently be 'ag-chain-cosmos'`);
+    Fail`<prog> must currently be 'ag-chain-cosmos'`;
 
   const { exportMetrics, enableCors } = opts;
 

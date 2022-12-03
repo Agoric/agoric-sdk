@@ -1,6 +1,6 @@
 // @ts-check
 import { Far } from '@endo/far';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 import { parse } from '@agoric/swingset-vat/src/vats/network/multiaddr.js';
 
@@ -15,9 +15,13 @@ const sourcePrefixedDenom = (addr, denom) => {
   const ma = parse(addr);
 
   const ibcPort = ma.find(([protocol]) => protocol === 'ibc-port');
-  assert(ibcPort, X`${addr} does not contain an IBC port`);
+  if (!ibcPort) {
+    throw Fail`${addr} does not contain an IBC port`;
+  }
   const ibcChannel = ma.find(([protocol]) => protocol === 'ibc-channel');
-  assert(ibcChannel, X`${addr} does not contain an IBC channel`);
+  if (!ibcChannel) {
+    throw Fail`${addr} does not contain an IBC channel`;
+  }
 
   return `${ibcPort[1]}/${ibcChannel[1]}/${denom}`;
 };

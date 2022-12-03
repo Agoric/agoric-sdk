@@ -7,7 +7,7 @@ import { registerNetworkProtocols } from './chain-behaviors.js';
 
 export { makeVatsFromBundles } from './basic-behaviors.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const PROVISIONER_INDEX = 1;
 
@@ -139,7 +139,7 @@ export const startClient = async ({
   }
 
   const addChainPresences = async () => {
-    assert(FIXME_GCI, X`client must be given GCI`);
+    FIXME_GCI || Fail`client must be given GCI`;
     await addRemote(FIXME_GCI);
     // addEgress(..., index, ...) is called in vat-provisioning.
     const chainProvider = E(vats.comms).addIngress(

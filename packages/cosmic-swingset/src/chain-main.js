@@ -12,7 +12,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { makeSlogSender } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
@@ -36,14 +36,14 @@ const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 const toNumber = specimen => {
   const number = parseInt(specimen, 10);
   String(number) === String(specimen) ||
-    assert.fail(X`Could not parse ${JSON.stringify(specimen)} as a number`);
+    Fail`Could not parse ${JSON.stringify(specimen)} as a number`;
   return number;
 };
 
 const makeChainStorage = (call, prefix = '', options = {}) => {
   prefix === '' ||
     prefix.endsWith('.') ||
-    assert.fail(X`prefix ${prefix} must end with a dot`);
+    Fail`prefix ${prefix} must end with a dot`;
 
   const { fromChainShape, toChainShape } = options;
 
@@ -278,7 +278,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       try {
         return JSON.parse(respStr);
       } catch (e) {
-        assert.fail(X`cannot JSON.parse(${JSON.stringify(respStr)}): ${e}`);
+        throw Fail`cannot JSON.parse(${JSON.stringify(respStr)}): ${e}`;
       }
     }
 

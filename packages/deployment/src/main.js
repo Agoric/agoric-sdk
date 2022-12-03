@@ -3,7 +3,7 @@ import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { doInit } from './init.js';
 import { shellMetaRegexp, shellEscape } from './run.js';
 import { streamFromString } from './files.js';
@@ -116,7 +116,7 @@ const main = async (progname, rawArgs, powers) => {
 
   const needReMain = async reArgs => {
     const code = await reMain(reArgs);
-    assert(code === 0, X`Unexpected exit: ${code}`);
+    code === 0 || Fail`Unexpected exit: ${code}`;
   };
 
   const initHint = () => {
@@ -250,7 +250,7 @@ show-config      display the client connection parameters
           break;
         }
         default: {
-          assert.fail(X`Unrecognized bootstrap argument ${subArgs[0]}`);
+          Fail`Unrecognized bootstrap argument ${subArgs[0]}`;
         }
       }
       break;
@@ -285,7 +285,7 @@ show-config      display the client connection parameters
 
         default:
           versionKind.match(/^[1-9]/) ||
-            assert.fail(X`${versionKind} is not one of "epoch", or NNN`);
+            Fail`${versionKind} is not one of "epoch", or NNN`;
       }
 
       let vstr = `${epoch}`;
@@ -594,7 +594,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
     case 'ssh': {
       const [host, ...sshArgs] = args.slice(1);
-      assert(host, X`Need: [host]`);
+      host || Fail`Need: [host]`;
 
       setSilent(true);
       await chdir(setup.SETUP_HOME);
@@ -664,7 +664,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       }
 
       const nodes = [...nodeSet.keys()].sort();
-      assert(nodes.length > 0, X`Need at least one node`);
+      nodes.length > 0 || Fail`Need at least one node`;
 
       for (const node of nodes) {
         const nodePlaybook = (book, ...pbargs) =>
@@ -775,7 +775,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
           break;
         }
         default: {
-          assert.fail(X`Unrecognized show command ${cmd}`);
+          Fail`Unrecognized show command ${cmd}`;
         }
       }
 
@@ -803,15 +803,13 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
         const raw = await trimReadFile(idPath);
         const ID = String(raw);
-
-        assert(ID, X`${idPath} must contain a node ${ID}`);
-        ID.match(/^[a-f0-9]+/) ||
-          assert.fail(X`${idPath} contains an invalid ID ${ID}`);
+        ID || Fail`${idPath} must contain a node ${ID}`;
+        ID.match(/^[a-f0-9]+/) || Fail`${idPath} contains an invalid ID ${ID}`;
         if (cmd.endsWith('-ids')) {
           ret += `${sep}${ID}`;
         } else {
           const IP = publicIps[i];
-          assert(IP, X`${idPath} does not correspond to a Terraform public IP`);
+          IP || Fail`${idPath} does not correspond to a Terraform public IP`;
           const PORT = publicPorts[i] || DEFAULT_PORT;
           ret += `${sep}${ID}@${IP}:${PORT}`;
         }
@@ -834,7 +832,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       if (!dir) {
         dir = setup.SETUP_HOME;
       }
-      assert(dir, X`Need: [dir]`);
+      dir || Fail`Need: [dir]`;
 
       // Unprovision terraform.
       await chdir(dir);
@@ -851,7 +849,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
             message: `Type "yes" if you are sure you want to reset ${dir} state:`,
           },
         ]);
-        assert(CONFIRM === 'yes', X`Aborting due to user request`);
+        CONFIRM === 'yes' || Fail`Aborting due to user request`;
       }
 
       // We no longer are provisioned or have Cosmos.
@@ -971,16 +969,16 @@ ${node}:${roleParams}
 
     case 'play': {
       const [pb, ...pbargs] = args.slice(1);
-      assert(pb, X`Need: [playbook name]`);
+      pb || Fail`Need: [playbook name]`;
       pb.match(/^\w[-\w]*$/) ||
-        assert.fail(X`[playbook] ${JSON.stringify(pb)} must be a word`);
+        Fail`[playbook] ${JSON.stringify(pb)} must be a word`;
       await inited();
       return doRun(setup.playbook(pb, ...pbargs));
     }
 
     case 'run': {
       const [host, ...subcmd] = args.slice(1);
-      assert(host && subcmd.length !== 0, X`Need: [host] [cmd...]`);
+      (host && subcmd.length !== 0) || Fail`Need: [host] [cmd...]`;
       await inited();
       let runArg;
       if (subcmd.length === 1) {
@@ -1000,8 +998,9 @@ ${node}:${roleParams}
       break;
     }
 
-    default:
-      assert.fail(X`Unknown command ${cmd}; try \`${progname} help'`);
+    default: {
+      Fail`Unknown command ${cmd}; try \`${progname} help'`;
+    }
   }
   return 0;
 };

@@ -1,7 +1,7 @@
 import { Far, assertPassable, passStyleOf } from '@endo/marshal';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 /**
  * @template K,V
@@ -20,10 +20,10 @@ export const makeWeakMapStoreMethods = (
   keyName = 'key',
 ) => {
   const assertKeyDoesNotExist = key =>
-    assert(!jsmap.has(key), X`${q(keyName)} already registered: ${key}`);
+    !jsmap.has(key) || Fail`${q(keyName)} already registered: ${key}`;
 
   const assertKeyExists = key =>
-    assert(jsmap.has(key), X`${q(keyName)} not found: ${key}`);
+    jsmap.has(key) || Fail`${q(keyName)} not found: ${key}`;
 
   return harden({
     has: key => {
@@ -112,9 +112,7 @@ export const makeScalarWeakMapStore = (
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
     passStyleOf(key) === 'remotable' ||
-      assert.fail(
-        X`Only remotables can be keys of scalar WeakMapStores: ${key}`,
-      );
+      Fail`Only remotables can be keys of scalar WeakMapStores: ${key}`;
     if (keyShape !== undefined) {
       fit(key, keyShape, 'weakMapStore key');
     }

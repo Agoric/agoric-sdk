@@ -8,7 +8,7 @@ import { makeLegacyMap } from '@agoric/store';
 
 import './types.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * Make two facets of a node in a name hierarchy: the nameHub
@@ -112,7 +112,7 @@ export const makeNameHubKit = () => {
         record = keyToRecord.get(key);
       }
       (record && !record.promise) ||
-        assert.fail(X`key ${key} is not already initialized`);
+        Fail`key ${key} is not already initialized`;
       nameAdmin.update(key, newValue, adminValue);
     },
     onUpdate: fn => {

@@ -2,7 +2,7 @@ import { promisify } from 'util';
 import { Readable } from 'stream';
 import chalk from 'chalk';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 const { freeze } = Object;
 
@@ -21,7 +21,7 @@ export const reading = (
     exists: existsP,
     mustNotExist: async filename => {
       const fileExists = await existsP(filename);
-      assert(!fileExists, X`${filename} already exists`);
+      !fileExists || Fail`${filename} already exists`;
     },
   });
 };

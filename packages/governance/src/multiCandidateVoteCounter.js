@@ -17,17 +17,17 @@ import {
 import { makeQuorumCounter } from './quorumCounter.js';
 import { breakTie } from './breakTie.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const validateQuestionSpec = questionSpec => {
   coerceQuestionSpec(questionSpec);
 
   questionSpec.electionType === ElectionType.ELECTION ||
     questionSpec.electionType === ElectionType.SURVEY ||
-    assert.fail(X`${questionSpec.electionType} must be ELECTION or SURVEY`);
+    Fail`${questionSpec.electionType} must be ELECTION or SURVEY`;
 
   questionSpec.method === ChoiceMethod.PLURALITY ||
-    assert.fail(X`${questionSpec.method} must be PLURALITY`);
+    Fail`${questionSpec.method} must be PLURALITY`;
 };
 
 /** @type {BuildMultiVoteCounter} */
@@ -60,7 +60,7 @@ const makeMultiCandidateVoteCounter = (
   const allBallots = makeStore('voterHandle');
 
   const countVotes = () => {
-    assert(!isOpen, X`can't count votes while the election is open`);
+    !isOpen || Fail`can't count votes while the election is open`;
 
     let spoiled = 0n;
     const tally = Array(positions.length).fill(0n);
@@ -167,13 +167,11 @@ const makeMultiCandidateVoteCounter = (
     {
       submitVote(voterHandle, chosenPositions, shares = 1n) {
         chosenPositions.length <= maxChoices ||
-          assert.fail(X`The number of choices exceeds the max choices.`);
+          Fail`The number of choices exceeds the max choices.`;
 
         chosenPositions.forEach(position => {
           positionIncluded(positions, position) ||
-            assert.fail(
-              X`The specified choice is not a legal position: ${position}.`,
-            );
+            Fail`The specified choice is not a legal position: ${position}.`;
         });
 
         const completedBallot = harden({ chosen: chosenPositions, shares });

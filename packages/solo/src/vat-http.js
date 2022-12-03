@@ -2,7 +2,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeCache } from '@agoric/cache';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { getCapTPHandler } from './captp.js';
@@ -41,7 +41,7 @@ export function buildRootObject(vatPowers) {
     if (remaining.length === 0) {
       return firstValue;
     }
-    assert(firstValue, X`${first} not found in home`);
+    firstValue || Fail`${first} not found in home`;
     return E(firstValue).lookup(...remaining);
   };
   harden(lookup);
@@ -242,7 +242,7 @@ export function buildRootObject(vatPowers) {
 
         if (dispatcher === 'onMessage') {
           sendResponse(count, false, { type: 'doesNotUnderstand', obj });
-          assert.fail(X`No handler for ${url} ${type}`);
+          Fail`No handler for ${url} ${type}`;
         }
         sendResponse(count, false, true);
       } catch (rej) {

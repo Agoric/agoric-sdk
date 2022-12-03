@@ -7,7 +7,7 @@ import {
 } from './defaults.js';
 import { assertNetworkConfig } from './netconfig.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * @param {string[]} rpcAddrs
@@ -15,10 +15,10 @@ const { details: X } = assert;
  * @returns {import('./types.js').Leader}
  */
 export const makeLeaderFromRpcAddresses = (rpcAddrs, leaderOptions) => {
-  assert(Array.isArray(rpcAddrs), X`rpcAddrs ${rpcAddrs} must be an array`);
+  Array.isArray(rpcAddrs) || Fail`rpcAddrs ${rpcAddrs} must be an array`;
 
   const rpcHrefs = rpcAddrs.map(rpcAddr => {
-    assert.typeof(rpcAddr, 'string', X`rpcAddr ${rpcAddr} must be a string`);
+    typeof rpcAddr === 'string' || Fail`rpcAddr ${rpcAddr} must be a string`;
     // Don't remove explicit port numbers from the URL, because the Cosmos
     // `--node=xxx` flag requires them (it doesn't just assume that
     // `--node=https://testnet.rpc.agoric.net` is the same as

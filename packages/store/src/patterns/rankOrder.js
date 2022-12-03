@@ -7,7 +7,7 @@ import {
 
 /** @typedef {import('@endo/marshal').PassStyle} PassStyle */
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 const { entries, fromEntries, setPrototypeOf, is } = Object;
 
 /**
@@ -45,9 +45,7 @@ const passStyleRanks = /** @type {PassStyleRanksRecord} */ (
         // verifying that it is sorted so that is
         // all s such that prefixes.at(0) ≤ s < successor(prefixes.at(-1)).
         prefixes === [...prefixes].sort().join('') ||
-          assert.fail(
-            X`unsorted prefixes for passStyle ${q(passStyle)}: ${q(prefixes)}`,
-          );
+          Fail`unsorted prefixes for passStyle ${q(passStyle)}: ${q(prefixes)}`;
         const cover = [
           prefixes.charAt(0),
           String.fromCharCode(prefixes.charCodeAt(prefixes.length - 1) + 1),
@@ -198,7 +196,7 @@ export const makeComparatorKit = (compareRemotables = (_x, _y) => 0) => {
         return comparator(left.payload, right.payload);
       }
       default: {
-        assert.fail(X`Unrecognized passStyle: ${q(leftStyle)}`);
+        throw Fail`Unrecognized passStyle: ${q(leftStyle)}`;
       }
     }
   };
@@ -248,11 +246,8 @@ harden(isRankSorted);
  */
 export const assertRankSorted = (sorted, compare) =>
   isRankSorted(sorted, compare) ||
-  assert.fail(
-    // TODO assert on bug could lead to infinite recursion. Fix.
-    // eslint-disable-next-line no-use-before-define
-    X`Must be rank sorted: ${sorted} vs ${sortByRank(sorted, compare)}`,
-  );
+  // eslint-disable-next-line no-use-before-define
+  Fail`Must be rank sorted: ${sorted} vs ${sortByRank(sorted, compare)}`;
 harden(assertRankSorted);
 
 /**

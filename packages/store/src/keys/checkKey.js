@@ -19,7 +19,7 @@ import {
   sortByRank,
 } from '../patterns/rankOrder.js';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 const { ownKeys } = Reflect;
 
 // ////////////////// Primitive and Scalar keys ////////////////////////////////
@@ -565,7 +565,7 @@ const checkKeyInternal = (val, check) => {
     default: {
       // Unexpected tags are just non-keys, but an unexpected passStyle
       // is always an error.
-      assert.fail(X`unexpected passStyle ${q(passStyle)}: ${val}`);
+      throw Fail`unexpected passStyle ${q(passStyle)}: ${val}`;
     }
   }
 };

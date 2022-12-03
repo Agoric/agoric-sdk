@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
@@ -8,14 +8,12 @@ export const makeId = (dappOrigin, rawId) => `${dappOrigin}#${rawId}`;
 const assertFirstCapASCII = str => {
   assert.typeof(str, 'string');
   const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
-  assert(
-    firstCapASCII.test(str),
-    X`The string ${q(
+  firstCapASCII.test(str) ||
+    Fail`The string ${q(
       str,
-    )} must be an ascii identifier starting with upper case.`,
-  );
+    )} must be an ascii identifier starting with upper case.`;
   (str !== 'NaN' && str !== 'Infinity') ||
-    assert.fail(X`keyword ${q(str)} must not be a number's name`);
+    Fail`keyword ${q(str)} must not be a number's name`;
 };
 
 /**
@@ -31,8 +29,7 @@ const findByBoardId = async (invitationPurseBalance, { board, boardId }) => {
   const invitationHandle = await E(board).getValue(boardId);
   const match = element => element.handle === invitationHandle;
   const matchingValue = invitationPurseBalance.value.find(match);
-  matchingValue ||
-    assert.fail(X`Cannot find invitation corresponding to ${q(boardId)}`);
+  matchingValue || Fail`Cannot find invitation corresponding to ${q(boardId)}`;
 
   return harden([matchingValue]);
 };
@@ -53,7 +50,7 @@ const findByKeyValuePairs = async (invitationPurseBalance, kvs) => {
     );
 
   const matchingValue = invitationPurseBalance.value.find(matches);
-  assert(matchingValue, X`Cannot find invitation corresponding to ${q(kvs)}`);
+  matchingValue || Fail`Cannot find invitation corresponding to ${q(kvs)}`;
   return harden([matchingValue]);
 };
 
@@ -169,5 +166,5 @@ export const findOrMakeInvitation = async (
     );
   }
 
-  assert.fail(X`no invitation was found or made for this offer ${offer.id}`);
+  throw Fail`no invitation was found or made for this offer ${offer.id}`;
 };

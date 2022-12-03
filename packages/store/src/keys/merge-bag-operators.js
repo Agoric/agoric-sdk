@@ -6,7 +6,7 @@ import {
 } from '../patterns/rankOrder.js';
 import { assertNoDuplicateKeys, makeBagOfEntries } from './copyBag.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 // Based on merge-set-operators.js, but altered for the bag representation.
 // TODO share more code with merge-set-operators.js, rather than
@@ -121,7 +121,7 @@ const merge = (xbagEntries, ybagEntries) => {
 
       const xi = xs[Symbol.iterator]();
       const nextX = () => {
-        assert(!xDone, X`Internal: nextX should not be called once done`);
+        !xDone || Fail`Internal: nextX should not be called once done`;
         ({
           done: xDone,
           value: [x, xc],
@@ -131,7 +131,7 @@ const merge = (xbagEntries, ybagEntries) => {
 
       const yi = ys[Symbol.iterator]();
       const nextY = () => {
-        assert(!yDone, X`Internal: nextY should not be called once done`);
+        !yDone || Fail`Internal: nextY should not be called once done`;
         ({
           done: yDone,
           value: [y, yc],
@@ -170,7 +170,7 @@ const merge = (xbagEntries, ybagEntries) => {
               nextX();
             } else {
               // y is earlier, so report it
-              assert(comp > 0, X`Internal: Unexpected comp ${q(comp)}`);
+              comp > 0 || Fail`Internal: Unexpected comp ${q(comp)}`;
               value = [y, 0n, yc];
               nextY();
             }
@@ -231,7 +231,7 @@ const bagIterCompare = xyi => {
     return -1;
   } else {
     (!loneX && !loneY) ||
-      assert.fail(X`Internal: Unexpected lone pair ${q([loneX, loneY])}`);
+      Fail`Internal: Unexpected lone pair ${q([loneX, loneY])}`;
     return 0;
   }
 };
@@ -257,7 +257,7 @@ const bagIterDisjointSubtract = xyi => {
   const result = [];
   for (const [m, xc, yc] of xyi) {
     const mc = xc - yc;
-    assert(mc >= 0n, X`right element ${m} was not in left`);
+    mc >= 0n || Fail`right element ${m} was not in left`;
     if (mc >= 1n) {
       // the x was not in y
       result.push([m, mc]);
