@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 /**
  * Endowments for a Timer device that can be made available to SwingSet vats.
@@ -25,7 +25,7 @@ export function buildTimer() {
     try {
       return Boolean(devicePollFunction(Nat(time)));
     } catch (e) {
-      assert.fail(X`error in devicePollFunction: ${e}`);
+      throw Fail`error in devicePollFunction: ${e}`;
     }
   }
 

@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../lib/parseVatSlots.js';
 import { parseLocalSlot } from './parseLocalSlots.js';
 import { cdebug } from './cdebug.js';
@@ -21,11 +21,11 @@ export function makeKernel(state, syscall) {
 
   function getKernelForLocal(lref) {
     const kfref = state.mapToKernel(lref);
-    assert(kfref, X`${lref} must already be mapped to a kernel-facing ID`);
+    kfref || Fail`${lref} must already be mapped to a kernel-facing ID`;
     const { type, allocatedByVat } = parseVatSlot(kfref);
     if (type === 'object' && !allocatedByVat) {
       // comms import, kernel export, make sure we can still reach it
-      assert(isReachable(lref), X`comms sending to unreachable import ${lref}`);
+      isReachable(lref) || Fail`comms sending to unreachable import ${lref}`;
     }
     return kfref;
   }
@@ -41,13 +41,13 @@ export function makeKernel(state, syscall) {
         // We should always know about this lref. It is allocated upon
         // receipt.  We retain the promiseTable entry even after the
         // promise is resolved (to remember the resolution).
-        assert(status, X`how did I forget about ${lref}`);
+        status || Fail`how did I forget about ${lref}`;
         kfref = state.allocateKernelPromiseID();
         if (status === 'unresolved' && !state.deciderIsKernel(lref)) {
           state.subscribeKernelToPromise(lref);
         }
       } else {
-        assert.fail(X`unknown type ${type}`);
+        Fail`unknown type ${type}`;
       }
       state.addKernelMapping(kfref, lref);
       cdebug(`comms add mapping l->k ${kfref}<=>${lref}`);
@@ -63,7 +63,7 @@ export function makeKernel(state, syscall) {
         const isImportFromComms = true;
         setReachable(lref, isImportFromComms);
       }
-      assert(isReachable(lref), X`comms sending unreachable ${lref}`);
+      isReachable(lref) || Fail`comms sending unreachable ${lref}`;
     }
 
     return kfref;
@@ -74,7 +74,7 @@ export function makeKernel(state, syscall) {
       return undefined;
     }
     const status = state.getPromiseStatus(lpid);
-    assert(status === 'unresolved', X`result ${lpid} is already resolved`);
+    status === 'unresolved' || Fail`result ${lpid} is already resolved`;
     // TODO: reject somehow rather than crashing weirdly if we are not
     // already the decider, but I'm not sure how we could hit that case.
     state.changeDeciderToKernel(lpid);
@@ -87,11 +87,10 @@ export function makeKernel(state, syscall) {
   function retireKernelPromiseID(kfpid) {
     insistVatType('promise', kfpid);
     const lpid = state.mapFromKernel(kfpid);
-    assert(lpid, X`unknown kernel promise ${kfpid}`);
-    assert(state.mapToKernel(lpid), X`unmapped local promise ${lpid}`);
+    lpid || Fail`unknown kernel promise ${kfpid}`;
+    state.mapToKernel(lpid) || Fail`unmapped local promise ${lpid}`;
     const { kernelIsSubscribed } = state.getPromiseSubscribers(lpid);
-    !kernelIsSubscribed ||
-      assert.fail(X`attempt to retire subscribed promise ${kfpid}`);
+    !kernelIsSubscribed || Fail`attempt to retire subscribed promise ${kfpid}`;
     state.deleteKernelMapping(lpid);
     cdebug(`comms delete mapping l<->k ${kfpid}<=>${lpid}`);
   }
@@ -100,11 +99,10 @@ export function makeKernel(state, syscall) {
 
   function getLocalForKernel(kfref) {
     const lref = state.mapFromKernel(kfref);
-    assert(lref, X`${kfref} must already be mapped to a local ID`);
+    lref || Fail`${kfref} must already be mapped to a local ID`;
     if (parseVatSlot(kfref).type === 'object') {
       // comms export, kernel import, it must be reachable
-      isReachable(lref) ||
-        assert.fail(X`kernel sending to unreachable import ${lref}`);
+      isReachable(lref) || Fail`kernel sending to unreachable import ${lref}`;
     }
     return lref;
   }
@@ -136,7 +134,7 @@ export function makeKernel(state, syscall) {
     if (type !== 'object' && type !== 'promise') {
       // TODO: reject the message rather than crashing weirdly, we
       // can't prevent vats from attempting this
-      assert.fail(X`cannot accept type ${type} from kernel`);
+      Fail`cannot accept type ${type} from kernel`;
     }
 
     if (!state.mapFromKernel(kfref)) {
@@ -145,7 +143,7 @@ export function makeKernel(state, syscall) {
       } else if (type === 'promise') {
         addLocalPromiseForKernel(kfref);
       } else {
-        assert.fail(X`cannot accept type ${type} from kernel`);
+        Fail`cannot accept type ${type} from kernel`;
       }
     }
     const lref = state.mapFromKernel(kfref);

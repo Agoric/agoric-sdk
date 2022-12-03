@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
@@ -58,7 +58,7 @@ export function makeDeliveryKit(
     const methargs = mapDataFromKernel(kmethargs, null);
     state.getObject(target) ||
       state.getPromiseStatus(target) ||
-      assert.fail(X`unknown message target ${target}/${ktarget}`);
+      Fail`unknown message target ${target}/${ktarget}`;
     const result = provideLocalForKernelResult(kresult);
     const localDelivery = harden({ target, methargs, result });
     handleSend(localDelivery);
@@ -129,17 +129,16 @@ export function makeDeliveryKit(
     // of sending the message:
     // `$seqnum:$ackSeqNum:$actualMessage` or `:$ackSeqNum:$actualMessage`
     const delim1 = message.indexOf(':');
-    assert(delim1 >= 0, X`received message ${message} lacks seqNum delimiter`);
+    delim1 >= 0 || Fail`received message ${message} lacks seqNum delimiter`;
     const seqNum = message.substring(0, delim1);
     const remote = state.getRemote(remoteID);
     const recvSeqNum = remote.advanceReceivedSeqNum();
     seqNum === '' ||
       seqNum === `${recvSeqNum}` ||
-      assert.fail(X`unexpected recv seqNum ${seqNum}`);
+      Fail`unexpected recv seqNum ${seqNum}`;
 
     const delim2 = message.indexOf(':', delim1 + 1);
-    delim2 >= 0 ||
-      assert.fail(X`received message ${message} lacks ackSeqNum delimiter`);
+    delim2 >= 0 || Fail`received message ${message} lacks ackSeqNum delimiter`;
     const ackSeqNum = parseInt(message.substring(delim1 + 1, delim2), 10);
     handleAckFromRemote(remoteID, ackSeqNum);
 
@@ -154,7 +153,7 @@ export function makeDeliveryKit(
     if (command === 'gc') {
       return gcFromRemote(remoteID, msgBody, ackSeqNum);
     }
-    assert.fail(X`unrecognized '${command}' in received message ${msgBody}`);
+    throw Fail`unrecognized '${command}' in received message ${msgBody}`;
   }
 
   function mapDataFromRemote(remoteID, rdata) {
@@ -168,7 +167,7 @@ export function makeDeliveryKit(
   function sendFromRemote(remoteID, message) {
     // deliver:$target:[$result][:$slots..];body
     const sci = message.indexOf(';');
-    assert(sci !== -1, X`missing semicolon in deliver ${message}`);
+    sci !== -1 || Fail`missing semicolon in deliver ${message}`;
     const fields = message.slice(0, sci).split(':').slice(1);
     // fields: [$target, $result, $slots..]
     const remoteTarget = fields[0];
@@ -195,7 +194,7 @@ export function makeDeliveryKit(
     const resolutions = [];
     for (const submsg of subMessages) {
       const sci = submsg.indexOf(';');
-      assert(sci !== -1, X`missing semicolon in resolve ${submsg}`);
+      sci !== -1 || Fail`missing semicolon in resolve ${submsg}`;
       const pieces = submsg.slice(0, sci).split(':');
       assert(pieces[0] === 'resolve');
       const rejected = pieces[1] === 'reject';
@@ -286,7 +285,7 @@ export function makeDeliveryKit(
         const { type } = parseLocalSlot(slot);
         if (type === 'promise') {
           const status = state.getPromiseStatus(slot);
-          assert(status, X`should have a value for ${slot} but didn't`);
+          status || Fail`should have a value for ${slot} but didn't`;
           if (status !== 'unresolved' && !doneResolutions.has(slot)) {
             collect(slot);
           }
@@ -345,7 +344,7 @@ export function makeDeliveryKit(
       return;
     }
 
-    assert.fail(X`unknown where ${where}`);
+    Fail`unknown where ${where}`;
   }
 
   function sendToKernel(target, delivery) {
@@ -360,7 +359,7 @@ export function makeDeliveryKit(
   }
 
   function sendToRemote(target, remoteID, localDelivery) {
-    assert(remoteID, X`oops ${target}`);
+    remoteID || Fail`oops ${target}`;
     insistCapData(localDelivery.methargs);
 
     const {

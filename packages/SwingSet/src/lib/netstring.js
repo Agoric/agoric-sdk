@@ -1,5 +1,5 @@
 /* global Buffer */
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 import { Transform } from 'stream';
@@ -63,17 +63,17 @@ export function decode(data, optMaxChunkSize) {
     const size = parseInt(sizeString, 10);
     if (!(size > -1)) {
       // reject NaN, all negative numbers
-      assert.fail(X`unparsable size ${sizeString}, should be integer`);
+      Fail`unparsable size ${sizeString}, should be integer`;
     }
     if (optMaxChunkSize) {
       size <= optMaxChunkSize ||
-        assert.fail(X`size ${size} exceeds limit of ${optMaxChunkSize}`);
+        Fail`size ${size} exceeds limit of ${optMaxChunkSize}`;
     }
     if (data.length < colon + 1 + size + 1) {
       break; // still waiting for `${DATA}.`
     }
     data[colon + 1 + size] === COMMA ||
-      assert.fail(X`malformed netstring: not terminated by comma`);
+      Fail`malformed netstring: not terminated by comma`;
     payloads.push(data.subarray(colon + 1, colon + 1 + size));
     start = colon + 1 + size + 1;
   }

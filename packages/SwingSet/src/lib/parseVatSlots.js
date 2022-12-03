@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 
 // NOTE: confusing terminology: "slot" vs. "reference".  All these things
 // called "slots" are references, but the word "slot" suggests something into
@@ -107,7 +107,7 @@ import { assert, details as X } from '@agoric/assert';
 export function parseVatSlot(vref) {
   assert.typeof(vref, 'string');
   const parts = vref.split(':');
-  assert(parts.length === 1 || parts.length === 2, X`invalid vref ${vref}`);
+  parts.length === 1 || parts.length === 2 || Fail`invalid vref ${vref}`;
   const [baseRef, facetStr] = parts;
   let type;
   let allocatedByVat;
@@ -122,7 +122,7 @@ export function parseVatSlot(vref) {
   } else if (typechar === 'p') {
     type = 'promise';
   } else {
-    assert.fail(X`invalid vref ${vref}`);
+    Fail`invalid vref ${vref}`;
   }
 
   if (allocchar === '+') {
@@ -130,7 +130,7 @@ export function parseVatSlot(vref) {
   } else if (allocchar === '-') {
     allocatedByVat = false;
   } else {
-    assert.fail(X`invalid vref ${vref}`);
+    Fail`invalid vref ${vref}`;
   }
 
   const delim = idSuffix.indexOf('/');
@@ -139,7 +139,7 @@ export function parseVatSlot(vref) {
   let facet;
   let virtual = false;
   if (delim > 0) {
-    assert(type === 'object' && allocatedByVat, X`invalid vref ${vref}`);
+    (type === 'object' && allocatedByVat) || Fail`invalid vref ${vref}`;
     virtual = true;
     id = Nat(BigInt(idSuffix.substr(0, delim)));
     subid = Nat(BigInt(idSuffix.slice(delim + 1)));
@@ -181,7 +181,7 @@ export function makeVatSlot(type, allocatedByVat, id) {
   if (type === 'promise') {
     return `p${idSuffix}`;
   }
-  assert.fail(X`unknown type ${type}`);
+  throw Fail`unknown type ${type}`;
 }
 
 /**

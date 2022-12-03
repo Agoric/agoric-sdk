@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { insistCapData } from '../../lib/capdata.js';
 import {
   makeVatSlot,
@@ -43,7 +43,7 @@ function makeSyscallStore(syscall) {
     getRequired(key) {
       assert.typeof(key, 'string');
       const result = syscall.vatstoreGet(key);
-      assert(result !== undefined, X`store lacks required key ${key}`);
+      result !== undefined || Fail`store lacks required key ${key}`;
       return result;
     },
   });
@@ -187,7 +187,7 @@ export function makeState(syscall) {
       case 'rejected':
         break;
       default:
-        assert.fail(X`unknown status for ${lpid}: ${status}`);
+        Fail`unknown status for ${lpid}: ${status}`;
     }
     deleteLocalPromiseState(lpid);
   }
@@ -309,7 +309,7 @@ export function makeState(syscall) {
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       let refCount = parseInt(store.get(`${lref}.refCount`), 10);
-      assert(refCount > 0n, X`refCount underflow {lref} ${tag}`);
+      refCount > 0n || Fail`refCount underflow {lref} ${tag}`;
       refCount -= 1;
       // cdebug(`-- ${lref}  ${tag} ${refCount}`);
       store.set(`${lref}.refCount`, `${Nat(refCount)}`);
@@ -661,7 +661,7 @@ export function makeState(syscall) {
 
   function insistPromiseIsUnresolved(lpid) {
     const status = store.getRequired(`${lpid}.status`);
-    assert(status === 'unresolved', X`${lpid} already resolved`);
+    status === 'unresolved' || Fail`${lpid} already resolved`;
   }
 
   function subscribeRemoteToPromise(lpid, subscriber) {
@@ -685,7 +685,7 @@ export function makeState(syscall) {
   function subscribeKernelToPromise(lpid) {
     insistPromiseIsUnresolved(lpid);
     const decider = store.getRequired(`${lpid}.decider`);
-    assert(decider !== KERNEL, X`kernel is decider for ${lpid}, hush`);
+    decider !== KERNEL || Fail`kernel is decider for ${lpid}, hush`;
     // cdebug(`subscribeKernelToPromise ${lpid} d=${decider}`);
     store.set(`${lpid}.kernelSubscribed`, 'true');
   }
@@ -715,7 +715,7 @@ export function makeState(syscall) {
   function addRemote(name, transmitterID) {
     assert(/^[-\w.+]+$/.test(name), `not a valid remote name: ${name}`);
     const nameKey = `rname.${name}`;
-    assert(!store.get(nameKey), X`remote name ${name} already in use`);
+    !store.get(nameKey) || Fail`remote name ${name} already in use`;
 
     insistVatType('object', transmitterID);
     addMetaObject(transmitterID);

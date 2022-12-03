@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { kser, kunser, kslot, krefOf } from '../../lib/kmarshal.js';
 
 // deliverToController() is used for local vats which want to talk to us as a
@@ -53,7 +53,7 @@ export function deliverToController(
 
     const remoteName = args[0];
     const remoteID = state.getRemoteIDForName(remoteName);
-    assert(remoteID, X`unknown remote name ${remoteName}`);
+    remoteID || Fail`unknown remote name ${remoteName}`;
     const remoteRefID = args[1];
     const kernelRefID = krefOf(args[2]);
     assert(kernelRefID, 'bad "obj0" arg for addEgress()');
@@ -67,7 +67,7 @@ export function deliverToController(
 
     const remoteName = args[0];
     const remoteID = state.getRemoteIDForName(remoteName);
-    assert(remoteID, X`unknown remote name ${remoteName}`);
+    remoteID || Fail`unknown remote name ${remoteName}`;
     const remoteRefID = Nat(args[1]);
     const iface = args[2];
     if (iface) {
@@ -79,13 +79,17 @@ export function deliverToController(
   }
 
   switch (method) {
-    case 'addRemote':
+    case 'addRemote': {
       return doAddRemote();
-    case 'addEgress':
+    }
+    case 'addEgress': {
       return doAddEgress();
-    case 'addIngress':
+    }
+    case 'addIngress': {
       return doAddIngress();
-    default:
-      assert.fail(X`method ${method} is not available`);
+    }
+    default: {
+      throw Fail`method ${method} is not available`;
+    }
   }
 }

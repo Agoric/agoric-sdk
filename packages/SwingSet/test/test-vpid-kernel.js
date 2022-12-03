@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import anylogger from 'anylogger';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { provideHostStorage } from '../src/controller/hostStorage.js';
@@ -123,7 +123,7 @@ function doResolveSyscall(syscallA, vpid, mode, targets) {
       syscallA.resolve([[vpid, true, kser(kslot(targets.p1))]]);
       break;
     default:
-      assert.fail(X`unknown mode ${mode}`);
+      Fail`unknown mode ${mode}`;
   }
 }
 
@@ -163,8 +163,9 @@ function resolutionOf(vpid, mode, targets) {
         type: 'notify',
         resolutions: oneResolution(vpid, true, kser(kslot(targets.p1))),
       };
-    default:
-      assert.fail(X`unknown mode ${mode}`);
+    default: {
+      throw Fail`unknown mode ${mode}`;
+    }
   }
 }
 

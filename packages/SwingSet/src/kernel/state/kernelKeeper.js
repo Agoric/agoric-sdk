@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 import { Nat, isNat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { wrapStorage } from './storageWrapper.js';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
@@ -214,7 +214,7 @@ export default function makeKernelKeeper(
    * @returns {string}
    */
   function getRequired(key) {
-    assert(kvStore.has(key), X`storage lacks required key ${key}`);
+    kvStore.has(key) || Fail`storage lacks required key ${key}`;
     // @ts-ignore already checked .has()
     return kvStore.get(key);
   }
@@ -665,9 +665,10 @@ export default function makeKernelKeeper(
     insistKernelType('promise', kernelSlot);
     const p = { state: getRequired(`${kernelSlot}.state`) };
     switch (p.state) {
-      case undefined:
-        assert.fail(X`unknown kernelPromise '${kernelSlot}'`);
-      case 'unresolved':
+      case undefined: {
+        throw Fail`unknown kernelPromise '${kernelSlot}'`;
+      }
+      case 'unresolved': {
         p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
         p.decider = kvStore.get(`${kernelSlot}.decider`);
         if (p.decider === '') {
@@ -679,8 +680,9 @@ export default function makeKernelKeeper(
           kvStore.getPrefixedValues(`${kernelSlot}.queue.`),
         ).map(s => JSON.parse(s));
         break;
+      }
       case 'fulfilled':
-      case 'rejected':
+      case 'rejected': {
         p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
         p.data = {
           body: kvStore.get(`${kernelSlot}.data.body`),
@@ -688,8 +690,10 @@ export default function makeKernelKeeper(
         };
         p.data.slots.forEach(parseKernelSlot);
         break;
-      default:
-        assert.fail(X`unknown state for ${kernelSlot}: ${p.state}`);
+      }
+      default: {
+        throw Fail`unknown state for ${kernelSlot}: ${p.state}`;
+      }
     }
     return harden(p);
   }
@@ -700,14 +704,12 @@ export default function makeKernelKeeper(
       insistVatID(expectedDecider);
     }
     const p = getKernelPromise(kpid);
-    assert(p.state === 'unresolved', X`${kpid} was already resolved`);
+    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
     if (expectedDecider) {
       p.decider === expectedDecider ||
-        assert.fail(
-          X`${kpid} is decided by ${p.decider}, not ${expectedDecider}`,
-        );
+        Fail`${kpid} is decided by ${p.decider}, not ${expectedDecider}`;
     } else {
-      assert(!p.decider, X`${kpid} is decided by ${p.decider}, not the kernel`);
+      !p.decider || Fail`${kpid} is decided by ${p.decider}, not the kernel`;
     }
     return p;
   }
@@ -741,7 +743,7 @@ export default function makeKernelKeeper(
         decStat('kpRejected');
         break;
       default:
-        assert.fail(X`unknown state for ${kpid}: ${state}`);
+        Fail`unknown state for ${kpid}: ${state}`;
     }
     decStat('kernelPromises');
     deleteKernelPromiseState(kpid);
@@ -930,7 +932,7 @@ export default function makeKernelKeeper(
 
     const p = getKernelPromise(kernelSlot);
     p.state === 'unresolved' ||
-      assert.fail(X`${kernelSlot} is '${p.state}', not 'unresolved'`);
+      Fail`${kernelSlot} is '${p.state}', not 'unresolved'`;
     const nkey = `${kernelSlot}.queue.nextID`;
     const nextID = Nat(BigInt(getRequired(nkey)));
     kvStore.set(nkey, `${nextID + 1n}`);
@@ -942,15 +944,15 @@ export default function makeKernelKeeper(
   function setDecider(kpid, decider) {
     insistVatID(decider);
     const p = getKernelPromise(kpid);
-    assert(p.state === 'unresolved', X`${kpid} was already resolved`);
-    assert(!p.decider, X`${kpid} has decider ${p.decider}, not empty`);
+    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
+    !p.decider || Fail`${kpid} has decider ${p.decider}, not empty`;
     kvStore.set(`${kpid}.decider`, decider);
   }
 
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
-    assert(p.state === 'unresolved', X`${kpid} was already resolved`);
-    assert(p.decider, X`${kpid} does not have a decider`);
+    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
+    p.decider || Fail`${kpid} does not have a decider`;
     kvStore.set(`${kpid}.decider`, '');
   }
 
@@ -1095,7 +1097,7 @@ export default function makeKernelKeeper(
   function getVatIDForName(name) {
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
-    assert(kvStore.has(k), X`vat name ${name} must exist, but doesn't`);
+    kvStore.has(k) || Fail`vat name ${name} must exist, but doesn't`;
     return kvStore.get(k) || assert.fail('.has() ensures .get()');
   }
 
@@ -1235,7 +1237,7 @@ export default function makeKernelKeeper(
     const { type } = parseKernelSlot(kernelSlot);
     if (type === 'promise') {
       let refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`)));
-      assert(refCount > 0n, X`refCount underflow ${kernelSlot} ${tag}`);
+      refCount > 0n || Fail`refCount underflow ${kernelSlot} ${tag}`;
       refCount -= 1n;
       // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);

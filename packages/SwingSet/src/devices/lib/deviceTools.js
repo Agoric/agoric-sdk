@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeMarshal, Far } from '@endo/marshal';
 import { parseVatSlot } from '../../lib/parseVatSlots.js';
 
@@ -47,16 +47,16 @@ export function buildSerializationTools(syscall, deviceName) {
   function convertSlotToVal(slot) {
     const { type, allocatedByVat } = parseVatSlot(slot);
     if (type === 'object') {
-      assert(!allocatedByVat, X`devices cannot yet allocate objects ${slot}`);
+      !allocatedByVat || Fail`devices cannot yet allocate objects ${slot}`;
       return presenceForSlot(slot);
     } else if (type === 'device') {
       allocatedByVat ||
-        assert.fail(X`devices should yet not be given other devices '${slot}'`);
+        Fail`devices should yet not be given other devices '${slot}'`;
       return deviceNodeForSlot(slot);
     } else if (type === 'promise') {
-      assert.fail(X`devices should not yet be given promises '${slot}'`);
+      throw Fail`devices should not yet be given promises '${slot}'`;
     } else {
-      assert.fail(X`unrecognized slot type '${type}'`);
+      throw Fail`unrecognized slot type '${type}'`;
     }
   }
 
@@ -69,7 +69,7 @@ export function buildSerializationTools(syscall, deviceName) {
     if (devnodeSlot) {
       return devnodeSlot;
     }
-    assert.fail(X`unable to convert value ${val}`);
+    throw Fail`unable to convert value ${val}`;
   }
 
   const m = makeMarshal(convertValToSlot, convertSlotToVal, {

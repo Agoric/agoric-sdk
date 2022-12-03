@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
 
@@ -94,11 +94,13 @@ export function makeXsSubprocessFactory({
           }
           return ['ok'];
         }
-        case 'testLog':
+        case 'testLog': {
           testLog(...args);
           return ['OK'];
-        default:
-          assert.fail(X`unrecognized uplink message ${type}`);
+        }
+        default: {
+          throw Fail`unrecognized uplink message ${type}`;
+        }
       }
     }
 
@@ -157,7 +159,7 @@ export function makeXsSubprocessFactory({
         parentLog(vatID, `bundle loaded. dispatch ready.`);
       } else {
         const [_tag, errName, message] = bundleReply;
-        assert.fail(X`setBundle failed: ${q(errName)}: ${q(message)}`);
+        Fail`setBundle failed: ${q(errName)}: ${q(message)}`;
       }
     }
 

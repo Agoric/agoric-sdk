@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {
@@ -12,7 +12,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         const s = D(devices.d3).getState();
         log(`got ${JSON.stringify(s)}`);
       } else {
-        assert.fail(X`unknown argv mode '${vatParameters.argv[0]}'`);
+        Fail`unknown argv mode '${vatParameters.argv[0]}'`;
       }
     },
   });
