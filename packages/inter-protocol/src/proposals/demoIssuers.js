@@ -9,7 +9,7 @@ import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import { Nat } from '@endo/nat';
 import * as Collect from '../collect.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
 
@@ -77,7 +77,7 @@ export const showBrand = b =>
   `${b}`.replace(/.object Alleged: (.*) brand./, '$1');
 export const showAmount = ({ brand, value }) => {
   const b = `${showBrand(brand)}`;
-  assert(b in DecimalPlaces, X`unknown brand name: ${q(b)}`);
+  b in DecimalPlaces || Fail`unknown brand name: ${q(b)}`;
   return `${decimal(value, DecimalPlaces[b])} ${b}`;
 };
 
@@ -542,14 +542,15 @@ export const fundAMM = async ({
         );
 
         const kit = kits[issuerName];
-        assert(kit.mint, X`no mint for ${q(issuerName)}`);
+        if (!kit.mint) {
+          throw Fail`no mint for ${q(issuerName)}`;
+        }
         // @@ doesn't work for BLD?
         const secondaryPayment = await E(kit.mint).mintPayment(
           AmountMath.make(kit.brand, initialValue),
         );
-        assert(secondaryPayment, X`no payment for ${q(issuerName)}`);
-
-        assert(kit.issuer, X`No issuer for ${q(issuerName)}`);
+        secondaryPayment || Fail`no payment for ${q(issuerName)}`;
+        kit.issuer || Fail`No issuer for ${q(issuerName)}`;
         const liquidityIssuer = /** @type {Promise<Issuer<'nat'>>} */ (
           E(ammPublicFacet).addIssuer(kit.issuer, issuerName)
         );

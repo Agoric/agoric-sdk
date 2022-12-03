@@ -32,7 +32,7 @@ import {
 } from './params.js';
 import { makeVaultManager } from './vaultManager.js';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 /** @typedef {{
  * debtMint: ZCFMint<'nat'>,
@@ -216,17 +216,15 @@ const makeVaultInvitation = ({ state }) => {
     } = seat.getProposal();
     const { brand: brandIn } = collateralAmount;
     collateralTypes.has(brandIn) ||
-      assert.fail(X`Not a supported collateral type ${brandIn}`);
+      Fail`Not a supported collateral type ${brandIn}`;
 
-    assert(
-      AmountMath.isGTE(
-        requestedAmount,
-        ephemera.directorParamManager.getMinInitialDebt(),
-      ),
-      X`The request must be for at least ${
+    AmountMath.isGTE(
+      requestedAmount,
+      ephemera.directorParamManager.getMinInitialDebt(),
+    ) ||
+      Fail`The request must be for at least ${
         ephemera.directorParamManager.getMinInitialDebt().value
-      }. ${requestedAmount.value} is too small`,
-    );
+      }. ${requestedAmount.value} is too small`;
 
     /** @type {VaultManager} */
     const mgr = collateralTypes.get(brandIn);
@@ -323,9 +321,7 @@ const machineBehavior = {
     const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
     // We create only one vault per collateralType.
     !collateralTypes.has(collateralBrand) ||
-      assert.fail(
-        X`Collateral brand ${q(collateralBrand)} has already been added`,
-      );
+      Fail`Collateral brand ${q(collateralBrand)} has already been added`;
 
     const managerStorageNode =
       storageNode &&
@@ -489,7 +485,7 @@ const publicBehavior = {
   getCollateralManager: ({ state }, brandIn) => {
     const { collateralTypes } = state;
     collateralTypes.has(brandIn) ||
-      assert.fail(X`Not a supported collateral type ${brandIn}`);
+      Fail`Not a supported collateral type ${brandIn}`;
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },

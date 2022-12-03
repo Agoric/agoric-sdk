@@ -29,7 +29,7 @@ import { INVITATION_MAKERS_DESC } from '../src/econCommitteeCharter.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
 
-const { details: X } = assert;
+const { Fail } = assert;
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -79,7 +79,7 @@ const makeTestContext = async () => {
   const bundlePathToInstallP = new Map();
   const restoreBundleID = bundleID => {
     const absolutePaths = bundleIDToAbsolutePaths.get(bundleID);
-    assert(absolutePaths, X`bundleID ${bundleID} not found`);
+    absolutePaths || Fail`bundleID ${bundleID} not found`;
     const { source, bundle } = absolutePaths;
     const bundlePath = bundle || source.replace(/(\\|\/|:)/g, '_');
     if (!bundlePathToInstallP.has(bundlePath)) {
@@ -93,7 +93,7 @@ const makeTestContext = async () => {
   const registerBundleHandles = bundleHandleMap => {
     for (const [{ bundleID }, paths] of bundleHandleMap.entries()) {
       !bundleIDToAbsolutePaths.has(bundleID) ||
-        assert.fail(X`bundleID ${bundleID} already registered`);
+        Fail`bundleID ${bundleID} already registered`;
       bundleIDToAbsolutePaths.set(bundleID, paths);
     }
   };

@@ -7,7 +7,7 @@ import { AmountMath } from '@agoric/ertp';
 
 import '@agoric/zoe/exported.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const { add, multiply } = natSafeMath;
 /**
@@ -29,7 +29,7 @@ const makeMakeAddLiquidityInvitation = (zcf, getPool) => {
     const liquidityIssuer = pool.getLiquidityIssuer();
     const liquidityBrand = zcf.getBrandForIssuer(liquidityIssuer);
     seat.getProposal().want.Liquidity.brand === liquidityBrand ||
-      assert.fail(X`liquidity brand must be ${q(liquidityBrand)}`);
+      Fail`liquidity brand must be ${q(liquidityBrand)}`;
 
     return pool.addLiquidity(seat);
   };

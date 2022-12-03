@@ -30,6 +30,9 @@ import {
   subscriptionKey,
 } from '../supports.js';
 
+const { entries } = Object;
+const { Fail } = assert;
+
 // 8	Partial repayment from reward stream - TODO
 // TODO: #4728 case 9: Extending LoC - unbonded (FAIL)
 
@@ -42,9 +45,6 @@ const contractRoots = {
   stakeFactory: './src/stakeFactory/stakeFactory.js',
   faker: './test/stakeFactory/attestationFaker.js',
 };
-
-const { entries } = Object;
-const { details: X } = assert;
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -212,8 +212,8 @@ const mockChain = genesisData => {
          * @param {Brand} brand
          */
         getAccountState: (address, brand) => {
-          assert(brand === stakingBrand, X`unexpected brand: ${brand}`);
-          assert(bankBalance.has(address), X`no such account: ${address}`);
+          brand === stakingBrand || Fail`unexpected brand: ${brand}`;
+          bankBalance.has(address) || Fail`no such account: ${address}`;
 
           currentTime += 10n;
           return harden({

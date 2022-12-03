@@ -12,7 +12,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { makeTracer } from '../makeTracer.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 const trace = makeTracer('LiqI', false);
 
 /**
@@ -284,7 +284,7 @@ const start = async zcf => {
       give: { In: null },
     });
     originalDebt.brand === debtBrand ||
-      assert.fail(X`Cannot liquidate to ${originalDebt.brand}`);
+      Fail`Cannot liquidate to ${originalDebt.brand}`;
     const penalty = ceilMultiplyBy(originalDebt, penaltyRate);
     const debtWithPenalty = AmountMath.add(originalDebt, penalty);
     trace('LIQ', { originalDebt, debtWithPenalty });

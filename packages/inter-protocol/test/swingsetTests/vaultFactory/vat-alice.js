@@ -1,11 +1,10 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X, q } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 
 /**
- *
  * @param {(msg: any)=> void} log
  * @param {ZoeService} zoe
  * @param {Brand[]} brands
@@ -54,7 +53,7 @@ const build = async (log, zoe, brands, payments, timer) => {
           return oneLoanWithInterest(vaultFactory);
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          throw Fail`testName ${testName} not recognized`;
         }
       }
     },

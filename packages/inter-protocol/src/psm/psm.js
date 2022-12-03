@@ -20,7 +20,7 @@ import { AmountMath } from '@agoric/ertp';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublishKit } from '../contractSupport.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * @file The Parity Stability Module supports efficiently minting/burning a
@@ -87,11 +87,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.feeMintAccess,
   );
   const { brand: stableBrand } = stableMint.getIssuerRecord();
-  assert(
-    anchorPerMinted.numerator.brand === anchorBrand &&
-      anchorPerMinted.denominator.brand === stableBrand,
-    X`Ratio ${anchorPerMinted} is not consistent with brands ${anchorBrand} and ${stableBrand}`,
-  );
+  (anchorPerMinted.numerator.brand === anchorBrand &&
+    anchorPerMinted.denominator.brand === stableBrand) ||
+    Fail`Ratio ${anchorPerMinted} is not consistent with brands ${anchorBrand} and ${stableBrand}`;
 
   zcf.setTestJig(() => ({
     stableIssuerRecord: stableMint.getIssuerRecord(),
@@ -155,7 +153,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const assertUnderLimit = toMint => {
     const mintedAfter = AmountMath.add(mintedPoolBalance, toMint);
     AmountMath.isGTE(params.getMintLimit(), mintedAfter) ||
-      assert.fail(X`Request would exceed mint limit`);
+      Fail`Request would exceed mint limit`;
   };
 
   const burnMinted = toBurn => {
@@ -178,7 +176,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const afterFee = AmountMath.subtract(given, fee);
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
     AmountMath.isGTE(maxAnchor, wanted) ||
-      assert.fail(X`wanted ${wanted} is more than ${given} minus fees ${fee}`);
+      Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
     try {
       stageTransfer(seat, stage, { In: afterFee }, { Minted: afterFee });
       stageTransfer(seat, feePool, { In: fee }, { Minted: fee });
@@ -211,7 +209,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const fee = ceilMultiplyBy(asStable, params.getWantMintedFee());
     const afterFee = AmountMath.subtract(asStable, fee);
     AmountMath.isGTE(afterFee, wanted) ||
-      assert.fail(X`wanted ${wanted} is more than ${given} minus fees ${fee}`);
+      Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
     mintMinted(asStable);
     try {
       stageTransfer(seat, anchorPool, { In: given }, { Anchor: given });
