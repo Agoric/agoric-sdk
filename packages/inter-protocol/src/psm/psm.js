@@ -7,7 +7,7 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   floorMultiplyBy,
-  atomicTransfer,
+  atomicRearrange,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import {
@@ -163,7 +163,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const maxAnchor = floorMultiplyBy(afterFee, anchorPerMinted);
     AmountMath.isGTE(maxAnchor, wanted) ||
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
         [seat, stage, { In: afterFee }, { Minted: afterFee }],
@@ -173,7 +173,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
     // The treatment of `burnMinted` here is different than the
     // one immediately below. This `burnMinted`
-    // happen only if the `atomicTransfer` does *not* throw.
+    // happen only if the `atomicRearrange` does *not* throw.
     burnMinted(afterFee);
     totalAnchorProvided = AmountMath.add(totalAnchorProvided, maxAnchor);
   };
@@ -192,7 +192,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       Fail`wanted ${wanted} is more than ${given} minus fees ${fee}`;
     mintMinted(asStable);
     try {
-      atomicTransfer(
+      atomicRearrange(
         zcf,
         harden([
           [seat, anchorPool, { In: given }, { Anchor: given }],
@@ -203,7 +203,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     } catch (e) {
       // The treatment of `burnMinted` here is different than the
       // one immediately above. This `burnMinted`
-      // happens only if the `atomicTransfer` *does* throw.
+      // happens only if the `atomicRearrange` *does* throw.
       burnMinted(asStable);
       throw e;
     }

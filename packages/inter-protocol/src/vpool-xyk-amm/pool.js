@@ -7,7 +7,7 @@ import {
   calcLiqValueToMint,
   calcSecondaryRequired,
   calcValueToRemove,
-  atomicTransfer,
+  atomicRearrange,
 } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { E } from '@endo/eventual-send';
@@ -253,7 +253,7 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
         ),
       );
 
-      atomicTransfer(
+      atomicRearrange(
         ammPowers.zcf,
         harden([
           [userSeat, poolSeat, { Liquidity: liquidityIn }],

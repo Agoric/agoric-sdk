@@ -538,16 +538,9 @@ const helperBehavior = {
           // it. We could hold it until it crosses some threshold, then sell it
           // to the AMM, or we could transfer it to the reserve. At least it's
           // visible in the accounting.
-          atomicTransfer(
-            zcf,
-            harden([
-              [
-                vaultSeat,
-                state.retainedCollateralSeat,
-                { Collateral: collateralPost },
-              ],
-            ]),
-          );
+          atomicTransfer(zcf, vaultSeat, state.retainedCollateralSeat, {
+            Collateral: collateralPost,
+          });
         }
 
         // Reduce totalCollateral by collateralPre, since all the collateral was

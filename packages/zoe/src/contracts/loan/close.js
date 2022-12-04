@@ -5,7 +5,7 @@ import { AmountMath } from '@agoric/ertp';
 
 import {
   assertProposalShape,
-  atomicTransfer,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 
 // The debt, the amount which must be repaid, is just the amount
@@ -42,7 +42,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.
     // Transfer the repaid loan amount to the lender
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
         [

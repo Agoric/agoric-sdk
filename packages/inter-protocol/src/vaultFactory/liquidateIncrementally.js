@@ -322,10 +322,7 @@ const start = async zcf => {
     const penaltyPaid = AmountMath.min(penalty, debtPaid);
 
     // Allocate penalty portion of proceeds to a seat that will hold it for transfer to reserve
-    atomicTransfer(
-      zcf,
-      harden([[debtorSeat, penaltyPoolSeat, { Out: penaltyPaid }]]),
-    );
+    atomicTransfer(zcf, debtorSeat, penaltyPoolSeat, { Out: penaltyPaid });
 
     debtorSeat.exit();
     trace('exit seat');

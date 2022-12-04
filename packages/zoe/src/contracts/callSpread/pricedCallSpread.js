@@ -10,7 +10,7 @@ import {
   assertNatAssetKind,
   makeRatio,
   ceilMultiplyBy,
-  atomicTransfer,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
@@ -131,7 +131,7 @@ const start = zcf => {
         'wanted option not a match',
       );
 
-      atomicTransfer(
+      atomicRearrange(
         zcf,
         harden([
           [collateralSeat, depositSeat, spreadAmount],

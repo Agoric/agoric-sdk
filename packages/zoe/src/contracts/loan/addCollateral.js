@@ -19,16 +19,9 @@ export const makeAddCollateralInvitation = (zcf, config) => {
       want: {},
     });
 
-    atomicTransfer(
-      zcf,
-      harden([
-        [
-          addCollateralSeat,
-          collateralSeat,
-          { Collateral: addCollateralSeat.getAmountAllocated('Collateral') },
-        ],
-      ]),
-    );
+    atomicTransfer(zcf, addCollateralSeat, collateralSeat, {
+      Collateral: addCollateralSeat.getAmountAllocated('Collateral'),
+    });
 
     addCollateralSeat.exit();
 

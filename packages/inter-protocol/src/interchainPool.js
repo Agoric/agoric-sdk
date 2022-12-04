@@ -90,7 +90,7 @@ export const start = (zcf, { bankManager }) => {
         },
       });
 
-      atomicTransfer(zcf, harden([[seat, seat2, { Central: centralAmt }]]));
+      atomicTransfer(zcf, seat, seat2, { Central: centralAmt });
 
       const invitation = await E(ammPub).addPoolInvitation();
       const { userSeatPromise, deposited } = await offerTo(

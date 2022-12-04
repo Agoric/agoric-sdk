@@ -399,10 +399,7 @@ const helperBehavior = {
         Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
 
       // Return any overpayment
-      atomicTransfer(
-        zcf,
-        harden([[vaultSeat, seat, vaultSeat.getCurrentAllocation()]]),
-      );
+      atomicTransfer(zcf, vaultSeat, seat, vaultSeat.getCurrentAllocation());
 
       state.manager.burnAndRecord(debt, seat);
     } else if (phase === Phase.LIQUIDATED) {
@@ -410,10 +407,7 @@ const helperBehavior = {
       // Don't take anything from the offer, even if vault is underwater.
       // TODO verify that returning Minted here doesn't mess up debt limits
 
-      atomicTransfer(
-        zcf,
-        harden([[vaultSeat, seat, vaultSeat.getCurrentAllocation()]]),
-      );
+      atomicTransfer(zcf, vaultSeat, seat, vaultSeat.getCurrentAllocation());
     } else {
       throw new Error('only active and liquidated vaults can be closed');
     }

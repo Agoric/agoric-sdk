@@ -1,4 +1,8 @@
-import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  atomicRearrange,
+  fromOnly,
+  toOnly,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,
@@ -20,33 +24,28 @@ export const makeSinglePool = ammPowers => ({
     const { zcf, protocolSeat } = ammPowers;
     const inBrand = prices.swapperGives.brand;
 
-    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferArgs} */
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferArgs[]} */
     const xfer = harden(
       inBrand === getSecondaryBrand(pool)
         ? [
-            poolSeat,
-            poolSeat,
-            { Central: prices.yDecrement },
-            { Secondary: prices.xIncrement },
+            fromOnly(poolSeat, { Central: prices.yDecrement }),
+            toOnly(poolSeat, { Secondary: prices.xIncrement }),
           ]
         : [
-            poolSeat,
-            poolSeat,
-            { Secondary: prices.yDecrement },
-            { Central: prices.xIncrement },
+            fromOnly(poolSeat, { Secondary: prices.yDecrement }),
+            toOnly(poolSeat, { Central: prices.xIncrement }),
           ],
     );
 
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
-        [seat, seat, { In: prices.swapperGives }, { Out: prices.swapperGets }],
-        // This strange construction is to transfer into without saying at the
-        // same time where this amount was transfered from. But the overall
-        // atomicTransfer still has to be conserved, i.e., balance to
-        // a net zero.
-        [undefined, protocolSeat, undefined, { Fee: prices.protocolFee }],
-        xfer,
+        fromOnly(seat, { In: prices.swapperGives }),
+
+        toOnly(seat, { Out: prices.swapperGets }),
+        toOnly(protocolSeat, { Fee: prices.protocolFee }),
+
+        ...xfer,
       ]),
     );
     seat.exit();

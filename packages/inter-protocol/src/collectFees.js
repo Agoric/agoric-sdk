@@ -16,10 +16,7 @@ export const makeMakeCollectFeesInvitation = (
 ) => {
   const collectFees = seat => {
     const amount = feeSeat.getAmountAllocated(keyword, feeBrand);
-    atomicTransfer(
-      zcf,
-      harden([[feeSeat, seat, { [keyword]: amount }, { Fee: amount }]]),
-    );
+    atomicTransfer(zcf, feeSeat, seat, { [keyword]: amount }, { Fee: amount });
 
     seat.exit();
     return `paid out ${amount.value}`;

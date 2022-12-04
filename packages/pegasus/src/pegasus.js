@@ -252,14 +252,10 @@ const makePegasus = (zcf, board, namesByAddress) => {
           // Transfer the amount to our backing seat.
           atomicTransfer(
             zcf,
-            harden([
-              [
-                loser,
-                winner,
-                { [loserKeyword]: amount },
-                { [winnerKeyword]: amount },
-              ],
-            ]),
+            loser,
+            winner,
+            { [loserKeyword]: amount },
+            { [winnerKeyword]: amount },
           );
         };
 

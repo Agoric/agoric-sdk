@@ -97,10 +97,7 @@ const start = zcf => {
   const addInventory = seat => {
     assertProposalShape(seat, { want: {} });
     // Take everything in this seat and add it to the marketMakerSeat
-    atomicTransfer(
-      zcf,
-      harden([[seat, marketMakerSeat, seat.getCurrentAllocation()]]),
-    );
+    atomicTransfer(zcf, seat, marketMakerSeat, seat.getCurrentAllocation());
 
     seat.exit();
     return 'Inventory added';
@@ -109,7 +106,7 @@ const start = zcf => {
   const removeInventory = seat => {
     assertProposalShape(seat, { give: {} });
     const { want } = seat.getProposal();
-    atomicTransfer(zcf, harden([[marketMakerSeat, seat, want]]));
+    atomicTransfer(zcf, marketMakerSeat, seat, want);
 
     seat.exit();
     return 'Inventory removed';

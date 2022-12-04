@@ -11,7 +11,7 @@ import {
   assertProposalShape,
   assertNatAssetKind,
   calcSecondaryRequired,
-  atomicTransfer,
+  atomicRearrange,
 } from '../contractSupport/index.js';
 
 /**
@@ -88,7 +88,7 @@ const start = async zcf => {
   };
 
   function consummate(tradeAmountIn, tradeAmountOut, swapSeat) {
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
         [
@@ -204,7 +204,7 @@ const start = async zcf => {
       Central: AmountMath.make(brands.Central, centralIn),
       Secondary: secondaryAmount,
     };
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
         [seat, poolSeat, liquidityDeposited],
@@ -307,7 +307,7 @@ const start = async zcf => {
       Secondary: newUserSecondaryAmount,
     };
 
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
         [removeLiqSeat, poolSeat, { Liquidity: userAllocation.Liquidity }],

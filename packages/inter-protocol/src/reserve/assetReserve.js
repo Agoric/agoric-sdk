@@ -259,14 +259,10 @@ const start = async (zcf, privateArgs, baggage) => {
 
     atomicTransfer(
       zcf,
-      harden([
-        [
-          seat,
-          collateralSeat,
-          { Collateral: amountIn },
-          { [collateralKeyword]: amountIn },
-        ],
-      ]),
+      seat,
+      collateralSeat,
+      { Collateral: amountIn },
+      { [collateralKeyword]: amountIn },
     );
     seat.exit();
 
@@ -344,12 +340,9 @@ const start = async (zcf, privateArgs, baggage) => {
     const offerToSeat = feeMint.mintGains(harden({ Fee: fee }));
     state.totalFeeMinted = AmountMath.add(state.totalFeeMinted, fee);
 
-    atomicTransfer(
-      zcf,
-      harden([
-        [collateralSeat, offerToSeat, { [collateralKeyword]: collateral }],
-      ]),
-    );
+    atomicTransfer(zcf, collateralSeat, offerToSeat, {
+      [collateralKeyword]: collateral,
+    });
 
     // Add Fee tokens and collateral to the AMM
     const invitation = await E(
@@ -379,14 +372,10 @@ const start = async (zcf, privateArgs, baggage) => {
 
     atomicTransfer(
       zcf,
-      harden([
-        [
-          offerToSeat,
-          collateralSeat,
-          { Liquidity: liquidityAmount.Liquidity },
-          { [liquidityKeyword]: liquidityAmount.Liquidity },
-        ],
-      ]),
+      offerToSeat,
+      collateralSeat,
+      { Liquidity: liquidityAmount.Liquidity },
+      { [liquidityKeyword]: liquidityAmount.Liquidity },
     );
     updateMetrics({ state });
   };

@@ -179,14 +179,10 @@ export const makeAddPoolInvitation = (
     const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
     atomicTransfer(
       zcf,
-      harden([
-        [
-          seat,
-          reserveLiquidityTokenSeat,
-          { Liquidity: minLiqAmount },
-          { [liquidityKeyword]: minLiqAmount },
-        ],
-      ]),
+      seat,
+      reserveLiquidityTokenSeat,
+      { Liquidity: minLiqAmount },
+      { [liquidityKeyword]: minLiqAmount },
     );
 
     seat.exit();

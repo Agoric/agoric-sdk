@@ -30,7 +30,7 @@ const start = async zcf => {
           ? feeSeat.getCurrentAllocation()
           : seat.getProposal().want;
 
-        atomicTransfer(zcf, harden([[feeSeat, seat, gains]]));
+        atomicTransfer(zcf, feeSeat, seat, gains);
 
         seat.exit();
         return 'Successfully withdrawn';
@@ -42,10 +42,7 @@ const start = async zcf => {
     makeShutdownInvitation: () => {
       const shutdown = seat => {
         revoked = true;
-        atomicTransfer(
-          zcf,
-          harden([[feeSeat, seat, feeSeat.getCurrentAllocation()]]),
-        );
+        atomicTransfer(zcf, feeSeat, seat, feeSeat.getCurrentAllocation());
 
         zcf.shutdown(revokedMsg);
       };
@@ -84,10 +81,7 @@ const start = async zcf => {
           const fee = querySeat.getAmountAllocated('Fee', feeBrand);
           const { requiredFee, reply } = await E(handler).onQuery(query, fee);
           if (requiredFee) {
-            atomicTransfer(
-              zcf,
-              harden([[querySeat, feeSeat, { Fee: requiredFee }]]),
-            );
+            atomicTransfer(zcf, querySeat, feeSeat, { Fee: requiredFee });
           }
           querySeat.exit();
           E(handler).onReply(query, reply, requiredFee);

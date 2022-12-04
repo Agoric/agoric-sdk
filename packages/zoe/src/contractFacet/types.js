@@ -23,7 +23,7 @@
  * in code as zcf.
  *
  * @property {Reallocate} reallocate - reallocate amounts among seats.
- * Deprecated: Use atomicTransfer instead.
+ * Deprecated: Use atomicRearrange instead.
  * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
  * whether a keyword is valid and unique and could be added in
  * `saveIssuer`
@@ -194,16 +194,16 @@
  * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
  * @property {() => Allocation} getStagedAllocation
- * Deprecated: Use atomicTransfer instead
+ * Deprecated: Use atomicRearrange instead
  * @property {() => boolean} hasStagedAllocation
- * Deprecated: Use atomicTransfer instead
+ * Deprecated: Use atomicRearrange instead
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
  * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
- * Deprecated: Use atomicTransfer instead
+ * Deprecated: Use atomicRearrange instead
  * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
- * Deprecated: Use atomicTransfer instead
+ * Deprecated: Use atomicRearrange instead
  * @property {() => void} clear
- * Deprecated: Use atomicTransfer instead
+ * Deprecated: Use atomicRearrange instead
  */
 
 /**

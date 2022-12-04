@@ -21,7 +21,12 @@ export { makeStateMachine } from './stateMachine.js';
 
 export * from './statistics.js';
 
-export { atomicTransfer } from './atomicTransfer.js';
+export {
+  atomicRearrange,
+  atomicTransfer,
+  fromOnly,
+  toOnly,
+} from './atomicTransfer.js';
 
 export {
   defaultAcceptanceMsg,

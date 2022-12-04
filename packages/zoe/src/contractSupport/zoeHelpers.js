@@ -4,7 +4,12 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
-import { atomicTransfer } from './atomicTransfer.js';
+import {
+  atomicRearrange,
+  atomicTransfer,
+  fromOnly,
+  toOnly,
+} from './atomicTransfer.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -52,7 +57,7 @@ export const satisfies = (zcf, seat, update) => {
 /** @type {Swap} */
 export const swap = (zcf, leftSeat, rightSeat) => {
   try {
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
         [rightSeat, leftSeat, leftSeat.getProposal().want],
@@ -73,21 +78,14 @@ export const swap = (zcf, leftSeat, rightSeat) => {
 /** @type {SwapExact} */
 export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
-    atomicTransfer(
+    atomicRearrange(
       zcf,
       harden([
-        [
-          rightSeat,
-          leftSeat,
-          rightSeat.getProposal().give,
-          leftSeat.getProposal().want,
-        ],
-        [
-          leftSeat,
-          rightSeat,
-          leftSeat.getProposal().give,
-          rightSeat.getProposal().want,
-        ],
+        fromOnly(rightSeat, rightSeat.getProposal().give),
+        fromOnly(leftSeat, leftSeat.getProposal().give),
+
+        toOnly(leftSeat, leftSeat.getProposal().want),
+        toOnly(rightSeat, rightSeat.getProposal().want),
       ]),
     );
   } catch (err) {
@@ -203,7 +201,7 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
     // exit the temporary seat. Note that the offerResult is the return value of this
     // function, so this synchronous trade must happen before the
     // offerResult resolves.
-    atomicTransfer(zcf, harden([[tempSeat, recipientSeat, amounts]]));
+    atomicTransfer(zcf, tempSeat, recipientSeat, amounts);
     tempSeat.exit();
     return depositToSeatSuccessMsg;
   };
@@ -236,7 +234,7 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
 export const withdrawFromSeat = async (zcf, seat, amounts) => {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
-  atomicTransfer(zcf, harden([[seat, tempSeat, amounts]]));
+  atomicTransfer(zcf, seat, tempSeat, amounts);
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();
 };
