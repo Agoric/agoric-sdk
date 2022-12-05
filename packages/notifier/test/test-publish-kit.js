@@ -2,14 +2,13 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
-import { makeMarshal } from '@endo/marshal';
 import {
   buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { provideHostStorage } from '../../SwingSet/src/controller/hostStorage.js';
-// import { makeScalarMapStore as makeBaggage } from '@agoric/store';
+import { kunser } from '../../SwingSet/src/lib/kmarshal.js';
 import { makeScalarBigMapStore } from '../../vat-data/src/vat-data-bindings.js';
 import {
   makePublishKit,
@@ -225,7 +224,9 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('vat-integration/bootstrap-upgrade.js') },
+      bootstrap: {
+        sourceSpec: bfile('../../SwingSet/test/bootstrap-relay.js'),
+      },
     },
     bundles: {
       pubsub: { sourceSpec: bfile('vat-integration/vat-pubsub.js') },
@@ -244,18 +245,18 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   c.pinVatRoot('bootstrap');
   await c.run();
 
-  const { unserialize } = makeMarshal();
-  const run = async (method, args = [], slots = []) => {
+  const run = async (method, args = []) => {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args, undefined, slots);
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     if (status === 'fulfilled') {
-      const capdata = c.kpResolution(kpid);
-      const decoded = unserialize(capdata);
-      return decoded;
+      const result = c.kpResolution(kpid);
+      return kunser(result);
     }
-    throw c.kpResolution(kpid);
+    assert(status === 'rejected');
+    const err = c.kpResolution(kpid);
+    throw kunser(err);
   };
 
   // Create the vat and get its subscriber.
@@ -325,13 +326,16 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const sub2 = await run('messageVat', [
     { name: 'pubsub', methodName: 'getSubscriber' },
   ]);
-  // But we can't verify the former promise without an actual reference
-  // rather than a substitute symbol.
-  // await t.throwsAsync(
-  //   async () => run('awaitVatObject', [{ presence: v1SecondCells[0].tail }]),
-  //   { message: '???' },
-  //   'tail promise of old vat must be rejected',
-  // );
+  await run('awaitVatObject', [{ presence: v1SecondCells[0].tail }]).then(
+    (...args) =>
+      t.deepEqual(args, undefined, 'tail promise of old vat must be rejected'),
+    failure =>
+      t.deepEqual(failure, {
+        incarnationNumber: 1,
+        name: 'vatUpgraded',
+        upgradeMessage: 'vat upgraded',
+      }),
+  );
 
   // Verify receipt of the last published value from v1.
   const v2FirstCell = await run('messageVatObject', [
