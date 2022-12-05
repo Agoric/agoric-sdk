@@ -399,7 +399,7 @@ export const makePsmCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'continuing',
-          previousOffer: opts.previousOfferId,
+          previousOffer: opts.econCommAcceptOfferId,
           invitationMakerName: 'makeVoteInvitation',
           // (positionList, questionHandle)
           invitationArgs: harden([
