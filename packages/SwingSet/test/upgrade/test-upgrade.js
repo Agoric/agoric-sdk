@@ -52,6 +52,65 @@ const makeRun = swingsetController => {
   return run;
 };
 
+const testNullUpgrade = async (t, defaultManagerType) => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType,
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('../bootstrap-relay.js') },
+    },
+    bundles: {
+      durableSingleton: { sourceSpec: bfile('../vat-durable-singleton.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+  const run = makeRun(c);
+
+  await run('createVat', [
+    {
+      name: 'durableSingleton',
+      bundleCapName: 'durableSingleton',
+      vatParameters: { version: 'v1' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [
+      { name: 'durableSingleton', methodName: 'getVersion' },
+    ]),
+    'v1',
+  );
+  await run('upgradeVat', [
+    {
+      name: 'durableSingleton',
+      bundleCapName: 'durableSingleton',
+      vatParameters: { version: 'v2' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [
+      { name: 'durableSingleton', methodName: 'getVersion' },
+    ]),
+    'v2',
+  );
+};
+
+test('null upgrade - local', async t => {
+  return testNullUpgrade(t, 'local');
+});
+
+test('null upgrade - xsnap', async t => {
+  return testNullUpgrade(t, 'xs-worker');
+});
+
 const testUpgrade = async (
   t,
   defaultManagerType,
