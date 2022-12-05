@@ -32,7 +32,7 @@ import '@agoric/ertp/src/types-ambient.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
-/** @typedef {ParsableNumber | Ratio} Result */
+/** @typedef {ParsableNumber | Ratio} Price */
 
 /**
  * This contract aggregates price values from a set of oracles and provides a
@@ -425,7 +425,7 @@ const start = async (zcf, privateArgs) => {
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<{admin: OracleAdmin<Result>, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async (
         seat,
@@ -483,7 +483,7 @@ const start = async (zcf, privateArgs) => {
     /**
      * @param {Instance | string} [oracleInstance]
      * @param {OracleQuery} [query]
-     * @returns {Promise<OracleAdmin<Result>>}
+     * @returns {Promise<OracleAdmin<Price>>}
      */
     initOracle: async (oracleInstance, query) => {
       /** @type {OracleKey} */
@@ -526,7 +526,7 @@ const start = async (zcf, privateArgs) => {
         record.lastSample = ratio;
       };
 
-      /** @type {OracleAdmin<Result>} */
+      /** @type {OracleAdmin<Price>} */
       const oracleAdmin = Far('OracleAdmin', {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');

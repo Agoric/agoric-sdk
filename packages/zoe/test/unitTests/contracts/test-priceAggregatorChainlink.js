@@ -118,8 +118,12 @@ test.before(
 
       const aggregator = await E(zoe).startInstance(
         aggregatorInstallation,
-        { In: link.issuer, Out: usd.issuer },
+        // TODO back to this way of specifying brands
+        // { In: link.issuer, Out: usd.issuer },
+        undefined,
         {
+          brandIn: link.issuer,
+          brandOut: usd.issuer,
           timer,
           maxSubmissionCount,
           minSubmissionCount,

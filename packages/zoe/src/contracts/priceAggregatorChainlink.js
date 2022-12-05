@@ -13,9 +13,11 @@ import {
 } from '../contractSupport/index.js';
 
 import '../../tools/types.js';
+import { assertParsableNumber } from '../contractSupport/ratio.js';
+import { INVITATION_MAKERS_DESC } from './priceAggregator';
 
 /**
- * @typedef {{ roundId: number | undefined, data: string }} Result
+ * @typedef {{ roundId: number | undefined, data: string }} PriceRound
  * `data` is a string encoded integer (Number.MAX_SAFE_INTEGER)
  */
 
@@ -34,7 +36,9 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * timeout: number,
  * minSubmissionValue: number,
  * maxSubmissionValue: number,
- * unitAmountIn?: Amount,
+ * brandIn: Brand<'nat'>,
+ * brandOut: Brand<'nat'>,
+ * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {object} root0
  * @param {ERef<Mint<'set'>>} [root0.quoteMint]
@@ -45,7 +49,8 @@ const start = async (
 ) => {
   const {
     timer,
-    brands: { In: brandIn, Out: brandOut },
+    brandIn,
+    brandOut,
     maxSubmissionCount,
     minSubmissionCount,
     restartDelay,
@@ -55,6 +60,11 @@ const start = async (
 
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
+  // TODO helper like: assertDefined({ brandIn, brandOut, timer, unitAmountIn })
+  assert(brandIn, 'missing brandIn');
+  assert(brandOut, 'missing brandOut');
+  assert(timer, 'missing timer');
+  assert(unitAmountIn, 'missing unitAmountIn');
 
   const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
 
@@ -592,13 +602,56 @@ const start = async (
   };
 
   /**
-   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation' | 'initOracle'> & {
-   *   initOracle: (instance) => Promise<OracleAdmin<Result>>,
+   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'initOracle'> & {
+   *   initOracle: (instance) => Promise<OracleAdmin<PriceRound>>,
    *   getRoundData(_roundId: BigInt): Promise<any>,
    *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
    * }}
    */
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
+    /**
+     * An "oracle invitation" is an invitation to be able to submit data to
+     * include in the priceAggregator's results.
+     *
+     * The offer result from this invitation is a OracleAdmin, which can be used
+     * directly to manage the price submissions as well as to terminate the
+     * relationship.
+     *
+     * @param {Instance | string} [oracleKey]
+     */
+    makeOracleInvitation: async oracleKey => {
+      /**
+       * If custom arguments are supplied to the `zoe.offer` call, they can
+       * indicate an OraclePriceSubmission notifier and a corresponding
+       * `shiftValueOut` that should be adapted as part of the priceAuthority's
+       * reported data.
+       *
+       * @param {ZCFSeat} seat
+       * @returns {Promise<{admin: OracleAdmin<PriceRound>, invitationMakers: {makePushPriceInvitation: (result: PriceRound) => Promise<Invitation<void>>} }>}
+       */
+      const offerHandler = async seat => {
+        const admin = await creatorFacet.initOracle(oracleKey);
+        const invitationMakers = Far('invitation makers', {
+          /** @param {PriceRound} result */
+          makePushPriceInvitation(result) {
+            assertParsableNumber(result.data);
+            return zcf.makeInvitation(cSeat => {
+              cSeat.exit();
+              admin.pushResult(result);
+            }, 'PushPrice');
+          },
+        });
+        seat.exit();
+
+        return harden({
+          admin,
+
+          invitationMakers,
+        });
+      };
+
+      return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
+    },
     deleteOracle: async oracleKey => {
       const records = keyToRecords.get(oracleKey);
       for (const record of records) {
@@ -639,7 +692,7 @@ const start = async (
       }
       records.add(record);
 
-      /** @param {Result} result */
+      /** @param {PriceRound} result */
       const pushResult = async ({
         roundId: _roundIdRaw = undefined,
         data: _submissionRaw,
@@ -689,8 +742,8 @@ const start = async (
       // Obtain the oracle's publicFacet.
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {OracleAdmin<Result>} */
-      const oracleAdmin = {
+      /** @type {OracleAdmin<PriceRound>} */
+      const oracleAdmin = Far('OracleAdmin', {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');
 
@@ -718,7 +771,7 @@ const start = async (
             data: _submissionRaw,
           }).catch(console.error);
         },
-      };
+      });
 
       return harden(oracleAdmin);
     },
