@@ -317,8 +317,13 @@ export async function releaseOldState(tools) {
   identifyExportedFacets(abandonedVrefSet, tools);
   abandonExports(abandonedVrefSet, tools);
 
-  /* Disabling the rest of this in the interest of stop-vat performance.  We
-   * expect that in the fullness of time the following will be superseded by a
+  // bringOutYourDead remains to ensure that the LRU cache is flushed,
+  // but the rest of this function has been disabled to improve stop-vat
+  // performance.
+  // eslint-disable-next-line no-use-before-define
+  await tools.bringOutYourDead();
+
+  /* We expect that in the fullness of time the following will be superseded by a
    * post-upgrade scavenger process that cleans up dead database debris
    * incrementally, rather than taking the hit of a potentially large delay at
    * shutdown time.  If that change happens, the below code can simply be

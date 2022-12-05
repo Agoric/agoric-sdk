@@ -913,7 +913,13 @@ export default function buildKernel(
       return results;
     }
 
-    const args = [upgradeID, true, undefined, incarnationNumber];
+    const kernelRootObjSlot = exportRootObject(kernelKeeper, vatID);
+    const args = [
+      upgradeID,
+      true,
+      undefined,
+      { incarnationNumber, rootObject: kslot(kernelRootObjSlot) },
+    ];
     /** @type {RawMethargs} */
     const vatAdminMethargs = ['vatUpgradeCallback', args];
     const results = harden({
