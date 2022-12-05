@@ -179,7 +179,10 @@ const testUpgrade = async (
   t.deepEqual(v2result.youAre, 'v2');
   t.deepEqual(krefOf(v2result.marker), krefOf(marker));
   t.deepEqual(v2result.data, ['some', 'data']);
-  t.deepEqual(v2result.upgradeResult, { incarnationNumber: 2 });
+  t.deepEqual(v2result.upgradeResult, {
+    incarnationNumber: 2,
+    rootObject: v2result.upgradeResult?.rootObject,
+  });
   t.deepEqual(v2result.remoerr, Error('vat terminated'));
 
   // newDur() (the first Durandal instance created in vat-ulrik-2)
