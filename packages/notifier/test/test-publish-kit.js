@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import '@agoric/swingset-vat/tools/prepare-test-env.js';
+import test from 'ava';
 import { E } from '@endo/eventual-send';
 import {
   buildKernelBundles,
@@ -76,10 +77,8 @@ const assertCells = (t, label, cells, publishCount, result, options = {}) => {
   }
 };
 
-// TODO: Replace with test.macro once that works with prepare-test-env-ava.
-// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
 // eslint-disable-next-line no-shadow
-const verifyPublishKit = async (t, makePublishKit) => {
+const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   const publishKit = makePublishKit();
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
   const { publisher, subscriber } = publishKit;
@@ -165,12 +164,10 @@ const verifyPublishKit = async (t, makePublishKit) => {
       `${methodName} fails after the final value`,
     );
   }
-};
+});
 
-// TODO: Replace with test.macro once that works with prepare-test-env-ava.
-// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
 // eslint-disable-next-line no-shadow
-const verifySubscribeAfter = async (t, makePublishKit) => {
+const verifySubscribeAfter = test.macro(async (t, makePublishKit) => {
   const { publisher, subscriber } = makePublishKit();
   for (const badCount of [1n, 0, '', false, Symbol('symbol'), {}]) {
     t.throws(
@@ -186,7 +183,7 @@ const verifySubscribeAfter = async (t, makePublishKit) => {
   publisher.publish('published');
   const subFirst = await subFirstP;
   t.deepEqual(subFirst.head, { value: 'published', done: false });
-};
+});
 
 for (const [type, maker] of Object.entries(makers)) {
   test(type, verifyPublishKit, maker);
@@ -405,56 +402,58 @@ test.skip('durable publish kit upgrade trauma', async t => {
   );
 });
 
-// TODO: Replace with test.macro once that works with prepare-test-env-ava.
-// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
 // eslint-disable-next-line no-shadow
-const verifyPublishKitTermination = async (t, makePublishKit, config = {}) => {
-  const { publisher, subscriber } = makePublishKit();
+const verifyPublishKitTermination = test.macro(
+  async (t, makePublishKit, config = {}) => {
+    const { publisher, subscriber } = makePublishKit();
 
-  const getLatestPromises = () => [
-    subscriber.subscribeAfter(),
-    subscriber.subscribeAfter(undefined),
-  ];
-  const { method = 'finish', getExtraFinalPromises = getLatestPromises } =
-    config;
+    const getLatestPromises = () => [
+      subscriber.subscribeAfter(),
+      subscriber.subscribeAfter(undefined),
+    ];
+    const { method = 'finish', getExtraFinalPromises = getLatestPromises } =
+      config;
 
-  const cellsP = [...(await getExtraFinalPromises(publisher, subscriber))];
-  const value = Symbol.for('termination');
-  publisher[method](value);
-  const promiseMapper = method === 'fail' ? invertPromiseSettlement : p => p;
-  const results = await Promise.all(
-    [...cellsP, ...getLatestPromises()].map(promiseMapper),
-  );
-  results.push(...(await Promise.all(getLatestPromises().map(promiseMapper))));
-  if (method === 'fail') {
-    t.is(results[0], value, 'terminal value must be correct');
-    t.deepEqual(
-      new Set(results),
-      new Set(results.slice(0, 1)),
-      'all terminal values must referentially match',
+    const cellsP = [...(await getExtraFinalPromises(publisher, subscriber))];
+    const value = Symbol.for('termination');
+    publisher[method](value);
+    const promiseMapper = method === 'fail' ? invertPromiseSettlement : p => p;
+    const results = await Promise.all(
+      [...cellsP, ...getLatestPromises()].map(promiseMapper),
     );
-  } else {
-    assertCells(t, 'final', results, 1n, { value, done: true });
-    await t.throwsAsync(
-      async () => results[0].tail,
-      { message: 'Cannot read past end of iteration.' },
-      'tail promise of final cell must be rejected',
+    results.push(
+      ...(await Promise.all(getLatestPromises().map(promiseMapper))),
     );
-    await t.throwsAsync(
-      async () => subscriber.subscribeAfter(results[0].publishCount),
-      { message: 'Cannot read past end of iteration.' },
-      'subscribeAfter(finalPublishCount) must be rejected',
-    );
-  }
+    if (method === 'fail') {
+      t.is(results[0], value, 'terminal value must be correct');
+      t.deepEqual(
+        new Set(results),
+        new Set(results.slice(0, 1)),
+        'all terminal values must referentially match',
+      );
+    } else {
+      assertCells(t, 'final', results, 1n, { value, done: true });
+      await t.throwsAsync(
+        async () => results[0].tail,
+        { message: 'Cannot read past end of iteration.' },
+        'tail promise of final cell must be rejected',
+      );
+      await t.throwsAsync(
+        async () => subscriber.subscribeAfter(results[0].publishCount),
+        { message: 'Cannot read past end of iteration.' },
+        'subscribeAfter(finalPublishCount) must be rejected',
+      );
+    }
 
-  for (const methodName of ['publish', 'fail', 'finish']) {
-    t.throws(
-      () => publisher[methodName](value),
-      { message: 'Cannot update state after termination.' },
-      `${methodName} must not be allowed after finalization`,
-    );
-  }
-};
+    for (const methodName of ['publish', 'fail', 'finish']) {
+      t.throws(
+        () => publisher[methodName](value),
+        { message: 'Cannot update state after termination.' },
+        `${methodName} must not be allowed after finalization`,
+      );
+    }
+  },
+);
 
 for (const [type, maker] of Object.entries(makers)) {
   test(`${type} - immediate finish`, verifyPublishKitTermination, maker);
@@ -471,10 +470,8 @@ for (const [type, maker] of Object.entries(makers)) {
   });
 }
 
-// TODO: Replace with test.macro once that works with prepare-test-env-ava.
-// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
 // eslint-disable-next-line no-shadow
-const verifySubscribeLatest = async (t, makePublishKit) => {
+const verifySubscribeLatest = test.macro(async (t, makePublishKit) => {
   const { publisher, subscriber } = makePublishKit();
   const latestIterator = subscribeLatest(subscriber);
 
@@ -499,16 +496,14 @@ const verifySubscribeLatest = async (t, makePublishKit) => {
     [1, 2, 4, 8, 16, 32],
     'only the last of values published between iteration steps should be observed',
   );
-};
+});
 
 for (const [type, maker] of Object.entries(makers)) {
   test(`subscribeLatest(${type} subscriber)`, verifySubscribeLatest, maker);
 }
 
-// TODO: Replace with test.macro once that works with prepare-test-env-ava.
-// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
 // eslint-disable-next-line no-shadow
-const verifySubscribeEach = async (t, makePublishKit) => {
+const verifySubscribeEach = test.macro(async (t, makePublishKit) => {
   const { publisher, subscriber } = makePublishKit();
   const latestIterator = subscribeEach(subscriber);
 
@@ -540,16 +535,14 @@ const verifySubscribeEach = async (t, makePublishKit) => {
     expectedResults,
     'all values published between iteration steps should be observed',
   );
-};
+});
 
 for (const [type, maker] of Object.entries(makers)) {
   test(`subscribeEach(${type} subscriber)`, verifySubscribeEach, maker);
 }
 
-// TODO: Replace with test.macro once that works with prepare-test-env-ava.
-// https://github.com/avajs/ava/blob/main/docs/01-writing-tests.md#reusing-test-logic-through-macros
 // eslint-disable-next-line no-shadow
-const verifySubscribeAfterSequencing = async (t, makePublishKit) => {
+const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   // Demonstrate sequencing by publishing to two destinations.
   const { publisher: pub1, subscriber: sub1 } = makePublishKit();
   const { publisher: pub2, subscriber: sub2 } = makePublishKit();
@@ -637,7 +630,7 @@ const verifySubscribeAfterSequencing = async (t, makePublishKit) => {
   );
   t.is(sub1FinalAll.length, 2);
   assertCells(t, 'final', sub1FinalAll, 3n, { value: pub1Final, done: true });
-};
+});
 
 for (const [type, maker] of Object.entries(makers)) {
   test(
