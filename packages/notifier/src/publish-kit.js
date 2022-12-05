@@ -256,6 +256,7 @@ const provideDurablePublishKitEphemeralData = state => {
     return foundData;
   }
   const { status, publishCount } = state;
+  /** @type {object} */
   let newData;
   if (status === 'failed') {
     newData = {
