@@ -7,9 +7,9 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
-import { provideHostStorage } from '../../SwingSet/src/controller/hostStorage.js';
-import { kunser } from '../../SwingSet/src/lib/kmarshal.js';
-import { makeScalarBigMapStore } from '../../vat-data/src/vat-data-bindings.js';
+import { provideHostStorage } from '@agoric/swingset-vat/src/controller/hostStorage.js';
+import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
 import {
   makePublishKit,
   subscribeEach,
@@ -218,7 +218,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType:
-      /** @type {import('../../SwingSet/src/types-external.js').ManagerType} */ (
+      /** @type {import('@agoric/swingset-vat/src/types-external.js').ManagerType} */ (
         'xs-worker'
       ), // 'local',
     bootstrap: 'bootstrap',
@@ -235,7 +235,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const hostStorage = provideHostStorage();
   const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
   const initOpts =
-    /** @type {{kernelBundles: Record<string, import('../../SwingSet/src/types-external.js').Bundle>}} */ ({
+    /** @type {{kernelBundles: Record<string, import('@agoric/swingset-vat/src/types-external.js').Bundle>}} */ ({
       kernelBundles,
     });
   const runtimeOpts = { kernelBundle };
