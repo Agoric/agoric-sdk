@@ -8,39 +8,36 @@ export const buildRootObject = () => {
   let vatAdmin;
   const vatData = new Map();
 
-  // Represent all data as copyable by overloading symbols.
-  const valToSymbol = new Map();
-  const symbolToVal = new Map();
+  // Represent all data as passable by replacing non-passable values
+  // with special-prefix registered symbols.
+  const replaced = new Map();
   // This is testing code, so we don't enforce absence of this prefix
   // from manually created symbols.
-  const remotePrefix = 'remote:';
-  const mapValToSymbol = value => {
-    const mapped = Symbol.for(`${remotePrefix}${valToSymbol.size}`);
-    valToSymbol.set(value, mapped);
-    symbolToVal.set(mapped, value);
-    return mapped;
+  const replacementPrefix = 'replaced:';
+  const makeReplacement = value => {
+    const replacement = Symbol.for(`${replacementPrefix}${replaced.size}`);
+    replaced.set(replacement, value);
+    return replacement;
   };
-  const slotToVal = undefined;
-  const { unserialize: unencode } = makeMarshal(undefined, undefined, {
-    serializeBodyFormat: 'capdata',
-  });
-  const { serialize: symbolEncode } = makeMarshal(mapValToSymbol, slotToVal, {
+  const { serialize: encodeReplacements } = makeMarshal(makeReplacement, undefined, {
     marshalSaveError: () => {},
     serializeBodyFormat: 'capdata',
   });
-  const copyableFromValue = value => unencode(symbolEncode(value));
-  const valueFromCopyable = arg => {
-    // This is testing code, so we look for special symbols only at top level.
+  const { unserialize: decodeReplacements } = makeMarshal(undefined, undefined, {
+    serializeBodyFormat: 'capdata',
+  });
+  const encodePassable = value => decodeReplacements(encodeReplacements(value));
+  const decodePassable = arg => {
+    // This is testing code, so we look for replacements only at top level.
     if (typeof arg !== 'symbol' || !Symbol.keyFor(arg)) {
       return arg;
     }
     const { description } = arg;
-    if (description.startsWith(remotePrefix)) {
-      const value =
-        symbolToVal.get(arg) || assert.fail(X`no value for symbol: ${q(arg)}`);
-      return value;
+    if (!description.startsWith(replacementPrefix)) {
+      return arg;
     }
-    return arg;
+    const value = replaced.get(arg) || assert.fail(X`no value for replacement: ${q(arg)}`);
+    return value;
   };
 
   return Far('root', {
@@ -72,28 +69,25 @@ export const buildRootObject = () => {
       const vat =
         vatData.get(name) || assert.fail(X`unknown vat name: ${q(name)}`);
       const { root } = vat;
-      const result = await E(root)[methodName](...args);
-      const copyableResult = copyableFromValue(result);
-      return copyableResult;
+      const decodedArgs = args.map(decodePassable);
+      const result = await E(root)[methodName](...decodedArgs);
+      return encodePassable(result);
     },
 
     messageVatObject: async ({ presence, methodName, args = [] }) => {
-      const object = valueFromCopyable(presence);
-      const mappedArgs = args.map(valueFromCopyable);
-      const result = await E(object)[methodName](...mappedArgs);
-      const copyableResult = copyableFromValue(result);
-      return copyableResult;
+      const object = decodePassable(presence);
+      const decodedArgs = args.map(decodePassable);
+      const result = await E(object)[methodName](...decodedArgs);
+      return encodePassable(result);
     },
 
     awaitVatObject: async ({ presence, path = [] }) => {
-      const object = await valueFromCopyable(presence);
-      let value = object;
+      let value = await decodePassable(presence);
       for (const key of path) {
         // eslint-disable-next-line no-await-in-loop
         value = await value[key];
       }
-      const copyableValue = copyableFromValue(value);
-      return copyableValue;
+      return encodePassable(value);
     },
   });
 };
