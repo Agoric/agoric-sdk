@@ -8,7 +8,7 @@ import { canBeDurable, vivifyFarClassKit } from '@agoric/vat-data';
 
 import './types-ambient.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const sink = () => {};
 const makeQuietRejection = reason => {
@@ -297,7 +297,7 @@ const provideDurablePublishKitEphemeralData = state => {
       tailR,
     };
   } else {
-    assert.fail(X`Invalid durable promise kit status: ${q(status)}`);
+    Fail`Invalid durable promise kit status: ${q(status)}`;
   }
   durablePublishKitEphemeralData.set(state, harden(newData));
   return newData;
@@ -317,10 +317,9 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
     throw new Error('Cannot update state after termination.');
   }
   if (done || valueDurability === 'mandatory') {
-    canBeDurable(value) ||
-      assert.fail(X`Cannot accept non-durable value: ${value}`);
+    canBeDurable(value) || Fail`Cannot accept non-durable value: ${value}`;
     canBeDurable(rejection) ||
-      assert.fail(X`Cannot accept non-durable rejection: ${rejection}`);
+      Fail`Cannot accept non-durable rejection: ${rejection}`;
   }
   const { tailP: currentP, tailR: resolveCurrent } =
     provideDurablePublishKitEphemeralData(state);
@@ -347,7 +346,7 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
   } else {
     // Persist a terminal value, or a non-terminal value
     // if configured as 'mandatory' or 'opportunistic'.
-    if (done || valueDurability !== 'ignored' && canBeDurable(value)) {
+    if (done || (valueDurability !== 'ignored' && canBeDurable(value))) {
       state.hasValue = true;
       state.value = value;
     } else {
