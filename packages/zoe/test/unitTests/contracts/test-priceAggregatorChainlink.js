@@ -139,6 +139,8 @@ test('basic', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
@@ -214,6 +216,8 @@ test('timeout', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
@@ -282,6 +286,8 @@ test('issue check', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
@@ -338,6 +344,8 @@ test('supersede', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
@@ -402,6 +410,8 @@ test('interleaved', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
@@ -538,6 +548,8 @@ test('larger', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
@@ -619,6 +631,8 @@ test('suggest', async t => {
     minSubmissionValue,
     maxSubmissionValue,
   );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
   const priceOracleA = await makeFakePriceOracle();
