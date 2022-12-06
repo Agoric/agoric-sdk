@@ -36,7 +36,7 @@ export function makeSnapStoreIO() {
  *   has: (key: string) => boolean,
  *   getKeys: (start: string, end: string) => IterableIterator<string>,
  *   get: (key: string) => string | undefined,
- *   set: (key: string, value: string) => void,
+ *   set: (key: string, value: string, bypassHash?: boolean ) => void,
  *   delete: (key: string) => void,
  * }} KVStore
  *
@@ -58,9 +58,11 @@ export function makeSnapStoreIO() {
  *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the kernel
  *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
  *   snapStore?: SnapStore,
- *   commitCrank: () => { crankhash: string, activityhash: string },
- *   abortCrank: () => void,
- *   resetCrankhash: () => void, // XXX temp
+ *   startCrank: () => void,
+ *   establishCrankSavepoint: (savepoint: string) => void,
+ *   rollbackCrank: (savepoint: string) => void,
+ *   emitCrankHashes: () => { crankhash: string, activityhash: string },
+ *   endCrank: () => void,
  * }} SwingStoreKernelStorage
  *
  * @typedef {{
@@ -198,18 +200,14 @@ function makeSwingStore(dirPath, forceReset, options) {
     )
   `);
 
-  const sqlStartCrank = db.prepare('SAVEPOINT crankSavepoint');
-  const sqlCommitCrank = db.prepare('RELEASE SAVEPOINT crankSavepoint');
-  const sqlAbortCrank = db.prepare('ROLLBACK TO SAVEPOINT crankSavepoint');
-
   const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
+  let inCrank = false;
 
   function ensureTxn() {
     assert(db);
     if (!db.inTransaction) {
       sqlBeginTransaction.run();
       assert(db.inTransaction);
-      sqlStartCrank.run();
     }
     return db;
   }
@@ -255,7 +253,6 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   function get(key) {
     assert.typeof(key, 'string');
-    ensureTxn();
     return sqlKVGet.get(key);
   }
 
@@ -290,7 +287,6 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(start, 'string');
     assert.typeof(end, 'string');
 
-    ensureTxn();
     let keys;
     if (end) {
       keys = sqlKVGetKeys.all(start, end);
@@ -379,12 +375,12 @@ function makeSwingStore(dirPath, forceReset, options) {
 
   const kernelKVStore = {
     ...kvStore,
-    set(key, value) {
+    set(key, value, bypassHash) {
       assert.typeof(key, 'string');
       const keyType = getKeyType(key);
       assert(keyType !== 'host');
       set(key, value);
-      if (keyType === 'consensus') {
+      if (keyType === 'consensus' && !bypassHash) {
         crankhasher.add('add');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -432,13 +428,42 @@ function makeSwingStore(dirPath, forceReset, options) {
     });
   }
 
-  function commitCrank() {
-    // Calculate the resulting crankhash and reset for the next crank.
+  const savepoints = [];
+  const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');
+
+  function startCrank() {
+    assert(!inCrank);
+    inCrank = true;
+    resetCrankhash();
+  }
+
+  function establishCrankSavepoint(savepoint) {
+    assert(inCrank);
+    const savepointOrdinal = savepoints.length;
+    savepoints.push(savepoint);
+    const sql = db.prepare(`SAVEPOINT t${savepointOrdinal}`);
+    sql.run();
+  }
+
+  function rollbackCrank(savepoint) {
+    assert(inCrank);
+    for (const savepointOrdinal of savepoints.keys()) {
+      if (savepoints[savepointOrdinal] === savepoint) {
+        const sql = db.prepare(`ROLLBACK TO SAVEPOINT t${savepointOrdinal}`);
+        sql.run();
+        savepoints.length = savepointOrdinal;
+        return;
+      }
+    }
+    assert.fail(`no such savepoint as "${savepoint}"`);
+  }
+
+  function emitCrankHashes() {
+    // Calculate the resulting crankhash and reset for the next round.
     const crankhash = crankhasher.finish();
     resetCrankhash();
-    ensureTxn();
 
-    // Get the old activityhash directly from (unbuffered) backing storage.
+    // Get the old activityhash
     let oldActivityhash = get('activityhash');
     if (oldActivityhash === undefined) {
       oldActivityhash = '';
@@ -453,19 +478,20 @@ function makeSwingStore(dirPath, forceReset, options) {
     hasher.add(crankhash);
     hasher.add('\n');
 
-    // Store the new activityhash directly into (unbuffered) backing storage.
+    // Store the new activityhash
     const activityhash = hasher.finish();
     set('activityhash', activityhash);
-    resetCrankhash();
-    sqlCommitCrank.run();
-    sqlStartCrank.run();
 
     return { crankhash, activityhash };
   }
 
-  function abortCrank() {
-    sqlAbortCrank.run();
-    resetCrankhash();
+  function endCrank() {
+    assert(inCrank);
+    if (savepoints.length > 0) {
+      sqlReleaseSavepoints.run();
+      savepoints.length = 0;
+    }
+    inCrank = false;
   }
 
   const sqlCommit = db.prepare('COMMIT');
@@ -503,9 +529,11 @@ function makeSwingStore(dirPath, forceReset, options) {
     kvStore: kernelKVStore,
     streamStore,
     snapStore,
-    commitCrank,
-    abortCrank,
-    resetCrankhash,
+    startCrank,
+    establishCrankSavepoint,
+    rollbackCrank,
+    emitCrankHashes,
+    endCrank,
   };
   const hostStorage = {
     kvStore: hostKVStore,
@@ -623,10 +651,10 @@ export function getAllState(kernelStorage) {
  * }} stuff  The state to stuff into `kernelStorage`
  */
 export function setAllState(kernelStorage, stuff) {
-  const { kvStore, streamStore, resetCrankhash } = kernelStorage;
+  const { kvStore, streamStore } = kernelStorage;
   const { kvStuff, streamStuff } = stuff;
   for (const k of Object.getOwnPropertyNames(kvStuff)) {
-    kvStore.set(k, kvStuff[k]);
+    kvStore.set(k, kvStuff[k], true);
   }
   for (const [streamName, stream] of streamStuff.entries()) {
     for (const [pos, item] of stream) {
@@ -635,5 +663,4 @@ export function setAllState(kernelStorage, stuff) {
     }
     streamStore.closeStream(streamName);
   }
-  resetCrankhash();
 }

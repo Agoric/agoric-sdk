@@ -432,6 +432,7 @@ export async function makeSwingsetController(
       const vatID = kernel.vatNameToID(vatName);
       const kref = kernel.getRootObject(vatID);
       kernel.pinObject(kref);
+      kernelStorage.emitCrankHashes();
       return kref;
     },
 
@@ -440,7 +441,9 @@ export async function makeSwingsetController(
     },
 
     kpResolution(kpid) {
-      return kernel.kpResolution(kpid);
+      const result = kernel.kpResolution(kpid);
+      kernelStorage.emitCrankHashes();
+      return result;
     },
     vatNameToID(vatName) {
       return kernel.vatNameToID(vatName);
@@ -463,6 +466,7 @@ export async function makeSwingsetController(
       if (kpid) {
         kernel.kpRegisterInterest(kpid);
       }
+      kernelStorage.emitCrankHashes();
       return kpid;
     },
 
@@ -475,12 +479,13 @@ export async function makeSwingsetController(
       if (!options.upgradeMessage) {
         options.upgradeMessage = `vat ${vatName} upgraded`;
       }
-      return controller.queueToVatRoot(
+      const result = controller.queueToVatRoot(
         'vatAdmin',
         'upgradeStaticVat',
         [vatID, pauseTarget, bundleID, options],
         'ignore',
       );
+      return result;
     },
   });
 

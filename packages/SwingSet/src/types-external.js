@@ -303,7 +303,7 @@ export {};
  *   streamStore: StreamStore,
  *   snapStore?: SnapStore,
  *   commitCrank: () => { crankhash: string, activityhash: string },
- *   abortCrank: () => void,
+ *   abortCrank: (wholeCrank: boolean) => void,
  * }} HostStore
  */
 

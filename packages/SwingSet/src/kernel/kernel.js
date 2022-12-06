@@ -24,7 +24,7 @@ import { makeKernelSyscallHandler } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
 import { makeDummyMeterControl } from './dummyMeterControl.js';
 import { getKpidsToRetire } from './cleanup.js';
-import { processNextGCAction } from './gc-actions.js';
+import { processGCActionSet } from './gc-actions.js';
 import { makeVatLoader } from './vat-loader/vat-loader.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
@@ -359,7 +359,7 @@ export default function buildKernel(
    *  } } DeliveryStatus
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
-   *    popDelivery?: boolean, // discard the aborted delivery
+   *    consumeMessage?: boolean, // discard the aborted delivery
    *    didDelivery?: boolean, // we made a delivery to a vat, for run policy
    *    computrons?: BigInt, // computron count for run policy
    *    meterID?: string, // deduct those computrons from a meter
@@ -487,11 +487,11 @@ export default function buildKernel(
       results.decrementReapCount = { vatID };
     }
 
-    // We leave results.popDelivery up to the caller.  Send failures
-    // never set results.popDelivery (we allow the delivery to be
+    // We leave results.consumeMessage up to the caller.  Send failures
+    // never set results.consumeMessage (we allow the delivery to be
     // re-attempted and it splats against the now-dead vat, or doesn't
     // get delivered until the vat is unsuspended).  But failures in
-    // e.g. startVat will want to set popDelivery.
+    // e.g. startVat will want to set consumeMessage.
 
     return harden(results);
   }
@@ -659,7 +659,7 @@ export default function buildKernel(
     // startVat errors should still terminate them
     const results = harden({
       ...deliveryCrankResults(vatID, status, true, meterID),
-      popDelivery: true,
+      consumeMessage: true,
     });
     return results;
   }
@@ -699,7 +699,7 @@ export default function buildKernel(
       const results = {
         didDelivery: true, // ok, it failed, but we did spend the time
         abort: true, // delete partial vat state
-        popDelivery: true, // don't repeat createVat
+        consumeMessage: true, // don't repeat createVat
         terminate: { vatID, reject: true, info },
       };
       return harden(results);
@@ -714,8 +714,8 @@ export default function buildKernel(
     const startVat = { type: 'startVat', vatID, vatParameters };
     const startResults = await processStartVat(startVat);
     if (startResults.terminate) {
-      const popDelivery = true;
-      return harden({ ...startResults, popDelivery });
+      const consumeMessage = true;
+      return harden({ ...startResults, consumeMessage });
     }
 
     // if the startVat CrankResults were happy, we should report them
@@ -776,7 +776,7 @@ export default function buildKernel(
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
     const results = deliveryCrankResults(vatID, status, false); // no meter
-    return harden({ ...results, popDelivery: true });
+    return harden({ ...results, consumeMessage: true });
   }
 
   function addComputrons(computrons1, computrons2) {
@@ -864,7 +864,7 @@ export default function buildKernel(
         ...results1,
         computrons,
         abort: true, // always unwind
-        popDelivery: true, // don't repeat the upgrade
+        consumeMessage: true, // don't repeat the upgrade
         terminate: undefined, // do *not* terminate the vat
         vatAdminMethargs,
       });
@@ -905,7 +905,7 @@ export default function buildKernel(
         ...results2,
         computrons,
         abort: true, // always unwind
-        popDelivery: true, // don't repeat the upgrade
+        consumeMessage: true, // don't repeat the upgrade
         terminate: undefined, // do *not* terminate the vat
         vatAdminMethargs,
       });
@@ -1073,11 +1073,12 @@ export default function buildKernel(
    * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
    * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
    * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
+   * @typedef { { type: 'negated-gc-action', vatID: VatID } } RunQueueEventNegatedGCAction
    * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
    * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
    *            RunQueueEventUpgradeVat | RunQueueEventChangeVatOptions | RunQueueEventStartVat |
    *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
-   *            RunQueueEventBringOutYourDead
+   *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead
    *          } RunQueueEvent
    */
 
@@ -1142,6 +1143,9 @@ export default function buildKernel(
       deliverP = processChangeVatOptions(message);
     } else if (message.type === 'bringOutYourDead') {
       deliverP = processBringOutYourDead(message);
+    } else if (message.type === 'negated-gc-action') {
+      // processGCActionSet pruned some negated actions, but had no GC
+      // action to perform. Record the DB changes in their own crank.
     } else if (gcMessages.includes(message.type)) {
       deliverP = processGCMessage(message);
     } else {
@@ -1183,8 +1187,9 @@ export default function buildKernel(
     // deduct a meter, decrement the vat's reapcount, and maybe
     // terminate the vat
 
+    kernelKeeper.establishCrankSavepoint('deliver');
     const crankResults = await deliverRunQueueEvent(message);
-    // { abort/commit, deduct, terminate+notify, popDelivery }
+    // { abort/commit, deduct, terminate+notify, consumeMessage }
 
     if (crankResults.didDelivery) {
       if (message.type === 'create-vat') {
@@ -1209,22 +1214,9 @@ export default function buildKernel(
     // directly.
 
     if (crankResults.abort) {
-      // errors unwind any changes the vat made
-      kernelKeeper.abortCrank();
-
-      // some deliveries should be consumed when they fail
-      if (crankResults.popDelivery) {
-        // kernelKeeper.abortCrank removed all evidence that the crank
-        // ever happened, including, notably, the removal of the
-        // delivery itself from the head of the run queue, which will
-        // result in it being delivered again on the next crank. If we
-        // don't want that, then we need to remove it again.
-
-        // eslint-disable-next-line no-use-before-define
-        getNextDeliveryMessage();
-      }
-      // other deliveries should be re-attempted on the next crank, so they
-      // get the right error: we leave those on the queue
+      kernelKeeper.rollbackCrank(
+        crankResults.consumeMessage ? 'deliver' : 'start',
+      );
     } else {
       // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.maybeSaveSnapshot();
@@ -1273,7 +1265,7 @@ export default function buildKernel(
     kernelKeeper.processRefcounts();
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
-    const { crankhash, activityhash } = kernelKeeper.commitCrank();
+    const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
     // kernelSlog.write({
     //   type: 'kernel-stats',
     //   stats: kernelKeeper.getStats(),
@@ -1355,7 +1347,7 @@ export default function buildKernel(
     kernelKeeper.processRefcounts();
     const crankNum = kernelKeeper.getCrankNumber();
     kernelKeeper.incrementCrankNumber();
-    const { crankhash, activityhash } = kernelKeeper.commitCrank();
+    const { crankhash, activityhash } = kernelKeeper.emitCrankHashes();
     kernelSlog.write({
       type: 'crank-finish',
       crankNum,
@@ -1647,7 +1639,7 @@ export default function buildKernel(
   }
 
   function getNextDeliveryMessage() {
-    const gcMessage = processNextGCAction(kernelKeeper);
+    const gcMessage = processGCActionSet(kernelKeeper);
     if (gcMessage) {
       return gcMessage;
     }
@@ -1688,40 +1680,49 @@ export default function buildKernel(
     if (!started) {
       throw new Error('must do kernel.start() before step()');
     }
-    const { processor, message } = getNextMessageAndProcessor();
-    // process a single message
-    if (message) {
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      await tryProcessMessage(processor, message);
-      if (kernelPanic) {
-        throw kernelPanic;
+    kernelKeeper.startCrank();
+    try {
+      kernelKeeper.establishCrankSavepoint('start');
+      const { processor, message } = getNextMessageAndProcessor();
+      // process a single message
+      if (message) {
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await tryProcessMessage(processor, message);
+        if (kernelPanic) {
+          throw kernelPanic;
+        }
+        return 1;
+      } else {
+        return 0;
       }
-      kernelKeeper.commitCrank();
-      return 1;
-    } else {
-      kernelKeeper.commitCrank();
-      return 0;
+    } finally {
+      kernelKeeper.endCrank();
     }
   }
 
   function changeKernelOptions(options) {
     assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
-    for (const option of Object.getOwnPropertyNames(options)) {
-      const value = options[option];
-      switch (option) {
-        case 'defaultReapInterval': {
-          kernelKeeper.setDefaultReapInterval(value);
-          break;
+    kernelKeeper.startCrank();
+    try {
+      for (const option of Object.getOwnPropertyNames(options)) {
+        const value = options[option];
+        switch (option) {
+          case 'defaultReapInterval': {
+            kernelKeeper.setDefaultReapInterval(value);
+            break;
+          }
+          case 'snapshotInterval': {
+            vatWarehouse.setSnapshotInterval(value);
+            break;
+          }
+          default:
+            assert.fail(`this can't happen (kernel option ${option})`);
         }
-        case 'snapshotInterval': {
-          vatWarehouse.setSnapshotInterval(value);
-          break;
-        }
-        default:
-          assert.fail(`this can't happen (kernel option ${option})`);
       }
+    } finally {
+      kernelKeeper.emitCrankHashes();
+      kernelKeeper.endCrank();
     }
-    kernelKeeper.commitCrank();
   }
 
   /**
@@ -1740,41 +1741,46 @@ export default function buildKernel(
     }
     let count = 0;
     for (;;) {
-      const { processor, message } = getNextMessageAndProcessor();
-      if (!message) {
-        break;
-      }
-      count += 1;
-      /** @type { PolicyInput } */
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
-      const policyInput = await tryProcessMessage(processor, message);
-      if (kernelPanic) {
-        throw kernelPanic;
-      }
-      // console.log(`policyInput`, policyInput);
-      let policyOutput = true; // keep going
-      switch (policyInput[0]) {
-        case 'create-vat':
-          policyOutput = policy.vatCreated(policyInput[1]);
+      kernelKeeper.startCrank();
+      try {
+        kernelKeeper.establishCrankSavepoint('start');
+        const { processor, message } = getNextMessageAndProcessor();
+        if (!message) {
           break;
-        case 'crank':
-          policyOutput = policy.crankComplete(policyInput[1]);
-          break;
-        case 'crank-failed':
-          policyOutput = policy.crankFailed(policyInput[1]);
-          break;
-        case 'none':
-          policyOutput = policy.emptyCrank();
-          break;
-        default:
-          assert.fail(`unknown policyInput type in ${policyInput}`);
-      }
-      if (!policyOutput) {
-        // console.log(`ending c.run() by policy, count=${count}`);
-        return count;
+        }
+        count += 1;
+        /** @type { PolicyInput } */
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+        const policyInput = await tryProcessMessage(processor, message);
+        if (kernelPanic) {
+          throw kernelPanic;
+        }
+        // console.log(`policyInput`, policyInput);
+        let policyOutput = true; // keep going
+        switch (policyInput[0]) {
+          case 'create-vat':
+            policyOutput = policy.vatCreated(policyInput[1]);
+            break;
+          case 'crank':
+            policyOutput = policy.crankComplete(policyInput[1]);
+            break;
+          case 'crank-failed':
+            policyOutput = policy.crankFailed(policyInput[1]);
+            break;
+          case 'none':
+            policyOutput = policy.emptyCrank();
+            break;
+          default:
+            assert.fail(`unknown policyInput type in ${policyInput}`);
+        }
+        if (!policyOutput) {
+          // console.log(`ending c.run() by policy, count=${count}`);
+          return count;
+        }
+      } finally {
+        kernelKeeper.endCrank();
       }
     }
-    kernelKeeper.commitCrank();
     return count;
   }
 
@@ -1792,21 +1798,26 @@ export default function buildKernel(
   async function installBundle(bundleID, bundle) {
     // bundleID is b1-HASH
     if (!kernelKeeper.hasBundle(bundleID)) {
-      kernelKeeper.addBundle(bundleID, bundle);
-      if (vatAdminRootKref) {
-        // TODO: consider 'panic' instead of 'logFailure'
-        queueToKref(
-          vatAdminRootKref,
-          'bundleInstalled',
-          [bundleID],
-          'logFailure',
-        );
-      } else {
-        // this should only happen during unit tests that are too lazy to
-        // build a complete kernel: test/bundles/test-bundles-kernel.js
-        console.log(`installBundle cannot notify, missing vatAdminRootKref`);
+      kernelKeeper.startCrank();
+      try {
+        kernelKeeper.addBundle(bundleID, bundle);
+        if (vatAdminRootKref) {
+          // TODO: consider 'panic' instead of 'logFailure'
+          queueToKref(
+            vatAdminRootKref,
+            'bundleInstalled',
+            [bundleID],
+            'logFailure',
+          );
+        } else {
+          // this should only happen during unit tests that are too lazy to
+          // build a complete kernel: test/bundles/test-bundles-kernel.js
+          console.log(`installBundle cannot notify, missing vatAdminRootKref`);
+        }
+      } finally {
+        kernelKeeper.emitCrankHashes();
+        kernelKeeper.endCrank();
       }
-      kernelKeeper.commitCrank();
     }
   }
 
