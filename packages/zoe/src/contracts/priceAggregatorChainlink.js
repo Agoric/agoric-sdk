@@ -604,7 +604,7 @@ const start = async (
   /**
    * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'initOracle'> & {
    *   initOracle: (instance) => Promise<OracleAdmin<PriceRound>>,
-   *   getRoundData(_roundId: BigInt): Promise<any>,
+   *   getRoundData(_roundId: bigint | number): Promise<any>,
    *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
    * }}
    */
@@ -792,7 +792,7 @@ const start = async (
      * timed out. answeredInRound is equal to roundId when the round didn't time out
      * and was completed regularly.
      *
-     * @param {bigint} _roundIdRaw
+     * @param {bigint | number} _roundIdRaw
      */
     async getRoundData(_roundIdRaw) {
       const roundId = Nat(_roundIdRaw);

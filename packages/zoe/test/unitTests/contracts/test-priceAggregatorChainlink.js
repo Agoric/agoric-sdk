@@ -15,27 +15,8 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../src/contracts/exported.js';
 
-/** @type {import('ava').TestFn<TestContext>} */
+/** @type {import('ava').TestFn<Awaited<ReturnType<makeContext>>>} */
 const test = unknownTest;
-
-/**
- * @callback MakeFakePriceOracle
- * @param {ExecutionContext} t
- * @param {bigint} [valueOut]
- * @returns {Promise<OracleKit & { instance: Instance }>}
- */
-
-/**
- * @typedef {object} TestContext
- * @property {ZoeService} zoe
- * @property {(...args) => } makeChainlinkAggregator
- * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
- * @property {Amount} feeAmount
- * @property {IssuerKit} link
- *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
- */
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -43,102 +24,102 @@ const dirname = path.dirname(filename);
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
 const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregatorChainlink.js`;
 
-test.before(
-  // comment to maintain formatting for git blame
-  'setup aggregator and oracles',
-  async ot => {
-    // Outside of tests, we should use the long-lived Zoe on the
-    // testnet. In this test, we must create a new Zoe.
-    const { admin, vatAdminState } = makeFakeVatAdmin();
-    const { zoeService: zoe } = makeZoeKit(admin);
+const makeContext = async () => {
+  // Outside of tests, we should use the long-lived Zoe on the
+  // testnet. In this test, we must create a new Zoe.
+  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(admin);
 
-    // Pack the contracts.
-    const oracleBundle = await bundleSource(oraclePath);
-    const aggregatorBundle = await bundleSource(aggregatorPath);
+  // Pack the contracts.
+  const oracleBundle = await bundleSource(oraclePath);
+  const aggregatorBundle = await bundleSource(aggregatorPath);
 
-    // Install the contract on Zoe, getting an installation. We can
-    // use this installation to look up the code we installed. Outside
-    // of tests, we can also send the installation to someone
-    // else, and they can use it to create a new contract instance
-    // using the same code.
-    vatAdminState.installBundle('b1-oracle', oracleBundle);
-    /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
-    const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
-    vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-    /** @type {Installation<import('../../../src/contracts/priceAggregatorChainlink.js').start>} */
-    const aggregatorInstallation = await E(zoe).installBundleID(
-      'b1-aggregator',
+  // Install the contract on Zoe, getting an installation. We can
+  // use this installation to look up the code we installed. Outside
+  // of tests, we can also send the installation to someone
+  // else, and they can use it to create a new contract instance
+  // using the same code.
+  vatAdminState.installBundle('b1-oracle', oracleBundle);
+  /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
+  const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
+  vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+  /** @type {Installation<import('../../../src/contracts/priceAggregatorChainlink.js').start>} */
+  const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
+
+  const link = makeIssuerKit('$LINK', AssetKind.NAT);
+  const usd = makeIssuerKit('$USD', AssetKind.NAT);
+
+  /**
+   * @param {bigint} [valueOut]
+   * @returns {Promise<OracleKit & { instance: Instance }>}
+   */
+  const makeFakePriceOracle = async valueOut => {
+    /** @type {OracleHandler} */
+    const oracleHandler = Far('OracleHandler', {
+      async onQuery({ increment }, _fee) {
+        assert(valueOut);
+        assert(increment);
+        valueOut += increment;
+        return harden({
+          reply: `${valueOut}`,
+          requiredFee: AmountMath.makeEmpty(link.brand),
+        });
+      },
+      onError(query, reason) {
+        console.error('query', query, 'failed with', reason);
+      },
+      onReply(_query, _reply) {},
+    });
+
+    const startResult = await E(zoe).startInstance(
+      oracleInstallation,
+      { Fee: link.issuer },
+      { oracleDescription: 'myOracle' },
     );
+    const creatorFacet = await E(startResult.creatorFacet).initialize({
+      oracleHandler,
+    });
 
-    const link = makeIssuerKit('$LINK', AssetKind.NAT);
-    const usd = makeIssuerKit('$USD', AssetKind.NAT);
+    return harden({
+      ...startResult,
+      creatorFacet,
+    });
+  };
 
-    /** @type {MakeFakePriceOracle} */
-    const makeFakePriceOracle = async (t, valueOut = undefined) => {
-      /** @type {OracleHandler} */
-      const oracleHandler = Far('OracleHandler', {
-        async onQuery({ increment }, _fee) {
-          assert(valueOut);
-          assert(increment);
-          valueOut += increment;
-          return harden({
-            reply: `${valueOut}`,
-            requiredFee: AmountMath.makeEmpty(link.brand),
-          });
-        },
-        onError(query, reason) {
-          console.error('query', query, 'failed with', reason);
-        },
-        onReply(_query, _reply) {},
-      });
+  const makeChainlinkAggregator = async (
+    maxSubmissionCount,
+    minSubmissionCount,
+    restartDelay,
+    timeout,
+    minSubmissionValue,
+    maxSubmissionValue,
+  ) => {
+    const timer = buildManualTimer(() => {});
 
-      const startResult = await E(zoe).startInstance(
-        oracleInstallation,
-        { Fee: link.issuer },
-        { oracleDescription: 'myOracle' },
-      );
-      const creatorFacet = await E(startResult.creatorFacet).initialize({
-        oracleHandler,
-      });
+    const aggregator = await E(zoe).startInstance(
+      aggregatorInstallation,
+      undefined,
+      {
+        timer,
+        brandIn: link.brand,
+        brandOut: usd.brand,
+        maxSubmissionCount,
+        minSubmissionCount,
+        restartDelay,
+        timeout,
+        minSubmissionValue,
+        maxSubmissionValue,
+      },
+    );
+    return aggregator;
+  };
 
-      return harden({
-        ...startResult,
-        creatorFacet,
-      });
-    };
+  return { makeChainlinkAggregator, makeFakePriceOracle, zoe };
+};
 
-    const makeChainlinkAggregator = async (
-      maxSubmissionCount,
-      minSubmissionCount,
-      restartDelay,
-      timeout,
-      minSubmissionValue,
-      maxSubmissionValue,
-    ) => {
-      const timer = buildManualTimer(() => {});
-
-      const aggregator = await E(zoe).startInstance(
-        aggregatorInstallation,
-        undefined,
-        {
-          timer,
-          brandIn: link.brand,
-          brandOut: usd.brand,
-          maxSubmissionCount,
-          minSubmissionCount,
-          restartDelay,
-          timeout,
-          minSubmissionValue,
-          maxSubmissionValue,
-        },
-      );
-      return aggregator;
-    };
-    ot.context.zoe = zoe;
-    ot.context.makeFakePriceOracle = makeFakePriceOracle;
-    ot.context.makeChainlinkAggregator = makeChainlinkAggregator;
-  },
-);
+test.before('setup aggregator and oracles', async t => {
+  t.context = await makeContext();
+});
 
 test('basic', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
@@ -160,9 +141,9 @@ test('basic', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
@@ -235,9 +216,9 @@ test('timeout', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
@@ -303,9 +284,9 @@ test('issue check', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
@@ -359,9 +340,9 @@ test('supersede', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
@@ -423,9 +404,9 @@ test('interleaved', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
@@ -559,11 +540,11 @@ test('larger', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
-  const priceOracleD = await makeFakePriceOracle(t);
-  const priceOracleE = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
+  const priceOracleD = await makeFakePriceOracle();
+  const priceOracleE = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
@@ -640,9 +621,9 @@ test('suggest', async t => {
   );
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle(t);
-  const priceOracleB = await makeFakePriceOracle(t);
-  const priceOracleC = await makeFakePriceOracle(t);
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+  const priceOracleC = await makeFakePriceOracle();
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     priceOracleA.instance,
