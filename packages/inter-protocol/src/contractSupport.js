@@ -3,7 +3,7 @@ import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 export const amountPattern = harden({ brand: M.remotable(), value: M.any() });
 export const ratioPattern = harden({
@@ -37,10 +37,8 @@ export const assertOnlyKeys = (proposal, keys) => {
   /** @param {AmountKeywordRecord} clause */
   const onlyKeys = clause =>
     Object.getOwnPropertyNames(clause).every(c => keys.includes(c));
-  onlyKeys(proposal.give) ||
-    assert.fail(X`extraneous terms in give: ${proposal.give}`);
-  onlyKeys(proposal.want) ||
-    assert.fail(X`extraneous terms in want: ${proposal.want}`);
+  onlyKeys(proposal.give) || Fail`extraneous terms in give: ${proposal.give}`;
+  onlyKeys(proposal.want) || Fail`extraneous terms in want: ${proposal.want}`;
 };
 
 /**
@@ -72,12 +70,10 @@ export const stageDelta = (fromSeat, toSeat, fromLoses, fromGains, key) => {
  */
 export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
   const debtPost = AmountMath.add(totalDebt, toMint);
-  assert(
-    !AmountMath.isGTE(debtPost, debtLimit),
-    X`Minting ${q(toMint)} past ${q(totalDebt)} would hit total debt limit ${q(
-      debtLimit,
-    )}`,
-  );
+  !AmountMath.isGTE(debtPost, debtLimit) ||
+    Fail`Minting ${q(toMint)} past ${q(
+      totalDebt,
+    )} would hit total debt limit ${q(debtLimit)}`;
 };
 
 /**
@@ -169,6 +165,6 @@ harden(makeEphemeraProvider);
  */
 export const assertKeysDefined = (specimen, keyList) => {
   for (const key of keyList) {
-    assert(specimen[key], X`Missing ${q(key)}`);
+    specimen[key] || Fail`Missing ${q(key)}`;
   }
 };

@@ -7,7 +7,7 @@ import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import { daysForVoting } from './bootstrap';
 import { ONE_DAY } from '../setup';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /** @typedef {import('../../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
@@ -109,7 +109,7 @@ const build = async (log, zoe, brands, payments, timer) => {
           return oneLoanWithInterest(vaultFactory);
         }
         default: {
-          assert.fail(X`testName ${testName} not recognized`);
+          throw Fail`testName ${testName} not recognized`;
         }
       }
     },

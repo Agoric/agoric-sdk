@@ -8,7 +8,7 @@ import { AMM_INSTANCE } from './params.js';
 import { makeTracer } from '../makeTracer.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const trace = makeTracer('Reserve', false);
 
@@ -232,9 +232,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   const getKeywordForBrand = brand => {
     keywordForBrand.has(brand) ||
-      assert.fail(
-        X`Issuer not defined for brand ${q(brand)}; first call addIssuer()`,
-      );
+      Fail`Issuer not defined for brand ${q(brand)}; first call addIssuer()`;
     return keywordForBrand.get(brand);
   };
 

@@ -2,7 +2,7 @@
 // @ts-nocheck
 /** @file Script to replace the econ governance committee in a SwingSet Core Eval (aka big hammer) */
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const runConfig = {
   committeeName: 'Economic Committee',
@@ -52,7 +52,7 @@ const reserveThenGetNamePaths = async (nameAdmin, paths) => {
 
   return Promise.all(
     paths.map(async path => {
-      assert(Array.isArray(path), X`path ${path} is not an array`);
+      Array.isArray(path) || Fail`path ${path} is not an array`;
       return nextPath(nameAdmin, path);
     }),
   );
@@ -140,9 +140,7 @@ const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 /** @type {(name: string) => void} */
 const assertPathSegment = name => {
   pathSegmentPattern.test(name) ||
-    assert.fail(
-      X`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`,
-    );
+    Fail`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`;
 };
 harden(assertPathSegment);
 

@@ -3,7 +3,7 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
 import { MIN_INITIAL_POOL_LIQUIDITY_KEY } from './vpool-xyk-amm/params.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const COSMOS_DECIMALS = 6;
 
@@ -56,9 +56,7 @@ export const start = (zcf, { bankManager }) => {
       give: { Central: centralAmt },
     } = seat.getProposal();
     AmountMath.isGTE(centralAmt, minimumCentral) ||
-      assert.fail(
-        X`at least ${q(minimumCentral)} required; only ${q(centralAmt)} given`,
-      );
+      Fail`at least ${q(minimumCentral)} required; only ${q(centralAmt)} given`;
 
     const interAsset = makeIssuerKit(
       denom,

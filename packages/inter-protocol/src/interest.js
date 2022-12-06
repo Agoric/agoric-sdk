@@ -5,7 +5,7 @@ import {
   multiplyRatios,
   quantize,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
@@ -133,9 +133,7 @@ const validatedBrand = (mint, debt) => {
   const { brand: debtBrand } = debt;
   const { brand: issuerBrand } = mint.getIssuerRecord();
   debtBrand === issuerBrand ||
-    assert.fail(
-      X`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`,
-    );
+    Fail`Debt and issuer brands differ: ${debtBrand} != ${issuerBrand}`;
   return issuerBrand;
 };
 

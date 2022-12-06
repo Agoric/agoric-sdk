@@ -4,7 +4,7 @@ import { E } from '@endo/far';
 // must match packages/wallet/api/src/lib-wallet.js
 export const DEPOSIT_FACET = 'depositFacet';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
@@ -36,7 +36,7 @@ export const reserveThenGetNamePaths = async (nameAdmin, paths) => {
 
   return Promise.all(
     paths.map(async path => {
-      assert(Array.isArray(path), X`path ${path} is not an array`);
+      Array.isArray(path) || Fail`path ${path} is not an array`;
       return nextPath(nameAdmin, path);
     }),
   );

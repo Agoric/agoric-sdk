@@ -4,13 +4,11 @@ import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { getXY } from './getXY.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const assertSingleBrand = ratio => {
   ratio.numerator.brand === ratio.denominator.brand ||
-    assert.fail(
-      X`Ratio was expected to have same brand in numerator ${ratio.numerator.brand} and denominator ${ratio.denominator.brand}`,
-    );
+    Fail`Ratio was expected to have same brand in numerator ${ratio.numerator.brand} and denominator ${ratio.denominator.brand}`;
 };
 
 /**
@@ -106,9 +104,7 @@ const swapInReduced = ({ x, y, deltaX: offeredAmountIn }) => {
   const amountOut = calcDeltaYSellingX(x, y, offeredAmountIn);
   const reducedAmountIn = calcDeltaXSellingX(x, y, amountOut);
   AmountMath.isGTE(offeredAmountIn, reducedAmountIn) ||
-    assert.fail(
-      X`The trade would have required ${reducedAmountIn} more than was offered ${offeredAmountIn}`,
-    );
+    Fail`The trade would have required ${reducedAmountIn} more than was offered ${offeredAmountIn}`;
 
   return harden({
     amountIn: reducedAmountIn,
@@ -128,9 +124,7 @@ const swapOutImproved = ({ x, y, deltaY: wantedAmountOut }) => {
   const amountIn = calcDeltaXSellingX(x, y, wantedAmountOut);
   const improvedAmountOut = calcDeltaYSellingX(x, y, amountIn);
   AmountMath.isGTE(improvedAmountOut, wantedAmountOut) ||
-    assert.fail(
-      X`The trade would have returned ${improvedAmountOut} less than was wanted ${wantedAmountOut}`,
-    );
+    Fail`The trade would have returned ${improvedAmountOut} less than was wanted ${wantedAmountOut}`;
 
   return harden({
     amountIn,

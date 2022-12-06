@@ -20,7 +20,7 @@ import { makeAmmTerms } from '../vpool-xyk-amm/params.js';
 
 const trace = makeTracer('RunEconBehaviors', false);
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
@@ -224,7 +224,7 @@ export const setupAmm = async (
   ammCreatorFacet.resolve(creatorFacet);
 
   // Confirm that the amm was indeed setup
-  assert(ammPublicFacet, X`ammPublicFacet broken  ${ammPublicFacet}`);
+  ammPublicFacet || Fail`ammPublicFacet broken  ${ammPublicFacet}`;
 
   ammInstanceWithoutReserve.resolve(instance);
   ammGovernor.resolve(g.instance);

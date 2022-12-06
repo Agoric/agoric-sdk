@@ -11,7 +11,7 @@ import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { ManagerKW as KW } from './constants.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const trace = makeTracer('R1');
 
@@ -83,9 +83,7 @@ const initState = (zcf, startSeat, manager) => {
 
     const { maxDebt } = manager.maxDebtForLien(attestationGiven);
     AmountMath.isGTE(maxDebt, runWanted) ||
-      assert.fail(
-        X`wanted ${runWanted}, more than max debt (${maxDebt}) for ${attestationGiven}`,
-      );
+      Fail`wanted ${runWanted}, more than max debt (${maxDebt}) for ${attestationGiven}`;
 
     const { newDebt, fee, toMint } = calculateFee(
       manager.getLoanFee(),
@@ -94,10 +92,8 @@ const initState = (zcf, startSeat, manager) => {
       runWanted,
     );
     !AmountMath.isEmpty(fee) ||
-      assert.fail(
-        X`loan requested (${runWanted}) is too small; cannot accrue interest`,
-      );
-    assert(AmountMath.isEqual(newDebt, toMint), X`loan fee mismatch`);
+      Fail`loan requested (${runWanted}) is too small; cannot accrue interest`;
+    AmountMath.isEqual(newDebt, toMint) || Fail`loan fee mismatch`;
     trace('init', { runWanted, fee, attestationGiven });
 
     vaultSeat.incrementBy(
@@ -236,7 +232,7 @@ const helperBehavior = {
     const { vaultSeat } = state;
     const { helper } = facets;
     AmountMath.isEmpty(helper.getMintedAllocated(vaultSeat)) ||
-      assert.fail(X`Vault should be empty of debt`);
+      Fail`Vault should be empty of debt`;
   },
 
   /**
@@ -337,9 +333,7 @@ const helperBehavior = {
       give: { [KW.Debt]: runOffered },
     } = seat.getProposal();
     AmountMath.isGTE(runOffered, currentDebt) ||
-      assert.fail(
-        X`Offer ${runOffered} is not sufficient to pay off debt ${currentDebt}`,
-      );
+      Fail`Offer ${runOffered} is not sufficient to pay off debt ${currentDebt}`;
     vaultSeat.incrementBy(seat.decrementBy(harden({ [KW.Debt]: currentDebt })));
     seat.incrementBy(
       vaultSeat.decrementBy(
