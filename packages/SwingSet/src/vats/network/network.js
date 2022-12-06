@@ -237,7 +237,7 @@ export function makeNetworkProtocol(protocolHandler) {
     // Check if we are underspecified (ends in slash)
     if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
       for (;;) {
-        // eslint-disable-next-line no-await-in-loop
+        // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
         const portID = await E(protocolHandler).generatePortID(
           localAddr,
           protocolHandler,
@@ -380,7 +380,7 @@ export function makeNetworkProtocol(protocolHandler) {
         let localAddr;
         try {
           // See if our protocol is willing to receive this connection.
-          // eslint-disable-next-line no-await-in-loop
+          // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
           const localInstance = await E(protocolHandler)
             .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
             .catch(rethrowUnlessMissing);
@@ -461,6 +461,7 @@ export function makeNetworkProtocol(protocolHandler) {
       let lastFailure;
       try {
         // Attempt the loopback connection.
+        // eslint-disable-next-line @jessie.js/no-nested-await
         const attempt = await protocolImpl.inbound(
           remoteAddr,
           initialLocalAddr,
