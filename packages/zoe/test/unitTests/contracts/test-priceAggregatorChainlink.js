@@ -15,7 +15,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../src/contracts/exported.js';
 
-/** @type {import('ava').TestFn<any>} */
+/** @type {import('ava').TestFn<TestContext>} */
 const test = unknownTest;
 
 /**
@@ -28,6 +28,7 @@ const test = unknownTest;
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
+ * @property {(...args) => } makeChainlinkAggregator
  * @property {MakeFakePriceOracle} makeFakePriceOracle
  * @property {(POLL_INTERVAL: bigint) => Promise<PriceAggregatorKit & { instance: Instance }>} makeMedianAggregator
  * @property {Amount} feeAmount
@@ -64,6 +65,7 @@ test.before(
     /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
     const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
     vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+    /** @type {Installation<import('../../../src/contracts/priceAggregatorChainlink.js').start>} */
     const aggregatorInstallation = await E(zoe).installBundleID(
       'b1-aggregator',
     );
@@ -110,7 +112,6 @@ test.before(
       minSubmissionCount,
       restartDelay,
       timeout,
-      description,
       minSubmissionValue,
       maxSubmissionValue,
     ) => {
@@ -118,18 +119,15 @@ test.before(
 
       const aggregator = await E(zoe).startInstance(
         aggregatorInstallation,
-        // TODO back to this way of specifying brands
-        // { In: link.issuer, Out: usd.issuer },
         undefined,
         {
-          brandIn: link.issuer,
-          brandOut: usd.issuer,
           timer,
+          brandIn: link.brand,
+          brandOut: usd.brand,
           maxSubmissionCount,
           minSubmissionCount,
           restartDelay,
           timeout,
-          description,
           minSubmissionValue,
           maxSubmissionValue,
         },
@@ -149,7 +147,6 @@ test('basic', async t => {
   const minSubmissionCount = 2;
   const restartDelay = 5;
   const timeout = 10;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -158,7 +155,6 @@ test('basic', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );
@@ -226,7 +222,6 @@ test('timeout', async t => {
   const minSubmissionCount = 2;
   const restartDelay = 2;
   const timeout = 5;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -235,7 +230,6 @@ test('timeout', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );
@@ -296,7 +290,6 @@ test('issue check', async t => {
   const minSubmissionCount = 2;
   const restartDelay = 2;
   const timeout = 5;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -305,7 +298,6 @@ test('issue check', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );
@@ -354,7 +346,6 @@ test('supersede', async t => {
   const minSubmissionCount = 2;
   const restartDelay = 1;
   const timeout = 5;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -363,7 +354,6 @@ test('supersede', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );
@@ -420,7 +410,6 @@ test('interleaved', async t => {
   const minSubmissionCount = 3; // requires ALL the oracles for consensus in this case
   const restartDelay = 1;
   const timeout = 5;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -429,7 +418,6 @@ test('interleaved', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );
@@ -558,7 +546,6 @@ test('larger', async t => {
   const minSubmissionCount = 3;
   const restartDelay = 1;
   const timeout = 5;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -567,7 +554,6 @@ test('larger', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );
@@ -641,7 +627,6 @@ test('suggest', async t => {
   const minSubmissionCount = 3;
   const restartDelay = 1;
   const timeout = 5;
-  const description = 'Chainlink oracles';
   const minSubmissionValue = 100;
   const maxSubmissionValue = 10000;
 
@@ -650,7 +635,6 @@ test('suggest', async t => {
     minSubmissionCount,
     restartDelay,
     timeout,
-    description,
     minSubmissionValue,
     maxSubmissionValue,
   );

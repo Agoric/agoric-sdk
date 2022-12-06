@@ -38,7 +38,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * maxSubmissionValue: number,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
- * unitAmountIn: Amount<'nat'>,
+ * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
  * @param {object} root0
  * @param {ERef<Mint<'set'>>} [root0.quoteMint]
