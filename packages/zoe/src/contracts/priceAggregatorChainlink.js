@@ -24,6 +24,20 @@ import { INVITATION_MAKERS_DESC } from './priceAggregator';
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /**
+ * @typedef {object} RoundData
+ * @property {bigint} roundId  the round ID for which data was retrieved
+ * @property {number} answer the answer for the given round
+ * @property {Timestamp} startedAt the timestamp when the round was started. This is 0
+ * if the round hasn't been started yet.
+ * @property {Timestamp} updatedAt the timestamp when the round last was updated (i.e.
+ * answer was last computed)
+ * @property {bigint} answeredInRound the round ID of the round in which the answer
+ * was computed. answeredInRound may be smaller than roundId when the round
+ * timed out. answeredInRound is equal to roundId when the round didn't time out
+ * and was completed regularly.
+ */
+
+/**
  * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
  * the *Node Operator Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
@@ -604,7 +618,7 @@ const start = async (
   /**
    * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'initOracle'> & {
    *   initOracle: (instance) => Promise<OracleAdmin<PriceRound>>,
-   *   getRoundData(_roundId: bigint | number): Promise<any>,
+   *   getRoundData(_roundId: bigint | number): Promise<RoundData>,
    *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
    * }}
    */
@@ -780,19 +794,9 @@ const start = async (
      * consumers are encouraged to check
      * that they're receiving fresh data by inspecting the updatedAt and
      * answeredInRound return values.
-     * return is: [roundId, answer, startedAt, updatedAt, answeredInRound], where
-     * roundId is the round ID for which data was retrieved
-     * answer is the answer for the given round
-     * startedAt is the timestamp when the round was started. This is 0
-     * if the round hasn't been started yet.
-     * updatedAt is the timestamp when the round last was updated (i.e.
-     * answer was last computed)
-     * answeredInRound is the round ID of the round in which the answer
-     * was computed. answeredInRound may be smaller than roundId when the round
-     * timed out. answeredInRound is equal to roundId when the round didn't time out
-     * and was completed regularly.
      *
      * @param {bigint | number} _roundIdRaw
+     * @returns {Promise<RoundData>}
      */
     async getRoundData(_roundIdRaw) {
       const roundId = Nat(_roundIdRaw);
