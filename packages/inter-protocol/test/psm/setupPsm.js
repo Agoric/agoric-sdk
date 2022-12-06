@@ -20,7 +20,7 @@ import {
   withAmountUtils,
 } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
-import { startPSM, startPSMCharter } from '../../src/proposals/startPSM.js';
+import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 import { allValues } from '../../src/collect.js';
 
 const psmRoot = './src/psm/psm.js'; // package relative
@@ -141,7 +141,7 @@ export const setupPsm = async (
     startEconomicCommittee(space, {
       options: { econCommitteeOptions: electorateTerms },
     }),
-    startPSMCharter(space),
+    startEconCharter(space),
     startPSM(space, {
       options: {
         anchorOptions: {

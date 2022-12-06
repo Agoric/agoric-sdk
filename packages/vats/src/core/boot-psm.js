@@ -5,11 +5,11 @@ import {
   installGovAndPSMContracts,
   makeAnchorAsset,
   startPSM,
-  inviteToPSMCharter,
+  inviteToEconCharter,
   inviteCommitteeMembers,
   PSM_MANIFEST,
   PSM_GOV_MANIFEST,
-  startPSMCharter,
+  startEconCharter,
   INVITE_PSM_COMMITTEE_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
@@ -201,7 +201,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       inviteCommitteeMembers(powersFor('inviteCommitteeMembers'), {
         options: { voterAddresses: economicCommitteeAddresses },
       }),
-      inviteToPSMCharter(powersFor('inviteToPSMCharter'), {
+      inviteToEconCharter(powersFor('inviteToEconCharter'), {
         options: { voterAddresses: economicCommitteeAddresses },
       }),
       ...anchorAssets.map(anchorOptions =>
@@ -214,7 +214,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           options: { anchorOptions },
         }),
       ),
-      startPSMCharter(powersFor('startPSMCharter')),
+      startEconCharter(powersFor('startEconCharter')),
       // Allow bootstrap powers to be granted by governance
       // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),

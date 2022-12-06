@@ -7,7 +7,7 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/vat-data';
 
-import { reserveThenDeposit, reserveThenGetNamePaths } from './utils.js';
+import { reserveThenGetNamePaths } from './utils.js';
 
 import {
   inviteCommitteeMembers,
@@ -17,8 +17,6 @@ import {
 
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
-
-const { values } = Object;
 
 export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 
@@ -338,7 +336,7 @@ export const PSM_GOV_MANIFEST = {
     },
   },
   [startEconCharter.name]: {
-    consume: { zoe: 'zoe' },
+    consume: { zoe: 'zoe', agoricNames: true },
     produce: {
       econCharterStartResult: 'econCommitteeCharter',
     },
@@ -411,7 +409,7 @@ export const getManifestForPsmGovernance = (
   return {
     manifest,
     installations: {
-      psmCharter: restoreRef(installKeys.psmCharter),
+      econCommitteeCharter: restoreRef(installKeys.econCommitteeCharter),
       contractGovernor: restoreRef(installKeys.contractGovernor),
       committee: restoreRef(installKeys.committee),
       binaryVoteCounter: restoreRef(installKeys.binaryVoteCounter),

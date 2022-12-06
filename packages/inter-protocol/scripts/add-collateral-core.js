@@ -70,10 +70,10 @@ export const psmGovernanceBuilder = async ({
           psm: publishRef(
             install('../src/psm/psm.js', '../bundles/bundle-psm.js'),
           ),
-          psmCharter: publishRef(
+          econCommitteeCharter: publishRef(
             install(
-              '../src/psm/psmCharter.js',
-              '../bundles/bundle-psmCharter.js',
+              '../src/econCommitteeCharter.js',
+              '../bundles/bundle-econCommitteeCharter.js',
             ),
           ),
           contractGovernor: publishRef(

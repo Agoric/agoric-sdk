@@ -45,16 +45,17 @@ harden(inviteCommitteeMembers);
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  */
 export const startEconCharter = async ({
-  consume: { zoe, agoricNames },
+  consume: { zoe },
   produce: { econCharterStartResult },
   installation: {
-    consume: { binaryVoteCounter: counterP },
+    consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
+  },
+  instance: {
+    produce: { econCommitteeCharter: instanceP },
   },
 }) => {
-  // FIXME: why doesn't this use the promise space?
-  /** @type {[Installation, Installation]} */
   const [charterInstall, counterInstall] = await Promise.all([
-    E(agoricNames).lookup('installation', 'econCommitteeCharter'),
+    installP,
     counterP,
   ]);
   const terms = await deeplyFulfilledObject(
@@ -66,6 +67,7 @@ export const startEconCharter = async ({
   /** @type {Promise<import('./econ-behaviors').EconCharterStartResult>} */
   const startResult = E(zoe).startInstance(charterInstall, undefined, terms);
   econCharterStartResult.resolve(startResult);
+  instanceP.resolve(E.get(startResult).instance);
 };
 harden(startEconCharter);
 
@@ -139,10 +141,13 @@ export const getManifestForInviteCommittee = async (
         consume: { namesByAddressAdmin: t, economicCommitteeCreatorFacet: t },
       },
       [startEconCharter.name]: {
-        consume: { zoe: t, agoricNames: t },
+        consume: { zoe: t },
         produce: { econCharterStartResult: t },
         installation: {
-          consume: { binaryVoteCounter: t },
+          consume: { binaryVoteCounter: t, econCommitteeCharter: t },
+        },
+        instance: {
+          produce: { econCommitteeCharter: t },
         },
       },
       [addGovernorsToEconCharter.name]: {
