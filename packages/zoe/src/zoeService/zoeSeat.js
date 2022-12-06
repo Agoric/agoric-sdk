@@ -18,7 +18,7 @@ const ZoeSeatGuard = {
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
     fail: M.call(M.any()).returns(),
-    resolveExitAndResult: M.call(M.promise(), M.remotable()).returns(),
+    resolveExitAndResult: M.call(M.promise(), M.remotable('exitObj')).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
     finalPayouts: M.call(M.eref(PaymentPKeywordRecordShape)).returns(
       M.promise(),

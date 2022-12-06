@@ -266,8 +266,8 @@ export const makeZCFZygote = async (
     },
   );
 
-  const HandleOfferFunctionShape = M.remotable();
-  const OfferHandlerShape = M.or(HandleOfferObjShape, HandleOfferFunctionShape);
+  const HandleOfferFunctionShape = M.remotable('HandleOfferFunction');
+  const OfferHandlerShape = M.or(HandleOfferShape, HandleOfferFunctionShape);
   const TakerGuard = M.interface('offer handler taker', {
     take: M.call(InvitationHandleShape)
       .optional(M.string())

@@ -254,9 +254,9 @@ export const createSeatManager = (
           seatHandle: SeatShape,
           offerArgs: M.any(),
         }),
-      ).returns(M.remotable()),
-      reallocate: M.call(M.remotable(), M.remotable())
-        .rest(M.arrayOf(M.remotable()))
+      ).returns(M.remotable('zcfSeat')),
+      reallocate: M.call(M.remotable('zcfSeat'), M.remotable('zcfSeat'))
+        .rest(M.arrayOf(M.remotable('zcfSeat')))
         .returns(),
       dropAllReferences: M.call().returns(),
     }),

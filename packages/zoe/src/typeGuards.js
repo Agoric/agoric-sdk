@@ -138,27 +138,32 @@ export const ZoeMintShape = M.interface('ZoeMint', {
 
 export const ZcfMintShape = M.interface('ZcfMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
-  mintGains: M.call(AmountKeywordRecordShape, M.remotable()).returns(),
-  burnLosses: M.call(AmountKeywordRecordShape, M.remotable()).returns(),
+  mintGains: M.call(AmountKeywordRecordShape, M.remotable('zcfSeat')).returns(),
+  burnLosses: M.call(
+    AmountKeywordRecordShape,
+    M.remotable('zcfSeat'),
+  ).returns(),
 });
 
-export const ExitObjectShape = M.interface('Exit Object', {
+export const ExitObjectI = M.interface('Exit Object', {
   exit: M.call().returns(),
 });
 
-export const InstanceAdminShape = M.interface('InstanceAdmin', {
+export const InstanceAdminI = M.interface('InstanceAdmin', {
   makeInvitation: M.call(InvitationHandleShape, M.string())
     .optional(M.any(), M.pattern())
     .returns(M.promise()),
   saveIssuer: M.call(M.eref(IssuerShape), M.string()).returns(M.promise()),
   makeZoeMint: M.call(KeywordShape)
     .optional(AssetKindShape, DisplayInfoShape, M.pattern())
-    .returns(M.remotable()),
-  registerFeeMint: M.call(KeywordShape, M.remotable()).returns(M.remotable()),
+    .returns(M.remotable('zoeMint')),
+  registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
+    M.remotable('feeMint'),
+  ),
   makeNoEscrowSeatKit: M.call(
     AmountKeywordRecordShape,
     ProposalShape,
-    M.remotable(),
+    M.remotable('ExitObj'),
     SeatShape,
   ).returns({ userSeat: SeatShape }),
   replaceAllocations: M.call(SeatHandleAllocations).returns(),
@@ -184,8 +189,8 @@ export const InstanceStorageManagerGuard = M.interface(
     saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
     makeZoeMint: M.call(KeywordShape)
       .optional(AssetKindShape, DisplayInfoShape, M.pattern())
-      .returns(M.or(ZoeMintShape, M.remotable(), M.promise())),
-    registerFeeMint: M.call(KeywordShape, M.remotable()).returns(
+      .returns(M.or(ZoeMintShape, M.remotable('zoeMint'), M.promise())),
+    registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
       IssuerKitShape,
     ),
     getInstanceRecord: M.call().returns(InstanceRecordShape),
@@ -197,15 +202,16 @@ export const InstanceStorageManagerGuard = M.interface(
         ),
       }),
     ),
-    initInstanceAdmin: M.call(InstanceHandleShape, M.remotable()).returns(
-      M.promise(),
-    ),
-    deleteInstanceAdmin: M.call(InstanceAdminShape).returns(),
+    initInstanceAdmin: M.call(
+      InstanceHandleShape,
+      M.remotable('instanceAdmin'),
+    ).returns(M.promise()),
+    deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
       .optional(M.any(), M.pattern())
       .returns(M.promise()),
     getRoot: M.call().returns(M.promise()),
-    getAdminNode: M.call().returns(M.remotable()),
+    getAdminNode: M.call().returns(M.remotable('adminNode')),
   },
 );
 
@@ -241,7 +247,9 @@ export const ZoeStorageMangerI = {
   makeOfferAccess: M.interface('ZoeStorage makeOffer access', {
     getAssetKindByBrand: M.call(BrandShape).returns(AssetKindShape),
     installBundle: M.call(InstanceHandleShape).returns(),
-    getInstanceAdmin: M.call(InstanceHandleShape).returns(M.remotable()),
+    getInstanceAdmin: M.call(InstanceHandleShape).returns(
+      M.remotable('instanceAdmin'),
+    ),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
       M.or(M.pattern(), M.undefined()),
     ),
