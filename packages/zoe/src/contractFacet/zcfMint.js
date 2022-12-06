@@ -121,7 +121,7 @@ export const makeZCFMintFactory = async (
           }
 
           // No effects above, apart from decrementBy. Note COMMIT POINT within
-          // reallocateForZCFMint. The following two steps *should* be
+          // reallocator.reallocate(). The following two steps *should* be
           // committed atomically, but it is not a disaster if they are
           // not. If we only commit the allocationMinusLosses no one would
           // ever get the unburned assets.

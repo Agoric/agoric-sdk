@@ -209,9 +209,10 @@ export const InstanceStorageManagerGuard = M.interface(
   },
 );
 
+// In `SwingSet/src/types-external.js`, it's typed as `*`.
 const BundleCapShape = M.any();
 
-export const ZoeStorageMangerInterface = {
+export const ZoeStorageMangerI = {
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
     getTerms: M.call(InstanceHandleShape).returns(
       M.split(TermsShape, M.record()),
@@ -265,7 +266,7 @@ export const ZoeStorageMangerInterface = {
   }),
 };
 
-export const ZoeServiceInterface = {
+export const ZoeServiceI = {
   zoeService: M.interface('ZoeService', {
     install: M.call(M.any()).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
@@ -315,4 +316,17 @@ export const AdminFacetGuard = M.interface('ZcfAdminFacet', {
   getVatShutdownPromise: M.call().returns(M.promise()),
   restartContract: M.call().optional(M.any()).returns(M.promise()),
   upgradeContract: M.call(M.string()).optional(M.any()).returns(M.promise()),
+});
+
+export const SeatDataShape = harden({
+  proposal: ProposalShape,
+  initialAllocation: AmountKeywordRecordShape,
+  seatHandle: SeatShape,
+});
+
+export const HandleOfferI = M.interface('HandleOffer', {
+  handleOffer: M.call(InvitationHandleShape, SeatDataShape).returns({
+    offerResultPromise: M.promise(),
+    exitObj: ExitObjectI,
+  }),
 });

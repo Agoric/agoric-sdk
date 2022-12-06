@@ -32,7 +32,7 @@ import {
   InvitationHandleShape,
   ProposalShape,
   SeatShape,
-  ExitObjectShape,
+  ExitObjectI,
 } from '../typeGuards.js';
 
 const { details: X } = assert;
@@ -230,18 +230,7 @@ export const makeZCFZygote = async (
     getOfferFilter: () => E(zoeInstanceAdmin).getOfferFilter(),
   });
 
-  const SeatDataShape = harden({
-    proposal: ProposalShape,
-    initialAllocation: AmountKeywordRecordShape,
-    seatHandle: SeatShape,
-  });
-
-  const HandleOfferObjShape = M.interface('HandleOffer object', {
-    handleOffer: M.call(InvitationHandleShape, SeatDataShape).returns({
-      offerResultPromise: M.promise(),
-      exitObj: ExitObjectShape,
-    }),
-  });
+  const HandleOfferShape = M.remotable('HandleOffer');
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
   // added in offer(). ZCF responds with the exitObj and offerResult.

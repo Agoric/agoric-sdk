@@ -10,7 +10,7 @@ import { initEmpty } from '@agoric/store';
 
 import { defineDurableHandle } from '../makeHandle.js';
 import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
-import { AdminFacetGuard, InstanceAdminShape } from '../typeGuards.js';
+import { AdminFacetGuard, InstanceAdminI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
@@ -130,7 +130,7 @@ export const makeStartInstance = (
   const makeZoeInstanceAdmin = vivifyFarClass(
     zoeBaggage,
     'zoeInstanceAdmin',
-    InstanceAdminShape,
+    InstanceAdminI,
     (instanceStorage, instanceAdmin, seatHandleToAdmin, adminNode) => ({
       instanceStorage,
       instanceAdmin,

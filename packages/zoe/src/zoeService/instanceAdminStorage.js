@@ -10,7 +10,7 @@ import {
 } from '@agoric/vat-data';
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 import { defineDurableHandle } from '../makeHandle.js';
-import { InstanceAdminShape, InstanceHandleShape } from '../typeGuards.js';
+import { InstanceAdminI, InstanceHandleShape } from '../typeGuards.js';
 
 const { quote: q, details: X } = assert;
 
@@ -22,7 +22,7 @@ const InstanceAdminStorageShape = M.interface('InstanceAdminStorage', {
   getOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
   setOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(),
   getInstallationForInstance: M.call(InstanceHandleShape).returns(M.promise()),
-  getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminShape),
+  getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminI),
   initInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
   deleteInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
 });

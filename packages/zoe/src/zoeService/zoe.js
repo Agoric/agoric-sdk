@@ -27,7 +27,7 @@ import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
-import { ZoeServiceInterface } from '../typeGuards.js';
+import { ZoeServiceI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -113,7 +113,7 @@ const makeZoeKit = (
   const makeZoeService = vivifyFarClassKit(
     zoeBaggage,
     'ZoeService',
-    ZoeServiceInterface,
+    ZoeServiceI,
     dataAccess => ({ dataAccess }),
     {
       zoeService: {

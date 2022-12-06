@@ -142,8 +142,7 @@ export const createSeatManager = (
     'zcfSeat',
     proposal => ({ proposal }),
     {
-      getSubscriber: context => {
-        const { self } = context;
+      getSubscriber: ({ self }) => {
         return E(zoeInstanceAdmin).getExitSubscriber(
           zcfSeatToSeatHandle.get(self),
         );

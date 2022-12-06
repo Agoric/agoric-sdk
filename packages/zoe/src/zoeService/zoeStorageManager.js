@@ -21,7 +21,7 @@ import './internal-types.js';
 import {
   InstanceStorageManagerGuard,
   ZoeMintShape,
-  ZoeStorageMangerInterface,
+  ZoeStorageMangerI,
 } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -348,7 +348,7 @@ export const makeZoeStorageManager = (
   const makeStorageManager = vivifyFarClassKit(
     zoeBaggage,
     'ZoeStorageManager',
-    ZoeStorageMangerInterface,
+    ZoeStorageMangerI,
     instanceAdmins => ({ instanceAdmins }),
     {
       zoeServiceDataAccess: {
