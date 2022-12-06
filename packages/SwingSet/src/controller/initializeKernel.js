@@ -151,7 +151,7 @@ export function initializeKernel(config, kernelStorage, verbose = false) {
     }
   }
   kernelKeeper.setInitialized();
-  kernelKeeper.commitCrank(); // commit initialized kernel state as crank #0
+  kernelKeeper.emitCrankHashes();
   return bootstrapResultKpid;
 
   // ----------------------------------------------------------------------

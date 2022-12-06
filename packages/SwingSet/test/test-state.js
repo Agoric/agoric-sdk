@@ -150,7 +150,7 @@ test('kernel state', async t => {
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.setInitialized();
 
-  k.commitCrank();
+  k.emitCrankHashes();
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['initialized', 'true'],
@@ -186,7 +186,7 @@ test('kernelKeeper vat names', async t => {
   t.is(v1, 'v1');
   t.is(v2, 'v2');
 
-  k.commitCrank();
+  k.emitCrankHashes();
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['gcActions', '[]'],
@@ -237,7 +237,7 @@ test('kernelKeeper device names', async t => {
   t.is(d7, 'd7');
   t.is(d8, 'd8');
 
-  k.commitCrank();
+  k.emitCrankHashes();
   checkState(t, getState, [
     ['crankNumber', '0'],
     ['gcActions', '[]'],
@@ -294,7 +294,7 @@ test('kernelKeeper runQueue', async t => {
   t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 2);
 
-  k.commitCrank();
+  k.emitCrankHashes();
   const k2 = duplicateKeeper(getState);
 
   t.deepEqual(k.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
@@ -338,7 +338,7 @@ test('kernelKeeper promises', async t => {
   t.truthy(k.hasKernelPromise(p1));
   t.falsy(k.hasKernelPromise('kp99'));
 
-  k.commitCrank();
+  k.emitCrankHashes();
   let k2 = duplicateKeeper(getState);
 
   t.deepEqual(k2.getKernelPromise(p1), {
@@ -361,7 +361,7 @@ test('kernelKeeper promises', async t => {
     decider: undefined,
   });
 
-  k.commitCrank();
+  k.emitCrankHashes();
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
@@ -401,7 +401,7 @@ test('kernelKeeper promises', async t => {
   t.deepEqual(k.getKernelPromise(p1).refCount, 2);
   expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
-  k.commitCrank();
+  k.emitCrankHashes();
   k2 = duplicateKeeper(getState);
   t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
@@ -418,7 +418,7 @@ test('kernelKeeper promises', async t => {
   });
   t.truthy(k.hasKernelPromise(p1));
   // all the subscriber/queue stuff should be gone
-  k.commitCrank();
+  k.emitCrankHashes();
 
   checkState(t, getState, [
     ['crankNumber', '0'],
@@ -505,7 +505,7 @@ test('vatKeeper', async t => {
   t.is(vk.nextDeliveryNum(), 0n);
   t.is(vk.nextDeliveryNum(), 1n);
 
-  k.commitCrank();
+  k.emitCrankHashes();
   let vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
@@ -518,7 +518,7 @@ test('vatKeeper', async t => {
   t.is(vk.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
-  k.commitCrank();
+  k.emitCrankHashes();
   vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
@@ -640,7 +640,7 @@ test('crankhash - initial state and additions', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
-  k.commitCrank();
+  k.emitCrankHashes();
   // the initial state additions happen to hash to this:
   const initialActivityHash = store.kvStore.get('activityhash');
   t.snapshot(initialActivityHash, 'initial state');
@@ -662,7 +662,7 @@ test('crankhash - initial state and additions', t => {
   const expectedActivityHash = h.digest('hex');
   t.snapshot(expectedActivityHash, 'expected activityhash');
 
-  const { crankhash, activityhash } = k.commitCrank();
+  const { crankhash, activityhash } = k.emitCrankHashes();
   t.is(crankhash, expCrankhash);
   t.is(activityhash, expectedActivityHash);
   t.is(store.kvStore.get('activityhash'), expectedActivityHash);
@@ -679,7 +679,7 @@ test('crankhash - skip keys', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
-  k.commitCrank();
+  k.emitCrankHashes();
 
   k.kvStore.set('one', '1');
   const h = makeTestCrankHasher('sha256');
@@ -689,7 +689,7 @@ test('crankhash - skip keys', t => {
     expCrankhash,
     '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
-  t.is(k.commitCrank().crankhash, expCrankhash);
+  t.is(k.emitCrankHashes().crankhash, expCrankhash);
 
   // certain local keys are excluded from consensus, and should not affect
   // the hash
@@ -700,7 +700,7 @@ test('crankhash - skip keys', t => {
     '{"snapshotID":"XYZ","startPos":4}',
   );
   t.throws(() => k.kvStore.set('host.foo', 'bar'));
-  t.is(k.commitCrank().crankhash, expCrankhash);
+  t.is(k.emitCrankHashes().crankhash, expCrankhash);
 });
 
 test('crankhash - duplicate set', t => {
@@ -710,7 +710,7 @@ test('crankhash - duplicate set', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
-  k.commitCrank();
+  k.emitCrankHashes();
 
   k.kvStore.set('one', '1');
   const h = makeTestCrankHasher('sha256');
@@ -720,7 +720,7 @@ test('crankhash - duplicate set', t => {
     expCrankhash,
     '136550ffca718f8097396cbecb511aa2320d9ddc9bda5cebbafb64081b29e1e6',
   );
-  t.is(k.commitCrank().crankhash, expCrankhash);
+  t.is(k.emitCrankHashes().crankhash, expCrankhash);
 
   k.kvStore.set('one', '1');
   k.kvStore.set('one', '1');
@@ -732,7 +732,7 @@ test('crankhash - duplicate set', t => {
     expCrankhash2,
     '2b60f31547515d4887ff62871fbf27a99a4091ec1564f6aaefe89f41131245eb',
   );
-  t.is(k.commitCrank().crankhash, expCrankhash2);
+  t.is(k.emitCrankHashes().crankhash, expCrankhash2);
 });
 
 test('crankhash - set and delete', t => {
@@ -741,11 +741,11 @@ test('crankhash - set and delete', t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
-  k.commitCrank();
+  k.emitCrankHashes();
 
   const h1 = makeTestCrankHasher('sha256');
   const expCrankhash1 = h1.digest('hex');
-  t.is(k.commitCrank().crankhash, expCrankhash1); // empty
+  t.is(k.emitCrankHashes().crankhash, expCrankhash1); // empty
 
   const h2 = makeTestCrankHasher('sha256');
   h2.update('add\n' + 'one\n' + '1\n');
@@ -754,7 +754,7 @@ test('crankhash - set and delete', t => {
 
   k.kvStore.set('one', '1');
   k.kvStore.delete('one');
-  t.is(k.commitCrank().crankhash, expCrankhash2);
+  t.is(k.emitCrankHashes().crankhash, expCrankhash2);
 
   t.not(expCrankhash1, expCrankhash2);
 });

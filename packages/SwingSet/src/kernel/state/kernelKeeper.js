@@ -214,15 +214,26 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     });
   }
 
-  function commitCrank() {
-    saveStats();
-    return kernelStorage.commitCrank();
+  function startCrank() {
+    kernelStorage.startCrank();
   }
 
-  function abortCrank() {
-    const ret = kernelStorage.abortCrank();
+  function establishCrankSavepoint(savepoint) {
+    kernelStorage.establishCrankSavepoint(savepoint);
+  }
+
+  function rollbackCrank(savepoint) {
+    kernelStorage.rollbackCrank(savepoint);
     loadStats();
-    return ret;
+  }
+
+  function emitCrankHashes() {
+    saveStats();
+    return kernelStorage.emitCrankHashes();
+  }
+
+  function endCrank() {
+    kernelStorage.endCrank();
   }
 
   const ephemeral = harden({
@@ -1629,8 +1640,11 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     allocateDeviceKeeperIfNeeded,
 
     kvStore,
-    abortCrank,
-    commitCrank,
+    startCrank,
+    establishCrankSavepoint,
+    rollbackCrank,
+    emitCrankHashes,
+    endCrank,
     getActivityhash,
 
     dump,

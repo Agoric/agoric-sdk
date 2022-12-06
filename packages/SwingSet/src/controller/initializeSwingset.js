@@ -344,7 +344,7 @@ export async function initializeSwingset(
 
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
   kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
-  kernelStorage.resetCrankhash();
+  kernelStorage.emitCrankHashes();
 
   if (config.bootstrap && argv) {
     const bootConfig = config.vats[config.bootstrap];
