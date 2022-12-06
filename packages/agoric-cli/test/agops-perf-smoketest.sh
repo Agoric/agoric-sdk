@@ -7,18 +7,17 @@ if [ -z "$AGORIC_NET" ]; then
   echo
   echo "To test locally, AGORIC_NET=local and have the following running:
 # freshen sdk
-cd agoric-sdk
 yarn install && yarn build
 
 # local chain running with wallet provisioned
-packages/smart-wallet/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
+packages/inter-protocol/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
 "
   exit 1
 fi
 
-KEY=$1
+WALLET=$1
 
-if [ -z "$KEY" ]; then
+if [ -z "$WALLET" ]; then
   echo "USAGE: $0 key"
   echo "You can reference by name: agd keys list"
   echo "Make sure it has been provisioned by the faucet: https://$AGORIC_NET.faucet.agoric.net/"
@@ -32,9 +31,9 @@ set -x
 # perf test wantMinted
 OFFER=$(mktemp -t agops.XXX)
 bin/agops psm swap --wantMinted 0.01 --feePct 0.01 >|"$OFFER"
-time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$KEY"
+time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$WALLET"
 
 # perf test giveMinted
 OFFER=$(mktemp -t agops.XXX)
 bin/agops psm swap --giveMinted 0.01 --feePct 0.03 >|"$OFFER"
-time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$KEY"
+time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$WALLET"
