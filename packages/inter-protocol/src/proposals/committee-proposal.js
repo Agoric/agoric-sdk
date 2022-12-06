@@ -46,7 +46,7 @@ harden(inviteCommitteeMembers);
  */
 export const startEconCharter = async ({
   consume: { zoe },
-  produce: { econCharterStartResult },
+  produce: { econCharterFacets },
   installation: {
     consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
   },
@@ -66,8 +66,8 @@ export const startEconCharter = async ({
 
   /** @type {Promise<import('./econ-behaviors').EconCharterStartResult>} */
   const startResult = E(zoe).startInstance(charterInstall, undefined, terms);
-  econCharterStartResult.resolve(startResult);
   instanceP.resolve(E.get(startResult).instance);
+  econCharterFacets.resolve(startResult);
 };
 harden(startEconCharter);
 
@@ -75,17 +75,12 @@ harden(startEconCharter);
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
-  consume: {
-    reserveFacets,
-    ammFacets,
-    vaultFactoryFacets,
-    econCharterStartResult,
-  },
+  consume: { reserveFacets, ammFacets, vaultFactoryFacets, econCharterFacets },
   instance: {
     consume: { amm, reserve, VaultFactory },
   },
 }) => {
-  const { creatorFacet } = E.get(econCharterStartResult);
+  const { creatorFacet } = E.get(econCharterFacets);
 
   // Introduce charter to governed creator facets.
   await Promise.all(
@@ -111,10 +106,10 @@ harden(addGovernorsToEconCharter);
  * @param {{ options: { voterAddresses: Record<string, string> }}} param1
  */
 export const inviteToEconCharter = async (
-  { consume: { namesByAddressAdmin, econCharterStartResult } },
+  { consume: { namesByAddressAdmin, econCharterFacets } },
   { options: { voterAddresses } },
 ) => {
-  const { creatorFacet } = E.get(econCharterStartResult);
+  const { creatorFacet } = E.get(econCharterFacets);
 
   await Promise.all(
     values(voterAddresses).map(async addr =>
@@ -142,7 +137,7 @@ export const getManifestForInviteCommittee = async (
       },
       [startEconCharter.name]: {
         consume: { zoe: t },
-        produce: { econCharterStartResult: t },
+        produce: { econCharterFacets: t },
         installation: {
           consume: { binaryVoteCounter: t, econCommitteeCharter: t },
         },
@@ -155,7 +150,7 @@ export const getManifestForInviteCommittee = async (
           reserveGovernorCreatorFacet: t,
           ammGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
-          econCharterStartResult: t,
+          econCharterFacets: t,
           zoe: t,
           agoricNames: t,
           namesByAddressAdmin: t,
@@ -172,7 +167,7 @@ export const getManifestForInviteCommittee = async (
         },
       },
       [inviteToEconCharter.name]: {
-        consume: { namesByAddressAdmin: t, econCharterStartResult: t },
+        consume: { namesByAddressAdmin: t, econCharterFacets: t },
       },
     },
     installations: {

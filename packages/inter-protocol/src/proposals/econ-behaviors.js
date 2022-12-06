@@ -64,10 +64,7 @@ const MILLI = 1_000_000n;
  *   periodicFeeCollectors: import('../feeDistributor.js').PeriodicFeeCollector[],
  *   bankMints: Mint[],
  *   psmFacets: MapStore<Brand, PSMFacets>,
- *   econCharterFacets: {
- *     creatorFacet: EconCharterStartResult,
- *     adminFacet: AdminFacet,
- *   },
+ *   econCharterFacets: EconCharterStartResult,
  *   reserveFacets: {
  *     publicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
  *     creatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,

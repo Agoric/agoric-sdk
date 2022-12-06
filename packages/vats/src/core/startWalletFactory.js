@@ -146,12 +146,7 @@ export const startWalletFactory = async (
       consume: { [Stable.symbol]: feeIssuerP },
     },
   },
-  {
-    options: {
-      perAccountInitialValue = (StableUnit * 25n) / 100n,
-      walletBridgeId = BRIDGE_ID.PROVISION_SMART_WALLET,
-    } = {},
-  } = {},
+  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
   const WALLET_STORAGE_PATH = 'wallet';
   const POOL_STORAGE_PATH = 'provisionPool';

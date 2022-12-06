@@ -332,13 +332,7 @@ export const startPSMCharter = async ({
   const facets = await E(zoe).startInstance(charterR, {}, terms);
 
   instanceP.resolve(facets.instance);
-  econCharterFacets.resolve(
-    harden({
-      creatorFacet: facets.creatorFacet,
-      adminFacet: facets.adminFacet,
-      instance: facets.instance,
-    }),
-  );
+  econCharterFacets.resolve(harden(facets));
 };
 
 /**
@@ -391,7 +385,7 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
     [inviteToEconCharter.name]: {
       consume: {
         namesByAddressAdmin: true,
-        econCharterStartResult: true,
+        econCharterFacets: true,
       },
     },
   }),
