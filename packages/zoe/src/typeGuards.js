@@ -9,12 +9,10 @@ import {
 } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { SubscriberShape } from '@agoric/notifier';
 
 // keywords have an initial cap
 export const KeywordShape = M.string();
-
-// TODO should be exported from Notifiers.
-export const NotifierShape = M.any();
 
 export const InvitationHandleShape = M.remotable('InvitationHandle');
 export const InvitationShape = M.remotable('Invitation');
@@ -171,7 +169,7 @@ export const InstanceAdminShape = M.interface('InstanceAdmin', {
   stopAcceptingOffers: M.call().returns(),
   setOfferFilter: M.call(M.arrayOf(M.string())).returns(),
   getOfferFilter: M.call().returns(M.string()),
-  getExitSubscriber: M.call(SeatShape).returns(M.any()),
+  getExitSubscriber: M.call(SeatShape).returns(SubscriberShape),
 });
 
 export const InstanceStorageManagerGuard = M.interface(

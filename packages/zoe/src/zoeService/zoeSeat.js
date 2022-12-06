@@ -1,4 +1,4 @@
-import { vivifyDurablePublishKit } from '@agoric/notifier';
+import { vivifyDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { M, vivifyFarClassKit, canBeDurable } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -19,7 +19,7 @@ const ZoeSeatGuard = {
     exit: M.call(M.any()).returns(),
     fail: M.call(M.any()).returns(),
     resolveExitAndResult: M.call(M.promise(), M.remotable()).returns(),
-    getExitSubscriber: M.call().returns(M.any()),
+    getExitSubscriber: M.call().returns(SubscriberShape),
     finalPayouts: M.call(M.eref(PaymentPKeywordRecordShape)).returns(
       M.promise(),
     ),
