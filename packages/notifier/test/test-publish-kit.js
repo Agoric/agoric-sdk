@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+/* eslint-disable no-void */
 
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
@@ -19,6 +20,8 @@ import {
 } from '../src/index.js';
 import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
+
+/** @typedef {import('../src/index.js').makePublishKit} makePublishKit */
 
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
@@ -79,7 +82,7 @@ const assertCells = (t, label, cells, publishCount, result, options = {}) => {
 
 // eslint-disable-next-line no-shadow
 const verifyPublishKit = test.macro(async (t, makePublishKit) => {
-  const publishKit = makePublishKit();
+  const publishKit = /** @type {makePublishKit} */ (makePublishKit)();
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
   const { publisher, subscriber } = publishKit;
 
@@ -168,7 +171,9 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
 
 // eslint-disable-next-line no-shadow
 const verifySubscribeAfter = test.macro(async (t, makePublishKit) => {
-  const { publisher, subscriber } = makePublishKit();
+  const { publisher, subscriber } = /** @type {makePublishKit} */ (
+    makePublishKit
+  )();
   for (const badCount of [1n, 0, '', false, Symbol('symbol'), {}]) {
     t.throws(
       // @ts-ignore deliberate invalid arguments for testing
@@ -402,17 +407,19 @@ test.skip('durable publish kit upgrade trauma', async t => {
   );
 });
 
-// eslint-disable-next-line no-shadow
 const verifyPublishKitTermination = test.macro(
+  // eslint-disable-next-line no-shadow
   async (t, makePublishKit, config = {}) => {
-    const { publisher, subscriber } = makePublishKit();
+    const { publisher, subscriber } = /** @type {makePublishKit} */ (
+      makePublishKit
+    )();
 
     const getLatestPromises = () => [
       subscriber.subscribeAfter(),
       subscriber.subscribeAfter(undefined),
     ];
     const { method = 'finish', getExtraFinalPromises = getLatestPromises } =
-      config;
+      /** @type {object} */ (config);
 
     const cellsP = [...(await getExtraFinalPromises(publisher, subscriber))];
     const value = Symbol.for('termination');
@@ -472,7 +479,9 @@ for (const [type, maker] of Object.entries(makers)) {
 
 // eslint-disable-next-line no-shadow
 const verifySubscribeLatest = test.macro(async (t, makePublishKit) => {
-  const { publisher, subscriber } = makePublishKit();
+  const { publisher, subscriber } = /** @type {makePublishKit} */ (
+    makePublishKit
+  )();
   const latestIterator = subscribeLatest(subscriber);
 
   // Publish in geometric batches: [1], [2], [3, 4], [5, 6, 7, 8], ...
@@ -504,7 +513,9 @@ for (const [type, maker] of Object.entries(makers)) {
 
 // eslint-disable-next-line no-shadow
 const verifySubscribeEach = test.macro(async (t, makePublishKit) => {
-  const { publisher, subscriber } = makePublishKit();
+  const { publisher, subscriber } = /** @type {makePublishKit} */ (
+    makePublishKit
+  )();
   const latestIterator = subscribeEach(subscriber);
 
   // Publish in geometric batches: [1], [2], [3, 4], [5, 6, 7, 8], ...
@@ -544,13 +555,17 @@ for (const [type, maker] of Object.entries(makers)) {
 // eslint-disable-next-line no-shadow
 const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   // Demonstrate sequencing by publishing to two destinations.
-  const { publisher: pub1, subscriber: sub1 } = makePublishKit();
-  const { publisher: pub2, subscriber: sub2 } = makePublishKit();
+  const { publisher: pub1, subscriber: sub1 } = /** @type {makePublishKit} */ (
+    makePublishKit
+  )();
+  const { publisher: pub2, subscriber: sub2 } = /** @type {makePublishKit} */ (
+    makePublishKit
+  )();
   const sub2LIFO = [];
 
   const sub1FirstAll = [];
-  E.when(sub1.subscribeAfter(), cell => sub1FirstAll.push(cell), t.fail);
-  E.when(sub1.subscribeAfter(), cell => sub1FirstAll.push(cell), t.fail);
+  E.when(sub1.subscribeAfter(), cell => void sub1FirstAll.push(cell), t.fail);
+  E.when(sub1.subscribeAfter(), cell => void sub1FirstAll.push(cell), t.fail);
 
   pub2.publish(undefined);
   sub2LIFO.unshift(await sub2.subscribeAfter());
@@ -569,11 +584,19 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
 
   const sub1FirstLateAll = [];
   const sub1SecondAll = [];
-  E.when(sub1.subscribeAfter(), cell => sub1FirstLateAll.push(cell), t.fail);
-  E.when(sub1.subscribeAfter(0n), cell => sub1FirstLateAll.push(cell), t.fail);
+  E.when(
+    sub1.subscribeAfter(),
+    cell => void sub1FirstLateAll.push(cell),
+    t.fail,
+  );
+  E.when(
+    sub1.subscribeAfter(0n),
+    cell => void sub1FirstLateAll.push(cell),
+    t.fail,
+  );
   E.when(
     sub1.subscribeAfter(sub1FirstAll[0].publishCount),
-    cell => sub1SecondAll.push(cell),
+    cell => void sub1SecondAll.push(cell),
     t.fail,
   );
 
@@ -600,11 +623,11 @@ const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   const sub1SecondLateAll = [];
   const sub1FinalAll = [];
   for (const p of [sub1.subscribeAfter(), sub1.subscribeAfter(0n)]) {
-    E.when(p, cell => sub1SecondLateAll.push(cell), t.fail);
+    E.when(p, cell => void sub1SecondLateAll.push(cell), t.fail);
   }
   E.when(
     sub1.subscribeAfter(sub1SecondAll[0].publishCount),
-    result => sub1FinalAll.push(result),
+    result => void sub1FinalAll.push(result),
     t.fail,
   );
 
