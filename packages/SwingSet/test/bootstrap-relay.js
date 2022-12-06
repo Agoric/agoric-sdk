@@ -4,6 +4,8 @@ import { assert } from '@agoric/assert';
 
 const { Fail, quote: q } = assert;
 
+const sink = () => {};
+
 export const buildRootObject = () => {
   let vatAdmin;
   const vatData = new Map();
@@ -17,6 +19,10 @@ export const buildRootObject = () => {
   const makeReplacement = value => {
     const replacement = Symbol.for(`${replacementPrefix}${replaced.size}`);
     replaced.set(replacement, value);
+
+    // Suppress unhandled promise rejection warnings.
+    void E.when(value, sink, sink);
+
     return replacement;
   };
   const { serialize: encodeReplacements } = makeMarshal(
