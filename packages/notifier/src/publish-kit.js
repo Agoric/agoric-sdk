@@ -209,11 +209,9 @@ harden(makePublishKit);
 // TODO: Move durable publish kit to a new file?
 
 /**
- * @typedef {ReturnType<typeof initDurablePublishKitState>} DurablePublishKitState
- */
-
-/**
- * @param {DurablePublishKitOptions} [options]
+ * @param {object} [options]
+ * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
+ * @returns {DurablePublishKitState}
  */
 const initDurablePublishKitState = (options = {}) => {
   const { valueDurability = 'mandatory' } = options;

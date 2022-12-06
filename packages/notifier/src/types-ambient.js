@@ -102,10 +102,9 @@
 // /////////////////////////////////////////////////////////////////////////////
 
 /**
- * @typedef {object} DurablePublishKitOptions
- * @property {'mandatory' | 'opportunistic' | 'ignored'} [valueDurability]
+ * @typedef {'mandatory' | 'opportunistic' | 'ignored'} DurablePublishKitValueDurability
  *
- * valueDurability configures constraints on non-terminal values that can be
+ * Durability configures constraints on non-terminal values that can be
  * published to a durable publish kit (terminal values sent to finish or fail
  * must always be durable).
  * - 'mandatory' means that each value must be durable, so it can be restored
@@ -118,6 +117,25 @@
  *
  * 'mandatory' is the only currently-supported value, and others must not be
  * enabled without test coverage.
+ */
+
+/**
+ * @typedef {object} DurablePublishKitState
+ *
+ * @property {DurablePublishKitValueDurability} valueDurability
+ *
+ * @property {bigint} publishCount
+ *
+ * @property {'live' | 'finished' | 'failed'} status
+ *
+ * @property {boolean} hasValue
+ * hasValue indicates the presence of value. It starts off false,
+ * and can be reset to false when a durable publish kit is restored and
+ * the previous value was not durable, or non-terminal and valueDurablity is 'ignored'.
+ *
+ * @property {any} value
+ * value holds either a non-terminal value from `publish` or a terminal value
+ * from `finish` or `fail`, depending upon the value in status.
  */
 
 // /////////////////////////////////////////////////////////////////////////////
