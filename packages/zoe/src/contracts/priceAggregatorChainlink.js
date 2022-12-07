@@ -296,16 +296,16 @@ const start = async (
   });
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const timedOut = (_roundId, blockTimestamp) => {
-    if (!details.has(_roundId) || !rounds.has(_roundId)) {
+  const timedOut = (roundId, blockTimestamp) => {
+    if (!details.has(roundId) || !rounds.has(roundId)) {
       return false;
     }
 
-    const startedAt = rounds.get(_roundId).startedAt;
-    const roundTimeout = details.get(_roundId).roundTimeout;
+    const startedAt = rounds.get(roundId).startedAt;
+    const roundTimeout = details.get(roundId).roundTimeout;
     // TODO Better would be to make `roundTimeout` a `RelativeTime`
     // everywhere, and to rename it to a name that does not
     // mistakenly imply that it is an absolute time.
@@ -322,53 +322,53 @@ const start = async (
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const updateTimedOutRoundInfo = (_roundId, blockTimestamp) => {
+  const updateTimedOutRoundInfo = (roundId, blockTimestamp) => {
     // round 0 is non-existent, so we avoid that case -- round 1 is ignored
     // because we can't copy from round 0 in that case
-    if (_roundId === 0n || _roundId === 1n) {
+    if (roundId === 0n || roundId === 1n) {
       return;
     }
 
-    const roundTimedOut = timedOut(_roundId, blockTimestamp);
+    const roundTimedOut = timedOut(roundId, blockTimestamp);
     if (!roundTimedOut) return;
 
-    const prevId = subtract(_roundId, 1);
+    const prevId = subtract(roundId, 1);
 
-    const round = rounds.get(_roundId);
+    const round = rounds.get(roundId);
     round.answer = rounds.get(prevId).answer;
     round.answeredInRound = rounds.get(prevId).answeredInRound;
     round.updatedAt = blockTimestamp;
 
-    details.delete(_roundId);
+    details.delete(roundId);
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const newRound = _roundId => {
-    return _roundId === add(reportingRoundId, 1);
+  const newRound = roundId => {
+    return roundId === add(reportingRoundId, 1);
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const initializeNewRound = (_roundId, blockTimestamp) => {
-    updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
+  const initializeNewRound = (roundId, blockTimestamp) => {
+    updateTimedOutRoundInfo(subtract(roundId, 1), blockTimestamp);
 
-    reportingRoundId = _roundId;
+    reportingRoundId = roundId;
     roundStartUpdater.updateState(reportingRoundId);
 
     details.init(
-      _roundId,
+      roundId,
       makeRoundDetails([], maxSubmissionCount, minSubmissionCount, timeout),
     );
 
     rounds.init(
-      _roundId,
+      roundId,
       makeRound(
         /* answer = */ 0,
         /* startedAt = */ 0n,
@@ -377,91 +377,90 @@ const start = async (
       ),
     );
 
-    rounds.get(_roundId).startedAt = blockTimestamp;
+    rounds.get(roundId).startedAt = blockTimestamp;
   };
 
   /**
-   * @param {bigint} _roundId
-   * @param {OracleKey} _oracle
+   * @param {bigint} roundId
+   * @param {OracleKey} oracleKey
    * @param {Timestamp} blockTimestamp
    */
-  const oracleInitializeNewRound = (_roundId, _oracle, blockTimestamp) => {
-    if (!newRound(_roundId)) return;
-    const lastStarted = oracleStatuses.get(_oracle).lastStartedRound; // cache storage reads
-    if (_roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n)
-      return;
-    initializeNewRound(_roundId, blockTimestamp);
+  const oracleInitializeNewRound = (roundId, oracleKey, blockTimestamp) => {
+    if (!newRound(roundId)) return;
+    const lastStarted = oracleStatuses.get(oracleKey).lastStartedRound; // cache storage reads
+    if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n) return;
+    initializeNewRound(roundId, blockTimestamp);
 
-    oracleStatuses.get(_oracle).lastStartedRound = _roundId;
+    oracleStatuses.get(oracleKey).lastStartedRound = roundId;
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const acceptingSubmissions = _roundId => {
-    return details.has(_roundId) && details.get(_roundId).maxSubmissions !== 0;
+  const acceptingSubmissions = roundId => {
+    return details.has(roundId) && details.get(roundId).maxSubmissions !== 0;
   };
 
   /**
-   * @param {bigint} _submission
-   * @param {bigint} _roundId
-   * @param {OracleKey} _oracle
+   * @param {bigint} submission
+   * @param {bigint} roundId
+   * @param {OracleKey} oracleKey
    */
-  const recordSubmission = (_submission, _roundId, _oracle) => {
-    if (!acceptingSubmissions(_roundId)) {
+  const recordSubmission = (submission, roundId, oracleKey) => {
+    if (!acceptingSubmissions(roundId)) {
       console.error('round not accepting submissions');
       return false;
     }
 
-    details.get(_roundId).submissions.push(_submission);
-    oracleStatuses.get(_oracle).lastReportedRound = _roundId;
-    oracleStatuses.get(_oracle).latestSubmission = _submission;
+    details.get(roundId).submissions.push(submission);
+    oracleStatuses.get(oracleKey).lastReportedRound = roundId;
+    oracleStatuses.get(oracleKey).latestSubmission = submission;
     return true;
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const updateRoundAnswer = (_roundId, blockTimestamp) => {
+  const updateRoundAnswer = (roundId, blockTimestamp) => {
     if (
-      details.get(_roundId).submissions.length <
-      details.get(_roundId).minSubmissions
+      details.get(roundId).submissions.length <
+      details.get(roundId).minSubmissions
     ) {
       return [false, 0];
     }
 
     const newAnswer = calculateMedian(
       details
-        .get(_roundId)
+        .get(roundId)
         .submissions.filter(sample => isNat(sample) && sample > 0n),
       { add, divide: floorDivide, isGTE },
     );
 
-    rounds.get(_roundId).answer = newAnswer;
-    rounds.get(_roundId).updatedAt = blockTimestamp;
-    rounds.get(_roundId).answeredInRound = _roundId;
+    rounds.get(roundId).answer = newAnswer;
+    rounds.get(roundId).updatedAt = blockTimestamp;
+    rounds.get(roundId).answeredInRound = roundId;
 
     return [true, newAnswer];
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const deleteRoundDetails = _roundId => {
+  const deleteRoundDetails = roundId => {
     if (
-      details.get(_roundId).submissions.length <
-      details.get(_roundId).maxSubmissions
+      details.get(roundId).submissions.length <
+      details.get(roundId).maxSubmissions
     )
       return;
-    details.delete(_roundId);
+    details.delete(roundId);
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const validRoundId = _roundId => {
-    return _roundId <= ROUND_MAX;
+  const validRoundId = roundId => {
+    return roundId <= ROUND_MAX;
   };
 
   /**
@@ -471,75 +470,75 @@ const start = async (
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const supersedable = (_roundId, blockTimestamp) => {
+  const supersedable = (roundId, blockTimestamp) => {
     return (
-      rounds.has(_roundId) &&
-      (TimeMath.absValue(rounds.get(_roundId).updatedAt) > 0n ||
-        timedOut(_roundId, blockTimestamp))
+      rounds.has(roundId) &&
+      (TimeMath.absValue(rounds.get(roundId).updatedAt) > 0n ||
+        timedOut(roundId, blockTimestamp))
     );
   };
 
   /**
-   * @param {bigint} _roundId
-   * @param {bigint} _rrId
+   * @param {bigint} roundId
+   * @param {bigint} rrId reporting round ID
    */
-  const previousAndCurrentUnanswered = (_roundId, _rrId) => {
-    return add(_roundId, 1) === _rrId && rounds.get(_rrId).updatedAt === 0n;
+  const previousAndCurrentUnanswered = (roundId, rrId) => {
+    return add(roundId, 1) === rrId && rounds.get(rrId).updatedAt === 0n;
   };
 
   /**
-   * @param {OracleKey} _oracle
-   * @param {bigint} _roundId
+   * @param {OracleKey} oracleKey
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const validateOracleRound = (_oracle, _roundId, blockTimestamp) => {
+  const validateOracleRound = (oracleKey, roundId, blockTimestamp) => {
     // cache storage reads
-    const startingRound = oracleStatuses.get(_oracle).startingRound;
+    const startingRound = oracleStatuses.get(oracleKey).startingRound;
     const rrId = reportingRoundId;
 
     let canSupersede = true;
-    if (_roundId > 1n) {
-      canSupersede = supersedable(subtract(_roundId, 1), blockTimestamp);
+    if (roundId > 1n) {
+      canSupersede = supersedable(subtract(roundId, 1), blockTimestamp);
     }
 
     if (startingRound === 0n) return 'not enabled oracle';
-    if (startingRound > _roundId) return 'not yet enabled oracle';
-    if (oracleStatuses.get(_oracle).endingRound < _roundId)
+    if (startingRound > roundId) return 'not yet enabled oracle';
+    if (oracleStatuses.get(oracleKey).endingRound < roundId)
       return 'no longer allowed oracle';
-    if (oracleStatuses.get(_oracle).lastReportedRound >= _roundId)
+    if (oracleStatuses.get(oracleKey).lastReportedRound >= roundId)
       return 'cannot report on previous rounds';
     if (
-      _roundId !== rrId &&
-      _roundId !== add(rrId, 1) &&
-      !previousAndCurrentUnanswered(_roundId, rrId)
+      roundId !== rrId &&
+      roundId !== add(rrId, 1) &&
+      !previousAndCurrentUnanswered(roundId, rrId)
     )
       return 'invalid round to report';
-    if (_roundId !== 1n && !canSupersede)
+    if (roundId !== 1n && !canSupersede)
       return 'previous round not supersedable';
     return '';
   };
 
   /**
-   * @param {OracleKey} _oracle
-   * @param {bigint} _roundId
+   * @param {OracleKey} oracleKey
+   * @param {bigint} roundId
    */
-  const delayed = (_oracle, _roundId) => {
-    const lastStarted = oracleStatuses.get(_oracle).lastStartedRound;
-    return _roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
+  const delayed = (oracleKey, roundId) => {
+    const lastStarted = oracleStatuses.get(oracleKey).lastStartedRound;
+    return roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
   };
 
   /**
    * a method to provide all current info oracleStatuses need. Intended only
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
-   * @param {OracleKey} _oracle
+   * @param {OracleKey} oracleKey
    * @param {Timestamp} blockTimestamp
    */
-  const oracleRoundStateSuggestRound = (_oracle, blockTimestamp) => {
-    const oracle = oracleStatuses.get(_oracle);
+  const oracleRoundStateSuggestRound = (oracleKey, blockTimestamp) => {
+    const oracle = oracleStatuses.get(oracleKey);
 
     const shouldSupersede =
       oracle.lastReportedRound === reportingRoundId ||
@@ -553,7 +552,7 @@ const start = async (
     let eligibleToSubmit;
     if (canSupersede && shouldSupersede) {
       roundId = add(reportingRoundId, 1);
-      eligibleToSubmit = delayed(_oracle, roundId);
+      eligibleToSubmit = delayed(oracleKey, roundId);
     } else {
       roundId = reportingRoundId;
       eligibleToSubmit = acceptingSubmissions(roundId);
@@ -571,7 +570,7 @@ const start = async (
       roundTimeout = 0;
     }
 
-    const error = validateOracleRound(_oracle, roundId, blockTimestamp);
+    const error = validateOracleRound(oracleKey, roundId, blockTimestamp);
     if (error.length !== 0) {
       eligibleToSubmit = false;
     }
@@ -587,31 +586,35 @@ const start = async (
   };
 
   /**
-   * @param {OracleKey} _oracle
-   * @param {bigint} _queriedRoundId
+   * @param {OracleKey} oracleKey
+   * @param {bigint} queriedRoundId
    * @param {Timestamp} blockTimestamp
    */
   const eligibleForSpecificRound = (
-    _oracle,
-    _queriedRoundId,
+    oracleKey,
+    queriedRoundId,
     blockTimestamp,
   ) => {
-    const error = validateOracleRound(_oracle, _queriedRoundId, blockTimestamp);
-    if (TimeMath.absValue(rounds.get(_queriedRoundId).startedAt) > 0n) {
-      return acceptingSubmissions(_queriedRoundId) && error.length === 0;
+    const error = validateOracleRound(
+      oracleKey,
+      queriedRoundId,
+      blockTimestamp,
+    );
+    if (TimeMath.absValue(rounds.get(queriedRoundId).startedAt) > 0n) {
+      return acceptingSubmissions(queriedRoundId) && error.length === 0;
     } else {
-      return delayed(_oracle, _queriedRoundId) && error.length === 0;
+      return delayed(oracleKey, queriedRoundId) && error.length === 0;
     }
   };
 
   /**
-   * @param {OracleKey} _oracle
+   * @param {OracleKey} oracleKey
    */
-  const getStartingRound = _oracle => {
+  const getStartingRound = oracleKey => {
     const currentRound = reportingRoundId;
     if (
       currentRound !== 0n &&
-      currentRound === oracleStatuses.get(_oracle).endingRound
+      currentRound === oracleStatuses.get(oracleKey).endingRound
     ) {
       return currentRound;
     }
@@ -621,8 +624,8 @@ const start = async (
   /**
    * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'initOracle'> & {
    *   initOracle: (instance) => Promise<OracleAdmin<PriceRound>>,
-   *   getRoundData(_roundId: bigint | number): Promise<RoundData>,
-   *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
+   *   getRoundData(roundId: bigint | number): Promise<RoundData>,
+   *   oracleRoundState(oracleKey: OracleKey, queriedRoundId: BigInt): Promise<any>
    * }}
    */
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
@@ -711,14 +714,14 @@ const start = async (
 
       /** @param {PriceRound} result */
       const pushResult = async ({
-        roundId: _roundIdRaw = undefined,
-        data: _submissionRaw,
+        roundId: roundIdRaw = undefined,
+        data: submissionRaw,
       }) => {
-        const parsedSubmission = Nat(parseInt(_submissionRaw, 10));
+        const parsedSubmission = Nat(parseInt(submissionRaw, 10));
         const blockTimestamp = await E(timer).getCurrentTimestamp();
 
         let roundId;
-        if (_roundIdRaw === undefined) {
+        if (roundIdRaw === undefined) {
           const suggestedRound = oracleRoundStateSuggestRound(
             oracleKey,
             blockTimestamp,
@@ -727,7 +730,7 @@ const start = async (
             ? suggestedRound.queriedRoundId
             : add(suggestedRound.queriedRoundId, 1);
         } else {
-          roundId = Nat(_roundIdRaw);
+          roundId = Nat(roundIdRaw);
         }
 
         const error = validateOracleRound(oracleKey, roundId, blockTimestamp);
@@ -778,14 +781,14 @@ const start = async (
           }
         },
         async pushResult({
-          roundId: _roundIdRaw = undefined,
-          data: _submissionRaw,
+          roundId: roundIdRaw = undefined,
+          data: submissionRaw,
         }) {
           // Sample of NaN, 0, or negative numbers get culled in
           // the median calculation.
           pushResult({
-            roundId: _roundIdRaw,
-            data: _submissionRaw,
+            roundId: roundIdRaw,
+            data: submissionRaw,
           }).catch(console.error);
         },
       });
@@ -798,11 +801,11 @@ const start = async (
      * that they're receiving fresh data by inspecting the updatedAt and
      * answeredInRound return values.
      *
-     * @param {bigint | number} _roundIdRaw
+     * @param {bigint | number} roundIdRaw
      * @returns {Promise<RoundData>}
      */
-    async getRoundData(_roundIdRaw) {
-      const roundId = Nat(_roundIdRaw);
+    async getRoundData(roundIdRaw) {
+      const roundId = Nat(roundIdRaw);
 
       assert(rounds.has(roundId), V3_NO_DATA_ERROR);
 
@@ -823,28 +826,28 @@ const start = async (
      * a method to provide all current info oracleStatuses need. Intended only
      * only to be callable by oracleStatuses. Not for use by contracts to read state.
      *
-     * @param {OracleKey} _oracle
-     * @param {bigint} _queriedRoundId
+     * @param {OracleKey} oracleKey
+     * @param {bigint} queriedRoundId
      */
-    async oracleRoundState(_oracle, _queriedRoundId) {
+    async oracleRoundState(oracleKey, queriedRoundId) {
       const blockTimestamp = await E(timer).getCurrentTimestamp();
-      if (_queriedRoundId > 0) {
-        const round = rounds.get(_queriedRoundId);
-        const detail = details.get(_queriedRoundId);
+      if (queriedRoundId > 0) {
+        const round = rounds.get(queriedRoundId);
+        const detail = details.get(queriedRoundId);
         return {
           eligibleForSpecificRound: eligibleForSpecificRound(
-            _oracle,
-            _queriedRoundId,
+            oracleKey,
+            queriedRoundId,
             blockTimestamp,
           ),
-          queriedRoundId: _queriedRoundId,
-          oracleStatus: oracleStatuses.get(_oracle).latestSubmission,
+          queriedRoundId,
+          oracleStatus: oracleStatuses.get(oracleKey).latestSubmission,
           startedAt: round.startedAt,
           roundTimeout: detail.roundTimeout,
           oracleCount: oracleCount(),
         };
       } else {
-        return oracleRoundStateSuggestRound(_oracle, blockTimestamp);
+        return oracleRoundStateSuggestRound(oracleKey, blockTimestamp);
       }
     },
   });
