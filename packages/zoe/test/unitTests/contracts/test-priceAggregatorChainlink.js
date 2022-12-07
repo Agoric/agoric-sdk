@@ -708,3 +708,59 @@ test('suggest', async t => {
   t.deepEqual(round3Attempt1.roundId, 3n);
   t.deepEqual(round3Attempt1.answer, 200n);
 });
+
+test('notifications', async t => {
+  const { makeFakePriceOracle, zoe } = t.context;
+
+  const maxSubmissionCount = 1000;
+  const minSubmissionCount = 2;
+  const restartDelay = 1; // have to alternate to start rounds
+  const timeout = 10;
+  const minSubmissionValue = 100;
+  const maxSubmissionValue = 10000;
+
+  const aggregator = await t.context.makeChainlinkAggregator(
+    maxSubmissionCount,
+    minSubmissionCount,
+    restartDelay,
+    timeout,
+    minSubmissionValue,
+    maxSubmissionValue,
+  );
+  /** @type {{ timer: ManualTimer }} */
+  // @ts-expect-error cast
+  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+
+  const priceOracleA = await makeFakePriceOracle();
+  const priceOracleB = await makeFakePriceOracle();
+
+  const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
+    priceOracleA.instance,
+  );
+  const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
+    priceOracleB.instance,
+  );
+
+  const roundStartNotifier = await E(
+    aggregator.publicFacet,
+  ).getRoundStartNotifier();
+
+  await oracleTimer.tick();
+  await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
+  t.is((await E(roundStartNotifier).getUpdateSince()).value, 1n);
+  await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
+
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
+  // A started last round so fails to start next round
+  t.is((await E(roundStartNotifier).getUpdateSince()).value, 1n);
+  // B gets to start it
+  await E(pricePushAdminB).pushResult({ roundId: 2, data: '1000' });
+  // now it's roundId=2
+  t.is((await E(roundStartNotifier).getUpdateSince()).value, 2n);
+  // A joins in
+  await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
+
+  // A can start again
+  await E(pricePushAdminA).pushResult({ roundId: 3, data: '1000' });
+  t.is((await E(roundStartNotifier).getUpdateSince()).value, 3n);
+});
