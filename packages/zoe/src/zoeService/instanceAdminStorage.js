@@ -202,11 +202,15 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
 
       state.offerFilterStrings = proposedStrings;
     },
-    // if any string in the list matches, don't process the invitation. Strings
-    // that end in ':' may be prefix matches, others must match exactly.
+    // If any offer filter string matches the input string, don't process the
+    // invitation. Offer filter strings that end in ':' match if they are a
+    // prefix of the input string; others must match it exactly.
     isBlocked: ({ state }, string) => {
-      return state.offerFilterStrings.some(s => {
-        return string === s || (s.slice(-1) === ':' && string.startsWith(s));
+      return state.offerFilterStrings.some(filterString => {
+        return (
+          filterString === string ||
+          (filterString.endsWith(':') && string.startsWith(filterString))
+        );
       });
     },
   });

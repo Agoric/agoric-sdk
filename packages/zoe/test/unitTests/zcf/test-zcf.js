@@ -12,7 +12,6 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import { setupZCFTest } from './setupZcfTest.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
-import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
 
 test(`zcf.getZoeService`, async t => {
   const { zoe, zcf } = await setupZCFTest();
@@ -874,28 +873,6 @@ test(`zcfSeat.incrementBy, decrementBy, zcf.reallocate from zcf.makeEmptySeatKit
     B: AmountMath.make(issuerRecord1.brand, 6n),
   });
 });
-
-// this test fails because the userSeat is now a far instance
-test.failing(
-  `userSeat from zcf.makeEmptySeatKit - only these properties exist`,
-  async t => {
-    const expectedMethods = [
-      'getProposal',
-      'getPayouts',
-      'getPayout',
-      'getOfferResult',
-      'hasExited',
-      'tryExit',
-      'getFinalAllocation',
-      'numWantsSatisfied',
-    ];
-    const { zcf } = await setupZCFTest();
-    const { userSeat: userSeatP } = zcf.makeEmptySeatKit();
-    const userSeat = await userSeatP;
-
-    t.deepEqual(Object.keys(userSeat), expectedMethods);
-  },
-);
 
 test(`userSeat.getProposal from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();

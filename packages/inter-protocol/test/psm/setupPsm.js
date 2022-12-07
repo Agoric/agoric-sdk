@@ -26,11 +26,7 @@ import { allValues } from '../../src/collect.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-export const setUpZoeForTest = async defaultKit => {
-  if (defaultKit) {
-    return defaultKit;
-  }
-
+export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
   const { zoeService, feeMintAccessRetriever } = await makeFar(
     makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
@@ -58,7 +54,7 @@ export const setupPsmBootstrap = async (
   timer = buildManualTimer(console.log),
   farZoeKit,
 ) => {
-  const { zoe } = await setUpZoeForTest(farZoeKit);
+  const { zoe } = await (farZoeKit || setUpZoeForTest());
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
@@ -93,13 +89,9 @@ export const setupPsm = async (
   timer = buildManualTimer(t.log),
   farZoeKit,
 ) => {
-  if (!farZoeKit) {
-    farZoeKit = await setUpZoeForTest();
-  }
-
   const knut = withAmountUtils(makeIssuerKit('KNUT'));
 
-  const { feeMintAccessP, zoe } = await farZoeKit;
+  const { feeMintAccessP, zoe } = await (farZoeKit || setUpZoeForTest());
   const space = await setupPsmBootstrap(timer, farZoeKit);
   space.produce.zoe.resolve(zoe);
   const feeMintAccess = await feeMintAccessP;

@@ -286,29 +286,27 @@ export const createSeatManager = (
           // Ensure that rights are conserved overall.
           const flattenAllocations = allocations =>
             allocations.flatMap(Object.values);
-
           const previousAllocations = seats.map(seat =>
             seat.getCurrentAllocation(),
           );
           const previousAmounts = flattenAllocations(previousAllocations);
-
           const newAllocations = seats.map(seat => seat.getStagedAllocation());
           const newAmounts = flattenAllocations(newAllocations);
 
           assertRightsConserved(previousAmounts, newAmounts);
 
           // Ensure that offer safety holds.
-          seats.forEach(seat => {
+          for (const seat of seats) {
             isOfferSafe(seat.getProposal(), seat.getStagedAllocation()) ||
               assert.fail(
                 X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
               );
-          });
+          }
 
           // Keep track of seats used so far in this call, to prevent aliasing.
           const zcfSeatsSoFar = new Set();
 
-          seats.forEach(seat => {
+          for (const seat of seats) {
             zcfSeatToSeatHandle.has(seat) ||
               assert.fail(X`The seat ${seat} was not recognized`);
             !zcfSeatsSoFar.has(seat) ||
@@ -316,7 +314,7 @@ export const createSeatManager = (
                 X`Seat (${seat}) was already an argument to reallocate`,
               );
             zcfSeatsSoFar.add(seat);
-          });
+          }
 
           try {
             // No side effects above. All conditions checked which could have

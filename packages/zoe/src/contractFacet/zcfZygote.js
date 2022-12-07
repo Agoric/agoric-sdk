@@ -27,13 +27,7 @@ import '../internal-types.js';
 import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
-import {
-  AmountKeywordRecordShape,
-  InvitationHandleShape,
-  ProposalShape,
-  SeatShape,
-  ExitObjectI,
-} from '../typeGuards.js';
+import { InvitationHandleShape } from '../typeGuards.js';
 
 const { details: X } = assert;
 

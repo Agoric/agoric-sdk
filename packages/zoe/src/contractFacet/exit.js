@@ -25,7 +25,6 @@ export const makeMakeExiter = baggage => {
     zcfSeat => ({ zcfSeat }),
     {
       exit() {
-        // @ts-expect-error context isn't known yet.
         const { state } = this;
         state.zcfSeat.exit();
       },
@@ -52,14 +51,12 @@ export const makeMakeExiter = baggage => {
     (zcfSeat, afterDeadline) => ({ zcfSeat, afterDeadline }),
     {
       wake(_when) {
-        // @ts-expect-error context isn't known yet.
         const { state, self } = this;
 
         activeWakers.delete(self);
         state.zcfSeat.exit();
       },
       schedule() {
-        // @ts-expect-error context isn't known yet.
         const { state, self } = this;
 
         E(state.afterDeadline.timer)
