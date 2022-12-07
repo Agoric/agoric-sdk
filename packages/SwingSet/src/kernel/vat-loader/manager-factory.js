@@ -69,7 +69,7 @@ export function makeVatManagerFactory({
       typeof bundle === 'object' ||
       Fail`bundle must be object, not a plain string`;
     // todo maybe useless
-    !(setup && !enableSetup) || Fail`setup() provided, but not enabled`;
+    !setup || enableSetup || Fail`setup() provided, but not enabled`;
   }
 
   // returns promise for new vatManager

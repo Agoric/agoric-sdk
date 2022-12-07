@@ -1,6 +1,6 @@
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 // Vats are identified by an integer index, which (for typechecking purposes)
 // is encoded as `vNN`. Devices are similarly identified as `dNN`. Both have
@@ -23,11 +23,11 @@ import { assert, details as X, Fail } from '@agoric/assert';
  */
 export function insistVatID(s) {
   try {
-    assert.typeof(s, 'string', X`not a string`);
+    typeof s === 'string' || Fail`not a string`;
     s.startsWith(`v`) || Fail`does not start with 'v'`;
     Nat(BigInt(s.slice(1)));
   } catch (e) {
-    Fail`'${s} is not a 'vNN'-style VatID: ${e}`;
+    Fail`${s} is not a 'vNN'-style VatID: ${e}`;
   }
 }
 
@@ -55,11 +55,13 @@ export function makeVatID(index) {
  */
 export function insistDeviceID(s) {
   try {
-    assert.typeof(s, 'string', X`not a string`);
+    if (typeof s !== 'string') {
+      throw Fail`not a string`;
+    }
     s.startsWith(`d`) || Fail`does not start with 'd'`;
     Nat(BigInt(s.slice(1)));
   } catch (e) {
-    Fail`'${s} is not a 'dNN'-style DeviceID: ${e}`;
+    Fail`${s} is not a 'dNN'-style DeviceID: ${e}`;
   }
 }
 
@@ -87,12 +89,8 @@ export function makeDeviceID(index) {
  * @throws {Error} if the parameter is not a string or is malformed.
  */
 export function parseVatOrDeviceID(s) {
-  assert.typeof(
-    s,
-    'string',
-    X`${s} is not a string, so cannot be a VatID/DeviceID`,
-  );
-  s = `${s}`;
+  typeof s === 'string' ||
+    Fail`${s} is not a string, so cannot be a VatID/DeviceID`;
   /** @type {'vat' | 'device' | undefined} */
   let type;
   let idSuffix;
@@ -103,7 +101,7 @@ export function parseVatOrDeviceID(s) {
     type = 'device';
     idSuffix = s.slice(1);
   } else {
-    throw Fail`'${s}' is neither a VatID nor a DeviceID`;
+    throw Fail`${s} is neither a VatID nor a DeviceID`;
   }
   return harden({ type, id: Nat(BigInt(idSuffix)) });
 }
