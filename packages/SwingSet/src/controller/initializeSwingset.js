@@ -26,8 +26,9 @@ const { keys, values, fromEntries } = Object;
  */
 const allValues = async obj => {
   const objKeys = keys(obj);
-  const objValues = await Promise.all(values(obj));
-  return fromEntries(zip(objKeys, objValues));
+  const objValues = values(obj);
+  const fulfillments = await Promise.all(objValues);
+  return fromEntries(zip(objKeys, fulfillments));
 };
 
 const bundleRelative = rel =>
@@ -174,15 +175,17 @@ export function loadBasedir(basedir, options = {}) {
  *    determined.
  */
 async function resolveSpecFromConfig(referrer, specPath) {
-  try {
-    // eslint-disable-next-line @jessie.js/no-nested-await
-    return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
-  } catch (e) {
-    if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
-      throw e;
-    }
-  }
-  return new URL(specPath, referrer).pathname;
+  return resolveModuleSpecifier(specPath, referrer)
+    .then(urlString => new URL(urlString).pathname)
+    .catch(err => {
+      if (
+        err.code === 'MODULE_NOT_FOUND' ||
+        err.code === 'ERR_MODULE_NOT_FOUND'
+      ) {
+        return new URL(specPath, referrer).pathname;
+      }
+      throw err;
+    });
 }
 
 /**
@@ -233,23 +236,9 @@ async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
  *    invalid.
  */
 export async function loadSwingsetConfigFile(configPath) {
+  let configJson;
   try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-    const referrer = new URL(
-      configPath,
-      `file:///${process.cwd()}/`,
-    ).toString();
-    // eslint-disable-next-line @jessie.js/no-nested-await
-    await normalizeConfigDescriptor(config.vats, referrer, true);
-    // eslint-disable-next-line @jessie.js/no-nested-await
-    await normalizeConfigDescriptor(config.bundles, referrer, false);
-    // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
-    assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
-    (config.vats && config.vats[config.bootstrap]) ||
-      assert.fail(
-        X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
-      );
-    return config;
+    configJson = fs.readFileSync(configPath, 'utf-8');
   } catch (e) {
     if (e.code === 'ENOENT') {
       return null;
@@ -257,6 +246,20 @@ export async function loadSwingsetConfigFile(configPath) {
       throw e;
     }
   }
+  const config = JSON.parse(configJson);
+  const referrer = new URL(configPath, `file:///${process.cwd()}/`).toString();
+  const normalizationJobs = [
+    normalizeConfigDescriptor(config.vats, referrer, true),
+    normalizeConfigDescriptor(config.bundles, referrer, false),
+  ];
+  await Promise.all(normalizationJobs);
+  // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
+  assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
+  (config.vats && config.vats[config.bootstrap]) ||
+    assert.fail(
+      X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
+    );
+  return config;
 }
 
 export function swingsetIsInitialized(hostStorage) {
