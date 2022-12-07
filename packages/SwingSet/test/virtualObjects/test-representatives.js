@@ -1,6 +1,6 @@
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { M } from '@agoric/store';
 import { initSwingStore } from '@agoric/swing-store';
 import {

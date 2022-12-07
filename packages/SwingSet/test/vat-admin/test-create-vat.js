@@ -303,6 +303,7 @@ test('createVat holds refcount', async t => {
   // calling getHeld doesn't immediately increment the refcount
   const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', []);
   await c.run();
+  expectedRefcount += 1; // from 'getHeld'
   const h1 = kunser(c.kpResolution(kpid1));
   const held = krefOf(h1);
   t.is(held, 'ko27'); // gleaned from the logs, unstable, update as needed

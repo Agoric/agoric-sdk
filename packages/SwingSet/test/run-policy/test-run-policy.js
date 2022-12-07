@@ -92,7 +92,7 @@ async function testCranks(t, mode) {
     await c.run(computronCounter(4_000_000n));
     t.is(elapsedCranks(), 35);
     const ckey = `${rightID}.vs.vc.1.sseqnum`;
-    const seqnum = JSON.parse(hostStorage.kvStore.get(ckey));
+    const seqnum = JSON.parse(kernelStorage.kvStore.get(ckey));
     t.deepEqual(seqnum, kser(5));
   } else if (mode === 'wallclock') {
     const startMS = Date.now();
