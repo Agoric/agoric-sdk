@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { parseReachableAndVatSlot } from '@agoric/swingset-vat/src/kernel/state/reachable.js';
 import { parseVatSlot } from '@agoric/swingset-vat/src/lib/parseVatSlots.js';
 
@@ -67,7 +67,7 @@ export function auditRefCounts(store, doDump, printPrefix) {
         break;
       }
       default:
-        assert.fail(X`unknown state for ${kpid}: ${state}`);
+        Fail`unknown state for ${kpid}: ${state}`;
     }
   }
 
@@ -120,7 +120,7 @@ export function auditRefCounts(store, doDump, printPrefix) {
         slotNum += 1;
       }
     } else {
-      assert.fail(X`unknown message type ${msg.type}`);
+      Fail`unknown message type ${msg.type}`;
     }
   }
 

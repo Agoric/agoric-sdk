@@ -14,7 +14,7 @@ import {
 } from './assertions.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * @param {ParamManagerBase} paramManager
@@ -27,13 +27,9 @@ const assertElectorateMatches = (paramManager, governedParams) => {
     [CONTRACT_ELECTORATE]: { value: paramElectorate },
   } = governedParams;
   paramElectorate ||
-    assert.fail(
-      X`Missing ${q(CONTRACT_ELECTORATE)} term in ${q(governedParams)}`,
-    );
+    Fail`Missing ${q(CONTRACT_ELECTORATE)} term in ${q(governedParams)}`;
   keyEQ(managerElectorate, paramElectorate) ||
-    assert.fail(
-      X`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`,
-    );
+    Fail`Electorate in manager (${managerElectorate})} incompatible with terms (${paramElectorate}`;
 };
 
 /**
@@ -86,7 +82,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   const buildCopyParam = (name, value, assertion, type) => {
     let current;
     assertKeywordName(name);
-    assert(value !== undefined, X`param ${q(name)} must be defined`);
+    value !== undefined || Fail`param ${q(name)} must be defined`;
 
     const setParamValue = newValue => {
       assertion(newValue);
@@ -125,7 +121,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   /** @type {(name: string, value: Amount, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addAmount = (name, value, builder) => {
     const assertAmount = a => {
-      assert(a.brand, X`Expected an Amount for ${q(name)}, got: ${a}`);
+      a.brand || Fail`Expected an Amount for ${q(name)}, got: ${a}`;
       return AmountMath.coerce(value.brand, a);
     };
     buildCopyParam(name, value, assertAmount, ParamTypes.AMOUNT);
@@ -196,7 +192,9 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   };
 
   const assertInvitation = async i => {
-    assert(zoe, X`zoe must be provided for governed Invitations ${zoe}`);
+    if (!zoe) {
+      throw Fail`zoe must be provided for governed Invitations ${zoe}`;
+    }
     const { instance, installation } = await E(zoe).getInvitationDetails(i);
     assert(instance && installation, 'must be an invitation');
   };
@@ -213,7 +211,9 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
    * @param {Invitation} invitation
    */
   const buildInvitationParam = async (name, invitation) => {
-    assert(zoe, X`zoe must be provided for governed Invitations ${zoe}`);
+    if (!zoe) {
+      throw Fail`zoe must be provided for governed Invitations ${zoe}`;
+    }
     let currentInvitation;
     let currentAmount;
 
@@ -280,7 +280,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => Promise<ParamManagerBuilder>} */
   const addInvitation = async (name, value, builder) => {
     assertKeywordName(name);
-    assert(value !== null, X`param ${q(name)} must be defined`);
+    value !== null || Fail`param ${q(name)} must be defined`;
     await Promise.all([
       assertInvitation(value),
       buildInvitationParam(name, value),
@@ -293,7 +293,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
 
   const getTypedParam = (type, name) => {
     const param = namesToParams.get(name);
-    assert(type === param.getType(), X`${name} is not ${type}`);
+    type === param.getType() || Fail`${name} is not ${type}`;
     return param.getValue();
   };
 

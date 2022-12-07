@@ -7,7 +7,7 @@ import { AmountShape, BrandShape } from '@agoric/ertp';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 export const GOVERNANCE_STORAGE_KEY = 'governance';
 
@@ -36,12 +36,10 @@ const publicMixinAPI = harden({
 const facetHelpers = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const { governedParams } = terms;
-  assert(
-    keyEQ(governedParams, paramManager.getParams()),
-    X`Terms must include ${q(paramManager.getParams())}, but were ${q(
+  keyEQ(governedParams, paramManager.getParams()) ||
+    Fail`Terms must include ${q(paramManager.getParams())}, but were ${q(
       governedParams,
-    )}`,
-  );
+    )}`;
   assertElectorateMatches(paramManager, governedParams);
 
   const typedAccessors = {

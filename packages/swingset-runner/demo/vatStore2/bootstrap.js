@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { makeXorShift128 } from './xorshift128.js';
 
 const p = console.log;
@@ -72,7 +72,7 @@ export function buildRootObject() {
             break;
           }
           default:
-            assert.fail(X`this can't happen`);
+            Fail`this can't happen`;
         }
       }
       return 'done';

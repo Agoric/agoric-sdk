@@ -1,7 +1,7 @@
 // @ts-check
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/far';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 
 /**
  * @typedef {object} ICS20TransferPacket Packet shape defined at:
@@ -22,6 +22,7 @@ export const DUMMY_SENDER_ADDRESS = 'pegasus';
 
 /**
  * @param {string} s
+ * @returns {Record<string, any>}
  */
 const safeJSONParseObject = s => {
   /** @type {unknown} */
@@ -32,8 +33,12 @@ const safeJSONParseObject = s => {
     assert.note(e, X`${s} is not valid JSON`);
     throw e;
   }
-  assert.typeof(obj, 'object', X`${s} is not a JSON object`);
-  assert(obj !== null, X`${s} is null`);
+  if (typeof obj !== 'object') {
+    throw Fail`${s} is not a JSON object`;
+  }
+  if (obj === null) {
+    throw Fail`${s} is null`;
+  }
   return obj;
 };
 
@@ -100,8 +105,8 @@ export const makeICS20TransferPacket = async ({
  */
 export const assertICS20TransferPacketAck = async ack => {
   const { result, error } = safeJSONParseObject(ack);
-  assert(error === undefined, X`ICS20 transfer error ${error}`);
-  assert(result !== undefined, X`ICS20 transfer missing result in ${ack}`);
+  error === undefined || Fail`ICS20 transfer error ${error}`;
+  result !== undefined || Fail`ICS20 transfer missing result in ${ack}`;
   if (result !== ICS20_TRANSFER_SUCCESS_RESULT) {
     // We don't want to throw an error here, because we want only to be able to
     // differentiate between a transfer that failed and a transfer that succeeded.

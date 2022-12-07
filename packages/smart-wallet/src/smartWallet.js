@@ -20,7 +20,7 @@ import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 const ERROR_LAST_OFFER_ID = -1;
 
@@ -461,11 +461,13 @@ const SmartWalletKit = defineVirtualFarClassKit(
           /** @param {BridgeAction} action */
           action => {
             switch (action.method) {
-              case 'executeOffer':
+              case 'executeOffer': {
                 assert(canSpend, 'executeOffer requires spend authority');
                 return offers.executeOffer(action.offer);
-              default:
-                assert.fail(X`invalid handle bridge action ${q(action)}`);
+              }
+              default: {
+                throw Fail`invalid handle bridge action ${q(action)}`;
+              }
             }
           },
         );

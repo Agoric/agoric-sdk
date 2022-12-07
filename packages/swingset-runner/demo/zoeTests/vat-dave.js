@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
@@ -26,14 +26,11 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
       installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
-      assert(
-        keyEQ(
-          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
-      );
+        Fail`wrong installation`;
+      keyEQ(
+        harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
+        issuerKeywordRecord,
+      ) || Fail`issuerKeywordRecord were not as expected`;
       assert(keyEQ(invitationValue[0].minimumBid, simoleans(3)));
       assert(keyEQ(invitationValue[0].auctionedAssets, moola(1)));
 
@@ -75,46 +72,34 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { source } = await E(installation).getBundle();
       // pick some arbitrary code points as a signature.
       source.includes('asset: give.Asset,') ||
-        assert.fail(X`source bundle didn't match at "asset: give.Asset,"`);
+        Fail`source bundle didn't match at "asset: give.Asset,"`;
       source.includes('swap(zcf, firstSeat, matchingSeat)') ||
-        assert.fail(
-          X`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`,
-        );
+        Fail`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`;
       source.includes('makeMatchingInvitation') ||
-        assert.fail(X`source bundle didn't match at "makeMatchingInvitation"`);
-      assert(installation === installations.atomicSwap, X`wrong installation`);
-      assert(
-        keyEQ(
-          harden({ Asset: invitationIssuer, Price: bucksIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
-      );
+        Fail`source bundle didn't match at "makeMatchingInvitation"`;
+      installation === installations.atomicSwap || Fail`wrong installation`;
+      keyEQ(
+        harden({ Asset: invitationIssuer, Price: bucksIssuer }),
+        issuerKeywordRecord,
+      ) || Fail`issuerKeywordRecord were not as expected`;
 
       // Dave expects that Bob has already made an offer in the swap
       // with the following rules:
       keyEQ(invitationValue[0].asset, optionAmounts) ||
-        assert.fail(X`asset is the option`);
-      assert(keyEQ(invitationValue[0].price, bucks(1n)), X`price is 1 buck`);
+        Fail`asset is the option`;
+      keyEQ(invitationValue[0].price, bucks(1n)) || Fail`price is 1 buck`;
       const optionValue = optionAmounts.value;
-      optionValue[0].description === 'exerciseOption' ||
-        assert.fail(X`wrong invitation`);
-      assert(
-        AmountMath.isEqual(
-          optionValue[0].underlyingAssets.UnderlyingAsset,
-          moola(3),
-        ),
-        X`wrong underlying asset`,
-      );
-      assert(
-        AmountMath.isEqual(
-          optionValue[0].strikePrice.StrikePrice,
-          simoleans(7),
-        ),
-        X`wrong strike price`,
-      );
-      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
-      assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
+      optionValue[0].description === 'exerciseOption' || Fail`wrong invitation`;
+      AmountMath.isEqual(
+        optionValue[0].underlyingAssets.UnderlyingAsset,
+        moola(3),
+      ) || Fail`wrong underlying asset`;
+      AmountMath.isEqual(
+        optionValue[0].strikePrice.StrikePrice,
+        simoleans(7),
+      ) || Fail`wrong strike price`;
+      optionValue[0].expirationDate === 100n || Fail`wrong expiration date`;
+      optionValue[0].timeAuthority === timer || Fail`wrong timer`;
 
       // Dave escrows his 1 buck with Zoe and forms his proposal
       const daveSwapProposal = harden({

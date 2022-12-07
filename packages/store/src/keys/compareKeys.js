@@ -7,7 +7,7 @@ import { assertKey } from './checkKey.js';
 import { bagCompare } from './merge-bag-operators.js';
 import { setCompare } from './merge-set-operators.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 /** @type {KeyCompare} */
 export const compareKeys = (left, right) => {
@@ -146,17 +146,15 @@ export const compareKeys = (left, right) => {
           // 0` then, because these values obey the above invariants, none of
           // the values in X have a later rank than the corresponding value
           // of Y. Thus, `compareRank(X,Y) <= 0`. TODO implement
-          assert.fail(
-            X`Map comparison not yet implemented: ${left} vs ${right}`,
-          );
+          throw Fail`Map comparison not yet implemented: ${left} vs ${right}`;
         }
         default: {
-          assert.fail(X`unexpected tag ${q(leftTag)}: ${left}`);
+          throw Fail`unexpected tag ${q(leftTag)}: ${left}`;
         }
       }
     }
     default: {
-      assert.fail(X`unexpected passStyle ${q(leftStyle)}: ${left}`);
+      throw Fail`unexpected passStyle ${q(leftStyle)}: ${left}`;
     }
   }
 };

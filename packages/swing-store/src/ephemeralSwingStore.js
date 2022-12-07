@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-disable jsdoc/require-returns-type */
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 
 /**
  * @typedef { import('./swingStore').KVStore } KVStore
@@ -126,8 +126,7 @@ export function initEphemeralSwingStore() {
 
   function insistStreamName(streamName) {
     assert.typeof(streamName, 'string');
-    streamName.match(/^[-\w]+$/) ||
-      assert.fail(X`invalid stream name ${q(streamName)}`);
+    streamName.match(/^[-\w]+$/) || Fail`invalid stream name ${q(streamName)}`;
   }
 
   function insistStreamPosition(position) {
@@ -158,9 +157,7 @@ export function initEphemeralSwingStore() {
     insistStreamName(streamName);
     const stream = streams.get(streamName) || [];
     !streamStatus.get(streamName) ||
-      assert.fail(
-        X`can't read stream ${q(streamName)} because it's already in use`,
-      );
+      Fail`can't read stream ${q(streamName)} because it's already in use`;
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
     assert(startPosition.itemCount <= endPosition.itemCount);
@@ -176,15 +173,13 @@ export function initEphemeralSwingStore() {
       function* reader() {
         while (pos < stream.length) {
           streamStatus.get(streamName) === readStatus ||
-            assert.fail(
-              X`can't read stream ${q(streamName)}, it's been closed`,
-            );
+            Fail`can't read stream ${q(streamName)}, it's been closed`;
           const result = stream[pos];
           pos += 1;
           yield result;
         }
         streamStatus.get(streamName) === readStatus ||
-          assert.fail(X`can't read stream ${q(streamName)}, it's been closed`);
+          Fail`can't read stream ${q(streamName)}, it's been closed`;
         streamStatus.delete(streamName);
       }
       return reader();
@@ -209,9 +204,7 @@ export function initEphemeralSwingStore() {
       streams.set(streamName, stream);
     } else {
       !streamStatus.get(streamName) ||
-        assert.fail(
-          X`can't write stream ${q(streamName)} because it's already in use`,
-        );
+        Fail`can't write stream ${q(streamName)} because it's already in use`;
     }
     stream[position.itemCount] = item;
     return harden({ itemCount: position.itemCount + 1 });

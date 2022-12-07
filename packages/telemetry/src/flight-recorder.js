@@ -17,7 +17,7 @@ import { promises as fsPromises } from 'fs';
 import path from 'path';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 export const DEFAULT_CBUF_SIZE = 100 * 1024 * 1024;
 export const DEFAULT_CBUF_FILE = 'flight-recorder.bin';
@@ -95,16 +95,10 @@ export const makeMemoryMappedCircularBuffer = async ({
   const arenaSize = newArenaSize || hdrArenaSize;
 
   const hdrMagic = header.getBigUint64(I_MAGIC);
-  assert.equal(
-    SLOG_MAGIC,
-    hdrMagic,
-    X`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`,
-  );
-  assert.equal(
-    arenaSize,
-    hdrArenaSize,
-    X`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`,
-  );
+  SLOG_MAGIC === hdrMagic ||
+    Fail`${filename} is not a slog buffer; wanted magic ${SLOG_MAGIC}, got ${hdrMagic}`;
+  arenaSize === hdrArenaSize ||
+    Fail`${filename} arena size mismatch; wanted ${arenaSize}, got ${hdrArenaSize}`;
   const arena = new Uint8Array(
     fileBuf.buffer,
     header.byteLength,
@@ -118,7 +112,7 @@ export const makeMemoryMappedCircularBuffer = async ({
    */
   const readCircBuf = (outbuf, offset = 0) => {
     offset + outbuf.byteLength <= arenaSize ||
-      assert.fail(X`Reading past end of circular buffer`);
+      Fail`Reading past end of circular buffer`;
 
     // Read the data to the end of the arena.
     let firstReadLength = outbuf.byteLength;

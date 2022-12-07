@@ -6,7 +6,7 @@ import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 
 const { entries, fromEntries, keys } = Object;
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /** @type { <K extends string, T, U>(obj: Record<K, T>, f: (k: K, v: T) => [K, U]) => Record<K, U>} */
 const mapEntries = (obj, f) =>
@@ -222,11 +222,11 @@ export const extract = (template, specimen, path = []) => {
     return specimen;
   } else if (typeof template === 'object' && template !== null) {
     if (typeof specimen !== 'object' || specimen === null) {
-      assert.fail(
-        X`object template ${q(template)} requires object specimen at [${q(
-          path.join('.'),
-        )}], not ${q(specimen)}`,
-      );
+      throw Fail`object template ${q(
+        template,
+      )} requires object specimen at [${q(path.join('.'))}], not ${q(
+        specimen,
+      )}`;
     }
     const target = harden(
       fromEntries(
@@ -240,13 +240,13 @@ export const extract = (template, specimen, path = []) => {
       get: (t, propName) => {
         if (typeof propName !== 'symbol') {
           propName in t ||
-            assert.fail(X`${propName} not permitted, only ${keys(template)}`);
+            Fail`${propName} not permitted, only ${keys(template)}`;
         }
         return t[propName];
       },
     });
   } else {
-    assert.fail(X`unexpected template: ${q(template)}`);
+    throw Fail`unexpected template: ${q(template)}`;
   }
 };
 harden(extract);

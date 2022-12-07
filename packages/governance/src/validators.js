@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * Assert that the governed contract was started by the governor. Throws if
@@ -58,9 +58,7 @@ const assertContractElectorate = async (
   const allegedGovernorPF = E(zoe).getPublicFacet(allegedGovernor);
   const electorate = await E(allegedGovernorPF).getElectorate();
   electorate === allegedElectorate ||
-    assert.fail(
-      X`The allegedElectorate didn't match the actual ${q(electorate)}`,
-    );
+    Fail`The allegedElectorate didn't match the actual ${q(electorate)}`;
 
   return true;
 };

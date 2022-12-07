@@ -12,7 +12,7 @@ import anylogger from 'anylogger';
 import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/vats/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
@@ -79,7 +79,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   ).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
-    assert.fail(X`Replay not implemented`);
+    Fail`Replay not implemented`;
   }
   function clearChainSends() {
     return [];

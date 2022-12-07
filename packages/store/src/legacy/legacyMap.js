@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { q, Fail } from '@agoric/assert';
 
 /**
  * This module and its fraternal sibling legacyWeakMap exist only to
@@ -34,9 +34,9 @@ import { assert, details as X, q } from '@agoric/assert';
 export const makeLegacyMap = (tag = 'key') => {
   const m = new Map();
   const assertKeyDoesNotExist = key =>
-    assert(!m.has(key), X`${q(tag)} already registered: ${key}`);
+    !m.has(key) || Fail`${q(tag)} already registered: ${key}`;
   const assertKeyExists = key =>
-    assert(m.has(key), X`${q(tag)} not found: ${key}`);
+    m.has(key) || Fail`${q(tag)} not found: ${key}`;
   return harden({
     has: key => {
       // Check if a key exists. The key can be any JavaScript value,

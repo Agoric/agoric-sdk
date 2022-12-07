@@ -1,6 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 // Allows multiple parties to store values for retrieval by others.
@@ -17,7 +17,7 @@ function makeSharedMap(name) {
     },
     addEntry(key, value) {
       !namedEntries.has(key) ||
-        assert.fail(X`SharedMap ${name} already has an entry for ${key}.`);
+        Fail`SharedMap ${name} already has an entry for ${key}.`;
       orderedEntries.push([key, value]);
       namedEntries.set(key, [value, orderedEntries.length]);
       return orderedEntries.length;

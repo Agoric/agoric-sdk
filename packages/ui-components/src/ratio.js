@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X, q } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 const PERCENT = 100n;
@@ -25,9 +25,7 @@ export const makeRatio = (
   denominatorBrand = numeratorBrand,
 ) => {
   denominator > 0n ||
-    assert.fail(
-      X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
-    );
+    Fail`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`;
 
   // @ts-expect-error cast to return type because make() ensures
   return harden({

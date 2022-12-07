@@ -11,7 +11,7 @@
  * and dapps.
  */
 
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { objectMap } from '@agoric/internal';
 import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
@@ -670,7 +670,7 @@ export function makeWalletRoot({
       async ([keyword, { type, ...amount }]) => {
         const purse = purseKeywordRecord[keyword];
         purse !== undefined ||
-          assert.fail(X`purse was not found for keyword ${q(keyword)}`);
+          Fail`purse was not found for keyword ${q(keyword)}`;
 
         if (type === 'Attestation') {
           const payment = await E(attMakerPK.promise).makeAttestation(amount);
@@ -886,13 +886,10 @@ export function makeWalletRoot({
     const found = [...contactMapping.petnameToVal.entries()].find(
       ([_pn, { depositBoardId: dbid }]) => depositBoardId === dbid,
     );
-
-    assert(
-      !found,
-      X`${q(found && found[0])} is already the petname for board ID ${q(
+    !found ||
+      Fail`${q(found && found[0])} is already the petname for board ID ${q(
         depositBoardId,
-      )}`,
-    );
+      )}`;
 
     const contact = harden(
       addMeta({
@@ -1650,10 +1647,8 @@ export function makeWalletRoot({
   /** @type {IssuerManager} */
   const issuerManager = Far('IssuerManager', {
     rename: async (petname, issuer) => {
-      assert(
-        brandTable.hasByIssuer(issuer),
-        `issuer has not been previously added`,
-      );
+      brandTable.hasByIssuer(issuer) ||
+        Fail`issuer has not been previously added`;
       const brandRecord = brandTable.getByIssuer(issuer);
       brandMapping.renamePetname(petname, brandRecord.brand);
       await updateAllState();
@@ -1712,7 +1707,7 @@ export function makeWalletRoot({
       passStyleOf(offerResult) === 'copyRecord',
       `offerResult must be a record to have a uiNotifier`,
     );
-    assert(offerResult.uiNotifier, X`offerResult does not have a uiNotifier`);
+    offerResult.uiNotifier || Fail`offerResult does not have a uiNotifier`;
     return offerResult.uiNotifier;
   }
 
@@ -1735,11 +1730,9 @@ export function makeWalletRoot({
 
     const { publicSubscribers } = offerResult;
     publicSubscribers ||
-      assert.fail(
-        X`offerResult ${offerResult} does not have publicSubscribers`,
-      );
+      Fail`offerResult ${offerResult} does not have publicSubscribers`;
     passStyleOf(publicSubscribers) === 'copyRecord' ||
-      assert.fail(X`publicSubscribers ${publicSubscribers} must be a record`);
+      Fail`publicSubscribers ${publicSubscribers} must be a record`;
 
     return publicSubscribers;
   }
@@ -1805,13 +1798,10 @@ export function makeWalletRoot({
     const idOnly =
       (kind, lookup) =>
       (...path) => {
-        assert.equal(
-          path.length,
-          1,
-          X`${assert.quote(
+        path.length === 1 ||
+          Fail`${assert.quote(
             kind,
-          )} lookup must be called with a single offer ID, not ${path}`,
-        );
+          )} lookup must be called with a single offer ID, not ${path}`;
         return lookup(path[0]);
       };
     makeLookup('offer', idOnly('offer', idToOffer.get));
@@ -1969,14 +1959,16 @@ export function makeWalletRoot({
       return board;
     },
     getAgoricNames(...path) {
-      assert(agoricNames, X`agoricNames was not supplied to the wallet maker`);
+      if (!agoricNames) {
+        throw Fail`agoricNames was not supplied to the wallet maker`;
+      }
       return E(agoricNames).lookup(...path);
     },
     getNamesByAddress(...path) {
       if (namesByAddress === undefined) {
         // TypeScript confused about `||` control flow so use `if` instead
         // https://github.com/microsoft/TypeScript/issues/50739
-        assert.fail(X`namesByAddress was not supplied to the wallet maker`);
+        throw Fail`namesByAddress was not supplied to the wallet maker`;
       }
       return E(namesByAddress).lookup(...path);
     },

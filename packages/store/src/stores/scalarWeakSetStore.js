@@ -1,7 +1,7 @@
 import { Far, passStyleOf } from '@endo/marshal';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 /**
  * @template K
@@ -18,7 +18,7 @@ export const makeWeakSetStoreMethods = (
   keyName = 'key',
 ) => {
   const assertKeyExists = key =>
-    assert(jsset.has(key), X`${q(keyName)} not found: ${key}`);
+    jsset.has(key) || Fail`${q(keyName)} not found: ${key}`;
 
   return harden({
     has: key => {
@@ -80,7 +80,7 @@ export const makeScalarWeakSetStore = (
     // See https://github.com/Agoric/agoric-sdk/issues/3606
     harden(key);
     passStyleOf(key) === 'remotable' ||
-      assert.fail(X`Only remotables can be keys of scalar WeakStores: ${key}`);
+      Fail`Only remotables can be keys of scalar WeakStores: ${key}`;
     if (keyShape !== undefined) {
       fit(key, keyShape, 'weakSetStore key');
     }

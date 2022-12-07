@@ -22,7 +22,7 @@ import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 const { keys } = Object;
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
@@ -99,8 +99,9 @@ export const bridgeCoreEval = async allPowers => {
             ),
           ).then(_ => {});
         }
-        default:
-          assert.fail(X`Unrecognized request ${obj.type}`);
+        default: {
+          throw Fail`Unrecognized request ${obj.type}`;
+        }
       }
     },
   });
@@ -153,8 +154,9 @@ export const bridgeProvisioner = async ({
             )
             .then(_ => {});
         }
-        default:
-          assert.fail(X`Unrecognized request ${obj.type}`);
+        default: {
+          throw Fail`Unrecognized request ${obj.type}`;
+        }
       }
     },
   });

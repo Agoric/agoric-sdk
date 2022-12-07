@@ -1,16 +1,12 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Nat, isNat } from '@agoric/nat';
 
 export const stringToNat = s => {
-  assert.typeof(s, 'string', X`${s} must be a string`);
+  typeof s === 'string' || Fail`${s} must be a string`;
   const bint = BigInt(s);
   const nat = Nat(bint);
-  assert.equal(
-    `${nat}`,
-    s,
-    X`${s} must be the canonical representation of ${nat}`,
-  );
+  `${nat}` === s || Fail`${s} must be the canonical representation of ${nat}`;
   return nat;
 };
 
@@ -18,8 +14,8 @@ export const stringToNat = s => {
 export const parseQueueSizes = queueSizeEntries =>
   Object.fromEntries(
     queueSizeEntries.map(({ key, size }) => {
-      assert.typeof(key, 'string', X`Key ${key} must be a string`);
-      assert(isNat(size), X`Size ${size} is not a positive integer`);
+      typeof key === 'string' || Fail`Key ${key} must be a string`;
+      isNat(size) || Fail`Size ${size} is not a positive integer`;
       return [key, size];
     }),
   );
@@ -36,24 +32,22 @@ export const parseParams = params => {
     queue_max: rawQueueMax,
   } = params;
   Array.isArray(rawBeansPerUnit) ||
-    assert.fail(X`beansPerUnit must be an array, not ${rawBeansPerUnit}`);
+    Fail`beansPerUnit must be an array, not ${rawBeansPerUnit}`;
   const beansPerUnit = Object.fromEntries(
     rawBeansPerUnit.map(({ key, beans }) => {
-      assert.typeof(key, 'string', X`Key ${key} must be a string`);
+      typeof key === 'string' || Fail`Key ${key} must be a string`;
       return [key, stringToNat(beans)];
     }),
   );
   Array.isArray(rawFeeUnitPrice) ||
-    assert.fail(X`feeUnitPrice ${rawFeeUnitPrice} must be an array`);
+    Fail`feeUnitPrice ${rawFeeUnitPrice} must be an array`;
   const feeUnitPrice = rawFeeUnitPrice.map(({ denom, amount }) => {
-    assert.typeof(denom, 'string', X`denom ${denom} must be a string`);
-    assert(denom, X`denom ${denom} must be non-empty`);
+    typeof denom === 'string' || Fail`denom ${denom} must be a string`;
+    denom || Fail`denom ${denom} must be non-empty`;
     return { denom, amount: stringToNat(amount) };
   });
-  assert(
-    Array.isArray(rawQueueMax),
-    X`queueMax must be an array, not ${rawQueueMax}`,
-  );
+  Array.isArray(rawQueueMax) ||
+    Fail`queueMax must be an array, not ${rawQueueMax}`;
   const queueMax = parseQueueSizes(rawQueueMax);
 
   return { beansPerUnit, feeUnitPrice, queueMax };
