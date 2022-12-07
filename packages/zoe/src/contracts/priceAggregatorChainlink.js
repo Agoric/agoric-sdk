@@ -61,6 +61,9 @@ const start = async (
   zcf,
   { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
 ) => {
+  // brands come from named terms instead of `brands` key because the latter is
+  // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
+  // Oracle brands are inert (without issuers or mints).
   const {
     timer,
     brandIn,

@@ -55,6 +55,9 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
+  // brands come from named terms instead of `brands` key because the latter is
+  // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
+  // Oracle brands are inert (without issuers or mints).
   const { timer, POLL_INTERVAL, brandIn, brandOut, unitAmountIn } =
     zcf.getTerms();
   assertAllDefined({ brandIn, brandOut, POLL_INTERVAL, timer, unitAmountIn });
