@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "author": "Agoric",
   "agoric-wallet": {
-    "htmlBasedir": "./node_modules/@agoric/wallet-ui/build",
+    "htmlBasedir": "../../node_modules/@agoric/wallet-ui/build",
     "deploy": [
       "./api/deploy.js"
     ]

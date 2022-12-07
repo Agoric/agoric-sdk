@@ -2,7 +2,10 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 import { getManifestForAddAssetToVault } from '../src/proposals/addAssetToVault.js';
-import { getManifestForPsm } from '../src/proposals/startPSM.js';
+import {
+  getManifestForPsm,
+  getManifestForPsmGovernance,
+} from '../src/proposals/startPSM.js';
 import { makeInstallCache } from '../src/proposals/utils.js';
 
 export const defaultProposalBuilder = async (
@@ -51,6 +54,52 @@ export const defaultProposalBuilder = async (
   });
 };
 
+export const psmGovernanceBuilder = async ({
+  publishRef,
+  install: install0,
+  wrapInstall,
+}) => {
+  const install = wrapInstall ? wrapInstall(install0) : install0;
+
+  return harden({
+    sourceSpec: '../src/proposals/startPSM.js',
+    getManifestCall: [
+      getManifestForPsmGovernance.name,
+      {
+        installKeys: {
+          psm: publishRef(
+            install('../src/psm/psm.js', '../bundles/bundle-psm.js'),
+          ),
+          econCommitteeCharter: publishRef(
+            install(
+              '../src/econCommitteeCharter.js',
+              '../bundles/bundle-econCommitteeCharter.js',
+            ),
+          ),
+          contractGovernor: publishRef(
+            install(
+              '@agoric/governance/src/contractGovernor.js',
+              '../../governance/bundles/bundle-contractGovernor.js',
+            ),
+          ),
+          committee: publishRef(
+            install(
+              '@agoric/governance/src/committee.js',
+              '../../governance/bundles/bundle-committee.js',
+            ),
+          ),
+          binaryVoteCounter: publishRef(
+            install(
+              '@agoric/governance/src/binaryVoteCounter.js',
+              '../../governance/bundles/bundle-binaryVoteCounter.js',
+            ),
+          ),
+        },
+      },
+    ],
+  });
+};
+
 export const psmProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { anchorOptions = /** @type {object} */ ({}) } = {},
@@ -63,11 +112,12 @@ export const psmProposalBuilder = async (
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
   return harden({
-    sourceSpec: '../src/proposals/addAssetToVault.js',
+    sourceSpec: '../src/proposals/startPSM.js',
     getManifestCall: [
       getManifestForPsm.name,
       {
         anchorOptions: {
+          ...anchorOptions,
           denom,
           decimalPlaces,
         },
