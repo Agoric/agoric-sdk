@@ -147,7 +147,8 @@ export const bridgeProvisioner = async ({
     async fromBridge(_srcID, obj) {
       switch (obj.type) {
         case 'PLEASE_PROVISION': {
-          const { nickname, address, powerFlags } = obj;
+          const { nickname, address, powerFlags: rawPowerFlags } = obj;
+          const powerFlags = rawPowerFlags || [];
           let provisionP;
           if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
             // Only provision a smart wallet.
