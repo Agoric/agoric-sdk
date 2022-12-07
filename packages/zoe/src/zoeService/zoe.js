@@ -183,7 +183,9 @@ const makeZoeKit = (
         },
       },
       feeMintAccessRetriever: {
+        /** @type {() => FeeMintAccess} */
         get() {
+          // @ts-expect-error type cast
           return feeMintKit.feeMintAccess;
         },
       },

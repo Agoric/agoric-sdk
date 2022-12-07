@@ -35,6 +35,7 @@ harden(defineDurableHandle);
 export const makeHandle = handleType => {
   assert.typeof(handleType, 'string', 'handleType must be a string');
   // Return the intersection type (really just an empty object).
+  // @ts-expect-error Bit by our own opaque types.
   return /** @type {Handle<H>} */ (
     makeHeapFarInstance(`${handleType}Handle`, HandleI, {})
   );

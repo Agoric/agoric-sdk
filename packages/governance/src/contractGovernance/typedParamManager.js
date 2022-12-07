@@ -146,6 +146,7 @@ const makeParamManagerFromTerms = async (
     CONTRACT_ELECTORATE,
     [ParamTypes.INVITATION, initialPoserInvitation],
   ]);
+  // @ts-expect-error This used to work
   return makeParamManager(
     publisherKit,
     Object.fromEntries(makerSpecEntries),
