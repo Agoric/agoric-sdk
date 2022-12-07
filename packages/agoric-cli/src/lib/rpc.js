@@ -265,3 +265,4 @@ export const makeRpcUtils = async ({ fetch }) => {
 
   return { vstorage, fromBoard, agoricNames };
 };
+/** @typedef {Awaited<ReturnType<typeof makeAgoricNames>>} AgoricNames */

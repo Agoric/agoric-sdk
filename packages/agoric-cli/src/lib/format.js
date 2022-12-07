@@ -1,12 +1,7 @@
 // @ts-check
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-// eslint-disable-next-line no-unused-vars -- typeof below
-import { makeAgoricNames } from './rpc.js';
 
 // ambient types
 import '@agoric/ertp/src/types-ambient.js';
-
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 
 export const COSMOS_UNIT = 1_000_000n;
 
@@ -97,13 +92,12 @@ export const fmtRecordOfLines = record => {
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
- * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ * @param {import('./rpc.js').AgoricNames} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { brands, offerStatuses } = state;
   const fmt = makeAmountFormatter(
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-    // @ts-ignore xxx RpcRemote
+    // @ts-expect-error xxx RpcRemote
     [...brands.values()],
   );
   const fmtRecord = r =>
@@ -136,7 +130,7 @@ export const offerStatusTuples = (state, agoricNames) => {
         } = o;
         // xxx could be O(1)
         const entry = Object.entries(agoricNames.instance).find(
-          // @ts-ignore minimarshal types are off by a bit
+          // @ts-expect-error minimarshal types are off by a bit
           ([_name, candidate]) => candidate === instance,
         );
         const instanceName = entry ? entry[0] : '???';
@@ -159,17 +153,14 @@ export const offerStatusTuples = (state, agoricNames) => {
  *
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
- * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
+ * @param {import('./rpc.js').AgoricNames} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {
     lastOfferId: [current.lastOfferId],
     purses: purseBalanceTuples(
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-      // @ts-ignore xxx RpcRemote
       [...current.purses.values()],
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-      // @ts-ignore xxx RpcRemote
+      // @ts-expect-error xxx RpcRemote
       [...current.brands.values()],
     ),
     usedInvitations: Object.entries(current.offerToUsedInvitation).map(

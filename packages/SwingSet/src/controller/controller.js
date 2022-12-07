@@ -1,5 +1,4 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import fs from 'fs';
 import path from 'path';
@@ -287,9 +286,9 @@ export async function makeSwingsetController(
   }
 
   const bundles = [
-    // @ts-ignore assume lockdownBundle is set
+    // @ts-expect-error assume lockdownBundle is set
     JSON.parse(kvStore.get('lockdownBundle')),
-    // @ts-ignore assume supervisorBundle is set
+    // @ts-expect-error assume supervisorBundle is set
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, {

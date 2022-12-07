@@ -135,8 +135,7 @@ export const makeStoredSubscription = (
   }
 
   /** @type {StoredSubscription<T>} */
-  // eslint-disable-next-line -- different per package https://github.com/Agoric/agoric-sdk/issues/4620
-  // @ts-ignore getStoreKey type does not have `subscription`
+  // @ts-expect-error getStoreKey type does not have `subscription`
   const storesub = Far('StoredSubscription', {
     getStoreKey: async () => {
       if (!storageNode) {
