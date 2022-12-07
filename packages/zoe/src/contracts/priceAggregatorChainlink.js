@@ -5,7 +5,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
-
+import { Fail } from '@agoric/assert';
 import {
   calculateMedian,
   natSafeMath,
@@ -37,19 +37,27 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * and was completed regularly.
  */
 
+// Partly documented at https://github.com/smartcontractkit/chainlink/blob/b045416ebca769aa69bde2da23b5109abe07a8b5/contracts/src/v0.6/FluxAggregator.sol#L153
+/**
+ * @typedef {object} ChainlinkConfig
+ * @property {number} maxSubmissionCount
+ * @property {number} minSubmissionCount
+ * @property {RelativeTime} restartDelay the number of rounds an Oracle has to wait before they can initiate a round
+ * @property {number} minSubmissionValue an immutable check for a lower bound of what
+ * submission values are accepted from an oracle
+ * @property {number} maxSubmissionValue an immutable check for an upper bound of what
+ * submission values are accepted from an oracle
+ * @property {number} timeout the number of seconds after the previous round that
+ * allowed to lapse before allowing an oracle to skip an unfinished round
+ */
+
 /**
  * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
  * the *Node Operator Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
- * @param {ZCF<{
+ * @param {ZCF<ChainlinkConfig & {
  * timer: TimerService,
- * maxSubmissionCount: number,
- * minSubmissionCount: number,
- * restartDelay: RelativeTime,
- * timeout: number,
- * minSubmissionValue: number,
- * maxSubmissionValue: number,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
  * unitAmountIn?: Amount<'nat'>,
@@ -357,6 +365,8 @@ const start = async (
    * @param {Timestamp} blockTimestamp
    */
   const initializeNewRound = (roundId, blockTimestamp) => {
+    newRound(roundId) || Fail`Round ${roundId} already started`;
+
     updateTimedOutRoundInfo(subtract(roundId, 1), blockTimestamp);
 
     reportingRoundId = roundId;
@@ -385,7 +395,7 @@ const start = async (
    * @param {OracleKey} oracleKey
    * @param {Timestamp} blockTimestamp
    */
-  const oracleInitializeNewRound = (roundId, oracleKey, blockTimestamp) => {
+  const proposeNewRound = (roundId, oracleKey, blockTimestamp) => {
     if (!newRound(roundId)) return;
     const lastStarted = oracleStatuses.get(oracleKey).lastStartedRound; // cache storage reads
     if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n) return;
@@ -749,7 +759,7 @@ const start = async (
           return;
         }
 
-        oracleInitializeNewRound(roundId, oracleKey, blockTimestamp);
+        proposeNewRound(roundId, oracleKey, blockTimestamp);
         const recorded = recordSubmission(parsedSubmission, roundId, oracleKey);
         if (!recorded) {
           return;
