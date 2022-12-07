@@ -690,8 +690,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           console.debug(`helper said: ${stdout}`);
           const out = JSON.parse(stdout);
 
-          out.code ||
-            0 ||
+          out.code === 0 ||
             Fail`Unexpected output: ${out.raw_log || stdout.trimRight()}`;
 
           // Wait for the transaction to be included in a block.
