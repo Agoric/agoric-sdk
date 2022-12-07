@@ -3,8 +3,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { kunser } from '../../src/lib/kmarshal.js';
 import { initSwingStore } from '@agoric/swing-store';
+import { kunser } from '../../src/lib/kmarshal.js';
 
 import {
   initializeSwingset,

@@ -297,7 +297,8 @@ export async function initializeSwingset(
 ) {
   const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
-  !swingsetIsInitialized(kernelStorage) || Fail`kernel store already initialized`;
+  !swingsetIsInitialized(kernelStorage) ||
+    Fail`kernel store already initialized`;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));
