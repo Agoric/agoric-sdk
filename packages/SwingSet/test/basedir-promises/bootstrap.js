@@ -2,7 +2,7 @@ import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;
@@ -75,7 +75,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.call-promise1.finish`);
       } else {
-        assert.fail(X`unknown mode ${mode}`);
+        Fail`unknown mode ${mode}`;
       }
     },
   });

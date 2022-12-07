@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import {
   flipRemoteSlot,
@@ -16,7 +16,7 @@ export function makeOutbound(state) {
     const remote = state.getRemote(remoteID);
     const { mapToRemote, isReachable } = remote;
     const rref = mapToRemote(lref);
-    assert(rref, X`${lref} must already be in remote ${rname(remote)}`);
+    rref || Fail`${lref} must already be in remote ${rname(remote)}`;
     if (parseRemoteSlot(rref).type === 'object') {
       assert(isReachable(lref), `sending unreachable ${lref} to remote`);
     }
@@ -41,7 +41,7 @@ export function makeOutbound(state) {
 
   function addRemotePromiseForLocal(remote, lpid) {
     const status = state.getPromiseStatus(lpid);
-    assert(status, X`promise ${lpid} wasn't being tracked`);
+    status || Fail`promise ${lpid} wasn't being tracked`;
 
     const rpid = remote.allocateRemotePromise();
     remote.addRemoteMapping(flipRemoteSlot(rpid), lpid);
@@ -68,7 +68,7 @@ export function makeOutbound(state) {
       } else if (type === 'promise') {
         addRemotePromiseForLocal(remote, lref);
       } else {
-        assert.fail(X`cannot send type ${type} to remote`);
+        Fail`cannot send type ${type} to remote`;
       }
       rref = remote.mapToRemote(lref);
     }

@@ -1,10 +1,10 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@agoric/nat';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export default function buildCommand(broadcastCallback) {
-  assert(broadcastCallback, X`broadcastCallback must be provided.`);
+  broadcastCallback || Fail`broadcastCallback must be provided.`;
   let inboundCallback;
   const srcPath = new URL('device-command.js', import.meta.url).pathname;
   let nextCount = 0n;
@@ -18,7 +18,7 @@ export default function buildCommand(broadcastCallback) {
     const count = nextCount;
     nextCount += 1n;
     responses.set(count, { resolve, reject });
-    assert(inboundCallback, X`inboundCommand before registerInboundCallback`);
+    inboundCallback || Fail`inboundCommand before registerInboundCallback`;
     try {
       inboundCallback(count, JSON.stringify(obj));
     } catch (e) {
@@ -33,7 +33,7 @@ export default function buildCommand(broadcastCallback) {
   }
 
   function registerInboundCallback(cb) {
-    assert(!inboundCallback, X`registerInboundCallback called more than once`);
+    !inboundCallback || Fail`registerInboundCallback called more than once`;
     inboundCallback = cb;
   }
 
@@ -48,7 +48,7 @@ export default function buildCommand(broadcastCallback) {
     }
     // TODO this might not qualify as an error, it needs more thought
     // See https://github.com/Agoric/agoric-sdk/pull/2406#discussion_r575561554
-    assert(responses.has(count), X`unknown response index ${count}`);
+    responses.has(count) || Fail`unknown response index ${count}`;
     const { resolve, reject } = responses.get(count);
     if (isReject) {
       reject(obj);

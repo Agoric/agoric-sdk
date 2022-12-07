@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 function sanitize(data) {
@@ -28,7 +28,7 @@ export function buildRootDeviceNode(tools) {
   let { inboundHandler } = getDeviceState() || {};
 
   function inboundCallback(...args) {
-    assert(inboundHandler, X`inboundHandler not yet registered`);
+    inboundHandler || Fail`inboundHandler not yet registered`;
     const safeArgs = JSON.parse(JSON.stringify(args));
     try {
       SO(inboundHandler).inbound(...harden(safeArgs));

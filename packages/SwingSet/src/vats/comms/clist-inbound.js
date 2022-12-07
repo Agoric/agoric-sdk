@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import {
   flipRemoteSlot,
   insistRemoteType,
@@ -21,12 +21,10 @@ export function makeInbound(state) {
     insistRemoteType('promise', rpid);
     const remote = state.getRemote(remoteID);
     const lpid = remote.mapFromRemote(rpid);
-    assert(lpid, X`unknown remote ${remoteID} promise ${rpid}`);
+    lpid || Fail`unknown remote ${remoteID} promise ${rpid}`;
     const { subscribers } = state.getPromiseSubscribers(lpid);
     subscribers.indexOf(remoteID) === -1 ||
-      assert.fail(
-        X`attempt to retire remote ${remoteID} subscribed promise ${rpid}`,
-      );
+      Fail`attempt to retire remote ${remoteID} subscribed promise ${rpid}`;
     remote.deleteRemoteMapping(lpid);
     cdebug(`comms delete mapping r<->k ${remoteID} ${rpid}<=>${lpid}`);
   }
@@ -51,7 +49,7 @@ export function makeInbound(state) {
     const remote = state.getRemote(remoteID);
     const { mapFromRemote, isReachable } = remote;
     const lref = mapFromRemote(rref);
-    assert(lref, X`${rref} must already be in remote ${rname(remote)}`);
+    lref || Fail`${rref} must already be in remote ${rname(remote)}`;
     if (parseRemoteSlot(rref).type === 'object') {
       assert(isReachable(lref), `remote sending to unreachable ${lref}`);
     }
@@ -106,7 +104,7 @@ export function makeInbound(state) {
       } else if (type === 'promise') {
         addLocalPromiseForRemote(remote, rref);
       } else {
-        assert.fail(X`cannot accept type ${type} from remote`);
+        Fail`cannot accept type ${type} from remote`;
       }
       lref = remote.mapFromRemote(rref);
     }

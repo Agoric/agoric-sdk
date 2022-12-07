@@ -1,5 +1,5 @@
 /* global globalThis WeakRef FinalizationRegistry */
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import '../../types-ambient.js';
@@ -115,8 +115,8 @@ function managerPort(issueCommand) {
   function decode(msg) {
     /** @type { Tagged } */
     const item = decodeData(msg);
-    assert(Array.isArray(item), X`expected array`);
-    assert(item.length > 0, X`empty array lacks tag`);
+    Array.isArray(item) || Fail`expected array`;
+    item.length > 0 || Fail`empty array lacks tag`;
     return item;
   }
 

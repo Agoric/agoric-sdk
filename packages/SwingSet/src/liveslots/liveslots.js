@@ -4,7 +4,7 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
 import { HandledPromise } from '@endo/eventual-send';
@@ -439,7 +439,7 @@ function build(
         lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
-          assert.fail(X`mIPromise handler called after resolution`);
+          Fail`mIPromise handler called after resolution`;
         }
         // eslint-disable-next-line no-use-before-define
         return queueMessage(vpid, prop, args, returnedP);
@@ -449,7 +449,7 @@ function build(
         lsdebug(`makePipelinablePromise handler.get (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
-          assert.fail(X`mIPromise handler called after resolution`);
+          Fail`mIPromise handler called after resolution`;
         }
         // FIXME: Actually pipeline.
         return p.then(o => o[prop]);
@@ -610,7 +610,7 @@ function build(
   function requiredValForSlot(baseRef) {
     const wr = slotToVal.get(baseRef);
     const result = wr && wr.deref();
-    assert(result, X`no value for ${baseRef}`);
+    result || Fail`no value for ${baseRef}`;
     return result;
   }
 
@@ -775,7 +775,7 @@ function build(
         result = val[facet];
       }
     } else {
-      assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
+      !allocatedByVat || Fail`I don't remember allocating ${slot}`;
       if (type === 'object') {
         // this is a new import value
         val = makeImportedPresence(slot, iface);
@@ -798,7 +798,7 @@ function build(
         val = makeDeviceNode(slot, iface);
         importedDevices.add(val);
       } else {
-        assert.fail(X`unrecognized slot type '${type}'`);
+        Fail`unrecognized slot type '${type}'`;
       }
     }
     registerValue(baseRef, val, facet !== undefined);
@@ -811,9 +811,8 @@ function build(
   function revivePromise(slot) {
     meterControl.assertNotMetered();
     const { type } = parseVatSlot(slot);
-    assert(type === 'promise', X`revivePromise called on non-promise ${slot}`);
-    !getValForSlot(slot) ||
-      assert.fail(X`revivePromise called on pre-existing ${slot}`);
+    type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
+    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
     const pRec = makePipelinablePromise(slot);
     importedVPIDs.set(slot, pRec);
     const p = pRec.promise;
@@ -986,7 +985,7 @@ function build(
   function forbidPromises(serArgs) {
     for (const slot of serArgs.slots) {
       parseVatSlot(slot).type !== 'promise' ||
-        assert.fail(X`D() arguments cannot include a Promise`);
+        Fail`D() arguments cannot include a Promise`;
     }
   }
 
@@ -1040,7 +1039,7 @@ function build(
       `ls[${forVatID}].dispatch.deliver ${target}.${extractMethod(methargsdata)} -> ${resultVPID}`,
     );
     const t = convertSlotToVal(target);
-    assert(t, X`no target ${target}`);
+    t || Fail`no target ${target}`;
     // TODO: if we acquire new decision-making authority over a promise that
     // we already knew about ('resultVPID' is already in slotToVal), we should no
     // longer accept dispatch.notify from the kernel. We currently use
@@ -1300,7 +1299,7 @@ function build(
 
   function disavow(presence) {
     if (!valToSlot.has(presence)) {
-      assert.fail(X`attempt to disavow unknown ${presence}`);
+      Fail`attempt to disavow unknown ${presence}`;
     }
     const slot = valToSlot.get(presence);
     const { type, allocatedByVat } = parseVatSlot(slot);
@@ -1423,9 +1422,7 @@ function build(
       X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
     );
     getInterfaceOf(rootObject) !== undefined ||
-      assert.fail(
-        X`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`,
-      );
+      Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
     // Need to load watched promises *after* buildRootObject() so that handler kindIDs
     // have a chance to be reassociated with their handlers.
     watchedPromiseManager.loadWatchedPromiseTable();
@@ -1484,7 +1481,7 @@ function build(
         break;
       }
       default:
-        assert.fail(X`unknown delivery type ${type}`);
+        Fail`unknown delivery type ${type}`;
     }
     return result;
   }

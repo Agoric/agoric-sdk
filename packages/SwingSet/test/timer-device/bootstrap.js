@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
@@ -31,7 +31,7 @@ export function buildRootObject(vatPowers, vatParameters) {
         const nextTime = D(devices.timer).schedule(rptr, handler);
         log(`next scheduled time: ${nextTime}`);
       } else {
-        assert.fail(X`unknown argv mode '${argv[0]}'`);
+        Fail`unknown argv mode '${argv[0]}'`;
       }
     },
   });

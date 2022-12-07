@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
@@ -31,10 +31,10 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const targetSlot = mapKernelSlotToVatSlot(target);
     const { type } = parseVatSlot(targetSlot);
     if (type === 'object') {
-      assert(parseVatSlot(targetSlot).allocatedByVat, 'deliver() to wrong vat');
+      parseVatSlot(targetSlot).allocatedByVat || Fail`deliver() to wrong vat`;
     } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
-      assert(p.decider === vatID, 'wrong decider');
+      p.decider === vatID || Fail`wrong decider`;
     }
     const inputSlots = msg.methargs.slots.map(slot =>
       mapKernelSlotToVatSlot(slot),
@@ -43,10 +43,8 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      p.state === 'unresolved' ||
-        assert.fail(X`result ${msg.result} already resolved`);
-      !p.decider ||
-        assert.fail(X`result ${msg.result} already has decider ${p.decider}`);
+      p.state === 'unresolved' || Fail`result ${msg.result} already resolved`;
+      !p.decider || Fail`result ${msg.result} already has decider ${p.decider}`;
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
       kernelKeeper.setDecider(msg.result, vatID);
@@ -81,7 +79,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       // pipelined messages pending in the inbound queue
       throw new Error('not implemented yet');
     } else {
-      assert.fail(X`unknown kernelPromise state '${kp.state}'`);
+      throw Fail`unknown kernelPromise state '${kp.state}'`;
     }
   }
 
@@ -95,7 +93,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     let idx = 0;
     for (const resolution of kResolutions) {
       const [kpid, p] = resolution;
-      assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
+      p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
       const vpid = mapKernelSlotToVatSlot(kpid);
       /** @type { VatOneResolution } */
       const vres = [vpid, ...translatePromiseDescriptor(p)];
@@ -228,8 +226,9 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
         const [_, ...args] = kd;
         return translateBringOutYourDead(...args);
       }
-      default:
-        assert.fail(X`unknown kernelDelivery.type ${kd[0]}`);
+      default: {
+        throw Fail`unknown kernelDelivery.type ${kd[0]}`;
+      }
     }
     // returns one of:
     //  ['message', target, msg]
@@ -259,7 +258,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   const { enablePipelining = false } = vatKeeper.getOptions();
 
   function translateSend(targetSlot, msg) {
-    assert.typeof(targetSlot, 'string', 'non-string targetSlot');
+    typeof targetSlot === 'string' || Fail`non-string targetSlot`;
     insistMessage(msg);
     const { methargs, result: resultSlot } = msg;
     insistCapData(methargs);
@@ -297,11 +296,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       // we're guaranteed to have a promise newly allocated by the vat.
       const p = kernelKeeper.getKernelPromise(result);
       p.state === 'unresolved' ||
-        assert.fail(X`send() result ${result} is already resolved`);
+        Fail`send() result ${result} is already resolved`;
       p.decider === vatID ||
-        assert.fail(
-          X`send() result ${result} is decided by ${p.decider} not ${vatID}`,
-        );
+        Fail`send() result ${result} is decided by ${p.decider} not ${vatID}`;
       kernelKeeper.clearDecider(result);
       // resolution authority now held by run-queue
     }
@@ -403,7 +400,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    * @returns {KernelSyscallDropImports}
    */
   function translateDropImports(vrefs) {
-    assert(Array.isArray(vrefs), X`dropImports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`dropImports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -426,7 +423,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    * @returns {KernelSyscallRetireImports}
    */
   function translateRetireImports(vrefs) {
-    assert(Array.isArray(vrefs), X`retireImports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`retireImports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -451,7 +448,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    * @returns {KernelSyscallRetireExports}
    */
   function translateRetireExports(vrefs) {
-    assert(Array.isArray(vrefs), X`retireExports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`retireExports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -473,7 +470,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    * @returns {import('../types-external.js').KernelSyscallAbandonExports}
    */
   function translateAbandonExports(vrefs) {
-    assert(Array.isArray(vrefs), X`abandonExports() given non-Array ${vrefs}`);
+    Array.isArray(vrefs) || Fail`abandonExports() given non-Array ${vrefs}`;
     const krefs = vrefs.map(vref => {
       const { type, allocatedByVat } = parseVatSlot(vref);
       assert.equal(type, 'object');
@@ -499,7 +496,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     insistCapData(args);
     const dev = mapVatSlotToKernelSlot(target);
     const { type } = parseKernelSlot(dev);
-    assert(type === 'device', X`doCallNow must target a device, not ${dev}`);
+    type === 'device' || Fail`doCallNow must target a device, not ${dev}`;
     for (const slot of args.slots) {
       assert(
         parseVatSlot(slot).type !== 'promise',
@@ -517,7 +514,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     const kpid = mapVatSlotToKernelSlot(vpid);
     kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
     kernelKeeper.hasKernelPromise(kpid) ||
-      assert.fail(X`unknown kernelPromise id '${kpid}'`);
+      Fail`unknown kernelPromise id '${kpid}'`;
     /** @type { KernelSyscallSubscribe } */
     const ks = harden(['subscribe', vatID, kpid]);
     return ks;
@@ -629,8 +626,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         const [_, ...args] = vsc;
         return translateAbandonExports(...args);
       }
-      default:
-        assert.fail(X`unknown vatSyscall type ${vsc[0]}`);
+      default: {
+        throw Fail`unknown vatSyscall type ${vsc[0]}`;
+      }
     }
   }
 

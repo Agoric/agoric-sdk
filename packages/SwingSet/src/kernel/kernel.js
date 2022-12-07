@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { importBundle } from '@endo/import-bundle';
 import { assertKnownOptions } from '../lib/assertOptions.js';
@@ -547,8 +547,7 @@ export default function buildKernel(
     const p = kernelKeeper.getKernelPromise(kpid);
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-
-    assert(p.state !== 'unresolved', X`spurious notification ${kpid}`);
+    p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
@@ -975,7 +974,7 @@ export default function buildKernel(
     const { target, msg } = message;
     const { type } = parseKernelSlot(target);
     ['object', 'promise'].includes(type) ||
-      assert.fail(X`unable to send() to slot.type ${type}`);
+      Fail`unable to send() to slot.type ${type}`;
 
     function splat(error) {
       if (msg.result) {
@@ -1147,7 +1146,7 @@ export default function buildKernel(
     } else if (gcMessages.includes(message.type)) {
       deliverP = processGCMessage(message);
     } else {
-      assert.fail(X`unable to process message.type ${message.type}`);
+      Fail`unable to process message.type ${message.type}`;
     }
 
     // this always returns a CrankResults, even if it's just
@@ -1293,7 +1292,7 @@ export default function buildKernel(
   async function tryProcessMessage(processor, message) {
     if (processQueueRunning) {
       console.error(`We're currently already running at`, processQueueRunning);
-      assert.fail(X`Kernel reentrancy is forbidden`);
+      Fail`Kernel reentrancy is forbidden`;
     }
     processQueueRunning = Error('here');
     try {
@@ -1512,19 +1511,15 @@ export default function buildKernel(
       bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
       ...actualCreationOptions
     } = creationOptions;
-    assert.typeof(
-      setup,
-      'function',
-      X`setup is not a function, rather ${setup}`,
-    );
+    typeof setup === 'function' ||
+      Fail`setup is not a function, rather ${setup}`;
     assertKnownOptions(actualCreationOptions, [
       'enablePipelining',
       'metered',
       'reapInterval',
       'managerType',
     ]);
-
-    assert(!kernelKeeper.hasVatWithName(name), X`vat ${name} already exists`);
+    !kernelKeeper.hasVatWithName(name) || Fail`vat ${name} already exists`;
 
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
@@ -1564,7 +1559,7 @@ export default function buildKernel(
       throw Error('kernel.start already called');
     }
     started = true;
-    assert(kernelKeeper.getInitialized(), X`kernel not initialized`);
+    kernelKeeper.getInitialized() || Fail`kernel not initialized`;
 
     kernelKeeper.loadStats();
 
@@ -1835,17 +1830,20 @@ export default function buildKernel(
   function kpResolution(kpid) {
     const p = kernelKeeper.getKernelPromise(kpid);
     switch (p.state) {
-      case 'unresolved':
-        assert.fail(X`resolution of ${kpid} is still pending`);
+      case 'unresolved': {
+        throw Fail`resolution of ${kpid} is still pending`;
+      }
       case 'fulfilled':
-      case 'rejected':
+      case 'rejected': {
         kernelKeeper.decrementRefCount(kpid, 'external');
         for (const kref of p.data.slots) {
           kernelKeeper.incrementRefCount(kref, 'external');
         }
         return p.data;
-      default:
-        assert.fail(X`invalid state for ${kpid}: ${p.state}`);
+      }
+      default: {
+        throw Fail`invalid state for ${kpid}: ${p.state}`;
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 /*
  * The "loopbox" is a special device used for unit tests, which glues one
@@ -19,7 +19,7 @@ import { assert, details as X } from '@agoric/assert';
 export function buildLoopbox(deliverMode) {
   deliverMode === 'immediate' ||
     deliverMode === 'queued' ||
-    assert.fail(X`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`);
+    Fail`deliverMode=${deliverMode}, must be 'immediate' or 'queued'`;
   const loopboxSrcPath = new URL('device-loopbox.js', import.meta.url).pathname;
 
   let loopboxPassOneMessage;

@@ -1,5 +1,5 @@
 /* eslint-disable no-await-in-loop,@jessie.js/no-nested-await */
-import { assert, details as X, quote as q } from '@agoric/assert';
+import { assert, Fail, quote as q } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
@@ -102,8 +102,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function ensureVatOnline(vatID, recreate) {
     const info = ephemeral.vats.get(vatID);
     if (info) return info;
-
-    assert(kernelKeeper.vatIsAlive(vatID), X`${q(vatID)}: not alive`);
+    kernelKeeper.vatIsAlive(vatID) || Fail`${q(vatID)}: not alive`;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const { source, options } = vatKeeper.getSourceAndOptions();
 

@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { insistMessage } from '../lib/message.js';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
@@ -21,7 +21,7 @@ export function makeKDTranslator(deviceID, kernelKeeper) {
     insistCapData(args);
     const targetSlot = mapKernelSlotToDeviceSlot(target);
     const { allocatedByVat } = parseVatSlot(targetSlot);
-    assert(allocatedByVat, X`invoke() to someone else's device`);
+    allocatedByVat || Fail`invoke() to someone else's device`;
     const slots = args.slots.map(slot => mapKernelSlotToDeviceSlot(slot));
     const deviceArgs = { ...args, slots };
     const deviceInvocation = harden([targetSlot, method, deviceArgs]);
@@ -172,7 +172,7 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
       case 'callKernelHook':
         return translateCallKernelHook(...args);
       default:
-        assert.fail(X`unknown deviceSyscall type ${type}`);
+        throw Fail`unknown deviceSyscall type ${type}`;
     }
   }
 

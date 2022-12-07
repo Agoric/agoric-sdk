@@ -1,5 +1,5 @@
 import { Remotable, passStyleOf, makeMarshal } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import {
   insistVatType,
   makeVatSlot,
@@ -84,16 +84,16 @@ export function makeDeviceSlots(
     if (!slotToVal.has(slot)) {
       let val;
       const { type, allocatedByVat } = parseVatSlot(slot);
-      assert(!allocatedByVat, X`I don't remember allocating ${slot}`);
+      !allocatedByVat || Fail`I don't remember allocating ${slot}`;
       if (type === 'object') {
         // this is a new import value
         // lsdebug(`assigning new import ${slot}`);
         val = makePresence(slot, iface);
         // lsdebug(` for presence`, val);
       } else if (type === 'device') {
-        assert.fail(X`devices should not be given other devices '${slot}'`);
+        throw Fail`devices should not be given other devices '${slot}'`;
       } else {
-        assert.fail(X`unrecognized slot type '${type}'`);
+        throw Fail`unrecognized slot type '${type}'`;
       }
       slotToVal.set(slot, val);
       valToSlot.set(val, slot);
@@ -111,7 +111,7 @@ export function makeDeviceSlots(
 
   function PresenceHandler(importSlot) {
     return {
-      get(target, prop) {
+      get(_target, prop) {
         lsdebug(`PreH proxy.get(${String(prop)})`);
         if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
@@ -136,11 +136,10 @@ export function makeDeviceSlots(
     // a sendOnly() rather than a send(), so it doesn't return a Promise. And
     // since devices don't accept Promises either, SO(x) must be given a
     // presence, not a promise that might resolve to a presence.
-
-    assert(!outstandingProxies.has(x), X`SO(SO(x)) is invalid`);
+    !outstandingProxies.has(x) || Fail`SO(SO(x)) is invalid`;
     const slot = valToSlot.get(x);
     (slot && parseVatSlot(slot).type === 'object') ||
-      assert.fail(X`SO(x) must be called on a Presence, not ${x}`);
+      Fail`SO(x) must be called on a Presence, not ${x}`;
     const handler = PresenceHandler(slot);
     const p = harden(new Proxy({}, handler));
     outstandingProxies.add(p);

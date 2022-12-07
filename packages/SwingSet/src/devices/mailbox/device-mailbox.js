@@ -1,7 +1,7 @@
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
@@ -36,7 +36,7 @@ export function buildRootDeviceNode(tools) {
   // console.debug(`device-mailbox build: inboundHandler is`, inboundHandler);
   deliverInboundMessages = (peer, newMessages) => {
     inboundHandler ||
-      assert.fail(X`deliverInboundMessages before registerInboundHandler`);
+      Fail`deliverInboundMessages before registerInboundHandler`;
     try {
       SO(inboundHandler).deliverInboundMessages(peer, newMessages);
     } catch (e) {
@@ -45,7 +45,7 @@ export function buildRootDeviceNode(tools) {
   };
 
   deliverInboundAck = (peer, ack) => {
-    assert(inboundHandler, X`deliverInboundAck before registerInboundHandler`);
+    inboundHandler || Fail`deliverInboundAck before registerInboundHandler`;
     try {
       SO(inboundHandler).deliverInboundAck(peer, ack);
     } catch (e) {
@@ -56,7 +56,7 @@ export function buildRootDeviceNode(tools) {
   // the Root Device Node.
   return Far('root', {
     registerInboundHandler(handler) {
-      assert(!inboundHandler, X`already registered`);
+      !inboundHandler || Fail`already registered`;
       inboundHandler = handler;
       setDeviceState(harden({ inboundHandler }));
     },
@@ -69,7 +69,7 @@ export function buildRootDeviceNode(tools) {
       try {
         endowments.add(`${peer}`, Nat(msgnum), `${body}`);
       } catch (e) {
-        assert.fail(X`error in add: ${e}`);
+        Fail`error in add: ${e}`;
       }
     },
 
@@ -77,7 +77,7 @@ export function buildRootDeviceNode(tools) {
       try {
         endowments.remove(`${peer}`, Nat(msgnum));
       } catch (e) {
-        assert.fail(X`error in remove: ${e}`);
+        Fail`error in remove: ${e}`;
       }
     },
 
@@ -85,7 +85,7 @@ export function buildRootDeviceNode(tools) {
       try {
         endowments.setAcknum(`${peer}`, Nat(msgnum));
       } catch (e) {
-        assert.fail(X`error in ackInbound: ${e}`);
+        Fail`error in ackInbound: ${e}`;
       }
     },
   });

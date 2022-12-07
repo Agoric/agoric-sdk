@@ -3,7 +3,7 @@
  */
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistDeviceID } from '../../lib/id.js';
@@ -72,7 +72,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    *    or is otherwise invalid.
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
-    assert.typeof(devSlot, 'string', X`non-string devSlot: ${devSlot}`);
+    typeof devSlot === 'string' || Fail`non-string devSlot: ${devSlot}`;
     // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
     if (!kvStore.has(devKey)) {
@@ -81,13 +81,13 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
-          assert.fail(X`devices cannot export Objects`);
+          Fail`devices cannot export Objects`;
         } else if (type === 'promise') {
-          assert.fail(X`devices cannot export Promises`);
+          Fail`devices cannot export Promises`;
         } else if (type === 'device') {
           kernelSlot = addKernelDeviceNode(deviceID);
         } else {
-          assert.fail(X`unknown type ${type}`);
+          Fail`unknown type ${type}`;
         }
         // device nodes don't have refcounts: they're immortal
         const kernelKey = `${deviceID}.c.${kernelSlot}`;
@@ -96,7 +96,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
-        assert.fail(X`unknown devSlot ${devSlot}`);
+        Fail`unknown devSlot ${devSlot}`;
       }
     }
 
@@ -115,7 +115,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    *    devices or is otherwise invalid.
    */
   function mapKernelSlotToDeviceSlot(kernelSlot) {
-    assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
+    typeof kernelSlot === 'string' || Fail`non-string kernelSlot`;
     const kernelKey = `${deviceID}.c.${kernelSlot}`;
     if (!kvStore.has(kernelKey)) {
       const { type } = parseKernelSlot(kernelSlot);
@@ -131,7 +131,7 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
         id = Nat(BigInt(kvStore.get(`${deviceID}.p.nextID`)));
         kvStore.set(`${deviceID}.p.nextID`, `${id + 1n}`);
       } else {
-        assert.fail(X`unknown type ${type}`);
+        throw Fail`unknown type ${type}`;
       }
       // Use isExport=false, since this is an import. Unlike
       // mapKernelSlotToVatSlot, we use onlyRecognizable=false, to increment

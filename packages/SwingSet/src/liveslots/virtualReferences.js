@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
@@ -293,7 +293,7 @@ export function makeVirtualReferenceManager(
     if (reanimator) {
       return reanimator(baseRef);
     } else {
-      assert.fail(X`unknown kind ${kindID}`);
+      throw Fail`unknown kind ${kindID}`;
     }
   }
 
@@ -309,7 +309,7 @@ export function makeVirtualReferenceManager(
     if (deleter) {
       return deleter(vobjID);
     } else {
-      assert.fail(X`unknown kind ${kindID}`);
+      throw Fail`unknown kind ${kindID}`;
     }
   }
 

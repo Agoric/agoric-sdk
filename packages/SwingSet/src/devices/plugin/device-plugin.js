@@ -1,6 +1,6 @@
 import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
@@ -148,7 +148,7 @@ export function buildRootDeviceNode(tools) {
     connect,
     send,
     registerReceiver(receiver) {
-      assert(!registeredReceiver, X`registered receiver already set`);
+      !registeredReceiver || Fail`registered receiver already set`;
       registeredReceiver = receiver;
       saveState();
     },

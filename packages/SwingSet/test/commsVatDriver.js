@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
@@ -185,7 +185,7 @@ function loggingSyscall(log) {
  */
 function refOf(scriptRef) {
   scriptRef[0] === '@' ||
-    assert.fail(X`expected reference ${scriptRef} to start with '@'`);
+    Fail`expected reference ${scriptRef} to start with '@'`;
   const delim = scriptRef.indexOf(':');
   let ref;
   if (delim < 0) {
