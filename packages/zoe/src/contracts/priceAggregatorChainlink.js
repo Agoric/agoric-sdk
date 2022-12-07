@@ -6,6 +6,7 @@ import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import { Fail } from '@agoric/assert';
+import { assertAllDefined } from '@agoric/internal';
 import {
   calculateMedian,
   natSafeMath,
@@ -14,7 +15,9 @@ import {
 
 import '../../tools/types.js';
 import { assertParsableNumber } from '../contractSupport/ratio.js';
-import { INVITATION_MAKERS_DESC } from './priceAggregator';
+import { INVITATION_MAKERS_DESC } from './priceAggregator.js';
+
+export { INVITATION_MAKERS_DESC };
 
 /**
  * @typedef {{ roundId: number | undefined, data: string }} PriceRound
@@ -77,23 +80,31 @@ const start = async (zcf, privateArgs) => {
   // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
   // Oracle brands are inert (without issuers or mints).
   const {
-    timer,
     brandIn,
     brandOut,
     maxSubmissionCount,
+    maxSubmissionValue,
     minSubmissionCount,
+    minSubmissionValue,
     restartDelay,
     timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
+    timer,
 
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
-  // TODO helper like: assertDefined({ brandIn, brandOut, timer, unitAmountIn })
-  assert(brandIn, 'missing brandIn');
-  assert(brandOut, 'missing brandOut');
-  assert(timer, 'missing timer');
-  assert(unitAmountIn, 'missing unitAmountIn');
+
+  assertAllDefined({
+    brandIn,
+    brandOut,
+    maxSubmissionCount,
+    maxSubmissionValue,
+    minSubmissionCount,
+    minSubmissionValue,
+    restartDelay,
+    timeout,
+    timer,
+    unitAmountIn,
+  });
 
   const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
 
@@ -119,7 +130,7 @@ const start = async (zcf, privateArgs) => {
   let reportingRoundId = 0n;
 
   const { marshaller, storageNode } = privateArgs;
-  assertDefined({ marshaller, storageNode });
+  assertAllDefined({ marshaller, storageNode });
   /** @type {PublishKit<LatestRound>} */
   const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
     makeStoredPublishKit(
@@ -743,6 +754,8 @@ const start = async (zcf, privateArgs) => {
         const parsedSubmission = Nat(parseInt(submissionRaw, 10));
         const blockTimestamp = await E(timer).getCurrentTimestamp();
 
+        console.log('DEBUG pushResult', { parsedSubmission, blockTimestamp });
+
         let roundId;
         if (roundIdRaw === undefined) {
           const suggestedRound = oracleRoundStateSuggestRound(
@@ -758,7 +771,7 @@ const start = async (zcf, privateArgs) => {
 
         const error = validateOracleRound(oracleKey, roundId, blockTimestamp);
         if (!(parsedSubmission >= minSubmissionValue)) {
-          console.error('value below minSubmissionValue');
+          console.error('value below minSubmissionValue', minSubmissionValue);
           return;
         }
 

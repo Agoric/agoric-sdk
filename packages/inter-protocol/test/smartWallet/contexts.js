@@ -73,10 +73,10 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       'installation',
     );
     const paBundle = await bundleCache.load(
-      '../zoe/src/contracts/priceAggregator.js',
+      '../zoe/src/contracts/priceAggregatorChainlink.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>>} */
+    /** @type {Promise<Installation<import('@agoric/zoe/src/contracts/priceAggregatorChainlink.js').start>>} */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 
@@ -87,7 +87,12 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
           priceFeedOptions: {
             AGORIC_INSTANCE_NAME: `${inBrandName}-${outBrandName} price feed`,
             contractTerms: {
-              POLL_INTERVAL: 1n,
+              minSubmissionCount: 2,
+              minSubmissionValue: 1,
+              maxSubmissionCount: 5,
+              maxSubmissionValue: 99999,
+              restartDelay: 1n,
+              timeout: 10,
             },
             oracleAddresses,
             IN_BRAND_NAME: inBrandName,

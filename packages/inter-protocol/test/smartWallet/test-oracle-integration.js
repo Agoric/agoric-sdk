@@ -10,13 +10,12 @@ import {
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 
-import { INVITATION_MAKERS_DESC } from '@agoric/zoe/src/contracts/priceAggregator.js';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { AmountMath } from '@agoric/ertp';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { INVITATION_MAKERS_DESC } from '@agoric/zoe/src/contracts/priceAggregatorChainlink.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
-import { makeDefaultTestContext } from './contexts.js';
 import { headValue } from '../supports.js';
+import { makeDefaultTestContext } from './contexts.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -87,18 +86,15 @@ test('admin price', async t => {
   const currentSub = E(wallet).getCurrentSubscriber();
 
   await t.context.simpleCreatePriceFeed([operatorAddress], 'ATOM', 'USD');
-  const atomBrand = await E(agoricNames).lookup('oracleBrand', 'ATOM');
-  const usdBrand = await E(agoricNames).lookup('oracleBrand', 'USD');
 
   const offersFacet = wallet.getOffersFacet();
 
+  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/zoe/src/contracts/priceAggregatorChainlink.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
   );
-  /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['publicFacet']} */
   const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
-  const priceAuthority = await E(paPublicFacet).getPriceAuthority();
 
   /**
    * get invitation details the way a user would
@@ -159,12 +155,15 @@ test('admin price', async t => {
 
   // Push a new price result /////////////////////////
 
+  /** @type {import('@agoric/zoe/src/contracts/priceAggregatorChainlink.js').PriceRound} */
+  const result = { roundId: 1, data: '123' };
+
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: 44,
     invitationMakerName: 'makePushPriceInvitation',
-    invitationArgs: harden([123n]),
+    invitationArgs: harden([result]),
   };
 
   /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
@@ -185,17 +184,10 @@ test('admin price', async t => {
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   E(manualTimer).tickN(1);
 
-  const quote = await priceAuthority.quoteGiven(
-    AmountMath.make(atomBrand, 1_000n),
-    usdBrand,
-  );
+  const latestRoundSubscriber = await E(paPublicFacet).getRoundStartNotifier();
 
-  t.deepEqual(quote.quoteAmount.value[0].amountIn, {
-    brand: atomBrand,
-    value: 1_000n,
-  });
-  t.deepEqual(quote.quoteAmount.value[0].amountOut, {
-    brand: usdBrand,
-    value: 123_000n,
+  t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
+    roundId: 1n,
+    startedAt: 0n,
   });
 });
