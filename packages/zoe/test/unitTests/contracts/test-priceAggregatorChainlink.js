@@ -9,6 +9,9 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
+import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { subscribeEach } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -94,6 +97,11 @@ const makeContext = async () => {
     minSubmissionValue,
     maxSubmissionValue,
   ) => {
+    // ??? why do we need the Far here and not in VaultFactory tests?
+    const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
+    const mockStorageRoot = makeMockChainStorageRoot();
+    const storageNode = E(mockStorageRoot).makeChildNode('priceAggregator');
+
     const timer = buildManualTimer(() => {});
 
     const aggregator = await E(zoe).startInstance(
@@ -110,8 +118,12 @@ const makeContext = async () => {
         minSubmissionValue,
         maxSubmissionValue,
       },
+      {
+        marshaller,
+        storageNode: E(storageNode).makeChildNode('LINK-USD_price_feed'),
+      },
     );
-    return aggregator;
+    return { ...aggregator, mockStorageRoot };
   };
 
   return { makeChainlinkAggregator, makeFakePriceOracle, zoe };
@@ -741,26 +753,68 @@ test('notifications', async t => {
     priceOracleB.instance,
   );
 
-  const roundStartNotifier = await E(
+  const latestRoundSubscriber = await E(
     aggregator.publicFacet,
   ).getRoundStartNotifier();
+  const eachLatestRound = subscribeEach(latestRoundSubscriber)[
+    Symbol.asyncIterator
+  ]();
 
   await oracleTimer.tick();
   await E(pricePushAdminA).pushResult({ roundId: 1, data: '100' });
-  t.is((await E(roundStartNotifier).getUpdateSince()).value, 1n);
+  t.deepEqual((await eachLatestRound.next()).value, {
+    roundId: 1n,
+    startedAt: 1n,
+  });
+  // t.deepEqual(
+  //   aggregator.mockStorageRoot.getBody(
+  //     'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+  //   ),
+  //   {
+  //     quoteAmount: {
+  //       brand: { iface: 'Alleged: quote brand' },
+  //       value: [
+  //         {
+  //           amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+  //           amountOut: {
+  //             brand: { iface: 'Alleged: $USD brand' },
+  //             value: 1020n,
+  //           },
+  //           timer: { iface: 'Alleged: ManualTimer' },
+  //           timestamp: 1n,
+  //         },
+  //       ],
+  //     },
+  //     quotePayment: { iface: 'Alleged: quote payment' },
+  //   },
+  // );
+
   await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
 
   await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
   // A started last round so fails to start next round
-  t.is((await E(roundStartNotifier).getUpdateSince()).value, 1n);
+  t.deepEqual(
+    // subscribe fresh because the iterator won't advance yet
+    (await latestRoundSubscriber.subscribeAfter()).head.value,
+    {
+      roundId: 1n,
+      startedAt: 1n,
+    },
+  );
   // B gets to start it
   await E(pricePushAdminB).pushResult({ roundId: 2, data: '1000' });
   // now it's roundId=2
-  t.is((await E(roundStartNotifier).getUpdateSince()).value, 2n);
+  t.deepEqual((await eachLatestRound.next()).value, {
+    roundId: 2n,
+    startedAt: 1n,
+  });
   // A joins in
   await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
 
   // A can start again
   await E(pricePushAdminA).pushResult({ roundId: 3, data: '1000' });
-  t.is((await E(roundStartNotifier).getUpdateSince()).value, 3n);
+  t.deepEqual((await eachLatestRound.next()).value, {
+    roundId: 3n,
+    startedAt: 1n,
+  });
 });

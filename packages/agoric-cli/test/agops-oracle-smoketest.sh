@@ -45,5 +45,5 @@ agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 echo "Offer $ORACLE_OFFER_ID should have numWantsSatisfied: 1"
 agoric wallet show --from "$WALLET"
 
-# see new price
-agoric follow :published.priceFeed.ATOM-USD_price_feed
+# verify that the round started
+agoric follow :published.priceFeed.ATOM-USD_price_feed.latestRound

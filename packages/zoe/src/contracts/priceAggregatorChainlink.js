@@ -1,7 +1,7 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+import { makeNotifierKit, makeStoredPublishKit } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
@@ -37,6 +37,10 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * and was completed regularly.
  */
 
+/**
+ * @typedef {Pick<RoundData, 'roundId' | 'startedAt'>} LatestRound
+ */
+
 // Partly documented at https://github.com/smartcontractkit/chainlink/blob/b045416ebca769aa69bde2da23b5109abe07a8b5/contracts/src/v0.6/FluxAggregator.sol#L153
 /**
  * @typedef {object} ChainlinkConfig
@@ -62,13 +66,13 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * brandOut: Brand<'nat'>,
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
- * @param {object} root0
- * @param {ERef<Mint<'set'>>} [root0.quoteMint]
+ * @param {{
+ * marshaller: Marshaller,
+ * quoteMint?: ERef<Mint<'set'>>,
+ * storageNode: ERef<StorageNode>,
+ * }} privateArgs
  */
-const start = async (
-  zcf,
-  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
-) => {
+const start = async (zcf, privateArgs) => {
   // brands come from named terms instead of `brands` key because the latter is
   // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
   // Oracle brands are inert (without issuers or mints).
@@ -96,6 +100,8 @@ const start = async (
   // Get the timer's identity.
   const timerPresence = await timer;
 
+  const quoteMint =
+    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -111,10 +117,14 @@ const start = async (
   // --- [begin] Chainlink specific values
   /** @type {bigint} */
   let reportingRoundId = 0n;
-  const { notifier: roundStartNotifier, updater: roundStartUpdater } =
-    makeNotifierKit(
-      // Start with the first round.
-      add(reportingRoundId, 1),
+
+  const { marshaller, storageNode } = privateArgs;
+  assertDefined({ marshaller, storageNode });
+  /** @type {PublishKit<LatestRound>} */
+  const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
+    makeStoredPublishKit(
+      E(storageNode).makeChildNode('latestRound'),
+      marshaller,
     );
 
   /** @type {LegacyMap<OracleKey, ReturnType<typeof makeOracleStatus>>} */
@@ -370,7 +380,10 @@ const start = async (
     updateTimedOutRoundInfo(subtract(roundId, 1), blockTimestamp);
 
     reportingRoundId = roundId;
-    roundStartUpdater.updateState(reportingRoundId);
+    latestRoundPublisher.publish({
+      roundId: reportingRoundId,
+      startedAt: blockTimestamp,
+    });
 
     details.init(
       roundId,
@@ -867,7 +880,7 @@ const start = async (
       return priceAuthority;
     },
     getRoundStartNotifier() {
-      return roundStartNotifier;
+      return latestRoundSubscriber;
     },
   });
 
