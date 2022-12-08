@@ -51,6 +51,8 @@ const USE_CUSTOM_SNAP_STORE = true;
 // Enable to output xsnap debug traces corresponding to the transcript replay
 const RECORD_XSNAP_TRACE = false;
 
+const USE_XSNAP_DEBUG = false;
+
 const pipe = promisify(pipeline);
 
 /** @type {(filename: string) => Promise<string>} */
@@ -193,6 +195,9 @@ async function replay(transcriptFile) {
     const env = /** @type {Record<string, string>} */ ({});
     if (RECORD_XSNAP_TRACE) {
       env.XSNAP_TEST_RECORD = process.cwd();
+    }
+    if (USE_XSNAP_DEBUG) {
+      env.XSNAP_DEBUG = 'true';
     }
 
     const capturePIDSpawn = /** @type {typeof spawn} */ (
