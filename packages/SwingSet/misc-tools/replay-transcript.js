@@ -25,7 +25,12 @@ import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subpro
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { makeNodeSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-node.js';
 import { startSubprocessWorker } from '../src/lib-nodejs/spawnSubprocessWorker.js';
-import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
+import {
+  extraSyscall,
+  missingSyscall,
+  requireIdenticalExceptStableVCSyscalls,
+  vcSyscallRE,
+} from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
@@ -47,6 +52,9 @@ const IGNORE_SNAPSHOT_HASH_DIFFERENCES = false;
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
 const FORCED_RELOAD_FROM_SNAPSHOT = false;
+
+const SKIP_EXTRA_SYSCALLS = true;
+const SIMULATE_VC_SYSCALLS = false;
 
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
@@ -102,17 +110,6 @@ async function makeBundles() {
   fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
   fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
   console.log(`xs bundles written`);
-}
-
-function compareSyscalls(vatID, originalSyscall, newSyscall) {
-  const error = requireIdentical(vatID, originalSyscall, newSyscall);
-  if (
-    error &&
-    JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
-  ) {
-    return undefined; // Errors are serialized differently, sometimes
-  }
-  return error;
 }
 
 // relative timings:
@@ -255,6 +252,74 @@ async function replay(transcriptFile) {
     throw Error(`unhandled worker type ${worker}`);
   }
 
+  /** @type {Map<string, VatSyscallResult | undefined>} */
+  const knownVCSyscalls = new Map();
+
+  /**
+   * @param {import('../src/types-external.js').VatSyscallObject} vso
+   */
+  const vatSyscallHandler = vso => {
+    if (vso[0] === 'vatstoreGet') {
+      const response = knownVCSyscalls.get(vso[1]);
+
+      if (!response) {
+        throw new Error(`Unknown vc vatstore entry ${vso[1]}`);
+      }
+
+      return response;
+    }
+
+    throw new Error(`Unexpected syscall ${vso[0]}(${vso.slice(1).join(', ')})`);
+  };
+
+  /**
+   * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}
+   */
+  const makeCompareSyscalls =
+    () => (_vatID, originalSyscall, newSyscall, originalResponse) => {
+      const error = requireIdenticalExceptStableVCSyscalls(
+        vatID,
+        originalSyscall,
+        newSyscall,
+      );
+      if (
+        error &&
+        JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
+      ) {
+        return undefined; // Errors are serialized differently, sometimes
+      }
+
+      if (error) {
+        console.error(`during transcript num= ${lastTranscriptNum}`);
+
+        if (error === extraSyscall && !SKIP_EXTRA_SYSCALLS) {
+          return new Error('Extra syscall disallowed');
+        }
+      }
+
+      const newSyscallKind = newSyscall[0];
+
+      if (error === missingSyscall && !SIMULATE_VC_SYSCALLS) {
+        return new Error('Missing syscall disallowed');
+      }
+
+      if (
+        SIMULATE_VC_SYSCALLS &&
+        !error &&
+        (newSyscallKind === 'vatstoreGet' ||
+          newSyscallKind === 'vatstoreSet') &&
+        vcSyscallRE.test(newSyscall[1])
+      ) {
+        if (newSyscallKind === 'vatstoreGet') {
+          knownVCSyscalls.set(newSyscall[1], originalResponse);
+        } else if (newSyscallKind === 'vatstoreSet') {
+          knownVCSyscalls.set(newSyscall[1], ['ok', newSyscall[2]]);
+        }
+      }
+
+      return error;
+    };
+
   let vatParameters;
   let vatSourceBundle;
   /** @type {import('../src/types-external.js').VatManager | undefined} */
@@ -266,11 +331,10 @@ async function replay(transcriptFile) {
         /** @type {Partial<import('../src/types-external.js').ManagerOptions>} */ ({
           sourcedConsole: console,
           vatParameters,
-          compareSyscalls,
+          compareSyscalls: makeCompareSyscalls(),
           useTranscript: true,
         })
       );
-    const vatSyscallHandler = undefined;
     manager = await factory.createFromBundle(
       vatID,
       vatSourceBundle,

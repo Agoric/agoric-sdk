@@ -4,11 +4,11 @@ import djson from '../../lib/djson.js';
 
 // Indicate that a syscall is missing from the transcript but is safe to
 // perform during replay
-const missingSyscall = Symbol('missing transcript syscall');
+export const missingSyscall = Symbol('missing transcript syscall');
 
 // Indicate that a syscall is recorded in the transcript but can be safely
 // ignored / skipped during replay.
-const extraSyscall = Symbol('extra transcript syscall');
+export const extraSyscall = Symbol('extra transcript syscall');
 
 /** @typedef {typeof missingSyscall | typeof extraSyscall | Error | undefined} CompareSyscallsResult */
 /**
@@ -16,6 +16,7 @@ const extraSyscall = Symbol('extra transcript syscall');
  *     vatId: any,
  *     originalSyscall: VatSyscallObject,
  *     newSyscall: VatSyscallObject,
+ *     originalResponse?: VatSyscallResult,
  *   ) => CompareSyscallsResult
  * } CompareSyscalls
  */
@@ -35,7 +36,7 @@ export function requireIdentical(vatID, originalSyscall, newSyscall) {
   return undefined;
 }
 
-const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
+export const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
 
 /**
  * Liveslots currently has a deficiency which results in [virtual collections
@@ -156,6 +157,7 @@ export function makeTranscriptManager(
         vatID,
         playbackSyscalls[0].d,
         newSyscall,
+        playbackSyscalls[0].response,
       );
 
       if (compareError === missingSyscall) {
