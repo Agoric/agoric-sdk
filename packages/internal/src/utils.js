@@ -1,3 +1,4 @@
+// @ts-check
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
