@@ -1,6 +1,7 @@
 /// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { assertAllDefined } from '@agoric/internal';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import {
@@ -52,16 +53,11 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 const start = async (zcf, privateArgs) => {
   const { timer, POLL_INTERVAL, brandIn, brandOut, unitAmountIn } =
     zcf.getTerms();
-  assert(brandIn, 'missing brandIn');
-  assert(brandOut, 'missing brandOut');
-  assert(POLL_INTERVAL, 'missing POLL_INTERVAL');
-  assert(timer, 'missing timer');
-  assert(unitAmountIn, 'missing unitAmountIn');
+  assertAllDefined({ brandIn, brandOut, POLL_INTERVAL, timer, unitAmountIn });
 
   assert(privateArgs, 'Missing privateArgs in priceAggregator start');
   const { marshaller, storageNode } = privateArgs;
-  assert(marshaller, 'missing marshaller');
-  assert(storageNode, 'missing storageNode');
+  assertAllDefined({ marshaller, storageNode });
 
   const quoteMint =
     privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;

@@ -159,6 +159,7 @@ export const makeEphemeraProvider = init => {
 harden(makeEphemeraProvider);
 
 /**
+ * @see assertDefined for a static alternative
  * @template {Record<string, unknown>} T
  * @param {T} specimen
  * @param {Array<keyof T>} keyList

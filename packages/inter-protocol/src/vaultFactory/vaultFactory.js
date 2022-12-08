@@ -19,6 +19,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 
 import { assertElectorateMatches } from '@agoric/governance';
 import { makeStoredPublisherKit } from '@agoric/notifier';
+import { assertAllDefined } from '@agoric/internal';
 import {
   makeVaultDirectorParamManager,
   LIQUIDATION_INSTALL_KEY,
@@ -26,7 +27,6 @@ import {
   MIN_INITIAL_DEBT_KEY,
 } from './params.js';
 import { makeVaultDirector } from './vaultDirector.js';
-import { assertKeysDefined } from '../contractSupport.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
@@ -52,15 +52,20 @@ import { assertKeysDefined } from '../contractSupport.js';
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  assertKeysDefined(privateArgs, [
-    'feeMintAccess',
-    'initialPoserInvitation',
-    'initialShortfallInvitation',
-    'storageNode',
-    'marshaller',
-  ]);
-  const { feeMintAccess, initialPoserInvitation, initialShortfallInvitation } =
-    privateArgs;
+  const {
+    feeMintAccess,
+    initialPoserInvitation,
+    initialShortfallInvitation,
+    marshaller,
+    storageNode,
+  } = privateArgs;
+  assertAllDefined({
+    feeMintAccess,
+    initialPoserInvitation,
+    initialShortfallInvitation,
+    marshaller,
+    storageNode,
+  });
   const debtMint = await zcf.registerFeeMint('Minted', feeMintAccess);
   zcf.setTestJig(() => ({
     mintedIssuerRecord: debtMint.getIssuerRecord(),
