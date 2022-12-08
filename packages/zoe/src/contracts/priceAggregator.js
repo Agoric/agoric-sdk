@@ -1,33 +1,34 @@
 /// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
   observeNotifier,
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+
+import '../../tools/types.js';
 import {
   calculateMedian,
   makeOnewayPriceAuthorityKit,
 } from '../contractSupport/index.js';
 import {
+  addRatios,
+  assertParsableNumber,
+  ceilDivideBy,
+  floorMultiplyBy,
   makeRatio,
   makeRatioFromAmounts,
-  parseRatio,
-  addRatios,
-  ratioGTE,
-  floorMultiplyBy,
-  ceilDivideBy,
   multiplyRatios,
+  parseRatio,
+  ratioGTE,
   ratiosSame,
-  assertParsableNumber,
 } from '../contractSupport/ratio.js';
 
-import '../../tools/types.js';
 import '@agoric/ertp/src/types-ambient.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
