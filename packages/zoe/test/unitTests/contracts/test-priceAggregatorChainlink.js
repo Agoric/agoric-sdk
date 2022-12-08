@@ -18,7 +18,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 
 import '../../../src/contracts/exported.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeContext>>>} */
+/** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
 const test = unknownTest;
 
 const filename = new URL(import.meta.url).pathname;
@@ -27,6 +27,14 @@ const dirname = path.dirname(filename);
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
 const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregatorChainlink.js`;
 
+const defaultConfig = {
+  maxSubmissionCount: 1000,
+  minSubmissionCount: 2,
+  restartDelay: 5,
+  timeout: 10,
+  minSubmissionValue: 100,
+  maxSubmissionValue: 10000,
+};
 const makeContext = async () => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
@@ -89,14 +97,16 @@ const makeContext = async () => {
     });
   };
 
-  const makeChainlinkAggregator = async (
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  ) => {
+  async function makeChainlinkAggregator(config) {
+    const {
+      maxSubmissionCount,
+      maxSubmissionValue,
+      minSubmissionCount,
+      minSubmissionValue,
+      restartDelay,
+      timeout,
+    } = config;
+
     // ??? why do we need the Far here and not in VaultFactory tests?
     const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
     const mockStorageRoot = makeMockChainStorageRoot();
@@ -124,7 +134,7 @@ const makeContext = async () => {
       },
     );
     return { ...aggregator, mockStorageRoot };
-  };
+  }
 
   return { makeChainlinkAggregator, makeFakePriceOracle, zoe };
 };
@@ -136,21 +146,7 @@ test.before('setup aggregator and oracles', async t => {
 test('basic', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 2;
-  const restartDelay = 5;
-  const timeout = 10;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator(defaultConfig);
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -213,21 +209,11 @@ test('basic', async t => {
 test('timeout', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 2;
-  const restartDelay = 2;
-  const timeout = 5;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    restartDelay: 2,
+    timeout: 5,
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -283,21 +269,10 @@ test('timeout', async t => {
 test('issue check', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 2;
-  const restartDelay = 2;
-  const timeout = 5;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    restartDelay: 2,
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -341,21 +316,10 @@ test('issue check', async t => {
 test('supersede', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 2;
-  const restartDelay = 1;
-  const timeout = 5;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    restartDelay: 1,
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -407,21 +371,13 @@ test('supersede', async t => {
 test('interleaved', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 3;
-  const minSubmissionCount = 3; // requires ALL the oracles for consensus in this case
-  const restartDelay = 1;
-  const timeout = 5;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    maxSubmissionCount: 3,
+    minSubmissionCount: 3, // requires ALL the oracles for consensus in this case
+    restartDelay: 1,
+    timeout: 5,
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -545,21 +501,12 @@ test('interleaved', async t => {
 test('larger', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 3;
-  const restartDelay = 1;
-  const timeout = 5;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    minSubmissionCount: 3,
+    restartDelay: 1,
+    timeout: 5,
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -628,21 +575,12 @@ test('larger', async t => {
 test('suggest', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 3;
-  const restartDelay = 1;
-  const timeout = 5;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    minSubmissionCount: 3,
+    restartDelay: 1,
+    timeout: 5,
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
@@ -724,21 +662,11 @@ test('suggest', async t => {
 test('notifications', async t => {
   const { makeFakePriceOracle, zoe } = t.context;
 
-  const maxSubmissionCount = 1000;
-  const minSubmissionCount = 2;
-  const restartDelay = 1; // have to alternate to start rounds
-  const timeout = 10;
-  const minSubmissionValue = 100;
-  const maxSubmissionValue = 10000;
-
-  const aggregator = await t.context.makeChainlinkAggregator(
-    maxSubmissionCount,
-    minSubmissionCount,
-    restartDelay,
-    timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
-  );
+  const aggregator = await t.context.makeChainlinkAggregator({
+    ...defaultConfig,
+    maxSubmissionCount: 1000,
+    restartDelay: 1, // have to alternate to start rounds
+  });
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
