@@ -36,7 +36,8 @@ test(`E(zoe).install bad bundle`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "install" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -52,7 +53,8 @@ test(`E(zoe).installBundleID bad id`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).installBundleID(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "installBundleID" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -74,7 +76,8 @@ test(`E(zoe).startInstance bad installation`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "startInstance" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -141,7 +144,7 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
       ),
     {
       message:
-        /In "startInstance" method of \(ZoeService zoeService\) arg 1: something: \[1\]: 2/,
+        'In "startInstance" method of (ZoeService zoeService): arg 1?: something: [1]: 2 - Must match one of ["[match:remotable]","[match:kind]"]',
     },
   );
 });
@@ -187,7 +190,7 @@ test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(invitation, proposal, payment), {
     message:
-      'In "offer" method of (ZoeService zoeService) arg 2: remotable "[Alleged: Token payment]" - Must be a copyRecord',
+      'In "offer" method of (ZoeService zoeService): arg 2?: remotable "[Alleged: Token payment]" - Must be a copyRecord',
   });
 });
 
@@ -228,7 +231,8 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getPublicFacet" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -258,7 +262,8 @@ test(`zoe.getIssuers - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getIssuers" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -288,7 +293,8 @@ test(`zoe.getBrands - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getBrands" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -340,7 +346,8 @@ test(`zoe.getTerms - no instance`, async t => {
   const { zoe } = setup();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getTerms" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -376,7 +383,8 @@ test(`zoe.getInstance`, async t => {
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   await t.throwsAsync(() => E(zoe).getInstance(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getInstance" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -391,7 +399,8 @@ test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getInstallation" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -407,7 +416,8 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
-    message: /expected 1 arguments/,
+    message:
+      'In "getInvitationDetails" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 

@@ -60,7 +60,6 @@ test('connectFaucet produces payments', async t => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
   const feeMintAccess = await feeMintAccessP;
-  // @ts-expect-error typescript doesn't understand KindFacet
   produce.feeMintAccess.resolve(feeMintAccess);
   produce.bridgeManager.resolve(undefined);
 

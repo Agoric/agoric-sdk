@@ -24,6 +24,8 @@ const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
 const BAIT = harden({ text: 'Cut Bait' });
 
+/** @type {PARAM_CHANGE_ISSUE} */
+// @ts-expect-error cast
 const PARAM_ISSUE = harden({
   spec: {
     paramPath: { key: 'something' },

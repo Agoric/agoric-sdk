@@ -21,8 +21,8 @@ test('vivifyInvitationKit', async t => {
   const mockInstallation = Far('mockInstallation', {});
 
   const makeInvitation = setupMakeInvitation(
-    mockInstance,
     // @ts-expect-error mockInstallation is mocked
+    mockInstance,
     mockInstallation,
     proposalShapes,
   );
@@ -34,6 +34,7 @@ test('vivifyInvitationKit', async t => {
   });
 
   const invitation = makeInvitation(
+    // @ts-expect-error mockInvitationHandle is mocked
     mockInvitationHandle,
     description,
     customProperties,
@@ -68,8 +69,8 @@ test('description is omitted, wrongly', async t => {
   const mockInstallation = Far('mockInstallation', {});
 
   const makeInvitation = setupMakeInvitation(
-    mockInstance,
     // @ts-expect-error mockInstallation is mocked
+    mockInstance,
     mockInstallation,
     proposalShapes,
   );
@@ -83,8 +84,8 @@ test('description is omitted, wrongly', async t => {
   await t.throwsAsync(
     async () =>
       makeInvitation(
-        mockInvitationHandle,
         // @ts-expect-error intentional incorrect argument
+        mockInvitationHandle,
         description,
         customProperties,
       ),
@@ -101,8 +102,8 @@ test('customProperties ok to omit', async t => {
   const mockInstallation = Far('mockInstallation', {});
 
   const makeInvitation = setupMakeInvitation(
-    mockInstance,
     // @ts-expect-error mockInstallation is mocked
+    mockInstance,
     mockInstallation,
     proposalShapes,
   );
@@ -110,6 +111,7 @@ test('customProperties ok to omit', async t => {
   const mockInvitationHandle = Far('mockInvitationHandle', {});
   const description = 'myInvitation';
 
+  // @ts-expect-error type exception for testing
   const invitation = makeInvitation(mockInvitationHandle, description);
 
   const amount = await E(invitationIssuer).getAmountOf(invitation);

@@ -388,7 +388,7 @@ test(`zcf.makeZCFMint - not a math kind`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => zcf.makeZCFMint('A', 'whatever'), {
     message:
-      / arg 1: "whatever" - Must match one of \["nat","set","copySet","copyBag"\]/,
+      'In "makeZoeMint" method of (zoeInstanceAdmin): arg 1?: "whatever" - Must match one of ["nat","set","copySet","copyBag"]',
   });
 });
 
@@ -983,7 +983,7 @@ test(`userSeat.getPayout() should throw from zcf.makeEmptySeatKit`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(userSeat).getPayout(), {
     message:
-      '"In \\"getPayout\\" method of (ZoeSeatKit userSeat)" args: [] - expected 1 arguments',
+      'In "getPayout" method of (ZoeSeatKit userSeat): Expected at least 1 arguments: []',
   });
 });
 
@@ -992,7 +992,7 @@ test(`zcf.reallocate < 2 seats`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcf.reallocate(), {
     message:
-      /.*reallocate.* method of \(ZcfSeatManager seatManager\)" args: \[\] - expected 2 arguments/,
+      'In "reallocate" method of (ZcfSeatManager seatManager): Expected at least 2 arguments: []',
   });
 });
 

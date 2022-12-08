@@ -681,7 +681,7 @@ test('extra give wantMintedInvitation', async t => {
       ),
     {
       message:
-        /"wantMinted" proposal: required-parts: give: {.*} - Must not have unexpected properties: \["Extra"\]/,
+        /"wantMinted" proposal: .* - Must not have unexpected properties: \["Extra"\]/,
     },
   );
 });
