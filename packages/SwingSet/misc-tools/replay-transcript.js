@@ -47,6 +47,7 @@ const IGNORE_SNAPSHOT_HASH_DIFFERENCES = false;
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
 const FORCED_RELOAD_FROM_SNAPSHOT = false;
+const MAX_CONCURRENT_WORKERS = 1;
 
 const SKIP_EXTRA_SYSCALLS = true;
 const SIMULATE_VC_SYSCALLS = false;
@@ -178,7 +179,14 @@ async function replay(transcriptFile) {
         testLog,
       })
     );
-  let xsnapPID;
+  /**
+   * @typedef {{
+   *  manager: import('../src/types-external.js').VatManager;
+   *  xsnapPID: number | undefined;
+   * }} WorkerData
+   */
+  /** @type {WorkerData[]} */
+  const workers = [];
 
   if (worker === 'xs-worker') {
     // eslint-disable-next-line no-constant-condition
@@ -203,7 +211,7 @@ async function replay(transcriptFile) {
       /** @param  {Parameters<typeof spawn>} args */
       (...args) => {
         const child = spawn(...args);
-        xsnapPID = child.pid;
+        workers[workers.length - 1].xsnapPID = child.pid;
         return child;
       }
     );
@@ -344,10 +352,11 @@ async function replay(transcriptFile) {
   };
 
   /**
+   * @param {WorkerData} workerData
    * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}
    */
   const makeCompareSyscalls =
-    () => (_vatID, originalSyscall, newSyscall, originalResponse) => {
+    workerData => (_vatID, originalSyscall, newSyscall, originalResponse) => {
       const error = bestRequireIdentical(vatID, originalSyscall, newSyscall);
       if (
         error &&
@@ -357,7 +366,9 @@ async function replay(transcriptFile) {
       }
 
       if (error) {
-        console.error(`during transcript num= ${lastTranscriptNum}`);
+        console.error(
+          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID}`,
+        );
 
         if (error === extraSyscall && !SKIP_EXTRA_SYSCALLS) {
           return new Error('Extra syscall disallowed');
@@ -397,32 +408,44 @@ async function replay(transcriptFile) {
 
   let vatParameters;
   let vatSourceBundle;
-  /** @type {import('../src/types-external.js').VatManager | undefined} */
-  let manager;
 
   const createManager = async () => {
+    /** @type {WorkerData} */
+    const workerData = {
+      manager: /** @type {WorkerData['manager']} */ (
+        /** @type {unknown} */ (undefined)
+      ),
+      xsnapPID: NaN,
+    };
+    workers.push(workerData);
     const managerOptions =
       /** @type {import('../src/types-external.js').ManagerOptions} */ (
         /** @type {Partial<import('../src/types-external.js').ManagerOptions>} */ ({
           sourcedConsole: console,
           vatParameters,
-          compareSyscalls: makeCompareSyscalls(),
+          compareSyscalls: makeCompareSyscalls(workerData),
           useTranscript: true,
         })
       );
-    manager = await factory.createFromBundle(
+    workerData.manager = await factory.createFromBundle(
       vatID,
       vatSourceBundle,
       managerOptions,
       {},
       vatSyscallHandler,
     );
+    return workerData;
   };
 
   const loadSnapshot = async data => {
-    if (manager) {
+    while (workers.length >= MAX_CONCURRENT_WORKERS) {
+      // Keep the first ever worker, unless we're allowed one max
+      const { manager, xsnapPID } = /** @type {WorkerData} */ (
+        MAX_CONCURRENT_WORKERS > 1 ? workers.splice(1, 1)[0] : workers.pop()
+      );
+      // eslint-disable-next-line no-await-in-loop
       await manager.shutdown();
-      manager = undefined;
+      console.log(`Shutdown worker PID ${xsnapPID}`);
     }
     loadSnapshotID = data.snapshotID;
     if (snapshotOverrideMap.has(loadSnapshotID)) {
@@ -431,7 +454,7 @@ async function replay(transcriptFile) {
     if (data.vatID) {
       vatID = data.vatID;
     }
-    await createManager();
+    const { xsnapPID } = await createManager();
     console.log(
       `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
     );
@@ -464,7 +487,7 @@ async function replay(transcriptFile) {
     const data = JSON.parse(line);
     if (data.type === 'heap-snapshot-load') {
       await loadSnapshot(data);
-    } else if (!manager) {
+    } else if (!workers.length) {
       if (data.type !== 'create-vat') {
         throw Error(
           `first line of transcript was not a create-vat or heap-snapshot-load`,
@@ -472,7 +495,7 @@ async function replay(transcriptFile) {
       }
       ({ vatParameters, vatSourceBundle } = data);
       vatID = data.vatID;
-      await createManager();
+      const { xsnapPID } = await createManager();
       console.log(
         `manager created from bundle source, worker PID: ${xsnapPID}`,
       );
@@ -487,30 +510,34 @@ async function replay(transcriptFile) {
       );
     } else if (data.type === 'heap-snapshot-save') {
       saveSnapshotID = data.snapshotID;
-      const { hash } = await manager.makeSnapshot(snapStore);
-      snapshotOverrideMap.set(saveSnapshotID, hash);
-      fs.writeSync(
-        snapshotActivityFd,
-        `${JSON.stringify({
-          transcriptFile,
-          type: 'save',
-          xsnapPID,
-          vatID,
-          transcriptNum: lastTranscriptNum,
-          snapshotID: hash,
-          saveSnapshotID,
-        })}\n`,
+      await Promise.all(
+        workers.map(async ({ manager, xsnapPID }) => {
+          const { hash } = await manager.makeSnapshot(snapStore);
+          snapshotOverrideMap.set(saveSnapshotID, hash);
+          fs.writeSync(
+            snapshotActivityFd,
+            `${JSON.stringify({
+              transcriptFile,
+              type: 'save',
+              xsnapPID,
+              vatID,
+              transcriptNum: lastTranscriptNum,
+              snapshotID: hash,
+              saveSnapshotID,
+            })}\n`,
+          );
+          if (hash !== saveSnapshotID) {
+            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID}`;
+            if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
+              console.warn(errorMessage);
+            } else {
+              throw new Error(errorMessage);
+            }
+          } else {
+            console.log(`made snapshot ${hash} of worker PID ${xsnapPID}`);
+          }
+        }),
       );
-      if (hash !== saveSnapshotID) {
-        const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID}`;
-        if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
-          console.warn(errorMessage);
-        } else {
-          throw new Error(errorMessage);
-        }
-      } else {
-        console.log(`made snapshot ${hash}`);
-      }
       saveSnapshotID = null;
       if (FORCED_RELOAD_FROM_SNAPSHOT) {
         await loadSnapshot(data);
@@ -518,6 +545,10 @@ async function replay(transcriptFile) {
     } else {
       const { transcriptNum, d: delivery, syscalls } = data;
       lastTranscriptNum = transcriptNum;
+      const makeSnapshot =
+        FORCED_SNAPSHOT_INTERVAL &&
+        (transcriptNum - FORCED_SNAPSHOT_INITIAL) % FORCED_SNAPSHOT_INTERVAL ===
+          0;
       // syscalls = [{ d, response }, ..]
       // console.log(`replaying:`);
       // console.log(
@@ -533,43 +564,61 @@ async function replay(transcriptFile) {
       //     JSON.stringify(s.response[1]).slice(0, 200),
       //   );
       // }
-      await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
-      // console.log(`dr`, dr);
+      const snapshotIDs = await Promise.all(
+        workers.map(async ({ manager, xsnapPID }) => {
+          await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
 
-      // enable this to write periodic snapshots, for #5975 leak
-      if (
-        FORCED_SNAPSHOT_INTERVAL &&
-        (transcriptNum - FORCED_SNAPSHOT_INITIAL) % FORCED_SNAPSHOT_INTERVAL ===
-          0
-      ) {
-        const { hash } = await manager.makeSnapshot(snapStore);
-        fs.writeSync(
-          snapshotActivityFd,
-          `${JSON.stringify({
-            transcriptFile,
-            type: 'save',
-            xsnapPID,
-            vatID,
-            transcriptNum,
-            snapshotID: hash,
-          })}\n`,
-        );
-        console.log(`made snapshot ${hash} for delivery ${transcriptNum}`);
-        if (FORCED_RELOAD_FROM_SNAPSHOT) {
-          await loadSnapshot({
-            snapshotID: hash,
-            vatID,
-          });
+          // console.log(`dr`, dr);
+
+          // enable this to write periodic snapshots, for #5975 leak
+          if (makeSnapshot) {
+            const { hash: snapshotID } = await manager.makeSnapshot(snapStore);
+            fs.writeSync(
+              snapshotActivityFd,
+              `${JSON.stringify({
+                transcriptFile,
+                type: 'save',
+                xsnapPID,
+                vatID,
+                transcriptNum,
+                snapshotID,
+              })}\n`,
+            );
+            console.log(
+              `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID}`,
+            );
+            return snapshotID;
+          } else {
+            return undefined;
+          }
+        }),
+      );
+      const uniqueSnapshotIDs = [...new Set(snapshotIDs)];
+
+      if (makeSnapshot && uniqueSnapshotIDs.length !== 1) {
+        const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
+          ', ',
+        )}`;
+        if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
+          console.warn(errorMessage);
+        } else {
+          throw new Error(errorMessage);
         }
+      }
+
+      const snapshotID = uniqueSnapshotIDs[0];
+      if (snapshotID && FORCED_RELOAD_FROM_SNAPSHOT) {
+        await loadSnapshot({
+          snapshotID,
+          vatID,
+        });
       }
     }
   }
 
   lines.close();
   fs.closeSync(snapshotActivityFd);
-  if (manager) {
-    await manager.shutdown();
-  }
+  await Promise.all(workers.map(async ({ manager }) => manager.shutdown()));
 }
 
 async function run() {
