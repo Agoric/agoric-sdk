@@ -35,6 +35,17 @@ const defaultConfig = {
   minSubmissionValue: 100,
   maxSubmissionValue: 10000,
 };
+
+/**
+ *
+ * @param {Promise<StoredSubscriber<unknown>>} subscriber
+ */
+export const subscriberSubkey = subscriber => {
+  return E(subscriber)
+    .getStoreKey()
+    .then(storeKey => storeKey.storeSubkey);
+};
+
 const makeContext = async () => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
@@ -745,4 +756,15 @@ test('notifications', async t => {
     roundId: 3n,
     startedAt: 1n,
   });
+});
+
+test('storage keys', async t => {
+  const { publicFacet } = await t.context.makeChainlinkAggregator(
+    defaultConfig,
+  );
+
+  t.is(
+    await subscriberSubkey(E(publicFacet).getSubscriber()),
+    'fake:mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+  );
 });

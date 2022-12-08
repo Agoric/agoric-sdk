@@ -1,7 +1,11 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit, makeStoredPublishKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeStoredPublishKit,
+  observeNotifier,
+} from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
@@ -131,6 +135,12 @@ const start = async (zcf, privateArgs) => {
 
   const { marshaller, storageNode } = privateArgs;
   assertAllDefined({ marshaller, storageNode });
+
+  // For publishing priceAuthority values to off-chain storage
+  /** @type {PublishKit<PriceQuote>} */
+  const { publisher: quotePublisher, subscriber: quoteSubscriber } =
+    makeStoredPublishKit(storageNode, marshaller);
+
   /** @type {PublishKit<LatestRound>} */
   const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
     makeStoredPublishKit(
@@ -322,6 +332,17 @@ const start = async (zcf, privateArgs) => {
     timer,
     actualBrandIn: brandIn,
     actualBrandOut: brandOut,
+  });
+
+  // for each new quote from the priceAuthority, publish it to off-chain storage
+  observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
+    updateState: quote => quotePublisher.publish(quote),
+    fail: reason => {
+      throw Error(`priceAuthority observer failed: ${reason}`);
+    },
+    finish: done => {
+      throw Error(`priceAuthority observer died: ${done}`);
+    },
   });
 
   /**
@@ -892,6 +913,7 @@ const start = async (zcf, privateArgs) => {
     getPriceAuthority() {
       return priceAuthority;
     },
+    getSubscriber: () => quoteSubscriber,
     getRoundStartNotifier() {
       return latestRoundSubscriber;
     },
