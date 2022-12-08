@@ -102,17 +102,6 @@ async function makeBundles() {
   console.log(`xs bundles written`);
 }
 
-function compareSyscalls(vatID, originalSyscall, newSyscall) {
-  const error = requireIdentical(vatID, originalSyscall, newSyscall);
-  if (
-    error &&
-    JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
-  ) {
-    return undefined; // Errors are serialized differently, sometimes
-  }
-  return error;
-}
-
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
@@ -232,6 +221,43 @@ async function replay(transcriptFile) {
   let vatParameters;
   let vatSourceBundle;
   let manager;
+
+  function compareSyscalls(
+    _vatID,
+    originalSyscall,
+    newSyscall,
+    originalSyscalls,
+  ) {
+    let i;
+    let initialError;
+    let error;
+    for (i = 0; i < originalSyscalls.length; i += 1) {
+      originalSyscall = originalSyscalls[i].d;
+      error = requireIdentical(vatID, originalSyscall, newSyscall);
+      if (!error) {
+        break;
+      } else if (i === 0) {
+        initialError = error;
+      }
+
+      if (
+        error &&
+        JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
+      ) {
+        return undefined; // Errors are serialized differently, sometimes
+      }
+    }
+    if (initialError) {
+      console.error(`during transcript num= ${lastTranscriptNum}`);
+    }
+
+    if (!error && i > 0) {
+      originalSyscalls.splice(0, i);
+      return undefined;
+    }
+
+    return initialError;
+  }
 
   const createManager = async () => {
     const managerOptions = {

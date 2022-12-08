@@ -59,8 +59,13 @@ export function makeTranscriptManager(
   let replayError;
 
   function simulateSyscall(newSyscall) {
+    const newReplayError = compareSyscalls(
+      vatID,
+      playbackSyscalls[0].d,
+      newSyscall,
+      playbackSyscalls,
+    );
     const s = playbackSyscalls.shift();
-    const newReplayError = compareSyscalls(vatID, s.d, newSyscall);
     if (newReplayError) {
       replayError = newReplayError;
       throw replayError;
