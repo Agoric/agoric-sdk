@@ -381,3 +381,23 @@ export const fsStreamReady = stream =>
     stream.on('ready', onReady);
     stream.on('error', onError);
   });
+
+/**
+ * Concise way to check values are available from object literal shorthand.
+ * Throws error message to specify the missing values.
+ *
+ * @param {Record<string, unknown>} obj
+ * @throws if any value in the object entries is not defined
+ */
+
+export const assertAllDefined = obj => {
+  const missing = [];
+  for (const [key, val] of Object.entries(obj)) {
+    if (val === undefined) {
+      missing.push(key);
+    }
+  }
+  if (missing.length > 0) {
+    Fail`missing ${q(missing)}`;
+  }
+};

@@ -5,6 +5,7 @@ import {
   fromUniqueEntries,
   objectMap,
   makeMeasureSeconds,
+  assertAllDefined,
 } from '../src/utils.js';
 
 test('fromUniqueEntries', t => {
@@ -59,4 +60,16 @@ test('makeMeasureSeconds', async t => {
   const output = await measureSeconds(async () => unique);
   t.deepEqual(output, { result: unique, duration: 1.0005 });
   t.deepEqual(times, [NaN]);
+});
+
+test('assertAllDefined', t => {
+  /** @type {{s: string, m?: string | undefined}} */
+  const obj = { s: 'defined', m: 'maybe' };
+  assertAllDefined(obj);
+  // typecheck
+  obj.m.length;
+
+  t.throws(() => assertAllDefined({ u: undefined, v: undefined }), {
+    message: 'missing ["u","v"]',
+  });
 });
