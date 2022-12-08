@@ -53,6 +53,8 @@ const USE_CUSTOM_SNAP_STORE = false;
 // Enable to output xsnap debug traces corresponding to the transcript replay
 const RECORD_XSNAP_TRACE = false;
 
+const USE_XSNAP_DEBUG = false;
+
 const pipe = promisify(pipeline);
 
 /** @type {(filename: string) => Promise<string>} */
@@ -178,7 +180,7 @@ async function replay(transcriptFile) {
       JSON.parse(fs.readFileSync('lockdown-bundle')),
       JSON.parse(fs.readFileSync('supervisor-bundle')),
     ];
-    const env = {};
+    const env = { XSNAP_DEBUG: USE_XSNAP_DEBUG };
     if (RECORD_XSNAP_TRACE) {
       env.XSNAP_TEST_RECORD = process.cwd();
     }
