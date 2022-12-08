@@ -72,7 +72,7 @@ export const makeInstallationStorage = (
     return installation;
   };
 
-  const InstallationStorage = M.interface('InstallationStorage', {
+  const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(BundleShape).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
     unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(M.any()),
@@ -82,7 +82,7 @@ export const makeInstallationStorage = (
   const installationStorage = vivifyFarInstance(
     zoeBaggage,
     'InstallationStorage',
-    InstallationStorage,
+    InstallationStorageI,
     {
       async installBundle(allegedBundle) {
         // Bundle is a very open-ended type and we must decide here
