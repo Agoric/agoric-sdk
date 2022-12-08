@@ -46,6 +46,8 @@ const USE_CUSTOM_SNAP_STORE = true;
 // Enable to output xsnap debug traces corresponding to the transcript replay
 const RECORD_XSNAP_TRACE = false;
 
+const USE_XSNAP_DEBUG = false;
+
 const pipe = promisify(pipeline);
 
 /** @type {(filename: string) => Promise<string>} */
@@ -188,6 +190,7 @@ async function replay(transcriptFile) {
     const startXSnap = makeStartXSnap({
       snapStore,
       spawn: capturePIDSpawn,
+      debug: USE_XSNAP_DEBUG,
       workerTraceRootPath: RECORD_XSNAP_TRACE ? process.cwd() : undefined,
       overrideBundles: bundles,
       bundleHandler: /** @type {*} */ (undefined),
