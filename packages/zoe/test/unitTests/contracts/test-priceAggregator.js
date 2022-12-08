@@ -89,9 +89,8 @@ const makePublicationChecker = async (t, aggregatorPublicFacet) => {
     /** @param {{timestamp: bigint, amountOut: any}} spec */
     async nextMatches({ timestamp, amountOut }) {
       const { value } = await E(publications).next();
-      const quoteValue = value.quoteAmount.value[0];
-      t.is(quoteValue.timestamp, timestamp, 'wrong timestamp');
-      t.is(quoteValue.amountOut.value, amountOut, 'wrong amountOut value');
+      t.is(value.timestamp, timestamp, 'wrong timestamp');
+      t.is(value.amountOut.value, amountOut, 'wrong amountOut value');
     },
   };
 };
@@ -1096,21 +1095,13 @@ test('storage', async t => {
       'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
     ),
     {
-      quoteAmount: {
-        brand: { iface: 'Alleged: quote brand' },
-        value: [
-          {
-            amountIn: { brand: { iface: 'Alleged: $ATOM brand' }, value: 1n },
-            amountOut: {
-              brand: { iface: 'Alleged: $USD brand' },
-              value: 1020n,
-            },
-            timer: { iface: 'Alleged: ManualTimer' },
-            timestamp: 1n,
-          },
-        ],
+      amountIn: { brand: { iface: 'Alleged: $ATOM brand' }, value: 1n },
+      amountOut: {
+        brand: { iface: 'Alleged: $USD brand' },
+        value: 1020n,
       },
-      quotePayment: { iface: 'Alleged: quote payment' },
+      timer: { iface: 'Alleged: ManualTimer' },
+      timestamp: 1n,
     },
   );
 });

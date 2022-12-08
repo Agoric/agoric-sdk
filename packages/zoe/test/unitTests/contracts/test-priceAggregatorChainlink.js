@@ -705,29 +705,6 @@ test('notifications', async t => {
     roundId: 1n,
     startedAt: 1n,
   });
-  // t.deepEqual(
-  //   aggregator.mockStorageRoot.getBody(
-  //     'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
-  //   ),
-  //   {
-  //     quoteAmount: {
-  //       brand: { iface: 'Alleged: quote brand' },
-  //       value: [
-  //         {
-  //           amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
-  //           amountOut: {
-  //             brand: { iface: 'Alleged: $USD brand' },
-  //             value: 1020n,
-  //           },
-  //           timer: { iface: 'Alleged: ManualTimer' },
-  //           timestamp: 1n,
-  //         },
-  //       ],
-  //     },
-  //     quotePayment: { iface: 'Alleged: quote payment' },
-  //   },
-  // );
-
   await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
 
   await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
@@ -749,6 +726,13 @@ test('notifications', async t => {
   });
   // A joins in
   await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
+  // writes to storage
+  t.deepEqual(
+    aggregator.mockStorageRoot.getBody(
+      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
+    ),
+    { roundId: 2n, startedAt: 1n },
+  );
 
   // A can start again
   await E(pricePushAdminA).pushResult({ roundId: 3, data: '1000' });
@@ -756,6 +740,28 @@ test('notifications', async t => {
     roundId: 3n,
     startedAt: 1n,
   });
+  t.deepEqual(
+    aggregator.mockStorageRoot.getBody(
+      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    ),
+    {
+      quoteAmount: {
+        brand: { iface: 'Alleged: quote brand' },
+        value: [
+          {
+            amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+            amountOut: {
+              brand: { iface: 'Alleged: $USD brand' },
+              value: 1020n,
+            },
+            timer: { iface: 'Alleged: ManualTimer' },
+            timestamp: 1n,
+          },
+        ],
+      },
+      quotePayment: { iface: 'Alleged: quote payment' },
+    },
+  );
 });
 
 test('storage keys', async t => {

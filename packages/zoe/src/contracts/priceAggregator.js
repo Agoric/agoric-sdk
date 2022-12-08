@@ -35,6 +35,9 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /** @typedef {ParsableNumber | Ratio} Price */
 
+/** @type {(quote: PriceQuote) => PriceDescription} */
+export const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
+
 /**
  * @deprecated use priceAggregatorChainlink
  *
@@ -220,7 +223,7 @@ const start = async (zcf, privateArgs) => {
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
   observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => publisher.publish(quote),
+    updateState: quote => publisher.publish(priceDescriptionFromQuote(quote)),
     fail: reason => {
       throw Error(`priceAuthority observer failed: ${reason}`);
     },

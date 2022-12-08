@@ -19,7 +19,10 @@ import {
 
 import '../../tools/types.js';
 import { assertParsableNumber } from '../contractSupport/ratio.js';
-import { INVITATION_MAKERS_DESC } from './priceAggregator.js';
+import {
+  INVITATION_MAKERS_DESC,
+  priceDescriptionFromQuote,
+} from './priceAggregator.js';
 
 export { INVITATION_MAKERS_DESC };
 
@@ -33,7 +36,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 /**
  * @typedef {object} RoundData
  * @property {bigint} roundId  the round ID for which data was retrieved
- * @property {number} answer the answer for the given round
+ * @property {bigint} answer the answer for the given round
  * @property {Timestamp} startedAt the timestamp when the round was started. This is 0
  * if the round hasn't been started yet.
  * @property {Timestamp} updatedAt the timestamp when the round last was updated (i.e.
@@ -137,11 +140,11 @@ const start = async (zcf, privateArgs) => {
   assertAllDefined({ marshaller, storageNode });
 
   // For publishing priceAuthority values to off-chain storage
-  /** @type {PublishKit<PriceQuote>} */
-  const { publisher: quotePublisher, subscriber: quoteSubscriber } =
+  /** @type {StoredPublishKit<PriceDescription>} */
+  const { publisher: pricePublisher, subscriber: quoteSubscriber } =
     makeStoredPublishKit(storageNode, marshaller);
 
-  /** @type {PublishKit<LatestRound>} */
+  /** @type {StoredPublishKit<LatestRound>} */
   const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
     makeStoredPublishKit(
       E(storageNode).makeChildNode('latestRound'),
@@ -165,7 +168,7 @@ const start = async (zcf, privateArgs) => {
   // --- [end] Chainlink specific values
 
   /**
-   * @param {number} answer
+   * @param {bigint} answer
    * @param {Timestamp} startedAt
    * @param {Timestamp} updatedAt
    * @param {bigint} answeredInRound
@@ -336,7 +339,8 @@ const start = async (zcf, privateArgs) => {
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
   observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => quotePublisher.publish(quote),
+    updateState: quote =>
+      pricePublisher.publish(priceDescriptionFromQuote(quote)),
     fail: reason => {
       throw Error(`priceAuthority observer failed: ${reason}`);
     },
@@ -425,7 +429,7 @@ const start = async (zcf, privateArgs) => {
     rounds.init(
       roundId,
       makeRound(
-        /* answer = */ 0,
+        /* answer = */ 0n,
         /* startedAt = */ 0n,
         /* updatedAt = */ 0n,
         /* answeredInRound = */ 0n,
@@ -485,12 +489,15 @@ const start = async (zcf, privateArgs) => {
       return [false, 0];
     }
 
+    /** @type {bigint | undefined} */
     const newAnswer = calculateMedian(
       details
         .get(roundId)
         .submissions.filter(sample => isNat(sample) && sample > 0n),
       { add, divide: floorDivide, isGTE },
     );
+
+    assert(newAnswer, 'insufficient samples');
 
     rounds.get(roundId).answer = newAnswer;
     rounds.get(roundId).updatedAt = blockTimestamp;
