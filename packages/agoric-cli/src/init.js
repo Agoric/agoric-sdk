@@ -6,7 +6,9 @@ import { makePspawn } from './helpers.js';
 import '@endo/captp/src/types.js';
 import '@agoric/swingset-vat/exported.js';
 import '@agoric/swingset-vat/src/vats/network/types.js';
-import { Command } from 'commander';
+import commander from 'commander';
+
+const { Command } = commander;
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
 const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
@@ -24,8 +26,8 @@ const gitURL = (relativeOrAbsoluteURL, base) => {
 
 export const makeInitCommand = () =>
   new Command('init')
-    .argument('<project>')
     .description('create a new Dapp directory named <project>')
+    .arguments('<project>')
     .option(
       '--dapp-template <name>',
       'use the template specified by <name>',

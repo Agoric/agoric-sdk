@@ -1,10 +1,43 @@
 import { basename } from 'path';
 import { Fail } from '@agoric/assert';
+import commander from 'commander';
 import {
   finishCosmosApp,
   finishTendermintConfig,
   finishCosmosGenesis,
 } from './chain-config.js';
+
+const { Command } = commander;
+
+export const makeSetDefaultsCommand = () =>
+  new Command('set-defaults')
+    .description('update the configuration files for <program> in <config-dir>')
+    .arguments('<program> <config-dir>')
+    .option(
+      '--enable-cors',
+      'open RPC and API endpoints to all cross-origin requests',
+      false,
+    )
+    .option(
+      '--export-metrics',
+      'open ports to export Prometheus metrics',
+      false,
+    )
+    .option(
+      '--import-from <dir>',
+      'import the exported configuration from <dir>',
+    )
+    .option(
+      '--persistent-peers <addrs>',
+      'set the config.toml p2p.persistent_peers value',
+      '',
+    )
+    .option('--seeds <addrs>', 'set the config.toml p2p.seeds value', '')
+    .option(
+      '--unconditional-peer-ids <ids>',
+      'set the config.toml p2p.unconditional_peer_ids value',
+      '',
+    );
 
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs } = powers;

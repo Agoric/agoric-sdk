@@ -17,7 +17,7 @@ import deployMain from './deploy.js';
 import publishMain from './main-publish.js';
 import initMain, { makeInitCommand } from './init.js';
 import installMain from './install.js';
-import setDefaultsMain from './set-defaults.js';
+import setDefaultsMain, { makeSetDefaultsCommand } from './set-defaults.js';
 import startMain from './start.js';
 import followMain from './follow.js';
 import { makeOpenCommand, makeTUI } from './open.js';
@@ -94,42 +94,15 @@ const main = async (progname, rawArgs, powers) => {
   );
   program.addCommand(makeOpenCommand({ opener, baseDir, tui, randomBytes }));
 
-  program.addComman(
+  program.addCommand(
     makeInitCommand().action(async (project, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return initMain(progname, ['init', project], powers, opts).then(procExit);
     }),
   );
 
-  program
-    .command('set-defaults <program> <config-dir>')
-    .description('update the configuration files for <program> in <config-dir>')
-    .option(
-      '--enable-cors',
-      'open RPC and API endpoints to all cross-origin requests',
-      false,
-    )
-    .option(
-      '--export-metrics',
-      'open ports to export Prometheus metrics',
-      false,
-    )
-    .option(
-      '--import-from <dir>',
-      'import the exported configuration from <dir>',
-    )
-    .option(
-      '--persistent-peers <addrs>',
-      'set the config.toml p2p.persistent_peers value',
-      '',
-    )
-    .option('--seeds <addrs>', 'set the config.toml p2p.seeds value', '')
-    .option(
-      '--unconditional-peer-ids <ids>',
-      'set the config.toml p2p.unconditional_peer_ids value',
-      '',
-    )
-    .action(async (prog, configDir, cmd) => {
+  program.addCommand(
+    makeSetDefaultsCommand().action(async (prog, configDir, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return setDefaultsMain(
         progname,
@@ -137,7 +110,8 @@ const main = async (progname, rawArgs, powers) => {
         powers,
         opts,
       ).then(procExit);
-    });
+    }),
+  );
 
   program
     .command('install [force-sdk-version]')
