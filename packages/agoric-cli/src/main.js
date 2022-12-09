@@ -57,12 +57,8 @@ const main = async (progname, rawArgs, powers) => {
     return true;
   }
 
-  function subMain(fn, args, options) {
-    return fn(progname, args, powers, options).then(
-      // This seems to be the only way to propagate the exit code.
-      code => process.exit(code || 0),
-    );
-  }
+  // This seems to be the only way to propagate the exit code.
+  const procExit = code => process.exit(code || 0);
 
   program.storeOptionsAsProperties(false);
 
@@ -87,7 +83,9 @@ const main = async (progname, rawArgs, powers) => {
     .description('client for an Agoric Cosmos chain')
     .action(async (command, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(cosmosMain, ['cosmos', ...command], opts);
+      return cosmosMain(progname, ['cosmos', ...command], powers, opts).then(
+        procExit,
+      );
     });
 
   const { randomBytes } = crypto;
@@ -120,7 +118,7 @@ const main = async (progname, rawArgs, powers) => {
     )
     .action(async (project, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(initMain, ['init', project], opts);
+      return initMain(progname, ['init', project], powers, opts).then(procExit);
     });
 
   program
@@ -153,7 +151,12 @@ const main = async (progname, rawArgs, powers) => {
     )
     .action(async (prog, configDir, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
+      return setDefaultsMain(
+        progname,
+        ['set-defaults', prog, configDir],
+        powers,
+        opts,
+      ).then(procExit);
     });
 
   program
@@ -162,7 +165,12 @@ const main = async (progname, rawArgs, powers) => {
     .action(async (forceSdkVersion, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(installMain, ['install', forceSdkVersion], opts);
+      return installMain(
+        progname,
+        ['install', forceSdkVersion],
+        powers,
+        opts,
+      ).then(procExit);
     });
 
   program
@@ -236,7 +244,9 @@ const main = async (progname, rawArgs, powers) => {
     .option('-B, --bootstrap <config>', 'network bootstrap configuration')
     .action(async (pathSpecs, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(followMain, ['follow', ...pathSpecs], opts);
+      return followMain(progname, ['follow', ...pathSpecs], powers, opts).then(
+        procExit,
+      );
     });
 
   const addRunOptions = cmd =>
@@ -270,7 +280,7 @@ const main = async (progname, rawArgs, powers) => {
       ),
   ).action(async (script, scriptArgs, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts(), scriptArgs };
-    return subMain(deployMain, ['run', script], opts);
+    return deployMain(progname, ['run', script], powers, opts).then(procExit);
   });
 
   addRunOptions(
@@ -286,7 +296,9 @@ const main = async (progname, rawArgs, powers) => {
       ),
   ).action(async (scripts, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts() };
-    return subMain(deployMain, ['deploy', ...scripts], opts);
+    return deployMain(progname, ['deploy', ...scripts], powers, opts).then(
+      procExit,
+    );
   });
 
   addRunOptions(
@@ -307,7 +319,9 @@ const main = async (progname, rawArgs, powers) => {
       .description('publish a bundle to a Cosmos chain'),
   ).action(async (bundles, cmd) => {
     const opts = { ...program.opts(), ...cmd.opts() };
-    return subMain(publishMain, ['publish', ...bundles], opts);
+    return publishMain(progname, ['publish', ...bundles], powers, opts).then(
+      procExit,
+    );
   });
 
   program.addCommand(await makeWalletCommand());
@@ -349,7 +363,12 @@ agoric start local-solo [portNum] [provisionPowers] - local solo VM
     .action(async (profile, args, cmd) => {
       await isNotBasedir();
       const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(startMain, ['start', profile, ...args], opts);
+      return startMain(
+        progname,
+        ['start', profile, ...args],
+        powers,
+        opts,
+      ).then(procExit);
     });
 
   // Throw an error instead of exiting directly.
