@@ -482,143 +482,213 @@
 
 /**
  * @typedef {object} MatcherNamespace
+ *
  * @property {() => Matcher} any
- * Matches any passable
+ * Matches any passable.
+ *
  * @property {(...patts: Pattern[]) => Matcher} and
- * Only if it matches all the sub-patterns
+ * Matches against the intersection of all sub-patterns.
+ *
  * @property {(...patts: Pattern[]) => Matcher} or
- * Only if it matches at least one subPattern
+ * Matches against the union of all sub-patterns
+ * (requiring a match against at least one).
+ *
  * @property {(subPatt: Pattern) => Matcher} not
- * Only if it does not match the sub-pattern
+ * Matches against the negation of the sub-pattern.
  *
  * @property {() => Matcher} scalar
- * The scalars are the primitive values and Remotables.
+ * Matches a primitive value or Remotable.
  * All scalars are keys.
+ *
  * @property {() => Matcher} key
- * Can be in a copySet or CopyBag, or the key in a CopyMap.
- * (Will eventually be able to a key is a MapStore.)
- * All keys are patterns that match only themselves.
+ * Matches any value that can be a key in a CopyMap
+ * or a value in a CopySet or CopyBag.
+ * All keys are also valid Patterns that match only themselves.
+ *
  * @property {() => Matcher} pattern
- * If it matches M.pattern(), the it is itself a pattern used
- * to match other passables. A pattern cannot contain errors
- * or promises, as these are not stable enough to usefully match.
+ * Matches any Pattern that can be used to characterize passables.
+ * A pattern cannot contain errors or promises,
+ * as these are not stable enough to usefully match.
+ *
  * @property {(kind: string) => Matcher} kind
+ *
  * @property {() => Matcher} boolean
- * @property {() => Matcher} number Only floating point numbers
+ *
+ * @property {() => Matcher} number
+ * Matches any floating point number.
+ *
  * @property {(limits?: Limits) => Matcher} bigint
+ *
  * @property {(limits?: Limits) => Matcher} nat
+ * Matches any non-negative bigint or
+ * "safe" (no greater than 2**53 - 1) non-negative integral number,
+ * subject to limits.
+ *
  * @property {(limits?: Limits) => Matcher} string
+ *
  * @property {(limits?: Limits) => Matcher} symbol
- * Only registered and well-known symbols are passable
- * @property {(limits?: Limits) => Matcher} record A CopyRecord
- * @property {(limits?: Limits) => Matcher} array A CopyArray
- * @property {(limits?: Limits) => Matcher} set A CopySet
- * @property {(limits?: Limits) => Matcher} bag A CopyBag
- * @property {(limits?: Limits) => Matcher} map A CopyMap
+ * Matches any registered or well-known symbol,
+ * subject to limits.
+ *
+ * @property {(limits?: Limits) => Matcher} record
+ * Matches any CopyRecord, subject to limits.
+ *
+ * @property {(limits?: Limits) => Matcher} array
+ * Matches any CopyArray, subject to limits.
+ *
+ * @property {(limits?: Limits) => Matcher} set
+ * Matches any CopySet, subject to limits.
+ *
+ * @property {(limits?: Limits) => Matcher} bag
+ * Matches any CopyBag, subject to limits.
+ *
+ * @property {(limits?: Limits) => Matcher} map
+ * Matches any CopyMap, subject to limits.
+ *
  * @property {(label?: string) => Matcher} remotable
- * A far object or its remote presence. The optional `label` is purely for
- * diagnostic purpose. It does not enforce any constraint beyond the
- * must-be-a-remotable constraint.
+ * Matches a far object or its remote presence.
+ * The optional `label` is purely for diagnostic purposes and does not
+ * add any constraints.
+ *
  * @property {() => Matcher} error
+ * Matches any error object.
  * Error objects are passable, but are neither keys nor symbols.
  * They do not have a useful identity.
+ *
  * @property {() => Matcher} promise
+ * Matches any promise object.
  * Promises are passable, but are neither keys nor symbols.
  * They do not have a useful identity.
+ *
  * @property {() => Matcher} undefined
+ * Matches the exact value `undefined`.
  * All keys including `undefined` are already valid patterns and
- * so can validly represent themselves. But optional pattern arguments
- * `(pattern = undefined) => ...`
- * cannot distinguish between `undefined` passed as a pattern vs
- * omission of the argument. It will interpret the first as the
- * second. Thus, when a passed pattern does not also need to be a key,
+ * so can validly represent themselves.
+ * But optional pattern arguments `(pattern = undefined) => ...`
+ * cannot distinguish between `undefined` passed as a pattern vs.
+ * omission of the argument, and interpret the former as the latter.
+ * Thus, when a passed pattern does not also need to be a key,
  * we recommend passing `M.undefined()` instead of `undefined`.
  *
  * @property {() => null} null
  *
  * @property {(rightOperand :Key) => Matcher} lt
- * Matches if < the right operand by compareKeys
+ * Matches any value that compareKeys reports as less than rightOperand.
+ *
  * @property {(rightOperand :Key) => Matcher} lte
- * Matches if <= the right operand by compareKeys
+ * Matches any value that compareKeys reports as less than or equal to
+ * rightOperand.
+ *
  * @property {(key :Key) => Matcher} eq
+ * Matches any value that is equal to key.
+ *
  * @property {(key :Key) => Matcher} neq
+ * Matches any value that is not equal to key.
+ *
  * @property {(rightOperand :Key) => Matcher} gte
- * Matches if >= the right operand by compareKeys
+ * Matches any value that compareKeys reports as greater than or equal
+ * to rightOperand.
+ *
  * @property {(rightOperand :Key) => Matcher} gt
  * Matches if > the right operand by compareKeys
+ * Matches any value that compareKeys reports as greater than
+ * rightOperand.
  *
  * @property {(subPatt?: Pattern, limits?: Limits) => Matcher} arrayOf
+ * Matches any CopyArray whose elements are all matched by subPatt
+ * if defined, subject to limits.
+ *
  * @property {(keyPatt?: Pattern,
  *             valuePatt?: Pattern,
  *             limits?: Limits
  * ) => Matcher} recordOf
+ * Matches any CopyRecord whose keys are all matched by keyPatt
+ * if defined and values are all matched by valuePatt if defined,
+ * subject to limits.
+ *
  * @property {(keyPatt?: Pattern, limits?: Limits) => Matcher} setOf
+ * Matches any CopySet whose elements are all matched by subPatt
+ * if defined, subject to limits.
+ *
  * @property {(keyPatt?: Pattern,
  *             countPatt?: Pattern,
  *             limits?: Limits
  * ) => Matcher} bagOf
- * Parameterized by a keyPatt that is matched against every element of the
- * abstract bag. In terms of the bag representation, it is matched against
- * the first element of each pair. If the second `countPatt` is provided,
- * it is matched against the cardinality of each element. The `countPatt`
- * is rarely expected to be useful, but is provided to minimize surprise.
+ * Matches any CopyBag whose elements are all matched by keyPatt
+ * if defined and the cardinality of each is matched by countPatt
+ * if defined, subject to limits.
+ * countPatt is expected to rarely be useful,
+ * but is provided to minimize surprise.
+ *
  * @property {(keyPatt?: Pattern,
  *             valuePatt?: Pattern,
  *             limits?: Limits
  * ) => Matcher} mapOf
+ * Matches any CopyMap whose keys are all matched by keyPatt if defined
+ * and values are all matched by valuePatt if defined,
+ * subject to limits.
  *
  * @property {(required: Pattern[],
  *             optional?: Pattern[],
  *             rest?: Pattern,
  * ) => Matcher} splitArray
- * Splits an array --- typically an arguments list --- into an initial
- * portion that matches the `required` pattern, then the portion that matches
- * the `optional` pattern, and the remainder which is matched against the
- * `rest` pattern. The specimen must be at least as long as the `required`
- * pattern, but the remainder can be shorter than the `optional` pattern.
- * Within the optional portion, an `undefined` arg matches unconditionally.
- * Any elements beyond the `optional` pattern are matched against the
- * `rest` pattern.
+ * Matches any array --- typically an arguments list --- consisting of
+ *   - an initial portion matched by required, and
+ *   - a middle portion of length up to the length of optional that is
+ *     matched by the equal-length prefix of optional if optional is
+ *     defined, and
+ *   - a remainder that is matched by rest if rest is defined.
+ * The array must be at least as long as the required pattern,
+ * but its remainder can be arbitrarily short.
+ * Any array elements beyond the summed length of required and optional
+ * are collected and matched against the rest pattern.
+ *
  * @property {(required: CopyRecord<Pattern>,
  *             optional?: CopyRecord<Pattern>,
  *             rest?: Pattern,
  * ) => Matcher} splitRecord
- * Splits a copyRecord into those properties that match the `required`
- * pattern, the remainder which is matched against the `optional` pattern.
- * Any properties not matched by either are gathered into a record that
- * is matched against the `rest` pattern.
- * The specimen must have all the properties that appear on the `required`
- * pattern. It may omit properties that appear on the optional pattern.
- * For these purposes, `undefined` is like omission --- such properties
- * pass unconditionally.
+ * Matches any CopyRecord that can be split into component CopyRecords
+ * as follows:
+ *   - all properties corresponding with a property of required
+ *   - all properties corresponding with a property of optional
+ *     but not corresponding with a property of required
+ *   - all other properties
+ * where the first component is matched by the required pattern,
+ * the second component is matched by the subset of the optional pattern
+ * corresponding with its properties if optional is defined, and
+ * the third component is matched by the rest pattern if defined.
+ * The CopyRecord must have all properties that appear on the required
+ * pattern, but may omit properties that appear on the optional pattern.
  *
  * @property {(required: CopyRecord<*> | CopyArray<*>,
  *             rest?: Pattern,
  * ) => Matcher} split
  * Deprecated. Use `M.splitArray` or `M.splitRecord` instead.
- *
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.
+ *
  * @property {(base: CopyRecord<*> | CopyArray<*>,
  *             rest?: Pattern,
  * ) => Matcher} partial
  * Deprecated. Use `M.splitArray` or `M.splitRecord` instead.
- *
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.
  * Unlike `M.split`, `M.partial` ignores properties on the base
- * pattern that are not present on the specimen.
+ * pattern that are not present on the CopyRecord.
  *
  * @property {(t: Pattern) => Pattern} eref
+ *
  * @property {(t: Pattern) => Pattern} opt
  *
  * @property {<M extends Record<any, any>>(interfaceName: string,
  *             methodGuards: M,
  *             options?: {sloppy?: boolean}
  * ) => InterfaceGuard} interface
+ *
  * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call
+ *
  * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} callWhen
  *
  * @property {(argGuard: ArgGuard) => ArgGuard} await
