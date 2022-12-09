@@ -15,17 +15,13 @@ import { makeMyAgoricDir } from '@agoric/access-token';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
 import publishMain from './main-publish.js';
-import initMain from './init.js';
+import initMain, { makeInitCommand } from './init.js';
 import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
 import followMain from './follow.js';
 import { makeOpenCommand, makeTUI } from './open.js';
 import { makeWalletCommand } from './commands/wallet.js';
-
-const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
-const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
-const DEFAULT_DAPP_BRANCH = undefined;
 
 const STAMP = '_agstate';
 
@@ -98,28 +94,12 @@ const main = async (progname, rawArgs, powers) => {
   );
   program.addCommand(makeOpenCommand({ opener, baseDir, tui, randomBytes }));
 
-  program
-    .command('init <project>')
-    .description('create a new Dapp directory named <project>')
-    .option(
-      '--dapp-template <name>',
-      'use the template specified by <name>',
-      DEFAULT_DAPP_TEMPLATE,
-    )
-    .option(
-      '--dapp-base <base-url>',
-      'find the template relative to <base-url>',
-      DEFAULT_DAPP_URL_BASE,
-    )
-    .option(
-      '--dapp-branch <branch>',
-      'use this branch instead of the repository HEAD',
-      DEFAULT_DAPP_BRANCH,
-    )
-    .action(async (project, cmd) => {
+  program.addComman(
+    makeInitCommand().action(async (project, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return initMain(progname, ['init', project], powers, opts).then(procExit);
-    });
+    }),
+  );
 
   program
     .command('set-defaults <program> <config-dir>')

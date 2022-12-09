@@ -6,6 +6,11 @@ import { makePspawn } from './helpers.js';
 import '@endo/captp/src/types.js';
 import '@agoric/swingset-vat/exported.js';
 import '@agoric/swingset-vat/src/vats/network/types.js';
+import { Command } from 'commander';
+
+const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
+const DEFAULT_DAPP_URL_BASE = 'https://github.com/Agoric/';
+const DEFAULT_DAPP_BRANCH = undefined;
 
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {
@@ -16,6 +21,26 @@ const gitURL = (relativeOrAbsoluteURL, base) => {
   }
   return url.href;
 };
+
+export const makeInitCommand = () =>
+  new Command('init')
+    .argument('<project>')
+    .description('create a new Dapp directory named <project>')
+    .option(
+      '--dapp-template <name>',
+      'use the template specified by <name>',
+      DEFAULT_DAPP_TEMPLATE,
+    )
+    .option(
+      '--dapp-base <base-url>',
+      'find the template relative to <base-url>',
+      DEFAULT_DAPP_URL_BASE,
+    )
+    .option(
+      '--dapp-branch <branch>',
+      'use this branch instead of the repository HEAD',
+      DEFAULT_DAPP_BRANCH,
+    );
 
 export default async function initMain(_progname, rawArgs, priv, opts) {
   const { anylogger, spawn, fs } = priv;
