@@ -1,5 +1,6 @@
 import { passStyleOf } from '@endo/marshal';
 import { fit } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
@@ -27,7 +28,8 @@ export const makeOfferMethod = offerDataAccess => {
     // AWAIT ///
 
     const instanceAdmin = offerDataAccess.getInstanceAdmin(instance);
-    !instanceAdmin.isBlocked(description) ||
+    const blocked = await E(instanceAdmin).isBlocked(description);
+    !blocked ||
       assert.fail(X`not accepting offer with description ${q(description)}`);
     const { invitationHandle } = await burnInvitation(
       invitationIssuer,
@@ -35,7 +37,7 @@ export const makeOfferMethod = offerDataAccess => {
     );
     // AWAIT ///
 
-    instanceAdmin.assertAcceptingOffers();
+    await E(instanceAdmin).assertAcceptingOffers();
 
     const getAssetKindByBrand = brand => {
       return offerDataAccess.getAssetKindByBrand(brand);
@@ -65,7 +67,7 @@ export const makeOfferMethod = offerDataAccess => {
     // AWAIT ///
 
     // This triggers the offerHandler in ZCF
-    const userSeat = await instanceAdmin.makeUserSeat(
+    const userSeat = await E(instanceAdmin).makeUserSeat(
       invitationHandle,
       initialAllocation,
       proposal,

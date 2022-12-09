@@ -9,8 +9,8 @@ import {
   isWaivedExitRule,
 } from '../typeGuards.js';
 
-const ExitObjectGuard = M.interface('ExitObject', { exit: M.call().returns() });
-const WakerInterfaceGuard = M.interface('Waker', {
+const ExitObjectI = M.interface('ExitObject', { exit: M.call().returns() });
+const WakerI = M.interface('Waker', {
   wake: M.call(M.bigint()).returns(),
   schedule: M.call().returns(),
 });
@@ -21,7 +21,7 @@ export const makeMakeExiter = baggage => {
   const makeExitable = vivifyFarClass(
     baggage,
     'ExitObject',
-    ExitObjectGuard,
+    ExitObjectI,
     zcfSeat => ({ zcfSeat }),
     {
       exit() {
@@ -33,7 +33,7 @@ export const makeMakeExiter = baggage => {
   const makeWaived = vivifyFarClass(
     baggage,
     'ExitWaived',
-    ExitObjectGuard,
+    ExitObjectI,
     initEmpty,
     {
       exit() {
@@ -47,7 +47,7 @@ export const makeMakeExiter = baggage => {
   const makeWaker = vivifyFarClass(
     baggage,
     'Waker',
-    WakerInterfaceGuard,
+    WakerI,
     (zcfSeat, afterDeadline) => ({ zcfSeat, afterDeadline }),
     {
       wake(_when) {

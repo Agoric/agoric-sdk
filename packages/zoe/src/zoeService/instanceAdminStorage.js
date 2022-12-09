@@ -10,21 +10,34 @@ import {
 } from '@agoric/vat-data';
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 import { defineDurableHandle } from '../makeHandle.js';
-import { InstanceAdminI, InstanceHandleShape } from '../typeGuards.js';
+import { InstanceAdminShape, InstanceHandleShape } from '../typeGuards.js';
 
 const { quote: q, details: X } = assert;
 
-const InstanceAdminStorageShape = M.interface('InstanceAdminStorage', {
-  getPublicFacet: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
-  getBrands: M.call(InstanceHandleShape).returns(M.promise()),
-  getIssuers: M.call(InstanceHandleShape).returns(M.promise()),
-  getTerms: M.call(InstanceHandleShape).returns(M.promise()),
-  getOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
-  setOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(),
-  getInstallationForInstance: M.call(InstanceHandleShape).returns(M.promise()),
-  getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminI),
-  initInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
-  deleteInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
+const InstanceAdminStorageIKit = harden({
+  accessor: M.interface('InstanceAdminStorage', {
+    getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.promise(),
+    ),
+    getBrands: M.call(InstanceHandleShape).returns(M.promise()),
+    getIssuers: M.call(InstanceHandleShape).returns(M.promise()),
+    getTerms: M.call(InstanceHandleShape).returns(M.promise()),
+    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.promise(),
+    ),
+    getInstallationForInstance: M.call(InstanceHandleShape).returns(
+      M.promise(),
+    ),
+    getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminShape),
+    initInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
+    deleteInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
+  }),
+  updater: M.interface('InstanceAdmin updater', {
+    initInstanceAdmin: M.call(InstanceHandleShape, InstanceAdminShape).returns(
+      InstanceAdminShape,
+    ),
+    deleteInstanceAdmin: M.call(InstanceHandleShape).returns(),
+  }),
 });
 
 /** @param {import('@agoric/vat-data').Baggage} baggage */
@@ -32,7 +45,7 @@ export const makeInstanceAdminStorage = baggage => {
   const makeIAS = vivifyFarClassKit(
     baggage,
     'InstanceAdmin',
-    InstanceAdminStorageShape,
+    InstanceAdminStorageIKit,
     () => ({
       instanceToInstanceAdmin: provideDurableWeakMapStore(
         baggage,
@@ -42,12 +55,10 @@ export const makeInstanceAdminStorage = baggage => {
     {
       // ZoeStorageManager uses the accessor facet to get info about instances
       accessor: {
-        async getPublicFacet(instanceP) {
+        async getPublicFacet(instance) {
           const { state } = this;
-          return E.when(instanceP, async instance => {
-            const ia = state.instanceToInstanceAdmin.get(instance);
-            return ia.getPublicFacet();
-          });
+          const ia = state.instanceToInstanceAdmin.get(instance);
+          return ia.getPublicFacet();
         },
         async getBrands(instance) {
           const { state } = this;
@@ -61,11 +72,9 @@ export const makeInstanceAdminStorage = baggage => {
           const { state } = this;
           return state.instanceToInstanceAdmin.get(instance).getTerms();
         },
-        async getOfferFilter(instanceP) {
+        async getOfferFilter(instance) {
           const { state } = this;
-          return E.when(instanceP, instance =>
-            state.instanceToInstanceAdmin.get(instance).getOfferFilter(),
-          );
+          state.instanceToInstanceAdmin.get(instance).getOfferFilter();
         },
         async getInstallationForInstance(instance) {
           const { state } = this;
@@ -171,7 +180,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       // return the userSeat before the offerHandler is called
       return userSeat;
     },
-    makeNoEscrowSeatKit: (
+    makeNoEscrowSeat: (
       { state, facets: { helper } },
       initialAllocation,
       proposal,

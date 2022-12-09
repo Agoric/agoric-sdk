@@ -10,7 +10,7 @@ import { initEmpty } from '@agoric/store';
 
 import { defineDurableHandle } from '../makeHandle.js';
 import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
-import { AdminFacetGuard, InstanceAdminI } from '../typeGuards.js';
+import { AdminFacetI, InstanceAdminI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
@@ -33,9 +33,9 @@ const instanceAdminBehavior = {
     return state.instanceStorage.saveIssuer(issuer, keyword);
   },
   // A Seat requested by the contract without any payments to escrow
-  makeNoEscrowSeatKit(initialAllocations, proposal, exitObj, seatHandle) {
+  makeNoEscrowSeat(initialAllocations, proposal, exitObj, seatHandle) {
     const { state } = this;
-    return state.instanceAdmin.makeNoEscrowSeatKit(
+    return state.instanceAdmin.makeNoEscrowSeat(
       initialAllocations,
       proposal,
       exitObj,
@@ -99,6 +99,10 @@ const instanceAdminBehavior = {
     const { state } = this;
     return state.seatHandleToAdmin.get(seatHandle).getExitSubscriber();
   },
+  isBlocked(string) {
+    const { state } = this;
+    return state.instanceAdmin.isBlocked(string);
+  },
 };
 
 /**
@@ -154,7 +158,7 @@ export const makeStartInstance = (
   const makeAdminFacet = vivifyFarClass(
     zoeBaggage,
     'adminFacet',
-    AdminFacetGuard,
+    AdminFacetI,
     (adminNode, zcfBundleCap, contractBundleCap) => ({
       adminNode,
       zcfBundleCap,

@@ -13,7 +13,7 @@ import {
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
 
-const ZoeSeatGuard = {
+const ZoeSeatIKit = harden({
   zoeSeatAdmin: M.interface('ZoeSeatAdmin', {
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
@@ -35,7 +35,7 @@ const ZoeSeatGuard = {
     getFinalAllocation: M.call().returns(M.promise()),
     getExitSubscriber: M.call().returns(M.any()),
   }),
-};
+});
 
 const assertHasNotExited = (c, msg) => {
   !c.state.instanceAdminHelper.hasExited(c.facets.zoeSeatAdmin) ||
@@ -88,7 +88,7 @@ export const makeZoeSeatAdminFactory = baggage => {
   return vivifyFarClassKit(
     baggage,
     'ZoeSeatKit',
-    ZoeSeatGuard,
+    ZoeSeatIKit,
     (
       initialAllocation,
       proposal,

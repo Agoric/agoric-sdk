@@ -15,12 +15,15 @@ import { InstallationShape } from '../typeGuards.js';
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 export const SourceBundleShape = M.recordOf(M.string(), M.string());
-export const ModuleFormatBundleShape = M.partial({ moduleFormat: M.any() });
+export const ModuleFormatBundleShape = M.splitRecord(
+  harden({}),
+  harden({ moduleFormat: M.any() }),
+);
 export const BundleShape = M.or(ModuleFormatBundleShape, SourceBundleShape);
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
- * @param {Baggage} [zoeBaggage]
+ * @param {Baggage} [zoeBaggage] optional only so it can be omitted in tests
  */
 export const makeInstallationStorage = (
   getBundleCapForID,
@@ -65,9 +68,10 @@ export const makeInstallationStorage = (
   const installSourceBundle = async bundle => {
     assert.typeof(bundle, 'object', 'a bundle must be provided');
     /** @type {Installation} */
+    assert(bundle, 'a bundle must be provided');
+    /** @type {Installation} */
     // @ts-expect-error cast
     const installation = makeBundleInstallation(bundle);
-    assert(bundle, 'a bundle must be provided');
     installationsBundle.init(installation, bundle);
     return installation;
   };
@@ -75,7 +79,7 @@ export const makeInstallationStorage = (
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(BundleShape).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
-    unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(M.any()),
+    unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(M.any()),
     getBundleIDFromInstallation: M.call(InstallationShape).returns(M.promise()),
   });
 
@@ -85,15 +89,14 @@ export const makeInstallationStorage = (
     InstallationStorageI,
     {
       async installBundle(allegedBundle) {
-        // Bundle is a very open-ended type and we must decide here
-        // whether to treat it as either a HashBundle or SourceBundle.
-        // So, we cast it down and inspect it.
-        const bundle = /** @type {unknown} */ (harden(allegedBundle));
-        assert.typeof(bundle, 'object', 'a bundle must be provided');
-        assert(bundle !== null, 'a bundle must be provided');
-        const { moduleFormat } = bundle;
+        // Bundle is a very open-ended type and we must decide here whether to
+        // treat it as either a HashBundle or SourceBundle. So we have to
+        // inspect it.
+        assert.typeof(allegedBundle, 'object', 'a bundle must be provided');
+        assert(allegedBundle !== null, 'a bundle must be provided');
+        const { moduleFormat } = allegedBundle;
         if (moduleFormat === 'endoZipBase64Sha512') {
-          const { endoZipBase64Sha512 } = bundle;
+          const { endoZipBase64Sha512 } = allegedBundle;
           assert.typeof(
             endoZipBase64Sha512,
             'string',
@@ -101,7 +104,7 @@ export const makeInstallationStorage = (
           );
           return this.installBundleID(`b1-${endoZipBase64Sha512}`);
         }
-        return installSourceBundle(bundle);
+        return installSourceBundle(allegedBundle);
       },
       async installBundleID(bundleID) {
         assert.typeof(bundleID, 'string', `a bundle ID must be provided`);
@@ -119,19 +122,17 @@ export const makeInstallationStorage = (
         );
         return installation;
       },
-      unwrapInstallation(installationP) {
-        return E.when(installationP, installation => {
-          if (installationsBundleCap.has(installation)) {
-            const { bundleCap, bundleID } =
-              installationsBundleCap.get(installation);
-            return { bundleCap, bundleID, installation };
-          } else if (installationsBundle.has(installation)) {
-            const bundle = installationsBundle.get(installation);
-            return { bundle, installation };
-          } else {
-            assert.fail(X`${installation} was not a valid installation`);
-          }
-        });
+      unwrapInstallation(installation) {
+        if (installationsBundleCap.has(installation)) {
+          const { bundleCap, bundleID } =
+            installationsBundleCap.get(installation);
+          return { bundleCap, bundleID, installation };
+        } else if (installationsBundle.has(installation)) {
+          const bundle = installationsBundle.get(installation);
+          return { bundle, installation };
+        } else {
+          assert.fail(X`${installation} was not a valid installation`);
+        }
       },
       async getBundleIDFromInstallation(allegedInstallationP) {
         // @ts-expect-error TS doesn't understand context
