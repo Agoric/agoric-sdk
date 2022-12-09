@@ -6,11 +6,6 @@ import path from 'path';
 import crypto from 'crypto';
 import { Command } from 'commander';
 import opener from 'opener';
-import { assert, details as X } from '@agoric/assert';
-import {
-  DEFAULT_KEEP_POLLING_SECONDS,
-  DEFAULT_JITTER_SECONDS,
-} from '@agoric/casting';
 import { makeMyAgoricDir } from '@agoric/access-token';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
@@ -19,7 +14,7 @@ import initMain, { makeInitCommand } from './init.js';
 import installMain from './install.js';
 import setDefaultsMain, { makeSetDefaultsCommand } from './set-defaults.js';
 import startMain from './start.js';
-import followMain from './follow.js';
+import followMain, { createFollowCommand } from './follow.js';
 import { makeOpenCommand, makeTUI } from './open.js';
 import { makeWalletCommand } from './commands/wallet.js';
 
@@ -127,81 +122,14 @@ const main = async (progname, rawArgs, powers) => {
       ).then(procExit);
     });
 
-  program
-    .command('follow <path-spec...>')
-    .description('follow an Agoric Casting leader')
-    .option(
-      '--proof <strict | optimistic | none>',
-      'set proof mode',
-      value => {
-        assert(
-          ['strict', 'optimistic', 'none'].includes(value),
-          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
-          TypeError,
-        );
-        return value;
-      },
-      'optimistic',
-    )
-    .option(
-      '--sleep <seconds>',
-      'sleep <seconds> between polling (may be fractional)',
-      value => {
-        const num = Number(value);
-        assert.equal(`${num}`, value, X`--sleep must be a number`, TypeError);
-        return num;
-      },
-      DEFAULT_KEEP_POLLING_SECONDS,
-    )
-    .option(
-      '--jitter <max-seconds>',
-      'jitter up to <max-seconds> (may be fractional)',
-      value => {
-        const num = Number(value);
-        assert.equal(`${num}`, value, X`--jitter must be a number`, TypeError);
-        return num;
-      },
-      DEFAULT_JITTER_SECONDS,
-    )
-    .option(
-      '-o, --output <format>',
-      'value output format',
-      value => {
-        assert(
-          [
-            'hex',
-            'justin',
-            'justinlines',
-            'json',
-            'jsonlines',
-            'text',
-          ].includes(value),
-          X`--output must be one of 'hex', 'justin', 'justinlines', 'json', 'jsonlines', or 'text'`,
-          TypeError,
-        );
-        return value;
-      },
-      'justin',
-    )
-    .option(
-      '-l, --lossy',
-      'show only the most recent value for each sample interval',
-    )
-    .option(
-      '-b, --block-height',
-      'show first block height when each value was stored',
-    )
-    .option(
-      '-c, --current-block-height',
-      'show current block height when each value is reported',
-    )
-    .option('-B, --bootstrap <config>', 'network bootstrap configuration')
-    .action(async (pathSpecs, cmd) => {
+  program.addCommand(
+    createFollowCommand().action(async (pathSpecs, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return followMain(progname, ['follow', ...pathSpecs], powers, opts).then(
         procExit,
       );
-    });
+    }),
+  );
 
   const addRunOptions = cmd =>
     cmd

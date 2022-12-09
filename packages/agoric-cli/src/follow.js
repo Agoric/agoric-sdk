@@ -2,15 +2,90 @@
 import process from 'process';
 import { Far, getInterfaceOf } from '@endo/marshal';
 import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
+import { assert, details as X } from '@agoric/assert';
 
 import {
+  DEFAULT_KEEP_POLLING_SECONDS,
+  DEFAULT_JITTER_SECONDS,
   iterateLatest,
   makeCastingSpec,
   iterateEach,
   makeFollower,
   makeLeader,
 } from '@agoric/casting';
+import { Command } from 'commander';
 import { makeLeaderOptions } from './lib/casting.js';
+
+export const createFollowCommand = () =>
+  new Command('follow')
+    .description('follow an Agoric Casting leader')
+    .arguments('<path-spec...>')
+    .option(
+      '--proof <strict | optimistic | none>',
+      'set proof mode',
+      value => {
+        assert(
+          ['strict', 'optimistic', 'none'].includes(value),
+          X`--proof must be one of 'strict', 'optimistic', or 'none'`,
+          TypeError,
+        );
+        return value;
+      },
+      'optimistic',
+    )
+    .option(
+      '--sleep <seconds>',
+      'sleep <seconds> between polling (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--sleep must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_KEEP_POLLING_SECONDS,
+    )
+    .option(
+      '--jitter <max-seconds>',
+      'jitter up to <max-seconds> (may be fractional)',
+      value => {
+        const num = Number(value);
+        assert.equal(`${num}`, value, X`--jitter must be a number`, TypeError);
+        return num;
+      },
+      DEFAULT_JITTER_SECONDS,
+    )
+    .option(
+      '-o, --output <format>',
+      'value output format',
+      value => {
+        assert(
+          [
+            'hex',
+            'justin',
+            'justinlines',
+            'json',
+            'jsonlines',
+            'text',
+          ].includes(value),
+          X`--output must be one of 'hex', 'justin', 'justinlines', 'json', 'jsonlines', or 'text'`,
+          TypeError,
+        );
+        return value;
+      },
+      'justin',
+    )
+    .option(
+      '-l, --lossy',
+      'show only the most recent value for each sample interval',
+    )
+    .option(
+      '-b, --block-height',
+      'show first block height when each value was stored',
+    )
+    .option(
+      '-c, --current-block-height',
+      'show current block height when each value is reported',
+    )
+    .option('-B, --bootstrap <config>', 'network bootstrap configuration');
 
 export default async function followerMain(progname, rawArgs, powers, opts) {
   const { anylogger } = powers;
