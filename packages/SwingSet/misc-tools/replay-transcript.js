@@ -48,11 +48,11 @@ const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
 const FORCED_RELOAD_FROM_SNAPSHOT = false;
 const KEEP_WORKER_RECENT = 0;
-const KEEP_WORKER_INITIAL = 1;
+const KEEP_WORKER_INITIAL = 2;
 const KEEP_WORKER_INTERVAL = 1;
 
 const SKIP_EXTRA_SYSCALLS = true;
-const SIMULATE_VC_SYSCALLS = false;
+const SIMULATE_VC_SYSCALLS = true;
 
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
@@ -188,6 +188,7 @@ async function replay(transcriptFile) {
    *  xsnapPID: number | undefined;
    *  deliveryTimeTotal: number;
    *  deliveryTimeSinceLastSnapshot: number;
+   *  loadSnapshotID: string | undefined;
    *  firstTranscriptNum: number | null;
    * }} WorkerData
    */
@@ -424,6 +425,7 @@ async function replay(transcriptFile) {
       xsnapPID: NaN,
       deliveryTimeTotal: 0,
       deliveryTimeSinceLastSnapshot: 0,
+      loadSnapshotID,
       firstTranscriptNum: null,
     };
     workers.push(workerData);
@@ -446,26 +448,25 @@ async function replay(transcriptFile) {
     return workerData;
   };
 
+  let loadLock = Promise.resolve();
   const loadSnapshot = async data => {
     if (worker !== 'xs-worker') {
       return;
     }
+    await loadLock;
+
     await Promise.all(
       workers
         .filter(
-          ({ firstTranscriptNum }) =>
+          ({ firstTranscriptNum }, idx) =>
             firstTranscriptNum != null &&
             !(
               (KEEP_WORKER_INTERVAL &&
                 Math.floor(firstTranscriptNum / FORCED_SNAPSHOT_INTERVAL) %
                   KEEP_WORKER_INTERVAL ===
                   0) ||
-              (KEEP_WORKER_RECENT > 0 &&
-                lastTranscriptNum - firstTranscriptNum <=
-                  KEEP_WORKER_RECENT * FORCED_SNAPSHOT_INTERVAL) ||
-              (KEEP_WORKER_INITIAL > 0 &&
-                firstTranscriptNum - startTranscriptNum <=
-                  KEEP_WORKER_INITIAL * FORCED_SNAPSHOT_INTERVAL)
+              idx < KEEP_WORKER_INITIAL ||
+              idx >= workers.length - KEEP_WORKER_RECENT
             ),
         )
         .map(async workerData => {
@@ -491,29 +492,49 @@ async function replay(transcriptFile) {
           );
         }),
     );
+
     loadSnapshotID = data.snapshotID;
-    if (snapshotOverrideMap.has(loadSnapshotID)) {
-      loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
+    /** @type {() => void} */
+    let releaseLock;
+    loadLock = new Promise(resolve => {
+      releaseLock = resolve;
+    });
+    // @ts-expect-error
+    assert(releaseLock);
+    try {
+      if (snapshotOverrideMap.has(loadSnapshotID)) {
+        loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
+      }
+      if (
+        workers.find(workerData => workerData.loadSnapshotID === loadSnapshotID)
+      ) {
+        console.log(
+          `found an existing manager for snapshot ${loadSnapshotID}, skipping duplicate creation`,
+        );
+        return;
+      }
+      if (data.vatID) {
+        vatID = data.vatID;
+      }
+      const { xsnapPID } = await createManager();
+      console.log(
+        `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
+      );
+      fs.writeSync(
+        snapshotActivityFd,
+        `${JSON.stringify({
+          transcriptFile,
+          type: 'load',
+          xsnapPID,
+          vatID,
+          snapshotID: data.snapshotID,
+          loadSnapshotID,
+        })}\n`,
+      );
+    } finally {
+      loadSnapshotID = null;
+      releaseLock();
     }
-    if (data.vatID) {
-      vatID = data.vatID;
-    }
-    const { xsnapPID } = await createManager();
-    console.log(
-      `created manager from snapshot ${loadSnapshotID}, worker PID: ${xsnapPID}`,
-    );
-    fs.writeSync(
-      snapshotActivityFd,
-      `${JSON.stringify({
-        transcriptFile,
-        type: 'load',
-        xsnapPID,
-        vatID,
-        snapshotID: data.snapshotID,
-        loadSnapshotID,
-      })}\n`,
-    );
-    loadSnapshotID = null;
   };
 
   /** @type {import('stream').Readable} */
@@ -690,14 +711,13 @@ async function replay(transcriptFile) {
       }
 
       if (FORCED_RELOAD_FROM_SNAPSHOT) {
-        await Promise.all(
-          uniqueSnapshotIDs.map(async snapshotID =>
-            loadSnapshot({
-              snapshotID,
-              vatID,
-            }),
-          ),
-        );
+        for (const snapshotID of uniqueSnapshotIDs) {
+          // eslint-disable-next-line no-await-in-loop
+          await loadSnapshot({
+            snapshotID,
+            vatID,
+          });
+        }
       }
     }
   }
