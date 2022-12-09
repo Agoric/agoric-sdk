@@ -32,6 +32,7 @@ main(progname, rawArgs, {
   stdout,
   makeWebSocket,
   fs,
+  fsSync: rawFs,
   now: Date.now,
   os,
   process,

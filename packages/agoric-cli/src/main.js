@@ -1,12 +1,17 @@
 /* eslint-disable @jessie.js/no-nested-await */
-/* global process */
-import { Command } from 'commander';
+/* global process, setInterval, clearInterval */
+// @ts-check
+import os from 'os';
 import path from 'path';
+import crypto from 'crypto';
+import { Command } from 'commander';
+import opener from 'opener';
 import { assert, details as X } from '@agoric/assert';
 import {
   DEFAULT_KEEP_POLLING_SECONDS,
   DEFAULT_JITTER_SECONDS,
 } from '@agoric/casting';
+import { makeMyAgoricDir } from '@agoric/access-token';
 import cosmosMain from './cosmos.js';
 import deployMain from './deploy.js';
 import publishMain from './main-publish.js';
@@ -15,7 +20,7 @@ import installMain from './install.js';
 import setDefaultsMain from './set-defaults.js';
 import startMain from './start.js';
 import followMain from './follow.js';
-import walletMain from './open.js';
+import { makeOpenCommand, makeTUI } from './open.js';
 import { makeWalletCommand } from './commands/wallet.js';
 
 const DEFAULT_DAPP_TEMPLATE = 'dapp-fungible-faucet';
@@ -27,8 +32,16 @@ const STAMP = '_agstate';
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
+/**
+ * @param {string} progname
+ * @param {string[]} rawArgs
+ * @param {object} powers
+ * @param {typeof import('anylogger').default} powers.anylogger
+ * @param {typeof import('fs/promises')} powers.fs
+ * @param {typeof import('fs')} powers.fsSync
+ */
 const main = async (progname, rawArgs, powers) => {
-  const { anylogger, fs } = powers;
+  const { anylogger, fs, fsSync } = powers;
   const log = anylogger('agoric');
 
   const program = new Command();
@@ -53,7 +66,7 @@ const main = async (progname, rawArgs, powers) => {
 
   program.storeOptionsAsProperties(false);
 
-  const pj = await fs.readFile(`${dirname}/../package.json`);
+  const pj = await fs.readFile(`${dirname}/../package.json`, 'utf-8');
   const pkg = JSON.parse(pj);
   program.name(pkg.name).version(pkg.version);
 
@@ -77,31 +90,15 @@ const main = async (progname, rawArgs, powers) => {
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
 
-  program
-    .command('open')
-    .description('launch the Agoric UI')
-    .option(
-      '--hostport <host:port>',
-      'host and port to connect to VM',
-      '127.0.0.1:8000',
-    )
-    .option('--no-browser', `just display the URL, don't open a browser`)
-    .option(
-      '--repl [yes | only | no]',
-      'whether to show the Read-eval-print loop [yes]',
-      value => {
-        assert(
-          ['yes', 'only', 'no'].includes(value),
-          X`--repl must be one of 'yes', 'no', or 'only'`,
-          TypeError,
-        );
-        return value;
-      },
-    )
-    .action(async cmd => {
-      const opts = { ...program.opts(), ...cmd.opts() };
-      return subMain(walletMain, ['wallet'], opts);
-    });
+  const { randomBytes } = crypto;
+  const baseDir = makeMyAgoricDir(path.join(os.homedir(), '.agoric'), {
+    fs: fsSync,
+  });
+  const tui = makeTUI(
+    { stdout: process.stdout, stderr: process.stderr },
+    { setInterval, clearInterval },
+  );
+  program.addCommand(makeOpenCommand({ opener, baseDir, tui, randomBytes }));
 
   program
     .command('init <project>')

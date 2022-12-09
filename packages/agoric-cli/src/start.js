@@ -1,3 +1,4 @@
+/* eslint-disable @jessie.js/no-nested-await */
 /* global process setTimeout */
 import chalk from 'chalk';
 import { createHash } from 'crypto';
