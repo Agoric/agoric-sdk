@@ -49,6 +49,9 @@ const KEEP_WORKER_RECENT = 0;
 const KEEP_WORKER_INITIAL = 1;
 const KEEP_WORKER_INTERVAL = 1;
 
+const SKIP_EXTRA_SYSCALLS = true;
+const SIMULATE_VC_SYSCALLS = false;
+
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
 const USE_CUSTOM_SNAP_STORE = false;
@@ -225,6 +228,8 @@ async function replay(transcriptFile) {
   let vatParameters;
   let vatSourceBundle;
 
+  const knownVCSyscalls = new Map();
+
   const makeCompareSyscalls =
     workerData => (_vatID, originalSyscall, newSyscall, originalSyscalls) => {
       let i;
@@ -245,6 +250,10 @@ async function replay(transcriptFile) {
         ) {
           return undefined; // Errors are serialized differently, sometimes
         }
+
+        if (!SKIP_EXTRA_SYSCALLS) {
+          break;
+        }
       }
       if (initialError) {
         console.error(
@@ -254,7 +263,27 @@ async function replay(transcriptFile) {
 
       if (!error && i > 0) {
         originalSyscalls.splice(0, i);
+        console.warn(`  mitigation: ignoring extra syscalls`);
         return undefined;
+      }
+
+      if (
+        SIMULATE_VC_SYSCALLS &&
+        newSyscall[0] === 'vatstoreGet' &&
+        /^vc\.\d+\.\|(?:schemata|label)$/.test(newSyscall[1])
+      ) {
+        if (initialError) {
+          const response = knownVCSyscalls.get(newSyscall[1]);
+          if (response) {
+            originalSyscalls.unshift({ d: newSyscall, response });
+            console.warn(
+              `  mitigation: using response from previous saved syscall`,
+            );
+            return undefined;
+          }
+        } else {
+          knownVCSyscalls.set(newSyscall[1], originalSyscalls[0].response);
+        }
       }
 
       return initialError;
