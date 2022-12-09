@@ -313,29 +313,6 @@ export const installGovAndPSMContracts = async ({
 };
 
 /**
- * @deprecated the PSM charter has been merged with the econ charter
- * @param {EconomyBootstrapPowers} powers
- */
-export const startPSMCharter = async ({
-  consume: { zoe },
-  produce: { econCharterFacets },
-  installation: {
-    consume: { binaryVoteCounter, econCommitteeCharter: installP },
-  },
-  instance: {
-    produce: { econCommitteeCharter: instanceP },
-  },
-}) => {
-  const [charterR, counterR] = await Promise.all([installP, binaryVoteCounter]);
-
-  const terms = { binaryVoteCounterInstallation: counterR };
-  const facets = await E(zoe).startInstance(charterR, {}, terms);
-
-  instanceP.resolve(facets.instance);
-  econCharterFacets.resolve(harden(facets));
-};
-
-/**
  * PSM and gov contracts are available as
  * named swingset bundles only in
  * decentral-psm-config.json
