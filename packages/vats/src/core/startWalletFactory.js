@@ -146,7 +146,12 @@ export const startWalletFactory = async (
       consume: { [Stable.symbol]: feeIssuerP },
     },
   },
-  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
+  {
+    options: {
+      perAccountInitialValue = (StableUnit * 25n) / 100n,
+      walletBridgeId = BRIDGE_ID.PROVISION_SMART_WALLET,
+    } = {},
+  } = {},
 ) => {
   const WALLET_STORAGE_PATH = 'wallet';
   const POOL_STORAGE_PATH = 'provisionPool';
@@ -236,7 +241,7 @@ export const startWalletFactory = async (
   });
 
   await Promise.all([
-    E(bridgeManager).register(BRIDGE_ID.PROVISION, handler),
+    E(bridgeManager).register(walletBridgeId, handler),
     E(E.get(econCharterFacets).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.creatorFacet,
