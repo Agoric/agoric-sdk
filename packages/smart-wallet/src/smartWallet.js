@@ -204,7 +204,7 @@ export const initState = (unique, shared) => {
   };
 };
 
-const behaviorGuards = {
+const behaviorIKit = harden({
   // xxx updateBalance string not really optional. not exposed so okay to skip guards.
   // helper: M.interface('helperFacetI', {
   //   addBrand: M.call(
@@ -233,11 +233,11 @@ const behaviorGuards = {
     getCurrentSubscriber: M.call().returns(M.eref(M.any())),
     getUpdatesSubscriber: M.call().returns(M.eref(M.any())),
   }),
-};
+});
 
 const SmartWalletKit = defineVirtualFarClassKit(
   'SmartWallet',
-  behaviorGuards,
+  behaviorIKit,
   initState,
   {
     helper: {

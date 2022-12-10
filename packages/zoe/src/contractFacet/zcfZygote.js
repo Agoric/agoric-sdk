@@ -262,17 +262,14 @@ export const makeZCFZygote = async (
 
   const HandleOfferFunctionShape = M.remotable('HandleOfferFunction');
   const OfferHandlerShape = M.or(HandleOfferShape, HandleOfferFunctionShape);
-  const TakerGuard = M.interface('offer handler taker', {
+  const TakerI = M.interface('offer handler taker', {
     take: M.call(InvitationHandleShape)
       .optional(M.string())
       .returns(OfferHandlerShape),
   });
-  const taker = vivifyFarInstance(
-    zcfBaggage,
-    'offer handler taker',
-    TakerGuard,
-    { take: takeOfferHandler },
-  );
+  const taker = vivifyFarInstance(zcfBaggage, 'offer handler taker', TakerI, {
+    take: takeOfferHandler,
+  });
   const handleOfferObj = makeHandleOfferObj(taker);
 
   const evaluateContract = () => {

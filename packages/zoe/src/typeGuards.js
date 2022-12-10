@@ -130,13 +130,13 @@ export const SeatHandleAllocations = M.arrayOf(
   }),
 );
 
-export const ZoeMintShape = M.interface('ZoeMint', {
+export const ZoeMintI = M.interface('ZoeMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
   mintAndEscrow: M.call(AmountShape).returns(),
   withdrawAndBurn: M.call(AmountShape).returns(),
 });
 
-export const ZcfMintShape = M.interface('ZcfMint', {
+export const ZcfMintI = M.interface('ZcfMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
   mintGains: M.call(AmountKeywordRecordShape, M.remotable('zcfSeat')).returns(),
   burnLosses: M.call(
@@ -181,54 +181,49 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   getExitSubscriber: M.call(SeatShape).returns(SubscriberShape),
 });
 
-export const InstanceStorageManagerGuard = M.interface(
-  'InstanceStorageManager',
-  {
-    getTerms: M.call().returns(M.split(TermsShape, M.record())),
-    getIssuers: M.call().returns(IssuerKeywordRecordShape),
-    getBrands: M.call().returns(BrandKeywordRecordShape),
-    getInstallationForInstance: M.call().returns(InstallationShape),
-    getInvitationIssuer: M.call().returns(IssuerShape),
+export const InstanceStorageManagerI = M.interface('InstanceStorageManager', {
+  getTerms: M.call().returns(M.split(TermsShape, M.record())),
+  getIssuers: M.call().returns(IssuerKeywordRecordShape),
+  getBrands: M.call().returns(BrandKeywordRecordShape),
+  getInstallationForInstance: M.call().returns(InstallationShape),
+  getInvitationIssuer: M.call().returns(IssuerShape),
 
-    saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
-    makeZoeMint: M.call(KeywordShape)
-      .optional(AssetKindShape, DisplayInfoShape, M.pattern())
-      .returns(M.or(ZoeMintShape, M.remotable('zoeMint'), M.promise())),
-    registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
-      IssuerKitShape,
-    ),
-    getInstanceRecord: M.call().returns(InstanceRecordShape),
-    getIssuerRecords: M.call().returns(M.arrayOf(IssuerRecordShape)),
-    getWithdrawPayments: M.call().returns(
-      M.interface('WithdrawFacet', {
-        withdrawPayments: M.call(AmountKeywordRecordShape).returns(
-          PaymentKeywordRecordShape,
-        ),
-      }),
-    ),
-    initInstanceAdmin: M.call(
-      InstanceHandleShape,
-      M.remotable('instanceAdmin'),
-    ).returns(M.promise()),
-    deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
-    makeInvitation: M.call(InvitationHandleShape, M.string())
-      .optional(M.any(), M.pattern())
-      .returns(M.promise()),
-    getRoot: M.call().returns(M.promise()),
-    getAdminNode: M.call().returns(M.remotable('adminNode')),
-  },
-);
+  saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
+  makeZoeMint: M.call(KeywordShape)
+    .optional(AssetKindShape, DisplayInfoShape, M.pattern())
+    .returns(M.or(ZoeMintI, M.remotable('zoeMint'), M.promise())),
+  registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
+    IssuerKitShape,
+  ),
+  getInstanceRecord: M.call().returns(InstanceRecordShape),
+  getIssuerRecords: M.call().returns(M.arrayOf(IssuerRecordShape)),
+  getWithdrawPayments: M.call().returns(M.remotable('WithdrawFacet')),
+  initInstanceAdmin: M.call(
+    InstanceHandleShape,
+    M.remotable('instanceAdmin'),
+  ).returns(M.promise()),
+  deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
+  makeInvitation: M.call(InvitationHandleShape, M.string())
+    .optional(M.any(), M.pattern())
+    .returns(M.promise()),
+  getRoot: M.call().returns(M.promise()),
+  getAdminNode: M.call().returns(M.remotable('adminNode')),
+});
 
 // In `SwingSet/src/types-external.js`, it's typed as `*`.
 const BundleCapShape = M.any();
 
-export const ZoeStorageMangerI = {
+export const ZoeStorageManagerIKit = harden({
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
-    getTerms: M.call(InstanceHandleShape).returns(
+    getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(
       M.split(TermsShape, M.record()),
     ),
-    getIssuers: M.call(InstanceHandleShape).returns(M.promise()),
-    getBrands: M.call(InstanceHandleShape).returns(M.promise()),
+    getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
+      IssuerKeywordRecordShape,
+    ),
+    getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
+      BrandKeywordRecordShape,
+    ),
     getInstallationForInstance: M.call(InstanceHandleShape).returns(
       M.promise(),
     ),
@@ -280,9 +275,9 @@ export const ZoeStorageMangerI = {
   invitationIssuerAccess: M.interface('ZoeStorage invitationIssuer', {
     getInvitationIssuer: M.call().returns(IssuerShape),
   }),
-};
+});
 
-export const ZoeServiceI = {
+export const ZoeServiceIKit = harden({
   zoeService: M.interface('ZoeService', {
     install: M.call(M.any()).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
@@ -326,9 +321,9 @@ export const ZoeServiceI = {
   feeMintAccessRetriever: M.interface('FeeMintAccessRetriever', {
     get: M.call().returns(M.any()),
   }),
-};
+});
 
-export const AdminFacetGuard = M.interface('ZcfAdminFacet', {
+export const AdminFacetI = M.interface('ZcfAdminFacet', {
   getVatShutdownPromise: M.call().returns(M.promise()),
   restartContract: M.call().optional(M.any()).returns(M.promise()),
   upgradeContract: M.call(M.string()).optional(M.any()).returns(M.promise()),

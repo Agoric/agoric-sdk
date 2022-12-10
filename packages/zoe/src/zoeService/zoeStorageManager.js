@@ -19,9 +19,9 @@ import { makeInstallationStorage } from './installationStorage.js';
 import './types.js';
 import './internal-types.js';
 import {
-  InstanceStorageManagerGuard,
-  ZoeMintShape,
-  ZoeStorageMangerI,
+  InstanceStorageManagerI,
+  ZoeMintI,
+  ZoeStorageManagerIKit,
 } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -121,7 +121,7 @@ export const makeZoeStorageManager = (
   const makeZoeMint = vivifyFarClass(
     zoeBaggage,
     'ZoeMint',
-    ZoeMintShape,
+    ZoeMintI,
     (localMint, localPooledPurse, adminNode, localIssuerRecord) => ({
       localMint,
       localPooledPurse,
@@ -234,7 +234,7 @@ export const makeZoeStorageManager = (
     const makeInstanceStorageManager = vivifyFarClassKit(
       instanceBaggage,
       'InstanceStorageManager',
-      InstanceStorageManagerGuard,
+      InstanceStorageManagerI,
       initEmpty,
       {
         instanceStorageManager: {
@@ -348,7 +348,7 @@ export const makeZoeStorageManager = (
   const makeStorageManager = vivifyFarClassKit(
     zoeBaggage,
     'ZoeStorageManager',
-    ZoeStorageMangerI,
+    ZoeStorageManagerIKit,
     instanceAdmins => ({ instanceAdmins }),
     {
       zoeServiceDataAccess: {

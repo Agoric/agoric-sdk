@@ -245,7 +245,7 @@ export const createSeatManager = (
     return mapStore;
   };
 
-  const ZcfSeatManagerGuard = {
+  const ZcfSeatManagerIKit = harden({
     seatManager: M.interface('ZcfSeatManager', {
       makeZCFSeat: M.call(
         M.partial({
@@ -263,12 +263,12 @@ export const createSeatManager = (
     zcfMintReallocator: M.interface('MintReallocator', {
       reallocate: M.call(SeatShape, AmountKeywordRecordShape).returns(),
     }),
-  };
+  });
 
   const makeSeatManagerKit = vivifyFarClassKit(
     zcfBaggage,
     'ZcfSeatManager',
-    ZcfSeatManagerGuard,
+    ZcfSeatManagerIKit,
     initEmpty,
     {
       seatManager: {
