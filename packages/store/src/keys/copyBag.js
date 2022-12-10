@@ -4,7 +4,7 @@ import {
   isRankSorted,
   makeFullOrderComparatorKit,
   sortByRank,
-} from '../patterns/rankOrder.js';
+} from '@endo/marshal/src/rankOrder.js';
 
 /// <reference types="ses"/>
 

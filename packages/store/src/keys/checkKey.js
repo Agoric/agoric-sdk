@@ -10,14 +10,14 @@ import {
   passStyleOf,
 } from '@endo/marshal';
 import { identChecker } from '@agoric/assert';
-
-import { checkElements, makeSetOfElements } from './copySet.js';
-import { checkBagEntries, makeBagOfEntries } from './copyBag.js';
 import {
   compareAntiRank,
   makeFullOrderComparatorKit,
   sortByRank,
-} from '../patterns/rankOrder.js';
+} from '@endo/marshal/src/rankOrder.js';
+
+import { checkElements, makeSetOfElements } from './copySet.js';
+import { checkBagEntries, makeBagOfEntries } from './copyBag.js';
 
 const { details: X, quote: q, Fail } = assert;
 const { ownKeys } = Reflect;
