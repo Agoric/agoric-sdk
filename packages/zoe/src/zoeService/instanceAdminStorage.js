@@ -171,7 +171,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       // return the userSeat before the offerHandler is called
       return userSeat;
     },
-    makeNoEscrowSeatKit: (
+    makeNoEscrowSeat: (
       { state, facets: { helper } },
       initialAllocation,
       proposal,

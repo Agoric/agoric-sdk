@@ -1,5 +1,6 @@
 import { passStyleOf } from '@endo/marshal';
 import { fit } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
@@ -9,7 +10,7 @@ import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
 import '../internal-types.js';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 export const makeOfferMethod = offerDataAccess => {
   /** @type {Offer} */
@@ -27,15 +28,15 @@ export const makeOfferMethod = offerDataAccess => {
     // AWAIT ///
 
     const instanceAdmin = offerDataAccess.getInstanceAdmin(instance);
-    !instanceAdmin.isBlocked(description) ||
-      assert.fail(X`not accepting offer with description ${q(description)}`);
-    const { invitationHandle } = await burnInvitation(
-      invitationIssuer,
-      invitation,
-    );
+    const blocked = await E(instanceAdmin).isBlocked(description);
     // AWAIT ///
 
-    instanceAdmin.assertAcceptingOffers();
+    !blocked || Fail`not accepting offer with description ${q(description)}`;
+    const [{ invitationHandle }] = await Promise.all([
+      burnInvitation(invitationIssuer, invitation),
+      E(instanceAdmin).assertAcceptingOffers(),
+    ]);
+    // AWAIT ///
 
     const getAssetKindByBrand = brand => {
       return offerDataAccess.getAssetKindByBrand(brand);
@@ -65,15 +66,12 @@ export const makeOfferMethod = offerDataAccess => {
     // AWAIT ///
 
     // This triggers the offerHandler in ZCF
-    const userSeat = await instanceAdmin.makeUserSeat(
+    return E(instanceAdmin).makeUserSeat(
       invitationHandle,
       initialAllocation,
       proposal,
       offerArgs,
     );
-    // AWAIT ///
-
-    return userSeat;
   };
   return offer;
 };

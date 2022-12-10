@@ -33,9 +33,9 @@ const instanceAdminBehavior = {
     return state.instanceStorage.saveIssuer(issuer, keyword);
   },
   // A Seat requested by the contract without any payments to escrow
-  makeNoEscrowSeatKit(initialAllocations, proposal, exitObj, seatHandle) {
+  makeNoEscrowSeat(initialAllocations, proposal, exitObj, seatHandle) {
     const { state } = this;
-    return state.instanceAdmin.makeNoEscrowSeatKit(
+    return state.instanceAdmin.makeNoEscrowSeat(
       initialAllocations,
       proposal,
       exitObj,
@@ -98,6 +98,10 @@ const instanceAdminBehavior = {
   getExitSubscriber(seatHandle) {
     const { state } = this;
     return state.seatHandleToAdmin.get(seatHandle).getExitSubscriber();
+  },
+  isBlocked(string) {
+    const { state } = this;
+    return state.instanceAdmin.isBlocked(string);
   },
 };
 

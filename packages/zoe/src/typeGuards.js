@@ -37,7 +37,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
-export const IssuerRecordShape = M.split(
+export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
     issuer: IssuerShape,
@@ -160,7 +160,7 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
     M.remotable('feeMint'),
   ),
-  makeNoEscrowSeatKit: M.call(
+  makeNoEscrowSeat: M.call(
     AmountKeywordRecordShape,
     ProposalShape,
     M.remotable('ExitObj'),

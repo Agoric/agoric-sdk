@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -7,6 +5,7 @@ import { makeHandle } from '../../../src/makeHandle.js';
 import { makeInstallationStorage } from '../../../src/zoeService/installationStorage.js';
 
 test('install, unwrap installations', async t => {
+  // @ts-expect-error omitting required param during tests
   const installationStorage = makeInstallationStorage();
   const fakeBundle = {};
 
@@ -30,6 +29,7 @@ test('install, unwrap installation of bundlecap', async t => {
 });
 
 test('unwrap promise for installation', async t => {
+  // @ts-expect-error omitting required param during tests
   const installationStorage = makeInstallationStorage();
   const fakeBundle = {};
 
@@ -42,6 +42,7 @@ test('unwrap promise for installation', async t => {
 });
 
 test('install several', async t => {
+  // @ts-expect-error omitting required param during tests
   const installationStorage = makeInstallationStorage();
   const fakeBundle1 = {};
   const fakeBundle2 = {};
