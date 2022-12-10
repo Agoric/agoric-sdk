@@ -4,7 +4,7 @@ import { listDifference, objectMap } from '@agoric/internal';
 
 import { fit, M } from './patternMatchers.js';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 const { apply, ownKeys } = Reflect;
 const { defineProperties, seal, freeze } = Object;
 
@@ -232,6 +232,49 @@ export const defendPrototype = (
 };
 harden(defendPrototype);
 
+/**
+ * @param {string} tag
+ * @param {Record<string, WeakMap>} contextMapKit
+ * @param {Record<string, Record<string | symbol, CallableFunction>>} behaviorMethodsKit
+ * @param {boolean} [thisfulMethods]
+ * @param {Record<string, InterfaceGuard>} [interfaceGuardKit]
+ */
+export const defendPrototypeKit = (
+  tag,
+  contextMapKit,
+  behaviorMethodsKit,
+  thisfulMethods = false,
+  interfaceGuardKit = undefined,
+) => {
+  const facetNames = ownKeys(behaviorMethodsKit).sort();
+  facetNames.length > 1 || Fail`A multi-facet object must have multiple facets`;
+  if (interfaceGuardKit) {
+    const interfaceNames = ownKeys(interfaceGuardKit);
+    const extraInterfaceNames = listDifference(facetNames, interfaceNames);
+    extraInterfaceNames.length === 0 ||
+      Fail`Interfaces ${q(extraInterfaceNames)} not implemented by ${q(tag)}`;
+    const extraFacetNames = listDifference(interfaceNames, facetNames);
+    extraFacetNames.length === 0 ||
+      Fail`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`;
+  }
+  const contextMapNames = ownKeys(contextMapKit);
+  const extraContextNames = listDifference(facetNames, contextMapNames);
+  extraContextNames.length === 0 ||
+    Fail`Contexts ${q(extraContextNames)} not implemented by ${q(tag)}`;
+  const extraFacetNames = listDifference(contextMapNames, facetNames);
+  extraFacetNames.length === 0 ||
+    Fail`Facets ${q(extraFacetNames)} of ${q(tag)} missing contexts`;
+  return objectMap(behaviorMethodsKit, (behaviorMethods, facetName) =>
+    defendPrototype(
+      `${tag} ${facetName}`,
+      contextMapKit[facetName],
+      behaviorMethods,
+      thisfulMethods,
+      interfaceGuardKit && interfaceGuardKit[facetName],
+    ),
+  );
+};
+
 const emptyRecord = harden({});
 
 /**
@@ -321,30 +364,13 @@ export const defineHeapFarClassKit = (
   methodsKit,
   options = undefined,
 ) => {
-  const facetNames = ownKeys(methodsKit);
-  const interfaceNames = ownKeys(interfaceGuardKit);
-  const extraInterfaceNames = listDifference(facetNames, interfaceNames);
-  extraInterfaceNames.length === 0 ||
-    assert.fail(
-      X`Interfaces ${q(extraInterfaceNames)} not implemented by ${q(tag)}`,
-    );
-  const extraFacetNames = listDifference(interfaceNames, facetNames);
-  extraFacetNames.length === 0 ||
-    assert.fail(
-      X`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`,
-    );
-
   const contextMapKit = objectMap(methodsKit, () => new WeakMap());
-  const prototypeKit = objectMap(methodsKit, (methods, facetName) =>
-    defendPrototype(
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- different per package https://github.com/Agoric/agoric-sdk/issues/4620
-      // @ts-ignore could be symbol
-      `${tag} ${facetName}`,
-      contextMapKit[facetName],
-      methods,
-      true,
-      interfaceGuardKit[facetName],
-    ),
+  const prototypeKit = defendPrototypeKit(
+    tag,
+    contextMapKit,
+    methodsKit,
+    true,
+    interfaceGuardKit,
   );
   const makeInstanceKit = (...args) => {
     // Be careful not to freeze the state record

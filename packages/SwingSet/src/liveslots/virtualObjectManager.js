@@ -1,7 +1,8 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, details as X, q } from '@agoric/assert';
-import { defendPrototype } from '@agoric/store';
+import { objectMap } from '@agoric/internal';
+import { defendPrototype, defendPrototypeKit } from '@agoric/store';
 import { Far } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
@@ -609,25 +610,14 @@ export function makeVirtualObjectManager(
       case 'many': {
         assert(multifaceted);
         facetNames = Object.getOwnPropertyNames(behavior).sort();
-        assert(
-          facetNames.length > 1,
-          'a multi-facet object must have multiple facets',
+        contextMapTemplate = objectMap(behavior, () => new WeakMap());
+        prototypeTemplate = defendPrototypeKit(
+          tag,
+          contextMapTemplate,
+          behavior,
+          thisfulMethods,
+          interfaceGuard,
         );
-        contextMapTemplate = {};
-        prototypeTemplate = {};
-        for (const name of facetNames) {
-          const contextMap = new WeakMap();
-          contextMapTemplate[name] = contextMap;
-          const prototype = defendPrototype(
-            `${tag} ${name}`,
-            contextMap,
-            behavior[name],
-            thisfulMethods,
-            // TODO some tool does not yet understand the `?.[` syntax
-            interfaceGuard && interfaceGuard[name],
-          );
-          prototypeTemplate[name] = prototype;
-        }
         break;
       }
       case 'not':
