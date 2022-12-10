@@ -1,5 +1,4 @@
 import { assert, details as X } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
 import {
   M,
   makeScalarBigMapStore,
@@ -79,7 +78,7 @@ export const makeInstallationStorage = (
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(BundleShape).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
-    unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(M.any()),
+    unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(M.any()),
     getBundleIDFromInstallation: M.call(InstallationShape).returns(M.promise()),
   });
 
@@ -122,19 +121,17 @@ export const makeInstallationStorage = (
         );
         return installation;
       },
-      unwrapInstallation(installationP) {
-        return E.when(installationP, installation => {
-          if (installationsBundleCap.has(installation)) {
-            const { bundleCap, bundleID } =
-              installationsBundleCap.get(installation);
-            return { bundleCap, bundleID, installation };
-          } else if (installationsBundle.has(installation)) {
-            const bundle = installationsBundle.get(installation);
-            return { bundle, installation };
-          } else {
-            assert.fail(X`${installation} was not a valid installation`);
-          }
-        });
+      unwrapInstallation(installation) {
+        if (installationsBundleCap.has(installation)) {
+          const { bundleCap, bundleID } =
+            installationsBundleCap.get(installation);
+          return { bundleCap, bundleID, installation };
+        } else if (installationsBundle.has(installation)) {
+          const bundle = installationsBundle.get(installation);
+          return { bundle, installation };
+        } else {
+          assert.fail(X`${installation} was not a valid installation`);
+        }
       },
       async getBundleIDFromInstallation(allegedInstallationP) {
         // @ts-expect-error TS doesn't understand context

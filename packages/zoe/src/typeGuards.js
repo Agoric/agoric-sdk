@@ -149,11 +149,15 @@ export const ExitObjectI = M.interface('Exit Object', {
   exit: M.call().returns(),
 });
 
+export const InstanceAdminShape = M.remotable('InstanceAdmin');
 export const InstanceAdminI = M.interface('InstanceAdmin', {
   makeInvitation: M.call(InvitationHandleShape, M.string())
     .optional(M.any(), M.pattern())
     .returns(M.promise()),
-  saveIssuer: M.call(M.eref(IssuerShape), M.string()).returns(M.promise()),
+  saveIssuer: M.callWhen(M.await(IssuerShape), M.string()).returns(
+    IssuerRecordShape,
+  ),
+  isBlocked: M.call(M.string()).returns(M.boolean()),
   makeZoeMint: M.call(KeywordShape)
     .optional(AssetKindShape, DisplayInfoShape, M.pattern())
     .returns(M.remotable('zoeMint')),
@@ -234,10 +238,14 @@ export const ZoeStorageMangerI = {
     installBundle: M.call(M.any()).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
 
-    getPublicFacet: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
-    getOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
-    setOfferFilter: M.call(
-      InstanceHandleShape,
+    getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.remotable(),
+    ),
+    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.promise(),
+    ),
+    setOfferFilter: M.callWhen(
+      M.await(InstanceHandleShape),
       M.arrayOf(M.string()),
     ).returns(),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
@@ -246,8 +254,8 @@ export const ZoeStorageMangerI = {
   }),
   makeOfferAccess: M.interface('ZoeStorage makeOffer access', {
     getAssetKindByBrand: M.call(BrandShape).returns(AssetKindShape),
-    installBundle: M.call(InstanceHandleShape).returns(),
-    getInstanceAdmin: M.call(InstanceHandleShape).returns(
+    installBundle: M.callWhen(M.await(InstanceHandleShape)).returns(),
+    getInstanceAdmin: M.callWhen(M.await(InstanceHandleShape)).returns(
       M.remotable('instanceAdmin'),
     ),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(

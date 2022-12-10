@@ -42,12 +42,10 @@ export const makeInstanceAdminStorage = baggage => {
     {
       // ZoeStorageManager uses the accessor facet to get info about instances
       accessor: {
-        async getPublicFacet(instanceP) {
+        async getPublicFacet(instance) {
           const { state } = this;
-          return E.when(instanceP, async instance => {
-            const ia = state.instanceToInstanceAdmin.get(instance);
-            return ia.getPublicFacet();
-          });
+          const ia = state.instanceToInstanceAdmin.get(instance);
+          return ia.getPublicFacet();
         },
         async getBrands(instance) {
           const { state } = this;
@@ -61,11 +59,9 @@ export const makeInstanceAdminStorage = baggage => {
           const { state } = this;
           return state.instanceToInstanceAdmin.get(instance).getTerms();
         },
-        async getOfferFilter(instanceP) {
+        async getOfferFilter(instance) {
           const { state } = this;
-          return E.when(instanceP, instance =>
-            state.instanceToInstanceAdmin.get(instance).getOfferFilter(),
-          );
+          state.instanceToInstanceAdmin.get(instance).getOfferFilter();
         },
         async getInstallationForInstance(instance) {
           const { state } = this;
