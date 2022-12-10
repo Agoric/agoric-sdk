@@ -29,8 +29,6 @@ const InstanceAdminStorageIKit = harden({
       M.promise(),
     ),
     getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminShape),
-    initInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
-    deleteInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
   }),
   updater: M.interface('InstanceAdmin updater', {
     initInstanceAdmin: M.call(InstanceHandleShape, InstanceAdminShape).returns(

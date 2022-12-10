@@ -198,11 +198,6 @@ export const InstanceStorageManagerI = M.interface('InstanceStorageManager', {
   getInstanceRecord: M.call().returns(InstanceRecordShape),
   getIssuerRecords: M.call().returns(M.arrayOf(IssuerRecordShape)),
   getWithdrawPayments: M.call().returns(M.remotable('WithdrawFacet')),
-  initInstanceAdmin: M.call(
-    InstanceHandleShape,
-    M.remotable('instanceAdmin'),
-  ).returns(M.promise()),
-  deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
   makeInvitation: M.call(InvitationHandleShape, M.string())
     .optional(M.any(), M.pattern())
     .returns(M.promise()),
