@@ -59,7 +59,7 @@ const USE_CUSTOM_SNAP_STORE = false;
 // Enable to output xsnap debug traces corresponding to the transcript replay
 const RECORD_XSNAP_TRACE = false;
 
-const USE_XSNAP_DEBUG = false;
+const USE_XSNAP_DEBUG = true;
 
 const pipe = promisify(pipeline);
 
