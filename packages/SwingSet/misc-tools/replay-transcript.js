@@ -44,10 +44,16 @@ const IGNORE_SNAPSHOT_HASH_DIFFERENCES = true;
 
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
-const FORCED_RELOAD_FROM_SNAPSHOT = false;
-const KEEP_WORKER_RECENT = 0;
+const FORCED_RELOAD_FROM_SNAPSHOT = true;
+const KEEP_WORKER_RECENT = 10;
 const KEEP_WORKER_INITIAL = 2;
-const KEEP_WORKER_INTERVAL = 1;
+const KEEP_WORKER_INTERVAL = 10;
+const KEEP_WORKER_TRANSACTION_NUMS = [
+  69002, 70002, 86002, 87002, 108002, 111002, 114002, 115002, 118002, 127002,
+  128002, 129002, 131002, 134002, 135002, 139002, 141002, 142002, 143002,
+  144002, 145002, 146002, 147002, 151002, 156002, 159002, 160002, 161002,
+  162002, 163002,
+];
 
 const SKIP_EXTRA_SYSCALLS = true;
 const SIMULATE_VC_SYSCALLS = true;
@@ -59,7 +65,7 @@ const USE_CUSTOM_SNAP_STORE = false;
 // Enable to output xsnap debug traces corresponding to the transcript replay
 const RECORD_XSNAP_TRACE = false;
 
-const USE_XSNAP_DEBUG = true;
+const USE_XSNAP_DEBUG = false;
 
 const pipe = promisify(pipeline);
 
@@ -229,6 +235,7 @@ async function replay(transcriptFile) {
   let vatSourceBundle;
 
   const knownVCSyscalls = new Map();
+  const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
 
   const makeCompareSyscalls =
     workerData => (_vatID, originalSyscall, newSyscall, originalSyscalls) => {
@@ -251,38 +258,46 @@ async function replay(transcriptFile) {
           return undefined; // Errors are serialized differently, sometimes
         }
 
-        if (!SKIP_EXTRA_SYSCALLS) {
+        if (
+          !(
+            SKIP_EXTRA_SYSCALLS &&
+            originalSyscall[0] === 'vatstoreGet' &&
+            vcSyscallRE.test(originalSyscall[1])
+          )
+        ) {
           break;
         }
       }
       if (initialError) {
         console.error(
-          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID}`,
+          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID} (start delivery ${workerData.firstTranscriptNum})`,
         );
       }
 
       if (!error && i > 0) {
         originalSyscalls.splice(0, i);
-        console.warn(`  mitigation: ignoring extra syscalls`);
+        console.warn(`  mitigation: ignoring extra vc syscalls`);
         return undefined;
       }
 
       if (
         SIMULATE_VC_SYSCALLS &&
-        newSyscall[0] === 'vatstoreGet' &&
-        /^vc\.\d+\.\|(?:schemata|label)$/.test(newSyscall[1])
+        newSyscall[0].startsWith('vatstore') &&
+        vcSyscallRE.test(newSyscall[1])
       ) {
         if (initialError) {
           const response = knownVCSyscalls.get(newSyscall[1]);
-          if (response) {
+          if (newSyscall[0] === 'vatstoreGet' && response) {
             originalSyscalls.unshift({ d: newSyscall, response });
             console.warn(
-              `  mitigation: using response from previous saved syscall`,
+              `  mitigation: using response from previous saved vc syscall`,
             );
             return undefined;
           }
-        } else {
+        } else if (newSyscall[0] === 'vatstoreGet') {
           knownVCSyscalls.set(newSyscall[1], originalSyscalls[0].response);
+        } else if (newSyscall[0] === 'vatstoreSet') {
+          knownVCSyscalls.set(newSyscall[1], ['ok', newSyscall[2]]);
         }
       }
 
@@ -327,11 +342,15 @@ async function replay(transcriptFile) {
             firstTranscriptNum != null &&
             !(
               (KEEP_WORKER_INTERVAL &&
-                Math.floor(firstTranscriptNum / FORCED_SNAPSHOT_INTERVAL) %
+                Math.floor(
+                  (firstTranscriptNum - startTranscriptNum) /
+                    FORCED_SNAPSHOT_INTERVAL,
+                ) %
                   KEEP_WORKER_INTERVAL ===
                   0) ||
               idx < KEEP_WORKER_INITIAL ||
-              idx >= workers.length - KEEP_WORKER_RECENT
+              idx >= workers.length - KEEP_WORKER_RECENT ||
+              KEEP_WORKER_TRANSACTION_NUMS.includes(firstTranscriptNum)
             ),
         )
         .map(async workerData => {
@@ -347,7 +366,7 @@ async function replay(transcriptFile) {
           // eslint-disable-next-line no-await-in-loop
           await manager.shutdown();
           console.log(
-            `Shutdown worker PID ${xsnapPID} (first transcript num ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
+            `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
             }s. Delivery time total ${
               Math.round(deliveryTimeTotal) / 1000
@@ -436,7 +455,7 @@ async function replay(transcriptFile) {
       saveSnapshotID = data.snapshotID;
       await Promise.all(
         workers.map(async workerData => {
-          const { manager, xsnapPID } = workerData;
+          const { manager, xsnapPID, firstTranscriptNum } = workerData;
           const { hash, rawSaveSeconds } = await manager.makeSnapshot(
             snapStore,
           );
@@ -454,16 +473,15 @@ async function replay(transcriptFile) {
             })}\n`,
           );
           if (hash !== saveSnapshotID) {
-            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID}`;
+            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
             if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
               console.warn(errorMessage);
             } else {
               throw new Error(errorMessage);
             }
           } else {
-            console.log(`made snapshot ${hash} of worker PID ${xsnapPID}`);
             console.log(
-              `made snapshot ${hash} of worker PID ${xsnapPID}.\n    Save time = ${
+              `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
                 Math.round(rawSaveSeconds * 1000) / 1000
               }s. Delivery time since last snapshot ${
                 Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
@@ -483,7 +501,7 @@ async function replay(transcriptFile) {
       const { transcriptNum, d: delivery, syscalls } = data;
       lastTranscriptNum = transcriptNum;
       if (startTranscriptNum == null) {
-        startTranscriptNum = transcriptNum;
+        startTranscriptNum = transcriptNum - 1;
       }
       const makeSnapshot =
         FORCED_SNAPSHOT_INTERVAL &&
@@ -532,7 +550,9 @@ async function replay(transcriptFile) {
               })}\n`,
             );
             console.log(
-              `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID}.\n    Save time = ${
+              `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
+                workerData.firstTranscriptNum
+              }).\n    Save time = ${
                 Math.round(rawSaveSeconds * 1000) / 1000
               }s. Delivery time since last snapshot ${
                 Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
@@ -587,7 +607,7 @@ async function replay(transcriptFile) {
       }) => {
         await manager.shutdown();
         console.log(
-          `Shutdown worker PID ${xsnapPID} (first transcript num ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
+          `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
             Math.round(deliveryTimeSinceLastSnapshot) / 1000
           }s. Delivery time total ${
             Math.round(deliveryTimeTotal) / 1000
