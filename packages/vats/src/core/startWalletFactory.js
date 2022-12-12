@@ -107,7 +107,7 @@ const startGovernedInstance = async (
  *
  * @param {BootstrapPowers & PromiseSpaceOf<{
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet
- *   econCharterFacets: {
+ *   econCharterKit: {
  *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>['creatorFacet'],
  *     adminFacet: AdminFacet,
  *   } ,
@@ -132,7 +132,7 @@ export const startWalletFactory = async (
       zoe,
       chainTimerService,
       economicCommitteeCreatorFacet,
-      econCharterFacets,
+      econCharterKit,
     },
     produce: { client, walletFactoryStartResult, provisionPoolStartResult },
     installation: {
@@ -242,7 +242,7 @@ export const startWalletFactory = async (
 
   await Promise.all([
     E(bridgeManager).register(walletBridgeId, handler),
-    E(E.get(econCharterFacets).creatorFacet).addInstance(
+    E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.creatorFacet,
       'provisionPool',
@@ -276,7 +276,7 @@ export const WALLET_FACTORY_MANIFEST = {
       zoe: 'zoe',
       chainTimerService: 'timer',
       economicCommitteeCreatorFacet: 'economicCommittee',
-      econCharterFacets: 'psmCharter',
+      econCharterKit: 'psmCharter',
     },
     produce: {
       client: true, // dummy client in this configuration

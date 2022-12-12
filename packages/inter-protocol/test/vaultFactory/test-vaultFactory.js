@@ -180,7 +180,7 @@ const setupAmmAndElectorateAndReserve = async (
   // AMM needs the reserve in order to function
   await setupReserve(space);
 
-  const governorCreatorFacet = E.get(consume.ammFacets).governorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.ammKit).governorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
@@ -214,7 +214,7 @@ const setupAmmAndElectorateAndReserve = async (
 
   // TODO get the creator directly
   const newAmm = {
-    ammCreatorFacet: await E.get(consume.ammFacets).creatorFacet,
+    ammCreatorFacet: await E.get(consume.ammKit).creatorFacet,
     ammPublicFacet,
     instance: governedInstance,
     ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
@@ -320,14 +320,14 @@ const setupServices = async (
     proposal: aethInitialLiquidity,
     payment: aeth.mint.mintPayment(aethInitialLiquidity),
   };
-  const { amm: ammFacets, space } = await setupAmmAndElectorateAndReserve(
+  const { amm: ammKit, space } = await setupAmmAndElectorateAndReserve(
     t,
     aethLiquidity,
     runLiquidity,
   );
 
   const { consume, produce } = space;
-  trace(t, 'amm', { ammFacets });
+  trace(t, 'amm', { ammKit });
 
   const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
   // Cheesy hack for easy use of manual price authority
@@ -358,14 +358,12 @@ const setupServices = async (
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
   const governorCreatorFacet = E.get(
-    consume.vaultFactoryFacets,
+    consume.vaultFactoryKit,
   ).governorCreatorFacet;
   /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<VaultFactoryCreatorFacet>>} */
-  const vaultFactoryCreatorFacetP = E.get(
-    consume.vaultFactoryFacets,
-  ).creatorFacet;
-  const reserveCreatorFacet = E.get(consume.reserveFacets).creatorFacet;
-  const reserveFacets = { reserveCreatorFacet };
+  const vaultFactoryCreatorFacetP = E.get(consume.vaultFactoryKit).creatorFacet;
+  const reserveCreatorFacet = E.get(consume.reserveKit).creatorFacet;
+  const reserveKit = { reserveCreatorFacet };
 
   // Add a vault that will lend on aeth collateral
   /** @type {Promise<VaultManager>} */
@@ -384,7 +382,7 @@ const setupServices = async (
   ] = await Promise.all([
     E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
     vaultFactoryCreatorFacetP,
-    E.get(consume.vaultFactoryFacets).publicFacet,
+    E.get(consume.vaultFactoryKit).publicFacet,
     aethVaultManagerP,
     pa,
   ]);
@@ -412,13 +410,13 @@ const setupServices = async (
     zoe,
     governor: g,
     vaultFactory: v,
-    ammFacets,
+    ammKit,
     runKit: { issuer: run.issuer, brand: run.brand },
     priceAuthority,
-    reserveFacets,
+    reserveKit,
     /** @param {Brand<'nat'>} baseBrand */
     getLiquidityBrand: baseBrand =>
-      E(ammFacets.ammPublicFacet)
+      E(ammKit.ammPublicFacet)
         .getLiquidityIssuer(baseBrand)
         .then(liqIssuer => E(liqIssuer).getBrand()),
   };
@@ -566,7 +564,7 @@ test('price drop', async t => {
   const {
     vaultFactory: { vaultFactory, lender },
     priceAuthority,
-    reserveFacets: { reserveCreatorFacet },
+    reserveKit: { reserveCreatorFacet },
   } = services;
 
   // Create a loan for 270 Minted with 400 aeth collateral
@@ -719,7 +717,7 @@ test('price falls precipitously', async t => {
 
   const { vaultFactory, lender } = services.vaultFactory;
 
-  const { reserveCreatorFacet } = services.reserveFacets;
+  const { reserveCreatorFacet } = services.reserveKit;
   // Create a loan for 370 Minted with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(370n);
@@ -757,9 +755,7 @@ test('price falls precipitously', async t => {
   );
 
   // Sell some Eth to drive the value down
-  const swapInvitation = E(
-    services.ammFacets.ammPublicFacet,
-  ).makeSwapInvitation();
+  const swapInvitation = E(services.ammKit.ammPublicFacet).makeSwapInvitation();
   const proposal = harden({
     give: { In: aeth.make(200n) },
     want: { Out: run.makeEmpty() },
@@ -1764,7 +1760,7 @@ test('mutable liquidity triggers and interest', async t => {
   const {
     vaultFactory: { lender },
     priceAuthority,
-    reserveFacets: { reserveCreatorFacet },
+    reserveKit: { reserveCreatorFacet },
   } = services;
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
@@ -2038,7 +2034,7 @@ test('collect fees from loan and AMM', async t => {
     Minted: run.make(24n),
   });
 
-  const amm = services.ammFacets.ammPublicFacet;
+  const amm = services.ammKit.ammPublicFacet;
   const swapAmount = aeth.make(60000n);
   const swapSeat = await E(zoe).offer(
     E(amm).makeSwapInInvitation(),

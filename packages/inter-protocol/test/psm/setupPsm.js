@@ -122,7 +122,7 @@ export const setupPsm = async (
   brand.produce.AUSD.resolve(knut.brand);
   issuer.produce.AUSD.resolve(knut.issuer);
 
-  space.produce.psmFacets.resolve(makeScalarMapStore());
+  space.produce.psmKit.resolve(makeScalarMapStore());
   const istIssuer = await E(zoe).getFeeIssuer();
   const istBrand = await E(istIssuer).getBrand();
 
@@ -162,10 +162,10 @@ export const setupPsm = async (
     counter: installation.consume.binaryVoteCounter,
   });
 
-  const allPsms = await consume.psmFacets;
-  const psmFacets = allPsms.get(knut.brand);
-  const governorCreatorFacet = psmFacets.psmGovernorCreatorFacet;
-  const governorInstance = psmFacets.psmGovernor;
+  const allPsms = await consume.psmKit;
+  const psmKit = allPsms.get(knut.brand);
+  const governorCreatorFacet = psmKit.psmGovernorCreatorFacet;
+  const governorInstance = psmKit.psmGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
     governorInstance,
@@ -177,7 +177,7 @@ export const setupPsm = async (
   /** @type { GovernedPublicFacet<import('../../src/psm/psm.js').PsmPublicFacet> } */
   const psmPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const psm = {
-    psmCreatorFacet: psmFacets.psmCreatorFacet,
+    psmCreatorFacet: psmKit.psmCreatorFacet,
     psmPublicFacet,
     instance: governedInstance,
   };
@@ -185,7 +185,7 @@ export const setupPsm = async (
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
   const { creatorFacet: econCharterCreatorFacet } = await E.get(
-    consume.econCharterFacets,
+    consume.econCharterKit,
   );
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();

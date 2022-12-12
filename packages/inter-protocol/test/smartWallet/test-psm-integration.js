@@ -173,9 +173,9 @@ test('want stable', async t => {
 
 test('govern offerFilter', async t => {
   const { anchor, invitationBrand } = t.context;
-  const { agoricNames, psmFacets, zoe } = await E.get(t.context.consume);
+  const { agoricNames, psmKit, zoe } = await E.get(t.context.consume);
 
-  const { psm: psmInstance } = await E(psmFacets).get(anchor.brand);
+  const { psm: psmInstance } = await E(psmKit).get(anchor.brand);
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());

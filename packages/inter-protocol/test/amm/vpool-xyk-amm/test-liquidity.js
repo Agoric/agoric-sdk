@@ -380,7 +380,7 @@ test('MinInitialPoolLiquidity to reserve', async t => {
     { committeeName: 'EnBancPanel', committeeSize: 3 },
     centralR,
   );
-  const { reserveFacets } = space.consume;
+  const { reserveKit } = space.consume;
 
   const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
     moolaKit.issuer,
@@ -413,7 +413,7 @@ test('MinInitialPoolLiquidity to reserve', async t => {
     `Added Moola and Central Liquidity`,
   );
 
-  const reserveCreatorFacet = E.get(reserveFacets).creatorFacet;
+  const reserveCreatorFacet = E.get(reserveKit).creatorFacet;
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.deepEqual(reserveAllocations, {
     RmoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),

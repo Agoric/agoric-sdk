@@ -21,7 +21,7 @@ const SHARED_MAIN_MANIFEST = harden({
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
-    produce: { ammFacets: 'amm' },
+    produce: { ammKit: 'amm' },
     issuer: { consume: { [Stable.symbol]: 'zoe' } },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
     installation: {
@@ -56,9 +56,9 @@ const SHARED_MAIN_MANIFEST = harden({
       zoe: 'zoe',
       priceAuthority: 'priceAuthority',
       economicCommitteeCreatorFacet: 'economicCommittee',
-      reserveFacets: 'reserve',
+      reserveKit: 'reserve',
     },
-    produce: { vaultFactoryFacets: 'VaultFactory' },
+    produce: { vaultFactoryKit: 'VaultFactory' },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
     oracleBrand: { consume: { USD: true } },
     installation: {
@@ -84,13 +84,13 @@ const SHARED_MAIN_MANIFEST = harden({
     consume: {
       client: 'provisioning',
       priceAuthorityAdmin: 'priceAuthority',
-      vaultFactoryFacets: 'VaultFactory',
+      vaultFactoryKit: 'VaultFactory',
     },
   },
 
   [econBehaviors.setupReserve.name]: {
     consume: {
-      ammFacets: 'amm',
+      ammKit: 'amm',
       board: 'board',
       chainStorage: true,
       feeMintAccess: 'zoe',
@@ -98,7 +98,7 @@ const SHARED_MAIN_MANIFEST = harden({
       zoe: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
-    produce: { reserveFacets: 'reserve' },
+    produce: { reserveKit: 'reserve' },
     issuer: { consume: { [Stable.symbol]: 'zoe' } },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
     installation: {
@@ -142,14 +142,14 @@ const REWARD_MANIFEST = harden({
     consume: {
       chainTimerService: true,
       bankManager: true,
-      vaultFactoryFacets: true,
+      vaultFactoryKit: true,
       periodicFeeCollectors: true,
-      ammFacets: true,
-      stakeFactoryFacets: true,
-      reserveFacets: true,
+      ammKit: true,
+      stakeFactoryKit: true,
+      reserveKit: true,
       zoe: true,
     },
-    produce: { feeDistributorFacets: true, periodicFeeCollectors: true },
+    produce: { feeDistributorKit: true, periodicFeeCollectors: true },
     instance: { produce: { feeDistributor: true } },
     installation: { consume: { feeDistributor: true } },
     issuer: { consume: { [Stable.symbol]: 'zoe' } },
@@ -177,7 +177,7 @@ const STAKE_FACTORY_MANIFEST = harden({
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
     produce: {
-      stakeFactoryFacets: 'stakeFactory',
+      stakeFactoryKit: 'stakeFactory',
     },
     installation: {
       consume: { contractGovernor: 'zoe', stakeFactory: 'zoe' },
@@ -208,7 +208,7 @@ export const SIM_CHAIN_MANIFEST = harden({
       mints: 'mints',
       priceAuthorityVat: 'priceAuthority',
       priceAuthorityAdmin: 'priceAuthority',
-      vaultFactoryFacets: 'VaultFactory',
+      vaultFactoryKit: 'VaultFactory',
       zoe: true,
     },
     installation: {

@@ -296,9 +296,9 @@ test('wrap liened amount', async t => {
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume, instance } = space;
-  const { zoe, stakeFactoryFacets } = consume;
+  const { zoe, stakeFactoryKit } = consume;
   const { stakeFactory: stakeFactoryinstance } = instance.consume;
-  const walletMaker = makeWalletMaker(E.get(stakeFactoryFacets).creatorFacet);
+  const walletMaker = makeWalletMaker(E.get(stakeFactoryKit).creatorFacet);
   const bob = chain.provisionAccount('Bob', 'addr1b');
 
   // Bob introduces himself to the Agoric JS VM.
@@ -324,9 +324,9 @@ test('unwrap liened amount', async t => {
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume, instance } = space;
-  const { zoe, stakeFactoryFacets } = consume;
+  const { zoe, stakeFactoryKit } = consume;
   const { stakeFactory: stakeFactoryinstance } = instance.consume;
-  const walletMaker = makeWalletMaker(E.get(stakeFactoryFacets).creatorFacet);
+  const walletMaker = makeWalletMaker(E.get(stakeFactoryKit).creatorFacet);
   const bob = chain.provisionAccount('Bob', 'addr1b');
 
   // Bob introduces himself to the Agoric JS VM.
@@ -357,7 +357,7 @@ test('stakeFactory API usage', async t => {
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
-  const { zoe, stakeFactoryFacets } = consume;
+  const { zoe, stakeFactoryKit } = consume;
   const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const runIssuer = await space.issuer.consume.IST;
@@ -370,7 +370,7 @@ test('stakeFactory API usage', async t => {
   founder.sendTo('addr1b', 5_000n * micro.unit);
   bob.stake(3_000n * micro.unit);
 
-  const walletMaker = makeWalletMaker(E.get(stakeFactoryFacets).creatorFacet);
+  const walletMaker = makeWalletMaker(E.get(stakeFactoryKit).creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
   const bobWallet = walletMaker(bob.getAddress());
@@ -406,7 +406,7 @@ test('extra offer keywords are rejected', async t => {
 
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
-  const { zoe, stakeFactoryFacets } = consume;
+  const { zoe, stakeFactoryKit } = consume;
   const runBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const publicFacet = E(zoe).getPublicFacet(
@@ -418,7 +418,7 @@ test('extra offer keywords are rejected', async t => {
   founder.sendTo('addr1b', 5_000n * micro.unit);
   bob.stake(3_000n * micro.unit);
 
-  const walletMaker = makeWalletMaker(E.get(stakeFactoryFacets).creatorFacet);
+  const walletMaker = makeWalletMaker(E.get(stakeFactoryKit).creatorFacet);
 
   // Bob introduces himself to the Agoric JS VM.
   const bobWallet = walletMaker(bob.getAddress());
@@ -516,7 +516,7 @@ const makeWorld = async t => {
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
 
-  const { zoe, stakeFactoryFacets, lienBridge } = consume;
+  const { zoe, stakeFactoryKit, lienBridge } = consume;
   const { IST: runIssuer } = space.issuer.consume;
   const [bldBrand, runBrand] = await Promise.all([
     space.brand.consume.BLD,
@@ -526,14 +526,14 @@ const makeWorld = async t => {
   const stakeFactory = {
     instance: stakeFactoryinstance,
     publicFacet: E(zoe).getPublicFacet(stakeFactoryinstance),
-    creatorFacet: E.get(stakeFactoryFacets).creatorFacet,
+    creatorFacet: E.get(stakeFactoryKit).creatorFacet,
   };
 
   const counter = await space.installation.consume.binaryVoteCounter;
   const committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
-    E.get(space.consume.stakeFactoryFacets).governorCreatorFacet,
+    E.get(space.consume.stakeFactoryKit).governorCreatorFacet,
     counter,
   );
 

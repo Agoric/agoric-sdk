@@ -104,9 +104,7 @@ export const setupReserveServices = async (
   issuer.produce.IST.resolve(runIssuer);
   produce.feeMintAccess.resolve(await feeMintAccess);
 
-  const governorCreatorFacet = E.get(
-    consume.reserveFacets,
-  ).governorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.reserveKit).governorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
@@ -121,7 +119,7 @@ export const setupReserveServices = async (
 
   /** @type {ReserveKit} */
   const reserve = {
-    reserveCreatorFacet: await E.get(consume.reserveFacets).creatorFacet,
+    reserveCreatorFacet: await E.get(consume.reserveKit).creatorFacet,
     reservePublicFacet,
     instance: governedInstance,
   };

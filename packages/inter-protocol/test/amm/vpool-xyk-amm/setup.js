@@ -142,7 +142,7 @@ export const setupAmmServices = async (
     counter: installation.consume.binaryVoteCounter,
   });
 
-  const governorCreatorFacet = E.get(consume.ammFacets).governorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.ammKit).governorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
@@ -155,7 +155,7 @@ export const setupAmmServices = async (
   /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const amm = {
-    ammCreatorFacet: await E.get(consume.ammFacets).creatorFacet,
+    ammCreatorFacet: await E.get(consume.ammKit).creatorFacet,
     ammPublicFacet,
     instance: governedInstance,
   };
