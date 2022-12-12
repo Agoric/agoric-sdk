@@ -23,7 +23,11 @@ import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subpro
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { makeNodeSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-node.js';
 import { startSubprocessWorker } from '../src/lib-nodejs/spawnSubprocessWorker.js';
-import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
+import {
+  extraSyscall,
+  missingSyscall,
+  requireIdenticalExceptStableVCSyscalls,
+} from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
@@ -237,71 +241,65 @@ async function replay(transcriptFile) {
   const knownVCSyscalls = new Map();
   const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
 
-  const makeCompareSyscalls =
-    workerData => (_vatID, originalSyscall, newSyscall, originalSyscalls) => {
-      let i;
-      let initialError;
-      let error;
-      for (i = 0; i < originalSyscalls.length; i += 1) {
-        originalSyscall = originalSyscalls[i].d;
-        error = requireIdentical(vatID, originalSyscall, newSyscall);
-        if (!error) {
-          break;
-        } else if (i === 0) {
-          initialError = error;
-        }
+  const vatSyscallHandler = vso => {
+    if (vso[0] === 'vatstoreGet') {
+      const response = knownVCSyscalls.get(vso[1]);
 
-        if (
-          error &&
-          JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
-        ) {
-          return undefined; // Errors are serialized differently, sometimes
-        }
-
-        if (
-          !(
-            SKIP_EXTRA_SYSCALLS &&
-            originalSyscall[0] === 'vatstoreGet' &&
-            vcSyscallRE.test(originalSyscall[1])
-          )
-        ) {
-          break;
-        }
+      if (!response) {
+        throw new Error(`Unknown vc vatstore entry ${vso[1]}`);
       }
-      if (initialError) {
+
+      return response;
+    }
+
+    throw new Error(`Unexpected syscall ${vso[0]}(${vso.slice(1).join(', ')})`);
+  };
+
+  const makeCompareSyscalls =
+    workerData => (_vatID, originalSyscall, newSyscall, originalResponse) => {
+      const error = requireIdenticalExceptStableVCSyscalls(
+        vatID,
+        originalSyscall,
+        newSyscall,
+      );
+      if (
+        error &&
+        JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
+      ) {
+        return undefined; // Errors are serialized differently, sometimes
+      }
+
+      if (error) {
         console.error(
           `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID} (start delivery ${workerData.firstTranscriptNum})`,
         );
+
+        if (error === extraSyscall && !SKIP_EXTRA_SYSCALLS) {
+          return new Error('Extra syscall disallowed');
+        }
       }
 
-      if (!error && i > 0) {
-        originalSyscalls.splice(0, i);
-        console.warn(`  mitigation: ignoring extra vc syscalls`);
-        return undefined;
+      const newSyscallKind = newSyscall[0];
+
+      if (error === missingSyscall && !SIMULATE_VC_SYSCALLS) {
+        return new Error('Missing syscall disallowed');
       }
 
       if (
         SIMULATE_VC_SYSCALLS &&
-        newSyscall[0].startsWith('vatstore') &&
+        !error &&
+        (newSyscallKind === 'vatstoreGet' ||
+          newSyscallKind === 'vatstoreSet') &&
         vcSyscallRE.test(newSyscall[1])
       ) {
-        if (initialError) {
-          const response = knownVCSyscalls.get(newSyscall[1]);
-          if (newSyscall[0] === 'vatstoreGet' && response) {
-            originalSyscalls.unshift({ d: newSyscall, response });
-            console.warn(
-              `  mitigation: using response from previous saved vc syscall`,
-            );
-            return undefined;
-          }
-        } else if (newSyscall[0] === 'vatstoreGet') {
-          knownVCSyscalls.set(newSyscall[1], originalSyscalls[0].response);
-        } else if (newSyscall[0] === 'vatstoreSet') {
+        if (newSyscallKind === 'vatstoreGet') {
+          knownVCSyscalls.set(newSyscall[1], originalResponse);
+        } else if (newSyscallKind === 'vatstoreSet') {
           knownVCSyscalls.set(newSyscall[1], ['ok', newSyscall[2]]);
         }
       }
 
-      return initialError;
+      return error;
     };
 
   const createManager = async () => {
@@ -320,7 +318,6 @@ async function replay(transcriptFile) {
       compareSyscalls: makeCompareSyscalls(workerData),
       useTranscript: true,
     };
-    const vatSyscallHandler = undefined;
     workerData.manager = await factory.createFromBundle(
       vatID,
       vatSourceBundle,
