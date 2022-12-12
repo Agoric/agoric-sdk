@@ -21,8 +21,9 @@ import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
+import { PowerFlags } from './basic-behaviors.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 const { keys } = Object;
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
@@ -99,8 +100,9 @@ export const bridgeCoreEval = async allPowers => {
             ),
           ).then(_ => {});
         }
-        default:
-          assert.fail(X`Unrecognized request ${obj.type}`);
+        default: {
+          throw Fail`Unrecognized request ${obj.type}`;
+        }
       }
     },
   });
@@ -145,16 +147,32 @@ export const bridgeProvisioner = async ({
     async fromBridge(_srcID, obj) {
       switch (obj.type) {
         case 'PLEASE_PROVISION': {
-          const { nickname, address, powerFlags } = obj;
-          return E(provisioning)
-            .pleaseProvision(nickname, address, powerFlags)
+          const { nickname, address, powerFlags: rawPowerFlags } = obj;
+          const powerFlags = rawPowerFlags || [];
+          let provisionP;
+          if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
+            // Only provision a smart wallet.
+            provisionP = E(bridgeManager).fromBridge(
+              BRIDGE_ID.PROVISION_SMART_WALLET,
+              obj,
+            );
+          } else {
+            // Provision a mailbox and REPL.
+            provisionP = E(provisioning).pleaseProvision(
+              nickname,
+              address,
+              powerFlags,
+            );
+          }
+          return provisionP
             .catch(e =>
               console.error(`Error provisioning ${nickname} ${address}:`, e),
             )
             .then(_ => {});
         }
-        default:
-          assert.fail(X`Unrecognized request ${obj.type}`);
+        default: {
+          throw Fail`Unrecognized request ${obj.type}`;
+        }
       }
     },
   });

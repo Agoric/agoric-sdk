@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 
 import { makeMarshal, Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { createSHA256 } from '../lib-nodejs/hasher.js';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';
@@ -65,8 +65,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         creationOptions = {},
       } = config.vats[name];
       logStartup(`adding vat '${name}' from bundle ${bundleID}`);
-
-      assert(bundleID, X`no bundleID specified for vat ${name}`);
+      bundleID || Fail`no bundleID specified for vat ${name}`;
 
       // todo: consider having vats indicate 'enablePipelining' by exporting a
       // boolean, rather than options= . We'd have to retrieve the flag from
@@ -112,7 +111,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         gotVatAdminRootKref = true;
       }
     }
-    assert(gotVatAdminRootKref, X`a vat admin vat is required`);
+    gotVatAdminRootKref || Fail`a vat admin vat is required`;
   }
 
   // generate the devices
@@ -125,8 +124,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         creationOptions = {},
       } = config.devices[name];
       logStartup(`adding device '${name}' from bundle ${bundleID}`);
-
-      assert(bundleID, X`no bundleID for device ${name}`);
+      bundleID || Fail`no bundleID for device ${name}`;
       creationOptions.deviceParameters = deviceParameters;
 
       const deviceID = kernelKeeper.allocateDeviceIDForNameIfNeeded(name);
@@ -137,7 +135,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
         haveAdminDevice = true;
       }
     }
-    assert(haveAdminDevice, X`a vat admin device is required`);
+    haveAdminDevice || Fail`a vat admin device is required`;
   }
 
   // And enqueue the bootstrap() call. If we're reloading from an

@@ -1,5 +1,5 @@
 // @ts-check
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
@@ -153,7 +153,7 @@ export function buildRootObject() {
         const handler = Far('bankHandler', {
           async fromBridge(_srcID, obj) {
             if (!updateBalances(obj)) {
-              assert.fail(X`Unrecognized request ${obj && obj.type}`);
+              Fail`Unrecognized request ${obj && obj.type}`;
             }
           },
         });

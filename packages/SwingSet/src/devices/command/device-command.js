@@ -1,7 +1,7 @@
 import { Nat } from '@agoric/nat';
 import { Far } from '@endo/marshal';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
@@ -20,7 +20,7 @@ export function buildRootDeviceNode(tools) {
       SO(inboundHandler).inbound(Nat(count), body);
     } catch (e) {
       console.error(`error during inboundCallback:`, e);
-      assert.fail(X`error during inboundCallback: ${e}`);
+      Fail`error during inboundCallback: ${e}`;
     }
   });
 

@@ -4,7 +4,7 @@ import { listDifference, objectMap } from '@agoric/internal';
 
 import { fit, M } from './patternMatchers.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 const { apply, ownKeys } = Reflect;
 const { defineProperties, seal, freeze } = Object;
 
@@ -44,7 +44,7 @@ const isAwaitArgGuard = argGuard =>
 const desync = methodGuard => {
   const { argGuards, optionalArgGuards = [], restArgGuard } = methodGuard;
   !isAwaitArgGuard(restArgGuard) ||
-    assert.fail(X`Rest args may not be awaited: ${restArgGuard}`);
+    Fail`Rest args may not be awaited: ${restArgGuard}`;
   const rawArgGuards = [...argGuards, ...optionalArgGuards];
 
   const awaitIndexes = [];
@@ -127,9 +127,7 @@ const bindMethod = (
   const getContext = self => {
     const context = contextMap.get(self);
     context ||
-      assert.fail(
-        X`${q(methodTag)} may only be applied to a valid instance: ${self}`,
-      );
+      Fail`${q(methodTag)} may only be applied to a valid instance: ${self}`;
     return context;
   };
 
@@ -205,15 +203,11 @@ export const defendPrototype = (
       const methodGuardNames = ownKeys(methodGuards);
       const unimplemented = listDifference(methodGuardNames, methodNames);
       unimplemented.length === 0 ||
-        assert.fail(
-          X`methods ${q(unimplemented)} not implemented by ${q(tag)}`,
-        );
+        Fail`methods ${q(unimplemented)} not implemented by ${q(tag)}`;
       if (!sloppy) {
         const unguarded = listDifference(methodNames, methodGuardNames);
         unguarded.length === 0 ||
-          assert.fail(
-            X`methods ${q(unguarded)} not guarded by ${q(interfaceName)}`,
-          );
+          Fail`methods ${q(unguarded)} not guarded by ${q(interfaceName)}`;
       }
     }
   }
@@ -325,14 +319,10 @@ export const defineHeapFarClassKit = (
   const interfaceNames = ownKeys(interfaceGuardKit);
   const extraInterfaceNames = listDifference(facetNames, interfaceNames);
   extraInterfaceNames.length === 0 ||
-    assert.fail(
-      X`Interfaces ${q(extraInterfaceNames)} not implemented by ${q(tag)}`,
-    );
+    Fail`Interfaces ${q(extraInterfaceNames)} not implemented by ${q(tag)}`;
   const extraFacetNames = listDifference(interfaceNames, facetNames);
   extraFacetNames.length === 0 ||
-    assert.fail(
-      X`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`,
-    );
+    Fail`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`;
 
   const contextMapKit = objectMap(methodsKit, () => new WeakMap());
   const prototypeKit = objectMap(methodsKit, (methods, facetName) =>

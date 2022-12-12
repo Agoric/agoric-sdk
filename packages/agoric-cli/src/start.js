@@ -2,6 +2,7 @@
 import chalk from 'chalk';
 import { createHash } from 'crypto';
 import path from 'path';
+import { createRequire } from 'module';
 
 import { Nat, isNat } from '@agoric/nat';
 
@@ -15,6 +16,8 @@ import {
 
 import { makePspawn, getSDKBinaries } from './helpers.js';
 
+const require = createRequire(import.meta.url);
+
 const terminalOnlyFlags = (...flags) => {
   if (process.stdout.isTTY && process.stdin.isTTY) {
     return flags;
@@ -27,10 +30,10 @@ const PROVISION_COINS = [
   `5000000000000000${CENTRAL_DENOM}`,
   `100provisionpass`,
   `100sendpacketpass`,
-  `1000000000000ibc/0123456789abcdef`, // IbcATOM
-  `1000000000000ibc/123456789abcdef0`, // AUSD
-  `1000000000000ibc/23456789abcdef01`,
-  `1000000000000ibc/3456789abcdef012`,
+  `1000000000000ibc/atom1234`, // IbcATOM
+  `1000000000000ibc/toyellie`, // AUSD
+  `1000000000000ibc/usdc1234`,
+  `1000000000000ibc/usdt5678`,
 ].join(',');
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const SOLO_COINS = `13000000${STAKING_DENOM},500000000${CENTRAL_DENOM}`;
@@ -509,6 +512,32 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         return exitStatus;
       }
     }
+
+    // Create the full economy chain config.
+    const agServerResolve = spec =>
+      require.resolve(spec, { paths: [agServer] });
+    const coreConfigPath = agServerResolve(
+      '@agoric/vats/decentral-core-config.json',
+    );
+    const economyTemplPath = agServerResolve(
+      '@agoric/cosmic-swingset/economy-template.json',
+    );
+    const [rawSoloAddr, coreConfigJson, economyTemplJson] = await Promise.all([
+      fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8'),
+      fs.readFile(coreConfigPath, 'utf-8'),
+      fs.readFile(economyTemplPath, 'utf-8'),
+    ]);
+    const soloAddr = rawSoloAddr.trimRight();
+    const economyProposals = JSON.parse(
+      economyTemplJson.replace(/@FIRST_SOLO_ADDRESS@/g, soloAddr),
+    );
+    const economyConfig = JSON.parse(coreConfigJson);
+    economyConfig.coreProposals = economyProposals;
+    await fs.writeFile(
+      `${agServer}/decentral-economy-config.json`,
+      JSON.stringify(economyConfig, null, 2),
+    );
+
     if (!opts.restart) {
       return 0;
     }
@@ -551,9 +580,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     let exitStatus;
 
     // Provision the ag-solo, if necessary.
-    const soloAddr = (
-      await fs.readFile(`${agServer}/ag-cosmos-helper-address`, 'utf-8')
-    ).trimRight();
     let bestRpcAddr;
     while (!bestRpcAddr) {
       for (const rpcAddr of rpcAddrs) {

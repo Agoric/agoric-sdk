@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
@@ -136,8 +136,7 @@ const makePegasus = (zcf, board, namesByAddress) => {
         // Only continue if the promise isn't already resolved.
         const raceWinner = await Promise.race([promise, null]);
         checkAbort();
-
-        assert(!raceWinner, X`${receiveDenom} is already resolved`);
+        !raceWinner || Fail`${receiveDenom} is already resolved`;
 
         // If rejected, the rejection is returned to our caller, so we have
         // handled it correctly and that flow doesn't need to trigger an

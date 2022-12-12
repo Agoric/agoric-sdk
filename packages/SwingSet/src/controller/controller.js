@@ -12,7 +12,7 @@ import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
@@ -148,7 +148,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
     for (const bundle of bundles) {
       bundle.moduleFormat === 'getExport' ||
         bundle.moduleFormat === 'nestedEvaluate' ||
-        assert.fail(X`unexpected: ${bundle.moduleFormat}`);
+        Fail`unexpected: ${bundle.moduleFormat}`;
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }
@@ -246,7 +246,7 @@ export async function makeSwingsetController(
   }
 
   function kernelRequire(what) {
-    assert.fail(X`kernelRequire unprepared to satisfy require(${what})`);
+    Fail`kernelRequire unprepared to satisfy require(${what})`;
   }
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {

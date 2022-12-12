@@ -2,7 +2,7 @@
 
 import { makeMarshal, mapIterable } from '@endo/marshal';
 import { makeLegacyMap, makeScalarMap } from '@agoric/store';
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 
 /**
  * @typedef {string[]} Path
@@ -14,7 +14,7 @@ export const isPath = x => {
   if (!Array.isArray(x)) {
     return false;
   }
-  assert(x.length > 0, X`Path ${q(x)} must not be empty`);
+  x.length > 0 || Fail`Path ${q(x)} must not be empty`;
   for (const name of x) {
     if (typeof name !== 'string') {
       return false;
@@ -49,9 +49,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    */
   const explode = data => {
     data.startsWith(IMPLODE_PREFIX) ||
-      assert.fail(
-        X`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`,
-      );
+      Fail`exploded string ${data} must start with ${q(IMPLODE_PREFIX)}`;
     const strongname = JSON.parse(data.slice(IMPLODE_PREFIX.length));
     if (!isPath(strongname)) {
       return strongname;
@@ -79,7 +77,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const { petnameToVal: petnameToRoot } = edgeMapping;
     if (!petnameToRoot.has(path[0])) {
       // Avoid asserting, which fills up the logs.
-      assert.fail(X`Edgename for ${q(path[0])} petname not found`);
+      Fail`Edgename for ${q(path[0])} petname not found`;
     }
     const root = petnameToRoot.get(path[0]);
     path[0] = root;
@@ -94,7 +92,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    * @returns {Mapping<T>}
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
-    assert.typeof(kind, 'string', X`kind ${kind} must be a string`);
+    typeof kind === 'string' || `kind ${kind} must be a string`;
     const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMap;
     // These are actually either a LegacyMap or a MapStore depending on
     // useLegacyMap. Fortunately, the LegacyMap type is approximately the
@@ -164,7 +162,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
      * @param {any} val
      */
     const addPath = (path, val) => {
-      assert(isPath(path), X`path ${q(path)} must be an array of strings`);
+      isPath(path) || Fail`path ${q(path)} must be an array of strings`;
 
       if (
         !valToPetname.has(val) &&
@@ -206,9 +204,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
       if (petnameToVal.has(petname) && petnameToVal.get(petname) === val) {
         return;
       }
-      !petnameToVal.has(petname) ||
-        assert.fail(X`petname ${petname} is already in use`);
-      assert(!valToPetname.has(val), X`val ${val} already has a petname`);
+      !petnameToVal.has(petname) || Fail`petname ${petname} is already in use`;
+      !valToPetname.has(val) || Fail`val ${val} already has a petname`;
       petnameToVal.init(petname, val);
       valToPetname.init(val, petname);
 
@@ -219,11 +216,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
 
     const renamePetname = (petname, val) => {
       valToPetname.has(val) ||
-        assert.fail(
-          X`val ${val} has not been previously named, would you like to add it instead?`,
-        );
-      !petnameToVal.has(petname) ||
-        assert.fail(X`petname ${petname} is already in use`);
+        Fail`val ${val} has not been previously named, would you like to add it instead?`;
+      !petnameToVal.has(petname) || Fail`petname ${petname} is already in use`;
       // Delete the old mappings.
       const oldPetname = valToPetname.get(val);
       petnameToVal.delete(oldPetname);
@@ -266,12 +260,10 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     };
 
     const deletePetname = petname => {
-      assert(
-        petnameToVal.has(petname),
-        X`petname ${q(
+      petnameToVal.has(petname) ||
+        Fail`petname ${q(
           petname,
-        )} has not been previously named, would you like to add it instead?`,
-      );
+        )} has not been previously named, would you like to add it instead?`;
 
       // Delete the mappings.
       const val = petnameToVal.get(petname);

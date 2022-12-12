@@ -6,7 +6,7 @@ import {
 } from '../patterns/rankOrder.js';
 import { assertNoDuplicates, makeSetOfElements } from './copySet.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 /**
  * Asserts that `elements` is already rank sorted by `rankCompare`, where there
@@ -109,14 +109,14 @@ const merge = (xelements, yelements) => {
 
       const xi = xs[Symbol.iterator]();
       const nextX = () => {
-        assert(!xDone, X`Internal: nextX should not be called once done`);
+        !xDone || Fail`Internal: nextX should not be called once done`;
         ({ done: xDone, value: x } = xi.next());
       };
       nextX();
 
       const yi = ys[Symbol.iterator]();
       const nextY = () => {
-        assert(!yDone, X`Internal: nextY should not be called once done`);
+        !yDone || Fail`Internal: nextY should not be called once done`;
         ({ done: yDone, value: y } = yi.next());
       };
       nextY();
@@ -152,7 +152,7 @@ const merge = (xelements, yelements) => {
               nextX();
             } else {
               // y is earlier, so report it
-              assert(comp > 0, X`Internal: Unexpected comp ${q(comp)}`);
+              comp > 0 || Fail`Internal: Unexpected comp ${q(comp)}`;
               value = [y, 0n, 1n];
               nextY();
             }
@@ -207,7 +207,7 @@ const iterCompare = xyi => {
     return -1;
   } else {
     (!loneX && !loneY) ||
-      assert.fail(X`Internal: Unexpected lone pair ${q([loneX, loneY])}`);
+      Fail`Internal: Unexpected lone pair ${q([loneX, loneY])}`;
     return 0;
   }
 };
@@ -218,7 +218,7 @@ const iterUnion = xyi => {
     if (xc >= 0n) {
       result.push(m);
     } else {
-      assert(yc >= 0n, X`Internal: Unexpected count ${q(yc)}`);
+      yc >= 0n || Fail`Internal: Unexpected count ${q(yc)}`;
       // if x and y were both ready, then they were equivalent and
       // above clause already took care of it. Otherwise push here.
       result.push(m);
@@ -230,11 +230,11 @@ const iterUnion = xyi => {
 const iterDisjointUnion = xyi => {
   const result = [];
   for (const [m, xc, yc] of xyi) {
-    assert(xc === 0n || yc === 0n, X`Sets must not have common elements: ${m}`);
+    xc === 0n || yc === 0n || Fail`Sets must not have common elements: ${m}`;
     if (xc >= 1n) {
       result.push(m);
     } else {
-      assert(yc >= 1n, X`Internal: Unexpected count ${q(yc)}`);
+      yc >= 1n || Fail`Internal: Unexpected count ${q(yc)}`;
       result.push(m);
     }
   }
@@ -255,7 +255,7 @@ const iterIntersection = xyi => {
 const iterDisjointSubtract = xyi => {
   const result = [];
   for (const [m, xc, yc] of xyi) {
-    assert(xc >= 1n, X`right element ${m} was not in left`);
+    xc >= 1n || Fail`right element ${m} was not in left`;
     if (yc === 0n) {
       // the x was not in y
       result.push(m);

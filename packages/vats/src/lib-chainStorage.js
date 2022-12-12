@@ -2,7 +2,7 @@
 
 import { E, Far } from '@endo/far';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 // TODO: Formalize segment constraints.
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity
@@ -13,9 +13,7 @@ const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
 /** @type {(name: string) => void} */
 export const assertPathSegment = name => {
   pathSegmentPattern.test(name) ||
-    assert.fail(
-      X`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`,
-    );
+    Fail`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`;
 };
 harden(assertPathSegment);
 

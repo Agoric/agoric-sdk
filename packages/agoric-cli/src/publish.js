@@ -82,7 +82,7 @@ const registry = new Registry([
  * @typedef {SourceBundle | HashBundle} Bundle
  */
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 /**
  * @template T
@@ -121,9 +121,7 @@ const assertHttpConnectionSpec = connectionSpec => {
     X`Expected "port" number on "http" type connectionSpec, ${connectionSpec}`,
   );
   Number.isInteger(port) ||
-    assert.fail(
-      X`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`,
-    );
+    Fail`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`;
 };
 
 // eslint-disable-next-line jsdoc/require-returns-check
@@ -198,7 +196,9 @@ export const makeHttpBundlePublisher = ({ jsonHttpCall, getAccessToken }) => {
       'object',
       X`Expected JSON object response body, got ${response}`,
     );
-    assert(response, X`Expected non-null response body, got ${response}`);
+    if (!response) {
+      throw Fail`Expected non-null response body, got ${response}`;
+    }
     const { ok } = response;
     if (!ok) {
       const { rej } = response;
@@ -419,12 +419,11 @@ const publishBundle = async (
       endoZipBase64Sha512,
     });
   }
-  assert(
-    hashBundle !== undefined,
-    X`Unrecognized bundle format ${q(
+  if (hashBundle === undefined) {
+    throw Fail`Unrecognized bundle format ${q(
       moduleFormat,
-    )}, publishBundle supports only "endoZipBase64" with "endoZipBase64Sha512"`,
-  );
+    )}, publishBundle supports only "endoZipBase64" with "endoZipBase64Sha512"`;
+  }
 
   if (connectionSpec === undefined && getDefaultConnection !== undefined) {
     connectionSpec = await getDefaultConnection();
@@ -435,7 +434,7 @@ const publishBundle = async (
     'object',
     X`Expected object for connectionSpec, got ${connectionSpec}`,
   );
-  assert(connectionSpec, X`Expected non-null connectionSpec`);
+  connectionSpec || Fail`Expected non-null connectionSpec`;
   const { type } = connectionSpec;
   assert.typeof(type, 'string', X`Expected string "type" on connectionSpec`);
 

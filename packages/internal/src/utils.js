@@ -13,7 +13,7 @@ const {
 } = Object;
 const { ownKeys, apply } = Reflect;
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 /**
  * Throws if multiple entries use the same property name. Otherwise acts
@@ -33,11 +33,11 @@ export const fromUniqueEntries = allEntries => {
   const names = new Set();
   for (const [name, _] of entriesArray) {
     if (names.has(name)) {
-      assert.fail(X`collision on property name ${q(name)}: ${entriesArray}`);
+      Fail`collision on property name ${q(name)}: ${entriesArray}`;
     }
     names.add(name);
   }
-  assert.fail(X`internal: failed to create object from unique entries`);
+  throw Fail`internal: failed to create object from unique entries`;
 };
 harden(fromUniqueEntries);
 

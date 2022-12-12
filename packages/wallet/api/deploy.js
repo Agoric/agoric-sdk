@@ -3,7 +3,7 @@
 // FIXME: This is just hacked together for the legacy wallet.
 
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import path from 'path';
 
 const filename = new URL(import.meta.url).pathname;
@@ -63,7 +63,7 @@ export default async function deployWallet(
       issuers.map(async ([issuerPetname, issuer]) => {
         const brand = await E(issuer).getBrand();
         const brandMatches = E(brand).isMyIssuer(issuer);
-        assert(brandMatches, X`issuer was using a brand which was not its own`);
+        brandMatches || Fail`issuer was using a brand which was not its own`;
         brandToIssuer.set(brand, { issuerPetname, issuer });
       }),
     ]);

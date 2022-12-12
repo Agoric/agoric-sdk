@@ -1,6 +1,6 @@
 import { Writable } from 'stream';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 const { freeze } = Object;
 
@@ -51,9 +51,7 @@ export const running = (process, { exec, spawn }) => {
     needBacktick: async cmd => {
       const ret = await it.getStdout(cmd);
       ret.code === 0 ||
-        assert.fail(
-          X`Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`,
-        );
+        Fail`Unexpected ${JSON.stringify(cmd)} exit code: ${ret.code}`;
       return ret.stdout;
     },
     cwd: () => process.cwd(),
@@ -104,7 +102,7 @@ export const running = (process, { exec, spawn }) => {
 
     needDoRun: async (cmd, ...opts) => {
       const ret = await it.doRun(cmd, ...opts);
-      assert(ret === 0, X`Aborted with exit code ${ret}`);
+      ret === 0 || Fail`Aborted with exit code ${ret}`;
       return ret;
     },
   });

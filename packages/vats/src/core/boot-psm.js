@@ -5,10 +5,11 @@ import {
   installGovAndPSMContracts,
   makeAnchorAsset,
   startPSM,
-  invitePSMCommitteeMembers,
+  inviteToEconCharter,
+  inviteCommitteeMembers,
   PSM_MANIFEST,
   PSM_GOV_MANIFEST,
-  startPSMCharter,
+  startEconCharter,
   INVITE_PSM_COMMITTEE_MANIFEST,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
@@ -19,6 +20,7 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -181,7 +183,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
       }),
-      startWalletFactory(powersFor('startWalletFactory')),
+      startWalletFactory(powersFor('startWalletFactory'), {
+        options: { walletBridgeId: BRIDGE_ID.PROVISION },
+      }),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),
@@ -194,7 +198,10 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           },
         },
       }),
-      invitePSMCommitteeMembers(powersFor('invitePSMCommitteeMembers'), {
+      inviteCommitteeMembers(powersFor('inviteCommitteeMembers'), {
+        options: { voterAddresses: economicCommitteeAddresses },
+      }),
+      inviteToEconCharter(powersFor('inviteToEconCharter'), {
         options: { voterAddresses: economicCommitteeAddresses },
       }),
       ...anchorAssets.map(anchorOptions =>
@@ -207,7 +214,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           options: { anchorOptions },
         }),
       ),
-      startPSMCharter(powersFor('startPSMCharter')),
+      startEconCharter(powersFor('startEconCharter')),
       // Allow bootstrap powers to be granted by governance
       // to code to be evaluated after initial bootstrap.
       bridgeCoreEval(powersFor('bridgeCoreEval')),

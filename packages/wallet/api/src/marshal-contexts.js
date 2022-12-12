@@ -3,7 +3,7 @@ import { makeScalarMap } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * For a value with a known id in the board, we can use
@@ -155,7 +155,7 @@ export const makeExportContext = () => {
       return boardObjects.bySlot.get(slot);
     }
     const { kind, id } = parseWalletSlot(walletObjects, slot);
-    assert(kind, X`bad slot kind: ${slot}`);
+    kind || Fail`bad slot kind: ${slot}`;
     const val = walletObjects[kind].bySlot.get(id); // or throw
     return val;
   };
@@ -287,7 +287,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
      * @param {string} iface
      */
     fromBoard: (slot, iface) => {
-      assert(isBoardId(slot), X`bad board slot ${q(slot)}`);
+      isBoardId(slot) || Fail`bad board slot ${q(slot)}`;
       return provideVal(boardObjects, slot, iface);
     },
 
@@ -312,7 +312,9 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     /** @param {unknown} val */
     fromMyWallet: val => {
       const kind = findKey(walletObjects, k => walletObjects[k].byVal.has(val));
-      assert(kind, X`cannot serialize unregistered ${val}`);
+      if (kind === undefined) {
+        throw Fail`cannot serialize unregistered ${val}`;
+      }
 
       const id = walletObjects[kind].byVal.get(val);
       return makeWalletSlot(walletObjects, kind, id);

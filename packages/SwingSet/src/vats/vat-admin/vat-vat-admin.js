@@ -18,7 +18,7 @@ import {
   vivifySingleton,
 } from '@agoric/vat-data';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 const managerTypes = ['local', 'nodeWorker', 'node-subprocess', 'xs-worker'];
 
@@ -223,7 +223,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     const leftovers = Object.keys(rest);
     if (leftovers.length) {
       const bad = leftovers.join(',');
-      assert.fail(X`upgrade() received unknown options: ${bad}`);
+      Fail`upgrade() received unknown options: ${bad}`;
     }
     assert.typeof(upgradeMessage, 'string', 'upgradeMessage not a string');
     const upgradeID = D(vatAdminDev).upgradeVat(
@@ -295,7 +295,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
         bundleID = D(bundlecap).getBundleID();
       } catch (e) {
         // 'bundlecap' probably wasn't a bundlecap
-        assert.fail(X`vatAdmin.upgrade() requires a bundlecap: ${e}`);
+        Fail`vatAdmin.upgrade() requires a bundlecap: ${e}`;
       }
       return upgradeVat(state.vatID, bundleID, options);
     },

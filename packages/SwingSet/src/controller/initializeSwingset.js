@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
 
 import '../types-ambient.js';
@@ -238,11 +238,9 @@ export async function loadSwingsetConfigFile(configPath) {
     await normalizeConfigDescriptor(config.vats, referrer, true);
     await normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
-    assert(config.bootstrap, X`no designated bootstrap vat in ${configPath}`);
+    config.bootstrap || Fail`no designated bootstrap vat in ${configPath}`;
     (config.vats && config.vats[config.bootstrap]) ||
-      assert.fail(
-        X`bootstrap vat ${config.bootstrap} not found in ${configPath}`,
-      );
+      Fail`bootstrap vat ${config.bootstrap} not found in ${configPath}`;
     return config;
   } catch (e) {
     if (e.code === 'ENOENT') {
@@ -295,8 +293,7 @@ export async function initializeSwingset(
 ) {
   const kvStore = hostStorage.kvStore;
   insistStorageAPI(kvStore);
-  !swingsetIsInitialized(hostStorage) ||
-    assert.fail(X`kernel store already initialized`);
+  !swingsetIsInitialized(hostStorage) || Fail`kernel store already initialized`;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));
@@ -327,7 +324,7 @@ export async function initializeSwingset(
       config.defaultManagerType = 'local';
       break;
     default:
-      assert.fail(X`unknown manager type ${defaultManagerType}`);
+      Fail`unknown manager type ${defaultManagerType}`;
   }
 
   const obtainKernelBundles = async () =>

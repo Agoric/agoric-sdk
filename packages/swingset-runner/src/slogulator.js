@@ -3,7 +3,7 @@ import process from 'process';
 import Readlines from 'n-readlines';
 import yargs from 'yargs';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 /* eslint-disable no-use-before-define */
 
@@ -316,7 +316,7 @@ export function main() {
             result = `new ${val.name}('${val.message}')`;
             break;
           default:
-            assert.fail(X`unknown qClass ${qClass} in legibilizeValue`);
+            Fail`unknown qClass ${qClass} in legibilizeValue`;
         }
       } else {
         result = '{';

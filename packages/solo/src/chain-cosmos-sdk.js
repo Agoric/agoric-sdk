@@ -11,7 +11,7 @@ import anylogger from 'anylogger';
 import { makeNotifierKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
@@ -690,11 +690,8 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           console.debug(`helper said: ${stdout}`);
           const out = JSON.parse(stdout);
 
-          assert.equal(
-            out.code,
-            0,
-            X`Unexpected output: ${out.raw_log || stdout.trimRight()}`,
-          );
+          out.code === 0 ||
+            Fail`Unexpected output: ${out.raw_log || stdout.trimRight()}`;
 
           // Wait for the transaction to be included in a block.
           const txHash = out.txhash;
@@ -704,7 +701,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
             if (txResult.code) {
               // eslint-disable-next-line no-use-before-define
               failedSend(
-                assert.error(X`Error in tx processing: ${txResult.log}`),
+                assert.error(`Error in tx processing: ${txResult.log}`),
               );
             }
           });
@@ -734,7 +731,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
     const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
       lastMailboxUpdate,
     );
-    assert(updateCount, X`${GCI} unexpectedly finished!`);
+    updateCount || Fail`${GCI} unexpectedly finished!`;
     if (mailbox) {
       const { outbox, ack } = mailbox;
       // console.info('have mailbox', mailbox);
@@ -784,7 +781,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   const recurseEachSend = async (lastSendUpdate = undefined) => {
     // See when there is another requested send since our last time.
     const { updateCount } = await sendNotifier.getUpdateSince(lastSendUpdate);
-    assert(updateCount, X`Sending unexpectedly finished!`);
+    updateCount || Fail`Sending unexpectedly finished!`;
 
     await sendFromMessagePool().then(successfulSend, failedSend);
     recurseEachSend(updateCount);

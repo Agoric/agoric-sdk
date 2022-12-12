@@ -4,7 +4,7 @@ import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 import bundleSource from '@endo/bundle-source';
 import { makePromiseKit } from '@endo/promise-kit';
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 export const makeFileReader = (fileName, { fs, path }) => {
   const make = there => makeFileReader(there, { fs, path });
@@ -96,9 +96,7 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     try {
       txt = await metaRd.readText();
     } catch (ioErr) {
-      assert.fail(
-        X`${q(targetName)}: cannot read bundle metadata: ${q(ioErr)}`,
-      );
+      Fail`${q(targetName)}: cannot read bundle metadata: ${q(ioErr)}`;
     }
     const meta = JSON.parse(txt);
     const {
@@ -129,12 +127,10 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
       }),
     );
     const outOfDate = actualTimes.filter(({ mtime }) => mtime > bundleTime);
-    assert(
-      outOfDate.length === 0,
-      X`out of date: ${q(outOfDate)}. ${q(targetName)} bundled at ${q(
+    outOfDate.length === 0 ||
+      Fail`out of date: ${q(outOfDate)}. ${q(targetName)} bundled at ${q(
         bundleTime,
-      )}`,
-    );
+      )}`;
     return meta;
   };
 

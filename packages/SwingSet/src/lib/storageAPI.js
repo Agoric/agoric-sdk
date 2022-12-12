@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
 
@@ -16,7 +16,7 @@ import { assert, details as X } from '@agoric/assert';
  */
 export function insistStorageAPI(kvStore) {
   for (const n of ['has', 'getKeys', 'get', 'set', 'delete']) {
-    assert(n in kvStore, X`kvStore.${n} is missing, cannot use`);
+    n in kvStore || Fail`kvStore.${n} is missing, cannot use`;
   }
 }
 
@@ -39,7 +39,7 @@ export function insistEnhancedStorageAPI(kvStore) {
     'getPrefixedValues',
     'deletePrefixedKeys',
   ]) {
-    assert(n in kvStore, X`kvStore.${n} is missing, cannot use`);
+    n in kvStore || Fail`kvStore.${n} is missing, cannot use`;
   }
 }
 

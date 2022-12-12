@@ -23,7 +23,7 @@
  */
 
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
@@ -244,9 +244,7 @@ export function buildRootDeviceNode(tools) {
 
   function updateTime(time) {
     time >= lastPolled ||
-      assert.fail(
-        X`Time is monotonic. ${time} cannot be less than ${lastPolled}`,
-      );
+      Fail`Time is monotonic. ${time} cannot be less than ${lastPolled}`;
     lastPolled = time;
     saveState();
   }

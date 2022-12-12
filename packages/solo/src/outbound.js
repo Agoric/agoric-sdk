@@ -1,7 +1,7 @@
 /* global process */
 import anylogger from 'anylogger';
 
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =
@@ -62,7 +62,7 @@ export function deliver(mbs) {
 }
 
 export function addDeliveryTarget(target, deliverator) {
-  assert(!knownTargets.has(target), X`target ${target} already added`);
+  !knownTargets.has(target) || Fail`target ${target} already added`;
   /** @type {TargetRecord} */
   const targetRecord = { deliverator, highestSent: 0, highestAck: 0 };
   knownTargets.set(target, targetRecord);

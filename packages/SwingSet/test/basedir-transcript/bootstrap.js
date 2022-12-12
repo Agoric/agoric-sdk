@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {
@@ -14,7 +14,7 @@ export function buildRootObject(vatPowers, vatParameters) {
             err => vatPowers.testLog(`b.rejected ${err}`),
           );
       } else {
-        assert.fail(X`unknown mode ${mode}`);
+        Fail`unknown mode ${mode}`;
       }
     },
   });

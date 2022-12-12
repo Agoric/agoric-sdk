@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { passStyleOf } from '@endo/marshal';
 import { kunser, krefOf } from './kmarshal.js';
 
@@ -14,13 +14,10 @@ import { kunser, krefOf } from './kmarshal.js';
  * @returns {asserts capdata is import('@endo/marshal').CapData<string>}
  */
 export function insistCapData(capdata) {
-  assert.typeof(
-    capdata.body,
-    'string',
-    X`capdata has non-string .body ${capdata.body}`,
-  );
+  typeof capdata.body === 'string' ||
+    Fail`capdata has non-string .body ${capdata.body}`;
   Array.isArray(capdata.slots) ||
-    assert.fail(X`capdata has non-Array slots ${capdata.slots}`);
+    Fail`capdata has non-Array slots ${capdata.slots}`;
   // TODO check that the .slots array elements are actually strings
 }
 

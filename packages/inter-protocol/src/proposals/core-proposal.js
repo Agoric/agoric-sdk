@@ -7,8 +7,8 @@ export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
-export * from './startPSM.js';
-export * from './startEconCommittee.js';
+export * from './startPSM.js'; // eslint-disable-line import/export
+export * from './startEconCommittee.js'; // eslint-disable-line import/export
 
 /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({

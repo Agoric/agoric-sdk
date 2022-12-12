@@ -10,7 +10,7 @@ import {
 } from '../question.js';
 import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * The electorate that governs changes to the contract's parameters. It must be
@@ -46,13 +46,9 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   const { parameterName, paramPath } = paramSpec;
   const { issue } = questionSpec;
   issue.spec.changes[parameterName] ||
-    assert.fail(
-      X`Question (${issue.spec.changes}) does not concern ${parameterName}`,
-    );
+    Fail`Question (${issue.spec.changes}) does not concern ${parameterName}`;
   keyEQ(issue.spec.paramPath, paramPath) ||
-    assert.fail(
-      X`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`,
-    );
+    Fail`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`;
 };
 
 /** @type {SetupGovernance} */

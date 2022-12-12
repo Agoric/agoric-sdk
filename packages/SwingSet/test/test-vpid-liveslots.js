@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeResolve, makeReject } from './util.js';
@@ -105,7 +105,7 @@ function resolvePR(pr, mode, targets) {
       pr.reject(targets.p1);
       break;
     default:
-      assert.fail(X`unknown mode ${mode}`);
+      Fail`unknown mode ${mode}`;
   }
 }
 
@@ -143,7 +143,7 @@ function resolutionOf(vpid, mode, targets) {
       resolution.resolutions[0][2] = kser(kslot(targets.p1));
       break;
     default:
-      assert.fail(X`unknown mode ${mode}`);
+      Fail`unknown mode ${mode}`;
   }
   return resolution;
 }
@@ -353,7 +353,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
     await dispatch(makeMessage(rootA, 'result', [], p1));
     // vat cannot unsubscribe, but is now the decider
   } else {
-    assert.fail(X`bad which=${which}`);
+    Fail`bad which=${which}`;
   }
   // console.log(`-- did mode=${which} result+promise log= ->`, JSON.stringify(log), '<-');
 
@@ -629,7 +629,7 @@ async function doVatResolveCase4(t, mode) {
   } else if (mode === 'promise-reject') {
     r = makeReject(p1, kser(kslot(p1)));
   } else {
-    assert.fail(X`unknown mode ${mode}`);
+    Fail`unknown mode ${mode}`;
   }
   await dispatch(r);
   t.deepEqual(log, []);

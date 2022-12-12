@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 
 // Object/promise references (in the kernel) contain a two-tuple of (type,
 // index). All object references point to entries in the kernel Object
@@ -38,7 +38,7 @@ export function parseKernelSlot(s) {
     type = 'promise';
     idSuffix = s.slice(2);
   } else {
-    assert.fail(X`invalid kernelSlot ${s}`);
+    throw Fail`invalid kernelSlot ${s}`;
   }
   const id = Nat(BigInt(idSuffix));
   return { type, id };
@@ -64,7 +64,7 @@ export function makeKernelSlot(type, id) {
   if (type === 'promise') {
     return `kp${Nat(id)}`;
   }
-  assert.fail(X`unknown type ${type}`);
+  throw Fail`unknown type ${type}`;
 }
 
 /**
@@ -80,5 +80,5 @@ export function makeKernelSlot(type, id) {
  */
 export function insistKernelType(type, kernelSlot) {
   type === parseKernelSlot(kernelSlot).type ||
-    assert.fail(X`kernelSlot ${kernelSlot} is not of type ${type}`);
+    Fail`kernelSlot ${kernelSlot} is not of type ${type}`;
 }

@@ -6,7 +6,7 @@ import { parentPort } from 'worker_threads';
 import anylogger from 'anylogger';
 
 import '../../types-ambient.js';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import engineGC from '../../lib-nodejs/engine-gc.js';
@@ -30,7 +30,7 @@ function workerLog(first, ...args) {
 workerLog(`supervisor started`);
 
 function sendUplink(msg) {
-  assert(msg instanceof Array, X`msg must be an Array`);
+  msg instanceof Array || Fail`msg must be an Array`;
   assert(parentPort, 'parentPort somehow missing, am I not a Worker?');
   parentPort.postMessage(msg);
 }

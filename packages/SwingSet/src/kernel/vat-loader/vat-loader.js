@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 
@@ -199,7 +199,7 @@ export function makeVatLoader(stuff) {
       assert(vatSourceBundle, `unknown bundleID ${source.bundleID}`);
       sourceDesc = `from bundleID: ${source.bundleID}`;
     } else {
-      assert.fail(X`unknown vat source descriptor ${source}`);
+      Fail`unknown vat source descriptor ${source}`;
     }
     assert.typeof(vatSourceBundle, 'object', `vat creation requires bundle`);
 

@@ -6,7 +6,7 @@ import {
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { makeStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assert, details as X } from '@agoric/assert';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
 
 import '@agoric/store/exported.js';
@@ -443,8 +443,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
               return true;
             },
           );
-
-          assert(oidx >= 0, X`${portID}: did not expect channelOpenAck`);
+          oidx >= 0 || Fail`${portID}: did not expect channelOpenAck`;
           const { onConnectP, localAddr, ...chanInfo } = outbounds[oidx];
           outbounds.splice(oidx, 1);
           if (outbounds.length === 0) {
@@ -474,7 +473,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           const { portID, channelID } = obj;
           const channelKey = `${channelID}:${portID}`;
           channelKeyToAttemptP.has(channelKey) ||
-            assert.fail(X`${channelKey}: did not expect channelOpenConfirm`);
+            Fail`${channelKey}: did not expect channelOpenConfirm`;
           const attemptP = channelKeyToAttemptP.get(channelKey);
           channelKeyToAttemptP.delete(channelKey);
 

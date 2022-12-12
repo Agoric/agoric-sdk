@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { Far } from '@endo/marshal';
 import { showPurseBalance, setupIssuers } from './helpers.js';
@@ -25,14 +25,11 @@ const build = async (log, zoe, issuers, payments, installations) => {
         invitation,
       );
       installation === installations.secondPriceAuction ||
-        assert.fail(X`wrong installation`);
-      assert(
-        keyEQ(
-          harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
-          issuerKeywordRecord,
-        ),
-        X`issuerKeywordRecord were not as expected`,
-      );
+        Fail`wrong installation`;
+      keyEQ(
+        harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
+        issuerKeywordRecord,
+      ) || Fail`issuerKeywordRecord were not as expected`;
       assert(keyEQ(invitationValue[0].minimumBid, simoleans(3)));
       assert(keyEQ(invitationValue[0].auctionedAssets, moola(1)));
 

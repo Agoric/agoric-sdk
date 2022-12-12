@@ -2,7 +2,7 @@ import { E, Far } from '@endo/far';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { ZipWriter } from '@endo/zip';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 export const start = () => {
   /** @type { Map<string, [string, Uint8Array]>} */
@@ -44,7 +44,9 @@ export const start = () => {
        */
       addByRef: (name, hash) => {
         const entry = hashToEntry.get(hash);
-        assert(entry, X`hash not found: ${q(hash)}`);
+        if (!entry) {
+          throw Fail`hash not found: ${q(hash)}`;
+        }
         const [_n, content] = entry;
         nameToContent.set(name, [hash, content]);
       },

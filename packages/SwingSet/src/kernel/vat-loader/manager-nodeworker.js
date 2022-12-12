@@ -1,5 +1,5 @@
 // import { Worker } from 'worker_threads'; // not from a Compartment
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 
@@ -110,7 +110,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
     function deliverToWorker(delivery) {
       parentLog(`sending delivery`, delivery);
-      assert(!waiting, X`already waiting for delivery`);
+      !waiting || Fail`already waiting for delivery`;
       const pr = makePromiseKit();
       waiting = pr.resolve;
       sendToWorker(['deliver', delivery]);

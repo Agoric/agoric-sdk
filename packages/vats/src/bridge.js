@@ -2,7 +2,7 @@
 
 import { makeStore } from '@agoric/store';
 import '@agoric/store/exported.js';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
 
 /**
@@ -44,7 +44,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
   const bridgeHandler = Far('bridgeHandler', { inbound: bridgeInbound });
 
   function callOutbound(dstID, obj) {
-    assert(bridgeDevice, X`bridge device not yet connected`);
+    bridgeDevice || Fail`bridge device not yet connected`;
     const retobj = D(bridgeDevice).callOutbound(dstID, obj);
     // note: *we* get this return value synchronously, but any callers (in
     // separate vats) only get a Promise, and will receive the value in some
@@ -62,12 +62,15 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     toBridge(dstID, obj) {
       return callOutbound(dstID, obj);
     },
+    fromBridge(srcID, obj) {
+      return bridgeHandler.inbound(srcID, obj);
+    },
     register(srcID, handler) {
       srcHandlers.init(srcID, handler);
     },
     unregister(srcID, handler) {
       srcHandlers.get(srcID) === handler ||
-        assert.fail(X`Handler was not registered for ${srcID}`);
+        Fail`Handler was not registered for ${srcID}`;
       srcHandlers.delete(srcID);
     },
   });

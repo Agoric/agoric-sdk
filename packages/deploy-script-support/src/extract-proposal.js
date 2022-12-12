@@ -8,7 +8,7 @@ import {
   makeEnactCoreProposalsFromBundleCap,
 } from './coreProposalBehavior.js';
 
-const { details: X } = assert;
+const { details: X, Fail } = assert;
 
 const require = createRequire(import.meta.url);
 
@@ -84,17 +84,11 @@ export const extractCoreProposalBundles = async (
         ({ module, entrypoint, args = [] } = coreProposal);
       }
 
-      assert.typeof(
-        module,
-        'string',
-        X`coreProposal module ${module} must be string`,
-      );
-      assert.typeof(
-        entrypoint,
-        'string',
-        X`coreProposal entrypoint ${entrypoint} must be string`,
-      );
-      assert(Array.isArray(args), X`coreProposal args ${args} must be array`);
+      typeof module === 'string' ||
+        Fail`coreProposal module ${module} must be string`;
+      typeof entrypoint === 'string' ||
+        Fail`coreProposal entrypoint ${entrypoint} must be string`;
+      Array.isArray(args) || Fail`coreProposal args ${args} must be array`;
 
       const thisProposalBundleHandles = new Set();
       assert(getSequenceForProposal);
@@ -129,7 +123,7 @@ export const extractCoreProposalBundles = async (
       const publishRef = async handleP => {
         const handle = await handleP;
         bundleHandleToAbsolutePaths.has(handle) ||
-          assert.fail(X`${handle} not in installed bundles`);
+          Fail`${handle} not in installed bundles`;
         return handle;
       };
       const proposal = await ns[entrypoint]({ publishRef, install }, ...args);
