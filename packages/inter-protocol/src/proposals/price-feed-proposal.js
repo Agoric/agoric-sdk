@@ -187,11 +187,11 @@ export const createPriceFeed = async (
     .then(deleter => E(aggregators).set(terms, { aggregator, deleter }));
 
   /**
-   * Send an invitation to one of the oracles.
+   * Initialize a new oracle and send an invitation to administer it.
    *
    * @param {string} addr
    */
-  const distributeInvitation = async addr => {
+  const addOracle = async addr => {
     const invitation = await E(aggregator.creatorFacet).makeOracleInvitation(
       addr,
     );
@@ -204,7 +204,7 @@ export const createPriceFeed = async (
   };
 
   trace('distributing invitations', oracleAddresses);
-  await Promise.all(oracleAddresses.map(distributeInvitation));
+  await Promise.all(oracleAddresses.map(addOracle));
   trace('createPriceFeed complete');
 };
 
