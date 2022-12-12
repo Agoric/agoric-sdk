@@ -1,5 +1,16 @@
 import djson from '../../lib/djson.js';
 
+export const missingSyscall = Symbol('missing transcript syscall');
+export const extraSyscall = Symbol('extra transcript syscall');
+
+/** @typedef {typeof missingSyscall | typeof extraSyscall | Error | undefined} CompareSyscallsResult */
+
+/**
+ * @param {any} vatID
+ * @param {object} originalSyscall
+ * @param {object} newSyscall
+ * @returns {CompareSyscallsResult}
+ */
 export function requireIdentical(vatID, originalSyscall, newSyscall) {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
     console.error(`anachrophobia strikes vat ${vatID}`);
@@ -8,6 +19,39 @@ export function requireIdentical(vatID, originalSyscall, newSyscall) {
     return new Error(`historical inaccuracy in replay of ${vatID}`);
   }
   return undefined;
+}
+
+const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
+
+/**
+ * @param {any} vatID
+ * @param {object} originalSyscall
+ * @param {object} newSyscall
+ * @returns {CompareSyscallsResult}
+ */
+export function requireIdenticalExceptStableVCSyscalls(
+  vatID,
+  originalSyscall,
+  newSyscall,
+) {
+  const error = requireIdentical(vatID, originalSyscall, newSyscall);
+
+  if (error) {
+    if (
+      originalSyscall[0] === 'vatstoreGet' &&
+      vcSyscallRE.test(originalSyscall[1])
+    ) {
+      console.warn(`  mitigation: ignoring extra vc syscall`);
+      return extraSyscall;
+    }
+
+    if (newSyscall[0] === 'vatstoreGet' && vcSyscallRE.test(newSyscall[1])) {
+      console.warn(`  mitigation: falling through to syscall handler`);
+      return missingSyscall;
+    }
+  }
+
+  return error;
 }
 
 export function makeTranscriptManager(
@@ -59,18 +103,32 @@ export function makeTranscriptManager(
   let replayError;
 
   function simulateSyscall(newSyscall) {
-    const newReplayError = compareSyscalls(
-      vatID,
-      playbackSyscalls[0].d,
-      newSyscall,
-      playbackSyscalls,
-    );
-    const s = playbackSyscalls.shift();
-    if (newReplayError) {
-      replayError = newReplayError;
-      throw replayError;
+    while (playbackSyscalls.length) {
+      const compareError = compareSyscalls(
+        vatID,
+        playbackSyscalls[0].d,
+        newSyscall,
+        playbackSyscalls[0].response,
+      );
+
+      if (compareError === missingSyscall) {
+        return missingSyscall;
+      }
+
+      const s = playbackSyscalls.shift();
+
+      if (!compareError) {
+        return s.response;
+      } else if (compareError !== extraSyscall) {
+        replayError = compareError;
+        break;
+      }
     }
-    return s.response;
+
+    if (!replayError) {
+      replayError = new Error(`historical inaccuracy in replay of ${vatID}`);
+    }
+    throw replayError;
   }
 
   function finishReplayDelivery(dnum) {

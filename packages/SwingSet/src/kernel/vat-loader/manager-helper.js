@@ -2,7 +2,7 @@
 import { assert } from '@agoric/assert';
 import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
-import { makeTranscriptManager } from './transcript.js';
+import { makeTranscriptManager, missingSyscall } from './transcript.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
@@ -103,7 +103,7 @@ import { makeTranscriptManager } from './transcript.js';
  * @param {KernelSlog} kernelSlog
  * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
  * @param {boolean} workerCanBlock
- * @param {(vatID: any, originalSyscall: any, newSyscall: any) => Error | undefined} [compareSyscalls]
+ * @param {(vatID: any, originalSyscall: any, newSyscall: any) => import('./transcript.js').CompareSyscallsResult} [compareSyscalls]
  * @param {boolean} [useTranscript]
  * @returns {ManagerKit}
  */
@@ -247,7 +247,9 @@ function makeManagerKit(
       // but if the puppy deviates one inch from previous twitches, explode
       kernelSlog.syscall(vatID, undefined, vso);
       const vres = transcriptManager.simulateSyscall(vso);
-      return vres;
+      if (vres !== missingSyscall) {
+        return vres;
+      }
     }
 
     const vres = vatSyscallHandler(vso);
@@ -256,7 +258,7 @@ function makeManagerKit(
     if (successFlag === 'ok' && data && !workerCanBlock) {
       console.log(`warning: syscall returns data, but worker cannot get it`);
     }
-    if (transcriptManager) {
+    if (transcriptManager && !transcriptManager.inReplay()) {
       transcriptManager.addSyscall(vso, vres);
     }
     return vres;
