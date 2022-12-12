@@ -675,12 +675,26 @@
  * An array or record is split into the first part that matches the
  * base pattern, and the remainder, which matches against the optional
  * rest pattern if present.
- * Unlike `M.split`, `M.partial` ignores properties on the base
- * pattern that are not present on the CopyRecord.
+ * `M.partial` differs from `M.split` in the handling of data that is
+ * described in the base pattern but absent in a provided specimen:
+ *   - For a CopyRecord, `M.partial` ignores properties of the base
+ *     pattern that are not present on the specimen.
+ *   - For a CopyArray, `M.partial` ignores elements of the base
+ *     pattern at indices beyond the maximum index of the specimen.
  *
  * @property {(t: Pattern) => Pattern} eref
+ * Matches any promise object or passable non-promise that matches the
+ * sub-pattern.
+ * Note that validation is immediate, so (unlike the TypeScript ERef<T>
+ * type) `M.eref` matches a promise object whose fulfillment value is
+ * _not_ matched by the sub-pattern.
+ * For describing a top-level parameter,
+ * `M.callWhen(..., M.await(p), ...)` is probably more appropriate than
+ * `M.call(..., M.eref(p), ...)`.
  *
  * @property {(t: Pattern) => Pattern} opt
+ * Matches a value matched by the sub-pattern or the exact value
+ * `undefined`.
  *
  * @property {<M extends Record<any, any>>(interfaceName: string,
  *             methodGuards: M,
