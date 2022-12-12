@@ -46,10 +46,11 @@ const IGNORE_SNAPSHOT_HASH_DIFFERENCES = true;
 
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
-const FORCED_RELOAD_FROM_SNAPSHOT = false;
-const KEEP_WORKER_RECENT = 0;
+const FORCED_RELOAD_FROM_SNAPSHOT = true;
+const KEEP_WORKER_RECENT = 10;
 const KEEP_WORKER_INITIAL = 2;
-const KEEP_WORKER_INTERVAL = 1;
+const KEEP_WORKER_INTERVAL = 10;
+const KEEP_WORKER_TRANSACTION_NUMS = [];
 
 const SKIP_EXTRA_SYSCALLS = true;
 const SIMULATE_VC_SYSCALLS = true;
@@ -374,7 +375,7 @@ async function replay(transcriptFile) {
 
       if (error) {
         console.error(
-          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID}`,
+          `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID} (start delivery ${workerData.firstTranscriptNum})`,
         );
 
         if (error === extraSyscall && !SKIP_EXTRA_SYSCALLS) {
@@ -462,11 +463,15 @@ async function replay(transcriptFile) {
             firstTranscriptNum != null &&
             !(
               (KEEP_WORKER_INTERVAL &&
-                Math.floor(firstTranscriptNum / FORCED_SNAPSHOT_INTERVAL) %
+                Math.floor(
+                  (firstTranscriptNum - startTranscriptNum) /
+                    FORCED_SNAPSHOT_INTERVAL,
+                ) %
                   KEEP_WORKER_INTERVAL ===
                   0) ||
               idx < KEEP_WORKER_INITIAL ||
-              idx >= workers.length - KEEP_WORKER_RECENT
+              idx >= workers.length - KEEP_WORKER_RECENT ||
+              KEEP_WORKER_TRANSACTION_NUMS.includes(firstTranscriptNum)
             ),
         )
         .map(async workerData => {
@@ -482,7 +487,7 @@ async function replay(transcriptFile) {
           // eslint-disable-next-line no-await-in-loop
           await manager.shutdown();
           console.log(
-            `Shutdown worker PID ${xsnapPID} (first transcript num ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
+            `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
             }s. Delivery time total ${
               Math.round(deliveryTimeTotal) / 1000
@@ -583,7 +588,7 @@ async function replay(transcriptFile) {
       saveSnapshotID = data.snapshotID;
       await Promise.all(
         workers.map(async workerData => {
-          const { manager, xsnapPID } = workerData;
+          const { manager, xsnapPID, firstTranscriptNum } = workerData;
           if (!manager.makeSnapshot) return;
           const { hash, rawSaveSeconds } = await manager.makeSnapshot(
             snapStore,
@@ -602,16 +607,15 @@ async function replay(transcriptFile) {
             })}\n`,
           );
           if (hash !== saveSnapshotID) {
-            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID}`;
+            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
             if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
               console.warn(errorMessage);
             } else {
               throw new Error(errorMessage);
             }
           } else {
-            console.log(`made snapshot ${hash} of worker PID ${xsnapPID}`);
             console.log(
-              `made snapshot ${hash} of worker PID ${xsnapPID}.\n    Save time = ${
+              `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
                 Math.round(rawSaveSeconds * 1000) / 1000
               }s. Delivery time since last snapshot ${
                 Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
@@ -631,7 +635,7 @@ async function replay(transcriptFile) {
       const { transcriptNum, d: delivery, syscalls } = data;
       lastTranscriptNum = transcriptNum;
       if (startTranscriptNum == null) {
-        startTranscriptNum = transcriptNum;
+        startTranscriptNum = transcriptNum - 1;
       }
       const makeSnapshot =
         FORCED_SNAPSHOT_INTERVAL &&
@@ -680,7 +684,9 @@ async function replay(transcriptFile) {
               })}\n`,
             );
             console.log(
-              `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID}.\n    Save time = ${
+              `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
+                workerData.firstTranscriptNum
+              }).\n    Save time = ${
                 Math.round(rawSaveSeconds * 1000) / 1000
               }s. Delivery time since last snapshot ${
                 Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
@@ -735,7 +741,7 @@ async function replay(transcriptFile) {
       }) => {
         await manager.shutdown();
         console.log(
-          `Shutdown worker PID ${xsnapPID} (first transcript num ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
+          `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
             Math.round(deliveryTimeSinceLastSnapshot) / 1000
           }s. Delivery time total ${
             Math.round(deliveryTimeTotal) / 1000
