@@ -9,7 +9,10 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
-import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
+import {
+  eventLoopIteration,
+  makeFakeMarshaller,
+} from '@agoric/notifier/tools/testSupports.js';
 import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
@@ -707,6 +710,22 @@ test('notifications', async t => {
   });
   await E(pricePushAdminB).pushResult({ roundId: 1, data: '200' });
 
+  await eventLoopIteration();
+  t.deepEqual(
+    aggregator.mockStorageRoot.getBody(
+      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    ),
+    {
+      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+      amountOut: {
+        brand: { iface: 'Alleged: $USD brand' },
+        value: 150n, // AVG(100, 200)
+      },
+      timer: { iface: 'Alleged: ManualTimer' },
+      timestamp: 1n,
+    },
+  );
+
   await E(pricePushAdminA).pushResult({ roundId: 2, data: '1000' });
   // A started last round so fails to start next round
   t.deepEqual(
@@ -734,34 +753,29 @@ test('notifications', async t => {
     { roundId: 2n, startedAt: 1n },
   );
 
+  await eventLoopIteration();
+  t.deepEqual(
+    aggregator.mockStorageRoot.getBody(
+      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    ),
+    {
+      amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
+      amountOut: {
+        brand: { iface: 'Alleged: $USD brand' },
+        value: 1000n, // AVG(1000, 1000)
+      },
+      timer: { iface: 'Alleged: ManualTimer' },
+      timestamp: 1n,
+    },
+  );
+
   // A can start again
   await E(pricePushAdminA).pushResult({ roundId: 3, data: '1000' });
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 3n,
     startedAt: 1n,
   });
-  t.deepEqual(
-    aggregator.mockStorageRoot.getBody(
-      'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
-    ),
-    {
-      quoteAmount: {
-        brand: { iface: 'Alleged: quote brand' },
-        value: [
-          {
-            amountIn: { brand: { iface: 'Alleged: $LINK brand' }, value: 1n },
-            amountOut: {
-              brand: { iface: 'Alleged: $USD brand' },
-              value: 1020n,
-            },
-            timer: { iface: 'Alleged: ManualTimer' },
-            timestamp: 1n,
-          },
-        ],
-      },
-      quotePayment: { iface: 'Alleged: quote payment' },
-    },
-  );
+  // no new price yet publishable
 });
 
 test('storage keys', async t => {

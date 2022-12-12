@@ -238,8 +238,13 @@ const start = async (zcf, privateArgs) => {
     return harden({ quoteAmount, quotePayment });
   };
 
-  // FIXME: We throw away the updater but shouldn't.
-  const { notifier } = makeNotifierKit();
+  /**
+   * This is just a signal that there's a new answer, which is read from `lastValueOutForUnitIn`
+   *
+   * @type {NotifierRecord<void>}
+   */
+  const { notifier: answerNotifier, updater: answerUpdator } =
+    makeNotifierKit();
 
   /**
    * @typedef {object} OracleRecord
@@ -326,7 +331,7 @@ const start = async (zcf, privateArgs) => {
 
   const { priceAuthority } = makeOnewayPriceAuthorityKit({
     createQuote: makeCreateQuote(),
-    notifier,
+    notifier: answerNotifier,
     quoteIssuer: quoteKit.issuer,
     timer,
     actualBrandIn: brandIn,
@@ -499,6 +504,9 @@ const start = async (zcf, privateArgs) => {
     rounds.get(roundId).updatedAt = blockTimestamp;
     rounds.get(roundId).answeredInRound = roundId;
 
+    lastValueOutForUnitIn = newAnswer;
+    answerUpdator.updateState(undefined);
+
     return [true, newAnswer];
   };
 
@@ -551,6 +559,7 @@ const start = async (zcf, privateArgs) => {
    * @param {string} oracleAddr
    * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
+   * @returns {string} error message or '' if no error
    */
   const validateOracleRound = (oracleAddr, roundId, blockTimestamp) => {
     // cache storage reads
@@ -576,6 +585,7 @@ const start = async (zcf, privateArgs) => {
       return 'invalid round to report';
     if (roundId !== 1n && !canSupersede)
       return 'previous round not supersedable';
+    // XXX return a more obvious 'no errors' value, e.g. null
     return '';
   };
 
@@ -776,8 +786,6 @@ const start = async (zcf, privateArgs) => {
       }) => {
         const parsedSubmission = Nat(parseInt(submissionRaw, 10));
         const blockTimestamp = await E(timer).getCurrentTimestamp();
-
-        console.log('DEBUG pushResult', { parsedSubmission, blockTimestamp });
 
         let roundId;
         if (roundIdRaw === undefined) {
