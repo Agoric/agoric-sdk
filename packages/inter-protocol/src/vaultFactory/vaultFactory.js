@@ -78,11 +78,7 @@ export const start = async (zcf, privateArgs) => {
   } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
-    makeStoredPublisherKit(
-      privateArgs.storageNode,
-      privateArgs.marshaller,
-      'governance',
-    ),
+    makeStoredPublisherKit(storageNode, marshaller, 'governance'),
     zcf.getZoeService(),
     initialPoserInvitation,
     liqInstall,
@@ -100,8 +96,8 @@ export const start = async (zcf, privateArgs) => {
     zcf,
     vaultDirectorParamManager,
     debtMint,
-    privateArgs.storageNode,
-    privateArgs.marshaller,
+    storageNode,
+    marshaller,
   );
 
   return harden({

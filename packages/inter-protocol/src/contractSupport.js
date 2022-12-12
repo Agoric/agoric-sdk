@@ -157,15 +157,3 @@ export const makeEphemeraProvider = init => {
   };
 };
 harden(makeEphemeraProvider);
-
-/**
- * @see assertDefined for a static alternative
- * @template {Record<string, unknown>} T
- * @param {T} specimen
- * @param {Array<keyof T>} keyList
- */
-export const assertKeysDefined = (specimen, keyList) => {
-  for (const key of keyList) {
-    specimen[key] || Fail`Missing ${q(key)}`;
-  }
-};
