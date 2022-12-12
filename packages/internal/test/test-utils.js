@@ -1,3 +1,4 @@
+// @ts-check
 import test from 'ava';
 import '@endo/init';
 
@@ -5,9 +6,11 @@ import {
   fromUniqueEntries,
   objectMap,
   makeMeasureSeconds,
+  assertAllDefined,
 } from '../src/utils.js';
 
 test('fromUniqueEntries', t => {
+  /** @type {[string | symbol, number][]} */
   const goodEntries = [
     ['a', 7],
     ['b', 8],
@@ -22,6 +25,7 @@ test('fromUniqueEntries', t => {
   const goodObj2 = fromUniqueEntries(goodEntries);
   t.deepEqual(goodObj2, goodObj1);
 
+  /** @type {[string | symbol, number][]} */
   const badEntries = [
     ['a', 7],
     ['a', 8],
@@ -52,6 +56,8 @@ test('objectMap', t => {
 
 test('makeMeasureSeconds', async t => {
   const times = [1000.25, 2000.75, NaN];
+  /** @type {() => number} */
+  // @ts-expect-error undefined on fourth call
   const mockNow = () => times.shift();
   const measureSeconds = makeMeasureSeconds(mockNow);
 
@@ -59,4 +65,16 @@ test('makeMeasureSeconds', async t => {
   const output = await measureSeconds(async () => unique);
   t.deepEqual(output, { result: unique, duration: 1.0005 });
   t.deepEqual(times, [NaN]);
+});
+
+test('assertAllDefined', t => {
+  /** @type {{s: string, m?: string | undefined}} */
+  const obj = { s: 'defined', m: 'maybe' };
+  assertAllDefined(obj);
+  // typecheck
+  obj.m.length;
+
+  t.throws(() => assertAllDefined({ u: undefined, v: undefined }), {
+    message: 'missing ["u","v"]',
+  });
 });
