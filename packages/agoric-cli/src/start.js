@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import { createHash } from 'crypto';
 import path from 'path';
 import { createRequire } from 'module';
+import { Command } from 'commander';
 
 import { Nat, isNat } from '@agoric/nat';
 
@@ -50,6 +51,41 @@ const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 const DEFAULT_NETCONFIG = 'https://testnet.agoric.net/network-config';
 
 const GAS_ADJUSTMENT = '1.2';
+
+export const createStartCommand = () =>
+  new Command('start [profile] [args...]')
+    .description(
+      `\
+start an Agoric VM
+
+agoric start - runs the default profile (dev)
+agoric start dev -- [initArgs] - simulated chain and solo VM
+agoric start local-chain [portNum] -- [initArgs] - local chain
+agoric start local-solo [portNum] [provisionPowers] - local solo VM
+`,
+    )
+    .option('-d, --debug', 'run in JS debugger mode')
+    .option('--reset', 'clear all VM state before starting')
+    .option('--no-restart', 'do not actually start the VM')
+    .option('--pull', 'for Docker-based VM, pull the image before running')
+    .option('--rebuild', 'rebuild VM dependencies before running')
+    .option(
+      '--delay [seconds]',
+      'delay for simulated chain to process messages',
+    )
+    .option(
+      '--inspect [host[:port]]',
+      'activate inspector on host:port (default: "127.0.0.1:9229")',
+    )
+    .option(
+      '--inspect-brk [host[:port]]',
+      'activate inspector on host:port and break at start of script (default: "127.0.0.1:9229")',
+    )
+    .option(
+      '--wallet <package>',
+      'install the wallet from NPM package <package>',
+      '@agoric/wallet-frontend',
+    );
 
 /**
  * Resolve after a delay in milliseconds.
