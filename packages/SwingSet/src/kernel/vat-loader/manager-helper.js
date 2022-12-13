@@ -2,7 +2,7 @@
 import { assert } from '@agoric/assert';
 import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
-import { makeTranscriptManager, missingSyscall } from './transcript.js';
+import { makeTranscriptManager } from './transcript.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
@@ -247,7 +247,7 @@ function makeManagerKit(
       // but if the puppy deviates one inch from previous twitches, explode
       kernelSlog.syscall(vatID, undefined, vso);
       const vres = transcriptManager.simulateSyscall(vso);
-      if (vres !== missingSyscall) {
+      if (vres) {
         return vres;
       }
     }
