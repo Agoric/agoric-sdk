@@ -137,6 +137,7 @@ harden(makeProvisioner);
 export const bridgeProvisioner = async ({
   consume: { provisioning, bridgeManager: bridgeManagerP },
 }) => {
+  console.log('DEBUG bridgeProvisioner start');
   const bridgeManager = await bridgeManagerP;
   if (!bridgeManager) {
     return;
@@ -148,6 +149,11 @@ export const bridgeProvisioner = async ({
       switch (obj.type) {
         case 'PLEASE_PROVISION': {
           const { nickname, address, powerFlags: rawPowerFlags } = obj;
+          console.log('DEBUG PLEASE_PROVISION', {
+            nickname,
+            address,
+            rawPowerFlags,
+          });
           const powerFlags = rawPowerFlags || [];
           let provisionP;
           if (powerFlags.includes(PowerFlags.SMART_WALLET)) {

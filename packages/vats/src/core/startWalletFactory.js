@@ -153,6 +153,7 @@ export const startWalletFactory = async (
     } = {},
   } = {},
 ) => {
+  console.log('DEBUG startWalletFactory start');
   const WALLET_STORAGE_PATH = 'wallet';
   const POOL_STORAGE_PATH = 'provisionPool';
   const [bridgeManager, poolAddr] = await Promise.all([
@@ -170,6 +171,7 @@ export const startWalletFactory = async (
     );
     return;
   }
+  console.log('DEBUG await all: walletStorageNode...');
   const [
     walletStorageNode,
     poolStorageNode,
@@ -184,6 +186,7 @@ export const startWalletFactory = async (
     feeIssuerP,
   ]);
 
+  console.log('DEBUG await terms');
   const terms = await deeplyFulfilled(
     harden({
       agoricNames,
@@ -191,6 +194,7 @@ export const startWalletFactory = async (
       board,
     }),
   );
+  console.log('DEBUG await wfFacets');
   /** @type {WalletFactoryStartResult} */
   const wfFacets = await E(zoe).startInstance(
     walletFactory,
@@ -207,6 +211,7 @@ export const startWalletFactory = async (
   instanceProduce.walletFactory.resolve(wfFacets.instance);
   const poolBank = E(bankManager).getBankForAddress(poolAddr);
 
+  console.log('DEBUG await ppFacets');
   const ppFacets = await startGovernedInstance(
     {
       zoe,
@@ -234,12 +239,17 @@ export const startWalletFactory = async (
 
   provisionPoolStartResult.resolve(ppFacets);
 
+  console.log('DEBUG await handler');
   const handler = await E(ppFacets.creatorFacet).makeHandler({
     bankManager,
     namesByAddressAdmin,
     walletFactory: wfFacets.creatorFacet,
   });
 
+  console.log(
+    'DEBUG startWalletFactory registering handler with bridgeManager',
+    walletBridgeId,
+  );
   await Promise.all([
     E(bridgeManager).register(walletBridgeId, handler),
     E(E.get(econCharterKit).creatorFacet).addInstance(

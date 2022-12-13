@@ -46,6 +46,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...CHAIN_BOOTSTRAP_MANIFEST,
       ...PRICE_FEEDS_MANIFEST,
     };
+    console.log('DEBUG runBootstrapParts manifest', manifest);
     /** @param {string} name */
     const powersFor = name => {
       const permit = manifest[name];

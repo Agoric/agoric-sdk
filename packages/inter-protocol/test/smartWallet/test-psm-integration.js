@@ -13,6 +13,7 @@ import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { BridgeId } from '@agoric/internal';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { headValue, withAmountUtils } from '../supports.js';
@@ -368,3 +369,15 @@ test.todo('not enough funds');
 test.todo(
   'a faulty issuer that never returns and additional offers can still flow',
 );
+
+test('provision', async t => {
+  assert(t.context.sendToBridge);
+  const res = await t.context.sendToBridge(BridgeId.PROVISION_SMART_WALLET, {
+    type: 'PLEASE_PROVISION',
+    address: committeeAddress,
+    powerFlags: ['SMART_WALLET'],
+    blockTime: 0,
+    blockHeight: 0,
+  });
+  t.deepEqual(res, {});
+});
