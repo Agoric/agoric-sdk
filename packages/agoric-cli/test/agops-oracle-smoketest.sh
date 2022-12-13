@@ -57,6 +57,9 @@ agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 echo "Offer $ORACLE_OFFER_ID should have numWantsSatisfied: 1"
 agoric wallet show --from "$WALLET"
 
+# verify feed publishing
+agd query vstorage keys published.priceFeed
+
 # verify that the round started
 agoric follow :published.priceFeed.ATOM-USD_price_feed.latestRound
 
@@ -68,9 +71,12 @@ agoric wallet send --from "$WALLET2" --offer "$PROPOSAL_OFFER"
 
 # second round, first oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 1.02 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 11.02 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 # second round, second oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 2.01 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 12.02 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET2" --offer "$PROPOSAL_OFFER"
+
+# see new price
+agoric follow :published.priceFeed.ATOM-USD_price_feed

@@ -1,3 +1,7 @@
+/** @file
+ * Adaptation of Chainlink algorithm to the Agoric platform.
+ * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
+ */
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -26,6 +30,7 @@ import {
 
 export { INVITATION_MAKERS_DESC };
 
+// FIXME is MAX_SAFE_INTEGER sufficient? why encoded as string?
 /**
  * @typedef {{ roundId: number | undefined, data: string }} PriceRound
  * `data` is a string encoded integer (Number.MAX_SAFE_INTEGER)
