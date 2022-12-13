@@ -30,6 +30,7 @@ const dirname = path.dirname(filename);
  * @param {typeof import('anylogger').default} powers.anylogger
  * @param {typeof import('fs/promises')} powers.fs
  * @param {typeof import('fs')} powers.fsSync
+ * @param {typeof import('path')} powers.path
  */
 const main = async (progname, rawArgs, powers) => {
   const { anylogger, fs, fsSync } = powers;

@@ -33,6 +33,7 @@ main(progname, rawArgs, {
   makeWebSocket,
   fs,
   fsSync: rawFs,
+  path,
   now: Date.now,
   os,
   process,
