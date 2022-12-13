@@ -559,7 +559,7 @@ const start = async (zcf, privateArgs) => {
    * @param {string} oracleAddr
    * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
-   * @returns {string} error message or '' if no error
+   * @returns {string?} error message, if there is one
    */
   const validateOracleRound = (oracleAddr, roundId, blockTimestamp) => {
     // cache storage reads
@@ -585,8 +585,7 @@ const start = async (zcf, privateArgs) => {
       return 'invalid round to report';
     if (roundId !== 1n && !canSupersede)
       return 'previous round not supersedable';
-    // XXX return a more obvious 'no errors' value, e.g. null
-    return '';
+    return null;
   };
 
   /**
@@ -639,7 +638,7 @@ const start = async (zcf, privateArgs) => {
     }
 
     const error = validateOracleRound(oracleAddr, roundId, blockTimestamp);
-    if (error.length !== 0) {
+    if (error !== null) {
       eligibleToSubmit = false;
     }
 
@@ -669,9 +668,9 @@ const start = async (zcf, privateArgs) => {
       blockTimestamp,
     );
     if (TimeMath.absValue(rounds.get(queriedRoundId).startedAt) > 0n) {
-      return acceptingSubmissions(queriedRoundId) && error.length === 0;
+      return acceptingSubmissions(queriedRoundId) && error === null;
     } else {
-      return delayed(oracleAddr, queriedRoundId) && error.length === 0;
+      return delayed(oracleAddr, queriedRoundId) && error === null;
     }
   };
 
@@ -811,7 +810,7 @@ const start = async (zcf, privateArgs) => {
           return;
         }
 
-        if (!(error.length === 0)) {
+        if (!(error === null)) {
           console.error(error);
           return;
         }
