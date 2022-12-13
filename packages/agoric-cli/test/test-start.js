@@ -12,7 +12,7 @@ const test = anyTest;
 
 const makeTestContext = () => {
   // eslint-disable-next-line no-undef
-  return { setTimeout };
+  return { setTimeout, agoricOpts: { sdk: true, verbose: 0 } };
 };
 
 test.before(async t => {
@@ -28,7 +28,11 @@ const setDefault = (m, k, d) => {
 const makeDelay = setTimeout => ms =>
   new Promise(resolve => setTimeout(resolve, ms));
 
-const makeScenario = t => {
+/**
+ * @param {*} t
+ * @param {Map<string, *>} files
+ */
+const makeScenario = (t, files) => {
   const logged = [];
   const save =
     level =>
@@ -48,18 +52,12 @@ const makeScenario = t => {
     return log;
   };
 
-  const myFiles = new Map(
-    Object.entries({
-      'node_modules/@agoric/solo': {},
-    }),
-  );
-
   const anyStats = /** @type {any} */ ({});
   /** @type {typeof import('fs/promises')} */
   // @ts-expect-error cast
   const fs = {
     stat: async file =>
-      myFiles.has(file) ? anyStats : assert.fail('no such file'),
+      files.has(file) ? anyStats : assert.fail('no such file'),
   };
 
   const running = new Map();
@@ -104,16 +102,37 @@ const makeScenario = t => {
     },
   };
 
-  return { anylogger, logged, fs, myFiles, spawn, runChildren, process };
+  return { anylogger, logged, fs, spawn, runChildren, process };
 };
 
-test('refactor1', async t => {
-  const progName = 'agoric';
-  const agoricOpts = { sdk: true, verbose: 0 };
-  const world = makeScenario(t);
-  const done = startMain(progName, [], world, { ...agoricOpts, restart: true });
+test('agoric start - no install', async t => {
+  const world = makeScenario(t, new Map());
+  const done = startMain('agoric', ['start'], world, {
+    ...t.context.agoricOpts,
+    restart: true,
+  });
   world.runChildren(makeDelay(t.context.setTimeout), 50);
-  await done;
+  t.is(await done, 1);
+  const expected = ['you must first run'];
+  t.is(world.logged.length, expected.length);
+  expected.forEach((s, ix) => t.regex(world.logged[ix].msg, new RegExp(s)));
+});
+
+test('agoric start - installed', async t => {
+  const world = makeScenario(
+    t,
+    new Map(
+      Object.entries({
+        'node_modules/@agoric/solo': {},
+      }),
+    ),
+  );
+  const done = startMain('agoric', ['start'], world, {
+    ...t.context.agoricOpts,
+    restart: true,
+  });
+  world.runChildren(makeDelay(t.context.setTimeout), 50);
+  t.is(await done, 0);
   const expected = [
     'initializing dev',
     ' init dev ',
