@@ -152,7 +152,7 @@ const main = async (progname, rawArgs, powers) => {
       'set the config.toml p2p.unconditional_peer_ids value',
       '',
     )
-    .action(async (prog, configDir, _options, cmd) => {
+    .action(async (prog, configDir, cmd) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
