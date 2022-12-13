@@ -1,8 +1,8 @@
 /* eslint-disable @jessie.js/no-nested-await */
 /* global process setTimeout */
+// @ts-check
 import chalk from 'chalk';
 import { createHash } from 'crypto';
-import path from 'path';
 import { createRequire } from 'module';
 import { Command } from 'commander';
 
@@ -16,7 +16,13 @@ import {
   finishCosmosApp,
 } from './chain-config.js';
 
-import { makePspawn, getSDKBinaries } from './helpers.js';
+import {
+  makePspawn,
+  getSDKBinaries,
+  makeFileWriter,
+} from './helpers.js';
+
+const { freeze } = Object;
 
 const require = createRequire(import.meta.url);
 
@@ -51,6 +57,26 @@ const CHAIN_PORT = process.env.CHAIN_PORT || 26657;
 const DEFAULT_NETCONFIG = 'https://testnet.agoric.net/network-config';
 
 const GAS_ADJUSTMENT = '1.2';
+
+/**
+ * @typedef {{
+ *   sdk: boolean,
+ *   dockerTag?: string,
+ *   verbose: number,
+ * }} AgoricOpts
+ *
+ * @typedef {{
+ *   debug?: boolean,
+ *   reset?: boolean,
+ *   restart?: boolean, // default true
+ *   pull?: boolean,
+ *   rebuild?: boolean,
+ *   delay?: number,
+ *   inspect?: string,
+ *   inspectBrk?: string,
+ *   wallet?: string,
+ * }} StartOpts
+ */
 
 export const createStartCommand = () =>
   new Command('start [profile] [args...]')
@@ -87,6 +113,95 @@ agoric start local-solo [portNum] [provisionPowers] - local solo VM
       '@agoric/wallet-frontend',
     );
 
+
+const maybeResolves = p =>
+  p.then(
+    () => true,
+    () => false,
+  );
+
+/**
+ * @param {'dev'} profileName
+ * @param {unknown} _startArgs
+ * @param {StartOpts} popts
+ * @param {*} XXX
+ */
+async function startFakeChain(
+  profileName,
+  _startArgs,
+  popts,
+  {
+    opts,
+    log,
+    pspawn,
+    agSolo,
+    debugOpts,
+    nodeDebugEnv,
+    progname,
+    agoricServers,
+    nodeModules,
+  },
+) {
+  const fakeDelay =
+    popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
+
+  const agServer = agoricServers.neighbor(profileName);
+
+  if (popts.reset) {
+    log(chalk.green(`removing ${agServer}`));
+    agoricServers.rmdir(profileName);
+  }
+
+  const exists = f => maybeResolves(f.readOnly().stat());
+
+  if (!opts.dockerTag) {
+    if (!(await exists(nodeModules.neighbor('@agoric/solo')))) {
+      log.error(`you must first run '${progname} install'`);
+      return 1; // @@@throw?
+    }
+  }
+
+  if (opts.pull || opts.rebuild) {
+    if (!opts.dockerTag && agSoloBuild) {
+      const exitStatus = await pspawn(agSoloBuild[0], agSoloBuild.slice(1));
+      if (exitStatus) {
+        return exitStatus;
+      }
+    }
+  }
+
+  const fakeGCI = 'sim-chain';
+  if (!(await exists(agServer))) {
+    log(chalk.yellow(`initializing ${profileName}`));
+    await pspawn(
+      agSolo,
+      ['init', profileName, '--egresses=fake', `--webport=${HOST_PORT}`],
+      {
+        cwd: '_agstate/agoric-servers',
+      },
+    );
+  }
+
+  if (fakeDelay >= 0) {
+    log(chalk.yellow(`setting sim chain with ${fakeDelay} second delay`));
+    await pspawn(agSolo, ['set-fake-chain', `--delay=${fakeDelay}`, fakeGCI], {
+      cwd: agServer,
+    });
+  }
+
+  if (!popts.restart) {
+    // Don't actually run the chain.
+    return 0;
+  }
+
+  const ps = pspawn(agSolo, [...debugOpts, 'start'], {
+    cwd: agServer,
+    env: nodeDebugEnv,
+  });
+  process.on('SIGINT', () => ps.childProcess.kill('SIGINT'));
+  return ps;
+}
+
 /**
  * Resolve after a delay in milliseconds.
  *
@@ -95,8 +210,20 @@ agoric start local-solo [portNum] [provisionPowers] - local solo VM
  */
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
+/**
+ * @param {string} progname
+ * @param {string[]} rawArgs
+ * @param {object} powers
+ * @param {typeof import('anylogger').default} powers.anylogger
+ * @param {typeof import('fs/promises')} powers.fs
+ * @param {typeof import('fs')} powers.fsSync
+ * @param {typeof import('child_process').spawn} powers.spawn
+ * @param {typeof import('process')} powers.process
+ * @param {typeof import('path')} powers.path
+ * @param {AgoricOpts & StartOpts} opts
+ */
 export default async function startMain(progname, rawArgs, powers, opts) {
-  const { anylogger, fs, spawn, process } = powers;
+  const { anylogger, fs, fsSync, spawn, process, path } = powers;
   const log = anylogger('agoric:start');
 
   const SDK_IMAGE = `agoric/agoric-sdk:${opts.dockerTag}`;
@@ -201,70 +328,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     agSolo = `ag-solo`;
   } else {
     ({ agSolo, agSoloBuild } = getSDKBinaries(sdkPrefixes));
-  }
-
-  async function startFakeChain(profileName, _startArgs, popts) {
-    const fakeDelay =
-      popts.delay === undefined ? FAKE_CHAIN_DELAY : Number(popts.delay);
-
-    const agServer = `_agstate/agoric-servers/${profileName}`;
-
-    if (popts.reset) {
-      log(chalk.green(`removing ${agServer}`));
-      // rm is available on all the unix-likes, so use it for speed.
-      await pspawn('rm', ['-rf', agServer]);
-    }
-
-    if (!opts.dockerTag) {
-      if (!(await exists('node_modules/@agoric/solo'))) {
-        log.error(`you must first run '${progname} install'`);
-        return 1;
-      }
-    }
-
-    if (opts.pull || opts.rebuild) {
-      if (!opts.dockerTag && agSoloBuild) {
-        const exitStatus = await pspawn(agSoloBuild[0], agSoloBuild.slice(1));
-        if (exitStatus) {
-          return exitStatus;
-        }
-      }
-    }
-
-    const fakeGCI = 'sim-chain';
-    if (!(await exists(agServer))) {
-      log(chalk.yellow(`initializing ${profileName}`));
-      await pspawn(
-        agSolo,
-        ['init', profileName, '--egresses=fake', `--webport=${HOST_PORT}`],
-        {
-          cwd: '_agstate/agoric-servers',
-        },
-      );
-    }
-
-    if (fakeDelay >= 0) {
-      log(chalk.yellow(`setting sim chain with ${fakeDelay} second delay`));
-      await pspawn(
-        agSolo,
-        ['set-fake-chain', `--delay=${fakeDelay}`, fakeGCI],
-        {
-          cwd: agServer,
-        },
-      );
-    }
-
-    if (!popts.restart) {
-      // Don't actually run the chain.
-      return 0;
-    }
-
-    const ps = pspawn(agSolo, [...debugOpts, 'start'], {
-      cwd: agServer,
-      env: nodeDebugEnv,
-    });
-    process.on('SIGINT', () => ps.childProcess.kill('SIGINT'));
-    return ps;
   }
 
   async function startLocalChain(profileName, startArgs, popts) {
@@ -772,8 +835,31 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     return setupRun('setup', `--netconfig=${netconfig}`);
   }
 
+  const here = makeFileWriter('.', {
+    fs: fsSync,
+    path,
+  });
+  const s0 = here.neighbor('_agstate/agoric-servers');
+  const agoricServers = {
+    ...s0,
+    // rm is available on all the unix-likes, so use it for speed.
+    rmdir: there => pspawn('rm', ['-rf', `${s0.neighbor(there)}`]),
+  };
+  const nodeModules = here.neighbor('node_modules').readOnly();
+
   const profiles = {
-    dev: startFakeChain,
+    dev: (...args) =>
+      startFakeChain(...args, {
+        opts,
+        log,
+        pspawn,
+        agSolo,
+        debugOpts,
+        nodeDebugEnv,
+        progname,
+        agoricServers,
+        nodeModules,
+      }),
     'local-chain': startLocalChain,
     'local-solo': startLocalSolo,
     testnet: opts.dockerTag ? startTestnetDocker : startTestnetSdk,
