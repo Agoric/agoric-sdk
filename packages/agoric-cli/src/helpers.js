@@ -1,6 +1,8 @@
 /* global process */
 // @ts-check
 
+const { freeze } = Object;
+
 /** @typedef {import('child_process').ChildProcess} ChildProcess */
 
 export const getSDKBinaries = ({
@@ -87,3 +89,50 @@ export const makePspawn = ({
     });
     return Object.assign(pr, { childProcess: cp });
   };
+
+/**
+ * @param {string} fileName
+ * @param {object} io
+ * @param {typeof import('fs')} io.fs
+ * @param {typeof import('path')} io.path
+ *
+ * @typedef {ReturnType<typeof makeFileReader>} FileReader
+ */
+export const makeFileReader = (fileName, { fs, path }) => {
+  /** @param {string} there */
+  const make = there => makeFileReader(there, { fs, path });
+  const self = harden({
+    toString: () => fileName,
+    readText: () => fs.promises.readFile(fileName, 'utf-8'),
+    /** @param {string} ref */
+    neighbor: ref => make(path.resolve(fileName, ref)),
+    stat: () => fs.promises.stat(fileName),
+    absolute: () => path.normalize(fileName),
+    /** @param {string} there */
+    relative: there => path.relative(fileName, there),
+    existsSync: () => fs.existsSync(fileName),
+    readOnly: () => self,
+  });
+  return self;
+};
+
+/**
+ * @param {string} fileName
+ * @param {object} io
+ * @param {typeof import('fs')} io.fs
+ * @param {typeof import('path')} io.path
+ *
+ * @typedef {ReturnType<typeof makeFileWriter>} FileWriter
+ */
+export const makeFileWriter = (fileName, { fs, path }) => {
+  const make = there => makeFileWriter(there, { fs, path });
+  return harden({
+    toString: () => fileName,
+    /** @param {string} txt */
+    writeText: txt => fs.promises.writeFile(fileName, txt),
+    readOnly: () => makeFileReader(fileName, { fs, path }),
+    /** @param {string} ref */
+    neighbor: ref => make(path.resolve(fileName, ref)),
+    mkdir: opts => fs.promises.mkdir(fileName, opts),
+  });
+};
