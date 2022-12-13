@@ -38,13 +38,13 @@ export const startPSM = async (
       zoe,
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet,
-      econCharterStartResult,
+      econCharterKit,
       provisionPoolStartResult,
       chainStorage,
       chainTimerService,
-      psmFacets,
+      psmKit,
     },
-    produce: { psmFacets: producePsmFacets },
+    produce: { psmKit: producepsmKit },
     installation: {
       consume: { contractGovernor, psm: psmInstall },
     },
@@ -162,9 +162,9 @@ export const startPSM = async (
     E(governorFacets.creatorFacet).getAdminFacet(),
   ]);
 
-  /** @typedef {import('./econ-behaviors.js').PSMFacets} PSMFacets */
-  /** @type {PSMFacets} */
-  const newPsmFacets = {
+  /** @typedef {import('./econ-behaviors.js').PSMKit} psmKit */
+  /** @type {psmKit} */
+  const newpsmKit = {
     psm,
     psmGovernor: governorFacets.instance,
     psmCreatorFacet,
@@ -173,18 +173,18 @@ export const startPSM = async (
   };
 
   // Provide pattern with a promise.
-  producePsmFacets.resolve(makeScalarMapStore());
+  producepsmKit.resolve(makeScalarMapStore());
 
-  /** @type {MapStore<Brand,PSMFacets>} */
-  const psmFacetsMap = await psmFacets;
+  /** @type {MapStore<Brand,psmKit>} */
+  const psmKitMap = await psmKit;
 
-  psmFacetsMap.init(anchorBrand, newPsmFacets);
+  psmKitMap.init(anchorBrand, newpsmKit);
   const instanceKey = `psm-${Stable.symbol}-${keyword}`;
   const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
 
   await Promise.all([
-    E(instanceAdmin).update(instanceKey, newPsmFacets.psm),
-    E(E.get(econCharterStartResult).creatorFacet).addInstance(
+    E(instanceAdmin).update(instanceKey, newpsmKit.psm),
+    E(E.get(econCharterKit).creatorFacet).addInstance(
       psm,
       governorFacets.creatorFacet,
       instanceKey,
@@ -192,7 +192,7 @@ export const startPSM = async (
     // @ts-expect-error TODO type for provisionPoolStartResult
     E(E.get(provisionPoolStartResult).creatorFacet).initPSM(
       anchorBrand,
-      newPsmFacets.psm,
+      newpsmKit.psm,
     ),
   ]);
 };
@@ -278,7 +278,7 @@ export const installGovAndPSMContracts = async ({
   vatPowers: { D },
   devices: { vatAdmin },
   consume: { zoe },
-  produce: { psmFacets },
+  produce: { psmKit },
   installation: {
     produce: {
       contractGovernor,
@@ -293,7 +293,7 @@ export const installGovAndPSMContracts = async ({
   // indexed by the brand. Since each name in the BootstrapSpace can only be
   // produced  once, we produce an empty store here, and each time a PSM is
   // started up, the details are added to the store.
-  psmFacets.resolve(makeScalarMapStore());
+  psmKit.resolve(makeScalarMapStore());
 
   return Promise.all(
     Object.entries({
@@ -324,7 +324,7 @@ export const PSM_GOV_MANIFEST = {
     vatPowers: { D: true },
     devices: { vatAdmin: true },
     consume: { zoe: 'zoe' },
-    produce: { psmFacets: 'true' },
+    produce: { psmKit: 'true' },
     installation: {
       produce: {
         contractGovernor: 'zoe',
@@ -338,7 +338,7 @@ export const PSM_GOV_MANIFEST = {
   [startEconCharter.name]: {
     consume: { zoe: 'zoe', agoricNames: true },
     produce: {
-      econCharterStartResult: 'econCommitteeCharter',
+      econCharterKit: 'econCommitteeCharter',
     },
     installation: {
       consume: { binaryVoteCounter: 'zoe', econCommitteeCharter: 'zoe' },
@@ -356,12 +356,13 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
       consume: {
         namesByAddressAdmin: true,
         economicCommitteeCreatorFacet: true,
+        econCharterKit: true,
       },
     },
     [inviteToEconCharter.name]: {
       consume: {
         namesByAddressAdmin: true,
-        econCharterStartResult: true,
+        econCharterKit: true,
       },
     },
   }),
@@ -384,11 +385,11 @@ export const PSM_MANIFEST = harden({
       feeMintAccess: 'zoe',
       economicCommitteeCreatorFacet: 'economicCommittee',
       provisionPoolStartResult: true,
-      econCharterStartResult: 'econCommitteeCharter',
+      econCharterKit: 'econCommitteeCharter',
       chainTimerService: 'timer',
-      psmFacets: true,
+      psmKit: true,
     },
-    produce: { psmFacets: 'true' },
+    produce: { psmKit: 'true' },
     installation: {
       consume: { contractGovernor: 'zoe', psm: 'zoe' },
     },

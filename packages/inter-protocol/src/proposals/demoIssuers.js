@@ -464,7 +464,7 @@ export const fundAMM = async ({
     mints,
     priceAuthorityVat,
     priceAuthorityAdmin,
-    vaultFactoryCreator,
+    vaultFactoryKit,
     zoe,
   },
   installation: {
@@ -576,7 +576,7 @@ export const fundAMM = async ({
         );
 
         const issuerPresence = await kit.issuer;
-        return E(vaultFactoryCreator).addVaultType(
+        return E(E.get(vaultFactoryKit).creatorFacet).addVaultType(
           issuerPresence,
           issuerName,
           rates,

@@ -162,7 +162,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   });
   await setupReserve(space);
 
-  const governorCreatorFacet = consume.ammGovernorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.ammKit).governorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
@@ -171,7 +171,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   t.context.committee = makeVoterTool(
     zoe,
     space.consume.economicCommitteeCreatorFacet,
-    space.consume.vaultFactoryGovernorCreator,
+    E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
     counter,
   );
 
@@ -204,7 +204,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
   // TODO get the creator directly
   const newAmm = {
-    ammCreatorFacet: await consume.ammCreatorFacet,
+    ammCreatorFacet: await E.get(consume.ammKit).creatorFacet,
     ammPublicFacet,
     instance: governedInstance,
     ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
@@ -281,13 +281,13 @@ const setupServices = async (
     proposal: aethInitialLiquidity,
     payment: aeth.mint.mintPayment(aethInitialLiquidity),
   };
-  const { amm: ammFacets, space } = await setupAmmAndElectorate(
+  const { amm: ammKit, space } = await setupAmmAndElectorate(
     t,
     aethLiquidity,
     runLiquidity,
   );
   const { consume, produce } = space;
-  trace(t, 'amm', { ammFacets });
+  trace(t, 'amm', { ammKit });
 
   // Cheesy hack for easy use of manual price authority
   const priceAuthority = makeManualPriceAuthority({
@@ -302,12 +302,14 @@ const setupServices = async (
   const {
     installation: { produce: iProduce },
   } = space;
-  t.context.reserveCreatorFacet = space.consume.reserveCreatorFacet;
+  t.context.reserveCreatorFacet = E.get(space.consume.reserveKit).creatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
 
-  const governorCreatorFacet = consume.vaultFactoryGovernorCreator;
+  const governorCreatorFacet = E.get(
+    consume.vaultFactoryKit,
+  ).governorCreatorFacet;
   /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<any>>} */
   const vaultFactoryCreatorFacet = /** @type { any } */ (
     E(governorCreatorFacet).getCreatorFacet()
@@ -344,7 +346,7 @@ const setupServices = async (
       lender,
       aethVaultManager,
     },
-    ammFacets,
+    ammKit,
     priceAuthority,
   };
 };
@@ -481,7 +483,7 @@ export const makeManagerDriver = async (
     },
     sellOnAMM: async (give, want, optStopAfter, expected) => {
       const swapInvitation = E(
-        services.ammFacets.ammPublicFacet,
+        services.ammKit.ammPublicFacet,
       ).makeSwapInvitation();
       trace(t, 'AMM sell', { give, want, optStopAfter });
       const offerArgs = optStopAfter
@@ -534,7 +536,7 @@ export const makeManagerDriver = async (
       const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
 
       const liquidityIssuer = await E(
-        services.ammFacets.ammPublicFacet,
+        services.ammKit.ammPublicFacet,
       ).getLiquidityIssuer(aeth.brand);
       const liquidityBrand = await E(liquidityIssuer).getBrand();
 
