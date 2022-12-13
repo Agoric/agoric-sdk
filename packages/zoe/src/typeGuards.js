@@ -177,7 +177,7 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   failSeat: M.call(SeatShape, M.any()).returns(),
   stopAcceptingOffers: M.call().returns(),
   setOfferFilter: M.call(M.arrayOf(M.string())).returns(),
-  getOfferFilter: M.call().returns(M.string()),
+  getOfferFilter: M.call().returns(M.arrayOf(M.string())),
   getExitSubscriber: M.call(SeatShape).returns(SubscriberShape),
 });
 
@@ -215,17 +215,13 @@ const BundleCapShape = M.any();
 
 export const ZoeStorageManagerIKit = harden({
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
-    getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(
+    getTerms: M.call(InstanceHandleShape).returns(
       M.split(TermsShape, M.record()),
     ),
-    getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
-      IssuerKeywordRecordShape,
-    ),
-    getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
-      BrandKeywordRecordShape,
-    ),
+    getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
+    getBrands: M.call(InstanceHandleShape).returns(BrandKeywordRecordShape),
     getInstallationForInstance: M.call(InstanceHandleShape).returns(
-      M.promise(),
+      M.or(M.promise(), M.remotable('Installation')),
     ),
     getInvitationIssuer: M.call().returns(IssuerShape),
 
@@ -233,14 +229,12 @@ export const ZoeStorageManagerIKit = harden({
     installBundle: M.call(M.any()).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
 
-    getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.remotable(),
+    getPublicFacet: M.call(InstanceHandleShape).returns(
+      M.or(M.promise(), M.remotable('PublicFacet')),
     ),
-    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.promise(),
-    ),
-    setOfferFilter: M.callWhen(
-      M.await(InstanceHandleShape),
+    getOfferFilter: M.call(InstanceHandleShape).returns(M.arrayOf(M.string())),
+    setOfferFilter: M.call(
+      InstanceHandleShape,
       M.arrayOf(M.string()),
     ).returns(),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
@@ -249,8 +243,8 @@ export const ZoeStorageManagerIKit = harden({
   }),
   makeOfferAccess: M.interface('ZoeStorage makeOffer access', {
     getAssetKindByBrand: M.call(BrandShape).returns(AssetKindShape),
-    installBundle: M.callWhen(M.await(InstanceHandleShape)).returns(),
-    getInstanceAdmin: M.callWhen(M.await(InstanceHandleShape)).returns(
+    installBundle: M.call(InstanceHandleShape).returns(),
+    getInstanceAdmin: M.call(InstanceHandleShape).returns(
       M.remotable('instanceAdmin'),
     ),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
@@ -288,18 +282,26 @@ export const ZoeServiceIKit = harden({
       .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
       .returns(M.promise()),
 
-    getPublicFacet: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
-    getBrands: M.call(InstanceHandleShape).returns(M.promise()),
-    getIssuers: M.call(InstanceHandleShape).returns(M.promise()),
-    getOfferFilter: M.call(M.eref(InstanceHandleShape)).returns(M.promise()),
+    getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.or(M.promise(), M.remotable('PublicFacet')),
+    ),
+    getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.or(M.promise(), BrandKeywordRecordShape),
+    ),
+    getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.or(M.promise(), IssuerKeywordRecordShape),
+    ),
+    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
+      M.arrayOf(M.string()),
+    ),
     setOfferFilter: M.call(
       InstanceHandleShape,
       M.arrayOf(M.string()),
     ).returns(),
-    getTerms: M.call(InstanceHandleShape).returns(M.any()),
-    getInstallationForInstance: M.call(InstanceHandleShape).returns(
-      M.promise(),
-    ),
+    getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(M.any()),
+    getInstallationForInstance: M.callWhen(
+      M.await(InstanceHandleShape),
+    ).returns(M.or(M.promise(), M.remotable('Installation'))),
     getInvitationIssuer: M.call().returns(M.promise()),
     getBundleIDFromInstallation: M.call(M.any()).returns(M.promise()),
 

@@ -1,5 +1,6 @@
 import { passStyleOf } from '@endo/marshal';
 import { fit } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { burnInvitation } from './burnInvitation.js';
@@ -59,19 +60,17 @@ export const makeOfferMethod = offerDataAccess => {
       );
     }
 
-    const initialAllocation = await offerDataAccess.depositPayments(
-      proposal,
-      paymentKeywordRecord,
-    );
-    // AWAIT ///
-
-    // This triggers the offerHandler in ZCF
-    return instanceAdmin.makeUserSeat(
-      invitationHandle,
-      initialAllocation,
-      proposal,
-      offerArgs,
+    return E.when(
+      offerDataAccess.depositPayments(proposal, paymentKeywordRecord),
+      initialAllocation =>
+        instanceAdmin.makeUserSeat(
+          invitationHandle,
+          initialAllocation,
+          proposal,
+          offerArgs,
+        ),
     );
   };
+
   return offer;
 };

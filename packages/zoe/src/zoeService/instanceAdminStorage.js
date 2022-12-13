@@ -10,39 +10,36 @@ import {
 } from '@agoric/vat-data';
 import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 import { defineDurableHandle } from '../makeHandle.js';
-import { InstanceAdminShape, InstanceHandleShape } from '../typeGuards.js';
+import {
+  BrandKeywordRecordShape,
+  InstanceAdminShape,
+  InstanceHandleShape,
+  IssuerKeywordRecordShape,
+} from '../typeGuards.js';
 
 const { quote: q, details: X } = assert;
 
-// TODO (cth)  bug: #6655
-const InstanceAdminStorageIKit =
-  // harden({
-  // accessor:
-  M.interface('InstanceAdminStorage', {
+const InstanceAdminStorageIKit = harden({
+  accessor: M.interface('InstanceAdminStorage', {
     getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.promise(),
+      M.remotable(),
     ),
-    getBrands: M.call(InstanceHandleShape).returns(M.promise()),
-    getIssuers: M.call(InstanceHandleShape).returns(M.promise()),
-    getTerms: M.call(InstanceHandleShape).returns(M.promise()),
-    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.promise(),
-    ),
+    getBrands: M.call(InstanceHandleShape).returns(BrandKeywordRecordShape),
+    getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
+    getTerms: M.call(InstanceHandleShape).returns(M.record()),
+    getOfferFilter: M.call(InstanceHandleShape).returns(M.arrayOf(M.string())),
     getInstallationForInstance: M.call(InstanceHandleShape).returns(
-      M.promise(),
+      M.remotable(),
     ),
     getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminShape),
-    initInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
-    deleteInstanceAdmin: M.call(InstanceHandleShape).returns(M.promise()),
-  });
-// }),
-// updater: M.interface('InstanceAdmin updater', {
-//   initInstanceAdmin: M.call(InstanceHandleShape, InstanceAdminShape).returns(
-//     InstanceAdminShape,
-//   ),
-//   deleteInstanceAdmin: M.call(InstanceHandleShape).returns(),
-// }),
-// });
+  }),
+  updater: M.interface('InstanceAdmin updater', {
+    initInstanceAdmin: M.call(InstanceHandleShape, InstanceAdminShape).returns(
+      M.promise(),
+    ),
+    deleteInstanceAdmin: M.call(InstanceHandleShape).returns(),
+  }),
+});
 
 /** @param {import('@agoric/vat-data').Baggage} baggage */
 export const makeInstanceAdminStorage = baggage => {
@@ -59,16 +56,16 @@ export const makeInstanceAdminStorage = baggage => {
     {
       // ZoeStorageManager uses the accessor facet to get info about instances
       accessor: {
-        async getPublicFacet(instance) {
+        getPublicFacet(instance) {
           const { state } = this;
           const ia = state.instanceToInstanceAdmin.get(instance);
           return ia.getPublicFacet();
         },
-        async getBrands(instance) {
+        getBrands(instance) {
           const { state } = this;
           return state.instanceToInstanceAdmin.get(instance).getBrands();
         },
-        async getIssuers(instance) {
+        getIssuers(instance) {
           const { state } = this;
           return state.instanceToInstanceAdmin.get(instance).getIssuers();
         },
@@ -76,11 +73,11 @@ export const makeInstanceAdminStorage = baggage => {
           const { state } = this;
           return state.instanceToInstanceAdmin.get(instance).getTerms();
         },
-        async getOfferFilter(instance) {
+        getOfferFilter(instance) {
           const { state } = this;
-          state.instanceToInstanceAdmin.get(instance).getOfferFilter();
+          return state.instanceToInstanceAdmin.get(instance).getOfferFilter();
         },
-        async getInstallationForInstance(instance) {
+        getInstallationForInstance(instance) {
           const { state } = this;
           return state.instanceToInstanceAdmin
             .get(instance)

@@ -232,7 +232,7 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message:
-      'In "getPublicFacet" method of (ZoeService zoeService): Expected at least 1 arguments: []',
+      'In "getPublicFacet" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -263,7 +263,7 @@ test(`zoe.getIssuers - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message:
-      'In "getIssuers" method of (ZoeService zoeService): Expected at least 1 arguments: []',
+      'In "getIssuers" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -294,7 +294,7 @@ test(`zoe.getBrands - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message:
-      'In "getBrands" method of (ZoeService zoeService): Expected at least 1 arguments: []',
+      'In "getBrands" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -347,7 +347,7 @@ test(`zoe.getTerms - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message:
-      'In "getTerms" method of (ZoeService zoeService): Expected at least 1 arguments: []',
+      'In "getTerms" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 

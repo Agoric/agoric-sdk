@@ -5,21 +5,31 @@ import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage.js';
+import { setup } from '../setupBasicMints.js';
 
 test('makeInstanceAdminStorage', async t => {
   const ias = makeInstanceAdminStorage(
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
+  const { moolaKit } = setup();
   const mockInstallation1 = Far('mockInstallation', {});
   const mockInstance1 = Far('mockInstance', {});
+  const mockBrandRecord = harden({ M: moolaKit.brand });
+  const mockIssuerRecord = harden({ M: moolaKit.issuer });
+  const mockTerms = harden({ something: 'anything' });
+  const mockFacet = harden(
+    Far('mock', {
+      identity: a => a,
+    }),
+  );
   const mockInstanceAdmin = Far('mockInstanceAdmin', {
     getInstallationForInstance: () => mockInstallation1,
-    getBrands: () => 'brands',
-    getPublicFacet: () => 'publicFacet',
-    getIssuers: () => 'issuers',
-    getTerms: () => 'terms',
-    getOfferFilter: () => 'filter',
+    getBrands: () => mockBrandRecord,
+    getPublicFacet: () => mockFacet,
+    getIssuers: () => mockIssuerRecord,
+    getTerms: () => mockTerms,
+    getOfferFilter: () => ['filter'],
   });
 
   ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin);
@@ -27,10 +37,10 @@ test('makeInstanceAdminStorage', async t => {
     await ias.accessor.getInstallationForInstance(mockInstance1),
     mockInstallation1,
   );
-  t.is(await ias.accessor.getBrands(mockInstance1), 'brands');
-  t.is(await ias.accessor.getPublicFacet(mockInstance1), 'publicFacet');
-  t.is(await ias.accessor.getIssuers(mockInstance1), 'issuers');
-  t.is(await ias.accessor.getTerms(mockInstance1), 'terms');
+  t.is(await ias.accessor.getBrands(mockInstance1), mockBrandRecord);
+  t.is(await ias.accessor.getPublicFacet(mockInstance1), mockFacet);
+  t.is(await ias.accessor.getIssuers(mockInstance1), mockIssuerRecord);
+  t.is(await ias.accessor.getTerms(mockInstance1), mockTerms);
 });
 
 test('add another instance admin for same instance', async t => {

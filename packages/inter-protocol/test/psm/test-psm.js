@@ -642,7 +642,6 @@ test('wrong give wantMintedInvitation', async t => {
     installs: { centralSupply },
   } = t.context;
   const { publicFacet } = await makePsmDriver(t);
-  console.log('publicFacet', publicFacet);
   const istValue = scale6(100);
   const giveIST = AmountMath.make(minted.brand, istValue);
   const istPayment = await mintRunPayment(istValue, {
