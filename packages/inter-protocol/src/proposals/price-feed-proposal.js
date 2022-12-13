@@ -20,6 +20,27 @@ const sanitizePathSegment = name => {
   return candidate;
 };
 
+/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+export const installPriceAggregatorContract = async ({
+  vatPowers: { D },
+  devices: { vatAdmin },
+  consume: { zoe },
+  installation: {
+    produce: { priceAggregator },
+  },
+}) => {
+  // Copied from installBootContracts:
+
+  // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
+  // good enough to do D(vatAdmin).getBundleIDByName
+  const bundleCap = D(vatAdmin).getNamedBundleCap('priceAggregator');
+
+  const bundle = D(bundleCap).getBundle();
+  // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
+  const installation = E(zoe).install(bundle);
+  priceAggregator.resolve(installation);
+};
+
 /**
  * @typedef {{
  * brandIn?: ERef<Brand<'nat'> | undefined>,
@@ -299,6 +320,7 @@ export const startPriceFeeds = async (
     },
   );
 
+  trace('await createPriceFeed');
   await createPriceFeed(
     { consume, produce },
     {
@@ -335,5 +357,17 @@ export const PRICE_FEEDS_MANIFEST = harden({
     },
     produce: { aggregators: true },
     installation: { consume: { priceAggregator: true } },
+  },
+  [installPriceAggregatorContract.name]: {
+    vatPowers: { D: true },
+    devices: { vatAdmin: true },
+    consume: { zoe: 'zoe' },
+    installation: {
+      produce: {
+        centralSupply: 'zoe',
+        mintHolder: 'zoe',
+        priceAggregator: 'zoe',
+      },
+    },
   },
 });
