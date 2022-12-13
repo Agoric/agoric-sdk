@@ -1,5 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far, makeMarshal } from '@endo/marshal';
+import { assertAllDefined } from '@agoric/internal';
 import { observeIteration } from './asyncIterableAdaptor.js';
 import { makePublishKit, subscribeEach } from './publish-kit.js';
 import { makeSubscriptionKit } from './subscriber.js';
@@ -39,7 +40,7 @@ const forEachPublicationRecord = async (subscriber, consumeValue) => {
  * @returns {StoredSubscriber<T>}
  */
 export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
-  assert(subscriber && storageNode && marshaller, 'missing argument');
+  assertAllDefined({ subscriber, storageNode, marshaller });
 
   const storeValue = value =>
     E(marshaller)

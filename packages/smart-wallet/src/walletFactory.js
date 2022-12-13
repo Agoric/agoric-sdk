@@ -4,7 +4,7 @@
  * Contract to make smart wallets.
  */
 
-import { BridgeId, WalletName } from '@agoric/internal';
+import { assertAllDefined, BridgeId, WalletName } from '@agoric/internal';
 import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -74,8 +74,7 @@ export const publishDepositFacet = async (
 export const start = async (zcf, privateArgs) => {
   fit(harden(privateArgs), PrivateArgsShape);
   const { agoricNames, board } = zcf.getTerms();
-  assert(board, 'missing board');
-  assert(agoricNames, 'missing agoricNames');
+  assertAllDefined({ agoricNames, board });
 
   const zoe = zcf.getZoeService();
   const { storageNode, bridgeManager } = privateArgs;

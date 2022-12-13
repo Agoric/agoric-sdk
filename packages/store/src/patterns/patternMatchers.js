@@ -1646,10 +1646,7 @@ const makePatternKit = () => {
     rest = undefined,
   ) => {
     if (rest) {
-      if (optional) {
-        return [base, optional, rest];
-      }
-      return [base, empty, rest];
+      return [base, optional || empty, rest];
     }
     if (optional) {
       return [base, optional];
