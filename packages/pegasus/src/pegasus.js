@@ -3,7 +3,10 @@
 import { assert, details as X, Fail } from '@agoric/assert';
 import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
 import { E, Far } from '@endo/far';
-import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicTransfer,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeSubscriptionKit } from '@agoric/notifier';
 
 import '@agoric/vats/exported.js';
@@ -247,9 +250,13 @@ const makePegasus = (zcf, board, namesByAddress) => {
           winner,
         ) => {
           // Transfer the amount to our backing seat.
-          loser.decrementBy(harden({ [loserKeyword]: amount }));
-          winner.incrementBy(harden({ [winnerKeyword]: amount }));
-          zcf.reallocate(loser, winner);
+          atomicTransfer(
+            zcf,
+            loser,
+            winner,
+            { [loserKeyword]: amount },
+            { [winnerKeyword]: amount },
+          );
         };
 
         // Describe how to retain/redeem real local erights.

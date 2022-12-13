@@ -1,4 +1,9 @@
 import { AmountMath } from '@agoric/ertp';
+import {
+  atomicRearrange,
+  fromOnly,
+  toOnly,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
@@ -55,15 +60,20 @@ export const makeDoublePool = (
     const inPoolSeat = collateralInPool.getPoolSeat();
     const outPoolSeat = collateralOutPool.getPoolSeat();
 
-    seat.decrementBy(harden({ In: prices.swapperGives }));
-    inPoolSeat.decrementBy(harden({ Central: prices.inPoolDecrement }));
-    outPoolSeat.decrementBy(harden({ Secondary: prices.outPoolDecrement }));
-    seat.incrementBy(harden({ Out: prices.swapperGets }));
-    inPoolSeat.incrementBy(harden({ Secondary: prices.inPoolIncrement }));
-    outPoolSeat.incrementBy(harden({ Central: prices.outPoolIncrement }));
-    feeSeat.incrementBy(harden({ Fee: prices.protocolFee }));
+    atomicRearrange(
+      zcf,
+      harden([
+        fromOnly(seat, { In: prices.swapperGives }),
+        fromOnly(inPoolSeat, { Central: prices.inPoolDecrement }),
+        fromOnly(outPoolSeat, { Secondary: prices.outPoolDecrement }),
 
-    zcf.reallocate(outPoolSeat, inPoolSeat, feeSeat, seat);
+        toOnly(seat, { Out: prices.swapperGets }),
+        toOnly(inPoolSeat, { Secondary: prices.inPoolIncrement }),
+        toOnly(outPoolSeat, { Central: prices.outPoolIncrement }),
+        toOnly(feeSeat, { Fee: prices.protocolFee }),
+      ]),
+    );
+
     seat.exit();
     collateralInPool.updateState();
     collateralOutPool.updateState();

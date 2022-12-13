@@ -5,6 +5,7 @@ import {
   offerTo,
   saveAllIssuers,
   assertProposalShape,
+  atomicTransfer,
 } from '../contractSupport/index.js';
 
 /**
@@ -96,10 +97,8 @@ const start = zcf => {
   const addInventory = seat => {
     assertProposalShape(seat, { want: {} });
     // Take everything in this seat and add it to the marketMakerSeat
-    marketMakerSeat.incrementBy(
-      seat.decrementBy(harden(seat.getCurrentAllocation())),
-    );
-    zcf.reallocate(marketMakerSeat, seat);
+    atomicTransfer(zcf, seat, marketMakerSeat, seat.getCurrentAllocation());
+
     seat.exit();
     return 'Inventory added';
   };
@@ -107,8 +106,8 @@ const start = zcf => {
   const removeInventory = seat => {
     assertProposalShape(seat, { give: {} });
     const { want } = seat.getProposal();
-    seat.incrementBy(marketMakerSeat.decrementBy(harden(want)));
-    zcf.reallocate(marketMakerSeat, seat);
+    atomicTransfer(zcf, marketMakerSeat, seat, want);
+
     seat.exit();
     return 'Inventory removed';
   };

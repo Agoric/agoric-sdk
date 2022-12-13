@@ -7,6 +7,7 @@ import {
   assertProposalShape,
   depositToSeat,
   assertNatAssetKind,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
@@ -111,18 +112,20 @@ const start = async zcf => {
         give: { Collateral: null },
         want: { LongOption: null, ShortOption: null },
       });
-      collateralSeat.incrementBy(
-        creatorSeat.decrementBy(harden({ Collateral: settlementAmount })),
+      atomicRearrange(
+        zcf,
+        harden([
+          [creatorSeat, collateralSeat, { Collateral: settlementAmount }],
+          [
+            collateralSeat,
+            creatorSeat,
+            {
+              LongOption: longAmount,
+              ShortOption: shortAmount,
+            },
+          ],
+        ]),
       );
-      creatorSeat.incrementBy(
-        collateralSeat.decrementBy(
-          harden({
-            LongOption: longAmount,
-            ShortOption: shortAmount,
-          }),
-        ),
-      );
-      zcf.reallocate(collateralSeat, creatorSeat);
       payoffHandler.schedulePayoffs();
       creatorSeat.exit();
     };

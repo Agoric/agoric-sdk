@@ -4,6 +4,12 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
+import {
+  atomicRearrange,
+  atomicTransfer,
+  fromOnly,
+  toOnly,
+} from './atomicTransfer.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
@@ -51,13 +57,13 @@ export const satisfies = (zcf, seat, update) => {
 /** @type {Swap} */
 export const swap = (zcf, leftSeat, rightSeat) => {
   try {
-    rightSeat.decrementBy(harden(leftSeat.getProposal().want));
-    leftSeat.incrementBy(harden(leftSeat.getProposal().want));
-
-    leftSeat.decrementBy(harden(rightSeat.getProposal().want));
-    rightSeat.incrementBy(harden(rightSeat.getProposal().want));
-
-    zcf.reallocate(leftSeat, rightSeat);
+    atomicRearrange(
+      zcf,
+      harden([
+        [rightSeat, leftSeat, leftSeat.getProposal().want],
+        [leftSeat, rightSeat, rightSeat.getProposal().want],
+      ]),
+    );
   } catch (err) {
     leftSeat.fail(err);
     rightSeat.fail(err);
@@ -72,13 +78,16 @@ export const swap = (zcf, leftSeat, rightSeat) => {
 /** @type {SwapExact} */
 export const swapExact = (zcf, leftSeat, rightSeat) => {
   try {
-    rightSeat.decrementBy(harden(rightSeat.getProposal().give));
-    leftSeat.incrementBy(harden(leftSeat.getProposal().want));
+    atomicRearrange(
+      zcf,
+      harden([
+        fromOnly(rightSeat, rightSeat.getProposal().give),
+        fromOnly(leftSeat, leftSeat.getProposal().give),
 
-    leftSeat.decrementBy(harden(leftSeat.getProposal().give));
-    rightSeat.incrementBy(harden(rightSeat.getProposal().want));
-
-    zcf.reallocate(leftSeat, rightSeat);
+        toOnly(leftSeat, leftSeat.getProposal().want),
+        toOnly(rightSeat, rightSeat.getProposal().want),
+      ]),
+    );
   } catch (err) {
     leftSeat.fail(err);
     rightSeat.fail(err);
@@ -192,9 +201,7 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
     // exit the temporary seat. Note that the offerResult is the return value of this
     // function, so this synchronous trade must happen before the
     // offerResult resolves.
-    tempSeat.decrementBy(harden(amounts));
-    recipientSeat.incrementBy(harden(amounts));
-    zcf.reallocate(tempSeat, recipientSeat);
+    atomicTransfer(zcf, tempSeat, recipientSeat, amounts);
     tempSeat.exit();
     return depositToSeatSuccessMsg;
   };
@@ -227,9 +234,7 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
 export const withdrawFromSeat = async (zcf, seat, amounts) => {
   assert(!seat.hasExited(), 'The seat cannot have exited.');
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
-  seat.decrementBy(harden(amounts));
-  tempSeat.incrementBy(harden(amounts));
-  zcf.reallocate(tempSeat, seat);
+  atomicTransfer(zcf, seat, tempSeat, amounts);
   tempSeat.exit();
   return E(tempUserSeatP).getPayouts();
 };
@@ -373,25 +378,4 @@ export const offerTo = async (
 
   // TODO rename return key; userSeatPromise is a remote UserSeat
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });
-};
-
-/**
- * Create a wrapped version of zcf that asserts an invariant
- * before performing a reallocation.
- *
- * @param {ZCF} zcf
- * @param {(seats: ZCFSeat[]) => void} assertFn - an assertion
- * that must be true for the reallocate to occur
- * @returns {ZCF}
- */
-export const checkZCF = (zcf, assertFn) => {
-  const checkedZCF = harden({
-    ...zcf,
-    reallocate: (...seats) => {
-      assertFn(seats);
-      // @ts-expect-error The types aren't right for spreading
-      zcf.reallocate(...seats);
-    },
-  });
-  return checkedZCF;
 };

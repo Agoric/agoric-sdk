@@ -46,6 +46,7 @@ export const assertOnlyKeys = (proposal, keys) => {
  * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
  * give/want respectively of a proposal. The `key` is the allocation keyword.
  *
+ * @deprecated Use atomicRearrange instead
  * @param {ZCFSeat} fromSeat
  * @param {ZCFSeat} toSeat
  * @param {Amount} fromLoses
