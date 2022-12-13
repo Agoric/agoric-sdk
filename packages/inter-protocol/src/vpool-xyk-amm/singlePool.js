@@ -24,7 +24,7 @@ export const makeSinglePool = ammPowers => ({
     const { zcf, protocolSeat } = ammPowers;
     const inBrand = prices.swapperGives.brand;
 
-    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferArgs[]} */
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
     const xfer = harden(
       inBrand === getSecondaryBrand(pool)
         ? [

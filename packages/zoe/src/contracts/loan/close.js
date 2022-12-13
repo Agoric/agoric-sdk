@@ -42,19 +42,14 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     // Transfer the collateral to the repaySeat and remove the
     // required Loan amount. Any excess Loan amount is kept by the repaySeat.
     // Transfer the repaid loan amount to the lender
+    const collateralAmount = collateralSeat.getAmountAllocated(
+      'Collateral',
+      collateralBrand,
+    );
     atomicRearrange(
       zcf,
       harden([
-        [
-          collateralSeat,
-          repaySeat,
-          {
-            Collateral: collateralSeat.getAmountAllocated(
-              'Collateral',
-              collateralBrand,
-            ),
-          },
-        ],
+        [collateralSeat, repaySeat, { Collateral: collateralAmount }],
         [repaySeat, lenderSeat, { Loan: debt }],
       ]),
     );

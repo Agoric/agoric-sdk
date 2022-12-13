@@ -1,3 +1,6 @@
+import { fit, M } from '@agoric/store';
+import { assertRightsConserved } from '../contractFacet/rightsConservation.js';
+
 const { Fail, quote: q } = assert;
 
 /**
@@ -6,7 +9,7 @@ const { Fail, quote: q } = assert;
  *   toSeat?: ZCFSeat,
  *   fromAmounts?: AmountKeywordRecord,
  *   toAmounts?: AmountKeywordRecord
- * ]} TransferArgs
+ * ]} TransferPart
  */
 
 /**
@@ -19,28 +22,57 @@ const { Fail, quote: q } = assert;
  * atomic rearragements clearly.
  *
  * @param {ZCF} zcf
- * @param {TransferArgs[]} transfers
+ * @param {TransferPart[]} transfers
  */
 export const atomicRearrange = (zcf, transfers) => {
+  fit(transfers, M.arrayOf(M.array()), 'transfers');
   const uniqueSeatSet = new Set();
   for (const [
     fromSeat = undefined,
     toSeat = undefined,
-    _subtrahend,
-    _addend,
+    fromAmounts = undefined,
+    toAmounts = undefined,
   ] of transfers) {
     if (fromSeat) {
+      if (!fromAmounts) {
+        throw Fail`Transfer from ${fromSeat} must say how much`;
+      }
       uniqueSeatSet.add(fromSeat);
-    }
-    if (toSeat) {
+      if (toSeat) {
+        // Conserved transfer between seats
+        if (toAmounts) {
+          // distinct amounts, so we check conservation.
+          // Note that this is not needed for Zoe's safety, as Zoe does
+          // its own overall conservation check. Rather, it helps catch
+          // and diagnose contract bugs earlier.
+          assertRightsConserved(
+            Object.values(fromAmounts),
+            Object.values(toAmounts),
+          );
+        } // else fromAmounts will be used as toAmounts
+        uniqueSeatSet.add(toSeat);
+      } else {
+        // Transfer only from fromSeat
+        !toAmounts ||
+          Fail`Transfer without toSeat cannot have toAmounts ${toAmounts}`;
+      }
+    } else {
+      toSeat || Fail`Transfer must have at least one of fromSeat or toSeat`;
+      // Transfer only to toSeat
+      !fromAmounts ||
+        Fail`Transfer without fromSeat cannot have fromAmounts ${fromAmounts}`;
+      toAmounts || Fail`Transfer to ${toSeat} must say how much`;
       uniqueSeatSet.add(toSeat);
     }
   }
+
   const uniqueSeats = harden([...uniqueSeatSet.keys()]);
   for (const seat of uniqueSeats) {
     !seat.hasStagedAllocation() ||
       Fail`Cannot mix atomicRearrange with seat stagings: ${seat}`;
   }
+
+  // At this point the basic shape has been validated
 
   try {
     for (const [
@@ -49,22 +81,12 @@ export const atomicRearrange = (zcf, transfers) => {
       fromAmounts = undefined,
       toAmounts = toSeat && fromAmounts,
     ] of transfers) {
-      if (fromSeat || fromAmounts) {
-        if (!fromSeat) {
-          throw Fail`Transfer ${fromAmounts} from ? must have a fromSeat`;
-        }
-        if (!fromAmounts) {
-          throw Fail`Transfer ? from ${fromSeat} must say how much`;
-        }
+      if (fromSeat && fromAmounts) {
+        // testing both just to satisfy the type checker
         fromSeat.decrementBy(fromAmounts);
       }
-      if (toSeat || toAmounts) {
-        if (!toSeat) {
-          throw Fail`Transfer ${toAmounts} into ? must have a toSeat`;
-        }
-        if (!toAmounts) {
-          throw Fail`Transfer ? into ${toSeat} must say how much`;
-        }
+      if (toSeat && toAmounts) {
+        // testing both just to satisfy the type checker
         toSeat.incrementBy(toAmounts);
       }
     }
@@ -85,31 +107,31 @@ export const atomicRearrange = (zcf, transfers) => {
 };
 
 /**
- * Sometimes a TransferArg in an atomicRearrange only expresses what amounts
- * should be taken from a seat, leaving it to other TransferArgs of the
+ * Sometimes a TransferPart in an atomicRearrange only expresses what amounts
+ * should be taken from a seat, leaving it to other TransferPart of the
  * same atomicRearrange to balance it out. For this case, the
  * `[fromSeat, undefined, fromAmounts]` form is more clearly expressed as
- * `fromOnly(fromSeat, fromAmounts)`. Unlike TransferArgs, both arguments to
+ * `fromOnly(fromSeat, fromAmounts)`. Unlike TransferPart, both arguments to
  * `fromOnly` are non-optional, as otherwise it doesn't make much sense.
  *
  * @param {ZCFSeat} fromSeat
  * @param {AmountKeywordRecord} fromAmounts
- * @returns {TransferArgs}
+ * @returns {TransferPart}
  */
 export const fromOnly = (fromSeat, fromAmounts) =>
   harden([fromSeat, undefined, fromAmounts]);
 
 /**
- * Sometimes a TransferArg in an atomicRearrange only expresses what amounts
- * should be given to a seat, leaving it to other TransferArgs of the
+ * Sometimes a TransferPart in an atomicRearrange only expresses what amounts
+ * should be given to a seat, leaving it to other TransferPart of the
  * same atomicRearrange to balance it out. For this case, the
  * `[undefined, toSeat, undefined, toAmounts]` form is more clearly expressed as
- * `toOnly(toSeat, toAmounts)`. Unlike TransferArgs, both arguments to
+ * `toOnly(toSeat, toAmounts)`. Unlike TransferPart, both arguments to
  * `toOnly` are non-optional, as otherwise it doesn't make much sense.
  *
  * @param {ZCFSeat} toSeat
  * @param {AmountKeywordRecord} toAmounts
- * @returns {TransferArgs}
+ * @returns {TransferPart}
  */
 export const toOnly = (toSeat, toAmounts) =>
   harden([undefined, toSeat, undefined, toAmounts]);

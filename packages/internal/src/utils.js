@@ -404,37 +404,3 @@ export const assertAllDefined = obj => {
     Fail`missing ${q(missing)}`;
   }
 };
-
-/**
- * @template T
- * @typedef {object} ListAccumulator
- * @property {(value: T) => void} push
- * @property {() => void} clear
- * @property {() => T[]} snapshot
- * @property {() => T[]} takeSnapshot
- */
-
-/**
- * @template {any} T
- * @param {(x: T) => T} coerce
- * @returns {ListAccumulator<T>}
- */
-export const makeListAccumulator = (coerce = x => x) => {
-  /** @type {T[]} */
-  let list = [];
-  return harden({
-    push: value => {
-      list.push(coerce(value));
-    },
-    clear: () => {
-      list = [];
-    },
-    snapshot: () => harden([...list]),
-    takeSnapshot: () => {
-      const result = harden(list);
-      list = [];
-      return result;
-    },
-  });
-};
-harden(makeListAccumulator);
