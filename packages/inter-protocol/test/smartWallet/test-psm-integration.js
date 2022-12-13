@@ -11,7 +11,7 @@ import {
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
-
+import { makeFakeBridgeManager } from '@agoric/smart-wallet/test/supports.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { BridgeId } from '@agoric/internal';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
@@ -42,6 +42,10 @@ const makePsmTestSpace = async log => {
     psmParams,
   );
   psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+
+  psmVatRoot
+    .getPromiseSpace()
+    .produce.bridgeManager.resolve(makeFakeBridgeManager());
 
   // @ts-expect-error cast
   return /** @type {ChainBootstrapSpace} */ (psmVatRoot.getPromiseSpace());

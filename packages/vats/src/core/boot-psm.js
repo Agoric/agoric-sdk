@@ -20,7 +20,6 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -35,6 +34,7 @@ import {
 import * as utils from './utils.js';
 import {
   bridgeCoreEval,
+  bridgeProvisioner,
   makeBridgeManager,
   makeChainStorage,
   publishAgoricNames,
@@ -164,6 +164,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...PSM_MANIFEST,
       ...INVITE_PSM_COMMITTEE_MANIFEST,
     };
+    console.log('DEBUG boot-psm runBootstrapParts manifest', manifest);
     /** @param {string} name */
     const powersFor = name => {
       const permit = manifest[name];
@@ -171,6 +172,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       return utils.extractPowers(permit, allPowers);
     };
 
+    console.log('DEBUG await all vats');
     await Promise.all([
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
@@ -183,9 +185,8 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
       }),
-      startWalletFactory(powersFor('startWalletFactory'), {
-        options: { walletBridgeId: BRIDGE_ID.PROVISION },
-      }),
+      startWalletFactory(powersFor(startWalletFactory.name)),
+      bridgeProvisioner(powersFor(bridgeProvisioner.name)),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),
