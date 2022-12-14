@@ -1,6 +1,6 @@
 {
   "name": "@agoric/wallet",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "type": "module",
   "main": "index.js",
   "license": "Apache-2.0",
@@ -19,7 +19,7 @@
     "build": "exit 0"
   },
   "dependencies": {
-    "agoric": "^0.18.2",
+    "agoric": "^0.18.3",
     "babel-eslint": "^10.0.3",
     "eslint-plugin-eslint-comments": "^3.1.2",
     "import-meta-resolve": "^1.1.1"

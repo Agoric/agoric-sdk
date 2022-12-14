@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.30.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.2...@agoric/swingset-vat@0.30.3) (2022-12-14)
+
+
+### Bug Fixes
+
+* **swingset:** workaround XS garbage collection bugs ([#6664](https://github.com/Agoric/agoric-sdk/issues/6664)) ([12e97f1](https://github.com/Agoric/agoric-sdk/commit/12e97f1e7d384c11c76b61de67ee0de30de00fe6))
+
+
+
 ### [0.30.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.1...@agoric/swingset-vat@0.30.2) (2022-10-18)
 
 
