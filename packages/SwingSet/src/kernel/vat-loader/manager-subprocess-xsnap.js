@@ -2,6 +2,7 @@
 import { assert, details as X, q } from '@agoric/assert';
 import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
+import { requireIdenticalExceptStableVCSyscalls } from './transcript.js';
 
 import {
   insistVatSyscallObject,
@@ -55,7 +56,7 @@ export function makeXsSubprocessFactory({
     const {
       name: vatName,
       metered,
-      compareSyscalls,
+      compareSyscalls = requireIdenticalExceptStableVCSyscalls,
       useTranscript,
       sourcedConsole,
     } = managerOptions;
