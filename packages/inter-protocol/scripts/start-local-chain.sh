@@ -26,6 +26,7 @@ fi
 
 WALLET_BECH32=$(agd keys show "$WALLET" --output json | jq -r .address)
 
+sed "s/@PRIMARY_ADDRESS@/$WALLET_BECH32/" "$SDK/packages/cosmic-swingset/scripts/start-local-chain-config.json"
 # xxx this would be more robust using `jq`
 # grant econ governance
 sed -i '' "s/\"voter\":.*/\"voter\": \"$WALLET_BECH32\"/" "$CHAIN_BOOTSTRAP_VAT_CONFIG"
