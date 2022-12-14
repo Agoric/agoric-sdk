@@ -2,7 +2,9 @@ import {
   AmountMath,
   AmountShape,
   BrandShape,
+  IssuerShape,
   PaymentShape,
+  PurseShape,
 } from '@agoric/ertp';
 import {
   makeStoredPublishKit,
@@ -205,18 +207,18 @@ export const initState = (unique, shared) => {
 };
 
 const behaviorGuards = {
-  // xxx updateBalance string not really optional. not exposed so okay to skip guards.
-  // helper: M.interface('helperFacetI', {
-  //   addBrand: M.call(
-  //     {
-  //       brand: BrandShape,
-  //       issuer: IssuerShape,
-  //       petname: M.string(),
-  //     },
-  //     PurseShape,
-  //   ).returns(M.promise()),
-  //   updateBalance: M.call(PurseShape, AmountShape, M.opt(M.string())).returns(),
-  // }),
+  helper: M.interface('helperFacetI', {
+    updateBalance: M.call(PurseShape, AmountShape).optional('init').returns(),
+    publishCurrentState: M.call().returns(),
+    addBrand: M.call(
+      {
+        brand: BrandShape,
+        issuer: M.eref(IssuerShape),
+        petname: M.string(),
+      },
+      PurseShape,
+    ).returns(M.promise()),
+  }),
   deposit: M.interface('depositFacetI', {
     receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
   }),
