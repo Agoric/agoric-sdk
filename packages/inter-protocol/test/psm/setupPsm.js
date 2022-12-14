@@ -54,7 +54,8 @@ export const setupPsmBootstrap = async (
   timer = buildManualTimer(console.log),
   farZoeKit,
 ) => {
-  const { zoe } = await (farZoeKit || setUpZoeForTest());
+  const { zoe: wrappedZoe, feeMintAccessP } = await (farZoeKit ||
+    setUpZoeForTest());
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
@@ -63,7 +64,9 @@ export const setupPsmBootstrap = async (
     );
 
   produce.chainTimerService.resolve(timer);
-  produce.zoe.resolve(zoe);
+  produce.zoe.resolve(wrappedZoe);
+  const zoe = space.consume.zoe;
+  produce.feeMintAccess.resolve(feeMintAccessP);
 
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -91,10 +94,8 @@ export const setupPsm = async (
 ) => {
   const knut = withAmountUtils(makeIssuerKit('KNUT'));
 
-  const { feeMintAccessP, zoe } = await (farZoeKit || setUpZoeForTest());
   const space = await setupPsmBootstrap(timer, farZoeKit);
-  const feeMintAccess = await feeMintAccessP;
-  space.produce.feeMintAccess.resolve(feeMintAccess);
+  const zoe = space.consume.zoe;
   const { consume, brand, issuer, installation, instance } = space;
   const psmBundle = await provideBundle(t, psmRoot, 'psm');
   installation.produce.psm.resolve(E(zoe).install(psmBundle));
