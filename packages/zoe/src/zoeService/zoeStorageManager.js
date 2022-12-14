@@ -19,7 +19,7 @@ import { makeInstallationStorage } from './installationStorage.js';
 import './types.js';
 import './internal-types.js';
 import {
-  InstanceStorageManagerI,
+  InstanceStorageManagerIKit,
   ZoeMintI,
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
@@ -234,7 +234,7 @@ export const makeZoeStorageManager = (
     const makeInstanceStorageManager = vivifyFarClassKit(
       instanceBaggage,
       'InstanceStorageManager',
-      InstanceStorageManagerI,
+      InstanceStorageManagerIKit,
       initEmpty,
       {
         instanceStorageManager: {

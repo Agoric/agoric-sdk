@@ -3,7 +3,6 @@ import {
   AssetKindShape,
   DisplayInfoShape,
   IssuerShape,
-  IssuerKitShape,
   BrandShape,
   PaymentShape,
 } from '@agoric/ertp';
@@ -181,33 +180,40 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   getExitSubscriber: M.call(SeatShape).returns(SubscriberShape),
 });
 
-export const InstanceStorageManagerI = M.interface('InstanceStorageManager', {
-  getTerms: M.call().returns(M.split(TermsShape, M.record())),
-  getIssuers: M.call().returns(IssuerKeywordRecordShape),
-  getBrands: M.call().returns(BrandKeywordRecordShape),
-  getInstallationForInstance: M.call().returns(InstallationShape),
-  getInvitationIssuer: M.call().returns(IssuerShape),
+export const InstanceStorageManagerIKit = harden({
+  instanceStorageManager: M.interface('InstanceStorageManager', {
+    getTerms: M.call().returns(M.split(TermsShape, M.record())),
+    getIssuers: M.call().returns(IssuerKeywordRecordShape),
+    getBrands: M.call().returns(BrandKeywordRecordShape),
+    getInstallationForInstance: M.call().returns(InstallationShape),
+    getInvitationIssuer: M.call().returns(IssuerShape),
 
-  saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
-  makeZoeMint: M.call(KeywordShape)
-    .optional(AssetKindShape, DisplayInfoShape, M.pattern())
-    .returns(M.or(ZoeMintI, M.remotable('zoeMint'), M.promise())),
-  registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
-    IssuerKitShape,
-  ),
-  getInstanceRecord: M.call().returns(InstanceRecordShape),
-  getIssuerRecords: M.call().returns(M.arrayOf(IssuerRecordShape)),
-  getWithdrawPayments: M.call().returns(M.remotable('WithdrawFacet')),
-  initInstanceAdmin: M.call(
-    InstanceHandleShape,
-    M.remotable('instanceAdmin'),
-  ).returns(M.promise()),
-  deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
-  makeInvitation: M.call(InvitationHandleShape, M.string())
-    .optional(M.any(), M.pattern())
-    .returns(M.promise()),
-  getRoot: M.call().returns(M.promise()),
-  getAdminNode: M.call().returns(M.remotable('adminNode')),
+    saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
+    makeZoeMint: M.call(KeywordShape)
+      .optional(AssetKindShape, DisplayInfoShape, M.pattern())
+      .returns(M.or(ZoeMintI, M.remotable('zoeMint'), M.promise())),
+    registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
+      M.remotable('feeMint'),
+    ),
+    getInstanceRecord: M.call().returns(InstanceRecordShape),
+    getIssuerRecords: M.call().returns(M.arrayOf(IssuerRecordShape)),
+    getWithdrawFacet: M.call().returns(M.remotable('WithdrawFacet')),
+    initInstanceAdmin: M.call(
+      InstanceHandleShape,
+      M.remotable('instanceAdmin'),
+    ).returns(M.promise()),
+    deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
+    makeInvitation: M.call(InvitationHandleShape, M.string())
+      .optional(M.any(), M.pattern())
+      .returns(M.promise()),
+    getRoot: M.call().returns(M.any()),
+    getAdminNode: M.call().returns(M.remotable('adminNode')),
+  }),
+  withdrawFacet: M.interface('WithdrawFacet', {
+    withdrawPayments: M.call(AmountKeywordRecordShape).returns(
+      PaymentPKeywordRecordShape,
+    ),
+  }),
 });
 
 // In `SwingSet/src/types-external.js`, it's typed as `*`.

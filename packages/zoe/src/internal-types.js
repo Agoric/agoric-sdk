@@ -237,7 +237,7 @@
  */
 
 /**
- * @typedef RootAndAdminNode
+ * @typedef {object} RootAndAdminNode
  * @property {object} root
  * @property {AdminNode} adminNode
  */
