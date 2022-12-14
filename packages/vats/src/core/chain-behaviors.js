@@ -140,6 +140,7 @@ export const bridgeProvisioner = async ({
   console.log('DEBUG bridgeProvisioner start');
   const bridgeManager = await bridgeManagerP;
   if (!bridgeManager) {
+    console.warn('bridgeProvisioner aborting without bridgeManager');
     return;
   }
 

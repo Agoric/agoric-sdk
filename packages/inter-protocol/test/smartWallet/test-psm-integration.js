@@ -16,6 +16,7 @@ import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { BridgeId } from '@agoric/internal';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { makeDefaultTestContext } from './contexts.js';
+import { devices as stubDevices } from './devices.js';
 import { headValue, withAmountUtils } from '../supports.js';
 
 /**
@@ -41,7 +42,8 @@ const makePsmTestSpace = async log => {
     },
     psmParams,
   );
-  psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+  const [vats, devices] = mockPsmBootstrapArgs(log);
+  psmVatRoot.bootstrap(vats, { ...devices, ...stubDevices });
 
   psmVatRoot
     .getPromiseSpace()
@@ -383,5 +385,6 @@ test('provision', async t => {
     blockTime: 0,
     blockHeight: 0,
   });
+  // FIXME should check a real result
   t.deepEqual(res, {});
 });

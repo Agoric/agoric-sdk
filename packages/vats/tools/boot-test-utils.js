@@ -5,6 +5,7 @@ import {
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
+import { makeMockChainStorageRootObject } from './storage-test-utils.js';
 import { devices } from '../test/devices.js';
 
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
@@ -19,6 +20,7 @@ import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
 export const vatRoots = {
   bank: bankRoot,
   board: boardRoot,
+  chainStorage: makeMockChainStorageRootObject,
   ibc: ibcRoot,
   mints: mintsRoot,
   network: networkRoot,
@@ -126,6 +128,7 @@ export const mockSwingsetVats = mock => {
 /**
  *
  * @param {(msg: string) => void} log
+ * @returns {[vats: object, devices: object]}
  */
 export const mockPsmBootstrapArgs = log => {
   const mock = makeMock(log);

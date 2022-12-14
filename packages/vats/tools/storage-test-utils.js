@@ -101,3 +101,12 @@ export const makeMockChainStorageRoot = () => {
   });
 };
 /** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */
+
+/** @see buildRootObject in vat-chainStorage */
+export const makeMockChainStorageRootObject = () => {
+  return Far('root', {
+    makeBridgedChainStorageRoot(bridge, bridgeId, rootPath, options) {
+      return makeMockChainStorageRoot();
+    },
+  });
+};
