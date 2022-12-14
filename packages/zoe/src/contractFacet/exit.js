@@ -15,6 +15,12 @@ const WakerI = M.interface('Waker', {
   schedule: M.call().returns(),
 });
 
+/**
+ * Makes a function that makes exitObjects. The maker is executed in ZCF. It
+ * returns an object than can be passed to Zoe when a seat is created so Zoe can
+ * inform ZCF if and when the seat's owner calls seat.exit().
+ */
+
 export const makeMakeExiter = baggage => {
   const activeWakers = provideDurableSetStore(baggage, 'activeWakers');
 

@@ -17,7 +17,16 @@ import {
   IssuerKeywordRecordShape,
 } from '../typeGuards.js';
 
-const { quote: q, details: X } = assert;
+const { quote: q, Fail } = assert;
+
+/**
+ * @file Two objects are defined here, both called InstanceAdminSomething.
+ * InstanceAdminStorage is a container for individual InstanceAdmins. Each
+ * InstanceAdmin is associated with a particular contract instance, and is used
+ * by both Zoe and ZCF to record and access the instance state. startInstance
+ * also defines zoeInstanceAdmin, which is a facet that is passed to startZcf()
+ * that wraps access to a zoeInstanceAdmin and other stores.
+ */
 
 const InstanceAdminStorageIKit = harden({
   accessor: M.interface('InstanceAdminStorage', {
@@ -118,7 +127,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
     // called after startZcf, but before the contract facets are made available.
     initDelayedState: ({ state }, handleOfferObj, publicFacet) => {
       state.handleOfferObj = handleOfferObj;
-      assert(canBeDurable(publicFacet), 'publicFacet must be durable');
+      canBeDurable(publicFacet) || Fail`publicFacet must be durable`;
       state.publicFacet = publicFacet;
     },
     getInstallationForInstance: ({ state }) =>
@@ -167,7 +176,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       });
 
       state.zoeSeatAdmins.add(zoeSeatAdmin);
-      assert(state.handleOfferObj, 'incomplete setup of zoe seat');
+      state.handleOfferObj || Fail`incomplete setup of zoe seat`;
       E.when(
         E(state.handleOfferObj).handleOffer(invitationHandle, seatData),
         ({ offerResultPromise, exitObj }) =>
@@ -203,12 +212,12 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
     },
     getOfferFilter: ({ state }) => state.offerFilterStrings,
     setOfferFilter: ({ state }, strings) => {
-      assert(Array.isArray(strings), X`${q(strings)} must be an Array`);
+      Array.isArray(strings) || Fail`${q(strings)} must be an Array`;
       const proposedStrings = harden([...strings]);
-      assert(
-        proposedStrings.every(s => typeof s === 'string'),
-        X`Blocked strings (${q(proposedStrings)}) must be an Array of strings.`,
-      );
+      proposedStrings.every(s => typeof s === 'string') ||
+        Fail`Blocked strings (${q(
+          proposedStrings,
+        )}) must be an Array of strings.`;
 
       state.offerFilterStrings = proposedStrings;
     },

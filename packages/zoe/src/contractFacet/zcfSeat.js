@@ -21,7 +21,7 @@ import {
   SeatShape,
 } from '../typeGuards.js';
 
-const { details: X } = assert;
+const { details: X, Fail } = assert;
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -52,7 +52,7 @@ export const createSeatManager = (
    * @returns {void}
    */
   const assertActive = zcfSeat => {
-    assert(activeZCFSeats.has(zcfSeat), 'seat has been exited');
+    activeZCFSeats.has(zcfSeat) || Fail`seat has been exited`;
   };
 
   /**
@@ -298,9 +298,7 @@ export const createSeatManager = (
           // Ensure that offer safety holds.
           for (const seat of seats) {
             isOfferSafe(seat.getProposal(), seat.getStagedAllocation()) ||
-              assert.fail(
-                X`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`,
-              );
+              Fail`Offer safety was violated by the proposed allocation: ${seat.getStagedAllocation()}. Proposal was ${seat.getProposal()}`;
           }
 
           // Keep track of seats used so far in this call, to prevent aliasing.
@@ -308,11 +306,9 @@ export const createSeatManager = (
 
           for (const seat of seats) {
             zcfSeatToSeatHandle.has(seat) ||
-              assert.fail(X`The seat ${seat} was not recognized`);
+              Fail`The seat ${seat} was not recognized`;
             !zcfSeatsSoFar.has(seat) ||
-              assert.fail(
-                X`Seat (${seat}) was already an argument to reallocate`,
-              );
+              Fail`Seat (${seat}) was already an argument to reallocate`;
             zcfSeatsSoFar.add(seat);
           }
 

@@ -93,7 +93,6 @@ export const setupPsm = async (
 
   const { feeMintAccessP, zoe } = await (farZoeKit || setUpZoeForTest());
   const space = await setupPsmBootstrap(timer, farZoeKit);
-  space.produce.zoe.resolve(zoe);
   const feeMintAccess = await feeMintAccessP;
   space.produce.feeMintAccess.resolve(feeMintAccess);
   const { consume, brand, issuer, installation, instance } = space;

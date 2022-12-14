@@ -89,7 +89,7 @@ export const makeZoeStorageManager = (
   // "zoeInstanceAdmin" - an admin facet within the Zoe Service for
   // that particular instance. This code manages the storage of those
   // instanceAdmins
-  const instanceAdminManager = makeInstanceAdminStorage(zoeBaggage);
+  const instanceAdminStorage = makeInstanceAdminStorage(zoeBaggage);
 
   // Zoe stores "installations" - identifiable bundles of contract
   // code that can be reused to create new contract instances
@@ -303,13 +303,13 @@ export const makeZoeStorageManager = (
             );
           },
           initInstanceAdmin(i, instanceAdmin) {
-            return instanceAdminManager.updater.initInstanceAdmin(
+            return instanceAdminStorage.updater.initInstanceAdmin(
               i,
               instanceAdmin,
             );
           },
           deleteInstanceAdmin(i) {
-            instanceAdminManager.updater.deleteInstanceAdmin(i);
+            instanceAdminStorage.updater.deleteInstanceAdmin(i);
           },
           makeInvitation(handle, desc, customProps, proposalShape) {
             return makeInvitationImpl(handle, desc, customProps, proposalShape);
@@ -417,5 +417,5 @@ export const makeZoeStorageManager = (
     },
   );
 
-  return makeStorageManager(instanceAdminManager.accessor);
+  return makeStorageManager(instanceAdminStorage.accessor);
 };

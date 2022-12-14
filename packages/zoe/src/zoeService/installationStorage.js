@@ -9,6 +9,8 @@ import {
 import { initEmpty } from '@agoric/store';
 import { InstallationShape } from '../typeGuards.js';
 
+const { Fail } = assert;
+
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -65,9 +67,9 @@ export const makeInstallationStorage = (
 
   /** @type {InstallBundle} */
   const installSourceBundle = async bundle => {
-    assert.typeof(bundle, 'object', 'a bundle must be provided');
+    typeof bundle === 'object' || Fail`a bundle must be provided`;
     /** @type {Installation} */
-    assert(bundle, 'a bundle must be provided');
+    bundle || Fail`a bundle must be provided`;
     /** @type {Installation} */
     // @ts-expect-error cast
     const installation = makeBundleInstallation(bundle);
@@ -91,8 +93,8 @@ export const makeInstallationStorage = (
         // Bundle is a very open-ended type and we must decide here whether to
         // treat it as either a HashBundle or SourceBundle. So we have to
         // inspect it.
-        assert.typeof(allegedBundle, 'object', 'a bundle must be provided');
-        assert(allegedBundle !== null, 'a bundle must be provided');
+        typeof allegedBundle === 'object' || Fail`a bundle must be provided`;
+        allegedBundle !== null || Fail`a bundle must be provided`;
         const { moduleFormat } = allegedBundle;
         if (moduleFormat === 'endoZipBase64Sha512') {
           const { endoZipBase64Sha512 } = allegedBundle;
@@ -106,7 +108,7 @@ export const makeInstallationStorage = (
         return installSourceBundle(allegedBundle);
       },
       async installBundleID(bundleID) {
-        assert.typeof(bundleID, 'string', `a bundle ID must be provided`);
+        typeof bundleID === 'string' || Fail`a bundle ID must be provided`;
         // this waits until someone tells the host application to store the
         // bundle into the kernel, with controller.validateAndInstallBundle()
         const bundleCap = await getBundleCapForID(bundleID);
@@ -140,7 +142,7 @@ export const makeInstallationStorage = (
           allegedInstallationP,
         );
         // AWAIT
-        assert(bundleID, 'installation does not have a bundle ID');
+        bundleID || Fail`installation does not have a bundle ID`;
         return bundleID;
       },
     },

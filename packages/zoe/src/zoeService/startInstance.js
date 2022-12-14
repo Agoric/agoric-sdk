@@ -52,11 +52,11 @@ const instanceAdminBehavior = {
   },
   exitSeat(seatHandle, completion) {
     const { state } = this;
-    state.seatHandleToAdmin.get(seatHandle).exit(completion);
+    state.seatHandleToSeatAdmin.get(seatHandle).exit(completion);
   },
   failSeat(seatHandle, reason) {
     const { state } = this;
-    state.seatHandleToAdmin.get(seatHandle).fail(reason);
+    state.seatHandleToSeatAdmin.get(seatHandle).fail(reason);
   },
   makeZoeMint(keyword, assetKind, displayInfo, pattern) {
     const { state } = this;
@@ -75,7 +75,7 @@ const instanceAdminBehavior = {
     const { state } = this;
     try {
       seatHandleAllocations.forEach(({ seatHandle, allocation }) => {
-        const zoeSeatAdmin = state.seatHandleToAdmin.get(seatHandle);
+        const zoeSeatAdmin = state.seatHandleToSeatAdmin.get(seatHandle);
         zoeSeatAdmin.replaceAllocation(allocation);
       });
     } catch (err) {
@@ -97,7 +97,7 @@ const instanceAdminBehavior = {
   },
   getExitSubscriber(seatHandle) {
     const { state } = this;
-    return state.seatHandleToAdmin.get(seatHandle).getExitSubscriber();
+    return state.seatHandleToSeatAdmin.get(seatHandle).getExitSubscriber();
   },
   isBlocked(string) {
     const { state } = this;
@@ -135,10 +135,10 @@ export const makeStartInstance = (
     zoeBaggage,
     'zoeInstanceAdmin',
     InstanceAdminI,
-    (instanceStorage, instanceAdmin, seatHandleToAdmin, adminNode) => ({
+    (instanceStorage, instanceAdmin, seatHandleToSeatAdmin, adminNode) => ({
       instanceStorage,
       instanceAdmin,
-      seatHandleToAdmin,
+      seatHandleToSeatAdmin,
       adminNode,
     }),
     instanceAdminBehavior,
