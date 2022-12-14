@@ -84,14 +84,20 @@
  */
 
 /**
+ * @typedef {object} CandidatePosition
+ * @property {string} name
+ * @property {string} address
+ */
+
+/**
  * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
- *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
+ *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition | CandidatePosition[] } Position
  */
 
 /**
  * @typedef {{ question: Handle<'Question'> } & (
  *   { outcome: 'win', position: Position } |
- *   { outcome: 'fail', reason: 'No quorum' }
+ *   { outcome: 'fail', reason: 'No quorum' | 'Rejected' }
  * )} OutcomeRecord
  */
 
@@ -116,6 +122,7 @@
  * @property {ClosingRule} closingRule
  * @property {QuorumRule} quorumRule
  * @property {Position} tieOutcome
+ * @property {Position} [winOutcome]
  */
 
 /**

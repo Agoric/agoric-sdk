@@ -54,6 +54,7 @@ const coerceQuestionSpec = ({
   closingRule,
   quorumRule,
   tieOutcome,
+  winOutcome,
 }) => {
   const question = harden({
     method,
@@ -65,6 +66,7 @@ const coerceQuestionSpec = ({
     closingRule,
     quorumRule,
     tieOutcome,
+    winOutcome,
   });
 
   fit(question, QuestionSpecShape);

@@ -45,18 +45,27 @@ const start = (zcf, privateArgs) => {
     'latestQuestion',
   );
 
+  const electionQuestionNode = E(privateArgs.storageNode).makeChildNode(
+    'latestElectionQuestion',
+  );
+
   /** @type {StoredPublishKit<QuestionDetails>} */
   const { subscriber: questionsSubscriber, publisher: questionsPublisher } =
     makeStoredPublishKit(questionNode, privateArgs.marshaller);
 
-  const committee = makeStore('committee');
+  /** @type {StoredPublishKit<QuestionDetails>} */
+  const {
+    subscriber: electionQuestionsSubscriber,
+    publisher: electionQuestionsPublisher,
+  } = makeStoredPublishKit(electionQuestionNode, privateArgs.marshaller);
+
   /** @type {Store<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = makeStore('Question');
 
-  /** @type {AddQuestionReturn} */
-  let committeeVoteCounter;
+  /** @type {Store<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
+  const allElectionQuestions = makeStore('ElectionQuestion');
 
-  const makeCommitteeVoterInvitation = index => {
+  const makeElectorInvitation = index => {
     /** @type {OfferHandler} */
     const offerHandler = seat => {
       const voterHandle = makeHandle('Voter');
@@ -75,11 +84,6 @@ const start = (zcf, privateArgs) => {
         ).returns(M.promise()),
       });
 
-      // CRUCIAL: voteCap carries the ability to cast votes for any voter at
-      // any weight. It's wrapped here and given to the voter.
-      //
-      // Ensure that the voter can't get access to the unwrapped voteCap, and
-      // has no control over the voteHandle or weight
       return harden({
         voter: makeHeapFarInstance(`voter${index}`, VoterI, {
           castBallotFor(questionHandle, positions) {
@@ -105,65 +109,39 @@ const start = (zcf, privateArgs) => {
       });
     };
 
-    // https://github.com/Agoric/agoric-sdk/pull/3448/files#r704003612
-    // This will produce unique descriptions because
-    // makeCommitteeVoterInvitation() is only called within the following loop,
-    // which is only called once per Electorate.
-    return zcf.makeInvitation(offerHandler, `Voter${index}`);
-  };
-
-  const makeCommitteeElectorInvitation = index => {
-    const offerHandler = seat => {
-      const voterHandle = makeHandle('Voter');
-      seat.exit();
-
-      const VoterI = M.interface('voter', {
-        castBallotFor: M.call(
-          QuestionHandleShape,
-          M.arrayOf(PositionShape),
-        ).returns(M.promise()),
-      });
-      return harden({
-        voter: makeHeapFarInstance(`voter${index}`, VoterI, {
-          castBallotFor(questionHandle, positions) {
-            const { voteCap } = allQuestions.get(questionHandle);
-            return E(voteCap).submitVote(voterHandle, positions, 1n);
-          },
-        }),
-      });
-    };
-
     return zcf.makeInvitation(offerHandler, `Voter${index}`);
   };
 
   const { committeeName, committeeSize } = zcf.getTerms();
 
-  const committeeVoterInvitations = harden(
-    committee.get('members').map((_, i) => makeCommitteeVoterInvitation(i)),
-  );
-
-  const committeeElectorInvitations = harden(
-    [...Array(committeeSize).keys()].map(makeCommitteeElectorInvitation),
+  const electorateInvitations = harden(
+    [...Array(committeeSize).keys()].map(makeElectorInvitation),
   );
 
   const publicFacet = makeHeapFarInstance(
     'Committee publicFacet',
     ElectoratePublicI,
     {
-      getCommitteeMembers() {
-        return committee.get('members');
-      },
       getQuestionSubscriber() {
         return questionsSubscriber;
       },
+      getElectionQuestionSubscriber() {
+        return electionQuestionsSubscriber;
+      },
       getOpenQuestions() {
         return getOpenQuestions(allQuestions);
+      },
+      getElectionQuestions() {
+        return getOpenQuestions(allElectionQuestions);
       },
       getName() {
         return committeeName;
       },
       getInstance() {
         return zcf.getInstance();
+      },
+      getElectionQuestion(handleP) {
+        return getQuestion(handleP, allElectionQuestions);
       },
       getQuestion(handleP) {
         return getQuestion(handleP, allQuestions);
@@ -178,6 +156,27 @@ const start = (zcf, privateArgs) => {
       getPoserInvitation() {
         return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
           creatorFacet.addQuestion(voteCounter, questionSpec),
+        );
+      },
+      startCommitteeElection(voteCounter, questionSpec) {
+        const outcomeNode = E(privateArgs.storageNode).makeChildNode(
+          'latestElectionOutcome',
+        );
+
+        /** @type {StoredPublishKit<OutcomeRecord>} */
+        const { publisher: outcomePublisher } = makeStoredPublishKit(
+          outcomeNode,
+          privateArgs.marshaller,
+        );
+
+        return startCounter(
+          zcf,
+          questionSpec,
+          quorumThreshold(questionSpec.quorumRule, committeeSize),
+          voteCounter,
+          allElectionQuestions,
+          electionQuestionsPublisher,
+          outcomePublisher,
         );
       },
       /** @type {AddQuestion} */
@@ -202,49 +201,14 @@ const start = (zcf, privateArgs) => {
           outcomePublisher,
         );
       },
-      addCommitteeVoters(voteCounter, questionSpec) {
-        const outcomeNode = E(privateArgs.storageNode).makeChildNode(
-          'latestOutcome',
-        );
-
-        /** @type {StoredPublishKit<OutcomeRecord>} */
-        const { publisher: outcomePublisher } = makeStoredPublishKit(
-          outcomeNode,
-          privateArgs.marshaller,
-        );
-
-        const counter = startCounter(
-          zcf,
-          questionSpec,
-          quorumThreshold(questionSpec.quorumRule),
-          voteCounter,
-          allQuestions,
-          questionsPublisher,
-          outcomePublisher,
-        );
-
-        committeeVoteCounter = counter;
-
-        return counter;
-      },
-      async verifyCommitteeVote() {
-        assert(
-          !committeeVoteCounter.publicFacet.isOpen(),
-          'Committee vote is still open',
-        );
-
-        const outcome = await committeeVoteCounter.publicFacet.getOutcome();
-
-        committee.set('members', [outcome]);
-      },
-      getCommitteeVoterInvitations() {
-        return committeeVoterInvitations;
-      },
-      getCommitteeElectorInvitations() {
-        return committeeElectorInvitations;
+      getVoterInvitations() {
+        return electorateInvitations;
       },
       getQuestionSubscriber() {
         return questionsSubscriber;
+      },
+      getElectionQuestionSubscriber() {
+        return electionQuestionsSubscriber;
       },
       getPublicFacet() {
         return publicFacet;

@@ -128,6 +128,9 @@ export const SimplePositionsShape = harden([
   YesSimplePositionShape,
   NoSimplePositionShape,
 ]);
+
+export const CandidateShape = M.arrayOf(M.any());
+
 export const SimpleIssueShape = SimpleSpecShape;
 export const SimpleQuestionSpecShape = harden({
   method: ChoiceMethodShape,
@@ -139,6 +142,7 @@ export const SimpleQuestionSpecShape = harden({
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoSimplePositionShape,
+  winOutcome: CandidateShape,
 });
 export const SimpleQuestionDetailsShape = harden({
   ...SimpleQuestionSpecShape,
@@ -180,12 +184,17 @@ export const QuestionDetailsShape = M.or(
   SimpleQuestionDetailsShape,
 );
 
+const QuestionShape = M.remotable('Question');
+
 export const ElectoratePublicI = M.interface('Committee PublicFacet', {
+  getElectionQuestionSubscriber: M.call().returns(QuestionShape),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
   getOpenQuestions: M.call().returns(M.promise()),
+  getElectionQuestions: M.call().returns(M.promise()),
   getName: M.call().returns(M.string()),
   getInstance: M.call().returns(InstanceHandleShape),
   getQuestion: M.call(QuestionHandleShape).returns(M.promise()),
+  getElectionQuestion: M.call(QuestionHandleShape).returns(M.promise())
 });
 const ElectoratePublicShape = M.remotable('ElectoratePublic');
 
@@ -194,8 +203,13 @@ export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   addQuestion: M.call(InstanceHandleShape, QuestionSpecShape).returns(
     M.promise(),
   ),
+  startCommitteeElection: M.call(
+    InstanceHandleShape,
+    QuestionSpecShape,
+  ).returns(M.promise()),
   getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
+  getElectionQuestionSubscriber: M.call().returns(QuestionShape),
   getPublicFacet: M.call().returns(ElectoratePublicShape),
 });
 
@@ -209,7 +223,6 @@ export const QuestionI = M.interface('Question', {
   getVoteCounter: M.call().returns(InstanceHandleShape),
   getDetails: M.call().returns(QuestionDetailsShape),
 });
-const QuestionShape = M.remotable('Question');
 
 export const BinaryVoteCounterPublicI = M.interface(
   'BinaryVoteCounter PublicFacet',
