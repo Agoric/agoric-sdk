@@ -5,7 +5,6 @@ import {
   grantRunBehaviors,
   installSimEgress,
 } from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
-import { makeBridgeManager } from '../bridge.js';
 import { makeBoard } from '../lib-board.js';
 import {
   addBankAssets,
@@ -21,6 +20,7 @@ import {
 import {
   bridgeProvisioner,
   connectChainFaucet,
+  makeBridgeManager,
   makeChainStorage,
   makeProvisioner,
   publishAgoricNames,
@@ -103,8 +103,8 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     },
   },
   [makeBridgeManager.name]: {
-    devices: { bridge: true },
-    vatPowers: { D: true },
+    consume: { loadCriticalVat: true },
+    devices: { bridge: 'kernel' },
     produce: { bridgeManager: true },
   },
   [makeAddressNameHubs.name]: {

@@ -73,8 +73,8 @@ export {};
 
 /**
  * @typedef {object} BridgeManager The object to manage this bridge
- * @property {(dstID: string, obj: any) => any} toBridge
- * @property {(dstID: string, obj: any) => any} fromBridge
+ * @property {(dstID: string, obj: any) => Promise<any>} toBridge
+ * @property {(dstID: string, obj: any) => void} fromBridge
  * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} register
  * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} unregister
  */

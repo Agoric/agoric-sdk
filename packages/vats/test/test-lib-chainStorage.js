@@ -15,7 +15,7 @@ test('makeChainStorageRoot', async t => {
 
   t.throws(() =>
     makeChainStorageRoot(
-      () => {
+      async () => {
         t.fail(
           'toStorage should not have been called for non-"swingset" storeName',
         );

@@ -49,8 +49,8 @@ export function makeChainStorageRoot(
   function makeChainStorageNode(path, options = {}) {
     const { sequence = false } = options;
     const node = {
-      /** @type {() => VStorageKey} */
-      getStoreKey() {
+      /** @type {() => Promise<VStorageKey>} */
+      async getStoreKey() {
         return handleStorageMessage({
           key: path,
           method: 'getStoreKey',
@@ -64,10 +64,10 @@ export function makeChainStorageRoot(
         const mergedOptions = { sequence, ...childNodeOptions };
         return makeChainStorageNode(`${path}.${name}`, mergedOptions);
       },
-      /** @type {(value: string) => void} */
-      setValue(value) {
+      /** @type {(value: string) => Promise<void>} */
+      async setValue(value) {
         assert.typeof(value, 'string');
-        handleStorageMessage({
+        await handleStorageMessage({
           key: path,
           method: sequence ? 'append' : 'set',
           value,

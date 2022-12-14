@@ -17,7 +17,6 @@ import {
 import { importBundle } from '@endo/import-bundle';
 import * as Collect from '@agoric/inter-protocol/src/collect.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
@@ -290,19 +289,25 @@ export const startTimerService = async ({
 };
 harden(startTimerService);
 
-/** @param {BootDevices<ChainDevices> & BootstrapSpace} powers */
+/**
+ * @param {BootDevices<ChainDevices> & BootstrapSpace & {
+ *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ * }} powers
+ */
 export const makeBridgeManager = async ({
+  consume: { loadCriticalVat },
   devices: { bridge },
-  vatPowers: { D },
   produce: { bridgeManager },
 }) => {
-  const myBridge = bridge ? makeBridgeManagerKit(E, D, bridge) : undefined;
-  if (!myBridge) {
+  if (!bridge) {
     console.warn(
       'Running without a bridge device; this is not an actual chain.',
     );
+    bridgeManager.resolve(undefined);
+    return;
   }
-  bridgeManager.resolve(myBridge);
+  const vat = E(loadCriticalVat)('chainStorage');
+  bridgeManager.resolve(E(vat).provideManagerForBridge(bridge));
 };
 harden(makeBridgeManager);
 
