@@ -39,7 +39,7 @@ function makePayoffHandler(zcf, seatPromiseKits, collateralSeat) {
   }
 
   function reallocateToSeat(seatPromise, seatPortion) {
-    seatPromise.then(seat => {
+    E.when(seatPromise, seat => {
       atomicTransfer(zcf, collateralSeat, seat, { Collateral: seatPortion });
       seat.exit();
       seatsExited += 1;

@@ -1,5 +1,6 @@
 import { createWriteStream } from 'fs';
 import { open } from 'fs/promises';
+import { E } from '@endo/eventual-send';
 import { fsStreamReady, makeAggregateError } from '@agoric/internal';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
@@ -31,7 +32,8 @@ export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
         }
       });
     });
-    flushed = flushed.then(
+    flushed = E.when(
+      flushed,
       () => written,
       async err =>
         Promise.reject(

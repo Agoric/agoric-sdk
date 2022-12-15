@@ -330,7 +330,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     noteRunningVat(vatID);
 
     const adminNode = makeAdminNode(vatID);
-    return pendingP.then(root => {
+    return E.when(pendingP, root => {
       return { adminNode, root };
     });
   }

@@ -474,7 +474,7 @@ export function makeWalletRoot({
         return;
       case 'accept':
         assert(idToOfferResultPromiseKit.has(id));
-        void idToOfferResultPromiseKit.get(id).promise.then(result => {
+        void E.when(idToOfferResultPromiseKit.get(id).promise, result => {
           const style = passStyleOf(result);
           const active =
             style === 'remotable' ||
@@ -845,7 +845,7 @@ export function makeWalletRoot({
       } else {
         p = Promise.resolve();
       }
-      return p.then(_ => petnameForBrand);
+      return E.when(p, _ => petnameForBrand);
     };
     return addBrandPetname().then(async brandName => {
       await updateAllIssuersState();

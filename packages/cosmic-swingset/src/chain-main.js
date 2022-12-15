@@ -4,6 +4,7 @@ import process from 'node:process';
 import fs from 'node:fs';
 import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { E } from '@endo/far';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import {
@@ -174,7 +175,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
     const action = JSON.parse(str);
     const p = Promise.resolve(handler(action));
-    p.then(
+    E.when(
+      p,
       res => {
         // console.error(`Replying in Node to ${str} with`, res);
         replier.resolve(stringify(res !== undefined ? res : null));
