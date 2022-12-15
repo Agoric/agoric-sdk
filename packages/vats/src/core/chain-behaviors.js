@@ -401,7 +401,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
     // We have access to the bridge, and therefore IBC.
     const callbacks = Far('callbacks', {
       downcall(method, obj) {
-        return dibcBridgeManager.toBridge(BRIDGE_ID.DIBC, {
+        return E(dibcBridgeManager).toBridge(BRIDGE_ID.DIBC, {
           ...obj,
           type: 'IBC_METHOD',
           method,
@@ -409,7 +409,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
       },
     });
     const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-    dibcBridgeManager.register(BRIDGE_ID.DIBC, ibcHandler);
+    await E(dibcBridgeManager).register(BRIDGE_ID.DIBC, ibcHandler);
     ps.push(
       E(vats.network).registerProtocolHandler(
         ['/ibc-port', '/ibc-hop'],

@@ -37,7 +37,7 @@ export function buildRootObject(vatPowers) {
     // and is instead the responsibility of callers.
 
     const bridgeManager = provideManagerForBridge(bridge);
-    const toStorage = obj => bridgeManager.toBridge(bridgeId, obj);
+    const toStorage = obj => E(bridgeManager).toBridge(bridgeId, obj);
 
     const rootNode = makeChainStorageRoot(
       toStorage,
@@ -48,6 +48,8 @@ export function buildRootObject(vatPowers) {
     return rootNode;
   };
 
+  // We colocate these functions in this vat so that we don't pay extra cranks
+  // to shuffle messages between a chainStorage node and the bridgeManager.
   return Far('root', {
     makeBridgedChainStorageRoot,
     provideManagerForBridge,
