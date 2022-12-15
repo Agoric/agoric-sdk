@@ -7,11 +7,10 @@
 # (the Makefile passes this to agd start)
 export AGC_START_ARGS="--pruning=nothing"
 
-# TODO make cross-platform https://stackoverflow.com/questions/52670836/standard-log-locations-for-a-cross-platform-application
-mkdir -p ~/Library/Logs/Agoric
-CHAIN_LOG=~/Library/Logs/Agoric/local-chain.log
-touch "$CHAIN_LOG" || exit 1
-open -a /System/Applications/Utilities/Console.app $CHAIN_LOG
+CHAIN_LOG=$(mktemp -t Agoric-start-local-chain-log)
+if [[ $(uname) == "Darwin" ]]; then
+    open -a /System/Applications/Utilities/Console.app "$CHAIN_LOG"
+fi
 
 # ugly way to get SDK path regardless of cwd
 SDK=$(readlink -f "$(dirname -- "$(readlink -f -- "$0")")/../../..")
@@ -26,7 +25,7 @@ fi
 
 WALLET_BECH32=$(agd keys show "$WALLET" --output json | jq -r .address)
 
-echo CHAIN_LOG $CHAIN_LOG
+echo CHAIN_LOG "$CHAIN_LOG"
 echo SDK "$SDK"
 echo WALLET "$WALLET"
 echo WALLET_BECH32 "$WALLET_BECH32"
