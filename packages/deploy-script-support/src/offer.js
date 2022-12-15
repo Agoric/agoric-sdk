@@ -77,7 +77,7 @@ export const makeOfferAndFindInvitationAmount = (
       const allDepositedP = Promise.all(
         Object.entries(paymentsP).map(([keyword, paymentP]) => {
           const depositInPurse = makeDepositInPurse(keyword);
-          return paymentP.then(depositInPurse);
+          return E.when(paymentP, depositInPurse);
         }),
       );
       return allDepositedP;
