@@ -96,7 +96,8 @@ export function makeWatchedPromiseManager(
       }
     }
 
-    p.then(
+    E.when(
+      p,
       res => settle(res, true),
       rej => settle(rej, false),
     );

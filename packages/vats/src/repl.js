@@ -1,6 +1,6 @@
 // @ts-check
 import { isPromise } from '@endo/promise-kit';
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import * as farExports from '@endo/far';
 
 import { Nat } from '@agoric/nat';
@@ -253,7 +253,8 @@ export function getReplHandler(replObjects, send) {
 
       if (isPromise(r)) {
         display[histnum] = `unresolved Promise`;
-        r.then(
+        E.when(
+          r,
           res => {
             history[histnum] = res;
             display[histnum] = dump(res);

@@ -88,7 +88,7 @@ export const makeVatsFromBundles = async ({
         });
         return vatInfo;
       });
-      return vatInfoP.then(vatInfo => vatInfo.root);
+      return E.when(vatInfoP, vatInfo => vatInfo.root);
     };
   };
 
