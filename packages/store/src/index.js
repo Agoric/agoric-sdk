@@ -56,6 +56,7 @@ export {
 
 export {
   defendPrototype,
+  defendPrototypeKit,
   initEmpty,
   defineHeapFarClass,
   defineHeapFarClassKit,
