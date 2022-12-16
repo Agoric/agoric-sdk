@@ -1,3 +1,5 @@
+// @ts-check
+
 /* global WeakRef FinalizationRegistry */
 /* eslint-disable no-constant-condition */
 import fs from 'fs';
@@ -110,30 +112,42 @@ function compareSyscalls(vatID, originalSyscall, newSyscall) {
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
+/** @type {import('../src/types-external.js').ManagerType} */
 const worker = 'xs-worker';
 
 async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
+  /** @type {import('../src/types-external.js').VatManagerFactory} */
   let factory;
 
   let loadSnapshotID = null;
   let saveSnapshotID = null;
   const snapshotOverrideMap = new Map();
 
-  const fakeKernelKeeper = {
-    provideVatKeeper: _vatID => ({
-      addToTranscript: () => undefined,
-      getLastSnapshot: () => loadSnapshotID && { snapshotID: loadSnapshotID },
-    }),
-    getRelaxDurabilityRules: () => false,
-  };
-  const kernelSlog = {
-    write() {},
-    delivery: () => () => undefined,
-    syscall: () => () => undefined,
-  };
+  const fakeKernelKeeper =
+    /** @type {import('../src/types-external.js').KernelKeeper} */ ({
+      provideVatKeeper: _vatID =>
+        /** @type {import('../src/types-external.js').VatKeeper} */ (
+          /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
+            addToTranscript: () => {},
+            getLastSnapshot: () =>
+              loadSnapshotID && { snapshotID: loadSnapshotID },
+          })
+        ),
+      getRelaxDurabilityRules: () => false,
+    });
+
+  const kernelSlog =
+    /** @type {import('../src/types-external.js').KernelSlog} */ (
+      /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
+        write() {},
+        delivery: () => () => undefined,
+        syscall: () => () => undefined,
+      })
+    );
+
   const snapStore = USE_CUSTOM_SNAP_STORE
-    ? {
+    ? /** @type {SnapStore} */ ({
         async save(saveRaw) {
           const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
           await saveRaw(snapFile);
@@ -146,9 +160,9 @@ async function replay(transcriptFile) {
           const snapFile = `${hash}.xss`;
           return loadRaw(snapFile);
         },
-      }
+      })
     : makeSnapStore(process.cwd(), makeSnapStoreIO());
-  const testLog = undefined;
+  const testLog = () => {};
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
     WeakRef,
@@ -157,7 +171,12 @@ async function replay(transcriptFile) {
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl,
   });
-  const allVatPowers = { testLog };
+  const allVatPowers =
+    /** @type {import('../src/types-external.js').VatPowers} */ (
+      /** @type {Partial<import('../src/types-external.js').VatPowers>} */ ({
+        testLog,
+      })
+    );
   let xsnapPID;
 
   if (worker === 'xs-worker') {
@@ -168,25 +187,29 @@ async function replay(transcriptFile) {
       console.log(`xsnap helper bundles created`);
     }
     const bundles = [
-      JSON.parse(fs.readFileSync('lockdown-bundle')),
-      JSON.parse(fs.readFileSync('supervisor-bundle')),
+      JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
+      JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
     ];
-    const env = {};
+    const env = /** @type {Record<string, string>} */ ({});
     if (RECORD_XSNAP_TRACE) {
       env.XSNAP_TEST_RECORD = process.cwd();
     }
 
-    const capturePIDSpawn = (...args) => {
-      const child = spawn(...args);
-      xsnapPID = child.pid;
-      return child;
-    };
+    const capturePIDSpawn = /** @type {typeof spawn} */ (
+      /** @param  {Parameters<typeof spawn>} args */
+      (...args) => {
+        const child = spawn(...args);
+        xsnapPID = child.pid;
+        return child;
+      }
+    );
     const startXSnap = makeStartXSnap(bundles, {
       snapStore,
       env,
       spawn: capturePIDSpawn,
     });
     factory = makeXsSubprocessFactory({
+      allVatPowers,
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
       startXSnap,
@@ -222,15 +245,19 @@ async function replay(transcriptFile) {
 
   let vatParameters;
   let vatSourceBundle;
+  /** @type {import('../src/types-external.js').VatManager | undefined} */
   let manager;
 
   const createManager = async () => {
-    const managerOptions = {
-      sourcedConsole: console,
-      vatParameters,
-      compareSyscalls,
-      useTranscript: true,
-    };
+    const managerOptions =
+      /** @type {import('../src/types-external.js').ManagerOptions} */ (
+        /** @type {Partial<import('../src/types-external.js').ManagerOptions>} */ ({
+          sourcedConsole: console,
+          vatParameters,
+          compareSyscalls,
+          useTranscript: true,
+        })
+      );
     const vatSyscallHandler = undefined;
     manager = await factory.createFromBundle(
       vatID,
@@ -241,6 +268,7 @@ async function replay(transcriptFile) {
     );
   };
 
+  /** @type {import('stream').Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());
@@ -266,7 +294,7 @@ async function replay(transcriptFile) {
       }
       if (manager) {
         await manager.shutdown();
-        manager = null;
+        manager = undefined;
       }
       loadSnapshotID = data.snapshotID;
       if (snapshotOverrideMap.has(loadSnapshotID)) {
@@ -336,6 +364,7 @@ async function replay(transcriptFile) {
             return thunk(fn);
           },
         };
+        // @ts-expect-error to be removed
         await manager.makeSnapshot(snapstore);
         // const size = fs.statSync(fn).size;
       }
