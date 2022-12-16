@@ -274,8 +274,8 @@
  * string-valued data for each node, defaulting to the empty string.
  *
  * @typedef {object} StorageNode
- * @property {(data: string) => void} setValue publishes some data
- * @property {() => ERef<VStorageKey>} getStoreKey get the
+ * @property {(data: string) => Promise<void>} setValue publishes some data
+ * @property {() => Promise<VStorageKey>} getStoreKey get the
  * externally-reachable store key for this storage item
  * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
  */

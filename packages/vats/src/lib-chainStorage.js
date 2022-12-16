@@ -46,6 +46,12 @@ export function makeChainStorageRoot(
   );
   assert.typeof(rootPath, 'string');
 
+  /**
+   * @param {string} path
+   * @param {object} [options]
+   * @param {boolean} [options.sequence]
+   * @returns {StorageNode}
+   */
   function makeChainStorageNode(path, options = {}) {
     const { sequence = false } = options;
     const node = {
@@ -106,8 +112,8 @@ const makeNullStorageNode = () => {
  * @returns {Promise<StorageNode>}
  */
 export async function makeStorageNodeChild(storageNodeRef, childName) {
-  // eslint-disable-next-line @jessie.js/no-nested-await
-  const storageNode = (await storageNodeRef) || makeNullStorageNode();
+  const existingStorageNode = await storageNodeRef;
+  const storageNode = existingStorageNode || makeNullStorageNode();
   return E(storageNode).makeChildNode(childName);
 }
 harden(makeStorageNodeChild);
