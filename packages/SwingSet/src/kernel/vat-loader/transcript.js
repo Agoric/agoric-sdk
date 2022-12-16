@@ -1,3 +1,5 @@
+// @ts-check
+
 import djson from '../../lib/djson.js';
 
 // Indicate that a syscall is missing from the transcript but is safe to
@@ -9,12 +11,12 @@ export const missingSyscall = Symbol('missing transcript syscall');
 export const extraSyscall = Symbol('extra transcript syscall');
 
 /** @typedef {typeof missingSyscall | typeof extraSyscall | Error | undefined} CompareSyscallsResult */
+/** @typedef {(vatId: any, originalSyscall: VatSyscallObject, newSyscall: VatSyscallObject, originalResponse: VatSyscallResult) => CompareSyscallsResult} CompareSyscalls */
 
 /**
  * @param {any} vatID
- * @param {object} originalSyscall
- * @param {object} newSyscall
- * @returns {CompareSyscallsResult}
+ * @param {VatSyscallObject} originalSyscall
+ * @param {VatSyscallObject} newSyscall
  */
 export function requireIdentical(vatID, originalSyscall, newSyscall) {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
@@ -54,8 +56,8 @@ const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
  * `simulateSyscall` which then performs the appropriate action.
  *
  * @param {any} vatID
- * @param {object} originalSyscall
- * @param {object} newSyscall
+ * @param {VatSyscallObject} originalSyscall
+ * @param {VatSyscallObject} newSyscall
  * @returns {CompareSyscallsResult}
  */
 export function requireIdenticalExceptStableVCSyscalls(
@@ -87,6 +89,11 @@ export function requireIdenticalExceptStableVCSyscalls(
   return error;
 }
 
+/**
+ * @param {*} vatKeeper
+ * @param {*} vatID
+ * @param {CompareSyscalls} compareSyscalls
+ */
 export function makeTranscriptManager(
   vatKeeper,
   vatID,
@@ -149,6 +156,7 @@ export function makeTranscriptManager(
     }
   };
 
+  /** @param {VatSyscallObject} newSyscall */
   function simulateSyscall(newSyscall) {
     function simulateSyscallNext() {
       if (!playbackSyscalls.length) {
@@ -173,7 +181,10 @@ export function makeTranscriptManager(
         ),
       );
     }
-    /** @param {CompareSyscallsResult} compareError */
+    /**
+     * @param {CompareSyscallsResult} compareError
+     * @returns {VatSyscallResult | undefined}
+     */
     function handleCompareResult(compareError) {
       if (compareError === missingSyscall) {
         // return `undefined` to indicate that this syscall cannot be simulated
@@ -181,6 +192,7 @@ export function makeTranscriptManager(
         return undefined;
       }
 
+      /** @type {{d: VatSyscallObject; response: VatSyscallResult}} */
       const s = playbackSyscalls.shift();
 
       if (!compareError) {
