@@ -60,6 +60,7 @@ const KEEP_WORKER_TRANSACTION_NUMS = [];
 
 const SKIP_EXTRA_SYSCALLS = true;
 const SIMULATE_VC_SYSCALLS = true;
+const SYNCHRONIZE_SYSCALLS = false;
 
 // Use a simplified snapstore which derives the snapshot filename from the
 // transcript and doesn't compress the snapshot
@@ -259,6 +260,27 @@ async function replay(transcriptFile) {
   const knownVCSyscalls = new Map();
   const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
 
+  let syncSyscalls = Promise.resolve();
+
+  const updateSyncSyscalls = () => {
+    const workersDone = Promise.all(
+      workers.map(({ syscallCompleted }) => syscallCompleted),
+    );
+    const newSyncSyscalls = workersDone.then(() => {
+      if (syncSyscalls === newSyncSyscalls) {
+        updateSyncSyscalls();
+      }
+    });
+    syncSyscalls = newSyncSyscalls;
+  };
+
+  const completeWorkerSyscall = workerData => {
+    workerData.completeSyscall();
+    workerData.syscallCompleted = new Promise(resolve => {
+      workerData.completeSyscall = resolve;
+    });
+  };
+
   const updateDeliveryTime = workerData => {
     const deliveryTime = performance.now() - workerData.timeOfLastCommand;
     workerData.timeOfLastCommand = NaN;
@@ -348,8 +370,16 @@ async function replay(transcriptFile) {
         newSyscall,
         originalResponse,
       );
-      workerData.timeOfLastCommand = performance.now();
-      return result;
+      const finish = () => {
+        workerData.timeOfLastCommand = performance.now();
+        return result;
+      };
+      if (SYNCHRONIZE_SYSCALLS && result !== missingSyscall) {
+        completeWorkerSyscall(workerData);
+        return syncSyscalls.then(finish);
+      } else {
+        return finish();
+      }
     };
     return compareSyscalls;
   };
@@ -364,8 +394,12 @@ async function replay(transcriptFile) {
       loadSnapshotID,
       keep,
       firstTranscriptNum: undefined,
+      completeSyscall: () => {},
+      syscallCompleted: Promise.resolve(),
     };
+    completeWorkerSyscall(workerData);
     workers.push(workerData);
+    updateSyncSyscalls();
     const managerOptions = {
       sourcedConsole: console,
       vatParameters,
@@ -407,6 +441,7 @@ async function replay(transcriptFile) {
         )
         .map(async workerData => {
           workers.splice(workers.indexOf(workerData), 1);
+          updateSyncSyscalls();
 
           const {
             manager,
@@ -606,6 +641,8 @@ async function replay(transcriptFile) {
           await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
           updateDeliveryTime(workerData);
           workerData.firstTranscriptNum ??= transcriptNum - 1;
+          completeWorkerSyscall(workerData);
+          await syncSyscalls;
 
           // console.log(`dr`, dr);
 
