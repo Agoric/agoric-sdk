@@ -109,15 +109,14 @@ scenario2-setup-nobuild:
 	$(AGCH) --home=t1/n0 init scenario2-chain --chain-id=$(CHAIN_ID)
 	# Init all the ag-solos, ensuring only the first one uses the $SOLO_MNEMONIC, if any.
 	set -e; \
-		first_solo=true; \
 		for port in `seq $(BASE_PORT) $$(($(BASE_PORT) + $(NUM_SOLOS) - 1))`; do \
 			NODE_OPTIONS= $(AG_SOLO) init t1/$$port --webport=$$port; \
-			if $$first_solo; then \
-				first_solo=false; \
-				sed -e "s!@FIRST_SOLO_ADDRESS@!$$(cat t1/$$port/ag-cosmos-helper-address)!g" \
-					'$(ECONOMY_TEMPLATE)' > '$(ECONOMY_PROPOSALS)'; \
+			if [ -z $$PRIMARY_ADDRESS ]; then \
+				echo "Getting PRIMARY_ADDRESS from agsolo config"; \
+				export PRIMARY_ADDRESS=$$(cat t1/$$port/ag-cosmos-helper-address); \
 			fi; \
-	  done
+	  done; \
+	  sed -e "s!@PRIMARY_ADDRESS@!$$PRIMARY_ADDRESS!g" '$(ECONOMY_TEMPLATE)' > '$(ECONOMY_PROPOSALS)'
 	# Create the bootstrap account.
 	$(AGCH) --home=t1/bootstrap keys add bootstrap --keyring-backend=test
 	$(AGCH) --home=t1/bootstrap keys show -a bootstrap --keyring-backend=test > t1/bootstrap-address
