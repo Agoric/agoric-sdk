@@ -1,6 +1,7 @@
 // import { spawn } from 'child_process'; // not from Compartment
 
 import { assert, Fail } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 
@@ -105,7 +106,7 @@ export function makeNodeSubprocessFactory(tools) {
 
     function shutdown() {
       terminate();
-      return done.then(_ => undefined);
+      return E.when(done, _ => undefined);
     }
     const manager = mk.getManager(shutdown);
     return dispatchReadyP.then(() => manager);

@@ -100,7 +100,7 @@ export const start = (zcf, { bankManager }) => {
         proposal,
         seat2,
       );
-      return deposited.then(_ => {
+      return E.when(deposited, _ => {
         seat.exit();
         seat2.exit();
 

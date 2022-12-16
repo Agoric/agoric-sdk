@@ -3,6 +3,7 @@
 
 import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
+import { E } from '@endo/eventual-send';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 /**
@@ -96,7 +97,8 @@ export function makeWatchedPromiseManager(
       }
     }
 
-    p.then(
+    E.when(
+      p,
       res => settle(res, true),
       rej => settle(rej, false),
     );

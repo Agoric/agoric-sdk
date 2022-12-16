@@ -70,7 +70,7 @@ export const makeWriteCoreProposal = (
       }
 
       // Serialise the installations.
-      mutex = mutex.then(() => {
+      mutex = E.when(mutex, () => {
         console.log('installing', { filePrefix, entrypoint, bundlePath });
 
         return installInPieces(bundle, bundler, opts);

@@ -35,6 +35,82 @@ const dumpState = (hostStorage, vatID) => {
   }
 };
 
+const makeRun = swingsetController => {
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = swingsetController.queueToVatRoot('bootstrap', method, args);
+    await swingsetController.run();
+    const status = swingsetController.kpStatus(kpid);
+    if (status === 'fulfilled') {
+      const result = swingsetController.kpResolution(kpid);
+      return kunser(result);
+    }
+    assert(status === 'rejected');
+    const err = swingsetController.kpResolution(kpid);
+    throw kunser(err);
+  };
+  return run;
+};
+
+const testNullUpgrade = async (t, defaultManagerType) => {
+  const config = {
+    includeDevDependencies: true, // for vat-data
+    defaultManagerType,
+    bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
+    vats: {
+      bootstrap: { sourceSpec: bfile('../bootstrap-relay.js') },
+    },
+    bundles: {
+      durableSingleton: { sourceSpec: bfile('../vat-durable-singleton.js') },
+    },
+  };
+
+  const hostStorage = provideHostStorage();
+  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  await initializeSwingset(config, [], hostStorage, initOpts);
+  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  t.teardown(c.shutdown);
+  c.pinVatRoot('bootstrap');
+  await c.run();
+  const run = makeRun(c);
+
+  await run('createVat', [
+    {
+      name: 'durableSingleton',
+      bundleCapName: 'durableSingleton',
+      vatParameters: { version: 'v1' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [
+      { name: 'durableSingleton', methodName: 'getVersion' },
+    ]),
+    'v1',
+  );
+  await run('upgradeVat', [
+    {
+      name: 'durableSingleton',
+      bundleCapName: 'durableSingleton',
+      vatParameters: { version: 'v2' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [
+      { name: 'durableSingleton', methodName: 'getVersion' },
+    ]),
+    'v2',
+  );
+};
+
+test('null upgrade - local', async t => {
+  return testNullUpgrade(t, 'local');
+});
+
+test('null upgrade - xsnap', async t => {
+  return testNullUpgrade(t, 'xs-worker');
+});
+
 const testUpgrade = async (
   t,
   defaultManagerType,
@@ -47,7 +123,7 @@ const testUpgrade = async (
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -63,37 +139,24 @@ const testUpgrade = async (
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
+  const run = makeRun(c);
 
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
-
-  const mcd = await run('getMarker');
-  t.is(mcd[0], 'fulfilled');
-  const marker = kunser(mcd[1]); // probably ko26
+  const marker = await run('getMarker'); // probably ko26
   t.is(marker.iface(), 'marker');
 
   // fetch all the "importSensors": exported by bootstrap, imported by
   // the upgraded vat. We'll determine their krefs and later query the
   // upgraded vat to see if it's still importing them or not
-  const [impstatus, impresult] = await run('getImportSensors', []);
-  t.is(impstatus, 'fulfilled');
+  const impresult = await run('getImportSensors', []);
   // eslint-disable-next-line no-unused-vars
-  const impKrefs = ['skip0', ...kunser(impresult).slice(1).map(krefOf)];
+  const impKrefs = ['skip0', ...impresult.slice(1).map(krefOf)];
 
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
   }
 
   // create initial version
-  const [v1status, v1resultEnc] = await run('buildV1', []);
-  const v1result = kunser(v1resultEnc);
-  t.is(v1status, 'fulfilled');
+  const v1result = await run('buildV1', []);
   t.is(v1result.version, 'v1');
   t.is(v1result.youAre, 'v1');
   t.truthy(krefOf(v1result.marker));
@@ -170,9 +233,7 @@ const testUpgrade = async (
   // now perform the upgrade
   // console.log(`-- starting upgradeV2`);
 
-  const [v2status, v2resultEnc] = await run('upgradeV2', []);
-  const v2result = kunser(v2resultEnc);
-  t.is(v2status, 'fulfilled');
+  const v2result = await run('upgradeV2', []);
   t.deepEqual(v2result.version, 'v2');
   t.deepEqual(v2result.youAre, 'v2');
   t.deepEqual(krefOf(v2result.marker), krefOf(marker));
@@ -291,7 +352,7 @@ test('vat upgrade - omit vatParameters', async t => {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -306,20 +367,11 @@ test('vat upgrade - omit vatParameters', async t => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-
-  const run = async (name, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
+  const run = makeRun(c);
 
   // create initial version
-  const [status, result] = await run('doUpgradeWithoutVatParameters', []);
-  t.is(status, 'fulfilled');
-  t.deepEqual(kunser(result), [undefined, undefined]);
+  const result = await run('doUpgradeWithoutVatParameters', []);
+  t.deepEqual(result, [undefined, undefined]);
 });
 
 test('failed upgrade - relaxed durable rules', async t => {
@@ -328,7 +380,7 @@ test('failed upgrade - relaxed durable rules', async t => {
     includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -343,26 +395,16 @@ test('failed upgrade - relaxed durable rules', async t => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
+  const run = makeRun(c);
 
   // create initial version
-  const [v1status] = await run('buildV1', []);
-  t.is(v1status, 'fulfilled');
+  await run('buildV1', []);
 
   // upgrade should fail
-  const [v2status, v2result] = await run('upgradeV2', []);
-  t.is(v2status, 'rejected');
-  const e = kunser(v2result);
-  t.truthy(e instanceof Error);
-  t.regex(e.message, /vat-upgrade failure/);
+  await t.throwsAsync(run('upgradeV2', []), {
+    instanceOf: Error,
+    message: /vat-upgrade failure/,
+  });
 });
 
 test('failed upgrade - lost kind', async t => {
@@ -372,7 +414,7 @@ test('failed upgrade - lost kind', async t => {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -387,26 +429,15 @@ test('failed upgrade - lost kind', async t => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
+  const run = makeRun(c);
 
   // create initial version
-  const [v1status, v1result] = await run('buildV1WithLostKind', []);
-  t.is(v1status, 'fulfilled');
-  t.deepEqual(kunser(v1result), ['ping 1']);
+  const v1result = await run('buildV1WithLostKind', []);
+  t.deepEqual(v1result, ['ping 1']);
 
   // upgrade should fail, get rewound
   console.log(`note: expect a 'defineDurableKind not called' error below`);
-  const [v2status, v2result] = await run('upgradeV2WhichLosesKind', []);
-  t.is(v2status, 'fulfilled');
-  const events = kunser(v2result);
+  const events = await run('upgradeV2WhichLosesKind', []);
   t.is(events[0], 'ping 2');
 
   // The v2 vat starts with a 'ping from v2' (which will be unwound).
@@ -442,7 +473,7 @@ test('failed upgrade - explode', async t => {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -455,25 +486,14 @@ test('failed upgrade - explode', async t => {
   const c = await makeSwingsetController(hostStorage);
   c.pinVatRoot('bootstrap');
   await c.run();
-
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
+  const run = makeRun(c);
 
   // create initial version
-  const [v1status, v1result] = await run('buildV1WithPing', []);
-  t.is(v1status, 'fulfilled');
-  t.deepEqual(kunser(v1result), ['hello from v1', 'ping 1']);
+  const v1result = await run('buildV1WithPing', []);
+  t.deepEqual(v1result, ['hello from v1', 'ping 1']);
 
   // upgrade should fail, error returned in array
-  const [v2status, v2result] = await run('upgradeV2WhichExplodes', []);
-  t.is(v2status, 'fulfilled');
-  const events = kunser(v2result);
+  const events = await run('upgradeV2WhichExplodes', []);
   const e = events[0];
   t.truthy(e instanceof Error);
   t.regex(e.message, /vat-upgrade failure/);
@@ -497,7 +517,7 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -512,35 +532,25 @@ async function testMultiKindUpgradeChecks(t, mode, complaint) {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
+  const run = makeRun(c);
 
   // create initial version
-  const [v1status] = await run('buildV1WithMultiKind', [mode]);
-  t.is(v1status, 'fulfilled');
+  await run('buildV1WithMultiKind', [mode]);
 
-  // upgrade should fail
-  if (complaint) {
-    console.log(`note: expect a '${complaint}' error below`);
+  // upgrade
+  const resultP = run('upgradeV2Simple', [mode]);
+  if (!complaint) {
+    await resultP;
+    t.pass();
+    return;
   }
-  const [v2status, v2result] = await run('upgradeV2Simple', [mode]);
-  if (complaint) {
-    t.is(v2status, 'rejected');
-    const e = kunser(v2result);
-    t.truthy(e instanceof Error);
-    t.regex(e.message, /vat-upgrade failure/);
-    // TODO: who should see the details of what v2 did wrong? calling
-    // vat? only the console?
-  } else {
-    t.is(v2status, 'fulfilled');
-  }
+  console.log(`note: expect a '${complaint}' error below`);
+  // TODO: who should see the details of what v2 did wrong? calling
+  // vat? only the console?
+  await t.throwsAsync(resultP, {
+    instanceOf: Error,
+    message: /vat-upgrade failure/,
+  });
 }
 
 test('facet kind redefinition - fail on facet count mismatch', async t => {
@@ -590,7 +600,7 @@ test('failed upgrade - unknown options', async t => {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -605,24 +615,15 @@ test('failed upgrade - unknown options', async t => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
+  const run = makeRun(c);
 
-  const run = async (name, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', name, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
-
-  const [status, result] = await run('doUpgradeWithBadOption', []);
-  t.is(status, 'rejected');
-  const e = kunser(result);
-  t.truthy(e instanceof Error);
-  // TODO Since we should be running with `errorTaming: unsafe`, the
-  // following should have worked.
-  // t.regex(e.message, /upgrade\(\) received unknown options: bad/);
-  t.regex(e.message, /upgrade\(\) received unknown options: \(a string\)/);
+  await t.throwsAsync(run('doUpgradeWithBadOption', []), {
+    instanceOf: Error,
+    // TODO Since we should be running with `errorTaming: unsafe`, the
+    // following should have worked.
+    // message: /upgrade\(\) received unknown options: bad/,
+    message: /upgrade\(\) received unknown options: \(a string\)/,
+  });
 });
 
 test('failed vatAdmin upgrade - bad replacement code', async t => {
@@ -631,7 +632,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-upgrade.js') },
+      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
     },
     bundles: {
       ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
@@ -643,15 +644,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   const c = await makeSwingsetController(hostStorage);
   c.pinVatRoot('bootstrap');
   await c.run();
-
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    const result = c.kpResolution(kpid);
-    return [status, result];
-  };
+  const run = makeRun(c);
 
   const badVABundle = await bundleSource(
     new URL('./vat-junk.js', import.meta.url).pathname,
@@ -667,8 +660,7 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   t.regex(vaUpgradeResult.message, /vat-upgrade failure/);
 
   // Now try doing something that uses vatAdmin to verify that original vatAdmin is intact.
-  const [v1status, v1result] = await run('buildV1', []);
-  t.is(v1status, 'fulfilled');
+  const v1result = await run('buildV1', []);
   // Just a taste to verify that the create went right; other tests check the rest
-  t.deepEqual(kunser(v1result).data, ['some', 'data']);
+  t.deepEqual(v1result.data, ['some', 'data']);
 });

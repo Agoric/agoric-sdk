@@ -7,7 +7,7 @@ import {
 import { assert, details as X, Fail } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
-import { HandledPromise } from '@endo/eventual-send';
+import { E, HandledPromise } from '@endo/eventual-send';
 import {
   insistVatType,
   makeVatSlot,
@@ -452,7 +452,7 @@ function build(
           Fail`mIPromise handler called after resolution`;
         }
         // FIXME: Actually pipeline.
-        return p.then(o => o[prop]);
+        return E.when(p, o => o[prop]);
       },
     };
 
@@ -1168,7 +1168,8 @@ function build(
       exportedVPIDs.delete(vpid);
     }
 
-    p.then(
+    E.when(
+      p,
       value => handle(false, value),
       value => handle(true, value),
     );
