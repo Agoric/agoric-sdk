@@ -43,6 +43,7 @@ const REBUILD_BUNDLES = false;
 
 // Enable to continue if snapshot hash doesn't match transcript
 const IGNORE_SNAPSHOT_HASH_DIFFERENCES = true;
+const IGNORE_CONCURRENT_WORKER_DIVERGENCES = true;
 
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
@@ -345,6 +346,68 @@ async function replay(transcriptFile) {
     );
   }
 
+  /** @type {Partial<Record<ReturnType<typeof getResultKind>, Map<string, number[]>>>} */
+  let syscallResults = {};
+
+  const getResultKind = result => {
+    if (result === extraSyscall) {
+      return 'extra';
+    } else if (result === missingSyscall) {
+      return 'missing';
+    } else if (result) {
+      return 'error';
+    } else {
+      return 'success';
+    }
+  };
+
+  const reportWorkerResult = ({
+    xsnapPID,
+    result,
+    originalSyscall,
+    newSyscall,
+  }) => {
+    if (!result) return;
+    if (workers.length <= 1) return;
+    const resultKind = getResultKind(result);
+    let kindSummary = syscallResults[resultKind];
+    if (!kindSummary) {
+      /** @type {Map<string, number[]>} */
+      kindSummary = new Map();
+      syscallResults[resultKind] = kindSummary;
+    }
+    const syscallKey = JSON.stringify(
+      resultKind === 'extra' ? originalSyscall : newSyscall,
+    );
+    let workerList = kindSummary.get(syscallKey);
+    if (!workerList) {
+      workerList = [];
+      kindSummary.set(syscallKey, workerList);
+    }
+    workerList.push(xsnapPID);
+  };
+
+  const analyzeSyscallResults = () => {
+    const numWorkers = workers.length;
+    let divergent = false;
+    for (const [kind, kindSummary] of Object.entries(syscallResults)) {
+      for (const [syscallKey, workerList] of kindSummary.entries()) {
+        if (workerList.length !== numWorkers) {
+          console.error(
+            `Divergent ${kind} syscall on deliveryNum= ${lastTranscriptNum}:\n  Worker PIDs ${workerList.join(
+              ', ',
+            )} recorded ${kind} ${syscallKey}`,
+          );
+          divergent = true;
+        }
+      }
+    }
+    syscallResults = {};
+    if (divergent && !IGNORE_CONCURRENT_WORKER_DIVERGENCES) {
+      throw new Error('Divergent execution between workers');
+    }
+  };
+
   let workersSynced = Promise.resolve();
 
   const updateWorkersSynced = () => {
@@ -354,6 +417,7 @@ async function replay(transcriptFile) {
     const newWorkersSynced = stepsCompleted.then(() => {
       if (workersSynced === newWorkersSynced) {
         updateWorkersSynced();
+        analyzeSyscallResults();
       }
     });
     workersSynced = newWorkersSynced;
@@ -466,6 +530,12 @@ async function replay(transcriptFile) {
         newSyscall,
         originalResponse,
       );
+      reportWorkerResult({
+        xsnapPID: workerData.xsnapPID,
+        result,
+        originalSyscall,
+        newSyscall,
+      });
       workerData.timeOfLastCommand = performance.now();
       return result;
     };
