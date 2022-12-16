@@ -7,7 +7,6 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     baggage,
     'DurablePublishKit',
   );
-  // TODO: Figure out why this breaks during upgrade!
   const { publisher, subscriber } = provide(
     baggage,
     'publishKitSingleton',

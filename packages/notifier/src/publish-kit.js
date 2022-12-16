@@ -232,13 +232,21 @@ const initDurablePublishKitState = (options = {}) => {
   };
 };
 
-/** @type {WeakMap<object, {currentP, tailP, tailR}>} */
+// We need the WeakMap key for a kit to be a vref-bearing object
+// in its cohort, and have arbitrarily chosen the publisher facet.
+/** @typedef {Publisher<*>} DurablePublishKitEphemeralKey */
+/**
+ * @param {PublishKit<*>} facets
+ * @returns {DurablePublishKitEphemeralKey}
+ */
+const getEphemeralKey = facets => facets.publisher;
+
+/** @type {WeakMap<DurablePublishKitEphemeralKey, {currentP, tailP, tailR}>} */
 const durablePublishKitEphemeralData = new WeakMap();
 
-// XXX Does state actually work as a WeakMap key?
 /**
  * Returns the current/next-result promises and next-result resolver
- * associated with a given state object backing a durable publish kit.
+ * associated with a given durable publish kit.
  * They are lost on upgrade, but recreated on-demand.
  * Such recreation preserves the value in (but not the identity of) the
  * current { value, done } result when possible, which is always the
@@ -247,9 +255,11 @@ const durablePublishKitEphemeralData = new WeakMap();
  * `valueDurability: 'mandatory'`.
  *
  * @param {DurablePublishKitState} state
+ * @param {PublishKit<*>} facets
  */
-const provideDurablePublishKitEphemeralData = state => {
-  const foundData = durablePublishKitEphemeralData.get(state);
+const provideDurablePublishKitEphemeralData = (state, facets) => {
+  const ephemeralKey = getEphemeralKey(facets);
+  const foundData = durablePublishKitEphemeralData.get(ephemeralKey);
   if (foundData) {
     return foundData;
   }
@@ -298,19 +308,20 @@ const provideDurablePublishKitEphemeralData = state => {
   } else {
     Fail`Invalid durable promise kit status: ${q(status)}`;
   }
-  durablePublishKitEphemeralData.set(state, harden(newData));
+  durablePublishKitEphemeralData.set(ephemeralKey, harden(newData));
   return newData;
 };
 
 /**
  * Extends the sequence of results.
  *
- * @param {DurablePublishKitState} state
+ * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
  * @param {boolean} done
  * @param {any} value
  * @param {any} [rejection]
  */
-const advanceDurablePublishKit = (state, done, value, rejection) => {
+const advanceDurablePublishKit = (context, done, value, rejection) => {
+  const { state, facets } = context;
   const { valueDurability, status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
@@ -321,10 +332,10 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
       Fail`Cannot accept non-durable rejection: ${rejection}`;
   }
   const { tailP: currentP, tailR: resolveCurrent } =
-    provideDurablePublishKitEphemeralData(state);
+    provideDurablePublishKitEphemeralData(state, facets);
 
-  state.publishCount += 1n;
-  const publishCount = state.publishCount;
+  const publishCount = state.publishCount + 1n;
+  state.publishCount = publishCount;
   let tailP;
   let tailR;
 
@@ -336,7 +347,10 @@ const advanceDurablePublishKit = (state, done, value, rejection) => {
     ({ promise: tailP, resolve: tailR } = makePromiseKit());
     void E.when(tailP, sink, sink);
   }
-  durablePublishKitEphemeralData.set(state, harden({ currentP, tailP, tailR }));
+  durablePublishKitEphemeralData.set(
+    getEphemeralKey(facets),
+    harden({ currentP, tailP, tailR }),
+  );
 
   if (rejection) {
     state.hasValue = true;
@@ -381,14 +395,14 @@ export const vivifyDurablePublishKit = (baggage, kindName) => {
       // accepts new values.
       publisher: {
         publish(value) {
-          advanceDurablePublishKit(this.state, false, value);
+          advanceDurablePublishKit(this, false, value);
         },
         finish(finalValue) {
-          advanceDurablePublishKit(this.state, true, finalValue);
+          advanceDurablePublishKit(this, true, finalValue);
         },
         fail(reason) {
           const rejection = makeQuietRejection(reason);
-          advanceDurablePublishKit(this.state, true, undefined, rejection);
+          advanceDurablePublishKit(this, true, undefined, rejection);
         },
       },
 
@@ -396,10 +410,12 @@ export const vivifyDurablePublishKit = (baggage, kindName) => {
       // propagates values.
       subscriber: {
         subscribeAfter(publishCount = -1n) {
-          const { state } = this;
+          const { state, facets } = this;
           const { publishCount: currentPublishCount } = state;
-          const { currentP, tailP } =
-            provideDurablePublishKitEphemeralData(state);
+          const { currentP, tailP } = provideDurablePublishKitEphemeralData(
+            state,
+            facets,
+          );
           if (publishCount === currentPublishCount) {
             return tailP;
           } else if (publishCount < currentPublishCount) {
