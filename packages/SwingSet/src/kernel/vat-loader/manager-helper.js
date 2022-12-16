@@ -103,7 +103,7 @@ import { makeTranscriptManager } from './transcript.js';
  * @param {KernelSlog} kernelSlog
  * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
  * @param {boolean} workerCanBlock
- * @param {(vatID: any, originalSyscall: any, newSyscall: any) => import('./transcript.js').CompareSyscallsResult} [compareSyscalls]
+ * @param {import('./transcript.js').CompareSyscalls} [compareSyscalls]
  * @param {boolean} [useTranscript]
  * @returns {ManagerKit}
  */
@@ -119,6 +119,7 @@ function makeManagerKit(
 ) {
   assert(kernelSlog);
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+  /** @type {ReturnType<typeof makeTranscriptManager> | undefined} */
   let transcriptManager;
   if (useTranscript) {
     transcriptManager = makeTranscriptManager(
@@ -236,7 +237,6 @@ function makeManagerKit(
    * just direct).
    *
    * @param {VatSyscallObject} vso
-   * @returns {VatSyscallResult}
    */
   function syscallFromWorker(vso) {
     if (transcriptManager && transcriptManager.inReplay()) {
