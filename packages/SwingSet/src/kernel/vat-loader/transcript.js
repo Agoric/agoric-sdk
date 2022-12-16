@@ -1,6 +1,7 @@
 // @ts-check
 
 import djson from '../../lib/djson.js';
+import { maybeAsync } from './async-helper.js';
 
 // Indicate that a syscall is missing from the transcript but is safe to
 // perform during replay
@@ -11,7 +12,7 @@ export const missingSyscall = Symbol('missing transcript syscall');
 export const extraSyscall = Symbol('extra transcript syscall');
 
 /** @typedef {typeof missingSyscall | typeof extraSyscall | Error | undefined} CompareSyscallsResult */
-/** @typedef {(vatId: any, originalSyscall: VatSyscallObject, newSyscall: VatSyscallObject, originalResponse: VatSyscallResult) => CompareSyscallsResult} CompareSyscalls */
+/** @typedef {(vatId: any, originalSyscall: VatSyscallObject, newSyscall: VatSyscallObject, originalResponse: VatSyscallResult) => CompareSyscallsResult | Promise<CompareSyscallsResult>} CompareSyscalls */
 
 /**
  * @param {any} vatID
@@ -171,19 +172,20 @@ export function makeTranscriptManager(
         return failReplay();
       }
 
-      // eslint-disable-next-line no-use-before-define
-      return handleCompareResult(
+      return maybeAsync(
         compareSyscalls(
           vatID,
           playbackSyscalls[0].d,
           newSyscall,
           playbackSyscalls[0].response,
         ),
+        // eslint-disable-next-line no-use-before-define
+        handleCompareResult,
       );
     }
     /**
      * @param {CompareSyscallsResult} compareError
-     * @returns {VatSyscallResult | undefined}
+     * @returns {VatSyscallResult | undefined | Promise<VatSyscallResult | undefined>}
      */
     function handleCompareResult(compareError) {
       if (compareError === missingSyscall) {

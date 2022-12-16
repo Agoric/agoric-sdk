@@ -42,7 +42,13 @@ export function makeLocalVatManagerFactory(tools) {
 
       return mk.getManager(shutdown);
     }
-    const syscall = makeSupervisorSyscall(mk.syscallFromWorker, true);
+    const syscall = makeSupervisorSyscall(vso => {
+      const vres = mk.syscallFromWorker(vso);
+      if ('then' in vres) {
+        throw new Error('Unexpected async result from syscallFromWorker');
+      }
+      return vres;
+    }, true);
     return { syscall, finish };
   }
 

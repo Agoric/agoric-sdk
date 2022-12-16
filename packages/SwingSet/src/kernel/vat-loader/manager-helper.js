@@ -3,6 +3,7 @@ import { assert } from '@agoric/assert';
 import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
 import { makeTranscriptManager } from './transcript.js';
+import { maybeAsync } from './async-helper.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
@@ -49,7 +50,7 @@ import { makeTranscriptManager } from './transcript.js';
  *
  * @typedef { { getManager: (shutdown: () => Promise<void>,
  *                           makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>) => VatManager,
- *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
+ *              syscallFromWorker: (vso: VatSyscallObject) => Promise<VatSyscallResult> | VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
  *
@@ -91,7 +92,7 @@ import { makeTranscriptManager } from './transcript.js';
  *
  * The returned syscallFromWorker function should be called when the worker
  * wants to make a syscall. It accepts a VatSyscallObject and will return a
- * (synchronous) VatSyscallResult, never throwing. For remote workers, this
+ * (synchronous if possible) VatSyscallResult. For remote workers, this
  * should be called from a handler that receives a syscall message from the
  * child process.
  *
@@ -260,7 +261,10 @@ function makeManagerKit(
 
       // but if the puppy deviates one inch from previous twitches, explode
       kernelSlog.syscall(vatID, undefined, vso);
-      return transcriptManager.simulateSyscall(vso) || doSyscallFromWorker(vso);
+      return maybeAsync(
+        transcriptManager.simulateSyscall(vso),
+        vres => vres || doSyscallFromWorker(vso),
+      );
     } else {
       const vres = doSyscallFromWorker(vso);
       if (transcriptManager) {
