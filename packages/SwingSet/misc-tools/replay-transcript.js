@@ -1,3 +1,5 @@
+// @ts-check
+
 /* global WeakRef FinalizationRegistry */
 /* eslint-disable no-constant-condition */
 import fs from 'fs';
@@ -49,15 +51,12 @@ const IGNORE_SNAPSHOT_HASH_DIFFERENCES = true;
 const FORCED_SNAPSHOT_INITIAL = 2;
 const FORCED_SNAPSHOT_INTERVAL = 1000;
 const FORCED_RELOAD_FROM_SNAPSHOT = true;
-const KEEP_WORKER_RECENT = 11;
+const KEEP_WORKER_RECENT = 10;
 const KEEP_WORKER_INITIAL = 0;
 const KEEP_WORKER_INTERVAL = 10;
 const KEEP_WORKER_EXPLICIT_LOAD = true;
 const KEEP_WORKER_DIVERGENT_SNAPSHOTS = true;
-const KEEP_WORKER_TRANSACTION_NUMS = [
-  69002, 70002, 86002, 87002, 127002, 128002, 129002, 146002, 147002, 158002,
-  159002, 160002, 161002, 162002, 163002,
-];
+const KEEP_WORKER_TRANSACTION_NUMS = [];
 
 const SKIP_EXTRA_SYSCALLS = true;
 const SIMULATE_VC_SYSCALLS = true;
@@ -135,20 +134,29 @@ async function replay(transcriptFile) {
 
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
-  const fakeKernelKeeper = {
-    provideVatKeeper: _vatID => ({
-      addToTranscript: () => undefined,
-      getLastSnapshot: () => loadSnapshotID && { snapshotID: loadSnapshotID },
-    }),
-    getRelaxDurabilityRules: () => false,
-  };
-  const kernelSlog = {
-    write() {},
-    delivery: () => () => undefined,
-    syscall: () => () => undefined,
-  };
+  const fakeKernelKeeper =
+    /** @type {import('../src/types-external.js').KernelKeeper} */ ({
+      provideVatKeeper: _vatID =>
+        /** @type {import('../src/types-external.js').VatKeeper} */ (
+          /** @type {unknown} */ ({
+            addToTranscript: () => {},
+            getLastSnapshot: () =>
+              loadSnapshotID && { snapshotID: loadSnapshotID },
+          })
+        ),
+      getRelaxDurabilityRules: () => false,
+    });
+
+  const kernelSlog =
+    /** @type {import('../src/types-external.js').KernelSlog} */ (
+      /** @type {unknown} */ ({
+        write() {},
+        delivery: () => () => undefined,
+        syscall: () => () => undefined,
+      })
+    );
   const snapStore = USE_CUSTOM_SNAP_STORE
-    ? {
+    ? /** @type {SnapStore} */ ({
         async save(saveRaw) {
           const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
           await saveRaw(snapFile);
@@ -161,9 +169,9 @@ async function replay(transcriptFile) {
           const snapFile = `${hash}.xss`;
           return loadRaw(snapFile);
         },
-      }
+      })
     : makeSnapStore(process.cwd(), makeSnapStoreIO(), { keepSnapshots: true });
-  const testLog = undefined;
+  const testLog = () => {};
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
     WeakRef,
@@ -172,7 +180,10 @@ async function replay(transcriptFile) {
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl,
   });
-  const allVatPowers = { testLog };
+  const allVatPowers =
+    /** @type {import('../src/types-external.js').VatPowers} */ (
+      /** @type {unknown} */ ({ testLog })
+    );
   const workers = [];
 
   if (worker === 'xs-worker') {
@@ -183,25 +194,32 @@ async function replay(transcriptFile) {
       console.log(`xsnap helper bundles created`);
     }
     const bundles = [
-      JSON.parse(fs.readFileSync('lockdown-bundle')),
-      JSON.parse(fs.readFileSync('supervisor-bundle')),
+      JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
+      JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
     ];
-    const env = { XSNAP_DEBUG: USE_XSNAP_DEBUG };
+    const env = /** @type {Record<string, string>} */ ({});
     if (RECORD_XSNAP_TRACE) {
       env.XSNAP_TEST_RECORD = process.cwd();
     }
+    if (USE_XSNAP_DEBUG) {
+      env.XSNAP_DEBUG = 'true';
+    }
 
-    const capturePIDSpawn = (...args) => {
-      const child = spawn(...args);
-      workers[workers.length - 1].xsnapPID = child.pid;
-      return child;
-    };
+    const capturePIDSpawn = /** @type {typeof spawn} */ (
+      /** @param  {Parameters<typeof spawn>} args */
+      (...args) => {
+        const child = spawn(...args);
+        workers[workers.length - 1].xsnapPID = child.pid;
+        return child;
+      }
+    );
     const startXSnap = makeStartXSnap(bundles, {
       snapStore,
       env,
       spawn: capturePIDSpawn,
     });
     factory = makeXsSubprocessFactory({
+      allVatPowers,
       kernelKeeper: fakeKernelKeeper,
       kernelSlog,
       startXSnap,
@@ -255,6 +273,10 @@ async function replay(transcriptFile) {
     throw new Error(`Unexpected syscall ${vso[0]}(${vso.slice(1).join(', ')})`);
   };
 
+  /**
+   * @param {*} workerData
+   * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}
+   */
   const makeCompareSyscalls =
     workerData => (_vatID, originalSyscall, newSyscall, originalResponse) => {
       const error = requireIdenticalExceptStableVCSyscalls(
@@ -375,10 +397,13 @@ async function replay(transcriptFile) {
     );
 
     loadSnapshotID = data.snapshotID;
+    /** @type {() => void} */
     let releaseLock;
     loadLock = new Promise(resolve => {
       releaseLock = resolve;
     });
+    // @ts-expect-error
+    assert(releaseLock);
     try {
       if (snapshotOverrideMap.has(loadSnapshotID)) {
         loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
@@ -417,6 +442,7 @@ async function replay(transcriptFile) {
     }
   };
 
+  /** @type {import('stream').Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());
