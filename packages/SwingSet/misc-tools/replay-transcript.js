@@ -259,6 +259,13 @@ async function replay(transcriptFile) {
   const knownVCSyscalls = new Map();
   const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
 
+  const updateDeliveryTime = workerData => {
+    const deliveryTime = performance.now() - workerData.timeOfLastCommand;
+    workerData.timeOfLastCommand = NaN;
+    workerData.deliveryTimeTotal += deliveryTime;
+    workerData.deliveryTimeSinceLastSnapshot += deliveryTime;
+  };
+
   const vatSyscallHandler = vso => {
     if (vso[0] === 'vatstoreGet') {
       const response = knownVCSyscalls.get(vso[1]);
@@ -277,8 +284,13 @@ async function replay(transcriptFile) {
    * @param {*} workerData
    * @returns {import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}
    */
-  const makeCompareSyscalls =
-    workerData => (_vatID, originalSyscall, newSyscall, originalResponse) => {
+  const makeCompareSyscalls = workerData => {
+    const doCompare = (
+      _vatID,
+      originalSyscall,
+      newSyscall,
+      originalResponse,
+    ) => {
       const error = requireIdenticalExceptStableVCSyscalls(
         vatID,
         originalSyscall,
@@ -323,6 +335,24 @@ async function replay(transcriptFile) {
 
       return error;
     };
+    const compareSyscalls = (
+      _vatID,
+      originalSyscall,
+      newSyscall,
+      originalResponse,
+    ) => {
+      updateDeliveryTime(workerData);
+      const result = doCompare(
+        _vatID,
+        originalSyscall,
+        newSyscall,
+        originalResponse,
+      );
+      workerData.timeOfLastCommand = performance.now();
+      return result;
+    };
+    return compareSyscalls;
+  };
 
   const createManager = async keep => {
     const workerData = {
@@ -330,6 +360,7 @@ async function replay(transcriptFile) {
       xsnapPID: NaN,
       deliveryTimeTotal: 0,
       deliveryTimeSinceLastSnapshot: 0,
+      timeOfLastCommand: NaN,
       loadSnapshotID,
       keep,
       firstTranscriptNum: undefined,
@@ -568,14 +599,12 @@ async function replay(transcriptFile) {
       //     JSON.stringify(s.response[1]).slice(0, 200),
       //   );
       // }
-      const start = performance.now();
       const snapshotIDs = await Promise.all(
         workers.map(async workerData => {
           const { manager, xsnapPID } = workerData;
+          workerData.timeOfLastCommand = performance.now();
           await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
-          const deliveryTime = performance.now() - start;
-          workerData.deliveryTimeTotal += deliveryTime;
-          workerData.deliveryTimeSinceLastSnapshot += deliveryTime;
+          updateDeliveryTime(workerData);
           workerData.firstTranscriptNum ??= transcriptNum - 1;
 
           // console.log(`dr`, dr);
