@@ -238,6 +238,20 @@ function makeManagerKit(
    * @param {VatSyscallObject} vso
    * @returns {VatSyscallResult}
    */
+  function doSyscallFromWorker(vso) {
+    const vres = vatSyscallHandler(vso);
+    // vres is ['error', reason] or ['ok', null] or ['ok', capdata] or ['ok', string]
+    const [successFlag, data] = vres;
+    if (successFlag === 'ok' && data && !workerCanBlock) {
+      console.log(`warning: syscall returns data, but worker cannot get it`);
+    }
+    return vres;
+  }
+
+  /**
+   * @param {VatSyscallObject} vso
+   * @returns {VatSyscallResult}
+   */
   function syscallFromWorker(vso) {
     if (transcriptManager && transcriptManager.inReplay()) {
       // We're replaying old messages to bring the vat's internal state
@@ -246,22 +260,14 @@ function makeManagerKit(
 
       // but if the puppy deviates one inch from previous twitches, explode
       kernelSlog.syscall(vatID, undefined, vso);
-      const vres = transcriptManager.simulateSyscall(vso);
-      if (vres) {
-        return vres;
+      return transcriptManager.simulateSyscall(vso) || doSyscallFromWorker(vso);
+    } else {
+      const vres = doSyscallFromWorker(vso);
+      if (transcriptManager) {
+        transcriptManager.addSyscall(vso, vres);
       }
+      return vres;
     }
-
-    const vres = vatSyscallHandler(vso);
-    // vres is ['error', reason] or ['ok', null] or ['ok', capdata] or ['ok', string]
-    const [successFlag, data] = vres;
-    if (successFlag === 'ok' && data && !workerCanBlock) {
-      console.log(`warning: syscall returns data, but worker cannot get it`);
-    }
-    if (transcriptManager && !transcriptManager.inReplay()) {
-      transcriptManager.addSyscall(vso, vres);
-    }
-    return vres;
   }
 
   /**
