@@ -34,7 +34,7 @@ export {};
  *   enableDisavow: boolean,
  *   useTranscript: boolean,
  *   name: string,
- *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
+ *   compareSyscalls?: import('./kernel/vat-loader/transcript.js').CompareSyscalls,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
  *   enableSetup: boolean,
  *   setup?: unknown,

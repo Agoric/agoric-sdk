@@ -1,5 +1,25 @@
+// @ts-check
+
 import djson from '../../lib/djson.js';
 
+/** @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject */
+/** @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult */
+
+/** @typedef {Error | undefined} CompareSyscallsResult */
+/**
+ * @typedef {(
+ *     vatId: any,
+ *     originalSyscall: VatSyscallObject,
+ *     newSyscall: VatSyscallObject,
+ *   ) => CompareSyscallsResult
+ * } CompareSyscalls
+ */
+
+/**
+ * @param {any} vatID
+ * @param {VatSyscallObject} originalSyscall
+ * @param {VatSyscallObject} newSyscall
+ */
 export function requireIdentical(vatID, originalSyscall, newSyscall) {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
     console.error(`anachrophobia strikes vat ${vatID}`);
@@ -10,6 +30,11 @@ export function requireIdentical(vatID, originalSyscall, newSyscall) {
   return undefined;
 }
 
+/**
+ * @param {*} vatKeeper
+ * @param {*} vatID
+ * @param {CompareSyscalls} compareSyscalls
+ */
 export function makeTranscriptManager(
   vatKeeper,
   vatID,
@@ -58,7 +83,9 @@ export function makeTranscriptManager(
 
   let replayError;
 
+  /** @param {VatSyscallObject} newSyscall */
   function simulateSyscall(newSyscall) {
+    /** @type {{d: VatSyscallObject; response: VatSyscallResult}} */
     const s = playbackSyscalls.shift();
     const newReplayError = compareSyscalls(vatID, s.d, newSyscall);
     if (newReplayError) {
