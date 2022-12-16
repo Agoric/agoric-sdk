@@ -40,7 +40,7 @@ export {};
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,
- *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
+ *   compareSyscalls?: import('./kernel/vat-loader/transcript.js').CompareSyscalls,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
  *   meterID?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
