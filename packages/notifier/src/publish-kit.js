@@ -3,15 +3,24 @@
 import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
+import { M } from '@agoric/store';
+import { canBeDurable, vivifyFarClassKit } from '@agoric/vat-data';
 
 import './types-ambient.js';
 
+const { Fail, quote: q } = assert;
+
 const sink = () => {};
+const makeQuietRejection = reason => {
+  const rejection = HandledPromise.reject(reason);
+  void E.when(rejection, sink, sink);
+  return harden(rejection);
+};
 
 /**
- * Asyncronously iterates over the contents of a PublicationList as it appears.
- * As it proceeds, it must drop the parts of the list it no longer needs.
- * Thus, if no one else is holding on to those, it can be garbage collected.
+ * Asyncronously iterates over the contents of a PublicationList as they appear.
+ * This iteration must drop parts of publication records that are no longer
+ * needed so they can be garbage collected.
  *
  * @template T
  * @param {PublicationList<T>} pubList
@@ -101,6 +110,19 @@ export const subscribeLatest = subscriber => {
 };
 harden(subscribeLatest);
 
+export const PublisherI = M.interface('Publisher', {
+  publish: M.call(M.any()).returns(),
+  finish: M.call(M.any()).returns(),
+  fail: M.call(M.any()).returns(),
+});
+export const SubscriberI = M.interface('Subscriber', {
+  subscribeAfter: M.call().optional(M.bigint()).returns(M.promise()),
+});
+export const publishKitIKit = harden({
+  publisher: PublisherI,
+  subscriber: SubscriberI,
+});
+
 /**
  * Makes a `{ publisher, subscriber }` pair for doing efficient
  * distributed pub/sub supporting both "each" and "latest" iteration
@@ -128,11 +150,9 @@ export const makePublishKit = () => {
     const resolveCurrent = tailR;
 
     if (done) {
-      tailP = HandledPromise.reject(
+      tailP = makeQuietRejection(
         new Error('Cannot read past end of iteration.'),
       );
-      // Suppress unhandled rejection error.
-      tailP.catch(() => {});
       tailR = undefined;
     } else {
       ({ promise: tailP, resolve: tailR } = makePromiseKit());
@@ -179,12 +199,235 @@ export const makePublishKit = () => {
       advanceCurrent(true, finalValue);
     },
     fail: reason => {
-      const rejection = HandledPromise.reject(reason);
-      // Suppress unhandled rejection error.
-      rejection.catch(() => {});
-      advanceCurrent(true, undefined, rejection);
+      advanceCurrent(true, undefined, makeQuietRejection(reason));
     },
   });
   return harden({ publisher, subscriber });
 };
 harden(makePublishKit);
+
+// TODO: Move durable publish kit to a new file?
+
+/**
+ * @param {object} [options]
+ * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
+ * @returns {DurablePublishKitState}
+ */
+const initDurablePublishKitState = (options = {}) => {
+  const { valueDurability = 'mandatory' } = options;
+  assert.equal(valueDurability, 'mandatory');
+  return {
+    // configuration
+    valueDurability,
+
+    // lifecycle progress
+    publishCount: 0n,
+    status: 'live', // | 'finished' | 'failed'
+
+    // persisted result data
+    // Note that in addition to non-terminal values from `publish`,
+    // value also holds the terminal value from `finish` or `fail`.
+    hasValue: false,
+    value: undefined,
+  };
+};
+
+// We need the WeakMap key for a kit to be a vref-bearing object
+// in its cohort, and have arbitrarily chosen the publisher facet.
+/** @typedef {Publisher<*>} DurablePublishKitEphemeralKey */
+/**
+ * @param {PublishKit<*>} facets
+ * @returns {DurablePublishKitEphemeralKey}
+ */
+const getEphemeralKey = facets => facets.publisher;
+
+/** @type {WeakMap<DurablePublishKitEphemeralKey, {currentP, tailP, tailR}>} */
+const durablePublishKitEphemeralData = new WeakMap();
+
+/**
+ * Returns the current/next-result promises and next-result resolver
+ * associated with a given durable publish kit.
+ * They are lost on upgrade, but recreated on-demand.
+ * Such recreation preserves the value in (but not the identity of) the
+ * current { value, done } result when possible, which is always the
+ * case when that value is terminal (i.e., from `finish` or `fail`) or
+ * when the durable publish kit is configured with
+ * `valueDurability: 'mandatory'`.
+ *
+ * @param {DurablePublishKitState} state
+ * @param {PublishKit<*>} facets
+ */
+const provideDurablePublishKitEphemeralData = (state, facets) => {
+  const ephemeralKey = getEphemeralKey(facets);
+  const foundData = durablePublishKitEphemeralData.get(ephemeralKey);
+  if (foundData) {
+    return foundData;
+  }
+  const { status, publishCount } = state;
+  /** @type {object} */
+  let newData;
+  if (status === 'failed') {
+    newData = {
+      currentP: makeQuietRejection(state.value),
+      tailP: makeQuietRejection(
+        new Error('Cannot read past end of iteration.'),
+      ),
+      tailR: undefined,
+    };
+  } else if (status === 'finished') {
+    const tailP = makeQuietRejection(
+      new Error('Cannot read past end of iteration.'),
+    );
+    newData = {
+      currentP: HandledPromise.resolve(
+        harden({
+          head: { value: state.value, done: true },
+          publishCount,
+          tail: tailP,
+        }),
+      ),
+      tailP,
+      tailR: undefined,
+    };
+  } else if (status === 'live') {
+    const { promise: tailP, resolve: tailR } = makePromiseKit();
+    void E.when(tailP, sink, sink);
+    newData = {
+      currentP: state.hasValue
+        ? HandledPromise.resolve(
+            harden({
+              head: { value: state.value, done: false },
+              publishCount,
+              tail: tailP,
+            }),
+          )
+        : tailP,
+      tailP,
+      tailR,
+    };
+  } else {
+    Fail`Invalid durable promise kit status: ${q(status)}`;
+  }
+  durablePublishKitEphemeralData.set(ephemeralKey, harden(newData));
+  return newData;
+};
+
+/**
+ * Extends the sequence of results.
+ *
+ * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
+ * @param {boolean} done
+ * @param {any} value
+ * @param {any} [rejection]
+ */
+const advanceDurablePublishKit = (context, done, value, rejection) => {
+  const { state, facets } = context;
+  const { valueDurability, status } = state;
+  if (status !== 'live') {
+    throw new Error('Cannot update state after termination.');
+  }
+  if (done || valueDurability === 'mandatory') {
+    canBeDurable(value) || Fail`Cannot accept non-durable value: ${value}`;
+    canBeDurable(rejection) ||
+      Fail`Cannot accept non-durable rejection: ${rejection}`;
+  }
+  const { tailP: currentP, tailR: resolveCurrent } =
+    provideDurablePublishKitEphemeralData(state, facets);
+
+  const publishCount = state.publishCount + 1n;
+  state.publishCount = publishCount;
+  let tailP;
+  let tailR;
+
+  if (done) {
+    state.status = rejection ? 'failed' : 'finished';
+    tailP = makeQuietRejection(new Error('Cannot read past end of iteration.'));
+    tailR = undefined;
+  } else {
+    ({ promise: tailP, resolve: tailR } = makePromiseKit());
+    void E.when(tailP, sink, sink);
+  }
+  durablePublishKitEphemeralData.set(
+    getEphemeralKey(facets),
+    harden({ currentP, tailP, tailR }),
+  );
+
+  if (rejection) {
+    state.hasValue = true;
+    state.value = rejection;
+    resolveCurrent(rejection);
+  } else {
+    // Persist a terminal value, or a non-terminal value
+    // if configured as 'mandatory' or 'opportunistic'.
+    if (done || (valueDurability !== 'ignored' && canBeDurable(value))) {
+      state.hasValue = true;
+      state.value = value;
+    } else {
+      state.hasValue = false;
+      state.value = undefined;
+    }
+
+    resolveCurrent(
+      harden({
+        head: { value, done },
+        publishCount,
+        tail: tailP,
+      }),
+    );
+  }
+};
+
+/**
+ * @param {import('../../vat-data/src/types.js').Baggage} baggage
+ * @param {string} kindName
+ */
+export const vivifyDurablePublishKit = (baggage, kindName) => {
+  /**
+   * @returns {() => PublishKit<*>}
+   */
+  return vivifyFarClassKit(
+    baggage,
+    kindName,
+    publishKitIKit,
+    initDurablePublishKitState,
+    {
+      // The publisher facet of a durable publish kit
+      // accepts new values.
+      publisher: {
+        publish(value) {
+          advanceDurablePublishKit(this, false, value);
+        },
+        finish(finalValue) {
+          advanceDurablePublishKit(this, true, finalValue);
+        },
+        fail(reason) {
+          const rejection = makeQuietRejection(reason);
+          advanceDurablePublishKit(this, true, undefined, rejection);
+        },
+      },
+
+      // The subscriber facet of a durable publish kit
+      // propagates values.
+      subscriber: {
+        subscribeAfter(publishCount = -1n) {
+          const { state, facets } = this;
+          const { publishCount: currentPublishCount } = state;
+          const { currentP, tailP } = provideDurablePublishKitEphemeralData(
+            state,
+            facets,
+          );
+          if (publishCount === currentPublishCount) {
+            return tailP;
+          } else if (publishCount < currentPublishCount) {
+            return currentP;
+          } else {
+            throw new Error(
+              'subscribeAfter argument must be a previously-issued publishCount.',
+            );
+          }
+        },
+      },
+    },
+  );
+};
+harden(vivifyDurablePublishKit);
