@@ -62,6 +62,7 @@ jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$WALLET" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m in commands/psm.js)
 
+# FIXME this one failing with: Error: cannot grab 10002ibc/toyellie coins: 0ibc/toyellie is smaller than 10002ibc/toyellie: insufficient funds
 # check that the dictatorial vote was executed
 # TODO use vote outcome data https://github.com/Agoric/agoric-sdk/pull/6204/
 SWAP_OFFER=$(mktemp -t agops.XXX)
@@ -78,7 +79,7 @@ agoric wallet send --from "$WALLET" --offer "$SWAP_OFFER"
 
 # Propose a vote to raise the mint limit
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposeChangeMintLimit --limit 10000 --psmCharterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 

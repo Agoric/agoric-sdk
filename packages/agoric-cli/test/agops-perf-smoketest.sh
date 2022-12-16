@@ -28,6 +28,7 @@ set -x
 
 # NB: fee percentages must be at least the governed param values
 
+# FIXME this one failing with: Error: cannot grab 10002ibc/toyellie coins: 0ibc/toyellie is smaller than 10002ibc/toyellie: insufficient funds
 # perf test wantMinted
 OFFER=$(mktemp -t agops.XXX)
 bin/agops psm swap --wantMinted 0.01 --feePct 0.01 >|"$OFFER"
