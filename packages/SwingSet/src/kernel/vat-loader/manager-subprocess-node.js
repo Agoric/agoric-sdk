@@ -82,7 +82,7 @@ export function makeNodeSubprocessFactory(tools) {
       } else if (type === 'syscall') {
         parentLog(`syscall`, args);
         const [vatSyscallObject] = args;
-        mk.syscallFromWorker(vatSyscallObject);
+        void mk.syscallFromWorker(vatSyscallObject);
       } else if (type === 'testLog') {
         testLog(...args);
       } else if (type === 'deliverDone') {
