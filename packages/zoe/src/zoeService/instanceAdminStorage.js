@@ -208,7 +208,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
 
       state.zoeSeatAdmins.add(zoeSeatAdmin);
       state.seatHandleToZoeSeatAdmin.init(seatHandle, zoeSeatAdmin);
-      return { userSeat };
+      return userSeat;
     },
     getOfferFilter: ({ state }) => state.offerFilterStrings,
     setOfferFilter: ({ state }, strings) => {

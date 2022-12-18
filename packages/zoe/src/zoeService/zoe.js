@@ -127,13 +127,17 @@ const makeZoeKit = (
         },
         startInstance,
         offer,
-        getPublicFacet(instance) {
+        setOfferFilter(instance, filters) {
           const { state } = this;
-          return state.dataAccess.getPublicFacet(instance);
+          state.dataAccess.setOfferFilter(instance, filters);
         },
 
         // The functions below are getters only and have no impact on
         // state within Zoe
+        getOfferFilter(instance) {
+          const { state } = this;
+          return state.dataAccess.getOfferFilter(instance);
+        },
         async getInvitationIssuer() {
           const { state } = this;
           return state.dataAccess.getInvitationIssuer();
@@ -150,33 +154,29 @@ const makeZoeKit = (
           const { state } = this;
           return state.dataAccess.getIssuers(instance);
         },
+        getPublicFacet(instance) {
+          const { state } = this;
+          return state.dataAccess.getPublicFacet(instance);
+        },
         getTerms(instance) {
           const { state } = this;
           return state.dataAccess.getTerms(instance);
-        },
-        getOfferFilter(instance) {
-          const { state } = this;
-          return state.dataAccess.getOfferFilter(instance);
-        },
-        setOfferFilter(instance, filters) {
-          const { state } = this;
-          state.dataAccess.setOfferFilter(instance, filters);
         },
         getInstallationForInstance(instance) {
           const { state } = this;
           return state.dataAccess.getInstallationForInstance(instance);
         },
-
-        getInstance(invitation) {
-          return getInstance(invitation);
-        },
-        getInstallation,
-        getInvitationDetails,
-        getConfiguration,
         getBundleIDFromInstallation(installation) {
           const { state } = this;
           return state.dataAccess.getBundleIDFromInstallation(installation);
         },
+        getInstallation,
+
+        getInstance(invitation) {
+          return getInstance(invitation);
+        },
+        getConfiguration,
+        getInvitationDetails,
         getProposalShapeForInvitation(invitation) {
           const { state } = this;
           return state.dataAccess.getProposalShapeForInvitation(invitation);

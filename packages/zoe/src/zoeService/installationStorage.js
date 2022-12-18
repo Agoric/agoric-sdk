@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert } from '@agoric/assert';
 import {
   M,
   makeScalarBigMapStore,
@@ -7,7 +7,7 @@ import {
   vivifyKind,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
-import { InstallationShape } from '../typeGuards.js';
+import { InstallationShape, BundleCapShape } from '../typeGuards.js';
 
 const { Fail } = assert;
 
@@ -77,11 +77,27 @@ export const makeInstallationStorage = (
     return installation;
   };
 
+  const UnwrappedInstallationShape = M.splitRecord(
+    harden({
+      installation: InstallationShape,
+    }),
+    harden({
+      bundle: SourceBundleShape,
+      bundleCap: BundleCapShape,
+      bundleID: M.string(),
+    }),
+    harden({}),
+  );
+
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(BundleShape).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
-    unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(M.any()),
-    getBundleIDFromInstallation: M.call(InstallationShape).returns(M.promise()),
+    unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(
+      UnwrappedInstallationShape,
+    ),
+    getBundleIDFromInstallation: M.callWhen(M.await(InstallationShape)).returns(
+      M.eref(M.string()),
+    ),
   });
 
   const installationStorage = vivifyFarInstance(
@@ -123,6 +139,8 @@ export const makeInstallationStorage = (
         );
         return installation;
       },
+      // XXX is there a better way to declare that the final else throws?
+      // eslint-disable-next-line consistent-return
       unwrapInstallation(installation) {
         if (installationsBundleCap.has(installation)) {
           const { bundleCap, bundleID } =
@@ -132,15 +150,13 @@ export const makeInstallationStorage = (
           const bundle = installationsBundle.get(installation);
           return { bundle, installation };
         } else {
-          assert.fail(X`${installation} was not a valid installation`);
+          Fail`${installation} was not a valid installation`;
         }
       },
-      async getBundleIDFromInstallation(allegedInstallationP) {
+      async getBundleIDFromInstallation(allegedInstallation) {
         // @ts-expect-error TS doesn't understand context
         const { self } = this;
-        const { bundleID } = await self.unwrapInstallation(
-          allegedInstallationP,
-        );
+        const { bundleID } = await self.unwrapInstallation(allegedInstallation);
         // AWAIT
         bundleID || Fail`installation does not have a bundle ID`;
         return bundleID;

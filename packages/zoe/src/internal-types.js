@@ -166,7 +166,7 @@
  * @param {ProposalRecord} proposal
  * @param {ExitObj} exitObj
  * @param {SeatHandle} seatHandle
- * @returns {{userSeat: UserSeat}}
+ * @returns {UserSeat}
  */
 
 /**
@@ -237,7 +237,7 @@
  */
 
 /**
- * @typedef RootAndAdminNode
+ * @typedef {object} RootAndAdminNode
  * @property {object} root
  * @property {AdminNode} adminNode
  */

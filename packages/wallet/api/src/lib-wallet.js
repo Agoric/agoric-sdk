@@ -593,7 +593,7 @@ export function makeWalletRoot({
    * @param {string} id
    * @param {ERef<UserSeat>} seat
    */
-  async function subscribeToNotifier(id, seat) {
+  async function subscribeToUpdates(id, seat) {
     E(E(seat).getExitSubscriber())
       .subscribeAfter()
       .then(update => updateOrResubscribe(id, seat, update));
@@ -1330,7 +1330,7 @@ export function makeWalletRoot({
         .hasExited()
         .then(exited => {
           if (!exited) {
-            subscribeToNotifier(id, seat);
+            subscribeToUpdates(id, seat);
           }
         });
 

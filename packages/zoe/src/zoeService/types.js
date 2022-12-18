@@ -143,7 +143,7 @@
 /**
  * @callback GetBundleIDFromInstallation
  *
- * Verify that an alleged Invitation is real, and return the Bundle ID it
+ * Verify that an alleged Installation is real, and return the Bundle ID it
  * will use for contract code.
  *
  * @param {ERef<Installation>} allegedInstallation

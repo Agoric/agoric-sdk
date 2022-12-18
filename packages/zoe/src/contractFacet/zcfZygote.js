@@ -29,7 +29,7 @@ import './internal-types.js';
 import '@agoric/swingset-vat/src/types-ambient.js';
 import { InvitationHandleShape } from '../typeGuards.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -108,7 +108,7 @@ export const makeZCFZygote = async (
     const exiter = makeExiter(seatData.proposal, zcfSeat);
     E(zoeInstanceAdmin)
       .makeNoEscrowSeat(initialAllocation, proposal, exiter, seatHandle)
-      .then(({ userSeat }) => userSeatPromiseKit.resolve(userSeat));
+      .then(userSeat => userSeatPromiseKit.resolve(userSeat));
 
     return { zcfSeat, userSeat: userSeatPromiseKit.promise };
   };
@@ -173,13 +173,10 @@ export const makeZCFZygote = async (
       customProperties = harden({}),
       proposalShape = undefined,
     ) => {
-      assert.typeof(
-        description,
-        'string',
-        X`invitations must have a description string: ${description}`,
-      );
+      typeof description === 'string' ||
+        Fail`invitations must have a description string: ${description}`;
 
-      offerHandler || assert(offerHandler, `offerHandler must be provided`);
+      offerHandler || Fail`offerHandler must be provided`;
 
       if (proposalShape !== undefined) {
         assertPattern(proposalShape);
@@ -287,16 +284,13 @@ export const makeZCFZygote = async (
   const { start, buildRootObject, vivify } = await evaluateContract();
 
   if (start === undefined && vivify === undefined) {
-    assert(
-      buildRootObject === undefined,
-      'Did you provide a vat bundle instead of a contract bundle?',
-    );
-    assert.fail('unrecognized contract exports');
+    buildRootObject === undefined ||
+      Fail`Did you provide a vat bundle instead of a contract bundle?`;
+    Fail`unrecognized contract exports`;
   }
-  assert(
-    !start || !vivify,
-    'contract must provide exactly one of "start" and "vivify"',
-  );
+  !start ||
+    !vivify ||
+    Fail`contract must provide exactly one of "start" and "vivify"`;
 
   // snapshot zygote here //////////////////
   // the zygote object below will be created now, but its methods won't be
@@ -381,7 +375,7 @@ export const makeZCFZygote = async (
     restartContract: async (privateArgs = undefined) => {
       const instanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       zoeInstanceAdmin = instanceAdmin;
-      assert(vivify, 'vivify must be defined to upgrade a contract');
+      vivify || Fail`vivify must be defined to upgrade a contract`;
       initSeatMgrAndMintFactory();
 
       // restart an upgradeable contract
@@ -396,12 +390,10 @@ export const makeZCFZygote = async (
           const priorPublicFacet = zcfBaggage.get('publicFacet');
           const priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
 
-          assert(
-            priorCreatorFacet === creatorFacet &&
-              priorPublicFacet === publicFacet &&
-              priorCreatorInvitation === creatorInvitation,
-            'restartContract failed: facets returned by contract changed identity',
-          );
+          (priorCreatorFacet === creatorFacet &&
+            priorPublicFacet === publicFacet &&
+            priorCreatorInvitation === creatorInvitation) ||
+            Fail`restartContract failed: facets returned by contract changed identity`;
           return harden({
             creatorFacet,
             publicFacet,

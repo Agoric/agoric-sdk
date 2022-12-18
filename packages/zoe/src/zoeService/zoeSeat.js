@@ -1,6 +1,6 @@
 import { vivifyDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { M, vivifyFarClassKit, canBeDurable } from '@agoric/vat-data';
+import { M, vivifyFarClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -20,6 +20,8 @@ const ZoeSeatIKit = harden({
     fail: M.call(M.any()).returns(),
     resolveExitAndResult: M.call(M.promise(), M.remotable('exitObj')).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
+    // The return promise is empty, but doExit relies on resolution as a signal
+    // that the payouts have settled. The exit publisher is notified after that.
     finalPayouts: M.call(M.eref(PaymentPKeywordRecordShape)).returns(
       M.promise(),
     ),
@@ -128,7 +130,7 @@ export const makeZoeSeatAdminFactory = baggage => {
 
           state.currentAllocation = replacementAllocation;
         },
-        exit(reason) {
+        exit(completion) {
           const { state, facets } = this;
           // Since this method doesn't wait, we could re-enter via exitAllSeats.
           // If that happens, we shouldn't re-do any of the work.
@@ -145,7 +147,7 @@ export const makeZoeSeatAdminFactory = baggage => {
               state.withdrawFacet,
               state.instanceAdminHelper,
             ),
-            () => state.publisher.finish(reason),
+            () => state.publisher.finish(completion),
           );
         },
         fail(reason) {
@@ -191,9 +193,6 @@ export const makeZoeSeatAdminFactory = baggage => {
                 ephemeralOfferResultStore.delete(facets.userSeat);
               },
             );
-          } else if (canBeDurable(offerResultPromise)) {
-            state.offerResult = offerResultPromise;
-            state.offerResultValid = true;
           } else {
             const kit = makePromiseKit();
             kit.resolve(offerResultPromise);
@@ -224,18 +223,21 @@ export const makeZoeSeatAdminFactory = baggage => {
 
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => deeplyFulfilled(state.payouts),
-            () => deeplyFulfilled(state.payouts),
+            () => state.payouts,
+            () => state.payouts,
           );
         },
         async getPayout(keyword) {
           const { state } = this;
 
+          // subscriber.subscribeAfter() only triggers after publisher.finish()
+          // in exit() or publisher.fail() in fail(). Both of those wait for
+          // doExit(), which ensures that finalPayouts() has set state.payouts.
           return E.when(
             state.subscriber.subscribeAfter(),
-            // @ts-expect-error subscribeAfter guarantees it won't be undefined
+            // @ts-expect-error subscribeAfter guarantees payouts will be defined
             () => state.payouts[keyword],
-            // @ts-expect-error subscribeAfter guarantees it won't be undefined
+            // @ts-expect-error subscribeAfter guarantees payouts will be defined
             () => state.payouts[keyword],
           );
         },

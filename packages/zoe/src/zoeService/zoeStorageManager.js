@@ -19,7 +19,7 @@ import { makeInstallationStorage } from './installationStorage.js';
 import './types.js';
 import './internal-types.js';
 import {
-  InstanceStorageManagerI,
+  InstanceStorageManagerIKit,
   ZoeMintI,
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
@@ -234,7 +234,7 @@ export const makeZoeStorageManager = (
     const makeInstanceStorageManager = vivifyFarClassKit(
       instanceBaggage,
       'InstanceStorageManager',
-      InstanceStorageManagerI,
+      InstanceStorageManagerIKit,
       initEmpty,
       {
         instanceStorageManager: {
@@ -302,16 +302,21 @@ export const makeZoeStorageManager = (
               ),
             );
           },
-          initInstanceAdmin(i, instanceAdmin) {
+          initInstanceAdmin(instanceHandle, instanceAdmin) {
             return instanceAdminStorage.updater.initInstanceAdmin(
-              i,
+              instanceHandle,
               instanceAdmin,
             );
           },
           deleteInstanceAdmin(i) {
             instanceAdminStorage.updater.deleteInstanceAdmin(i);
           },
-          makeInvitation(handle, desc, customProps, proposalShape) {
+          makeInvitation(
+            handle,
+            desc,
+            customProps = undefined,
+            proposalShape = undefined,
+          ) {
             return makeInvitationImpl(handle, desc, customProps, proposalShape);
           },
           getInvitationIssuer() {
@@ -393,8 +398,7 @@ export const makeZoeStorageManager = (
         },
       },
       makeOfferAccess: {
-        getAssetKindByBrand: issuerStorage.getAssetKindByBrand /* o */,
-        installBundle,
+        getAssetKindByBrand: issuerStorage.getAssetKindByBrand,
         getInstanceAdmin(instance) {
           const { state } = this;
           return state.instanceAdmins.getInstanceAdmin(instance);
