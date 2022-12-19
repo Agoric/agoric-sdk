@@ -20,7 +20,7 @@ const ZoeSeatIKit = harden({
     fail: M.call(M.any()).returns(),
     resolveExitAndResult: M.call(M.promise(), M.remotable('exitObj')).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
-    // The return promise is empty, but doExit relies on resolution as a signal
+    // The return promise is empty, but doExit relies on settlement as a signal
     // that the payouts have settled. The exit publisher is notified after that.
     finalPayouts: M.call(M.eref(PaymentPKeywordRecordShape)).returns(
       M.promise(),

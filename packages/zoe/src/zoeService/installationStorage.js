@@ -139,8 +139,6 @@ export const makeInstallationStorage = (
         );
         return installation;
       },
-      // XXX is there a better way to declare that the final else throws?
-      // eslint-disable-next-line consistent-return
       unwrapInstallation(installation) {
         if (installationsBundleCap.has(installation)) {
           const { bundleCap, bundleID } =
@@ -150,7 +148,7 @@ export const makeInstallationStorage = (
           const bundle = installationsBundle.get(installation);
           return { bundle, installation };
         } else {
-          Fail`${installation} was not a valid installation`;
+          throw Fail`${installation} was not a valid installation`;
         }
       },
       async getBundleIDFromInstallation(allegedInstallation) {
