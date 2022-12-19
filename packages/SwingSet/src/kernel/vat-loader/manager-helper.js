@@ -267,7 +267,7 @@ function makeManagerKit(
   /**
    *
    * @param { () => Promise<void>} shutdown
-   * @param {(ss: SnapStore) => Promise<SnapshotInfo>} makeSnapshot
+   * @param {(ss: SnapStore) => Promise<SnapshotInfo>} [makeSnapshot]
    * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {

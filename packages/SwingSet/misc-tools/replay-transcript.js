@@ -281,6 +281,7 @@ async function replay(transcriptFile) {
         `manager created from bundle source, worker PID: ${xsnapPID}`,
       );
     } else if (data.type === 'heap-snapshot-save') {
+      if (!manager.makeSnapshot) continue; // eslint-disable-line no-continue
       saveSnapshotID = data.snapshotID;
       const h = await manager.makeSnapshot(snapStore);
       snapshotOverrideMap.set(saveSnapshotID, h);
@@ -317,7 +318,7 @@ async function replay(transcriptFile) {
       // console.log(`dr`, dr);
 
       // enable this to write periodic snapshots, for #5975 leak
-      if (false && deliveryNum % 10 === 8) {
+      if (false && deliveryNum % 10 === 8 && manager.makeSnapshot) {
         console.log(`-- writing snapshot`, xsnapPID);
         const fn = 'snapshot.xss';
         const snapstore = {
