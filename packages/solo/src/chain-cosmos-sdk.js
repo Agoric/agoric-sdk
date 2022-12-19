@@ -34,7 +34,7 @@ const adviseEgress = egressAddr =>
 
 Visit https://devnet.faucet.agoric.net/
 enter address: ${egressAddr}
-chhoose client, ag-solo
+choose client, ag-solo
 and then Submit.
 `;
 
