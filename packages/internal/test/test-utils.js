@@ -68,13 +68,27 @@ test('makeMeasureSeconds', async t => {
 });
 
 test('assertAllDefined', t => {
-  /** @type {{s: string, m?: string | undefined}} */
+  /** @type {{ s: string, m: string | undefined, u?: string}} */
   const obj = { s: 'defined', m: 'maybe' };
   assertAllDefined(obj);
   // typecheck
   obj.m.length;
+  t.throws(
+    () =>
+      // @ts-expect-error key presence not checked
+      obj.u.length,
+  );
 
   t.throws(() => assertAllDefined({ u: undefined, v: undefined }), {
     message: 'missing ["u","v"]',
   });
+
+  /** @type {{ prop?: number }} */
+  const foo = {};
+  assertAllDefined(foo);
+  t.throws(
+    () =>
+      // @ts-expect-error key presence not checked
+      foo.prop.toFixed,
+  );
 });

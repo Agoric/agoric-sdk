@@ -384,13 +384,18 @@ export const fsStreamReady = stream =>
   });
 
 /**
+ * @template {Record<string, unknown>} T
+ * @typedef {{[P in keyof T]: Exclude<T[P], undefined>;}} AllDefined
+ */
+
+/**
  * Concise way to check values are available from object literal shorthand.
  * Throws error message to specify the missing values.
  *
  * @template {Record<string, unknown>} T
  * @param {T} obj
  * @throws if any value in the object entries is not defined
- * @returns {asserts obj is Required<T>}
+ * @returns {asserts obj is AllDefined<T>}
  */
 
 export const assertAllDefined = obj => {
