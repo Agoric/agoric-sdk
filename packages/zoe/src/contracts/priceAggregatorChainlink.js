@@ -30,10 +30,8 @@ import {
 
 export { INVITATION_MAKERS_DESC };
 
-// FIXME is MAX_SAFE_INTEGER sufficient? why encoded as string?
 /**
- * @typedef {{ roundId: number | undefined, data: string }} PriceRound
- * `data` is a string encoded integer (Number.MAX_SAFE_INTEGER)
+ * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound
  */
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
@@ -726,7 +724,7 @@ const start = async (zcf, privateArgs) => {
         const invitationMakers = Far('invitation makers', {
           /** @param {PriceRound} result */
           makePushPriceInvitation(result) {
-            assertParsableNumber(result.data);
+            assertParsableNumber(result.unitPrice);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();
               admin.pushResult(result);
@@ -786,9 +784,9 @@ const start = async (zcf, privateArgs) => {
       /** @param {PriceRound} result */
       const pushResult = async ({
         roundId: roundIdRaw = undefined,
-        data: submissionRaw,
+        unitPrice: valueRaw,
       }) => {
-        const parsedSubmission = Nat(parseInt(submissionRaw, 10));
+        const value = Nat(valueRaw);
         const blockTimestamp = await E(timer).getCurrentTimestamp();
 
         let roundId;
@@ -805,12 +803,12 @@ const start = async (zcf, privateArgs) => {
         }
 
         const error = validateOracleRound(oracleAddr, roundId, blockTimestamp);
-        if (!(parsedSubmission >= minSubmissionValue)) {
+        if (!(value >= minSubmissionValue)) {
           console.error('value below minSubmissionValue', minSubmissionValue);
           return;
         }
 
-        if (!(parsedSubmission <= maxSubmissionValue)) {
+        if (!(value <= maxSubmissionValue)) {
           console.error('value above maxSubmissionValue');
           return;
         }
@@ -821,11 +819,7 @@ const start = async (zcf, privateArgs) => {
         }
 
         proposeNewRound(roundId, oracleAddr, blockTimestamp);
-        const recorded = recordSubmission(
-          parsedSubmission,
-          roundId,
-          oracleAddr,
-        );
+        const recorded = recordSubmission(value, roundId, oracleAddr);
         if (!recorded) {
           return;
         }
@@ -857,13 +851,13 @@ const start = async (zcf, privateArgs) => {
         },
         async pushResult({
           roundId: roundIdRaw = undefined,
-          data: submissionRaw,
+          unitPrice: submissionRaw,
         }) {
           // Sample of NaN, 0, or negative numbers get culled in
           // the median calculation.
           pushResult({
             roundId: roundIdRaw,
-            data: submissionRaw,
+            unitPrice: submissionRaw,
           }).catch(console.error);
         },
       });

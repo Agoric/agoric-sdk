@@ -137,7 +137,7 @@ export const makeOracleCommand = async logger => {
       'offer that had continuing invitation result',
       Number,
     )
-    .requiredOption('--price [number]', 'price (format TODO)', String)
+    .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
     .requiredOption('--roundId [number]', 'round', Number)
     .action(async function () {
       // @ts-expect-error this implicit any
@@ -150,7 +150,9 @@ export const makeOracleCommand = async logger => {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
           invitationMakerName: 'makePushPriceInvitation',
-          invitationArgs: harden([{ data: opts.price, roundId: opts.roundId }]),
+          invitationArgs: harden([
+            { unitPrice: opts.price, roundId: opts.roundId },
+          ]),
         },
         proposal: {},
       };

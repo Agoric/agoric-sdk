@@ -156,7 +156,7 @@ test('admin price', async t => {
   // Push a new price result /////////////////////////
 
   /** @type {import('@agoric/zoe/src/contracts/priceAggregatorChainlink.js').PriceRound} */
-  const result = { roundId: 1, data: '123' };
+  const result = { roundId: 1, unitPrice: 123n };
 
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {

@@ -49,7 +49,7 @@ ORACLE2_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 1.01 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 101 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 
@@ -65,17 +65,17 @@ agoric follow :published.priceFeed.ATOM-USD_price_feed.latestRound
 
 # submit another price in the round from the second oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 2.01 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET2" --offer "$PROPOSAL_OFFER"
 
 # second round, first oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 11.02 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 1102 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 # second round, second oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 12.02 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 1202 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET2" --offer "$PROPOSAL_OFFER"
 
 # see new price
