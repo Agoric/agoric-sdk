@@ -4,7 +4,7 @@
  * Contract to make smart wallets.
  */
 
-import { assertAllDefined, BridgeId, WalletName } from '@agoric/internal';
+import { BridgeId, WalletName } from '@agoric/internal';
 import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -22,6 +22,11 @@ export const privateArgsShape = harden(
     { bridgeManager: M.eref(M.any()) },
   ),
 );
+
+export const customTermsShape = harden({
+  agoricNames: M.not(M.undefined()),
+  board: M.not(M.undefined()),
+});
 
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
@@ -73,7 +78,6 @@ export const publishDepositFacet = async (
  */
 export const start = async (zcf, privateArgs) => {
   const { agoricNames, board } = zcf.getTerms();
-  assertAllDefined({ agoricNames, board });
 
   const zoe = zcf.getZoeService();
   const { storageNode, bridgeManager } = privateArgs;
