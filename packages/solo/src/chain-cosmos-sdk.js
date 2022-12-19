@@ -26,21 +26,17 @@ export const HELPER = url.fileURLToPath(
   new URL('../../../golang/cosmos/build/agd', import.meta.url),
 );
 
-const FAUCET_ADDRESS =
-  'the appropriate faucet channel on Discord (https://agoric.com/discord)';
-
 // Transaction simulation should be an accurate measure of gas.
 const GAS_ADJUSTMENT = '1.2';
 
 const adviseEgress = egressAddr =>
   `\
 
-
-Send:
-
-  !faucet client ${egressAddr}
-
-to ${FAUCET_ADDRESS}`;
+Visit https://devnet.faucet.agoric.net/
+enter address: ${egressAddr}
+choose client, ag-solo
+and then Submit.
+`;
 
 // Retry if our latest message failed.
 const INITIAL_SEND_RETRY_DELAY_MS = 1_000;
