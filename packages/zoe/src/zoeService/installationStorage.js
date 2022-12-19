@@ -7,20 +7,18 @@ import {
   vivifyKind,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
-import { InstallationShape, BundleCapShape } from '../typeGuards.js';
+import {
+  InstallationShape,
+  BundleCapShape,
+  SourceBundleShape,
+  InstanceHandleShape,
+} from '../typeGuards.js';
 
 const { Fail } = assert;
 
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
-export const SourceBundleShape = M.recordOf(M.string(), M.string());
-export const ModuleFormatBundleShape = M.splitRecord(
-  harden({}),
-  harden({ moduleFormat: M.any() }),
-);
-export const BundleShape = M.or(ModuleFormatBundleShape, SourceBundleShape);
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
@@ -90,7 +88,9 @@ export const makeInstallationStorage = (
   );
 
   const InstallationStorageI = M.interface('InstallationStorage', {
-    installBundle: M.call(BundleShape).returns(M.promise()),
+    installBundle: M.call(M.or(InstanceHandleShape, SourceBundleShape)).returns(
+      M.promise(),
+    ),
     installBundleID: M.call(M.string()).returns(M.promise()),
     unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(
       UnwrappedInstallationShape,

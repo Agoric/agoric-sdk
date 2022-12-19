@@ -344,10 +344,6 @@ export const makeZoeStorageManager = (
     return makeInstanceStorageManager().instanceStorageManager;
   };
 
-  const installBundle = bundleID => {
-    return installationStorage.installBundle(bundleID);
-  };
-
   const getInvitationIssuer = () => invitationIssuer;
 
   const makeStorageManager = vivifyFarClassKit(
@@ -392,7 +388,9 @@ export const makeZoeStorageManager = (
           return state.instanceAdmins.getInstallationForInstance(instance);
         },
         getProposalShapeForInvitation,
-        installBundle,
+        installBundle: allegedBundle => {
+          return installationStorage.installBundle(allegedBundle);
+        },
         installBundleID(bundleID) {
           return installationStorage.installBundleID(bundleID);
         },
