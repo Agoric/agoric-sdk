@@ -16,7 +16,7 @@ import { shape } from './typeGuards.js';
 // Ambient types. Needed only for dev but this does a runtime import.
 import '@agoric/vats/exported.js';
 
-const PrivateArgsShape = harden(
+export const privateArgsShape = harden(
   M.splitRecord(
     { storageNode: M.eref(M.any()) },
     { bridgeManager: M.eref(M.any()) },
@@ -72,7 +72,6 @@ export const publishDepositFacet = async (
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  fit(harden(privateArgs), PrivateArgsShape);
   const { agoricNames, board } = zcf.getTerms();
   assertAllDefined({ agoricNames, board });
 
