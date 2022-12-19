@@ -2,7 +2,7 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf, Remotable } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assertPattern } from '@agoric/store';
+import { assertPattern, fit } from '@agoric/store';
 import {
   canBeDurable,
   M,
@@ -281,7 +281,8 @@ export const makeZCFZygote = async (
     return evalContractBundle(bundle);
   };
   // evaluate the contract (either the first version, or an upgrade)
-  const { start, buildRootObject, vivify } = await evaluateContract();
+  const { start, buildRootObject, privateArgsShape, customTermsShape, vivify } =
+    await evaluateContract();
 
   if (start === undefined && vivify === undefined) {
     buildRootObject === undefined ||
@@ -343,6 +344,9 @@ export const makeZCFZygote = async (
       instantiateIssuerStorage(issuerStorageFromZoe);
 
       const startFn = start || vivify;
+      if (privateArgsShape) {
+        fit(privateArgs, privateArgsShape);
+      }
       // start a contract for the first time
       return E.when(
         startFn(zcf, privateArgs, contractBaggage),
