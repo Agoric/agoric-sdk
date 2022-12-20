@@ -113,7 +113,7 @@ export const makeZoeSeatAdminFactory = baggage => {
         withdrawFacet,
         publisher,
         subscriber,
-        payouts: undefined,
+        payouts: harden({}),
         exiting: false,
       };
     },
@@ -236,9 +236,7 @@ export const makeZoeSeatAdminFactory = baggage => {
           // doExit(), which ensures that finalPayouts() has set state.payouts.
           return E.when(
             state.subscriber.subscribeAfter(),
-            // @ts-expect-error subscribeAfter guarantees payouts will be defined
             () => state.payouts[keyword],
-            // @ts-expect-error subscribeAfter guarantees payouts will be defined
             () => state.payouts[keyword],
           );
         },
