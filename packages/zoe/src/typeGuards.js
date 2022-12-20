@@ -231,10 +231,10 @@ export const SourceBundleShape = M.recordOf(
   M.string(),
   M.string({ stringLengthLimit: Infinity }),
 );
-export const BundleShape = M.and(
-  M.partial({ moduleFormat: M.string() }),
-  M.recordOf(M.string(), M.string()),
+export const ModuleFormatBundleShape = M.splitRecord(
+  harden({ moduleFormat: M.any() }),
 );
+export const BundleShape = M.and(ModuleFormatBundleShape, SourceBundleShape);
 
 export const ZoeStorageManagerIKit = harden({
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
