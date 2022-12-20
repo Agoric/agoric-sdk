@@ -196,7 +196,11 @@ export const InstanceStorageManagerIKit = harden({
 
     saveIssuer: M.call(IssuerShape, KeywordShape).returns(M.promise()),
     makeZoeMint: M.call(KeywordShape)
-      .optional(AssetKindShape, DisplayInfoShape, M.pattern())
+      .optional(
+        AssetKindShape,
+        DisplayInfoShape,
+        M.splitRecord(harden({}), harden({ elementShape: M.pattern() })),
+      )
       .returns(M.eref(ZoeMintShape)),
     registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
       M.remotable('feeMint'),
