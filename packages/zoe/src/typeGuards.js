@@ -227,14 +227,10 @@ export const InstanceStorageManagerIKit = harden({
 });
 
 export const BundleCapShape = M.remotable('bundleCap');
-export const SourceBundleShape = M.recordOf(
-  M.string(),
-  M.string({ stringLengthLimit: Infinity }),
+export const BundleShape = M.and(
+  M.splitRecord({ moduleFormat: M.any() }),
+  M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
 );
-export const ModuleFormatBundleShape = M.splitRecord(
-  harden({ moduleFormat: M.any() }),
-);
-export const BundleShape = M.and(ModuleFormatBundleShape, SourceBundleShape);
 
 export const ZoeStorageManagerIKit = harden({
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
@@ -249,7 +245,7 @@ export const ZoeStorageManagerIKit = harden({
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
       M.eref(M.string()),
     ),
-    installBundle: M.call(M.or(InstanceHandleShape, SourceBundleShape)).returns(
+    installBundle: M.call(M.or(InstanceHandleShape, BundleShape)).returns(
       M.promise(),
     ),
     installBundleID: M.call(M.string()).returns(M.promise()),
@@ -285,7 +281,7 @@ export const ZoeStorageManagerIKit = harden({
       InstallationShape,
       M.any(),
       IssuerPKeywordRecordShape,
-      M.or(InstanceHandleShape, SourceBundleShape),
+      M.or(InstanceHandleShape, BundleShape),
       M.or(BundleCapShape, BundleShape),
     ).returns(M.promise()),
     unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(M.any()),
