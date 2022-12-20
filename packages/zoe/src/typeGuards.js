@@ -260,7 +260,7 @@ export const ZoeStorageManagerIKit = harden({
       M.arrayOf(M.string()),
     ).returns(),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-      M.or(M.pattern(), M.undefined()),
+      M.opt(M.pattern()),
     ),
   }),
   makeOfferAccess: M.interface('ZoeStorage makeOffer access', {
@@ -269,7 +269,7 @@ export const ZoeStorageManagerIKit = harden({
       M.remotable('instanceAdmin'),
     ),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-      M.or(M.pattern(), M.undefined()),
+      M.opt(M.pattern()),
     ),
     getInvitationIssuer: M.call().returns(IssuerShape),
     depositPayments: M.call(ProposalShape, PaymentPKeywordRecordShape).returns(
