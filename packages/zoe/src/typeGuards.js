@@ -330,7 +330,7 @@ export const ZoeServiceIKit = harden({
       M.await(InstanceHandleShape),
     ).returns(M.eref(M.remotable('Installation'))),
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
-      M.eref(M.string),
+      M.eref(M.string()),
     ),
 
     getInstallation: M.call(M.eref(InvitationShape)).returns(M.promise()),
