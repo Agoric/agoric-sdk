@@ -26,12 +26,7 @@ import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
-import {
-  extraSyscall,
-  missingSyscall,
-  requireIdenticalExceptStableVCSyscalls,
-  vcSyscallRE,
-} from '../src/kernel/vat-loader/transcript.js';
+import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
@@ -226,7 +221,88 @@ async function replay(transcriptFile) {
     throw Error(`unhandled worker type ${worker}`);
   }
 
-  /** @type {Map<string, VatSyscallResult | undefined>} */
+  const [
+    bestRequireIdentical,
+    extraSyscall,
+    missingSyscall,
+    vcSyscallRE,
+    supportsRelaxedSyscalls,
+  ] = await (async () => {
+    /** @type {any} */
+    const transcriptModule = await import(
+      '../src/kernel/vat-loader/transcript.js'
+    );
+
+    /** @type {RegExp} */
+    const syscallRE =
+      transcriptModule.vcSyscallRE || /^vc\.\d+\.\|(?:schemata|label)$/;
+
+    if (
+      typeof transcriptModule.requireIdenticalExceptStableVCSyscalls !==
+      'function'
+    ) {
+      return [
+        requireIdentical,
+        Symbol('never extra'),
+        Symbol('never missing'),
+        syscallRE,
+        false,
+      ];
+    }
+
+    /** @type {{requireIdenticalExceptStableVCSyscalls: import('../src/kernel/vat-loader/transcript.js').CompareSyscalls}} */
+    const { requireIdenticalExceptStableVCSyscalls } = transcriptModule;
+
+    if (
+      typeof transcriptModule.extraSyscall === 'symbol' &&
+      typeof transcriptModule.missingSyscall === 'symbol'
+    ) {
+      return [
+        requireIdenticalExceptStableVCSyscalls,
+        /** @type {symbol} */ (transcriptModule.extraSyscall),
+        /** @type {symbol} */ (transcriptModule.missingSyscall),
+        syscallRE,
+        true,
+      ];
+    }
+
+    /** @type {unknown} */
+    const dynamicExtraSyscall = requireIdenticalExceptStableVCSyscalls(
+      'vat0',
+      ['vatstoreGet', 'vc.0.|label'],
+      ['vatstoreGet', 'ignoreExtraSyscall'],
+    );
+    /** @type {unknown} */
+    const dynamicMissingSyscall = requireIdenticalExceptStableVCSyscalls(
+      'vat0',
+      ['vatstoreGet', 'ignoreMissingSyscall'],
+      ['vatstoreGet', 'vc.0.|label'],
+    );
+
+    return [
+      requireIdenticalExceptStableVCSyscalls,
+      typeof dynamicExtraSyscall === 'symbol'
+        ? dynamicExtraSyscall
+        : Symbol('never extra'),
+      typeof dynamicMissingSyscall === 'symbol'
+        ? dynamicMissingSyscall
+        : Symbol('never missing'),
+      syscallRE,
+      typeof dynamicExtraSyscall === 'symbol' &&
+        typeof dynamicMissingSyscall === 'symbol',
+    ];
+  })();
+
+  if (
+    (SIMULATE_VC_SYSCALLS || SKIP_EXTRA_SYSCALLS) &&
+    !supportsRelaxedSyscalls
+  ) {
+    console.warn(
+      'Transcript replay does not support relaxed replay. Cannot simulate or skip syscalls',
+    );
+  }
+
+  /** @type {Map<string, import('@agoric/swingset-liveslots').VatSyscallResult | undefined>} */
   const knownVCSyscalls = new Map();
 
   /**
@@ -251,11 +327,7 @@ async function replay(transcriptFile) {
    */
   const makeCompareSyscalls =
     () => (_vatID, originalSyscall, newSyscall, originalResponse) => {
-      const error = requireIdenticalExceptStableVCSyscalls(
-        vatID,
-        originalSyscall,
-        newSyscall,
-      );
+      const error = bestRequireIdentical(vatID, originalSyscall, newSyscall);
       if (
         error &&
         JSON.stringify(originalSyscall).indexOf('error:liveSlots') !== -1
@@ -266,26 +338,42 @@ async function replay(transcriptFile) {
       if (error) {
         console.error(`during transcript num= ${lastTranscriptNum}`);
 
-        if (error === extraSyscall && !SKIP_EXTRA_SYSCALLS) {
+        if (
+          // @ts-expect-error may be a symbol in some versions
+          error === extraSyscall &&
+          !SKIP_EXTRA_SYSCALLS
+        ) {
           return new Error('Extra syscall disallowed');
         }
       }
 
       const newSyscallKind = newSyscall[0];
 
-      if (error === missingSyscall && !SIMULATE_VC_SYSCALLS) {
+      if (
+        // @ts-expect-error may be a symbol in some versions
+        error === missingSyscall &&
+        !SIMULATE_VC_SYSCALLS
+      ) {
         return new Error('Missing syscall disallowed');
       }
 
       if (
         SIMULATE_VC_SYSCALLS &&
+        supportsRelaxedSyscalls &&
         !error &&
         (newSyscallKind === 'vatstoreGet' ||
           newSyscallKind === 'vatstoreSet') &&
         vcSyscallRE.test(newSyscall[1])
       ) {
         if (newSyscallKind === 'vatstoreGet') {
-          knownVCSyscalls.set(newSyscall[1], originalResponse);
+          if (originalResponse !== undefined) {
+            knownVCSyscalls.set(newSyscall[1], originalResponse);
+          } else if (!knownVCSyscalls.has(newSyscall[1])) {
+            console.warn(
+              `Cannot store vc syscall result for vatstoreGet(${newSyscall[1]})`,
+            );
+            knownVCSyscalls.set(newSyscall[1], undefined);
+          }
         } else if (newSyscallKind === 'vatstoreSet') {
           knownVCSyscalls.set(newSyscall[1], ['ok', newSyscall[2]]);
         }
