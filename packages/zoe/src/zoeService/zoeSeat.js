@@ -10,6 +10,7 @@ import '../internal-types.js';
 import {
   AmountKeywordRecordShape,
   KeywordShape,
+  ExitObjectShape,
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
 
@@ -18,7 +19,7 @@ const ZoeSeatIKit = harden({
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
     fail: M.call(M.any()).returns(),
-    resolveExitAndResult: M.call(M.promise(), M.remotable('exitObj')).returns(),
+    resolveExitAndResult: M.call(M.promise(), ExitObjectShape).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
     // The return promise is empty, but doExit relies on settlement as a signal
     // that the payouts have settled. The exit publisher is notified after that.

@@ -129,6 +129,7 @@ export const SeatHandleAllocationsShape = M.arrayOf(
   }),
 );
 
+export const ZoeMintShape = M.remotable('ZoeMint');
 export const ZoeMintI = M.interface('ZoeMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
   mintAndEscrow: M.call(AmountShape).returns(),
@@ -148,13 +149,13 @@ export const ExitObjectI = M.interface('Exit Object', {
   exit: M.call().returns(),
 });
 
-const ExitObjectShape = M.remotable('ExitObj');
+export const ExitObjectShape = M.remotable('ExitObj');
 export const InstanceAdminShape = M.remotable('InstanceAdmin');
 export const InstanceAdminI = M.interface('InstanceAdmin', {
   makeInvitation: M.call(InvitationHandleShape, M.string())
     .optional(M.record(), M.pattern())
     .returns(M.promise()),
-  saveIssuer: M.callWhen(M.await(IssuerShape), M.string()).returns(
+  saveIssuer: M.callWhen(M.await(IssuerShape), KeywordShape).returns(
     IssuerRecordShape,
   ),
   makeNoEscrowSeat: M.call(
@@ -168,7 +169,11 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
   exitSeat: M.call(SeatShape, M.any()).returns(),
   failSeat: M.call(SeatShape, M.any()).returns(),
   makeZoeMint: M.call(KeywordShape)
-    .optional(AssetKindShape, DisplayInfoShape, M.pattern())
+    .optional(
+      AssetKindShape,
+      DisplayInfoShape,
+      M.splitRecord(harden({}), harden({ elementShape: M.pattern() })),
+    )
     .returns(M.remotable('zoeMint')),
   registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
     M.remotable('feeMint'),
@@ -183,16 +188,16 @@ export const InstanceAdminI = M.interface('InstanceAdmin', {
 
 export const InstanceStorageManagerIKit = harden({
   instanceStorageManager: M.interface('InstanceStorageManager', {
-    getTerms: M.call().returns(M.split(TermsShape, M.record())),
+    getTerms: M.call().returns(M.splitRecord(TermsShape)),
     getIssuers: M.call().returns(IssuerKeywordRecordShape),
     getBrands: M.call().returns(BrandKeywordRecordShape),
     getInstallationForInstance: M.call().returns(InstallationShape),
     getInvitationIssuer: M.call().returns(IssuerShape),
 
-    saveIssuer: M.call(IssuerShape, M.string()).returns(M.promise()),
+    saveIssuer: M.call(IssuerShape, KeywordShape).returns(M.promise()),
     makeZoeMint: M.call(KeywordShape)
       .optional(AssetKindShape, DisplayInfoShape, M.pattern())
-      .returns(M.or(ZoeMintI, M.remotable('zoeMint'), M.promise())),
+      .returns(M.eref(ZoeMintShape)),
     registerFeeMint: M.call(KeywordShape, M.remotable('feeMintAccess')).returns(
       M.remotable('feeMint'),
     ),
@@ -205,7 +210,7 @@ export const InstanceStorageManagerIKit = harden({
     ).returns(M.promise()),
     deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
-      .optional(M.any(), M.pattern())
+      .optional(M.record(), M.pattern())
       .returns(M.promise()),
     getRoot: M.call().returns(M.any()),
     getAdminNode: M.call().returns(M.remotable('adminNode')),
@@ -230,9 +235,7 @@ export const BundleShape = M.or(ModuleFormatBundleShape, SourceBundleShape);
 
 export const ZoeStorageManagerIKit = harden({
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
-    getTerms: M.call(InstanceHandleShape).returns(
-      M.split(TermsShape, M.record()),
-    ),
+    getTerms: M.call(InstanceHandleShape).returns(M.splitRecord(TermsShape)),
     getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
     getBrands: M.call(InstanceHandleShape).returns(BrandKeywordRecordShape),
     getInstallationForInstance: M.call(InstanceHandleShape).returns(
@@ -322,7 +325,9 @@ export const ZoeServiceIKit = harden({
     getInstallationForInstance: M.callWhen(
       M.await(InstanceHandleShape),
     ).returns(M.or(M.promise(), M.remotable('Installation'))),
-    getBundleIDFromInstallation: M.call(M.any()).returns(M.promise()),
+    getBundleIDFromInstallation: M.call(InstallationShape).returns(
+      M.eref(M.string),
+    ),
 
     getInstallation: M.call(M.eref(InvitationShape)).returns(M.promise()),
     getInstance: M.call(M.eref(InvitationShape)).returns(M.promise()),
