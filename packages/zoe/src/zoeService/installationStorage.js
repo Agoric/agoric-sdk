@@ -10,7 +10,6 @@ import { initEmpty } from '@agoric/store';
 import {
   InstallationShape,
   BundleCapShape,
-  BundleShape,
   InstanceHandleShape,
 } from '../typeGuards.js';
 
@@ -80,7 +79,7 @@ export const makeInstallationStorage = (
       installation: InstallationShape,
     }),
     harden({
-      bundle: BundleShape,
+      bundle: M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
       bundleCap: BundleCapShape,
       bundleID: M.string(),
     }),
@@ -88,9 +87,12 @@ export const makeInstallationStorage = (
   );
 
   const InstallationStorageI = M.interface('InstallationStorage', {
-    installBundle: M.call(M.or(InstanceHandleShape, BundleShape)).returns(
-      M.promise(),
-    ),
+    installBundle: M.call(
+      M.or(
+        InstanceHandleShape,
+        M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
+      ),
+    ).returns(M.promise()),
     installBundleID: M.call(M.string()).returns(M.promise()),
     unwrapInstallation: M.callWhen(M.await(InstallationShape)).returns(
       UnwrappedInstallationShape,
