@@ -239,7 +239,7 @@ export const ZoeStorageManagerIKit = harden({
     getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
     getBrands: M.call(InstanceHandleShape).returns(BrandKeywordRecordShape),
     getInstallationForInstance: M.call(InstanceHandleShape).returns(
-      M.or(M.promise(), M.remotable('Installation')),
+      M.eref(M.remotable('Installation')),
     ),
     getInvitationIssuer: M.call().returns(IssuerShape),
 
@@ -252,7 +252,7 @@ export const ZoeStorageManagerIKit = harden({
     installBundleID: M.call(M.string()).returns(M.promise()),
 
     getPublicFacet: M.call(InstanceHandleShape).returns(
-      M.or(M.promise(), M.remotable('PublicFacet')),
+      M.eref(M.remotable('PublicFacet')),
     ),
     getOfferFilter: M.call(InstanceHandleShape).returns(M.arrayOf(M.string())),
     setOfferFilter: M.call(
@@ -313,10 +313,10 @@ export const ZoeServiceIKit = harden({
     getInvitationIssuer: M.call().returns(M.promise()),
     getFeeIssuer: M.call().returns(M.promise()),
     getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.or(M.promise(), BrandKeywordRecordShape),
+      BrandKeywordRecordShape,
     ),
     getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.or(M.promise(), IssuerKeywordRecordShape),
+      IssuerKeywordRecordShape,
     ),
     getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
       M.remotable('PublicFacet'),
@@ -324,7 +324,7 @@ export const ZoeServiceIKit = harden({
     getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(M.any()),
     getInstallationForInstance: M.callWhen(
       M.await(InstanceHandleShape),
-    ).returns(M.or(M.promise(), M.remotable('Installation'))),
+    ).returns(M.eref(M.remotable('Installation'))),
     getBundleIDFromInstallation: M.call(InstallationShape).returns(
       M.eref(M.string),
     ),
