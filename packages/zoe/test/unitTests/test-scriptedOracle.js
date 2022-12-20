@@ -67,7 +67,7 @@ test.before(
   },
 );
 
-test('pay bounty', async t => {
+test.serial('pay bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
   // The timer is not build in test.before(), because each test needs its own.
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
@@ -152,7 +152,7 @@ test('pay bounty', async t => {
   await Promise.all([promise1, promise2, promise3, promise4]);
 });
 
-test('pay no bounty', async t => {
+test.serial('pay no bounty', async t => {
   const { zoe, oracleInstallation, bountyInstallation } = t.context;
   // The timer is not build in test.before(), because each test needs its own.
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });

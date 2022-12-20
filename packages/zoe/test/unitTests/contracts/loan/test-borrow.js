@@ -35,11 +35,12 @@ const setupBorrow = async (
   timer = buildManualTimer(console.log, 0n, { eventLoopIteration }),
 ) => {
   const setup = await setupLoanUnitTest();
-  const { zcf, loanKit, collateralKit, zoe, vatAdminState } = setup;
+  const { zcf: loanZcf, loanKit, collateralKit, zoe, vatAdminState } = setup;
   // Set up the lender seat
   const maxLoan = AmountMath.make(loanKit.brand, maxLoanValue);
+
   const { zcfSeat: lenderSeat, userSeat: lenderUserSeat } = await makeSeatKit(
-    zcf,
+    loanZcf,
     { give: { Loan: maxLoan } },
     { Loan: loanKit.mint.mintPayment(maxLoan) },
   );
@@ -88,7 +89,7 @@ const setupBorrow = async (
     loanBrand: loanKit.brand,
     collateralBrand: collateralKit.brand,
   };
-  const borrowInvitation = makeBorrowInvitation(zcf, config);
+  const borrowInvitation = makeBorrowInvitation(loanZcf, config);
   return {
     ...setup,
     borrowInvitation,

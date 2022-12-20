@@ -6,7 +6,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { M, fit, keyEQ } from '@agoric/store';
-import { AmountMath, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -200,7 +200,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
   fit(optionAmount, optionAmountPattern1);
 
   const optionAmountPattern2 = harden({
-    brand: M.remotable(),
+    brand: BrandShape,
     value: [
       M.split({
         installation: coveredCallInstallation,

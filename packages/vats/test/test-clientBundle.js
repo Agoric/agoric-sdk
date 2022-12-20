@@ -28,21 +28,16 @@ import { devices } from './devices.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(() => {}).admin,
-    undefined,
-    {
+  const { zoeService, feeMintAccessRetriever } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
-    },
+    }),
   );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
   return {
-    zoe,
-    feeMintAccess,
+    zoe: zoeService,
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 harden(setUpZoeForTest);
@@ -62,8 +57,9 @@ test('connectFaucet produces payments', async t => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoe, feeMintAccess } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
+  const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(feeMintAccess);
   produce.bridgeManager.resolve(undefined);
 

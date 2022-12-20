@@ -5,6 +5,7 @@ import {
   TimerShape,
   makeHandleShape,
 } from '@agoric/zoe/src/typeGuards.js';
+import { SubscriberShape } from '@agoric/notifier';
 
 export const ChoiceMethodShape = M.or('unranked', 'order', 'plurality');
 export const QuorumRuleShape = M.or('majority', 'no_quorum', 'all');
@@ -167,7 +168,6 @@ export const PositionShape = M.or(
 export const QuestionHandleShape = makeHandleShape('question');
 
 // TODO(hibbert): add details; move to a more appropriate location
-export const SubscriberShape = M.remotable('Subscriber');
 export const InvitationShape = M.remotable('Invitation');
 
 // XXX I want to add questionHandle and counterInstance to

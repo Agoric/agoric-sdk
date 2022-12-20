@@ -222,7 +222,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
 
   /** @param {ZCFSeat} seat */
-  const wantmintedHook = seat => {
+  const wantMintedHook = seat => {
     const {
       give: { In: given },
       want: { Out: wanted } = { Out: undefined },
@@ -254,7 +254,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     makeWantMintedInvitation() {
       return zcf.makeInvitation(
-        wantmintedHook,
+        wantMintedHook,
         'wantMinted',
         undefined,
         M.splitRecord({

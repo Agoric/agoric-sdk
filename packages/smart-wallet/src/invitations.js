@@ -66,6 +66,7 @@ export const makeInvitationsHelper = (
       fit(spec, shape.PurseInvitationSpec);
 
       const { instance, description } = spec;
+      // @ts-expect-error TS thinks it's always true. I'm doubtful.
       assert(instance && description, 'missing instance or description');
       /** @type {Amount<'set'>} */
       const purseAmount = await E(invitationsPurse).getCurrentAmount();

@@ -33,6 +33,7 @@
  * @property {GetBrands} getBrands
  * @property {GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
+ * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
@@ -40,12 +41,6 @@
  * Return an object with the instance, installation, description, invitation
  * handle, and any custom properties specific to the contract.
  * @property {GetFeeIssuer} getFeeIssuer
- * @property {() => Promise<Purse>} makeFeePurse
- * Deprecated. Does nothing useful but provided during transition so less old
- * code breaks.
- * @property {(defaultFeePurse: ERef<Purse>) => ZoeService} bindDefaultFeePurse
- * Deprecated. Does nothing useful but provided during transition so less old
- * code breaks.
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
  * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
@@ -90,6 +85,12 @@
  * @callback GetOfferFilter
  * @param {import('./utils').Instance<any>} instance
  * @returns {string[]}
+ */
+
+/**
+ * @callback SetOfferFilter
+ * @param {Instance} instance
+ * @param {string[]} strings
  */
 
 /**
@@ -142,7 +143,7 @@
 /**
  * @callback GetBundleIDFromInstallation
  *
- * Verify that an alleged Invitation is real, and return the Bundle ID it
+ * Verify that an alleged Installation is real, and return the Bundle ID it
  * will use for contract code.
  *
  * @param {ERef<Installation>} allegedInstallation
@@ -197,7 +198,11 @@
  * @typedef {object} UserSeat
  * @property {() => Promise<ProposalRecord>} getProposal
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
+ * returns a promise for a KeywordPaymentRecord containing all the payouts from
+ * this seat. The promise will resolve after the seat has exited.
  * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout
+ * returns a promise for the Payment corresponding to the indicated keyword.
+ * The promise will resolve after the seat has exited.
  * @property {() => Promise<OR>} getOfferResult
  * @property {() => void} [tryExit]
  * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
@@ -208,17 +213,16 @@
  * interact with the contract.
  * @property {() => Promise<boolean>} hasExited
  * Returns true if the seat has exited, false if it is still active.
- * @property {() => Promise<0|1>} numWantsSatisfied
- *
- * @property {() => Promise<Allocation>} getCurrentAllocationJig
- * Labelled "Jig" because it *should* only be used for tests, though
- * nothing prevents it from being used otherwise.
- * @property {() => Promise<Notifier<Allocation>>} getAllocationNotifierJig
- * Labelled "Jig" because it *should* only be used for tests, though
- * nothing prevents it from being used otherwise.
+ * @property {() => Promise<0|1>} numWantsSatisfied returns 1 if the proposal's
+ * want clause was satisfied by the final allocation, otherwise 0. This is
+ * numeric to support a planned enhancement called "multiples" which will allow
+ * the return value to be any non-negative number. The promise will resolve
+ * after the seat has exited.
  * @property {() => Promise<Allocation>} getFinalAllocation
- * return a promise for the final allocation. If called after the seat has
- * exited, it will promptly resolve to an Allocation.
+ * return a promise for the final allocation. The promise will resolve after the
+ * seat has exited.
+ * @property {() => Subscriber<any>} getExitSubscriber returns a subscriber that
+ * will be notified when the seat has exited or failed.
  */
 
 /**

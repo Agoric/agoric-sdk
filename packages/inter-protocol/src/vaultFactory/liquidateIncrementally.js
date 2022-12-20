@@ -265,10 +265,6 @@ const start = async zcf => {
       { stopAfter: debt },
     );
     await Promise.all([E(liqSeat).getOfferResult(), deposited]);
-
-    // This uses getCurrentAllocationJig only to support testing, so is ok
-    const amounts = await E(liqSeat).getCurrentAllocationJig();
-    trace('offerResult', { amounts });
   }
 
   /**

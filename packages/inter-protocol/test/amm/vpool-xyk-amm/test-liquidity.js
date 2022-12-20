@@ -252,7 +252,7 @@ test('amm add and remove liquidity', async t => {
   };
   await tracker.assertChange(poolLiquidity);
 
-  const alloc = await E(addLiquiditySeat).getCurrentAllocationJig();
+  const alloc = await E(addLiquiditySeat).getFinalAllocation();
   t.deepEqual(alloc, {
     Central: central(0n),
     Liquidity: AmountMath.make(liquidityBrand, 1_499_999_000n),
@@ -493,7 +493,7 @@ test('add wrong liquidity', async t => {
     }),
   );
 
-  const alloc = await E(addLiquiditySeat).getCurrentAllocationJig();
+  const alloc = await E(addLiquiditySeat).getFinalAllocation();
   t.deepEqual(alloc, {
     Central: central(0n),
     Liquidity: AmountMath.make(liquidityBrand, 1_499_999_000n),
