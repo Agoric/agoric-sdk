@@ -189,6 +189,8 @@ async function replay(transcriptFile) {
    *  timeOfLastCommand: number;
    *  keep: boolean;
    *  firstTranscriptNum: number | null;
+   *  completeStep: () => void;
+   *  stepCompleted: Promise<void>
    * }} WorkerData
    */
   /** @type {WorkerData[]} */
@@ -322,6 +324,28 @@ async function replay(transcriptFile) {
     );
   }
 
+  let workersSynced = Promise.resolve();
+
+  const updateWorkersSynced = () => {
+    const stepsCompleted = Promise.all(
+      workers.map(({ stepCompleted }) => stepCompleted),
+    );
+    const newWorkersSynced = stepsCompleted.then(() => {
+      if (workersSynced === newWorkersSynced) {
+        updateWorkersSynced();
+      }
+    });
+    workersSynced = newWorkersSynced;
+  };
+
+  /** @param {WorkerData} workerData */
+  const completeWorkerStep = workerData => {
+    workerData.completeStep();
+    workerData.stepCompleted = new Promise(resolve => {
+      workerData.completeStep = resolve;
+    });
+  };
+
   const updateDeliveryTime = workerData => {
     const deliveryTime = performance.now() - workerData.timeOfLastCommand;
     workerData.timeOfLastCommand = NaN;
@@ -452,8 +476,12 @@ async function replay(transcriptFile) {
       loadSnapshotID,
       keep,
       firstTranscriptNum: null,
+      completeStep: () => {},
+      stepCompleted: Promise.resolve(),
     };
+    completeWorkerStep(workerData);
     workers.push(workerData);
+    updateWorkersSynced();
     const managerOptions =
       /** @type {import('../src/types-internal.js').ManagerOptions} */ (
         /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
@@ -501,6 +529,7 @@ async function replay(transcriptFile) {
         )
         .map(async workerData => {
           workers.splice(workers.indexOf(workerData), 1);
+          updateWorkersSynced();
 
           const {
             manager,
@@ -719,6 +748,8 @@ async function replay(transcriptFile) {
           await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
           updateDeliveryTime(workerData);
           workerData.firstTranscriptNum ??= transcriptNum - 1;
+          completeWorkerStep(workerData);
+          await workersSynced;
 
           // console.log(`dr`, dr);
 
