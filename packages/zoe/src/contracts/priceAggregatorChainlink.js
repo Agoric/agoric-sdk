@@ -849,17 +849,7 @@ const start = async (zcf, privateArgs) => {
             keyToRecords.delete(oracleAddr);
           }
         },
-        async pushResult({
-          roundId: roundIdRaw = undefined,
-          unitPrice: submissionRaw,
-        }) {
-          // Sample of NaN, 0, or negative numbers get culled in
-          // the median calculation.
-          pushResult({
-            roundId: roundIdRaw,
-            unitPrice: submissionRaw,
-          }).catch(console.error);
-        },
+        pushResult,
       });
 
       return harden(oracleAdmin);
