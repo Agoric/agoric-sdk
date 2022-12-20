@@ -52,7 +52,7 @@
 /**
  * @typedef {object} MutableQuote
  * @property {(reason?: any) => void} cancel
- * @property {(amountIn: Amount, amountOut: Amount) => void} updateLevel
+ * @property {(amountIn: Amount<'nat'>, amountOut: Amount<'nat'>) => void} updateLevel
  * @property {() => ERef<PriceQuote>} getPromise
  */
 
@@ -69,36 +69,36 @@
  * ) => ERef<TimerService>} getTimerService
  * Get the timer used in PriceQuotes for a given brandIn/brandOut pair
  *
- * @property {(amountIn: Amount,
- *             brandOut: Brand
+ * @property {(amountIn: Amount<'nat'>,
+ *             brandOut: Brand<'nat'>
  *            ) => ERef<Notifier<PriceQuote>>} makeQuoteNotifier
  * Be notified of the latest PriceQuotes for a given
  * `amountIn`.  The rate at which these are issued may be very different between
  * `priceAuthorities`.
  *
  * @property {(deadline: Timestamp,
- *             amountIn: Amount,
- *             brandOut: Brand
+ *             amountIn: Amount<'nat'>,
+ *             brandOut: Brand<'nat'>
  * ) => Promise<PriceQuote>} quoteAtTime
  * Resolves after `deadline` passes on the
  * priceAuthority's timerService with the price quote of `amountIn` at that time
  *
- * @property {(amountIn: Amount,
- *             brandOut: Brand
+ * @property {(amountIn: Amount<'nat'>,
+ *             brandOut: Brand<'nat'>
  * ) => Promise<PriceQuote>} quoteGiven
  * Get a quote corresponding to the specified amountIn
  *
- * @property {(brandIn: Brand,
- *             amountOut: Amount) => Promise<PriceQuote>} quoteWanted
+ * @property {(brandIn: Brand<'nat'>,
+ *             amountOut: Amount<'nat'>) => Promise<PriceQuote>} quoteWanted
  * Get a quote corresponding to the specified amountOut
  *
- * @property {(amountIn: Amount,
- *             amountOutLimit: Amount
+ * @property {(amountIn: Amount<'nat'>,
+ *             amountOutLimit: Amount<'nat'>
  * ) => Promise<PriceQuote>} quoteWhenGT
  * Resolve when a price quote of `amountIn` exceeds `amountOutLimit`
  *
- * @property {(amountIn: Amount,
- *             amountOutLimit: Amount
+ * @property {(amountIn: Amount<'nat'>,
+ *             amountOutLimit: Amount<'nat'>
  * ) => Promise<PriceQuote>} quoteWhenGTE
  * Resolve when a price quote of `amountIn` reaches or exceeds `amountOutLimit`
  *
@@ -137,12 +137,12 @@
  */
 
 /**
- * @typedef {(amount: Amount) => Amount} PriceCalculator
+ * @typedef {(amount: Amount<'nat'>) => Amount<'nat'>} PriceCalculator
  */
 
 /**
  * @callback PriceQuery
  * @param {PriceCalculator} calcAmountIn
  * @param {PriceCalculator} calcAmountOut
- * @returns {{ amountIn: Amount, amountOut: Amount, timestamp?: Timestamp }=}
+ * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: Timestamp }=}
  */

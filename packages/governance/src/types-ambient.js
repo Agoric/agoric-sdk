@@ -61,7 +61,7 @@
  * Terms a contract must provide in order to be governed.
  *
  * @template {import('./contractGovernance/typedParamManager.js').ParamTypesMap} T Governed parameters of contract
- * @typedef {{ electionManager: Instance, governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & { Electorate: 'invitation' }> } } GovernanceTerms<T>
+ * @typedef {{ electionManager: import('@agoric/zoe/src/zoeService/utils.js').Instance<import('./contractGovernor').start>, governedParams: import('./contractGovernance/typedParamManager.js').ParamRecordsFromTypes<T & { Electorate: 'invitation' }> } } GovernanceTerms<T>
  */
 
 /**
@@ -369,7 +369,7 @@
  * @template [P=StandardParamPath] path for a paramManagerRetriever
  * @typedef {object} ParamChangeIssue
  * @property {ParamChangesSpec<P>} spec
- * @property {Instance} contract
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} contract
  */
 
 /**
@@ -710,9 +710,9 @@
  * @callback AssertContractGovernance
  *
  * @param {ERef<ZoeService>} zoe
- * @param {Instance} allegedGoverned
+ * @param {import('@agoric/zoe/src/zoeService/utils.js').Instance<(zcf: ZCF<GovernanceTerms<{}>>) => {}>} allegedGoverned
  * @param {Instance} allegedGovernor
- * @param {Installation} contractGovernorInstallation
+ * @param {Installation<import('@agoric/governance/src/contractGovernor').start>} contractGovernorInstallation
  * @returns {Promise<GovernancePair>}
  */
 

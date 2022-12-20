@@ -1,14 +1,13 @@
-import { E } from '@endo/eventual-send';
 import {
   canBeDurable,
-  makeScalarBigSetStore,
-  provideDurableWeakMapStore,
-  vivifyKindMulti,
-  vivifyFarClassKit,
   M,
+  makeScalarBigSetStore,
   provide,
+  provideDurableWeakMapStore,
+  vivifyFarClassKit,
+  vivifyKindMulti,
 } from '@agoric/vat-data';
-import { makeZoeSeatAdminFactory } from './zoeSeat.js';
+import { E } from '@endo/eventual-send';
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,
@@ -16,6 +15,7 @@ import {
   InstanceHandleShape,
   IssuerKeywordRecordShape,
 } from '../typeGuards.js';
+import { makeZoeSeatAdminFactory } from './zoeSeat.js';
 
 const { quote: q, Fail } = assert;
 

@@ -52,7 +52,7 @@ const trace = makeTracer('LiqI', false);
  *   priceAuthority: PriceAuthority,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
- *   debtBrand: Brand,
+ *   debtBrand: Brand<'nat'>,
  *   MaxImpactBP: NatValue,
  *   OracleTolerance: Ratio,
  *   AMMMaxSlippage: Ratio,
