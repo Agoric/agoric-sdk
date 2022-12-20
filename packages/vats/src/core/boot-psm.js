@@ -63,6 +63,10 @@ export const agoricNamesReserved = harden(
       [Stable.symbol]: Stable.proposedName,
       AUSD: 'Agoric bridged USDC',
     },
+    vbankAsset: {
+      [Stake.symbol]: Stake.proposedName,
+      [Stable.symbol]: Stable.proposedName,
+    },
     oracleBrand: {
       USD: 'US Dollar',
     },
