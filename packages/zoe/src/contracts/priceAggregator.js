@@ -32,6 +32,8 @@ import '@agoric/ertp/src/types-ambient.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
+/** @typedef {ParsableNumber | Ratio} Result */
+
 /**
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median. This naive method is game-able and so this module
@@ -161,7 +163,7 @@ const start = async (zcf, privateArgs) => {
 
       /**
        * @param {Amount<'nat'>} amountIn the given amountIn
-       * @returns {Amount} the amountOut that will be received
+       * @returns {Amount<'nat'>} the amountOut that will be received
        */
       const calcAmountOut = amountIn => {
         return floorMultiplyBy(amountIn, price);
@@ -169,7 +171,7 @@ const start = async (zcf, privateArgs) => {
 
       /**
        * @param {Amount<'nat'>} amountOut the wanted amountOut
-       * @returns {Amount} the amountIn needed to give
+       * @returns {Amount<'nat'>} the amountIn needed to give
        */
       const calcAmountIn = amountOut => {
         return ceilDivideBy(amountOut, price);
@@ -423,7 +425,7 @@ const start = async (zcf, privateArgs) => {
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<{admin: OracleAdmin, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{admin: OracleAdmin<Result>, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async (
         seat,
@@ -481,7 +483,7 @@ const start = async (zcf, privateArgs) => {
     /**
      * @param {Instance | string} [oracleInstance]
      * @param {OracleQuery} [query]
-     * @returns {Promise<OracleAdmin>}
+     * @returns {Promise<OracleAdmin<Result>>}
      */
     initOracle: async (oracleInstance, query) => {
       /** @type {OracleKey} */
@@ -524,7 +526,7 @@ const start = async (zcf, privateArgs) => {
         record.lastSample = ratio;
       };
 
-      /** @type {OracleAdmin} */
+      /** @type {OracleAdmin<Result>} */
       const oracleAdmin = Far('OracleAdmin', {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');

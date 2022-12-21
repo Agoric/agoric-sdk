@@ -61,8 +61,8 @@ export const makePriceAuthorityRegistry = () => {
     /**
      * Return a quote when relation is true of the arguments.
      *
-     * @param {Amount} amountIn monitor the amountOut corresponding to this amountIn
-     * @param {Amount} amountOutLimit the value to compare with the monitored amountOut
+     * @param {Amount<'nat'>} amountIn monitor the amountOut corresponding to this amountIn
+     * @param {Amount<'nat'>} amountOutLimit the value to compare with the monitored amountOut
      * @returns {Promise<PriceQuote>} resolve with a quote when `amountOut
      * relation amountOutLimit` is true
      */
