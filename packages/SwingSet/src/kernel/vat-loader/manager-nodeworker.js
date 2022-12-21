@@ -54,7 +54,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
       kernelSlog,
       kernelKeeper,
       vatSyscallHandler,
-      false,
+      'async-dropping',
       compareSyscalls,
       useTranscript,
     );

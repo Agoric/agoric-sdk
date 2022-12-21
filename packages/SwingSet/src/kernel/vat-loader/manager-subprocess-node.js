@@ -31,7 +31,7 @@ export function makeNodeSubprocessFactory(tools) {
       kernelSlog,
       kernelKeeper,
       vatSyscallHandler,
-      false,
+      'async-dropping',
       compareSyscalls,
       useTranscript,
     );
