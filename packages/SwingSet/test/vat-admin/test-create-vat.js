@@ -295,23 +295,32 @@ test('createVat holds refcount', async t => {
   let expectedRefcount = 0;
   let expectedCLists = 1; // v6-export-held
 
-  // bootstrap() imports 'held', adding it to the v2-bootstrap c-list and
+  // bootstrap() imports 'held', adding it to the v1-bootstrap c-list and
   // incrementing the refcount.
   expectedRefcount += 1; // v1-bootstrap holds resolution of 'createHeld'
   expectedCLists += 1; // v1-bootstrap
 
-  // calling getHeld doesn't immediately increment the refcount
   const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', []);
   await c.run();
-  expectedRefcount += 1; // from 'getHeld'
+  // We send `getHeld` to v1-bootstrap, which resolves kpid1 to
+  // 'held'. It now has refCount=2,2: one from v1-bootstrap, the other
+  // from kpid1's resolution value. kpid1 itself is held by a refcount
+  // added by queueToVatRoot, which will be removed when we call
+  // kpResolution.
+  expectedRefcount += 1; // from kpid1
+
   const h1 = kunser(c.kpResolution(kpid1));
+  // `kpResolution()` does an incref on the results, making the
+  // refcount now 3,3: v1-bootstrap c-list (from 'createHeld'), kpid1
+  // resolution value, and pinned by kpResolution. kpid1 has now been
+  // retired (and is currently in maybeFreeKrefs), but the contents
+  // won't be released until the next delivery happens (c.step) and we
+  // do a processRefcounts()
+  expectedRefcount += 1; // kpResolution pin
+
   const held = krefOf(h1);
   t.is(held, 'ko27'); // gleaned from the logs, unstable, update as needed
 
-  // but `kpResolution()` does an incref on the results, making the refcount now
-  // 3,3: import held twice by v1-bootstrap (from 'createHeld' and temporarily
-  // from 'getHeld') and pinned by kpResolution.
-  expectedRefcount += 1; // kpResolution pin
   const { refcount, refs } = findRefs(kvStore, held);
   t.deepEqual(refcount, [expectedRefcount, expectedRefcount]);
   t.is(refs.length, expectedCLists);
@@ -343,11 +352,12 @@ test('createVat holds refcount', async t => {
       ).length;
   }
   await stepUntil(seeDeliverCreateVat);
-  expectedRefcount -= 1; // GC discards resolution from `getHeld`
-
-  // now we should still see 3,3: v1-bootstrap, the kpResolution pin, and the
-  // send(createVat) arguments. Two of these are c-lists.
+  // first delivery also does processRefcounts, deletes kpid1
+  expectedRefcount -= 1; // kpid1 deleted, drops ref to 'held', now 2,2
+  // it also does syscall.send(createVat), which holds a new reference
   expectedRefcount += 1; // arg to 'createVat'
+  // now we should see 3,3: v1-bootstrap, the kpResolution pin, and the
+  // send(createVat) arguments. Two of these are c-lists.
   const r1 = findRefs(kvStore, held);
   t.deepEqual(r1.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r1.refs.length, expectedCLists);
