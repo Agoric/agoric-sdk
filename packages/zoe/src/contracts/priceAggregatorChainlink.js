@@ -717,13 +717,13 @@ const start = async (zcf, privateArgs) => {
        * reported data.
        *
        * @param {ZCFSeat} seat
-       * @returns {Promise<{admin: OracleAdmin<PriceRound>, invitationMakers: {makePushPriceInvitation: (result: PriceRound) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{admin: OracleAdmin<PriceRound>, invitationMakers: {PushPrice: (result: PriceRound) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async seat => {
         const admin = await creatorFacet.initOracle(oracleAddr);
         const invitationMakers = Far('invitation makers', {
           /** @param {PriceRound} result */
-          makePushPriceInvitation(result) {
+          PushPrice(result) {
             assertParsableNumber(result.unitPrice);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();

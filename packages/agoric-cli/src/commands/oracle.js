@@ -114,7 +114,7 @@ export const makeOracleCommand = async logger => {
         invitationSpec: {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
-          invitationMakerName: 'makePushPriceInvitation',
+          invitationMakerName: 'PushPrice',
           invitationArgs: harden([opts.price]),
         },
         proposal: {},
@@ -149,7 +149,7 @@ export const makeOracleCommand = async logger => {
         invitationSpec: {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
-          invitationMakerName: 'makePushPriceInvitation',
+          invitationMakerName: 'PushPrice',
           invitationArgs: harden([
             { unitPrice: opts.price, roundId: opts.roundId },
           ]),

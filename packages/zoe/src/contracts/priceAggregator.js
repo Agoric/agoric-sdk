@@ -434,7 +434,7 @@ const start = async (zcf, privateArgs) => {
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {PushPrice: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async (
         seat,
@@ -443,7 +443,7 @@ const start = async (zcf, privateArgs) => {
         const admin = await creatorFacet.initOracle(oracleKey);
         const invitationMakers = Far('invitation makers', {
           /** @param {ParsableNumber} price */
-          makePushPriceInvitation(price) {
+          PushPrice(price) {
             assertParsableNumber(price);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();

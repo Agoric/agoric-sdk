@@ -559,7 +559,7 @@ test('oracle continuing invitation', async t => {
   const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
   const oracleAdmin1 = E(or1).getOfferResult();
   const invitationMakers = await E.get(oracleAdmin1).invitationMakers;
-  t.true('makePushPriceInvitation' in invitationMakers);
+  t.true('PushPrice' in invitationMakers);
 
   const amountIn = AmountMath.make(brandIn, 1000000n);
   const makeQuoteValue = (timestamp, valueOut) => [
@@ -575,7 +575,7 @@ test('oracle continuing invitation', async t => {
     E(aggregator.publicFacet).getPriceAuthority(),
   ).makeQuoteNotifier(amountIn, brandOut);
 
-  const invPrice = await E(invitationMakers).makePushPriceInvitation('1234');
+  const invPrice = await E(invitationMakers).PushPrice('1234');
   const invPriceResult = await E(zoe).offer(invPrice);
   t.deepEqual(await E(invPriceResult).numWantsSatisfied(), 1);
 

@@ -162,7 +162,7 @@ test('admin price', async t => {
   const proposeInvitationSpec = {
     source: 'continuing',
     previousOffer: 44,
-    invitationMakerName: 'makePushPriceInvitation',
+    invitationMakerName: 'PushPrice',
     invitationArgs: harden([result]),
   };
 
