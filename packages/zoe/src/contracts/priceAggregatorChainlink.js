@@ -691,13 +691,6 @@ const start = async (zcf, privateArgs) => {
     return add(currentRound, 1);
   };
 
-  /**
-   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'initOracle'> & {
-   *   initOracle: (instance) => Promise<OracleAdmin<PriceRound>>,
-   *   getRoundData(roundId: bigint | number): Promise<RoundData>,
-   *   oracleRoundState(oracleAddr: string, queriedRoundId: BigInt): Promise<any>
-   * }}
-   */
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
     /**
      * An "oracle invitation" is an invitation to be able to submit data to
@@ -707,7 +700,7 @@ const start = async (zcf, privateArgs) => {
      * directly to manage the price submissions as well as to terminate the
      * relationship.
      *
-     * @param {string} oracleAddr
+     * @param {string} oracleAddr Bech32 of oracle operator smart wallet
      */
     makeOracleInvitation: async oracleAddr => {
       /**
@@ -756,8 +749,12 @@ const start = async (zcf, privateArgs) => {
     },
 
     // unlike the median case, no query argument is passed, since polling behavior is undesired
-    /** @param {string} oracleAddr */
+    /**
+     * @param {string} oracleAddr Bech32 of oracle operator smart wallet
+     * @returns {Promise<OracleAdmin<PriceRound>>}
+     */
     async initOracle(oracleAddr) {
+      assert.typeof(oracleAddr, 'string');
       /** @type {OracleRecord} */
       const record = { querier: undefined, lastSample: 0 };
 
@@ -885,7 +882,7 @@ const start = async (zcf, privateArgs) => {
      * a method to provide all current info oracleStatuses need. Intended only
      * only to be callable by oracleStatuses. Not for use by contracts to read state.
      *
-     * @param {string} oracleAddr
+     * @param {string} oracleAddr Bech32 of oracle operator smart wallet
      * @param {bigint} queriedRoundId
      */
     async oracleRoundState(oracleAddr, queriedRoundId) {

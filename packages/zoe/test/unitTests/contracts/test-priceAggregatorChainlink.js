@@ -7,7 +7,7 @@ import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import {
   eventLoopIteration,
@@ -65,51 +65,12 @@ const makeContext = async () => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-oracle', oracleBundle);
-  /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
-  const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
   /** @type {Installation<import('../../../src/contracts/priceAggregatorChainlink.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
   const usd = makeIssuerKit('$USD', AssetKind.NAT);
-
-  /**
-   * @param {bigint} [valueOut]
-   * @returns {Promise<OracleKit & { instance: Instance }>}
-   */
-  const makeFakePriceOracle = async valueOut => {
-    /** @type {OracleHandler} */
-    const oracleHandler = Far('OracleHandler', {
-      async onQuery({ increment }, _fee) {
-        assert(valueOut);
-        assert(increment);
-        valueOut += increment;
-        return harden({
-          reply: `${valueOut}`,
-          requiredFee: AmountMath.makeEmpty(link.brand),
-        });
-      },
-      onError(query, reason) {
-        console.error('query', query, 'failed with', reason);
-      },
-      onReply(_query, _reply) {},
-    });
-
-    const startResult = await E(zoe).startInstance(
-      oracleInstallation,
-      { Fee: link.issuer },
-      { oracleDescription: 'myOracle' },
-    );
-    const creatorFacet = await E(startResult.creatorFacet).initialize({
-      oracleHandler,
-    });
-
-    return harden({
-      ...startResult,
-      creatorFacet,
-    });
-  };
 
   async function makeChainlinkAggregator(config) {
     const {
@@ -150,7 +111,7 @@ const makeContext = async () => {
     return { ...aggregator, mockStorageRoot };
   }
 
-  return { makeChainlinkAggregator, makeFakePriceOracle, zoe };
+  return { makeChainlinkAggregator, zoe };
 };
 
 test.before('setup aggregator and oracles', async t => {
@@ -158,25 +119,21 @@ test.before('setup aggregator and oracles', async t => {
 });
 
 test('basic', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator(defaultConfig);
   /** @type {{ timer: ManualTimer }} */
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
 
   // ----- round 1: basic consensus
@@ -221,7 +178,7 @@ test('basic', async t => {
 });
 
 test('timeout', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -232,18 +189,14 @@ test('timeout', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
 
   // ----- round 1: basic consensus w/ ticking: should work EXACTLY the same
@@ -281,7 +234,7 @@ test('timeout', async t => {
 });
 
 test('issue check', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -291,18 +244,14 @@ test('issue check', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
 
   // ----- round 1: ignore too low values
@@ -328,7 +277,7 @@ test('issue check', async t => {
 });
 
 test('supersede', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -338,18 +287,14 @@ test('supersede', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
 
   // ----- round 1: round 1 is NOT supersedable when 3 submits, meaning it will be ignored
@@ -383,7 +328,7 @@ test('supersede', async t => {
 });
 
 test('interleaved', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -396,18 +341,14 @@ test('interleaved', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
 
   // ----- round 1: we now need unanimous submission for a round for it to have consensus
@@ -513,7 +454,7 @@ test('interleaved', async t => {
 });
 
 test('larger', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -525,26 +466,20 @@ test('larger', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-  const priceOracleD = await makeFakePriceOracle();
-  const priceOracleE = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
   const pricePushAdminD = await E(aggregator.creatorFacet).initOracle(
-    priceOracleD.instance,
+    'agorice1priceOracleD',
   );
   const pricePushAdminE = await E(aggregator.creatorFacet).initOracle(
-    priceOracleE.instance,
+    'agorice1priceOracleE',
   );
 
   // ----- round 1: usual case
@@ -587,7 +522,7 @@ test('larger', async t => {
 });
 
 test('suggest', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -599,18 +534,14 @@ test('suggest', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-  const priceOracleC = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
   const pricePushAdminC = await E(aggregator.creatorFacet).initOracle(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
   );
 
   // ----- round 1: basic consensus
@@ -628,7 +559,7 @@ test('suggest', async t => {
   await oracleTimer.tick();
   await E(pricePushAdminB).pushResult({ roundId: 2, unitPrice: 1000n });
   const oracleCSuggestion = await E(aggregator.creatorFacet).oracleRoundState(
-    priceOracleC.instance,
+    'agorice1priceOracleC',
     1n,
   );
 
@@ -637,7 +568,7 @@ test('suggest', async t => {
   t.deepEqual(oracleCSuggestion.oracleCount, 3);
 
   const oracleBSuggestion = await E(aggregator.creatorFacet).oracleRoundState(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
     0n,
   );
 
@@ -652,7 +583,7 @@ test('suggest', async t => {
   await E(pricePushAdminC).pushResult({ roundId: 2, unitPrice: 3000n });
 
   const oracleASuggestion = await E(aggregator.creatorFacet).oracleRoundState(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
     0n,
   );
 
@@ -674,7 +605,7 @@ test('suggest', async t => {
 });
 
 test('notifications', async t => {
-  const { makeFakePriceOracle, zoe } = t.context;
+  const { zoe } = t.context;
 
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
@@ -685,14 +616,11 @@ test('notifications', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  const priceOracleA = await makeFakePriceOracle();
-  const priceOracleB = await makeFakePriceOracle();
-
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
-    priceOracleA.instance,
+    'agorice1priceOracleA',
   );
   const pricePushAdminB = await E(aggregator.creatorFacet).initOracle(
-    priceOracleB.instance,
+    'agorice1priceOracleB',
   );
 
   const latestRoundSubscriber = await E(
