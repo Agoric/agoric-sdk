@@ -118,6 +118,7 @@ test.before('setup aggregator and oracles', async t => {
   /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
   const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+  /** @type {Installation<import('../../../src/contracts/priceAggregator.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$ATOM');
@@ -185,8 +186,7 @@ test.before('setup aggregator and oracles', async t => {
         storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
       },
     );
-    aggregator.mockStorageRoot = storageRoot;
-    return aggregator;
+    return { ...aggregator, mockStorageRoot: storageRoot };
   };
   t.context.zoe = zoe;
   t.context.makeFakePriceOracle = makeFakePriceOracle;

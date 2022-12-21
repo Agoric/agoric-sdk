@@ -49,7 +49,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * @param {{
  * marshaller: Marshaller,
  * quoteMint?: ERef<Mint<'set'>>,
- * storageNode: StorageNode,
+ * storageNode: ERef<StorageNode>,
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {

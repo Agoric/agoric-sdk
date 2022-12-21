@@ -71,7 +71,7 @@ type StartContractInstance<C> = (
 
 /** The result of `startInstance` */
 export type StartedInstanceKit<SF> = {
-  instance: Instance;
+  instance: Instance<SF>;
   adminFacet: AdminFacet;
 } & Awaited<ReturnType<SF>>;
 

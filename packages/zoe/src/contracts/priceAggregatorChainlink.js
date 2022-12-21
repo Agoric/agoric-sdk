@@ -1,5 +1,3 @@
-// @ts-nocheck XXX
-
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -15,6 +13,11 @@ import {
 } from '../contractSupport';
 
 import '../../tools/types';
+
+/**
+ * @typedef {{ roundId: number | undefined, data: string }} Result
+ * `data` is a string encoded integer (Number.MAX_SAFE_INTEGER)
+ */
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
@@ -34,7 +37,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * unitAmountIn?: Amount,
  * }>} zcf
  * @param {object} root0
- * @param {ERef<Mint>} [root0.quoteMint]
+ * @param {ERef<Mint<'set'>>} [root0.quoteMint]
  */
 const start = async (
   zcf,
@@ -589,7 +592,8 @@ const start = async (
   };
 
   /**
-   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation'> & {
+   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation' | 'initOracle'> & {
+   *   initOracle: (instance) => Promise<OracleAdmin<Result>>,
    *   getRoundData(_roundId: BigInt): Promise<any>,
    *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
    * }}
@@ -635,6 +639,7 @@ const start = async (
       }
       records.add(record);
 
+      /** @param {Result} result */
       const pushResult = async ({
         roundId: _roundIdRaw = undefined,
         data: _submissionRaw,
@@ -684,7 +689,7 @@ const start = async (
       // Obtain the oracle's publicFacet.
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {OracleAdmin} */
+      /** @type {OracleAdmin<Result>} */
       const oracleAdmin = {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');

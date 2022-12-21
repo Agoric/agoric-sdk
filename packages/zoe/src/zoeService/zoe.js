@@ -116,6 +116,7 @@ const makeZoeKit = (
     ZoeServiceIKit,
     dataAccess => ({ dataAccess }),
     {
+      /** @type {ZoeService} */
       zoeService: {
         install(bundleId) {
           const { state } = this;
