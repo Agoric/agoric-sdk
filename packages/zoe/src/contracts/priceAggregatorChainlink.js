@@ -1,66 +1,128 @@
+/** @file
+ * Adaptation of Chainlink algorithm to the Agoric platform.
+ * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
+ */
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  makeStoredPublishKit,
+  observeNotifier,
+} from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
-
+import { Fail } from '@agoric/assert';
+import { assertAllDefined } from '@agoric/internal';
 import {
   calculateMedian,
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../contractSupport';
+} from '../contractSupport/index.js';
 
-import '../../tools/types';
+import '../../tools/types.js';
+import { assertParsableNumber } from '../contractSupport/ratio.js';
+import {
+  INVITATION_MAKERS_DESC,
+  priceDescriptionFromQuote,
+} from './priceAggregator.js';
+
+export { INVITATION_MAKERS_DESC };
 
 /**
- * @typedef {{ roundId: number | undefined, data: string }} Result
- * `data` is a string encoded integer (Number.MAX_SAFE_INTEGER)
+ * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound
  */
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
+
+/**
+ * @typedef {object} RoundData
+ * @property {bigint} roundId  the round ID for which data was retrieved
+ * @property {bigint} answer the answer for the given round
+ * @property {Timestamp} startedAt the timestamp when the round was started. This is 0
+ * if the round hasn't been started yet.
+ * @property {Timestamp} updatedAt the timestamp when the round last was updated (i.e.
+ * answer was last computed)
+ * @property {bigint} answeredInRound the round ID of the round in which the answer
+ * was computed. answeredInRound may be smaller than roundId when the round
+ * timed out. answeredInRound is equal to roundId when the round didn't time out
+ * and was completed regularly.
+ */
+
+/**
+ * @typedef {Pick<RoundData, 'roundId' | 'startedAt'>} LatestRound
+ */
+
+// Partly documented at https://github.com/smartcontractkit/chainlink/blob/b045416ebca769aa69bde2da23b5109abe07a8b5/contracts/src/v0.6/FluxAggregator.sol#L153
+/**
+ * @typedef {object} ChainlinkConfig
+ * @property {number} maxSubmissionCount
+ * @property {number} minSubmissionCount
+ * @property {RelativeTime} restartDelay the number of rounds an Oracle has to wait before they can initiate a round
+ * @property {number} minSubmissionValue an immutable check for a lower bound of what
+ * submission values are accepted from an oracle
+ * @property {number} maxSubmissionValue an immutable check for an upper bound of what
+ * submission values are accepted from an oracle
+ * @property {number} timeout the number of seconds after the previous round that
+ * allowed to lapse before allowing an oracle to skip an unfinished round
+ */
 
 /**
  * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
  * the *Node Operator Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
- * @param {ZCF<{
+ * @param {ZCF<ChainlinkConfig & {
  * timer: TimerService,
- * maxSubmissionCount: number,
- * minSubmissionCount: number,
- * restartDelay: RelativeTime,
- * timeout: number,
- * minSubmissionValue: number,
- * maxSubmissionValue: number,
- * unitAmountIn?: Amount,
+ * brandIn: Brand<'nat'>,
+ * brandOut: Brand<'nat'>,
+ * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
- * @param {object} root0
- * @param {ERef<Mint<'set'>>} [root0.quoteMint]
+ * @param {{
+ * marshaller: Marshaller,
+ * quoteMint?: ERef<Mint<'set'>>,
+ * storageNode: ERef<StorageNode>,
+ * }} privateArgs
  */
-const start = async (
-  zcf,
-  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
-) => {
+const start = async (zcf, privateArgs) => {
+  // brands come from named terms instead of `brands` key because the latter is
+  // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
+  // Oracle brands are inert (without issuers or mints).
   const {
-    timer,
-    brands: { In: brandIn, Out: brandOut },
+    brandIn,
+    brandOut,
     maxSubmissionCount,
+    maxSubmissionValue,
     minSubmissionCount,
+    minSubmissionValue,
     restartDelay,
     timeout,
-    minSubmissionValue,
-    maxSubmissionValue,
+    timer,
 
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
+
+  assertAllDefined({
+    brandIn,
+    brandOut,
+    maxSubmissionCount,
+    maxSubmissionValue,
+    minSubmissionCount,
+    minSubmissionValue,
+    restartDelay,
+    timeout,
+    timer,
+    unitAmountIn,
+  });
 
   const unitIn = AmountMath.getValue(brandIn, unitAmountIn);
 
   // Get the timer's identity.
   const timerPresence = await timer;
 
+  const quoteMint =
+    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
@@ -76,13 +138,23 @@ const start = async (
   // --- [begin] Chainlink specific values
   /** @type {bigint} */
   let reportingRoundId = 0n;
-  const { notifier: roundStartNotifier, updater: roundStartUpdater } =
-    makeNotifierKit(
-      // Start with the first round.
-      add(reportingRoundId, 1),
+
+  const { marshaller, storageNode } = privateArgs;
+  assertAllDefined({ marshaller, storageNode });
+
+  // For publishing priceAuthority values to off-chain storage
+  /** @type {StoredPublishKit<PriceDescription>} */
+  const { publisher: pricePublisher, subscriber: quoteSubscriber } =
+    makeStoredPublishKit(storageNode, marshaller);
+
+  /** @type {StoredPublishKit<LatestRound>} */
+  const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
+    makeStoredPublishKit(
+      E(storageNode).makeChildNode('latestRound'),
+      marshaller,
     );
 
-  /** @type {LegacyMap<OracleKey, ReturnType<typeof makeOracleStatus>>} */
+  /** @type {LegacyMap<string, ReturnType<typeof makeOracleStatus>>} */
   const oracleStatuses = makeLegacyMap('oracleStatus');
 
   /** @type {LegacyMap<bigint, ReturnType<typeof makeRound>>} */
@@ -99,7 +171,7 @@ const start = async (
   // --- [end] Chainlink specific values
 
   /**
-   * @param {number} answer
+   * @param {bigint} answer
    * @param {Timestamp} startedAt
    * @param {Timestamp} updatedAt
    * @param {bigint} answeredInRound
@@ -169,8 +241,13 @@ const start = async (
     return harden({ quoteAmount, quotePayment });
   };
 
-  // FIXME: We throw away the updater but shouldn't.
-  const { notifier } = makeNotifierKit();
+  /**
+   * This is just a signal that there's a new answer, which is read from `lastValueOutForUnitIn`
+   *
+   * @type {NotifierRecord<void>}
+   */
+  const { notifier: answerNotifier, updater: answerUpdator } =
+    makeNotifierKit();
 
   /**
    * @typedef {object} OracleRecord
@@ -178,12 +255,8 @@ const start = async (
    * @property {number} lastSample
    */
 
-  /**
-   * @typedef {{}} OracleKey
-   */
-
-  /** @type {LegacyMap<OracleKey, Set<OracleRecord>>} */
-  const keyToRecords = makeLegacyMap('oracleKey');
+  /** @type {LegacyMap<string, Set<OracleRecord>>} */
+  const keyToRecords = makeLegacyMap('oracleAddr');
 
   /**
    * @param {object} param0
@@ -261,24 +334,36 @@ const start = async (
 
   const { priceAuthority } = makeOnewayPriceAuthorityKit({
     createQuote: makeCreateQuote(),
-    notifier,
+    notifier: answerNotifier,
     quoteIssuer: quoteKit.issuer,
     timer,
     actualBrandIn: brandIn,
     actualBrandOut: brandOut,
   });
 
+  // for each new quote from the priceAuthority, publish it to off-chain storage
+  observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
+    updateState: quote =>
+      pricePublisher.publish(priceDescriptionFromQuote(quote)),
+    fail: reason => {
+      throw Error(`priceAuthority observer failed: ${reason}`);
+    },
+    finish: done => {
+      throw Error(`priceAuthority observer died: ${done}`);
+    },
+  });
+
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const timedOut = (_roundId, blockTimestamp) => {
-    if (!details.has(_roundId) || !rounds.has(_roundId)) {
+  const timedOut = (roundId, blockTimestamp) => {
+    if (!details.has(roundId) || !rounds.has(roundId)) {
       return false;
     }
 
-    const startedAt = rounds.get(_roundId).startedAt;
-    const roundTimeout = details.get(_roundId).roundTimeout;
+    const startedAt = rounds.get(roundId).startedAt;
+    const roundTimeout = details.get(roundId).roundTimeout;
     // TODO Better would be to make `roundTimeout` a `RelativeTime`
     // everywhere, and to rename it to a name that does not
     // mistakenly imply that it is an absolute time.
@@ -295,146 +380,156 @@ const start = async (
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const updateTimedOutRoundInfo = (_roundId, blockTimestamp) => {
+  const updateTimedOutRoundInfo = (roundId, blockTimestamp) => {
     // round 0 is non-existent, so we avoid that case -- round 1 is ignored
     // because we can't copy from round 0 in that case
-    if (_roundId === 0n || _roundId === 1n) {
+    if (roundId === 0n || roundId === 1n) {
       return;
     }
 
-    const roundTimedOut = timedOut(_roundId, blockTimestamp);
+    const roundTimedOut = timedOut(roundId, blockTimestamp);
     if (!roundTimedOut) return;
 
-    const prevId = subtract(_roundId, 1);
+    const prevId = subtract(roundId, 1);
 
-    const round = rounds.get(_roundId);
+    const round = rounds.get(roundId);
     round.answer = rounds.get(prevId).answer;
     round.answeredInRound = rounds.get(prevId).answeredInRound;
     round.updatedAt = blockTimestamp;
 
-    details.delete(_roundId);
+    details.delete(roundId);
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const newRound = _roundId => {
-    return _roundId === add(reportingRoundId, 1);
+  const newRound = roundId => {
+    return roundId === add(reportingRoundId, 1);
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const initializeNewRound = (_roundId, blockTimestamp) => {
-    updateTimedOutRoundInfo(subtract(_roundId, 1), blockTimestamp);
+  const initializeNewRound = (roundId, blockTimestamp) => {
+    newRound(roundId) || Fail`Round ${roundId} already started`;
 
-    reportingRoundId = _roundId;
-    roundStartUpdater.updateState(reportingRoundId);
+    updateTimedOutRoundInfo(subtract(roundId, 1), blockTimestamp);
+
+    reportingRoundId = roundId;
+    latestRoundPublisher.publish({
+      roundId: reportingRoundId,
+      startedAt: blockTimestamp,
+    });
 
     details.init(
-      _roundId,
+      roundId,
       makeRoundDetails([], maxSubmissionCount, minSubmissionCount, timeout),
     );
 
     rounds.init(
-      _roundId,
+      roundId,
       makeRound(
-        /* answer = */ 0,
+        /* answer = */ 0n,
         /* startedAt = */ 0n,
         /* updatedAt = */ 0n,
         /* answeredInRound = */ 0n,
       ),
     );
 
-    rounds.get(_roundId).startedAt = blockTimestamp;
+    rounds.get(roundId).startedAt = blockTimestamp;
   };
 
   /**
-   * @param {bigint} _roundId
-   * @param {OracleKey} _oracle
+   * @param {bigint} roundId
+   * @param {string} oracleAddr
    * @param {Timestamp} blockTimestamp
    */
-  const oracleInitializeNewRound = (_roundId, _oracle, blockTimestamp) => {
-    if (!newRound(_roundId)) return;
-    const lastStarted = oracleStatuses.get(_oracle).lastStartedRound; // cache storage reads
-    if (_roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n)
-      return;
-    initializeNewRound(_roundId, blockTimestamp);
+  const proposeNewRound = (roundId, oracleAddr, blockTimestamp) => {
+    if (!newRound(roundId)) return;
+    const lastStarted = oracleStatuses.get(oracleAddr).lastStartedRound; // cache storage reads
+    if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n) return;
+    initializeNewRound(roundId, blockTimestamp);
 
-    oracleStatuses.get(_oracle).lastStartedRound = _roundId;
+    oracleStatuses.get(oracleAddr).lastStartedRound = roundId;
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const acceptingSubmissions = _roundId => {
-    return details.has(_roundId) && details.get(_roundId).maxSubmissions !== 0;
+  const acceptingSubmissions = roundId => {
+    return details.has(roundId) && details.get(roundId).maxSubmissions !== 0;
   };
 
   /**
-   * @param {bigint} _submission
-   * @param {bigint} _roundId
-   * @param {OracleKey} _oracle
+   * @param {bigint} submission
+   * @param {bigint} roundId
+   * @param {string} oracleAddr
    */
-  const recordSubmission = (_submission, _roundId, _oracle) => {
-    if (!acceptingSubmissions(_roundId)) {
+  const recordSubmission = (submission, roundId, oracleAddr) => {
+    if (!acceptingSubmissions(roundId)) {
       console.error('round not accepting submissions');
       return false;
     }
 
-    details.get(_roundId).submissions.push(_submission);
-    oracleStatuses.get(_oracle).lastReportedRound = _roundId;
-    oracleStatuses.get(_oracle).latestSubmission = _submission;
+    details.get(roundId).submissions.push(submission);
+    oracleStatuses.get(oracleAddr).lastReportedRound = roundId;
+    oracleStatuses.get(oracleAddr).latestSubmission = submission;
     return true;
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const updateRoundAnswer = (_roundId, blockTimestamp) => {
+  const updateRoundAnswer = (roundId, blockTimestamp) => {
     if (
-      details.get(_roundId).submissions.length <
-      details.get(_roundId).minSubmissions
+      details.get(roundId).submissions.length <
+      details.get(roundId).minSubmissions
     ) {
       return [false, 0];
     }
 
+    /** @type {bigint | undefined} */
     const newAnswer = calculateMedian(
       details
-        .get(_roundId)
+        .get(roundId)
         .submissions.filter(sample => isNat(sample) && sample > 0n),
       { add, divide: floorDivide, isGTE },
     );
 
-    rounds.get(_roundId).answer = newAnswer;
-    rounds.get(_roundId).updatedAt = blockTimestamp;
-    rounds.get(_roundId).answeredInRound = _roundId;
+    assert(newAnswer, 'insufficient samples');
+
+    rounds.get(roundId).answer = newAnswer;
+    rounds.get(roundId).updatedAt = blockTimestamp;
+    rounds.get(roundId).answeredInRound = roundId;
+
+    lastValueOutForUnitIn = newAnswer;
+    answerUpdator.updateState(undefined);
 
     return [true, newAnswer];
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const deleteRoundDetails = _roundId => {
+  const deleteRoundDetails = roundId => {
     if (
-      details.get(_roundId).submissions.length <
-      details.get(_roundId).maxSubmissions
+      details.get(roundId).submissions.length <
+      details.get(roundId).maxSubmissions
     )
       return;
-    details.delete(_roundId);
+    details.delete(roundId);
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    */
-  const validRoundId = _roundId => {
-    return _roundId <= ROUND_MAX;
+  const validRoundId = roundId => {
+    return roundId <= ROUND_MAX;
   };
 
   /**
@@ -444,75 +539,76 @@ const start = async (
   };
 
   /**
-   * @param {bigint} _roundId
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    */
-  const supersedable = (_roundId, blockTimestamp) => {
+  const supersedable = (roundId, blockTimestamp) => {
     return (
-      rounds.has(_roundId) &&
-      (TimeMath.absValue(rounds.get(_roundId).updatedAt) > 0n ||
-        timedOut(_roundId, blockTimestamp))
+      rounds.has(roundId) &&
+      (TimeMath.absValue(rounds.get(roundId).updatedAt) > 0n ||
+        timedOut(roundId, blockTimestamp))
     );
   };
 
   /**
-   * @param {bigint} _roundId
-   * @param {bigint} _rrId
+   * @param {bigint} roundId
+   * @param {bigint} rrId reporting round ID
    */
-  const previousAndCurrentUnanswered = (_roundId, _rrId) => {
-    return add(_roundId, 1) === _rrId && rounds.get(_rrId).updatedAt === 0n;
+  const previousAndCurrentUnanswered = (roundId, rrId) => {
+    return add(roundId, 1) === rrId && rounds.get(rrId).updatedAt === 0n;
   };
 
   /**
-   * @param {OracleKey} _oracle
-   * @param {bigint} _roundId
+   * @param {string} oracleAddr
+   * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
+   * @returns {string?} error message, if there is one
    */
-  const validateOracleRound = (_oracle, _roundId, blockTimestamp) => {
+  const validateOracleRound = (oracleAddr, roundId, blockTimestamp) => {
     // cache storage reads
-    const startingRound = oracleStatuses.get(_oracle).startingRound;
+    const startingRound = oracleStatuses.get(oracleAddr).startingRound;
     const rrId = reportingRoundId;
 
     let canSupersede = true;
-    if (_roundId > 1n) {
-      canSupersede = supersedable(subtract(_roundId, 1), blockTimestamp);
+    if (roundId > 1n) {
+      canSupersede = supersedable(subtract(roundId, 1), blockTimestamp);
     }
 
     if (startingRound === 0n) return 'not enabled oracle';
-    if (startingRound > _roundId) return 'not yet enabled oracle';
-    if (oracleStatuses.get(_oracle).endingRound < _roundId)
+    if (startingRound > roundId) return 'not yet enabled oracle';
+    if (oracleStatuses.get(oracleAddr).endingRound < roundId)
       return 'no longer allowed oracle';
-    if (oracleStatuses.get(_oracle).lastReportedRound >= _roundId)
+    if (oracleStatuses.get(oracleAddr).lastReportedRound >= roundId)
       return 'cannot report on previous rounds';
     if (
-      _roundId !== rrId &&
-      _roundId !== add(rrId, 1) &&
-      !previousAndCurrentUnanswered(_roundId, rrId)
+      roundId !== rrId &&
+      roundId !== add(rrId, 1) &&
+      !previousAndCurrentUnanswered(roundId, rrId)
     )
       return 'invalid round to report';
-    if (_roundId !== 1n && !canSupersede)
+    if (roundId !== 1n && !canSupersede)
       return 'previous round not supersedable';
-    return '';
+    return null;
   };
 
   /**
-   * @param {OracleKey} _oracle
-   * @param {bigint} _roundId
+   * @param {string} oracleAddr
+   * @param {bigint} roundId
    */
-  const delayed = (_oracle, _roundId) => {
-    const lastStarted = oracleStatuses.get(_oracle).lastStartedRound;
-    return _roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
+  const delayed = (oracleAddr, roundId) => {
+    const lastStarted = oracleStatuses.get(oracleAddr).lastStartedRound;
+    return roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
   };
 
   /**
    * a method to provide all current info oracleStatuses need. Intended only
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
-   * @param {OracleKey} _oracle
+   * @param {string} oracleAddr
    * @param {Timestamp} blockTimestamp
    */
-  const oracleRoundStateSuggestRound = (_oracle, blockTimestamp) => {
-    const oracle = oracleStatuses.get(_oracle);
+  const oracleRoundStateSuggestRound = (oracleAddr, blockTimestamp) => {
+    const oracle = oracleStatuses.get(oracleAddr);
 
     const shouldSupersede =
       oracle.lastReportedRound === reportingRoundId ||
@@ -526,7 +622,7 @@ const start = async (
     let eligibleToSubmit;
     if (canSupersede && shouldSupersede) {
       roundId = add(reportingRoundId, 1);
-      eligibleToSubmit = delayed(_oracle, roundId);
+      eligibleToSubmit = delayed(oracleAddr, roundId);
     } else {
       roundId = reportingRoundId;
       eligibleToSubmit = acceptingSubmissions(roundId);
@@ -544,8 +640,8 @@ const start = async (
       roundTimeout = 0;
     }
 
-    const error = validateOracleRound(_oracle, roundId, blockTimestamp);
-    if (error.length !== 0) {
+    const error = validateOracleRound(oracleAddr, roundId, blockTimestamp);
+    if (error !== null) {
       eligibleToSubmit = false;
     }
 
@@ -560,124 +656,167 @@ const start = async (
   };
 
   /**
-   * @param {OracleKey} _oracle
-   * @param {bigint} _queriedRoundId
+   * @param {string} oracleAddr
+   * @param {bigint} queriedRoundId
    * @param {Timestamp} blockTimestamp
    */
   const eligibleForSpecificRound = (
-    _oracle,
-    _queriedRoundId,
+    oracleAddr,
+    queriedRoundId,
     blockTimestamp,
   ) => {
-    const error = validateOracleRound(_oracle, _queriedRoundId, blockTimestamp);
-    if (TimeMath.absValue(rounds.get(_queriedRoundId).startedAt) > 0n) {
-      return acceptingSubmissions(_queriedRoundId) && error.length === 0;
+    const error = validateOracleRound(
+      oracleAddr,
+      queriedRoundId,
+      blockTimestamp,
+    );
+    if (TimeMath.absValue(rounds.get(queriedRoundId).startedAt) > 0n) {
+      return acceptingSubmissions(queriedRoundId) && error === null;
     } else {
-      return delayed(_oracle, _queriedRoundId) && error.length === 0;
+      return delayed(oracleAddr, queriedRoundId) && error === null;
     }
   };
 
   /**
-   * @param {OracleKey} _oracle
+   * @param {string} oracleAddr
    */
-  const getStartingRound = _oracle => {
+  const getStartingRound = oracleAddr => {
     const currentRound = reportingRoundId;
     if (
       currentRound !== 0n &&
-      currentRound === oracleStatuses.get(_oracle).endingRound
+      currentRound === oracleStatuses.get(oracleAddr).endingRound
     ) {
       return currentRound;
     }
     return add(currentRound, 1);
   };
 
-  /**
-   * @type {Omit<import('./priceAggregator').PriceAggregatorContract['creatorFacet'], 'makeOracleInvitation' | 'initOracle'> & {
-   *   initOracle: (instance) => Promise<OracleAdmin<Result>>,
-   *   getRoundData(_roundId: BigInt): Promise<any>,
-   *   oracleRoundState(_oracle: OracleKey, _queriedRoundId: BigInt): Promise<any>
-   * }}
-   */
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
-    deleteOracle: async oracleKey => {
-      const records = keyToRecords.get(oracleKey);
+    /**
+     * An "oracle invitation" is an invitation to be able to submit data to
+     * include in the priceAggregator's results.
+     *
+     * The offer result from this invitation is a OracleAdmin, which can be used
+     * directly to manage the price submissions as well as to terminate the
+     * relationship.
+     *
+     * @param {string} oracleAddr Bech32 of oracle operator smart wallet
+     */
+    makeOracleInvitation: async oracleAddr => {
+      /**
+       * If custom arguments are supplied to the `zoe.offer` call, they can
+       * indicate an OraclePriceSubmission notifier and a corresponding
+       * `shiftValueOut` that should be adapted as part of the priceAuthority's
+       * reported data.
+       *
+       * @param {ZCFSeat} seat
+       * @returns {Promise<{admin: OracleAdmin<PriceRound>, invitationMakers: {PushPrice: (result: PriceRound) => Promise<Invitation<void>>} }>}
+       */
+      const offerHandler = async seat => {
+        const admin = await creatorFacet.initOracle(oracleAddr);
+        const invitationMakers = Far('invitation makers', {
+          /** @param {PriceRound} result */
+          PushPrice(result) {
+            assertParsableNumber(result.unitPrice);
+            return zcf.makeInvitation(cSeat => {
+              cSeat.exit();
+              admin.pushResult(result);
+            }, 'PushPrice');
+          },
+        });
+        seat.exit();
+
+        return harden({
+          admin,
+
+          invitationMakers,
+        });
+      };
+
+      return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
+    },
+    /** @param {string} oracleAddr */
+    deleteOracle: async oracleAddr => {
+      const records = keyToRecords.get(oracleAddr);
       for (const record of records) {
         records.delete(record);
       }
 
-      oracleStatuses.delete(oracleKey);
+      oracleStatuses.delete(oracleAddr);
 
       // We should remove the entry entirely, as it is empty.
-      keyToRecords.delete(oracleKey);
+      keyToRecords.delete(oracleAddr);
     },
 
     // unlike the median case, no query argument is passed, since polling behavior is undesired
-    async initOracle(oracleInstance) {
-      /** @type {OracleKey} */
-      const oracleKey = oracleInstance || Far('oracleKey', {});
-
+    /**
+     * @param {string} oracleAddr Bech32 of oracle operator smart wallet
+     * @returns {Promise<OracleAdmin<PriceRound>>}
+     */
+    async initOracle(oracleAddr) {
+      assert.typeof(oracleAddr, 'string');
       /** @type {OracleRecord} */
       const record = { querier: undefined, lastSample: 0 };
 
       /** @type {Set<OracleRecord>} */
       let records;
-      if (keyToRecords.has(oracleKey)) {
-        records = keyToRecords.get(oracleKey);
+      if (keyToRecords.has(oracleAddr)) {
+        records = keyToRecords.get(oracleAddr);
       } else {
         records = new Set();
-        keyToRecords.init(oracleKey, records);
+        keyToRecords.init(oracleAddr, records);
 
         const oracleStatus = makeOracleStatus(
-          /* startingRound = */ getStartingRound(oracleKey),
+          /* startingRound = */ getStartingRound(oracleAddr),
           /* endingRound = */ ROUND_MAX,
           /* lastReportedRound = */ 0n,
           /* lastStartedRound = */ 0n,
           /* latestSubmission = */ 0n,
           /* index = */ oracleStatuses.getSize(),
         );
-        oracleStatuses.init(oracleKey, oracleStatus);
+        oracleStatuses.init(oracleAddr, oracleStatus);
       }
       records.add(record);
 
-      /** @param {Result} result */
+      /** @param {PriceRound} result */
       const pushResult = async ({
-        roundId: _roundIdRaw = undefined,
-        data: _submissionRaw,
+        roundId: roundIdRaw = undefined,
+        unitPrice: valueRaw,
       }) => {
-        const parsedSubmission = Nat(parseInt(_submissionRaw, 10));
+        const value = Nat(valueRaw);
         const blockTimestamp = await E(timer).getCurrentTimestamp();
 
         let roundId;
-        if (_roundIdRaw === undefined) {
+        if (roundIdRaw === undefined) {
           const suggestedRound = oracleRoundStateSuggestRound(
-            oracleKey,
+            oracleAddr,
             blockTimestamp,
           );
           roundId = suggestedRound.eligibleForSpecificRound
             ? suggestedRound.queriedRoundId
             : add(suggestedRound.queriedRoundId, 1);
         } else {
-          roundId = Nat(_roundIdRaw);
+          roundId = Nat(roundIdRaw);
         }
 
-        const error = validateOracleRound(oracleKey, roundId, blockTimestamp);
-        if (!(parsedSubmission >= minSubmissionValue)) {
-          console.error('value below minSubmissionValue');
+        const error = validateOracleRound(oracleAddr, roundId, blockTimestamp);
+        if (!(value >= minSubmissionValue)) {
+          console.error('value below minSubmissionValue', minSubmissionValue);
           return;
         }
 
-        if (!(parsedSubmission <= maxSubmissionValue)) {
+        if (!(value <= maxSubmissionValue)) {
           console.error('value above maxSubmissionValue');
           return;
         }
 
-        if (!(error.length === 0)) {
+        if (!(error === null)) {
           console.error(error);
           return;
         }
 
-        oracleInitializeNewRound(roundId, oracleKey, blockTimestamp);
-        const recorded = recordSubmission(parsedSubmission, roundId, oracleKey);
+        proposeNewRound(roundId, oracleAddr, blockTimestamp);
+        const recorded = recordSubmission(value, roundId, oracleAddr);
         if (!recorded) {
           return;
         }
@@ -689,36 +828,26 @@ const start = async (
       // Obtain the oracle's publicFacet.
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {OracleAdmin<Result>} */
-      const oracleAdmin = {
+      /** @type {OracleAdmin<PriceRound>} */
+      const oracleAdmin = Far('OracleAdmin', {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');
 
           // The actual deletion is synchronous.
-          oracleStatuses.delete(oracleKey);
+          oracleStatuses.delete(oracleAddr);
           records.delete(record);
 
           if (
             records.size === 0 &&
-            keyToRecords.has(oracleKey) &&
-            keyToRecords.get(oracleKey) === records
+            keyToRecords.has(oracleAddr) &&
+            keyToRecords.get(oracleAddr) === records
           ) {
             // We should remove the entry entirely, as it is empty.
-            keyToRecords.delete(oracleKey);
+            keyToRecords.delete(oracleAddr);
           }
         },
-        async pushResult({
-          roundId: _roundIdRaw = undefined,
-          data: _submissionRaw,
-        }) {
-          // Sample of NaN, 0, or negative numbers get culled in
-          // the median calculation.
-          pushResult({
-            roundId: _roundIdRaw,
-            data: _submissionRaw,
-          }).catch(console.error);
-        },
-      };
+        pushResult,
+      });
 
       return harden(oracleAdmin);
     },
@@ -727,22 +856,12 @@ const start = async (
      * consumers are encouraged to check
      * that they're receiving fresh data by inspecting the updatedAt and
      * answeredInRound return values.
-     * return is: [roundId, answer, startedAt, updatedAt, answeredInRound], where
-     * roundId is the round ID for which data was retrieved
-     * answer is the answer for the given round
-     * startedAt is the timestamp when the round was started. This is 0
-     * if the round hasn't been started yet.
-     * updatedAt is the timestamp when the round last was updated (i.e.
-     * answer was last computed)
-     * answeredInRound is the round ID of the round in which the answer
-     * was computed. answeredInRound may be smaller than roundId when the round
-     * timed out. answeredInRound is equal to roundId when the round didn't time out
-     * and was completed regularly.
      *
-     * @param {bigint} _roundIdRaw
+     * @param {bigint | number} roundIdRaw
+     * @returns {Promise<RoundData>}
      */
-    async getRoundData(_roundIdRaw) {
-      const roundId = Nat(_roundIdRaw);
+    async getRoundData(roundIdRaw) {
+      const roundId = Nat(roundIdRaw);
 
       assert(rounds.has(roundId), V3_NO_DATA_ERROR);
 
@@ -763,28 +882,28 @@ const start = async (
      * a method to provide all current info oracleStatuses need. Intended only
      * only to be callable by oracleStatuses. Not for use by contracts to read state.
      *
-     * @param {OracleKey} _oracle
-     * @param {bigint} _queriedRoundId
+     * @param {string} oracleAddr Bech32 of oracle operator smart wallet
+     * @param {bigint} queriedRoundId
      */
-    async oracleRoundState(_oracle, _queriedRoundId) {
+    async oracleRoundState(oracleAddr, queriedRoundId) {
       const blockTimestamp = await E(timer).getCurrentTimestamp();
-      if (_queriedRoundId > 0) {
-        const round = rounds.get(_queriedRoundId);
-        const detail = details.get(_queriedRoundId);
+      if (queriedRoundId > 0) {
+        const round = rounds.get(queriedRoundId);
+        const detail = details.get(queriedRoundId);
         return {
           eligibleForSpecificRound: eligibleForSpecificRound(
-            _oracle,
-            _queriedRoundId,
+            oracleAddr,
+            queriedRoundId,
             blockTimestamp,
           ),
-          queriedRoundId: _queriedRoundId,
-          oracleStatus: oracleStatuses.get(_oracle).latestSubmission,
+          queriedRoundId,
+          oracleStatus: oracleStatuses.get(oracleAddr).latestSubmission,
           startedAt: round.startedAt,
           roundTimeout: detail.roundTimeout,
           oracleCount: oracleCount(),
         };
       } else {
-        return oracleRoundStateSuggestRound(_oracle, blockTimestamp);
+        return oracleRoundStateSuggestRound(oracleAddr, blockTimestamp);
       }
     },
   });
@@ -793,8 +912,9 @@ const start = async (
     getPriceAuthority() {
       return priceAuthority;
     },
+    getSubscriber: () => quoteSubscriber,
     getRoundStartNotifier() {
-      return roundStartNotifier;
+      return latestRoundSubscriber;
     },
   });
 

@@ -11,6 +11,10 @@ const sourceToBundle = [
     '../src/contracts/priceAggregator.js',
     '../bundles/bundle-priceAggregator.js',
   ],
+  [
+    '../src/contracts/priceAggregatorChainlink.js',
+    '../bundles/bundle-priceAggregatorChainlink.js',
+  ],
 ];
 
 await createBundles(sourceToBundle, dirname);

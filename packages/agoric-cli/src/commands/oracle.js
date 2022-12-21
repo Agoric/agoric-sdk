@@ -96,7 +96,7 @@ export const makeOracleCommand = async logger => {
 
   oracle
     .command('pushPrice')
-    .description('add a current price sample')
+    .description('add a current price sample to a priceAggregator')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .requiredOption(
       '--oracleAdminAcceptOfferId [number]',
@@ -114,7 +114,7 @@ export const makeOracleCommand = async logger => {
         invitationSpec: {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
-          invitationMakerName: 'makePushPriceInvitation',
+          invitationMakerName: 'PushPrice',
           invitationArgs: harden([opts.price]),
         },
         proposal: {},
@@ -128,6 +128,42 @@ export const makeOracleCommand = async logger => {
       console.warn('Now execute the prepared offer');
     });
 
+  oracle
+    .command('pushPriceRound')
+    .description('add a price for a round to a priceAggregatorChainlink')
+    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .requiredOption(
+      '--oracleAdminAcceptOfferId [number]',
+      'offer that had continuing invitation result',
+      Number,
+    )
+    .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
+    .requiredOption('--roundId [number]', 'round', Number)
+    .action(async function () {
+      // @ts-expect-error this implicit any
+      const opts = this.opts();
+
+      /** @type {import('../lib/psm.js').OfferSpec} */
+      const offer = {
+        id: Number(opts.offerId),
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: opts.oracleAdminAcceptOfferId,
+          invitationMakerName: 'PushPrice',
+          invitationArgs: harden([
+            { unitPrice: opts.price, roundId: opts.roundId },
+          ]),
+        },
+        proposal: {},
+      };
+
+      outputAction({
+        method: 'executeOffer',
+        offer,
+      });
+
+      console.warn('Now execute the prepared offer');
+    });
   oracle
     .command('query')
     .description('return current aggregated (median) price')

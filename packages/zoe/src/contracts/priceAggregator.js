@@ -1,40 +1,46 @@
 /// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
   observeNotifier,
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+
+import '../../tools/types.js';
 import {
   calculateMedian,
   makeOnewayPriceAuthorityKit,
 } from '../contractSupport/index.js';
 import {
+  addRatios,
+  assertParsableNumber,
+  ceilDivideBy,
+  floorMultiplyBy,
   makeRatio,
   makeRatioFromAmounts,
-  parseRatio,
-  addRatios,
-  ratioGTE,
-  floorMultiplyBy,
-  ceilDivideBy,
   multiplyRatios,
+  parseRatio,
+  ratioGTE,
   ratiosSame,
-  assertParsableNumber,
 } from '../contractSupport/ratio.js';
 
-import '../../tools/types.js';
 import '@agoric/ertp/src/types-ambient.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
-/** @typedef {ParsableNumber | Ratio} Result */
+/** @typedef {ParsableNumber | Ratio} Price */
+
+/** @type {(quote: PriceQuote) => PriceDescription} */
+export const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
+ * @deprecated use priceAggregatorChainlink
+ *
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median. This naive method is game-able and so this module
  * is a stub until we complete what is now in `priceAggregatorChainlink.js`.
@@ -53,6 +59,9 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
+  // brands come from named terms instead of `brands` key because the latter is
+  // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
+  // Oracle brands are inert (without issuers or mints).
   const { timer, POLL_INTERVAL, brandIn, brandOut, unitAmountIn } =
     zcf.getTerms();
   assertAllDefined({ brandIn, brandOut, POLL_INTERVAL, timer, unitAmountIn });
@@ -214,7 +223,7 @@ const start = async (zcf, privateArgs) => {
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
   observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => publisher.publish(quote),
+    updateState: quote => publisher.publish(priceDescriptionFromQuote(quote)),
     fail: reason => {
       throw Error(`priceAuthority observer failed: ${reason}`);
     },
@@ -425,7 +434,7 @@ const start = async (zcf, privateArgs) => {
        * @param {object} param1
        * @param {Notifier<OraclePriceSubmission>} [param1.notifier] optional notifier that produces oracle price submissions
        * @param {number} [param1.scaleValueOut]
-       * @returns {Promise<{admin: OracleAdmin<Result>, invitationMakers: {makePushPriceInvitation: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{admin: OracleAdmin<Price>, invitationMakers: {PushPrice: (price: ParsableNumber) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async (
         seat,
@@ -434,7 +443,7 @@ const start = async (zcf, privateArgs) => {
         const admin = await creatorFacet.initOracle(oracleKey);
         const invitationMakers = Far('invitation makers', {
           /** @param {ParsableNumber} price */
-          makePushPriceInvitation(price) {
+          PushPrice(price) {
             assertParsableNumber(price);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();
@@ -483,7 +492,7 @@ const start = async (zcf, privateArgs) => {
     /**
      * @param {Instance | string} [oracleInstance]
      * @param {OracleQuery} [query]
-     * @returns {Promise<OracleAdmin<Result>>}
+     * @returns {Promise<OracleAdmin<Price>>}
      */
     initOracle: async (oracleInstance, query) => {
       /** @type {OracleKey} */
@@ -526,7 +535,7 @@ const start = async (zcf, privateArgs) => {
         record.lastSample = ratio;
       };
 
-      /** @type {OracleAdmin<Result>} */
+      /** @type {OracleAdmin<Price>} */
       const oracleAdmin = Far('OracleAdmin', {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');

@@ -256,7 +256,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
             amountIn,
             amountOut: calcAmountOut(amountIn),
           }));
-          assert(quote);
+          assert(quote, 'createQuote returned falsey');
 
           const value = await quote;
           return harden({
