@@ -66,7 +66,7 @@ const makeTestContext = async () => {
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
   const installation = {
     mintHolder: install(contractRoots.mintHolder, 'mintHolder'),
-    /** @type {Installation<import('@agoric/vats/src/centralSupply.js').start>} */
+    /** @type {Promise<Installation<import('@agoric/vats/src/centralSupply.js').start>>} */
     centralSupply: E(zoe).install(centralSupplyBundle),
     econCommitteeCharter: install(
       contractRoots.econCommitteeCharter,

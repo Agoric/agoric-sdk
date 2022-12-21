@@ -12,7 +12,7 @@ import { Far } from '@endo/marshal';
  * anything in `give` and `want`. The amount in `give` will be returned, and
  * `want` will be ignored.
  *
- * @param {ZCF} zcf
+ * @param {ZCF<{}>} zcf
  */
 const start = zcf => {
   let offersCount = 0n;

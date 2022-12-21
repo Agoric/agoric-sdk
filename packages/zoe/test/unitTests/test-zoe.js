@@ -199,8 +199,13 @@ test(`E(zoe).getPublicFacet`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
+  t.throwsAsync(() =>
+    // @ts-expect-error not on public facet
+    E(publicFacet).missingMethod(),
+  );
   const offersCount = await E(publicFacet).getOffersCount();
   t.is(offersCount, 0n);
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
@@ -316,6 +321,7 @@ test(`zoe.getTerms`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,
@@ -328,6 +334,8 @@ test(`zoe.getTerms`, async t => {
   );
 
   const zoeTerms = await E(zoe).getTerms(instance);
+  // @ts-expect-error not a term of the contract
+  t.is(zoeTerms.invalid, undefined);
 
   const expected = {
     issuers: {
@@ -382,6 +390,7 @@ test(`zoe.getInstance`, async t => {
 
 test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
+  // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
     message:
       'In "getInstance" method of (ZoeService zoeService): Expected at least 1 arguments: []',
