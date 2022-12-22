@@ -269,13 +269,13 @@ test('ratio bad inputs', t => {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
   t.throws(() => makeRatio(3n, brand, 0n), {
-    message: /No infinite ratios! Denominator was 0 ,
+    message: /No infinite ratios! Denominator was 0/,
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
-    message: /No infinite ratios! Denominator was 0 ,
+    message: /No infinite ratios! Denominator was 0/,
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
-    message: /No infinite ratios! Denominator was 0 ,
+    message: /No infinite ratios! Denominator was 0/,
   });
 });
 
