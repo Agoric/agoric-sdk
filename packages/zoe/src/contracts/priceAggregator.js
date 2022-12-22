@@ -1,5 +1,6 @@
 /// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
 
+import { Fail, q } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import {
@@ -387,8 +388,9 @@ const start = async (zcf, privateArgs) => {
           result = makeScaledRatioFromData(value);
           break;
         }
-        case 'undefined':
-          assert.fail('undefined value in OraclePriceSubmission');
+        case 'undefined': {
+          throw Fail`undefined value in OraclePriceSubmission`;
+        }
         case 'object': {
           if ('data' in value) {
             result = makeScaledRatioFromData(value.data);
@@ -399,10 +401,11 @@ const start = async (zcf, privateArgs) => {
             result = value;
             break;
           }
-          assert.fail(`unknown value object`);
+          throw Fail`unknown value object`;
         }
-        default:
-          assert.fail(`unknown value type {typeof value}`);
+        default: {
+          throw Fail`unknown value type ${q(typeof value)}`;
+        }
       }
 
       pushResult(result).catch(console.error);

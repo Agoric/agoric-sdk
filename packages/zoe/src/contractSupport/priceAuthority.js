@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
@@ -219,16 +219,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
    * @param {Brand} brandOut
    */
   const assertBrands = (brandIn, brandOut) => {
-    assert.equal(
-      brandIn,
-      actualBrandIn,
-      X`Desired brandIn ${brandIn} must match ${actualBrandIn}`,
-    );
-    assert.equal(
-      brandOut,
-      actualBrandOut,
-      X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
-    );
+    brandIn === actualBrandIn ||
+      Fail`Desired brandIn ${q(brandIn)} must match ${q(actualBrandIn)}`;
+    brandOut === actualBrandOut ||
+      Fail`Desired brandOut ${q(brandOut)} must match ${q(actualBrandOut)}`;
   };
 
   /** @type {PriceAuthority} */
@@ -296,9 +290,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
         const amountIn = calcAmountIn(amountOut);
         const actualAmountOut = calcAmountOut(amountIn);
         AmountMath.isGTE(actualAmountOut, amountOut) ||
-          assert.fail(
-            X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
-          );
+          Fail`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`;
         return { amountIn, amountOut };
       });
       assert(quote);

@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { assertKey, assertPattern, fit, isKey } from '@agoric/store';
@@ -25,19 +25,15 @@ const firstCapASCII = /^[A-Z][a-zA-Z0-9_$]*$/;
 export const assertKeywordName = keyword => {
   assert.typeof(keyword, 'string');
   keyword.length <= MAX_KEYWORD_LENGTH ||
-    assert.fail(
-      X`keyword ${q(keyword)} exceeded maximum length ${q(
-        MAX_KEYWORD_LENGTH,
-      )} characters; got ${keyword.length}`,
-    );
-  assert(
-    firstCapASCII.test(keyword),
-    X`keyword ${q(
+    Fail`keyword ${q(keyword)} exceeded maximum length ${q(
+      MAX_KEYWORD_LENGTH,
+    )} characters; got ${keyword.length}`;
+  firstCapASCII.test(keyword) ||
+    Fail`keyword ${q(
       keyword,
-    )} must be an ascii identifier starting with upper case.`,
-  );
+    )} must be an ascii identifier starting with upper case.`;
   (keyword !== 'NaN' && keyword !== 'Infinity') ||
-    assert.fail(X`keyword ${q(keyword)} must not be a number's name`);
+    Fail`keyword ${q(keyword)} must not be a number's name`;
 };
 
 /**
@@ -72,9 +68,7 @@ export const coerceAmountPatternKeywordRecord = (
       // TODO: replace this assertion with a check of the assetKind
       // property on the brand, when that exists.
       assetKind === brandAssetKind ||
-        assert.fail(
-          X`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`,
-        );
+        Fail`The amount ${amount} did not have the assetKind of the brand ${brandAssetKind}`;
       return AmountMath.coerce(amount.brand, amount);
     } else {
       assertPattern(amount);
@@ -106,7 +100,7 @@ export const coerceAmountKeywordRecord = (
  * @param {ExitRule} exit
  */
 const assertExit = exit =>
-  assert(ownKeys(exit).length === 1, X`exit ${exit} should only have one key`);
+  ownKeys(exit).length === 1 || Fail`exit ${exit} should only have one key`;
 
 /**
  * check that keyword is not in both 'want' and 'give'.
@@ -120,7 +114,7 @@ const assertKeywordNotInBoth = (want, give) => {
 
   giveKeywords.forEach(keyword => {
     !wantKeywordSet.has(keyword) ||
-      assert.fail(X`a keyword cannot be in both 'want' and 'give'`);
+      Fail`a keyword cannot be in both 'want' and 'give'`;
   });
 };
 
@@ -150,9 +144,7 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
     ...rest
   } = proposal;
   ownKeys(rest).length === 0 ||
-    assert.fail(
-      X`${proposal} - Must only have want:, give:, exit: properties: ${rest}`,
-    );
+    Fail`${proposal} - Must only have want:, give:, exit: properties: ${rest}`;
 
   const cleanedWant = coerceAmountPatternKeywordRecord(
     want,

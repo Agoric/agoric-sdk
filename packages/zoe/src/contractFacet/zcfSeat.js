@@ -21,7 +21,7 @@ import {
   SeatShape,
 } from '../typeGuards.js';
 
-const { details: X, Fail } = assert;
+const { Fail } = assert;
 
 /** @type {CreateSeatManager} */
 export const createSeatManager = (
@@ -129,11 +129,9 @@ export const createSeatManager = (
   /** @param {ZCFSeat} zcfSeat */
   const assertNoStagedAllocation = zcfSeat => {
     if (hasStagedAllocation(zcfSeat)) {
-      assert.fail(
-        X`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
-          zcfSeat,
-        )}. Please reallocate over this seat or clear the staged allocation.`,
-      );
+      Fail`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
+        zcfSeat,
+      )}. Please reallocate over this seat or clear the staged allocation.`;
     }
   };
 

@@ -10,7 +10,7 @@ import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
 import '../internal-types.js';
 
-const { details: X, quote: q, Fail } = assert;
+const { quote: q, Fail } = assert;
 
 export const makeOfferMethod = offerDataAccess => {
   /** @type {Offer} */
@@ -52,12 +52,10 @@ export const makeOfferMethod = offerDataAccess => {
 
     if (offerArgs !== undefined) {
       const passStyle = passStyleOf(offerArgs);
-      assert(
-        passStyle === 'copyRecord',
-        X`offerArgs must be a pass-by-copy record, but instead was a ${q(
+      passStyle === 'copyRecord' ||
+        Fail`offerArgs must be a pass-by-copy record, but instead was a ${q(
           passStyle,
-        )}: ${offerArgs}`,
-      );
+        )}: ${offerArgs}`;
     }
 
     return E.when(

@@ -2,7 +2,7 @@ import { vivifyFarClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 export const vivifyPurseKind = (
   issuerBaggage,
@@ -99,9 +99,7 @@ export const vivifyPurseKind = (
             amount = AmountMath.add(amount, delta, brand);
           }
           state.recoverySet.getSize() === 0 ||
-            assert.fail(
-              X`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`,
-            );
+            Fail`internal: Remaining unrecovered payments: ${facets.purse.getRecoverySet()}`;
           return amount;
         },
       },

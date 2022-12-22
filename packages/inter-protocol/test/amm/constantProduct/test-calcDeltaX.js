@@ -16,7 +16,7 @@ const doTest = (t, x, y, deltaY, expectedDeltaX) => {
 
 test('0, 0, 0, 0', t => {
   t.throws(() => doTest(t, 0n, 0n, 0n, 0n), {
-    message: 'No infinite ratios! Denominator was 0/"[Alleged: BLD brand]"',
+    message: 'No infinite ratios! Denominator was 0 "[Alleged: BLD brand]"',
   });
 });
 
@@ -28,7 +28,7 @@ test('0, 0, 1, 0', t => {
 
 test('1, 0, 0, 0', t => {
   t.throws(() => doTest(t, 1n, 0n, 0n, 0n), {
-    message: 'No infinite ratios! Denominator was 0/"[Alleged: BLD brand]"',
+    message: 'No infinite ratios! Denominator was 0 "[Alleged: BLD brand]"',
   });
 });
 
@@ -42,7 +42,7 @@ test('1, 1, 0, 0', t => {
 
 test('1, 1, 1, 0', t => {
   t.throws(() => doTest(t, 1n, 1n, 1n, 0n), {
-    message: 'No infinite ratios! Denominator was 0/"[Alleged: BLD brand]"',
+    message: 'No infinite ratios! Denominator was 0 "[Alleged: BLD brand]"',
   });
 });
 

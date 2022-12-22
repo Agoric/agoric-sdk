@@ -269,13 +269,13 @@ test('ratio bad inputs', t => {
     message: '"brand" "[undefined]" must be a remotable, not "undefined"',
   });
   t.throws(() => makeRatio(3n, brand, 0n), {
-    message: /No infinite ratios! Denominator was 0/,
+    message: /No infinite ratios! Denominator was 0 ,
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
-    message: /No infinite ratios! Denominator was 0/,
+    message: /No infinite ratios! Denominator was 0 ,
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
-    message: /No infinite ratios! Denominator was 0/,
+    message: /No infinite ratios! Denominator was 0 ,
   });
 });
 
@@ -284,13 +284,13 @@ test('ratio bad inputs w/brand names', t => {
   /** @param {bigint} value */
   const moe = value => AmountMath.make(brand, value);
   t.throws(() => makeRatio(3n, brand, 0n), {
-    message: 'No infinite ratios! Denominator was 0/"[Alleged: moe brand]"',
+    message: 'No infinite ratios! Denominator was 0 "[Alleged: moe brand]"',
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
-    message: 'No infinite ratios! Denominator was 0/"[Alleged: moe brand]"',
+    message: 'No infinite ratios! Denominator was 0 "[Alleged: moe brand]"',
   });
   t.throws(() => makeRatioFromAmounts(moe(37n), moe(0n)), {
-    message: 'No infinite ratios! Denominator was 0/"[Alleged: moe brand]"',
+    message: 'No infinite ratios! Denominator was 0 "[Alleged: moe brand]"',
   });
 });
 

@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { fit } from '@agoric/store';
 
 import { DisplayInfoShape } from './typeGuards.js';
@@ -13,17 +13,13 @@ export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
 
   if (allegedDisplayInfo.assetKind !== undefined) {
     allegedDisplayInfo.assetKind === assetKind ||
-      assert.fail(
-        X`displayInfo.assetKind was present (${allegedDisplayInfo.assetKind}) and did not match the assetKind argument (${assetKind})`,
-      );
+      Fail`displayInfo.assetKind was present (${allegedDisplayInfo.assetKind}) and did not match the assetKind argument (${assetKind})`;
   }
   const displayInfo = harden({ ...allegedDisplayInfo, assetKind });
 
   if (displayInfo.decimalPlaces !== undefined) {
     Number.isSafeInteger(displayInfo.decimalPlaces) ||
-      assert.fail(
-        X`decimalPlaces ${displayInfo.decimalPlaces} is not a safe integer`,
-      );
+      Fail`decimalPlaces ${displayInfo.decimalPlaces} is not a safe integer`;
   }
 
   return displayInfo;

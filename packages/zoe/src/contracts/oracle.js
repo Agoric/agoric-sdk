@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 
@@ -66,7 +66,7 @@ const start = async zcf => {
         const { requiredFee, reply } = await E(handler).onQuery(query, noFee);
         !requiredFee ||
           AmountMath.isGTE(noFee, requiredFee) ||
-          assert.fail(X`Oracle required a fee but the query had none`);
+          Fail`Oracle required a fee but the query had none`;
         return reply;
       } catch (e) {
         E(handler).onError(query, e);

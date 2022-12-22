@@ -3,7 +3,7 @@ import { assertKeywordName } from './cleanProposal.js';
 
 const { ownKeys } = Reflect;
 
-const { details: X, quote: q } = assert;
+const { details: X, quote: q, Fail } = assert;
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,
@@ -34,8 +34,7 @@ export const makeInstanceRecordStorage = baggage => {
     );
 
   const addIssuerToInstanceRecord = (keyword, issuerRecord) => {
-    !(keyword in issuerRecord) ||
-      assert.fail(X`conflicting definition of ${q(keyword)}`);
+    !(keyword in issuerRecord) || Fail`conflicting definition of ${q(keyword)}`;
 
     assertInstantiated();
     const instanceRecord = baggage.get('instanceRecord');
@@ -83,7 +82,7 @@ export const makeInstanceRecordStorage = baggage => {
     assertInstantiated();
     assertKeywordName(keyword);
     !ownKeys(baggage.get('instanceRecord').terms.issuers).includes(keyword) ||
-      assert.fail(X`keyword ${q(keyword)} must be unique`);
+      Fail`keyword ${q(keyword)} must be unique`;
   };
 
   const instantiate = startingInstanceRecord => {
