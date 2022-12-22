@@ -10,7 +10,6 @@ import {
   makeStoredPublishKit,
   observeNotifier,
 } from '@agoric/notifier';
-import { makeLegacyMap } from '@agoric/store';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import { Fail } from '@agoric/assert';
@@ -209,15 +208,6 @@ const start = async (zcf, privateArgs) => {
    */
   const { notifier: answerNotifier, updater: answerUpdator } =
     makeNotifierKit();
-
-  /**
-   * @typedef {object} OracleRecord
-   * @property {(timestamp: Timestamp) => Promise<void>=} querier
-   * @property {number} lastSample
-   */
-
-  /** @type {LegacyMap<string, Set<OracleRecord>>} */
-  const keyToRecords = makeLegacyMap('oracleId');
 
   /**
    * @param {object} param0
@@ -711,15 +701,7 @@ const start = async (zcf, privateArgs) => {
     },
     /** @param {string} oracleId */
     deleteOracle: async oracleId => {
-      const records = keyToRecords.get(oracleId);
-      for (const record of records) {
-        records.delete(record);
-      }
-
       oracleStatuses.delete(oracleId);
-
-      // We should remove the entry entirely, as it is empty.
-      keyToRecords.delete(oracleId);
     },
 
     /**
@@ -727,51 +709,24 @@ const start = async (zcf, privateArgs) => {
      */
     async initOracle(oracleId) {
       assert.typeof(oracleId, 'string');
-      /** @type {OracleRecord} */
-      const record = { querier: undefined, lastSample: 0 };
 
-      /** @type {Set<OracleRecord>} */
-      let records;
-      if (keyToRecords.has(oracleId)) {
-        records = keyToRecords.get(oracleId);
-      } else {
-        records = new Set();
-        keyToRecords.init(oracleId, records);
-
-        oracleStatuses.init(
-          oracleId,
-          harden({
-            startingRound: getStartingRound(oracleId),
-            endingRound: ROUND_MAX,
-            lastReportedRound: 0n,
-            lastStartedRound: 0n,
-            latestSubmission: 0n,
-            index: oracleStatuses.getSize(),
-          }),
-        );
-      }
-      records.add(record);
-
-      // Obtain the oracle's publicFacet.
-      assert(records.has(record), 'Oracle record is already deleted');
+      oracleStatuses.init(
+        oracleId,
+        harden({
+          startingRound: getStartingRound(oracleId),
+          endingRound: ROUND_MAX,
+          lastReportedRound: 0n,
+          lastStartedRound: 0n,
+          latestSubmission: 0n,
+          index: oracleStatuses.getSize(),
+        }),
+      );
 
       const oracleAdmin = Far('OracleAdmin', {
         /** Remove the oracle from the aggregator */
         async delete() {
-          assert(records.has(record), 'Oracle record is already deleted');
-
           // The actual deletion is synchronous.
           oracleStatuses.delete(oracleId);
-          records.delete(record);
-
-          if (
-            records.size === 0 &&
-            keyToRecords.has(oracleId) &&
-            keyToRecords.get(oracleId) === records
-          ) {
-            // We should remove the entry entirely, as it is empty.
-            keyToRecords.delete(oracleId);
-          }
         },
         /**
          * push a unitPrice result from this oracle
