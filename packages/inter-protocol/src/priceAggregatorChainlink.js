@@ -714,7 +714,7 @@ const start = async (zcf, privateArgs) => {
           PushPrice(result) {
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();
-              admin.pushResult(result);
+              admin.pushPrice(result);
             }, 'PushPrice');
           },
         });
@@ -796,7 +796,7 @@ const start = async (zcf, privateArgs) => {
          *
          * @param {PriceRound} result
          */
-        async pushResult({
+        async pushPrice({
           roundId: roundIdRaw = undefined,
           unitPrice: valueRaw,
         }) {
