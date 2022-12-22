@@ -23,15 +23,22 @@ import {
 
 import '../../tools/types.js';
 import { assertParsableNumber } from '../contractSupport/ratio.js';
-import {
-  INVITATION_MAKERS_DESC,
-  priceDescriptionFromQuote,
-} from './priceAggregator.js';
 
-export { INVITATION_MAKERS_DESC };
+export const INVITATION_MAKERS_DESC = 'oracle invitation';
+
+/** @type {(quote: PriceQuote) => PriceDescription} */
+export const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
  * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound
+ */
+
+/**
+ * @typedef {object} OracleAdmin
+ * @property {() => Promise<void>} delete
+ * Remove the oracle from the aggregator
+ * @property {(result: PriceRound) => Promise<void>} pushResult
+ * Rather than waiting for the polling query, push a result directly from this oracle
  */
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
@@ -710,7 +717,7 @@ const start = async (zcf, privateArgs) => {
        * reported data.
        *
        * @param {ZCFSeat} seat
-       * @returns {Promise<{admin: OracleAdmin<PriceRound>, invitationMakers: {PushPrice: (result: PriceRound) => Promise<Invitation<void>>} }>}
+       * @returns {Promise<{admin: OracleAdmin, invitationMakers: {PushPrice: (result: PriceRound) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async seat => {
         const admin = await creatorFacet.initOracle(oracleAddr);
@@ -751,7 +758,7 @@ const start = async (zcf, privateArgs) => {
     // unlike the median case, no query argument is passed, since polling behavior is undesired
     /**
      * @param {string} oracleAddr Bech32 of oracle operator smart wallet
-     * @returns {Promise<OracleAdmin<PriceRound>>}
+     * @returns {Promise<OracleAdmin>}
      */
     async initOracle(oracleAddr) {
       assert.typeof(oracleAddr, 'string');
@@ -828,7 +835,7 @@ const start = async (zcf, privateArgs) => {
       // Obtain the oracle's publicFacet.
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {OracleAdmin<PriceRound>} */
+      /** @type {OracleAdmin} */
       const oracleAdmin = Far('OracleAdmin', {
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');
