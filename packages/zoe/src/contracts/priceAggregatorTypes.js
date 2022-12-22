@@ -16,11 +16,6 @@
  */
 
 /**
- * @typedef {bigint | number | string} ParsableNumber
- * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission
- */
-
-/**
  * @typedef {Record<string, unknown> & {
  * kind?: string,
  * increment?: bigint,

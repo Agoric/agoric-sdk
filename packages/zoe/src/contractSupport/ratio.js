@@ -375,6 +375,7 @@ export const quantize = (ratio, newDen) => {
 };
 
 const NUMERIC_RE = /^(\d\d*)(?:\.(\d*))?$/;
+/** @typedef {bigint | number | string} ParsableNumber */
 
 /**
  * Create a ratio from a given numeric value.

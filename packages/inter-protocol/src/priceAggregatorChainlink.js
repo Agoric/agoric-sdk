@@ -19,16 +19,12 @@ import {
   calculateMedian,
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../contractSupport/index.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 
-import '../../tools/types.js';
-import { assertParsableNumber } from '../contractSupport/ratio.js';
-import {
-  INVITATION_MAKERS_DESC,
-  priceDescriptionFromQuote,
-} from './priceAggregator.js';
+export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
-export { INVITATION_MAKERS_DESC };
+/** @type {(quote: PriceQuote) => PriceDescription} */
+const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
  * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound
@@ -710,17 +706,15 @@ const start = async (zcf, privateArgs) => {
        * reported data.
        *
        * @param {ZCFSeat} seat
-       * @returns {Promise<{admin: OracleAdmin<PriceRound>, invitationMakers: {PushPrice: (result: PriceRound) => Promise<Invitation<void>>} }>}
        */
       const offerHandler = async seat => {
         const admin = await creatorFacet.initOracle(oracleAddr);
         const invitationMakers = Far('invitation makers', {
           /** @param {PriceRound} result */
           PushPrice(result) {
-            assertParsableNumber(result.unitPrice);
             return zcf.makeInvitation(cSeat => {
               cSeat.exit();
-              admin.pushResult(result);
+              admin.pushPrice(result);
             }, 'PushPrice');
           },
         });
@@ -748,10 +742,8 @@ const start = async (zcf, privateArgs) => {
       keyToRecords.delete(oracleAddr);
     },
 
-    // unlike the median case, no query argument is passed, since polling behavior is undesired
     /**
      * @param {string} oracleAddr Bech32 of oracle operator smart wallet
-     * @returns {Promise<OracleAdmin<PriceRound>>}
      */
     async initOracle(oracleAddr) {
       assert.typeof(oracleAddr, 'string');
@@ -778,58 +770,11 @@ const start = async (zcf, privateArgs) => {
       }
       records.add(record);
 
-      /** @param {PriceRound} result */
-      const pushResult = async ({
-        roundId: roundIdRaw = undefined,
-        unitPrice: valueRaw,
-      }) => {
-        const value = Nat(valueRaw);
-        const blockTimestamp = await E(timer).getCurrentTimestamp();
-
-        let roundId;
-        if (roundIdRaw === undefined) {
-          const suggestedRound = oracleRoundStateSuggestRound(
-            oracleAddr,
-            blockTimestamp,
-          );
-          roundId = suggestedRound.eligibleForSpecificRound
-            ? suggestedRound.queriedRoundId
-            : add(suggestedRound.queriedRoundId, 1);
-        } else {
-          roundId = Nat(roundIdRaw);
-        }
-
-        const error = validateOracleRound(oracleAddr, roundId, blockTimestamp);
-        if (!(value >= minSubmissionValue)) {
-          console.error('value below minSubmissionValue', minSubmissionValue);
-          return;
-        }
-
-        if (!(value <= maxSubmissionValue)) {
-          console.error('value above maxSubmissionValue');
-          return;
-        }
-
-        if (!(error === null)) {
-          console.error(error);
-          return;
-        }
-
-        proposeNewRound(roundId, oracleAddr, blockTimestamp);
-        const recorded = recordSubmission(value, roundId, oracleAddr);
-        if (!recorded) {
-          return;
-        }
-
-        updateRoundAnswer(roundId, blockTimestamp);
-        deleteRoundDetails(roundId);
-      };
-
       // Obtain the oracle's publicFacet.
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {OracleAdmin<PriceRound>} */
       const oracleAdmin = Far('OracleAdmin', {
+        /** Remove the oracle from the aggregator */
         async delete() {
           assert(records.has(record), 'Oracle record is already deleted');
 
@@ -846,7 +791,60 @@ const start = async (zcf, privateArgs) => {
             keyToRecords.delete(oracleAddr);
           }
         },
-        pushResult,
+        /**
+         * push a unitPrice result from this oracle
+         *
+         * @param {PriceRound} result
+         */
+        async pushPrice({
+          roundId: roundIdRaw = undefined,
+          unitPrice: valueRaw,
+        }) {
+          const value = Nat(valueRaw);
+          const blockTimestamp = await E(timer).getCurrentTimestamp();
+
+          let roundId;
+          if (roundIdRaw === undefined) {
+            const suggestedRound = oracleRoundStateSuggestRound(
+              oracleAddr,
+              blockTimestamp,
+            );
+            roundId = suggestedRound.eligibleForSpecificRound
+              ? suggestedRound.queriedRoundId
+              : add(suggestedRound.queriedRoundId, 1);
+          } else {
+            roundId = Nat(roundIdRaw);
+          }
+
+          const error = validateOracleRound(
+            oracleAddr,
+            roundId,
+            blockTimestamp,
+          );
+          if (!(value >= minSubmissionValue)) {
+            console.error('value below minSubmissionValue', minSubmissionValue);
+            return;
+          }
+
+          if (!(value <= maxSubmissionValue)) {
+            console.error('value above maxSubmissionValue');
+            return;
+          }
+
+          if (!(error === null)) {
+            console.error(error);
+            return;
+          }
+
+          proposeNewRound(roundId, oracleAddr, blockTimestamp);
+          const recorded = recordSubmission(value, roundId, oracleAddr);
+          if (!recorded) {
+            return;
+          }
+
+          updateRoundAnswer(roundId, blockTimestamp);
+          deleteRoundDetails(roundId);
+        },
       });
 
       return harden(oracleAdmin);

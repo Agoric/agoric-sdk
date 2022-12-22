@@ -32,12 +32,15 @@ import {
 
 import '@agoric/ertp/src/types-ambient.js';
 
-export const INVITATION_MAKERS_DESC = 'oracle invitation';
+/** @typedef {bigint | number | string} ParsableNumber */
+/**
+ * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission
+ */
 
 /** @typedef {ParsableNumber | Ratio} Price */
 
 /** @type {(quote: PriceQuote) => PriceDescription} */
-export const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
+const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
  * @deprecated use priceAggregatorChainlink
@@ -477,7 +480,7 @@ const start = async (zcf, privateArgs) => {
         });
       };
 
-      return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
+      return zcf.makeInvitation(offerHandler, 'oracle invitation');
     },
     /** @param {OracleKey} oracleKey */
     deleteOracle: async oracleKey => {
