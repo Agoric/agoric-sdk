@@ -11,8 +11,8 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
-import { INVITATION_MAKERS_DESC } from '@agoric/inter-protocol/src/priceAggregatorChainlink.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { INVITATION_MAKERS_DESC } from '../../src/priceAggregatorChainlink.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { makeDefaultTestContext } from './contexts.js';
