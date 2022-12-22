@@ -12,7 +12,7 @@ import {
 } from '@agoric/notifier';
 import { Nat, isNat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
-import { Fail } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { assertAllDefined } from '@agoric/internal';
 import {
   calculateMedian,
@@ -738,6 +738,14 @@ const start = async (zcf, privateArgs) => {
           unitPrice: valueRaw,
         }) {
           const value = Nat(valueRaw);
+          if (!(value >= minSubmissionValue)) {
+            Fail`value below minSubmissionValue ${q(minSubmissionValue)}`;
+          }
+
+          if (!(value <= maxSubmissionValue)) {
+            Fail`value above maxSubmissionValue ${q(maxSubmissionValue)}`;
+          }
+
           const blockTimestamp = await E(timer).getCurrentTimestamp();
 
           let roundId;
@@ -753,20 +761,14 @@ const start = async (zcf, privateArgs) => {
             roundId = Nat(roundIdRaw);
           }
 
-          const error = validateOracleRound(oracleId, roundId, blockTimestamp);
-          if (!(value >= minSubmissionValue)) {
-            console.error('value below minSubmissionValue', minSubmissionValue);
-            return;
-          }
+          const errorMsg = validateOracleRound(
+            oracleId,
+            roundId,
+            blockTimestamp,
+          );
 
-          if (!(value <= maxSubmissionValue)) {
-            console.error('value above maxSubmissionValue');
-            return;
-          }
-
-          if (!(error === null)) {
-            console.error(error);
-            return;
+          if (!(errorMsg === null)) {
+            assert.fail(errorMsg);
           }
 
           proposeNewRound(roundId, oracleId, blockTimestamp);

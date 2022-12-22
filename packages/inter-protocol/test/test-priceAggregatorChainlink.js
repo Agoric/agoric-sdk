@@ -251,7 +251,12 @@ test('issue check', async t => {
 
   // ----- round 1: ignore too low values
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 50n }); // should be IGNORED
+  await t.throwsAsync(
+    E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 50n }),
+    {
+      message: 'value below minSubmissionValue 100',
+    },
+  );
   await oracleTimer.tick();
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
   await oracleTimer.tick();
@@ -262,7 +267,10 @@ test('issue check', async t => {
 
   // ----- round 2: ignore too high values
   await oracleTimer.tick();
-  await E(pricePushAdminB).pushPrice({ roundId: 2, unitPrice: 20000n });
+  await t.throwsAsync(
+    E(pricePushAdminB).pushPrice({ roundId: 2, unitPrice: 20000n }),
+    { message: 'value above maxSubmissionValue 10000' },
+  );
   await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 1000n });
   await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 3000n });
   await oracleTimer.tick();
@@ -295,7 +303,12 @@ test('supersede', async t => {
   // ----- round 1: round 1 is NOT supersedable when 3 submits, meaning it will be ignored
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 100n });
-  await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 300n });
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 300n }),
+    {
+      message: 'previous round not supersedable',
+    },
+  );
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
   await oracleTimer.tick();
 
@@ -313,7 +326,10 @@ test('supersede', async t => {
 
   // ----- round 3: oracle C should NOT be able to supersede round 3
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushPrice({ roundId: 4, unitPrice: 1000n });
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 4, unitPrice: 1000n }),
+    { message: 'invalid round to report' },
+  );
 
   try {
     await E(aggregator.creatorFacet).getRoundData(4);
@@ -349,7 +365,12 @@ test('interleaved', async t => {
   // ----- round 1: we now need unanimous submission for a round for it to have consensus
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 100n });
-  await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 300n });
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 300n }),
+    {
+      message: 'previous round not supersedable',
+    },
+  );
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
   await oracleTimer.tick();
 
@@ -366,7 +387,10 @@ test('interleaved', async t => {
   await E(pricePushAdminB).pushPrice({ roundId: 2, unitPrice: 2000n });
   await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 1000n });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushPrice({ roundId: 3, unitPrice: 9000n });
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 3, unitPrice: 9000n }),
+    { message: 'previous round not supersedable' },
+  );
   await oracleTimer.tick();
   await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 3000n }); // assumes oracle C is going for a resubmission
   await oracleTimer.tick();
@@ -413,8 +437,14 @@ test('interleaved', async t => {
 
   // so NOW we should be able to submit round 4, and round 3 should just be copied from round 2
   await E(pricePushAdminA).pushPrice({ roundId: 4, unitPrice: 4000n });
-  await E(pricePushAdminB).pushPrice({ roundId: 4, unitPrice: 5000n });
-  await E(pricePushAdminC).pushPrice({ roundId: 4, unitPrice: 6000n });
+  await t.throwsAsync(
+    E(pricePushAdminB).pushPrice({ roundId: 4, unitPrice: 5000n }),
+    { message: /cannot report on previous rounds/ },
+  );
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 4, unitPrice: 6000n }),
+    { message: /cannot report on previous rounds/ },
+  );
   await oracleTimer.tick();
 
   const round3Attempt3 = await E(aggregator.creatorFacet).getRoundData(3);
@@ -483,9 +513,15 @@ test('larger', async t => {
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
   await oracleTimer.tick();
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 1000n });
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 1000n }),
+    { message: 'previous round not supersedable' },
+  );
   await oracleTimer.tick();
-  await E(pricePushAdminD).pushPrice({ roundId: 3, unitPrice: 3000n });
+  await t.throwsAsync(
+    E(pricePushAdminD).pushPrice({ roundId: 3, unitPrice: 3000n }),
+    { message: 'invalid round to report' },
+  );
   await oracleTimer.tick();
   await oracleTimer.tick();
   await oracleTimer.tick();
@@ -500,7 +536,10 @@ test('larger', async t => {
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 500n });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushPrice({ roundId: 3, unitPrice: 1000n });
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 3, unitPrice: 1000n }),
+    { message: 'previous round not supersedable' },
+  );
   await oracleTimer.tick();
   await E(pricePushAdminD).pushPrice({ roundId: 1, unitPrice: 500n });
   await oracleTimer.tick();
@@ -508,7 +547,11 @@ test('larger', async t => {
   await oracleTimer.tick();
   await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 1000n });
   await oracleTimer.tick();
-  await E(pricePushAdminC).pushPrice({ roundId: 1, unitPrice: 700n }); // this should be IGNORED since oracle C has already sent round 2
+  await t.throwsAsync(
+    E(pricePushAdminC).pushPrice({ roundId: 1, unitPrice: 700n }),
+    // oracle C has already sent round 2
+    { message: 'cannot report on previous rounds' },
+  );
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
