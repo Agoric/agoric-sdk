@@ -1,12 +1,14 @@
 import { E } from '@endo/eventual-send';
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far, isObject, makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
+import { buildManualTimer } from '../tools/manual-timer.js';
 
 const { Fail, quote: q } = assert;
 
 const sink = () => {};
 
 export const buildRootObject = () => {
+  const timer = buildManualTimer();
   let vatAdmin;
   const vatData = new Map();
 
@@ -42,12 +44,21 @@ export const buildRootObject = () => {
   );
   const encodePassable = value => decodeReplacements(encodeReplacements(value));
   const decodePassable = arg => {
-    // This is testing code, so we look for replacements only at top level.
-    if (typeof arg !== 'symbol' || !Symbol.keyFor(arg)) {
-      return arg;
-    }
-    const { description } = arg;
-    if (!description.startsWith(replacementPrefix)) {
+    // Recursively replace our symbols with their non-passable source data.
+    if (Array.isArray(arg)) {
+      return arg.map(decodePassable);
+    } else if (isObject(arg)) {
+      const entries = Object.entries(arg);
+      const decodedEntries = entries.map(([key, value]) => [
+        key,
+        decodePassable(value),
+      ]);
+      return Object.fromEntries(decodedEntries);
+    } else if (
+      typeof arg !== 'symbol' ||
+      !Symbol.keyFor(arg) ||
+      !arg.description.startsWith(replacementPrefix)
+    ) {
       return arg;
     }
     const value =
@@ -58,14 +69,23 @@ export const buildRootObject = () => {
   return Far('root', {
     bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+      for (const [name, root] of Object.entries(vats)) {
+        if (name !== 'vatAdmin') {
+          vatData.set(name, { root });
+        }
+      }
     },
+
+    getVatAdmin: async () => encodePassable(vatAdmin),
+
+    getTimer: async () => encodePassable(timer),
 
     createVat: async ({ name, bundleCapName, vatParameters = {} }) => {
       const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
       const options = { vatParameters };
       const { adminNode, root } = await E(vatAdmin).createVat(bcap, options);
       vatData.set(name, { adminNode, root });
-      return root;
+      return encodePassable(root);
     },
 
     upgradeVat: async ({ name, bundleCapName, vatParameters = {} }) => {
