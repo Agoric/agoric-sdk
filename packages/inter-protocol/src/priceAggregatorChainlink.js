@@ -20,6 +20,7 @@ import {
   natSafeMath,
   makeOnewayPriceAuthorityKit,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -150,14 +151,39 @@ const start = async (zcf, privateArgs) => {
       marshaller,
     );
 
-  /** @type {LegacyMap<string, ReturnType<typeof makeOracleStatus>>} */
-  const oracleStatuses = makeLegacyMap('oracleStatus');
+  /**
+   * @typedef {object} OracleStatus
+   * @property {bigint} startingRound
+   * @property {bigint} endingRound
+   * @property {bigint} lastReportedRound
+   * @property {bigint} lastStartedRound
+   * @property {bigint} latestSubmission
+   * @property {number} index
+   */
+  /** @type {MapStore<string, OracleStatus>} */
+  const oracleStatuses = makeScalarBigMapStore('oracleStatus', {
+    durable: true,
+  });
 
-  /** @type {LegacyMap<bigint, ReturnType<typeof makeRound>>} */
-  const rounds = makeLegacyMap('rounds');
+  /**
+   * @typedef {object} Round
+   * @property {bigint} answer
+   * @property {Timestamp} startedAt
+   * @property {Timestamp} updatedAt
+   * @property {bigint} answeredInRound
+   */
+  /** @type {MapStore<bigint, Round>} */
+  const rounds = makeScalarBigMapStore('rounds', { durable: true });
 
-  /** @type {LegacyMap<bigint, ReturnType<typeof makeRoundDetails>>} */
-  const details = makeLegacyMap('details');
+  /**
+   * @typedef {object} RoundDetails
+   * @property {bigint[]} submissions
+   * @property {number} maxSubmissions
+   * @property {number} minSubmissions
+   * @property {number} roundTimeout
+   */
+  /** @type {MapStore<bigint, RoundDetails>} */
+  const details = makeScalarBigMapStore('details', { durable: true });
 
   /** @type {bigint} */
   const ROUND_MAX = BigInt(2 ** 32 - 1);
@@ -165,67 +191,6 @@ const start = async (zcf, privateArgs) => {
   /** @type {string} */
   const V3_NO_DATA_ERROR = 'No data present';
   // --- [end] Chainlink specific values
-
-  /**
-   * @param {bigint} answer
-   * @param {Timestamp} startedAt
-   * @param {Timestamp} updatedAt
-   * @param {bigint} answeredInRound
-   */
-  const makeRound = (answer, startedAt, updatedAt, answeredInRound) => {
-    return {
-      answer,
-      startedAt,
-      updatedAt,
-      answeredInRound,
-    };
-  };
-
-  /**
-   * @param {bigint[]} submissions
-   * @param {number} maxSubmissions
-   * @param {number} minSubmissions
-   * @param {number} roundTimeout
-   */
-  const makeRoundDetails = (
-    submissions,
-    maxSubmissions,
-    minSubmissions,
-    roundTimeout,
-  ) => {
-    return {
-      submissions,
-      maxSubmissions,
-      minSubmissions,
-      roundTimeout,
-    };
-  };
-
-  /**
-   * @param {bigint} startingRound
-   * @param {bigint} endingRound
-   * @param {bigint} lastReportedRound
-   * @param {bigint} lastStartedRound
-   * @param {bigint} latestSubmission
-   * @param {number} index
-   */
-  const makeOracleStatus = (
-    startingRound,
-    endingRound,
-    lastReportedRound,
-    lastStartedRound,
-    latestSubmission,
-    index,
-  ) => {
-    return {
-      startingRound,
-      endingRound,
-      lastReportedRound,
-      lastStartedRound,
-      latestSubmission,
-      index,
-    };
-  };
 
   /**
    *
@@ -389,12 +354,14 @@ const start = async (zcf, privateArgs) => {
     const roundTimedOut = timedOut(roundId, blockTimestamp);
     if (!roundTimedOut) return;
 
-    const prevId = subtract(roundId, 1);
+    const prevRound = rounds.get(subtract(roundId, 1));
 
-    const round = rounds.get(roundId);
-    round.answer = rounds.get(prevId).answer;
-    round.answeredInRound = rounds.get(prevId).answeredInRound;
-    round.updatedAt = blockTimestamp;
+    rounds.set(roundId, {
+      ...rounds.get(roundId),
+      answer: prevRound.answer,
+      answeredInRound: prevRound.answeredInRound,
+      updatedAt: blockTimestamp,
+    });
 
     details.delete(roundId);
   };
@@ -423,20 +390,23 @@ const start = async (zcf, privateArgs) => {
 
     details.init(
       roundId,
-      makeRoundDetails([], maxSubmissionCount, minSubmissionCount, timeout),
+      harden({
+        submissions: [],
+        maxSubmissions: maxSubmissionCount,
+        minSubmissions: minSubmissionCount,
+        roundTimeout: timeout,
+      }),
     );
 
     rounds.init(
       roundId,
-      makeRound(
-        /* answer = */ 0n,
-        /* startedAt = */ 0n,
-        /* updatedAt = */ 0n,
-        /* answeredInRound = */ 0n,
-      ),
+      harden({
+        answer: 0n,
+        startedAt: blockTimestamp,
+        updatedAt: 0n,
+        answeredInRound: 0n,
+      }),
     );
-
-    rounds.get(roundId).startedAt = blockTimestamp;
   };
 
   /**
@@ -450,7 +420,10 @@ const start = async (zcf, privateArgs) => {
     if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n) return;
     initializeNewRound(roundId, blockTimestamp);
 
-    oracleStatuses.get(oracleId).lastStartedRound = roundId;
+    oracleStatuses.set(oracleId, {
+      ...oracleStatuses.get(oracleId),
+      lastStartedRound: roundId,
+    });
   };
 
   /**
@@ -471,9 +444,17 @@ const start = async (zcf, privateArgs) => {
       return false;
     }
 
-    details.get(roundId).submissions.push(submission);
-    oracleStatuses.get(oracleId).lastReportedRound = roundId;
-    oracleStatuses.get(oracleId).latestSubmission = submission;
+    const lastRoundDetails = details.get(roundId);
+    details.set(roundId, {
+      ...lastRoundDetails,
+      submissions: [...lastRoundDetails.submissions, submission],
+    });
+
+    oracleStatuses.set(oracleId, {
+      ...oracleStatuses.get(oracleId),
+      lastReportedRound: roundId,
+      latestSubmission: submission,
+    });
     return true;
   };
 
@@ -499,9 +480,12 @@ const start = async (zcf, privateArgs) => {
 
     assert(newAnswer, 'insufficient samples');
 
-    rounds.get(roundId).answer = newAnswer;
-    rounds.get(roundId).updatedAt = blockTimestamp;
-    rounds.get(roundId).answeredInRound = roundId;
+    rounds.set(roundId, {
+      ...rounds.get(roundId),
+      answer: newAnswer,
+      updatedAt: blockTimestamp,
+      answeredInRound: roundId,
+    });
 
     lastValueOutForUnitIn = newAnswer;
     answerUpdator.updateState(undefined);
@@ -754,15 +738,17 @@ const start = async (zcf, privateArgs) => {
         records = new Set();
         keyToRecords.init(oracleId, records);
 
-        const oracleStatus = makeOracleStatus(
-          /* startingRound = */ getStartingRound(oracleId),
-          /* endingRound = */ ROUND_MAX,
-          /* lastReportedRound = */ 0n,
-          /* lastStartedRound = */ 0n,
-          /* latestSubmission = */ 0n,
-          /* index = */ oracleStatuses.getSize(),
+        oracleStatuses.init(
+          oracleId,
+          harden({
+            startingRound: getStartingRound(oracleId),
+            endingRound: ROUND_MAX,
+            lastReportedRound: 0n,
+            lastStartedRound: 0n,
+            latestSubmission: 0n,
+            index: oracleStatuses.getSize(),
+          }),
         );
-        oracleStatuses.init(oracleId, oracleStatus);
       }
       records.add(record);
 
