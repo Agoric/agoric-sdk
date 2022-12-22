@@ -6,7 +6,7 @@ import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
-const { details: X, quote: q } = assert;
+const { quote: q, Fail } = assert;
 
 /**
  * Constants for the kinds of assets we support.
@@ -27,9 +27,7 @@ const assetKindNames = harden(Object.values(AssetKind).sort());
  */
 const assertAssetKind = allegedAK => {
   assetKindNames.includes(allegedAK) ||
-    assert.fail(
-      X`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`,
-    );
+    Fail`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`;
 };
 harden(assertAssetKind);
 
@@ -101,14 +99,14 @@ const assertValueGetAssetKind = value => {
     // @ts-expect-error cast
     return 'copyBag';
   }
-  assert.fail(
-    // TODO This isn't quite the right error message, in case valuePassStyle
-    // is 'tagged'. We would need to distinguish what kind of tagged
-    // object it is.
-    // Also, this kind of manual listing is a maintenance hazard we
-    // (TODO) will encounter when we extend the math helpers further.
-    X`value ${value} must be a bigint, copySet, copyBag, or an array, not ${passStyle}`,
-  );
+  // TODO This isn't quite the right error message, in case valuePassStyle
+  // is 'tagged'. We would need to distinguish what kind of tagged
+  // object it is.
+  // Also, this kind of manual listing is a maintenance hazard we
+  // (TODO) will encounter when we extend the math helpers further.
+  throw Fail`value ${value} must be a bigint, copySet, copyBag, or an array, not ${q(
+    passStyle,
+  )}`;
 };
 
 /**
@@ -129,11 +127,10 @@ export const assertValueGetHelpers = value =>
 const optionalBrandCheck = (allegedBrand, brand) => {
   if (brand !== undefined) {
     assertRemotable(brand, 'brand');
-    assert.equal(
-      allegedBrand,
-      brand,
-      X`amount's brand ${allegedBrand} did not match expected brand ${brand}`,
-    );
+    allegedBrand === brand ||
+      Fail`amount's brand ${q(allegedBrand)} did not match expected brand ${q(
+        brand,
+      )}`;
   }
 };
 
@@ -153,18 +150,14 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
   assertRemotable(rightBrand, 'rightBrand');
   optionalBrandCheck(leftBrand, brand);
   optionalBrandCheck(rightBrand, brand);
-  assert.equal(
-    leftBrand,
-    rightBrand,
-    X`Brands in left ${leftBrand} and right ${rightBrand} should match but do not`,
-  );
+  leftBrand === rightBrand ||
+    Fail`Brands in left ${q(leftBrand)} and right ${q(
+      rightBrand,
+    )} should match but do not`;
   const leftHelpers = assertValueGetHelpers(leftValue);
   const rightHelpers = assertValueGetHelpers(rightValue);
-  assert.equal(
-    leftHelpers,
-    rightHelpers,
-    X`The left ${leftAmount} and right amount ${rightAmount} had different assetKinds`,
-  );
+  leftHelpers === rightHelpers ||
+    Fail`The left ${leftAmount} and right amount ${rightAmount} had different assetKinds`;
   return leftHelpers;
 };
 
@@ -219,9 +212,7 @@ const AmountMath = {
     assertRecord(allegedAmount, 'amount');
     const { brand: allegedBrand, value: allegedValue } = allegedAmount;
     brand === allegedBrand ||
-      assert.fail(
-        X`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`,
-      );
+      Fail`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`;
     // Will throw on inappropriate value
     return AmountMath.make(brand, allegedValue);
   },

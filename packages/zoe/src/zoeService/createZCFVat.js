@@ -1,5 +1,7 @@
 import { E } from '@endo/eventual-send';
 
+const { Fail, quote: q } = assert;
+
 export const getZcfBundleCap = (zcfSpec, vatAdminSvc) => {
   let zcfBundleCapP;
   if (zcfSpec.bundleCap) {
@@ -10,7 +12,7 @@ export const getZcfBundleCap = (zcfSpec, vatAdminSvc) => {
     zcfBundleCapP = E(vatAdminSvc).getBundleCap(zcfSpec.id);
   } else {
     const keys = Object.keys(zcfSpec).join(',');
-    assert.fail(`setupCreateZCFVat: bad zcfSpec, has keys '${keys}'`);
+    Fail`setupCreateZCFVat: bad zcfSpec, has keys '${q(keys)}'`;
   }
 
   return zcfBundleCapP;

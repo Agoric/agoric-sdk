@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 /**
@@ -159,11 +159,8 @@ export const makePriceAuthorityRegistry = () => {
 
       return Far('deleter', {
         delete() {
-          assert.equal(
-            priceStore.has(brandOut) && priceStore.get(brandOut),
-            record,
-            X`Price authority already dropped`,
-          );
+          (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
+            Fail`Price authority already dropped`;
           priceStore.delete(brandOut);
         },
       });

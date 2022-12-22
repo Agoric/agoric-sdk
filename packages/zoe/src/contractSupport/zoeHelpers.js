@@ -13,7 +13,7 @@ import {
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const getKeysSorted = obj => harden(Reflect.ownKeys(obj || {}).sort());
 
@@ -23,7 +23,7 @@ export const assertIssuerKeywords = (zcf, expected) => {
   expected = [...expected]; // in case hardened
   expected.sort();
   keyEQ(actual, harden(expected)) ||
-    assert.fail(X`keywords: ${actual} were not as expected: ${expected}`);
+    Fail`keywords: ${actual} were not as expected: ${expected}`;
 };
 
 /**
@@ -143,11 +143,10 @@ export const assertProposalShape = (seat, expected) => {
   assert(!Array.isArray(expected), 'Expected must be an non-array object');
   const assertValuesNull = e => {
     if (e !== undefined) {
-      Object.values(e).forEach(value =>
-        assert(
-          value === null,
-          X`The value of the expected record must be null but was ${value}`,
-        ),
+      Object.values(e).forEach(
+        value =>
+          value === null ||
+          Fail`The value of the expected record must be null but was ${value}`,
       );
     }
   };
@@ -162,7 +161,7 @@ export const assertProposalShape = (seat, expected) => {
   const assertKeys = (a, e) => {
     if (e !== undefined) {
       keyEQ(getKeysSorted(a), getKeysSorted(e)) ||
-        assert.fail(X`actual ${a} did not match expected ${e}`);
+        Fail`actual ${a} did not match expected ${e}`;
     }
   };
   assertKeys(actual.give, expected.give);

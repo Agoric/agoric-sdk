@@ -1,4 +1,4 @@
-import { assert, details as X, q } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { vivifyFarClass, provideDurableSetStore } from '@agoric/vat-data';
 import { M, initEmpty } from '@agoric/store';
@@ -113,6 +113,6 @@ export const makeMakeExiter = baggage => {
       return makeWaived();
     }
 
-    assert.fail(X`exit kind was not recognized: ${q(exit)}`);
+    throw Fail`exit kind was not recognized: ${q(exit)}`;
   };
 };

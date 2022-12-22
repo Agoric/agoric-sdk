@@ -3,7 +3,7 @@ import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const sellSeatExpiredMsg = 'The covered call option is expired.';
 
@@ -65,9 +65,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
       // TypeScript confused about `||` control flow so use `if` instead
       // https://github.com/microsoft/TypeScript/issues/50739
-      assert.fail(
-        X`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`,
-      );
+      throw Fail`the seller must have an afterDeadline exitRule, but instead had ${sellSeatExitRule}`;
     }
 
     const exerciseOption = makeExerciser(sellSeat);

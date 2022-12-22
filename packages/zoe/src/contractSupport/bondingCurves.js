@@ -2,7 +2,7 @@ import { Nat } from '@agoric/nat';
 import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;
-const { details: X } = assert;
+const { Fail } = assert;
 
 const BASIS_POINTS = 10000n; // TODO change to 10_000n once tooling copes.
 
@@ -39,10 +39,9 @@ export const getInputPrice = (
   inputValue = Nat(inputValue);
   inputReserve = Nat(inputReserve);
   outputReserve = Nat(outputReserve);
-  assert(inputValue > 0n, X`inputValue ${inputValue} must be positive`);
-  assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
-  outputReserve > 0n ||
-    assert.fail(X`outputReserve ${outputReserve} must be positive`);
+  inputValue > 0n || Fail`inputValue ${inputValue} must be positive`;
+  inputReserve > 0n || Fail`inputReserve ${inputReserve} must be positive`;
+  outputReserve > 0n || Fail`outputReserve ${outputReserve} must be positive`;
 
   const oneMinusFeeScaled = subtract(BASIS_POINTS, feeBasisPoints);
   const inputWithFee = multiply(inputValue, oneMinusFeeScaled);
@@ -80,13 +79,10 @@ export const getOutputPrice = (
   inputReserve = Nat(inputReserve);
   outputReserve = Nat(outputReserve);
 
-  assert(inputReserve > 0n, X`inputReserve ${inputReserve} must be positive`);
-  outputReserve > 0n ||
-    assert.fail(X`outputReserve ${outputReserve} must be positive`);
+  inputReserve > 0n || Fail`inputReserve ${inputReserve} must be positive`;
+  outputReserve > 0n || Fail`outputReserve ${outputReserve} must be positive`;
   outputReserve > outputValue ||
-    assert.fail(
-      X`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`,
-    );
+    Fail`outputReserve ${outputReserve} must be greater than outputValue ${outputValue}`;
 
   const oneMinusFeeScaled = subtract(BASIS_POINTS, feeBasisPoints);
   const numerator = multiply(multiply(outputValue, inputReserve), BASIS_POINTS);

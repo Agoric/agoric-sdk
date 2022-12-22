@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { AmountMath, makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 
@@ -34,11 +34,8 @@ export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
       proposalShape = undefined,
     ) => {
       assert.typeof(invitationHandle, 'object');
-      assert.typeof(
-        description,
-        'string',
-        X`The description ${description} must be a string`,
-      );
+      typeof description === 'string' ||
+        Fail`The description ${description} must be a string`;
 
       // If the contract-provided customProperties include the
       // properties 'description', 'handle', 'instance',
