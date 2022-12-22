@@ -15,6 +15,9 @@ export const ParamTypes = /** @type {const} */ ({
   RATIO: 'ratio',
   STRING: 'string',
   PASSABLE_RECORD: 'record',
+  TIMER_SERVICE: 'timerService',
+  TIMESTAMP: 'timestamp',
+  RELATIVE_TIME: 'relativeTime',
   UNKNOWN: 'unknown',
 });
 

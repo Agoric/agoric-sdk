@@ -41,9 +41,32 @@ const makeAssertBrandedRatio = (name, modelRatio) => {
 };
 harden(makeAssertBrandedRatio);
 
+const assertRelativeTime = value => {
+  isRemotable(value.timerBrand) || Fail`relativeTime must have a brand`;
+  typeof value.relValue === 'bigint' || Fail`must have a relValue field`;
+};
+harden(assertRelativeTime);
+
+const assertTimestamp = value => {
+  isRemotable(value.timerBrand) || Fail`timestamp must have a brand`;
+  typeof value.absValue === 'bigint' || Fail`must have an absValue field`;
+};
+harden(assertTimestamp);
+
+const makeAssertTimerService = name => {
+  return timerService => {
+    typeof timerService === 'object' ||
+      Fail`value for ${name} must be a TimerService, was ${timerService}`;
+  };
+};
+harden(makeAssertTimerService);
+
 export {
   makeLooksLikeBrand,
   makeAssertInstallation,
   makeAssertInstance,
   makeAssertBrandedRatio,
+  assertRelativeTime,
+  assertTimestamp,
+  makeAssertTimerService,
 };

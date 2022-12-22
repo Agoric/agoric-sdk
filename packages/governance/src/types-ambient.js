@@ -427,6 +427,9 @@
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
+ * @property {(name: string) => import('@agoric/time/src/types').TimerService} getTimerService
+ * @property {(name: string) => import('@agoric/time/src/types').Timestamp} getTimestamp
+ * @property {(name: string) => import('@agoric/time/src/types').RelativeTime} getRelativeTime
  * @property {(name: string) => any} getUnknown
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations

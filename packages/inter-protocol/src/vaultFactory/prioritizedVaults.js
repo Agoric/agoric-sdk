@@ -74,11 +74,6 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
   /** @type {string | undefined} */
   let firstKey;
 
-  // Check if this ratio of debt to collateral would be the highest known. If
-  // so, reset our highest and invoke the callback. This can be called on new
-  // vaults and when we get a state update for a vault changing balances.
-  /** @param {Ratio} collateralToDebt */
-
   /**
    * Ratio of the least-collateralized vault, if there is one.
    *

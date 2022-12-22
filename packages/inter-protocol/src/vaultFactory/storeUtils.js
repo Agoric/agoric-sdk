@@ -44,7 +44,7 @@ const decodeData = makeDecodePassable();
  * @param {number} n
  * @returns {string}
  */
-const encodeNumber = n => {
+export const encodeNumber = n => {
   assert.typeof(n, 'number');
   return encodeData(n);
 };
@@ -53,7 +53,7 @@ const encodeNumber = n => {
  * @param {string} encoded
  * @returns {number}
  */
-const decodeNumber = encoded => {
+export const decodeNumber = encoded => {
   const result = decodeData(encoded);
   assert.typeof(result, 'number');
   return result;

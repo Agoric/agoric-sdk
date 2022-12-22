@@ -140,6 +140,7 @@ harden(makeVaultDirectorParamManager);
  *   reservePublicFacet: AssetReservePublicFacet,
  *   loanTiming: LoanTiming,
  *   shortfallInvitationAmount: Amount,
+ *   auctionPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
  *   endorsedUi?: string,
  * }} opts
  */
@@ -147,6 +148,7 @@ export const makeGovernedTerms = (
   { storageNode, marshaller },
   {
     bootstrapPaymentValue,
+    auctionPublicFacet,
     electorateInvitationAmount,
     loanTiming,
     minInitialDebt,
@@ -173,6 +175,7 @@ export const makeGovernedTerms = (
 
   return harden({
     priceAuthority,
+    auctionPublicFacet,
     loanTimingParams,
     reservePublicFacet,
     timerService: timer,

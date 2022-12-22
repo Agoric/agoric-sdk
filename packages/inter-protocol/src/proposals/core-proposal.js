@@ -22,6 +22,7 @@ const SHARED_MAIN_MANIFEST = harden({
       priceAuthority: 'priceAuthority',
       economicCommitteeCreatorFacet: 'economicCommittee',
       reserveKit: 'reserve',
+      auction: 'auction',
     },
     produce: { vaultFactoryKit: 'VaultFactory' },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
@@ -35,6 +36,7 @@ const SHARED_MAIN_MANIFEST = harden({
     instance: {
       consume: {
         reserve: 'reserve',
+        auction: 'auction',
       },
       produce: {
         VaultFactory: 'VaultFactory',
@@ -71,6 +73,28 @@ const SHARED_MAIN_MANIFEST = harden({
         reserve: 'reserve',
         reserveGovernor: 'ReserveGovernor',
       },
+    },
+  },
+
+  [econBehaviors.startAuction.name]: {
+    consume: {
+      zoe: 'zoe',
+      board: 'board',
+      chainTimerService: 'timer',
+      priceAuthority: 'priceAuthority',
+      chainStorage: true,
+      economicCommitteeCreatorFacet: 'economicCommittee',
+    },
+    produce: { auctionKit: 'auction' },
+    instance: {
+      produce: { auction: 'auction' },
+    },
+    installation: {
+      consume: { auctionInstallation: 'zoe' },
+      contractGovernor: 'zoe',
+    },
+    issuer: {
+      consume: { [Stable.symbol]: 'zoe' },
     },
   },
 });
@@ -165,6 +189,7 @@ export const getManifestForMain = (
     manifest: SHARED_MAIN_MANIFEST,
     installations: {
       VaultFactory: restoreRef(installKeys.vaultFactory),
+      auction: restoreRef(installKeys.auction),
       feeDistributor: restoreRef(installKeys.feeDistributor),
       reserve: restoreRef(installKeys.reserve),
     },

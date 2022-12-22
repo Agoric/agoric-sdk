@@ -282,6 +282,7 @@ export const installGovAndPSMContracts = async ({
       contractGovernor,
       committee,
       binaryVoteCounter,
+      auction,
       psm,
       econCommitteeCharter,
     },
@@ -298,6 +299,7 @@ export const installGovAndPSMContracts = async ({
       contractGovernor,
       committee,
       binaryVoteCounter,
+      auction,
       psm,
       econCommitteeCharter,
     }).map(async ([name, producer]) => {
@@ -325,6 +327,7 @@ export const PSM_GOV_MANIFEST = {
         contractGovernor: 'zoe',
         committee: 'zoe',
         binaryVoteCounter: 'zoe',
+        auction: 'zoe',
         psm: 'zoe',
         econCommitteeCharter: 'zoe',
       },
@@ -420,6 +423,7 @@ export const getManifestForPsm = (
   return {
     manifest: PSM_MANIFEST,
     installations: {
+      auction: restoreRef(installKeys.auctioneer),
       psm: restoreRef(installKeys.psm),
       mintHolder: restoreRef(installKeys.mintHolder),
     },

@@ -52,4 +52,8 @@ export {
   oneMinus,
   addRatios,
   multiplyRatios,
+  ratiosSame,
+  quantize,
+  ratioGTE,
+  subtractRatios,
 } from './ratio.js';

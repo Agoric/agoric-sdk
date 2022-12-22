@@ -8,10 +8,13 @@ import { assertAllDefined } from '@agoric/internal';
 import { ParamTypes } from '../constants.js';
 
 import {
+  assertTimestamp,
+  assertRelativeTime,
   makeAssertBrandedRatio,
   makeAssertInstallation,
   makeAssertInstance,
   makeLooksLikeBrand,
+  makeAssertTimerService,
 } from './assertions.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
@@ -44,6 +47,9 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
+ * @property {(name: string, value: import('@agoric/time/src/types').TimerService) => ParamManagerBuilder} addTimerService
+ * @property {(name: string, value: import('@agoric/time/src/types').Timestamp) => ParamManagerBuilder} addTimestamp
+ * @property {(name: string, value: import('@agoric/time/src/types').RelativeTime) => ParamManagerBuilder} addRelativeTime
  * @property {(name: string, value: any) => ParamManagerBuilder} addUnknown
  * @property {() => AnyParamManager} build
  */
@@ -181,6 +187,25 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   const addString = (name, value, builder) => {
     const assertString = v => assert.typeof(v, 'string');
     buildCopyParam(name, value, assertString, ParamTypes.STRING);
+    return builder;
+  };
+
+  /** @type {(name: string, value: import('@agoric/time/src/types').TimerService, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addTimerService = (name, value, builder) => {
+    const assertTimerService = makeAssertTimerService(name);
+    buildCopyParam(name, value, assertTimerService, ParamTypes.TIMER_SERVICE);
+    return builder;
+  };
+
+  /** @type {(name: string, value: import('@agoric/time/src/types').Timestamp, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addTimestamp = (name, value, builder) => {
+    buildCopyParam(name, value, assertTimestamp, ParamTypes.TIMESTAMP);
+    return builder;
+  };
+
+  /** @type {(name: string, value: import('@agoric/time/src/types').RelativeTime, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addRelativeTime = (name, value, builder) => {
+    buildCopyParam(name, value, assertRelativeTime, ParamTypes.RELATIVE_TIME);
     return builder;
   };
 
@@ -356,6 +381,9 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       getRatio: name => getTypedParam(ParamTypes.RATIO, name),
       getRecord: name => getTypedParam(ParamTypes.PASSABLE_RECORD, name),
       getString: name => getTypedParam(ParamTypes.STRING, name),
+      getTimerService: name => getTypedParam(ParamTypes.TIMER_SERVICE, name),
+      getTimestamp: name => getTypedParam(ParamTypes.TIMESTAMP, name),
+      getRelativeTime: name => getTypedParam(ParamTypes.RELATIVE_TIME, name),
       getUnknown: name => getTypedParam(ParamTypes.UNKNOWN, name),
       getVisibleValue,
       getInternalParamValue,
@@ -379,6 +407,9 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     addRatio: (n, v) => addRatio(n, v, builder),
     addRecord: (n, v) => addRecord(n, v, builder),
     addString: (n, v) => addString(n, v, builder),
+    addTimerService: (n, v) => addTimerService(n, v, builder),
+    addRelativeTime: (n, v) => addRelativeTime(n, v, builder),
+    addTimestamp: (n, v) => addTimestamp(n, v, builder),
     build,
   };
   return builder;

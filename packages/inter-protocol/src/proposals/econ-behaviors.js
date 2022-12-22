@@ -13,6 +13,7 @@ import { LienBridgeId, makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeStakeFactoryTerms } from '../stakeFactory/params.js';
 import { makeGovernedTerms } from '../vaultFactory/params.js';
+import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 
 const trace = makeTracer('RunEconBehaviors', false);
 
@@ -26,6 +27,8 @@ const BASIS_POINTS = 10_000n;
  * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
  * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
+ * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
+ * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
  */
 
 /**
@@ -69,6 +72,12 @@ const BASIS_POINTS = 10_000n;
  *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
  *     adminFacet: AdminFacet,
  *   },
+ *   auctionKit: {
+ *     publicFacet: AuctioneerPublicFacet,
+ *     creatorFacet: AuctioneerCreatorFacet,
+ *     governorCreatorFacet: GovernedContractFacetAccess<{},{}>,
+ *     adminFacet: AdminFacet,
+ *   }
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  */
@@ -204,7 +213,7 @@ export const startVaultFactory = async (
     },
     instance: {
       produce: instanceProduce,
-      consume: { reserve: reserveInstance },
+      consume: { auction: auctionInstance, reserve: reserveInstance },
     },
     installation: {
       consume: {
@@ -247,6 +256,7 @@ export const startVaultFactory = async (
   const centralBrand = await centralBrandP;
 
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
+  const auctionPublicFacet = await E(zoe).getPublicFacet(auctionInstance);
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
@@ -262,6 +272,7 @@ export const startVaultFactory = async (
       bootstrapPaymentValue: 0n,
       shortfallInvitationAmount,
       endorsedUi,
+      auctionPublicFacet,
     },
   );
 
@@ -477,6 +488,128 @@ export const startLienBridge = async ({
   const bldBrand = await bldP;
   const reporter = makeStakeReporter(lienBridgeManager, bldBrand);
   lienBridge.resolve(reporter);
+};
+
+/**
+ * @param {EconomyBootstrapPowers} powers
+ * @param {object} config
+ * @param {any} [config.auctionParams]
+ */
+export const startAuction = async (
+  {
+    consume: {
+      zoe,
+      board,
+      chainTimerService,
+      priceAuthority,
+      chainStorage,
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+    },
+    produce: { auctionKit },
+    instance: {
+      produce: { auction: auctionInstance },
+    },
+    installation: {
+      consume: {
+        auction: auctionInstallation,
+        contractGovernor: contractGovernorInstallation,
+      },
+    },
+    issuer: {
+      consume: { [Stable.symbol]: runIssuerP },
+    },
+  },
+  {
+    auctionParams = {
+      startFreq: 3600n,
+      clockStep: 3n * 60n,
+      startingRate: 10500n,
+      lowestRate: 4500n,
+      discountStep: 500n,
+      auctionStartDelay: 2n,
+      priceLockPeriod: 3n,
+    },
+  } = {},
+) => {
+  trace('startAuction');
+  const STORAGE_PATH = 'auction';
+
+  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+
+  const [initialPoserInvitation, electorateInvitationAmount, runIssuer] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+      runIssuerP,
+    ]);
+
+  const timerBrand = await E(chainTimerService).getTimerBrand();
+
+  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
+  const marshaller = await E(board).getReadonlyMarshaller();
+
+  const auctionTerms = makeGovernedATerms(
+    { storageNode, marshaller },
+    {
+      priceAuthority,
+      timer: chainTimerService,
+      startFreq: auctionParams.startFreq,
+      clockStep: auctionParams.clockStep,
+      lowestRate: auctionParams.lowestRate,
+      startingRate: auctionParams.startingRate,
+      discountStep: auctionParams.discountStep,
+      auctionStartDelay: auctionParams.auctionStartDelay,
+      priceLockPeriod: auctionParams.priceLockPeriod,
+      electorateInvitationAmount,
+      timerBrand,
+    },
+  );
+
+  const governorTerms = await deeplyFulfilledObject(
+    harden({
+      timer: chainTimerService,
+      governedContractInstallation: auctionInstallation,
+      governed: {
+        terms: auctionTerms,
+        issuerKeywordRecord: { Currency: runIssuer },
+        storageNode,
+        marshaller,
+      },
+    }),
+  );
+
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<AuctioneerPublicFacet,AuctioneerCreatorFacet>, adminFacet: AdminFacet}} */
+  const governorStartResult = await E(zoe).startInstance(
+    contractGovernorInstallation,
+    undefined,
+    governorTerms,
+    harden({
+      electorateCreatorFacet,
+      governed: {
+        initialPoserInvitation,
+        storageNode,
+        marshaller,
+      },
+    }),
+  );
+
+  const [governedInstance, governedCreatorFacet, governedPublicFacet] =
+    await Promise.all([
+      E(governorStartResult.creatorFacet).getInstance(),
+      E(governorStartResult.creatorFacet).getCreatorFacet(),
+      E(governorStartResult.creatorFacet).getPublicFacet(),
+    ]);
+
+  auctionKit.resolve(
+    harden({
+      creatorFacet: governedCreatorFacet,
+      governorCreatorFacet: governorStartResult.creatorFacet,
+      adminFacet: governorStartResult.adminFacet,
+      publicFacet: governedPublicFacet,
+    }),
+  );
+
+  auctionInstance.resolve(governedInstance);
 };
 
 /**
