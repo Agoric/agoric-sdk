@@ -379,7 +379,7 @@ const NUMERIC_RE = /^(\d\d*)(?:\.(\d*))?$/;
 /**
  * Create a ratio from a given numeric value.
  *
- * @param {ParsableNumber} numeric
+ * @param {bigint | number | string} numeric
  * @param {Brand} numeratorBrand
  * @param {Brand} [denominatorBrand]
  * @returns {Ratio}
