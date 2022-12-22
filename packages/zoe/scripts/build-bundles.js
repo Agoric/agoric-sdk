@@ -7,10 +7,7 @@ const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const sourceToBundle = [
   ['../src/contractFacet/vatRoot.js', '../bundles/bundle-contractFacet.js'],
-  [
-    '../src/contracts/priceAggregator.js',
-    '../bundles/bundle-priceAggregator.js',
-  ],
+  // TODO rename to truncate 'Chainlink'
   [
     '../src/contracts/priceAggregatorChainlink.js',
     '../bundles/bundle-priceAggregatorChainlink.js',

@@ -69,8 +69,8 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  */
 
 /**
- * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
- * the *Node Operator Aggregation* logic of [Chainlink price
+ * PriceAuthority for their median. This approximates the *Node Operator
+ * Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
  * @param {ZCF<ChainlinkConfig & {
