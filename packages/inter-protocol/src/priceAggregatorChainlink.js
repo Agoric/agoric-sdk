@@ -430,8 +430,7 @@ const start = async (zcf, privateArgs) => {
    */
   const recordSubmission = (submission, roundId, oracleId) => {
     if (!acceptingSubmissions(roundId)) {
-      console.error('round not accepting submissions');
-      return false;
+      assert.fail('round not accepting submissions');
     }
 
     const lastRoundDetails = details.get(roundId);
@@ -445,7 +444,6 @@ const start = async (zcf, privateArgs) => {
       lastReportedRound: roundId,
       latestSubmission: submission,
     });
-    return true;
   };
 
   /**
@@ -772,10 +770,7 @@ const start = async (zcf, privateArgs) => {
           }
 
           proposeNewRound(roundId, oracleId, blockTimestamp);
-          const recorded = recordSubmission(value, roundId, oracleId);
-          if (!recorded) {
-            return;
-          }
+          recordSubmission(value, roundId, oracleId);
 
           updateRoundAnswer(roundId, blockTimestamp);
           deleteRoundDetails(roundId);

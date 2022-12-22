@@ -147,7 +147,10 @@ test('basic', async t => {
   // the restartDelay, which means its submission will be IGNORED. this means the median
   // should ONLY be between the OracleB and C values, which is why it is 25000
   await oracleTimer.tick();
-  await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 1000n });
+  await t.throwsAsync(
+    E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 1000n }),
+    { message: 'round not accepting submissions' },
+  );
   await E(pricePushAdminB).pushPrice({ roundId: 2, unitPrice: 2000n });
   await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 3000n });
   await oracleTimer.tick();
@@ -418,7 +421,10 @@ test('interleaved', async t => {
   await oracleTimer.tick();
   await oracleTimer.tick();
   // round 3 is NOT yet supersedeable (since no value present and not yet timed out), so these should fail
-  await E(pricePushAdminA).pushPrice({ roundId: 4, unitPrice: 4000n });
+  await t.throwsAsync(
+    E(pricePushAdminA).pushPrice({ roundId: 4, unitPrice: 4000n }),
+    { message: 'round not accepting submissions' },
+  );
   await E(pricePushAdminB).pushPrice({ roundId: 4, unitPrice: 5000n });
   await E(pricePushAdminC).pushPrice({ roundId: 4, unitPrice: 6000n });
   await oracleTimer.tick(); // --- round 3 has NOW timed out, meaning it is now supersedable
@@ -692,7 +698,10 @@ test('notifications', async t => {
     },
   );
 
-  await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 1000n });
+  await t.throwsAsync(
+    E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 1000n }),
+    { message: 'round not accepting submissions' },
+  );
   // A started last round so fails to start next round
   t.deepEqual(
     // subscribe fresh because the iterator won't advance yet
