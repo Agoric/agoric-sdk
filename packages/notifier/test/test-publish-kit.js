@@ -9,7 +9,7 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
-import { provideHostStorage } from '@agoric/swingset-vat/src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
 import {
@@ -234,15 +234,15 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
       pubsub: { sourceSpec: bfile('vat-integration/vat-pubsub.js') },
     },
   };
-  const hostStorage = provideHostStorage();
+  const { kernelStorage } = initSwingStore();
   const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
   const initOpts =
     /** @type {{kernelBundles: Record<string, import('@agoric/swingset-vat/src/types-external.js').Bundle>}} */ ({
       kernelBundles,
     });
   const runtimeOpts = { kernelBundle };
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

@@ -65,10 +65,10 @@ const testNullUpgrade = async (t, defaultManagerType) => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const { kernelStorage } = initSwingStore();
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
