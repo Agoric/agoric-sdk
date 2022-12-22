@@ -57,8 +57,8 @@ export const defaultProposalBuilder = async (
         brandOutRef: brandOut && publishRef(brandOut),
         priceAggregatorRef: publishRef(
           install(
-            '@agoric/zoe/src/contracts/priceAggregatorChainlink.js',
-            '../bundles/bundle-priceAggregatorChainlink.js',
+            '@agoric/zoe/src/contracts/priceAggregator.js',
+            '../bundles/bundle-priceAggregator.js',
           ),
         ),
       },

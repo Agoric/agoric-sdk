@@ -9,8 +9,8 @@ const sourceToBundle = [
   ['../src/contractFacet/vatRoot.js', '../bundles/bundle-contractFacet.js'],
   // TODO rename to truncate 'Chainlink'
   [
-    '../src/contracts/priceAggregatorChainlink.js',
-    '../bundles/bundle-priceAggregatorChainlink.js',
+    '../src/contracts/priceAggregator.js',
+    '../bundles/bundle-priceAggregator.js',
   ],
 ];
 

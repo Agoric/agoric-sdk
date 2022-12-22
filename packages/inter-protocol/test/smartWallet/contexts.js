@@ -73,10 +73,10 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       'installation',
     );
     const paBundle = await bundleCache.load(
-      '../zoe/src/contracts/priceAggregatorChainlink.js',
+      '../zoe/src/contracts/priceAggregator.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/zoe/src/contracts/priceAggregatorChainlink.js').start>>} */
+    /** @type {Promise<Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>>} */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 

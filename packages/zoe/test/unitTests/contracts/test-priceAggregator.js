@@ -28,7 +28,7 @@ const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
-const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregatorChainlink.js`;
+const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -66,7 +66,7 @@ const makeContext = async () => {
   // using the same code.
   vatAdminState.installBundle('b1-oracle', oracleBundle);
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../../../src/contracts/priceAggregatorChainlink.js').start>} */
+  /** @type {Installation<import('../../../src/contracts/priceAggregator.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
