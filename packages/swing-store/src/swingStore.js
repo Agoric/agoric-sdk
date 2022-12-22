@@ -63,6 +63,7 @@ export function makeSnapStoreIO() {
  *   rollbackCrank: (savepoint: string) => void,
  *   emitCrankHashes: () => { crankhash: string, activityhash: string },
  *   endCrank: () => void,
+ *   getActivityhash: () => string,
  * }} SwingStoreKernelStorage
  *
  * @typedef {{
@@ -76,8 +77,6 @@ export function makeSnapStoreIO() {
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
  * }} SwingStore
- *
- * //at//typedef {KernelStore & { snapStore: SnapStore }} KernelAndSnapStore
  */
 
 /**
@@ -192,6 +191,8 @@ function makeSwingStore(dirPath, forceReset, options) {
     filePath,
     // { verbose: console.log },
   );
+  db.exec(`PRAGMA journal_mode=WAL`);
+  db.exec(`PRAGMA synchronous=FULL`);
   db.exec(`
     CREATE TABLE IF NOT EXISTS kvStore (
       key TEXT,
@@ -203,6 +204,24 @@ function makeSwingStore(dirPath, forceReset, options) {
   const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
   let inCrank = false;
 
+  // We use explicit transactions to 1: not commit writes until the host
+  // application calls commit() and 2: avoid expensive fsyncs until the
+  // appropriate commit point. All API methods should call this first, otherwise
+  // SQLite will automatically start a transaction for us, but it will
+  // commit/fsync at the end of the DB run(). We use IMMEDIATE because the
+  // kernel is supposed to be the sole writer of the DB, and if some other
+  // process is holding a write lock, we want to find out earlier rather than
+  // later. We do not use EXCLUSIVE because we should allow external *readers*,
+  // and we might decide to use WAL mode some day. Read all of
+  // https://sqlite.org/lang_transaction.html, especially section 2.2
+  //
+  // It is critical to call ensureTxn as the first step of any API call that
+  // might modify the database (any INSERT or DELETE, etc), to prevent SQLite
+  // from creating an automatic transaction, which will commit as soon as the
+  // SQL statement finishes. This would cause partial writes to be committed to
+  // the DB, and if the application crashes before the real hostStorage.commit()
+  // happens, it would wake up with inconsistent state. The only commit point
+  // must be the hostStorage.commit().
   function ensureTxn() {
     assert(db);
     if (!db.inTransaction) {
@@ -316,15 +335,6 @@ function makeSwingStore(dirPath, forceReset, options) {
     VALUES (?, ?)
     ON CONFLICT DO UPDATE SET value = excluded.value
   `);
-
-  // XXX Debug helper, remove before push
-  // function pfx(s) {
-  //   if (s.length < 15) {
-  //     return s;
-  //   } else {
-  //     return `${s.substring(0, 15)}...`;
-  //   }
-  // }
 
   /**
    * Store a value for a given key.  The value will replace any prior value if
@@ -485,6 +495,10 @@ function makeSwingStore(dirPath, forceReset, options) {
     return { crankhash, activityhash };
   }
 
+  function getActivityhash() {
+    return get('activityhash') || '';
+  }
+
   function endCrank() {
     assert(inCrank);
     if (savepoints.length > 0) {
@@ -495,6 +509,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
 
   const sqlCommit = db.prepare('COMMIT');
+  const sqlCheckpoint = db.prepare('PRAGMA wal_checkpoint(FULL)');
 
   /**
    * Commit unsaved changes.
@@ -503,6 +518,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert(db);
     if (db.inTransaction) {
       sqlCommit.run();
+      sqlCheckpoint.run();
     }
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
@@ -534,6 +550,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     rollbackCrank,
     emitCrankHashes,
     endCrank,
+    getActivityhash,
   };
   const hostStorage = {
     kvStore: hostKVStore,

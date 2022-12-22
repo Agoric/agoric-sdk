@@ -30,7 +30,6 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').BundleCap } BundleCap
  * @typedef { import('../../types-external.js').BundleID } BundleID
  * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').HostStore } HostStore
  * @typedef { import('../../types-external.js').KernelOptions } KernelOptions
  * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
  * @typedef { import('../../types-external.js').ManagerType } ManagerType
@@ -172,14 +171,9 @@ const FIRST_METER_ID = 1n;
  * @param {KernelSlog|null} kernelSlog
  */
 export default function makeKernelKeeper(kernelStorage, kernelSlog) {
-  const kvStore = kernelStorage.kvStore;
+  const { kvStore, streamStore, snapStore } = kernelStorage;
+
   insistStorageAPI(kvStore);
-
-  const { streamStore, snapStore } = kernelStorage;
-
-  function getActivityhash() {
-    return kvStore.get('activityhash');
-  }
 
   /**
    * @param {string} key
@@ -1645,7 +1639,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     rollbackCrank,
     emitCrankHashes,
     endCrank,
-    getActivityhash,
 
     dump,
   });

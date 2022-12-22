@@ -173,6 +173,12 @@ test('gc actions', t => {
   t.deepEqual(msg, { type: 'negated-gc-action', vatID: undefined });
   t.deepEqual(newActions, []);
 
+  // empty action set should result in no actions
+  setActions([]);
+  msg = process();
+  t.deepEqual(msg, undefined);
+  t.deepEqual(newActions, []);
+
   // multiple vats: process in sorted order
   setActions(['v1 dropExport ko1', 'v2 dropExport ko2']);
   rc = { ko1: [0, 0], ko2: [0, 0] };

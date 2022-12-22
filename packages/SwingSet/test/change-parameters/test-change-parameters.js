@@ -3,7 +3,6 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-// eslint-disable-next-line import/order
 import { initSwingStore, getAllState } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { kunser } from '../../src/lib/kmarshal.js';

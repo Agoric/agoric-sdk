@@ -1214,6 +1214,13 @@ export default function buildKernel(
     // directly.
 
     if (crankResults.abort) {
+      // Errors unwind any changes the vat made, by rolling back to the
+      // "deliver" savepoint In addition, the crankResults will either ask for
+      // the message to be consumed (without redelivery), or they'll ask for it
+      // to be attempted again (so it can go "splat" against a terminated vat,
+      // and give the sender the right error). In the latter case, we roll back
+      // to the "start" savepoint, established by `run()` or `step()` before the
+      // delivery was pulled off the run-queue, undoing the dequeueing.
       kernelKeeper.rollbackCrank(
         crankResults.consumeMessage ? 'deliver' : 'start',
       );
@@ -1673,6 +1680,31 @@ export default function buildKernel(
     return { message, processor };
   }
 
+  function changeKernelOptions(options) {
+    assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
+    kernelKeeper.startCrank();
+    try {
+      for (const option of Object.getOwnPropertyNames(options)) {
+        const value = options[option];
+        switch (option) {
+          case 'defaultReapInterval': {
+            kernelKeeper.setDefaultReapInterval(value);
+            break;
+          }
+          case 'snapshotInterval': {
+            vatWarehouse.setSnapshotInterval(value);
+            break;
+          }
+          default:
+            assert.fail(`this can't happen (kernel option ${option})`);
+        }
+      }
+    } finally {
+      kernelKeeper.emitCrankHashes();
+      kernelKeeper.endCrank();
+    }
+  }
+
   async function step() {
     if (kernelPanic) {
       throw kernelPanic;
@@ -1696,31 +1728,6 @@ export default function buildKernel(
         return 0;
       }
     } finally {
-      kernelKeeper.endCrank();
-    }
-  }
-
-  function changeKernelOptions(options) {
-    assertKnownOptions(options, ['defaultReapInterval', 'snapshotInterval']);
-    kernelKeeper.startCrank();
-    try {
-      for (const option of Object.getOwnPropertyNames(options)) {
-        const value = options[option];
-        switch (option) {
-          case 'defaultReapInterval': {
-            kernelKeeper.setDefaultReapInterval(value);
-            break;
-          }
-          case 'snapshotInterval': {
-            vatWarehouse.setSnapshotInterval(value);
-            break;
-          }
-          default:
-            assert.fail(`this can't happen (kernel option ${option})`);
-        }
-      }
-    } finally {
-      kernelKeeper.emitCrankHashes();
       kernelKeeper.endCrank();
     }
   }
@@ -1892,10 +1899,6 @@ export default function buildKernel(
       return harden({
         activeVats: vatWarehouse.activeVatsInfo(),
       });
-    },
-
-    getActivityhash() {
-      return kernelKeeper.getActivityhash();
     },
 
     /**

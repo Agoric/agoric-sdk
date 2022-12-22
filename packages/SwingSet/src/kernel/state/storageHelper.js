@@ -2,18 +2,6 @@
 
 import { assert } from '@agoric/assert';
 
-// We wrap a provided object implementing StorageAPI methods { has, getKeys,
-// get, set, delete } (cf. packages/SwingSet/docs/state.md#transactions) and
-// add some convenience methods.
-
-// NOTE: There's a lot of suspenders-and-belt paranoia here because we have to
-// be vewy, vewy careful with host-realm objects.  This raises a question
-// whether ad hoc paranoia is the best engineering practice.  Also, if it's
-// important for users of a parameter to be aware of the potentially suspect
-// nature of that parameter, perhaps we should establish some naming convention
-// that signals that the object could be foreign and thus deserving of
-// xenophobia.
-
 // NOTE: awkward naming: the thing that returns a stream of keys is named
 // "enumerate..." while the thing that returns a stream of values is named
 // "get..."

@@ -27,7 +27,6 @@
     "@endo/init": "^0.5.52",
     "@types/better-sqlite3": "^7.5.0",
     "ava": "^5.0.1",
-    "@agoric/swingset-vat": "^0.30.2",
     "c8": "^7.7.2"
   },
   "publishConfig": {

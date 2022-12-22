@@ -418,7 +418,7 @@ export async function makeSwingsetController(
     },
 
     getActivityhash() {
-      return kernel.getActivityhash();
+      return kernelStorage.getActivityhash();
     },
 
     // everything beyond here is for tests, and everything should be migrated
@@ -442,6 +442,7 @@ export async function makeSwingsetController(
 
     kpResolution(kpid) {
       const result = kernel.kpResolution(kpid);
+      // kpResolution does DB write (changes refcounts) so we need emitCrankHashes here
       kernelStorage.emitCrankHashes();
       return result;
     },
@@ -485,6 +486,7 @@ export async function makeSwingsetController(
         [vatID, pauseTarget, bundleID, options],
         'ignore',
       );
+      // no emitCrankHashes here because queueToVatRoot did that
       return result;
     },
   });

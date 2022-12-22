@@ -297,14 +297,6 @@ export {};
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
  * @typedef { import('@agoric/swing-store').SwingStoreKernelStorage } SwingStoreKernelStorage
  * @typedef { import('@agoric/swing-store').SwingStoreHostStorage } SwingStoreHostStorage
- *
- * @typedef {{
- *   kvStore: KVStore,
- *   streamStore: StreamStore,
- *   snapStore?: SnapStore,
- *   commitCrank: () => { crankhash: string, activityhash: string },
- *   abortCrank: (wholeCrank: boolean) => void,
- * }} HostStore
  */
 
 /**

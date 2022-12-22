@@ -110,6 +110,9 @@ test('storage helpers', t => {
   t.falsy(kv.has('foo.2'));
   t.falsy(kv.has('foo.3'));
   t.falsy(kv.has('foo.4'));
+  // `getPrefixedValues` and `deletePrefixedKeys` both work by counting from
+  // zero, so if there is a gap in the key sequence (e.g., 'foo.4' in the
+  // above), they stop counting when they hit it
   t.truthy(kv.has('foo.5'));
   checkState(t, () => getAllState(kernelStorage).kvStuff, [['foo.5', 'f5']]);
 });

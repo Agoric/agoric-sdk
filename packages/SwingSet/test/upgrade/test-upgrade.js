@@ -130,7 +130,7 @@ const testUpgrade = async (
     },
   };
 
-  const kernelStorage = initSwingStore().kernelStorage;
+  const { kernelStorage } = initSwingStore();
   const { kvStore } = kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
   await initializeSwingset(config, [], kernelStorage, initOpts);
