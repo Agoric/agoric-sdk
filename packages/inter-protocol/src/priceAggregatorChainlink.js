@@ -19,16 +19,15 @@ import {
   calculateMedian,
   natSafeMath,
   makeOnewayPriceAuthorityKit,
-} from '../contractSupport/index.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 
-import '../../tools/types.js';
-import { assertParsableNumber } from '../contractSupport/ratio.js';
-import {
-  INVITATION_MAKERS_DESC,
-  priceDescriptionFromQuote,
-} from './priceAggregator.js';
+import '@agoric/zoe/tools/types.js';
+import { assertParsableNumber } from '@agoric/zoe/src/contractSupport/ratio.js';
 
-export { INVITATION_MAKERS_DESC };
+export const INVITATION_MAKERS_DESC = 'oracle invitation';
+
+/** @type {(quote: PriceQuote) => PriceDescription} */
+const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
  * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound

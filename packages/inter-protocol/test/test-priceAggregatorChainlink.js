@@ -15,11 +15,9 @@ import {
 } from '@agoric/notifier/tools/testSupports.js';
 import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import { makeZoeKit } from '../../../src/zoeService/zoe.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
-
-import '../../../src/contracts/exported.js';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeZoeKit } from '@agoric/zoe/src/zoeService/zoe.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
 const test = unknownTest;
@@ -27,8 +25,7 @@ const test = unknownTest;
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
-const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregatorChainlink.js`;
+const aggregatorPath = `${dirname}/../src/priceAggregatorChainlink.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -56,7 +53,6 @@ const makeContext = async () => {
   const { zoeService: zoe } = makeZoeKit(admin);
 
   // Pack the contracts.
-  const oracleBundle = await bundleSource(oraclePath);
   const aggregatorBundle = await bundleSource(aggregatorPath);
 
   // Install the contract on Zoe, getting an installation. We can
@@ -64,9 +60,8 @@ const makeContext = async () => {
   // of tests, we can also send the installation to someone
   // else, and they can use it to create a new contract instance
   // using the same code.
-  vatAdminState.installBundle('b1-oracle', oracleBundle);
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../../../src/contracts/priceAggregatorChainlink.js').start>} */
+  /** @type {Installation<import('../src/priceAggregatorChainlink.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
