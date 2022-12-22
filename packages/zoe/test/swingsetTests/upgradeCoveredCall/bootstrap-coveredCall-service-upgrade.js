@@ -10,17 +10,17 @@ const mintInto = (kit, purse, value) =>
     .mintPayment(AmountMath.make(kit.brand, value))
     .then(p => E(purse).deposit(p));
 
-const mintPayment = (kit, value) =>
-  E(kit.mint).mintPayment(AmountMath.make(kit.brand, value));
-
 const offerCall = async (zoe, creatorFacet, kits, timer, give, want) => {
   const { doubloonsKit, bucksKit } = kits;
   const ccMakerInvitation = await E(creatorFacet).makeInvitation();
+  const giveAmount = AmountMath.make(doubloonsKit.brand, give);
+  const wantAmount = AmountMath.make(bucksKit.brand, want);
+  const payment = E(doubloonsKit.mint).mintPayment(giveAmount);
   return E(zoe).offer(
     ccMakerInvitation,
     harden({
-      give: { Doubloons: AmountMath.make(doubloonsKit.brand, give) },
-      want: { Bucks: AmountMath.make(bucksKit.brand, want) },
+      give: { Doubloons: giveAmount },
+      want: { Bucks: wantAmount },
       exit: {
         afterDeadline: {
           deadline: 10n,
@@ -28,20 +28,23 @@ const offerCall = async (zoe, creatorFacet, kits, timer, give, want) => {
         },
       },
     }),
-    { Doubloons: mintPayment(doubloonsKit, give) },
+    { Doubloons: payment },
   );
 };
 
 const acceptCall = async (zoe, invitation, kits, give, want) => {
   const { doubloonsKit, bucksKit } = kits;
+  const giveAmount = AmountMath.make(bucksKit.brand, give);
+  const wantAmount = AmountMath.make(doubloonsKit.brand, want);
+  const payment = E(bucksKit.mint).mintPayment(giveAmount);
   return E(zoe).offer(
     invitation,
     harden({
-      give: { Bucks: AmountMath.make(bucksKit.brand, give) },
-      want: { Doubloons: AmountMath.make(doubloonsKit.brand, want) },
+      give: { Bucks: giveAmount },
+      want: { Doubloons: wantAmount },
       exit: { onDemand: null },
     }),
-    { Bucks: mintPayment(bucksKit, give) },
+    { Bucks: payment },
   );
 };
 
@@ -69,7 +72,7 @@ export const buildRootObject = () => {
   let invitation2B;
   let creator2;
   let kits;
-  let issuerReccord;
+  let issuerRecord;
   let doubloons;
   let bucks;
   const timer = buildManualTimer(console.log);
@@ -94,7 +97,7 @@ export const buildRootObject = () => {
       assert(v2BundleId, 'bundleId must not be empty');
       installation = await E(zoe).installBundleID(v2BundleId);
 
-      issuerReccord = harden({
+      issuerRecord = harden({
         Bucks: bucksKit.issuer,
         Doubloons: doubloonsKit.issuer,
       });
@@ -110,7 +113,7 @@ export const buildRootObject = () => {
       await mintInto(doubloonsKit, doubloonPurse, 20n);
 
       // Complete round-trip without upgrade
-      const facets1 = await E(zoe).startInstance(installation, issuerReccord);
+      const facets1 = await E(zoe).startInstance(installation, issuerRecord);
       const creator1 = facets1.creatorFacet;
       const seat1A = await offerCall(zoe, creator1, kits, timer, 15n, 30n);
       const invitation1B = await E(seat1A).getOfferResult();
@@ -127,7 +130,7 @@ export const buildRootObject = () => {
       await depositPayout(seat1B, 'Doubloons', doubloonsPurse, doubloons(15n));
 
       // Create the call, and hand off the invitation for exercise after upgrade
-      const facets2 = await E(zoe).startInstance(installation, issuerReccord);
+      const facets2 = await E(zoe).startInstance(installation, issuerRecord);
       ({ adminFacet: instanceAdmin2 } = facets2);
       creator2 = facets2.creatorFacet;
       const seat2A = await offerCall(zoe, creator2, kits, timer, 22n, 42n);
@@ -176,7 +179,7 @@ export const buildRootObject = () => {
       // Complete round-trip with post-upgraded instance
       console.log('Boot  starting post-upgrade contract');
       const installationV3 = await E(zoe).installBundleID(v3BundleId);
-      const facets3 = await E(zoe).startInstance(installationV3, issuerReccord);
+      const facets3 = await E(zoe).startInstance(installationV3, issuerRecord);
       const creator3 = facets3.creatorFacet;
       const seat3A = await offerCall(zoe, creator3, kits, timer, 15n, 30n);
       const invitation3B = await E(seat3A).getOfferResult();
