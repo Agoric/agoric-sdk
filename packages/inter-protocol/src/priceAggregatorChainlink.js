@@ -20,6 +20,7 @@ import {
   makeOnewayPriceAuthorityKit,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeOracleAdmin } from './priceOracleAdmin.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -157,8 +158,8 @@ const start = async (zcf, privateArgs) => {
    * @property {bigint} latestSubmission
    * @property {number} index
    */
-  /** @type {MapStore<string, OracleStatus>} */
-  const oracleStatuses = makeScalarBigMapStore('oracleStatus', {
+  /** @type {MapStore<string, *>} */
+  const oracles = makeScalarBigMapStore('oracles', {
     durable: true,
   });
 
@@ -399,17 +400,19 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @param {bigint} roundId
-   * @param {string} oracleId
+   * @param {OracleStatus} status
    * @param {Timestamp} blockTimestamp
+   * @returns {OracleStatus=} the new status
    */
-  const proposeNewRound = (roundId, oracleId, blockTimestamp) => {
+  const proposeNewRound = (roundId, status, blockTimestamp) => {
     if (!newRound(roundId)) return;
-    const lastStarted = oracleStatuses.get(oracleId).lastStartedRound; // cache storage reads
+    const lastStarted = status.lastStartedRound; // cache storage reads
     if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n) return;
     initializeNewRound(roundId, blockTimestamp);
 
-    oracleStatuses.set(oracleId, {
-      ...oracleStatuses.get(oracleId),
+    // eslint-disable-next-line consistent-return -- faulty?
+    return harden({
+      ...status,
       lastStartedRound: roundId,
     });
   };
@@ -424,9 +427,10 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {bigint} submission
    * @param {bigint} roundId
-   * @param {string} oracleId
+   * @param {OracleStatus} status
+   * @returns {OracleStatus} the new status
    */
-  const recordSubmission = (submission, roundId, oracleId) => {
+  const recordSubmission = (submission, roundId, status) => {
     acceptingSubmissions(roundId) || Fail`round not accepting submissions`;
 
     const lastRoundDetails = details.get(roundId);
@@ -435,11 +439,11 @@ const start = async (zcf, privateArgs) => {
       submissions: [...lastRoundDetails.submissions, submission],
     });
 
-    oracleStatuses.set(oracleId, {
-      ...oracleStatuses.get(oracleId),
+    return {
+      ...status,
       lastReportedRound: roundId,
       latestSubmission: submission,
-    });
+    };
   };
 
   /**
@@ -499,7 +503,7 @@ const start = async (zcf, privateArgs) => {
   /**
    */
   const oracleCount = () => {
-    return oracleStatuses.getSize();
+    return oracles.getSize();
   };
 
   /**
@@ -523,26 +527,23 @@ const start = async (zcf, privateArgs) => {
   };
 
   /**
-   * @param {string} oracleId
+   * @param {OracleStatus} status
    * @param {bigint} roundId
    * @param {Timestamp} blockTimestamp
    * @returns {string?} error message, if there is one
    */
-  const validateOracleRound = (oracleId, roundId, blockTimestamp) => {
-    // cache storage reads
-    const rrId = reportingRoundId;
-
+  const validateOracleRound = (status, roundId, blockTimestamp) => {
     let canSupersede = true;
     if (roundId > 1n) {
       canSupersede = supersedable(subtract(roundId, 1), blockTimestamp);
     }
 
-    if (oracleStatuses.get(oracleId).lastReportedRound >= roundId)
+    if (status.lastReportedRound >= roundId)
       return 'cannot report on previous rounds';
     if (
-      roundId !== rrId &&
-      roundId !== add(rrId, 1) &&
-      !previousAndCurrentUnanswered(roundId, rrId)
+      roundId !== reportingRoundId &&
+      roundId !== add(reportingRoundId, 1) &&
+      !previousAndCurrentUnanswered(roundId, reportingRoundId)
     )
       return 'invalid round to report';
     if (roundId !== 1n && !canSupersede)
@@ -551,11 +552,11 @@ const start = async (zcf, privateArgs) => {
   };
 
   /**
-   * @param {string} oracleId
+   * @param {OracleStatus} status
    * @param {bigint} roundId
    */
-  const delayed = (oracleId, roundId) => {
-    const lastStarted = oracleStatuses.get(oracleId).lastStartedRound;
+  const delayed = (status, roundId) => {
+    const lastStarted = status.lastStartedRound;
     return roundId > add(lastStarted, restartDelay) || lastStarted === 0n;
   };
 
@@ -563,14 +564,12 @@ const start = async (zcf, privateArgs) => {
    * a method to provide all current info oracleStatuses need. Intended only
    * only to be callable by oracleStatuses. Not for use by contracts to read state.
    *
-   * @param {string} oracleId
+   * @param {OracleStatus} status
    * @param {Timestamp} blockTimestamp
    */
-  const oracleRoundStateSuggestRound = (oracleId, blockTimestamp) => {
-    const oracle = oracleStatuses.get(oracleId);
-
+  const oracleRoundStateSuggestRound = (status, blockTimestamp) => {
     const shouldSupersede =
-      oracle.lastReportedRound === reportingRoundId ||
+      status.lastReportedRound === reportingRoundId ||
       !acceptingSubmissions(reportingRoundId);
     // Instead of nudging oracleStatuses to submit to the next round, the inclusion of
     // the shouldSupersede Boolean in the if condition pushes them towards
@@ -581,7 +580,7 @@ const start = async (zcf, privateArgs) => {
     let eligibleToSubmit;
     if (canSupersede && shouldSupersede) {
       roundId = add(reportingRoundId, 1);
-      eligibleToSubmit = delayed(oracleId, roundId);
+      eligibleToSubmit = delayed(status, roundId);
     } else {
       roundId = reportingRoundId;
       eligibleToSubmit = acceptingSubmissions(roundId);
@@ -599,7 +598,7 @@ const start = async (zcf, privateArgs) => {
       roundTimeout = 0;
     }
 
-    const error = validateOracleRound(oracleId, roundId, blockTimestamp);
+    const error = validateOracleRound(status, roundId, blockTimestamp);
     if (error !== null) {
       eligibleToSubmit = false;
     }
@@ -607,7 +606,7 @@ const start = async (zcf, privateArgs) => {
     return {
       eligibleForSpecificRound: eligibleToSubmit,
       queriedRoundId: roundId,
-      oracleStatus: oracle.latestSubmission,
+      oracleStatus: status.latestSubmission,
       startedAt,
       roundTimeout,
       oracleCount: oracleCount(),
@@ -615,22 +614,70 @@ const start = async (zcf, privateArgs) => {
   };
 
   /**
-   * @param {string} oracleId
+   * @param {OracleStatus} status
    * @param {bigint} queriedRoundId
    * @param {Timestamp} blockTimestamp
    */
-  const eligibleForSpecificRound = (
-    oracleId,
-    queriedRoundId,
-    blockTimestamp,
-  ) => {
-    const error = validateOracleRound(oracleId, queriedRoundId, blockTimestamp);
+  const eligibleForSpecificRound = (status, queriedRoundId, blockTimestamp) => {
+    const error = validateOracleRound(status, queriedRoundId, blockTimestamp);
     if (TimeMath.absValue(rounds.get(queriedRoundId).startedAt) > 0n) {
       return acceptingSubmissions(queriedRoundId) && error === null;
     } else {
-      return delayed(oracleId, queriedRoundId) && error === null;
+      return delayed(status, queriedRoundId) && error === null;
     }
   };
+
+  const roundPowers = Far('price aggregator powers', {
+    /**
+     * push a unitPrice result from this oracle
+     *
+     * @param {OracleStatus} status
+     * @param {PriceRound} result
+     */
+    handlePush: async (
+      status,
+      { roundId: roundIdRaw = undefined, unitPrice: valueRaw },
+    ) => {
+      const value = Nat(valueRaw);
+      value >= minSubmissionValue ||
+        Fail`value below minSubmissionValue ${q(minSubmissionValue)}`;
+      value <= maxSubmissionValue ||
+        Fail`value above maxSubmissionValue ${q(maxSubmissionValue)}`;
+
+      const blockTimestamp = await E(timer).getCurrentTimestamp();
+
+      let roundId;
+      if (roundIdRaw === undefined) {
+        const suggestedRound = oracleRoundStateSuggestRound(
+          status,
+          blockTimestamp,
+        );
+        roundId = suggestedRound.eligibleForSpecificRound
+          ? suggestedRound.queriedRoundId
+          : add(suggestedRound.queriedRoundId, 1);
+      } else {
+        roundId = Nat(roundIdRaw);
+      }
+
+      const errorMsg = validateOracleRound(status, roundId, blockTimestamp);
+
+      if (!(errorMsg === null)) {
+        assert.fail(errorMsg);
+      }
+
+      const proposedStatus = proposeNewRound(roundId, status, blockTimestamp);
+      const settledStatus = recordSubmission(
+        value,
+        roundId,
+        proposedStatus || status,
+      );
+
+      updateRoundAnswer(roundId, blockTimestamp);
+      deleteRoundDetails(roundId);
+
+      return settledStatus;
+    },
+  });
 
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
     /**
@@ -676,76 +723,25 @@ const start = async (zcf, privateArgs) => {
     },
     /** @param {string} oracleId */
     deleteOracle: async oracleId => {
-      oracleStatuses.delete(oracleId);
+      // FIXME how to GC and remove its powers?
+      oracles.delete(oracleId);
     },
 
-    /**
-     * @param {string} oracleId unique per contract instance
-     */
+    /** @param {string} oracleId */
     async initOracle(oracleId) {
       assert.typeof(oracleId, 'string');
 
-      oracleStatuses.init(
-        oracleId,
+      const oracleAdmin = makeOracleAdmin(
         harden({
-          lastReportedRound: 0n,
-          lastStartedRound: 0n,
-          latestSubmission: 0n,
-          index: oracleStatuses.getSize(),
+          minSubmissionValue,
+          maxSubmissionValue,
+          roundPowers,
+          timer,
         }),
       );
+      oracles.init(oracleId, oracleAdmin);
 
-      const oracleAdmin = Far('OracleAdmin', {
-        /**
-         * push a unitPrice result from this oracle
-         *
-         * @param {PriceRound} result
-         */
-        async pushPrice({
-          roundId: roundIdRaw = undefined,
-          unitPrice: valueRaw,
-        }) {
-          const value = Nat(valueRaw);
-
-          value >= minSubmissionValue ||
-            Fail`value below minSubmissionValue ${q(minSubmissionValue)}`;
-          value <= maxSubmissionValue ||
-            Fail`value above maxSubmissionValue ${q(maxSubmissionValue)}`;
-
-          const blockTimestamp = await E(timer).getCurrentTimestamp();
-
-          let roundId;
-          if (roundIdRaw === undefined) {
-            const suggestedRound = oracleRoundStateSuggestRound(
-              oracleId,
-              blockTimestamp,
-            );
-            roundId = suggestedRound.eligibleForSpecificRound
-              ? suggestedRound.queriedRoundId
-              : add(suggestedRound.queriedRoundId, 1);
-          } else {
-            roundId = Nat(roundIdRaw);
-          }
-
-          const errorMsg = validateOracleRound(
-            oracleId,
-            roundId,
-            blockTimestamp,
-          );
-
-          if (!(errorMsg === null)) {
-            assert.fail(errorMsg);
-          }
-
-          proposeNewRound(roundId, oracleId, blockTimestamp);
-          recordSubmission(value, roundId, oracleId);
-
-          updateRoundAnswer(roundId, blockTimestamp);
-          deleteRoundDetails(roundId);
-        },
-      });
-
-      return harden(oracleAdmin);
+      return oracleAdmin;
     },
 
     /**
@@ -778,28 +774,29 @@ const start = async (zcf, privateArgs) => {
      * a method to provide all current info oracleStatuses need. Intended only
      * only to be callable by oracleStatuses. Not for use by contracts to read state.
      *
-     * @param {string} oracleId unique per contract instance
+     * @param {string} oracleId
      * @param {bigint} queriedRoundId
      */
     async oracleRoundState(oracleId, queriedRoundId) {
       const blockTimestamp = await E(timer).getCurrentTimestamp();
+      const status = await E(oracles.get(oracleId)).getStatus();
       if (queriedRoundId > 0) {
         const round = rounds.get(queriedRoundId);
         const detail = details.get(queriedRoundId);
         return {
           eligibleForSpecificRound: eligibleForSpecificRound(
-            oracleId,
+            status,
             queriedRoundId,
             blockTimestamp,
           ),
           queriedRoundId,
-          oracleStatus: oracleStatuses.get(oracleId).latestSubmission,
+          oracleStatus: status.latestSubmission,
           startedAt: round.startedAt,
           roundTimeout: detail.roundTimeout,
           oracleCount: oracleCount(),
         };
       } else {
-        return oracleRoundStateSuggestRound(oracleId, blockTimestamp);
+        return oracleRoundStateSuggestRound(status, blockTimestamp);
       }
     },
   });
