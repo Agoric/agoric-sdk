@@ -184,6 +184,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   },
   [addBankAssets.name]: {
     consume: {
+      agoricNamesAdmin: true,
       initialSupply: true,
       bridgeManager: true,
       // TODO: re-org loadCriticalVat to be subject to permits

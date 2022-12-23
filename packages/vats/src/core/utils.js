@@ -31,6 +31,10 @@ export const agoricNamesReserved = harden({
     Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
   },
+  vbankAsset: {
+    [Stake.denom]: Stake.proposedName,
+    [Stable.denom]: Stable.proposedName,
+  },
   installation: {
     centralSupply: 'central supply',
     mintHolder: 'mint holder',

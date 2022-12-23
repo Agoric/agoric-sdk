@@ -95,6 +95,13 @@ const makePurseController = (
  */
 
 /**
+ * @typedef { AssetDescriptor & {
+ *   issuer: Issuer<'nat'>, // settled identity
+ *   displayInfo: DisplayInfo,
+ * }} AssetInfo
+ */
+
+/**
  * @typedef {object} Bank
  * @property {() => Subscription<AssetDescriptor>} getAssetSubscription Returns
  * assets as they are added to the bank
@@ -108,8 +115,13 @@ export function buildRootObject() {
      * @param {ERef<import('./types.js').BridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
+     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdmin] update facet of
+     *   a NameAdmin; see addAsset() for detail.
      */
-    async makeBankManager(bankBridgeManagerP = undefined) {
+    async makeBankManager(
+      bankBridgeManagerP = undefined,
+      nameAdmin = undefined,
+    ) {
       const bankBridgeManager = await bankBridgeManagerP;
       /** @type {WeakStore<Brand, AssetRecord>} */
       const brandToAssetRecord = makeWeakStore('brand');
@@ -319,6 +331,10 @@ export function buildRootObject() {
 
         /**
          * Add an asset to the bank, and publish it to the subscriptions.
+         * If nameAdmin is defined, update with denom to AssetInfo entry.
+         *
+         * Note that AssetInfo has the settled identity of the issuer,
+         * not just a promise for it.
          *
          * @param {string} denom lower-level denomination string
          * @param {string} issuerName
@@ -361,6 +377,26 @@ export function buildRootObject() {
               proposedName,
             }),
           );
+
+          if (nameAdmin) {
+            // publish settled issuer identity
+            void Promise.all([kit.issuer, E(kit.brand).getDisplayInfo()]).then(
+              ([issuer, displayInfo]) =>
+                E(nameAdmin).update(
+                  denom,
+                  /** @type { AssetInfo } */ (
+                    harden({
+                      brand,
+                      issuer,
+                      issuerName,
+                      denom,
+                      proposedName,
+                      displayInfo,
+                    })
+                  ),
+                ),
+            );
+          }
         },
         getBankForAddress,
       });

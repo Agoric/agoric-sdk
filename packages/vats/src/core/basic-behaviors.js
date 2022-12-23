@@ -355,7 +355,13 @@ harden(mintInitialSupply);
  * }} powers
  */
 export const addBankAssets = async ({
-  consume: { initialSupply, bridgeManager, loadCriticalVat, zoe },
+  consume: {
+    agoricNamesAdmin,
+    initialSupply,
+    bridgeManager,
+    loadCriticalVat,
+    zoe,
+  },
   produce: { bankManager, bldIssuerKit },
   installation: {
     consume: { mintHolder },
@@ -385,8 +391,13 @@ export const addBankAssets = async ({
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
   bldIssuerKit.resolve(bldKit);
 
+  const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
+  const nameUpdater = Far('AssetHub', {
+    update: (name, val) => E(assetAdmin).update(name, val),
+  });
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bridgeManager,
+    nameUpdater,
   );
   bankManager.resolve(bankMgr);
 
