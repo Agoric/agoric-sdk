@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   buildVatController,
@@ -20,7 +20,7 @@ test.serial('replay does not resurrect dead vat', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const kernelStorage1 = initSwingStore().kernelStorage;
+  const { kernelStorage: kernelStorage1, debug: debug1 } = initSwingStore();
   {
     const c1 = await buildVatController(config, [], {
       kernelStorage: kernelStorage1,
@@ -32,10 +32,10 @@ test.serial('replay does not resurrect dead vat', async t => {
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
   }
 
-  const state1 = getAllState(kernelStorage1);
-  const kernelStorage2 = initSwingStore().kernelStorage;
+  const state1 = debug1.getAllState();
+  const { kernelStorage: kernelStorage2, debug: debug2 } = initSwingStore();
   // XXX TODO also copy transcripts
-  setAllState(kernelStorage2, state1);
+  debug2.setAllState(state1);
   {
     const c2 = await buildVatController(config, [], {
       kernelStorage: kernelStorage2,

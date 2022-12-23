@@ -8,7 +8,6 @@ import test from 'ava';
 import {
   initSwingStore,
   openSwingStore,
-  getAllState,
   isSwingStore,
 } from '../src/swingStore.js';
 
@@ -27,8 +26,9 @@ const tmpDir = prefix =>
     });
   });
 
-function testKVStore(t, kernelStorage) {
-  const kvStore = kernelStorage.kvStore;
+function testKVStore(t, storage) {
+  const { kernelStorage, debug } = storage;
+  const { kvStore } = kernelStorage;
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -59,33 +59,29 @@ function testKVStore(t, kernelStorage) {
     },
     streamStuff: new Map(),
   };
-  t.deepEqual(
-    getAllState(kernelStorage),
-    reference,
-    'check state after changes',
-  );
+  t.deepEqual(debug.getAllState(), reference, 'check state after changes');
 }
 
 test('in-memory kvStore read/write', t => {
-  testKVStore(t, initSwingStore(null).kernelStorage);
+  testKVStore(t, initSwingStore(null));
 });
 
 test('persistent kvStore read/write/re-open', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  const storage = initSwingStore(dbDir);
+  const { hostStorage, debug } = storage;
   const { commit, close } = hostStorage;
-  testKVStore(t, kernelStorage);
+  testKVStore(t, storage);
   await commit();
-  const before = getAllState(kernelStorage);
+  const before = debug.getAllState();
   await close();
   t.is(isSwingStore(dbDir), true);
 
-  const { kernelStorage: kernelStorage2, hostStorage: hostStorage2 } =
-    openSwingStore(dbDir);
+  const { hostStorage: hostStorage2, debug: debug2 } = openSwingStore(dbDir);
   const { close: close2 } = hostStorage2;
-  t.deepEqual(getAllState(kernelStorage2), before, 'check state after reread');
+  t.deepEqual(debug2.getAllState(), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
   await close2();
 });

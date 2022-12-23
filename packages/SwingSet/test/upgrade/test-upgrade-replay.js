@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -45,7 +45,7 @@ test('replay after upgrade', async t => {
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
 
-  const kernelStorage1 = initSwingStore().kernelStorage;
+  const { kernelStorage: kernelStorage1, debug: debug1 } = initSwingStore();
   {
     await initializeSwingset(copy(config), [], kernelStorage1, initOpts);
     const c1 = await makeSwingsetController(kernelStorage1, {}, runtimeOpts);
@@ -66,9 +66,9 @@ test('replay after upgrade', async t => {
   }
 
   // copy the store just to be sure
-  const state1 = getAllState(kernelStorage1);
-  const kernelStorage2 = initSwingStore().kernelStorage;
-  setAllState(kernelStorage2, state1);
+  const state1 = debug1.getAllState();
+  const { kernelStorage: kernelStorage2, debug: debug2 } = initSwingStore();
+  debug2.setAllState(state1);
   {
     const c2 = await makeSwingsetController(kernelStorage2, {}, runtimeOpts);
     t.teardown(c2.shutdown);

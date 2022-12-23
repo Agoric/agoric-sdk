@@ -50,7 +50,6 @@ export function makeSnapStoreIO() {
  *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
  *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => IterableIterator<string>,
  *   closeStream: (streamName: string) => void,
- *   dumpStreams: () => any,
  *   STREAM_START: StreamPosition,
  * }} StreamStore
  *
@@ -74,8 +73,15 @@ export function makeSnapStoreIO() {
  * }} SwingStoreHostStorage
  *
  * @typedef {{
+ *   dumpStreams: () => any,
+ *   getAllState: () => { kvStuff: Record<string, string>, streamStuff: Map<string, Array<string>> },
+ *   setAllState: (stuff: { kvStuff: Record<string, string>, streamStuff: Map<string, Array<[number, *]>> }) => void,
+ * }} SwingStoreDebugTools
+ *
+ * @typedef {{
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
+ *  debug: SwingStoreDebugTools,
  * }} SwingStore
  */
 
@@ -427,7 +433,7 @@ function makeSwingStore(dirPath, forceReset, options) {
     },
   };
 
-  const streamStore = makeSQLStreamStore(db, ensureTxn);
+  const { dumpStreams, ...streamStore } = makeSQLStreamStore(db, ensureTxn);
   let snapStore;
 
   if (dirPath) {
@@ -541,6 +547,56 @@ function makeSwingStore(dirPath, forceReset, options) {
     stopTrace();
   }
 
+  /**
+   * Produce a representation of all the state found in a swing store.
+   *
+   * WARNING: This is a helper function intended for use in testing and debugging.
+   * It extracts *everything*, and does so in the simplest and stupidest possible
+   * way, hence it is likely to be a performance and memory hog if you attempt to
+   * use it on anything real.
+   *
+   * @returns {{
+   *   kvStuff: Record<string, string>,
+   *   streamStuff: Map<string, Array<string>>,
+   * }}  A crude representation of all of the state of `kernelStorage`
+   */
+  function getAllState() {
+    /** @type { Record<string, string> } */
+    const kvStuff = {};
+    for (const key of Array.from(kernelKVStore.getKeys('', ''))) {
+      // @ts-expect-error get(key) of key from getKeys() is not undefined
+      kvStuff[key] = kernelKVStore.get(key);
+    }
+    const streamStuff = dumpStreams();
+    return { kvStuff, streamStuff };
+  }
+
+  /**
+   * Stuff a bunch of state into a swing store.
+   *
+   * WARNING: This is intended to support testing and should not be used as a
+   * general store initialization mechanism.  In particular, note that it does not
+   * bother to remove any pre-existing state from the store that it is given.
+   *
+   * @param {{
+   *   kvStuff: Record<string, string>,
+   *   streamStuff: Map<string, Array<[number, *]>>,
+   * }} stuff  The state to stuff into `kernelStorage`
+   */
+  function setAllState(stuff) {
+    const { kvStuff, streamStuff } = stuff;
+    for (const k of Object.getOwnPropertyNames(kvStuff)) {
+      kernelKVStore.set(k, kvStuff[k], true);
+    }
+    for (const [streamName, stream] of streamStuff.entries()) {
+      for (const [pos, item] of stream) {
+        const position = { itemCount: pos };
+        streamStore.writeStreamItem(streamName, item, position);
+      }
+      streamStore.closeStream(streamName);
+    }
+  }
+
   const kernelStorage = {
     kvStore: kernelKVStore,
     streamStore,
@@ -558,10 +614,16 @@ function makeSwingStore(dirPath, forceReset, options) {
     close,
     diskUsage,
   };
+  const debug = {
+    dumpStreams,
+    getAllState,
+    setAllState,
+  };
 
   return harden({
     kernelStorage,
     hostStorage,
+    debug,
   });
 }
 
@@ -625,59 +687,4 @@ export function isSwingStore(dirPath) {
     }
   }
   return false;
-}
-
-/**
- * Produce a representation of all the state found in a swing store.
- *
- * WARNING: This is a helper function intended for use in testing and debugging.
- * It extracts *everything*, and does so in the simplest and stupidest possible
- * way, hence it is likely to be a performance and memory hog if you attempt to
- * use it on anything real.
- *
- * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be extracted.
- *
- * @returns {{
- *   kvStuff: Record<string, string>,
- *   streamStuff: Map<string, Array<string>>,
- * }}  A crude representation of all of the state of `kernelStorage`
- */
-export function getAllState(kernelStorage) {
-  const { kvStore, streamStore } = kernelStorage;
-  /** @type { Record<string, string> } */
-  const kvStuff = {};
-  for (const key of Array.from(kvStore.getKeys('', ''))) {
-    // @ts-expect-error get(key) of key from getKeys() is not undefined
-    kvStuff[key] = kvStore.get(key);
-  }
-  const streamStuff = streamStore.dumpStreams();
-  return { kvStuff, streamStuff };
-}
-
-/**
- * Stuff a bunch of state into a swing store.
- *
- * WARNING: This is intended to support testing and should not be used as a
- * general store initialization mechanism.  In particular, note that it does not
- * bother to remove any pre-existing state from the store that it is given.
- *
- * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be set.
- * @param {{
- *   kvStuff: Record<string, string>,
- *   streamStuff: Map<string, Array<[number, *]>>,
- * }} stuff  The state to stuff into `kernelStorage`
- */
-export function setAllState(kernelStorage, stuff) {
-  const { kvStore, streamStore } = kernelStorage;
-  const { kvStuff, streamStuff } = stuff;
-  for (const k of Object.getOwnPropertyNames(kvStuff)) {
-    kvStore.set(k, kvStuff[k], true);
-  }
-  for (const [streamName, stream] of streamStuff.entries()) {
-    for (const [pos, item] of stream) {
-      const position = { itemCount: pos };
-      streamStore.writeStreamItem(streamName, item, position);
-    }
-    streamStore.closeStream(streamName);
-  }
 }

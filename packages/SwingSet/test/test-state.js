@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { createHash } from 'crypto';
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
@@ -70,17 +70,17 @@ async function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', async t => {
-  const kernelStorage = initSwingStore(null).kernelStorage;
+  const { kernelStorage, debug } = initSwingStore(null);
   await testStorage(
     t,
     kernelStorage.kvStore,
-    () => getAllState(kernelStorage).kvStuff,
+    () => debug.getAllState().kvStuff,
     null,
   );
 });
 
 test('storage helpers', t => {
-  const kernelStorage = initSwingStore(null).kernelStorage;
+  const { kernelStorage, debug } = initSwingStore(null);
   const kv = kernelStorage.kvStore;
 
   kv.set('foo.0', 'f0');
@@ -89,7 +89,7 @@ test('storage helpers', t => {
   kv.set('foo.3', 'f3');
   // omit foo.4
   kv.set('foo.5', 'f5');
-  checkState(t, () => getAllState(kernelStorage).kvStuff, [
+  checkState(t, () => debug.getAllState().kvStuff, [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
     ['foo.2', 'f2'],
@@ -114,20 +114,20 @@ test('storage helpers', t => {
   // zero, so if there is a gap in the key sequence (e.g., 'foo.4' in the
   // above), they stop counting when they hit it
   t.truthy(kv.has('foo.5'));
-  checkState(t, () => getAllState(kernelStorage).kvStuff, [['foo.5', 'f5']]);
+  checkState(t, () => debug.getAllState().kvStuff, [['foo.5', 'f5']]);
 });
 
 function buildKeeperStorageInMemory() {
-  const kernelStorage = initSwingStore(null).kernelStorage;
+  const { kernelStorage, debug } = initSwingStore(null);
   return {
-    getState: () => getAllState(kernelStorage).kvStuff,
+    getState: () => debug.getAllState().kvStuff,
     ...kernelStorage,
   };
 }
 
 function duplicateKeeper(getState) {
-  const kernelStorage = initSwingStore(null).kernelStorage;
-  setAllState(kernelStorage, { kvStuff: getState(), streamStuff: new Map() });
+  const { kernelStorage, debug } = initSwingStore(null);
+  debug.setAllState({ kvStuff: getState(), streamStuff: new Map() });
   const kernelKeeper = makeKernelKeeper(kernelStorage, null);
   kernelKeeper.loadStats();
   return kernelKeeper;

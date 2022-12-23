@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { buildTimer } from '../src/devices/timer/timer.js';
 
@@ -38,7 +38,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   const deviceEndowments1 = {
     timer: { ...timer1.endowments },
   };
-  const ks1 = initSwingStore().kernelStorage;
+  const { kernelStorage: ks1, debug: debug1 } = initSwingStore();
   // console.log(`--c1 build`);
   await initializeSwingset(config, [], ks1);
   const c1 = await makeSwingsetController(ks1, deviceEndowments1);
@@ -49,7 +49,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   await c1.run();
 
   // console.log(`--c1 getAllState`);
-  const state = getAllState(ks1);
+  const state = debug1.getAllState();
   // console.log(`ah: ${c1.getActivityhash()}`);
 
   // console.log(`--c1 poll1`);
@@ -70,8 +70,8 @@ test.serial('restarting kernel does not change activityhash', async t => {
   const deviceEndowments2 = {
     timer: { ...timer2.endowments },
   };
-  const ks2 = initSwingStore().kernelStorage;
-  setAllState(ks2, state);
+  const { kernelStorage: ks2, debug: debug2 } = initSwingStore();
+  debug2.setAllState(state);
   // console.log(`--c2 build`);
   const c2 = await makeSwingsetController(ks2, deviceEndowments2);
   // console.log(`ah: ${c2.getActivityhash()}`);
@@ -102,14 +102,14 @@ test.serial('comms initialize is deterministic', async t => {
   const config = {};
   config.bootstrap = 'bootstrap';
   config.vats = { bootstrap: { sourceSpec } };
-  const ks1 = initSwingStore().kernelStorage;
+  const { kernelStorage: ks1, debug: debug1 } = initSwingStore();
   await initializeSwingset(config, [], ks1);
   const c1 = await makeSwingsetController(ks1, {});
   c1.pinVatRoot('bootstrap');
   // the bootstrap message will cause comms to initialize itself
   await c1.run();
 
-  const state = getAllState(ks1);
+  const state = debug1.getAllState();
 
   // but the second message should not
   c1.queueToVatRoot('bootstrap', 'addRemote', ['remote2']);
@@ -118,8 +118,8 @@ test.serial('comms initialize is deterministic', async t => {
   await c1.shutdown();
 
   // a kernel restart is loading a new kernel from the same state
-  const ks2 = initSwingStore().kernelStorage;
-  setAllState(ks2, state);
+  const { kernelStorage: ks2, debug: debug2 } = initSwingStore();
+  debug2.setAllState(state);
   const c2 = await makeSwingsetController(ks2, {});
 
   // the "am I already initialized?" check must be identical to the

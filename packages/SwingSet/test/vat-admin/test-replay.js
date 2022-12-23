@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { kser } from '../../src/lib/kmarshal.js';
 
@@ -31,7 +31,7 @@ test.serial('replay dynamic vat', async t => {
   };
 
   // XXX TODO: also copy and check transcripts
-  const kernelStorage1 = initSwingStore().kernelStorage;
+  const { kernelStorage: kernelStorage1, debug: debug1 } = initSwingStore();
   {
     const c1 = await buildVatController(copy(config), [], {
       kernelStorage: kernelStorage1,
@@ -48,9 +48,9 @@ test.serial('replay dynamic vat', async t => {
   // we could re-use the Storage object, but I'll be paranoid and create a
   // new one.
 
-  const state1 = getAllState(kernelStorage1);
-  const kernelStorage2 = initSwingStore().kernelStorage;
-  setAllState(kernelStorage2, state1);
+  const state1 = debug1.getAllState();
+  const { kernelStorage: kernelStorage2, debug: debug2 } = initSwingStore();
+  debug2.setAllState(state1);
   {
     const c2 = await buildVatController(copy(config), [], {
       kernelStorage: kernelStorage2,

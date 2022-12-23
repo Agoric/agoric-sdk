@@ -8,22 +8,11 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
-}
-
-// eslint-disable-next-line no-unused-vars
-function dumpState(kernelStorage, vatID) {
-  const s = getAllState(kernelStorage).kvStuff;
-  const keys = Array.from(Object.keys(s)).sort();
-  for (const k of keys) {
-    if (k.startsWith(`${vatID}.vs.`)) {
-      console.log(k, s[k]);
-    }
-  }
 }
 
 async function testPromiseWatcher(t) {
