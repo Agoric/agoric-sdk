@@ -25,6 +25,7 @@ const { keys, values, fromEntries } = Object;
  * @template V
  */
 const allValues = async obj =>
+  // eslint-disable-next-line @jessie.js/no-nested-await
   fromEntries(zip(keys(obj), await Promise.all(values(obj))));
 
 const bundleRelative = rel =>
@@ -172,6 +173,7 @@ export function loadBasedir(basedir, options = {}) {
  */
 async function resolveSpecFromConfig(referrer, specPath) {
   try {
+    // eslint-disable-next-line @jessie.js/no-nested-await
     return new URL(await resolveModuleSpecifier(specPath, referrer)).pathname;
   } catch (e) {
     if (e.code !== 'MODULE_NOT_FOUND' && e.code !== 'ERR_MODULE_NOT_FOUND') {
@@ -235,7 +237,9 @@ export async function loadSwingsetConfigFile(configPath) {
       configPath,
       `file:///${process.cwd()}/`,
     ).toString();
+    // eslint-disable-next-line @jessie.js/no-nested-await
     await normalizeConfigDescriptor(config.vats, referrer, true);
+    // eslint-disable-next-line @jessie.js/no-nested-await
     await normalizeConfigDescriptor(config.bundles, referrer, false);
     // await normalizeConfigDescriptor(config.devices, referrer, true); // TODO: represent devices
     config.bootstrap || Fail`no designated bootstrap vat in ${configPath}`;
@@ -251,8 +255,8 @@ export async function loadSwingsetConfigFile(configPath) {
   }
 }
 
-export function swingsetIsInitialized(hostStorage) {
-  return !!hostStorage.kvStore.get('initialized');
+export function swingsetIsInitialized(kernelStorage) {
+  return !!kernelStorage.kvStore.get('initialized');
 }
 
 /**
@@ -280,20 +284,21 @@ function sortObjectProperties(obj, firsts = []) {
 /**
  * @param {SwingSetConfig} config
  * @param {string[]} argv
- * @param {HostStore} hostStorage
+ * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
   config,
   argv = [],
-  hostStorage,
+  kernelStorage,
   initializationOptions = {},
   runtimeOptions = {},
 ) {
-  const kvStore = hostStorage.kvStore;
+  const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
-  !swingsetIsInitialized(hostStorage) || Fail`kernel store already initialized`;
+  !swingsetIsInitialized(kernelStorage) ||
+    Fail`kernel store already initialized`;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));
@@ -517,5 +522,5 @@ export async function initializeSwingset(
   if (verbose) {
     kdebugEnable(true);
   }
-  return initializeKernel(kconfig, hostStorage);
+  return initializeKernel(kconfig, kernelStorage);
 }

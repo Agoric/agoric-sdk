@@ -19,6 +19,7 @@ import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
+import { start } from '../../../src/contracts/priceAggregator.js';
 
 import '../../../src/contracts/exported.js';
 import {
@@ -36,10 +37,29 @@ import {
  */
 
 /**
+ * Type to refine the `timer` term used in tests
+ *
+ * @param {ZCF<{
+ * timer: ManualTimer,
+ * POLL_INTERVAL: bigint,
+ * brandIn: Brand<'nat'>,
+ * brandOut: Brand<'nat'>,
+ * unitAmountIn: Amount<'nat'>,
+ * }>} zcf
+ * @param {{
+ * marshaller: Marshaller,
+ * quoteMint?: ERef<Mint<'set'>>,
+ * storageNode: StorageNode,
+ * }} privateArgs
+ */
+// eslint-disable-next-line no-unused-vars -- used for typedef
+const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
+
+/**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: Instance, mockStorageRoot: import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  */
@@ -69,9 +89,8 @@ const makePublicationChecker = async (t, aggregatorPublicFacet) => {
     /** @param {{timestamp: bigint, amountOut: any}} spec */
     async nextMatches({ timestamp, amountOut }) {
       const { value } = await E(publications).next();
-      const quoteValue = value.quoteAmount.value[0];
-      t.is(quoteValue.timestamp, timestamp, 'wrong timestamp');
-      t.is(quoteValue.amountOut.value, amountOut, 'wrong amountOut value');
+      t.is(value.timestamp, timestamp, 'wrong timestamp');
+      t.is(value.amountOut.value, amountOut, 'wrong amountOut value');
     },
   };
 };
@@ -98,6 +117,7 @@ test.before('setup aggregator and oracles', async t => {
   /** @type {Installation<import('../../../src/contracts/oracle.js').OracleStart>} */
   const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
+  /** @type {Installation<import('../../../src/contracts/priceAggregator.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$ATOM');
@@ -165,8 +185,7 @@ test.before('setup aggregator and oracles', async t => {
         storageNode: E(storageNode).makeChildNode('ATOM-USD_price_feed'),
       },
     );
-    aggregator.mockStorageRoot = storageRoot;
-    return aggregator;
+    return { ...aggregator, mockStorageRoot: storageRoot };
   };
   t.context.zoe = zoe;
   t.context.makeFakePriceOracle = makeFakePriceOracle;
@@ -540,7 +559,7 @@ test('oracle continuing invitation', async t => {
   const or1 = E(zoe).offer(inv1, undefined, undefined, { notifier: oracle1 });
   const oracleAdmin1 = E(or1).getOfferResult();
   const invitationMakers = await E.get(oracleAdmin1).invitationMakers;
-  t.true('makePushPriceInvitation' in invitationMakers);
+  t.true('PushPrice' in invitationMakers);
 
   const amountIn = AmountMath.make(brandIn, 1000000n);
   const makeQuoteValue = (timestamp, valueOut) => [
@@ -556,7 +575,7 @@ test('oracle continuing invitation', async t => {
     E(aggregator.publicFacet).getPriceAuthority(),
   ).makeQuoteNotifier(amountIn, brandOut);
 
-  const invPrice = await E(invitationMakers).makePushPriceInvitation('1234');
+  const invPrice = await E(invitationMakers).PushPrice('1234');
   const invPriceResult = await E(zoe).offer(invPrice);
   t.deepEqual(await E(invPriceResult).numWantsSatisfied(), 1);
 
@@ -1076,21 +1095,13 @@ test('storage', async t => {
       'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
     ),
     {
-      quoteAmount: {
-        brand: { iface: 'Alleged: quote brand' },
-        value: [
-          {
-            amountIn: { brand: { iface: 'Alleged: $ATOM brand' }, value: 1n },
-            amountOut: {
-              brand: { iface: 'Alleged: $USD brand' },
-              value: 1020n,
-            },
-            timer: { iface: 'Alleged: ManualTimer' },
-            timestamp: 1n,
-          },
-        ],
+      amountIn: { brand: { iface: 'Alleged: $ATOM brand' }, value: 1n },
+      amountOut: {
+        brand: { iface: 'Alleged: $USD brand' },
+        value: 1020n,
       },
-      quotePayment: { iface: 'Alleged: quote payment' },
+      timer: { iface: 'Alleged: ManualTimer' },
+      timestamp: 1n,
     },
   );
 });

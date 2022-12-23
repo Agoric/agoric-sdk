@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -9,6 +9,7 @@ import {
   getAmountOut,
   ceilMultiplyBy,
   getTimestamp,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 
 import { scheduleLiquidation } from './scheduleLiquidation.js';
@@ -52,9 +53,7 @@ export const makeBorrowInvitation = (zcf, config) => {
     // Assert the required collateral was escrowed.
     const requiredMargin = ceilMultiplyBy(loanWanted, mmr);
     AmountMath.isGTE(collateralPriceInLoanBrand, requiredMargin) ||
-      assert.fail(
-        X`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`,
-      );
+      Fail`The required margin is ${requiredMargin.value}% but collateral only had value of ${collateralPriceInLoanBrand.value}`;
 
     const timestamp = getTimestamp(quote);
 
@@ -69,22 +68,19 @@ export const makeBorrowInvitation = (zcf, config) => {
 
     // Assert that loanWanted <= maxLoan
     AmountMath.isGTE(maxLoan, loanWanted) ||
-      assert.fail(
-        X`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`,
-      );
+      Fail`The wanted loan ${loanWanted} must be below or equal to the maximum possible loan ${maxLoan}`;
 
     const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
 
-    // Transfer the wanted Loan amount to the borrower
-    borrowerSeat.incrementBy(
-      lenderSeat.decrementBy(harden({ Loan: loanWanted })),
+    atomicRearrange(
+      zcf,
+      harden([
+        // Transfer the wanted Loan amount to the borrower
+        [lenderSeat, borrowerSeat, { Loan: loanWanted }],
+        // Transfer *all* collateral to the collateral seat.
+        [borrowerSeat, collateralSeat, { Collateral: collateralGiven }],
+      ]),
     );
-
-    // Transfer *all* collateral to the collateral seat.
-    collateralSeat.incrementBy(
-      borrowerSeat.decrementBy(harden({ Collateral: collateralGiven })),
-    );
-    zcf.reallocate(lenderSeat, borrowerSeat, collateralSeat);
 
     // We now exit the borrower seat so that the borrower gets their
     // loan. However, the borrower gets an object as their offerResult

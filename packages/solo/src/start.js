@@ -177,8 +177,7 @@ const buildSwingset = async (
     serviceName: TELEMETRY_SERVICE_NAME,
   });
 
-  const { LMDB_MAP_SIZE, SWING_STORE_TRACE, XSNAP_KEEP_SNAPSHOTS } = env;
-  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
+  const { SWING_STORE_TRACE, XSNAP_KEEP_SNAPSHOTS } = env;
 
   const defaultTraceFile = path.resolve(kernelStateDBDir, 'store-trace.log');
   let swingStoreTraceFile;
@@ -199,15 +198,10 @@ const buildSwingset = async (
   const keepSnapshots =
     XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-    { mapSize, traceFile: swingStoreTraceFile, keepSnapshots },
-  );
-  const hostStorage = {
-    kvStore,
-    streamStore,
-    snapStore,
-  };
+  const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
+    traceFile: swingStoreTraceFile,
+    keepSnapshots,
+  });
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-solo');
@@ -215,11 +209,11 @@ const buildSwingset = async (
     metricMeter,
   });
 
-  if (!swingsetIsInitialized(hostStorage)) {
+  if (!swingsetIsInitialized(kernelStorage)) {
     if (defaultManagerType && !config.defaultManagerType) {
       config.defaultManagerType = defaultManagerType;
     }
-    await initializeSwingset(config, argv, hostStorage);
+    await initializeSwingset(config, argv, kernelStorage);
   }
   const slogSender = await makeSlogSender({
     stateDir: kernelStateDBDir,
@@ -227,7 +221,7 @@ const buildSwingset = async (
     env,
   });
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     deviceEndowments,
     { env, slogCallbacks, slogSender },
   );
@@ -241,7 +235,7 @@ const buildSwingset = async (
   async function saveState() {
     const ms = JSON.stringify(mbs.exportToData());
     await atomicReplaceFile(mailboxStateFile, ms);
-    await commit();
+    await hostStorage.commit();
   }
 
   function deliverOutbound() {

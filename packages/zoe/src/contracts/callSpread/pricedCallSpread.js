@@ -10,11 +10,12 @@ import {
   assertNatAssetKind,
   makeRatio,
   ceilMultiplyBy,
+  atomicRearrange,
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 const PERCENT_BASE = 100n;
 const BASIS_POINTS = 10000n;
@@ -121,7 +122,7 @@ const start = zcf => {
 
       // assert that the allocation includes the amount of collateral required
       AmountMath.isEqual(newCollateral, deposit) ||
-        assert.fail(X`Collateral required: ${deposit.value}`);
+        Fail`Collateral required: ${deposit.value}`;
 
       // assert that the requested option was the right one.
       assert(
@@ -130,12 +131,13 @@ const start = zcf => {
         'wanted option not a match',
       );
 
-      depositSeat.incrementBy(collateralSeat.decrementBy(harden(spreadAmount)));
-      collateralSeat.incrementBy(
-        depositSeat.decrementBy(harden({ Collateral: newCollateral })),
+      atomicRearrange(
+        zcf,
+        harden([
+          [collateralSeat, depositSeat, spreadAmount],
+          [depositSeat, collateralSeat, { Collateral: newCollateral }],
+        ]),
       );
-
-      zcf.reallocate(collateralSeat, depositSeat);
       depositSeat.exit();
     };
 

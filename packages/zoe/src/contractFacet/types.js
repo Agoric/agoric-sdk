@@ -22,7 +22,8 @@
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  *
- * @property {Reallocate} reallocate - reallocate amounts among seats
+ * @property {Reallocate} reallocate - reallocate amounts among seats.
+ * Deprecated: Use atomicRearrange instead.
  * @property {(keyword: Keyword) => void} assertUniqueKeyword - check
  * whether a keyword is valid and unique and could be added in
  * `saveIssuer`
@@ -32,7 +33,6 @@
  * @property {MakeInvitation} makeInvitation
  * @property {(completion: Completion) => void} shutdown
  * @property {ShutdownWithFailure} shutdownWithFailure
- * @property {Assert} assert
  * @property {() => ERef<ZoeService>} getZoeService
  * @property {() => Issuer<'set'>} getInvitationIssuer
  * @property {() => StandardTerms & CT} getTerms
@@ -45,6 +45,7 @@
  * @property {SetTestJig} setTestJig
  * @property {() => Promise<void>} stopAcceptingOffers
  * @property {(strings: Array<string>) => void} setOfferFilter
+ * @property {() => Promise<Array<string>>} getOfferFilter
  * @property {() => Instance} getInstance
  */
 
@@ -187,17 +188,22 @@
  * @typedef {object} ZCFSeat
  * @property {() => void} exit
  * @property {ZCFSeatFail} fail
- * @property {() => Promise<Notifier<Allocation>>} getNotifier
+ * @property {() => Promise<Subscriber<Allocation>>} getSubscriber
  * @property {() => boolean} hasExited
  * @property {() => ProposalRecord} getProposal
  * @property {ZCFGetAmountAllocated} getAmountAllocated
  * @property {() => Allocation} getCurrentAllocation
  * @property {() => Allocation} getStagedAllocation
+ * Deprecated: Use atomicRearrange instead
  * @property {() => boolean} hasStagedAllocation
+ * Deprecated: Use atomicRearrange instead
  * @property {(newAllocation: Allocation) => boolean} isOfferSafe
  * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} incrementBy
+ * Deprecated: Use atomicRearrange instead
  * @property {(amountKeywordRecord: AmountKeywordRecord) => AmountKeywordRecord} decrementBy
+ * Deprecated: Use atomicRearrange instead
  * @property {() => void} clear
+ * Deprecated: Use atomicRearrange instead
  */
 
 /**

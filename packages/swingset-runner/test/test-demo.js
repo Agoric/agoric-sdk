@@ -58,8 +58,8 @@ test('run encouragmentBot demo with memdb', async t => {
   await innerTest(t, '--memdb');
 });
 
-test('run encouragmentBot demo with lmdb', async t => {
-  await innerTest(t, '--lmdb', 'lmdbtest');
+test('run encouragmentBot demo with sqlite', async t => {
+  await innerTest(t, '--sqlite', 'sqlitetest');
 });
 
 test('run encouragmentBot demo with default', async t => {

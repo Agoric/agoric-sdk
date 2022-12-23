@@ -23,10 +23,13 @@ function createSHA256(initial = undefined) {
     done = true;
     return hash.digest('hex');
   }
+  function sample() {
+    return hash.copy().digest('hex');
+  }
   if (initial) {
     add(initial);
   }
-  return harden({ add, finish });
+  return harden({ add, finish, sample });
 }
 harden(createSHA256);
 export { createSHA256 };

@@ -1,3 +1,4 @@
+// @ts-check
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
@@ -381,3 +382,30 @@ export const fsStreamReady = stream =>
     stream.on('ready', onReady);
     stream.on('error', onError);
   });
+
+/**
+ * @template {Record<string, unknown>} T
+ * @typedef {{[P in keyof T]: Exclude<T[P], undefined>;}} AllDefined
+ */
+
+/**
+ * Concise way to check values are available from object literal shorthand.
+ * Throws error message to specify the missing values.
+ *
+ * @template {Record<string, unknown>} T
+ * @param {T} obj
+ * @throws if any value in the object entries is not defined
+ * @returns {asserts obj is AllDefined<T>}
+ */
+
+export const assertAllDefined = obj => {
+  const missing = [];
+  for (const [key, val] of Object.entries(obj)) {
+    if (val === undefined) {
+      missing.push(key);
+    }
+  }
+  if (missing.length > 0) {
+    Fail`missing ${q(missing)}`;
+  }
+};

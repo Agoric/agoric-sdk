@@ -1,3 +1,8 @@
+import {
+  atomicRearrange,
+  fromOnly,
+  toOnly,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,
@@ -17,20 +22,32 @@ export const makeSinglePool = ammPowers => ({
     const { pool } = context.facets;
     const { poolSeat } = context.state;
     const { zcf, protocolSeat } = ammPowers;
-    seat.decrementBy(harden({ In: prices.swapperGives }));
-    seat.incrementBy(harden({ Out: prices.swapperGets }));
-    protocolSeat.incrementBy(harden({ Fee: prices.protocolFee }));
-
     const inBrand = prices.swapperGives.brand;
-    if (inBrand === getSecondaryBrand(pool)) {
-      poolSeat.decrementBy(harden({ Central: prices.yDecrement }));
-      poolSeat.incrementBy(harden({ Secondary: prices.xIncrement }));
-    } else {
-      poolSeat.decrementBy(harden({ Secondary: prices.yDecrement }));
-      poolSeat.incrementBy(harden({ Central: prices.xIncrement }));
-    }
 
-    zcf.reallocate(poolSeat, seat, protocolSeat);
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+    const xfer = harden(
+      inBrand === getSecondaryBrand(pool)
+        ? [
+            fromOnly(poolSeat, { Central: prices.yDecrement }),
+            toOnly(poolSeat, { Secondary: prices.xIncrement }),
+          ]
+        : [
+            fromOnly(poolSeat, { Secondary: prices.yDecrement }),
+            toOnly(poolSeat, { Central: prices.xIncrement }),
+          ],
+    );
+
+    atomicRearrange(
+      zcf,
+      harden([
+        fromOnly(seat, { In: prices.swapperGives }),
+
+        toOnly(seat, { Out: prices.swapperGets }),
+        toOnly(protocolSeat, { Fee: prices.protocolFee }),
+
+        ...xfer,
+      ]),
+    );
     seat.exit();
     pool.updateState();
     return `Swap successfully completed.`;

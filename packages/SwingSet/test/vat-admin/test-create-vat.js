@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -75,9 +75,9 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
     }
   }
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data, { slogSender });
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   const id44 = await c.validateAndInstallBundle(bundles.vat44Bundle);
   const idRC = await c.validateAndInstallBundle(bundles.vatRefcountBundle);
@@ -90,7 +90,7 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
   }
-  return { c, id44, idRC, vat13Bundle: bundles.vat13Bundle, hostStorage };
+  return { c, id44, idRC, vat13Bundle: bundles.vat13Bundle, kernelStorage };
 }
 
 async function testCreateVatByBundle(t, doVatAdminRestart) {
@@ -263,8 +263,8 @@ function findRefs(kvStore, koid) {
 
 test('createVat holds refcount', async t => {
   const printSlog = false; // set true to debug this test
-  const { c, idRC, hostStorage } = await doTestSetup(t, false, printSlog);
-  const { kvStore } = hostStorage;
+  const { c, idRC, kernelStorage } = await doTestSetup(t, false, printSlog);
+  const { kvStore } = kernelStorage;
 
   // The bootstrap vat starts by fetching 'held' from vat-export-held, during
   // doTestSetup(), and retains it throughout the entire test. When we send
@@ -290,26 +290,37 @@ test('createVat holds refcount', async t => {
   // if/when things like that change, this test also asserts ko27, but that
   // can be updated in a single place.
 
-  // 'held' is exported by v1, which shows up in the c-lists but doesn't
+  // 'held' is exported by v6, which shows up in the c-lists but exports don't
   // count towards the refcount
   let expectedRefcount = 0;
-  let expectedCLists = 1; // v1-export-held
+  let expectedCLists = 1; // v6-export-held
 
-  // bootstrap() imports 'held', adding it to the v2-bootstrap c-list and
+  // bootstrap() imports 'held', adding it to the v1-bootstrap c-list and
   // incrementing the refcount.
-  expectedRefcount += 1; // v2-bootstrap
-  expectedCLists += 1; // v2-bootstrap
+  expectedRefcount += 1; // v1-bootstrap holds resolution of 'createHeld'
+  expectedCLists += 1; // v1-bootstrap
 
-  // calling getHeld doesn't immediately increment the refcount
   const kpid1 = c.queueToVatRoot('bootstrap', 'getHeld', []);
   await c.run();
+  // We send `getHeld` to v1-bootstrap, which resolves kpid1 to
+  // 'held'. It now has refCount=2,2: one from v1-bootstrap, the other
+  // from kpid1's resolution value. kpid1 itself is held by a refcount
+  // added by queueToVatRoot, which will be removed when we call
+  // kpResolution.
+  expectedRefcount += 1; // from kpid1
+
   const h1 = kunser(c.kpResolution(kpid1));
+  // `kpResolution()` does an incref on the results, making the
+  // refcount now 3,3: v1-bootstrap c-list (from 'createHeld'), kpid1
+  // resolution value, and pinned by kpResolution. kpid1 has now been
+  // retired (and is currently in maybeFreeKrefs), but the contents
+  // won't be released until the next delivery happens (c.step) and we
+  // do a processRefcounts()
+  expectedRefcount += 1; // kpResolution pin
+
   const held = krefOf(h1);
   t.is(held, 'ko27'); // gleaned from the logs, unstable, update as needed
 
-  // but `kpResolution()` does an incref on the results, making the refcount
-  // now 2,2: imported by v2-bootstrap and pinned by kpResolution.
-  expectedRefcount += 1; // kpResolution pin
   const { refcount, refs } = findRefs(kvStore, held);
   t.deepEqual(refcount, [expectedRefcount, expectedRefcount]);
   t.is(refs.length, expectedCLists);
@@ -341,10 +352,12 @@ test('createVat holds refcount', async t => {
       ).length;
   }
   await stepUntil(seeDeliverCreateVat);
-
-  // now we should see 3,3: v2-bootstrap, the kpResolution pin, and the
+  // first delivery also does processRefcounts, deletes kpid1
+  expectedRefcount -= 1; // kpid1 deleted, drops ref to 'held', now 2,2
+  // it also does syscall.send(createVat), which holds a new reference
+  expectedRefcount += 1; // arg to 'createVat'
+  // now we should see 3,3: v1-bootstrap, the kpResolution pin, and the
   // send(createVat) arguments. Two of these are c-lists.
-  expectedRefcount += 1; // send(createVat) arguments
   const r1 = findRefs(kvStore, held);
   t.deepEqual(r1.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r1.refs.length, expectedCLists);

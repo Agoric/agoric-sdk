@@ -1,20 +1,19 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 
 // import fs from 'fs';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
-async function buildTrace(c, storage) {
+async function buildTrace(c, kernelStorage) {
   const states = [];
   while (c.dump().runQueue.length && c.dump().gcActions.length) {
-    states.push(getAllState(storage));
+    states.push(getAllState(kernelStorage));
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  states.push(getAllState(storage));
+  states.push(getAllState(kernelStorage));
   await c.shutdown();
   return states;
 }
@@ -23,11 +22,11 @@ test('transcript-one save', async t => {
   const config = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c1 = await buildVatController(config, ['one'], {
-    hostStorage,
+    kernelStorage,
   });
-  const states1 = await buildTrace(c1, hostStorage);
+  const states1 = await buildTrace(c1, kernelStorage);
   /*
   states1.forEach( (s, i) =>
     fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s))
@@ -36,11 +35,11 @@ test('transcript-one save', async t => {
   const config2 = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const hostStorage2 = provideHostStorage();
+  const kernelStorage2 = initSwingStore().kernelStorage;
   const c2 = await buildVatController(config2, ['one'], {
-    hostStorage: hostStorage2,
+    kernelStorage: kernelStorage2,
   });
-  const states2 = await buildTrace(c2, hostStorage2);
+  const states2 = await buildTrace(c2, kernelStorage2);
 
   states1.forEach((s, i) => {
     // Too expensive!  If there is a difference in the 3MB data, AVA will spin
@@ -64,8 +63,8 @@ test('transcript-one load', async t => {
   const config = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const s0 = provideHostStorage();
-  const c0 = await buildVatController(config, ['one'], { hostStorage: s0 });
+  const s0 = initSwingStore().kernelStorage;
+  const c0 = await buildVatController(config, ['one'], { kernelStorage: s0 });
   const states = await buildTrace(c0, s0);
   // states.forEach((s,j) =>
   //               fs.writeFileSync(`kdata-${j}.json`,
@@ -76,10 +75,10 @@ test('transcript-one load', async t => {
     const cfg = await loadBasedir(
       new URL('basedir-transcript', import.meta.url).pathname,
     );
-    const s = provideHostStorage();
+    const s = initSwingStore().kernelStorage;
     setAllState(s, states[i]);
     // eslint-disable-next-line no-await-in-loop
-    const c = await buildVatController(cfg, ['one'], { hostStorage: s });
+    const c = await buildVatController(cfg, ['one'], { kernelStorage: s });
     // eslint-disable-next-line no-await-in-loop
     const newstates = await buildTrace(c, s);
     // newstates.forEach((s,j) =>

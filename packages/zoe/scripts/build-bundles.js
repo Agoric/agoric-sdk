@@ -7,10 +7,6 @@ const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 const sourceToBundle = [
   ['../src/contractFacet/vatRoot.js', '../bundles/bundle-contractFacet.js'],
-  [
-    '../src/contracts/priceAggregator.js',
-    '../bundles/bundle-priceAggregator.js',
-  ],
 ];
 
 await createBundles(sourceToBundle, dirname);

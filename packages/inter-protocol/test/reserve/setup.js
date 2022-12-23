@@ -43,7 +43,7 @@ const setupReserveBootstrap = async (
     /** @type { import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
       ammSpaces.space
     );
-  const zoe = await farZoeKit.zoe;
+  const zoe = await E.get(farZoeKit).zoe;
 
   // @ts-expect-error could be undefined
   produce.chainTimerService.resolve(timer);
@@ -52,7 +52,7 @@ const setupReserveBootstrap = async (
   const newAmm = {
     ammCreatorFacet: ammSpaces.amm.ammCreatorFacet,
     ammPublicFacet: ammSpaces.amm.ammPublicFacet,
-    instance: ammSpaces.amm.governedInstance,
+    instance: ammSpaces.amm.instance,
   };
 
   return {
@@ -82,7 +82,7 @@ export const setupReserveServices = async (
   timer = buildManualTimer(t.log),
 ) => {
   const farZoeKit = await setUpZoeForTest();
-  const { feeMintAccess, zoe } = farZoeKit;
+  const { feeMintAccessP, zoe } = farZoeKit;
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -90,6 +90,7 @@ export const setupReserveServices = async (
   const spaces = await setupReserveBootstrap(
     t,
     timer,
+    // @ts-expect-error confusion about awaited return types
     farZoeKit,
     runIssuer,
     electorateTerms,
@@ -102,9 +103,10 @@ export const setupReserveServices = async (
   const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.IST.resolve(runBrand);
   issuer.produce.IST.resolve(runIssuer);
+  const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(await feeMintAccess);
 
-  const governorCreatorFacet = consume.reserveGovernorCreatorFacet;
+  const governorCreatorFacet = E.get(consume.reserveKit).governorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
@@ -119,7 +121,7 @@ export const setupReserveServices = async (
 
   /** @type {ReserveKit} */
   const reserve = {
-    reserveCreatorFacet: await consume.reserveCreatorFacet,
+    reserveCreatorFacet: await E.get(consume.reserveKit).creatorFacet,
     reservePublicFacet,
     instance: governedInstance,
   };

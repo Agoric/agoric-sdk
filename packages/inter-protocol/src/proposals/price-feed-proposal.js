@@ -87,7 +87,7 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: unknown, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/priceAggregatorChainlink.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
  */
 export const createPriceFeed = async (
   {
@@ -129,7 +129,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/zoe/src/contracts/priceAggregator.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/priceAggregatorChainlink.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
@@ -142,7 +142,6 @@ export const createPriceFeed = async (
   ]);
 
   const unitAmountIn = await unitAmount(brandIn);
-  /** @type {import('@agoric/zoe/src/contracts/priceAggregator.js').PriceAggregatorContract['terms']} */
   const terms = await deeplyFulfilledObject(
     harden({
       ...contractTerms,
@@ -188,11 +187,11 @@ export const createPriceFeed = async (
     .then(deleter => E(aggregators).set(terms, { aggregator, deleter }));
 
   /**
-   * Send an invitation to one of the oracles.
+   * Initialize a new oracle and send an invitation to administer it.
    *
    * @param {string} addr
    */
-  const distributeInvitation = async addr => {
+  const addOracle = async addr => {
     const invitation = await E(aggregator.creatorFacet).makeOracleInvitation(
       addr,
     );
@@ -205,7 +204,7 @@ export const createPriceFeed = async (
   };
 
   trace('distributing invitations', oracleAddresses);
-  await Promise.all(oracleAddresses.map(distributeInvitation));
+  await Promise.all(oracleAddresses.map(addOracle));
   trace('createPriceFeed complete');
 };
 
@@ -306,7 +305,12 @@ export const startPriceFeeds = async (
         priceFeedOptions: {
           AGORIC_INSTANCE_NAME: `${inBrandName}-${outBrandName} price feed`,
           contractTerms: {
-            POLL_INTERVAL: 1n,
+            minSubmissionCount: 2,
+            minSubmissionValue: 1,
+            maxSubmissionCount: 5,
+            maxSubmissionValue: 99999,
+            restartDelay: 1n,
+            timeout: 10,
           },
           oracleAddresses: demoOracleAddresses,
           IN_BRAND_NAME: inBrandName,

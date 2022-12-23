@@ -27,10 +27,10 @@ import '../../../src/contracts/exported.js';
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {Installation<typeof import('../../../src/contracts/scaledPriceAuthority.js').start>} scaledPriceInstallation
- * @property {Brand} atomBrand
- * @property {Brand} usdBrand
- * @property {IssuerKit} ibcAtom
- * @property {IssuerKit} run
+ * @property {Brand<'nat'>} atomBrand
+ * @property {Brand<'nat'>} usdBrand
+ * @property {IssuerKit<'nat'>} ibcAtom
+ * @property {IssuerKit<'nat'>} run
  *
  * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
@@ -63,11 +63,11 @@ test.before(
 
     // Pick some weird decimal places.
     const dp = decimalPlaces => harden({ decimalPlaces });
-    const { brand: atomBrand } = makeIssuerKit('$ATOM', undefined, dp(5));
-    const { brand: usdBrand } = makeIssuerKit('$USD', undefined, dp(4));
+    const { brand: atomBrand } = makeIssuerKit('$ATOM', 'nat', dp(5));
+    const { brand: usdBrand } = makeIssuerKit('$USD', 'nat', dp(4));
 
-    const ibcAtom = makeIssuerKit('IBC-ATOM', undefined, dp(6));
-    const run = makeIssuerKit('RUN', undefined, dp(6));
+    const ibcAtom = makeIssuerKit('IBC-ATOM', 'nat', dp(6));
+    const run = makeIssuerKit('RUN', 'nat', dp(6));
 
     ot.context.zoe = zoe;
     ot.context.scaledPriceInstallation = /** @type {any} */ (

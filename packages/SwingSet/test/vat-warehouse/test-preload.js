@@ -3,8 +3,11 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // import * as proc from 'child_process';
 import tmp from 'tmp';
-import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import {
+  initSwingStore,
+  makeSnapStore,
+  makeSnapStoreIO,
+} from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 test('only preload maxVatsOnline vats', async t => {
@@ -32,9 +35,9 @@ test('only preload maxVatsOnline vats', async t => {
 
   const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
   const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
-  const hostStorage = { snapStore, ...provideHostStorage() };
+  const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
-  await initializeSwingset(config, argv, hostStorage, initOpts);
+  await initializeSwingset(config, argv, kernelStorage, initOpts);
 
   /* we use vat-warehouse's built-in instrumentation, but I'll leave
    * this alternative here in case it's ever useful
@@ -68,7 +71,7 @@ test('only preload maxVatsOnline vats', async t => {
   const warehousePolicy = { maxVatsOnline };
   const runtimeOptions = { warehousePolicy /* , spawn */ };
 
-  const c1 = await makeSwingsetController(hostStorage, null, runtimeOptions);
+  const c1 = await makeSwingsetController(kernelStorage, null, runtimeOptions);
   c1.pinVatRoot('bootstrap');
   await c1.run();
   areLiving(c1, 'bootstrap', 'vatAdmin');
@@ -101,7 +104,7 @@ test('only preload maxVatsOnline vats', async t => {
 
   // shut down that controller, then start a new one
   await c1.shutdown();
-  const c2 = await makeSwingsetController(hostStorage, null, runtimeOptions);
+  const c2 = await makeSwingsetController(kernelStorage, null, runtimeOptions);
 
   // we only preload maxVatsOnline/2 vats: the static vats in
   // lexicographic order (e.g. 1,10,11,2,3,4, except here we only have

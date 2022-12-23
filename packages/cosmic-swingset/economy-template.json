@@ -110,7 +110,8 @@
       {
         "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
         "oracleAddresses": [
-          "@FIRST_SOLO_ADDRESS@"
+          "@PRIMARY_ADDRESS@",
+          "agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y"
         ],
         "IN_BRAND_LOOKUP": [
           "agoricNames",
@@ -132,7 +133,9 @@
     "entrypoint": "defaultProposalBuilder",
     "args": [
       {
-        "voterAddresses": { "someone": "@FIRST_SOLO_ADDRESS@" }
+        "voterAddresses": {
+          "someone": "@PRIMARY_ADDRESS@"
+        }
       }
     ]
   }

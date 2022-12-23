@@ -1,8 +1,9 @@
 /**
+ * @template {object} R Result type
  * @typedef {object} OracleAdmin
  * @property {() => Promise<void>} delete
  * Remove the oracle from the aggregator
- * @property {(result: ParsableNumber | Ratio) => Promise<void>} pushResult
+ * @property {(result: R) => Promise<void>} pushResult
  * Rather than waiting for the polling query, push a result directly from this oracle
  */
 
@@ -12,11 +13,6 @@
 
 /**
  * @typedef {Pick<import("./priceAggregator").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
- */
-
-/**
- * @typedef {bigint | number | string} ParsableNumber
- * @typedef {Readonly<ParsableNumber | { data: ParsableNumber }>} OraclePriceSubmission
  */
 
 /**

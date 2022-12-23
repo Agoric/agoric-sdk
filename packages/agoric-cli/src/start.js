@@ -529,7 +529,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     ]);
     const soloAddr = rawSoloAddr.trimRight();
     const economyProposals = JSON.parse(
-      economyTemplJson.replace(/@FIRST_SOLO_ADDRESS@/g, soloAddr),
+      economyTemplJson.replace(/@PRIMARY_ADDRESS@/g, soloAddr),
     );
     const economyConfig = JSON.parse(coreConfigJson);
     economyConfig.coreProposals = economyProposals;

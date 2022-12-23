@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
@@ -38,8 +38,8 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
  * @param {ERef<Notifier<unknown>>} opts.notifier
  * @param {ERef<TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote
- * @param {Brand} opts.actualBrandIn
- * @param {Brand} opts.actualBrandOut
+ * @param {Brand<'nat'>} opts.actualBrandIn
+ * @param {Brand<'nat'>} opts.actualBrandOut
  * @returns {PriceAuthorityKit}
  */
 export function makeOnewayPriceAuthorityKit(opts) {
@@ -86,7 +86,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
     /**
      * Return a quote when triggerWhen is true of the arguments.
      *
-     * @param {Amount} amountIn the input value to the calcAmountTrigger
+     * @param {Amount<'nat'>} amountIn the input value to the calcAmountTrigger
      * @param {Amount} amountOutLimit the value to compare with the output
      * of calcAmountTrigger
      */
@@ -145,8 +145,8 @@ export function makeOnewayPriceAuthorityKit(opts) {
    */
   const makeMutableQuote = compareAmountsFn =>
     /**
-     * @param {Amount} amountIn
-     * @param {Amount} amountOutLimit
+     * @param {Amount<'nat'>} amountIn
+     * @param {Amount<'nat'>} amountOutLimit
      */
     async function mutableQuoteWhenOutTrigger(amountIn, amountOutLimit) {
       AmountMath.coerce(actualBrandIn, amountIn);
@@ -219,16 +219,10 @@ export function makeOnewayPriceAuthorityKit(opts) {
    * @param {Brand} brandOut
    */
   const assertBrands = (brandIn, brandOut) => {
-    assert.equal(
-      brandIn,
-      actualBrandIn,
-      X`Desired brandIn ${brandIn} must match ${actualBrandIn}`,
-    );
-    assert.equal(
-      brandOut,
-      actualBrandOut,
-      X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
-    );
+    brandIn === actualBrandIn ||
+      Fail`Desired brandIn ${q(brandIn)} must match ${q(actualBrandIn)}`;
+    brandOut === actualBrandOut ||
+      Fail`Desired brandOut ${q(brandOut)} must match ${q(actualBrandOut)}`;
   };
 
   /** @type {PriceAuthority} */
@@ -256,7 +250,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
             amountIn,
             amountOut: calcAmountOut(amountIn),
           }));
-          assert(quote);
+          assert(quote, 'createQuote returned falsey');
 
           const value = await quote;
           return harden({
@@ -296,9 +290,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
         const amountIn = calcAmountIn(amountOut);
         const actualAmountOut = calcAmountOut(amountIn);
         AmountMath.isGTE(actualAmountOut, amountOut) ||
-          assert.fail(
-            X`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`,
-          );
+          Fail`Calculation of ${actualAmountOut} didn't cover expected ${amountOut}`;
         return { amountIn, amountOut };
       });
       assert(quote);

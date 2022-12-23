@@ -4,17 +4,14 @@ import path from 'path';
 import { performance } from 'perf_hooks';
 import { file as tmpFile, tmpName } from 'tmp';
 
-import { open as lmdbOpen, ABORT as lmdbAbort } from 'lmdb';
 import sqlite3 from 'better-sqlite3';
 
 import { assert } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
-import { sqlStreamStore } from './sqlStreamStore.js';
+import { makeSQLStreamStore } from './sqlStreamStore.js';
 import { makeSnapStore } from './snapStore.js';
-import { initEphemeralSwingStore } from './ephemeralSwingStore.js';
-
-export const DEFAULT_LMDB_MAP_SIZE = 2 * 1024 * 1024 * 1024;
+import { createSHA256 } from './hasher.js';
 
 export { makeSnapStore };
 
@@ -39,7 +36,7 @@ export function makeSnapStoreIO() {
  *   has: (key: string) => boolean,
  *   getKeys: (start: string, end: string) => IterableIterator<string>,
  *   get: (key: string) => string | undefined,
- *   set: (key: string, value: string) => void,
+ *   set: (key: string, value: string, bypassHash?: boolean ) => void,
  *   delete: (key: string) => void,
  * }} KVStore
  *
@@ -53,18 +50,33 @@ export function makeSnapStoreIO() {
  *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
  *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => IterableIterator<string>,
  *   closeStream: (streamName: string) => void,
+ *   dumpStreams: () => any,
  *   STREAM_START: StreamPosition,
  * }} StreamStore
  *
  * @typedef {{
- *   kvStore: KVStore, // a key-value StorageAPI object to load and store data
+ *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the kernel
  *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
+ *   snapStore?: SnapStore,
+ *   startCrank: () => void,
+ *   establishCrankSavepoint: (savepoint: string) => void,
+ *   rollbackCrank: (savepoint: string) => void,
+ *   emitCrankHashes: () => { crankhash: string, activityhash: string },
+ *   endCrank: () => void,
+ *   getActivityhash: () => string,
+ * }} SwingStoreKernelStorage
+ *
+ * @typedef {{
+ *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the host
  *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
- * }} SwingStore
+ * }} SwingStoreHostStorage
  *
- * @typedef {SwingStore & { snapStore: ReturnType<typeof makeSnapStore> }} SwingAndSnapStore
+ * @typedef {{
+ *  kernelStorage: SwingStoreKernelStorage,
+ *  hostStorage: SwingStoreHostStorage,
+ * }} SwingStore
  */
 
 /**
@@ -72,21 +84,21 @@ export function makeSnapStoreIO() {
  * actually several different stores of different types that travel as a flock
  * and are managed according to a shared transactional model.  Each component
  * store serves a different purpose and satisfies a different set of access
- * constraints and access patterns.  The individual stores, each with its own
- * API, are available from the object that `makeSwingStore` returns:
+ * constraints and access patterns.
+ *
+ * The individual stores are:
  *
  * kvStore - a key-value store used to hold the kernel's working state.  Keys
  *   and values are both strings.  Provides random access to a large number of
- *   mostly small data items.  Persistently stored in an LMDB database.
+ *   mostly small data items.  Persistently stored in a sqlite table.
  *
  * streamStore - a streaming store used to hold kernel transcripts.  Transcripts
  *   are both written and read (if they are read at all) sequentially, according
- *   to metadata kept in the kvStore.  Persistently stored in a slqLite
- *   database.
+ *   to metadata kept in the kvStore.  Persistently stored in a sqllite table.
  *
  * snapStore - large object store used to hold XS memory image snapshots of
  *   vats.  Objects are stored in files named by the cryptographic hash of the
- *   data they hold, with tracking metadata kep in the kvStore.
+ *   data they hold, with tracking metadata kept in the kvStore.
  *
  * All persistent data is kept within a single directory belonging to the swing
  * store.  The individual stores present individual APIs suitable for their
@@ -96,53 +108,66 @@ export function makeSnapStoreIO() {
  * substrates used for one or more of these may change (or be consolidated) as
  * our implementation evolves.
  *
+ * In addition, the operational affordances of these stores are collectively
+ * separated into two facets, one for use by the host application and the other
+ * for use by the swingset kernel itself, represented by the `hostStorage` and
+ * `kernelStorage` properties of the object that `makeSwingStore` returns.
+ *
  * The units of data consistency in the swingset are the crank and the block.  A
  * crank is the execution of a single delivery into the swingset, typically a
  * message delivered to a vat.  A block is a series of cranks (how many is a
- * host-determined parameter) that are considered to either all happen as a
- * unit.  Crank-to-crank trnsactionality is managed by the crank buffer, a
- * kernel abstraction that wraps the kvStore.  Block-to-block transactionality
- * is provided by the swing store directly.  It provides a 'commit' operation
- * which will commit all changes made up to the time it is called.  It is the
- * responsibility of the kvStore to maintain a consistent view of what is going
- * on in the streamStore and snapStore.
+ * host-determined parameter) that are considered to either all happen or not as
+ * a unit.  Crank-to-crank transactionality is managed via the kernel facet,
+ * while block-to-block transactionality is managed by the host facet.  Each
+ * facet provides commit and abort operations that commit or abort all changes
+ * relative the relevant transactional unit.
  */
 
 /**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
- * @param {string} dirPath  Path to a directory in which database files may be kept.
- * @param {boolean} forceReset  If true, initialize the database to an empty state
+ * @param {string|null} dirPath  Path to a directory in which database files may
+ *   be kept.  If this is null, the database will be an in-memory ephemeral
+ *   database that evaporates when the process exits, which is useful for testing.
+ * @param {boolean} forceReset  If true, initialize the database to an empty
+ *   state if it already exists
  * @param {object} options  Configuration options
  *
- * @returns {SwingAndSnapStore}
+ * @returns {SwingStore}
  */
 function makeSwingStore(dirPath, forceReset, options) {
-  /** @type {((result?: typeof import("lmdb").ABORT) => void) | null} */
-  let txnFinish = null;
+  let crankhasher;
+  function resetCrankhash() {
+    crankhasher = createSHA256();
+  }
+  resetCrankhash();
 
-  /** @type {Promise<typeof import("lmdb").ABORT | void> | null} */
-  let txnDone = null;
-
-  if (forceReset) {
-    try {
-      // Node.js 16.8.0 warns:
-      // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
-      // be removed. Use fs.rm(path, { recursive: true }) instead
-      if (fs.rmSync) {
-        fs.rmSync(dirPath, { recursive: true });
-      } else {
-        fs.rmdirSync(dirPath, { recursive: true });
-      }
-    } catch (e) {
-      if (e.code !== 'ENOENT') {
-        throw e;
+  let filePath;
+  if (dirPath) {
+    if (forceReset) {
+      try {
+        // Node.js 16.8.0 warns:
+        // In future versions of Node.js, fs.rmdir(path, { recursive: true }) will
+        // be removed. Use fs.rm(path, { recursive: true }) instead
+        if (fs.rmSync) {
+          fs.rmSync(dirPath, { recursive: true });
+        } else {
+          fs.rmdirSync(dirPath, { recursive: true });
+        }
+      } catch (e) {
+        // Attempting to delete a non-existent directory is allowed
+        if (e.code !== 'ENOENT') {
+          throw e;
+        }
       }
     }
+    fs.mkdirSync(dirPath, { recursive: true });
+    filePath = path.join(dirPath, 'swingstore.sqlite');
+  } else {
+    filePath = ':memory:';
   }
-  fs.mkdirSync(dirPath, { recursive: true });
 
-  const { mapSize = DEFAULT_LMDB_MAP_SIZE, traceFile, keepSnapshots } = options;
+  const { traceFile, keepSnapshots } = options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -161,70 +186,112 @@ function makeSwingStore(dirPath, forceReset, options) {
     traceOutput = null;
   }
 
-  /** @type {import('lmdb').RootDatabase<string, string> | null} */
-  let db = lmdbOpen({
-    path: dirPath,
-    // TODO: mapSize seem to be ignored / treated as informative by lmbd-js
-    mapSize,
-    // Turn off useWritemap. It can theoretically cause corruption by stray
-    // pointers, it seems incompatible with our usage of sync transactions.
-    // While we've checked it wasn't the (sole) cause of
-    // https://github.com/Agoric/agoric-sdk/issues/5031, it is no longer
-    // necessary if using WSL2 on Windows.
-    useWritemap: false,
-    name: 'swingset-kernel-state',
-    // TODO: lmdb-js is using a UTF-8 encoding for strings (both keys and values)
-    // The biggest impact is on key sizes. A key with unicode points in the range
-    // 0x0800 - 0xFFFF ends up encoded as 3 bytes where for UTF-16 they'd be
-    // encoded as 2 bytes. lmbd-js also bumps the maxKeySize to 1791 bytes,
-    // making this a non-issue for now.
-    encoding: 'string',
-  });
+  /** @type {*} */
+  let db = sqlite3(
+    filePath,
+    // { verbose: console.log },
+  );
+  db.exec(`PRAGMA journal_mode=WAL`);
+  db.exec(`PRAGMA synchronous=FULL`);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS kvStore (
+      key TEXT,
+      value TEXT,
+      PRIMARY KEY (key)
+    )
+  `);
 
+  const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
+  let inCrank = false;
+
+  // We use explicit transactions to 1: not commit writes until the host
+  // application calls commit() and 2: avoid expensive fsyncs until the
+  // appropriate commit point. All API methods should call this first, otherwise
+  // SQLite will automatically start a transaction for us, but it will
+  // commit/fsync at the end of the DB run(). We use IMMEDIATE because the
+  // kernel is supposed to be the sole writer of the DB, and if some other
+  // process is holding a write lock, we want to find out earlier rather than
+  // later. We do not use EXCLUSIVE because we should allow external *readers*,
+  // and we might decide to use WAL mode some day. Read all of
+  // https://sqlite.org/lang_transaction.html, especially section 2.2
+  //
+  // It is critical to call ensureTxn as the first step of any API call that
+  // might modify the database (any INSERT or DELETE, etc), to prevent SQLite
+  // from creating an automatic transaction, which will commit as soon as the
+  // SQL statement finishes. This would cause partial writes to be committed to
+  // the DB, and if the application crashes before the real hostStorage.commit()
+  // happens, it would wake up with inconsistent state. The only commit point
+  // must be the hostStorage.commit().
   function ensureTxn() {
     assert(db);
-    if (!txnDone && !txnFinish) {
-      trace('begin-tx');
-      txnDone = db.transactionSync(
-        () =>
-          new Promise(resolve => {
-            txnFinish = resolve;
-          }),
-      );
+    if (!db.inTransaction) {
+      sqlBeginTransaction.run();
+      assert(db.inTransaction);
     }
-    assert(txnDone && txnFinish);
     return db;
   }
 
-  function diskUsage() {
-    const dataFilePath = `${dirPath}/data.mdb`;
-    const stat = fs.statSync(dataFilePath);
-    return stat.size;
+  /**
+   * @param {string} key
+   */
+  function getKeyType(key) {
+    if (key.startsWith('local.')) {
+      return 'local';
+    } else if (key.startsWith('host.')) {
+      return 'host';
+    }
+    return 'consensus';
   }
+
+  function diskUsage() {
+    if (dirPath) {
+      const dataFilePath = `${dirPath}/swingstore.sqlite`;
+      const stat = fs.statSync(dataFilePath);
+      return stat.size;
+    } else {
+      return 0;
+    }
+  }
+
+  const sqlKVGet = db.prepare(`
+    SELECT value
+    FROM kvStore
+    WHERE key = ?
+  `);
+  sqlKVGet.pluck(true);
 
   /**
    * Obtain the value stored for a given key.
    *
    * @param {string} key  The key whose value is sought.
    *
-   * @returns {string | undefined} the (string) value for the given key, or undefined if there is no
-   *    such value.
+   * @returns {string | undefined} the (string) value for the given key, or
+   *    undefined if there is no such value.
    *
    * @throws if key is not a string.
    */
   function get(key) {
     assert.typeof(key, 'string');
-    let result = ensureTxn().get(key);
-    if (result == null) {
-      result = undefined;
-    }
-    return result;
+    return sqlKVGet.get(key);
   }
+
+  const sqlKVGetKeys = db.prepare(`
+    SELECT key
+    FROM kvStore
+    WHERE ? <= key AND key < ?
+  `);
+  sqlKVGetKeys.pluck(true);
+
+  const sqlKVGetKeysNoEnd = db.prepare(`
+    SELECT key
+    FROM kvStore
+    WHERE ? <= key
+  `);
+  sqlKVGetKeysNoEnd.pluck(true);
 
   /**
    * Generator function that returns an iterator over all the keys within a
-   * given range.  Note that this can be slow as it's only intended for use in
-   * debugging.
+   * given range.
    *
    * @param {string} start  Start of the key range of interest (inclusive).  An empty
    *    string indicates a range from the beginning of the key set.
@@ -239,18 +306,14 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(start, 'string');
     assert.typeof(end, 'string');
 
-    /** @type {import("lmdb").RangeOptions} */
-    const rangeOptions = {};
-    if (start) {
-      rangeOptions.start = start;
-    }
+    let keys;
     if (end) {
-      rangeOptions.end = end;
+      keys = sqlKVGetKeys.all(start, end);
+    } else {
+      keys = sqlKVGetKeysNoEnd.all(start);
     }
 
-    const keys = ensureTxn().getKeys(rangeOptions);
-
-    yield* keys;
+    yield* keys.values();
   }
 
   /**
@@ -267,6 +330,12 @@ function makeSwingStore(dirPath, forceReset, options) {
     return get(key) !== undefined;
   }
 
+  const sqlKVSet = db.prepare(`
+    INSERT INTO kvStore (key, value)
+    VALUES (?, ?)
+    ON CONFLICT DO UPDATE SET value = excluded.value
+  `);
+
   /**
    * Store a value for a given key.  The value will replace any prior value if
    * there was one.
@@ -281,9 +350,15 @@ function makeSwingStore(dirPath, forceReset, options) {
     assert.typeof(value, 'string');
     // synchronous read after write within a transaction is safe
     // The transaction's overall success will be awaited during commit
-    void ensureTxn().put(key, value);
+    ensureTxn();
+    sqlKVSet.run(key, value);
     trace('set', key, value);
   }
+
+  const sqlKVDel = db.prepare(`
+    DELETE from kvStore
+    WHERE key = ?
+  `);
 
   /**
    * Remove any stored value for a given key.  It is permissible for there to
@@ -295,12 +370,9 @@ function makeSwingStore(dirPath, forceReset, options) {
    */
   function del(key) {
     assert.typeof(key, 'string');
-    if (has(key)) {
-      // synchronous read after write within a transaction is safe
-      // The transaction's overall success will be awaited during commit
-      void ensureTxn().remove(key);
-      trace('del', key);
-    }
+    ensureTxn();
+    sqlKVDel.run(key);
+    trace('del', key);
   }
 
   const kvStore = {
@@ -311,69 +383,186 @@ function makeSwingStore(dirPath, forceReset, options) {
     delete: del,
   };
 
-  const {
-    commit: commitStreamStore,
-    close: closeStreamStore,
-    ...streamStore
-  } = sqlStreamStore(dirPath, { sqlite3 });
+  const kernelKVStore = {
+    ...kvStore,
+    set(key, value, bypassHash) {
+      assert.typeof(key, 'string');
+      const keyType = getKeyType(key);
+      assert(keyType !== 'host');
+      set(key, value);
+      if (keyType === 'consensus' && !bypassHash) {
+        crankhasher.add('add');
+        crankhasher.add('\n');
+        crankhasher.add(key);
+        crankhasher.add('\n');
+        crankhasher.add(value);
+        crankhasher.add('\n');
+      }
+    },
+    delete(key) {
+      assert.typeof(key, 'string');
+      const keyType = getKeyType(key);
+      assert(keyType !== 'host');
+      del(key);
+      if (keyType === 'consensus') {
+        crankhasher.add('delete');
+        crankhasher.add('\n');
+        crankhasher.add(key);
+        crankhasher.add('\n');
+      }
+    },
+  };
 
-  const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
-  fs.mkdirSync(snapshotDir, { recursive: true });
-  const snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
-    keepSnapshots,
-  });
+  const hostKVStore = {
+    ...kvStore,
+    set(key, value) {
+      const keyType = getKeyType(key);
+      assert(keyType === 'host');
+      set(key, value);
+    },
+    delete(key) {
+      const keyType = getKeyType(key);
+      assert(keyType === 'host');
+      del(key);
+    },
+  };
 
-  /** @param {boolean} [abort] */
-  function doCommit(abort) {
-    if (!txnFinish) {
-      return undefined;
-    }
-    txnFinish(abort ? lmdbAbort : undefined);
-    return Promise.resolve(txnDone)
-      .then(() => {
-        trace(`${abort ? 'abort' : 'commit'}-tx`);
-      })
-      .finally(() => {
-        txnDone = null;
-        txnFinish = null;
-      });
+  const streamStore = makeSQLStreamStore(db, ensureTxn);
+  let snapStore;
+
+  if (dirPath) {
+    const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
+    fs.mkdirSync(snapshotDir, { recursive: true });
+    snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
+      keepSnapshots,
+    });
   }
+
+  const savepoints = [];
+  const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');
+
+  function startCrank() {
+    assert(!inCrank);
+    inCrank = true;
+    resetCrankhash();
+  }
+
+  function establishCrankSavepoint(savepoint) {
+    assert(inCrank);
+    const savepointOrdinal = savepoints.length;
+    savepoints.push(savepoint);
+    const sql = db.prepare(`SAVEPOINT t${savepointOrdinal}`);
+    sql.run();
+  }
+
+  function rollbackCrank(savepoint) {
+    assert(inCrank);
+    for (const savepointOrdinal of savepoints.keys()) {
+      if (savepoints[savepointOrdinal] === savepoint) {
+        const sql = db.prepare(`ROLLBACK TO SAVEPOINT t${savepointOrdinal}`);
+        sql.run();
+        savepoints.length = savepointOrdinal;
+        return;
+      }
+    }
+    assert.fail(`no such savepoint as "${savepoint}"`);
+  }
+
+  function emitCrankHashes() {
+    // Calculate the resulting crankhash and reset for the next round.
+    const crankhash = crankhasher.finish();
+    resetCrankhash();
+
+    // Get the old activityhash
+    let oldActivityhash = get('activityhash');
+    if (oldActivityhash === undefined) {
+      oldActivityhash = '';
+    }
+
+    // Digest the old activityhash and new crankhash into the new activityhash.
+    const hasher = createSHA256();
+    hasher.add('activityhash');
+    hasher.add('\n');
+    hasher.add(oldActivityhash);
+    hasher.add('\n');
+    hasher.add(crankhash);
+    hasher.add('\n');
+
+    // Store the new activityhash
+    const activityhash = hasher.finish();
+    set('activityhash', activityhash);
+
+    return { crankhash, activityhash };
+  }
+
+  function getActivityhash() {
+    return get('activityhash') || '';
+  }
+
+  function endCrank() {
+    assert(inCrank);
+    if (savepoints.length > 0) {
+      sqlReleaseSavepoints.run();
+      savepoints.length = 0;
+    }
+    inCrank = false;
+  }
+
+  const sqlCommit = db.prepare('COMMIT');
+  const sqlCheckpoint = db.prepare('PRAGMA wal_checkpoint(FULL)');
 
   /**
    * Commit unsaved changes.
    */
   async function commit() {
     assert(db);
-    // Commit the stream-store first, before kvStore. We keep the
-    // streams' startPos/endPos in the kvStore, so if we crash after
-    // commitStreamStore() but before the kvstore doCommit(), we'll
-    // wake up with the old startPos/endPos and it's (mostly) as if
-    // the stream entry was never added.
-    commitStreamStore();
-    await doCommit(false);
+    if (db.inTransaction) {
+      sqlCommit.run();
+      sqlCheckpoint.run();
+    }
 
     // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
     //   is being replaced with vatA -> snapshot2)
     //   MUST be committed BEFORE we delete snapshot1.
     //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
     //   but we'll fail to load it because it's been deleted already.
-    await snapStore.commitDeletes();
+    await (snapStore ? snapStore.commitDeletes() : false);
   }
 
   /**
-   * Close the database, abandoning any changes made since the last commit (if you want to save them, call
-   * commit() first).
+   * Close the database, abandoning any changes made since the last commit (if
+   * you want to save them, call commit() first).
    */
   async function close() {
     assert(db);
-    closeStreamStore();
-    await doCommit(true);
-    await db.close();
+    commit();
+    db.close();
     db = null;
     stopTrace();
   }
 
-  return harden({ kvStore, streamStore, snapStore, commit, close, diskUsage });
+  const kernelStorage = {
+    kvStore: kernelKVStore,
+    streamStore,
+    snapStore,
+    startCrank,
+    establishCrankSavepoint,
+    rollbackCrank,
+    emitCrankHashes,
+    endCrank,
+    getActivityhash,
+  };
+  const hostStorage = {
+    kvStore: hostKVStore,
+    commit,
+    close,
+    diskUsage,
+  };
+
+  return harden({
+    kernelStorage,
+    hostStorage,
+  });
 }
 
 /**
@@ -383,21 +572,20 @@ function makeSwingStore(dirPath, forceReset, options) {
  * undefined, a memory-only ephemeral store will be created that will evaporate
  * on program exit.
  *
- * @param {string|null} dirPath  Path to a directory in which database files may
+ * @param {string|null} dirPath Path to a directory in which database files may
  *   be kept.  This directory need not actually exist yet (if it doesn't it will
  *   be created) but it is reserved (by the caller) for the exclusive use of
- *   this swing store instance.  If null, an ephemeral store will be created.
+ *   this swing store instance.  If null, an ephemeral (memory only) store will
+ *   be created.
  * @param {object?} options  Optional configuration options
  *
  * @returns {SwingStore}
  */
-export function initSwingStore(dirPath, options = {}) {
-  if (!dirPath) {
-    return initEphemeralSwingStore();
-  } else {
+export function initSwingStore(dirPath = null, options = {}) {
+  if (dirPath) {
     assert.typeof(dirPath, 'string');
-    return makeSwingStore(dirPath, true, options);
   }
+  return makeSwingStore(dirPath, true, options);
 }
 
 /**
@@ -410,7 +598,7 @@ export function initSwingStore(dirPath, options = {}) {
  *   swing store instance.
  * @param {object?} options  Optional configuration options
  *
- * @returns {SwingAndSnapStore}
+ * @returns {SwingStore}
  */
 export function openSwingStore(dirPath, options = {}) {
   assert.typeof(dirPath, 'string');
@@ -431,7 +619,7 @@ export function openSwingStore(dirPath, options = {}) {
 export function isSwingStore(dirPath) {
   assert.typeof(dirPath, 'string');
   if (fs.existsSync(dirPath)) {
-    const storeFile = path.resolve(dirPath, 'data.mdb');
+    const storeFile = path.resolve(dirPath, 'swingstore.sqlite');
     if (fs.existsSync(storeFile)) {
       return true;
     }
@@ -439,4 +627,57 @@ export function isSwingStore(dirPath) {
   return false;
 }
 
-export { getAllState, setAllState } from './ephemeralSwingStore.js';
+/**
+ * Produce a representation of all the state found in a swing store.
+ *
+ * WARNING: This is a helper function intended for use in testing and debugging.
+ * It extracts *everything*, and does so in the simplest and stupidest possible
+ * way, hence it is likely to be a performance and memory hog if you attempt to
+ * use it on anything real.
+ *
+ * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be extracted.
+ *
+ * @returns {{
+ *   kvStuff: Record<string, string>,
+ *   streamStuff: Map<string, Array<string>>,
+ * }}  A crude representation of all of the state of `kernelStorage`
+ */
+export function getAllState(kernelStorage) {
+  const { kvStore, streamStore } = kernelStorage;
+  /** @type { Record<string, string> } */
+  const kvStuff = {};
+  for (const key of Array.from(kvStore.getKeys('', ''))) {
+    // @ts-expect-error get(key) of key from getKeys() is not undefined
+    kvStuff[key] = kvStore.get(key);
+  }
+  const streamStuff = streamStore.dumpStreams();
+  return { kvStuff, streamStuff };
+}
+
+/**
+ * Stuff a bunch of state into a swing store.
+ *
+ * WARNING: This is intended to support testing and should not be used as a
+ * general store initialization mechanism.  In particular, note that it does not
+ * bother to remove any pre-existing state from the store that it is given.
+ *
+ * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be set.
+ * @param {{
+ *   kvStuff: Record<string, string>,
+ *   streamStuff: Map<string, Array<[number, *]>>,
+ * }} stuff  The state to stuff into `kernelStorage`
+ */
+export function setAllState(kernelStorage, stuff) {
+  const { kvStore, streamStore } = kernelStorage;
+  const { kvStuff, streamStuff } = stuff;
+  for (const k of Object.getOwnPropertyNames(kvStuff)) {
+    kvStore.set(k, kvStuff[k], true);
+  }
+  for (const [streamName, stream] of streamStuff.entries()) {
+    for (const [pos, item] of stream) {
+      const position = { itemCount: pos };
+      streamStore.writeStreamItem(streamName, item, position);
+    }
+    streamStore.closeStream(streamName);
+  }
+}

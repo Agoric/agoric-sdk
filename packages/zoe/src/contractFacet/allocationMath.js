@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * @callback Operation
@@ -63,18 +63,14 @@ const subtract = (amount, amountToSubtract, keyword) => {
     if (amount === undefined) {
       // TypeScript confused about `||` control flow so use `if` instead
       // https://github.com/microsoft/TypeScript/issues/50739
-      assert.fail(
-        X`The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword ${q(
-          keyword,
-        )}.`,
-      );
+      throw Fail`The amount could not be subtracted from the allocation because the allocation did not have an amount under the keyword ${q(
+        keyword,
+      )}.`;
     }
     AmountMath.isGTE(amount, amountToSubtract) ||
-      assert.fail(
-        X`The amount to be subtracted ${amountToSubtract} was greater than the allocation's amount ${amount} for the keyword ${q(
-          keyword,
-        )}`,
-      );
+      Fail`The amount to be subtracted ${amountToSubtract} was greater than the allocation's amount ${amount} for the keyword ${q(
+        keyword,
+      )}`;
     return AmountMath.subtract(amount, amountToSubtract);
   }
 };

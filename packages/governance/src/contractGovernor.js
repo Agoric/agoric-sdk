@@ -28,7 +28,6 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
   } = details;
   fit(details, ParamChangesQuestionDetailsShape);
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof start>} */
   const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
     .electionManager;
   const governorPublic = E(zoe).getPublicFacet(governorInstance);

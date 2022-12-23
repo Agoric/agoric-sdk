@@ -2,6 +2,8 @@ export {
   makePublishKit,
   subscribeEach,
   subscribeLatest,
+  vivifyDurablePublishKit,
+  SubscriberShape,
 } from './publish-kit.js';
 export {
   makeNotifier,

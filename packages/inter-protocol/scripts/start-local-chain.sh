@@ -1,20 +1,19 @@
 #!/bin/bash
+#
+# Start a chain with "economy" and provision wallet to use it
+#
 
 # run an Archive node to keep all history https://docs.desmos.network/fullnode/overview/
 # (the Makefile passes this to agd start)
 export AGC_START_ARGS="--pruning=nothing"
 
-# TODO make cross-platform https://stackoverflow.com/questions/52670836/standard-log-locations-for-a-cross-platform-application
-mkdir -p ~/Library/Logs/Agoric
-CHAIN_LOG=~/Library/Logs/Agoric/local-chain.log
-touch "$CHAIN_LOG" || exit 1
-open -a /System/Applications/Utilities/Console.app $CHAIN_LOG
+CHAIN_LOG=$(mktemp -t Agoric-start-local-chain-log)
+if [[ $(uname) == "Darwin" ]]; then
+    open -a /System/Applications/Utilities/Console.app "$CHAIN_LOG"
+fi
 
 # ugly way to get SDK path regardless of cwd
 SDK=$(readlink -f "$(dirname -- "$(readlink -f -- "$0")")/../../..")
-
-# Basically the psm config, plus priceAggregator and a different sourceSpec
-export CHAIN_BOOTSTRAP_VAT_CONFIG="$SDK/packages/inter-protocol/scripts/start-local-chain-config.json"
 
 WALLET=$1
 
@@ -26,14 +25,7 @@ fi
 
 WALLET_BECH32=$(agd keys show "$WALLET" --output json | jq -r .address)
 
-# xxx this would be more robust using `jq`
-# grant econ governance
-sed -i '' "s/\"voter\":.*/\"voter\": \"$WALLET_BECH32\"/" "$CHAIN_BOOTSTRAP_VAT_CONFIG"
-# grant same key the priviledge of operating the demo oracle
-# NB this assumes the current value, so won't update any others
-sed -i '' "s/agoric1ersatz/$WALLET_BECH32/" "$CHAIN_BOOTSTRAP_VAT_CONFIG"
-
-echo CHAIN_LOG $CHAIN_LOG
+echo CHAIN_LOG "$CHAIN_LOG"
 echo SDK "$SDK"
 echo WALLET "$WALLET"
 echo WALLET_BECH32 "$WALLET_BECH32"
@@ -41,15 +33,21 @@ echo WALLET_BECH32 "$WALLET_BECH32"
 cd "$SDK"/packages/cosmic-swingset || exit 1
 
 echo "Logs written to $CHAIN_LOG"
-# setup can be skipped if you know its up to date
-make scenario2-setup >>$CHAIN_LOG 2>&1
+# specifies the address to use for chain config
+export PRIMARY_ADDRESS=$WALLET_BECH32
+# nobuild variety skips Golang artifacts; if you get errors try make scenario2-setup
+make scenario2-setup-nobuild >>"$CHAIN_LOG" 2>&1
 
 # TODO detect it's already running, indicate when it started and offer to restart
 # e.g. killall node xsnap-worker
 echo "Starting the chain..."
+# use -economy target to get the kitchen sink
 # disable pruning to keep all history https://docs.desmos.network/fullnode/overview/
-make AGC_START_ARGS="--pruning=nothing" scenario2-run-chain >>$CHAIN_LOG 2>&1 &
+make AGC_START_ARGS="--pruning=nothing" scenario2-run-chain-economy >>"$CHAIN_LOG" 2>&1 &
 make wait-for-cosmos
+
+# xxx sleep to let it settle
+sleep 15
 
 echo "Funding the pool..."
 make fund-provision-pool
@@ -67,3 +65,12 @@ sleep 15
 # verify
 agoric wallet list
 agoric wallet show --from "$WALLET"
+
+echo "Repeating for oracle2 account..."
+# this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
+# to use it run `agd keys oracle2 --interactive` and enter this mnenomic:
+# dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
+WALLET2=oracle2
+WALLET2_BECH32=$(agd keys show "$WALLET2" --output json | jq -r .address)
+make ACCT_ADDR="$WALLET2_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234 fund-acct
+agoric wallet provision --spend --account "$WALLET2"

@@ -25,26 +25,6 @@ export const setup = () => {
   /** @type {<K extends AssetKind>(brand: Brand<K>) => (value: any) => Amount<K>} */
   const makeSimpleMake = brand => value => AmountMath.make(brand, value);
 
-  /**
-   * @typedef {object} BasicMints
-   * @property {Issuer<'nat'>} moolaIssuer
-   * @property {Mint<'nat'>} moolaMint
-   * @property {IssuerKit<'nat'>} moolaKit
-   * @property {Issuer<'nat'>} simoleanIssuer
-   * @property {Mint<'nat'>} simoleanMint
-   * @property {IssuerKit<'nat'>} simoleanKit
-   * @property {Issuer<'nat'>} bucksIssuer
-   * @property {Mint<'nat'>} bucksMint
-   * @property {IssuerKit<'nat'>} bucksKit
-   * @property {Store<string, Brand<'nat'>>} brands
-   * @property {(value: NatValue) => Amount<'nat'>} moola
-   * @property {(value: NatValue) => Amount<'nat'>} simoleans
-   * @property {(value: NatValue) => Amount<'nat'>} bucks
-   * @property {ZoeService} zoe
-   * @property {*} vatAdminState
-   */
-
-  /** @type {BasicMints} */
   const result = {
     moolaIssuer: moolaKit.issuer,
     moolaMint: moolaKit.mint,

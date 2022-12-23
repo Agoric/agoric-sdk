@@ -4,6 +4,7 @@ import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';
 import { keyEQ, makeStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
+import { assertAllDefined } from '@agoric/internal';
 import { ParamTypes } from '../constants.js';
 
 import {
@@ -55,8 +56,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   /** @type {Store<Keyword, any>} */
   const namesToParams = makeStore('Parameter Name');
   const { publisher, subscriber } = publisherKit;
-  assert(publisher, 'missing publisher');
-  assert(subscriber, 'missing subscriber');
+  assertAllDefined({ publisher, subscriber });
 
   const getters = {};
   const setters = {};
@@ -196,6 +196,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
     const { instance, installation } = await E(zoe).getInvitationDetails(i);
+    // @ts-expect-error typescript thinks they're guaranteed True. I'm not sure.
     assert(instance && installation, 'must be an invitation');
   };
 

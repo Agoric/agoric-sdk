@@ -1,5 +1,6 @@
 // import { Worker } from 'worker_threads'; // not from a Compartment
 import { assert, Fail } from '@agoric/assert';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeManagerKit } from './manager-helper.js';
 
@@ -64,7 +65,7 @@ export function makeNodeWorkerVatManagerFactory(tools) {
 
     function sendToWorker(msg) {
       assert(msg instanceof Array);
-      void workerP.then(worker => worker.postMessage(msg));
+      E.when(workerP, worker => worker.postMessage(msg));
     }
 
     /** @type {PromiseKit<void>} */

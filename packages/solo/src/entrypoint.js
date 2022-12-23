@@ -2,9 +2,6 @@
 
 import '@endo/init/pre-bundle-source.js';
 
-// import lmdb early to work around SES incompatibility
-import 'lmdb';
-
 // Needed for legacy plugin support (dapp-oracle, for one).
 import 'esm';
 

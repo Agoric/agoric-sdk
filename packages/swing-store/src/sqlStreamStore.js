@@ -1,6 +1,4 @@
 // @ts-check
-import path from 'path';
-import sqlite3ambient from 'better-sqlite3';
 import { assert, Fail, q } from '@agoric/assert';
 
 const STREAM_START = { itemCount: 0 };
@@ -35,16 +33,10 @@ function insistStreamPosition(position) {
 }
 
 /**
- * @param {string} dbDir
- * @param {{ sqlite3?: typeof import('better-sqlite3') }} [io]
+ * @param {*} db
+ * @param {() => void} ensureTxn
  */
-export function sqlStreamStore(dbDir, io) {
-  const { sqlite3 = sqlite3ambient } = io || {};
-  const filePath = path.join(dbDir, 'streams.sqlite');
-  const db = sqlite3(
-    filePath,
-    // { verbose: console.log },
-  );
+export function makeSQLStreamStore(db, ensureTxn) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS streamItem (
       streamName TEXT,
@@ -54,26 +46,34 @@ export function sqlStreamStore(dbDir, io) {
     )
   `);
 
-  // We use explicit transactions to 1: not commit writes until the
-  // host application calls commit() and 2: avoid expensive fsyncs
-  // until the appropriate commit point. All API methods should call
-  // this first, otherwise sqlite will automatically start a
-  // transaction for us, but it will commit/fsync at the end of the DB
-  // run(). We use IMMEDIATE because the kernel is supposed to be the
-  // sole writer of the DB, and if some other process is holding a
-  // write lock, I'd like to find out earlier rather than later. We do
-  // not use EXCLUSIVE because we should allow external *readers*, and
-  // we might decide to use WAL mode some day. Read all of
-  // https://sqlite.org/lang_transaction.html , especially section 2.2
+  const streamStatus = new Map();
 
-  function ensureTransaction() {
-    if (!db.inTransaction) {
-      db.prepare('BEGIN IMMEDIATE TRANSACTION').run();
-      assert(db.inTransaction);
+  const sqlDumpStreamsQuery = db.prepare(`
+    SELECT streamName, position, item
+    FROM streamItem
+    ORDER BY position
+  `);
+
+  function dumpStreams() {
+    const dump = new Map();
+    for (const row of sqlDumpStreamsQuery.iterate()) {
+      const { streamName, position, item } = row;
+      let entry = dump.get(streamName);
+      if (!entry) {
+        entry = [];
+        dump.set(streamName, entry);
+      }
+      entry.push([position, item]);
     }
+    return dump;
   }
 
-  const streamStatus = new Map();
+  const sqlReadStreamQuery = db.prepare(`
+    SELECT item
+    FROM streamItem
+    WHERE streamName = ? AND position >= ? AND position < ?
+    ORDER BY position
+  `);
 
   /**
    * @param {string} streamName
@@ -90,14 +90,8 @@ export function sqlStreamStore(dbDir, io) {
       Fail`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`;
 
     function* reader() {
-      ensureTransaction();
-      const query = db.prepare(`
-        SELECT item
-        FROM streamItem
-        WHERE streamName = ? AND position >= ? AND position < ?
-        ORDER BY position
-      `);
-      for (const { item } of query.iterate(
+      ensureTxn();
+      for (const { item } of sqlReadStreamQuery.iterate(
         streamName,
         startPosition.itemCount,
         endPosition.itemCount,
@@ -120,6 +114,12 @@ export function sqlStreamStore(dbDir, io) {
     return reader();
   }
 
+  const sqlStreamWrite = db.prepare(`
+    INSERT INTO streamItem (streamName, item, position)
+    VALUES (?, ?, ?)
+    ON CONFLICT(streamName, position) DO UPDATE SET item = ?
+  `);
+
   /**
    * @param {string} streamName
    * @param {string} item
@@ -131,14 +131,8 @@ export function sqlStreamStore(dbDir, io) {
     !streamStatus.get(streamName) ||
       Fail`can't write stream ${q(streamName)} because it's already in use`;
 
-    ensureTransaction();
-    db.prepare(
-      `
-      INSERT INTO streamItem (streamName, item, position)
-        VALUES (?, ?, ?)
-        ON CONFLICT(streamName, position) DO UPDATE SET item = ?
-      `,
-    ).run(streamName, item, position.itemCount, item);
+    ensureTxn();
+    sqlStreamWrite.run(streamName, item, position.itemCount, item);
     return { itemCount: position.itemCount + 1 };
   };
 
@@ -148,23 +142,11 @@ export function sqlStreamStore(dbDir, io) {
     streamStatus.delete(streamName);
   };
 
-  const commit = () => {
-    if (db.inTransaction) {
-      db.prepare('COMMIT').run();
-    }
-  };
-
-  const close = () => {
-    // close without commit is abort
-    db.close();
-  };
-
   return harden({
     writeStreamItem,
     readStream,
     closeStream,
-    commit,
-    close,
+    dumpStreams,
     STREAM_START,
   });
 }

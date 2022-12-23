@@ -1,8 +1,5 @@
 // @ts-check
 
-// import LMDB before SES lockdown, as workaround for
-// https://github.com/Agoric/SES-shim/issues/308
-import 'lmdb';
 import '@endo/init/debug.js';
 
 import tmp from 'tmp';
@@ -30,8 +27,8 @@ const tmpDir = prefix =>
     });
   });
 
-function testKVStore(t, store) {
-  const kvStore = store.kvStore;
+function testKVStore(t, kernelStorage) {
+  const kvStore = kernelStorage.kvStore;
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -62,28 +59,33 @@ function testKVStore(t, store) {
     },
     streamStuff: new Map(),
   };
-  t.deepEqual(getAllState(store), reference, 'check state after changes');
+  t.deepEqual(
+    getAllState(kernelStorage),
+    reference,
+    'check state after changes',
+  );
 }
 
 test('in-memory kvStore read/write', t => {
-  testKVStore(t, initSwingStore(null));
+  testKVStore(t, initSwingStore(null).kernelStorage);
 });
 
 test('persistent kvStore read/write/re-open', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  const store = initSwingStore(dbDir);
-  const { commit, close } = store;
-  testKVStore(t, store);
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  const { commit, close } = hostStorage;
+  testKVStore(t, kernelStorage);
   await commit();
-  const before = getAllState(store);
+  const before = getAllState(kernelStorage);
   await close();
   t.is(isSwingStore(dbDir), true);
 
-  const store2 = openSwingStore(dbDir);
-  const { close: close2 } = store2;
-  t.deepEqual(getAllState(store2), before, 'check state after reread');
+  const { kernelStorage: kernelStorage2, hostStorage: hostStorage2 } =
+    openSwingStore(dbDir);
+  const { close: close2 } = hostStorage2;
+  t.deepEqual(getAllState(kernelStorage2), before, 'check state after reread');
   t.is(isSwingStore(dbDir), true);
   await close2();
 });
@@ -100,14 +102,16 @@ test('persistent kvStore maxKeySize write', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
-  const store = initSwingStore(dbDir);
-  store.kvStore.set('€'.repeat(254), 'Money!');
-  await store.commit();
-  await store.close();
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  kernelStorage.kvStore.set('€'.repeat(254), 'Money!');
+  await hostStorage.commit();
+  await hostStorage.close();
 });
 
 async function testStreamStore(t, dbDir) {
-  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  const { streamStore } = kernelStorage;
+  const { commit, close } = hostStorage;
 
   const start = streamStore.STREAM_START;
   let s1pos = start;
@@ -157,7 +161,9 @@ test('persistent streamStore read/write', async t => {
 });
 
 async function testStreamStoreModeInterlock(t, dbDir) {
-  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  const { streamStore } = kernelStorage;
+  const { commit, close } = hostStorage;
   const start = streamStore.STREAM_START;
 
   const s1pos = streamStore.writeStreamItem('st1', 'first', start);
@@ -195,7 +201,9 @@ test('persistent streamStore mode interlock', async t => {
 test('streamStore abort', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
-  const { streamStore, commit, close } = initSwingStore(dbDir);
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir);
+  const { streamStore } = kernelStorage;
+  const { commit, close } = hostStorage;
   const start = streamStore.STREAM_START;
 
   const s1pos = streamStore.writeStreamItem('st1', 'first', start);
@@ -207,7 +215,7 @@ test('streamStore abort', async t => {
   // abort is close without commit
   await close();
 
-  const { streamStore: ss2 } = openSwingStore(dbDir);
+  const { streamStore: ss2 } = openSwingStore(dbDir).kernelStorage;
   const reader = ss2.readStream('st1', start, s1pos);
   t.deepEqual(Array.from(reader), ['first']); // and not 'second'
 });

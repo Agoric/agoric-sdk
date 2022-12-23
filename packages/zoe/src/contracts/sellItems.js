@@ -1,15 +1,20 @@
 import { Far } from '@endo/marshal';
 import { Nat } from '@agoric/nat';
 import { AmountMath } from '@agoric/ertp';
-import { makeNotifierKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeNotifierKit,
+  observeIteration,
+  subscribeLatest,
+} from '@agoric/notifier';
 import {
   assertIssuerKeywords,
   defaultAcceptanceMsg,
   assertProposalShape,
   assertNatAssetKind,
+  atomicRearrange,
 } from '../contractSupport/index.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 /**
  * Sell items in exchange for money. Items may be fungible or
@@ -47,8 +52,8 @@ const start = zcf => {
   const sell = seat => {
     sellerSeat = seat;
 
-    observeNotifier(
-      sellerSeat.getNotifier(),
+    observeIteration(
+      subscribeLatest(sellerSeat.getSubscriber()),
       harden({
         updateState: sellerSeatAllocation =>
           availableItemsUpdater.updateState(
@@ -62,6 +67,7 @@ const start = zcf => {
         fail: reason => availableItemsUpdater.fail(reason),
       }),
     );
+    availableItemsUpdater.updateState(sellerSeat.getCurrentAllocation().Items);
     return defaultAcceptanceMsg;
   };
 
@@ -98,23 +104,28 @@ const start = zcf => {
 
     // Check that the money provided to pay for the items is greater than the totalCost.
     AmountMath.isGTE(providedMoney, totalCost) ||
-      assert.fail(X`More money (${totalCost}) is required to buy these items`);
+      Fail`More money (${totalCost}) is required to buy these items`;
 
     // Reallocate.
-    sellerSeat.incrementBy(
-      buyerSeat.decrementBy(harden({ Money: providedMoney })),
+    atomicRearrange(
+      zcf,
+      harden([
+        [buyerSeat, sellerSeat, { Money: providedMoney }],
+        [sellerSeat, buyerSeat, { Items: wantedItems }],
+      ]),
     );
-    buyerSeat.incrementBy(
-      sellerSeat.decrementBy(harden({ Items: wantedItems })),
-    );
-    zcf.reallocate(buyerSeat, sellerSeat);
 
     // The buyer's offer has been processed.
     buyerSeat.exit();
 
     if (AmountMath.isEmpty(getAvailableItems())) {
       zcf.shutdown('All items sold.');
+    } else {
+      availableItemsUpdater.updateState(
+        sellerSeat.getCurrentAllocation().Items,
+      );
     }
+
     return defaultAcceptanceMsg;
   };
 

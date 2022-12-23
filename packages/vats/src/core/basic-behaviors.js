@@ -88,7 +88,7 @@ export const makeVatsFromBundles = async ({
         });
         return vatInfo;
       });
-      return vatInfoP.then(vatInfo => vatInfo.root);
+      return E.when(vatInfoP, vatInfo => vatInfo.root);
     };
   };
 
@@ -111,12 +111,13 @@ export const buildZoe = async ({
   produce: { zoe, feeMintAccess },
 }) => {
   const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
-  const { zoeService, feeMintAccess: fma } = await E(
+  const { zoeService, feeMintAccessRetriever } = await E(
     E(loadCriticalVat)('zoe'),
   ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
 
+  const fma = await E(feeMintAccessRetriever).get();
   feeMintAccess.resolve(fma);
   return Promise.all([
     E(client).assignBundle([_addr => ({ zoe: zoeService })]),
@@ -354,7 +355,13 @@ harden(mintInitialSupply);
  * }} powers
  */
 export const addBankAssets = async ({
-  consume: { initialSupply, bridgeManager, loadCriticalVat, zoe },
+  consume: {
+    agoricNamesAdmin,
+    initialSupply,
+    bridgeManager,
+    loadCriticalVat,
+    zoe,
+  },
   produce: { bankManager, bldIssuerKit },
   installation: {
     consume: { mintHolder },
@@ -384,8 +391,13 @@ export const addBankAssets = async ({
   const bldKit = { mint: bldMint, issuer: bldIssuer, brand: bldBrand };
   bldIssuerKit.resolve(bldKit);
 
+  const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
+  const nameUpdater = Far('AssetHub', {
+    update: (name, val) => E(assetAdmin).update(name, val),
+  });
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bridgeManager,
+    nameUpdater,
   );
   bankManager.resolve(bankMgr);
 

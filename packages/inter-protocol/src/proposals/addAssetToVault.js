@@ -244,7 +244,7 @@ export const registerScaledPriceAuthority = async (
  */
 export const addAssetToVault = async (
   {
-    consume: { vaultFactoryCreator, agoricNamesAdmin },
+    consume: { vaultFactoryKit, agoricNamesAdmin },
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
@@ -260,6 +260,7 @@ export const addAssetToVault = async (
   );
 
   const stable = await stableP;
+  const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, 0n),
     // the rest of these are arbitrary, TBD by gov cttee
@@ -319,9 +320,7 @@ export const getManifestForAddAssetToVault = (
       },
       [addAssetToVault.name]: {
         consume: {
-          vaultFactoryCreator: true,
-          ammCreatorFacet: true,
-          reserveCreatorFacet: true,
+          vaultFactoryKit: true,
           agoricNamesAdmin: true,
         },
         brand: {

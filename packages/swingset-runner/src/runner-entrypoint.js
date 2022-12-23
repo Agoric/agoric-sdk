@@ -9,10 +9,6 @@
 
 import '@endo/init/pre-bundle-source.js';
 
-// Initialize transitive dependencies that run afoul of the property override
-// after SES lockdown hazard.
-import 'lmdb';
-
 // Now do lockdown.
 import '@endo/init';
 import { main } from './main.js';

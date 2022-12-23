@@ -1,5 +1,4 @@
 /* eslint-disable */
-import 'lmdb';
 import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';
@@ -41,7 +40,7 @@ function run() {
   }
   const stateDBDir = argv.shift();
 
-  const { kvStore } = openSwingStore(stateDBDir);
+  const { kvStore } = openSwingStore(stateDBDir).kernelStorage;
 
   // we know all keys start with letters, so '@' is before all keys, and '{'
   // is after all keys

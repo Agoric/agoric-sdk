@@ -41,26 +41,20 @@ harden(provideBundle);
  * Returns promises for `zoe` and the `feeMintAccess`.
  *
  * @param {() => void} setJig
- * @returns {import('./amm/vpool-xyk-amm/setup.js').FarZoeKit}
  */
-export const setUpZoeForTest = (setJig = () => {}) => {
+export const setUpZoeForTest = async (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(setJig).admin,
-    undefined,
-    {
+  const { zoeService, feeMintAccessRetriever } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
-    },
+    }),
   );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
   return {
-    zoe,
-    feeMintAccess,
+    zoe: zoeService,
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 harden(setUpZoeForTest);

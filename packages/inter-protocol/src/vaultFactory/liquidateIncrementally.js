@@ -7,6 +7,7 @@ import {
   natSafeMath as NatMath,
   ceilMultiplyBy,
   oneMinus,
+  atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
@@ -51,7 +52,7 @@ const trace = makeTracer('LiqI', false);
  *   priceAuthority: PriceAuthority,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: TimerService,
- *   debtBrand: Brand,
+ *   debtBrand: Brand<'nat'>,
  *   MaxImpactBP: NatValue,
  *   OracleTolerance: Ratio,
  *   AMMMaxSlippage: Ratio,
@@ -264,10 +265,6 @@ const start = async zcf => {
       { stopAfter: debt },
     );
     await Promise.all([E(liqSeat).getOfferResult(), deposited]);
-
-    // This uses getCurrentAllocationJig only to support testing, so is ok
-    const amounts = await E(liqSeat).getCurrentAllocationJig();
-    trace('offerResult', { amounts });
   }
 
   /**
@@ -321,10 +318,7 @@ const start = async zcf => {
     const penaltyPaid = AmountMath.min(penalty, debtPaid);
 
     // Allocate penalty portion of proceeds to a seat that will hold it for transfer to reserve
-    penaltyPoolSeat.incrementBy(
-      debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
-    );
-    zcf.reallocate(penaltyPoolSeat, debtorSeat);
+    atomicTransfer(zcf, debtorSeat, penaltyPoolSeat, { Out: penaltyPaid });
 
     debtorSeat.exit();
     trace('exit seat');

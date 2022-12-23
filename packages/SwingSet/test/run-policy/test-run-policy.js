@@ -1,7 +1,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import {
   crankCounter,
@@ -23,9 +23,9 @@ async function testCranks(t, mode) {
     },
     defaultManagerType: 'xs-worker',
   };
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('left');
   const rightKref = c.pinVatRoot('right');
@@ -55,9 +55,9 @@ async function testCranks(t, mode) {
     throw Error(`unknown mode ${mode}`);
   }
 
-  let oldCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
+  let oldCrankNum = parseInt(kernelStorage.kvStore.get('crankNumber'), 10);
   function elapsedCranks() {
-    const newCrankNum = parseInt(hostStorage.kvStore.get('crankNumber'), 10);
+    const newCrankNum = parseInt(kernelStorage.kvStore.get('crankNumber'), 10);
     const elapsed = newCrankNum - oldCrankNum;
     oldCrankNum = newCrankNum;
     return elapsed;
@@ -92,7 +92,7 @@ async function testCranks(t, mode) {
     await c.run(computronCounter(4_000_000n));
     t.is(elapsedCranks(), 35);
     const ckey = `${rightID}.vs.vc.1.sseqnum`;
-    const seqnum = JSON.parse(hostStorage.kvStore.get(ckey));
+    const seqnum = JSON.parse(kernelStorage.kvStore.get(ckey));
     t.deepEqual(seqnum, kser(5));
   } else if (mode === 'wallclock') {
     const startMS = Date.now();

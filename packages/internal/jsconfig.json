@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "checkJs": true,
+    // Disable b/c @endo/init can't pass noImplicitAny
+    "checkJs": false,
     "noEmit": true,
     "downlevelIteration": true,
     "noImplicitAny": true,
@@ -17,6 +18,8 @@
     "*.js",
     "*.ts",
     "src/**/*.js",
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "test/**/*.js",
+    "test/**/*.ts"
   ]
 }

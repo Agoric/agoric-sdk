@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { makeStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 /**
@@ -61,8 +61,8 @@ export const makePriceAuthorityRegistry = () => {
     /**
      * Return a quote when relation is true of the arguments.
      *
-     * @param {Amount} amountIn monitor the amountOut corresponding to this amountIn
-     * @param {Amount} amountOutLimit the value to compare with the monitored amountOut
+     * @param {Amount<'nat'>} amountIn monitor the amountOut corresponding to this amountIn
+     * @param {Amount<'nat'>} amountOutLimit the value to compare with the monitored amountOut
      * @returns {Promise<PriceQuote>} resolve with a quote when `amountOut
      * relation amountOutLimit` is true
      */
@@ -159,11 +159,8 @@ export const makePriceAuthorityRegistry = () => {
 
       return Far('deleter', {
         delete() {
-          assert.equal(
-            priceStore.has(brandOut) && priceStore.get(brandOut),
-            record,
-            X`Price authority already dropped`,
-          );
+          (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
+            Fail`Price authority already dropped`;
           priceStore.delete(brandOut);
         },
       });

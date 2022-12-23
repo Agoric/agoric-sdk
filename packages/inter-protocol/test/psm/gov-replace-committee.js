@@ -80,7 +80,7 @@ const invitePSMCommitteeMembers = async (
     consume: {
       namesByAddressAdmin,
       economicCommitteeCreatorFacet,
-      econCharterStartResult,
+      econCharterKit,
     },
   },
   { options: { voterAddresses = {} } },
@@ -98,9 +98,7 @@ const invitePSMCommitteeMembers = async (
       addrInvitations.map(async ([addr, invitationP]) => {
         const [voterInvitation, charterMemberInvitation] = await Promise.all([
           invitationP,
-          E(
-            E.get(econCharterStartResult).creatorFacet,
-          ).makeCharterMemberInvitation(),
+          E(E.get(econCharterKit).creatorFacet).makeCharterMemberInvitation(),
         ]);
         console.log('sending charter, voting invitations to', addr);
         await reserveThenDeposit(
@@ -209,10 +207,10 @@ const main = async permittedPowers => {
   /*
    * tell all the PSM contracts about it
    */
-  const psmFacetsMap = await permittedPowers.consume.psmFacets;
+  const psmKitMap = await permittedPowers.consume.psmKit;
   // TODO make sure new PSMs get this committee (using ".reset" in the space?)
-  const replacements = [...psmFacetsMap.values()].map(psmFacets =>
-    E(psmFacets.psmGovernorCreatorFacet).replaceElectorate(newElectoratePoser),
+  const replacements = [...psmKitMap.values()].map(psmKit =>
+    E(psmKit.psmGovernorCreatorFacet).replaceElectorate(newElectoratePoser),
   );
   await Promise.all(replacements);
 

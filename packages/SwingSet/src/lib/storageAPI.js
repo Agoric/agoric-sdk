@@ -21,29 +21,6 @@ export function insistStorageAPI(kvStore) {
 }
 
 /**
- * Assert function to ensure that an object implements the enhanced storage API.
- * (StorageAPI plus methods { enumeratePrefixedKeys, getPrefixedValues,
- * deletePrefixedKeys }), also known as "KVStorePlus".
- *
- * @param {*} kvStore  The object to be tested
- *
- * @throws {Error} if, upon inspection, the parameter does not satisfy the above
- *   criteria.
- *
- * @returns {void}
- */
-export function insistEnhancedStorageAPI(kvStore) {
-  insistStorageAPI(kvStore);
-  for (const n of [
-    'enumeratePrefixedKeys',
-    'getPrefixedValues',
-    'deletePrefixedKeys',
-  ]) {
-    n in kvStore || Fail`kvStore.${n} is missing, cannot use`;
-  }
-}
-
-/**
  * Given two iterators over sequences of unique strings sorted in ascending
  * order lexicographically by UTF-16 code unit, produce a new iterator that will
  * output the ascending sequence of unique strings from their merged output.

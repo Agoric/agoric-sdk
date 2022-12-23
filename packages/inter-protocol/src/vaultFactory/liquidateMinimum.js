@@ -2,6 +2,7 @@ import { E } from '@endo/eventual-send';
 import {
   ceilMultiplyBy,
   offerTo,
+  atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
@@ -73,10 +74,7 @@ const start = async zcf => {
     const penaltyPaid = AmountMath.min(penalty, debtPaid);
 
     // Allocate penalty portion of proceeds to a seat that will hold it for transfer to reserve
-    penaltyPoolSeat.incrementBy(
-      debtorSeat.decrementBy(harden({ Out: penaltyPaid })),
-    );
-    zcf.reallocate(penaltyPoolSeat, debtorSeat);
+    atomicTransfer(zcf, debtorSeat, penaltyPoolSeat, { Out: penaltyPaid });
 
     debtorSeat.exit();
   };

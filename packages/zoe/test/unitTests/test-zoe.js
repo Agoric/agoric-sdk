@@ -5,7 +5,6 @@ import path from 'path';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
 import { passStyleOf, Far } from '@endo/marshal';
 import { getMethodNames } from '@agoric/internal';
 
@@ -21,8 +20,7 @@ const dirname = path.dirname(filename);
 test(`zoe.getInvitationIssuer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  // @ts-expect-error
-  const invitation = zcf.makeInvitation(undefined, 'invite');
+  const invitation = zcf.makeInvitation(() => {}, 'invite');
 
   // A few basic tests that the invitation issuer acts like an issuer.
   // Not exhaustive.
@@ -38,7 +36,8 @@ test(`E(zoe).install bad bundle`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).install(), {
-    message: 'a bundle must be provided',
+    message:
+      'In "install" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -54,7 +53,8 @@ test(`E(zoe).installBundleID bad id`, async t => {
   const { zoe } = setup();
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).installBundleID(), {
-    message: 'a bundle ID must be provided',
+    message:
+      'In "installBundleID" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -77,12 +77,7 @@ test(`E(zoe).startInstance bad installation`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).startInstance(), {
     message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"\[undefined\]" was not a valid installation/,
-      /.* was not a valid installation/,
+      'In "startInstance" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
@@ -97,10 +92,9 @@ function facetHasMethods(t, facet, names) {
 }
 
 test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
-  const { zoe, installation } = await setupZCFTest();
-  const result = await E(zoe).startInstance(installation);
+  const result = await setupZCFTest();
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
-  t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
+  t.deepEqual(Object.getOwnPropertyNames(result.startInstanceResult).sort(), [
     'adminFacet',
     'creatorFacet',
     'creatorInvitation',
@@ -109,23 +103,16 @@ test(`E(zoe).startInstance no issuerKeywordRecord, no terms`, async t => {
   ]);
   isEmptyFacet(t, result.creatorFacet);
   t.deepEqual(result.creatorInvitation, undefined);
-  facetHasMethods(t, result.publicFacet, ['makeInvitation']);
-  t.deepEqual(getMethodNames(result.adminFacet), [
-    'getVatShutdownPromise',
-    'restartContract',
-    'upgradeContract',
+  facetHasMethods(t, result.startInstanceResult.publicFacet, [
+    'makeInvitation',
   ]);
+  isEmptyFacet(t, result.startInstanceResult.adminFacet);
 });
 
 test(`E(zoe).startInstance promise for installation`, async t => {
-  const { zoe, installation } = await setupZCFTest();
-  const { promise: installationP, resolve: installationPResolve } =
-    makePromiseKit();
+  const { startInstanceResult } = await setupZCFTest();
 
-  const resultP = E(zoe).startInstance(installationP);
-  installationPResolve(installation);
-
-  const result = await resultP;
+  const result = await startInstanceResult;
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
   t.deepEqual(Object.getOwnPropertyNames(result).sort(), [
     'adminFacet',
@@ -145,7 +132,8 @@ test(`E(zoe).startInstance promise for installation`, async t => {
 });
 
 test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
-  const { zoe, installation } = await setupZCFTest();
+  const { zoe } = setup();
+  const installation = await E(zoe).installBundleID('b1-contract');
   const { moolaKit } = setup();
   await t.throwsAsync(
     () =>
@@ -156,18 +144,14 @@ test(`E(zoe).startInstance - terms, issuerKeywordRecord switched`, async t => {
       ),
     {
       message:
-        // Should be able to use more informative error once SES double
-        // disclosure bug is fixed. See
-        // https://github.com/endojs/endo/pull/640
-        //
-        // /keyword "something" must be an ascii identifier starting with upper case./
-        /keyword .* must be an ascii identifier starting with upper case./,
+        'In "startInstance" method of (ZoeService zoeService): arg 1?: something: [1]: 2 - Must match one of ["[match:remotable]","[match:kind]"]',
     },
   );
 });
 
 test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
-  const { zoe, installation } = await setupZCFTest();
+  const { zoe } = setup();
+  const installation = await E(zoe).installBundleID('b1-contract');
   const brand = Far('brand', {
     // eslint-disable-next-line no-use-before-define
     isMyIssuer: i => i === badIssuer,
@@ -195,14 +179,6 @@ test(`E(zoe).offer`, async t => {
   t.is(await E(userSeat).getOfferResult(), 'result');
 });
 
-test(`E(zoe).offer - no invitation`, async t => {
-  const { zoe } = await setupZCFTest();
-  // @ts-expect-error deliberate invalid arguments for testing
-  await t.throwsAsync(() => E(zoe).offer(), {
-    message: /A Zoe invitation is required, not "\[undefined\]"/,
-  });
-});
-
 test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const { mint, brand, issuer } = makeIssuerKit('Token');
@@ -214,7 +190,7 @@ test(`E(zoe).offer - payment instead of paymentKeywordRecord`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).offer(invitation, proposal, payment), {
     message:
-      '"keywordRecord" "[Alleged: Token payment]" must be a pass-by-copy record, not "remotable"',
+      'In "offer" method of (ZoeService zoeService): arg 2?: remotable "[Alleged: Token payment]" - Must be a copyRecord',
   });
 });
 
@@ -223,8 +199,13 @@ test(`E(zoe).getPublicFacet`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { publicFacet, instance } = await E(zoe).startInstance(installation);
+  t.throwsAsync(() =>
+    // @ts-expect-error not on public facet
+    E(publicFacet).missingMethod(),
+  );
   const offersCount = await E(publicFacet).getOffersCount();
   t.is(offersCount, 0n);
   t.is(await E(zoe).getPublicFacet(instance), publicFacet);
@@ -256,12 +237,7 @@ test(`E(zoe).getPublicFacet - no instance`, async t => {
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getPublicFacet(), {
     message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      'In "getPublicFacet" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -292,12 +268,7 @@ test(`zoe.getIssuers - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getIssuers(), {
     message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      'In "getIssuers" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -328,12 +299,7 @@ test(`zoe.getBrands - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getBrands(), {
     message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      'In "getBrands" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -355,6 +321,7 @@ test(`zoe.getTerms`, async t => {
   const contractPath = `${dirname}/../../src/contracts/automaticRefund`;
   const bundle = await bundleSource(contractPath);
   vatAdminState.installBundle('b1-refund', bundle);
+  /** @type {Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>} */
   const installation = await E(zoe).installBundleID('b1-refund');
   const { instance } = await E(zoe).startInstance(
     installation,
@@ -367,6 +334,8 @@ test(`zoe.getTerms`, async t => {
   );
 
   const zoeTerms = await E(zoe).getTerms(instance);
+  // @ts-expect-error not a term of the contract
+  t.is(zoeTerms.invalid, undefined);
 
   const expected = {
     issuers: {
@@ -386,12 +355,7 @@ test(`zoe.getTerms - no instance`, async t => {
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getTerms(), {
     message:
-      // Should be able to use more informative error once SES double
-      // disclosure bug is fixed. See
-      // https://github.com/endojs/endo/pull/640
-      //
-      // /"instance" not found: "\[undefined\]"/,
-      /.* not found: "\[undefined\]"/,
+      'In "getTerms" method of (ZoeService zoeService): arg 0: undefined "[undefined]" - Must be a remotable (InstanceHandle)',
   });
 });
 
@@ -419,8 +383,7 @@ test(`zoe.getInstallationForInstance`, async t => {
 
 test(`zoe.getInstance`, async t => {
   const { zoe, zcf, instance } = await setupZCFTest();
-  // @ts-expect-error
-  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const invitation = await E(zcf).makeInvitation(() => {}, 'invitation');
   const actualInstance = await E(zoe).getInstance(invitation);
   t.is(actualInstance, instance);
 });
@@ -429,14 +392,14 @@ test(`zoe.getInstance - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstance(), {
-    message: 'A Zoe invitation is required, not "[undefined]"',
+    message:
+      'In "getInstance" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
 test(`zoe.getInstallation`, async t => {
   const { zoe, zcf, installation } = await setupZCFTest();
-  // @ts-expect-error
-  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
+  const invitation = await E(zcf).makeInvitation(() => {}, 'invitation');
   const actualInstallation = await E(zoe).getInstallation(invitation);
   t.is(actualInstallation, installation);
 });
@@ -445,20 +408,16 @@ test(`zoe.getInstallation - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInstallation(), {
-    message: 'A Zoe invitation is required, not "[undefined]"',
+    message:
+      'In "getInstallation" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
 test(`zoe.getInvitationDetails`, async t => {
-  const { zoe, zcf, installation, instance } = await setupZCFTest();
+  const { zcf } = await setupZCFTest();
   // @ts-expect-error
-  const invitation = await E(zcf).makeInvitation(undefined, 'invitation');
-  const details = await E(zoe).getInvitationDetails(invitation);
-  t.deepEqual(details, {
-    description: 'invitation',
-    handle: details.handle,
-    installation,
-    instance,
+  await t.throwsAsync(() => E(zcf).makeInvitation(undefined, 'invitation'), {
+    message: 'offerHandler must be provided',
   });
 });
 
@@ -466,30 +425,12 @@ test(`zoe.getInvitationDetails - no invitation`, async t => {
   const { zoe } = await setupZCFTest();
   // @ts-expect-error invalid arguments for testing
   await t.throwsAsync(() => E(zoe).getInvitationDetails(), {
-    message: 'A Zoe invitation is required, not "[undefined]"',
+    message:
+      'In "getInvitationDetails" method of (ZoeService zoeService): Expected at least 1 arguments: []',
   });
 });
 
-test(`zcf.registerFeeMint twice`, async t => {
-  const { zoe, zcf: zcf1, zcf2, feeMintAccess } = await setupZCFTest();
-  const feeIssuer = E(zoe).getFeeIssuer();
-  const feeBrand = await E(feeIssuer).getBrand();
-
-  const fee1000 = AmountMath.make(feeBrand, 1000n);
-
-  const zcfMint1 = await zcf1.registerFeeMint('RUN', feeMintAccess);
-  const zcfMint2 = await zcf2.registerFeeMint('RUN', feeMintAccess);
-
-  const zcfSeat1 = zcfMint1.mintGains(harden({ Fee: fee1000 }));
-  const zcfSeat2 = zcfMint2.mintGains(harden({ Fee: fee1000 }));
-
-  t.deepEqual(zcfSeat1.getCurrentAllocation(), {
-    Fee: fee1000,
-  });
-  t.deepEqual(zcfSeat2.getCurrentAllocation(), {
-    Fee: fee1000,
-  });
-});
+test.todo(`zcf.registerFeeMint twice in different contracts`);
 
 test(`zoe.getConfiguration`, async t => {
   const { zoe } = await setupZCFTest();

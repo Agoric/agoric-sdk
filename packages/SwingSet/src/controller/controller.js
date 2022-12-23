@@ -15,16 +15,15 @@ import microtime from 'microtime';
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
+import { initSwingStore } from '@agoric/swing-store';
 
 import { checkBundle } from '@endo/check-bundle/lite.js';
-import { createSHA256 } from '../lib-nodejs/hasher.js';
 import engineGC from '../lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
 import { kslot } from '../lib/kmarshal.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
-import { provideHostStorage } from './hostStorage.js';
 import {
   buildKernelBundle,
   swingsetIsInitialized,
@@ -159,7 +158,7 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
 
 /**
  *
- * @param {HostStore} hostStorage
+ * @param {SwingStoreKernelStorage} kernelStorage
  * @param {Record<string, unknown>} deviceEndowments
  * @param {{
  *   verbose?: boolean,
@@ -175,11 +174,11 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
-  hostStorage = provideHostStorage(),
+  kernelStorage = initSwingStore().kernelStorage,
   deviceEndowments = {},
   runtimeOptions = {},
 ) {
-  const kvStore = hostStorage.kvStore;
+  const kvStore = kernelStorage.kvStore;
   insistStorageAPI(kvStore);
 
   // Use ambient process.env only if caller did not specify.
@@ -293,14 +292,14 @@ export async function makeSwingsetController(
     JSON.parse(kvStore.get('supervisorBundle')),
   ];
   const startXSnap = makeStartXSnap(bundles, {
-    snapStore: hostStorage.snapStore,
+    snapStore: kernelStorage.snapStore,
     env,
     spawn,
   });
 
   const kernelEndowments = {
     waitUntilQuiescent,
-    hostStorage,
+    kernelStorage,
     debugPrefix,
     vatEndowments,
     makeConsole,
@@ -312,7 +311,6 @@ export async function makeSwingsetController(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize: makeGcAndFinalize(engineGC),
-    createSHA256,
   };
 
   const kernelRuntimeOptions = {
@@ -420,7 +418,7 @@ export async function makeSwingsetController(
     },
 
     getActivityhash() {
-      return kernel.getActivityhash();
+      return kernelStorage.getActivityhash();
     },
 
     // everything beyond here is for tests, and everything should be migrated
@@ -434,6 +432,7 @@ export async function makeSwingsetController(
       const vatID = kernel.vatNameToID(vatName);
       const kref = kernel.getRootObject(vatID);
       kernel.pinObject(kref);
+      kernelStorage.emitCrankHashes();
       return kref;
     },
 
@@ -442,7 +441,10 @@ export async function makeSwingsetController(
     },
 
     kpResolution(kpid) {
-      return kernel.kpResolution(kpid);
+      const result = kernel.kpResolution(kpid);
+      // kpResolution does DB write (changes refcounts) so we need emitCrankHashes here
+      kernelStorage.emitCrankHashes();
+      return result;
     },
     vatNameToID(vatName) {
       return kernel.vatNameToID(vatName);
@@ -465,6 +467,7 @@ export async function makeSwingsetController(
       if (kpid) {
         kernel.kpRegisterInterest(kpid);
       }
+      kernelStorage.emitCrankHashes();
       return kpid;
     },
 
@@ -477,12 +480,14 @@ export async function makeSwingsetController(
       if (!options.upgradeMessage) {
         options.upgradeMessage = `vat ${vatName} upgraded`;
       }
-      return controller.queueToVatRoot(
+      const result = controller.queueToVatRoot(
         'vatAdmin',
         'upgradeStaticVat',
         [vatID, pauseTarget, bundleID, options],
         'ignore',
       );
+      // no emitCrankHashes here because queueToVatRoot did that
+      return result;
     },
   });
 
@@ -507,7 +512,7 @@ export async function makeSwingsetController(
  * @param {SwingSetConfig} config
  * @param {string[]} argv
  * @param {{
- *   hostStorage?: HostStore;
+ *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
  *   verbose?: boolean;
  *   kernelBundles?: Record<string, Bundle>;
@@ -525,7 +530,7 @@ export async function buildVatController(
   runtimeOptions = {},
 ) {
   const {
-    hostStorage = provideHostStorage(),
+    kernelStorage = initSwingStore().kernelStorage,
     env,
     verbose,
     kernelBundles: kernelAndOtherBundles = {},
@@ -548,18 +553,18 @@ export async function buildVatController(
   };
   const initializationOptions = { verbose, kernelBundles };
   let bootstrapResult;
-  if (!swingsetIsInitialized(hostStorage)) {
+  if (!swingsetIsInitialized(kernelStorage)) {
     // eslint-disable-next-line @jessie.js/no-nested-await
     bootstrapResult = await initializeSwingset(
       config,
       argv,
-      hostStorage,
+      kernelStorage,
       initializationOptions,
       runtimeOptions,
     );
   }
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     {},
     actualRuntimeOptions,
   );

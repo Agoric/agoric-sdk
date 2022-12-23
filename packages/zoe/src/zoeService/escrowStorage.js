@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { assert, details as X, q } from '@agoric/assert';
+import { q, Fail } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
@@ -16,7 +16,7 @@ import { arrayToObj } from '../objArrayConversion.js';
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const makeEscrowStorage = baggage => {
+export const provideEscrowStorage = baggage => {
   /** @type {WeakStore<Brand, ERef<Purse>>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
@@ -34,16 +34,14 @@ export const makeEscrowStorage = baggage => {
         }
       },
       err =>
-        assert.fail(
-          X`A purse could not be created for brand ${brand} because: ${err}`,
-        ),
+        Fail`A purse could not be created for brand ${brand} because: ${err}`,
     );
   };
 
   /**
-   * @type {MakeLocalPurse}
+   * @type {ProvideLocalPurse}
    */
-  const makeLocalPurse = (issuer, brand) => {
+  const provideLocalPurse = (issuer, brand) => {
     if (brandToPurse.has(brand)) {
       return /** @type {Purse} */ (brandToPurse.get(brand));
     } else {
@@ -85,14 +83,12 @@ export const makeEscrowStorage = baggage => {
     // keywords. Proposal.give keywords that do not have matching payments will
     // be caught in the deposit step.
     paymentKeywords.forEach(keyword => {
-      assert(
-        giveKeywords.includes(keyword),
-        X`The ${q(
+      giveKeywords.includes(keyword) ||
+        Fail`The ${q(
           keyword,
         )} keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ${q(
           giveKeywords,
-        )}`,
-      );
+        )}`;
     });
 
     const proposalKeywords = harden([...giveKeywords, ...wantKeywords]);
@@ -106,14 +102,12 @@ export const makeEscrowStorage = baggage => {
     // https://github.com/Agoric/agoric-sdk/issues/1271
     const amountsDeposited = await Promise.all(
       giveKeywords.map(keyword => {
-        assert(
-          payments[keyword] !== undefined,
-          X`The ${q(
+        payments[keyword] !== undefined ||
+          Fail`The ${q(
             keyword,
           )} keyword in proposal.give did not have an associated payment in the paymentKeywordRecord, which had keywords: ${q(
             paymentKeywords,
-          )}`,
-        );
+          )}`;
         return doDepositPayment(payments[keyword], give[keyword]);
       }),
     );
@@ -132,7 +126,7 @@ export const makeEscrowStorage = baggage => {
 
   return {
     createPurse, // createPurse does not return a purse
-    makeLocalPurse,
+    provideLocalPurse,
     withdrawPayments,
     depositPayments,
   };

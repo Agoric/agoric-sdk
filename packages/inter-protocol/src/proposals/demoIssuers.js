@@ -323,7 +323,7 @@ export const connectFaucet = async ({
 
     const faucetPaymentInfo = userPaymentRecords.flat();
 
-    const userFeePurse = await E(zoe).makeFeePurse();
+    const userFeePurse = await E(E(zoe).getFeeIssuer()).makeEmptyPurse();
 
     const faucet = Far('faucet', {
       /**
@@ -464,7 +464,7 @@ export const fundAMM = async ({
     mints,
     priceAuthorityVat,
     priceAuthorityAdmin,
-    vaultFactoryCreator,
+    vaultFactoryKit,
     zoe,
   },
   installation: {
@@ -576,7 +576,7 @@ export const fundAMM = async ({
         );
 
         const issuerPresence = await kit.issuer;
-        return E(vaultFactoryCreator).addVaultType(
+        return E(E.get(vaultFactoryKit).creatorFacet).addVaultType(
           issuerPresence,
           issuerName,
           rates,

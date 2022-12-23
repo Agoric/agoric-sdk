@@ -3,7 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { spawn } from 'child_process';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
   loadBasedir,
@@ -42,8 +42,8 @@ async function simpleCall(t) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
-  const controller = await buildVatController(config, [], { hostStorage });
+  const kernelStorage = initSwingStore().kernelStorage;
+  const controller = await buildVatController(config, [], { kernelStorage });
   t.teardown(controller.shutdown);
   const data = controller.dump();
   // note: data.vatTables is sorted by vatID, but we have no particular
@@ -194,18 +194,18 @@ test('XS bootstrap', async t => {
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
-  const hostStorage = provideHostStorage();
-  const c = await buildVatController(config, [], { hostStorage });
+  const kernelStorage = initSwingStore().kernelStorage;
+  const c = await buildVatController(config, [], { kernelStorage });
   t.teardown(c.shutdown);
   await c.run();
   t.deepEqual(c.dump().log, ['buildRootObject called', 'bootstrap called']);
   t.is(
-    hostStorage.kvStore.get('kernel.defaultManagerType'),
+    kernelStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
     'defaultManagerType is saved by kernelKeeper',
   );
   const vatID = c.vatNameToID('bootstrap');
-  const options = JSON.parse(hostStorage.kvStore.get(`${vatID}.options`));
+  const options = JSON.parse(kernelStorage.kvStore.get(`${vatID}.options`));
   t.is(
     options.managerType,
     'xs-worker',
@@ -214,15 +214,15 @@ test('XS bootstrap', async t => {
 });
 
 test('static vats are unmetered on XS', async t => {
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = await loadBasedir(
     new URL('basedir-controller-2', import.meta.url).pathname,
   );
   config.defaultManagerType = 'xs-worker';
-  await initializeSwingset(config, [], hostStorage);
+  await initializeSwingset(config, [], kernelStorage);
   const limited = [];
   const c = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     {},
     {
       spawn(command, args, options) {

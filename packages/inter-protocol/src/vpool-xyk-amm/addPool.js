@@ -1,6 +1,9 @@
 import { E } from '@endo/eventual-send';
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicTransfer,
+} from '@agoric/zoe/src/contractSupport/index.js';
 
 import { definePoolKind } from './pool.js';
 
@@ -173,10 +176,15 @@ export const makeAddPoolInvitation = (
     // transfer minPoolLiquidity in tokens from the funder to the reserve.
     helper.addLiquidityInternal(seat, secondaryAmount, centralAmount);
 
-    seat.decrementBy({ Liquidity: minLiqAmount });
     const { zcfSeat: reserveLiquidityTokenSeat } = zcf.makeEmptySeatKit();
-    reserveLiquidityTokenSeat.incrementBy({ [liquidityKeyword]: minLiqAmount });
-    zcf.reallocate(reserveLiquidityTokenSeat, seat);
+    atomicTransfer(
+      zcf,
+      seat,
+      reserveLiquidityTokenSeat,
+      { Liquidity: minLiqAmount },
+      { [liquidityKeyword]: minLiqAmount },
+    );
+
     seat.exit();
     pool.updateState();
 

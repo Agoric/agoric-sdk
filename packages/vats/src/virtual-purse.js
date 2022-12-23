@@ -120,7 +120,7 @@ function makeVirtualPurse(vpc, kit) {
     async receive(payment, optAmountShape = undefined) {
       if (isPromise(payment)) {
         throw TypeError(
-          `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: paymentPromise.then(actualPayment => deposit(actualPayment))`,
+          `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, actualPayment => deposit(actualPayment))`,
         );
       }
 

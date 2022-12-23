@@ -1,5 +1,5 @@
 import './types.js';
-import { assert, details as X, q } from '@agoric/assert';
+import { assert, details as X, q, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@agoric/nat';
@@ -44,20 +44,14 @@ export const assertIsRatio = ratio => {
   assert(keys.length === 2, X`Ratio ${ratio} must be a record with 2 fields.`);
   for (const name of keys) {
     ratioPropertyNames.includes(name) ||
-      assert.fail(
-        X`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`,
-      );
+      Fail`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`;
   }
   const numeratorValue = ratio.numerator.value;
   const denominatorValue = ratio.denominator.value;
   isNat(numeratorValue) ||
-    assert.fail(
-      X`The numerator value must be a NatValue, not ${numeratorValue}`,
-    );
+    Fail`The numerator value must be a NatValue, not ${numeratorValue}`;
   isNat(denominatorValue) ||
-    assert.fail(
-      X`The denominator value must be a NatValue, not ${denominatorValue}`,
-    );
+    Fail`The denominator value must be a NatValue, not ${denominatorValue}`;
 };
 
 /**
@@ -74,9 +68,7 @@ export const makeRatio = (
   denominatorBrand = numeratorBrand,
 ) => {
   denominator > 0n ||
-    assert.fail(
-      X`No infinite ratios! Denominator was 0/${q(denominatorBrand)}`,
-    );
+    Fail`No infinite ratios! Denominator was 0 ${q(denominatorBrand)}`;
 
   // @ts-expect-error cast to return type because make() ensures
   return harden({
@@ -286,7 +278,7 @@ export const multiplyRatios = (left, right) => {
     if (left.numerator.brand === left.denominator.brand) {
       return [right.numerator.brand, right.denominator.brand];
     }
-    assert.fail(X`at least one brand must cancel out: ${q(left)} ${q(right)}`);
+    throw Fail`at least one brand must cancel out: ${q(left)} ${q(right)}`;
   };
 
   const [numeratorBrand, denominatorBrand] = getRemainingBrands();
@@ -307,13 +299,9 @@ export const multiplyRatios = (left, right) => {
 export const oneMinus = ratio => {
   assertIsRatio(ratio);
   ratio.numerator.brand === ratio.denominator.brand ||
-    assert.fail(
-      X`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`,
-    );
+    Fail`oneMinus only supports ratios with a single brand, but ${ratio.numerator.brand} doesn't match ${ratio.denominator.brand}`;
   ratio.numerator.value <= ratio.denominator.value ||
-    assert.fail(
-      X`Parameter must be less than or equal to 1: ${ratio.numerator.value}/${ratio.denominator.value}`,
-    );
+    Fail`Parameter must be less than or equal to 1: ${ratio.numerator.value}/${ratio.denominator.value}`;
   return makeRatio(
     subtract(ratio.denominator.value, ratio.numerator.value),
     ratio.numerator.brand,
@@ -387,6 +375,7 @@ export const quantize = (ratio, newDen) => {
 };
 
 const NUMERIC_RE = /^(\d\d*)(?:\.(\d*))?$/;
+/** @typedef {bigint | number | string} ParsableNumber */
 
 /**
  * Create a ratio from a given numeric value.

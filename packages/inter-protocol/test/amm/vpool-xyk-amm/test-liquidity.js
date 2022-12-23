@@ -252,7 +252,7 @@ test('amm add and remove liquidity', async t => {
   };
   await tracker.assertChange(poolLiquidity);
 
-  const alloc = await E(addLiquiditySeat).getCurrentAllocationJig();
+  const alloc = await E(addLiquiditySeat).getFinalAllocation();
   t.deepEqual(alloc, {
     Central: central(0n),
     Liquidity: AmountMath.make(liquidityBrand, 1_499_999_000n),
@@ -380,7 +380,7 @@ test('MinInitialPoolLiquidity to reserve', async t => {
     { committeeName: 'EnBancPanel', committeeSize: 3 },
     centralR,
   );
-  const { reserveCreatorFacet } = space.consume;
+  const { reserveKit } = space.consume;
 
   const liquidityIssuer = await E(amm.ammPublicFacet).addIssuer(
     moolaKit.issuer,
@@ -413,6 +413,7 @@ test('MinInitialPoolLiquidity to reserve', async t => {
     `Added Moola and Central Liquidity`,
   );
 
+  const reserveCreatorFacet = E.get(reserveKit).creatorFacet;
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.deepEqual(reserveAllocations, {
     RmoolaLiquidity: AmountMath.make(liquidityBrand, 1000n),
@@ -492,7 +493,7 @@ test('add wrong liquidity', async t => {
     }),
   );
 
-  const alloc = await E(addLiquiditySeat).getCurrentAllocationJig();
+  const alloc = await E(addLiquiditySeat).getFinalAllocation();
   t.deepEqual(alloc, {
     Central: central(0n),
     Liquidity: AmountMath.make(liquidityBrand, 1_499_999_000n),

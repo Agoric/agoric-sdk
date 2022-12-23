@@ -2,6 +2,7 @@ import { fork } from 'child_process';
 import path from 'path';
 import anylogger from 'anylogger';
 
+import { E } from '@endo/eventual-send';
 import { makeQueue } from '@endo/stream';
 
 import { makeShutdown } from './shutdown.js';
@@ -24,7 +25,7 @@ const withMutex = operation => {
   return async (...args) => {
     await mutex.get();
     const result = operation(...args);
-    mutex.put(result.then(() => {}));
+    mutex.put(E.when(result, () => {}));
     return result;
   };
 };

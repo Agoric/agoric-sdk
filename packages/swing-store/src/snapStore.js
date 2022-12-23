@@ -31,6 +31,20 @@ import {
  * }} SnapStore
  */
 
+/** @type {AssertFail} */
+function fail() {
+  assert.fail('snapStore not available in ephemeral swingStore');
+}
+
+/** @type {SnapStore} */
+export const ephemeralSnapStore = {
+  has: fail,
+  load: fail,
+  save: fail,
+  prepareToDelete: fail,
+  commitDeletes: fail,
+};
+
 const finished = promisify(finishedCallback);
 
 const { freeze } = Object;

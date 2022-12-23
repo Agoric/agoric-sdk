@@ -1,8 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { getAllState, setAllState } from '@agoric/swing-store';
-import { provideHostStorage } from '../../../src/controller/hostStorage.js';
+import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
 
 import {
   buildVatController,
@@ -41,14 +40,14 @@ async function doTerminateNonCritical(
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], {
     ...t.context.data,
-    hostStorage,
+    kernelStorage,
   });
   t.teardown(controller.shutdown);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
-  const preProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
+  const preProbe = kernelStorage.kvStore.get(`${deadVatID}.options`);
   if (!dynamic) {
     t.truthy(preProbe);
   }
@@ -90,7 +89,7 @@ async function doTerminateNonCritical(
     'foo4P.catch Error: vat terminated',
     ...dynamicDone,
   ]);
-  const postProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
+  const postProbe = kernelStorage.kvStore.get(`${deadVatID}.options`);
   t.is(postProbe, undefined);
 }
 
@@ -104,14 +103,14 @@ async function doTerminateCritical(
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], {
     ...t.context.data,
-    hostStorage,
+    kernelStorage,
   });
   t.teardown(controller.shutdown);
   t.is(controller.kpStatus(controller.bootstrapResult), 'unresolved');
-  const preProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
+  const preProbe = kernelStorage.kvStore.get(`${deadVatID}.options`);
   if (!dynamic) {
     t.truthy(preProbe);
   }
@@ -147,7 +146,7 @@ async function doTerminateCritical(
     t.is(thrown.message, mode);
   }
   t.is(controller.kpStatus(kpid), dynamic ? 'unresolved' : 'fulfilled');
-  const postProbe = hostStorage.kvStore.get(`${deadVatID}.options`);
+  const postProbe = kernelStorage.kvStore.get(`${deadVatID}.options`);
   t.is(postProbe, undefined);
 }
 
@@ -390,10 +389,10 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const hostStorage1 = provideHostStorage();
+  const kernelStorage1 = initSwingStore().kernelStorage;
   {
     const c1 = await buildVatController(config, [], {
-      hostStorage: hostStorage1,
+      kernelStorage: kernelStorage1,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c1.shutdown);
@@ -408,13 +407,13 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       'done: Error: arbitrary reason',
     ]);
   }
-  const state1 = getAllState(hostStorage1);
-  const hostStorage2 = provideHostStorage();
+  const state1 = getAllState(kernelStorage1);
+  const kernelStorage2 = initSwingStore().kernelStorage;
   // XXX TODO also copy transcripts
-  setAllState(hostStorage2, state1);
+  setAllState(kernelStorage2, state1);
   {
     const c2 = await buildVatController(config, [], {
-      hostStorage: hostStorage2,
+      kernelStorage: kernelStorage2,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c2.shutdown);
@@ -445,10 +444,10 @@ test.serial('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
   const controller = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles: t.context.data.kernelBundles,
   });
   t.teardown(controller.shutdown);
@@ -458,7 +457,7 @@ test.serial('dead vat state removed', async t => {
     controller.kpResolution(controller.bootstrapResult),
     kser('bootstrap done'),
   );
-  const kvStore = hostStorage.kvStore;
+  const kvStore = kernelStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
   t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length > 30, true);

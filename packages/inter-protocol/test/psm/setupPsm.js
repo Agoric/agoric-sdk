@@ -26,24 +26,19 @@ import { allValues } from '../../src/collect.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-export const setUpZoeForTest = () => {
+export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
-    makeFakeVatAdmin(() => {}).admin,
-    undefined,
-    {
+  const { zoeService, feeMintAccessRetriever } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
-    },
+    }),
   );
-  /** @type {ERef<ZoeService>} */
-  const zoe = makeFar(zoeService);
-  const feeMintAccess = makeFar(nonFarFeeMintAccess);
+
   return {
-    zoe,
-    feeMintAccess,
+    zoe: zoeService,
+    feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };
 harden(setUpZoeForTest);
@@ -59,10 +54,8 @@ export const setupPsmBootstrap = async (
   timer = buildManualTimer(console.log),
   farZoeKit,
 ) => {
-  if (!farZoeKit) {
-    farZoeKit = await setUpZoeForTest();
-  }
-  const { zoe } = farZoeKit;
+  const { zoe: wrappedZoe, feeMintAccessP } = await (farZoeKit ||
+    setUpZoeForTest());
 
   const space = /** @type {any} */ (makePromiseSpace());
   const { produce, consume } =
@@ -71,7 +64,9 @@ export const setupPsmBootstrap = async (
     );
 
   produce.chainTimerService.resolve(timer);
-  produce.zoe.resolve(zoe);
+  produce.zoe.resolve(wrappedZoe);
+  const zoe = space.consume.zoe;
+  produce.feeMintAccess.resolve(feeMintAccessP);
 
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
@@ -97,16 +92,10 @@ export const setupPsm = async (
   timer = buildManualTimer(t.log),
   farZoeKit,
 ) => {
-  if (!farZoeKit) {
-    farZoeKit = await setUpZoeForTest();
-  }
-
   const knut = withAmountUtils(makeIssuerKit('KNUT'));
 
-  const { feeMintAccess, zoe } = farZoeKit;
   const space = await setupPsmBootstrap(timer, farZoeKit);
-  space.produce.zoe.resolve(farZoeKit.zoe);
-  space.produce.feeMintAccess.resolve(feeMintAccess);
+  const zoe = space.consume.zoe;
   const { consume, brand, issuer, installation, instance } = space;
   const psmBundle = await provideBundle(t, psmRoot, 'psm');
   installation.produce.psm.resolve(E(zoe).install(psmBundle));
@@ -122,7 +111,7 @@ export const setupPsm = async (
   brand.produce.AUSD.resolve(knut.brand);
   issuer.produce.AUSD.resolve(knut.issuer);
 
-  space.produce.psmFacets.resolve(makeScalarMapStore());
+  space.produce.psmKit.resolve(makeScalarMapStore());
   const istIssuer = await E(zoe).getFeeIssuer();
   const istBrand = await E(istIssuer).getBrand();
 
@@ -162,10 +151,10 @@ export const setupPsm = async (
     counter: installation.consume.binaryVoteCounter,
   });
 
-  const allPsms = await consume.psmFacets;
-  const psmFacets = allPsms.get(knut.brand);
-  const governorCreatorFacet = psmFacets.psmGovernorCreatorFacet;
-  const governorInstance = psmFacets.psmGovernor;
+  const allPsms = await consume.psmKit;
+  const psmKit = allPsms.get(knut.brand);
+  const governorCreatorFacet = psmKit.psmGovernorCreatorFacet;
+  const governorInstance = psmKit.psmGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const g = {
     governorInstance,
@@ -177,15 +166,16 @@ export const setupPsm = async (
   /** @type { GovernedPublicFacet<import('../../src/psm/psm.js').PsmPublicFacet> } */
   const psmPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const psm = {
-    psmCreatorFacet: psmFacets.psmCreatorFacet,
+    psmCreatorFacet: psmKit.psmCreatorFacet,
     psmPublicFacet,
     instance: governedInstance,
   };
 
   const committeeCreator = await consume.economicCommitteeCreatorFacet;
   const electorateInstance = await instance.consume.economicCommittee;
-  const { creatorFacet: econCharterCreatorFacet } =
-    await consume.econCharterStartResult;
+  const { creatorFacet: econCharterCreatorFacet } = await E.get(
+    consume.econCharterKit,
+  );
 
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
   const poserInvitationAmount = await E(

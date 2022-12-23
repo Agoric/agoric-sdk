@@ -10,14 +10,14 @@ import { makeNotifier } from '@agoric/notifier';
  * @param {object} opts
  * @param {ERef<Mint<'set'>>} [opts.quoteMint]
  * @param {ERef<PriceAuthority>} opts.sourcePriceAuthority
- * @param {Brand} opts.sourceBrandIn
- * @param {Brand} opts.sourceBrandOut
- * @param {Brand} [opts.actualBrandIn]
- * @param {Brand} [opts.actualBrandOut]
- * @param {(amountIn: Amount) => Amount} [opts.makeSourceAmountIn]
- * @param {(amountOut: Amount) => Amount} [opts.makeSourceAmountOut]
- * @param {(sourceAmountIn: Amount) => Amount} [opts.transformSourceAmountIn]
- * @param {(sourceAmountOut: Amount) => Amount} [opts.transformSourceAmountOut]
+ * @param {Brand<'nat'>} opts.sourceBrandIn
+ * @param {Brand<'nat'>} opts.sourceBrandOut
+ * @param {Brand<'nat'>} [opts.actualBrandIn]
+ * @param {Brand<'nat'>} [opts.actualBrandOut]
+ * @param {(amountIn: Amount<'nat'>) => Amount<'nat'>} [opts.makeSourceAmountIn]
+ * @param {(amountOut: Amount<'nat'>) => Amount<'nat'>} [opts.makeSourceAmountOut]
+ * @param {(sourceAmountIn: Amount<'nat'>) => Amount<'nat'>} [opts.transformSourceAmountIn]
+ * @param {(sourceAmountOut: Amount<'nat'>) => Amount<'nat'>} [opts.transformSourceAmountOut]
  */
 export const makePriceAuthorityTransform = async ({
   quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
@@ -104,8 +104,8 @@ export const makePriceAuthorityTransform = async ({
     /**
      * Return a quote when sourceMethod fires.
      *
-     * @param {Amount} amountIn the input value to the calcAmountTrigger
-     * @param {Amount} amountOutLimit the value to compare with the output
+     * @param {Amount<'nat'>} amountIn the input value to the calcAmountTrigger
+     * @param {Amount<'nat'>} amountOutLimit the value to compare with the output
      * of calcAmountTrigger
      */
     const quoteWhenOut = async (amountIn, amountOutLimit) => {
@@ -129,8 +129,8 @@ export const makePriceAuthorityTransform = async ({
    */
   const makeMutableQuote = sourceMethod => {
     /**
-     * @param {Amount} amountIn
-     * @param {Amount} amountOutLimit
+     * @param {Amount<'nat'>} amountIn
+     * @param {Amount<'nat'>} amountOutLimit
      */
     const mutableQuoteWhenOut = (amountIn, amountOutLimit) => {
       AmountMath.coerce(actualBrandIn, amountIn);

@@ -2,6 +2,7 @@
 /* eslint-disable @jessie.js/no-nested-await */
 import anylogger from 'anylogger';
 
+import { E } from '@endo/far';
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -14,7 +15,7 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { assert, Fail } from '@agoric/assert';
-import { openSwingStore, DEFAULT_LMDB_MAP_SIZE } from '@agoric/swing-store';
+import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
@@ -49,7 +50,7 @@ const getHostKey = path => `host.${path}`;
 async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
-  hostStorage,
+  kernelStorage,
   vatconfig,
   argv,
   env,
@@ -92,7 +93,7 @@ async function buildSwingset(
   }
 
   async function ensureSwingsetInitialized() {
-    if (swingsetIsInitialized(hostStorage)) {
+    if (swingsetIsInitialized(kernelStorage)) {
       return;
     }
 
@@ -110,11 +111,11 @@ async function buildSwingset(
     }
     config.pinBootstrapRoot = true;
 
-    await initializeSwingset(config, argv, hostStorage, { debugPrefix });
+    await initializeSwingset(config, argv, kernelStorage, { debugPrefix });
   }
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
-    hostStorage,
+    kernelStorage,
     deviceEndowments,
     {
       env,
@@ -214,22 +215,17 @@ export async function launch({
   verboseBlocks = false,
   metricsProvider = DEFAULT_METER_PROVIDER,
   slogSender,
-  mapSize = DEFAULT_LMDB_MAP_SIZE,
   swingStoreTraceFile,
   keepSnapshots,
   afterCommitCallback = async () => ({}),
 }) {
   console.info('Launching SwingSet kernel');
 
-  const { kvStore, streamStore, snapStore, commit } = openSwingStore(
-    kernelStateDBDir,
-    { mapSize, traceFile: swingStoreTraceFile, keepSnapshots },
-  );
-  const hostStorage = {
-    kvStore,
-    streamStore,
-    snapStore,
-  };
+  const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
+    traceFile: swingStoreTraceFile,
+    keepSnapshots,
+  });
+  const { kvStore, commit } = hostStorage;
 
   // makeQueue() thinks it should commit/abort, but the kvStore doesn't provide
   // those ('commit' is reserved for flushing the block buffer). Furthermore
@@ -263,7 +259,7 @@ export async function launch({
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
     bridgeOutbound,
-    hostStorage,
+    kernelStorage,
     vatconfig,
     argv,
     env,
@@ -580,7 +576,7 @@ export async function launch({
     const p = fn();
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
-    p.then(finish, e => {
+    E.when(p, finish, e => {
       // None of these must fail, and if they do, log them verbosely before
       // returning to the chain.
       blockManagerConsole.error(type, 'error:', e);

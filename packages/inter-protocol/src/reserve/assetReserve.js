@@ -1,7 +1,10 @@
 import { E, Far } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import { offerTo } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  offerTo,
+  atomicTransfer,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { provideDurableMapStore, vivifyKindMulti } from '@agoric/vat-data';
 
 import { AMM_INSTANCE } from './params.js';
@@ -253,10 +256,14 @@ const start = async (zcf, privateArgs, baggage) => {
     } = seat.getProposal();
 
     const collateralKeyword = getKeywordForBrand(amountIn.brand);
-    seat.decrementBy(harden({ Collateral: amountIn }));
-    collateralSeat.incrementBy(harden({ [collateralKeyword]: amountIn }));
 
-    zcf.reallocate(collateralSeat, seat);
+    atomicTransfer(
+      zcf,
+      seat,
+      collateralSeat,
+      { Collateral: amountIn },
+      { [collateralKeyword]: amountIn },
+    );
     seat.exit();
 
     trace('received collateral', amountIn);
@@ -333,14 +340,9 @@ const start = async (zcf, privateArgs, baggage) => {
     const offerToSeat = feeMint.mintGains(harden({ Fee: fee }));
     state.totalFeeMinted = AmountMath.add(state.totalFeeMinted, fee);
 
-    offerToSeat.incrementBy(
-      collateralSeat.decrementBy(
-        harden({
-          [collateralKeyword]: collateral,
-        }),
-      ),
-    );
-    zcf.reallocate(collateralSeat, offerToSeat);
+    atomicTransfer(zcf, collateralSeat, offerToSeat, {
+      [collateralKeyword]: collateral,
+    });
 
     // Add Fee tokens and collateral to the AMM
     const invitation = await E(
@@ -368,17 +370,13 @@ const start = async (zcf, privateArgs, baggage) => {
     const liquidityAmount = offerToSeat.getCurrentAllocation();
     const liquidityKeyword = makeLiquidityKeyword(collateralKeyword);
 
-    offerToSeat.decrementBy(
-      harden({
-        Liquidity: liquidityAmount.Liquidity,
-      }),
+    atomicTransfer(
+      zcf,
+      offerToSeat,
+      collateralSeat,
+      { Liquidity: liquidityAmount.Liquidity },
+      { [liquidityKeyword]: liquidityAmount.Liquidity },
     );
-    collateralSeat.incrementBy(
-      harden({
-        [liquidityKeyword]: liquidityAmount.Liquidity,
-      }),
-    );
-    zcf.reallocate(offerToSeat, collateralSeat);
     updateMetrics({ state });
   };
 

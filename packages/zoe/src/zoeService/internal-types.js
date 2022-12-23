@@ -14,7 +14,7 @@
  * before with `feeMintAccess`. In that case, we do not create a new
  * purse, but reuse the existing purse.
  *
- * @callback MakeLocalPurse
+ * @callback ProvideLocalPurse
  * @param {Issuer} issuer
  * @param {Brand} brand
  * @returns {Purse}
@@ -86,9 +86,9 @@
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
- * @property {Issuer} invitationIssuer
- * @property {object} root of a RootAndAdminNode
- * @property {AdminNode} adminNode of a RootAndAdminNode
+ * @property {() => Issuer} getInvitationIssuer
+ * @property {() => object} getRoot of a RootAndAdminNode
+ * @property {() => AdminNode} getAdminNode of a RootAndAdminNode
  */
 
 /**
@@ -131,8 +131,9 @@
  * @property {import('./utils.js').GetPublicFacet} getPublicFacet
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
- * @property {GetTerms} getTerms
+ * @property {import('./utils').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
+ * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation

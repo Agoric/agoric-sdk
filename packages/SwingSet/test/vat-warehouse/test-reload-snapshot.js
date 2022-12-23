@@ -2,8 +2,11 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import tmp from 'tmp';
-import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import {
+  initSwingStore,
+  makeSnapStore,
+  makeSnapStoreIO,
+} from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 test('vat reload from snapshot', async t => {
@@ -23,21 +26,23 @@ test('vat reload from snapshot', async t => {
   const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
   const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
-  const hostStorage = { snapStore, ...provideHostStorage() };
+  const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
   const argv = [];
-  await initializeSwingset(config, argv, hostStorage);
+  await initializeSwingset(config, argv, kernelStorage);
 
-  const c1 = await makeSwingsetController(hostStorage, null);
+  const c1 = await makeSwingsetController(kernelStorage, null);
   c1.pinVatRoot('target');
   const vatID = c1.vatNameToID('target');
 
   function getPositions() {
-    const lastSnapshot = hostStorage.kvStore.get(`local.${vatID}.lastSnapshot`);
+    const lastSnapshot = kernelStorage.kvStore.get(
+      `local.${vatID}.lastSnapshot`,
+    );
     const start = lastSnapshot
       ? JSON.parse(lastSnapshot).startPos.itemCount
       : 0;
-    const endPosition = hostStorage.kvStore.get(`${vatID}.t.endPosition`);
+    const endPosition = kernelStorage.kvStore.get(`${vatID}.t.endPosition`);
     const end = JSON.parse(endPosition).itemCount;
     return [start, end];
   }
@@ -58,7 +63,7 @@ test('vat reload from snapshot', async t => {
   t.deepEqual(getPositions(), [8, 12]);
   await c1.shutdown();
 
-  const c2 = await makeSwingsetController(hostStorage);
+  const c2 = await makeSwingsetController(kernelStorage);
   const expected2 = [`count = 7`, `count = 8`, `count = 9`, `count = 10`];
   t.deepEqual(c2.dump().log, expected2); // replayed 4 deliveries
   c2.queueToVatRoot('target', 'count', []);

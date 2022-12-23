@@ -1,11 +1,10 @@
 import { assert } from '@agoric/assert';
 import { initEmpty, makeHeapFarInstance } from '@agoric/store';
-import {
-  provide,
-  defineDurableFarClass,
-  makeKindHandle,
-} from '@agoric/vat-data';
+import { vivifyFarClass } from '@agoric/vat-data';
+
 import { HandleI } from './typeGuards.js';
+
+const { Fail } = assert;
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -16,14 +15,10 @@ import { HandleI } from './typeGuards.js';
  * @returns {H extends 'Instance' ? () => Instance : () => Handle<H>}
  */
 export const defineDurableHandle = (baggage, handleType) => {
-  assert.typeof(handleType, 'string', 'handleType must be a string');
-  const durableHandleKindHandle = provide(
+  typeof handleType === 'string' || Fail`handleType must be a string`;
+  const makeHandle = vivifyFarClass(
     baggage,
-    `${handleType}KindHandle`,
-    () => makeKindHandle(`${handleType}Handle`),
-  );
-  const makeHandle = defineDurableFarClass(
-    durableHandleKindHandle,
+    `${handleType}Handle`,
     HandleI,
     initEmpty,
     {},
@@ -41,7 +36,7 @@ harden(defineDurableHandle);
  * @returns {H extends 'Instance' ? Instance : Handle<H>}
  */
 export const makeHandle = handleType => {
-  assert.typeof(handleType, 'string', 'handleType must be a string');
+  typeof handleType === 'string' || Fail`handleType must be a string`;
   // Return the intersection type (really just an empty object).
   // @ts-expect-error Bit by our own opaque types.
   return /** @type {Handle<H>} */ (
