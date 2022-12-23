@@ -30,6 +30,7 @@ test('test vivifyFarClass', t => {
     baggage,
     'UpCounter',
     UpCounterI,
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       incr(y = 1) {
@@ -50,6 +51,10 @@ test('test vivifyFarClass', t => {
     message:
       'In "incr" method of (UpCounter): arg 0?: string "foo" - Must be a number',
   });
+  // @ts-expect-error arity check
+  makeUpCounter(3, 4);
+  // @ts-expect-error type check
+  makeUpCounter('str');
 });
 
 test('test vivifyFarClassKit', t => {
@@ -59,6 +64,7 @@ test('test vivifyFarClassKit', t => {
     baggage,
     'Counter',
     { up: UpCounterI, down: DownCounterI },
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       up: {
@@ -93,6 +99,10 @@ test('test vivifyFarClassKit', t => {
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
+  // @ts-expect-error arity check
+  makeCounterKit(3, 4);
+  // @ts-expect-error type check
+  makeCounterKit('str');
 });
 
 test('test vivifyFarInstance', t => {

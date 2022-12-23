@@ -19,13 +19,14 @@ import {
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A,S,T
+ * @template {(...args: any) => any} I init state function
+ * @template T behavior
  * @param {string} tag
  * @param {any} interfaceGuard
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ self: T, state: S }>} methods
- * @param {DefineKindOptions<{ self: T, state: S }>} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @param {I} init
+ * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
+ * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
 export const defineVirtualFarClass = (
   tag,
@@ -45,15 +46,14 @@ harden(defineVirtualFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A args to init
- * @template S state from init
+ * @template {(...args: any) => any} I init state function
  * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
  * @param {string} tag
  * @param {any} interfaceGuardKit
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ facets: T, state: S }> } facets
- * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @param {I} init
+ * @param {T & ThisType<{ facets: T, state: ReturnType<I> }> } facets
+ * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
 export const defineVirtualFarClassKit = (
   tag,
@@ -73,15 +73,14 @@ harden(defineVirtualFarClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A args to init
- * @template S state from init
+ * @template {(...args: any) => any} I init state function
  * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuard
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ self: T, state: S }>} methods
- * @param {DefineKindOptions<{ self: T, state: S }>} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @param {I} init
+ * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
+ * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
 export const defineDurableFarClass = (
   kindHandle,
@@ -101,15 +100,14 @@ harden(defineDurableFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A args to init
- * @template S state from init
+ * @template {(...args: any) => any} I init state function
  * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
  * @param {DurableKindHandle} kindHandle
  * @param {any} interfaceGuardKit
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ facets: T, state: S }> } facets
- * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @param {I} init
+ * @param {T & ThisType<{ facets: T, state: ReturnType<I>}> } facets
+ * @param {DefineKindOptions<{ facets: T, state: ReturnType<I>}>} [options]
+ * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
 export const defineDurableFarClassKit = (
   kindHandle,
@@ -129,16 +127,15 @@ harden(defineDurableFarClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A args to init
- * @template S state from init
+ * @template {(...args: any) => any} I init state function
  * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {any} interfaceGuard
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ self: T, state: S }>} methods
- * @param {DefineKindOptions<{ self: T, state: S }>} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @param {I} init
+ * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
+ * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
 export const vivifyFarClass = (
   baggage,
@@ -159,16 +156,15 @@ harden(vivifyFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template A args to init
- * @template S state from init
+ * @template {(...args: any) => any} I init state function
  * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {any} interfaceGuardKit
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ facets: T, state: S }> } facets
- * @param {DefineKindOptions<{ facets: T, state: S }>} [options]
- * @returns {(...args: A[]) => (T & RemotableBrand<{}, T>)}
+ * @param {I} init
+ * @param {T & ThisType<{ facets: T, state: ReturnType<I> }> } facets
+ * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
 export const vivifyFarClassKit = (
   baggage,
