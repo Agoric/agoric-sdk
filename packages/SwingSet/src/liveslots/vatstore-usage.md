@@ -18,13 +18,13 @@ This file describes the layout of the vatstore keyspace.
 
 # Counters
 
-Liveslots maintains three counters to create the distinct vrefs that it transmits to the kernel. These counters are initialized the first time `startVat` is called (in the very first version of a vat), and written to the vatstore at the end of each delivery.
+Liveslots maintains three durable counters to create the distinct vrefs that it transmits to the kernel. These counters are initialized the first time `startVat` is called (in the very first version of a vat), and written to the vatstore at the end of each delivery as a JSON-serialized record at key `idCounters`.
 
-* `exportID`: each exported object vref (`o+NN`) and virtual/durable Kind gets the next ID
-* `collectionID`: each collection gets the next ID
-* `promiseID`: each exported Promise and outbound-message `result` gets the next ID
+* `exportID`: an integer indicating the ID of the next exported Remotable or defined Kind and incremented upon each allocation of such a value. Technically starts at 1, but that is mostly irrelevant because the root object itself is associated with 0 and many initial values are claimed before any userspace vat code has a chance to run (described below).
+* `collectionID`: an integer indicating the Collection ID of the next collection and incremented upon each allocation of a new collection. Starts at 1, which is claimed by "[baggage](#baggage)".
+* `promiseID`: an integer indicating the ID for the next exported promise (including a promise implicitly created for outbound-message results). Starts at 5.
 
-The first ten exportIDs (covering `o+0` through `o+9`) are consumed by liveslots during vat startup, leaving `10` as the first Kind ID available for userspace.
+The current version of liveslots consumes the first ten exportIDs (covering `o+0` through `o+9`) during vat startup, leaving `10` as the first Kind ID available for userspace.
 
 * `o+0`: root object
 * `o+1`: identifies the KindHandle Kind ID, each `o+1/${kindHandleID}` instance of which is a KindHandle
@@ -62,9 +62,9 @@ In a c-list or virtualized data, you may see vrefs like these:
 * `o+12/2:0`: the first facet of a different instance
 * `o+12/3:0`: the first facet of another different instance
 
-Each instance of a virtual object stores state in a vatstore key indexed by the baseref. If `o+12/1:0` and `o+12/1:1` are the facet vrefs for a cohort whose baseref is `o+12/1`, the cohort's shared state will be stored in `vom.o+12/1` as a JSON-serialized record. The keys of this record are property names: if the Kind uses `state.prop1`, the record will have a key named `prop1`. For each property, the value is a capdata structure: a `{ body: string, slots: any[] }` record.
+Each instance of a virtual object stores state in a vatstore key indexed by the baseref. If `o+12/1:0` and `o+12/1:1` are the facet vrefs for a cohort whose baseref is `o+12/1`, the cohort's shared state will be stored in `vom.o+12/1` as a JSON-serialized record. The keys of this record are property names: if the Kind uses `state.prop1`, the record will have a key named `prop1`. For each property, the value is a `{ body: string, slots: any[] }` capdata record with string-valued slot items (and unlike the treatment of capdata in many other parts of the system, it is not independently serialized).
 
-* `v6.vs.vom.o+12/1` : `{"prop1":{"body":"1","slots":[]}}`
+* `v6.vs.vom.o+12/1` : `{"booleanProp":{"body":"true","slots":[]},"arrayProp":{"body":"[]","slots":[]}}`
 
 In the refcounting portion of the vatstore (`vom.rc.${baseref}`), you will see baserefs:
 
@@ -79,27 +79,27 @@ In the export-status portion of the vatstore (`vom.es.${baseref}`), you will see
   * value `r`: the plain Remotable has been exported and is "reachable" by the kernel
   * value `s`: the Remotable was exported, the kernel dropped it, and is still "recognizable" by the kernel ("s" for "see")
   * If the kernel can neither reach nor recognize the export, the vatstore key will be missing entirely.
-* `v6.vs.vom.es.o+11/1` records the export status for all facets of virtual object `o+11/1`
+* `v6.vs.vom.es.o+12/1` records the export status for all facets of virtual object `o+12/1`
   * If the Kind is single-facet, the value will be the same as for a plain Remotable: a single `r` or `s` character
-  * If the Kind is multi-facet, the value will be a string with one letter for each facet, in the same order as their Facet ID. `n` is used to indicate neither reachable nor recognizable. For example, a value of `rsnr` means there are four facets, the first (`o+11/1:0`) and last (`o+11/1:3`) are reachable, the second (`o+11/1:1`) is recognizable, and the third (`o+11/1:2`) is neither.
+  * If the Kind is multi-facet, the value will be a string with one letter for each facet, in the same order as their Facet ID. `n` is used to indicate neither reachable nor recognizable. For example, a value of `rsnr` means there are four facets, the first (`o+12/1:0`) and last (`o+12/1:3`) are reachable, the second (`o+12/1:1`) is recognizable, and the third (`o+12/1:2`) is neither.
 
 
 # Durable Kinds
 
-Virtual objects are held on disk, which makes them suitable for high-cardinality data that may not fit in RAM: many objects, most of which are "idle" at any given time. However virtual objects do not survive a vat upgrade. For this, vats should define one or more "Durable Kinds" instead.
+Virtual objects are held on disk, which makes them suitable for high-cardinality data that is likely too large for our vat workers' limited RAM budget: many objects, most of which are "idle" at any given time. However virtual objects do not survive a vat upgrade. For this, vats should define one or more "Durable Kinds" instead.
 
 Durable Kinds are defined just like virtual Kinds, but they use a different constructor (`defineDurableKind` instead of `defineKind`), which requires a "handle" created by `makeKindHandle`. Durable virtual objects can only hold durable data in their `state`.
 
-The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets Kind ID `1` and the handles get vrefs like `o+1/${kindHandleID}`.
+The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets Kind ID 1 and the handles get vrefs like `o+1/${kindHandleID}`.
 
 
 # Kind Metadata
 
 For each virtual object kind that is defined, we store a metadata record for purposes of scanning directly through the defined kinds when a vat is stopped or upgraded. For durable kinds this record is stored in `vom.dkind.${kindID}`; for non-durable kinds it is stored in `vom.vkind.${kindID}`. Currently this metadata takes the form of a JSON-serialized record with the following properties:
-* `kindID`, the kind ID (redundantly with the storage key)
+* `kindID`, the kind ID as a numeric string (redundantly with the storage key)
 * `tag`, the tag string as provided in the `defineKind` or `makeKindHandle` call
 * `nextInstanceID`, an integer that is present only for durable kinds. It ensures that all versions share a single sequence of unique instance IDs. `nextInstanceID` is added to the metadata record upon allocation of the first instance of the kind and updated after each subsequent allocation.
-* `unfaceted`, a property with value `true` that is present only for single-facet durable kinds.
+* `unfaceted`, a property with boolean value `true` that is present only for single-facet durable kinds.
 * `facets`, an array that is present only for multi-facet durable kinds. Its elements are the names of the kind's facets, in the same order as the assignment of facet indices within the cohort record.
 
 `unfaceted` and `facets` are required so that kind definitions in upgraded versions of the containing vat are maintained in a backwards compatible manner over time.
@@ -125,7 +125,7 @@ These index values are stored in `storeKindIDTable`, as a mapping from the colle
 
 which means `2` is the Kind ID for non-durable merely-virtual "scalarMapStore", instances of which will have vrefs like `o+2/${collectionID}`.
 
-Each new store, regardless of type, is allocated the next available Collection ID. This is an incrementing integer that starts at `1`, and is independent of the "Export ID" numberspace used by exported Remotables and Kind IDs. The same Collection ID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+${kindID}/${instanceID}` is scoped to `o+${kindID}`), for collections the collectionID in `o+${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
+Each new store, regardless of type, is allocated the next available Collection ID. This is an incrementing integer that starts at 1, and is independent of the "Export ID" numberspace used by exported Remotables and Kind IDs. The same Collection ID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+${kindID}/${instanceID}` is scoped to `o+${kindID}`), for collections the collectionID in `o+${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
 
 The interpretation of a vref therefore varies based on whether the initial "type" portion before a slash (`o+${exportID}`) identifies a collection type or a virtual object kind:
 
@@ -142,11 +142,11 @@ The interpretation of a vref therefore varies based on whether the initial "type
 
 Most collections are created by userspace code, but to support vat upgrade, liveslots creates one special collection named "baggage". This is a `scalarDurableMapStore` that is passed into the third argument of `buildRootObject`.
 
-This object needs to be pre-generated because the second (and subsequent) versions of the vat will use it to reach all other durable objects from their predecessors, so v2 can remember things that were stored by v1. The most significant values of "baggage" are the KindHandles for durable Kinds made by v1. V2 will need these to call `defineDurableKind` and re-attach behavior for each one. Each version must re-attach behavior for *all* durable Kinds created by its predecessors, to satisfy the obligations created when the older version exported durable objects of those Kinds.
+This object needs to be pre-generated because the second (and subsequent) versions of the vat will use it to reach all other durable objects from their predecessors, so v2 can remember things that were stored by v1. The most significant values of "baggage" are the KindHandles for durable Kinds made by v1. V2 will need these to call `defineDurableKind` and re-attach behavior for each one. Each version must re-attach behavior for *all* durable Kinds created by its predecessors.
 
 `o+6/1` is allocated for the "baggage" collection, indicating that it is a scalarDurableMapStore (`o+6` is used for that collection type), and also that it is the first collection (of any type) allocated in the vat.
 
-If userspace version 1 starts `buildRootObject` by calling `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s, they are likely to be assigned `o+5/2`, `o+4/3`, `o+4/4`, and `o+4/5` respectively. The collections IDs start with `2` because `1` was used for baggage.
+If userspace version 1 starts `buildRootObject` by calling `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s, they are likely to be assigned `o+5/2`, `o+4/3`, `o+4/4`, and `o+4/5` respectively. Such collections IDs start with `2` because `1` is claimed by baggage.
 
 
 # Collection Data Records
