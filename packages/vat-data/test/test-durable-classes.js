@@ -52,6 +52,10 @@ test('test defineDurableFarClass', t => {
     message:
       'In "incr" method of (UpCounter): arg 0?: string "foo" - Must be a number',
   });
+  // @ts-expect-error arity check
+  makeUpCounter(3, 4);
+  // @ts-expect-error type check
+  makeUpCounter('str');
 });
 
 test('test defineDurableFarClassKit', t => {
@@ -60,6 +64,7 @@ test('test defineDurableFarClassKit', t => {
   const makeCounterKit = defineDurableFarClassKit(
     counterKindHandle,
     { up: UpCounterI, down: DownCounterI },
+    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       up: {
@@ -94,6 +99,10 @@ test('test defineDurableFarClassKit', t => {
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
+  // @ts-expect-error arity check
+  makeCounterKit(3, 4);
+  // @ts-expect-error type check
+  makeCounterKit('str');
 });
 
 test.todo('Add tests for durability');

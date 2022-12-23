@@ -46,6 +46,10 @@ test('test defineVirtualFarClass', t => {
     message:
       'In "incr" method of (UpCounter): arg 0?: string "foo" - Must be a number',
   });
+  // @ts-expect-error arity check
+  makeUpCounter(3, 4);
+  // @ts-expect-error type check
+  makeUpCounter('str');
 });
 
 test('test defineVirtualFarClassKit', t => {
@@ -87,4 +91,8 @@ test('test defineVirtualFarClassKit', t => {
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
+  // @ts-expect-error arity check
+  makeCounterKit(3, 4);
+  // @ts-expect-error type check
+  makeCounterKit('str');
 });
