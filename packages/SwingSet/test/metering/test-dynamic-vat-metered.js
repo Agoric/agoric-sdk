@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { restartVatAdminVat } from '../util.js';
 import { kunser, krefOf } from '../../src/lib/kmarshal.js';
@@ -36,9 +36,9 @@ async function meterObjectsTest(t, doVatAdminRestarts) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);
@@ -168,10 +168,10 @@ async function overflowCrank(t, explosion) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
-  const kvStore = hostStorage.kvStore;
+  const kernelStorage = initSwingStore().kernelStorage;
+  const kvStore = kernelStorage.kvStore;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);
@@ -272,9 +272,9 @@ test('meter decrements', async t => {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);
@@ -375,9 +375,9 @@ async function unlimitedMeterTest(t, doVatAdminRestarts) {
       },
     },
   };
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const c = await buildVatController(config, [], {
-    hostStorage,
+    kernelStorage,
     kernelBundles,
   });
   t.teardown(c.shutdown);

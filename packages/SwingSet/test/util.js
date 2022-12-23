@@ -3,9 +3,8 @@ import anylogger from 'anylogger';
 
 import bundleSource from '@endo/bundle-source';
 
+import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { extractMessage, ignore, vstr } from './vat-util.js';
 import { kser } from '../src/lib/kmarshal.js';
 
@@ -150,12 +149,11 @@ function makeConsole(tag) {
 export function makeKernelEndowments() {
   return {
     waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
+    kernelStorage: initSwingStore().kernelStorage,
     runEndOfCrank: () => {},
     makeConsole,
     WeakRef,
     FinalizationRegistry,
-    createSHA256,
   };
 }
 

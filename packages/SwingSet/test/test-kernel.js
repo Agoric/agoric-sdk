@@ -34,7 +34,7 @@ function emptySetup(_syscall) {
 
 function makeKernel() {
   const endowments = makeKernelEndowments();
-  initializeKernel({}, endowments.hostStorage);
+  initializeKernel({}, endowments.kernelStorage);
   return buildKernel(endowments, {}, {});
 }
 
@@ -1555,10 +1555,13 @@ test('pipelined promise queueing with delay', pipelinedSendTest, true);
 
 test('xs-worker default manager type', async t => {
   const endowments = makeKernelEndowments();
-  initializeKernel({ defaultManagerType: 'xs-worker' }, endowments.hostStorage);
+  initializeKernel(
+    { defaultManagerType: 'xs-worker' },
+    endowments.kernelStorage,
+  );
   buildKernel(endowments, {}, {});
   t.deepEqual(
-    endowments.hostStorage.kvStore.get('kernel.defaultManagerType'),
+    endowments.kernelStorage.kvStore.get('kernel.defaultManagerType'),
     'xs-worker',
   );
 });

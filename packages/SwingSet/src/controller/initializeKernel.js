@@ -2,7 +2,6 @@
 
 import { makeMarshal, Far } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
-import { createSHA256 } from '../lib-nodejs/hasher.js';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';
 import { kser, kunser } from '../lib/kmarshal.js';
@@ -16,12 +15,12 @@ function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
 }
 
-export function initializeKernel(config, hostStorage, verbose = false) {
+export function initializeKernel(config, kernelStorage, verbose = false) {
   const logStartup = verbose ? console.debug : () => 0;
-  insistStorageAPI(hostStorage.kvStore);
+  insistStorageAPI(kernelStorage.kvStore);
 
   const kernelSlog = null;
-  const kernelKeeper = makeKernelKeeper(hostStorage, kernelSlog, createSHA256);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
 
   const wasInitialized = kernelKeeper.getInitialized();
   assert(!wasInitialized);
@@ -152,7 +151,7 @@ export function initializeKernel(config, hostStorage, verbose = false) {
     }
   }
   kernelKeeper.setInitialized();
-  kernelKeeper.commitCrank(); // commit initialized kernel state as crank #0
+  kernelKeeper.emitCrankHashes(); // initialized kernel state is hashed as if it were crank #0
   return bootstrapResultKpid;
 
   // ----------------------------------------------------------------------

@@ -1,12 +1,13 @@
 /* global WeakRef, FinalizationRegistry */
 // eslint-disable-next-line import/order
 import anylogger from 'anylogger';
+// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
+import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
 import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
@@ -15,7 +16,6 @@ import {
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
-import { provideHostStorage } from '../src/controller/hostStorage.js';
 import {
   makeMessage,
   makeResolutions,
@@ -47,20 +47,19 @@ function writeSlogObject(o) {
 function makeEndowments() {
   return {
     waitUntilQuiescent,
-    hostStorage: provideHostStorage(),
+    kernelStorage: initSwingStore().kernelStorage,
     runEndOfCrank: () => {},
     makeConsole,
     writeSlogObject,
     WeakRef,
     FinalizationRegistry,
-    createSHA256,
   };
 }
 
 function makeKernel() {
   const endowments = makeEndowments();
-  const { kvStore } = endowments.hostStorage;
-  initializeKernel({}, endowments.hostStorage);
+  const { kvStore } = endowments.kernelStorage;
+  initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   return { kernel, kvStore };
 }
@@ -1185,9 +1184,9 @@ test.serial('device transfer', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
@@ -1200,7 +1199,7 @@ test.serial('device transfer', async t => {
   await c.run();
   // now rummage through the kernel state to locate the kref for amy and get
   // the reference count
-  const { kvStore } = hostStorage;
+  const { kvStore } = kernelStorage;
   const deviceID = kvStore.get('device.name.stash_device');
   const state = kvStore.get(`${deviceID}.deviceState`);
   const dref = JSON.parse(state).slots[0];

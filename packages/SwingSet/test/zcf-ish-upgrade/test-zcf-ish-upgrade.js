@@ -3,7 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
@@ -25,9 +25,9 @@ test('zcf-ish upgrade', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   c.pinVatRoot('bootstrap');
   await c.run();
 

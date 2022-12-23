@@ -1,4 +1,3 @@
-import 'lmdb';
 import '@endo/init';
 import process from 'process';
 import fs from 'fs';
@@ -19,7 +18,7 @@ if (!dirPath) {
 if (!isSwingStore(dirPath)) {
   throw Error(`${dirPath} does not appear to be a swingstore (no ./data.mdb)`);
 }
-const { kvStore, streamStore } = openSwingStore(dirPath);
+const { kvStore, streamStore } = openSwingStore(dirPath).kernelStorage;
 function get(key) {
   return kvStore.get(key);
 }

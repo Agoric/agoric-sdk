@@ -1,7 +1,8 @@
-import { test } from '../tools/prepare-test-env-ava.js';
+import '@endo/init/debug.js';
+import test from 'ava';
 
 // eslint-disable-next-line import/order
-import { createSHA256 } from '../src/lib-nodejs/hasher.js';
+import { createSHA256 } from '../src/hasher.js';
 
 test('createSHA256', t => {
   t.is(

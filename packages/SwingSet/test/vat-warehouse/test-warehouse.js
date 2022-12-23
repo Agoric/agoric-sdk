@@ -2,9 +2,6 @@
 
 import '@endo/init/pre-bundle-source.js';
 
-// import lmdb early to work around SES incompatibility
-import 'lmdb';
-
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 import fs from 'fs';
@@ -133,20 +130,19 @@ function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
 test('snapshot after deliveries', async t => {
   const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
 
-  const { kvStore, streamStore, commit } = initSwingStore(swingStorePath);
-  const hostStorage = { kvStore, streamStore };
+  const { kernelStorage, hostStorage } = initSwingStore(swingStorePath);
   const c = await makeController(
     'xs-worker',
-    { hostStorage, warehousePolicy: { maxVatsOnline } },
+    { kernelStorage, warehousePolicy: { maxVatsOnline } },
     1,
   );
   t.teardown(c.shutdown);
 
   await runSteps(c, t);
-  await commit();
+  await hostStorage.commit();
 
   const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
-    kvStore,
+    kernelStorage.kvStore,
     `${swingStorePath}/xs-snapshots`,
   );
   t.log({ inUse, onDisk, extra });

@@ -1,7 +1,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   initializeSwingset,
@@ -18,7 +18,7 @@ test('bridge device', async t => {
   }
   const bd = buildBridge(outboundCallback);
 
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',
@@ -42,8 +42,8 @@ test('bridge device', async t => {
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
 
-  await initializeSwingset(config, argv, hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, argv, kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
 
@@ -80,7 +80,7 @@ test('bridge device', async t => {
     bridge: { ...bd2.endowments },
   };
 
-  const c2 = await makeSwingsetController(hostStorage, endowments2);
+  const c2 = await makeSwingsetController(kernelStorage, endowments2);
   t.teardown(c2.shutdown);
   await c2.run();
   // The bootstrap is reloaded from transcript, which means it doesn't run
@@ -124,7 +124,7 @@ test('bridge device can return undefined', async t => {
   }
   const bd = buildBridge(outboundCallback);
 
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -147,8 +147,8 @@ test('bridge device can return undefined', async t => {
   const argv = [];
   argv[0] = { hello: 'from' };
   argv[1] = ['swingset'];
-  await initializeSwingset(config, argv, hostStorage);
-  const c = await makeSwingsetController(hostStorage, deviceEndowments);
+  await initializeSwingset(config, argv, kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
 

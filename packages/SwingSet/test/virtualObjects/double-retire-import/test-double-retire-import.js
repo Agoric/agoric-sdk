@@ -2,7 +2,7 @@
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { provideHostStorage } from '../../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   initializeSwingset,
   makeSwingsetController,
@@ -25,9 +25,9 @@ async function testUpgrade(t, defaultManagerType) {
     },
   };
 
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage);
-  const c = await makeSwingsetController(hostStorage);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

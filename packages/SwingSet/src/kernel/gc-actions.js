@@ -12,15 +12,16 @@ function parseAction(s) {
   return { vatID, type, kref };
 }
 
-export function processNextGCAction(kernelKeeper) {
+export function processGCActionSet(kernelKeeper) {
   const allActionsSet = kernelKeeper.getGCActions();
+  let actionSetUpdated = false;
 
   // GC actions are each one of 'dropExport', 'retireExport', or
   // 'retireImport', aimed at a specific vat and affecting a specific kref.
   // They are added to the durable "GC Actions" set (stored in kernelDB) when
   // `processRefcounts` notices a refcount sitting at zero, which means some
   // vat needs to be told that an object can be freed. Before each crank, the
-  // kernel calls processNextGCAction to see if there are any GC actions that
+  // kernel calls processGCActionSet to see if there are any GC actions that
   // should be taken. All such GC actions are executed before any regular vat
   // delivery gets to run.
 
@@ -90,6 +91,7 @@ export function processNextGCAction(kernelKeeper) {
         krefs.push(kref);
       }
       allActionsSet.delete(action);
+      actionSetUpdated = true;
     }
     return krefs;
   }
@@ -126,8 +128,14 @@ export function processNextGCAction(kernelKeeper) {
       }
     }
   }
-  // remove negated items from the durable set
-  kernelKeeper.setGCActions(allActionsSet);
-  return undefined; // no GC work to do
+  if (actionSetUpdated) {
+    // remove negated items from the durable set
+    kernelKeeper.setGCActions(allActionsSet);
+    // return a special gc-nop event to tell kernel to record our
+    // DB changes in their own crank
+    return harden({ type: 'negated-gc-action', vatID: undefined });
+  } else {
+    return undefined; // no GC work to do and no DB changes
+  }
 }
-harden(processNextGCAction);
+harden(processGCActionSet);

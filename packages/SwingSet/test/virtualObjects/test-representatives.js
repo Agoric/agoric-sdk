@@ -1,8 +1,8 @@
+// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { M } from '@agoric/store';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildVatController,
   initializeSwingset,
@@ -31,8 +31,8 @@ test.serial('exercise cache', async t => {
   const log = [];
 
   const expectedVatID = 'v1';
-  const hostStorage = provideHostStorage();
-  const kvStore = hostStorage.kvStore;
+  const kernelStorage = initSwingStore().kernelStorage;
+  const kvStore = kernelStorage.kvStore;
   function vsKey(key) {
     // ignore everything except vatStores on the one vat under test
     // (especially ignore comms, which performs vatstore operations during
@@ -62,17 +62,17 @@ test.serial('exercise cache', async t => {
       kvStore.delete(key);
     },
   };
-  const loggingHostStorage = {
-    ...hostStorage,
+  const loggingKernelStorage = {
+    ...kernelStorage,
     kvStore: loggingKVStore,
   };
 
   const bootstrapResult = await initializeSwingset(
     config,
     [],
-    loggingHostStorage,
+    loggingKernelStorage,
   );
-  const c = await makeSwingsetController(loggingHostStorage, {});
+  const c = await makeSwingsetController(loggingKernelStorage, {});
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
@@ -190,9 +190,9 @@ test.serial('exercise cache', async t => {
   await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
   ck('get', esKey(5), undefined);
   ck('set', esKey(5), 'r');
+  ck('set', dataKey(5), thingVal('thing5'));
   ck('get', rcKey(2), undefined);
   ck('get', esKey(2), 'r');
-  ck('set', dataKey(5), thingVal('thing5'));
   done();
 
   await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
@@ -204,17 +204,17 @@ test.serial('exercise cache', async t => {
   await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
   ck('get', esKey(7), undefined);
   ck('set', esKey(7), 'r');
+  ck('set', dataKey(7), thingVal('thing7'));
   ck('get', rcKey(3), undefined);
   ck('get', esKey(3), 'r');
-  ck('set', dataKey(7), thingVal('thing7'));
   done();
 
   await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
   ck('get', esKey(8), undefined);
   ck('set', esKey(8), 'r');
+  ck('set', dataKey(8), thingVal('thing8'));
   ck('get', rcKey(4), undefined);
   ck('get', esKey(4), 'r');
-  ck('set', dataKey(8), thingVal('thing8'));
   done();
 
   await read(T2, 'thing2'); // reanimate t2, evict t5 - [t2 t8 t7 t6]
@@ -351,9 +351,9 @@ test('virtual object gc', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  const c = await buildVatController(config, [], { hostStorage });
+  const c = await buildVatController(config, [], { kernelStorage });
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 
@@ -361,8 +361,8 @@ test('virtual object gc', async t => {
   t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
-  for (const key of hostStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
-    remainingVOs[key] = hostStorage.kvStore.get(key);
+  for (const key of kernelStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
+    remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
   // prettier-ignore
   t.deepEqual(remainingVOs, {
@@ -420,9 +420,9 @@ async function orphanTest(t, mode) {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
 
-  const c = await buildVatController(config, [mode], { hostStorage });
+  const c = await buildVatController(config, [mode], { kernelStorage });
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
 

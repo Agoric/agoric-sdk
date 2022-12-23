@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import 'lmdb';
 import '@endo/init';
 import process from 'process';
 import { openSwingStore } from '@agoric/swing-store';
@@ -58,7 +57,7 @@ function run() {
   const stateDBDir = argv.shift();
   const key = argv.shift();
 
-  const { kvStore } = openSwingStore(stateDBDir);
+  const { kvStore } = openSwingStore(stateDBDir).kernelStorage;
 
   function pkv(k) {
     const value = kvStore.get(k);

@@ -3,7 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '../../src/lib/kmarshal.js';
 
 import {
@@ -49,9 +49,9 @@ test('d1', async t => {
   };
 
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  const hostStorage = provideHostStorage();
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, devEndows, runtimeOpts);
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();

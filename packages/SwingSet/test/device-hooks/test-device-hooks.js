@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import bundleSource from '@endo/bundle-source';
-import { provideHostStorage } from '../../src/controller/hostStorage.js';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   initializeSwingset,
@@ -51,7 +51,7 @@ test('add hook', async t => {
     },
   };
 
-  const hostStorage = provideHostStorage();
+  const kernelStorage = initSwingStore().kernelStorage;
   const initOpts = {
     ...t.context.data,
     addComms: false,
@@ -60,8 +60,8 @@ test('add hook', async t => {
   };
   const { kernelBundle } = t.context.data.kernelBundles;
   const runtimeOpts = { kernelBundle };
-  await initializeSwingset(config, [], hostStorage, initOpts);
-  const c = await makeSwingsetController(hostStorage, {}, runtimeOpts);
+  await initializeSwingset(config, [], kernelStorage, initOpts);
+  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
 
   let hookreturn;
