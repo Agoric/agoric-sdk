@@ -429,9 +429,7 @@ const start = async (zcf, privateArgs) => {
    * @param {string} oracleId
    */
   const recordSubmission = (submission, roundId, oracleId) => {
-    if (!acceptingSubmissions(roundId)) {
-      assert.fail('round not accepting submissions');
-    }
+    acceptingSubmissions(roundId) || Fail`round not accepting submissions`;
 
     const lastRoundDetails = details.get(roundId);
     details.set(roundId, {
@@ -731,13 +729,11 @@ const start = async (zcf, privateArgs) => {
           unitPrice: valueRaw,
         }) {
           const value = Nat(valueRaw);
-          if (!(value >= minSubmissionValue)) {
-            Fail`value below minSubmissionValue ${q(minSubmissionValue)}`;
-          }
 
-          if (!(value <= maxSubmissionValue)) {
+          value >= minSubmissionValue ||
+            Fail`value below minSubmissionValue ${q(minSubmissionValue)}`;
+          value <= maxSubmissionValue ||
             Fail`value above maxSubmissionValue ${q(maxSubmissionValue)}`;
-          }
 
           const blockTimestamp = await E(timer).getCurrentTimestamp();
 
