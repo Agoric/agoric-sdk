@@ -19,8 +19,8 @@ export function buildRootObject(vatPowers, vatParameters) {
               prefix: 'Whoopie ',
             },
           );
-          await E(vats.bridge).init(pingPongP, devices.bridge);
           D(devices.bridge).registerInboundHandler(vats.bridge);
+          await E(vats.bridge).init(pingPongP, devices.bridge);
         } else {
           Fail`unknown argv mode '${argv[0]}'`;
         }
