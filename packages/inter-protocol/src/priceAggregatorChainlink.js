@@ -721,11 +721,6 @@ const start = async (zcf, privateArgs) => {
       );
 
       const oracleAdmin = Far('OracleAdmin', {
-        /** Remove the oracle from the aggregator */
-        async delete() {
-          // The actual deletion is synchronous.
-          oracleStatuses.delete(oracleId);
-        },
         /**
          * push a unitPrice result from this oracle
          *
