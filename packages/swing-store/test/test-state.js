@@ -26,16 +26,28 @@ const tmpDir = prefix =>
     });
   });
 
-function checkKVState(t, kvStore) {
-  const keys = [...kvStore.getKeys('', '{')]; // basically everything
-  t.deepEqual(keys, ['foo', 'foo1', 'foo3']);
-  t.is(kvStore.get('foo'), 'f');
-  t.is(kvStore.get('foo1'), 'f1');
-  t.is(kvStore.get('foo3'), 'f3');
+function* iterate(kvStore, start, end) {
+  if (kvStore.has(start)) {
+    yield start;
+  }
+  let prev = start;
+  while (true) {
+    const next = kvStore.getNextKey(prev);
+    if (!next || next >= end) {
+      break;
+    }
+    yield next;
+    prev = next;
+  }
 }
 
-function testKVStore(t, kernelStorage) {
-  const kvStore = kernelStorage.kvStore;
+function checkKVState(t, swingstore) {
+  const kv = swingstore.debug.dump().kvEntries;
+  t.deepEqual(kv, { foo: 'f', foo1: 'f1', foo3: 'f3' });
+}
+
+function testKVStore(t, storage) {
+  const { kvStore } = storage.kernelStorage;
   t.falsy(kvStore.has('missing'));
   t.is(kvStore.get('missing'), undefined);
 
@@ -46,8 +58,13 @@ function testKVStore(t, kernelStorage) {
   kvStore.set('foo2', 'f2');
   kvStore.set('foo1', 'f1');
   kvStore.set('foo3', 'f3');
-  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(kvStore.getKeys('foo1', 'foo4')), [
+  t.is(kvStore.getNextKey('foo'), 'foo1');
+  t.is(kvStore.getNextKey('foo1'), 'foo2');
+  t.is(kvStore.getNextKey('foo2'), 'foo3');
+  t.is(kvStore.getNextKey('foo3'), undefined);
+  t.is(kvStore.getNextKey('goo'), undefined);
+  t.deepEqual(Array.from(iterate(kvStore, 'foo1', 'foo3')), ['foo1', 'foo2']);
+  t.deepEqual(Array.from(iterate(kvStore, 'foo1', 'foo4')), [
     'foo1',
     'foo2',
     'foo3',
@@ -56,15 +73,17 @@ function testKVStore(t, kernelStorage) {
   kvStore.delete('foo2');
   t.falsy(kvStore.has('foo2'));
   t.is(kvStore.get('foo2'), undefined);
-  checkKVState(t, kernelStorage.kvStore);
+  t.is(kvStore.getNextKey('foo1'), 'foo3');
+  t.is(kvStore.getNextKey('foo2'), 'foo3');
+  checkKVState(t, storage);
 }
 
 test('in-memory kvStore read/write', t => {
   const ss1 = initSwingStore(null);
-  testKVStore(t, ss1.kernelStorage);
+  testKVStore(t, ss1);
   const serialized = ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
-  checkKVState(t, ss2.kernelStorage.kvStore);
+  checkKVState(t, ss2);
 });
 
 test('persistent kvStore read/write/re-open', async t => {
@@ -72,13 +91,13 @@ test('persistent kvStore read/write/re-open', async t => {
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   const ss1 = initSwingStore(dbDir);
-  testKVStore(t, ss1.kernelStorage);
+  testKVStore(t, ss1);
   await ss1.hostStorage.commit();
   await ss1.hostStorage.close();
   t.is(isSwingStore(dbDir), true);
 
   const ss2 = openSwingStore(dbDir);
-  checkKVState(t, ss2.kernelStorage.kvStore);
+  checkKVState(t, ss2);
   await ss2.hostStorage.close();
   t.is(isSwingStore(dbDir), true);
 });
