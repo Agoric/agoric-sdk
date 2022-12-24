@@ -59,11 +59,12 @@ export function makeBridgeManager(E, D, bridgeDevice) {
 
   // We now manage the device.
   D(bridgeDevice).registerInboundHandler(bridgeHandler);
+  const bridgeSendOnly = E.sendOnly(bridgeHandler);
 
   return Far('bridgeManager', {
     toBridge,
     fromBridge(srcID, obj) {
-      return E.sendOnly(bridgeHandler).inbound(srcID, obj);
+      return bridgeSendOnly.inbound(srcID, obj);
     },
     register(srcID, handler) {
       srcHandlers.init(srcID, handler);

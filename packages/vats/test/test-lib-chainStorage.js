@@ -7,8 +7,9 @@ import { makeFakeStorageKit } from '../tools/storage-test-utils.js';
 test('makeChainStorageRoot', async t => {
   const rootPath = 'root';
   const { rootNode, messages } = makeFakeStorageKit(rootPath);
+  const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
-    await rootNode.getStoreKey(),
+    rootStoreKey,
     { storeName: 'swingset', storeSubkey: `fake:${rootPath}` },
     'root store key matches initialization input',
   );
