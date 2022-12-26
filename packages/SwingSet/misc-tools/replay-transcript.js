@@ -16,6 +16,8 @@ import { pipeline } from 'stream';
 import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { file as tmpFile, tmpName } from 'tmp';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import yargsParser from 'yargs-parser';
 import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
@@ -30,44 +32,121 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
 
-// Set the absolute path of the SDK to use for bundling
-// This can help if there are symlinks in the path that should be respected
-// to match the path of the SDK that produced the initial transcript
-// For e.g. set to '/src' if replaying a docker based loadgen transcript
-const ABSOLUTE_SDK_PATH = null;
-
-// Rebuild the bundles when starting the replay.
-// Disable if bundles were previously extracted form a Kernel DB, or
-// to save a few seconds and rely upon previously built versions instead
-const REBUILD_BUNDLES = false;
-
-// Enable to continue if snapshot hash doesn't match transcript
-const IGNORE_SNAPSHOT_HASH_DIFFERENCES = true;
-const IGNORE_CONCURRENT_WORKER_DIVERGENCES = true;
-
-const FORCED_SNAPSHOT_INITIAL = 2;
-const FORCED_SNAPSHOT_INTERVAL = 1000;
-const FORCED_RELOAD_FROM_SNAPSHOT = true;
-const KEEP_WORKER_RECENT = 10;
-const KEEP_WORKER_INITIAL = 0;
-const KEEP_WORKER_INTERVAL = 10;
-const KEEP_WORKER_EXPLICIT_LOAD = true;
-const KEEP_WORKER_DIVERGENT_SNAPSHOTS = true;
-const KEEP_WORKER_TRANSACTION_NUMS = [];
-
-const SKIP_EXTRA_SYSCALLS = true;
-const SIMULATE_VC_SYSCALLS = true;
-
-// Use a simplified snapstore which derives the snapshot filename from the
-// transcript and doesn't compress the snapshot
-const USE_CUSTOM_SNAP_STORE = false;
-
-// Enable to output xsnap debug traces corresponding to the transcript replay
-const RECORD_XSNAP_TRACE = false;
-
-const USE_XSNAP_DEBUG = false;
-
 const pipe = promisify(pipeline);
+
+// TODO: switch to full yargs for documenting output
+const argv = yargsParser(process.argv.slice(2), {
+  string: [
+    // Set the absolute path of the SDK to use for bundling
+    // This can help if there are symlinks in the path that should be respected
+    // to match the path of the SDK that produced the initial transcript
+    // For e.g. set to '/src' if replaying a docker based loadgen transcript
+    'absoluteSdkPath',
+  ],
+
+  boolean: [
+    // Rebuild the bundles when starting the replay.
+    // Disable if bundles were previously extracted form a Kernel DB, or to
+    // save a few seconds and rely upon previously built versions instead.
+    'rebuildBundles',
+
+    // Enable to continue if snapshot hash doesn't match hash in transcript's
+    // 'save', or when the hash of the concurrent workers snapshots don't all
+    // match each other.
+    'ignoreSnapshotHashDifference',
+
+    // Enable to continue if concurrent workers do not produce the exact same
+    // set of syscalls for a delivery. With special virtual collection syscall
+    // handling (see below), all workers would normally have to diverge from
+    // the transcript in the same way for the delivery to be considered valid.
+    'ignoreConcurrentWorkerDivergences',
+
+    // If a snapshot of a worker is taken, create a new worker from that
+    // snapshot, even if no explicit snapshot load instruction is found in the
+    // input transcript.
+    'forcedReloadFromSnapshot',
+
+    // Mark workers loaded from an explicit transcript load instruction as
+    // being ineligible from being reaped.
+    'keepWorkerExplicitLoad',
+
+    // When `forcedReloadFromSnapshot` is enabled, if the hash of the/ snapshot
+    // had differences (see `ignoreSnapshotHashDifference`), mark the worker(s)
+    // created for this/these snapshot(s) as being ineligible from being reaped.
+    'keepWorkerHashDifference',
+
+    // Ignore Virtual Collection metadata syscalls that were recorded in the
+    // transcript but which are not performed by the worker.
+    'skipExtraVcSyscalls',
+
+    // Simulate Virtual Collection metadata syscalls which were not recorded in
+    // the transcript but which are performed by the worker. This only works if
+    // previous syscalls for the same metadata were recorded.
+    'simulateVcSyscalls',
+
+    // Use a simplified snapstore which derives the snapshot filename from the
+    // transcript and doesn't compress the snapshot
+    'useCustomSnapStore',
+
+    // Enable to output xsnap debug traces corresponding to the transcript replay
+    'recordXsnapTrace',
+
+    // Use the debug version of the xsnap worker
+    'useXsnapDebug',
+  ],
+  number: [
+    // Force making a snapshot after the "initial" deliveryNum, and every
+    // "interval" delivery after. The default Swingset config is after delivery
+    // 2 and every 1000 deliveries after (1002, 2002, etc.)
+    'forcedSnapshotInitial',
+    'forcedSnapshotInterval',
+
+    // Do not reap the first n "initial" and m "recent" workers.
+    // This may keep less workers than the first n or m * forcedSnapshotInterval
+    // if there are snapshots with different hashes taken for the same delivery
+    'keepWorkerInitial',
+    'keepWorkerRecent',
+
+    // Keep all workers which are made at deliveryNum which are a multiple of
+    // n * forcedSnapshotInterval from the first transcript delivery replayed.
+    // For example if the value of this option is 10, the snapshot interval is
+    // the default of 1000, and the first transcript loaded is 52002, then all
+    // workers loaded from delivery 62002, 72002, etc. won't be reaped.
+    'keepWorkerInterval',
+  ],
+  array: [
+    {
+      // Keep all workers which are made at the explicitly provided deliveryNum
+      key: 'keepWorkerTransactionNums',
+      number: true,
+    },
+  ],
+  default: {
+    absoluteSdkPath: '',
+    rebuildBundles: false,
+    ignoreSnapshotHashDifference: true,
+    ignoreConcurrentWorkerDivergences: true,
+    forcedSnapshotInitial: 2,
+    forcedSnapshotInterval: 1000,
+    forcedReloadFromSnapshot: true,
+    keepWorkerInitial: 0,
+    keepWorkerRecent: 10,
+    keepWorkerInterval: 10,
+    keepWorkerExplicitLoad: true,
+    keepWorkerHashDifference: true,
+    keepWorkerTransactionNums: [],
+    skipExtraVcSyscalls: true,
+    simulateVcSyscalls: true,
+    useCustomSnapStore: false,
+    recordXsnapTrace: false,
+    useXsnapDebug: false,
+  },
+  configuration: {
+    'duplicate-arguments-array': false,
+    'flatten-duplicate-arrays': false,
+    'greedy-arrays': true,
+  },
+});
 
 /** @type {(filename: string) => Promise<string>} */
 async function fileHash(filename) {
@@ -96,7 +175,7 @@ function makeSnapStoreIO() {
 async function makeBundles() {
   const controllerUrl = new URL(
     `${
-      ABSOLUTE_SDK_PATH ? `${ABSOLUTE_SDK_PATH}/packages/SwingSet` : '..'
+      argv.absoluteSdkPath ? `${argv.absoluteSdkPath}/packages/SwingSet` : '..'
     }/src/controller/initializeSwingset.js`,
     import.meta.url,
   );
@@ -155,7 +234,7 @@ async function replay(transcriptFile) {
       })
     );
 
-  const snapStore = USE_CUSTOM_SNAP_STORE
+  const snapStore = argv.useCustomSnapStore
     ? /** @type {SnapStore} */ ({
         async save(saveRaw) {
           const snapFile = `${saveSnapshotID || 'unknown'}.xss`;
@@ -205,7 +284,7 @@ async function replay(transcriptFile) {
 
   if (worker === 'xs-worker') {
     // eslint-disable-next-line no-constant-condition
-    if (REBUILD_BUNDLES) {
+    if (argv.rebuildBundles) {
       console.log(`creating xsnap helper bundles`);
       await makeBundles();
       console.log(`xsnap helper bundles created`);
@@ -215,10 +294,10 @@ async function replay(transcriptFile) {
       JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
     ];
     const env = /** @type {Record<string, string>} */ ({});
-    if (RECORD_XSNAP_TRACE) {
+    if (argv.recordXsnapTrace) {
       env.XSNAP_TEST_RECORD = process.cwd();
     }
-    if (USE_XSNAP_DEBUG) {
+    if (argv.useXsnapDebug) {
       env.XSNAP_DEBUG = 'true';
     }
 
@@ -338,7 +417,7 @@ async function replay(transcriptFile) {
   })();
 
   if (
-    (SIMULATE_VC_SYSCALLS || SKIP_EXTRA_SYSCALLS) &&
+    (argv.simulateVcSyscalls || argv.skipExtraVcSyscalls) &&
     !supportsRelaxedSyscalls
   ) {
     console.warn(
@@ -403,7 +482,7 @@ async function replay(transcriptFile) {
       }
     }
     syscallResults = {};
-    if (divergent && !IGNORE_CONCURRENT_WORKER_DIVERGENCES) {
+    if (divergent && !argv.ignoreConcurrentWorkerDivergences) {
       throw new Error('Divergent execution between workers');
     }
   };
@@ -482,19 +561,19 @@ async function replay(transcriptFile) {
           `during transcript num= ${lastTranscriptNum} for worker PID ${workerData.xsnapPID} (start delivery ${workerData.firstTranscriptNum})`,
         );
 
-        if (error === extraSyscall && !SKIP_EXTRA_SYSCALLS) {
+        if (error === extraSyscall && !argv.skipExtraVcSyscalls) {
           return new Error('Extra syscall disallowed');
         }
       }
 
       const newSyscallKind = newSyscall[0];
 
-      if (error === missingSyscall && !SIMULATE_VC_SYSCALLS) {
+      if (error === missingSyscall && !argv.simulateVcSyscalls) {
         return new Error('Missing syscall disallowed');
       }
 
       if (
-        SIMULATE_VC_SYSCALLS &&
+        argv.simulateVcSyscalls &&
         supportsRelaxedSyscalls &&
         !error &&
         (newSyscallKind === 'vatstoreGet' ||
@@ -595,16 +674,16 @@ async function replay(transcriptFile) {
             firstTranscriptNum != null &&
             !(
               keepRequested ||
-              (KEEP_WORKER_INTERVAL &&
+              (argv.keepWorkerInterval &&
                 Math.floor(
                   (firstTranscriptNum - startTranscriptNum) /
-                    FORCED_SNAPSHOT_INTERVAL,
+                    argv.forcedSnapshotInterval,
                 ) %
-                  KEEP_WORKER_INTERVAL ===
+                  argv.keepWorkerInterval ===
                   0) ||
-              idx < KEEP_WORKER_INITIAL ||
-              idx >= workers.length - KEEP_WORKER_RECENT ||
-              KEEP_WORKER_TRANSACTION_NUMS.includes(firstTranscriptNum)
+              idx < argv.keepWorkerInitial ||
+              idx >= workers.length - argv.keepWorkerRecent ||
+              argv.keepWorkerTransactionNums.includes(firstTranscriptNum)
             ),
         )
         .map(async workerData => {
@@ -693,7 +772,7 @@ async function replay(transcriptFile) {
       lineNumber += 1;
       const data = JSON.parse(line);
       if (data.type === 'heap-snapshot-load') {
-        await loadSnapshot(data, KEEP_WORKER_EXPLICIT_LOAD);
+        await loadSnapshot(data, argv.keepWorkerExplicitLoad);
       } else if (!workers.length) {
         if (data.type !== 'create-vat') {
           throw Error(
@@ -702,7 +781,7 @@ async function replay(transcriptFile) {
         }
         ({ vatParameters, vatSourceBundle } = data);
         vatID = data.vatID;
-        const { xsnapPID } = await createManager(KEEP_WORKER_EXPLICIT_LOAD);
+        const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
         console.log(
           `manager created from bundle source, worker PID: ${xsnapPID}`,
         );
@@ -738,7 +817,7 @@ async function replay(transcriptFile) {
           );
           if (hash !== saveSnapshotID) {
             const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
-            if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
+            if (argv.ignoreSnapshotHashDifference) {
               console.warn(errorMessage);
             } else {
               throw new Error(errorMessage);
@@ -757,7 +836,7 @@ async function replay(transcriptFile) {
           workerData.deliveryTimeSinceLastSnapshot = 0;
           return hash;
         };
-        const savedSnapshots = await (USE_CUSTOM_SNAP_STORE
+        const savedSnapshots = await (argv.useCustomSnapStore
           ? workers.reduce(
               async (hashes, workerData) => [
                 ...(await hashes),
@@ -774,12 +853,12 @@ async function replay(transcriptFile) {
           divergent = true;
           snapshotOverrideMap.set(data.snapshotID, savedSnapshots[0]);
         }
-        if (FORCED_RELOAD_FROM_SNAPSHOT) {
+        if (argv.forcedReloadFromSnapshot) {
           for (const snapshotID of uniqueSnapshotIDs) {
             // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
               { ...data, snapshotID },
-              KEEP_WORKER_DIVERGENT_SNAPSHOTS && divergent,
+              argv.keepWorkerHashDifference && divergent,
             );
           }
         }
@@ -790,9 +869,9 @@ async function replay(transcriptFile) {
           startTranscriptNum = transcriptNum - 1;
         }
         const makeSnapshot =
-          FORCED_SNAPSHOT_INTERVAL &&
-          (transcriptNum - FORCED_SNAPSHOT_INITIAL) %
-            FORCED_SNAPSHOT_INTERVAL ===
+          argv.forcedSnapshotInterval &&
+          (transcriptNum - argv.forcedSnapshotInitial) %
+            argv.forcedSnapshotInterval ===
             0;
         // syscalls = [{ d, response }, ..]
         // console.log(`replaying:`);
@@ -864,14 +943,14 @@ async function replay(transcriptFile) {
           const errorMessage = `Snapshot hashes do not match each other: ${uniqueSnapshotIDs.join(
             ', ',
           )}`;
-          if (IGNORE_SNAPSHOT_HASH_DIFFERENCES) {
+          if (argv.ignoreSnapshotHashDifference) {
             console.warn(errorMessage);
           } else {
             throw new Error(errorMessage);
           }
         }
 
-        if (FORCED_RELOAD_FROM_SNAPSHOT) {
+        if (argv.forcedReloadFromSnapshot) {
           for (const snapshotID of uniqueSnapshotIDs) {
             // eslint-disable-next-line no-await-in-loop
             await loadSnapshot(
@@ -879,7 +958,7 @@ async function replay(transcriptFile) {
                 snapshotID,
                 vatID,
               },
-              KEEP_WORKER_DIVERGENT_SNAPSHOTS && divergent,
+              argv.keepWorkerHashDifference && divergent,
             );
           }
         }
@@ -914,13 +993,12 @@ async function replay(transcriptFile) {
 }
 
 async function run() {
-  const args = process.argv.slice(2);
-  console.log(`argv`, args);
-  if (args.length < 1) {
+  console.dir(argv, { depth: null });
+  if (argv._.length < 1) {
     console.log(`replay-transcript.js transcript.sst`);
     return;
   }
-  const [transcriptFile] = args;
+  const [transcriptFile] = argv._;
   console.log(`using transcript ${transcriptFile}`);
   await replay(transcriptFile);
 }
