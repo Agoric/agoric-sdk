@@ -141,6 +141,9 @@ const argv = yargsParser(process.argv.slice(2), {
     recordXsnapTrace: false,
     useXsnapDebug: false,
   },
+  config: {
+    config: true,
+  },
   configuration: {
     'duplicate-arguments-array': false,
     'flatten-duplicate-arrays': false,
@@ -977,6 +980,23 @@ async function replay(transcriptFile) {
               argv.keepWorkerHashDifference && divergent,
             );
           }
+        }
+
+        const loadSnapshots = [].concat(
+          argv.loadSnapshots?.[transcriptNum] || [],
+        );
+        for (const snapshotID of loadSnapshots) {
+          // eslint-disable-next-line no-await-in-loop
+          await loadSnapshot(
+            {
+              snapshotID,
+              vatID,
+            },
+            argv.keepWorkerExplicitLoad ||
+              (argv.keepWorkerHashDifference &&
+                (loadSnapshots.length > 1 ||
+                  !uniqueSnapshotIDs.includes(snapshotID))),
+          );
         }
       }
     }
