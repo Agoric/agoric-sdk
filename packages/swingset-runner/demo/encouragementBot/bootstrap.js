@@ -6,7 +6,7 @@ const log = console.log;
 log(`=> loading bootstrap.js`);
 
 export function buildRootObject() {
-  log(`=> setup called`);
+  log(`=> buildRootObject called`);
   return Far('root', {
     bootstrap(vats) {
       log('=> bootstrap() called');
