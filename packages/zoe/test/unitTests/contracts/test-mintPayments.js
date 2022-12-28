@@ -18,7 +18,9 @@ const mintPaymentsRoot = `${dirname}/../../../src/contracts/mintPayments.js`;
 test('zoe - mint payments', async t => {
   t.plan(2);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const {
+    zoeServices: { zoeService: zoe },
+  } = makeZoeKit(fakeVatAdmin);
 
   const makeAlice = () => {
     return {
@@ -88,7 +90,9 @@ test('zoe - mint payments', async t => {
 test('zoe - mint payments with unrelated give and want', async t => {
   t.plan(3);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const {
+    zoeServices: { zoeService: zoe },
+  } = makeZoeKit(fakeVatAdmin);
   const moolaKit = makeIssuerKit('moola');
   const simoleanKit = makeIssuerKit('simolean');
 

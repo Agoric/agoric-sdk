@@ -28,7 +28,9 @@ import { devices } from './devices.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccessRetriever } = await makeFar(
+  const {
+    zoeServices: { zoeService, feeMintAccessRetriever },
+  } = await makeFar(
     makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,

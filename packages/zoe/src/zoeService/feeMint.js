@@ -1,4 +1,4 @@
-import { makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
+import { makeDurableIssuerKit, AssetKind, vivifyIssuerKit } from '@agoric/ertp';
 import { initEmpty } from '@agoric/store';
 import {
   vivifyKindMulti,
@@ -23,7 +23,7 @@ export const defaultFeeIssuerConfig = harden(
  */
 const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
-  if (!zoeBaggage.has(FEE_MINT_KIT)) {
+  if (!mintBaggage.has(FEE_MINT_KIT)) {
     /** @type {IssuerKit} */
     const feeIssuerKit = makeDurableIssuerKit(
       mintBaggage,
@@ -33,6 +33,8 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
       shutdownZoeVat,
     );
     mintBaggage.init(FEE_MINT_KIT, feeIssuerKit);
+  } else {
+    vivifyIssuerKit(mintBaggage, shutdownZoeVat);
   }
 
   const getFeeIssuerKit = ({ facets }, allegedFeeMintAccess) => {

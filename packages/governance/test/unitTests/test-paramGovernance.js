@@ -44,9 +44,9 @@ const setUpZoeForTest = async setJig => {
    * @property {IssuerRecord} mintedIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
    */
-  const { zoeService, feeMintAccessRetriever } = makeZoeKit(
-    makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
-  );
+  const {
+    zoeServices: { zoeService, feeMintAccessRetriever },
+  } = makeZoeKit(makeFakeVatAdmin(setJig, o => makeFar(o)).admin);
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
   return {

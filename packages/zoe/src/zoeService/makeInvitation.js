@@ -1,71 +1,36 @@
-import { assert, Fail } from '@agoric/assert';
-import { AmountMath, makeDurableIssuerKit, AssetKind } from '@agoric/ertp';
+import { provideDurableMapStore } from '@agoric/vat-data';
+import { AssetKind, makeDurableIssuerKit, vivifyIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
+
+const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
  */
 export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
-  const invitationKit = makeDurableIssuerKit(
+  let invitationKit;
+
+  const invitationKitBaggage = provideDurableMapStore(
     baggage,
-    'Zoe Invitation',
-    AssetKind.SET,
-    undefined,
-    shutdownZoeVat,
-    { elementShape: InvitationElementShape },
+    ZOE_INVITATION_KIT,
   );
-
-  /**
-   * @param {Instance} instance
-   * @param {Installation} installation
-   * @param {WeakMapStore<InvitationHandle, Pattern>} proposalShapes
-   * @returns {ZoeInstanceAdminMakeInvitation}
-   */
-  const setupMakeInvitation = (instance, installation, proposalShapes) => {
-    assert.typeof(instance, 'object');
-    assert.typeof(installation, 'object');
-
-    /** @type {ZoeInstanceAdminMakeInvitation} */
-    const makeInvitation = async (
-      invitationHandle,
-      description,
-      customProperties = undefined,
-      proposalShape = undefined,
-    ) => {
-      assert.typeof(invitationHandle, 'object');
-      typeof description === 'string' ||
-        Fail`The description ${description} must be a string`;
-
-      // If the contract-provided customProperties include the
-      // properties 'description', 'handle', 'instance',
-      // 'installation', their corresponding
-      // values will be overwritten with the actual values. For
-      // example, the value for `instance` will always be the actual
-      // instance for the contract, even if customProperties includes
-      // a property called `instance`.
-      const invitationAmount = AmountMath.make(
-        invitationKit.brand,
-        harden([
-          {
-            ...customProperties,
-            description,
-            handle: invitationHandle,
-            instance,
-            installation,
-          },
-        ]),
-      );
-      if (proposalShape !== undefined) {
-        proposalShapes.init(invitationHandle, proposalShape);
-      }
-      return invitationKit.mint.mintPayment(invitationAmount);
-    };
-    return makeInvitation;
-  };
+  if (!invitationKitBaggage.has(ZOE_INVITATION_KIT)) {
+    invitationKit = makeDurableIssuerKit(
+      invitationKitBaggage,
+      'Zoe Invitation',
+      AssetKind.SET,
+      undefined,
+      shutdownZoeVat,
+      { elementShape: InvitationElementShape },
+    );
+    invitationKitBaggage.init(ZOE_INVITATION_KIT, invitationKit);
+  } else {
+    invitationKit = vivifyIssuerKit(invitationKitBaggage);
+  }
 
   return harden({
-    setupMakeInvitation,
     invitationIssuer: invitationKit.issuer,
+    invitationKit,
   });
 };

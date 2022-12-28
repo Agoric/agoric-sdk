@@ -19,14 +19,14 @@ const { Fail, quote: q } = assert;
 
 /**
  * @param {any} startInstanceAccess
- * @param {ERef<BundleCap>} zcfBundleCapP
+ * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} [zoeBaggage]
  * @returns {import('./utils').StartInstance}
  */
 export const makeStartInstance = (
   startInstanceAccess,
-  zcfBundleCapP,
+  getZcfBundleCapP,
   getBundleCapByIdNow,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
@@ -244,14 +244,13 @@ export const makeStartInstance = (
     );
     zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
 
-    E(adminNode)
-      .done()
-      .then(
-        completion => {
-          instanceAdmin.exitAllSeats(completion);
-        },
-        reason => instanceAdmin.failAllSeats(reason),
-      );
+    E.when(
+      E(adminNode).done(),
+      completion => {
+        instanceAdmin.exitAllSeats(completion);
+      },
+      reason => instanceAdmin.failAllSeats(reason),
+    );
 
     /** @type {ZoeInstanceAdmin} */
     const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
@@ -277,45 +276,49 @@ export const makeStartInstance = (
 
     instanceAdmin.initDelayedState(handleOfferObj, publicFacet);
 
+    const settledBundleCap = await getZcfBundleCapP();
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
-    return Promise.allSettled([
-      creatorInvitationP,
-      zoeInstanceStorageManager
-        .getInvitationIssuer()
-        .isLive(creatorInvitationP),
-      zcfBundleCapP,
-    ]).then(([invitationResult, isLiveResult, zcfBundleCapResult]) => {
-      let creatorInvitation;
-      if (invitationResult.status === 'fulfilled') {
-        creatorInvitation = invitationResult.value;
-      }
-      if (creatorInvitation !== undefined) {
-        (isLiveResult.status === 'fulfilled' && isLiveResult.value) ||
-          Fail`The contract did not correctly return a creatorInvitation`;
-      }
-      if (zcfBundleCapResult !== undefined) {
-        (zcfBundleCapResult.status === 'fulfilled' &&
-          zcfBundleCapResult.value) ||
-          Fail`the bundle cap was broken`;
-      }
-      const adminFacet = makeAdminFacet(
-        adminNode,
-        harden(zcfBundleCapResult),
-        contractBundleCap,
-      );
+    return E.when(
+      Promise.allSettled([
+        creatorInvitationP,
+        zoeInstanceStorageManager
+          .getInvitationIssuer()
+          .isLive(creatorInvitationP),
+        settledBundleCap,
+      ]),
+      ([invitationResult, isLiveResult, zcfBundleCapResult]) => {
+        let creatorInvitation;
+        if (invitationResult.status === 'fulfilled') {
+          creatorInvitation = invitationResult.value;
+        }
+        if (creatorInvitation !== undefined) {
+          (isLiveResult.status === 'fulfilled' && isLiveResult.value) ||
+            Fail`The contract did not correctly return a creatorInvitation`;
+        }
+        if (zcfBundleCapResult !== undefined) {
+          (zcfBundleCapResult.status === 'fulfilled' &&
+            zcfBundleCapResult.value) ||
+            Fail`the bundle cap was broken`;
+        }
+        const adminFacet = makeAdminFacet(
+          adminNode,
+          harden(zcfBundleCapResult),
+          contractBundleCap,
+        );
 
-      // Actually returned to the user.
-      return {
-        creatorFacet,
+        // Actually returned to the user.
+        return {
+          creatorFacet,
 
-        // TODO (#5775) deprecate this return value from contracts.
-        creatorInvitation,
-        instance: instanceHandle,
-        publicFacet,
-        adminFacet,
-      };
-    });
+          // TODO (#5775) deprecate this return value from contracts.
+          creatorInvitation,
+          instance: instanceHandle,
+          publicFacet,
+          adminFacet,
+        };
+      },
+    );
   };
   // @ts-expect-error cast
   return startInstance;

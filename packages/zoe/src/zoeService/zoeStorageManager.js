@@ -1,4 +1,4 @@
-import { AssetKind, makeDurableIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeDurableIssuerKit, AmountMath } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
@@ -6,10 +6,9 @@ import {
   vivifyFarClass,
   provideDurableSetStore,
 } from '@agoric/vat-data';
-import { initEmpty } from '@agoric/store';
 
 import { provideIssuerStorage } from '../issuerStorage.js';
-import { makeAndStoreInstanceRecord } from '../instanceRecordStorage.js';
+import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { provideEscrowStorage } from './escrowStorage.js';
 import { vivifyInvitationKit } from './makeInvitation.js';
@@ -77,10 +76,15 @@ export const makeZoeStorageManager = (
     feeMint.getFeeBrand(),
   );
 
-  // In order to participate in a contract, users must have
-  // invitations, which are ERTP payments made by Zoe. This code
-  // contains the mint capability for invitations.
-  const { setupMakeInvitation, invitationIssuer } = vivifyInvitationKit(
+  const proposalShapes = provideDurableWeakMapStore(
+    zoeBaggage,
+    'proposal shapes',
+  );
+
+  // In order to participate in a contract, users must have invitations, which
+  // are ERTP payments made by Zoe. This invitationKit must be closely held and
+  // used only by the makeInvitation() method.
+  const { invitationIssuer, invitationKit } = vivifyInvitationKit(
     zoeBaggage,
     shutdownZoeVat,
   );
@@ -96,11 +100,6 @@ export const makeZoeStorageManager = (
   const installationStorage = makeInstallationStorage(
     getBundleCapForID,
     zoeBaggage,
-  );
-
-  const proposalShapes = provideDurableWeakMapStore(
-    zoeBaggage,
-    'proposal shapes',
   );
 
   const getProposalShapeForInvitation = invitationHandle => {
@@ -155,6 +154,195 @@ export const makeZoeStorageManager = (
     },
   );
 
+  const makeInstanceStorageManager = vivifyFarClassKit(
+    zoeBaggage,
+    'InstanceStorageManager',
+    InstanceStorageManagerIKit,
+    (instanceRecord, adminNode, root, functions) =>
+      harden({
+        instanceState: instanceRecord,
+        adminNode,
+        root,
+        functions,
+      }),
+    {
+      instanceStorageManager: {
+        getTerms() {
+          const { state } = this;
+          return state.instanceState.getTerms();
+        },
+        getIssuers() {
+          const { state } = this;
+          return state.instanceState.getIssuers();
+        },
+        getBrands() {
+          const { state } = this;
+          return state.instanceState.getBrands();
+        },
+        getInstallation() {
+          const { state } = this;
+          return state.instanceState.getInstallation();
+        },
+        async saveIssuer(issuerP, keyword) {
+          const { state } = this;
+          const issuerRecord = await issuerStorage.storeIssuer(issuerP);
+          await escrowStorage.createPurse(
+            issuerRecord.issuer,
+            issuerRecord.brand,
+          );
+          state.instanceState.addIssuer(keyword, issuerRecord);
+          return issuerRecord;
+        },
+        makeZoeMint(
+          keyword,
+          assetKind = AssetKind.NAT,
+          displayInfo,
+          { elementShape = undefined } = {},
+        ) {
+          const { state, facets } = this;
+          // Local indicates one that zoe itself makes from vetted code,
+          // and so can be assumed correct and fresh by zoe.
+          const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
+            durable: true,
+          });
+          const localIssuerKit = makeDurableIssuerKit(
+            issuerBaggage,
+            keyword,
+            assetKind,
+            displayInfo,
+            state.adminNode.terminateWithFailure,
+            { elementShape },
+          );
+          zoeMintBaggageSet.add(issuerBaggage);
+          return facets.helpers.wrapIssuerKitWithZoeMint(
+            keyword,
+            localIssuerKit,
+            state.adminNode,
+          );
+        },
+        registerFeeMint(keyword, allegedFeeMintAccess) {
+          const { state, facets } = this;
+          const feeIssuerKit = feeMint.getFeeIssuerKit(allegedFeeMintAccess);
+          return facets.helpers.wrapIssuerKitWithZoeMint(
+            keyword,
+            feeIssuerKit,
+            state.adminNode,
+          );
+        },
+        getInstanceRecord() {
+          const { state } = this;
+          return state.instanceState.getInstanceRecord();
+        },
+        getIssuerRecords() {
+          const { state } = this;
+          return issuerStorage.getIssuerRecords(
+            // the issuerStorage is a weakStore, so we cannot iterate over
+            // it directly. Additionally, we only want to export the
+            // issuers used in this contract instance specifically, not
+            // all issuers.
+            Object.values(
+              state.instanceState.getInstanceRecord().terms.issuers,
+            ),
+          );
+        },
+        initInstanceAdmin(instanceHandle, instanceAdmin) {
+          return instanceAdminStorage.updater.initInstanceAdmin(
+            instanceHandle,
+            instanceAdmin,
+          );
+        },
+        deleteInstanceAdmin(i) {
+          instanceAdminStorage.updater.deleteInstanceAdmin(i);
+        },
+        makeInvitation(
+          handle,
+          desc,
+          customProps = undefined,
+          proposalShape = undefined,
+        ) {
+          const { state } = this;
+
+          // If the contract-provided customProperties include the
+          // properties 'description', 'handle', 'instance',
+          // 'installation', their corresponding
+          // values will be overwritten with the actual values. For
+          // example, the value for `instance` will always be the actual
+          // instance for the contract, even if customProperties includes
+          // a property called `instance`.
+          const invitationAmount = AmountMath.make(
+            invitationKit.brand,
+            harden([
+              {
+                ...(customProps || {}),
+                description: desc,
+                handle,
+                instance: state.instanceState.getInstanceRecord().instance,
+                installation:
+                  state.instanceState.getInstanceRecord().installation,
+              },
+            ]),
+          );
+          if (proposalShape !== undefined) {
+            proposalShapes.init(handle, proposalShape);
+          }
+          return invitationKit.mint.mintPayment(invitationAmount);
+        },
+        getInvitationIssuer() {
+          return invitationIssuer;
+        },
+        getRoot() {
+          const { state } = this;
+          return state.root;
+        },
+        getWithdrawFacet() {
+          const { facets } = this;
+          return facets.withdrawFacet;
+        },
+        getAdminNode() {
+          const { state } = this;
+          return state.adminNode;
+        },
+      },
+      // Goes to the Zoe seat, which isn't restricted in how much to withdraw
+      withdrawFacet: {
+        withdrawPayments(amounts) {
+          return escrowStorage.withdrawPayments(amounts);
+        },
+      },
+      helpers: {
+        wrapIssuerKitWithZoeMint(keyword, localIssuerKit, adminNode) {
+          const { state } = this;
+          const {
+            mint: localMint,
+            issuer: localIssuer,
+            brand: localBrand,
+            displayInfo: localDisplayInfo,
+          } = localIssuerKit;
+
+          const localIssuerRecord = makeIssuerRecord(
+            localBrand,
+            localIssuer,
+            localDisplayInfo,
+          );
+          issuerStorage.storeIssuerRecord(localIssuerRecord);
+          const localPooledPurse = escrowStorage.provideLocalPurse(
+            localIssuerRecord.issuer,
+            localIssuerRecord.brand,
+          );
+          state.instanceState.addIssuer(keyword, localIssuerRecord);
+          /** @type {ZoeMint} */
+          return makeZoeMint(
+            localMint,
+            localPooledPurse,
+            adminNode,
+            localIssuerRecord,
+          );
+        },
+      },
+    },
+  );
+  const makeInstanceRecord = makeInstanceRecordStorage(zoeBaggage);
+
   const makeZoeInstanceStorageManager = async (
     instanceBaggage,
     installation,
@@ -183,165 +371,22 @@ export const makeZoeStorageManager = (
     // Zoe to find out the installation, terms, issuers, and brands
     // for a contract instance. Contract code has similar query
     // capabilities from the ZCF side.
-    const instanceRecordManager = makeAndStoreInstanceRecord(
-      instanceBaggage,
-      installation,
-      instance,
-      customTerms,
-      issuers,
-      brands,
-    );
 
-    const wrapIssuerKitWithZoeMint = (keyword, localIssuerKit, adminNode) => {
-      const {
-        mint: localMint,
-        issuer: localIssuer,
-        brand: localBrand,
-        displayInfo: localDisplayInfo,
-      } = localIssuerKit;
-
-      const localIssuerRecord = makeIssuerRecord(
-        localBrand,
-        localIssuer,
-        localDisplayInfo,
-      );
-      issuerStorage.storeIssuerRecord(localIssuerRecord);
-      const localPooledPurse = escrowStorage.provideLocalPurse(
-        localIssuerRecord.issuer,
-        localIssuerRecord.brand,
-      );
-      instanceRecordManager.addIssuerToInstanceRecord(
-        keyword,
-        localIssuerRecord,
-      );
-      /** @type {ZoeMint} */
-      return makeZoeMint(
-        localMint,
-        localPooledPurse,
-        adminNode,
-        localIssuerRecord,
-      );
-    };
-
-    const makeInvitationImpl = setupMakeInvitation(
-      instance,
-      installation,
-      proposalShapes,
+    const instanceRecord = makeInstanceRecord(
+      harden({
+        installation,
+        instance,
+        terms: {
+          ...customTerms,
+          issuers,
+          brands,
+        },
+      }),
     );
 
     const { root, adminNode } = await createZCFVat(contractBundleCap);
-
-    const makeInstanceStorageManager = vivifyFarClassKit(
-      instanceBaggage,
-      'InstanceStorageManager',
-      InstanceStorageManagerIKit,
-      initEmpty,
-      {
-        instanceStorageManager: {
-          getTerms() {
-            return instanceRecordManager.getTerms();
-          },
-          getIssuers() {
-            return instanceRecordManager.getIssuers();
-          },
-          getBrands() {
-            return instanceRecordManager.getBrands();
-          },
-          getInstallationForInstance() {
-            return instanceRecordManager.getInstallationForInstance();
-          },
-          async saveIssuer(issuerP, keyword) {
-            const issuerRecord = await issuerStorage.storeIssuer(issuerP);
-            await escrowStorage.createPurse(
-              issuerRecord.issuer,
-              issuerRecord.brand,
-            );
-            instanceRecordManager.addIssuerToInstanceRecord(
-              keyword,
-              issuerRecord,
-            );
-            return issuerRecord;
-          },
-          makeZoeMint(
-            keyword,
-            assetKind = AssetKind.NAT,
-            displayInfo,
-            { elementShape = undefined } = {},
-          ) {
-            // Local indicates one that zoe itself makes from vetted code,
-            // and so can be assumed correct and fresh by zoe.
-            const issuerBaggage = makeScalarBigMapStore('IssuerBaggage', {
-              durable: true,
-            });
-            const localIssuerKit = makeDurableIssuerKit(
-              issuerBaggage,
-              keyword,
-              assetKind,
-              displayInfo,
-              adminNode.terminateWithFailure,
-              { elementShape },
-            );
-            zoeMintBaggageSet.add(issuerBaggage);
-            return wrapIssuerKitWithZoeMint(keyword, localIssuerKit, adminNode);
-          },
-          registerFeeMint(keyword, allegedFeeMintAccess) {
-            const feeIssuerKit = feeMint.getFeeIssuerKit(allegedFeeMintAccess);
-            return wrapIssuerKitWithZoeMint(keyword, feeIssuerKit, adminNode);
-          },
-          getInstanceRecord() {
-            return instanceRecordManager.getInstanceRecord();
-          },
-          getIssuerRecords() {
-            return issuerStorage.getIssuerRecords(
-              // the issuerStorage is a weakStore, so we cannot iterate over
-              // it directly. Additionally, we only want to export the
-              // issuers used in this contract instance specifically, not
-              // all issuers.
-              Object.values(
-                instanceRecordManager.getInstanceRecord().terms.issuers,
-              ),
-            );
-          },
-          initInstanceAdmin(instanceHandle, instanceAdmin) {
-            return instanceAdminStorage.updater.initInstanceAdmin(
-              instanceHandle,
-              instanceAdmin,
-            );
-          },
-          deleteInstanceAdmin(i) {
-            instanceAdminStorage.updater.deleteInstanceAdmin(i);
-          },
-          makeInvitation(
-            handle,
-            desc,
-            customProps = undefined,
-            proposalShape = undefined,
-          ) {
-            return makeInvitationImpl(handle, desc, customProps, proposalShape);
-          },
-          getInvitationIssuer() {
-            return invitationIssuer;
-          },
-          getRoot() {
-            return root;
-          },
-          getWithdrawFacet() {
-            const { facets } = this;
-            return facets.withdrawFacet;
-          },
-          getAdminNode() {
-            return adminNode;
-          },
-        },
-        // Goes to the Zoe seat, which isn't restricted in how much to withdraw
-        withdrawFacet: {
-          withdrawPayments(amounts) {
-            return escrowStorage.withdrawPayments(amounts);
-          },
-        },
-      },
-    );
-    return makeInstanceStorageManager().instanceStorageManager;
+    return makeInstanceStorageManager(instanceRecord, adminNode, root)
+      .instanceStorageManager;
   };
 
   const getInvitationIssuer = () => invitationIssuer;
@@ -383,9 +428,9 @@ export const makeZoeStorageManager = (
           const { state } = this;
           return state.instanceAdmins.getTerms(instance);
         },
-        getInstallationForInstance(instance) {
+        getInstallation(instance) {
           const { state } = this;
-          return state.instanceAdmins.getInstallationForInstance(instance);
+          return state.instanceAdmins.getInstallation(instance);
         },
         getProposalShapeForInvitation,
         installBundle: allegedBundle => {

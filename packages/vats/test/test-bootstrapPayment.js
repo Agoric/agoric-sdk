@@ -15,7 +15,9 @@ import { Stable } from '../src/tokens.js';
 
 const setUpZoeForTest = async setJig => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccessRetriever } = await makeFar(
+  const {
+    zoeServices: { zoeService, feeMintAccessRetriever },
+  } = await makeFar(
     makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
