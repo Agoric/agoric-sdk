@@ -736,11 +736,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		upgrade8Handler(app, upgradeName),
+		upgrade9Handler(app, upgradeName),
 	)
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeNameTest,
-		upgrade8Handler(app, upgradeNameTest),
+		upgrade9Handler(app, upgradeNameTest),
 	)
 
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
@@ -771,26 +771,9 @@ func NewAgoricApp(
 	return app
 }
 
-func upgrade8Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+func upgrade9Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
-		swingsettypes.DefaultBeansPerBlockComputeLimit = sdk.NewUint(6_500_000_000)
-		// Set bootstrap
-		switch targetUpgrade {
-		case upgradeName:
-			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-main-psm-config.json"
-		case upgradeNameTest:
-			swingsettypes.DefaultBootstrapVatConfig = "@agoric/vats/decentral-test-psm-config.json"
-		default:
-			return fromVm, fmt.Errorf("invalid upgrade name")
-		}
-
-		//Run migrations so InitGenesis is called for lien, swingset, vibc, vbank, vstorage
-		fromVm, err := app.mm.RunMigrations(ctx, app.configurator, fromVm)
-		if err != nil {
-			return fromVm, err
-		}
-
-		return fromVm, err
+		return fromVm, nil
 	}
 }
 
