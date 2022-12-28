@@ -5,6 +5,7 @@ import {
   IssuerShape,
   BrandShape,
   PaymentShape,
+  IssuerKitShape,
 } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
@@ -154,7 +155,7 @@ export const InstanceAdminShape = M.remotable('InstanceAdmin');
 export const InstanceAdminI = M.interface('InstanceAdmin', {
   makeInvitation: M.call(InvitationHandleShape, M.string())
     .optional(M.record(), M.pattern())
-    .returns(M.promise()),
+    .returns(InvitationShape),
   saveIssuer: M.callWhen(M.await(IssuerShape), KeywordShape).returns(
     IssuerRecordShape,
   ),
@@ -191,7 +192,7 @@ export const InstanceStorageManagerIKit = harden({
     getTerms: M.call().returns(M.splitRecord(TermsShape)),
     getIssuers: M.call().returns(IssuerKeywordRecordShape),
     getBrands: M.call().returns(BrandKeywordRecordShape),
-    getInstallationForInstance: M.call().returns(InstallationShape),
+    getInstallation: M.call().returns(InstallationShape),
     getInvitationIssuer: M.call().returns(IssuerShape),
 
     saveIssuer: M.call(IssuerShape, KeywordShape).returns(M.promise()),
@@ -215,7 +216,7 @@ export const InstanceStorageManagerIKit = harden({
     deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
       .optional(M.record(), M.pattern())
-      .returns(M.promise()),
+      .returns(PaymentShape),
     getRoot: M.call().returns(M.any()),
     getAdminNode: M.call().returns(M.remotable('adminNode')),
   }),
@@ -223,6 +224,13 @@ export const InstanceStorageManagerIKit = harden({
     withdrawPayments: M.call(AmountKeywordRecordShape).returns(
       PaymentPKeywordRecordShape,
     ),
+  }),
+  helpers: M.interface('InstanceStorageManager helper', {
+    wrapIssuerKitWithZoeMint: M.call(
+      KeywordShape,
+      IssuerKitShape,
+      M.remotable('adminNode'),
+    ).returns(ZoeMintShape),
   }),
 });
 
@@ -237,7 +245,7 @@ export const ZoeStorageManagerIKit = harden({
     getTerms: M.call(InstanceHandleShape).returns(M.splitRecord(TermsShape)),
     getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
     getBrands: M.call(InstanceHandleShape).returns(BrandKeywordRecordShape),
-    getInstallationForInstance: M.call(InstanceHandleShape).returns(
+    getInstallation: M.call(InstanceHandleShape).returns(
       M.eref(M.remotable('Installation')),
     ),
     getInvitationIssuer: M.call().returns(IssuerShape),

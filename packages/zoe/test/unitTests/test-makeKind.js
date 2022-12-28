@@ -17,7 +17,9 @@ const root = `${dirname}/../minimalMakeKindContract.js`;
 test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const {
+    zoeServices: { zoeService: zoe },
+  } = makeZoeKit(fakeVatAdmin);
   vatAdminState.installBundle('b1-minimal', bundle);
   const installation = await E(zoe).installBundleID('b1-minimal');
   t.notThrows(() => VatData.defineKind('x', () => {}, {}));

@@ -87,7 +87,7 @@
  * @property {() => BrandKeywordRecord} getBrands
  * @property {() => object} getTerms
  * @property {() => string[]} getOfferFilter
- * @property {() => Installation} getInstallationForInstance
+ * @property {() => Installation} getInstallation
  * @property {(completion: Completion) => void} exitAllSeats
  * @property {ShutdownWithFailure} failAllSeats
  * @property {() => void} stopAcceptingOffers
@@ -311,7 +311,7 @@
  */
 
 /**
- * @callback AddIssuerToInstanceRecord
+ * @callback InstanceStateAddIssuer
  *
  * Add an issuer and its keyword to the instanceRecord for the
  * contract instance
@@ -322,12 +322,12 @@
  */
 
 /**
- * @callback InstanceRecordManagerGetTerms
+ * @callback InstanceStateGetTerms
  * @returns {AnyTerms}
  */
 
 /**
- * @callback InstanceRecordManagerGetInstallationForInstance
+ * @callback InstanceStateGetInstallation
  * @returns {Installation}
  */
 
@@ -342,15 +342,14 @@
  */
 
 /**
- * @typedef {object} InstanceRecordManager
- * @property {AddIssuerToInstanceRecord} addIssuerToInstanceRecord
+ * @typedef {object} InstanceState
+ * @property {InstanceStateAddIssuer} addIssuer
  * @property {GetInstanceRecord} getInstanceRecord
- * @property {InstanceRecordManagerGetTerms} getTerms
- * @property {InstanceRecordManagerGetInstallationForInstance} getInstallationForInstance
+ * @property {InstanceStateGetTerms} getTerms
+ * @property {InstanceStateGetInstallation} getInstallation
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
  * @property {(keyword: Keyword) => void} assertUniqueKeyword
- * @property {(startingInstanceRecord: InstanceRecord) => void} instantiate
  */
 
 /**

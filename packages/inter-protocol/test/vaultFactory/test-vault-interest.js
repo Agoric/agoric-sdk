@@ -34,9 +34,16 @@ const setJig = jig => {
 
 const { makeFar, makeNear: makeRemote } = makeLoopback('zoeTest');
 
-const { zoeService: zoe, feeMintAccessRetriever } = await makeFar(
-  makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin),
-);
+const {
+  zoeServices: {
+    zoeService: zoeServiceNear,
+    feeMintAccessRetriever: feeMintAccessRetrieverNear,
+  },
+} = makeZoeKit(makeFakeVatAdmin(setJig, makeRemote).admin);
+const {
+  zoeServiceNear: zoe,
+  feeMintAccessRetrieverNear: feeMintAccessRetriever,
+} = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
 
 const feeMintAccessP = E(feeMintAccessRetriever).get();
 

@@ -24,7 +24,9 @@ function makeFakeMyAddressNameAdmin() {
 }
 
 const setup = async () => {
-  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
+  const {
+    zoeServices: { zoeService: zoe },
+  } = makeZoeKit(fakeVatAdmin);
   const board = makeBoard();
 
   const pursesStateChangeHandler = _data => {};

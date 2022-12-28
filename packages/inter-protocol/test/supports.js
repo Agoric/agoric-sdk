@@ -45,13 +45,20 @@ harden(provideBundle);
 export const setUpZoeForTest = async (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const { zoeService, feeMintAccessRetriever } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
+  const {
+    zoeServices: {
+      zoeService: zoeServiceNear,
+      feeMintAccessRetriever: feeMintAccessRetrieverNear,
+    },
+  } = makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
+    name: Stable.symbol,
+    assetKind: Stable.assetKind,
+    displayInfo: Stable.displayInfo,
+  });
+  const {
+    zoeServiceNear: zoeService,
+    feeMintAccessRetrieverNear: feeMintAccessRetriever,
+  } = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
   return {
     zoe: zoeService,
     feeMintAccessP: E(feeMintAccessRetriever).get(),

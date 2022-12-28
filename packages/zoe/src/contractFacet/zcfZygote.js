@@ -34,7 +34,7 @@ const { Fail } = assert;
 /**
  * Wrap getTerms so it checks the fit of the custom terms
  *
- * @param {InstanceRecordManagerGetTerms} getTerms
+ * @param {InstanceStateGetTerms} getTerms
  * @param {Pattern} customTermsShape
  */
 const fitGetTerms = (getTerms, customTermsShape) => {
@@ -72,7 +72,14 @@ export const makeZCFZygote = async (
   /** @type {ERef<ZoeInstanceAdmin>} */
   let zoeInstanceAdmin;
   let seatManager;
+  let instanceRecord;
   const makeExiter = makeMakeExiter(zcfBaggage);
+
+  /** @type {() => InstanceState} */
+  const getInstanceRecord = () => {
+    instanceRecord || Fail`instanceRecord must be initialized before use.`;
+    return instanceRecord;
+  };
 
   const {
     storeIssuerRecord,
@@ -94,16 +101,10 @@ export const makeZCFZygote = async (
     makeOfferHandlerStorage(zcfBaggage);
 
   // Make the instanceRecord
-  const {
-    addIssuerToInstanceRecord,
-    getTerms,
-    assertUniqueKeyword,
-    getInstanceRecord,
-    instantiate: instantiateInstanceRecordStorage,
-  } = makeInstanceRecordStorage(zcfBaggage);
+  const makeInstanceRecord = makeInstanceRecordStorage(zcfBaggage);
 
   const recordIssuer = (keyword, issuerRecord) => {
-    addIssuerToInstanceRecord(keyword, issuerRecord);
+    getInstanceRecord().addIssuer(keyword, issuerRecord);
     storeIssuerRecord(issuerRecord);
   };
 
@@ -144,7 +145,7 @@ export const makeZCFZygote = async (
     assetKind = AssetKind.NAT,
     displayInfo,
   ) => {
-    assertUniqueKeyword(keyword);
+    getInstanceRecord().assertUniqueKeyword(keyword);
 
     const zoeMint = await E(zoeInstanceAdmin).makeZoeMint(
       keyword,
@@ -156,7 +157,7 @@ export const makeZCFZygote = async (
 
   /** @type {ZCFRegisterFeeMint} */
   const registerFeeMint = async (keyword, feeMintAccess) => {
-    assertUniqueKeyword(keyword);
+    getInstanceRecord().assertUniqueKeyword(keyword);
 
     const zoeMint = await E(zoeInstanceAdmin).registerFeeMint(
       keyword,
@@ -244,12 +245,12 @@ export const makeZCFZygote = async (
   // and has members.)
   const zcf = Remotable('Alleged: zcf', undefined, {
     reallocate: (...seats) => seatManager.reallocate(...seats),
-    assertUniqueKeyword,
+    assertUniqueKeyword: kwd => getInstanceRecord().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
       // TODO: The checks of the keyword for uniqueness are
       // duplicated. Assess how waiting on promises to resolve might
       // affect those checks and see if one can be removed.
-      assertUniqueKeyword(keyword);
+      getInstanceRecord().assertUniqueKeyword(keyword);
       const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
       // AWAIT ///
       recordIssuer(keyword, record);
@@ -294,9 +295,17 @@ export const makeZCFZygote = async (
     // The methods below are pure and have no side-effects //
     getZoeService: () => zoeService,
     getInvitationIssuer: () => invitationIssuer,
-    getTerms: customTermsShape
-      ? fitGetTerms(getTerms, customTermsShape)
-      : getTerms,
+    // @ts-expect-error mismatch between InstanceStateGetTerms and ZcfZygote
+    getTerms: () => {
+      if (customTermsShape) {
+        return fitGetTerms(
+          () => getInstanceRecord().getTerms(),
+          customTermsShape,
+        );
+      } else {
+        return getInstanceRecord().getTerms();
+      }
+    },
     getBrandForIssuer,
     getIssuerForBrand,
     getAssetKind: getAssetKindByBrand,
@@ -306,7 +315,7 @@ export const makeZCFZygote = async (
         testJigSetter({ ...testFn(), zcf });
       }
     },
-    getInstance: () => getInstanceRecord().instance,
+    getInstance: () => getInstanceRecord().getInstanceRecord().instance,
     setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
     getOfferFilter: () => E(zoeInstanceAdmin).getOfferFilter(),
   });
@@ -358,7 +367,7 @@ export const makeZCFZygote = async (
       initSeatMgrAndMintFactory();
 
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
-      instantiateInstanceRecordStorage(instanceRecordFromZoe);
+      instanceRecord = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 
       const startFn = start || vivify;

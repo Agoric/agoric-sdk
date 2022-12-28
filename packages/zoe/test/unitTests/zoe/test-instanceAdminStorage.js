@@ -24,7 +24,7 @@ test('makeInstanceAdminStorage', async t => {
     }),
   );
   const mockInstanceAdmin = Far('mockInstanceAdmin', {
-    getInstallationForInstance: () => mockInstallation1,
+    getInstallation: () => mockInstallation1,
     getBrands: () => mockBrandRecord,
     getPublicFacet: () => mockFacet,
     getIssuers: () => mockIssuerRecord,
@@ -33,10 +33,7 @@ test('makeInstanceAdminStorage', async t => {
   });
 
   ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin);
-  t.is(
-    await ias.accessor.getInstallationForInstance(mockInstance1),
-    mockInstallation1,
-  );
+  t.is(await ias.accessor.getInstallation(mockInstance1), mockInstallation1);
   t.is(await ias.accessor.getBrands(mockInstance1), mockBrandRecord);
   t.is(await ias.accessor.getPublicFacet(mockInstance1), mockFacet);
   t.is(await ias.accessor.getIssuers(mockInstance1), mockIssuerRecord);
@@ -51,7 +48,7 @@ test('add another instance admin for same instance', async t => {
   const mockInstallation1 = Far('mockInstallation', {});
   const mockInstance1 = Far('mockInstance', {});
   const mockInstanceAdmin1 = Far('mockInstanceAdmin', {
-    getInstallationForInstance: () => mockInstallation1,
+    getInstallation: () => mockInstallation1,
     getBrands: () => 'brands',
     getPublicFacet: () => 'publicFacet',
     getIssuers: () => 'issuers',
@@ -60,10 +57,7 @@ test('add another instance admin for same instance', async t => {
   });
 
   ias.updater.initInstanceAdmin(mockInstance1, mockInstanceAdmin1);
-  t.is(
-    await ias.accessor.getInstallationForInstance(mockInstance1),
-    mockInstallation1,
-  );
+  t.is(await ias.accessor.getInstallation(mockInstance1), mockInstallation1);
 
   const mockInstanceAdmin2 = Far('mockInstanceAdmin', {});
   await t.throwsAsync(

@@ -25,17 +25,20 @@ import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
-import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
+import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
 import { ZoeServiceIKit } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
+const { Fail } = assert;
+
 /**
  * Create an instance of Zoe.
  *
- * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
- * to create a new vat.
+ * @param {VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
+ * power to create a new vat. If it's not available when makeZoe() is called, it
+ * must be provided later using setVatAdminService().
  * @param {ShutdownWithFailure} shutdownZoeVat - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
@@ -44,32 +47,70 @@ import { ZoeServiceIKit } from '../typeGuards.js';
  * @param {Baggage} [zoeBaggage]
  */
 const makeZoeKit = (
-  vatAdminSvc,
+  vatAdminSvc = undefined,
   shutdownZoeVat = () => {},
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
   let zoeService;
+  let zcfBundleCap;
+
+  function saveBundleCap() {
+    zoeBaggage.init('vatAdminSvc', vatAdminSvc);
+    E.when(getZcfBundleCap(zcfSpec, vatAdminSvc), bundleCap => {
+      zcfBundleCap = bundleCap;
+      zoeBaggage.init('zcfBundleCap', bundleCap);
+    });
+  }
+
+  const setVatAdminService = lateVatAdminSvc => {
+    vatAdminSvc = lateVatAdminSvc;
+    saveBundleCap();
+  };
+  if (vatAdminSvc) {
+    saveBundleCap();
+  } else if (zoeBaggage.has('zcfBundleCap')) {
+    zcfBundleCap = zoeBaggage.get('zcfBundleCap');
+    vatAdminSvc = zoeBaggage.get('vatAdminSvc');
+  }
 
   const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
   /** @type {GetBundleCapForID} */
-  const getBundleCapForID = bundleID =>
-    E(vatAdminSvc).waitForBundleCap(bundleID);
+  const getBundleCapForID = bundleID => {
+    vatAdminSvc || Fail`vatAdminSvc must be defined.`;
+    // @ts-expect-error the guard protects it.
+    return E(vatAdminSvc).waitForBundleCap(bundleID);
+  };
 
-  const zcfBundleCap = getZcfBundleCap(zcfSpec, vatAdminSvc);
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(
-    vatAdminSvc,
-    zcfBundleCap,
-    // eslint-disable-next-line no-use-before-define
-    () => invitationIssuerAccess.getInvitationIssuer(),
-    () => zoeService,
-  );
-  const getBundleCapByIdNow = id => E(vatAdminSvc).getBundleCap(id);
+  const createZCFVat = contractBundleCap => {
+    assert(zcfBundleCap, `createZCFVat did not get bundleCap`);
+
+    vatAdminSvc || Fail`vatAdminSvc must be defined.`;
+    // @ts-expect-error the guard protects it.
+    return E(vatAdminSvc).createVat(
+      zcfBundleCap,
+      harden({
+        name: 'zcf',
+        vatParameters: {
+          contractBundleCap,
+          zoeService,
+          // eslint-disable-next-line no-use-before-define
+          invitationIssuer: invitationIssuerAccess.getInvitationIssuer(),
+        },
+      }),
+    );
+  };
+
+  const getBundleCapByIdNow = id => {
+    vatAdminSvc || Fail`vatAdminSvc must be defined.`;
+    // @ts-expect-error the guard protects it.
+    return E(vatAdminSvc).getBundleCap(id);
+  };
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
@@ -89,7 +130,7 @@ const makeZoeKit = (
   // Pass the capabilities necessary to create E(zoe).startInstance
   const startInstance = makeStartInstance(
     startInstanceAccess,
-    zcfBundleCap,
+    () => zcfBundleCap,
     getBundleCapByIdNow,
     zoeBaggage,
   );
@@ -165,7 +206,7 @@ const makeZoeKit = (
         },
         getInstallationForInstance(instance) {
           const { state } = this;
-          return state.dataAccess.getInstallationForInstance(instance);
+          return state.dataAccess.getInstallation(instance);
         },
         getBundleIDFromInstallation(installation) {
           const { state } = this;
@@ -197,7 +238,7 @@ const makeZoeKit = (
     makeZoeService(zoeServiceDataAccess),
   );
   zoeService = zoeServices.zoeService;
-  return zoeServices;
+  return { zoeServices, setVatAdminService };
 };
 
 export { makeZoeKit };

@@ -17,38 +17,3 @@ export const getZcfBundleCap = (zcfSpec, vatAdminSvc) => {
 
   return zcfBundleCapP;
 };
-
-/**
- * Attenuate the power of vatAdminSvc by restricting it such that only
- * ZCF Vats can be created.
- *
- * @param {VatAdminSvc} vatAdminSvc
- * @param {ERef<BundleCap>} zcfBundleCapP
- * @param {() => Issuer} getInvitationIssuer
- * @param {() => ZoeService} getZoeService
- * @returns {CreateZCFVat}
- */
-export const setupCreateZCFVat = (
-  vatAdminSvc,
-  zcfBundleCapP,
-  getInvitationIssuer,
-  getZoeService,
-) => {
-  /** @type {CreateZCFVat} */
-  const createZCFVat = async contractBundleCap => {
-    /** @type {BundleCap} */
-    const zcfBundleCap = await zcfBundleCapP;
-    assert(zcfBundleCap, `setupCreateZCFVat did not get bundleCap`);
-    const rootAndAdminNodeP = E(vatAdminSvc).createVat(zcfBundleCap, {
-      name: 'zcf',
-      vatParameters: {
-        contractBundleCap,
-        zoeService: getZoeService(),
-        invitationIssuer: getInvitationIssuer(),
-      },
-    });
-    const rootAndAdminNode = await rootAndAdminNodeP;
-    return rootAndAdminNode;
-  };
-  return createZCFVat;
-};
