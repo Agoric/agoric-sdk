@@ -213,7 +213,7 @@
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
- *   provisioning: Awaited<ProvisioningVat>,
+ *   provisioning: Awaited<ProvisioningVat> | undefined,
  *   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,

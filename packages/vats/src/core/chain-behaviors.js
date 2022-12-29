@@ -132,6 +132,14 @@ export const makeProvisioner = async ({
 };
 harden(makeProvisioner);
 
+/**
+ * @param {BootstrapPowers} powers
+ */
+export const noProvisioner = async ({ produce: { provisioning } }) => {
+  provisioning.resolve(undefined);
+};
+harden(noProvisioner);
+
 /** @param {BootstrapPowers} powers */
 export const bridgeProvisioner = async ({
   consume: {
@@ -151,36 +159,41 @@ export const bridgeProvisioner = async ({
   }
 
   // Register a provisioning handler over the bridge.
-  const handler = Far('provisioningHandler', {
-    async fromBridge(obj) {
-      switch (obj.type) {
-        case 'PLEASE_PROVISION': {
-          const { nickname, address, powerFlags: rawPowerFlags } = obj;
-          const powerFlags = rawPowerFlags || [];
-          let provisionP;
-          if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
-            // Only provision a smart wallet.
-            provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
-          } else {
-            // Provision a mailbox and REPL.
-            provisionP = E(provisioning).pleaseProvision(
-              nickname,
-              address,
-              powerFlags,
-            );
+  const handler = provisioning
+    ? Far('provisioningHandler', {
+        async fromBridge(obj) {
+          switch (obj.type) {
+            case 'PLEASE_PROVISION': {
+              const { nickname, address, powerFlags: rawPowerFlags } = obj;
+              const powerFlags = rawPowerFlags || [];
+              let provisionP;
+              if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
+                // Only provision a smart wallet.
+                provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
+              } else {
+                // Provision a mailbox and REPL.
+                provisionP = E(provisioning).pleaseProvision(
+                  nickname,
+                  address,
+                  powerFlags,
+                );
+              }
+              return provisionP
+                .catch(e =>
+                  console.error(
+                    `Error provisioning ${nickname} ${address}:`,
+                    e,
+                  ),
+                )
+                .then(_ => {});
+            }
+            default: {
+              throw Fail`Unrecognized request ${obj.type}`;
+            }
           }
-          return provisionP
-            .catch(e =>
-              console.error(`Error provisioning ${nickname} ${address}:`, e),
-            )
-            .then(_ => {});
-        }
-        default: {
-          throw Fail`Unrecognized request ${obj.type}`;
-        }
-      }
-    },
-  });
+        },
+      })
+    : provisionWalletBridgeManager;
   await E(provisionBridgeManager).setHandler(handler);
 };
 harden(bridgeProvisioner);
@@ -299,46 +312,36 @@ harden(startTimerService);
  * @param {BootDevices<ChainDevices> & BootstrapSpace & {
  *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
  * }} powers
- * @param {{ options?: {
- *   provisionToSmartWallet?: boolean
- * }}} config
  */
-export const makeBridgeManager = async (
-  {
-    consume: { loadCriticalVat },
-    devices: { bridge },
-    produce: {
-      bridgeManager: bridgeManagerP,
-      provisionBridgeManager,
-      provisionWalletBridgeManager: provisionWalletBridgeManagerP,
-      walletBridgeManager,
-    },
+export const makeBridgeManager = async ({
+  consume: { loadCriticalVat },
+  devices: { bridge },
+  produce: {
+    bridgeManager: bridgeManagerP,
+    provisionBridgeManager,
+    provisionWalletBridgeManager,
+    walletBridgeManager,
   },
-  { options: { provisionToSmartWallet = false } = {} } = {},
-) => {
+}) => {
   if (!bridge) {
     console.warn(
       'Running without a bridge device; this is not an actual chain.',
     );
     bridgeManagerP.resolve(undefined);
     provisionBridgeManager.resolve(undefined);
-    provisionWalletBridgeManagerP.resolve(undefined);
+    provisionWalletBridgeManager.resolve(undefined);
     walletBridgeManager.resolve(undefined);
     return;
   }
   const vat = E(loadCriticalVat)('chainStorage');
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
-  const provisionWalletBridgeManager = E(bridgeManager).register(
-    BRIDGE_ID.PROVISION_SMART_WALLET,
-  );
   provisionBridgeManager.resolve(
-    E(bridgeManager).register(
-      BRIDGE_ID.PROVISION,
-      provisionToSmartWallet ? provisionWalletBridgeManager : undefined,
-    ),
+    E(bridgeManager).register(BRIDGE_ID.PROVISION),
   );
-  provisionWalletBridgeManagerP.resolve(provisionWalletBridgeManager);
+  provisionWalletBridgeManager.resolve(
+    E(bridgeManager).register(BRIDGE_ID.PROVISION_SMART_WALLET),
+  );
   walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
 };
 harden(makeBridgeManager);

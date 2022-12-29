@@ -34,8 +34,10 @@ import {
 import * as utils from './utils.js';
 import {
   bridgeCoreEval,
+  bridgeProvisioner,
   makeBridgeManager,
   makeChainStorage,
+  noProvisioner,
   publishAgoricNames,
   startTimerService,
 } from './chain-behaviors.js';
@@ -166,6 +168,11 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
       ...INVITE_PSM_COMMITTEE_MANIFEST,
+      [noProvisioner.name]: {
+        produce: {
+          provisioning: 'provisioning',
+        },
+      },
     };
     /** @param {string} name */
     const powersFor = name => {
@@ -178,9 +185,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
       makeBoard(powersFor('makeBoard')),
-      makeBridgeManager(powersFor('makeBridgeManager'), {
-        options: { provisionToSmartWallet: true },
-      }),
+      makeBridgeManager(powersFor('makeBridgeManager')),
+      noProvisioner(powersFor('noProvisioner')),
+      bridgeProvisioner(powersFor('bridgeProvisioner')),
       makeChainStorage(powersFor('makeChainStorage')),
       makeAddressNameHubs(powersFor('makeAddressNameHubs')),
       publishAgoricNames(powersFor('publishAgoricNames'), {
