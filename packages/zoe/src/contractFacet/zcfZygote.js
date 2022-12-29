@@ -72,13 +72,13 @@ export const makeZCFZygote = async (
   /** @type {ERef<ZoeInstanceAdmin>} */
   let zoeInstanceAdmin;
   let seatManager;
-  let instanceRecord;
+  let instanceRecHolder;
   const makeExiter = makeMakeExiter(zcfBaggage);
 
   /** @type {() => InstanceState} */
-  const getInstanceRecord = () => {
-    instanceRecord || Fail`instanceRecord must be initialized before use.`;
-    return instanceRecord;
+  const getInstanceRecHolder = () => {
+    instanceRecHolder || Fail`instanceRecord must be initialized before use.`;
+    return instanceRecHolder;
   };
 
   const {
@@ -104,7 +104,7 @@ export const makeZCFZygote = async (
   const makeInstanceRecord = makeInstanceRecordStorage(zcfBaggage);
 
   const recordIssuer = (keyword, issuerRecord) => {
-    getInstanceRecord().addIssuer(keyword, issuerRecord);
+    getInstanceRecHolder().addIssuer(keyword, issuerRecord);
     storeIssuerRecord(issuerRecord);
   };
 
@@ -145,7 +145,7 @@ export const makeZCFZygote = async (
     assetKind = AssetKind.NAT,
     displayInfo,
   ) => {
-    getInstanceRecord().assertUniqueKeyword(keyword);
+    getInstanceRecHolder().assertUniqueKeyword(keyword);
 
     const zoeMint = await E(zoeInstanceAdmin).makeZoeMint(
       keyword,
@@ -157,7 +157,7 @@ export const makeZCFZygote = async (
 
   /** @type {ZCFRegisterFeeMint} */
   const registerFeeMint = async (keyword, feeMintAccess) => {
-    getInstanceRecord().assertUniqueKeyword(keyword);
+    getInstanceRecHolder().assertUniqueKeyword(keyword);
 
     const zoeMint = await E(zoeInstanceAdmin).registerFeeMint(
       keyword,
@@ -245,12 +245,12 @@ export const makeZCFZygote = async (
   // and has members.)
   const zcf = Remotable('Alleged: zcf', undefined, {
     reallocate: (...seats) => seatManager.reallocate(...seats),
-    assertUniqueKeyword: kwd => getInstanceRecord().assertUniqueKeyword(kwd),
+    assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
       // TODO: The checks of the keyword for uniqueness are
       // duplicated. Assess how waiting on promises to resolve might
       // affect those checks and see if one can be removed.
-      getInstanceRecord().assertUniqueKeyword(keyword);
+      getInstanceRecHolder().assertUniqueKeyword(keyword);
       const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
       // AWAIT ///
       recordIssuer(keyword, record);
@@ -299,11 +299,11 @@ export const makeZCFZygote = async (
     getTerms: () => {
       if (customTermsShape) {
         return fitGetTerms(
-          () => getInstanceRecord().getTerms(),
+          () => getInstanceRecHolder().getTerms(),
           customTermsShape,
         );
       } else {
-        return getInstanceRecord().getTerms();
+        return getInstanceRecHolder().getTerms();
       }
     },
     getBrandForIssuer,
@@ -315,7 +315,7 @@ export const makeZCFZygote = async (
         testJigSetter({ ...testFn(), zcf });
       }
     },
-    getInstance: () => getInstanceRecord().getInstanceRecord().instance,
+    getInstance: () => getInstanceRecHolder().getInstanceRecord().instance,
     setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
     getOfferFilter: () => E(zoeInstanceAdmin).getOfferFilter(),
   });
@@ -367,7 +367,7 @@ export const makeZCFZygote = async (
       initSeatMgrAndMintFactory();
 
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
-      instanceRecord = makeInstanceRecord(instanceRecordFromZoe);
+      instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 
       const startFn = start || vivify;

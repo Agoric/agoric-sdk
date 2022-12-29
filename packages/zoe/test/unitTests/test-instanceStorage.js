@@ -34,7 +34,9 @@ test('makeInstanceRecordStorage', async t => {
   const { currencyKit, ticketKit } = setupIssuersForTest();
   const bundle = await bundleSource(root);
   const fakeInstallation = Far('fakeInstallation', { getBundle: () => bundle });
-  const fakeInstance = /** @type {Instance} */ ({});
+  const fakeInstance = /** @type {Instance} */ (
+    Far('fakeInstance', { a: () => 0 })
+  );
   const issuers = harden({
     Currency: currencyKit.issuer,
     Ticket: ticketKit.issuer,
