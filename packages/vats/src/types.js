@@ -76,5 +76,4 @@ export {};
  * @property {(dstID: string, obj: any) => Promise<any>} toBridge
  * @property {(dstID: string, obj: any) => void} fromBridge
  * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} register
- * @property {(srcID: string, handler: ERef<BridgeHandler>) => void} unregister
  */

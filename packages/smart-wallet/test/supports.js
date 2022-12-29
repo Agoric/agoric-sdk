@@ -104,9 +104,6 @@ const makeFakeBridgeManager = () => {
         }
       }
     },
-    unregister(_srcID) {
-      assert.fail('expected unregister');
-    },
   };
   return Far('fakeBridgeManager', manager);
 };
