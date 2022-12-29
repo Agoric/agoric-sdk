@@ -20,7 +20,6 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -179,7 +178,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
       makeBoard(powersFor('makeBoard')),
-      makeBridgeManager(powersFor('makeBridgeManager')),
+      makeBridgeManager(powersFor('makeBridgeManager'), {
+        options: { provisionToSmartWallet: true },
+      }),
       makeChainStorage(powersFor('makeChainStorage')),
       makeAddressNameHubs(powersFor('makeAddressNameHubs')),
       publishAgoricNames(powersFor('publishAgoricNames'), {
@@ -187,9 +188,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
       }),
-      startWalletFactory(powersFor('startWalletFactory'), {
-        options: { walletBridgeId: BRIDGE_ID.PROVISION },
-      }),
+      startWalletFactory(powersFor('startWalletFactory')),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),

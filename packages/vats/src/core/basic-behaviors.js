@@ -5,7 +5,7 @@ import { Nat } from '@agoric/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { WalletName } from '@agoric/internal';
+import { BridgeId, WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
@@ -358,7 +358,7 @@ export const addBankAssets = async ({
   consume: {
     agoricNamesAdmin,
     initialSupply,
-    bridgeManager,
+    bridgeManager: bridgeManagerP,
     loadCriticalVat,
     zoe,
   },
@@ -395,8 +395,12 @@ export const addBankAssets = async ({
   const nameUpdater = Far('AssetHub', {
     update: (name, val) => E(assetAdmin).update(name, val),
   });
+
+  const bridgeManager = await bridgeManagerP;
+  const bankBridgeManager =
+    bridgeManager && E(bridgeManager).register(BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
-    bridgeManager,
+    bankBridgeManager,
     nameUpdater,
   );
   bankManager.resolve(bankMgr);

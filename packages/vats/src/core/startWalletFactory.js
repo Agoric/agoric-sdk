@@ -1,7 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import { BridgeId as BRIDGE_ID, deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '../lib-chainStorage.js';
@@ -111,11 +111,12 @@ const startGovernedInstance = async (
  *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>['creatorFacet'],
  *     adminFacet: AdminFacet,
  *   } ,
+ *   walletBridgeManager: import('../types.js').ScopedBridgeManager;
+ *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager;
  * }>} powers
  * @param {{
  *   options?: {
  *     perAccountInitialValue?: bigint,
- *     walletBridgeId?: string,
  *   },
  * }} [config]
  */
@@ -125,7 +126,8 @@ export const startWalletFactory = async (
       agoricNames,
       bankManager,
       board,
-      bridgeManager: bridgeManagerP,
+      walletBridgeManager: walletBridgeManagerP,
+      provisionWalletBridgeManager: provisionWalletBridgeManagerP,
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
       zoe,
@@ -145,21 +147,20 @@ export const startWalletFactory = async (
       consume: { [Stable.symbol]: feeIssuerP },
     },
   },
-  {
-    options: {
-      perAccountInitialValue = (StableUnit * 25n) / 100n,
-      walletBridgeId = BRIDGE_ID.PROVISION_SMART_WALLET,
-    } = {},
-  } = {},
+  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
 ) => {
   const WALLET_STORAGE_PATH = 'wallet';
   const POOL_STORAGE_PATH = 'provisionPool';
-  const [bridgeManager, poolAddr] = await Promise.all([
-    bridgeManagerP,
-    E(bankManager).getModuleAccountAddress('vbank/provision'),
-  ]);
-  if (!bridgeManager) {
-    console.warn('startWalletFactory needs bridgeManager (not sim chain)');
+  const [walletBridgeManager, provisionWalletBridgeManager, poolAddr] =
+    await Promise.all([
+      walletBridgeManagerP,
+      provisionWalletBridgeManagerP,
+      E(bankManager).getModuleAccountAddress('vbank/provision'),
+    ]);
+  if (!walletBridgeManager || !provisionWalletBridgeManager) {
+    console.warn(
+      'startWalletFactory needs wallet and provision bridgeManagers (not sim chain)',
+    );
     return;
   }
   console.log('provision pool', { poolAddr });
@@ -196,9 +197,7 @@ export const startWalletFactory = async (
     terms,
     {
       storageNode: walletStorageNode,
-      // POLA contract only needs to register for srcId='wallet'
-      // TODO consider a scoped attenuation of this bridge manager to just 'wallet'
-      bridgeManager,
+      walletBridgeManager,
     },
   );
   walletFactoryStartResult.resolve(wfFacets);
@@ -239,7 +238,7 @@ export const startWalletFactory = async (
   });
 
   await Promise.all([
-    E(bridgeManager).register(walletBridgeId, handler),
+    E(provisionWalletBridgeManager).setHandler(handler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.creatorFacet,
@@ -267,7 +266,8 @@ export const WALLET_FACTORY_MANIFEST = {
       agoricNames: true,
       bankManager: 'bank',
       board: 'board',
-      bridgeManager: true,
+      walletBridgeManager: true,
+      provisionWalletBridgeManager: true,
       chainStorage: 'chainStorage',
       namesByAddressAdmin: true,
       zoe: 'zoe',

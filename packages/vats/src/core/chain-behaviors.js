@@ -134,10 +134,19 @@ harden(makeProvisioner);
 
 /** @param {BootstrapPowers} powers */
 export const bridgeProvisioner = async ({
-  consume: { provisioning, bridgeManager: bridgeManagerP },
+  consume: {
+    provisioning: provisioningP,
+    provisionBridgeManager: provisionBridgeManagerP,
+    provisionWalletBridgeManager: provisionWalletBridgeManagerP,
+  },
 }) => {
-  const bridgeManager = await bridgeManagerP;
-  if (!bridgeManager) {
+  const [provisioning, provisionBridgeManager, provisionWalletBridgeManager] =
+    await Promise.all([
+      provisioningP,
+      provisionBridgeManagerP,
+      provisionWalletBridgeManagerP,
+    ]);
+  if (!provisionBridgeManager || !provisionWalletBridgeManager) {
     return;
   }
 
@@ -151,10 +160,7 @@ export const bridgeProvisioner = async ({
           let provisionP;
           if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
             // Only provision a smart wallet.
-            provisionP = E(bridgeManager).fromBridge(
-              BRIDGE_ID.PROVISION_SMART_WALLET,
-              obj,
-            );
+            provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
           } else {
             // Provision a mailbox and REPL.
             provisionP = E(provisioning).pleaseProvision(
@@ -175,7 +181,7 @@ export const bridgeProvisioner = async ({
       }
     },
   });
-  await E(bridgeManager).register(BRIDGE_ID.PROVISION, handler);
+  await E(provisionBridgeManager).setHandler(handler);
 };
 harden(bridgeProvisioner);
 
@@ -293,35 +299,61 @@ harden(startTimerService);
  * @param {BootDevices<ChainDevices> & BootstrapSpace & {
  *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
  * }} powers
+ * @param {{ options?: {
+ *   provisionToSmartWallet?: boolean
+ * }}} config
  */
-export const makeBridgeManager = async ({
-  consume: { loadCriticalVat },
-  devices: { bridge },
-  produce: { bridgeManager },
-}) => {
+export const makeBridgeManager = async (
+  {
+    consume: { loadCriticalVat },
+    devices: { bridge },
+    produce: {
+      bridgeManager: bridgeManagerP,
+      provisionBridgeManager,
+      provisionWalletBridgeManager: provisionWalletBridgeManagerP,
+      walletBridgeManager,
+    },
+  },
+  { options: { provisionToSmartWallet = false } = {} } = {},
+) => {
   if (!bridge) {
     console.warn(
       'Running without a bridge device; this is not an actual chain.',
     );
-    bridgeManager.resolve(undefined);
+    bridgeManagerP.resolve(undefined);
+    provisionBridgeManager.resolve(undefined);
+    provisionWalletBridgeManagerP.resolve(undefined);
+    walletBridgeManager.resolve(undefined);
     return;
   }
   const vat = E(loadCriticalVat)('chainStorage');
-  bridgeManager.resolve(E(vat).provideManagerForBridge(bridge));
+  const bridgeManager = E(vat).provideManagerForBridge(bridge);
+  bridgeManagerP.resolve(bridgeManager);
+  const provisionWalletBridgeManager = E(bridgeManager).register(
+    BRIDGE_ID.PROVISION_SMART_WALLET,
+  );
+  provisionBridgeManager.resolve(
+    E(bridgeManager).register(
+      BRIDGE_ID.PROVISION,
+      provisionToSmartWallet ? provisionWalletBridgeManager : undefined,
+    ),
+  );
+  provisionWalletBridgeManagerP.resolve(provisionWalletBridgeManager);
+  walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
 };
 harden(makeBridgeManager);
 
 /**
- * @param {BootDevices<ChainDevices> & BootstrapSpace & {
+ * @param {BootstrapSpace & {
  *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
  * }} powers
  */
 export const makeChainStorage = async ({
-  devices: { bridge },
-  consume: { loadCriticalVat },
+  consume: { loadCriticalVat, bridgeManager: bridgeManagerP },
   produce: { chainStorage: chainStorageP },
 }) => {
-  if (!bridge) {
+  const bridgeManager = await bridgeManagerP;
+  if (!bridgeManager) {
     console.warn('Cannot support chainStorage without an actual chain.');
     chainStorageP.resolve(null);
     return;
@@ -329,10 +361,11 @@ export const makeChainStorage = async ({
 
   const ROOT_PATH = STORAGE_PATH.CUSTOM;
 
+  const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
+
   const vat = E(loadCriticalVat)('chainStorage');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
-    bridge,
-    BRIDGE_ID.STORAGE,
+    storageBridgeManager,
     ROOT_PATH,
     { sequence: true },
   );
@@ -385,7 +418,7 @@ harden(connectChainFaucet);
 
 /**
  * @param {SoloVats | NetVats} vats
- * @param {import('../types.js').BridgeManager=} dibcBridgeManager
+ * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   const ps = [];
@@ -401,7 +434,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
     // We have access to the bridge, and therefore IBC.
     const callbacks = Far('callbacks', {
       downcall(method, obj) {
-        return E(dibcBridgeManager).toBridge(BRIDGE_ID.DIBC, {
+        return E(dibcBridgeManager).toBridge({
           ...obj,
           type: 'IBC_METHOD',
           method,
@@ -409,7 +442,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
       },
     });
     const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-    await E(dibcBridgeManager).register(BRIDGE_ID.DIBC, ibcHandler);
+    await E(dibcBridgeManager).setHandler(ibcHandler);
     ps.push(
       E(vats.network).registerProtocolHandler(
         ['/ibc-port', '/ibc-hop'],
@@ -449,10 +482,15 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
  * @typedef { ((name: 'network') => NetworkVat) &
  *            ((name: 'ibc') => IBCVat) } VatLoader2
  *
- * @typedef {{ network: NetworkVat, ibc: IBCVat, provisioning: ProvisioningVat}} NetVats
+ * @typedef {{ network: ERef<NetworkVat>, ibc: ERef<IBCVat>, provisioning: ERef<ProvisioningVat | undefined>}} NetVats
  */
 export const setupNetworkProtocols = async ({
-  consume: { client, loadCriticalVat, bridgeManager, provisioning },
+  consume: {
+    client,
+    loadCriticalVat,
+    bridgeManager: bridgeManagerP,
+    provisioning,
+  },
   produce: { networkVat },
 }) => {
   /** @type { NetVats } */
@@ -466,7 +504,9 @@ export const setupNetworkProtocols = async ({
 
   networkVat.reset();
   networkVat.resolve(vats.network);
-  const dibcBridgeManager = await bridgeManager;
+  const bridgeManager = await bridgeManagerP;
+  const dibcBridgeManager =
+    bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
 
   const makePorts = async () => {
     // Bind to some fresh ports (unspecified name) on the IBC implementation

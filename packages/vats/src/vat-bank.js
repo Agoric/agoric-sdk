@@ -4,7 +4,6 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeVirtualPurse } from './virtual-purse.js';
 
 import '@agoric/notifier/exported.js';
@@ -112,7 +111,7 @@ const makePurseController = (
 export function buildRootObject() {
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./types.js').BridgeManager | undefined>} [bankBridgeManagerP] a bridge
+     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
      * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdmin] update facet of
@@ -152,7 +151,7 @@ export function buildRootObject() {
       };
 
       /**
-       * @param {ERef<import('./types.js').BridgeManager>} [bankBridgeMgr]
+       * @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr]
        */
       async function makeBankCaller(bankBridgeMgr) {
         // We do the logic here if the bridge manager is available.  Otherwise,
@@ -170,10 +169,10 @@ export function buildRootObject() {
           },
         });
 
-        await E(bankBridgeMgr).register(BRIDGE_ID.BANK, handler);
+        await E(bankBridgeMgr).setHandler(handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return obj => E(bankBridgeMgr).toBridge(BRIDGE_ID.BANK, obj);
+        return obj => E(bankBridgeMgr).toBridge(obj);
       }
 
       const bankCall = await makeBankCaller(bankBridgeManager);

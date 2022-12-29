@@ -19,24 +19,18 @@ import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 import { devices } from './devices.js';
 
 test('communication', async t => {
-  t.plan(38);
+  t.plan(29);
   const bankVat = E(buildRootObject)();
 
   /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
   let bankHandler;
 
-  /** @type {import('../src/types.js').BridgeManager} */
-  const bridgeMgr = Far('fakeBridgeManager', {
-    register(srcID, handler) {
-      t.is(srcID, 'bank');
-      t.assert(handler);
-      bankHandler = handler;
-    },
-    fromBridge(_dstID, _obj) {
+  /** @type {import('../src/types.js').ScopedBridgeManager} */
+  const bankBridgeMgr = Far('fakeBankBridgeManager', {
+    async fromBridge(_obj) {
       t.fail('unexpected fromBridge');
     },
-    toBridge(dstID, obj) {
-      t.is(dstID, 'bank');
+    async toBridge(obj) {
       let ret;
       switch (obj.type) {
         case 'VBANK_GET_BALANCE': {
@@ -98,14 +92,13 @@ test('communication', async t => {
       }
       return ret;
     },
-    unregister(srcID) {
-      t.is(srcID, 'bank');
-      t.fail('no expected unregister');
+    setHandler(newHandler) {
+      bankHandler = newHandler;
     },
   });
 
   // Create a bank manager.
-  const bankMgr = await E(bankVat).makeBankManager(bridgeMgr);
+  const bankMgr = await E(bankVat).makeBankManager(bankBridgeMgr);
   const bank = E(bankMgr).getBankForAddress('agoricfoo');
 
   const sub = await E(bank).getAssetSubscription();
@@ -158,7 +151,8 @@ test('communication', async t => {
   const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
   const obj = { type: 'VBANK_BALANCE_UPDATE', updated: [balance] };
   t.assert(bankHandler);
-  await E(bankHandler)?.fromBridge(obj);
+  // @ts-expect-error banHandler does not resolve to undefined
+  await E(bankHandler).fromBridge(obj);
 
   // Wait for new balance.
   await E(notifier).getUpdateSince(updateRecord.updateCount);

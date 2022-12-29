@@ -105,7 +105,12 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
   [makeBridgeManager.name]: {
     consume: { loadCriticalVat: true },
     devices: { bridge: 'kernel' },
-    produce: { bridgeManager: true },
+    produce: {
+      bridgeManager: true,
+      provisionBridgeManager: true,
+      provisionWalletBridgeManager: true,
+      walletBridgeManager: true,
+    },
   },
   [makeAddressNameHubs.name]: {
     consume: {
@@ -134,8 +139,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     home: { produce: { chainTimerService: 'timer' } },
   },
   [makeChainStorage.name]: {
-    devices: { bridge: 'kernel' },
-    consume: { loadCriticalVat: true },
+    consume: { loadCriticalVat: true, bridgeManager: true },
     produce: {
       chainStorage: 'chainStorage',
     },
@@ -218,6 +222,8 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     consume: {
       provisioning: true,
       bridgeManager: true,
+      provisionBridgeManager: true,
+      provisionWalletBridgeManager: true,
     },
   },
   [setupClientManager.name]: {

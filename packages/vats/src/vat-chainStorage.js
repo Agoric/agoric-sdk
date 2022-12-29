@@ -27,17 +27,19 @@ export function buildRootObject(vatPowers) {
   };
 
   /**
-   * @param {BridgeDevice} bridge
-   * @param {string} bridgeId
+   * @param {ERef<import('./types.js').ScopedBridgeManager>} storageBridgeManager
    * @param {string} rootPath must be unique (caller responsibility to ensure)
    * @param {object} [options]
    */
-  const makeBridgedChainStorageRoot = (bridge, bridgeId, rootPath, options) => {
+  const makeBridgedChainStorageRoot = (
+    storageBridgeManager,
+    rootPath,
+    options,
+  ) => {
     // Note that the uniqueness of rootPath is not validated here,
     // and is instead the responsibility of callers.
 
-    const bridgeManager = provideManagerForBridge(bridge);
-    const toStorage = message => E(bridgeManager).toBridge(bridgeId, message);
+    const toStorage = message => E(storageBridgeManager).toBridge(message);
 
     const rootNode = makeChainStorageRoot(
       toStorage,

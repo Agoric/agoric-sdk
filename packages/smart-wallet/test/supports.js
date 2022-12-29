@@ -79,35 +79,34 @@ const setUpZoeForTest = async () => {
 };
 harden(setUpZoeForTest);
 
-const makeFakeBridgeManager = () => {
-  /** @type {Record<string, ERef<import('@agoric/vats').BridgeHandler>>} */
-  const handlers = {};
-  /** @type {import('@agoric/vats').BridgeManager} */
-  const manager = {
-    register(srcID, handler) {
-      handlers[srcID] = handler;
-    },
-    fromBridge(_dstID, _obj) {
-      assert.fail('expected fromBridge');
-    },
-    toBridge(dstID, obj) {
-      const handler = handlers[dstID];
-      assert(handler, `No handler for ${dstID}`);
-      switch (obj.type) {
-        case ActionType.WALLET_ACTION:
-        case ActionType.WALLET_SPEND_ACTION: {
-          return E(handler).fromBridge(obj);
-        }
+/** @returns {import('@agoric/vats').BridgeManager} */
+const makeFakeBridgeManager = () =>
+  Far('fakeBridgeManager', {
+    register(bridgeId, handler) {
+      return Far('scopedBridgeManager', {
+        fromBridge(_obj) {
+          assert.fail(`expected fromBridge`);
+        },
+        toBridge(obj) {
+          assert(handler, `No handler for ${bridgeId}`);
+          switch (obj.type) {
+            case ActionType.WALLET_ACTION:
+            case ActionType.WALLET_SPEND_ACTION: {
+              // @ts-expect-error handler possibly undefined
+              return E(handler).fromBridge(obj);
+            }
 
-        default: {
-          assert.fail(`Unsupported bridge object type ${obj.type}`);
-        }
-      }
+            default: {
+              assert.fail(`Unsupported bridge object type ${obj.type}`);
+            }
+          }
+        },
+        setHandler(newHandler) {
+          handler = newHandler;
+        },
+      });
     },
-  };
-  return Far('fakeBridgeManager', manager);
-};
-
+  });
 /**
  *
  * @param {*} log

@@ -1,4 +1,4 @@
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
 import { E } from '@endo/far';
@@ -36,6 +36,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
 
   const bridgeManager = await consume.bridgeManager;
+  const walletBridgeManager = await (bridgeManager &&
+    E(bridgeManager).register(BridgeId.WALLET));
   const walletFactory = await E(zoe).startInstance(
     installation,
     {},
@@ -43,7 +45,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       agoricNames,
       board: consume.board,
     },
-    { storageNode, bridgeManager },
+    { storageNode, walletBridgeManager },
   );
 
   const simpleProvideWallet = async address => {
@@ -112,7 +114,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     anchor,
     invitationBrand: await E(E(zoe).getInvitationIssuer()).getBrand(),
     sendToBridge:
-      bridgeManager && (obj => E(bridgeManager).toBridge(BridgeId.WALLET, obj)),
+      walletBridgeManager && (obj => E(walletBridgeManager).toBridge(obj)),
     consume,
     simpleProvideWallet,
     simpleCreatePriceFeed,
