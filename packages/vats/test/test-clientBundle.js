@@ -29,16 +29,22 @@ import { devices } from './devices.js';
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
   const {
-    zoeServices: { zoeService, feeMintAccessRetriever },
-  } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
-      name: Stable.symbol,
-      assetKind: Stable.assetKind,
-      displayInfo: Stable.displayInfo,
-    }),
-  );
+    zoeServices: {
+      zoeService: zoeServiceNear,
+      feeMintAccessRetriever: feeMintAccessRetrieverNear,
+    },
+  } = makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
+    name: Stable.symbol,
+    assetKind: Stable.assetKind,
+    displayInfo: Stable.displayInfo,
+  });
+  const {
+    zoeServiceNear: zoe,
+    feeMintAccessRetrieverNear: feeMintAccessRetriever,
+  } = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
+
   return {
-    zoe: zoeService,
+    zoe,
     feeMintAccessP: E(feeMintAccessRetriever).get(),
   };
 };

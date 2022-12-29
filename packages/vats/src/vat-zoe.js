@@ -6,6 +6,7 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
     buildZoe: async (adminVat, feeIssuerConfig, zcfBundleName) => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
       assert(zcfBundleName, `vat-zoe requires zcfBundleName`);
+
       const {
         zoeServices: { zoeService, feeMintAccessRetriever },
       } = makeZoeKit(
@@ -15,6 +16,7 @@ export function buildRootObject(vatPowers, _vatParams, zoeBaggage) {
         { name: zcfBundleName },
         zoeBaggage,
       );
+
       return harden({
         zoeService,
         feeMintAccessRetriever,
