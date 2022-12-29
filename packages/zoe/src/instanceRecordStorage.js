@@ -16,11 +16,6 @@ const { quote: q, Fail } = assert;
  */
 
 /**
- * @callback GetInstanceRecord
- * @returns {InstanceRecord}
- */
-
-/**
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {(ir: InstanceRecord) => InstanceState}
  */
