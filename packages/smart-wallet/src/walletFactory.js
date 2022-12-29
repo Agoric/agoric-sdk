@@ -89,18 +89,15 @@ export const start = async (zcf, privateArgs) => {
   const handleWalletAction = makeHeapFarInstance(
     'walletActionHandler',
     M.interface('walletActionHandlerI', {
-      fromBridge: M.call(M.string(), shape.WalletBridgeMsg).returns(
-        M.promise(),
-      ),
+      fromBridge: M.call(shape.WalletBridgeMsg).returns(M.promise()),
     }),
     {
       /**
        *
-       * @param {string} srcID
        * @param {import('./types.js').WalletBridgeMsg} obj
        */
-      fromBridge: async (srcID, obj) => {
-        console.log('walletFactory.fromBridge:', srcID, obj);
+      fromBridge: async obj => {
+        console.log('walletFactory.fromBridge:', obj);
 
         const canSpend = 'spendAction' in obj;
 

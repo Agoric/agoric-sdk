@@ -37,7 +37,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     // );
 
     // Notify the specific handler, if there was one.
-    void E(srcHandlers.get(srcID)).fromBridge(srcID, obj);
+    void E(srcHandlers.get(srcID)).fromBridge(obj);
 
     // No return value.
   }

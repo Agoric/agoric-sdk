@@ -96,7 +96,7 @@ const makeFakeBridgeManager = () => {
       switch (obj.type) {
         case ActionType.WALLET_ACTION:
         case ActionType.WALLET_SPEND_ACTION: {
-          return E(handler).fromBridge(dstID, obj);
+          return E(handler).fromBridge(obj);
         }
 
         default: {

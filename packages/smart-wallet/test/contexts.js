@@ -63,7 +63,8 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   return {
     anchor,
     invitationBrand: await E(E(zoe).getInvitationIssuer()).getBrand(),
-    sendToBridge: bridgeManager && bridgeManager.toBridge,
+    sendToBridge:
+      bridgeManager && (obj => E(bridgeManager).toBridge(BridgeId.WALLET, obj)),
     consume,
     simpleProvideWallet,
   };

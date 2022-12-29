@@ -163,7 +163,7 @@ export function buildRootObject() {
         }
         // We need to synchronise with the remote bank.
         const handler = Far('bankHandler', {
-          async fromBridge(_srcID, obj) {
+          async fromBridge(obj) {
             if (!updateBalances(obj)) {
               Fail`Unrecognized request ${obj && obj.type}`;
             }

@@ -262,10 +262,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
 
     /** @type {any} */
     const { coreEvalBridgeHandler } = space.consume;
-    await E(coreEvalBridgeHandler).fromBridge(
-      'arbitrary srcID',
-      coreEvalMessage,
-    );
+    await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
   };
 
   const startRunPreview = async () => {

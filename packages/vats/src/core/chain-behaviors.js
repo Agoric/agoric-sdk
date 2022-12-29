@@ -59,7 +59,7 @@ export const bridgeCoreEval = async allPowers => {
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
-    async fromBridge(_srcID, obj) {
+    async fromBridge(obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
           /**
@@ -143,7 +143,7 @@ export const bridgeProvisioner = async ({
 
   // Register a provisioning handler over the bridge.
   const handler = Far('provisioningHandler', {
-    async fromBridge(_srcID, obj) {
+    async fromBridge(obj) {
       switch (obj.type) {
         case 'PLEASE_PROVISION': {
           const { nickname, address, powerFlags: rawPowerFlags } = obj;

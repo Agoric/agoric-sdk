@@ -159,7 +159,7 @@ test('evaluateInstallation is available to core eval', async t => {
   t.log({ bridgeMessage });
 
   // @ts-expect-error
-  await E(handler).fromBridge('arbitrary srcID', bridgeMessage);
+  await E(handler).fromBridge(bridgeMessage);
   const actual = await consume.thing;
 
   // @ts-expect-error

@@ -22,7 +22,7 @@ test('communication', async t => {
   t.plan(38);
   const bankVat = E(buildRootObject)();
 
-  /** @type {undefined | ERef<{ fromBridge: (srcID: string, obj: any) => void }>} */
+  /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
   let bankHandler;
 
   /** @type {import('../src/types.js').BridgeManager} */
@@ -158,7 +158,7 @@ test('communication', async t => {
   const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
   const obj = { type: 'VBANK_BALANCE_UPDATE', updated: [balance] };
   t.assert(bankHandler);
-  await (bankHandler && E(bankHandler).fromBridge('bank', obj));
+  await E(bankHandler)?.fromBridge(obj);
 
   // Wait for new balance.
   await E(notifier).getUpdateSince(updateRecord.updateCount);
