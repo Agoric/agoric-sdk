@@ -23,14 +23,23 @@ import { makeLeaderOptions } from '../lib/casting.js';
 import {
   execSwingsetTransaction,
   fetchSwingsetParams,
-  normalizeAddress,
+  normalizeAddressWithOptions,
 } from '../lib/chain.js';
 import { getCurrent } from '../lib/wallet.js';
 
 const SLEEP_SECONDS = 3;
 
 export const makeWalletCommand = async () => {
-  const wallet = new Command('wallet').description('wallet commands');
+  const wallet = new Command('wallet')
+    .description('wallet commands')
+    .option('--home [dir]', 'agd application home directory')
+    .option(
+      '--keyring-backend [os|file|test]',
+      'keyring\'s backend (os|file|test) (default "os")',
+    );
+
+  const normalizeAddress = literalOrName =>
+    normalizeAddressWithOptions(literalOrName, wallet.opts());
 
   wallet
     .command('provision')
@@ -41,21 +50,15 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .option('--spend', 'confirm you want to spend')
-    .option('--home [dir]', 'agd application home directory')
-    .option(
-      '--keyring-backend [os|file|test]',
-      'keyring\'s backend (os|file|test) (default "os")',
-    )
     .option('--nickname [string]', 'nickname to use', 'my-wallet')
     .action(function () {
       const {
         account,
         nickname,
         spend,
-        home,
-        keyringBackend: backend,
         // @ts-expect-error this implicit any
       } = this.opts();
+      const { home, keyringBackend: backend } = wallet.opts();
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
         execSwingsetTransaction(tx, networkConfig, account, false, {
@@ -91,21 +94,15 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
-    .option('--home [dir]', 'agd application home directory')
-    .option(
-      '--keyring-backend [os|file|test]',
-      'keyring\'s backend (os|file|test) (default "os")',
-    )
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function () {
       const {
         dryRun,
         from,
         offer,
-        home,
-        keyringBackend: backend,
         // @ts-expect-error this implicit any
       } = this.opts();
+      const { home, keyringBackend: backend } = wallet.opts();
 
       const offerBody = fs.readFileSync(offer).toString();
       execSwingsetTransaction(
