@@ -17,7 +17,6 @@ import {
 import { importBundle } from '@endo/import-bundle';
 import * as Collect from '@agoric/inter-protocol/src/collect.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { makeBridgeManager as makeBridgeManagerKit } from '../bridge.js';
 import * as STORAGE_PATH from '../chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
@@ -290,19 +289,25 @@ export const startTimerService = async ({
 };
 harden(startTimerService);
 
-/** @param {BootDevices<ChainDevices> & BootstrapSpace} powers */
+/**
+ * @param {BootDevices<ChainDevices> & BootstrapSpace & {
+ *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ * }} powers
+ */
 export const makeBridgeManager = async ({
+  consume: { loadCriticalVat },
   devices: { bridge },
-  vatPowers: { D },
   produce: { bridgeManager },
 }) => {
-  const myBridge = bridge ? makeBridgeManagerKit(E, D, bridge) : undefined;
-  if (!myBridge) {
+  if (!bridge) {
     console.warn(
       'Running without a bridge device; this is not an actual chain.',
     );
+    bridgeManager.resolve(undefined);
+    return;
   }
-  bridgeManager.resolve(myBridge);
+  const vat = E(loadCriticalVat)('chainStorage');
+  bridgeManager.resolve(E(vat).provideManagerForBridge(bridge));
 };
 harden(makeBridgeManager);
 
@@ -396,7 +401,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
     // We have access to the bridge, and therefore IBC.
     const callbacks = Far('callbacks', {
       downcall(method, obj) {
-        return dibcBridgeManager.toBridge(BRIDGE_ID.DIBC, {
+        return E(dibcBridgeManager).toBridge(BRIDGE_ID.DIBC, {
           ...obj,
           type: 'IBC_METHOD',
           method,
@@ -404,7 +409,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
       },
     });
     const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-    dibcBridgeManager.register(BRIDGE_ID.DIBC, ibcHandler);
+    await E(dibcBridgeManager).register(BRIDGE_ID.DIBC, ibcHandler);
     ps.push(
       E(vats.network).registerProtocolHandler(
         ['/ibc-port', '/ibc-hop'],

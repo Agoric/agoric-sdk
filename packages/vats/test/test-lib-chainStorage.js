@@ -7,15 +7,16 @@ import { makeFakeStorageKit } from '../tools/storage-test-utils.js';
 test('makeChainStorageRoot', async t => {
   const rootPath = 'root';
   const { rootNode, messages } = makeFakeStorageKit(rootPath);
+  const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
-    rootNode.getStoreKey(),
+    rootStoreKey,
     { storeName: 'swingset', storeSubkey: `fake:${rootPath}` },
     'root store key matches initialization input',
   );
 
   t.throws(() =>
     makeChainStorageRoot(
-      () => {
+      async () => {
         t.fail(
           'toStorage should not have been called for non-"swingset" storeName',
         );
@@ -44,7 +45,8 @@ test('makeChainStorageRoot', async t => {
     }),
   );
   for (const [label, val] of nonStrings) {
-    t.throws(
+    // eslint-disable-next-line no-await-in-loop
+    await t.throwsAsync(
       // @ts-expect-error invalid value
       () => rootNode.setValue(val),
       undefined,
@@ -52,14 +54,14 @@ test('makeChainStorageRoot', async t => {
     );
   }
 
-  rootNode.setValue('');
-  rootNode.setValue('foo');
+  await rootNode.setValue('');
+  await rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
     [{ key: rootPath, method: 'set', value: 'foo' }],
     'root node setValue message',
   );
-  rootNode.setValue('bar');
+  await rootNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
     [{ key: rootPath, method: 'set', value: 'bar' }],
@@ -88,15 +90,16 @@ test('makeChainStorageRoot', async t => {
     validSegmentChars
       .repeat(Math.ceil(100 / validSegmentChars.length))
       .match(/.{1,100}/gsu) || [];
-  for (const segment of extremeSegments) {
+  for await (const segment of extremeSegments) {
     const child = rootNode.makeChildNode(segment);
     const childPath = `${rootPath}.${segment}`;
+    const storeKey = await child.getStoreKey();
     t.deepEqual(
-      child.getStoreKey(),
+      storeKey,
       { storeName: 'swingset', storeSubkey: `fake:${childPath}` },
       'path segments are dot-separated',
     );
-    child.setValue('foo');
+    await child.setValue('foo');
     t.deepEqual(
       messages.slice(-1),
       [{ key: childPath, method: 'set', value: 'foo' }],
@@ -133,38 +136,38 @@ test('makeChainStorageRoot', async t => {
   const childPath = `${rootPath}.child`;
   const deepNode = childNode.makeChildNode('grandchild');
   const deepPath = `${childPath}.grandchild`;
-  t.deepEqual(deepNode.getStoreKey(), {
+  t.deepEqual(await deepNode.getStoreKey(), {
     storeName: 'swingset',
     storeSubkey: `fake:${deepPath}`,
   });
-  for (const [label, val] of nonStrings) {
-    t.throws(
+  for await (const [label, val] of nonStrings) {
+    await t.throwsAsync(
       // @ts-expect-error invalid value
       () => deepNode.setValue(val),
       undefined,
       `${label} value for non-root node is rejected`,
     );
   }
-  deepNode.setValue('foo');
+  await deepNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'set', value: 'foo' }],
     'level-skipping setValue message',
   );
 
-  childNode.setValue('');
+  await childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: '' }],
     'child setValue message',
   );
-  deepNode.setValue('');
+  await deepNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'set', value: '' }],
     'granchild setValue message',
   );
-  childNode.setValue('');
+  await childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: '' }],
@@ -178,16 +181,20 @@ test('makeChainStorageRoot sequence data', async t => {
     sequence: true,
   });
 
-  // @ts-expect-error
-  t.throws(() => rootNode.setValue([]), undefined, 'array value is rejected');
+  await t.throwsAsync(
+    // @ts-expect-error
+    () => rootNode.setValue([]),
+    undefined,
+    'array value is rejected',
+  );
 
-  rootNode.setValue('foo');
+  await rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
     [{ key: rootPath, method: 'append', value: 'foo' }],
     'root setValue message',
   );
-  rootNode.setValue('bar');
+  await rootNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
     [{ key: rootPath, method: 'append', value: 'bar' }],
@@ -199,41 +206,41 @@ test('makeChainStorageRoot sequence data', async t => {
   const childPath = `${rootPath}.child`;
   let deepNode = childNode.makeChildNode('grandchild');
   const deepPath = `${childPath}.grandchild`;
-  childNode.setValue('foo');
+  await childNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'append', value: 'foo' }],
     'auto-sequence child setValue message',
   );
-  deepNode.setValue('foo');
+  await deepNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'append', value: 'foo' }],
     'auto-sequence grandchild setValue message',
   );
   deepNode = childNode.makeChildNode('grandchild', { sequence: false });
-  deepNode.setValue('bar');
+  await deepNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'set', value: 'bar' }],
     'manual-single grandchild setValue message',
   );
   childNode = rootNode.makeChildNode('child', { sequence: false });
-  childNode.setValue('bar');
+  await childNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
     [{ key: childPath, method: 'set', value: 'bar' }],
     'manual-single child setValue message',
   );
   deepNode = childNode.makeChildNode('grandchild');
-  deepNode.setValue('baz');
+  await deepNode.setValue('baz');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'set', value: 'baz' }],
     'auto-single grandchild setValue message',
   );
   deepNode = childNode.makeChildNode('grandchild', { sequence: true });
-  deepNode.setValue('qux');
+  await deepNode.setValue('qux');
   t.deepEqual(
     messages.slice(-1),
     [{ key: deepPath, method: 'append', value: 'qux' }],

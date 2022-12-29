@@ -23,8 +23,8 @@ export const makeFakeStorage = (path, publication) => {
   });
   /** @type {StorageNode} */
   const storage = {
-    getStoreKey: () => storeKey,
-    setValue: value => {
+    getStoreKey: async () => storeKey,
+    setValue: async value => {
       setValueCalls += 1;
       assert.typeof(value, 'string');
       if (!publication) {

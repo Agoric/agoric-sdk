@@ -4,6 +4,7 @@ import { makeStore } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
+import { makeWithQueue } from './queue.js';
 
 /**
  * @template T
@@ -43,7 +44,8 @@ export function makeBridgeManager(E, D, bridgeDevice) {
 
   const bridgeHandler = Far('bridgeHandler', { inbound: bridgeInbound });
 
-  function callOutbound(dstID, obj) {
+  const withOutboundQueue = makeWithQueue();
+  const toBridge = withOutboundQueue((dstID, obj) => {
     bridgeDevice || Fail`bridge device not yet connected`;
     const retobj = D(bridgeDevice).callOutbound(dstID, obj);
     // note: *we* get this return value synchronously, but any callers (in
@@ -53,17 +55,16 @@ export function makeBridgeManager(E, D, bridgeDevice) {
       throw Error(retobj.error);
     }
     return retobj;
-  }
+  });
 
   // We now manage the device.
   D(bridgeDevice).registerInboundHandler(bridgeHandler);
+  const bridgeSendOnly = E.sendOnly(bridgeHandler);
 
   return Far('bridgeManager', {
-    toBridge(dstID, obj) {
-      return callOutbound(dstID, obj);
-    },
+    toBridge,
     fromBridge(srcID, obj) {
-      return bridgeHandler.inbound(srcID, obj);
+      return bridgeSendOnly.inbound(srcID, obj);
     },
     register(srcID, handler) {
       srcHandlers.init(srcID, handler);
