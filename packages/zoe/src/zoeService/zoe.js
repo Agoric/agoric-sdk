@@ -36,7 +36,7 @@ const { Fail } = assert;
 /**
  * Create an instance of Zoe.
  *
- * @param {VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
+ * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvcP] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
  * @param {ShutdownWithFailure} shutdownZoeVat - a function to
@@ -47,7 +47,7 @@ const { Fail } = assert;
  * @param {Baggage} [zoeBaggage]
  */
 const makeZoeKit = (
-  vatAdminSvc = undefined,
+  vatAdminSvcP = undefined,
   shutdownZoeVat = () => {},
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
@@ -57,31 +57,36 @@ const makeZoeKit = (
   let zcfBundleCap;
 
   function saveBundleCap() {
-    zoeBaggage.init('vatAdminSvc', vatAdminSvc);
-    E.when(getZcfBundleCap(zcfSpec, vatAdminSvc), bundleCap => {
-      zcfBundleCap = bundleCap;
-      zoeBaggage.init('zcfBundleCap', bundleCap);
-    });
+    E.when(
+      Promise.all([vatAdminSvcP, getZcfBundleCap(zcfSpec, vatAdminSvcP)]),
+      ([vatAdminService, bundleCap]) => {
+        zcfBundleCap = bundleCap;
+
+        zoeBaggage.init('vatAdminSvc', vatAdminService);
+        zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+      },
+    );
   }
 
   const setVatAdminService = lateVatAdminSvc => {
-    vatAdminSvc = lateVatAdminSvc;
+    vatAdminSvcP = lateVatAdminSvc;
     saveBundleCap();
   };
-  if (vatAdminSvc) {
+  if (vatAdminSvcP) {
     saveBundleCap();
   } else if (zoeBaggage.has('zcfBundleCap')) {
     zcfBundleCap = zoeBaggage.get('zcfBundleCap');
-    vatAdminSvc = zoeBaggage.get('vatAdminSvc');
+    // in this case, it'll be known to have been resolved, but that's fine
+    vatAdminSvcP = zoeBaggage.get('vatAdminSvc');
   }
 
   const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID => {
-    vatAdminSvc || Fail`vatAdminSvc must be defined.`;
+    vatAdminSvcP || Fail`vatAdminSvc must be defined.`;
     // @ts-expect-error the guard protects it.
-    return E(vatAdminSvc).waitForBundleCap(bundleID);
+    return E(vatAdminSvcP).waitForBundleCap(bundleID);
   };
 
   // This method contains the power to create a new ZCF Vat, and must
@@ -90,9 +95,9 @@ const makeZoeKit = (
   const createZCFVat = contractBundleCap => {
     assert(zcfBundleCap, `createZCFVat did not get bundleCap`);
 
-    vatAdminSvc || Fail`vatAdminSvc must be defined.`;
+    vatAdminSvcP || Fail`vatAdminSvc must be defined.`;
     // @ts-expect-error the guard protects it.
-    return E(vatAdminSvc).createVat(
+    return E(vatAdminSvcP).createVat(
       zcfBundleCap,
       harden({
         name: 'zcf',
@@ -107,9 +112,9 @@ const makeZoeKit = (
   };
 
   const getBundleCapByIdNow = id => {
-    vatAdminSvc || Fail`vatAdminSvc must be defined.`;
+    vatAdminSvcP || Fail`vatAdminSvc must be defined.`;
     // @ts-expect-error the guard protects it.
-    return E(vatAdminSvc).getBundleCap(id);
+    return E(vatAdminSvcP).getBundleCap(id);
   };
 
   // The ZoeStorageManager composes and consolidates capabilities

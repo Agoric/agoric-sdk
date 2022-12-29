@@ -25,7 +25,6 @@ export const AmountPatternKeywordRecordShape = M.recordOf(
   KeywordShape,
   M.pattern(),
 );
-export const PaymentKeywordRecordShape = M.recordOf(KeywordShape, PaymentShape);
 export const PaymentPKeywordRecordShape = M.recordOf(
   KeywordShape,
   M.eref(PaymentShape),
