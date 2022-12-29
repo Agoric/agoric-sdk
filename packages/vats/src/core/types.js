@@ -98,10 +98,12 @@
  */
 
 /**
- * @template T
+ * @template B Bidirectional
+ * @template [C={}] Consume only
+ * @template [P={}] Produce only
  * @typedef {{
- *   consume: { [P in keyof T]: ERef<T[P]> },
- *   produce: { [P in keyof T]: Producer<T[P]> },
+ *   consume: { [K in keyof (B & C)]: ERef<(B & C)[K]> },
+ *   produce: { [K in keyof (B & P)]: Producer<(B & P)[K]> },
  * }} PromiseSpaceOf
  */
 
@@ -187,7 +189,7 @@
  */
 
 /**
- * @typedef {PromiseSpaceOf<{
+ * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
  *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
@@ -219,7 +221,8 @@
  *   walletFactoryStartResult: import('./startWalletFactory').WalletFactoryStartResult,
  *   provisionPoolStartResult: unknown,
  *   zoe: ZoeService,
- * }>} ChainBootstrapSpace
+ * }} ChainBootstrapSpaceT
+ * @typedef {PromiseSpaceOf<ChainBootstrapSpaceT>} ChainBootstrapSpace
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
@@ -241,12 +244,12 @@
  *   runBehaviors: (manifest: unknown) => Promise<unknown>,
  *   modules: Record<string, Record<string, any>>,
  * }} BootstrapPowers
- * @typedef { WellKnownSpaces & ChainBootstrapSpace & PromiseSpaceOf<{
+ * @typedef { WellKnownSpaces & PromiseSpaceOf<ChainBootstrapSpaceT & {
  *     vatAdminSvc: VatAdminSvc,
- *   }> & { produce: {
- *     loadVat: Producer<VatLoader<unknown>>,
- *     loadCriticalVat: Producer<VatLoader<unknown>>,
- *   }}
+ *   }, {}, {
+ *     loadVat: VatLoader<unknown>,
+ *     loadCriticalVat: VatLoader<unknown>,
+ *   }>
  * } BootstrapSpace
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
