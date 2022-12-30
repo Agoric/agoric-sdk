@@ -3,6 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
+import { asyncGenerate } from 'jessie.js';
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
@@ -235,18 +236,20 @@ export function makeNetworkProtocol(protocolHandler) {
    */
   const bind = async localAddr => {
     // Check if we are underspecified (ends in slash)
-    if (localAddr.endsWith(ENDPOINT_SEPARATOR)) {
-      for (;;) {
-        // eslint-disable-next-line no-await-in-loop
-        const portID = await E(protocolHandler).generatePortID(
-          localAddr,
-          protocolHandler,
-        );
-        const newAddr = `${localAddr}${portID}`;
-        if (!boundPorts.has(newAddr)) {
-          localAddr = newAddr;
-          break;
-        }
+    const underspecified = localAddr.endsWith(ENDPOINT_SEPARATOR);
+    const whileUnderspecified = asyncGenerate(() => ({
+      done: !underspecified,
+      value: null,
+    }));
+    for await (const _ of whileUnderspecified) {
+      const portID = await E(protocolHandler).generatePortID(
+        localAddr,
+        protocolHandler,
+      );
+      const newAddr = `${localAddr}${portID}`;
+      if (!boundPorts.has(newAddr)) {
+        localAddr = newAddr;
+        break;
       }
     }
 
@@ -371,25 +374,24 @@ export function makeNetworkProtocol(protocolHandler) {
     bind,
     async inbound(listenAddr, remoteAddr) {
       let lastFailure = Error(`No listeners for ${listenAddr}`);
-      for (const listenPrefix of getPrefixes(listenAddr)) {
+      for await (const listenPrefix of getPrefixes(listenAddr)) {
         if (!listening.has(listenPrefix)) {
-          // eslint-disable-next-line no-continue
           continue;
         }
         const [port, listener] = listening.get(listenPrefix);
         let localAddr;
-        try {
+        await (async () => {
           // See if our protocol is willing to receive this connection.
-          // eslint-disable-next-line no-await-in-loop
           const localInstance = await E(protocolHandler)
             .onInstantiate(port, listenPrefix, remoteAddr, protocolHandler)
             .catch(rethrowUnlessMissing);
           localAddr = localInstance
             ? `${listenAddr}/${localInstance}`
             : listenAddr;
-        } catch (e) {
+        })().catch(e => {
           lastFailure = e;
-          // eslint-disable-next-line no-continue
+        });
+        if (!localAddr) {
           continue;
         }
         // We have a legitimate inbound attempt.
@@ -459,15 +461,19 @@ export function makeNetworkProtocol(protocolHandler) {
         : localAddr;
 
       let lastFailure;
-      try {
+      let accepted;
+      await (async () => {
         // Attempt the loopback connection.
         const attempt = await protocolImpl.inbound(
           remoteAddr,
           initialLocalAddr,
         );
-        return attempt.accept({ handler: lchandler });
-      } catch (e) {
+        accepted = await attempt.accept({ handler: lchandler });
+      })().catch(e => {
         lastFailure = e;
+      });
+      if (accepted) {
+        return accepted;
       }
 
       const {
