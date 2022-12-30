@@ -298,60 +298,56 @@ export const ZoeStorageManagerIKit = harden({
   }),
 });
 
-export const ZoeServiceIKit = harden({
-  zoeService: M.interface('ZoeService', {
-    install: M.call(M.any()).returns(M.promise()),
-    installBundleID: M.call(M.string()).returns(M.promise()),
-    startInstance: M.call(M.eref(InstallationShape))
-      .optional(IssuerPKeywordRecordShape, M.any(), M.any())
-      .returns(M.promise()),
-    offer: M.call(M.eref(InvitationShape))
-      .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
-      .returns(M.promise()),
-    setOfferFilter: M.call(
-      InstanceHandleShape,
-      M.arrayOf(M.string()),
-    ).returns(),
+export const ZoeServiceI = M.interface('ZoeService', {
+  install: M.call(M.any()).returns(M.promise()),
+  installBundleID: M.call(M.string()).returns(M.promise()),
+  startInstance: M.call(M.eref(InstallationShape))
+    .optional(IssuerPKeywordRecordShape, M.any(), M.any())
+    .returns(M.promise()),
+  offer: M.call(M.eref(InvitationShape))
+    .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
+    .returns(M.promise()),
+  setOfferFilter: M.call(InstanceHandleShape, M.arrayOf(M.string())).returns(),
 
-    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.arrayOf(M.string()),
-    ),
-    getInvitationIssuer: M.call().returns(M.promise()),
-    getFeeIssuer: M.call().returns(M.promise()),
-    getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
-      BrandKeywordRecordShape,
-    ),
-    getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
-      IssuerKeywordRecordShape,
-    ),
-    getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.remotable('PublicFacet'),
-    ),
-    getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(M.any()),
-    getInstallationForInstance: M.callWhen(
-      M.await(InstanceHandleShape),
-    ).returns(M.eref(M.remotable('Installation'))),
-    getBundleIDFromInstallation: M.call(InstallationShape).returns(
-      M.eref(M.string()),
-    ),
+  getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
+    M.arrayOf(M.string()),
+  ),
+  getInvitationIssuer: M.call().returns(M.promise()),
+  getFeeIssuer: M.call().returns(M.promise()),
+  getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
+    BrandKeywordRecordShape,
+  ),
+  getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
+    IssuerKeywordRecordShape,
+  ),
+  getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
+    M.remotable('PublicFacet'),
+  ),
+  getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(M.any()),
+  getInstallationForInstance: M.callWhen(M.await(InstanceHandleShape)).returns(
+    M.eref(M.remotable('Installation')),
+  ),
+  getBundleIDFromInstallation: M.call(InstallationShape).returns(
+    M.eref(M.string()),
+  ),
 
-    getInstallation: M.call(M.eref(InvitationShape)).returns(M.promise()),
-    getInstance: M.call(M.eref(InvitationShape)).returns(M.promise()),
-    getConfiguration: M.call().returns({
-      feeIssuerConfig: {
-        name: M.string(),
-        assetKind: 'nat',
-        displayInfo: DisplayInfoShape,
-      },
-    }),
-    getInvitationDetails: M.call(M.eref(InvitationShape)).returns(M.any()),
-    getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-      M.opt(ProposalShape),
-    ),
+  getInstallation: M.call(M.eref(InvitationShape)).returns(M.promise()),
+  getInstance: M.call(M.eref(InvitationShape)).returns(M.promise()),
+  getConfiguration: M.call().returns({
+    feeIssuerConfig: {
+      name: M.string(),
+      assetKind: 'nat',
+      displayInfo: DisplayInfoShape,
+    },
   }),
-  feeMintAccessRetriever: M.interface('FeeMintAccessRetriever', {
-    get: M.call().returns(M.any()),
-  }),
+  getInvitationDetails: M.call(M.eref(InvitationShape)).returns(M.any()),
+  getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
+    M.opt(ProposalShape),
+  ),
+});
+
+export const FeeMintAccessRetrieverI = M.interface('FeeMintAccessRetriever', {
+  get: M.call().returns(M.any()),
 });
 
 export const AdminFacetI = M.interface('ZcfAdminFacet', {

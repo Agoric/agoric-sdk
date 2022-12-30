@@ -23,7 +23,7 @@ import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
-import { ZoeServiceIKit } from '../typeGuards.js';
+import { FeeMintAccessRetrieverI, ZoeServiceI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -116,7 +116,7 @@ const makeZoeKit = (
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
   const {
-    zoeServiceDataAccess,
+    zoeServiceDataAccess: dataAccess,
     makeOfferAccess,
     startInstanceAccess,
     invitationIssuerAccess,
@@ -152,73 +152,66 @@ const makeZoeKit = (
     });
   };
 
-  const dataAccess = zoeServiceDataAccess;
-
   /** @type {ZoeService} */
-  const zoeService = vivifyFarInstance(
-    zoeBaggage,
-    'ZoeService',
-    ZoeServiceIKit.zoeService,
-    {
-      install(bundleId) {
-        return dataAccess.installBundle(bundleId);
-      },
-      installBundleID(bundleId) {
-        return dataAccess.installBundleID(bundleId);
-      },
-      startInstance,
-      offer,
-      setOfferFilter(instance, filters) {
-        dataAccess.setOfferFilter(instance, filters);
-      },
-
-      // The functions below are getters only and have no impact on
-      // state within Zoe
-      getOfferFilter(instance) {
-        return dataAccess.getOfferFilter(instance);
-      },
-      async getInvitationIssuer() {
-        return dataAccess.getInvitationIssuer();
-      },
-      async getFeeIssuer() {
-        return feeMintKit.feeMint.getFeeIssuer();
-      },
-
-      getBrands(instance) {
-        return dataAccess.getBrands(instance);
-      },
-      getIssuers(instance) {
-        return dataAccess.getIssuers(instance);
-      },
-      getPublicFacet(instance) {
-        return dataAccess.getPublicFacet(instance);
-      },
-      getTerms(instance) {
-        return dataAccess.getTerms(instance);
-      },
-      getInstallationForInstance(instance) {
-        return dataAccess.getInstallation(instance);
-      },
-      getBundleIDFromInstallation(installation) {
-        return dataAccess.getBundleIDFromInstallation(installation);
-      },
-      getInstallation,
-
-      getInstance(invitation) {
-        return getInstance(invitation);
-      },
-      getConfiguration,
-      getInvitationDetails,
-      getProposalShapeForInvitation(invitation) {
-        return dataAccess.getProposalShapeForInvitation(invitation);
-      },
+  const zoeService = vivifyFarInstance(zoeBaggage, 'ZoeService', ZoeServiceI, {
+    install(bundleId) {
+      return dataAccess.installBundle(bundleId);
     },
-  );
+    installBundleID(bundleId) {
+      return dataAccess.installBundleID(bundleId);
+    },
+    startInstance,
+    offer,
+    setOfferFilter(instance, filters) {
+      dataAccess.setOfferFilter(instance, filters);
+    },
+
+    // The functions below are getters only and have no impact on
+    // state within Zoe
+    getOfferFilter(instance) {
+      return dataAccess.getOfferFilter(instance);
+    },
+    async getInvitationIssuer() {
+      return dataAccess.getInvitationIssuer();
+    },
+    async getFeeIssuer() {
+      return feeMintKit.feeMint.getFeeIssuer();
+    },
+
+    getBrands(instance) {
+      return dataAccess.getBrands(instance);
+    },
+    getIssuers(instance) {
+      return dataAccess.getIssuers(instance);
+    },
+    getPublicFacet(instance) {
+      return dataAccess.getPublicFacet(instance);
+    },
+    getTerms(instance) {
+      return dataAccess.getTerms(instance);
+    },
+    getInstallationForInstance(instance) {
+      return dataAccess.getInstallation(instance);
+    },
+    getBundleIDFromInstallation(installation) {
+      return dataAccess.getBundleIDFromInstallation(installation);
+    },
+    getInstallation,
+
+    getInstance(invitation) {
+      return getInstance(invitation);
+    },
+    getConfiguration,
+    getInvitationDetails,
+    getProposalShapeForInvitation(invitation) {
+      return dataAccess.getProposalShapeForInvitation(invitation);
+    },
+  });
 
   const feeMintAccessRetriever = vivifyFarInstance(
     zoeBaggage,
     'FeeMintAccessRetriever',
-    ZoeServiceIKit.feeMintAccessRetriever,
+    FeeMintAccessRetrieverI,
     {
       /** @type {() => FeeMintAccess} */
       get() {
