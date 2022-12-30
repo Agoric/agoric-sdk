@@ -36,7 +36,7 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier 
 func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
 	value := keeper.GetData(ctx, path)
 	if value == "" {
-		return nil, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get vstorage %+v", path)
+		return nil, sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "could not get vstorage path")
 	}
 
 	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, types.Data{Value: value})
