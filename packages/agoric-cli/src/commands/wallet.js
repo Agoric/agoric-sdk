@@ -10,6 +10,7 @@ import {
 } from '@agoric/casting';
 import { coalesceWalletState } from '@agoric/smart-wallet/src/utils.js';
 import { Command } from 'commander';
+import fs from 'fs';
 import util from 'util';
 import { fmtRecordOfLines, summarize } from '../lib/format.js';
 import {
@@ -55,7 +56,7 @@ export const makeWalletCommand = async () => {
         keyringBackend: backend,
         // @ts-expect-error this implicit any
       } = this.opts();
-      const tx = `provision-one ${nickname} ${account} SMART_WALLET`;
+      const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
         execSwingsetTransaction(tx, networkConfig, account, false, {
           home,
@@ -106,8 +107,9 @@ export const makeWalletCommand = async () => {
         // @ts-expect-error this implicit any
       } = this.opts();
 
+      const offerBody = fs.readFileSync(offer).toString();
       execSwingsetTransaction(
-        `wallet-action --allow-spend "$(cat ${offer})"`,
+        ['wallet-action', '--allow-spend', offerBody],
         networkConfig,
         from,
         dryRun,

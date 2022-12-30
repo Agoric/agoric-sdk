@@ -48,7 +48,7 @@ export const makePerfCommand = async logger => {
       // @ts-expect-error this implicit any
       const opts = this.opts();
       logger.warn({ opts });
-      const payloadStr = await fs.readFileSync(opts.executeOffer).toString();
+      const payloadStr = fs.readFileSync(opts.executeOffer).toString();
       const { offer } = JSON.parse(JSON.parse(payloadStr).body);
       const { id: offerId } = offer;
 
@@ -86,12 +86,12 @@ export const makePerfCommand = async logger => {
       void watchForSatisfied();
 
       // now execute
-      let cmd = `wallet-action --allow-spend "$(cat ${opts.executeOffer})"`;
+      let cmd = ['wallet-action', '--allow-spend', payloadStr];
       if (opts.keyringBackend) {
-        cmd = cmd.concat(' --keyring-backend ', opts.keyringBackend);
+        cmd = cmd.concat([`--keyring-backend=${opts.keyringBackend}`]);
       }
       if (opts.home) {
-        cmd = cmd.concat(' --home ', opts.home);
+        cmd = cmd.concat([`--home=${opts.home}`]);
       }
       execSwingsetTransaction(cmd, networkConfig, opts.from);
     });
