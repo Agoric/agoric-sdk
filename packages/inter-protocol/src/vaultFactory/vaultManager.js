@@ -700,7 +700,7 @@ const managerBehavior = {
     // i.e. vaults that have debt. The one exception is at the outset when
     // a vault has been added to the manager but not yet accounted for.
     const settled =
-      AmountMath.isEmpty(oldDebtNormalized) && vaultPhase !== Phase.ACTIVE;
+      AmountMath.isEmpty(oldDebtNormalized) && vaultPhase !== Phase.Active;
 
     if (settled) {
       assert(

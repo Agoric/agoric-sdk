@@ -13,6 +13,7 @@ import {
   makeKindHandle,
   pickFacet,
 } from '@agoric/vat-data';
+import { makeKeyEnum } from '@agoric/internal';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
@@ -48,40 +49,43 @@ const trace = makeTracer('IV', false);
 /**
  * Constants for vault phase.
  *
- * ACTIVE       - vault is in use and can be changed
- * LIQUIDATING  - vault is being liquidated by the vault manager, and cannot be changed by the user.
+ * Active       - vault is in use and can be changed
+ * Liquidating  - vault is being liquidated by the vault manager, and cannot be changed by the user.
  *                If liquidation fails, vaults may remain in this state. An upgrade to the contract
  *                might be able to recover them.
- * TRANSFER     - vault is able to be transferred (payments and debits frozen until it has a new owner)
- * CLOSED       - vault was closed by the user and all assets have been paid out
- * LIQUIDATED   - vault was closed by the manager, with remaining assets paid to owner
+ * Transfer     - vault is able to be transferred (payments and debits frozen until it has a new owner)
+ * Closed       - vault was closed by the user and all assets have been paid out
+ * Liquidated   - vault was closed by the manager, with remaining assets paid to owner
  */
-export const Phase = /** @type {const} */ ({
-  ACTIVE: 'active',
-  LIQUIDATING: 'liquidating',
-  CLOSED: 'closed',
-  LIQUIDATED: 'liquidated',
-  TRANSFER: 'transfer',
+export const Phase = makeKeyEnum({
+  Active: null,
+  Liquidating: null,
+  Closed: null,
+  Liquidated: null,
+  Transfer: null,
 });
+/**
+ * @typedef {Phase[keyof typeof Phase]} HolderPhase
+ */
+console.log('DEBUG Phase', Phase);
 
 /**
- * @typedef {Phase[keyof Omit<typeof Phase, 'TRANSFER'>]} VaultPhase
+ * @typedef {Exclude<HolderPhase, 'Transfer'>} VaultPhase
  * @type {{[K in VaultPhase]: Array<VaultPhase>}}
  */
 const validTransitions = {
-  [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
-  [Phase.LIQUIDATING]: [Phase.LIQUIDATED],
-  [Phase.LIQUIDATED]: [Phase.CLOSED],
-  [Phase.CLOSED]: [],
+  [Phase.Active]: [Phase.Liquidating, Phase.Closed],
+  [Phase.Liquidating]: [Phase.Liquidated],
+  [Phase.Liquidated]: [Phase.Closed],
+  [Phase.Closed]: [],
 };
+console.log('DEBUG validTransitions', validTransitions);
 
 /**
- * @typedef {Phase[keyof typeof Phase]} HolderPhase
- *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{debt: Amount<'nat'>, interest: Ratio}} debtSnapshot 'debt' at the point the compounded interest was 'interest'
- * @property {HolderPhase} vaultState
+ * @property {Uncapitalize<HolderPhase} vaultState
  */
 
 // XXX masks typedef from types.js, but using that causes circular def problems
@@ -161,7 +165,7 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
     idInManager,
     manager,
     outerUpdater: null,
-    phase: Phase.ACTIVE,
+    phase: Phase.Active,
 
     // vaultSeat will hold the collateral until the loan is retired. The
     // payout from it will be handed to the user: if the vault dies early
@@ -235,13 +239,13 @@ const helperBehavior = {
 
   assertActive: ({ state }) => {
     const { phase } = state;
-    assert(phase === Phase.ACTIVE);
+    assert(phase === Phase.Active);
   },
 
   assertCloseable: ({ state }) => {
     const { phase } = state;
-    phase === Phase.ACTIVE ||
-      phase === Phase.LIQUIDATED ||
+    phase === Phase.Active ||
+      phase === Phase.Liquidated ||
       Fail`to be closed a vault must be active or liquidated, not ${phase}`;
   },
   // #endregion
@@ -324,16 +328,19 @@ const helperBehavior = {
    *
    * @param {MethodContext} context
    * @param {HolderPhase} newPhase
+   * @returns {VaultNotification}
    */
   getStateSnapshot: ({ state, facets }, newPhase) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
     /** @type {VaultNotification} */
+    // @ts-expect-error FIXME toLowerCase widens the type to 'string'
     return harden({
       debtSnapshot: { debt, interest },
       locked: facets.self.getCollateralAmount(),
       // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
       // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
-      vaultState: newPhase,
+      // FIXME regrettable implication of key mirroring
+      vaultState: newPhase.toLowerCase(),
     });
   },
 
@@ -354,12 +361,12 @@ const helperBehavior = {
     trace('updateUiState', state.idInManager, uiState);
 
     switch (phase) {
-      case Phase.ACTIVE:
-      case Phase.LIQUIDATING:
-      case Phase.LIQUIDATED:
+      case Phase.Active:
+      case Phase.Liquidating:
+      case Phase.Liquidated:
         outerUpdater.publish(uiState);
         break;
-      case Phase.CLOSED:
+      case Phase.Closed:
         outerUpdater.finish(uiState);
         ephemera.outerUpdater = null;
         break;
@@ -382,7 +389,7 @@ const helperBehavior = {
     const oldDebtNormalized = self.getNormalizedDebt();
     const oldCollateral = self.getCollateralAmount();
 
-    if (phase === Phase.ACTIVE) {
+    if (phase === Phase.Active) {
       assertProposalShape(seat, {
         give: { Minted: null },
       });
@@ -402,7 +409,7 @@ const helperBehavior = {
       atomicTransfer(zcf, vaultSeat, seat, vaultSeat.getCurrentAllocation());
 
       state.manager.burnAndRecord(debt, seat);
-    } else if (phase === Phase.LIQUIDATED) {
+    } else if (phase === Phase.Liquidated) {
       // Simply reallocate vault assets to the offer seat.
       // Don't take anything from the offer, even if vault is underwater.
       // TODO verify that returning Minted here doesn't mess up debt limits
@@ -413,7 +420,7 @@ const helperBehavior = {
     }
 
     seat.exit();
-    helper.assignPhase(Phase.CLOSED);
+    helper.assignPhase(Phase.Closed);
     helper.updateDebtSnapshot(helper.emptyDebt());
     helper.updateUiState();
 
@@ -648,7 +655,7 @@ const selfBehavior = {
    */
   liquidating: ({ facets }) => {
     const { helper } = facets;
-    helper.assignPhase(Phase.LIQUIDATING);
+    helper.assignPhase(Phase.Liquidating);
     helper.updateUiState();
   },
 
@@ -665,7 +672,7 @@ const selfBehavior = {
       AmountMath.makeEmpty(helper.debtBrand()),
     );
 
-    helper.assignPhase(Phase.LIQUIDATED);
+    helper.assignPhase(Phase.Liquidated);
     helper.updateUiState();
   },
 
@@ -704,13 +711,14 @@ const selfBehavior = {
     helper.updateDebtSnapshot(self.getCurrentDebt());
     const { debtSnapshot: debt, interestSnapshot: interest, phase } = state;
     if (outerUpdater) {
-      outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
+      outerUpdater.finish(helper.getStateSnapshot(Phase.Transfer));
       ephemera.outerUpdater = null;
     }
     const transferState = {
       debtSnapshot: { debt, interest },
       locked: self.getCollateralAmount(),
-      vaultState: phase,
+      // FIXME regrettable implication of key mirroring
+      vaultState: phase.toLowerCase(),
     };
     const { zcf } = provideEphemera(state.idInManager);
     return zcf.makeInvitation(
