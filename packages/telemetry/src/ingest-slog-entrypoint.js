@@ -81,6 +81,16 @@ async function run() {
   console.log(`parsing`, slogFileName);
 
   let update = false;
+  const maybeUpdateStats = async now => {
+    if (
+      now - lastTime <= ELAPSED_MS_TO_FLUSH &&
+      lineCount % LINE_COUNT_TO_FLUSH !== 0
+    ) {
+      return;
+    }
+    lastTime = now;
+    await stats(update);
+  };
   for await (const line of lines) {
     lineCount += 1;
     const obj = harden(JSON.parse(line));
@@ -90,17 +100,9 @@ async function run() {
     }
 
     let now = Date.now();
-    if (
-      now - lastTime > ELAPSED_MS_TO_FLUSH ||
-      lineCount % LINE_COUNT_TO_FLUSH === 0
-    ) {
-      lastTime = now;
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      await stats(update);
-    }
+    await maybeUpdateStats(now);
 
     if (!update) {
-      // eslint-disable-next-line no-continue
       continue;
     }
 
@@ -110,7 +112,6 @@ async function run() {
       const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
       maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
     }
-    // eslint-disable-next-line @jessie.js/no-nested-await
     await maybeWait;
     now = Date.now();
 
