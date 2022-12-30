@@ -149,78 +149,6 @@ export const makeZCFZygote = async (
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
 
-  /** @type {ZCF} */
-  // Using Remotable rather than Far because there are too many complications
-  // imposing checking wrappers: makeInvitation() and setJig() want to
-  // accept raw functions. assert cannot be a valid passable! (It's a function
-  // and has members.)
-  const zcf = Remotable('Alleged: zcf', undefined, {
-    reallocate: (...seats) => seatManager.reallocate(...seats),
-    assertUniqueKeyword,
-    saveIssuer: async (issuerP, keyword) => {
-      // TODO: The checks of the keyword for uniqueness are
-      // duplicated. Assess how waiting on promises to resolve might
-      // affect those checks and see if one can be removed.
-      assertUniqueKeyword(keyword);
-      const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
-      // AWAIT ///
-      recordIssuer(keyword, record);
-      return record;
-    },
-    makeInvitation: (
-      offerHandler,
-      description,
-      customProperties = harden({}),
-      proposalShape = undefined,
-    ) => {
-      typeof description === 'string' ||
-        Fail`invitations must have a description string: ${description}`;
-
-      offerHandler || Fail`offerHandler must be provided`;
-
-      if (proposalShape !== undefined) {
-        assertPattern(proposalShape);
-      }
-
-      const invitationHandle = storeOfferHandler(offerHandler);
-      const invitationP = E(zoeInstanceAdmin).makeInvitation(
-        invitationHandle,
-        description,
-        customProperties,
-        proposalShape,
-      );
-      return invitationP;
-    },
-    // Shutdown the entire vat and give payouts
-    shutdown: completion => {
-      E(zoeInstanceAdmin).exitAllSeats(completion);
-      seatManager.dropAllReferences();
-      powers.exitVat(completion);
-    },
-    shutdownWithFailure,
-    stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
-    makeZCFMint,
-    registerFeeMint,
-    makeEmptySeatKit,
-
-    // The methods below are pure and have no side-effects //
-    getZoeService: () => zoeService,
-    getInvitationIssuer: () => invitationIssuer,
-    getTerms,
-    getBrandForIssuer,
-    getIssuerForBrand,
-    getAssetKind: getAssetKindByBrand,
-    /** @type {SetTestJig} */
-    setTestJig: (testFn = () => ({})) => {
-      if (testJigSetter) {
-        testJigSetter({ ...testFn(), zcf });
-      }
-    },
-    getInstance: () => getInstanceRecord().instance,
-    setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
-    getOfferFilter: () => E(zoeInstanceAdmin).getOfferFilter(),
-  });
-
   const HandleOfferShape = M.remotable('HandleOffer');
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
@@ -292,6 +220,78 @@ export const makeZCFZygote = async (
   !start ||
     !vivify ||
     Fail`contract must provide exactly one of "start" and "vivify"`;
+
+  /** @type {ZCF} */
+  // Using Remotable rather than Far because there are too many complications
+  // imposing checking wrappers: makeInvitation() and setJig() want to
+  // accept raw functions. assert cannot be a valid passable! (It's a function
+  // and has members.)
+  const zcf = Remotable('Alleged: zcf', undefined, {
+    reallocate: (...seats) => seatManager.reallocate(...seats),
+    assertUniqueKeyword,
+    saveIssuer: async (issuerP, keyword) => {
+      // TODO: The checks of the keyword for uniqueness are
+      // duplicated. Assess how waiting on promises to resolve might
+      // affect those checks and see if one can be removed.
+      assertUniqueKeyword(keyword);
+      const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
+      // AWAIT ///
+      recordIssuer(keyword, record);
+      return record;
+    },
+    makeInvitation: (
+      offerHandler,
+      description,
+      customProperties = harden({}),
+      proposalShape = undefined,
+    ) => {
+      typeof description === 'string' ||
+        Fail`invitations must have a description string: ${description}`;
+
+      offerHandler || Fail`offerHandler must be provided`;
+
+      if (proposalShape !== undefined) {
+        assertPattern(proposalShape);
+      }
+
+      const invitationHandle = storeOfferHandler(offerHandler);
+      const invitationP = E(zoeInstanceAdmin).makeInvitation(
+        invitationHandle,
+        description,
+        customProperties,
+        proposalShape,
+      );
+      return invitationP;
+    },
+    // Shutdown the entire vat and give payouts
+    shutdown: completion => {
+      E(zoeInstanceAdmin).exitAllSeats(completion);
+      seatManager.dropAllReferences();
+      powers.exitVat(completion);
+    },
+    shutdownWithFailure,
+    stopAcceptingOffers: () => E(zoeInstanceAdmin).stopAcceptingOffers(),
+    makeZCFMint,
+    registerFeeMint,
+    makeEmptySeatKit,
+
+    // The methods below are pure and have no side-effects //
+    getZoeService: () => zoeService,
+    getInvitationIssuer: () => invitationIssuer,
+    getTerms,
+    getBrandForIssuer,
+    getIssuerForBrand,
+    getAssetKind: getAssetKindByBrand,
+    /** @type {SetTestJig} */
+    setTestJig: (testFn = () => ({})) => {
+      if (testJigSetter) {
+        testJigSetter({ ...testFn(), zcf });
+      }
+    },
+    getInstance: () => getInstanceRecord().instance,
+    setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
+    getOfferFilter: () => E(zoeInstanceAdmin).getOfferFilter(),
+  });
 
   // snapshot zygote here //////////////////
   // the zygote object below will be created now, but its methods won't be
