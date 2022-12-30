@@ -2,6 +2,7 @@ import { E, Far } from '@endo/far';
 import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
 import { matches, makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { asyncGenerate } from 'jessie.js';
 import { withGroundState, makeState } from './state.js';
 
 import './types.js';
@@ -76,8 +77,11 @@ const applyCacheTransaction = async (
 
   // Loop until our updated state is fresh wrt our current state.
   basisState = stateStore.get(keyStr);
-  while (updatedState && updatedState.generation <= basisState.generation) {
-    // eslint-disable-next-line no-await-in-loop
+  const untilUpdateSynced = asyncGenerate(() => ({
+    value: null,
+    done: !updatedState || updatedState.generation > basisState.generation,
+  }));
+  for await (const _ of untilUpdateSynced) {
     updatedState = await getUpdatedState(basisState);
     // AWAIT INTERLEAVING
     basisState = stateStore.get(keyStr);

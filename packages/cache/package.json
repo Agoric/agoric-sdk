@@ -24,7 +24,8 @@
     "@agoric/vat-data": "^0.4.3",
     "@agoric/vats": "^0.13.0",
     "@endo/far": "^0.2.14",
-    "@endo/marshal": "^0.8.1"
+    "@endo/marshal": "^0.8.1",
+    "jessie.js": "^0.3.2"
   },
   "devDependencies": {
     "@agoric/zoe": "^0.25.3",
