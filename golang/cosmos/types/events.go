@@ -1,7 +1,7 @@
 package types
 
 import (
-	"encoding/base64"
+	"bytes"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -9,17 +9,33 @@ import (
 const (
 	EventTypeStateChange = "state_change"
 
-	AttributeKeyStoreName     = "store_name"
-	AttributeKeyStoreSubkey   = "store_subkey"
-	AttributeKeyUnprovedValue = "unproved_value"
+	AttributeKeyStoreName     = "store"
+	AttributeKeyStoreSubkey   = "key"
+	AttributeKeyAnchoredKey   = "anckey"
+	AttributeKeyUnprovedValue = "value"
+
+	// We chose \1 so that it is not a valid character in a vstorage path.
+	AnchoredKeyStart = "\x01"
+	AnchoredKeyEnd   = AnchoredKeyStart
 )
 
 func NewStateChangeEvent(storeName string, subkey, value []byte) sdk.Event {
-	// Bytes are base64-encoded.
+	// This is a hack to allow CONTAINS event queries to match the
+	// beginning or end of the subkey, enabling a handy OR of changes to a
+	// vstorage path's immediate children.
+	//
+	// FIXME: add string value ranges to Tendermint event queries instead.
+	anchoredKey := bytes.Join([][]byte{
+		[]byte(AnchoredKeyStart),
+		subkey,
+		[]byte(AnchoredKeyEnd),
+	}, []byte{})
+
 	return sdk.NewEvent(
 		EventTypeStateChange,
 		sdk.NewAttribute(AttributeKeyStoreName, storeName),
-		sdk.NewAttribute(AttributeKeyStoreSubkey, base64.StdEncoding.EncodeToString(subkey)),
-		sdk.NewAttribute(AttributeKeyUnprovedValue, base64.StdEncoding.EncodeToString(value)),
+		sdk.NewAttribute(AttributeKeyStoreSubkey, string(subkey)),
+		sdk.NewAttribute(AttributeKeyAnchoredKey, string(anchoredKey)),
+		sdk.NewAttribute(AttributeKeyUnprovedValue, string(value)),
 	)
 }
