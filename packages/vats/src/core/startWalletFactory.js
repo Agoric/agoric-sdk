@@ -127,7 +127,6 @@ export const startWalletFactory = async (
       board,
       bridgeManager: bridgeManagerP,
       chainStorage,
-      namesByAddress,
       namesByAddressAdmin: namesByAddressAdminP,
       zoe,
       chainTimerService,
@@ -187,7 +186,6 @@ export const startWalletFactory = async (
   const terms = await deeplyFulfilled(
     harden({
       agoricNames,
-      namesByAddress,
       board,
     }),
   );
@@ -271,7 +269,6 @@ export const WALLET_FACTORY_MANIFEST = {
       board: 'board',
       bridgeManager: true,
       chainStorage: 'chainStorage',
-      namesByAddress: true,
       namesByAddressAdmin: true,
       zoe: 'zoe',
       chainTimerService: 'timer',
