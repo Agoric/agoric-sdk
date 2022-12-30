@@ -47,7 +47,7 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "ava": "^5.0.1",
+    "ava": "^5.1.0",
     "c8": "^7.7.2"
   },
   "publishConfig": {
