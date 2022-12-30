@@ -59,6 +59,7 @@
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^8.2.2",
+    "jessie.js": "^0.3.2",
     "opener": "^1.5.2",
     "tmp": "^0.2.1",
     "ws": "^7.2.0"
