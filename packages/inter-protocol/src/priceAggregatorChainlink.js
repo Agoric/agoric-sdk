@@ -82,7 +82,7 @@ const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
  * storageNode: ERef<StorageNode>,
  * }} privateArgs
  */
-const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs) => {
   // brands come from named terms instead of `brands` key because the latter is
   // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
   // Oracle brands are inert (without issuers or mints).
@@ -813,5 +813,4 @@ const start = async (zcf, privateArgs) => {
 
   return harden({ creatorFacet, publicFacet });
 };
-
-export { start };
+harden(start);
