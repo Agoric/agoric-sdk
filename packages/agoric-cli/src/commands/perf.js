@@ -88,7 +88,7 @@ export const makePerfCommand = async logger => {
       // now execute
       let cmd = ['wallet-action', '--allow-spend', payloadStr];
       if (opts.keyringBackend) {
-        cmd = cmd.concat([`--keyring-backend=${opts.keyringBackend}`]);
+        cmd.push(`--keyring-backend=${opts.keyringBackend}`);
       }
       if (opts.home) {
         cmd = cmd.concat([`--home=${opts.home}`]);
