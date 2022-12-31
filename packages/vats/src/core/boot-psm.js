@@ -20,7 +20,6 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 import {
@@ -35,8 +34,10 @@ import {
 import * as utils from './utils.js';
 import {
   bridgeCoreEval,
+  bridgeProvisioner,
   makeBridgeManager,
   makeChainStorage,
+  noProvisioner,
   publishAgoricNames,
   startTimerService,
 } from './chain-behaviors.js';
@@ -167,6 +168,11 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       ...ECON_COMMITTEE_MANIFEST,
       ...PSM_MANIFEST,
       ...INVITE_PSM_COMMITTEE_MANIFEST,
+      [noProvisioner.name]: {
+        produce: {
+          provisioning: 'provisioning',
+        },
+      },
     };
     /** @param {string} name */
     const powersFor = name => {
@@ -180,6 +186,8 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       buildZoe(powersFor('buildZoe')),
       makeBoard(powersFor('makeBoard')),
       makeBridgeManager(powersFor('makeBridgeManager')),
+      noProvisioner(powersFor('noProvisioner')),
+      bridgeProvisioner(powersFor('bridgeProvisioner')),
       makeChainStorage(powersFor('makeChainStorage')),
       makeAddressNameHubs(powersFor('makeAddressNameHubs')),
       publishAgoricNames(powersFor('publishAgoricNames'), {
@@ -187,9 +195,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
           agoricNamesOptions: { topLevel: Object.keys(agoricNamesReserved) },
         },
       }),
-      startWalletFactory(powersFor('startWalletFactory'), {
-        options: { walletBridgeId: BRIDGE_ID.PROVISION },
-      }),
+      startWalletFactory(powersFor('startWalletFactory')),
       mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),

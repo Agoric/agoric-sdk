@@ -125,10 +125,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
     };
     /** @type {any} */
     const { coreEvalBridgeHandler } = consume;
-    await E(coreEvalBridgeHandler).fromBridge(
-      'arbitrary srcID',
-      coreEvalMessage,
-    );
+    await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
   };
 
   return Far('bootstrap', {

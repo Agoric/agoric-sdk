@@ -340,7 +340,7 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   });
 
   t.log('1st request to provision a SMART_WALLET for', address);
-  await handler.fromBridge('wallet', {
+  await handler.fromBridge({
     type: 'PLEASE_PROVISION',
     address,
     powerFlags: PowerFlags.SMART_WALLET,
@@ -357,7 +357,7 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   );
 
   t.log('2nd request to provision a SMART_WALLET for', address);
-  await handler.fromBridge('wallet', {
+  await handler.fromBridge({
     type: 'PLEASE_PROVISION',
     address,
     powerFlags: PowerFlags.SMART_WALLET,

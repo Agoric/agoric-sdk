@@ -4,7 +4,7 @@
  * Contract to make smart wallets.
  */
 
-import { BridgeId, WalletName } from '@agoric/internal';
+import { WalletName } from '@agoric/internal';
 import { fit, M, makeHeapFarInstance } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -19,7 +19,7 @@ import '@agoric/vats/exported.js';
 export const privateArgsShape = harden(
   M.splitRecord(
     { storageNode: M.eref(M.any()) },
-    { bridgeManager: M.eref(M.any()) },
+    { walletBridgeManager: M.eref(M.any()) },
   ),
 );
 
@@ -73,14 +73,14 @@ export const publishDepositFacet = async (
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   bridgeManager?: ERef<import('@agoric/vats').BridgeManager>,
+ *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
   const { agoricNames, board } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, bridgeManager } = privateArgs;
+  const { storageNode, walletBridgeManager } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
   const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
@@ -89,18 +89,15 @@ export const start = async (zcf, privateArgs) => {
   const handleWalletAction = makeHeapFarInstance(
     'walletActionHandler',
     M.interface('walletActionHandlerI', {
-      fromBridge: M.call(M.string(), shape.WalletBridgeMsg).returns(
-        M.promise(),
-      ),
+      fromBridge: M.call(shape.WalletBridgeMsg).returns(M.promise()),
     }),
     {
       /**
        *
-       * @param {string} srcID
        * @param {import('./types.js').WalletBridgeMsg} obj
        */
-      fromBridge: async (srcID, obj) => {
-        console.log('walletFactory.fromBridge:', srcID, obj);
+      fromBridge: async obj => {
+        console.log('walletFactory.fromBridge:', obj);
 
         const canSpend = 'spendAction' in obj;
 
@@ -121,8 +118,8 @@ export const start = async (zcf, privateArgs) => {
 
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of performAction() in cosmic-swingset/src/launch-chain.js
-  await (bridgeManager &&
-    E(bridgeManager).register(BridgeId.WALLET, handleWalletAction));
+  await (walletBridgeManager &&
+    E(walletBridgeManager).setHandler(handleWalletAction));
 
   // Resolve these first because the wallet maker must be synchronous
   const getInvitationIssuer = E(zoe).getInvitationIssuer();

@@ -1,7 +1,6 @@
 /* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { BridgeId } from '@agoric/internal';
 import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
@@ -62,7 +61,7 @@ test('bridge handler', async t => {
   });
 
   assert(t.context.sendToBridge);
-  const res = await t.context.sendToBridge(BridgeId.WALLET, {
+  const res = await t.context.sendToBridge({
     type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress1,
     // consider a helper for each action type
@@ -106,7 +105,7 @@ test('bridge with offerId string', async t => {
     proposal: {},
   };
   assert(t.context.sendToBridge);
-  const res = await t.context.sendToBridge(BridgeId.WALLET, {
+  const res = await t.context.sendToBridge({
     type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress2,
     // consider a helper for each action type

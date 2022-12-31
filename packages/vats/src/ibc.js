@@ -357,8 +357,8 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
 
   return Far('IBCProtocolHandler', {
     ...protocol,
-    async fromBridge(srcID, obj) {
-      console.info('IBC fromBridge', srcID, obj);
+    async fromBridge(obj) {
+      console.info('IBC fromBridge', obj);
       switch (obj.event) {
         case 'channelOpenTry': {
           // They're (more or less politely) asking if we are listening, so make an attempt.

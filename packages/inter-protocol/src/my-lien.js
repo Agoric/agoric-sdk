@@ -9,7 +9,6 @@ const { Fail } = assert;
  * @typedef { 'bonded' | 'liened' | 'locked' | 'total' | 'unbonding' } AccountProperty
  */
 const XLien = /** @type { const } */ ({
-  name: 'lien',
   LIEN_CHANGE_LIENED: 'LIEN_CHANGE_LIENED',
   LIEN_GET_ACCOUNT_STATE: 'LIEN_GET_ACCOUNT_STATE',
 });
@@ -19,13 +18,15 @@ const XLien = /** @type { const } */ ({
  * @template T
  */
 
+export const LienBridgeId = /** @type {const} */ ('lien');
+
 /**
- * @param {ERef<import('@agoric/vats').BridgeManager>} bridgeManager
+ * @param {ERef<import('@agoric/vats').ScopedBridgeManager>} lienBridgeManager
  * @param {Brand<'nat'>} brand
  * @param {string} [denom]
  * @returns {StakingAuthority}
  */
-export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
+export const makeStakeReporter = (lienBridgeManager, brand, denom = 'ubld') => {
   const { make: makeAmt } = AmountMath;
   const toStake = numeral => makeAmt(brand, BigInt(numeral));
   /**
@@ -35,7 +36,7 @@ export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
    */
   const changeLiened = async (address, delta) => {
     assert.typeof(address, 'string');
-    const newAmount = await E(bridgeManager).toBridge(XLien.name, {
+    const newAmount = await E(lienBridgeManager).toBridge({
       type: XLien.LIEN_CHANGE_LIENED,
       address,
       denom,
@@ -59,8 +60,8 @@ export const makeStakeReporter = (bridgeManager, brand, denom = 'ubld') => {
         Fail`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`;
       /** @type { AccountState<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
-        bridgeManager,
-      ).toBridge(XLien.name, {
+        lienBridgeManager,
+      ).toBridge({
         type: XLien.LIEN_GET_ACCOUNT_STATE,
         address,
         denom,

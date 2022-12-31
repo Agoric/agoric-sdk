@@ -11,7 +11,7 @@ import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import * as Collect from '../collect.js';
 import { makeTracer } from '../makeTracer.js';
-import { makeStakeReporter } from '../my-lien.js';
+import { LienBridgeId, makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeStakeFactoryTerms } from '../stakeFactory/params.js';
 import { liquidationDetailTerms } from '../vaultFactory/liquidation.js';
@@ -740,8 +740,9 @@ export const startLienBridge = async ({
   if (!bridgeManager) {
     return;
   }
+  const lienBridgeManager = E(bridgeManager).register(LienBridgeId);
   const bldBrand = await bldP;
-  const reporter = makeStakeReporter(bridgeManager, bldBrand);
+  const reporter = makeStakeReporter(lienBridgeManager, bldBrand);
   lienBridge.resolve(reporter);
 };
 

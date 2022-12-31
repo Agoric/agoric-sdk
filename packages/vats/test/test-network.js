@@ -102,7 +102,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(ibcHandler).fromBridge('dontcare', {
+    await E(ibcHandler).fromBridge({
       event: 'channelOpenAck',
       portID: 'port-1',
       channelID: 'channel-1',
@@ -130,7 +130,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(ibcHandler).fromBridge('stilldontcare', {
+    await E(ibcHandler).fromBridge({
       event: 'acknowledgementPacket',
       packet: {
         data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
@@ -151,7 +151,7 @@ test('network - ibc', async t => {
   await testIBCOutbound();
 
   const testIBCInbound = async () => {
-    await E(ibcHandler).fromBridge('reallydontcare', {
+    await E(ibcHandler).fromBridge({
       event: 'channelOpenTry',
       channelID: 'channel-2',
       portID: 'port-1',
@@ -162,7 +162,7 @@ test('network - ibc', async t => {
       counterpartyVersion: 'bazo',
     });
 
-    await E(ibcHandler).fromBridge('stillreallydontcare', {
+    await E(ibcHandler).fromBridge({
       event: 'channelOpenConfirm',
       portID: 'port-1',
       channelID: 'channel-2',
@@ -179,7 +179,7 @@ test('network - ibc', async t => {
       },
     ]);
 
-    await E(ibcHandler).fromBridge('notevenyet', {
+    await E(ibcHandler).fromBridge({
       event: 'receivePacket',
       packet: {
         data: 'aW5ib3VuZC1tc2c=',

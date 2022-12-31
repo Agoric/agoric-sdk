@@ -5,13 +5,20 @@ import { execFileSync } from 'child_process';
 
 const agdBinary = 'agd';
 
-export const normalizeAddress = literalOrName => {
+export const normalizeAddressWithOptions = (
+  literalOrName,
+  { keyringBackend = undefined } = {},
+) => {
   try {
     return normalizeBech32(literalOrName);
   } catch (_) {
     // not an address so try as a key
+    const backendOpt = keyringBackend
+      ? [`--keyring-backend=${keyringBackend}`]
+      : [];
     const buff = execFileSync(agdBinary, [
       `keys`,
+      ...backendOpt,
       `show`,
       `--address`,
       literalOrName,
@@ -19,7 +26,7 @@ export const normalizeAddress = literalOrName => {
     return normalizeBech32(buff.toString().trim());
   }
 };
-harden(normalizeAddress);
+harden(normalizeAddressWithOptions);
 
 /**
  * SECURITY: closes over process and child_process

@@ -13,7 +13,10 @@ import { Command } from 'commander';
 import fs from 'fs';
 import { exit } from 'process';
 import { makeLeaderOptions } from '../lib/casting.js';
-import { execSwingsetTransaction, normalizeAddress } from '../lib/chain.js';
+import {
+  execSwingsetTransaction,
+  normalizeAddressWithOptions,
+} from '../lib/chain.js';
 import { networkConfig } from '../lib/rpc.js';
 
 // tight for perf testing but less than this tends to hang.
@@ -24,7 +27,16 @@ const SLEEP_SECONDS = 0.1;
  * @param {import('anylogger').Logger} logger
  */
 export const makePerfCommand = async logger => {
-  const perf = new Command('perf').description('Performance testing commands');
+  const perf = new Command('perf')
+    .description('Performance testing commands')
+    .option(
+      '--keyring-backend [string]',
+      'Select keyring’s backend (os|file|kwallet|pass|test|memory) (default "os")',
+      'os',
+    )
+    .option('--home [string]', 'directory for config and data');
+  const normalizeAddress = literalOrName =>
+    normalizeAddressWithOptions(literalOrName, perf.opts());
 
   perf
     .command('satisfaction')
@@ -38,16 +50,11 @@ export const makePerfCommand = async logger => {
       'address literal or name',
       normalizeAddress,
     )
-    .option(
-      '--keyring-backend [string]',
-      'Select keyring’s backend (os|file|kwallet|pass|test|memory) (default "os")',
-      'os',
-    )
-    .option('--home [string]', 'directory for config and data')
     .action(async function () {
       // @ts-expect-error this implicit any
       const opts = this.opts();
-      logger.warn({ opts });
+      const sharedOpts = perf.opts();
+      logger.warn({ sharedOpts, opts });
       const payloadStr = fs.readFileSync(opts.executeOffer).toString();
       const { offer } = JSON.parse(JSON.parse(payloadStr).body);
       const { id: offerId } = offer;
@@ -87,10 +94,10 @@ export const makePerfCommand = async logger => {
 
       // now execute
       const cmd = ['wallet-action', '--allow-spend', payloadStr];
-      if (opts.keyringBackend) {
+      if (sharedOpts.keyringBackend) {
         cmd.push(`--keyring-backend=${opts.keyringBackend}`);
       }
-      if (opts.home) {
+      if (sharedOpts.home) {
         cmd.push(`--home=${opts.home}`);
       }
       execSwingsetTransaction(cmd, networkConfig, opts.from);

@@ -48,7 +48,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
    */
   const makeHandler = ({ bankManager, namesByAddressAdmin, walletFactory }) =>
     Far('provisioningHandler', {
-      fromBridge: async (_srcID, obj) => {
+      fromBridge: async obj => {
         assert.equal(
           obj.type,
           'PLEASE_PROVISION',

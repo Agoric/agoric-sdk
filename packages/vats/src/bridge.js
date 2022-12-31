@@ -27,9 +27,9 @@ import { makeWithQueue } from './queue.js';
  */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
-   * @type {Store<string, ERef<import('./types.js').BridgeHandler>>}
+   * @type {Store<string, import('./types.js').ScopedBridgeManager>}
    */
-  const srcHandlers = makeStore('srcID');
+  const scopedManagers = makeStore('bridgeId');
 
   function bridgeInbound(srcID, obj) {
     // console.log(
@@ -37,7 +37,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
     // );
 
     // Notify the specific handler, if there was one.
-    void E(srcHandlers.get(srcID)).fromBridge(srcID, obj);
+    void scopedManagers.get(srcID).fromBridge(obj);
 
     // No return value.
   }
@@ -59,20 +59,32 @@ export function makeBridgeManager(E, D, bridgeDevice) {
 
   // We now manage the device.
   D(bridgeDevice).registerInboundHandler(bridgeHandler);
-  const bridgeSendOnly = E.sendOnly(bridgeHandler);
 
   return Far('bridgeManager', {
-    toBridge,
-    fromBridge(srcID, obj) {
-      return bridgeSendOnly.inbound(srcID, obj);
-    },
-    register(srcID, handler) {
-      srcHandlers.init(srcID, handler);
-    },
-    unregister(srcID, handler) {
-      srcHandlers.get(srcID) === handler ||
-        Fail`Handler was not registered for ${srcID}`;
-      srcHandlers.delete(srcID);
+    register(bridgeId, handler) {
+      !scopedManagers.has(bridgeId) ||
+        Fail`Scoped bridge manager already registered for ${bridgeId}`;
+      const scopedManager = Far('bridgeSourceManager', {
+        toBridge(obj) {
+          return toBridge(bridgeId, obj);
+        },
+        fromBridge(obj) {
+          // If no handler was set, this will fail
+          // @ts-expect-error handler may be undefined
+          return E(handler).fromBridge(obj);
+        },
+        setHandler(newHandler) {
+          // setHandler could probably be on a separate facet to separate it
+          // from the toBridge and fromBridge powers, but it's easier to
+          // implement a set once check for the handler and pass a single
+          // object around.
+          !handler || Fail`Bridge handler already set for ${bridgeId}`;
+          newHandler || Fail`Bridge handler required`;
+          handler = newHandler;
+        },
+      });
+      scopedManagers.init(bridgeId, scopedManager);
+      return scopedManager;
     },
   });
 }
