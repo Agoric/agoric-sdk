@@ -155,7 +155,7 @@ test('admin price', async t => {
 
   // Push a new price result /////////////////////////
 
-  /** @type {import('@agoric/inter-protocol/src/priceAggregatorChainlink.js').PriceRound} */
+  /** @type {import('@agoric/inter-protocol/src/roundsManager.js').PriceRound} */
   const result = { roundId: 1, unitPrice: 123n };
 
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */

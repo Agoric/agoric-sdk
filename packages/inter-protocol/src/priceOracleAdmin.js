@@ -61,10 +61,8 @@ export const makeOracleAdmin = defineDurableFarClass(
      */
     async pushPrice({ roundId: roundIdRaw = undefined, unitPrice: valueRaw }) {
       const { state } = this;
-
-      const { handlePush } = state.roundPowers;
-
-      const result = await handlePush(
+      const { roundPowers } = state;
+      const result = await roundPowers.handlePush(
         {
           lastReportedRound: state.lastReportedRound,
           lastStartedRound: state.lastStartedRound,
