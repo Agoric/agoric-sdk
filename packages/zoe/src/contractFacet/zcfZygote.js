@@ -32,6 +32,22 @@ import { InvitationHandleShape } from '../typeGuards.js';
 const { Fail } = assert;
 
 /**
+ * Wrap getTerms so it checks the fit of the custom terms
+ *
+ * @param {InstanceRecordManagerGetTerms} getTerms
+ * @param {Pattern} customTermsShape
+ */
+const fitGetTerms = (getTerms, customTermsShape) => {
+  return () => {
+    const terms = getTerms();
+    // eslint-disable-next-line no-unused-vars -- assume brands and issuers are valid
+    const { brands, issuers, ...customTerms } = terms;
+    fit(harden(customTerms), customTermsShape);
+    return terms;
+  };
+};
+
+/**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
  * made, then the contract code is evaluated, then a particular
  * instance is made.
@@ -278,7 +294,9 @@ export const makeZCFZygote = async (
     // The methods below are pure and have no side-effects //
     getZoeService: () => zoeService,
     getInvitationIssuer: () => invitationIssuer,
-    getTerms,
+    getTerms: customTermsShape
+      ? fitGetTerms(getTerms, customTermsShape)
+      : getTerms,
     getBrandForIssuer,
     getIssuerForBrand,
     getAssetKind: getAssetKindByBrand,
