@@ -86,12 +86,12 @@ export const makePerfCommand = async logger => {
       void watchForSatisfied();
 
       // now execute
-      let cmd = ['wallet-action', '--allow-spend', payloadStr];
+      const cmd = ['wallet-action', '--allow-spend', payloadStr];
       if (opts.keyringBackend) {
         cmd.push(`--keyring-backend=${opts.keyringBackend}`);
       }
       if (opts.home) {
-        cmd = cmd.concat([`--home=${opts.home}`]);
+        cmd.push(`--home=${opts.home}`);
       }
       execSwingsetTransaction(cmd, networkConfig, opts.from);
     });
