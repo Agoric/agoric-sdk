@@ -59,6 +59,7 @@
   "files": [
     "README.md",
     "src/",
+    "tools/",
     "exported.js",
     "NEWS.md"
   ],
