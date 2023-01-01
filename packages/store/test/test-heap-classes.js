@@ -112,6 +112,26 @@ test('test makeHeapFarInstance', t => {
   });
 });
 
+test('naked function call', t => {
+  const greeter = makeHeapFarInstance(
+    'greeter',
+    M.interface('greeter', { sayHello: M.call().returns('hello') }),
+    {
+      sayHello() {
+        return 'hello';
+      },
+    },
+  );
+
+  const { sayHello } = greeter;
+  t.throws(() => sayHello(), {
+    message:
+      'thisful method "In \\"sayHello\\" method of (greeter)" called without \'this\' object',
+  });
+
+  t.is(sayHello.bind(greeter)(), 'hello');
+});
+
 // needn't run. we just don't have a better place to write these.
 test.skip('types', () => {
   // any methods can be defined if there's no interface

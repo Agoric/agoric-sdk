@@ -144,6 +144,9 @@ const bindMethod = (
   let { method } = thisfulMethods
     ? {
         method(...args) {
+          this || Fail`thisful method ${methodTag} called without this`;
+          this ||
+            Fail`thisful method ${methodTag} called without 'this' object`;
           const context = getContext(this);
           return apply(behaviorMethod, context, args);
         },
