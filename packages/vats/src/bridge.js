@@ -80,21 +80,23 @@ export function makeBridgeManager(E, D, bridgeDevice) {
   const toBridge = async (dstID, obj) => {
     bridgeDevice || Fail`bridge device not yet connected`;
     const { bpid, promise } = resultHandler.allocateResult();
-    try {
-      D(bridgeDevice).callOutbound(dstID, obj, bpid);
-    } catch (error) {
-      console.error('Synchronous error while invoking callOutbound', error);
-      resultHandler.fromBridge([
-        {
-          bpid,
-          result: {
-            status: 'rejected',
-            reason: `callOutbound failure: ${error}`,
+    return Promise.resolve()
+      .then(() => {
+        D(bridgeDevice).callOutbound(dstID, obj, bpid);
+      })
+      .catch(error => {
+        console.error('Error while invoking callOutbound', error);
+        return resultHandler.fromBridge([
+          {
+            bpid,
+            result: {
+              status: 'rejected',
+              reason: `callOutbound failure: ${error}`,
+            },
           },
-        },
-      ]);
-    }
-    return promise;
+        ]);
+      })
+      .then(() => promise);
   };
 
   // We now manage the device.
