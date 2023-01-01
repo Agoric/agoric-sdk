@@ -37,6 +37,7 @@ import {
 } from './sim-params.js';
 import { parseParams, encodeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
+import { makeActiveGuard } from './active-guard.js';
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -64,7 +65,14 @@ export async function buildSwingset(
   vatconfig,
   argv,
   env,
-  { debugName = undefined, slogCallbacks, slogSender },
+  {
+    debugName = undefined,
+    slogCallbacks,
+    slogSender,
+    whenActiveWrap = fn =>
+      (...args) =>
+        fn(...args),
+  },
 ) {
   // FIXME: Find a better way to propagate the role.
   process.env.ROLE = argv.ROLE;
@@ -77,9 +85,14 @@ export async function buildSwingset(
     config = loadBasedir(vatconfig);
   }
 
-  const mbs = buildMailboxStateMap(mailboxStorage);
+  const mailboxStateMap = buildMailboxStateMap(mailboxStorage);
+  const activeMailboxStateMap = {
+    add: whenActiveWrap(mailboxStateMap.add),
+    remove: whenActiveWrap(mailboxStateMap.remove),
+    setAcknum: whenActiveWrap(mailboxStateMap.setAcknum),
+  };
   const timer = buildTimer();
-  const mb = buildMailbox(mbs);
+  const mb = buildMailbox(activeMailboxStateMap);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
@@ -95,7 +108,7 @@ export async function buildSwingset(
 
   let bridgeInbound;
   if (bridgeOutbound) {
-    const asyncBridgeOutbound = (dstID, msg, bpid) => {
+    const activeBridgeOutbound = whenActiveWrap((dstID, msg, bpid) => {
       const retobj = bridgeOutbound(dstID, msg);
       // note: *we* get this return value synchronously, but we arrange for it
       // to be sent to the vat-side bridge through deliverInbound, which means
@@ -107,9 +120,9 @@ export async function buildSwingset(
           ? { status: 'rejected', reason: retobj.error }
           : { status: 'fulfilled', value: retobj };
       bridgeInbound(BRIDGE_ID.OUTBOUND_RESULT, [{ bpid, result }]);
-    };
+    });
 
-    const bd = buildBridge(asyncBridgeOutbound);
+    const bd = buildBridge(activeBridgeOutbound);
     config.devices.bridge = {
       sourceSpec: bd.srcPath,
     };
@@ -233,7 +246,7 @@ export async function launch({
   replayChainSends,
   setActivityhash,
   bridgeOutbound,
-  makeInstallationPublisher = undefined,
+  makeInstallationPublisher,
   vatconfig,
   argv,
   env = process.env,
@@ -282,6 +295,24 @@ export async function launch({
     metricMeter,
   });
 
+  // Helpers to ensure that no swingset activity will result in a chainSend
+  // outside of when we're actively processing an action.
+  // The following chain callbacks trigger chainSend:
+  // - bridgeOutbound
+  // - mailboxStorage
+  // - installationPublisher
+  // - setActivityhash
+  // - actionQueue
+  //
+  // The first 4 are sinks only and can simply be wrapped in the active guard.
+  // However, the actionQueue is meant to be used as a synchronous iterator, but
+  // it's ok to not guard it since it's only used when processing END_BLOCK.
+  const { whenActiveWrap, updateActive } = makeActiveGuard();
+
+  if (setActivityhash) {
+    setActivityhash = whenActiveWrap(setActivityhash);
+  }
+
   console.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
@@ -295,6 +326,7 @@ export async function launch({
       debugName,
       slogCallbacks,
       slogSender,
+      whenActiveWrap,
     },
   );
 
@@ -427,8 +459,13 @@ export async function launch({
       installationPublisher === undefined &&
       makeInstallationPublisher !== undefined
     ) {
-      // @ts-expect-error not really undefined. TODO give provideInstallationPublisher a signature.
-      installationPublisher = makeInstallationPublisher();
+      /** @type {Publisher<unknown>} */
+      const publisher = makeInstallationPublisher();
+      installationPublisher = {
+        publish: whenActiveWrap(publisher.publish),
+        finish: whenActiveWrap(publisher.finish),
+        fail: whenActiveWrap(publisher.fail),
+      };
     }
   }
 
@@ -599,7 +636,7 @@ export async function launch({
    */
   async function processAction(type, fn) {
     const start = Date.now();
-    const finish = res => {
+    const finish = async res => {
       // blockManagerConsole.error(
       //   'Action',
       //   action.type,
@@ -607,9 +644,11 @@ export async function launch({
       //   'is done!',
       // );
       runTime += Date.now() - start;
+      await updateActive(false);
       return res;
     };
 
+    await updateActive(true);
     const p = fn();
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
@@ -617,7 +656,7 @@ export async function launch({
       // None of these must fail, and if they do, log them verbosely before
       // returning to the chain.
       blockManagerConsole.error(type, 'error:', e);
-      finish();
+      return finish();
     });
     // Return the original promise so that the caller gets the original
     // resolution or rejection.
