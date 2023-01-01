@@ -155,14 +155,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   function registerPortHandler(portHandler) {
     lastPort += 1;
     const port = lastPort;
-    portHandlers[port] = async (...phArgs) => {
-      try {
-        return await portHandler(...phArgs);
-      } catch (e) {
+    portHandlers[port] = async (...phArgs) =>
+      E.resolve(portHandler(...phArgs)).catch(e => {
         console.error('portHandler threw', e);
         throw e;
-      }
-    };
+      });
     return port;
   }
 
@@ -305,13 +302,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ROLE: 'chain',
       bootMsg,
     };
-    const vatconfig = new URL(
-      await importMetaResolve(
-        env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-          argv.bootMsg.params.bootstrap_vat_config,
-        import.meta.url,
-      ),
-    ).pathname;
+    const vatHref = await importMetaResolve(
+      env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+        argv.bootMsg.params.bootstrap_vat_config,
+      import.meta.url,
+    );
+    const vatconfig = new URL(vatHref).pathname;
 
     const { metricsProvider } = getTelemetryProviders({
       console,
@@ -455,9 +451,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
 
     // Ensure that initialization has completed.
-    if (!blockingSend) {
-      blockingSend = await launchAndInitializeSwingSet(action);
-    }
+    blockingSend = await (blockingSend || launchAndInitializeSwingSet(action));
 
     if (action.type === AG_COSMOS_INIT) {
       // console.error('got AG_COSMOS_INIT', action);

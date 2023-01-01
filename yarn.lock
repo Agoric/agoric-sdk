@@ -1334,7 +1334,7 @@
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-0.16.8.tgz#d0084bd13c2034cbc8394968c49b8648f7224e5f"
   integrity sha512-bxWzRrcrCS44m0N0lCGA7BQoBFSfKkzwpFGGdZNVbUbT7+b9fzOV58sdSzzxxGnl6UwG24KzX71CNNA3PxJI9w==
 
-"@endo/far@^0.2.14":
+"@endo/far@^0.2.14", "@endo/far@^0.2.3":
   version "0.2.14"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-0.2.14.tgz#fe85854bed9d6affbc723ab0f0c28ccbb422ae27"
   integrity sha512-9fYkYgpoLU6bsYJhlXrMwlDNMi3hXZd/AHhxk9GvqOctEGGEMfUWkW/ZxQYmo9eyIE3b+VhktJDJz2hmoQPS6Q==
@@ -1579,10 +1579,10 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.3.tgz#e45e384e4b8ec16bce2fd903af78450f6bf7ec98"
   integrity sha512-ZXRY4jNvVgSVQ8DL3LTcakaAtXwTVUxE81hslsyD2AtoXW/wVob10HkOJ1X/pAlcI7D+2YoZKg5do8G/w6RYgA==
 
-"@jessie.js/eslint-plugin@^0.2.0", "@jessie.js/eslint-plugin@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@jessie.js/eslint-plugin/-/eslint-plugin-0.2.1.tgz#857f778963fd95179649be4fa601271bb5800303"
-  integrity sha512-SgQoa2O0uOKf6j2WMXFZc1KE+pOCzacV/uoyq0e4A/jm7Tja8/TJR+TlCPpYnx/YCMH23SCYC0Uz7T+5Qw6Byg==
+"@jessie.js/eslint-plugin@^0.2.0", "@jessie.js/eslint-plugin@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@jessie.js/eslint-plugin/-/eslint-plugin-0.3.0.tgz#5b084355f3cba288422d5ecf794e1290baeddd45"
+  integrity sha512-7v7lZCxP9t6eMu95+3J9nuxLHCLjBZgJ+1cICR9gAga7OGWlC1AdncDO9H2B+Tn0ATfd+w/G9w1yqJq7n53kMA==
   dependencies:
     requireindex "~1.1.0"
 
@@ -8211,6 +8211,13 @@ istanbul-reports@^3.0.2:
   dependencies:
     html-escaper "^2.0.0"
     istanbul-lib-report "^3.0.0"
+
+jessie.js@^0.3.2:
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/jessie.js/-/jessie.js-0.3.2.tgz#68159e1097f86fa56a3136668313ea38e96fc9f2"
+  integrity sha512-Gpa2iZhl/hPZGT3HWEURfYIV5kFjeHZmQLZuRF6A5czuezmEOlnDYH3w7rohaaEWwxJiXprUWj4r6lh1JIkXAA==
+  dependencies:
+    "@endo/far" "^0.2.3"
 
 jest-worker@^24.9.0:
   version "24.9.0"

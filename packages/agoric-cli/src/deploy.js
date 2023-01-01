@@ -1,10 +1,8 @@
 /* global process setTimeout setInterval clearInterval */
-/* eslint-disable no-await-in-loop */
 
 import { E, makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
 import bundleSource from '@endo/bundle-source';
-import { makeCache } from '@agoric/cache';
 import { makeLeaderFromRpcAddresses } from '@agoric/casting';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
 import url from 'url';
@@ -14,6 +12,7 @@ import inquirer from 'inquirer';
 import createEsmRequire from 'esm';
 import { createRequire } from 'module';
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { asyncGenerate } from 'jessie.js';
 
 import { getAccessToken } from '@agoric/access-token';
 
@@ -50,7 +49,10 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
   const console = anylogger('agoric:deploy');
 
   const allowUnsafePlugins = opts.allowUnsafePlugins;
-  if (allowUnsafePlugins) {
+  const promptForUnsafePlugins = async () => {
+    if (!allowUnsafePlugins) {
+      return;
+    }
     const { yesReally } = await inquirer.prompt([
       {
         name: 'yesReally',
@@ -64,7 +66,8 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
       );
       process.exit(1);
     }
-  }
+  };
+  await promptForUnsafePlugins();
 
   const args = rawArgs.slice(1);
   const provide = opts.provide
@@ -212,9 +215,9 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
     const wsWebkey = `${wsurl}?accessToken=${encodeURIComponent(accessToken)}`;
 
     const ws = makeWebSocket(wsWebkey, { origin: wsurl.origin });
-    ws.on('open', async () => {
-      connected = true;
-      try {
+    ws.on('open', () => {
+      const tryOnOpen = async () => {
+        connected = true;
         console.debug('Connected to CapTP!');
         // Help disambiguate connections.
         const epoch = now();
@@ -245,7 +248,11 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         let lastUpdateCount;
         let stillLoading = [...need].sort();
         progressDot = 'o';
-        while (stillLoading.length) {
+        const untilNotLoading = asyncGenerate(() => ({
+          done: !stillLoading.length,
+          value: stillLoading,
+        }));
+        for await (const _ of untilNotLoading) {
           // Wait for the notifier to report a new state.
           process.stdout.write(progressDot);
           console.debug('need:', stillLoading.join(', '));
@@ -298,29 +305,26 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
           );
         }
 
-        const cache = makeCache(
-          E(E(E.get(bootP).wallet).getBridge()).getCacheCoordinator(),
-        );
-
         let cachedLeader;
         const makeDefaultLeader = async leaderOptions => {
-          if (cachedLeader === undefined) {
-            const conn = await getDefaultConnection();
-            const { type, rpcAddresses } = conn;
-            assert.equal(
-              type,
-              'chain-cosmos-sdk',
-              X`${type} doesn't support casting followers`,
-            );
-            cachedLeader = makeLeaderFromRpcAddresses(
-              rpcAddresses,
-              leaderOptions,
-            );
+          if (cachedLeader) {
+            return cachedLeader;
           }
+          const conn = await getDefaultConnection();
+          const { type, rpcAddresses } = conn;
+          assert.equal(
+            type,
+            'chain-cosmos-sdk',
+            X`${type} doesn't support casting followers`,
+          );
+          cachedLeader = makeLeaderFromRpcAddresses(
+            rpcAddresses,
+            leaderOptions,
+          );
           return cachedLeader;
         };
 
-        for (const arg of args) {
+        for await (const arg of args) {
           const moduleFile = path.resolve(process.cwd(), arg);
           const pathResolve = (...paths) => {
             const fileName = paths.pop();
@@ -344,8 +348,8 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
               );
             };
           } else {
-            installUnsafePlugin = async (plugin, pluginOpts = undefined) => {
-              try {
+            installUnsafePlugin = (plugin, pluginOpts = undefined) => {
+              const tryInstallUnsafePlugin = async () => {
                 const absPath = pathResolve(plugin);
                 const pluginName = absPath.replace(PATH_SEP_RE, '_');
                 const pluginFile = path.resolve(pluginDir, pluginName);
@@ -367,11 +371,12 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
                 console.info(`Loading plugin ${JSON.stringify(pluginFile)}`);
                 return E.get(E(pluginManager).load(pluginName, pluginOpts))
                   .pluginRoot;
-              } catch (e) {
+              };
+              return tryInstallUnsafePlugin().catch(e => {
                 throw Error(
                   `Cannot install unsafe plugin: ${(e && e.stack) || e}`,
                 );
-              }
+              });
             };
           }
 
@@ -401,88 +406,94 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
           );
 
           const modulePath = pathResolve(moduleFile);
-          const mainNS = nativeEsm
-            ? await import(modulePath)
-            : esmRequire(modulePath);
+          let mainNS = await (nativeEsm && import(modulePath));
+          if (!mainNS) {
+            mainNS = esmRequire(modulePath);
+          }
           const main = mainNS.default;
           if (typeof main !== 'function') {
             console.error(
               `${moduleFile} does not have an export default function main`,
             );
-          } else {
-            await main(bootP, {
-              bundleSource: (file, options = undefined) =>
-                bundleSource(pathResolve(file), options),
-              cache,
-              makeDefaultLeader,
-              publishBundle,
-              listConnections,
-              pathResolve,
-              installUnsafePlugin,
-              /**
-               * Recursively look up names in the context of the bootstrap
-               * promise, such as:
-               *
-               * ['agoricNames', 'oracleBrand', 'USD']
-               * ['namesByAddress']
-               * ['namesByAddress', 'agoric1...']
-               * ['namesByAddress', 'agoric1...', 'depositFacet']
-               * ['wallet', 'issuer', 'IST']
-               *
-               * @param  {...string[]} namePath
-               * @returns {Promise<any>}
-               */
-              lookup: (...namePath) => {
-                if (namePath.length === 1 && Array.isArray(namePath[0])) {
-                  // Convert single array argument to a path.
-                  namePath = namePath[0];
-                }
-                if (namePath.length === 0) {
-                  return bootP;
-                }
-                const [first, ...remaining] = namePath;
-
-                // The first part of the name path is a property on bootP.
-                let nextValue = E.get(bootP)[first];
-                if (remaining.length === 0) {
-                  return nextValue;
-                }
-
-                // Compatibility for agoricdev-8; use `.get` for the next part.
-                // TODO: remove when agoricdev-9 is released.
-                if (first === 'scratch') {
-                  const second = remaining.shift();
-                  const secondValue = E(nextValue).get(second);
-                  if (remaining.length === 0) {
-                    return secondValue;
-                  }
-
-                  // Fall through to the lookup below.
-                  nextValue = secondValue;
-                }
-
-                // Any remaining paths go through the lookup method of the found
-                // object.
-                return E(nextValue).lookup(...remaining);
-              },
-              host,
-              port,
-              args: opts.scriptArgs,
-            });
+            continue;
           }
+
+          await main(bootP, {
+            bundleSource: (file, options = undefined) =>
+              bundleSource(pathResolve(file), options),
+            makeDefaultLeader,
+            publishBundle,
+            listConnections,
+            pathResolve,
+            installUnsafePlugin,
+            /**
+             * Recursively look up names in the context of the bootstrap
+             * promise, such as:
+             *
+             * ['agoricNames', 'oracleBrand', 'USD']
+             * ['namesByAddress']
+             * ['namesByAddress', 'agoric1...']
+             * ['namesByAddress', 'agoric1...', 'depositFacet']
+             * ['wallet', 'issuer', 'IST']
+             *
+             * @param  {...string[]} namePath
+             * @returns {Promise<any>}
+             */
+            lookup: (...namePath) => {
+              if (namePath.length === 1 && Array.isArray(namePath[0])) {
+                // Convert single array argument to a path.
+                namePath = namePath[0];
+              }
+              if (namePath.length === 0) {
+                return bootP;
+              }
+              const [first, ...remaining] = namePath;
+
+              // The first part of the name path is a property on bootP.
+              let nextValue = E.get(bootP)[first];
+              if (remaining.length === 0) {
+                return nextValue;
+              }
+
+              // Compatibility for agoricdev-8; use `.get` for the next part.
+              // TODO: remove when agoricdev-9 is released.
+              if (first === 'scratch') {
+                const second = remaining.shift();
+                const secondValue = E(nextValue).get(second);
+                if (remaining.length === 0) {
+                  return secondValue;
+                }
+
+                // Fall through to the lookup below.
+                nextValue = secondValue;
+              }
+
+              // Any remaining paths go through the lookup method of the found
+              // object.
+              return E(nextValue).lookup(...remaining);
+            },
+            host,
+            port,
+            args: opts.scriptArgs,
+          });
         }
 
-        if (provide.length) {
+        const doneLoading = async () => {
+          if (!provide.length) {
+            return;
+          }
           console.debug('provide:', provide.join(', '));
           await E(E.get(E.get(bootP).local).http).doneLoading(provide);
-        }
+        };
+        await doneLoading();
 
         console.debug('Done!');
         ws.close();
         exit.resolve(0);
-      } catch (e) {
+      };
+      tryOnOpen().catch(e => {
         exit.reject(e);
-      }
+      });
     });
     ws.on('close', (_code, _reason) => {
       console.debug('connection closed');
