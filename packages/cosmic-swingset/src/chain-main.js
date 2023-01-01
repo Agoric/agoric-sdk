@@ -192,14 +192,24 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   let savedChainSends = [];
 
+  let swingsetActive = false;
+
+  const checkSwingsetActive = () => {
+    if (!swingsetActive) {
+      throw new Error(`Cannot perform send while swingset inactive`);
+    }
+  };
+
   // Send a chain downcall, recording what we sent and received.
   function chainSend(...sendArgs) {
+    checkSwingsetActive();
     const ret = agcc.send(...sendArgs);
     savedChainSends.push([sendArgs, ret]);
     return ret;
   }
 
   const clearChainSends = () => {
+    checkSwingsetActive();
     const chainSends = savedChainSends;
     savedChainSends = [];
     return chainSends;
@@ -208,6 +218,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // Replay and clear the chain send queue.
   // While replaying each send, insist it has the same return result.
   function replayChainSends() {
+    checkSwingsetActive();
     // Remove our queue.
     const chainSends = [...savedChainSends];
 
@@ -226,6 +237,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
   }
+
+  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend']} */
+  let blockingSend;
 
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
@@ -417,10 +431,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     savedChainSends = s.savedChainSends;
 
-    return s.blockingSend;
+    blockingSend = s.blockingSend;
+    return blockingSend;
   }
 
-  let blockingSend;
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
     if (action.vibcPort) {
@@ -441,14 +455,22 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.lien = action.lienPort;
     }
 
-    // Ensure that initialization has completed.
-    blockingSend = await (blockingSend || launchAndInitializeSwingSet(action));
+    swingsetActive = true;
 
-    if (action.type === AG_COSMOS_INIT) {
-      // console.error('got AG_COSMOS_INIT', action);
-      return true;
-    }
-
-    return blockingSend(action);
+    return Promise.resolve(
+      // Ensure that initialization has completed.
+      blockingSend || launchAndInitializeSwingSet(action),
+    )
+      .then(doBlockingSend => {
+        if (action.type === AG_COSMOS_INIT) {
+          // console.error('got AG_COSMOS_INIT', action);
+          return true;
+        } else {
+          return doBlockingSend(action);
+        }
+      })
+      .finally(() => {
+        swingsetActive = false;
+      });
   }
 }
