@@ -95,7 +95,21 @@ export async function buildSwingset(
 
   let bridgeInbound;
   if (bridgeOutbound) {
-    const bd = buildBridge(bridgeOutbound);
+    const asyncBridgeOutbound = (dstID, msg, bpid) => {
+      const retobj = bridgeOutbound(dstID, msg);
+      // note: *we* get this return value synchronously, but we arrange for it
+      // to be sent to the vat-side bridge through deliverInbound, which means
+      // the caller only gets a Promise, and will receive the value in some
+      // future crank
+      /** @type {PromiseSettledResult<any>} */
+      const result =
+        retobj && retobj.error
+          ? { status: 'rejected', reason: retobj.error }
+          : { status: 'fulfilled', value: retobj };
+      bridgeInbound(BRIDGE_ID.OUTBOUND_RESULT, [{ bpid, result }]);
+    };
+
+    const bd = buildBridge(asyncBridgeOutbound);
     config.devices.bridge = {
       sourceSpec: bd.srcPath,
     };

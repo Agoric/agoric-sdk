@@ -4,16 +4,19 @@ import { makeScalarMapStore } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { makePromiseKit } from '@endo/promise-kit';
+import { BridgeId } from '@agoric/internal';
 
 /**
  * @template T
  * @typedef {'Device' & { __deviceType__: T }} Device
  */
 
+/** @typedef { {bpid: string; result: PromiseSettledResult<any>} } BridgeOutboundResultOneNotify */
+
 /**
  * @typedef {object} BridgeDevice
- * @property {(dstID: string, obj: any) => any} callOutbound
+ * @property {(dstID: string, obj: any, bpid: string) => void} callOutbound
  * @property {(handler: { inbound: (srcID: string, obj: any) => void}) => void} registerInboundHandler
  */
 
@@ -44,23 +47,61 @@ export function makeBridgeManager(E, D, bridgeDevice) {
 
   const bridgeHandler = Far('bridgeHandler', { inbound: bridgeInbound });
 
-  const withOutboundQueue = makeWithQueue();
-  const toBridge = withOutboundQueue((dstID, obj) => {
-    bridgeDevice || Fail`bridge device not yet connected`;
-    const retobj = D(bridgeDevice).callOutbound(dstID, obj);
-    // note: *we* get this return value synchronously, but any callers (in
-    // separate vats) only get a Promise, and will receive the value in some
-    // future turn
-    if (retobj && retobj.error) {
-      throw Error(retobj.error);
-    }
-    return retobj;
+  let nextPromiseId = 1n;
+
+  /** @type {Map<string, Pick<PromiseKit<any>, 'resolve' | 'reject'>>} */
+  const pendingResults = new Map();
+  const resultHandler = Far('bridgeCallOutboundResultHandler', {
+    /** @param {BridgeOutboundResultOneNotify[]} notifies */
+    async fromBridge(notifies) {
+      for (const { bpid, result } of notifies) {
+        const resolveKit = pendingResults.get(bpid);
+        if (!resolveKit) {
+          throw Fail`Unknown bridge result promise ${bpid}`;
+        }
+        pendingResults.delete(bpid);
+        if (result.status === 'fulfilled') {
+          resolveKit.resolve(result.value);
+        } else {
+          // The content must be JSON serializable so reconstruct the error here
+          resolveKit.reject(new Error(result.reason));
+        }
+      }
+    },
+    allocateResult() {
+      const { resolve, reject, promise } = makePromiseKit();
+      const bpid = `bp${nextPromiseId}`;
+      nextPromiseId += 1n;
+      pendingResults.set(bpid, harden({ resolve, reject }));
+      return { bpid, promise };
+    },
   });
+
+  const toBridge = async (dstID, obj) => {
+    bridgeDevice || Fail`bridge device not yet connected`;
+    const { bpid, promise } = resultHandler.allocateResult();
+    try {
+      D(bridgeDevice).callOutbound(dstID, obj, bpid);
+    } catch (error) {
+      console.error('Synchronous error while invoking callOutbound', error);
+      resultHandler.fromBridge([
+        {
+          bpid,
+          result: {
+            status: 'rejected',
+            reason: `callOutbound failure: ${error}`,
+          },
+        },
+      ]);
+    }
+    return promise;
+  };
 
   // We now manage the device.
   D(bridgeDevice).registerInboundHandler(bridgeHandler);
 
-  return Far('bridgeManager', {
+  /** @type {import('./types.js').BridgeManager} */
+  const bridgeManager = Far('bridgeManager', {
     register(bridgeId, handler) {
       !scopedManagers.has(bridgeId) ||
         Fail`Scoped bridge manager already registered for ${bridgeId}`;
@@ -87,4 +128,7 @@ export function makeBridgeManager(E, D, bridgeDevice) {
       return scopedManager;
     },
   });
+  bridgeManager.register(BridgeId.OUTBOUND_RESULT, resultHandler);
+
+  return bridgeManager;
 }
