@@ -42,6 +42,12 @@ function abbreviateReplacer(_, arg) {
     // truncate long strings
     return `${arg.slice(0, 15)}...${arg.slice(arg.length - 15)}`;
   }
+  if (arg === undefined) {
+    return 'undefined';
+  }
+  if (typeof arg === 'symbol') {
+    return String(arg);
+  }
   return arg;
 }
 
