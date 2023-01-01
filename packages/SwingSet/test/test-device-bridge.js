@@ -10,6 +10,7 @@ import {
 } from '../src/index.js';
 
 test('bridge device', async t => {
+  t.plan(6);
   const outboundLog = [];
   function outboundCallback(argv0, argv1) {
     outboundLog.push(argv0);
@@ -116,6 +117,7 @@ test('bridge device', async t => {
 });
 
 test('bridge device can return undefined', async t => {
+  t.plan(2);
   const outboundLog = [];
   function outboundCallback(argv0, argv1) {
     outboundLog.push(argv0);
@@ -153,5 +155,5 @@ test('bridge device can return undefined', async t => {
   await c.run();
 
   t.deepEqual(outboundLog, argv);
-  t.deepEqual(c.dump().log, ['outbound retval', '', 'true']);
+  t.deepEqual(c.dump().log, ['outbound retval', '"undefined"', 'true']);
 });
