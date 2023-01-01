@@ -73,7 +73,7 @@ async function main(t, argv) {
 }
 
 const expected = [
-  '{"adminFacet":{},"creatorFacet":{},"instance":{},"publicFacet":{}}',
+  '{"adminFacet":{},"creatorFacet":{},"creatorInvitation":"undefined","instance":{},"publicFacet":{}}',
 ];
 
 test.serial('defineKind swingset', async t => {
