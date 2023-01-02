@@ -171,26 +171,28 @@ export async function buildSwingset(
 
 /**
  * @typedef {object} BeansPerUnit
- * @property {bigint} blockComputeLimit
  * @property {bigint} vatCreation
  * @property {bigint} xsnapComputron
  */
 
 /**
  * @param {BeansPerUnit} beansPerUnit
+ * @param {bigint} computeLimit
  * @returns {ChainRunPolicy}
  */
-function computronCounter({
-  [BeansPerBlockComputeLimit]: blockComputeLimit,
-  [BeansPerVatCreation]: vatCreation,
-  [BeansPerXsnapComputron]: xsnapComputron,
-}) {
-  assert.typeof(blockComputeLimit, 'bigint');
+function computronCounter(
+  {
+    [BeansPerVatCreation]: vatCreation,
+    [BeansPerXsnapComputron]: xsnapComputron,
+  },
+  computeLimit,
+) {
+  assert.typeof(computeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
   let totalBeans = 0n;
-  const shouldRun = () => totalBeans < blockComputeLimit;
-  const remainingBeans = () => blockComputeLimit - totalBeans;
+  const shouldRun = () => totalBeans < computeLimit;
+  const remainingBeans = () => computeLimit - totalBeans;
 
   const policy = harden({
     vatCreated() {
@@ -612,7 +614,10 @@ export async function launch({
     );
 
     // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit);
+    const runPolicy = computronCounter(
+      params.beansPerUnit,
+      params.beansPerUnit[BeansPerBlockComputeLimit],
+    );
 
     await runKernel(runPolicy, blockHeight);
 
