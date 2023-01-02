@@ -31,6 +31,7 @@ import {
 
 import {
   BeansPerBlockComputeLimit,
+  BeansPerIntraBlockComputeLimit,
   BeansPerVatCreation,
   BeansPerXsnapComputron,
   QueueInbound,
@@ -535,13 +536,14 @@ export async function launch({
     return p;
   }
 
-  async function runKernel(runPolicy, blockHeight) {
+  async function runKernel(runPolicy, blockHeight, phase) {
     let runNum = 0;
     async function runSwingset() {
       const initialBeans = runPolicy.remainingBeans();
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-start',
         blockHeight,
+        phase,
         runNum,
         initialBeans,
       });
@@ -557,6 +559,7 @@ export async function launch({
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-finish',
         blockHeight,
+        phase,
         runNum,
         remainingBeans,
         usedBeans: initialBeans - remainingBeans,
@@ -625,7 +628,7 @@ export async function launch({
       params.beansPerUnit[BeansPerBlockComputeLimit],
     );
 
-    await runKernel(runPolicy, blockHeight);
+    await runKernel(runPolicy, blockHeight, 'endBlock');
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
@@ -700,7 +703,7 @@ export async function launch({
     throw decohered;
   }
 
-  async function afterCommit(blockHeight, blockTime) {
+  async function afterCommit(blockHeight, blockTime, params) {
     await Promise.resolve()
       .then(afterCommitCallback)
       .then((afterCommitStats = {}) => {
@@ -711,6 +714,15 @@ export async function launch({
           ...afterCommitStats,
         });
       });
+
+    const computeLimit = params.beansPerUnit[BeansPerIntraBlockComputeLimit];
+
+    if (!(computeLimit > 0n)) {
+      return;
+    }
+
+    const runPolicy = computronCounter(params.beansPerUnit, computeLimit);
+    await runKernel(runPolicy, blockHeight, 'afterCommit');
   }
 
   async function blockingSend(action) {
@@ -784,13 +796,27 @@ export async function launch({
           blockTime,
         });
 
-        blockParams = undefined;
-
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
-        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-after-commit-block-start',
+          blockHeight,
+          blockTime,
+        });
+        afterCommitWorkDone = afterCommit(
+          blockHeight,
+          blockTime,
+          blockParams,
+        ).then(() => {
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-after-commit-block-finish',
+            blockHeight,
+            blockTime,
+          });
+        });
+        blockParams = undefined;
 
         return undefined;
       }
