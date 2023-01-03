@@ -40,10 +40,15 @@ export function buildSyscall(skipLogging) {
     }
   }
 
-  function clearSorted() {
-    sortedKeys = undefined;
+  function clearGetNextKeyCache() {
     priorKeyReturned = undefined;
     priorKeyIndex = -1;
+  }
+  clearGetNextKeyCache();
+
+  function clearSorted() {
+    sortedKeys = undefined;
+    clearGetNextKeyCache();
   }
 
   const syscall = {
@@ -73,6 +78,33 @@ export function buildSyscall(skipLogging) {
       appendLog({ type: 'vatstoreGet', key, result });
       return result;
     },
+    vatstoreGetNextKey(priorKey) {
+      assert.typeof(priorKey, 'string');
+      ensureSorted();
+      // TODO: binary search for priorKey (maybe missing), then get
+      // the one after that. For now we go simple and slow. But cache
+      // a starting point, because the main use case is a full
+      // iteration. OTOH, the main use case also deletes everything,
+      // which will clobber the cache on each deletion, so it might
+      // not help.
+      const start = priorKeyReturned === priorKey ? priorKeyIndex : 0;
+      let result;
+      for (let i = start; i < sortedKeys.length; i += 1) {
+        const key = sortedKeys[i];
+        if (key > priorKey) {
+          priorKeyReturned = key;
+          priorKeyIndex = i;
+          result = key;
+          break;
+        }
+      }
+      if (!result) {
+        // reached end without finding the key, so clear our cache
+        clearGetNextKeyCache();
+      }
+      appendLog({ type: 'vatstoreGetNextKey', priorKey, result });
+      return result;
+    },
     vatstoreSet(key, value) {
       appendLog({ type: 'vatstoreSet', key, value });
       if (!fakestore.has(key)) {
@@ -87,37 +119,9 @@ export function buildSyscall(skipLogging) {
       }
       fakestore.delete(key);
     },
-    vatstoreGetAfter(priorKey, start, end) {
-      let actualEnd = end;
-      if (!end) {
-        const lastChar = String.fromCharCode(start.slice(-1).charCodeAt(0) + 1);
-        actualEnd = `${start.slice(0, -1)}${lastChar}`;
-      }
-      ensureSorted();
-      let from = 0;
-      if (priorKeyReturned === priorKey) {
-        from = priorKeyIndex;
-      }
-      let result = [undefined, undefined];
-      for (let i = from; i < sortedKeys.length; i += 1) {
-        const key = sortedKeys[i];
-        if (key >= actualEnd) {
-          priorKeyReturned = undefined;
-          priorKeyIndex = -1;
-          break;
-        } else if (key > priorKey && key >= start) {
-          priorKeyReturned = key;
-          priorKeyIndex = i;
-          result = [key, fakestore.get(key)];
-          break;
-        }
-      }
-      appendLog({ type: 'vatstoreGetAfter', priorKey, start, end, result });
-      return result;
-    },
   };
 
-  return skipLogging ? { syscall } : { log, syscall };
+  return { syscall, fakestore, log };
 }
 
 export async function makeDispatch(
@@ -167,7 +171,7 @@ export async function setupTestLiveslots(
   forceGC,
   skipLogging,
 ) {
-  const { log, syscall } = buildSyscall(skipLogging);
+  const { log, syscall, fakestore } = buildSyscall(skipLogging);
   const nextRP = makeRPMaker();
   const th = [];
   const dispatch = await makeDispatch(
@@ -209,6 +213,26 @@ export async function setupTestLiveslots(
     await dispatch(makeBringOutYourDead());
     return rp;
   }
+
+  async function dispatchMessageSuccessfully(message, ...args) {
+    log.length = 0;
+    const rp = await dispatchMessage(message, ...args);
+    for (const l of log) {
+      if (l.type === 'resolve') {
+        for (const [vpid, rejected, value] of l.resolutions) {
+          if (vpid === rp) {
+            if (rejected) {
+              throw Error(`vpid ${vpid} rejected with ${value}`);
+            } else {
+              return value; // resolved successfully
+            }
+          }
+        }
+      }
+    }
+    throw Error(`vpid ${rp} failed to resolve`);
+  }
+
   async function dispatchDropExports(...vrefs) {
     await dispatch(makeDropExports(...vrefs));
     await dispatch(makeBringOutYourDead());
@@ -222,11 +246,18 @@ export async function setupTestLiveslots(
     await dispatch(makeBringOutYourDead());
   }
 
-  const v = { t, log };
+  function dumpFakestore() {
+    for (const key of [...fakestore.keys()].sort()) {
+      console.log(`--fs: ${key} -> ${fakestore.get(key)}`);
+    }
+  }
+
+  const v = { t, log, fakestore, dumpFakestore };
 
   return {
     v,
     dispatchMessage,
+    dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
     dispatchRetireImports,
@@ -234,50 +265,6 @@ export async function setupTestLiveslots(
   };
 }
 
-export function matchResolveOne(vref, value) {
-  return { type: 'resolve', resolutions: [[vref, false, value]] };
-}
-
-export function matchVatstoreGet(key, result) {
-  return { type: 'vatstoreGet', key, result };
-}
-
-export function matchVatstoreGetAfter(priorKey, start, end, result) {
-  return { type: 'vatstoreGetAfter', priorKey, start, end, result };
-}
-
-export function matchVatstoreDelete(key) {
-  return { type: 'vatstoreDelete', key };
-}
-
-export function matchVatstoreSet(key, value) {
-  if (value !== undefined) {
-    return { type: 'vatstoreSet', key, value };
-  } else {
-    return { type: 'vatstoreSet', key };
-  }
-}
-
-export function matchRetireExports(...slots) {
-  return { type: 'retireExports', slots };
-}
-
-export function matchDropImports(...slots) {
-  return { type: 'dropImports', slots };
-}
-
-export function matchRetireImports(...slots) {
-  return { type: 'retireImports', slots };
-}
-
-export function validate(v, match) {
-  v.t.like(v.log.shift(), match);
-}
-
-export function validateDone(v) {
-  v.t.deepEqual(v.log, []);
-}
-
-export function validateReturned(v, rp) {
-  validate(v, matchResolveOne(rp, kser(undefined)));
+export function findSyscallsByType(log, type) {
+  return log.filter(m => m.type === type);
 }

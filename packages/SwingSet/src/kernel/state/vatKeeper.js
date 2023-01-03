@@ -11,6 +11,7 @@ import {
   parseReachableAndVatSlot,
   buildReachableAndVatSlot,
 } from './reachable.js';
+import { enumeratePrefixedKeys } from './storageHelper.js';
 
 /**
  * @typedef { import('../../types-external.js').KVStore } KVStore
@@ -604,17 +605,15 @@ export function makeVatKeeper(
   function dumpState() {
     const res = [];
     const prefix = `${vatID}.c.`;
-    for (const k of kvStore.getKeys(prefix, `${vatID}.c/`)) {
-      if (k.startsWith(prefix)) {
-        const slot = k.slice(prefix.length);
-        if (!slot.startsWith('k')) {
-          const vatSlot = slot;
-          const kernelSlot =
-            kvStore.get(k) || assert.fail('getKeys ensures get');
-          /** @type { [string, string, string] } */
-          const item = [kernelSlot, vatID, vatSlot];
-          res.push(item);
-        }
+    for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
+      const slot = k.slice(prefix.length);
+      if (!slot.startsWith('k')) {
+        const vatSlot = slot;
+        const kernelSlot =
+          kvStore.get(k) || assert.fail('getNextKey ensures get');
+        /** @type { [string, string, string] } */
+        const item = [kernelSlot, vatID, vatSlot];
+        res.push(item);
       }
     }
     return harden(res);

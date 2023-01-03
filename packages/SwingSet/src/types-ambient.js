@@ -57,7 +57,7 @@
  * @typedef { import('./types-external.js').VatSyscallResolve } VatSyscallResolve
  * @typedef { import('./types-external.js').VatSyscallExit } VatSyscallExit
  * @typedef { import('./types-external.js').VatSyscallVatstoreGet } VatSyscallVatstoreGet
- * @typedef { import('./types-external.js').VatSyscallVatstoreGetAfter } VatSyscallVatstoreGetAfter
+ * @typedef { import('./types-external.js').VatSyscallVatstoreGetNextKey } VatSyscallVatstoreGetNextKey
  * @typedef { import('./types-external.js').VatSyscallVatstoreSet } VatSyscallVatstoreSet
  * @typedef { import('./types-external.js').VatSyscallVatstoreDelete } VatSyscallVatstoreDelete
  * @typedef { import('./types-external.js').VatSyscallDropImports } VatSyscallDropImports
@@ -88,7 +88,7 @@
  * @typedef { import('./types-external.js').KernelSyscallResolve } KernelSyscallResolve
  * @typedef { import('./types-external.js').KernelSyscallExit } KernelSyscallExit
  * @typedef { import('./types-external.js').KernelSyscallVatstoreGet } KernelSyscallVatstoreGet
- * @typedef { import('./types-external.js').KernelSyscallVatstoreGetAfter } KernelSyscallVatstoreGetAfter
+ * @typedef { import('./types-external.js').KernelSyscallVatstoreGetNextKey } KernelSyscallVatstoreGetNextKey
  * @typedef { import('./types-external.js').KernelSyscallVatstoreSet } KernelSyscallVatstoreSet
  * @typedef { import('./types-external.js').KernelSyscallVatstoreDelete } KernelSyscallVatstoreDelete
  * @typedef { import('./types-external.js').KernelSyscallDropImports } KernelSyscallDropImports

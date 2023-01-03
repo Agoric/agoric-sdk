@@ -40,32 +40,14 @@ export function makeKernelSyscallHandler(tools) {
     return `${vatID}.vs.${key}`;
   }
 
-  function descopeVatstoreKey(key) {
-    return key.replace(/^([^.]+)\.vs\.(.+)$/, '$2');
+  function descopeVatstoreKey(vatID, dbKey) {
+    const prefix = `${vatID}.vs.`;
+    assert(dbKey.startsWith(prefix), `${dbKey} must start with ${prefix}`);
+    return dbKey.slice(prefix.length);
   }
 
-  let workingPriorKey;
-  let workingLowerBound;
-  let workingUpperBound;
-  /** @type {IterableIterator<string> | undefined} */
-  let workingKeyIterator;
-
-  /** @param {boolean} [done] */
-  function clearVatStoreIteration(done = false) {
-    try {
-      if (
-        !done &&
-        workingKeyIterator &&
-        typeof workingKeyIterator.return === 'function'
-      ) {
-        workingKeyIterator.return();
-      }
-    } finally {
-      workingKeyIterator = undefined;
-      workingPriorKey = undefined;
-      workingLowerBound = undefined;
-      workingUpperBound = undefined;
-    }
+  function vatstoreKeyInRange(vatID, key) {
+    return key.startsWith(`${vatID}.vs.`);
   }
 
   /**
@@ -93,137 +75,33 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreSet');
-    clearVatStoreIteration();
     kvStore.set(actualKey, value);
     return OKNULL;
   }
 
   /**
-   * Execute one step of iteration over a range of vatstore keys.
+   * Get the next vatstore key after 'priorKey' (in lexicographic
+   * order, as defined by swingstore's getNextKey() function), or
+   * undefined if this vat's portion of the vatstore has no more keys
    *
    * @param {string} vatID  The vat whose vatstore is being iterated
-   * @param {string} priorKey  The key that was returned by the prior cycle of
-   *   the iteration, or '' if this is the first cycle
-   * @param {string} lowerBound  The lower bound of the iteration range
-   * @param {string} [upperBound]  The uppper bound of the iteration range.  If
-   *   omitted, this defaults to a string equivalent to the `lowerBound` string
-   *   with its rightmost character replaced by the lexically next character.
-   *   For example, if `lowerBound` is 'hello', then `upperBound` would default
-   *   to 'hellp')
+   * @param {string} priorKey A key before the desired key
    *
-   * @returns {['ok', [string, string]|[undefined, undefined]]} A pair of a
-   *   status code and a result value.  In the case of this operation, the
-   *   status code is always 'ok'.  The result value is a pair of the key and
-   *   value of the first vatstore entry whose key is lexically greater than
-   *   both `priorKey` and `lowerBound`.  If there are no such entries or if the
-   *   first such entry has a key that is lexically greater than or equal to
-   *   `upperBound`, then result value is a pair of undefineds instead,
-   *   signalling the end of iteration.
-   *
-   * Usage notes:
-   *
-   * Iteration is accomplished by repeatedly calling `vatstoreGetAfter` in a
-   * loop, each time pass the key that was returned in the previous iteration,
-   * until undefined is returned.  While the initial value for `priorKey` is
-   * conventionally the empty string, in fact any value that is less than
-   * `lowerBound` may be used to the same effect.
-   *
-   * Keys in the vatstore are arbitrary strings, but subsets of the keyspace are
-   * often organized hierarchically.  This iteration API allows simple iteration
-   * over an explicit key range or iteration over the set of keys with a given
-   * prefix, depending on how you use it:
-   *
-   * Explicitly providing both a lower and an upper bound will enable iteration
-   * over the key range `lowerBound` <= key < `upperBound`
-   *
-   * Providing only the lower bound while letting the upper bound default will
-   * iterate over all keys that have `lowerBound` as a prefix.
-   *
-   * For example, if the stored keys are:
-   * bar
-   * baz
-   * foocount
-   * foopriority
-   * joober
-   * plugh.3
-   * plugh.47
-   * plugh.8
-   * zot
-   *
-   * Then the bounds    would iterate over the key sequence
-   * ----------------   -----------------------------------
-   * 'bar', 'goomba'    bar, baz, foocount, foopriority
-   * 'bar', 'joober'    bar, baz, foocount, foopriority
-   * 'foo'              foocount, foopriority
-   * 'plugh.'           plugh.3, plugh.47, plugh.8
-   * 'baz', 'plugh'     baz, foocount, foopriority, joober
-   * 'bar', '~'         bar, baz, foocount, foopriority, joober, plugh.3, plugh.47, plugh.8, zot
+   * @returns {['ok', string|null]} A pair of a status code and
+   *   a result value. In the case of this operation, the status code
+   *   is always 'ok'. The result value is either a key or null.
    */
-  function vatstoreGetAfter(vatID, priorKey, lowerBound, upperBound) {
-    const actualPriorKey = vatstoreKeyKey(vatID, priorKey);
-    const actualLowerBound = vatstoreKeyKey(vatID, lowerBound);
-    let actualUpperBound;
-    if (upperBound) {
-      actualUpperBound = vatstoreKeyKey(vatID, upperBound);
-    } else {
-      const lastChar = String.fromCharCode(
-        actualLowerBound.slice(-1).charCodeAt(0) + 1,
-      );
-      actualUpperBound = `${actualLowerBound.slice(0, -1)}${lastChar}`;
-    }
+  function vatstoreGetNextKey(vatID, priorKey) {
+    const dbPriorKey = vatstoreKeyKey(vatID, priorKey);
     kernelKeeper.incStat('syscalls');
-    kernelKeeper.incStat('syscallVatstoreGetAfter');
-    /** @type {IteratorResult<string>} */
-    let nextIter;
-    // Note that the working key iterator will be invalidated if the parameters
-    // to `vatstoreGetAfter` don't correspond to the working key iterator's
-    // belief about what iteration was in progress.  In particular, the bounds
-    // incorporate the vatID.  Additionally, when this syscall is used for
-    // iteration over a collection, the bounds also incorporate the collection
-    // ID.  This ensures that uncoordinated concurrent iterations cannot
-    // interfere with each other.  If such concurrent iterations *do* happen,
-    // there will be a modest performance cost since the working key iterator
-    // will have to be regenerated each time, but we expect this to be a rare
-    // case since the normal use pattern is a single iteration in a loop within
-    // a single crank.
-    if (
-      workingPriorKey === actualPriorKey &&
-      workingLowerBound === actualLowerBound &&
-      workingUpperBound === actualUpperBound &&
-      workingKeyIterator
-    ) {
-      nextIter = workingKeyIterator.next();
-    } else {
-      clearVatStoreIteration();
-      let startKey;
-      if (priorKey === '') {
-        startKey = actualLowerBound;
-      } else {
-        startKey = actualPriorKey;
-      }
-      assert(actualLowerBound <= startKey);
-      assert(actualLowerBound < actualUpperBound);
-      assert(startKey < actualUpperBound);
-      workingLowerBound = actualLowerBound;
-      workingUpperBound = actualUpperBound;
-      workingKeyIterator = kvStore.getKeys(startKey, actualUpperBound);
-      // @ts-ignore some resolution thinks this is undefined
-      nextIter = workingKeyIterator.next();
-      if (!nextIter.done && nextIter.value === actualPriorKey) {
-        // @ts-ignore some resolution thinks this is undefined
-        nextIter = workingKeyIterator.next();
+    kernelKeeper.incStat('syscallVatstoreGetNextKey');
+    const nextDbKey = kvStore.getNextKey(dbPriorKey);
+    if (nextDbKey) {
+      if (vatstoreKeyInRange(vatID, nextDbKey)) {
+        return harden(['ok', descopeVatstoreKey(vatID, nextDbKey)]);
       }
     }
-    if (nextIter.done) {
-      clearVatStoreIteration(true);
-      return harden(['ok', [undefined, undefined]]);
-    } else {
-      const nextKey = nextIter.value;
-      const resultValue = kvStore.get(nextKey);
-      workingPriorKey = nextKey;
-      const resultKey = descopeVatstoreKey(nextKey);
-      return harden(['ok', [resultKey, resultValue]]);
-    }
+    return harden(['ok', null]);
   }
 
   /**
@@ -237,7 +115,6 @@ export function makeKernelSyscallHandler(tools) {
     const actualKey = vatstoreKeyKey(vatID, key);
     kernelKeeper.incStat('syscalls');
     kernelKeeper.incStat('syscallVatstoreDelete');
-    clearVatStoreIteration();
     kvStore.delete(actualKey);
     return OKNULL;
   }
@@ -374,9 +251,9 @@ export function makeKernelSyscallHandler(tools) {
         const [_, ...args] = ksc;
         return vatstoreSet(...args);
       }
-      case 'vatstoreGetAfter': {
+      case 'vatstoreGetNextKey': {
         const [_, ...args] = ksc;
-        return vatstoreGetAfter(...args);
+        return vatstoreGetNextKey(...args);
       }
       case 'vatstoreDelete': {
         const [_, ...args] = ksc;

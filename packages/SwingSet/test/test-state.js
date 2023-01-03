@@ -9,6 +9,7 @@ import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import { kser, kslot } from '../src/lib/kmarshal.js';
 import {
+  enumeratePrefixedKeys,
   getPrefixedValues,
   deletePrefixedKeys,
 } from '../src/kernel/state/storageHelper.js';
@@ -47,16 +48,17 @@ async function testStorage(t, s, dump, commit) {
   s.set('foo2', 'f2');
   s.set('foo1', 'f1');
   s.set('foo3', 'f3');
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo2', 'foo3']);
-  t.deepEqual(Array.from(s.getKeys('', '')), ['foo', 'foo1', 'foo2', 'foo3']);
-  t.deepEqual(Array.from(s.getKeys('foo1', '')), ['foo1', 'foo2', 'foo3']);
-  t.deepEqual(Array.from(s.getKeys('', 'foo2')), ['foo', 'foo1']);
+  t.deepEqual(s.getNextKey('d-early'), 'foo');
+  t.deepEqual(s.getNextKey('foo'), 'foo1');
+  t.deepEqual(s.getNextKey('foo1'), 'foo2');
+  t.deepEqual(s.getNextKey('foo2'), 'foo3');
+  t.deepEqual(s.getNextKey('foo3'), undefined);
+  t.deepEqual(s.getNextKey('late'), undefined);
 
   s.delete('foo2');
   t.falsy(s.has('foo2'));
   t.is(s.get('foo2'), undefined);
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
+  t.deepEqual(s.getNextKey('foo1'), 'foo3');
 
   if (commit) {
     checkState(t, dump, []);
@@ -110,6 +112,19 @@ test('storage helpers', t => {
   // above), they stop counting when they hit it
   t.truthy(kv.has('foo.5'));
   checkState(t, debug.dump, [['foo.5', 'f5']]);
+
+  // now check lexicographic ordering with enumeratePrefixedKeys
+  kv.set('bar', 'b');
+  kv.set('bar.1', 'b1');
+  kv.set('bar.3', 'b3');
+  kv.set('bar.5', 'b5');
+  kv.set('cab.2', 'c');
+
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar')), [
+    'bar.1',
+    'bar.3',
+    'bar.5',
+  ]);
 });
 
 function buildKeeperStorageInMemory() {
@@ -134,8 +149,7 @@ test('kernelStorage param guards', async t => {
   t.throws(() => kvStore.set('foo', true), exp);
   t.throws(() => kvStore.set(true, 'foo'), exp);
   t.throws(() => kvStore.has(true), exp);
-  t.throws(() => Array.from(kvStore.getKeys('foo', true)), exp);
-  t.throws(() => Array.from(kvStore.getKeys(true, 'foo')), exp);
+  t.throws(() => kvStore.getNextKey(true), exp);
   t.throws(() => kvStore.get(true), exp);
   t.throws(() => kvStore.delete(true), exp);
 });

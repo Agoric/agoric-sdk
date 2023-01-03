@@ -3,6 +3,10 @@
 import { assert, Fail } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
+import {
+  enumerateKeysWithPrefix,
+  prefixedKeysExist,
+} from './vatstore-iterators.js';
 
 /**
  * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
@@ -116,7 +120,7 @@ export function makeVirtualReferenceManager(
   }
 
   function setRefCount(baseRef, refCount) {
-    const { virtual, facet } = parseVatSlot(baseRef);
+    const { facet } = parseVatSlot(baseRef);
     assert(
       !facet,
       `setRefCount ${baseRef} should not receive individual facets`,
@@ -154,7 +158,7 @@ export function makeVirtualReferenceManager(
     const es = Array.from(esRaw || 'n'.repeat(getFacetCount(baseRef)));
     const facetIdx = facet === undefined ? 0 : facet;
     // The export status of each facet is encoded as:
-    // 's' -> 'recogizable' ('s' for "see"), 'r' -> 'reachable', 'n' -> 'none'
+    // 's' -> 'recognizable' ('s' for "see"), 'r' -> 'reachable', 'n' -> 'none'
     switch (exportStatus) {
       // POSSIBLE TODO: An anticipated refactoring may merge
       // dispatch.dropExports with dispatch.retireExports. If this happens, and
@@ -574,6 +578,8 @@ export function makeVirtualReferenceManager(
         }
       }
     }
+
+    // remove from all voAwareWeakMap/Sets that knew about it
     const recognizerSet = vrefRecognizers.get(vref);
     if (recognizerSet) {
       vrefRecognizers.delete(vref);
@@ -588,13 +594,13 @@ export function makeVirtualReferenceManager(
         }
       }
     }
+
+    // and from (weak) virtual collections that knew about it
     const prefix = `vom.ir.${vref}|`;
-    let [key] = syscall.vatstoreGetAfter('', prefix);
-    while (key) {
+    for (const key of enumerateKeysWithPrefix(syscall, prefix)) {
       syscall.vatstoreDelete(key);
       const parts = key.split('|');
       doMoreGC = deleteCollectionEntry(parts[1], vref) || doMoreGC;
-      [key] = syscall.vatstoreGetAfter(key, prefix);
     }
     return doMoreGC;
   }
@@ -603,8 +609,7 @@ export function makeVirtualReferenceManager(
     if (vrefRecognizers.has(vref)) {
       return true;
     } else {
-      const [key] = syscall.vatstoreGetAfter('', `vom.ir.${vref}|`);
-      return !!key;
+      return prefixedKeysExist(syscall, `vom.ir.${vref}|`);
     }
   }
 
@@ -627,10 +632,9 @@ export function makeVirtualReferenceManager(
     const recognizerSet = vrefRecognizers.get(vref);
     let size = recognizerSet ? recognizerSet.size : 0;
     const prefix = `vom.ir.${vref}|`;
-    let [key] = syscall.vatstoreGetAfter('', prefix);
-    while (key) {
+    // eslint-disable-next-line no-underscore-dangle
+    for (const _key of enumerateKeysWithPrefix(syscall, prefix)) {
       size += 1;
-      [key] = syscall.vatstoreGetAfter(key, prefix);
     }
     return size;
   }

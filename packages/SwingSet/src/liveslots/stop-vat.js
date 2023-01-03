@@ -1,4 +1,5 @@
 import { makeVatSlot, parseVatSlot } from '../lib/parseVatSlots.js';
+import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 // This file has tools to run during the last delivery of the old vat
 // version, `dispatch.stopVat()`, just before an upgrade. It is
@@ -86,8 +87,8 @@ function identifyExportedFacets(vrefSet, { syscall, vrm }) {
   // drops these in a minute.
 
   const prefix = 'vom.es.';
-  let [key, value] = syscall.vatstoreGetAfter('', prefix);
-  while (key) {
+  for (const key of enumerateKeysWithPrefix(syscall, prefix)) {
+    const value = syscall.vatstoreGet(key);
     const baseRef = key.slice(prefix.length);
     const parsed = parseVatSlot(baseRef);
     assert(parsed.virtual && parsed.baseRef === baseRef, baseRef);
@@ -108,7 +109,6 @@ function identifyExportedFacets(vrefSet, { syscall, vrm }) {
         }
       }
     }
-    [key, value] = syscall.vatstoreGetAfter(key, prefix);
   }
 }
 
@@ -176,14 +176,12 @@ function deleteVirtualObjectsWithoutDecref({ vrm, syscall }) {
   // imports/durable-objects they might point to
 
   const prefix = 'vom.o+';
-  let [key, _value] = syscall.vatstoreGetAfter('', prefix);
-  while (key) {
+  for (const key of enumerateKeysWithPrefix(syscall, prefix)) {
     const baseRef = key.slice('vom.'.length);
     const p = parseVatSlot(baseRef);
     if (!vrm.isDurableKind(p.id)) {
       syscall.vatstoreDelete(key);
     }
-    [key, _value] = syscall.vatstoreGetAfter(key, prefix);
   }
 }
 
@@ -201,8 +199,8 @@ function deleteVirtualObjectsWithDecref({ syscall, vrm }) {
   const importDecrefs = new Map(); // baseRef -> count
   const prefix = 'vom.o+';
 
-  let [key, value] = syscall.vatstoreGetAfter('', prefix);
-  while (key) {
+  for (const key of enumerateKeysWithPrefix(syscall, prefix)) {
+    const value = syscall.vatstoreGet(key);
     const baseRef = key.slice('vom.'.length);
     const p = parseVatSlot(baseRef);
     if (!vrm.isDurableKind(p.id)) {
@@ -222,7 +220,6 @@ function deleteVirtualObjectsWithDecref({ syscall, vrm }) {
       }
       syscall.vatstoreDelete(key);
     }
-    [key, value] = syscall.vatstoreGetAfter(key, prefix);
   }
 
   // now decrement the DOs and imports that were held by the VOs,
@@ -261,8 +258,8 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
   const importDecrefs = new Map(); // baseRef -> count
   const prefix = 'vom.vc.';
 
-  let [key, value] = syscall.vatstoreGetAfter('', prefix);
-  while (key) {
+  for (const key of enumerateKeysWithPrefix(syscall, prefix)) {
+    const value = syscall.vatstoreGet(key);
     const subkey = key.slice(prefix.length); // '2.|meta' or '2.ENCKEY'
     const collectionID = subkey.slice(0, subkey.index('.')); // string
     const subsubkey = subkey.slice(collectionID.length); // '|meta' or 'ENCKEY'
@@ -282,8 +279,6 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
       }
     }
     syscall.vatstoreDelete(key);
-
-    [key, value] = syscall.vatstoreGetAfter(key, prefix);
   }
   const durableBaserefs = Array.from(durableDecrefs.keys()).sort();
   for (const baseRef of durableBaserefs) {

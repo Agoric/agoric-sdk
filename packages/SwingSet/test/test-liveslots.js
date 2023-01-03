@@ -1112,11 +1112,9 @@ test('GC syscall.dropImports', async t => {
 
   const l3 = log.shift();
   t.deepEqual(l3, {
-    type: 'vatstoreGetAfter',
-    priorKey: '',
-    start: 'vom.ir.o-1|',
-    end: undefined,
-    result: [undefined, undefined],
+    type: 'vatstoreGetNextKey',
+    priorKey: 'vom.ir.o-1|',
+    result: 'vom.rc.o+6/1',
   });
 
   // since nothing else is holding onto it, the vat should emit a dropImports
@@ -1165,7 +1163,7 @@ test('GC dispatch.retireImports', async t => {
   await dispatch(makeRetireImports(arg));
   // for now, we only care that it doesn't crash
   matchIDCounterSet(t, log);
-  t.like(log.shift(), { type: 'vatstoreGetAfter' });
+  t.like(log.shift(), { type: 'vatstoreGetNextKey' });
   t.deepEqual(log, []);
 
   // when we implement VOM.vrefIsRecognizable, this test might do more

@@ -2,17 +2,9 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { Far } from '@endo/marshal';
-import {
-  setupTestLiveslots,
-  matchVatstoreGet,
-  matchVatstoreGetAfter,
-  matchVatstoreSet,
-  validate,
-  validateDone,
-  validateReturned,
-} from './liveslots-helpers.js';
-import { validateCreateBuiltInTables } from './gc-helpers.js';
+import { setupTestLiveslots } from './liveslots-helpers.js';
 import { vstr } from './util.js';
+import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 
 function buildRootObject(vatPowers, vatParameters, baggage) {
   baggage.has('outside');
@@ -25,47 +17,29 @@ function buildRootObject(vatPowers, vatParameters, baggage) {
   });
 }
 
-const NONE = undefined; // mostly just shorter, to maintain legibility while making prettier shut up
-
-function validateSetup(v) {
-  validate(v, matchVatstoreGet('idCounters', NONE));
-  validate(v, matchVatstoreGet('kindIDID', NONE));
-  validate(v, matchVatstoreSet('kindIDID', '1'));
-  validate(v, matchVatstoreGet('storeKindIDTable', NONE));
-  validate(
-    v,
-    matchVatstoreSet(
-      'storeKindIDTable',
-      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
-    ),
-  );
-  validateCreateBuiltInTables(v);
-}
-
 test.serial('exercise baggage', async t => {
-  const { v, dispatchMessage } = await setupTestLiveslots(
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(
     t,
     buildRootObject,
     'bob',
     true,
   );
-  validateSetup(v);
-  validate(v, matchVatstoreGet('vc.1.soutside', NONE));
-  validate(v, matchVatstoreGet('vc.1.soutside', NONE));
-  validate(v, matchVatstoreSet('vc.1.soutside', vstr('outer val')));
-  validate(v, matchVatstoreGet('vc.1.|entryCount', '0'));
-  validate(v, matchVatstoreSet('vc.1.|entryCount', '1'));
-  validate(v, matchVatstoreGet('deadPromises', NONE));
-  validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
-  validateDone(v);
+  const { fakestore } = v;
 
-  const rp = await dispatchMessage('doSomething', []);
-  validate(v, matchVatstoreGet('vc.1.soutside', vstr('outer val')));
-  validate(v, matchVatstoreGet('vc.1.sinside', NONE));
-  validate(v, matchVatstoreSet('vc.1.sinside', vstr('inner val')));
-  validate(v, matchVatstoreGet('vc.1.|entryCount', '1'));
-  validate(v, matchVatstoreSet('vc.1.|entryCount', '2'));
-  validateReturned(v, rp);
-  validate(v, matchVatstoreSet('idCounters'));
-  validateDone(v);
+  const baggageVref = fakestore.get('baggageID');
+  const { subid } = parseVatSlot(baggageVref);
+  const baggageID = Number(subid);
+  console.log(`baggageID`, baggageID);
+  const kindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
+  // baggage is the first collection created, a scalarDurableMapStore
+  t.is(baggageVref, `o+${kindIDs.scalarDurableMapStore}/1`);
+  t.is(fakestore.get(`vc.${baggageID}.|label`), 'baggage');
+  const outsideVal = fakestore.get(`vc.${baggageID}.soutside`);
+  t.is(outsideVal, vstr('outer val'));
+  t.is(fakestore.get(`vc.${baggageID}.|entryCount`), '1');
+
+  await dispatchMessageSuccessfully('doSomething', []);
+  const insideVal = fakestore.get(`vc.${baggageID}.sinside`);
+  t.is(insideVal, vstr('inner val'));
+  t.is(fakestore.get(`vc.${baggageID}.|entryCount`), '2');
 });

@@ -4,7 +4,7 @@ import { assert, details as X, Fail } from '@agoric/assert';
 
 /**
  * Assert function to ensure that an object implements the StorageAPI
- * interface: methods { has, getKeys, get, set, delete }
+ * interface: methods { has, getNextKey, get, set, delete }
  * (cf. packages/SwingSet/docs/state.md#transactions).
  *
  * @param {*} kvStore  The object to be tested
@@ -15,7 +15,7 @@ import { assert, details as X, Fail } from '@agoric/assert';
  * @returns {void}
  */
 export function insistStorageAPI(kvStore) {
-  for (const n of ['has', 'getKeys', 'get', 'set', 'delete']) {
+  for (const n of ['has', 'get', 'getNextKey', 'set', 'delete']) {
     n in kvStore || Fail`kvStore.${n} is missing, cannot use`;
   }
 }

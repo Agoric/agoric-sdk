@@ -9,6 +9,7 @@ import {
   buildKernelBundles,
 } from '../../../src/index.js';
 import { kser, kunser } from '../../../src/lib/kmarshal.js';
+import { enumeratePrefixedKeys } from '../../../src/kernel/state/storageHelper.js';
 import { restartVatAdminVat } from '../../util.js';
 
 test.before(async t => {
@@ -458,13 +459,13 @@ test.serial('dead vat state removed', async t => {
   const kvStore = kernelStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length > 30, true);
+  t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 30, true);
 
   controller.queueToVatRoot('bootstrap', 'phase2', []);
   await controller.run();
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 0);
+  t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length, 0);
 });
 
 test.serial('terminate with presence', async t => {
