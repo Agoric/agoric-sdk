@@ -51,8 +51,8 @@ export function buildRootDeviceNode(tools) {
    * @param {number} epoch which generation of CapTP instances this is
    * @returns {Promise<(obj: Record<string, any>) => void>} send a message to the module
    */
-  async function createConnection(mod, index, epoch) {
-    try {
+  const createConnection = async (mod, index, epoch) =>
+    (async () => {
       const modNS = await endowments.import(mod);
       const receiver = obj => {
         // console.info('receiver', index, obj);
@@ -87,11 +87,10 @@ export function buildRootDeviceNode(tools) {
       const { dispatch } = makeCapTP(mod, receiver, bootstrap, { epoch });
 
       return dispatch;
-    } catch (e) {
+    })().catch(e => {
       console.error(`Cannot connect to ${mod}:`, e);
       throw e;
-    }
-  }
+    });
 
   /**
    * Load a module and connect to it.

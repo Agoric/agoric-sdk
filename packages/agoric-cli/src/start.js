@@ -5,6 +5,7 @@ import path from 'path';
 import { createRequire } from 'module';
 
 import { Nat, isNat } from '@agoric/nat';
+import { untilTrue } from '@agoric/internal';
 
 import {
   CENTRAL_DENOM,
@@ -127,17 +128,17 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   const capture = (spawner, args, show = false) => {
-    const capret = [
+    const statusOut = [
       spawner(args, { stdio: ['inherit', 'pipe', 'inherit'] }),
       '',
     ];
-    capret[0].childProcess.stdout.on('data', chunk => {
+    statusOut[0].childProcess.stdout.on('data', chunk => {
       if (show) {
         process.stdout.write(chunk);
       }
-      capret[1] += chunk.toString('utf-8');
+      statusOut[1] += chunk.toString('utf-8');
     });
-    return capret;
+    return statusOut;
   };
 
   const showKey = keyName =>
@@ -179,7 +180,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (!opts.dockerTag) {
-      if (!(await exists('node_modules/@agoric/solo'))) {
+      const soloExists = await exists('node_modules/@agoric/solo');
+      if (!soloExists) {
         log.error(`you must first run '${progname} install'`);
         return 1;
       }
@@ -195,7 +197,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     const fakeGCI = 'sim-chain';
-    if (!(await exists(agServer))) {
+    const serverExists = await exists(agServer);
+    if (!serverExists) {
       log(chalk.yellow(`initializing ${profileName}`));
       await pspawn(
         agSolo,
@@ -290,7 +293,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         );
     }
 
-    if (!(await exists(agServer))) {
+    const serverExists = await exists(agServer);
+    if (!serverExists) {
       const exitStatus = await chainSpawn([
         'init',
         'local-chain',
@@ -305,8 +309,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const addrs = {};
     for (const keyName of ['provision', 'delegate0']) {
       /* eslint-disable no-await-in-loop */
-      let capret = showKey(keyName);
-      if (await capret[0]) {
+      let statusOut = showKey(keyName);
+      const exitStatusOut = await statusOut[0];
+      if (exitStatusOut) {
         const exitStatus = await keysSpawn([
           'keys',
           'add',
@@ -316,18 +321,19 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         if (exitStatus) {
           return exitStatus;
         }
-        capret = showKey(keyName);
-        const status2 = await capret[0];
+        statusOut = showKey(keyName);
+        const status2 = await statusOut[0];
         if (status2) {
           return status2;
         }
       }
-      addrs[keyName] = capret[1].trimRight();
+      addrs[keyName] = statusOut[1].trimRight();
       /* eslint-enable no-await-in-loop */
     }
 
     const genesisFile = `${agServer}/config/genesis.json`;
-    if (!(await exists(`${genesisFile}.stamp`))) {
+    const stampExists = await exists(`${genesisFile}.stamp`);
+    if (!stampExists) {
       let exitStatus;
       exitStatus = await chainSpawn([
         'add-genesis-account',
@@ -497,8 +503,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         );
     }
 
+    const serverExists = await exists(agServer);
     // Initialise the solo directory and key.
-    if (!(await exists(agServer))) {
+    if (!serverExists) {
       const initArgs = [`--webport=${portNum}`];
       if (opts.dockerTag) {
         initArgs.push(`--webhost=0.0.0.0`);
@@ -545,13 +552,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const gciFile = `_agstate/agoric-servers/local-chain-${CHAIN_PORT}/config/genesis.json.sha256`;
     process.stdout.write(`Waiting for local-chain-${CHAIN_PORT} to start...`);
     let hasGci = false;
-    while (!hasGci) {
+    for await (const _ of untilTrue(() => hasGci)) {
       process.stdout.write('.');
 
       // eslint-disable-next-line no-await-in-loop
       await new Promise((resolve, reject) => {
         fs.stat(gciFile).then(
-          _ => {
+          _2 => {
             hasGci = true;
             resolve(true);
           },
@@ -581,8 +588,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
 
     // Provision the ag-solo, if necessary.
     let bestRpcAddr;
-    while (!bestRpcAddr) {
-      for (const rpcAddr of rpcAddrs) {
+    for await (const _ of untilTrue(() => bestRpcAddr)) {
+      for await (const rpcAddr of rpcAddrs) {
         // eslint-disable-next-line no-await-in-loop
         exitStatus = await keysSpawn([
           'query',
@@ -630,12 +637,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
               SOLO_COINS,
             ],
           ];
-          for (const cmd of provCmds) {
-            const capret = capture(keysSpawn, cmd, true);
+          for (/* await */ const cmd of provCmds) {
+            const statusOut = capture(keysSpawn, cmd, true);
             // eslint-disable-next-line no-await-in-loop
-            exitStatus = await capret[0];
+            exitStatus = await statusOut[0];
             if (!exitStatus) {
-              const json = capret[1].replace(/^gas estimate: \d+$/m, '');
+              const json = statusOut[1].replace(/^gas estimate: \d+$/m, '');
               try {
                 const ret = JSON.parse(json);
                 if (ret.code !== 0) {
@@ -665,8 +672,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       return exitStatus;
     }
 
+    const file = await fs.readFile(gciFile, 'utf-8');
     // Connect to the chain.
-    const gci = (await fs.readFile(gciFile, 'utf-8')).trimRight();
+    const gci = file.trimRight();
     exitStatus = await soloSpawn(
       ['set-gci-ingress', `--chainID=${CHAIN_ID}`, gci, bestRpcAddr],
       spawnOpts,

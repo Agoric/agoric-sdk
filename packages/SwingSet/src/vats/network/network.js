@@ -3,7 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
-import { asyncGenerate } from 'jessie.js';
+import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
 
 import '@agoric/store/exported.js';
@@ -237,11 +237,7 @@ export function makeNetworkProtocol(protocolHandler) {
   const bind = async localAddr => {
     // Check if we are underspecified (ends in slash)
     const underspecified = localAddr.endsWith(ENDPOINT_SEPARATOR);
-    const whileUnderspecified = asyncGenerate(() => ({
-      done: !underspecified,
-      value: null,
-    }));
-    for await (const _ of whileUnderspecified) {
+    for await (const _ of whileTrue(() => underspecified)) {
       const portID = await E(protocolHandler).generatePortID(
         localAddr,
         protocolHandler,

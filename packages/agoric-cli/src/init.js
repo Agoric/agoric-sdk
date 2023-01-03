@@ -40,15 +40,14 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
     dappBranch = ['-b', opts.dappBranch];
   }
 
-  if (
-    await pspawn(
-      'git',
-      ['clone', '--origin=upstream', dappURL, DIR, ...dappBranch],
-      {
-        stdio: 'inherit',
-      },
-    )
-  ) {
+  const exitStatus = await pspawn(
+    'git',
+    ['clone', '--origin=upstream', dappURL, DIR, ...dappBranch],
+    {
+      stdio: 'inherit',
+    },
+  );
+  if (exitStatus) {
     throw Error('cannot clone');
   }
 
@@ -57,7 +56,7 @@ export default async function initMain(_progname, rawArgs, priv, opts) {
 
   let topLevelName;
   const subdirs = ['', 'api/', 'contract/', 'ui/', '_agstate/agoric-servers/'];
-  for (const dir of subdirs) {
+  for await (const dir of subdirs) {
     const path = `${DIR}/${dir}package.json`;
     log('rewriting ', path);
 

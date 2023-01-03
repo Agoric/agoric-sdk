@@ -59,7 +59,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   }
 
   const yarnInstallEachWorktree = async (phase, ...flags) => {
-    for (const workTree of workTrees) {
+    for await (const workTree of workTrees) {
       log.info(`yarn install ${phase} in ${workTree}`);
       // eslint-disable-next-line no-await-in-loop
       const yarnInstall = await pspawn(
@@ -226,15 +226,14 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       }
     }
   } else {
+    const subdirPackageJsonExists = async subd => {
+      const exists = await fs.stat(`${subd}/package.json`).catch(_ => false);
+      return exists && subd;
+    };
     const existingSubdirs = await Promise.all(
       ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
         .sort()
-        .map(async subd => {
-          const exists = await fs
-            .stat(`${subd}/package.json`)
-            .catch(_ => false);
-          return exists && subd;
-        }),
+        .map(subdirPackageJsonExists),
     );
     subdirs = existingSubdirs.filter(subd => subd);
   }
@@ -254,22 +253,21 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       await fs.symlink(sdkRoot, sdkWorktree);
     }
 
-    await Promise.all(
-      subdirs.map(async subdir => {
-        const nm = `${subdir}/node_modules`;
-        log(chalk.bold.green(`removing ${nm} link`));
-        await fs.unlink(nm).catch(_ => {});
+    const removeNodeModulesSymlinks = async subdir => {
+      const nm = `${subdir}/node_modules`;
+      log(chalk.bold.green(`removing ${nm} link`));
+      await fs.unlink(nm).catch(_ => {});
 
-        // Remove all the package links.
-        // This is needed to prevent yarn errors when installing new versions of
-        // linked modules (like `@agoric/zoe`).
-        await Promise.all(
-          [...sdkPackageToPath.keys()].map(async pjName =>
-            fs.unlink(`${nm}/${pjName}`).catch(_ => {}),
-          ),
-        );
-      }),
-    );
+      // Remove all the package links.
+      // This is needed to prevent yarn errors when installing new versions of
+      // linked modules (like `@agoric/zoe`).
+      await Promise.all(
+        [...sdkPackageToPath.keys()].map(async pjName =>
+          fs.unlink(`${nm}/${pjName}`).catch(_ => {}),
+        ),
+      );
+    };
+    await Promise.all(subdirs.map(removeNodeModulesSymlinks));
   } else {
     DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
   }
@@ -310,17 +308,14 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   );
 
   const sdkPackages = [...sdkPackageToPath.keys()].sort();
-  for (const subdir of subdirs) {
-    // eslint-disable-next-line no-await-in-loop
+  for await (const subdir of subdirs) {
     const exists = await fs.stat(`${subdir}/package.json`).catch(_ => false);
-    if (
-      exists &&
-      // eslint-disable-next-line no-await-in-loop
-      (await pspawn('yarn', [...linkFlags, 'link', ...sdkPackages], {
+    const exitStatus = await (exists &&
+      pspawn('yarn', [...linkFlags, 'link', ...sdkPackages], {
         stdio: 'inherit',
         cwd: subdir,
-      }))
-    ) {
+      }));
+    if (exitStatus) {
       log.error('Cannot yarn link', ...sdkPackages);
       return 1;
     }

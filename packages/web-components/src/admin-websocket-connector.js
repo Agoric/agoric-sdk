@@ -1,5 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import { E } from '@endo/eventual-send';
+import { whileTrue } from '@agoric/internal';
 
 const CONNECTION_TIMEOUT_MS = 5000;
 
@@ -8,7 +9,7 @@ export const waitForBootstrap = async getBootstrap => {
   const getLoadingUpdate = (...args) =>
     E(E.get(getBootstrap()).loadingNotifier).getUpdateSince(...args);
   let update = await getLoadingUpdate();
-  while (update.value.includes('wallet')) {
+  for await (const _ of whileTrue(() => update.value.includes('wallet'))) {
     console.log('waiting for wallet');
     // eslint-disable-next-line no-await-in-loop
     update = await getLoadingUpdate(update.updateCount);

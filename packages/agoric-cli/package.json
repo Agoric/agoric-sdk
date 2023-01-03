@@ -34,6 +34,7 @@
     "@agoric/casting": "^0.3.2",
     "@agoric/cosmic-proto": "^0.2.1",
     "@agoric/ertp": "^0.15.3",
+    "@agoric/internal": "^0.2.1",
     "@agoric/nat": "^4.1.0",
     "@agoric/smart-wallet": "^0.4.2",
     "@agoric/swingset-vat": "^0.30.2",
@@ -59,7 +60,6 @@
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
     "inquirer": "^8.2.2",
-    "jessie.js": "^0.3.2",
     "opener": "^1.5.2",
     "tmp": "^0.2.1",
     "ws": "^7.2.0"

@@ -2,7 +2,7 @@ import { E, Far } from '@endo/far';
 import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
 import { matches, makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { asyncGenerate } from 'jessie.js';
+import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';
 
 import './types.js';
@@ -77,10 +77,9 @@ const applyCacheTransaction = async (
 
   // Loop until our updated state is fresh wrt our current state.
   basisState = stateStore.get(keyStr);
-  const untilUpdateSynced = asyncGenerate(() => ({
-    value: null,
-    done: !updatedState || updatedState.generation > basisState.generation,
-  }));
+  const untilUpdateSynced = untilTrue(
+    () => !updatedState || updatedState.generation > basisState.generation,
+  );
   for await (const _ of untilUpdateSynced) {
     updatedState = await getUpdatedState(basisState);
     // AWAIT INTERLEAVING

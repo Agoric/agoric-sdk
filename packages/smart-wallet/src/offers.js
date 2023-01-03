@@ -86,7 +86,7 @@ export const makeOfferExecutor = ({
         });
       };
 
-      try {
+      const tryBody = async () => {
         // 1. Prepare values and validate synchronously.
         const { id, invitationSpec, proposal, offerArgs } = offerSpec;
 
@@ -177,9 +177,8 @@ export const makeOfferExecutor = ({
             }),
           handleError,
         );
-      } catch (err) {
-        handleError(err);
-      }
+      };
+      await tryBody().catch(err => handleError(err));
     },
   };
 };
