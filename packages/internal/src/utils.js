@@ -2,6 +2,7 @@
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
+import { asyncGenerate } from 'jessie.js';
 
 /** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
 
@@ -409,3 +410,32 @@ export const assertAllDefined = obj => {
     Fail`missing ${q(missing)}`;
   }
 };
+
+const neverDone = harden({ done: false, value: null });
+
+/** @type {AsyncIterable<null>} */
+export const forever = asyncGenerate(() => neverDone);
+
+/**
+ * @param {() => boolean} boolFunc
+ * @returns {AsyncIterable<null>}
+ */
+export const whileTrue = boolFunc =>
+  asyncGenerate(() =>
+    harden({
+      done: !boolFunc(),
+      value: null,
+    }),
+  );
+
+/**
+ * @param {() => boolean} boolFunc
+ * @returns {AsyncIterable<null>}
+ */
+export const untilTrue = boolFunc =>
+  asyncGenerate(() =>
+    harden({
+      done: !!boolFunc(),
+      value: null,
+    }),
+  );

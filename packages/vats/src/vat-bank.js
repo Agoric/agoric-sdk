@@ -4,6 +4,7 @@ import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
 import { makeStore, makeWeakStore } from '@agoric/store';
+import { whileTrue } from '@agoric/internal';
 import { makeVirtualPurse } from './virtual-purse.js';
 
 import '@agoric/notifier/exported.js';
@@ -40,7 +41,7 @@ const makePurseController = (
     async *getBalances(b) {
       assert.equal(b, brand);
       let updateRecord = await balanceNotifier.getUpdateSince();
-      while (updateRecord.updateCount) {
+      for await (const _ of whileTrue(() => !!updateRecord.updateCount)) {
         yield updateRecord.value;
         // eslint-disable-next-line no-await-in-loop
         updateRecord = await balanceNotifier.getUpdateSince(

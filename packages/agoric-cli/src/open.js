@@ -53,8 +53,10 @@ export default async function walletMain(progname, rawArgs, powers, opts) {
   }${suffix}#accessToken=${encodeURIComponent(walletAccessToken)}`;
 
   process.stdout.write(`${walletUrl}\n`);
+  let p;
   if (opts.browser) {
     const browser = opener(walletUrl);
-    await new Promise(resolve => browser.on('exit', resolve));
+    p = new Promise(resolve => browser.on('exit', resolve));
   }
+  await p;
 }

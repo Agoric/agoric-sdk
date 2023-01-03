@@ -39,12 +39,11 @@ async function makeMapStorage(file) {
   };
 
   let obj = {};
-  try {
+  await (async () => {
     content = await fs.promises.readFile(file);
     obj = JSON.parse(content);
-  } catch (e) {
-    return map;
-  }
+  })().catch(() => map);
+
   Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v)));
 
   return map;
@@ -70,13 +69,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     },
   };
 
-  const vatconfig = new URL(
-    await importMetaResolve(
-      process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
-        argv.bootMsg.params.bootstrap_vat_config,
-      import.meta.url,
-    ),
-  ).pathname;
+  const url = await importMetaResolve(
+    process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+      argv.bootMsg.params.bootstrap_vat_config,
+    import.meta.url,
+  );
+  const vatconfig = new URL(url).pathname;
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
     Fail`Replay not implemented`;
@@ -191,10 +189,12 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
 
     intoChain.push([newMessages, acknum]);
     // Only actually simulate a block if we're not in bootstrap.
+    let p;
     if (blockHeight && !delay) {
       clearTimeout(nextBlockTimeout);
-      await simulateBlock();
+      p = simulateBlock();
     }
+    await p;
   }
 
   const bootSimChain = async () => {

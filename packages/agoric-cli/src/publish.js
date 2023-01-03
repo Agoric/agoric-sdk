@@ -253,10 +253,12 @@ export const makeCosmosBundlePublisher = ({
 
     const leader = makeLeaderFromRpcAddresses(rpcAddresses);
 
+    const file = await readFile(
+      pathResolve(homeDirectory, 'ag-solo-mnemonic'),
+      'ascii',
+    );
     // AWAIT
-    const mnemonic = (
-      await readFile(pathResolve(homeDirectory, 'ag-solo-mnemonic'), 'ascii')
-    ).trim();
+    const mnemonic = file.trim();
 
     const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
       prefix: Agoric.Bech32MainPrefix,
@@ -438,20 +440,21 @@ const publishBundle = async (
   const { type } = connectionSpec;
   assert.typeof(type, 'string', X`Expected string "type" on connectionSpec`);
 
+  let p;
   if (type === 'http') {
     assertHttpConnectionSpec(connectionSpec);
     assert(
       publishBundleHttp,
       'HTTP installation transaction publisher required',
     );
-    await publishBundleHttp(bundle, connectionSpec);
+    p = publishBundleHttp(bundle, connectionSpec);
   } else if (type === 'chain-cosmos-sdk') {
     assertCosmosConnectionSpec(connectionSpec);
     assert(
       publishBundleCosmos,
       'Cosmos SDK installation transaction publisher required',
     );
-    await publishBundleCosmos(bundle, connectionSpec);
+    p = publishBundleCosmos(bundle, connectionSpec);
   } else if (type === 'fake-chain') {
     // For the purposes of submitting a bundle to an API like
     // E(zoe).install(bundle), in the cases where the publication target does
@@ -464,6 +467,7 @@ const publishBundle = async (
     throw new Error(`Unsupported connection type ${type}`);
   }
 
+  await p;
   return hashBundle;
 };
 

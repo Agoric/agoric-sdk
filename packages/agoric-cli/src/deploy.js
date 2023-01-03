@@ -12,7 +12,7 @@ import inquirer from 'inquirer';
 import createEsmRequire from 'esm';
 import { createRequire } from 'module';
 import { SigningStargateClient } from '@cosmjs/stargate';
-import { asyncGenerate } from 'jessie.js';
+import { whileTrue } from '@agoric/internal';
 
 import { getAccessToken } from '@agoric/access-token';
 
@@ -248,11 +248,7 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
         let lastUpdateCount;
         let stillLoading = [...need].sort();
         progressDot = 'o';
-        const untilNotLoading = asyncGenerate(() => ({
-          done: !stillLoading.length,
-          value: stillLoading,
-        }));
-        for await (const _ of untilNotLoading) {
+        for await (const _ of whileTrue(() => stillLoading.length)) {
           // Wait for the notifier to report a new state.
           process.stdout.write(progressDot);
           console.debug('need:', stillLoading.join(', '));

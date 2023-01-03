@@ -13,6 +13,7 @@
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { racePromises } from '@endo/promise-kit';
+import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 import { defer } from './defer.js';
 
@@ -166,7 +167,7 @@ export function xsnap(options) {
    * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
-    for (;;) {
+    for await (const _ of forever) {
       const iteration = await messagesFromXsnap.next(undefined);
       if (iteration.done) {
         xsnapProcess.kill();
@@ -215,6 +216,7 @@ export function xsnap(options) {
         );
       }
     }
+    throw Error(`unreachable, but tools don't know that`);
   }
 
   /**

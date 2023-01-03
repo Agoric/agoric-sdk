@@ -208,7 +208,7 @@ export async function replayXSnap(
    */
   async function runSteps(rd, steps) {
     const folder = rd.path;
-    for (const step of steps) {
+    for await (const step of steps) {
       const parts = step.match(/(\d+)-([a-zA-Z]+)\.(dat|json)$/);
       if (!parts) {
         throw Error(`expected 0001-abc.dat; got: ${step}`);
@@ -217,14 +217,12 @@ export async function replayXSnap(
       const seq = parseInt(digits, 10);
       console.log(folder, seq, kind);
       if (running && !['command', 'reply'].includes(kind)) {
-        // eslint-disable-next-line no-await-in-loop
         await running;
         running = undefined;
       }
       const file = rd.file(step);
       switch (kind) {
         case 'isReady':
-          // eslint-disable-next-line no-await-in-loop
           await it.isReady();
           break;
         case 'evaluate':
@@ -245,7 +243,6 @@ export async function replayXSnap(
             return;
           } else {
             try {
-              // eslint-disable-next-line no-await-in-loop
               await it.snapshot(file.getText());
             } catch (err) {
               console.warn(err, 'while taking snapshot:', err);

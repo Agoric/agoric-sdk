@@ -11,6 +11,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { forever } from '@agoric/internal';
 import { makeTracer } from '../makeTracer.js';
 
 const { Fail } = assert;
@@ -187,7 +188,7 @@ const start = async zcf => {
    * @yields {LiquidationStep}
    */
   async function* processTranches(seat, originalDebt) {
-    while (true) {
+    for await (const _ of forever) {
       const proceedsSoFar = seat.getAmountAllocated('Out');
       const toSell = seat.getAmountAllocated('In');
       if (
