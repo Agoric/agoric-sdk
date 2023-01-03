@@ -64,7 +64,7 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
 
   /** @type {StoredSubscriber<T>} */
   const storesub = Far('StoredSubscriber', {
-    ...subscriber,
+    subscribeAfter: publishCount => subscriber.subscribeAfter(publishCount),
     getStoreKey: () => E(storageNode).getStoreKey(),
     getUnserializer: () => unserializer,
   });
