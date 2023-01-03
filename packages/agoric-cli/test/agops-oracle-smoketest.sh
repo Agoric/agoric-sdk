@@ -25,24 +25,27 @@ fi
 set -x
 
 # this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
-# to use it run `agd keys oracle2 --interactive` and enter this mnenomic:
+# to use it run `agd keys --keyring-backend=test add oracle2 --interactive` and enter this mnenomic:
 # dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
 WALLET2=oracle2
+
+WALLET_BECH32=$(agd keys show $WALLET --keyring-backend=test --output json | jq -r .address)
+WALLET2_BECH32=$(agd keys show $WALLET2 --keyring-backend=test --output json | jq -r .address)
 
 # Accept invitation to admin an oracle
 ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
 jq ".body | fromjson" <"$ORACLE_OFFER"
-agoric wallet send --from "$WALLET" --offer "$ORACLE_OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET_BECH32" --offer "$ORACLE_OFFER"
 # verify the offerId is readable from chain history
-agoric wallet show --from "$WALLET"
+agoric wallet show --keyring-backend="test" --from "$WALLET"
 ORACLE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 # repeat for oracle2
 ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
 jq ".body | fromjson" <"$ORACLE_OFFER"
-agoric wallet send --from "$WALLET2" --offer "$ORACLE_OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET2_BECH32" --offer "$ORACLE_OFFER"
 ORACLE2_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 ### Now we have the continuing invitationMakers saved in the wallets
@@ -51,11 +54,11 @@ ORACLE2_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle pushPriceRound --price 101 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
-agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET_BECH32" --offer "$PROPOSAL_OFFER"
 
 # verify that the offer was satisfied
 echo "Offer $ORACLE_OFFER_ID should have numWantsSatisfied: 1"
-agoric wallet show --from "$WALLET"
+agoric wallet show --keyring-backend="test" --from "$WALLET"
 
 # verify feed publishing
 agd query vstorage keys published.priceFeed
@@ -67,16 +70,16 @@ agoric follow :published.priceFeed.ATOM-USD_price_feed.latestRound
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle pushPriceRound --price 201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
-agoric wallet send --from "$WALLET2" --offer "$PROPOSAL_OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET2_BECH32" --offer "$PROPOSAL_OFFER"
 
 # second round, first oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle pushPriceRound --price 1102 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
-agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET_BECH32" --offer "$PROPOSAL_OFFER"
 # second round, second oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle pushPriceRound --price 1202 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
-agoric wallet send --from "$WALLET2" --offer "$PROPOSAL_OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET2_BECH32" --offer "$PROPOSAL_OFFER"
 
 # see new price
 agoric follow :published.priceFeed.ATOM-USD_price_feed
