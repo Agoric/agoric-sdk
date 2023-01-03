@@ -226,14 +226,14 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       }
     }
   } else {
-    const subdirMapper = async subd => {
+    const subdirPackageJsonExists = async subd => {
       const exists = await fs.stat(`${subd}/package.json`).catch(_ => false);
       return exists && subd;
     };
     const existingSubdirs = await Promise.all(
       ['.', '_agstate/agoric-servers', 'contract', 'api', 'ui']
         .sort()
-        .map(subdirMapper),
+        .map(subdirPackageJsonExists),
     );
     subdirs = existingSubdirs.filter(subd => subd);
   }
@@ -253,7 +253,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       await fs.symlink(sdkRoot, sdkWorktree);
     }
 
-    const subdirMapper = async subdir => {
+    const removeNodeModulesSymlinks = async subdir => {
       const nm = `${subdir}/node_modules`;
       log(chalk.bold.green(`removing ${nm} link`));
       await fs.unlink(nm).catch(_ => {});
@@ -267,7 +267,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         ),
       );
     };
-    await Promise.all(subdirs.map(subdirMapper));
+    await Promise.all(subdirs.map(removeNodeModulesSymlinks));
   } else {
     DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
   }
@@ -310,12 +310,12 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   const sdkPackages = [...sdkPackageToPath.keys()].sort();
   for await (const subdir of subdirs) {
     const exists = await fs.stat(`${subdir}/package.json`).catch(_ => false);
-    const flag = await (exists &&
+    const exitStatus = await (exists &&
       pspawn('yarn', [...linkFlags, 'link', ...sdkPackages], {
         stdio: 'inherit',
         cwd: subdir,
       }));
-    if (flag) {
+    if (exitStatus) {
       log.error('Cannot yarn link', ...sdkPackages);
       return 1;
     }

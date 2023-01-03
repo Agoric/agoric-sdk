@@ -41,7 +41,7 @@ const makePurseController = (
     async *getBalances(b) {
       assert.equal(b, brand);
       let updateRecord = await balanceNotifier.getUpdateSince();
-      for await (const _ of whileTrue(() => !!updateRecord.updateCount)) {
+      for await (const _ of whileTrue(() => updateRecord.updateCount)) {
         yield updateRecord.value;
         // eslint-disable-next-line no-await-in-loop
         updateRecord = await balanceNotifier.getUpdateSince(

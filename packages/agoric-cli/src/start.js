@@ -128,17 +128,17 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   }
 
   const capture = (spawner, args, show = false) => {
-    const capret = [
+    const statusOut = [
       spawner(args, { stdio: ['inherit', 'pipe', 'inherit'] }),
       '',
     ];
-    capret[0].childProcess.stdout.on('data', chunk => {
+    statusOut[0].childProcess.stdout.on('data', chunk => {
       if (show) {
         process.stdout.write(chunk);
       }
-      capret[1] += chunk.toString('utf-8');
+      statusOut[1] += chunk.toString('utf-8');
     });
-    return capret;
+    return statusOut;
   };
 
   const showKey = keyName =>
@@ -309,9 +309,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const addrs = {};
     for (const keyName of ['provision', 'delegate0']) {
       /* eslint-disable no-await-in-loop */
-      let capret = showKey(keyName);
-      const capretZero = await capret[0];
-      if (capretZero) {
+      let statusOut = showKey(keyName);
+      const exitStatusOut = await statusOut[0];
+      if (exitStatusOut) {
         const exitStatus = await keysSpawn([
           'keys',
           'add',
@@ -321,13 +321,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
         if (exitStatus) {
           return exitStatus;
         }
-        capret = showKey(keyName);
-        const status2 = await capret[0];
+        statusOut = showKey(keyName);
+        const status2 = await statusOut[0];
         if (status2) {
           return status2;
         }
       }
-      addrs[keyName] = capret[1].trimRight();
+      addrs[keyName] = statusOut[1].trimRight();
       /* eslint-enable no-await-in-loop */
     }
 
@@ -638,11 +638,11 @@ export default async function startMain(progname, rawArgs, powers, opts) {
             ],
           ];
           for (/* await */ const cmd of provCmds) {
-            const capret = capture(keysSpawn, cmd, true);
+            const statusOut = capture(keysSpawn, cmd, true);
             // eslint-disable-next-line no-await-in-loop
-            exitStatus = await capret[0];
+            exitStatus = await statusOut[0];
             if (!exitStatus) {
-              const json = capret[1].replace(/^gas estimate: \d+$/m, '');
+              const json = statusOut[1].replace(/^gas estimate: \d+$/m, '');
               try {
                 const ret = JSON.parse(json);
                 if (ret.code !== 0) {

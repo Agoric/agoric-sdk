@@ -417,7 +417,10 @@ const neverDone = harden({ done: false, value: null });
 export const forever = asyncGenerate(() => neverDone);
 
 /**
- * @param {() => boolean} boolFunc
+ * @param {() => unknown} boolFunc
+ * `boolFunc`'s return value is used for its truthiness vs falsiness.
+ * IOW, it is coerced to a boolean so the caller need not bother doing this
+ * themselves.
  * @returns {AsyncIterable<null>}
  */
 export const whileTrue = boolFunc =>
@@ -429,7 +432,10 @@ export const whileTrue = boolFunc =>
   );
 
 /**
- * @param {() => boolean} boolFunc
+ * @param {() => unknown} boolFunc
+ * `boolFunc`'s return value is used for its truthiness vs falsiness.
+ * IOW, it is coerced to a boolean so the caller need not bother doing this
+ * themselves.
  * @returns {AsyncIterable<null>}
  */
 export const untilTrue = boolFunc =>

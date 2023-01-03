@@ -38,13 +38,14 @@ async function makeMapStorage(file) {
     await fs.promises.writeFile(file, json);
   };
 
-  let obj = {};
   await (async () => {
     content = await fs.promises.readFile(file);
-    obj = JSON.parse(content);
-  })().catch(() => map);
-
-  Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v)));
+    return JSON.parse(content);
+  })().then(
+    obj =>
+      Object.entries(obj).forEach(([k, v]) => map.set(k, importMailbox(v))),
+    () => {},
+  );
 
   return map;
 }
