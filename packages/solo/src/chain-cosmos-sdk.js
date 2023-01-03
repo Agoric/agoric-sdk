@@ -16,6 +16,7 @@ import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
 } from '@agoric/vats/src/batched-deliver.js';
+import { forever, whileTrue } from '@agoric/internal';
 
 const console = anylogger('chain-cosmos-sdk');
 
@@ -172,7 +173,7 @@ export async function connectToChain(
   async function retryRpcHref(tryOnce) {
     let rpcHrefIndex = lastGoodRpcHrefIndex;
     // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for await (const _ of forever) {
       const thisRpcHref = rpcHrefs[rpcHrefIndex];
 
       // tryOnce will either throw if cancelled (which rejects this promise),
@@ -189,6 +190,7 @@ export async function connectToChain(
       await new Promise(resolve => setTimeout(resolve, 5000));
       rpcHrefIndex = (rpcHrefIndex + 1) % rpcHrefs.length;
     }
+    throw Error(`Unreachable, but the tools don't know that`);
   }
 
   let goodRpcHref = rpcHrefs[0];
@@ -608,7 +610,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
     const messages = messagePool;
 
-    try {
+    const tryBody = async () => {
       totalDeliveries += 1;
       console.log(
         `delivering to chain (trips=${totalDeliveries})`,
@@ -657,7 +659,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
       // We just try a single delivery per block.
       let retry = true;
-      while (retry) {
+      for await (const _ of whileTrue(() => retry)) {
         retry = false;
         // eslint-disable-next-line no-await-in-loop
         const { stderr, stdout } = await runHelper([
@@ -708,11 +710,9 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
           sequenceNumber += 1n;
         }
       }
-    } finally {
-      if (tmpInfo) {
-        await fs.promises.unlink(tmpInfo.path);
-      }
-    }
+    };
+
+    await tryBody().finally(() => tmpInfo && fs.promises.unlink(tmpInfo.path));
   };
 
   /**

@@ -210,7 +210,8 @@ export async function makeHTTPListener(
 
   // accept POST messages as commands.
   app.post('*', async (req, res) => {
-    if (!(await validateAccessToken(req))) {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -225,7 +226,8 @@ export async function makeHTTPListener(
   });
 
   app.get('/connections', async (req, res) => {
-    if (!(await validateAccessToken(req))) {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -237,7 +239,8 @@ export async function makeHTTPListener(
   });
 
   app.post('/publish-bundle', async (req, res) => {
-    if (!(await validateAccessToken(req))) {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
       res.json({ ok: false, rej: 'Unauthorized' });
       return;
     }
@@ -256,7 +259,8 @@ export async function makeHTTPListener(
   // GETs (which should return index.html) and WebSocket requests.
   const wss = new WebSocket.Server({ noServer: true });
   server.on('upgrade', async (req, socket, head) => {
-    if (!(await validateAccessToken(req))) {
+    const valid = await validateAccessToken(req);
+    if (!valid) {
       socket.destroy();
       return;
     }

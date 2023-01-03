@@ -357,9 +357,11 @@ const deployWallet = async ({ agWallet, deploys, hostport }) => {
   // This part only runs if there were wallet deploys to do.
   const resolvedDeploys = deploys.map(dep => path.resolve(agWallet, dep));
 
-  const agoricCli = new URL(
-    await importMetaResolve('agoric/src/entrypoint.js', import.meta.url),
-  ).pathname;
+  const resolvedUrl = await importMetaResolve(
+    'agoric/src/entrypoint.js',
+    import.meta.url,
+  );
+  const agoricCli = new URL(resolvedUrl).pathname;
 
   // Use the same verbosity as our caller did for us.
   let verbosity;
@@ -468,10 +470,12 @@ const start = async (basedir, argv) => {
   // Remove wallet traces.
   await unlink('html/wallet').catch(_ => {});
 
+  const packageUrl = await importMetaResolve(
+    `${wallet}/package.json`,
+    import.meta.url,
+  );
   // Find the wallet.
-  const pjs = new URL(
-    await importMetaResolve(`${wallet}/package.json`, import.meta.url),
-  ).pathname;
+  const pjs = new URL(packageUrl).pathname;
   const { 'agoric-wallet': { htmlBasedir = 'ui/build', deploy = [] } = {} } =
     JSON.parse(fs.readFileSync(pjs, 'utf-8'));
 
