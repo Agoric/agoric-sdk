@@ -26,6 +26,7 @@ const { Fail } = assert;
 const { keys } = Object;
 
 const NUM_IBC_PORTS_PER_CLIENT = 3;
+const INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX = 'icacontroller-';
 
 /**
  * This registers the code triggered by `agd tx gov submit-proposal
@@ -444,13 +445,19 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
         });
       },
     });
-    const ibcHandler = await E(vats.ibc).createInstance(callbacks);
-    await E(dibcBridgeManager).setHandler(ibcHandler);
     ps.push(
-      E(vats.network).registerProtocolHandler(
-        ['/ibc-port', '/ibc-hop'],
-        ibcHandler,
-      ),
+      E(vats.ibc)
+        .createInstance(callbacks)
+        .then(ibcHandler =>
+          E(dibcBridgeManager)
+            .setHandler(ibcHandler)
+            .then(() =>
+              E(vats.network).registerProtocolHandler(
+                ['/ibc-port', '/ibc-hop'],
+                ibcHandler,
+              ),
+            ),
+        ),
     );
   } else {
     const loHandler = makeLoopbackProtocolHandler(
@@ -511,12 +518,20 @@ export const setupNetworkProtocols = async ({
   const dibcBridgeManager =
     bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
 
+  // The Interchain Account (ICA) Controller must be bound to a port that starts
+  // with 'icacontroller', so we provide one such port to each client.
+  let lastICAPort = 0;
   const makePorts = async () => {
-    // Bind to some fresh ports (unspecified name) on the IBC implementation
-    // and provide them for the user to have.
+    // Bind to some fresh ports (either unspecified name or `icacontroller-*`)
+    // on the IBC implementation and provide them for the user to have.
     const ibcportP = [];
     for (let i = 0; i < NUM_IBC_PORTS_PER_CLIENT; i += 1) {
-      const port = E(vats.network).bind('/ibc-port/');
+      let bindAddr = '/ibc-port/';
+      if (i === NUM_IBC_PORTS_PER_CLIENT - 1) {
+        lastICAPort += 1;
+        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}-${lastICAPort}`;
+      }
+      const port = E(vats.network).bind(bindAddr);
       ibcportP.push(port);
     }
     return Promise.all(ibcportP);
