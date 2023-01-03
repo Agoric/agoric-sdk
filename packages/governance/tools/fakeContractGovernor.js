@@ -37,9 +37,8 @@ const start = async (zcf, privateArgs) => {
     },
   } = zcf.getTerms();
 
-  const augmentedTerms = harden({
-    ...contractTerms,
-  });
+  // in the fake there's no electionManager to augment the terms
+  const augmentedTerms = contractTerms;
 
   const {
     creatorFacet: governedCF,
@@ -55,7 +54,7 @@ const start = async (zcf, privateArgs) => {
 
   const paramMgrRetriever = E(governedCF).getParamMgrRetriever();
 
-  // In this fake, the ability to udpate params is not closely held.
+  // In this fake, the ability to update params is not closely held.
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 
   /** @param {ParamChangesSpec<any>} paramSpec */
