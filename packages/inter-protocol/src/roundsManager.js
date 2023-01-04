@@ -4,6 +4,7 @@ import { isNat, Nat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import {
   defineDurableFarClassKit,
+  M,
   makeKindHandle,
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
@@ -12,6 +13,7 @@ import {
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
@@ -99,8 +101,26 @@ const validRoundId = roundId => {
 
 export const makeRoundsManagerKit = defineDurableFarClassKit(
   roundsManagerKind,
-  // FIXME guard interface
-  undefined,
+  {
+    // facet used only internally, sloppy ok
+    helper: M.interface('helper', {}, { sloppy: true }),
+    contract: M.interface(
+      'contract',
+      {
+        authenticateQuote: M.call(M.any()).returns(M.any()),
+        makeCreateQuote: M.call().optional(M.any()).returns(M.any()),
+        eligibleForSpecificRound: M.call(M.any()).returns(M.boolean()),
+        getRoundData: M.call(M.any()).returns(M.promise()),
+        getRoundStatus: M.call(M.any()).returns(M.record()),
+        oracleRoundStateSuggestRound: M.call(M.any()).returns(M.record()),
+      },
+      // TODO(6571) stop sloppy
+      { sloppy: true },
+    ),
+    oracle: M.interface('oracle', {
+      handlePush: M.call(M.record(), M.record()).returns(M.promise()),
+    }),
+  },
   /** @type {(opts: HeldParams & { unitAmountIn: Amount<'nat'> }) => State} */
   ({
     // ChainlinkConfig
@@ -456,7 +476,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
         /**
          * @param {PriceQuery} priceQuery
          */
-        return function createQuote(priceQuery) {
+        return Far('createQuote', priceQuery => {
           const { lastValueOutForUnitIn, unitIn } = state;
 
           // Sniff the current baseValueOut.
@@ -521,7 +541,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
                 { amountIn, amountOut, timer: timerPresence, timestamp: now },
               ]),
             );
-        };
+        });
       },
 
       /**
