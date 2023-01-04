@@ -57,7 +57,7 @@ export const defaultProposalBuilder = async (
         brandOutRef: brandOut && publishRef(brandOut),
         priceAggregatorRef: publishRef(
           install(
-            '@agoric/inter-protocol/src/priceAggregatorChainlink.js',
+            '@agoric/inter-protocol/src/price/priceAggregatorChainlink.js',
             '../bundles/bundle-priceAggregatorChainlink.js',
           ),
         ),

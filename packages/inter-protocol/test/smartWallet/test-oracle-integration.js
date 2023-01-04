@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { INVITATION_MAKERS_DESC } from '../../src/priceAggregatorChainlink.js';
+import { INVITATION_MAKERS_DESC } from '../../src/price/priceAggregatorChainlink.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { makeDefaultTestContext } from './contexts.js';
@@ -89,7 +89,7 @@ test('admin price', async t => {
 
   const offersFacet = wallet.getOffersFacet();
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/priceAggregatorChainlink.js').start>} */
+  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
@@ -155,7 +155,7 @@ test('admin price', async t => {
 
   // Push a new price result /////////////////////////
 
-  /** @type {import('@agoric/inter-protocol/src/roundsManager.js').PriceRound} */
+  /** @type {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} */
   const result = { roundId: 1, unitPrice: 123n };
 
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */

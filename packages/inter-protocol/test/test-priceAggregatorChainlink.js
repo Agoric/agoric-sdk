@@ -25,7 +25,7 @@ const test = unknownTest;
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const aggregatorPath = `${dirname}/../src/priceAggregatorChainlink.js`;
+const aggregatorPath = `${dirname}/../src/price/priceAggregatorChainlink.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -61,7 +61,7 @@ const makeContext = async () => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../src/priceAggregatorChainlink.js').start>} */
+  /** @type {Installation<import('../src/price/priceAggregatorChainlink.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
