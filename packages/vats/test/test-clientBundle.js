@@ -28,24 +28,16 @@ import { devices } from './devices.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const {
-    zoeServices: {
-      zoeService: zoeServiceNear,
-      feeMintAccessRetriever: feeMintAccessRetrieverNear,
-    },
-  } = makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
-    name: Stable.symbol,
-    assetKind: Stable.assetKind,
-    displayInfo: Stable.displayInfo,
-  });
-  const {
-    zoeServiceNear: zoe,
-    feeMintAccessRetrieverNear: feeMintAccessRetriever,
-  } = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
-
+  const { zoeService, feeMintAccess } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
+      name: Stable.symbol,
+      assetKind: Stable.assetKind,
+      displayInfo: Stable.displayInfo,
+    }),
+  );
   return {
-    zoe,
-    feeMintAccessP: E(feeMintAccessRetriever).get(),
+    zoe: zoeService,
+    feeMintAccessP: feeMintAccess,
   };
 };
 harden(setUpZoeForTest);
@@ -67,8 +59,8 @@ test('connectFaucet produces payments', async t => {
 
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
-  const feeMintAccess = await feeMintAccessP;
-  produce.feeMintAccess.resolve(feeMintAccess);
+  const fma = await feeMintAccessP;
+  produce.feeMintAccess.resolve(fma);
   produce.bridgeManager.resolve(undefined);
 
   const vatLoader = name => {

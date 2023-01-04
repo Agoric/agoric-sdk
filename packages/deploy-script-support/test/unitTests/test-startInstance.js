@@ -18,9 +18,7 @@ test('startInstance', async t => {
   const moolaKit = makeIssuerKit('moola');
   const usdKit = makeIssuerKit('usd');
 
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const bundleUrl = new URL(
     await importMetaResolve(

@@ -37,7 +37,7 @@ export const makeInstanceRecordStorage = baggage => {
       'instanceRecord has not been instantiated',
     );
 
-  const InstanceRecordInterface = M.interface('InstanceRecord', {
+  const InstanceRecordI = M.interface('InstanceRecord', {
     addIssuer: M.call(KeywordShape, IssuerRecordShape).returns(),
     getInstanceRecord: M.call().returns(InstanceRecordShape),
     getTerms: M.call().returns(M.splitRecord(TermsShape)),
@@ -50,12 +50,12 @@ export const makeInstanceRecordStorage = baggage => {
   const makeInstanceRecord = vivifyFarClass(
     baggage,
     'InstanceRecord',
-    InstanceRecordInterface,
+    InstanceRecordI,
     record => harden({ instanceRecord: record }),
     {
       addIssuer(keyword, issuerRecord) {
         const { state } = this;
-        !(keyword in issuerRecord) ||
+        !ownKeys(issuerRecord).includes(keyword) ||
           Fail`conflicting definition of ${q(keyword)}`;
 
         assertInstantiated(state.instanceRecord);

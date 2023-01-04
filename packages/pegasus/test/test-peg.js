@@ -61,9 +61,7 @@ async function testRemotePeg(t) {
     },
   });
 
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // Pack the contract.
   const contractBundle = await bundleSource(contractPath);

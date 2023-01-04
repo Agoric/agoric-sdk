@@ -24,9 +24,7 @@ const setupMixed = () => {
   const moola = value => AmountMath.make(allBundles.moola.brand, value);
 
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   return {
     zoe,
     ccIssuer,

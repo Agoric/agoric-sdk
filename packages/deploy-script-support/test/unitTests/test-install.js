@@ -11,9 +11,7 @@ import '../../exported.js';
 import { makeInstall } from '../../src/install.js';
 
 test('install', async t => {
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   let addedInstallation;
 

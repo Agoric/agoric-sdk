@@ -21,9 +21,7 @@ test('zoe - brokenAutomaticRefund', async t => {
   // Setup zoe and mints
   const { moolaKit } = setup();
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
   // Pack the contract.
   const bundle = await bundleSource(automaticRefundRoot);
   vatAdminState.installBundle('b1-brokenAutomaticRefund', bundle);

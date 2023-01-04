@@ -111,13 +111,12 @@ export const buildZoe = async ({
   produce: { zoe, feeMintAccess },
 }) => {
   const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
-  const { zoeService, feeMintAccessRetriever } = await E(
+  const { zoeService, feeMintAccess: fma } = await E(
     E(loadCriticalVat)('zoe'),
   ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
 
-  const fma = await E(feeMintAccessRetriever).get();
   feeMintAccess.resolve(fma);
   return Promise.all([
     E(client).assignBundle([_addr => ({ zoe: zoeService })]),

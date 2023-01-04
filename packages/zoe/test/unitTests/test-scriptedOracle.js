@@ -45,9 +45,7 @@ test.before(
     // Outside of tests, we should use the long-lived Zoe on the
     // testnet. In this test, we must create a new Zoe.
     const { admin, vatAdminState } = makeFakeVatAdmin();
-    const {
-      zoeServices: { zoeService: zoe },
-    } = makeZoeKit(admin);
+    const { zoeService: zoe } = makeZoeKit(admin);
 
     const oracleContractBundle = await bundleSource(oracleContractPath);
     const bountyContractBundle = await bundleSource(bountyContractPath);

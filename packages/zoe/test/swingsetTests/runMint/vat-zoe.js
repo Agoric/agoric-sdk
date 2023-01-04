@@ -6,11 +6,12 @@ export function buildRootObject(vatPowers) {
   return Far('root', {
     buildZoe: async vatAdminSvc => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const {
-        zoeServices: { zoeService: zoe, feeMintAccessRetriever },
-      } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
+      const { zoeService: zoe, feeMintAccess } = makeZoeKit(
+        vatAdminSvc,
+        shutdownZoeVat,
+      );
 
-      return harden({ zoe, feeMintAccessRetriever });
+      return harden({ zoe, feeMintAccess });
     },
   });
 }

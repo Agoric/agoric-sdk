@@ -6,9 +6,7 @@ export function buildRootObject(vatPowers) {
   return Far('root', {
     buildZoe: vatAdminSvc => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const {
-        zoeServices: { zoeService: zoe },
-      } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
+      const { zoeService: zoe } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
       return zoe;
     },
   });

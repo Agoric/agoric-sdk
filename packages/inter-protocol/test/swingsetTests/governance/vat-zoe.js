@@ -8,15 +8,17 @@ export function buildRootObject(vatPowers) {
   return Far('root', {
     buildZoe: vatAdminSvc => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const {
-        zoeServices: { zoeService: zoe, feeMintAccessRetriever },
-      } = makeZoeKit(vatAdminSvc, shutdownZoeVat, {
-        name: Stable.symbol,
-        assetKind: Stable.assetKind,
-        displayInfo: Stable.displayInfo,
-      });
+      const { zoeService: zoe, feeMintAccess } = makeZoeKit(
+        vatAdminSvc,
+        shutdownZoeVat,
+        {
+          name: Stable.symbol,
+          assetKind: Stable.assetKind,
+          displayInfo: Stable.displayInfo,
+        },
+      );
 
-      return { zoe, feeMintAccessRetriever };
+      return { zoe, feeMintAccess };
     },
   });
 }

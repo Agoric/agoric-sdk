@@ -32,24 +32,17 @@ const trace = makeTracer('AmmTS', false);
 export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const {
-    zoeServices: {
-      zoeService: zoeServiceNear,
-      feeMintAccessRetriever: feeMintAccessRetrieverNear,
-    },
-  } = makeZoeKit(makeFakeVatAdmin().admin, undefined, {
-    name: Stable.symbol,
-    assetKind: Stable.assetKind,
-    displayInfo: Stable.displayInfo,
-  });
-  const {
-    zoeServiceNear: zoeService,
-    feeMintAccessRetrieverNear: feeMintAccessRetriever,
-  } = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
+  const { zoeService, feeMintAccess } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
+      name: Stable.symbol,
+      assetKind: Stable.assetKind,
+      displayInfo: Stable.displayInfo,
+    }),
+  );
 
   return {
     zoe: zoeService,
-    feeMintAccessP: E(feeMintAccessRetriever).get(),
+    feeMintAccessP: feeMintAccess,
   };
 };
 harden(setUpZoeForTest);

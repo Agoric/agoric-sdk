@@ -15,6 +15,7 @@ import '@agoric/vats/exported.js';
 import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore, vivifyFarInstance } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
@@ -23,7 +24,7 @@ import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
-import { FeeMintAccessRetrieverI, ZoeServiceI } from '../typeGuards.js';
+import { ZoeServiceI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -63,10 +64,11 @@ const makeZoeKit = (
     );
   }
 
-  const setVatAdminService = lateVatAdminSvc => {
+  const setVatAdminService = Far('setVatAdminService', lateVatAdminSvc => {
     vatAdminSvcP = lateVatAdminSvc;
     saveBundleCap();
-  };
+  });
+
   if (vatAdminSvcP) {
     saveBundleCap();
   } else if (zoeBaggage.has('zcfBundleCap')) {
@@ -79,8 +81,9 @@ const makeZoeKit = (
 
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID => {
-    vatAdminSvcP || Fail`vatAdminSvc must be defined.`;
-    // @ts-expect-error the guard protects it.
+    if (!vatAdminSvcP) {
+      throw Fail`vatAdminSvc must be defined.`;
+    }
     return E(vatAdminSvcP).waitForBundleCap(bundleID);
   };
 
@@ -88,10 +91,14 @@ const makeZoeKit = (
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = contractBundleCap => {
-    assert(zcfBundleCap, `createZCFVat did not get bundleCap`);
+    if (!zcfBundleCap) {
+      throw Fail`createZCFVat did not get bundleCap`;
+    }
 
-    vatAdminSvcP || Fail`vatAdminSvc must be defined.`;
-    // @ts-expect-error the guard protects it.
+    if (!vatAdminSvcP) {
+      throw Fail`vatAdminSvc must be defined.`;
+    }
+
     return E(vatAdminSvcP).createVat(
       zcfBundleCap,
       harden({
@@ -108,8 +115,9 @@ const makeZoeKit = (
   };
 
   const getBundleCapByIdNow = id => {
-    vatAdminSvcP || Fail`vatAdminSvc must be defined.`;
-    // @ts-expect-error the guard protects it.
+    if (!vatAdminSvcP) {
+      throw Fail`vatAdminSvc must be defined.`;
+    }
     return E(vatAdminSvcP).getBundleCap(id);
   };
 
@@ -208,24 +216,11 @@ const makeZoeKit = (
     },
   });
 
-  const feeMintAccessRetriever = vivifyFarInstance(
-    zoeBaggage,
-    'FeeMintAccessRetriever',
-    FeeMintAccessRetrieverI,
-    {
-      /** @type {() => FeeMintAccess} */
-      get() {
-        // @ts-expect-error type cast
-        return feeMintKit.feeMintAccess;
-      },
-    },
-  );
-
   return harden({
-    zoeServices: {
-      zoeService,
-      feeMintAccessRetriever,
-    },
+    zoeService,
+    /** @type {FeeMintAccess} */
+    // @ts-expect-error cast
+    feeMintAccess: feeMintKit.feeMintAccess,
     setVatAdminService,
   });
 };

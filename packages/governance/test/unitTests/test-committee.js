@@ -26,9 +26,7 @@ const electorateRoot = `${dirname}/../../src/committee.js`;
 const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
 const setupContract = async () => {
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mockChainStorageRoot = makeMockChainStorageRoot();
 

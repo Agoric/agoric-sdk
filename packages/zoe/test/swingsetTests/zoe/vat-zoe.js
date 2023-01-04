@@ -6,10 +6,13 @@ export function buildRootObject(vatPowers, vatParams, baggage) {
   const shutdownZoeVat = vatPowers.exitVatWithFailure;
 
   // define all the durable kinds
-  const {
-    zoeServices: { zoeService },
-    setVatAdminService,
-  } = makeZoeKit(undefined, shutdownZoeVat, undefined, undefined, baggage);
+  const { zoeService, setVatAdminService } = makeZoeKit(
+    undefined,
+    shutdownZoeVat,
+    undefined,
+    undefined,
+    baggage,
+  );
 
   return Far('root', {
     buildZoe: vatAdminSvc => {

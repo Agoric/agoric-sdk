@@ -346,10 +346,6 @@ export const ZoeServiceI = M.interface('ZoeService', {
   ),
 });
 
-export const FeeMintAccessRetrieverI = M.interface('FeeMintAccessRetriever', {
-  get: M.call().returns(M.any()),
-});
-
 export const AdminFacetI = M.interface('ZcfAdminFacet', {
   getVatShutdownPromise: M.call().returns(M.promise()),
   restartContract: M.call().optional(M.any()).returns(M.promise()),

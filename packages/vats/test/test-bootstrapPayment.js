@@ -15,23 +15,16 @@ import { Stable } from '../src/tokens.js';
 
 const setUpZoeForTest = async setJig => {
   const { makeFar } = makeLoopback('zoeTest');
-  const {
-    zoeServices: {
-      zoeService: zoeServiceNear,
-      feeMintAccessRetriever: feeMintAccessRetrieverNear,
-    },
-  } = makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
-    name: Stable.symbol,
-    assetKind: Stable.assetKind,
-    displayInfo: Stable.displayInfo,
-  });
-  const {
-    zoeServiceNear: zoe,
-    feeMintAccessRetrieverNear: feeMintAccessRetriever,
-  } = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
+  const { zoeService, feeMintAccess } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
+      name: Stable.symbol,
+      assetKind: Stable.assetKind,
+      displayInfo: Stable.displayInfo,
+    }),
+  );
   return {
-    zoe,
-    feeMintAccessP: E(feeMintAccessRetriever).get(),
+    zoe: zoeService,
+    feeMintAccessP: feeMintAccess,
   };
 };
 

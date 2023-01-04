@@ -29,9 +29,7 @@ const setupNonFungible = () => {
     return harden([{ name, description: desc || name, power }]);
   }
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const ccIssuer = ccBundle.issuer;
   const rpgIssuer = rpgBundle.issuer;

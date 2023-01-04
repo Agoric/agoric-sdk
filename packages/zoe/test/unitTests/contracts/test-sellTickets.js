@@ -21,9 +21,7 @@ const sellItemsRoot = `${dirname}/../../../src/contracts/sellItems.js`;
 test(`mint and sell tickets for multiple shows`, async t => {
   // Setup initial conditions
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
@@ -150,9 +148,7 @@ test(`mint and sell opera tickets`, async t => {
   const moola = value => AmountMath.make(moolaBrand, value);
 
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);
@@ -548,9 +544,7 @@ test(`mint and sell opera tickets`, async t => {
 test('Testing publicFacet.getAvailableItemsNotifier()', async t => {
   // Setup initial conditions
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const {
-    zoeServices: { zoeService: zoe },
-  } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   const mintAndSellNFTBundle = await bundleSource(mintAndSellNFTRoot);
   vatAdminState.installBundle('b1-nft', mintAndSellNFTBundle);

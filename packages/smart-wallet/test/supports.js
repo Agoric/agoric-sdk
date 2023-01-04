@@ -67,21 +67,14 @@ export const subscriptionKey = subscription => {
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const {
-    zoeServices: {
-      zoeService: zoeServiceNear,
-      feeMintAccessRetriever: feeMintAccessRetrieverNear,
-    },
-  } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
-  const {
-    zoeServiceNear: zoe,
-    feeMintAccessRetrieverNear: feeMintAccessRetriever,
-  } = await makeFar(harden({ zoeServiceNear, feeMintAccessRetrieverNear }));
-
+  const { zoeService, feeMintAccess } = await makeFar(
+    makeZoeKit(makeFakeVatAdmin(() => {}).admin),
+  );
   /** @type {import('@endo/far').ERef<ZoeService>} */
+  const zoe = makeFar(zoeService);
   return {
     zoe,
-    feeMintAccessRetriever,
+    feeMintAccess,
   };
 };
 harden(setUpZoeForTest);
