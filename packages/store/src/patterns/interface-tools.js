@@ -2,7 +2,7 @@ import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { listDifference, objectMap } from '@agoric/internal';
 
-import { fit, M } from './patternMatchers.js';
+import { MinMethodGuard, fit, M } from './patternMatchers.js';
 
 const { quote: q, Fail } = assert;
 const { apply, ownKeys } = Reflect;
@@ -144,7 +144,6 @@ const bindMethod = (
   let { method } = thisfulMethods
     ? {
         method(...args) {
-          this || Fail`thisful method ${methodTag} called without this`;
           this ||
             Fail`thisful method ${methodTag} called without 'this' object`;
           const context = getContext(this);
@@ -159,6 +158,9 @@ const bindMethod = (
       };
   if (methodGuard) {
     method = defendMethod(method, methodGuard, methodTag);
+  } else if (thisfulMethods) {
+    // For far classes ensure that inputs and outputs are passable.
+    method = defendMethod(method, MinMethodGuard, methodTag);
   }
   defineProperties(method, {
     name: { value: methodTag },
