@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# "agoric follow" steps need to be cancelled manually, so these steps should be
+# copy-pasted rather than run as a script for best results.
+
 if [ -z "$AGORIC_NET" ]; then
     echo "AGORIC_NET env not set"
     echo
