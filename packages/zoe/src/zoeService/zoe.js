@@ -170,9 +170,6 @@ const makeZoeKit = (
     },
     startInstance,
     offer,
-    setOfferFilter(instance, filters) {
-      dataAccess.setOfferFilter(instance, filters);
-    },
 
     // The functions below are getters only and have no impact on
     // state within Zoe

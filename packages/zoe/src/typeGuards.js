@@ -261,10 +261,6 @@ export const ZoeStorageManagerIKit = harden({
       M.eref(M.remotable('PublicFacet')),
     ),
     getOfferFilter: M.call(InstanceHandleShape).returns(M.arrayOf(M.string())),
-    setOfferFilter: M.call(
-      InstanceHandleShape,
-      M.arrayOf(M.string()),
-    ).returns(),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
       M.opt(M.pattern()),
     ),
@@ -307,7 +303,6 @@ export const ZoeServiceI = M.interface('ZoeService', {
   offer: M.call(M.eref(InvitationShape))
     .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
     .returns(M.promise()),
-  setOfferFilter: M.call(InstanceHandleShape, M.arrayOf(M.string())).returns(),
 
   getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
     M.arrayOf(M.string()),

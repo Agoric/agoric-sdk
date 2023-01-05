@@ -420,10 +420,6 @@ export const makeZoeStorageManager = (
           const { state } = this;
           return state.instanceAdmins.getOfferFilter(instance);
         },
-        setOfferFilter(instance, filters) {
-          const { state } = this;
-          state.instanceAdmins.setOfferFilter(instance, filters);
-        },
         getTerms(instance) {
           const { state } = this;
           return state.instanceAdmins.getTerms(instance);
