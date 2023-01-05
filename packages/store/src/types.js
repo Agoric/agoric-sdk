@@ -481,7 +481,7 @@
  */
 
 /**
- * @typedef {object} MatcherNamespace
+ * @typedef {object} PatternMatchers
  *
  * @property {() => Matcher} any
  * Matches any passable.
@@ -695,17 +695,24 @@
  * @property {(t: Pattern) => Pattern} opt
  * Matches a value matched by the sub-pattern or the exact value
  * `undefined`.
- *
+ */
+
+/**
+ * @typedef {object} GuardMakers
  * @property {<M extends Record<any, any>>(interfaceName: string,
  *             methodGuards: M,
  *             options?: {sloppy?: boolean}
- * ) => InterfaceGuard} interface
+ * ) => InterfaceGuard} interface Guard an interface to a far object or facet
  *
- * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call
+ * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call Guard a synchronous call
  *
- * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} callWhen
+ * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} callWhen Guard an async call
  *
- * @property {(argGuard: ArgGuard) => ArgGuard} await
+ * @property {(argGuard: ArgGuard) => ArgGuard} await Guard an await
+ */
+
+/**
+ * @typedef {PatternMatchers & GuardMakers} MatcherNamespace
  */
 
 /** @typedef {(...args: any[]) => any} Method */

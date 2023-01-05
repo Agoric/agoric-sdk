@@ -112,6 +112,74 @@ test('test makeHeapFarInstance', t => {
   });
 });
 
+// For code sharing with defineKind which does not support an interface
+test('missing interface', t => {
+  t.notThrows(() =>
+    makeHeapFarInstance('greeter', undefined, {
+      sayHello() {
+        return 'hello';
+      },
+    }),
+  );
+  const greeterMaker = makeHeapFarInstance('greeterMaker', undefined, {
+    makeSayHello() {
+      return () => 'hello';
+    },
+  });
+  t.throws(() => greeterMaker.makeSayHello(), {
+    message:
+      'In "makeSayHello" method of (greeterMaker): result: "[Symbol(passStyle)]" property expected: "[Function <anon>]"',
+  });
+});
+
+test('sloppy option', t => {
+  const emptyBehavior = {};
+  const greeter = makeHeapFarInstance(
+    'greeter',
+    M.interface('greeter', emptyBehavior, { sloppy: true }),
+    {
+      sayHello() {
+        return 'hello';
+      },
+    },
+  );
+  t.is(greeter.sayHello(), 'hello');
+
+  t.throws(
+    () =>
+      makeHeapFarInstance(
+        'greeter',
+        M.interface('greeter', emptyBehavior, { sloppy: false }),
+        {
+          sayHello() {
+            return 'hello';
+          },
+        },
+      ),
+    { message: 'methods ["sayHello"] not guarded by "greeter"' },
+  );
+});
+
+test('naked function call', t => {
+  const greeter = makeHeapFarInstance(
+    'greeter',
+    M.interface('greeter', { sayHello: M.call().returns('hello') }),
+    {
+      sayHello() {
+        return 'hello';
+      },
+    },
+  );
+
+  const { sayHello } = greeter;
+  t.throws(() => sayHello(), {
+    message:
+      'thisful method "In \\"sayHello\\" method of (greeter)" called without \'this\' object',
+  });
+
+  t.is(sayHello.bind(greeter)(), 'hello');
+});
+
 // needn't run. we just don't have a better place to write these.
 test.skip('types', () => {
   // any methods can be defined if there's no interface
