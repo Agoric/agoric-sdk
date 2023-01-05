@@ -13,7 +13,7 @@
   "include": [
     "*.js",
     "public/**/*.js",
-    "src/**/*.js",
-    "test/**/*.js",
+    "src",
+    "test",
   ],
 }

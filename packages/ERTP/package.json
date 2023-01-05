@@ -54,7 +54,7 @@
     "@endo/bundle-source": "^2.4.2",
     "@fast-check/ava": "^1.0.1",
     "ava": "^5.0.1",
-    "tsd": "^0.24.1"
+    "tsd": "^0.25.0"
   },
   "files": [
     "src",
