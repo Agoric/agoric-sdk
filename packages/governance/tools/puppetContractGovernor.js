@@ -6,11 +6,10 @@ import { Far } from '@endo/marshal';
 // eslint-disable-next-line no-unused-vars
 import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 
-// @file fakeContractGovernor is a simplified copy of ContractGovernor to
-// simplify testing. It has no electorate, and doesn't try to support
-// legibility. It does try to ensure that the governed contract can get complete
-// support for governance of parameters, apis, and filters. Tests should be able
-// to update parameters directly.
+// @file a version of the contractGovernor.js contract simplified for testing.
+// It removes the electorate and doesn't try to support legibility.
+// It maintains the API for the governed contract (parameters, apis, and filters)
+// It adds the ability for tests to update parameters directly.
 
 /**
  * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
