@@ -139,8 +139,8 @@ test('basic', async t => {
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt1.roundId, 1n);
-  t.deepEqual(round1Attempt1.answer, 200n);
+  t.is(round1Attempt1.roundId, 1n);
+  t.is(round1Attempt1.answer, 200n);
 
   // ----- round 2: check restartDelay implementation
   // since oracle A initialized the last round, it CANNOT start another round before
@@ -156,9 +156,9 @@ test('basic', async t => {
   await oracleTimer.tick();
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt2.answer, 200n);
+  t.is(round1Attempt2.answer, 200n);
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
-  t.deepEqual(round2Attempt1.answer, 2500n);
+  t.is(round2Attempt1.answer, 2500n);
 
   // ----- round 3: check oracle submission order
   // unlike the previous test, if C initializes, all submissions should be recorded,
@@ -170,9 +170,9 @@ test('basic', async t => {
   await oracleTimer.tick();
 
   const round1Attempt3 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt3.answer, 200n);
+  t.is(round1Attempt3.answer, 200n);
   const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
-  t.deepEqual(round3Attempt1.answer, 5000n);
+  t.is(round3Attempt1.answer, 5000n);
 });
 
 test('timeout', async t => {
@@ -206,8 +206,8 @@ test('timeout', async t => {
   await E(pricePushAdminC).pushPrice({ roundId: 1, unitPrice: 300n });
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt1.roundId, 1n);
-  t.deepEqual(round1Attempt1.answer, 200n);
+  t.is(round1Attempt1.roundId, 1n);
+  t.is(round1Attempt1.answer, 200n);
 
   // ----- round 2: check restartDelay implementation
   // timeout behavior is, if more ticks pass than the timeout param (5 here), the round is
@@ -224,11 +224,11 @@ test('timeout', async t => {
   await E(pricePushAdminA).pushPrice({ roundId: 3, unitPrice: 3000n });
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt2.answer, 200n);
+  t.is(round1Attempt2.answer, 200n);
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
-  t.deepEqual(round2Attempt1.answer, 200n);
+  t.is(round2Attempt1.answer, 200n);
   const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
-  t.deepEqual(round3Attempt1.answer, 2000n);
+  t.is(round3Attempt1.answer, 2000n);
 });
 
 test('issue check', async t => {
@@ -266,7 +266,7 @@ test('issue check', async t => {
   await E(pricePushAdminC).pushPrice({ roundId: 1, unitPrice: 300n });
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt1.answer, 250n);
+  t.is(round1Attempt1.answer, 250n);
 
   // ----- round 2: ignore too high values
   await oracleTimer.tick();
@@ -279,7 +279,7 @@ test('issue check', async t => {
   await oracleTimer.tick();
 
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
-  t.deepEqual(round2Attempt1.answer, 2000n);
+  t.is(round2Attempt1.answer, 2000n);
 });
 
 test('supersede', async t => {
@@ -316,7 +316,7 @@ test('supersede', async t => {
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt1.answer, 150n);
+  t.is(round1Attempt1.answer, 150n);
 
   // ----- round 2: oracle C's value from before should have been IGNORED
   await oracleTimer.tick();
@@ -325,7 +325,7 @@ test('supersede', async t => {
   await oracleTimer.tick();
 
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
-  t.deepEqual(round2Attempt1.answer, 1500n);
+  t.is(round2Attempt1.answer, 1500n);
 
   // ----- round 3: oracle C should NOT be able to supersede round 3
   await oracleTimer.tick();
@@ -337,7 +337,7 @@ test('supersede', async t => {
   try {
     await E(aggregator.creatorFacet).getRoundData(4);
   } catch (error) {
-    t.deepEqual(error.message, 'No data present');
+    t.is(error.message, 'No data present');
   }
 });
 
@@ -380,7 +380,7 @@ test('interleaved', async t => {
   try {
     await E(aggregator.creatorFacet).getRoundData(1);
   } catch (error) {
-    t.deepEqual(error.message, 'No data present');
+    t.is(error.message, 'No data present');
   }
 
   // ----- round 2: interleaved round submission -- just making sure this works
@@ -404,13 +404,13 @@ test('interleaved', async t => {
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
 
-  t.deepEqual(round1Attempt2.answer, 200n);
-  t.deepEqual(round2Attempt1.answer, 2000n);
+  t.is(round1Attempt2.answer, 200n);
+  t.is(round2Attempt1.answer, 2000n);
 
   try {
     await E(aggregator.creatorFacet).getRoundData(3);
   } catch (error) {
-    t.deepEqual(error.message, 'No data present');
+    t.is(error.message, 'No data present');
   }
 
   // ----- round 3/4: complicated supersedable case
@@ -432,13 +432,13 @@ test('interleaved', async t => {
   try {
     await E(aggregator.creatorFacet).getRoundData(3);
   } catch (error) {
-    t.deepEqual(error.message, 'No data present');
+    t.is(error.message, 'No data present');
   }
 
   try {
     await E(aggregator.creatorFacet).getRoundData(4);
   } catch (error) {
-    t.deepEqual(error.message, 'No data present');
+    t.is(error.message, 'No data present');
   }
 
   // so NOW we should be able to submit round 4, and round 3 should just be copied from round 2
@@ -456,8 +456,8 @@ test('interleaved', async t => {
   const round3Attempt3 = await E(aggregator.creatorFacet).getRoundData(3);
   const round4Attempt2 = await E(aggregator.creatorFacet).getRoundData(4);
 
-  t.deepEqual(round3Attempt3.answer, 2000n);
-  t.deepEqual(round4Attempt2.answer, 5000n);
+  t.is(round3Attempt3.answer, 2000n);
+  t.is(round4Attempt2.answer, 5000n);
 
   // ----- round 5: ping-ponging should be possible (although this is an unlikely pernicious case)
   await E(pricePushAdminC).pushPrice({ roundId: 5, unitPrice: 1000n });
@@ -480,8 +480,8 @@ test('interleaved', async t => {
   const round5Attempt1 = await E(aggregator.creatorFacet).getRoundData(5);
   const round6Attempt1 = await E(aggregator.creatorFacet).getRoundData(6);
 
-  t.deepEqual(round5Attempt1.answer, 5000n);
-  t.deepEqual(round6Attempt1.answer, 5000n);
+  t.is(round5Attempt1.answer, 5000n);
+  t.is(round6Attempt1.answer, 5000n);
 });
 
 test('larger', async t => {
@@ -534,7 +534,7 @@ test('larger', async t => {
   await E(pricePushAdminE).pushPrice({ roundId: 1, unitPrice: 300n });
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt1.answer, 200n);
+  t.is(round1Attempt1.answer, 200n);
 
   // ----- round 2: ignore late arrival
   await oracleTimer.tick();
@@ -561,8 +561,8 @@ test('larger', async t => {
 
   const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
-  t.deepEqual(round1Attempt2.answer, 250n);
-  t.deepEqual(round2Attempt1.answer, 600n);
+  t.is(round1Attempt2.answer, 250n);
+  t.is(round2Attempt1.answer, 600n);
 });
 
 test('suggest', async t => {
@@ -596,8 +596,8 @@ test('suggest', async t => {
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
-  t.deepEqual(round1Attempt1.roundId, 1n);
-  t.deepEqual(round1Attempt1.answer, 200n);
+  t.is(round1Attempt1.roundId, 1n);
+  t.is(round1Attempt1.answer, 200n);
 
   // ----- round 2: add a new oracle and confirm the suggested round is correct
   await oracleTimer.tick();
@@ -607,18 +607,18 @@ test('suggest', async t => {
     1n,
   );
 
-  t.deepEqual(oracleCSuggestion.eligibleForSpecificRound, false);
-  t.deepEqual(oracleCSuggestion.queriedRoundId, 1n);
-  t.deepEqual(oracleCSuggestion.oracleCount, 3);
+  t.is(oracleCSuggestion.eligibleForSpecificRound, false);
+  t.is(oracleCSuggestion.queriedRoundId, 1n);
+  t.is(oracleCSuggestion.oracleCount, 3);
 
   const oracleBSuggestion = await E(aggregator.creatorFacet).oracleRoundState(
     'agorice1priceOracleB',
     0n,
   );
 
-  t.deepEqual(oracleBSuggestion.eligibleForSpecificRound, false);
-  t.deepEqual(oracleBSuggestion.queriedRoundId, 2n);
-  t.deepEqual(oracleBSuggestion.oracleCount, 3);
+  t.is(oracleBSuggestion.eligibleForSpecificRound, false);
+  t.is(oracleBSuggestion.queriedRoundId, 2n);
+  t.is(oracleBSuggestion.oracleCount, 3);
 
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 2000n });
@@ -631,9 +631,9 @@ test('suggest', async t => {
     0n,
   );
 
-  t.deepEqual(oracleASuggestion.eligibleForSpecificRound, true);
-  t.deepEqual(oracleASuggestion.queriedRoundId, 3n);
-  t.deepEqual(oracleASuggestion.startedAt, 0n); // round 3 hasn't yet started, so it should be zeroed
+  t.is(oracleASuggestion.eligibleForSpecificRound, true);
+  t.is(oracleASuggestion.queriedRoundId, 3n);
+  t.is(oracleASuggestion.startedAt, 0n); // round 3 hasn't yet started, so it should be zeroed
 
   // ----- round 3: try using suggested round
   await E(pricePushAdminC).pushPrice({ roundId: 3, unitPrice: 100n });
@@ -644,8 +644,8 @@ test('suggest', async t => {
   await E(pricePushAdminB).pushPrice({ roundId: undefined, unitPrice: 300n });
 
   const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
-  t.deepEqual(round3Attempt1.roundId, 3n);
-  t.deepEqual(round3Attempt1.answer, 200n);
+  t.is(round3Attempt1.roundId, 3n);
+  t.is(round3Attempt1.answer, 200n);
 });
 
 test('notifications', async t => {
