@@ -13,7 +13,7 @@ import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedCont
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
-const contractGovernorRoot = '../../tools/fakeContractGovernor.js';
+const contractGovernorRoot = '../../tools/puppetContractGovernor.js';
 const autoRefundRoot = '@agoric/zoe/src/contracts/automaticRefund.js';
 
 const makeBundle = async sourceRoot => {
@@ -40,15 +40,13 @@ const setUpZoeForTest = async setJig => {
    * @property {IssuerRecord} mintedIssuerRecord
    * @property {IssuerRecord} govIssuerRecord
    */
-  const { zoeService, feeMintAccess: nonFarFeeMintAccess } = makeZoeKit(
+  const { zoeService } = makeZoeKit(
     makeFakeVatAdmin(setJig, o => makeFar(o)).admin,
   );
   /** @type {ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
-  const feeMintAccess = await makeFar(nonFarFeeMintAccess);
   return {
     zoe,
-    feeMintAccess,
   };
 };
 
@@ -141,7 +139,7 @@ test('multiple params bad change', async t => {
     () => E(governorFacets.creatorFacet).changeParams(paramChangesSpec),
     {
       message:
-        'In "getAmountOf" method of (Zoe Invitation issuer): arg 0: bigint "[13n]" - Must be a remotable (Payment)',
+        'In "getInvitationDetails" method of (ZoeService zoeService): arg 0: "[13n]" - Must match one of ["[match:remotable]","[match:kind]"]',
     },
   );
 });
