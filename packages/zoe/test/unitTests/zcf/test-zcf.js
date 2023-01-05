@@ -245,7 +245,7 @@ test(`zcf.saveIssuer - args reversed`, async t => {
   // https://github.com/Agoric/agoric-sdk/issues/1702
   // @ts-expect-error deliberate invalid arguments for testing
   await t.throwsAsync(async () => zcf.saveIssuer('A', moolaKit.issuer), {
-    message: /.* must be a string/,
+    message: /.* [mM]ust be a string/,
   });
 });
 
@@ -358,7 +358,7 @@ test(`zcf.makeZCFMint - no keyword`, async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"\[undefined\]" must be a string/,
-      /.* must be a string/,
+      /.* [mM]ust be a string/,
   });
 });
 

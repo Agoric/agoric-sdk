@@ -121,9 +121,8 @@ export const makeMockTestSpace = async log => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { zoe, feeMintAccess } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
-  const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(feeMintAccess);
 
   const vatLoader = name => {

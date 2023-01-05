@@ -32,22 +32,6 @@ import { InvitationHandleShape } from '../typeGuards.js';
 const { Fail } = assert;
 
 /**
- * Wrap getTerms so it checks the fit of the custom terms
- *
- * @param {InstanceStateGetTerms} getTerms
- * @param {Pattern} customTermsShape
- */
-const fitGetTerms = (getTerms, customTermsShape) => {
-  return () => {
-    const terms = getTerms();
-    // eslint-disable-next-line no-unused-vars -- assume brands and issuers are valid
-    const { brands, issuers, ...customTerms } = terms;
-    fit(harden(customTerms), customTermsShape);
-    return terms;
-  };
-};
-
-/**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
  * made, then the contract code is evaluated, then a particular
  * instance is made.
@@ -295,16 +279,16 @@ export const makeZCFZygote = async (
     // The methods below are pure and have no side-effects //
     getZoeService: () => zoeService,
     getInvitationIssuer: () => invitationIssuer,
-    // @ts-expect-error mismatch between InstanceStateGetTerms and ZcfZygote
     getTerms: () => {
+      const terms = getInstanceRecHolder().getTerms();
+
+      // If the contract provided customTermsShape, validate the customTerms.
       if (customTermsShape) {
-        return fitGetTerms(
-          () => getInstanceRecHolder().getTerms(),
-          customTermsShape,
-        );
-      } else {
-        return getInstanceRecHolder().getTerms();
+        const { brands: _b, issuers: _i, ...customTerms } = terms;
+        fit(harden(customTerms), customTermsShape);
       }
+
+      return terms;
     },
     getBrandForIssuer,
     getIssuerForBrand,

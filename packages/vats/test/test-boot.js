@@ -116,7 +116,7 @@ test('evaluateInstallation is available to core eval', async t => {
       },
     };
 
-    const { zoeService: zoe } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
+    const { zoeService } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
 
     const theBoard = boardRoot().getBoard();
     const bundle = await bundleSource(modulePath);
