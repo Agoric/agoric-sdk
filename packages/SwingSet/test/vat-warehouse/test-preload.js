@@ -3,6 +3,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 // import * as proc from 'child_process';
 import tmp from 'tmp';
+import sqlite3 from 'better-sqlite3';
 import {
   initSwingStore,
   makeSnapStore,
@@ -34,7 +35,8 @@ test('only preload maxVatsOnline vats', async t => {
   const argv = [];
 
   const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
-  const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const snapStore = makeSnapStore(db, snapstorePath, makeSnapStoreIO());
   const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
   await initializeSwingset(config, argv, kernelStorage, initOpts);

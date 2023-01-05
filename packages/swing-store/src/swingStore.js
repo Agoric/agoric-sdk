@@ -9,7 +9,7 @@ import sqlite3 from 'better-sqlite3';
 import { assert } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
-import { makeSQLStreamStore } from './sqlStreamStore.js';
+import { makeStreamStore } from './streamStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { createSHA256 } from './hasher.js';
 
@@ -19,11 +19,8 @@ export function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
-    fsync: fs.fsync,
     measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
-    rename: fs.promises.rename,
-    resolve: path.resolve,
     stat: fs.promises.stat,
     tmpFile,
     tmpName,
@@ -44,7 +41,7 @@ export function makeSnapStoreIO() {
  *
  * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
  *
- * @typedef {{ itemCount: number }} StreamPosition
+ * @typedef { number } StreamPosition
  *
  * @typedef {{
  *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
@@ -356,7 +353,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
 
   const sqlKVDel = db.prepare(`
-    DELETE from kvStore
+    DELETE FROM kvStore
     WHERE key = ?
   `);
 
@@ -427,13 +424,13 @@ function makeSwingStore(dirPath, forceReset, options) {
     },
   };
 
-  const streamStore = makeSQLStreamStore(db, ensureTxn);
+  const streamStore = makeStreamStore(db, ensureTxn);
   let snapStore;
 
   if (dirPath) {
     const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
     fs.mkdirSync(snapshotDir, { recursive: true });
-    snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
+    snapStore = makeSnapStore(db, snapshotDir, makeSnapStoreIO(), {
       keepSnapshots,
     });
   }
@@ -520,13 +517,6 @@ function makeSwingStore(dirPath, forceReset, options) {
       sqlCommit.run();
       sqlCheckpoint.run();
     }
-
-    // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
-    //   is being replaced with vatA -> snapshot2)
-    //   MUST be committed BEFORE we delete snapshot1.
-    //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
-    //   but we'll fail to load it because it's been deleted already.
-    await (snapStore ? snapStore.commitDeletes() : false);
   }
 
   /**
@@ -674,8 +664,7 @@ export function setAllState(kernelStorage, stuff) {
   }
   for (const [streamName, stream] of streamStuff.entries()) {
     for (const [pos, item] of stream) {
-      const position = { itemCount: pos };
-      streamStore.writeStreamItem(streamName, item, position);
+      streamStore.writeStreamItem(streamName, item, pos);
     }
     streamStore.closeStream(streamName);
   }

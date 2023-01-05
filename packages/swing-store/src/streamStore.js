@@ -1,7 +1,7 @@
 // @ts-check
 import { assert, Fail, q } from '@agoric/assert';
 
-const STREAM_START = { itemCount: 0 };
+const STREAM_START = 0;
 /**
  * @typedef { import('./swingStore').StreamPosition } StreamPosition
  */
@@ -26,17 +26,15 @@ function insistStreamName(streamName) {
  */
 
 function insistStreamPosition(position) {
-  assert.typeof(position, 'object');
-  assert(position);
-  assert.typeof(position.itemCount, 'number');
-  assert(position.itemCount >= 0);
+  assert.typeof(position, 'number');
+  assert(position >= 0);
 }
 
 /**
  * @param {*} db
  * @param {() => void} ensureTxn
  */
-export function makeSQLStreamStore(db, ensureTxn) {
+export function makeStreamStore(db, ensureTxn) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS streamItem (
       streamName TEXT,
@@ -86,15 +84,15 @@ export function makeSQLStreamStore(db, ensureTxn) {
       Fail`can't read stream ${q(streamName)} because it's already in use`;
     insistStreamPosition(startPosition);
     insistStreamPosition(endPosition);
-    startPosition.itemCount <= endPosition.itemCount ||
-      Fail`${q(startPosition.itemCount)} <= ${q(endPosition.itemCount)}}`;
+    startPosition <= endPosition ||
+      Fail`${q(startPosition)} <= ${q(endPosition)}}`;
 
     function* reader() {
       ensureTxn();
       for (const { item } of sqlReadStreamQuery.iterate(
         streamName,
-        startPosition.itemCount,
-        endPosition.itemCount,
+        startPosition,
+        endPosition,
       )) {
         streamStatus.get(streamName) === 'reading' ||
           Fail`can't read stream ${q(streamName)}, it's been closed`;
@@ -105,7 +103,7 @@ export function makeSQLStreamStore(db, ensureTxn) {
     !streamStatus.has(streamName) ||
       Fail`can't read stream ${q(streamName)} because it's already in use`;
 
-    if (startPosition.itemCount === endPosition.itemCount) {
+    if (startPosition === endPosition) {
       return empty();
     }
 
@@ -132,8 +130,8 @@ export function makeSQLStreamStore(db, ensureTxn) {
       Fail`can't write stream ${q(streamName)} because it's already in use`;
 
     ensureTxn();
-    sqlStreamWrite.run(streamName, item, position.itemCount, item);
-    return { itemCount: position.itemCount + 1 };
+    sqlStreamWrite.run(streamName, item, position, item);
+    return position + 1;
   };
 
   /** @param {string} streamName */

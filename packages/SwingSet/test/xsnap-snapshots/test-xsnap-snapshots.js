@@ -68,7 +68,7 @@ test.skip('snapshots', async t => {
 
   // the delivery of startVat and bootstrap() results in snapshot A
   const sidA = getLatestSnapshot();
-  t.true(await snapStore.has(sidA));
+  t.true(snapStore.has(sidA));
   t.deepEqual(getSnapshotUsers(sidA), [vatID]);
 
   // increment() results in snapshot B
@@ -78,8 +78,8 @@ test.skip('snapshots', async t => {
   t.not(sidA, sidB);
   // the DB remembers 'A' as unused, so commit() will delete it, but
   // until then we should have both
-  t.true(await snapStore.has(sidA));
-  t.true(await snapStore.has(sidB));
+  t.true(snapStore.has(sidA));
+  t.true(snapStore.has(sidB));
   t.deepEqual(getSnapshotUsers(sidA), []);
   t.deepEqual(getSnapshotUsers(sidB), [vatID]);
 
@@ -89,8 +89,8 @@ test.skip('snapshots', async t => {
   // used-by entries around forever
   await commit();
 
-  t.false(await snapStore.has(sidA));
-  t.true(await snapStore.has(sidB));
+  t.false(snapStore.has(sidA));
+  t.true(snapStore.has(sidB));
   // t.deepEqual(getSnapshotUsers(sidA), undefined);
   t.deepEqual(getSnapshotUsers(sidA), []); // not deleted
   t.deepEqual(getSnapshotUsers(sidB), [vatID]);
@@ -101,22 +101,22 @@ test.skip('snapshots', async t => {
   await run('read');
 
   t.is(getLatestSnapshot(), sidB);
-  t.true(await snapStore.has(sidB));
+  t.true(snapStore.has(sidB));
   t.deepEqual(getSnapshotUsers(sidA), []); // not deleted
   t.deepEqual(getSnapshotUsers(sidB), [vatID]);
 
   // in the buggy version, this commit() deleted B
   await commit();
   t.is(getLatestSnapshot(), sidB);
-  t.true(await snapStore.has(sidB)); // .. so this failed
+  t.true(snapStore.has(sidB)); // .. so this failed
   t.deepEqual(getSnapshotUsers(sidA), []); // not deleted
   t.deepEqual(getSnapshotUsers(sidB), [vatID]);
 
   await run('increment'); // results in snapshot C
   const sidC = getLatestSnapshot();
   t.not(sidC, sidB);
-  t.true(await snapStore.has(sidB));
-  t.true(await snapStore.has(sidC));
+  t.true(snapStore.has(sidB));
+  t.true(snapStore.has(sidC));
   t.deepEqual(getSnapshotUsers(sidA), []); // not deleted
   t.deepEqual(getSnapshotUsers(sidB), []);
   t.deepEqual(getSnapshotUsers(sidC), [vatID]);
@@ -124,8 +124,8 @@ test.skip('snapshots', async t => {
   // the commit() will delete B now that it is unused
   await commit();
   // in the buggy version, commit() failed because B was already deleted
-  t.false(await snapStore.has(sidB));
-  t.true(await snapStore.has(sidC));
+  t.false(snapStore.has(sidB));
+  t.true(snapStore.has(sidC));
   t.deepEqual(getSnapshotUsers(sidA), []); // not deleted
   t.deepEqual(getSnapshotUsers(sidB), []); // not deleted
   t.deepEqual(getSnapshotUsers(sidC), [vatID]);

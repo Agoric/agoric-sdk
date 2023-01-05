@@ -30,8 +30,8 @@ if (!vatName) {
   console.log(`all vats:`);
   for (const name of allVatNames) {
     const vatID = get(`vat.name.${name}`);
-    const startPos = JSON.parse(get(`${vatID}.t.startPosition`)).itemCount;
-    const endPos = JSON.parse(get(`${vatID}.t.endPosition`)).itemCount;
+    const startPos = Number(get(`${vatID}.t.startPosition`));
+    const endPos = Number(get(`${vatID}.t.endPosition`));
     const len = `${endPos - startPos}`;
     const status = `(static)`;
     console.log(
@@ -41,8 +41,8 @@ if (!vatName) {
     );
   }
   for (const vatID of allDynamicVatIDs) {
-    const startPos = JSON.parse(get(`${vatID}.t.startPosition`)).itemCount;
-    const endPos = JSON.parse(get(`${vatID}.t.endPosition`)).itemCount;
+    const startPos = Number(get(`${vatID}.t.startPosition`));
+    const endPos = Number(get(`${vatID}.t.endPosition`));
     const len = `${endPos - startPos}`;
     const options = JSON.parse(get(`${vatID}.options`));
     const { name, managerType } = options;
@@ -117,9 +117,9 @@ if (!vatName) {
   // *after* the snapshot was taken, where normal operation would
   // start a replay).
 
-  const startPos = JSON.parse(get(`${vatID}.t.startPosition`));
-  const endPos = JSON.parse(get(`${vatID}.t.endPosition`));
-  const transcriptLength = endPos.itemCount - startPos.itemCount;
+  const startPos = Number(get(`${vatID}.t.startPosition`));
+  const endPos = Number(get(`${vatID}.t.endPosition`));
+  const transcriptLength = endPos - startPos;
   console.log(`${transcriptLength} transcript entries`);
 
   let deliveryNum = 0;

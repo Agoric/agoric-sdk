@@ -536,11 +536,9 @@ export function makeVatKeeper(
   }
 
   function transcriptSnapshotStats() {
-    const totalEntries = getTranscriptEndPosition().itemCount;
+    const totalEntries = getTranscriptEndPosition();
     const lastSnapshot = getLastSnapshot();
-    const snapshottedEntries = lastSnapshot
-      ? lastSnapshot.startPos.itemCount
-      : 0;
+    const snapshottedEntries = lastSnapshot ? lastSnapshot.startPos : 0;
     return { totalEntries, snapshottedEntries };
   }
 
@@ -602,7 +600,6 @@ export function makeVatKeeper(
     const info = await manager.makeSnapshot(snapStore);
     const {
       hash: snapshotID,
-      newFile,
       rawByteCount,
       rawSaveSeconds,
       compressedByteCount,
@@ -611,7 +608,7 @@ export function makeVatKeeper(
     const old = getLastSnapshot();
     if (old && old.snapshotID !== snapshotID) {
       if (removeFromSnapshot(old.snapshotID) === 0) {
-        snapStore.prepareToDelete(old.snapshotID);
+        snapStore.deleteSnapshot(old.snapshotID);
       }
     }
     const endPosition = getTranscriptEndPosition();
@@ -624,7 +621,6 @@ export function makeVatKeeper(
       type: 'heap-snapshot-save',
       vatID,
       snapshotID,
-      newFile,
       rawByteCount,
       rawSaveSeconds,
       compressedByteCount,
@@ -641,14 +637,11 @@ export function makeVatKeeper(
       if (notation) {
         const { snapshotID } = JSON.parse(notation);
         if (removeFromSnapshot(snapshotID) === 0) {
-          // TODO: if we roll back (because the upgrade failed), we must
-          // not really delete the snapshot
-          snapStore.prepareToDelete(snapshotID);
+          snapStore.deleteSnapshot(snapshotID);
         }
         kvStore.delete(skey);
       }
     }
-    // TODO: same rollback concern
 
     const endPos = getRequired(`${vatID}.t.endPosition`);
     kvStore.set(`${vatID}.t.startPosition`, endPos);
@@ -663,12 +656,8 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const startCount = JSON.parse(
-      getRequired(`${vatID}.t.startPosition`),
-    ).itemCount;
-    const endCount = JSON.parse(
-      getRequired(`${vatID}.t.endPosition`),
-    ).itemCount;
+    const startCount = Number(getRequired(`${vatID}.t.startPosition`));
+    const endCount = Number(getRequired(`${vatID}.t.endPosition`));
     const transcriptCount = endCount - startCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts

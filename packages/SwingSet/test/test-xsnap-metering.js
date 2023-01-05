@@ -4,6 +4,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import tmp from 'tmp';
+import sqlite3 from 'better-sqlite3';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 
@@ -48,7 +49,8 @@ async function doTest(t, metered) {
   const pool = tmp.dirSync({ unsafeCleanup: true });
   t.teardown(() => pool.removeCallback());
   await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, pool.name, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);
   let snapshotHash;

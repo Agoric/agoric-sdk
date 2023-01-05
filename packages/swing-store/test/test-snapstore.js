@@ -4,6 +4,7 @@ import '@endo/init/debug.js';
 import fs from 'fs';
 import path from 'path';
 import zlib from 'zlib';
+import sqlite3 from 'better-sqlite3';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import test from 'ava';
@@ -17,7 +18,8 @@ test('build temp file; compress to cache file', async t => {
   t.teardown(() => pool.removeCallback());
   t.log({ pool: pool.name });
   await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, {
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, pool.name, {
     ...tmp,
     tmpFile: tmp.file,
     ...path,
@@ -36,23 +38,28 @@ test('build temp file; compress to cache file', async t => {
     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
   t.like(result, {
     hash: expectedHash,
-    filePath: path.resolve(pool.name, `${expectedHash}.gz`),
     rawByteCount: 3,
     rawSaveSeconds: 0,
     compressSeconds: 0,
   });
-  t.is(await store.has(hash), true);
+  t.is(store.has(hash), true);
   const zero =
     '0000000000000000000000000000000000000000000000000000000000000000';
-  t.is(await store.has(zero), false);
+  t.is(store.has(zero), false);
   t.falsy(
     fs.existsSync(keepTmp),
     'temp file should have been deleted after withTempName',
   );
-  const dest = path.resolve(pool.name, `${hash}.gz`);
-  t.truthy(fs.existsSync(dest), 'save() produces file named after hash');
-  const gz = fs.readFileSync(dest);
-  const contents = zlib.gunzipSync(gz);
+
+  const sqlGetSnapshot = db.prepare(`
+    SELECT compressedSnapshot
+    FROM snapshots
+    WHERE hash = ?
+  `);
+  sqlGetSnapshot.pluck(true);
+  const snapshotGZ = sqlGetSnapshot.get(hash);
+  t.truthy(snapshotGZ);
+  const contents = zlib.gunzipSync(snapshotGZ);
   t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
 });
 
@@ -68,7 +75,8 @@ test('snapStore prepare / commit delete is robust', async t => {
     ...fs.promises,
     measureSeconds: makeMeasureSeconds(() => 0),
   };
-  const store = makeSnapStore(pool.name, io);
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, pool.name, io);
 
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
@@ -78,34 +86,22 @@ test('snapStore prepare / commit delete is robust', async t => {
     );
     hashes.push(hash);
   }
-  t.is(fs.readdirSync(pool.name).length, 5);
+  const sqlCountSnapshots = db.prepare(`
+    SELECT COUNT(*)
+    FROM snapshots
+  `);
+  sqlCountSnapshots.pluck(true);
 
-  await t.notThrowsAsync(() => store.commitDeletes());
+  t.is(sqlCountSnapshots.get(), 5);
 
-  // @ts-expect-error
-  t.throws(() => store.prepareToDelete(1));
-  t.throws(() => store.prepareToDelete('../../../etc/passwd'));
-  t.throws(() => store.prepareToDelete('/etc/passwd'));
-
-  store.prepareToDelete(hashes[2]);
-  await store.commitDeletes();
-  t.deepEqual(fs.readdirSync(pool.name).length, 4);
+  store.deleteSnapshot(hashes[2]);
+  t.is(sqlCountSnapshots.get(), 4);
 
   // Restore (re-save) between prepare and commit.
-  store.prepareToDelete(hashes[3]);
+  store.deleteSnapshot(hashes[3]);
   await store.save(async fn => fs.promises.writeFile(fn, `file 3`));
-  await store.commitDeletes();
-  t.true(fs.readdirSync(pool.name).includes(`${hashes[3]}.gz`));
+  t.true(store.has(hashes[3]));
 
-  hashes.forEach(store.prepareToDelete);
-  store.prepareToDelete('does not exist');
-  await t.throwsAsync(() => store.commitDeletes());
-  // but it deleted the rest of the files
-  t.deepEqual(fs.readdirSync(pool.name), []);
-
-  // ignore errors while clearing out pending deletes
-  await store.commitDeletes(true);
-
-  // now we shouldn't see any errors
-  await store.commitDeletes();
+  hashes.forEach(store.deleteSnapshot);
+  t.is(sqlCountSnapshots.get(), 0);
 });
