@@ -365,3 +365,8 @@ export const HandleOfferI = M.interface('HandleOffer', {
     exitObj: ExitObjectI,
   }),
 });
+
+export const PriceQuoteShape = harden({
+  quoteAmount: AmountShape,
+  quotePayment: M.eref(PaymentShape),
+});
