@@ -35,12 +35,11 @@
     "@endo/eventual-send": "^0.16.8",
     "@endo/marshal": "^0.8.1",
     "@endo/promise-kit": "^0.2.52",
-    "@fast-check/ava": "^1.0.1"
+    "@fast-check/ava": "^1.1.3"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.30.2",
-    "@fast-check/ava": "^1.0.1",
-    "ava": "^5.0.1"
+    "ava": "^5.1.0"
   },
   "files": [
     "src/",
