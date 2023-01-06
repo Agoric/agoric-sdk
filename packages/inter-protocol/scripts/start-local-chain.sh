@@ -68,7 +68,7 @@ agoric wallet --keyring-backend=test show --from "$WALLET"
 
 echo "Repeating for oracle2 account..."
 # this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
-# to use it run `agd keys --keyring-backend=test oracle2 --interactive` and enter this mnenomic:
+# to use it run `agd keys --keyring-backend=test add oracle2 --interactive` and enter this mnenomic:
 # dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
 WALLET2=oracle2
 WALLET2_BECH32=$(agd keys --keyring-backend=test show "$WALLET2" --output json | jq -r .address)
