@@ -152,8 +152,6 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @typedef {object} OracleStatus
-   * @property {bigint} startingRound
-   * @property {bigint} endingRound
    * @property {bigint} lastReportedRound
    * @property {bigint} lastStartedRound
    * @property {bigint} latestSubmission
@@ -532,7 +530,6 @@ const start = async (zcf, privateArgs) => {
    */
   const validateOracleRound = (oracleId, roundId, blockTimestamp) => {
     // cache storage reads
-    const startingRound = oracleStatuses.get(oracleId).startingRound;
     const rrId = reportingRoundId;
 
     let canSupersede = true;
@@ -540,10 +537,6 @@ const start = async (zcf, privateArgs) => {
       canSupersede = supersedable(subtract(roundId, 1), blockTimestamp);
     }
 
-    if (startingRound === 0n) return 'not enabled oracle';
-    if (startingRound > roundId) return 'not yet enabled oracle';
-    if (oracleStatuses.get(oracleId).endingRound < roundId)
-      return 'no longer allowed oracle';
     if (oracleStatuses.get(oracleId).lastReportedRound >= roundId)
       return 'cannot report on previous rounds';
     if (
@@ -639,20 +632,6 @@ const start = async (zcf, privateArgs) => {
     }
   };
 
-  /**
-   * @param {string} oracleId
-   */
-  const getStartingRound = oracleId => {
-    const currentRound = reportingRoundId;
-    if (
-      currentRound !== 0n &&
-      currentRound === oracleStatuses.get(oracleId).endingRound
-    ) {
-      return currentRound;
-    }
-    return add(currentRound, 1);
-  };
-
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
     /**
      * An "oracle invitation" is an invitation to be able to submit data to
@@ -709,8 +688,6 @@ const start = async (zcf, privateArgs) => {
       oracleStatuses.init(
         oracleId,
         harden({
-          startingRound: getStartingRound(oracleId),
-          endingRound: ROUND_MAX,
           lastReportedRound: 0n,
           lastStartedRound: 0n,
           latestSubmission: 0n,
