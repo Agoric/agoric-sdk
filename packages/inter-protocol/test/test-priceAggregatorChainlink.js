@@ -602,23 +602,36 @@ test('suggest', async t => {
   // ----- round 2: add a new oracle and confirm the suggested round is correct
   await oracleTimer.tick();
   await E(pricePushAdminB).pushPrice({ roundId: 2, unitPrice: 1000n });
-  const oracleCSuggestion = await E(aggregator.creatorFacet).oracleRoundState(
-    'agorice1priceOracleC',
-    1n,
+
+  t.deepEqual(
+    await E(aggregator.creatorFacet).oracleRoundState(
+      'agorice1priceOracleC',
+      1n,
+    ),
+    {
+      eligibleForSpecificRound: false,
+      oracleCount: 3,
+      oracleStatus: 300n,
+      queriedRoundId: 1n,
+      roundTimeout: 5,
+      startedAt: 1n,
+    },
   );
 
-  t.is(oracleCSuggestion.eligibleForSpecificRound, false);
-  t.is(oracleCSuggestion.queriedRoundId, 1n);
-  t.is(oracleCSuggestion.oracleCount, 3);
-
-  const oracleBSuggestion = await E(aggregator.creatorFacet).oracleRoundState(
-    'agorice1priceOracleB',
-    0n,
+  t.deepEqual(
+    await E(aggregator.creatorFacet).oracleRoundState(
+      'agorice1priceOracleB',
+      0n,
+    ),
+    {
+      eligibleForSpecificRound: false,
+      oracleCount: 3,
+      oracleStatus: 1000n,
+      queriedRoundId: 2n,
+      roundTimeout: 5,
+      startedAt: 3n,
+    },
   );
-
-  t.is(oracleBSuggestion.eligibleForSpecificRound, false);
-  t.is(oracleBSuggestion.queriedRoundId, 2n);
-  t.is(oracleBSuggestion.oracleCount, 3);
 
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 2000n });
@@ -626,14 +639,20 @@ test('suggest', async t => {
   await oracleTimer.tick();
   await E(pricePushAdminC).pushPrice({ roundId: 2, unitPrice: 3000n });
 
-  const oracleASuggestion = await E(aggregator.creatorFacet).oracleRoundState(
-    'agorice1priceOracleA',
-    0n,
+  t.deepEqual(
+    await E(aggregator.creatorFacet).oracleRoundState(
+      'agorice1priceOracleA',
+      0n,
+    ),
+    {
+      eligibleForSpecificRound: true,
+      oracleCount: 3,
+      oracleStatus: 2000n,
+      queriedRoundId: 3n,
+      roundTimeout: 0,
+      startedAt: 0n, // round 3 hasn't yet started, so it should be zeroed
+    },
   );
-
-  t.is(oracleASuggestion.eligibleForSpecificRound, true);
-  t.is(oracleASuggestion.queriedRoundId, 3n);
-  t.is(oracleASuggestion.startedAt, 0n); // round 3 hasn't yet started, so it should be zeroed
 
   // ----- round 3: try using suggested round
   await E(pricePushAdminC).pushPrice({ roundId: 3, unitPrice: 100n });

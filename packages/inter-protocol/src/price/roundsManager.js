@@ -17,6 +17,8 @@ import { Far } from '@endo/marshal';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
+/** @typedef {import('./priceOracleAdmin.js').OracleStatus} OracleStatus */
+
 /** @type {string} */
 const V3_NO_DATA_ERROR = 'No data present';
 
@@ -50,14 +52,6 @@ const validRoundId = roundId => {
  * was computed. answeredInRound may be smaller than roundId when the round
  * timed out. answeredInRound is equal to roundId when the round didn't time out
  * and was completed regularly.
- */
-
-/**
- * @typedef {object} OracleStatus
- * @property {bigint} lastReportedRound
- * @property {bigint} lastStartedRound
- * @property {bigint} latestSubmission
- * @property {number} index
  */
 
 /**
