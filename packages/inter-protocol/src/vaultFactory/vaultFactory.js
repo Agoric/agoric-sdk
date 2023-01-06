@@ -21,14 +21,14 @@ import '@agoric/zoe/src/contracts/exported.js';
 
 import { assertElectorateMatches } from '@agoric/governance';
 import { makeStoredPublisherKit } from '@agoric/notifier';
+import { M, fit } from '@agoric/store';
 import {
   makeVaultDirectorParamManager,
   LIQUIDATION_INSTALL_KEY,
   LIQUIDATION_TERMS_KEY,
   MIN_INITIAL_DEBT_KEY,
 } from './params.js';
-import { makeVaultDirector } from './vaultDirector.js';
-import { assertKeysDefined } from '../contractSupport.js';
+import { vivifyVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
@@ -43,6 +43,14 @@ import { assertKeysDefined } from '../contractSupport.js';
  * }>} VaultFactoryZCF
  */
 
+const privateArgsShape = harden({
+  feeMintAccess: M.eref(M.remotable('mint')),
+  initialPoserInvitation: M.remotable('Invitation'),
+  initialShortfallInvitation: M.remotable('Invitation'),
+  storageNode: M.eref(M.remotable('storageNode')),
+  marshaller: M.eref(M.remotable('marshaller')),
+});
+
 /**
  * @param {VaultFactoryZCF} zcf
  * @param {{
@@ -52,17 +60,13 @@ import { assertKeysDefined } from '../contractSupport.js';
  *   storageNode: ERef<StorageNode>,
  *   marshaller: ERef<Marshaller>,
  * }} privateArgs
+ * @param baggage
  */
-export const start = async (zcf, privateArgs) => {
-  assertKeysDefined(privateArgs, [
-    'feeMintAccess',
-    'initialPoserInvitation',
-    'initialShortfallInvitation',
-    'storageNode',
-    'marshaller',
-  ]);
+export const vivify = async (zcf, privateArgs, baggage) => {
+  fit(privateArgs, privateArgsShape, 'vaultFactory privateArgs');
   const { feeMintAccess, initialPoserInvitation, initialShortfallInvitation } =
     privateArgs;
+  // TODO viviy feeMint
   const debtMint = await zcf.registerFeeMint('Minted', feeMintAccess);
   zcf.setTestJig(() => ({
     mintedIssuerRecord: debtMint.getIssuerRecord(),
@@ -93,8 +97,9 @@ export const start = async (zcf, privateArgs) => {
     zcf.getTerms().governedParams,
   );
 
-  const factory = makeVaultDirector(
+  const factory = vivifyVaultDirector(
     zcf,
+    baggage,
     vaultDirectorParamManager,
     debtMint,
     privateArgs.storageNode,
@@ -107,4 +112,4 @@ export const start = async (zcf, privateArgs) => {
   });
 };
 
-/** @typedef {ContractOf<typeof start>} VaultFactoryContract */
+/** @typedef {ContractOf<typeof vivify>} VaultFactoryContract */

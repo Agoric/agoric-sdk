@@ -17,7 +17,7 @@ export const makeVaultKit = (
   marshaller,
   assetSubscriber,
 ) => {
-  const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
+  const { holder, updater } = makeVaultHolder(vault, storageNode, marshaller);
   const vaultKit = harden({
     publicSubscribers: {
       // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
@@ -30,7 +30,7 @@ export const makeVaultKit = (
       TransferVault: holder.makeTransferInvitation,
     }),
     vault: holder,
-    vaultUpdater: helper.getUpdater(),
+    vaultUpdater: updater,
   });
   return vaultKit;
 };

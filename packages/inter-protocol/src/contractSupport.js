@@ -2,6 +2,11 @@
 import { AmountMath } from '@agoric/ertp';
 import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import {
+  makeScalarBigMapStore,
+  provide,
+  provideDurableSetStore,
+} from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 const { details: X, quote: q } = assert;
@@ -162,13 +167,25 @@ export const makeEphemeraProvider = init => {
 };
 harden(makeEphemeraProvider);
 
-/**
- * @template {Record<string, unknown>} T
- * @param {T} specimen
- * @param {Array<keyof T>} keyList
- */
-export const assertKeysDefined = (specimen, keyList) => {
-  for (const key of keyList) {
-    assert(specimen[key], X`Missing ${q(key)}`);
-  }
+export const provideEmptySeat = (zcf, baggage, name) => {
+  return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
 };
+harden(provideEmptySeat);
+
+export const provideChildBaggage = (baggage, category) => {
+  const baggageSet = provideDurableSetStore(baggage, `${category}Set`);
+  const maker = {
+    addChild: (childName, childFn) => {
+      const childStore = makeScalarBigMapStore(`${childName}${category}`, {
+        durable: true,
+      });
+      const result = childFn(childStore);
+      baggageSet.add(childStore);
+      return result;
+    },
+    children: () => baggageSet.values(),
+  };
+  harden(maker);
+  return maker;
+};
+harden(provideChildBaggage);
