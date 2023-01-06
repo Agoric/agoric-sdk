@@ -25,8 +25,8 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.30.2",
-    "ava": "^5.0.1",
-    "tsd": "^0.22.0"
+    "ava": "^5.1.0",
+    "tsd": "^0.25.0"
   },
   "publishConfig": {
     "access": "public"
