@@ -652,7 +652,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
         return {
           eligibleForSpecificRound: eligibleToSubmit,
           queriedRoundId: roundId,
-          oracleStatus: status.latestSubmission,
+          latestSubmission: status.latestSubmission,
           startedAt,
           roundTimeout,
         };

@@ -611,7 +611,7 @@ test('suggest', async t => {
     {
       eligibleForSpecificRound: false,
       oracleCount: 3,
-      oracleStatus: 300n,
+      latestSubmission: 300n,
       queriedRoundId: 1n,
       roundTimeout: 5,
       startedAt: 1n,
@@ -626,7 +626,7 @@ test('suggest', async t => {
     {
       eligibleForSpecificRound: false,
       oracleCount: 3,
-      oracleStatus: 1000n,
+      latestSubmission: 1000n,
       queriedRoundId: 2n,
       roundTimeout: 5,
       startedAt: 3n,
@@ -647,7 +647,7 @@ test('suggest', async t => {
     {
       eligibleForSpecificRound: true,
       oracleCount: 3,
-      oracleStatus: 2000n,
+      latestSubmission: 2000n,
       queriedRoundId: 3n,
       roundTimeout: 0,
       startedAt: 0n, // round 3 hasn't yet started, so it should be zeroed
