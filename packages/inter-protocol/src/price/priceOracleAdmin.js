@@ -4,7 +4,8 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
  * @typedef {{
- *   roundPowers: { handlePush: Function }
+ *   oracleId: string,
+ *   roundPowers: { handlePush: (status: OracleStatus, result: import('./roundsManager.js').PriceRound) => Promise<OracleStatus> }
  * }} HeldParams
  */
 
@@ -17,6 +18,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  * @property {bigint} lastReportedRound
  * @property {bigint} lastStartedRound
  * @property {bigint} latestSubmission
+ * @property {string} oracleId
  */
 /**
  * @typedef {Readonly<HeldParams & {
@@ -33,8 +35,9 @@ const oracleAdminKind = makeKindHandle('OracleAdmin');
  * @param {HeldParams} heldParams
  * @returns {State}
  */
-const initState = ({ roundPowers }) => {
+const initState = ({ oracleId, roundPowers }) => {
   return {
+    oracleId,
     roundPowers,
     lastReportedRound: 0n,
     lastStartedRound: 0n,
@@ -64,6 +67,7 @@ export const makeOracleAdmin = defineDurableFarClass(
       const { roundPowers } = state;
       const result = await roundPowers.handlePush(
         {
+          oracleId: state.oracleId,
           lastReportedRound: state.lastReportedRound,
           lastStartedRound: state.lastStartedRound,
           latestSubmission: state.latestSubmission,
@@ -85,6 +89,7 @@ export const makeOracleAdmin = defineDurableFarClass(
     getStatus() {
       const { state } = this;
       return {
+        oracleId: state.oracleId,
         lastReportedRound: state.lastReportedRound,
         lastStartedRound: state.lastStartedRound,
         latestSubmission: state.latestSubmission,

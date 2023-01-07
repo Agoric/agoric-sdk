@@ -29,7 +29,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * @typedef {object} RoundState
  * @property {boolean} eligibleForSpecificRound
  * @property {bigint} queriedRoundId
- * @property {bigint} oracleStatus
+ * @property {bigint} latestSubmission
  * @property {Timestamp} startedAt
  * @property {number} roundTimeout
  * @property {number} oracleCount
@@ -288,7 +288,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             blockTimestamp,
           ),
           queriedRoundId,
-          oracleStatus: status.latestSubmission,
+          latestSubmission: status.latestSubmission,
           startedAt: roundStatus.startedAt,
           roundTimeout: roundStatus.roundTimeout,
           oracleCount,
