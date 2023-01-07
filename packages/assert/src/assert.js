@@ -12,7 +12,7 @@
 // this module must be considered a resource module.
 
 // The assertions re-exported here are defined in
-// https://github.com/endojs/endo/blob/master/packages/ses/src/error/assert.js
+// https://github.com/endojs/endo/blob/HEAD/packages/ses/src/error/assert.js
 
 // At https://github.com/Agoric/agoric-sdk/issues/2774
 // is a record of a failed attempt to remove '.types'.

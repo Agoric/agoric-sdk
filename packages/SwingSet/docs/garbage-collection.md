@@ -507,7 +507,7 @@ Comms vats send three kinds of messages to each other:
 * `remote.retireExport`
 * `remote.retireImport`
 
-The comms protocol is [obsequiously polite](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/comms.md#over-the-wire-slot-types), and always formats messages for the convenience of the recipient. The comms GC protocol is the same. When a `dropExport` message arrives, it means the recipient of the message was exporting something to the sender, and now the sending side no longer needs it. When kernel A tells comms A to `dispatch.dropExport`, comms A will tell comms B to `remote.dropExport`.
+The comms protocol is [obsequiously polite](https://github.com/Agoric/agoric-sdk/blob/HEAD/packages/SwingSet/docs/comms.md#over-the-wire-slot-types), and always formats messages for the convenience of the recipient. The comms GC protocol is the same. When a `dropExport` message arrives, it means the recipient of the message was exporting something to the sender, and now the sending side no longer needs it. When kernel A tells comms A to `dispatch.dropExport`, comms A will tell comms B to `remote.dropExport`.
 
 For reference, the following diagram shows the set of object references involved in a downstream vat-3 (inside "machine 3") holding a Presence, which represents the import an object which is ultimately provided by a Remotable exported by vat-1 inside "machine 1".
 

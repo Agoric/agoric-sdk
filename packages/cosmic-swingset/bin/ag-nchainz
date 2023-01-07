@@ -2,7 +2,7 @@
 # ag-nchainz - Agoric-specific nchainz scripts
 #
 # First run at least two Agoric chains:
-# (https://github.com/iqlusioninc/relayer/tree/master/scripts/nchainz)
+# (https://github.com/cosmos/relayer/blob/d59c98adb368822a25328fe74db433f8aae78a1d/scripts/nchainz)
 #
 #   nchainz init agoric agoric
 #   ag-nchainz start-solos

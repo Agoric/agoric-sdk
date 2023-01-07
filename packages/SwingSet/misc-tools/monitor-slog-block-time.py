@@ -47,7 +47,7 @@ import subprocess
 #
 # [sigs2/3/tot]: The number of signatures on the block, of type 2 ("COMMIT")
 #                or type 3 ("NIL"), and the total of both. Tendermint docs at
-#                https://docs.tendermint.com/master/spec/core/data_structures.html#blockidflag
+#                https://github.com/tendermint/tendermint/blob/HEAD/spec/core/data_structures.md#blockidflag
 #                might provide an interpretation of these flags. If the
 #                number of signatures drops, it might indicate that
 #                validators are falling behind and were unable to deliver
