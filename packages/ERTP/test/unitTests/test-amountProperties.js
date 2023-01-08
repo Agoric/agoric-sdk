@@ -107,8 +107,18 @@ test('subtract: (x + y) - y = x; (y - x) + x = y if y >= x', async t => {
 test('minmax', t => {
   fc.assert(
     fc.property(fc.record({ x: arbAmount, y: arbAmount }), ({ x, y }) => {
-      t.deepEqual(m.min(x, y), m.isGTE(x, y) ? y : x, 'SET: min');
-      t.deepEqual(m.max(x, y), m.isGTE(x, y) ? x : y, 'SET: max');
+      if (m.isGTE(x, y)) {
+        t.deepEqual(m.min(x, y), y, 'min');
+        t.deepEqual(m.max(x, y), x, 'max');
+      }
+      if (!m.isGTE(x, y) && !m.isGTE(y, x)) {
+        t.throws(() => m.min(x, y), {
+          message: /\{"brand":.*?\} and \{"brand":.*?\} are incomparable/,
+        });
+        t.throws(() => m.max(x, y), {
+          message: /\{"brand":.*?\} and \{"brand":.*?\} are incomparable/,
+        });
+      }
     }),
   );
 });
