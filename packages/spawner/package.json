@@ -1,6 +1,6 @@
 {
   "name": "@agoric/spawner",
-  "version": "0.6.4",
+  "version": "0.6.3",
   "description": "Wrapper for JavaScript map",
   "type": "module",
   "main": "./src/contractHost.js",
@@ -36,8 +36,8 @@
     "@endo/marshal": "^0.7.5"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.9.5",
-    "@agoric/swingset-vat": "^0.30.3",
+    "@agoric/deploy-script-support": "^0.9.4",
+    "@agoric/swingset-vat": "^0.30.2",
     "@endo/bundle-source": "^2.3.1",
     "@endo/init": "^0.5.49",
     "ava": "^4.3.1",
