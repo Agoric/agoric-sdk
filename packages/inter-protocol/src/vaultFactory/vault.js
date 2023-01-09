@@ -634,7 +634,7 @@ const selfBehavior = {
     const vaultKit = makeVaultKit(
       self,
       storageNode,
-      marshaller,
+      ephemera.marshaller,
       state.manager.getAssetSubscriber(),
     );
     ephemera.outerUpdater = vaultKit.vaultUpdater;

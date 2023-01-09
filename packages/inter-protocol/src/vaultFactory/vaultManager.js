@@ -825,11 +825,7 @@ const selfBehavior = {
     try {
       // TODO `await` is allowed until the above ordering is fixed
       // eslint-disable-next-line @jessie.js/no-nested-await
-      const vaultKit = await vault.initVaultKit(
-        seat,
-        vaultStorageNode,
-        marshaller,
-      );
+      const vaultKit = await vault.initVaultKit(seat, vaultStorageNode);
       // initVaultKit calls back to handleBalanceChange() which will add the
       // vault to prioritizedVaults
       seat.exit();
