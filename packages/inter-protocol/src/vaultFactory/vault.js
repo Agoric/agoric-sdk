@@ -7,12 +7,15 @@ import {
   floorMultiplyBy,
   atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape } from '@agoric/ertp';
+import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
 import {
-  defineDurableKindMulti,
+  defineDurableFarClassKit,
+  M,
   makeKindHandle,
   pickFacet,
 } from '@agoric/vat-data';
+import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeTracer } from '../makeTracer.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeVaultKit } from './vaultKit.js';
@@ -117,16 +120,6 @@ const validTransitions = {
  */
 
 /**
- * @typedef {Readonly<{
- *   state: ImmutableState & MutableState,
- *   facets: {
- *     self: import('@agoric/vat-data/src/types').KindFacet<typeof selfBehavior>,
- *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
- *   },
- * }>} MethodContext
- */
-
-/**
  * Ephemera are the elements of state that cannot (or need not) be durable.
  * When there's a single instance it can be held in a closure, but there are
  * many vault manaager objects. So we hold their ephemera keyed by the durable
@@ -147,6 +140,7 @@ const provideEphemera = makeEphemeraProvider(() => ({}));
  * @param {VaultId} idInManager
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @returns {ImmutableState & MutableState}
  */
 const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
   const ephemera = provideEphemera(idInManager);
@@ -154,9 +148,6 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
   ephemera.marshaller = marshaller;
   ephemera.zcf = zcf;
 
-  /**
-   * @type {ImmutableState & MutableState}
-   */
   return harden({
     idInManager,
     manager,
@@ -212,20 +203,28 @@ const checkRestart = (newCollateralPre, maxDebtPre, newCollateral, newDebt) => {
 
 const helperBehavior = {
   // #region Computed constants
-  collateralBrand: ({ state }) => state.manager.getCollateralBrand(),
-  debtBrand: ({ state }) => state.manager.getDebtBrand(),
+  collateralBrand() {
+    return this.state.manager.getCollateralBrand();
+  },
+  debtBrand() {
+    return this.state.manager.getDebtBrand();
+  },
 
-  emptyCollateral: ({ facets }) =>
-    AmountMath.makeEmpty(facets.helper.collateralBrand()),
-  emptyDebt: ({ facets }) => AmountMath.makeEmpty(facets.helper.debtBrand()),
+  emptyCollateral() {
+    return AmountMath.makeEmpty(this.facets.helper.collateralBrand());
+  },
+  emptyDebt() {
+    return AmountMath.makeEmpty(this.facets.helper.debtBrand());
+  },
   // #endregion
 
   // #region Phase logic
   /**
-   * @param {MethodContext} context
    * @param {VaultPhase} newPhase
    */
-  assignPhase: ({ state }, newPhase) => {
+  assignPhase(newPhase) {
+    const { state } = this;
+
     const { phase } = state;
     const validNewPhases = validTransitions[phase];
     validNewPhases.includes(newPhase) ||
@@ -233,13 +232,13 @@ const helperBehavior = {
     state.phase = newPhase;
   },
 
-  assertActive: ({ state }) => {
-    const { phase } = state;
+  assertActive() {
+    const { phase } = this.state;
     assert(phase === Phase.ACTIVE);
   },
 
-  assertCloseable: ({ state }) => {
-    const { phase } = state;
+  assertCloseable() {
+    const { phase } = this.state;
     phase === Phase.ACTIVE ||
       phase === Phase.LIQUIDATED ||
       Fail`to be closed a vault must be active or liquidated, not ${phase}`;
@@ -250,10 +249,11 @@ const helperBehavior = {
    * Called whenever the debt is paid or created through a transaction,
    * but not for interest accrual.
    *
-   * @param {MethodContext} context
    * @param {Amount<'nat'>} newDebt - principal and all accrued interest
    */
-  updateDebtSnapshot: ({ state }, newDebt) => {
+  updateDebtSnapshot(newDebt) {
+    const { state } = this;
+
     // update local state
     state.debtSnapshot = newDebt;
     state.interestSnapshot = state.manager.getCompoundedInterest();
@@ -263,17 +263,12 @@ const helperBehavior = {
    * Update the debt balance and propagate upwards to
    * maintain aggregate debt and liquidation order.
    *
-   * @param {MethodContext} context
    * @param {NormalizedDebt} oldDebtNormalized - prior principal and all accrued interest, normalized to the launch of the vaultManager
    * @param {Amount<'nat'>} oldCollateral - actual collateral
    * @param {Amount<'nat'>} newDebtActual - actual principal and all accrued interest
    */
-  updateDebtAccounting: (
-    { state, facets },
-    oldDebtNormalized,
-    oldCollateral,
-    newDebtActual,
-  ) => {
+  updateDebtAccounting(oldDebtNormalized, oldCollateral, newDebtActual) {
+    const { state, facets } = this;
     const { helper } = facets;
     helper.updateDebtSnapshot(newDebtActual);
     // notify manager so it can notify and clean up as appropriate
@@ -288,15 +283,20 @@ const helperBehavior = {
 
   /**
    *
-   * @param {MethodContext} context
    * @param {ZCFSeat} seat
    */
-  getCollateralAllocated: ({ facets }, seat) =>
-    seat.getAmountAllocated('Collateral', facets.helper.collateralBrand()),
-  getMintedAllocated: ({ facets }, seat) =>
-    seat.getAmountAllocated('Minted', facets.helper.debtBrand()),
+  getCollateralAllocated(seat) {
+    return seat.getAmountAllocated(
+      'Collateral',
+      this.facets.helper.collateralBrand(),
+    );
+  },
+  getMintedAllocated(seat) {
+    return seat.getAmountAllocated('Minted', this.facets.helper.debtBrand());
+  },
 
-  assertVaultHoldsNoMinted: ({ state, facets }) => {
+  assertVaultHoldsNoMinted() {
+    const { state, facets } = this;
     const { vaultSeat } = state;
     AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat)) ||
       Fail`Vault should be empty of Minted`;
@@ -304,15 +304,11 @@ const helperBehavior = {
 
   /**
    *
-   * @param {MethodContext} context
    * @param {Amount<'nat'>} collateralAmount
    * @param {Amount<'nat'>} proposedRunDebt
    */
-  assertSufficientCollateral: async (
-    { state, facets },
-    collateralAmount,
-    proposedRunDebt,
-  ) => {
+  async assertSufficientCollateral(collateralAmount, proposedRunDebt) {
+    const { state, facets } = this;
     const maxRun = await state.manager.maxDebtFor(collateralAmount);
     AmountMath.isGTE(maxRun, proposedRunDebt, facets.helper.debtBrand()) ||
       Fail`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)} for ${q(
@@ -322,10 +318,11 @@ const helperBehavior = {
 
   /**
    *
-   * @param {MethodContext} context
    * @param {HolderPhase} newPhase
    */
-  getStateSnapshot: ({ state, facets }, newPhase) => {
+  getStateSnapshot(newPhase) {
+    const { state, facets } = this;
+
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
     /** @type {VaultNotification} */
     return harden({
@@ -340,9 +337,9 @@ const helperBehavior = {
   /**
    * call this whenever anything changes!
    *
-   * @param {MethodContext} context
    */
-  updateUiState: ({ state, facets }) => {
+  updateUiState() {
+    const { state, facets } = this;
     const ephemera = provideEphemera(state.idInManager);
     const { outerUpdater } = ephemera;
     if (!outerUpdater) {
@@ -369,10 +366,11 @@ const helperBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    * @param {ZCFSeat} seat
    */
-  closeHook: async ({ state, facets }, seat) => {
+  async closeHook(seat) {
+    const { state, facets } = this;
+
     const { self, helper } = facets;
     helper.assertCloseable();
     const { phase, vaultSeat } = state;
@@ -438,12 +436,13 @@ const helperBehavior = {
    * proposal. If the `want` is zero, the `fee` will also be zero,
    * so the simple math works.
    *
-   * @param {MethodContext} context
    * @param {Amount<'nat'>} currentDebt
    * @param {Amount<'nat'>} giveAmount
    * @param {Amount<'nat'>} wantAmount
    */
-  loanFee: ({ state }, currentDebt, giveAmount, wantAmount) => {
+  loanFee(currentDebt, giveAmount, wantAmount) {
+    const { state } = this;
+
     const fee = ceilMultiplyBy(
       wantAmount,
       state.manager.getGovernedParams().getLoanFee(),
@@ -456,11 +455,12 @@ const helperBehavior = {
   /**
    * Adjust principal and collateral (atomically for offer safety)
    *
-   * @param {MethodContext} context
    * @param {ZCFSeat} clientSeat
    * @returns {Promise<string>} success message
    */
-  adjustBalancesHook: async ({ state, facets }, clientSeat) => {
+  async adjustBalancesHook(clientSeat) {
+    const { state, facets } = this;
+
     const { self, helper } = facets;
     const ephemera = provideEphemera(state.idInManager);
     const { outerUpdater: updaterPre } = ephemera;
@@ -544,11 +544,12 @@ const helperBehavior = {
 
   /**
    *
-   * @param {MethodContext} context
    * @param {ZCFSeat} seat
    * @returns {VaultKit}
    */
-  makeTransferInvitationHook: ({ state, facets }, seat) => {
+  makeTransferInvitationHook(seat) {
+    const { state, facets } = this;
+
     const { self, helper } = facets;
     helper.assertCloseable();
     seat.exit();
@@ -571,18 +572,18 @@ const helperBehavior = {
 
 const selfBehavior = {
   /**
-   * @param {MethodContext} context
    */
-  getVaultSeat: ({ state }) => state.vaultSeat,
+  getVaultSeat() {
+    return this.state.vaultSeat;
+  },
 
   /**
-   * @param {MethodContext} context
    * @param {ZCFSeat} seat
    * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
    */
-  initVaultKit: async ({ state, facets }, seat, storageNode, marshaller) => {
-    assert(seat && storageNode && marshaller, 'initVaultKit missing argument');
+  async initVaultKit(seat, storageNode) {
+    const { state, facets } = this;
+
     const ephemera = provideEphemera(state.idInManager);
 
     const { self, helper } = facets;
@@ -644,9 +645,10 @@ const selfBehavior = {
   /**
    * Called by manager at start of liquidation.
    *
-   * @param {MethodContext} context
    */
-  liquidating: ({ facets }) => {
+  liquidating() {
+    const { facets } = this;
+
     const { helper } = facets;
     helper.assignPhase(Phase.LIQUIDATING);
     helper.updateUiState();
@@ -656,9 +658,10 @@ const selfBehavior = {
    * Called by manager at end of liquidation, at which point all debts have been
    * covered.
    *
-   * @param {MethodContext} context
    */
-  liquidated: ({ facets }) => {
+  liquidated() {
+    const { facets } = this;
+
     const { helper } = facets;
     helper.updateDebtSnapshot(
       // liquidated vaults retain no debt
@@ -670,9 +673,9 @@ const selfBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    */
-  makeAdjustBalancesInvitation: ({ state, facets }) => {
+  makeAdjustBalancesInvitation() {
+    const { state, facets } = this;
     const { helper } = facets;
     helper.assertActive();
     const { zcf } = provideEphemera(state.idInManager);
@@ -683,9 +686,9 @@ const selfBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    */
-  makeCloseInvitation: ({ state, facets }) => {
+  makeCloseInvitation() {
+    const { state, facets } = this;
     const { helper } = facets;
     helper.assertCloseable();
     const { zcf } = provideEphemera(state.idInManager);
@@ -693,10 +696,10 @@ const selfBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    * @returns {Promise<Invitation>}
    */
-  makeTransferInvitation: ({ state, facets }) => {
+  makeTransferInvitation() {
+    const { state, facets } = this;
     const ephemera = provideEphemera(state.idInManager);
     const { outerUpdater } = ephemera;
     const { self, helper } = facets;
@@ -724,10 +727,10 @@ const selfBehavior = {
 
   /**
    *
-   * @param {MethodContext} context
    * @returns {Amount<'nat'>}
    */
-  getCollateralAmount: ({ state, facets }) => {
+  getCollateralAmount() {
+    const { state, facets } = this;
     const { vaultSeat } = state;
     const { helper } = facets;
     // getCollateralAllocated would return final allocations
@@ -747,10 +750,10 @@ const selfBehavior = {
    *
    * @see getNormalizedDebt
    *
-   * @param {MethodContext} context
    * @returns {Amount<'nat'>}
    */
-  getCurrentDebt: ({ state }) => {
+  getCurrentDebt() {
+    const { state } = this;
     return calculateCurrentDebt(
       state.debtSnapshot,
       state.interestSnapshot,
@@ -766,22 +769,45 @@ const selfBehavior = {
    *
    * @see getActualDebAmount
    *
-   * @param {MethodContext} context
    * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault was open at the launch of this manager, before any interest accrued
    */
-  getNormalizedDebt: ({ state }) => {
+  getNormalizedDebt() {
+    const { state } = this;
     // @ts-expect-error cast
     return reverseInterest(state.debtSnapshot, state.interestSnapshot);
   },
 };
 
-const makeVaultBase = defineDurableKindMulti(
-  makeKindHandle('Vault'),
-  initState,
+export const VaultI = M.interface('Vault', {
+  getCollateralAmount: M.call().returns(AmountShape),
+  getCurrentDebt: M.call().returns(AmountShape),
+  getNormalizedDebt: M.call().returns(AmountShape),
+  getVaultSeat: M.call().returns(SeatShape),
+  initVaultKit: M.call(SeatShape, M.eref(StorageNodeShape)).returns(
+    M.promise(),
+  ),
+  liquidated: M.call().returns(undefined),
+  liquidating: M.call().returns(undefined),
+  makeAdjustBalancesInvitation: M.call().returns(M.promise()),
+  makeCloseInvitation: M.call().returns(M.promise()),
+  makeTransferInvitation: M.call().returns(M.promise()),
+});
+
+const vaultKind = makeKindHandle('Vault');
+const makeVaultBase = defineDurableFarClassKit(
+  vaultKind,
   {
-    self: selfBehavior,
-    helper: helperBehavior,
+    helper: M.interface(
+      'DepositFacet',
+      {
+        // helper not exposed so guard not necessary
+      },
+      { sloppy: true },
+    ),
+    self: VaultI,
   },
+  initState,
+  { helper: helperBehavior, self: selfBehavior },
 );
 
 /**
