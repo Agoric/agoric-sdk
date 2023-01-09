@@ -1,7 +1,7 @@
 /* global setImmediate */
 
 // eslint-disable-next-line import/order
-import { makeMarshal } from '@endo/marshal';
+import { Far, makeMarshal } from '@endo/marshal';
 
 import '../src/types-ambient.js';
 
@@ -22,7 +22,7 @@ export const makeFakeStorage = (path, publication) => {
     dataPrefixBytes: '',
   });
   /** @type {StorageNode} */
-  const storage = {
+  const storage = Far('StorageNode', {
     getStoreKey: async () => storeKey,
     setValue: async value => {
       setValueCalls += 1;
@@ -33,9 +33,8 @@ export const makeFakeStorage = (path, publication) => {
       publication.updateState(value);
     },
     makeChildNode: () => storage,
-    // @ts-expect-error
     countSetValueCalls: () => setValueCalls,
-  };
+  });
   return storage;
 };
 harden(makeFakeStorage);
