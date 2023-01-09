@@ -1,10 +1,9 @@
 /**
  * @file Use-object for the owner of a vault
  */
-import '@agoric/zoe/exported.js';
-
-import { makeStoredPublishKit } from '@agoric/notifier';
-import { defineDurableKindMulti, makeKindHandle } from '@agoric/vat-data';
+import { AmountShape } from '@agoric/ertp';
+import { makeStoredPublishKit, SubscriberShape } from '@agoric/notifier';
+import { defineDurableFarClassKit, M, makeKindHandle } from '@agoric/vat-data';
 import { makeEphemeraProvider } from '../contractSupport.js';
 
 const { Fail } = assert;
@@ -26,13 +25,6 @@ const provideEphemera = makeEphemeraProvider(() => ({}));
  * holderId: bigint,
  * vault: Vault | null,
  * }} State
- * @typedef {Readonly<{
- *   state: State,
- *   facets: {
- *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helper>,
- *     self: import('@agoric/vat-data/src/types').KindFacet<typeof holder>,
- *   },
- * }>} MethodContext
  */
 
 /**
@@ -59,54 +51,70 @@ const initState = (vault, storageNode, marshaller) => {
 
 const helper = {
   /**
-   * @param {MethodContext} context
    * @throws if this holder no longer owns the vault
    */
-  owned: ({ state }) => {
-    const { vault } = state;
+  owned() {
+    const { vault } = this.state;
     if (!vault) {
       throw Fail`Using vault holder after transfer`;
     }
     return vault;
   },
-  /** @param {MethodContext} context */
-  getUpdater: ({ state }) => provideEphemera(state.holderId).publisher,
+  getUpdater() {
+    return provideEphemera(this.state.holderId).publisher;
+  },
 };
 
 const holder = {
-  /** @param {MethodContext} context */
-  getSubscriber: ({ state }) => provideEphemera(state.holderId).subscriber,
-  /** @param {MethodContext} context */
-  makeAdjustBalancesInvitation: ({ facets }) =>
-    facets.helper.owned().makeAdjustBalancesInvitation(),
-  /** @param {MethodContext} context */
-  makeCloseInvitation: ({ facets }) =>
-    facets.helper.owned().makeCloseInvitation(),
+  getSubscriber() {
+    return provideEphemera(this.state.holderId).subscriber;
+  },
+  makeAdjustBalancesInvitation() {
+    return this.facets.helper.owned().makeAdjustBalancesInvitation();
+  },
+  makeCloseInvitation() {
+    return this.facets.helper.owned().makeCloseInvitation();
+  },
   /**
    * Starting a transfer revokes the vault holder. The associated updater will
    * get a special notification that the vault is being transferred.
-   *
-   * @param {MethodContext} context
    */
-  makeTransferInvitation: ({ state, facets }) => {
-    const vault = facets.helper.owned();
-    state.vault = null;
+  makeTransferInvitation() {
+    const vault = this.facets.helper.owned();
+    this.state.vault = null;
     return vault.makeTransferInvitation();
   },
   // for status/debugging
-  /** @param {MethodContext} context */
-  getCollateralAmount: ({ facets }) =>
-    facets.helper.owned().getCollateralAmount(),
-  /** @param {MethodContext} context */
-  getCurrentDebt: ({ facets }) => facets.helper.owned().getCurrentDebt(),
-  /** @param {MethodContext} context */
-  getNormalizedDebt: ({ facets }) => facets.helper.owned().getNormalizedDebt(),
+  getCollateralAmount() {
+    return this.facets.helper.owned().getCollateralAmount();
+  },
+  getCurrentDebt() {
+    return this.facets.helper.owned().getCurrentDebt();
+  },
+  getNormalizedDebt() {
+    return this.facets.helper.owned().getNormalizedDebt();
+  },
 };
 
-const behavior = { helper, holder };
-
-export const makeVaultHolder = defineDurableKindMulti(
+export const makeVaultHolder = defineDurableFarClassKit(
   makeKindHandle('VaultHolder'),
+  {
+    helper: M.interface(
+      'helper',
+      // helper not exposed so guard not necessary
+      {},
+      { sloppy: true },
+    ),
+    holder: M.interface('holder', {
+      getCollateralAmount: M.call().returns(AmountShape),
+      getCurrentDebt: M.call().returns(AmountShape),
+      getNormalizedDebt: M.call().returns(AmountShape),
+      getSubscriber: M.call().returns(SubscriberShape),
+      makeAdjustBalancesInvitation: M.call().returns(M.promise()),
+      makeCloseInvitation: M.call().returns(M.promise()),
+      makeTransferInvitation: M.call().returns(M.promise()),
+    }),
+  },
   initState,
-  behavior,
+  { helper, holder },
 );
