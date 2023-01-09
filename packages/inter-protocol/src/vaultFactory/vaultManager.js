@@ -14,10 +14,15 @@
  */
 import '@agoric/zoe/exported.js';
 
-import { AmountMath } from '@agoric/ertp';
-import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
+import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
-  defineDurableKindMulti,
+  makeStoredPublishKit,
+  observeNotifier,
+  SubscriberShape,
+} from '@agoric/notifier';
+import {
+  defineDurableFarClassKit,
+  M,
   makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
@@ -35,6 +40,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
+import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   checkDebtLimit,
   makeEphemeraProvider,
@@ -116,18 +122,6 @@ const trace = makeTracer('VM');
  * totalShortfallReceived: Amount<'nat'>,
  * vaultCounter: number,
  * }} MutableState
- */
-
-/**
- * @typedef {Readonly<{
- *   state: ImmutableState & MutableState,
- *   facets: {
- *     collateral: import('@agoric/vat-data/src/types').KindFacet<typeof collateralBehavior>,
- *     helper: import('@agoric/vat-data/src/types').KindFacet<typeof helperBehavior>,
- *     manager: import('@agoric/vat-data/src/types').KindFacet<typeof managerBehavior>,
- *     self: import('@agoric/vat-data/src/types').KindFacet<typeof selfBehavior>,
- *   }
- * }>} MethodContext
  */
 
 /**
@@ -283,11 +277,11 @@ const initState = (
 // Some of these could go in closures but are kept on a facet anticipating future durability options.
 const helperBehavior = {
   /**
-   * @param {MethodContext} context
    * @param {Timestamp} updateTime
    * @param {ZCFSeat} poolIncrementSeat
    */
-  chargeAllVaults: async ({ state, facets }, updateTime, poolIncrementSeat) => {
+  async chargeAllVaults(updateTime, poolIncrementSeat) {
+    const { state, facets } = this;
     trace('chargeAllVaults', state.collateralBrand, {
       updateTime,
     });
@@ -328,8 +322,8 @@ const helperBehavior = {
     return facets.helper.reschedulePriceCheck();
   },
 
-  /** @param {MethodContext} context */
-  assetNotify: ({ state }) => {
+  assetNotify() {
+    const { state } = this;
     const ephemera = provideEphemera(state.collateralBrand);
     assert(ephemera.factoryPowers && ephemera.assetPublisher);
     const interestRate = ephemera.factoryPowers
@@ -350,8 +344,8 @@ const helperBehavior = {
     ephemera.assetPublisher.publish(payload);
   },
 
-  /** @param {MethodContext} context */
-  updateMetrics: ({ state }) => {
+  updateMetrics() {
+    const { state } = this;
     const { metricsPublication, prioritizedVaults } = provideEphemera(
       state.collateralBrand,
     );
@@ -389,11 +383,11 @@ const helperBehavior = {
    * high-water level when the request was made matches the current high-water
    * level.
    *
-   * @param {MethodContext} context
    * @param {Ratio} [highestRatio]
    * @returns {Promise<void>}
    */
-  reschedulePriceCheck: async ({ state, facets }, highestRatio) => {
+  async reschedulePriceCheck(highestRatio) {
+    const { state, facets } = this;
     const { prioritizedVaults, ...ephemera } = provideEphemera(
       state.collateralBrand,
     );
@@ -435,9 +429,9 @@ const helperBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    */
-  processLiquidations: async ({ state, facets }) => {
+  async processLiquidations() {
+    const { state, facets } = this;
     const { prioritizedVaults, ...ephemera } = provideEphemera(
       state.collateralBrand,
     );
@@ -494,10 +488,10 @@ const helperBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    * @param {[key: string, vaultKit: Vault]} record
    */
-  liquidateAndRemove: ({ state, facets }, [key, vault]) => {
+  liquidateAndRemove([key, vault]) {
+    const { state, facets } = this;
     const { factoryPowers, prioritizedVaults, zcf } = provideEphemera(
       state.collateralBrand,
     );
@@ -592,18 +586,18 @@ const helperBehavior = {
 };
 
 const managerBehavior = {
-  /** @param {MethodContext} context */
-  getGovernedParams: ({ state }) => {
+  getGovernedParams() {
+    const { state } = this;
     const ephemera = provideEphemera(state.collateralBrand);
     assert(ephemera.factoryPowers);
     return ephemera.factoryPowers.getGovernedParams();
   },
 
   /**
-   * @param {MethodContext} context
    * @param {Amount<'nat'>} collateralAmount
    */
-  maxDebtFor: async ({ state }, collateralAmount) => {
+  async maxDebtFor(collateralAmount) {
+    const { state } = this;
     const { debtBrand } = state;
     const { priceAuthority, ...ephemera } = provideEphemera(
       state.collateralBrand,
@@ -623,14 +617,14 @@ const managerBehavior = {
    * TODO utility method to turn a callback into non-actual one
    * was type {MintAndReallocate}
    *
-   * @param {MethodContext} context
    * @param {Amount<'nat'>} toMint
    * @param {Amount<'nat'>} fee
    * @param {ZCFSeat} seat
    * @param {...ZCFSeat} otherSeats
    * @returns {void}
    */
-  mintAndReallocate: ({ state }, toMint, fee, seat, ...otherSeats) => {
+  mintAndReallocate(toMint, fee, seat, ...otherSeats) {
+    const { state } = this;
     const { totalDebt } = state;
     const { factoryPowers } = provideEphemera(state.collateralBrand);
     assert(factoryPowers);
@@ -644,11 +638,11 @@ const managerBehavior = {
     state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   },
   /**
-   * @param {MethodContext} context
    * @param {Amount<'nat'>} toBurn
    * @param {ZCFSeat} seat
    */
-  burnAndRecord: ({ state }, toBurn, seat) => {
+  burnAndRecord(toBurn, seat) {
+    const { state } = this;
     const { factoryPowers } = provideEphemera(state.collateralBrand);
     assert(factoryPowers);
     trace('burnAndRecord', state.collateralBrand, {
@@ -659,40 +653,42 @@ const managerBehavior = {
     burnDebt(toBurn, seat);
     state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
   },
-  /** @param {MethodContext} context */
-  getAssetSubscriber: ({ state }) => {
+  getAssetSubscriber() {
+    const { state } = this;
     const { assetSubscriber } = provideEphemera(state.collateralBrand);
     assert(assetSubscriber);
     return assetSubscriber;
   },
-  /** @param {MethodContext} context */
-  getCollateralBrand: ({ state }) => state.collateralBrand,
-  /** @param {MethodContext} context */
-  getDebtBrand: ({ state }) => state.debtBrand,
+  getCollateralBrand() {
+    return this.state.collateralBrand;
+  },
+  getDebtBrand() {
+    return this.state.debtBrand;
+  },
   /**
    * coefficient on existing debt to calculate new debt
    *
-   * @param {MethodContext} context
    */
-  getCompoundedInterest: ({ state }) => state.compoundedInterest,
+  getCompoundedInterest() {
+    return this.state.compoundedInterest;
+  },
   /**
    * Called by a vault when its balances change.
    *
-   * @param {MethodContext} context
    * @param {NormalizedDebt} oldDebtNormalized
    * @param {Amount<'nat'>} oldCollateral
    * @param {VaultId} vaultId
    * @param {import('./vault.js').VaultPhase} vaultPhase at the end of whatever change updated balances
    * @param {Vault} vault
    */
-  handleBalanceChange: (
-    { state, facets },
+  handleBalanceChange(
     oldDebtNormalized,
     oldCollateral,
     vaultId,
     vaultPhase,
     vault,
-  ) => {
+  ) {
+    const { state, facets } = this;
     const { prioritizedVaults } = provideEphemera(state.collateralBrand);
     assert(prioritizedVaults);
 
@@ -745,31 +741,34 @@ const managerBehavior = {
 };
 
 const collateralBehavior = {
-  /** @param {MethodContext} context */
-  makeVaultInvitation: ({ state, facets: { self } }) => {
-    const { zcf } = provideEphemera(state.collateralBrand);
+  makeVaultInvitation() {
+    const { zcf } = provideEphemera(this.state.collateralBrand);
     assert(zcf);
-    return zcf.makeInvitation(seat => self.makeVaultKit(seat), 'MakeVault');
+    return zcf.makeInvitation(
+      seat => this.facets.self.makeVaultKit(seat),
+      'MakeVault',
+    );
   },
-  /** @param {MethodContext} context */
-  getSubscriber: ({ state }) => {
+  getSubscriber() {
+    const { state } = this;
     const { assetSubscriber } = provideEphemera(state.collateralBrand);
     assert(assetSubscriber);
     return assetSubscriber;
   },
-  /** @param {MethodContext} context */
-  getMetrics: ({ state }) => {
+  getMetrics() {
+    const { state } = this;
     const { metricsSubscription } = provideEphemera(state.collateralBrand);
     assert(metricsSubscription);
     return metricsSubscription;
   },
-  /** @param {MethodContext} context */
-  getCompoundedInterest: ({ state }) => state.compoundedInterest,
+  getCompoundedInterest() {
+    return this.state.compoundedInterest;
+  },
 };
 
 const selfBehavior = {
-  /** @param {MethodContext} context */
-  getGovernedParams: ({ state }) => {
+  getGovernedParams() {
+    const { state } = this;
     const { factoryPowers } = provideEphemera(state.collateralBrand);
     assert(factoryPowers);
     return factoryPowers.getGovernedParams();
@@ -779,9 +778,12 @@ const selfBehavior = {
    * In extreme situations, system health may require liquidating all vaults.
    * This starts the liquidations all in parallel.
    *
-   * @param {MethodContext} context
    */
-  liquidateAll: async ({ state, facets: { helper } }) => {
+  async liquidateAll() {
+    const {
+      state,
+      facets: { helper },
+    } = this;
     const { prioritizedVaults } = provideEphemera(state.collateralBrand);
     assert(prioritizedVaults);
     const toLiquidate = Array.from(prioritizedVaults.entries()).map(entry =>
@@ -791,10 +793,13 @@ const selfBehavior = {
   },
 
   /**
-   * @param {MethodContext} context
    * @param {ZCFSeat} seat
    */
-  makeVaultKit: async ({ state, facets: { manager } }, seat) => {
+  async makeVaultKit(seat) {
+    const {
+      state,
+      facets: { manager },
+    } = this;
     const { marshaller, prioritizedVaults, storageNode, zcf } = provideEphemera(
       state.collateralBrand,
     );
@@ -860,15 +865,11 @@ const selfBehavior = {
 
   /**
    *
-   * @param {MethodContext} param
    * @param {Installation} liquidationInstall
    * @param {object} liquidationTerms
    */
-  setupLiquidator: async (
-    { state, facets },
-    liquidationInstall,
-    liquidationTerms,
-  ) => {
+  async setupLiquidator(liquidationInstall, liquidationTerms) {
+    const { state, facets } = this;
     const { zcf } = provideEphemera(state.collateralBrand);
     assert(zcf);
     const { debtBrand, collateralBrand } = state;
@@ -905,8 +906,8 @@ const selfBehavior = {
     facets.helper.assetNotify();
   },
 
-  /** @param {MethodContext} context */
-  getCollateralQuote: async ({ state }) => {
+  async getCollateralQuote() {
+    const { state } = this;
     const { priceAuthority } = provideEphemera(state.collateralBrand);
     assert(priceAuthority);
 
@@ -916,12 +917,17 @@ const selfBehavior = {
     return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
   },
 
-  /** @param {MethodContext} context */
-  getPublicFacet: ({ facets }) => facets.collateral,
+  getPublicFacet() {
+    return this.facets.collateral;
+  },
 };
 
-/** @param {MethodContext} context */
-const finish = ({ state, facets: { helper } }) => {
+// XXX type error when destructuring params
+const finish = context => {
+  const {
+    state,
+    facets: { helper },
+  } = context;
   const { periodNotifier, prioritizedVaults, zcf } = provideEphemera(
     state.collateralBrand,
   );
@@ -952,17 +958,58 @@ const finish = ({ state, facets: { helper } }) => {
   });
 };
 
-const behavior = {
-  collateral: collateralBehavior,
-  helper: helperBehavior,
-  manager: managerBehavior,
-  self: selfBehavior,
-};
-
-const makeVaultManagerKit = defineDurableKindMulti(
+const makeVaultManagerKit = defineDurableFarClassKit(
   makeKindHandle('VaultManagerKit'),
+  {
+    collateral: M.interface('collateral', {
+      makeVaultInvitation: M.call().returns(M.promise()),
+      getSubscriber: M.call().returns(SubscriberShape),
+      getMetrics: M.call().returns(SubscriberShape),
+      getCompoundedInterest: M.call().returns(RatioShape),
+    }),
+    helper: M.interface(
+      'helper',
+      // not exposed so sloppy okay
+      {},
+      { sloppy: true },
+    ),
+    manager: M.interface('manager', {
+      getGovernedParams: M.call().returns(M.remotable()),
+      maxDebtFor: M.call(AmountShape).returns(M.promise()),
+      mintAndReallocate: M.call(AmountShape, AmountShape, SeatShape)
+        .rest()
+        .returns(),
+      burnAndRecord: M.call(AmountShape, SeatShape).returns(),
+      getAssetSubscriber: M.call().returns(SubscriberShape),
+      getCollateralBrand: M.call().returns(BrandShape),
+      getDebtBrand: M.call().returns(BrandShape),
+      getCompoundedInterest: M.call().returns(RatioShape),
+      handleBalanceChange: M.call(
+        AmountShape,
+        AmountShape,
+        M.string(),
+        M.string(),
+        M.remotable(),
+      ).returns(),
+    }),
+    self: M.interface('self', {
+      getGovernedParams: M.call().returns(M.remotable()),
+      liquidateAll: M.call().returns(M.promise()),
+      makeVaultKit: M.call(SeatShape).returns(M.promise()),
+      setupLiquidator: M.call(InstallationShape, M.record()).returns(
+        M.promise(),
+      ),
+      getCollateralQuote: M.call().returns(M.promise()),
+      getPublicFacet: M.call().returns(M.remotable()),
+    }),
+  },
   initState,
-  behavior,
+  {
+    collateral: collateralBehavior,
+    helper: helperBehavior,
+    manager: managerBehavior,
+    self: selfBehavior,
+  },
   {
     finish,
   },
