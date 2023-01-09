@@ -1025,5 +1025,5 @@ async function run() {
 
 run().catch(err => {
   console.log('RUN ERR', err);
-  // process.exit(1);
+  process.exit(process.exitCode || 1);
 });
