@@ -78,23 +78,19 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makeTestSpace);
 });
 
-test('admin price', async t => {
-  const { agoricNames, zoe } = t.context.consume;
+test.serial('invitations', async t => {
+  const { agoricNames } = t.context.consume;
 
   const wallet = await t.context.simpleProvideWallet(operatorAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
-  const currentSub = E(wallet).getCurrentSubscriber();
 
   await t.context.simpleCreatePriceFeed([operatorAddress], 'ATOM', 'USD');
-
-  const offersFacet = wallet.getOffersFacet();
 
   /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
   );
-  const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
 
   /**
    * get invitation details the way a user would
@@ -125,6 +121,23 @@ test('admin price', async t => {
     proposeInvitationDetails[0].instance,
     priceAggregator,
     'priceAggregator',
+  );
+});
+
+test('admin price', async t => {
+  const { agoricNames, zoe } = t.context.consume;
+
+  const wallet = await t.context.simpleProvideWallet(operatorAddress);
+  const currentSub = E(wallet).getCurrentSubscriber();
+
+  await t.context.simpleCreatePriceFeed([operatorAddress], 'ATOM', 'USD');
+
+  const offersFacet = wallet.getOffersFacet();
+
+  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
+  const priceAggregator = await E(agoricNames).lookup(
+    'instance',
+    'ATOM-USD price feed',
   );
 
   // The purse has the invitation to get the makers ///////////
@@ -183,6 +196,8 @@ test('admin price', async t => {
   );
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   E(manualTimer).tickN(1);
+
+  const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
 
   const latestRoundSubscriber = await E(paPublicFacet).getRoundStartNotifier();
 
