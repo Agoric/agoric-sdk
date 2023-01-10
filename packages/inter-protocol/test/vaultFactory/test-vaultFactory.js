@@ -852,8 +852,8 @@ test('vaultFactory display collateral', async t => {
     500n,
   );
 
-  const { vaultFactory } = services.vaultFactory;
-  const collaterals = await E(vaultFactory).getCollaterals();
+  const { lender } = services.vaultFactory;
+  const collaterals = await E(lender).getCollaterals();
   t.deepEqual(collaterals[0], {
     brand: aeth.brand,
     liquidationMargin: makeRatio(105n, run.brand),

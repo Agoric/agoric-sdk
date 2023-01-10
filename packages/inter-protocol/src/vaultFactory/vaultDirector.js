@@ -427,7 +427,6 @@ const machineBehavior = {
     facets.machine.updateMetrics();
     return vm;
   },
-  getCollaterals,
   /** @param {MethodContext} context */
   makeCollectFeesInvitation: ({ state }) => {
     const { debtMint, zcf } = ephemera;
@@ -489,13 +488,13 @@ const publicBehavior = {
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },
+  getCollaterals,
   getMetrics: () => ephemera.metricsSubscription,
 
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeLoanInvitation: makeVaultInvitation,
   /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
   makeVaultInvitation,
-  getCollaterals,
   getRunIssuer: () => ephemera.debtMint.getIssuerRecord().issuer,
   /**
    * subscription for the paramManager for a particular vaultManager
