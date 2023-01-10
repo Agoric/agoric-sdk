@@ -13,10 +13,14 @@ import {
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 
-import { AmountMath } from '@agoric/ertp';
-import { makeStoredPublisherKit, observeIteration } from '@agoric/notifier';
+import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
-  defineDurableKindMulti,
+  makeStoredPublisherKit,
+  observeIteration,
+  SubscriberShape,
+} from '@agoric/notifier';
+import {
+  defineDurableFarClassKit,
   makeKindHandle,
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
@@ -77,7 +81,7 @@ const ephemera = {};
  *
  * @typedef {ImmutableState & MutableState} State
  *
- *  @typedef {{
+ * @typedef {{
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndReallocate: MintAndReallocate,
@@ -86,9 +90,9 @@ const ephemera = {};
  *
  * @typedef {Readonly<{
  *   state: State;
- *   facets: import('@agoric/vat-data/src/types').KindFacets<typeof behavior>;
  * }>} MethodContext
  */
+// FIXME find a way to type 'finish' with the context (state and facets)
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -194,71 +198,6 @@ const initState = (
 };
 
 /**
- * Make a loan in the vaultManager based on the collateral type.
- *
- * @deprecated
- * @param {MethodContext} context
- */
-const makeVaultInvitation = ({ state }) => {
-  const { zcf } = ephemera;
-
-  const { collateralTypes } = state;
-
-  /** @param {ZCFSeat} seat */
-  const makeVaultHook = async seat => {
-    assertProposalShape(seat, {
-      give: { Collateral: null },
-      want: { Minted: null },
-    });
-    const {
-      give: { Collateral: collateralAmount },
-      want: { Minted: requestedAmount },
-    } = seat.getProposal();
-    const { brand: brandIn } = collateralAmount;
-    collateralTypes.has(brandIn) ||
-      Fail`Not a supported collateral type ${brandIn}`;
-
-    AmountMath.isGTE(
-      requestedAmount,
-      ephemera.directorParamManager.getMinInitialDebt(),
-    ) ||
-      Fail`The request must be for at least ${
-        ephemera.directorParamManager.getMinInitialDebt().value
-      }. ${requestedAmount.value} is too small`;
-
-    /** @type {VaultManager} */
-    const mgr = collateralTypes.get(brandIn);
-    return mgr.makeVaultKit(seat);
-  };
-  return zcf.makeInvitation(makeVaultHook, 'MakeVault');
-};
-
-/**
- * @deprecated get `collaterals` list from metrics
- * @param {MethodContext} context
- */
-const getCollaterals = async ({ state }) => {
-  const { collateralTypes } = state;
-  // should be collateralTypes.map((vm, brand) => ({
-  return harden(
-    Promise.all(
-      [...collateralTypes.entries()].map(async ([brand, vm]) => {
-        const priceQuote = await vm.getCollateralQuote();
-        return {
-          brand,
-          interestRate: vm.getGovernedParams().getInterestRate(),
-          liquidationMargin: vm.getGovernedParams().getLiquidationMargin(),
-          stabilityFee: vm.getGovernedParams().getLoanFee(),
-          marketPrice: makeRatioFromAmounts(
-            getAmountOut(priceQuote),
-            getAmountIn(priceQuote),
-          ),
-        };
-      }),
-    ),
-  );
-};
-/**
  * @param {Ephemera['directorParamManager']} directorParamManager
  */
 const getLiquidationConfig = directorParamManager => ({
@@ -290,21 +229,15 @@ const watchGovernance = (govParams, vaultManager, oldInstall, oldTerms) => {
   });
 };
 
-/** @type {import('@agoric/vat-data/src/types').FunctionsPlusContext<MethodContext, VaultFactoryCreatorFacet>} */
 const machineBehavior = {
   // TODO move this under governance #3924
   /**
-   * @param {MethodContext} context
    * @param {Issuer<'nat'>} collateralIssuer
    * @param {Keyword} collateralKeyword
    * @param {VaultManagerParamValues} initialParamValues
    */
-  addVaultType: async (
-    { state, facets },
-    collateralIssuer,
-    collateralKeyword,
-    initialParamValues,
-  ) => {
+  async addVaultType(collateralIssuer, collateralKeyword, initialParamValues) {
+    const { state, facets } = this;
     const {
       debtMint,
       vaultParamManagers,
@@ -388,14 +321,16 @@ const machineBehavior = {
     const { loanTimingParams } = zcf.getTerms();
 
     const factoryPowers = Far('vault factory powers', {
-      getGovernedParams: () => ({
-        ...vaultParamManager.readonly(),
-        /** @type {() => Amount<'nat'>} */
-        // @ts-expect-error cast
-        getDebtLimit: vaultParamManager.readonly().getDebtLimit,
-        getChargingPeriod: () => loanTimingParams[CHARGING_PERIOD_KEY].value,
-        getRecordingPeriod: () => loanTimingParams[RECORDING_PERIOD_KEY].value,
-      }),
+      getGovernedParams: () =>
+        Far('vault manager param manager', {
+          ...vaultParamManager.readonly(),
+          /** @type {() => Amount<'nat'>} */
+          // @ts-expect-error cast
+          getDebtLimit: vaultParamManager.readonly().getDebtLimit,
+          getChargingPeriod: () => loanTimingParams[CHARGING_PERIOD_KEY].value,
+          getRecordingPeriod: () =>
+            loanTimingParams[RECORDING_PERIOD_KEY].value,
+        }),
       mintAndReallocate,
       getShortfallReporter: async () => {
         const reporterKit = await updateShortfallReporter(
@@ -427,8 +362,8 @@ const machineBehavior = {
     facets.machine.updateMetrics();
     return vm;
   },
-  /** @param {MethodContext} context */
-  makeCollectFeesInvitation: ({ state }) => {
+  makeCollectFeesInvitation() {
+    const { state } = this;
     const { debtMint, zcf } = ephemera;
     const { rewardPoolSeat } = state;
     return makeMakeCollectFeesInvitation(
@@ -438,16 +373,17 @@ const machineBehavior = {
       'Minted',
     ).makeCollectFeesInvitation();
   },
-  getContractGovernor: () => ephemera.zcf.getTerms().electionManager,
-  /** @param {MethodContext} context */
-  updateMetrics: ({ state }) => {
-    ephemera.metricsPublication.updateState(metricsOf(harden(state)));
+  getContractGovernor() {
+    return ephemera.zcf.getTerms().electionManager;
   },
-
+  updateMetrics() {
+    const { state } = this;
+    return ephemera.metricsPublication.updateState(metricsOf(harden(state)));
+  },
   // XXX accessors for tests
-  /** @param {MethodContext} context */
-  getRewardAllocation: ({ state }) =>
-    state.rewardPoolSeat.getCurrentAllocation(),
+  getRewardAllocation() {
+    return this.state.rewardPoolSeat.getCurrentAllocation();
+  },
 };
 
 const creatorBehavior = {
@@ -465,77 +401,139 @@ const creatorBehavior = {
       },
     }),
   /**
-   * @param {MethodContext} context
    * @param {string} name
    */
-  getInvitation: (context, name) =>
-    ephemera.directorParamManager.getInternalParamValue(name),
-  /** @param {MethodContext} context */
-  getLimitedCreatorFacet: context => context.facets.machine,
-  getGovernedApis: () => harden({}),
-  getGovernedApiNames: () => harden({}),
+  getInvitation(name) {
+    return ephemera.directorParamManager.getInternalParamValue(name);
+  },
+  getLimitedCreatorFacet() {
+    return this.facets.machine;
+  },
+  getGovernedApis() {
+    return harden({});
+  },
+  getGovernedApiNames() {
+    return harden({});
+  },
 };
 
 const publicBehavior = {
   /**
-   * @param {MethodContext} context
    * @param {Brand} brandIn
    */
-  getCollateralManager: ({ state }, brandIn) => {
+  getCollateralManager(brandIn) {
+    const { state } = this;
     const { collateralTypes } = state;
     collateralTypes.has(brandIn) ||
       Fail`Not a supported collateral type ${brandIn}`;
     /** @type {VaultManager} */
     return collateralTypes.get(brandIn).getPublicFacet();
   },
-  getCollaterals,
-  getMetrics: () => ephemera.metricsSubscription,
+  /**
+   * @deprecated get `collaterals` list from metrics
+   */
+  async getCollaterals() {
+    const { collateralTypes } = this.state;
+    // should be collateralTypes.map((vm, brand) => ({
+    return harden(
+      Promise.all(
+        [...collateralTypes.entries()].map(async ([brand, vm]) => {
+          const priceQuote = await vm.getCollateralQuote();
+          return {
+            brand,
+            interestRate: vm.getGovernedParams().getInterestRate(),
+            liquidationMargin: vm.getGovernedParams().getLiquidationMargin(),
+            stabilityFee: vm.getGovernedParams().getLoanFee(),
+            marketPrice: makeRatioFromAmounts(
+              getAmountOut(priceQuote),
+              getAmountIn(priceQuote),
+            ),
+          };
+        }),
+      ),
+    );
+  },
+  getMetrics() {
+    return ephemera.metricsSubscription;
+  },
+  /**
+   * @deprecated use getCollateralManager and then makeVaultInvitation instead
+   *
+   * Make a vault in the vaultManager based on the collateral type.
+   *
+   */
+  makeVaultInvitation() {
+    const { zcf } = ephemera;
 
-  /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-  makeLoanInvitation: makeVaultInvitation,
-  /** @deprecated use getCollateralManager and then makeVaultInvitation instead */
-  makeVaultInvitation,
-  getRunIssuer: () => ephemera.debtMint.getIssuerRecord().issuer,
+    const { collateralTypes } = this.state;
+
+    /** @param {ZCFSeat} seat */
+    const makeVaultHook = async seat => {
+      assertProposalShape(seat, {
+        give: { Collateral: null },
+        want: { Minted: null },
+      });
+      const {
+        give: { Collateral: collateralAmount },
+        want: { Minted: requestedAmount },
+      } = seat.getProposal();
+      const { brand: brandIn } = collateralAmount;
+      collateralTypes.has(brandIn) ||
+        Fail`Not a supported collateral type ${brandIn}`;
+
+      AmountMath.isGTE(
+        requestedAmount,
+        ephemera.directorParamManager.getMinInitialDebt(),
+      ) ||
+        Fail`The request must be for at least ${
+          ephemera.directorParamManager.getMinInitialDebt().value
+        }. ${requestedAmount.value} is too small`;
+
+      /** @type {VaultManager} */
+      const mgr = collateralTypes.get(brandIn);
+      return mgr.makeVaultKit(seat);
+    };
+    return zcf.makeInvitation(makeVaultHook, 'MakeVault');
+  },
+  getRunIssuer() {
+    return ephemera.debtMint.getIssuerRecord().issuer;
+  },
   /**
    * subscription for the paramManager for a particular vaultManager
    *
-   * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
    */
-  getSubscription: (context, { collateralBrand }) =>
-    ephemera.vaultParamManagers.get(collateralBrand).getSubscription(),
+  getSubscription({ collateralBrand }) {
+    return ephemera.vaultParamManagers.get(collateralBrand).getSubscription();
+  },
   /**
    * subscription for the paramManager for the vaultFactory's electorate
    */
-  getElectorateSubscription: () =>
-    ephemera.directorParamManager.getSubscription(),
+  getElectorateSubscription() {
+    return ephemera.directorParamManager.getSubscription();
+  },
   /**
-   * @param {MethodContext} context
    * @param {{ collateralBrand: Brand }} selector
    */
-  getGovernedParams: (context, { collateralBrand }) =>
+  getGovernedParams({ collateralBrand }) {
     // TODO use named getters of TypedParamManager
-    ephemera.vaultParamManagers.get(collateralBrand).getParams(),
+    return ephemera.vaultParamManagers.get(collateralBrand).getParams();
+  },
   /**
    * @returns {Promise<GovernorPublic>}
    */
-  getContractGovernor: () =>
+  getContractGovernor() {
     // PERF consider caching
-    E(ephemera.zcf.getZoeService()).getPublicFacet(
+    return E(ephemera.zcf.getZoeService()).getPublicFacet(
       ephemera.zcf.getTerms().electionManager,
-    ),
+    );
+  },
   /**
-   * @param {MethodContext} context
    * @param {string} name
    */
-  getInvitationAmount: (context, name) =>
-    ephemera.directorParamManager.getInvitationAmount(name),
-};
-
-const behavior = {
-  creator: creatorBehavior,
-  machine: machineBehavior,
-  public: publicBehavior,
+  getInvitationAmount(name) {
+    return ephemera.directorParamManager.getInvitationAmount(name);
+  },
 };
 
 /** @param {MethodContext} context */
@@ -564,10 +562,48 @@ const finish = async ({ state }) => {
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const makeVaultDirector = defineDurableKindMulti(
+const makeVaultDirector = defineDurableFarClassKit(
   makeKindHandle('VaultDirector'),
+  {
+    creator: M.interface('creator', {
+      getParamMgrRetriever: M.call().returns(M.remotable()),
+      getInvitation: M.call(M.string()).returns(M.promise()),
+      getLimitedCreatorFacet: M.call().returns(M.remotable()),
+      getGovernedApis: M.call().returns(M.record()),
+      getGovernedApiNames: M.call().returns(M.record()),
+    }),
+    machine: M.interface('machine', {
+      addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
+        M.promise(),
+      ),
+      makeCollectFeesInvitation: M.call().returns(M.promise()),
+      getContractGovernor: M.call().returns(M.remotable()),
+      updateMetrics: M.call().returns(),
+      getCollaterals: M.call().returns(M.promise()),
+      getRewardAllocation: M.call().returns({ Minted: AmountShape }),
+    }),
+    public: M.interface('public', {
+      getCollateralManager: M.call(BrandShape).returns(M.remotable()),
+      getMetrics: M.call().returns(SubscriberShape),
+      makeVaultInvitation: M.call().returns(M.promise()),
+      getRunIssuer: M.call().returns(IssuerShape),
+      getSubscription: M.call({ collateralBrand: BrandShape }).returns(
+        SubscriberShape,
+      ),
+      getElectorateSubscription: M.call().returns(SubscriberShape),
+      getGovernedParams: M.call({ collateralBrand: BrandShape }).returns(
+        M.record(),
+      ),
+      getContractGovernor: M.call().returns(M.remotable()),
+      getInvitationAmount: M.call(M.string()).returns(AmountShape),
+    }),
+  },
   initState,
-  behavior,
+  {
+    creator: creatorBehavior,
+    machine: machineBehavior,
+    public: publicBehavior,
+  },
   { finish },
 );
 
