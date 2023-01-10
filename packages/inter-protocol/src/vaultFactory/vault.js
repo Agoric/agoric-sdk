@@ -1,31 +1,26 @@
-import '@agoric/zoe/exported.js';
-
-import {
-  assertProposalShape,
-  makeRatioFromAmounts,
-  ceilMultiplyBy,
-  floorMultiplyBy,
-  atomicTransfer,
-} from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { M, vivifyFarClassKit } from '@agoric/vat-data';
 import {
-  defineDurableFarClassKit,
-  M,
-  makeKindHandle,
-  pickFacet,
-} from '@agoric/vat-data';
+  assertProposalShape,
+  atomicTransfer,
+  ceilMultiplyBy,
+  floorMultiplyBy,
+  makeRatioFromAmounts,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { makeTracer } from '../makeTracer.js';
-import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { makeVaultKit } from './vaultKit.js';
 import {
   addSubtract,
   assertOnlyKeys,
   makeEphemeraProvider,
   stageDelta,
 } from '../contractSupport.js';
+import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
+import { makeTracer } from '../makeTracer.js';
 import { UnguardedHelperI } from '../typeGuards.js';
+import { vivifyVaultKit } from './vaultKit.js';
+
+import '@agoric/zoe/exported.js';
 
 const { quote: q, Fail } = assert;
 
@@ -217,619 +212,638 @@ export const VaultI = M.interface('Vault', {
   makeTransferInvitation: M.call().returns(M.promise()),
 });
 
-const vaultKind = makeKindHandle('Vault');
-const makeVaultBase = defineDurableFarClassKit(
-  vaultKind,
-  {
-    helper: UnguardedHelperI,
-    self: VaultI,
-  },
-  initState,
-  {
-    helper: {
-      // #region Computed constants
-      collateralBrand() {
-        return this.state.manager.getCollateralBrand();
-      },
-      debtBrand() {
-        return this.state.manager.getDebtBrand();
-      },
+export const vivifyVault = baggage => {
+  const makeVaultKit = vivifyVaultKit(baggage);
 
-      emptyCollateral() {
-        return AmountMath.makeEmpty(this.facets.helper.collateralBrand());
-      },
-      emptyDebt() {
-        return AmountMath.makeEmpty(this.facets.helper.debtBrand());
-      },
-      // #endregion
+  // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
+  const maker = vivifyFarClassKit(
+    baggage,
+    'Vault',
+    {
+      helper: UnguardedHelperI,
+      self: VaultI,
+    },
+    initState,
+    {
+      helper: {
+        // #region Computed constants
+        collateralBrand() {
+          return this.state.manager.getCollateralBrand();
+        },
+        debtBrand() {
+          return this.state.manager.getDebtBrand();
+        },
 
-      // #region Phase logic
-      /**
-       * @param {VaultPhase} newPhase
-       */
-      assignPhase(newPhase) {
-        const { state } = this;
+        emptyCollateral() {
+          return AmountMath.makeEmpty(this.facets.helper.collateralBrand());
+        },
+        emptyDebt() {
+          return AmountMath.makeEmpty(this.facets.helper.debtBrand());
+        },
+        // #endregion
 
-        const { phase } = state;
-        const validNewPhases = validTransitions[phase];
-        validNewPhases.includes(newPhase) ||
-          Fail`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`;
-        state.phase = newPhase;
-      },
+        // #region Phase logic
+        /**
+         * @param {VaultPhase} newPhase
+         */
+        assignPhase(newPhase) {
+          const { state } = this;
 
-      assertActive() {
-        const { phase } = this.state;
-        assert(phase === Phase.ACTIVE);
-      },
+          const { phase } = state;
+          const validNewPhases = validTransitions[phase];
+          validNewPhases.includes(newPhase) ||
+            Fail`Vault cannot transition from ${q(phase)} to ${q(newPhase)}`;
+          state.phase = newPhase;
+        },
 
-      assertCloseable() {
-        const { phase } = this.state;
-        phase === Phase.ACTIVE ||
-          phase === Phase.LIQUIDATED ||
-          Fail`to be closed a vault must be active or liquidated, not ${phase}`;
-      },
-      // #endregion
+        assertActive() {
+          const { phase } = this.state;
+          assert(phase === Phase.ACTIVE);
+        },
 
-      /**
-       * Called whenever the debt is paid or created through a transaction,
-       * but not for interest accrual.
-       *
-       * @param {Amount<'nat'>} newDebt - principal and all accrued interest
-       */
-      updateDebtSnapshot(newDebt) {
-        const { state } = this;
+        assertCloseable() {
+          const { phase } = this.state;
+          phase === Phase.ACTIVE ||
+            phase === Phase.LIQUIDATED ||
+            Fail`to be closed a vault must be active or liquidated, not ${phase}`;
+        },
+        // #endregion
 
-        // update local state
-        state.debtSnapshot = newDebt;
-        state.interestSnapshot = state.manager.getCompoundedInterest();
-      },
+        /**
+         * Called whenever the debt is paid or created through a transaction,
+         * but not for interest accrual.
+         *
+         * @param {Amount<'nat'>} newDebt - principal and all accrued interest
+         */
+        updateDebtSnapshot(newDebt) {
+          const { state } = this;
 
-      /**
-       * Update the debt balance and propagate upwards to
-       * maintain aggregate debt and liquidation order.
-       *
-       * @param {NormalizedDebt} oldDebtNormalized - prior principal and all accrued interest, normalized to the launch of the vaultManager
-       * @param {Amount<'nat'>} oldCollateral - actual collateral
-       * @param {Amount<'nat'>} newDebtActual - actual principal and all accrued interest
-       */
-      updateDebtAccounting(oldDebtNormalized, oldCollateral, newDebtActual) {
-        const { state, facets } = this;
-        const { helper } = facets;
-        helper.updateDebtSnapshot(newDebtActual);
-        // notify manager so it can notify and clean up as appropriate
-        state.manager.handleBalanceChange(
-          oldDebtNormalized,
-          oldCollateral,
-          state.idInManager,
-          state.phase,
-          facets.self,
-        );
-      },
+          // update local state
+          state.debtSnapshot = newDebt;
+          state.interestSnapshot = state.manager.getCompoundedInterest();
+        },
 
-      /**
-       *
-       * @param {ZCFSeat} seat
-       */
-      getCollateralAllocated(seat) {
-        return seat.getAmountAllocated(
-          'Collateral',
-          this.facets.helper.collateralBrand(),
-        );
-      },
-      getMintedAllocated(seat) {
-        return seat.getAmountAllocated(
-          'Minted',
-          this.facets.helper.debtBrand(),
-        );
-      },
+        /**
+         * Update the debt balance and propagate upwards to
+         * maintain aggregate debt and liquidation order.
+         *
+         * @param {NormalizedDebt} oldDebtNormalized - prior principal and all accrued interest, normalized to the launch of the vaultManager
+         * @param {Amount<'nat'>} oldCollateral - actual collateral
+         * @param {Amount<'nat'>} newDebtActual - actual principal and all accrued interest
+         */
+        updateDebtAccounting(oldDebtNormalized, oldCollateral, newDebtActual) {
+          const { state, facets } = this;
+          const { helper } = facets;
+          helper.updateDebtSnapshot(newDebtActual);
+          // notify manager so it can notify and clean up as appropriate
+          state.manager.handleBalanceChange(
+            oldDebtNormalized,
+            oldCollateral,
+            state.idInManager,
+            state.phase,
+            facets.self,
+          );
+        },
 
-      assertVaultHoldsNoMinted() {
-        const { state, facets } = this;
-        const { vaultSeat } = state;
-        AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat)) ||
-          Fail`Vault should be empty of Minted`;
-      },
+        /**
+         *
+         * @param {ZCFSeat} seat
+         */
+        getCollateralAllocated(seat) {
+          return seat.getAmountAllocated(
+            'Collateral',
+            this.facets.helper.collateralBrand(),
+          );
+        },
+        getMintedAllocated(seat) {
+          return seat.getAmountAllocated(
+            'Minted',
+            this.facets.helper.debtBrand(),
+          );
+        },
 
-      /**
-       *
-       * @param {Amount<'nat'>} collateralAmount
-       * @param {Amount<'nat'>} proposedRunDebt
-       */
-      async assertSufficientCollateral(collateralAmount, proposedRunDebt) {
-        const { state, facets } = this;
-        const maxRun = await state.manager.maxDebtFor(collateralAmount);
-        AmountMath.isGTE(maxRun, proposedRunDebt, facets.helper.debtBrand()) ||
-          Fail`Requested ${q(proposedRunDebt)} exceeds max ${q(maxRun)} for ${q(
-            collateralAmount,
-          )} collateral`;
-      },
+        assertVaultHoldsNoMinted() {
+          const { state, facets } = this;
+          const { vaultSeat } = state;
+          AmountMath.isEmpty(facets.helper.getMintedAllocated(vaultSeat)) ||
+            Fail`Vault should be empty of Minted`;
+        },
 
-      /**
-       *
-       * @param {HolderPhase} newPhase
-       */
-      getStateSnapshot(newPhase) {
-        const { state, facets } = this;
+        /**
+         *
+         * @param {Amount<'nat'>} collateralAmount
+         * @param {Amount<'nat'>} proposedRunDebt
+         */
+        async assertSufficientCollateral(collateralAmount, proposedRunDebt) {
+          const { state, facets } = this;
+          const maxRun = await state.manager.maxDebtFor(collateralAmount);
+          AmountMath.isGTE(
+            maxRun,
+            proposedRunDebt,
+            facets.helper.debtBrand(),
+          ) ||
+            Fail`Requested ${q(proposedRunDebt)} exceeds max ${q(
+              maxRun,
+            )} for ${q(collateralAmount)} collateral`;
+        },
 
-        const { debtSnapshot: debt, interestSnapshot: interest } = state;
-        /** @type {VaultNotification} */
-        return harden({
-          debtSnapshot: { debt, interest },
-          locked: facets.self.getCollateralAmount(),
-          // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
-          // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
-          vaultState: newPhase,
-        });
-      },
+        /**
+         *
+         * @param {HolderPhase} newPhase
+         */
+        getStateSnapshot(newPhase) {
+          const { state, facets } = this;
 
-      /**
-       * call this whenever anything changes!
-       */
-      updateUiState() {
-        const { state, facets } = this;
-        const ephemera = provideEphemera(state.idInManager);
-        const { outerUpdater } = ephemera;
-        if (!outerUpdater) {
-          // It's not an error to change to liquidating during transfer
-          return;
-        }
-        const { phase } = state;
-        const uiState = facets.helper.getStateSnapshot(phase);
-        trace('updateUiState', state.idInManager, uiState);
+          const { debtSnapshot: debt, interestSnapshot: interest } = state;
+          /** @type {VaultNotification} */
+          return harden({
+            debtSnapshot: { debt, interest },
+            locked: facets.self.getCollateralAmount(),
+            // newPhase param is so that makeTransferInvitation can finish without setting the vault's phase
+            // TODO refactor https://github.com/Agoric/agoric-sdk/issues/4415
+            vaultState: newPhase,
+          });
+        },
 
-        switch (phase) {
-          case Phase.ACTIVE:
-          case Phase.LIQUIDATING:
-          case Phase.LIQUIDATED:
-            outerUpdater.publish(uiState);
-            break;
-          case Phase.CLOSED:
-            outerUpdater.finish(uiState);
-            ephemera.outerUpdater = null;
-            break;
-          default:
-            throw Error(`unreachable vault phase: ${phase}`);
-        }
-      },
+        /**
+         * call this whenever anything changes!
+         */
+        updateUiState() {
+          const { state, facets } = this;
+          const ephemera = provideEphemera(state.idInManager);
+          const { outerUpdater } = ephemera;
+          if (!outerUpdater) {
+            // It's not an error to change to liquidating during transfer
+            return;
+          }
+          const { phase } = state;
+          const uiState = facets.helper.getStateSnapshot(phase);
+          trace('updateUiState', state.idInManager, uiState);
 
-      /**
-       * @param {ZCFSeat} seat
-       */
-      async closeHook(seat) {
-        const { state, facets } = this;
+          switch (phase) {
+            case Phase.ACTIVE:
+            case Phase.LIQUIDATING:
+            case Phase.LIQUIDATED:
+              outerUpdater.publish(uiState);
+              break;
+            case Phase.CLOSED:
+              outerUpdater.finish(uiState);
+              ephemera.outerUpdater = null;
+              break;
+            default:
+              throw Error(`unreachable vault phase: ${phase}`);
+          }
+        },
 
-        const { self, helper } = facets;
-        helper.assertCloseable();
-        const { phase, vaultSeat } = state;
-        const { zcf } = provideEphemera(state.idInManager);
+        /**
+         * @param {ZCFSeat} seat
+         */
+        async closeHook(seat) {
+          const { state, facets } = this;
 
-        // Held as keys for cleanup in the manager
-        const oldDebtNormalized = self.getNormalizedDebt();
-        const oldCollateral = self.getCollateralAmount();
+          const { self, helper } = facets;
+          helper.assertCloseable();
+          const { phase, vaultSeat } = state;
+          const { zcf } = provideEphemera(state.idInManager);
 
-        if (phase === Phase.ACTIVE) {
-          assertProposalShape(seat, {
-            give: { Minted: null },
+          // Held as keys for cleanup in the manager
+          const oldDebtNormalized = self.getNormalizedDebt();
+          const oldCollateral = self.getCollateralAmount();
+
+          if (phase === Phase.ACTIVE) {
+            assertProposalShape(seat, {
+              give: { Minted: null },
+            });
+
+            // you're paying off the debt, you get everything back.
+            const debt = self.getCurrentDebt();
+            const {
+              give: { Minted: given },
+            } = seat.getProposal();
+
+            // you must pay off the entire remainder but if you offer too much, we won't
+            // take more than you owe
+            AmountMath.isGTE(given, debt) ||
+              Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
+
+            // Return any overpayment
+            atomicTransfer(
+              zcf,
+              vaultSeat,
+              seat,
+              vaultSeat.getCurrentAllocation(),
+            );
+
+            state.manager.burnAndRecord(debt, seat);
+          } else if (phase === Phase.LIQUIDATED) {
+            // Simply reallocate vault assets to the offer seat.
+            // Don't take anything from the offer, even if vault is underwater.
+            // TODO verify that returning Minted here doesn't mess up debt limits
+
+            atomicTransfer(
+              zcf,
+              vaultSeat,
+              seat,
+              vaultSeat.getCurrentAllocation(),
+            );
+          } else {
+            throw new Error('only active and liquidated vaults can be closed');
+          }
+
+          seat.exit();
+          helper.assignPhase(Phase.CLOSED);
+          helper.updateDebtSnapshot(helper.emptyDebt());
+          helper.updateUiState();
+
+          helper.assertVaultHoldsNoMinted();
+          vaultSeat.exit();
+
+          state.manager.handleBalanceChange(
+            oldDebtNormalized,
+            oldCollateral,
+            state.idInManager,
+            state.phase,
+            facets.self,
+          );
+
+          return 'your loan is closed, thank you for your business';
+        },
+
+        /**
+         * Calculate the fee, the amount to mint and the resulting debt.
+         * The give and the want together reflect a delta, where typically
+         * one is zero because they come from the gave/want of an offer
+         * proposal. If the `want` is zero, the `fee` will also be zero,
+         * so the simple math works.
+         *
+         * @param {Amount<'nat'>} currentDebt
+         * @param {Amount<'nat'>} giveAmount
+         * @param {Amount<'nat'>} wantAmount
+         */
+        loanFee(currentDebt, giveAmount, wantAmount) {
+          const { state } = this;
+
+          const fee = ceilMultiplyBy(
+            wantAmount,
+            state.manager.getGovernedParams().getLoanFee(),
+          );
+          const toMint = AmountMath.add(wantAmount, fee);
+          const newDebt = addSubtract(currentDebt, toMint, giveAmount);
+          return { newDebt, toMint, fee };
+        },
+
+        /**
+         * Adjust principal and collateral (atomically for offer safety)
+         *
+         * @param {ZCFSeat} clientSeat
+         * @returns {Promise<string>} success message
+         */
+        async adjustBalancesHook(clientSeat) {
+          const { state, facets } = this;
+
+          const { self, helper } = facets;
+          const ephemera = provideEphemera(state.idInManager);
+          const { outerUpdater: updaterPre } = ephemera;
+          const { vaultSeat } = state;
+          const proposal = clientSeat.getProposal();
+          assertOnlyKeys(proposal, ['Collateral', 'Minted']);
+
+          const allEmpty = amounts => {
+            return amounts.every(a => AmountMath.isEmpty(a));
+          };
+
+          const normalizedDebtPre = self.getNormalizedDebt();
+          const collateralPre = helper.getCollateralAllocated(vaultSeat);
+
+          const giveColl = proposal.give.Collateral || helper.emptyCollateral();
+          const wantColl = proposal.want.Collateral || helper.emptyCollateral();
+
+          const newCollateralPre = addSubtract(
+            collateralPre,
+            giveColl,
+            wantColl,
+          );
+          // max debt supported by current Collateral as modified by proposal
+          const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
+          updaterPre === ephemera.outerUpdater ||
+            Fail`Transfer during vault adjustment`;
+          helper.assertActive();
+
+          // After the `await`, we retrieve the vault's allocations again,
+          // so we can compare to the debt limit based on the new values.
+          const collateral = helper.getCollateralAllocated(vaultSeat);
+          const newCollateral = addSubtract(collateral, giveColl, wantColl);
+
+          const debt = self.getCurrentDebt();
+          const giveMinted = AmountMath.min(
+            proposal.give.Minted || helper.emptyDebt(),
+            debt,
+          );
+          const wantMinted = proposal.want.Minted || helper.emptyDebt();
+          if (allEmpty([giveColl, giveMinted, wantColl, wantMinted])) {
+            clientSeat.exit();
+            return 'no transaction, as requested';
+          }
+
+          // Calculate the fee, the amount to mint and the resulting debt. We'll
+          // verify that the target debt doesn't violate the collateralization ratio,
+          // then mint, reallocate, and burn.
+          const { newDebt, fee, toMint } = helper.loanFee(
+            debt,
+            giveMinted,
+            wantMinted,
+          );
+
+          trace('adjustBalancesHook', state.idInManager, {
+            newCollateralPre,
+            newCollateral,
+            fee,
+            toMint,
+            newDebt,
           });
 
-          // you're paying off the debt, you get everything back.
-          const debt = self.getCurrentDebt();
+          if (
+            checkRestart(newCollateralPre, maxDebtPre, newCollateral, newDebt)
+          ) {
+            return helper.adjustBalancesHook(clientSeat);
+          }
+
+          stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
+          // `wantMinted` is allocated in the reallocate and mint operation, and so not here
+          stageDelta(
+            clientSeat,
+            vaultSeat,
+            giveMinted,
+            helper.emptyDebt(),
+            'Minted',
+          );
+
+          /** @type {Array<ZCFSeat>} */
+          const vaultSeatOpt = allEmpty([giveColl, giveMinted, wantColl])
+            ? []
+            : [vaultSeat];
+          state.manager.mintAndReallocate(
+            toMint,
+            fee,
+            clientSeat,
+            ...vaultSeatOpt,
+          );
+
+          // parent needs to know about the change in debt
+          helper.updateDebtAccounting(
+            normalizedDebtPre,
+            collateralPre,
+            newDebt,
+          );
+          state.manager.burnAndRecord(giveMinted, vaultSeat);
+          helper.assertVaultHoldsNoMinted();
+
+          helper.updateUiState();
+          clientSeat.exit();
+          return 'We have adjusted your balances, thank you for your business';
+        },
+
+        /**
+         *
+         * @param {ZCFSeat} seat
+         * @returns {VaultKit}
+         */
+        makeTransferInvitationHook(seat) {
+          const { state, facets } = this;
+
+          const { self, helper } = facets;
+          helper.assertCloseable();
+          seat.exit();
+
+          const ephemera = provideEphemera(state.idInManager);
+
+          // eslint-disable-next-line no-use-before-define
+          const vaultKit = makeVaultKit(
+            self,
+            ephemera.storageNode,
+            ephemera.marshaller,
+            state.manager.getAssetSubscriber(),
+          );
+          ephemera.outerUpdater = vaultKit.vaultUpdater;
+          helper.updateUiState();
+
+          return vaultKit;
+        },
+      },
+      self: {
+        getVaultSeat() {
+          return this.state.vaultSeat;
+        },
+
+        /**
+         * @param {ZCFSeat} seat
+         * @param {ERef<StorageNode>} storageNode
+         */
+        async initVaultKit(seat, storageNode) {
+          const { state, facets } = this;
+
+          const ephemera = provideEphemera(state.idInManager);
+
+          const { self, helper } = facets;
+
+          const normalizedDebtPre = self.getNormalizedDebt();
+          const actualDebtPre = self.getCurrentDebt();
+          (AmountMath.isEmpty(normalizedDebtPre) &&
+            AmountMath.isEmpty(actualDebtPre)) ||
+            Fail`vault must be empty initially`;
+
+          const collateralPre = self.getCollateralAmount();
+          trace('initVaultKit start: collateral', state.idInManager, {
+            actualDebtPre,
+            collateralPre,
+          });
+
+          // get the payout to provide access to the collateral if the
+          // contract abandons
           const {
-            give: { Minted: given },
+            give: { Collateral: giveCollateral },
+            want: { Minted: wantMinted },
           } = seat.getProposal();
 
-          // you must pay off the entire remainder but if you offer too much, we won't
-          // take more than you owe
-          AmountMath.isGTE(given, debt) ||
-            Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
-
-          // Return any overpayment
-          atomicTransfer(
-            zcf,
-            vaultSeat,
-            seat,
-            vaultSeat.getCurrentAllocation(),
+          const {
+            newDebt: newDebtPre,
+            fee,
+            toMint,
+          } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
+          !AmountMath.isEmpty(fee) ||
+            Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
+          AmountMath.isEqual(newDebtPre, toMint) ||
+            Fail`fee mismatch for vault`;
+          trace(
+            'initVault',
+            state.idInManager,
+            { wantedRun: wantMinted, fee },
+            self.getCollateralAmount(),
           );
 
-          state.manager.burnAndRecord(debt, seat);
-        } else if (phase === Phase.LIQUIDATED) {
-          // Simply reallocate vault assets to the offer seat.
-          // Don't take anything from the offer, even if vault is underwater.
-          // TODO verify that returning Minted here doesn't mess up debt limits
+          await helper.assertSufficientCollateral(giveCollateral, newDebtPre);
 
-          atomicTransfer(
-            zcf,
-            vaultSeat,
-            seat,
-            vaultSeat.getCurrentAllocation(),
+          const { vaultSeat } = state;
+          vaultSeat.incrementBy(
+            seat.decrementBy(harden({ Collateral: giveCollateral })),
           );
-        } else {
-          throw new Error('only active and liquidated vaults can be closed');
-        }
+          state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
+          helper.updateDebtAccounting(
+            normalizedDebtPre,
+            collateralPre,
+            newDebtPre,
+          );
 
-        seat.exit();
-        helper.assignPhase(Phase.CLOSED);
-        helper.updateDebtSnapshot(helper.emptyDebt());
-        helper.updateUiState();
+          const vaultKit = makeVaultKit(
+            self,
+            storageNode,
+            ephemera.marshaller,
+            state.manager.getAssetSubscriber(),
+          );
+          ephemera.outerUpdater = vaultKit.vaultUpdater;
+          helper.updateUiState();
+          return vaultKit;
+        },
 
-        helper.assertVaultHoldsNoMinted();
-        vaultSeat.exit();
+        /**
+         * Called by manager at start of liquidation.
+         */
+        liquidating() {
+          const { facets } = this;
 
-        state.manager.handleBalanceChange(
-          oldDebtNormalized,
-          oldCollateral,
-          state.idInManager,
-          state.phase,
-          facets.self,
-        );
+          const { helper } = facets;
+          helper.assignPhase(Phase.LIQUIDATING);
+          helper.updateUiState();
+        },
 
-        return 'your loan is closed, thank you for your business';
-      },
+        /**
+         * Called by manager at end of liquidation, at which point all debts have been
+         * covered.
+         */
+        liquidated() {
+          const { facets } = this;
 
-      /**
-       * Calculate the fee, the amount to mint and the resulting debt.
-       * The give and the want together reflect a delta, where typically
-       * one is zero because they come from the gave/want of an offer
-       * proposal. If the `want` is zero, the `fee` will also be zero,
-       * so the simple math works.
-       *
-       * @param {Amount<'nat'>} currentDebt
-       * @param {Amount<'nat'>} giveAmount
-       * @param {Amount<'nat'>} wantAmount
-       */
-      loanFee(currentDebt, giveAmount, wantAmount) {
-        const { state } = this;
+          const { helper } = facets;
+          helper.updateDebtSnapshot(
+            // liquidated vaults retain no debt
+            AmountMath.makeEmpty(helper.debtBrand()),
+          );
 
-        const fee = ceilMultiplyBy(
-          wantAmount,
-          state.manager.getGovernedParams().getLoanFee(),
-        );
-        const toMint = AmountMath.add(wantAmount, fee);
-        const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-        return { newDebt, toMint, fee };
-      },
+          helper.assignPhase(Phase.LIQUIDATED);
+          helper.updateUiState();
+        },
 
-      /**
-       * Adjust principal and collateral (atomically for offer safety)
-       *
-       * @param {ZCFSeat} clientSeat
-       * @returns {Promise<string>} success message
-       */
-      async adjustBalancesHook(clientSeat) {
-        const { state, facets } = this;
+        makeAdjustBalancesInvitation() {
+          const { state, facets } = this;
+          const { helper } = facets;
+          helper.assertActive();
+          const { zcf } = provideEphemera(state.idInManager);
+          return zcf.makeInvitation(
+            seat => helper.adjustBalancesHook(seat),
+            'AdjustBalances',
+          );
+        },
 
-        const { self, helper } = facets;
-        const ephemera = provideEphemera(state.idInManager);
-        const { outerUpdater: updaterPre } = ephemera;
-        const { vaultSeat } = state;
-        const proposal = clientSeat.getProposal();
-        assertOnlyKeys(proposal, ['Collateral', 'Minted']);
+        makeCloseInvitation() {
+          const { state, facets } = this;
+          const { helper } = facets;
+          helper.assertCloseable();
+          const { zcf } = provideEphemera(state.idInManager);
+          return zcf.makeInvitation(
+            seat => helper.closeHook(seat),
+            'CloseVault',
+          );
+        },
 
-        const allEmpty = amounts => {
-          return amounts.every(a => AmountMath.isEmpty(a));
-        };
+        /**
+         * @returns {Promise<Invitation>}
+         */
+        makeTransferInvitation() {
+          const { state, facets } = this;
+          const ephemera = provideEphemera(state.idInManager);
+          const { outerUpdater } = ephemera;
+          const { self, helper } = facets;
+          // Bring the debt snapshot current for the final report before transfer
+          helper.updateDebtSnapshot(self.getCurrentDebt());
+          const {
+            debtSnapshot: debt,
+            interestSnapshot: interest,
+            phase,
+          } = state;
+          if (outerUpdater) {
+            outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
+            ephemera.outerUpdater = null;
+          }
+          const transferState = {
+            debtSnapshot: { debt, interest },
+            locked: self.getCollateralAmount(),
+            vaultState: phase,
+          };
+          const { zcf } = provideEphemera(state.idInManager);
+          return zcf.makeInvitation(
+            seat => helper.makeTransferInvitationHook(seat),
+            'TransferVault',
+            transferState,
+          );
+        },
 
-        const normalizedDebtPre = self.getNormalizedDebt();
-        const collateralPre = helper.getCollateralAllocated(vaultSeat);
+        // for status/debugging
 
-        const giveColl = proposal.give.Collateral || helper.emptyCollateral();
-        const wantColl = proposal.want.Collateral || helper.emptyCollateral();
+        /**
+         *
+         * @returns {Amount<'nat'>}
+         */
+        getCollateralAmount() {
+          const { state, facets } = this;
+          const { vaultSeat } = state;
+          const { helper } = facets;
+          // getCollateralAllocated would return final allocations
+          return vaultSeat.hasExited()
+            ? helper.emptyCollateral()
+            : helper.getCollateralAllocated(vaultSeat);
+        },
 
-        const newCollateralPre = addSubtract(collateralPre, giveColl, wantColl);
-        // max debt supported by current Collateral as modified by proposal
-        const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
-        updaterPre === ephemera.outerUpdater ||
-          Fail`Transfer during vault adjustment`;
-        helper.assertActive();
+        /**
+         * The actual current debt, including accrued interest.
+         *
+         * This looks like a simple getter but it does a lot of the heavy lifting for
+         * interest accrual. Rather than updating all records when interest accrues,
+         * the vault manager updates just its rolling compounded interest. Here we
+         * calculate what the current debt is given what's recorded in this vault and
+         * what interest has compounded since this vault record was written.
+         *
+         * @see getNormalizedDebt
+         *
+         * @returns {Amount<'nat'>}
+         */
+        getCurrentDebt() {
+          const { state } = this;
+          return calculateCurrentDebt(
+            state.debtSnapshot,
+            state.interestSnapshot,
+            state.manager.getCompoundedInterest(),
+          );
+        },
 
-        // After the `await`, we retrieve the vault's allocations again,
-        // so we can compare to the debt limit based on the new values.
-        const collateral = helper.getCollateralAllocated(vaultSeat);
-        const newCollateral = addSubtract(collateral, giveColl, wantColl);
-
-        const debt = self.getCurrentDebt();
-        const giveMinted = AmountMath.min(
-          proposal.give.Minted || helper.emptyDebt(),
-          debt,
-        );
-        const wantMinted = proposal.want.Minted || helper.emptyDebt();
-        if (allEmpty([giveColl, giveMinted, wantColl, wantMinted])) {
-          clientSeat.exit();
-          return 'no transaction, as requested';
-        }
-
-        // Calculate the fee, the amount to mint and the resulting debt. We'll
-        // verify that the target debt doesn't violate the collateralization ratio,
-        // then mint, reallocate, and burn.
-        const { newDebt, fee, toMint } = helper.loanFee(
-          debt,
-          giveMinted,
-          wantMinted,
-        );
-
-        trace('adjustBalancesHook', state.idInManager, {
-          newCollateralPre,
-          newCollateral,
-          fee,
-          toMint,
-          newDebt,
-        });
-
-        if (
-          checkRestart(newCollateralPre, maxDebtPre, newCollateral, newDebt)
-        ) {
-          return helper.adjustBalancesHook(clientSeat);
-        }
-
-        stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
-        // `wantMinted` is allocated in the reallocate and mint operation, and so not here
-        stageDelta(
-          clientSeat,
-          vaultSeat,
-          giveMinted,
-          helper.emptyDebt(),
-          'Minted',
-        );
-
-        /** @type {Array<ZCFSeat>} */
-        const vaultSeatOpt = allEmpty([giveColl, giveMinted, wantColl])
-          ? []
-          : [vaultSeat];
-        state.manager.mintAndReallocate(
-          toMint,
-          fee,
-          clientSeat,
-          ...vaultSeatOpt,
-        );
-
-        // parent needs to know about the change in debt
-        helper.updateDebtAccounting(normalizedDebtPre, collateralPre, newDebt);
-        state.manager.burnAndRecord(giveMinted, vaultSeat);
-        helper.assertVaultHoldsNoMinted();
-
-        helper.updateUiState();
-        clientSeat.exit();
-        return 'We have adjusted your balances, thank you for your business';
-      },
-
-      /**
-       *
-       * @param {ZCFSeat} seat
-       * @returns {VaultKit}
-       */
-      makeTransferInvitationHook(seat) {
-        const { state, facets } = this;
-
-        const { self, helper } = facets;
-        helper.assertCloseable();
-        seat.exit();
-
-        const ephemera = provideEphemera(state.idInManager);
-
-        // eslint-disable-next-line no-use-before-define
-        const vaultKit = makeVaultKit(
-          self,
-          ephemera.storageNode,
-          ephemera.marshaller,
-          state.manager.getAssetSubscriber(),
-        );
-        ephemera.outerUpdater = vaultKit.vaultUpdater;
-        helper.updateUiState();
-
-        return vaultKit;
+        /**
+         * The normalization puts all debts on a common time-independent scale since
+         * the launch of this vault manager. This allows the manager to order vaults
+         * by their debt-to-collateral ratios without having to mutate the debts as
+         * the interest accrues.
+         *
+         * @see getActualDebAmount
+         *
+         * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault was open at the launch of this manager, before any interest accrued
+         */
+        getNormalizedDebt() {
+          const { state } = this;
+          // @ts-expect-error cast
+          return reverseInterest(state.debtSnapshot, state.interestSnapshot);
+        },
       },
     },
-    self: {
-      getVaultSeat() {
-        return this.state.vaultSeat;
-      },
+  );
+  return maker;
+};
 
-      /**
-       * @param {ZCFSeat} seat
-       * @param {ERef<StorageNode>} storageNode
-       */
-      async initVaultKit(seat, storageNode) {
-        const { state, facets } = this;
-
-        const ephemera = provideEphemera(state.idInManager);
-
-        const { self, helper } = facets;
-
-        const normalizedDebtPre = self.getNormalizedDebt();
-        const actualDebtPre = self.getCurrentDebt();
-        (AmountMath.isEmpty(normalizedDebtPre) &&
-          AmountMath.isEmpty(actualDebtPre)) ||
-          Fail`vault must be empty initially`;
-
-        const collateralPre = self.getCollateralAmount();
-        trace('initVaultKit start: collateral', state.idInManager, {
-          actualDebtPre,
-          collateralPre,
-        });
-
-        // get the payout to provide access to the collateral if the
-        // contract abandons
-        const {
-          give: { Collateral: giveCollateral },
-          want: { Minted: wantMinted },
-        } = seat.getProposal();
-
-        const {
-          newDebt: newDebtPre,
-          fee,
-          toMint,
-        } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
-        !AmountMath.isEmpty(fee) ||
-          Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
-        AmountMath.isEqual(newDebtPre, toMint) || Fail`fee mismatch for vault`;
-        trace(
-          'initVault',
-          state.idInManager,
-          { wantedRun: wantMinted, fee },
-          self.getCollateralAmount(),
-        );
-
-        await helper.assertSufficientCollateral(giveCollateral, newDebtPre);
-
-        const { vaultSeat } = state;
-        vaultSeat.incrementBy(
-          seat.decrementBy(harden({ Collateral: giveCollateral })),
-        );
-        state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
-        helper.updateDebtAccounting(
-          normalizedDebtPre,
-          collateralPre,
-          newDebtPre,
-        );
-
-        const vaultKit = makeVaultKit(
-          self,
-          storageNode,
-          ephemera.marshaller,
-          state.manager.getAssetSubscriber(),
-        );
-        ephemera.outerUpdater = vaultKit.vaultUpdater;
-        helper.updateUiState();
-        return vaultKit;
-      },
-
-      /**
-       * Called by manager at start of liquidation.
-       */
-      liquidating() {
-        const { facets } = this;
-
-        const { helper } = facets;
-        helper.assignPhase(Phase.LIQUIDATING);
-        helper.updateUiState();
-      },
-
-      /**
-       * Called by manager at end of liquidation, at which point all debts have been
-       * covered.
-       */
-      liquidated() {
-        const { facets } = this;
-
-        const { helper } = facets;
-        helper.updateDebtSnapshot(
-          // liquidated vaults retain no debt
-          AmountMath.makeEmpty(helper.debtBrand()),
-        );
-
-        helper.assignPhase(Phase.LIQUIDATED);
-        helper.updateUiState();
-      },
-
-      makeAdjustBalancesInvitation() {
-        const { state, facets } = this;
-        const { helper } = facets;
-        helper.assertActive();
-        const { zcf } = provideEphemera(state.idInManager);
-        return zcf.makeInvitation(
-          seat => helper.adjustBalancesHook(seat),
-          'AdjustBalances',
-        );
-      },
-
-      makeCloseInvitation() {
-        const { state, facets } = this;
-        const { helper } = facets;
-        helper.assertCloseable();
-        const { zcf } = provideEphemera(state.idInManager);
-        return zcf.makeInvitation(seat => helper.closeHook(seat), 'CloseVault');
-      },
-
-      /**
-       * @returns {Promise<Invitation>}
-       */
-      makeTransferInvitation() {
-        const { state, facets } = this;
-        const ephemera = provideEphemera(state.idInManager);
-        const { outerUpdater } = ephemera;
-        const { self, helper } = facets;
-        // Bring the debt snapshot current for the final report before transfer
-        helper.updateDebtSnapshot(self.getCurrentDebt());
-        const { debtSnapshot: debt, interestSnapshot: interest, phase } = state;
-        if (outerUpdater) {
-          outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
-          ephemera.outerUpdater = null;
-        }
-        const transferState = {
-          debtSnapshot: { debt, interest },
-          locked: self.getCollateralAmount(),
-          vaultState: phase,
-        };
-        const { zcf } = provideEphemera(state.idInManager);
-        return zcf.makeInvitation(
-          seat => helper.makeTransferInvitationHook(seat),
-          'TransferVault',
-          transferState,
-        );
-      },
-
-      // for status/debugging
-
-      /**
-       *
-       * @returns {Amount<'nat'>}
-       */
-      getCollateralAmount() {
-        const { state, facets } = this;
-        const { vaultSeat } = state;
-        const { helper } = facets;
-        // getCollateralAllocated would return final allocations
-        return vaultSeat.hasExited()
-          ? helper.emptyCollateral()
-          : helper.getCollateralAllocated(vaultSeat);
-      },
-
-      /**
-       * The actual current debt, including accrued interest.
-       *
-       * This looks like a simple getter but it does a lot of the heavy lifting for
-       * interest accrual. Rather than updating all records when interest accrues,
-       * the vault manager updates just its rolling compounded interest. Here we
-       * calculate what the current debt is given what's recorded in this vault and
-       * what interest has compounded since this vault record was written.
-       *
-       * @see getNormalizedDebt
-       *
-       * @returns {Amount<'nat'>}
-       */
-      getCurrentDebt() {
-        const { state } = this;
-        return calculateCurrentDebt(
-          state.debtSnapshot,
-          state.interestSnapshot,
-          state.manager.getCompoundedInterest(),
-        );
-      },
-
-      /**
-       * The normalization puts all debts on a common time-independent scale since
-       * the launch of this vault manager. This allows the manager to order vaults
-       * by their debt-to-collateral ratios without having to mutate the debts as
-       * the interest accrues.
-       *
-       * @see getActualDebAmount
-       *
-       * @returns {import('./storeUtils.js').NormalizedDebt} as if the vault was open at the launch of this manager, before any interest accrued
-       */
-      getNormalizedDebt() {
-        const { state } = this;
-        // @ts-expect-error cast
-        return reverseInterest(state.debtSnapshot, state.interestSnapshot);
-      },
-    },
-  },
-);
-
-/**
- * @param {ZCF} zcf
- * @param {VaultManager} manager
- * @param {VaultId} idInManager
- */
-export const makeVault = pickFacet(makeVaultBase, 'self');
-
-/** @typedef {ReturnType<typeof makeVault>} Vault */
+/** @typedef {ReturnType<ReturnType<typeof vivifyVault>>['self']} Vault */

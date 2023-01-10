@@ -1,37 +1,36 @@
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
-import { makeVaultHolder } from './vaultHolder.js';
+import { vivifyVaultHolder } from './vaultHolder.js';
 
-/**
- * Create a kit of utilities for use of the vault.
- *
- * @param {Vault} vault
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
- */
-export const makeVaultKit = (
-  vault,
-  storageNode,
-  marshaller,
-  assetSubscriber,
-) => {
-  const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
-  const vaultKit = harden({
-    publicSubscribers: {
-      // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
-      asset: assetSubscriber,
-      vault: holder.getSubscriber(),
-    },
-    invitationMakers: Far('invitation makers', {
-      AdjustBalances: holder.makeAdjustBalancesInvitation,
-      CloseVault: holder.makeCloseInvitation,
-      TransferVault: holder.makeTransferInvitation,
-    }),
-    vault: holder,
-    vaultUpdater: helper.getUpdater(),
-  });
-  return vaultKit;
+export const vivifyVaultKit = baggage => {
+  const makeVaultHolder = vivifyVaultHolder(baggage);
+  /**
+   * Create a kit of utilities for use of the vault.
+   *
+   * @param {Vault} vault
+   * @param {ERef<StorageNode>} storageNode
+   * @param {ERef<Marshaller>} marshaller
+   * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
+   */
+  const makeVaultKit = (vault, storageNode, marshaller, assetSubscriber) => {
+    const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
+    const vaultKit = harden({
+      publicSubscribers: {
+        // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
+        asset: assetSubscriber,
+        vault: holder.getSubscriber(),
+      },
+      invitationMakers: Far('invitation makers', {
+        AdjustBalances: holder.makeAdjustBalancesInvitation,
+        CloseVault: holder.makeCloseInvitation,
+        TransferVault: holder.makeTransferInvitation,
+      }),
+      vault: holder,
+      vaultUpdater: helper.getUpdater(),
+    });
+    return vaultKit;
+  };
+  return makeVaultKit;
 };
 
-/** @typedef {(ReturnType<typeof makeVaultKit>)} VaultKit */
+/** @typedef {(ReturnType<ReturnType<typeof vivifyVaultKit>>)} VaultKit */

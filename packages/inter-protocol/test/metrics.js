@@ -1,4 +1,4 @@
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
+import { makeNotifierFromAsyncIterable, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
 
@@ -45,12 +45,12 @@ export const subscriptionTracker = async (t, subscription) => {
  * For public facets that have a `getMetrics` method.
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics?: () => ConsistentAsyncIterable<unknown>}} publicFacet
+ * @param {{getMetrics?: () => Subscriber<unknown>}} publicFacet
  * @template {object} N
  */
 export const metricsTracker = async (t, publicFacet) => {
   const metricsSub = await E(publicFacet).getMetrics();
-  return subscriptionTracker(t, metricsSub);
+  return subscriptionTracker(t, subscribeEach(metricsSub));
 };
 
 /**
@@ -60,7 +60,6 @@ export const metricsTracker = async (t, publicFacet) => {
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
   /** @type {Awaited<ReturnType<typeof subscriptionTracker<import('../src/vaultFactory/vaultManager').MetricsNotification>>>} */
-  // @ts-expect-error cast
   const m = await metricsTracker(t, publicFacet);
 
   /** @returns {bigint} Proceeds - overage + shortfall */
