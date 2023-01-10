@@ -25,8 +25,6 @@ import { zip } from '../../src/collect.js';
  */
 const test = anyTest;
 
-const operatorAddress = 'oracleTestAddress';
-
 const makeTestSpace = async log => {
   const psmParams = {
     anchorAssets: [{ denom: 'ibc/usdc1234', keyword: 'AUSD' }],
@@ -99,7 +97,31 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
   return { oracleWallets, priceAggregator };
 };
 
+let acceptInvitationCounter = 0;
+const acceptInvitation = async (wallet, priceAggregator) => {
+  acceptInvitationCounter += 1;
+  const id = `acceptInvitation${acceptInvitationCounter}`;
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+  const getInvMakersSpec = {
+    source: 'purse',
+    instance: priceAggregator,
+    description: INVITATION_MAKERS_DESC,
+  };
+
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const invMakersOffer = {
+    id,
+    invitationSpec: getInvMakersSpec,
+    proposal: {},
+  };
+  await wallet.getOffersFacet().executeOffer(invMakersOffer);
+  // wait for it to settle
+  await eventLoopIteration();
+  return id;
+};
+
 test.serial('invitations', async t => {
+  const operatorAddress = 'invitation test';
   const wallet = await t.context.simpleProvideWallet(operatorAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
@@ -137,20 +159,8 @@ test.serial('invitations', async t => {
     priceAggregator,
     'priceAggregator',
   );
-});
 
-test('admin price', async t => {
-  const { zoe } = t.context.consume;
-
-  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
-    operatorAddress,
-  ]);
-  const wallet = oracleWallets[operatorAddress];
-  const currentSub = E(wallet).getCurrentSubscriber();
-
-  const offersFacet = wallet.getOffersFacet();
-
-  // The purse has the invitation to get the makers ///////////
+  // The purse has the invitation to get the makers
 
   /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
   const getInvMakersSpec = {
@@ -159,32 +169,47 @@ test('admin price', async t => {
     description: INVITATION_MAKERS_DESC,
   };
 
+  const id = '33';
   /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const invMakersOffer = {
-    id: 44,
+    id,
     invitationSpec: getInvMakersSpec,
     proposal: {},
   };
+  await wallet.getOffersFacet().executeOffer(invMakersOffer);
 
-  await offersFacet.executeOffer(invMakersOffer);
-
+  const currentSub = E(wallet).getCurrentSubscriber();
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   const currentState = await headValue(currentSub);
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [id]);
   t.is(
-    currentState.offerToUsedInvitation[44].value[0].description,
+    currentState.offerToUsedInvitation[id].value[0].description,
     INVITATION_MAKERS_DESC,
   );
+});
+
+test('admin price', async t => {
+  const operatorAddress = 'adminPriceAddress';
+  const { zoe } = t.context.consume;
+
+  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
+    operatorAddress,
+  ]);
+  const wallet = oracleWallets[operatorAddress];
+
+  const offersFacet = wallet.getOffersFacet();
 
   // Push a new price result /////////////////////////
 
   /** @type {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} */
   const result = { roundId: 1, unitPrice: 123n };
 
+  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
+
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
-    previousOffer: 44,
+    previousOffer: adminOfferId,
     invitationMakerName: 'PushPrice',
     invitationArgs: harden([result]),
   };
