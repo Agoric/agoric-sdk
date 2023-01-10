@@ -16,6 +16,7 @@ import { INVITATION_MAKERS_DESC } from '../../src/price/priceAggregatorChainlink
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { makeDefaultTestContext } from './contexts.js';
+import { zip } from '../../src/collect.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -78,19 +79,33 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makeTestSpace);
 });
 
-test.serial('invitations', async t => {
+const setupFeedWithWallets = async (t, oracleAddresses) => {
   const { agoricNames } = t.context.consume;
 
-  const wallet = await t.context.simpleProvideWallet(operatorAddress);
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const wallets = await Promise.all(
+    oracleAddresses.map(addr => t.context.simpleProvideWallet(addr)),
+  );
 
-  await t.context.simpleCreatePriceFeed([operatorAddress], 'ATOM', 'USD');
+  const oracleWallets = Object.fromEntries(zip(oracleAddresses, wallets));
+
+  await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
   /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
   );
+
+  return { oracleWallets, priceAggregator };
+};
+
+test.serial('invitations', async t => {
+  const wallet = await t.context.simpleProvideWallet(operatorAddress);
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
+  // this returns wallets, but we need the updates subscriber to start before the price feed starts
+  // so we provision the wallet earlier above
+  const { priceAggregator } = await setupFeedWithWallets(t, [operatorAddress]);
 
   /**
    * get invitation details the way a user would
@@ -125,20 +140,15 @@ test.serial('invitations', async t => {
 });
 
 test('admin price', async t => {
-  const { agoricNames, zoe } = t.context.consume;
+  const { zoe } = t.context.consume;
 
-  const wallet = await t.context.simpleProvideWallet(operatorAddress);
+  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
+    operatorAddress,
+  ]);
+  const wallet = oracleWallets[operatorAddress];
   const currentSub = E(wallet).getCurrentSubscriber();
 
-  await t.context.simpleCreatePriceFeed([operatorAddress], 'ATOM', 'USD');
-
   const offersFacet = wallet.getOffersFacet();
-
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
-  const priceAggregator = await E(agoricNames).lookup(
-    'instance',
-    'ATOM-USD price feed',
-  );
 
   // The purse has the invitation to get the makers ///////////
 
