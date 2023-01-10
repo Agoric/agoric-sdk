@@ -25,6 +25,7 @@ import {
   makeEphemeraProvider,
   stageDelta,
 } from '../contractSupport.js';
+import { UnguardedHelperI } from '../typeGuards.js';
 
 const { quote: q, Fail } = assert;
 
@@ -797,13 +798,7 @@ const vaultKind = makeKindHandle('Vault');
 const makeVaultBase = defineDurableFarClassKit(
   vaultKind,
   {
-    helper: M.interface(
-      'DepositFacet',
-      {
-        // helper not exposed so guard not necessary
-      },
-      { sloppy: true },
-    ),
+    helper: UnguardedHelperI,
     self: VaultI,
   },
   initState,
