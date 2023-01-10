@@ -131,6 +131,9 @@ test('want stable', async t => {
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   const wallet = await t.context.simpleProvideWallet('agoric1wantstable');
+  const current = await E(E(wallet).getCurrentSubscriber())
+    .subscribeAfter()
+    .then(pub => pub.head.value);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
   const offersFacet = wallet.getOffersFacet();
@@ -138,7 +141,10 @@ test('want stable', async t => {
   // let promises settle to notify brands and create purses
   await eventLoopIteration();
 
-  t.is(purseBalance(computedState, anchor.brand), 0n);
+  t.deepEqual(current.purses.find(b => b.brand === anchor.brand).balance, {
+    brand: anchor.brand,
+    value: 0n,
+  });
 
   t.log('Fund the wallet');
   assert(anchor.mint);

@@ -35,7 +35,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {object} opts.powers
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
- * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
+ * @param {(brand: Brand) => Promise<import('./types').RemotePurse>} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
  * @param {(offerId: OfferId, invitationAmount: Amount<'set'>, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
  */

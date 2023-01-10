@@ -2,15 +2,12 @@ import {
   AmountMath,
   AmountShape,
   BrandShape,
+  DisplayInfoShape,
   IssuerShape,
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import {
-  makeStoredPublishKit,
-  observeIteration,
-  observeNotifier,
-} from '@agoric/notifier';
+import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
 import { fit, M, makeScalarMapStore } from '@agoric/store';
 import {
   defineVirtualFarClassKit,
@@ -80,7 +77,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {{
  *   brand: Brand,
  *   displayInfo: DisplayInfo,
- *   issuer: ERef<Issuer>,
+ *   issuer: Issuer,
  *   petname: import('./types').Petname
  * }} BrandDescriptor
  * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
@@ -98,8 +95,13 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *
  * @typedef {{
  *   agoricNames: ERef<import('@agoric/vats').NameHub>,
- *   invitationIssuer: ERef<Issuer<'set'>>,
+ *   registry: {
+ *     getRegisteredAsset: (b: Brand) => BrandDescriptor,
+ *     getRegisteredBrands: () => BrandDescriptor[],
+ *   },
+ *   invitationIssuer: Issuer<'set'>,
  *   invitationBrand: Brand<'set'>,
+ *   invitationDisplayInfo: DisplayInfo,
  *   publicMarshaller: Marshaller,
  *   storageNode: ERef<StorageNode>,
  *   zoe: ERef<ZoeService>,
@@ -108,7 +110,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {ImmutableState & MutableState} State
  * - `brandPurses` is precious and closely held. defined as late as possible to reduce its scope.
  * - `offerToInvitationMakers` is precious and closely held.
- * - `brandDescriptors` will be precious. Currently it includes invitation brand and  what we've received from the bank manager.
  * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
  * @typedef {UniqueParams & SharedParams} HeldParams
@@ -117,7 +118,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
- *   brandDescriptors: MapStore<Brand, BrandDescriptor>,
  *   brandPurses: MapStore<Brand, RemotePurse>,
  *   purseBalances: MapStore<RemotePurse, Amount>,
  *   updatePublishKit: StoredPublishKit<UpdateRecord>,
@@ -135,24 +135,26 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @returns {State}
  */
 export const initState = (unique, shared) => {
-  // Some validation of inputs. "any" erefs because this synchronous call can't check more than that.
+  // Some validation of inputs.
   fit(
     unique,
     harden({
       address: M.string(),
-      bank: M.eref(M.any()),
-      invitationPurse: M.eref(M.any()),
+      bank: M.eref(M.remotable()),
+      invitationPurse: PurseShape,
     }),
   );
   fit(
     shared,
     harden({
-      agoricNames: M.eref(M.any()),
-      invitationIssuer: M.eref(M.any()),
+      agoricNames: M.eref(M.remotable('agoricNames')),
+      invitationIssuer: IssuerShape,
       invitationBrand: BrandShape,
-      publicMarshaller: M.any(),
-      storageNode: M.eref(M.any()),
-      zoe: M.eref(M.any()),
+      invitationDisplayInfo: DisplayInfoShape,
+      publicMarshaller: M.remotable('Marshaller'),
+      storageNode: M.eref(M.remotable('StorageNode')),
+      zoe: M.eref(M.remotable('ZoeService')),
+      registry: M.remotable('AssetRegistry'),
     }),
   );
 
@@ -185,7 +187,6 @@ export const initState = (unique, shared) => {
   };
 
   const nonpreciousState = {
-    brandDescriptors: makeScalarMapStore(),
     // What purses have reported on construction and by getCurrentAmountNotifier updates.
     purseBalances: makeScalarMapStore(),
     /** @type {StoredPublishKit<UpdateRecord>} */
@@ -215,8 +216,9 @@ const behaviorGuards = {
         brand: BrandShape,
         issuer: M.eref(IssuerShape),
         petname: M.string(),
+        displayInfo: DisplayInfoShape,
       },
-      PurseShape,
+      M.eref(PurseShape),
     ).returns(M.promise()),
   }),
   deposit: M.interface('depositFacetI', {
@@ -230,10 +232,10 @@ const behaviorGuards = {
     handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
       M.promise(),
     ),
-    getDepositFacet: M.call().returns(M.eref(M.any())),
-    getOffersFacet: M.call().returns(M.eref(M.any())),
-    getCurrentSubscriber: M.call().returns(M.eref(M.any())),
-    getUpdatesSubscriber: M.call().returns(M.eref(M.any())),
+    getDepositFacet: M.call().returns(M.remotable()),
+    getOffersFacet: M.call().returns(M.remotable()),
+    getCurrentSubscriber: M.call().returns(M.remotable()),
+    getUpdatesSubscriber: M.call().returns(M.remotable()),
   }),
 };
 
@@ -265,13 +267,13 @@ const SmartWalletKit = defineVirtualFarClassKit(
 
       publishCurrentState() {
         const {
-          brandDescriptors,
           currentPublishKit,
           offerToUsedInvitation,
           purseBalances,
+          registry,
         } = this.state;
         currentPublishKit.publisher.publish({
-          brands: [...brandDescriptors.values()],
+          brands: registry.getRegisteredBrands(),
           purses: [...purseBalances.values()].map(a => ({
             brand: a.brand,
             balance: a,
@@ -282,39 +284,15 @@ const SmartWalletKit = defineVirtualFarClassKit(
         });
       },
 
-      /** @type {(desc: Omit<BrandDescriptor, 'displayInfo'>, purse: RemotePurse) => Promise<void>} */
+      /** @type {(desc: BrandDescriptor, purse: ERef<RemotePurse>) => Promise<void>} */
       async addBrand(desc, purseRef) {
-        const {
-          address,
-          brandDescriptors,
-          brandPurses,
-          paymentQueues,
-          updatePublishKit,
-        } = this.state;
-        // assert haven't received this issuer before.
-        const descriptorsHas = brandDescriptors.has(desc.brand);
+        const { address, brandPurses, paymentQueues, updatePublishKit } =
+          this.state;
         const pursesHas = brandPurses.has(desc.brand);
-        assert(
-          !(descriptorsHas && pursesHas),
-          'repeated brand from bank asset subscription',
-        );
-        assert(
-          !(descriptorsHas || pursesHas),
-          'corrupted state; one store has brand already',
-        );
+        assert(!pursesHas, 'repeated brand from bank asset subscription');
 
-        const [purse, displayInfo] = await Promise.all([
-          purseRef,
-          E(desc.brand).getDisplayInfo(),
-        ]);
+        const purse = await purseRef; // promises don't fit in durable storage
 
-        // save all five of these in a collection (indexed by brand?) so that when
-        // it's time to take an offer description you know where to get the
-        // relevant purse. when it's time to make an offer, you know how to make
-        // payments. REMEMBER when doing that, need to handle every exception to
-        // put the money back in the purse if anything fails.
-        const descriptor = { ...desc, displayInfo };
-        brandDescriptors.init(desc.brand, descriptor);
         brandPurses.init(desc.brand, purse);
 
         const { helper } = this.facets;
@@ -334,7 +312,10 @@ const SmartWalletKit = defineVirtualFarClassKit(
           },
         });
 
-        updatePublishKit.publisher.publish({ updated: 'brand', descriptor });
+        updatePublishKit.publisher.publish({
+          updated: 'brand',
+          descriptor: desc,
+        });
 
         // deposit queued payments
         const payments = paymentQueues.has(desc.brand)
@@ -405,6 +386,7 @@ const SmartWalletKit = defineVirtualFarClassKit(
           invitationIssuer,
           offerToInvitationMakers,
           offerToUsedInvitation,
+          registry,
           updatePublishKit,
         } = this.state;
 
@@ -424,7 +406,22 @@ const SmartWalletKit = defineVirtualFarClassKit(
               invitationPurse,
               offerToInvitationMakers.get,
             ),
-            purseForBrand: brandPurses.get,
+            /**
+             * @param {Brand} brand
+             * @returns {Promise<RemotePurse>}
+             */
+            purseForBrand: async brand => {
+              if (brandPurses.has(brand)) {
+                return brandPurses.get(brand);
+              }
+              const desc = registry.getRegisteredAsset(brand);
+              const { bank } = this.state;
+              /** @type {RemotePurse} */
+              // @ts-expect-error cast to RemotePurse
+              const purse = E(bank).getPurse(desc.brand);
+              facets.helper.addBrand(desc, purse);
+              return purse;
+            },
             logger,
           },
           onStatusChange: offerStatus => {
@@ -491,8 +488,12 @@ const SmartWalletKit = defineVirtualFarClassKit(
   },
   {
     finish: ({ state, facets }) => {
-      const { invitationBrand, invitationIssuer, invitationPurse, bank } =
-        state;
+      const {
+        invitationBrand,
+        invitationDisplayInfo,
+        invitationIssuer,
+        invitationPurse,
+      } = state;
       const { helper } = facets;
       // Ensure a purse for each issuer
       helper.addBrand(
@@ -500,25 +501,21 @@ const SmartWalletKit = defineVirtualFarClassKit(
           brand: invitationBrand,
           issuer: invitationIssuer,
           petname: 'invitations',
+          displayInfo: invitationDisplayInfo,
         },
         // @ts-expect-error cast to RemotePurse
         /** @type {RemotePurse} */ (invitationPurse),
       );
-      // watch the bank for new issuers to make purses out of
-      void observeIteration(E(bank).getAssetSubscription(), {
-        async updateState(desc) {
-          /** @type {RemotePurse} */
-          // @ts-expect-error cast to RemotePurse
-          const purse = await E(bank).getPurse(desc.brand);
-          await helper.addBrand(
-            {
-              brand: desc.brand,
-              issuer: desc.issuer,
-              petname: desc.issuerName,
-            },
-            purse,
+
+      // Schedule creation of a purse for each registered brand.
+      state.registry.getRegisteredBrands().forEach(desc => {
+        // In this sync method, we can't await the outcome.
+        void E(desc.issuer)
+          .makeEmptyPurse()
+          // @ts-expect-error cast
+          .then((/** @type {RemotePurse} */ purse) =>
+            helper.addBrand(desc, purse),
           );
-        },
       });
     },
   },

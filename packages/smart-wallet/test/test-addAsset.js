@@ -10,12 +10,10 @@ import { makeMockTestSpace } from './supports.js';
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>>} */
 const test = anyTest;
 
-const TODO = undefined;
-
 test.before(async t => {
   const withBankManager = async () => {
-    const bridge = TODO;
-    const bankManager = E(buildBankVatRoot()).makeBankManager(bridge);
+    const noBridge = undefined;
+    const bankManager = E(buildBankVatRoot()).makeBankManager(noBridge);
     const noop = () => {};
     const space0 = await makeMockTestSpace(noop);
     space0.produce.bankManager.reset();
@@ -35,7 +33,7 @@ const range = qty => [...Array(qty).keys()];
  * NOTE: this doesn't test all forms of work.
  * A better test would measure inter-vat messages or some such.
  */
-test.failing('avoid O(wallets) storage writes for a new asset', async t => {
+test('avoid O(wallets) storage writes for a new asset', async t => {
   const bankManager = t.context.consume.bankManager;
 
   let chainStorageWrites = 0;
@@ -73,8 +71,8 @@ test.failing('avoid O(wallets) storage writes for a new asset', async t => {
       addedWrites: chainStorageWrites - initialWrites,
     };
   };
-  const base = await simulate(2, 'ibc/dia1', 'DAI_axl');
-  const exp = await simulate(6, 'ibc/dia2', 'DAI_grv');
+  const base = await simulate(2, 'ibc/dai1', 'DAI_axl');
+  const exp = await simulate(6, 'ibc/dai2', 'DAI_grv');
 
   t.log({
     base: { wallets: base.qty, writes: base.addedWrites },

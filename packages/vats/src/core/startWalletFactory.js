@@ -184,10 +184,14 @@ export const startWalletFactory = async (
     feeIssuerP,
   ]);
 
+  const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const terms = await deeplyFulfilled(
     harden({
       agoricNames,
       board,
+      assetPublisher: Far('AssetPublisher', {
+        getAssetSubscription: () => E(poolBank).getAssetSubscription(),
+      }),
     }),
   );
   /** @type {WalletFactoryStartResult} */
@@ -202,7 +206,6 @@ export const startWalletFactory = async (
   );
   walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
-  const poolBank = E(bankManager).getBankForAddress(poolAddr);
 
   const ppFacets = await startGovernedInstance(
     {
