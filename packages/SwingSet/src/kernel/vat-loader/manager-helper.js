@@ -3,6 +3,7 @@ import { assert } from '@agoric/assert';
 import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
 import { makeTranscriptManager } from './transcript.js';
+import { ensureSync, maybeAsync } from './async-helper.js';
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
@@ -47,9 +48,10 @@ import { makeTranscriptManager } from './transcript.js';
 
 /**
  *
+ * @template {boolean} AsyncSyscall
  * @typedef { { getManager: (shutdown: () => Promise<void>,
  *                           makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>) => VatManager,
- *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
+ *              syscallFromWorker: (vso: VatSyscallObject) => import('./async-helper.js').MaybePromiseResult<AsyncSyscall, VatSyscallResult>,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
  *
@@ -91,7 +93,7 @@ import { makeTranscriptManager } from './transcript.js';
  *
  * The returned syscallFromWorker function should be called when the worker
  * wants to make a syscall. It accepts a VatSyscallObject and will return a
- * (synchronous) VatSyscallResult, never throwing. For remote workers, this
+ * (synchronous if possible) VatSyscallResult. For remote workers, this
  * should be called from a handler that receives a syscall message from the
  * child process.
  *
@@ -106,7 +108,7 @@ import { makeTranscriptManager } from './transcript.js';
  * @param {WorkerAsyncKind} workerAsyncKind
  * @param {import('./transcript.js').CompareSyscalls} [compareSyscalls]
  * @param {boolean} [useTranscript]
- * @returns {ManagerKit}
+ * @returns {ManagerKit<'async-blocking' extends WorkerAsyncKind ? true : false>}
  */
 
 function makeManagerKit(
@@ -120,13 +122,21 @@ function makeManagerKit(
 ) {
   assert(kernelSlog);
   const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-  /** @type {ReturnType<typeof makeTranscriptManager> | undefined} */
+  /** @typedef {'async-blocking' extends WorkerAsyncKind ? true : false} AsyncMode */
+
+  /** @type {ReturnType<typeof makeTranscriptManager<AsyncMode>> | undefined} */
   let transcriptManager;
   if (useTranscript) {
+    const asyncCompliantCompareSyscall =
+      workerAsyncKind === 'async-blocking' || !compareSyscalls
+        ? /** @type {import('./transcript.js').CompareSyscalls<AsyncMode> | undefined} */ (
+            compareSyscalls
+          )
+        : ensureSync(compareSyscalls);
     transcriptManager = makeTranscriptManager(
       vatKeeper,
       vatID,
-      compareSyscalls,
+      asyncCompliantCompareSyscall,
     );
   }
 
@@ -261,7 +271,17 @@ function makeManagerKit(
 
       // but if the puppy deviates one inch from previous twitches, explode
       kernelSlog.syscall(vatID, undefined, vso);
-      return transcriptManager.simulateSyscall(vso) || doSyscallFromWorker(vso);
+      // We trust simulateSyscall to only return a promise if compareSyscalls
+      // itself returns a promise, and we propagate that mode here.
+      // Since compareSyscalls can be user provided, we ensure it doesn't
+      // return a promise if the worker doesn't support it (workerAsyncKind
+      // is not 'async-blocking')
+      return /** @type {import('./async-helper.js').MaybePromiseResult<AsyncMode, VatSyscallResult>} */ (
+        maybeAsync(
+          transcriptManager.simulateSyscall(vso),
+          vres => vres || doSyscallFromWorker(vso),
+        )
+      );
     } else {
       const vres = doSyscallFromWorker(vso);
       if (transcriptManager) {
