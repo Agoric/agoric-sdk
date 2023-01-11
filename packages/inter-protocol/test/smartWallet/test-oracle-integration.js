@@ -248,3 +248,61 @@ test.serial('admin price', async t => {
     startedAt: 0n,
   });
 });
+
+test.serial('errors', async t => {
+  const operatorAddress = 'badInputsAddress';
+
+  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
+    operatorAddress,
+  ]);
+  const wallet = oracleWallets[operatorAddress];
+  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
+
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
+  const walletPushPrice = async priceRound => {
+    const offerId = await pushPrice(wallet, adminOfferId, priceRound);
+    return computedState.offerStatuses.get(offerId);
+  };
+  await eventLoopIteration();
+
+  // Invalid priceRound argument
+  t.like(
+    await walletPushPrice({
+      roundId: 1,
+      unitPrice: 1,
+    }),
+    {
+      error:
+        'Error: In "pushPrice" method of (OracleAdmin): arg 0: unitPrice: number 1 - Must be a bigint',
+      // trivially satisfied because the Want is empty
+      numWantsSatisfied: 1,
+    },
+  );
+  await eventLoopIteration();
+
+  // Success, round starts
+  t.like(
+    await walletPushPrice({
+      roundId: 1,
+      unitPrice: 1n,
+    }),
+    {
+      error: undefined,
+      numWantsSatisfied: 1,
+    },
+  );
+  await eventLoopIteration();
+
+  // Invalid attempt to push again to the same round
+  t.like(
+    await walletPushPrice({
+      roundId: 1,
+      unitPrice: 1n,
+    }),
+    {
+      error: 'Error: cannot report on previous rounds',
+      numWantsSatisfied: 1,
+    },
+  );
+});
