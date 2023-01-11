@@ -54,7 +54,7 @@ import { makeVault, Phase } from './vault.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM');
+const trace = makeTracer('VM', false);
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
