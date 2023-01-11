@@ -120,6 +120,32 @@ const acceptInvitation = async (wallet, priceAggregator) => {
   return id;
 };
 
+let pushPriceCounter = 0;
+const pushPrice = async (wallet, adminOfferId, priceRound) => {
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+  const proposeInvitationSpec = {
+    source: 'continuing',
+    previousOffer: adminOfferId,
+    invitationMakerName: 'PushPrice',
+    invitationArgs: harden([priceRound]),
+  };
+
+  pushPriceCounter += 1;
+  const id = `pushPrice${pushPriceCounter}`;
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const proposalOfferSpec = {
+    id,
+    invitationSpec: proposeInvitationSpec,
+    proposal: {},
+  };
+
+  await wallet.getOffersFacet().executeOffer(proposalOfferSpec);
+  await eventLoopIteration();
+  return id;
+};
+
+// The tests are serial because they mutate shared state
+
 test.serial('invitations', async t => {
   const operatorAddress = 'invitation test';
   const wallet = await t.context.simpleProvideWallet(operatorAddress);
@@ -188,7 +214,7 @@ test.serial('invitations', async t => {
   );
 });
 
-test('admin price', async t => {
+test.serial('admin price', async t => {
   const operatorAddress = 'adminPriceAddress';
   const { zoe } = t.context.consume;
 
@@ -196,33 +222,14 @@ test('admin price', async t => {
     operatorAddress,
   ]);
   const wallet = oracleWallets[operatorAddress];
-
-  const offersFacet = wallet.getOffersFacet();
+  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
 
   // Push a new price result /////////////////////////
 
   /** @type {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} */
   const result = { roundId: 1, unitPrice: 123n };
 
-  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
-
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
-    source: 'continuing',
-    previousOffer: adminOfferId,
-    invitationMakerName: 'PushPrice',
-    invitationArgs: harden([result]),
-  };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
-    id: 45,
-    invitationSpec: proposeInvitationSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(proposalOfferSpec);
-  await eventLoopIteration();
+  await pushPrice(wallet, adminOfferId, result);
 
   // Verify price result
 
