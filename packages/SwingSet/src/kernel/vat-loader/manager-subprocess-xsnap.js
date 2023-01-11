@@ -71,7 +71,7 @@ export function makeXsSubprocessFactory({
       kernelSlog,
       kernelKeeper,
       vatSyscallHandler,
-      true,
+      'async-blocking',
       compareSyscalls,
       useTranscript,
     );
