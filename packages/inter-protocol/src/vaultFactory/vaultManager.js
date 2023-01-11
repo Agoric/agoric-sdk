@@ -548,8 +548,6 @@ const makeVaultManagerKit = defineDurableFarClassKit(
         trace('update quote', state.collateralBrand, highestDebtRatio);
       },
 
-      /**
-       */
       async processLiquidations() {
         const { state, facets } = this;
         const { prioritizedVaults, ...ephemera } = provideEphemera(
@@ -790,7 +788,6 @@ const makeVaultManagerKit = defineDurableFarClassKit(
       },
       /**
        * coefficient on existing debt to calculate new debt
-       *
        */
       getCompoundedInterest() {
         return this.state.compoundedInterest;
@@ -873,7 +870,6 @@ const makeVaultManagerKit = defineDurableFarClassKit(
       /**
        * In extreme situations, system health may require liquidating all vaults.
        * This starts the liquidations all in parallel.
-       *
        */
       async liquidateAll() {
         const {

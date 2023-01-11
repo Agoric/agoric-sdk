@@ -364,7 +364,6 @@ const makeVaultBase = defineDurableFarClassKit(
 
       /**
        * call this whenever anything changes!
-       *
        */
       updateUiState() {
         const { state, facets } = this;
@@ -621,8 +620,6 @@ const makeVaultBase = defineDurableFarClassKit(
       },
     },
     self: {
-      /**
-       */
       getVaultSeat() {
         return this.state.vaultSeat;
       },
@@ -698,7 +695,6 @@ const makeVaultBase = defineDurableFarClassKit(
 
       /**
        * Called by manager at start of liquidation.
-       *
        */
       liquidating() {
         const { facets } = this;
@@ -711,7 +707,6 @@ const makeVaultBase = defineDurableFarClassKit(
       /**
        * Called by manager at end of liquidation, at which point all debts have been
        * covered.
-       *
        */
       liquidated() {
         const { facets } = this;
@@ -726,8 +721,6 @@ const makeVaultBase = defineDurableFarClassKit(
         helper.updateUiState();
       },
 
-      /**
-       */
       makeAdjustBalancesInvitation() {
         const { state, facets } = this;
         const { helper } = facets;
@@ -739,8 +732,6 @@ const makeVaultBase = defineDurableFarClassKit(
         );
       },
 
-      /**
-       */
       makeCloseInvitation() {
         const { state, facets } = this;
         const { helper } = facets;

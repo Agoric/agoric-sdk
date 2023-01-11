@@ -614,7 +614,6 @@ export function openSwingStore(dirPath, options = {}) {
  * @returns {boolean}
  *   If the directory is present and contains the files created by initSwingStore
  *   or openSwingStore, returns true. Else returns false.
- *
  */
 export function isSwingStore(dirPath) {
   assert.typeof(dirPath, 'string');

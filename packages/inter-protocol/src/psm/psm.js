@@ -29,7 +29,6 @@ const { Fail } = assert;
  * thereby acts as an anchor to provide additional stability. For flexible
  * economic policies, the fee percentage for trading into and out of the stable
  * token are specified separately.
- *
  */
 
 /**

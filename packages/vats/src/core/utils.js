@@ -322,7 +322,6 @@ harden(runModuleBehaviors);
  *   agoricNamesAdmin: import('../types.js').NameAdmin,
  *   spaces: WellKnownSpaces,
  * }}
- *
  */
 export const makeAgoricNamesAccess = (
   log = () => {}, // console.debug

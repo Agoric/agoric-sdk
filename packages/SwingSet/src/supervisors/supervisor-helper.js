@@ -24,7 +24,6 @@ function makeSupervisorDispatch(dispatch) {
   /**
    * @param {VatDeliveryObject} delivery
    * @returns {Promise<VatDeliveryResult>}
-   *
    */
   async function dispatchToVat(delivery) {
     // the (low-level) vat is responsible for giving up agency, but we still

@@ -533,7 +533,6 @@ const makeVaultDirector = defineDurableFarClassKit(
        * @deprecated use getCollateralManager and then makeVaultInvitation instead
        *
        * Make a vault in the vaultManager based on the collateral type.
-       *
        */
       makeVaultInvitation() {
         const { zcf } = ephemera;
