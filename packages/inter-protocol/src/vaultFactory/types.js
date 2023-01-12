@@ -46,7 +46,6 @@
 /**
  * @typedef  {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
- * @property {() => Promise<Array<Collateral>>} getCollaterals
  * @property {() => Allocation} getRewardAllocation
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation

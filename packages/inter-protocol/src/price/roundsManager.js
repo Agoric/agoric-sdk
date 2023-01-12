@@ -14,6 +14,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { UnguardedHelperI } from '../typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
@@ -96,8 +97,7 @@ const validRoundId = roundId => {
 export const makeRoundsManagerKit = defineDurableFarClassKit(
   roundsManagerKind,
   {
-    // facet used only internally, sloppy ok
-    helper: M.interface('helper', {}, { sloppy: true }),
+    helper: UnguardedHelperI,
     contract: M.interface(
       'contract',
       {

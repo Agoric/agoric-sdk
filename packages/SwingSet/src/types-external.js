@@ -336,7 +336,6 @@ export {};
  * @property {*} runWithoutMetering Run a callback outside metering
  * @property {*} runWithoutMeteringAsync Run an async callback outside metering
  * @property {*} unmetered Wrap a callback with runWithoutMetering
- *
  */
 
 /**

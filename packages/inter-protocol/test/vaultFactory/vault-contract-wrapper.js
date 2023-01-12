@@ -191,11 +191,7 @@ export async function start(zcf, privateArgs) {
   }));
 
   async function makeHook(seat) {
-    const vaultKit = await vault.initVaultKit(
-      seat,
-      makeFakeStorage('test'),
-      marshaller,
-    );
+    const vaultKit = await vault.initVaultKit(seat, makeFakeStorage('test'));
     return {
       vault,
       runMint,

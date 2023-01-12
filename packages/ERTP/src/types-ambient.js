@@ -208,7 +208,6 @@
  * @param {ERef<Payment>} payment
  * @param {Amount[]} amounts
  * @returns {Promise<Payment[]>}
- *
  */
 
 /**

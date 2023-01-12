@@ -80,6 +80,11 @@ export const AmountShape = harden({
   value: AmountValueShape,
 });
 
+export const RatioShape = harden({
+  numerator: AmountShape,
+  denominator: AmountShape,
+});
+
 /**
  * Returns true if value is a Nat bigint.
  *
