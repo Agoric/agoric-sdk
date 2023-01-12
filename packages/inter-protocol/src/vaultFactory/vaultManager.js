@@ -940,6 +940,8 @@ export const vivifyVaultManagerKit = baggage => {
             want: { Minted: null },
           });
 
+          // NB: This increments even when a vault fails to init and is removed
+          // from the manager, creating a sparse series of published vaults.
           state.vaultCounter += 1;
           const vaultId = String(state.vaultCounter);
 
