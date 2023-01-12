@@ -1,20 +1,30 @@
+// @ts-check
+
 import djson from '../../lib/djson.js';
 
 // Indicate that a syscall is missing from the transcript but is safe to
 // perform during replay
-const missingSyscall = Symbol('missing transcript syscall');
+export const missingSyscall = Symbol('missing transcript syscall');
 
 // Indicate that a syscall is recorded in the transcript but can be safely
 // ignored / skipped during replay.
-const extraSyscall = Symbol('extra transcript syscall');
+export const extraSyscall = Symbol('extra transcript syscall');
 
 /** @typedef {typeof missingSyscall | typeof extraSyscall | Error | undefined} CompareSyscallsResult */
+/**
+ * @typedef {(
+ *     vatId: any,
+ *     originalSyscall: VatSyscallObject,
+ *     newSyscall: VatSyscallObject,
+ *     originalResponse?: VatSyscallResult,
+ *   ) => CompareSyscallsResult
+ * } CompareSyscalls
+ */
 
 /**
  * @param {any} vatID
- * @param {object} originalSyscall
- * @param {object} newSyscall
- * @returns {CompareSyscallsResult}
+ * @param {VatSyscallObject} originalSyscall
+ * @param {VatSyscallObject} newSyscall
  */
 export function requireIdentical(vatID, originalSyscall, newSyscall) {
   if (djson.stringify(originalSyscall) !== djson.stringify(newSyscall)) {
@@ -26,7 +36,7 @@ export function requireIdentical(vatID, originalSyscall, newSyscall) {
   return undefined;
 }
 
-const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
+export const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
 
 /**
  * Liveslots currently has a deficiency which results in [virtual collections
@@ -54,8 +64,8 @@ const vcSyscallRE = /^vc\.\d+\.\|(?:schemata|label)$/;
  * `simulateSyscall` which then performs the appropriate action.
  *
  * @param {any} vatID
- * @param {object} originalSyscall
- * @param {object} newSyscall
+ * @param {VatSyscallObject} originalSyscall
+ * @param {VatSyscallObject} newSyscall
  * @returns {CompareSyscallsResult}
  */
 export function requireIdenticalExceptStableVCSyscalls(
@@ -87,6 +97,11 @@ export function requireIdenticalExceptStableVCSyscalls(
   return error;
 }
 
+/**
+ * @param {*} vatKeeper
+ * @param {*} vatID
+ * @param {CompareSyscalls} compareSyscalls
+ */
 export function makeTranscriptManager(
   vatKeeper,
   vatID,
@@ -135,12 +150,14 @@ export function makeTranscriptManager(
 
   let replayError;
 
+  /** @param {VatSyscallObject} newSyscall */
   function simulateSyscall(newSyscall) {
     while (playbackSyscalls.length) {
       const compareError = compareSyscalls(
         vatID,
         playbackSyscalls[0].d,
         newSyscall,
+        playbackSyscalls[0].response,
       );
 
       if (compareError === missingSyscall) {
@@ -149,6 +166,7 @@ export function makeTranscriptManager(
         return undefined;
       }
 
+      /** @type {{d: VatSyscallObject; response: VatSyscallResult}} */
       const s = playbackSyscalls.shift();
 
       if (!compareError) {

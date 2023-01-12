@@ -47,7 +47,6 @@ async function run() {
           vatParameters,
           vatSourceBundle,
         };
-        transcriptNum += 1;
         // first line of transcript is the source bundle
         fs.writeSync(fd, JSON.stringify(t));
         fs.writeSync(fd, '\n');
@@ -72,8 +71,8 @@ async function run() {
       }
       case 'deliver-result': {
         console.log(` -- deliver-result`);
-        const entry = { transcriptNum, d: delivery, syscalls };
         transcriptNum += 1;
+        const entry = { transcriptNum, d: delivery, syscalls };
         fs.writeSync(fd, JSON.stringify(entry));
         fs.writeSync(fd, '\n');
         break;
@@ -82,7 +81,6 @@ async function run() {
         console.log(' -- heap-snapshot-save');
         const { type, snapshotID } = e;
         const t = { transcriptNum, type, vatID, snapshotID };
-        transcriptNum += 1;
         fs.writeSync(fd, JSON.stringify(t));
         fs.writeSync(fd, '\n');
         break;
