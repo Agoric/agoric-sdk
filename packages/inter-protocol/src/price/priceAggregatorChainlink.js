@@ -219,10 +219,14 @@ export const start = async (zcf, privateArgs, baggage) => {
         const invitationMakers = Far('invitation makers', {
           /** @param {import('./roundsManager.js').PriceRound} result */
           PushPrice(result) {
-            return zcf.makeInvitation(cSeat => {
-              cSeat.exit();
-              admin.pushPrice(result);
-            }, 'PushPrice');
+            return zcf.makeInvitation(
+              /** @param {ZCFSeat} cSeat */
+              async cSeat => {
+                cSeat.exit();
+                await admin.pushPrice(result);
+              },
+              'PushPrice',
+            );
           },
         });
         seat.exit();

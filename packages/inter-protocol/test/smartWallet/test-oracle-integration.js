@@ -16,6 +16,7 @@ import { INVITATION_MAKERS_DESC } from '../../src/price/priceAggregatorChainlink
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { makeDefaultTestContext } from './contexts.js';
+import { zip } from '../../src/collect.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -23,8 +24,6 @@ import { makeDefaultTestContext } from './contexts.js';
  * }
  */
 const test = anyTest;
-
-const operatorAddress = 'oracleTestAddress';
 
 const makeTestSpace = async log => {
   const psmParams = {
@@ -78,23 +77,83 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makeTestSpace);
 });
 
-test('admin price', async t => {
-  const { agoricNames, zoe } = t.context.consume;
+const setupFeedWithWallets = async (t, oracleAddresses) => {
+  const { agoricNames } = t.context.consume;
 
-  const wallet = await t.context.simpleProvideWallet(operatorAddress);
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
-  const currentSub = E(wallet).getCurrentSubscriber();
+  const wallets = await Promise.all(
+    oracleAddresses.map(addr => t.context.simpleProvideWallet(addr)),
+  );
 
-  await t.context.simpleCreatePriceFeed([operatorAddress], 'ATOM', 'USD');
+  const oracleWallets = Object.fromEntries(zip(oracleAddresses, wallets));
 
-  const offersFacet = wallet.getOffersFacet();
+  await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
   /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
   );
-  const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
+
+  return { oracleWallets, priceAggregator };
+};
+
+let acceptInvitationCounter = 0;
+const acceptInvitation = async (wallet, priceAggregator) => {
+  acceptInvitationCounter += 1;
+  const id = `acceptInvitation${acceptInvitationCounter}`;
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
+  const getInvMakersSpec = {
+    source: 'purse',
+    instance: priceAggregator,
+    description: INVITATION_MAKERS_DESC,
+  };
+
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const invMakersOffer = {
+    id,
+    invitationSpec: getInvMakersSpec,
+    proposal: {},
+  };
+  await wallet.getOffersFacet().executeOffer(invMakersOffer);
+  // wait for it to settle
+  await eventLoopIteration();
+  return id;
+};
+
+let pushPriceCounter = 0;
+const pushPrice = async (wallet, adminOfferId, priceRound) => {
+  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
+  const proposeInvitationSpec = {
+    source: 'continuing',
+    previousOffer: adminOfferId,
+    invitationMakerName: 'PushPrice',
+    invitationArgs: harden([priceRound]),
+  };
+
+  pushPriceCounter += 1;
+  const id = `pushPrice${pushPriceCounter}`;
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const proposalOfferSpec = {
+    id,
+    invitationSpec: proposeInvitationSpec,
+    proposal: {},
+  };
+
+  await wallet.getOffersFacet().executeOffer(proposalOfferSpec);
+  await eventLoopIteration();
+  return id;
+};
+
+// The tests are serial because they mutate shared state
+
+test.serial('invitations', async t => {
+  const operatorAddress = 'invitation test';
+  const wallet = await t.context.simpleProvideWallet(operatorAddress);
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
+  // this returns wallets, but we need the updates subscriber to start before the price feed starts
+  // so we provision the wallet earlier above
+  const { priceAggregator } = await setupFeedWithWallets(t, [operatorAddress]);
 
   /**
    * get invitation details the way a user would
@@ -127,7 +186,7 @@ test('admin price', async t => {
     'priceAggregator',
   );
 
-  // The purse has the invitation to get the makers ///////////
+  // The purse has the invitation to get the makers
 
   /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
   const getInvMakersSpec = {
@@ -136,45 +195,41 @@ test('admin price', async t => {
     description: INVITATION_MAKERS_DESC,
   };
 
+  const id = '33';
   /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
   const invMakersOffer = {
-    id: 44,
+    id,
     invitationSpec: getInvMakersSpec,
     proposal: {},
   };
+  await wallet.getOffersFacet().executeOffer(invMakersOffer);
 
-  await offersFacet.executeOffer(invMakersOffer);
-
+  const currentSub = E(wallet).getCurrentSubscriber();
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   const currentState = await headValue(currentSub);
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [id]);
   t.is(
-    currentState.offerToUsedInvitation[44].value[0].description,
+    currentState.offerToUsedInvitation[id].value[0].description,
     INVITATION_MAKERS_DESC,
   );
+});
+
+test.serial('admin price', async t => {
+  const operatorAddress = 'adminPriceAddress';
+  const { zoe } = t.context.consume;
+
+  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
+    operatorAddress,
+  ]);
+  const wallet = oracleWallets[operatorAddress];
+  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
 
   // Push a new price result /////////////////////////
 
   /** @type {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} */
   const result = { roundId: 1, unitPrice: 123n };
 
-  /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
-    source: 'continuing',
-    previousOffer: 44,
-    invitationMakerName: 'PushPrice',
-    invitationArgs: harden([result]),
-  };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
-    id: 45,
-    invitationSpec: proposeInvitationSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(proposalOfferSpec);
-  await eventLoopIteration();
+  await pushPrice(wallet, adminOfferId, result);
 
   // Verify price result
 
@@ -184,10 +239,70 @@ test('admin price', async t => {
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   E(manualTimer).tickN(1);
 
+  const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
+
   const latestRoundSubscriber = await E(paPublicFacet).getRoundStartNotifier();
 
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
     roundId: 1n,
     startedAt: 0n,
   });
+});
+
+test.serial('errors', async t => {
+  const operatorAddress = 'badInputsAddress';
+
+  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
+    operatorAddress,
+  ]);
+  const wallet = oracleWallets[operatorAddress];
+  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
+
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
+  const walletPushPrice = async priceRound => {
+    const offerId = await pushPrice(wallet, adminOfferId, priceRound);
+    return computedState.offerStatuses.get(offerId);
+  };
+  await eventLoopIteration();
+
+  // Invalid priceRound argument
+  t.like(
+    await walletPushPrice({
+      roundId: 1,
+      unitPrice: 1,
+    }),
+    {
+      error:
+        'Error: In "pushPrice" method of (OracleAdmin): arg 0: unitPrice: number 1 - Must be a bigint',
+      // trivially satisfied because the Want is empty
+      numWantsSatisfied: 1,
+    },
+  );
+  await eventLoopIteration();
+
+  // Success, round starts
+  t.like(
+    await walletPushPrice({
+      roundId: 1,
+      unitPrice: 1n,
+    }),
+    {
+      error: undefined,
+      numWantsSatisfied: 1,
+    },
+  );
+  await eventLoopIteration();
+
+  // Invalid attempt to push again to the same round
+  t.like(
+    await walletPushPrice({
+      roundId: 1,
+      unitPrice: 1n,
+    }),
+    {
+      error: 'Error: cannot report on previous rounds',
+      numWantsSatisfied: 1,
+    },
+  );
 });
