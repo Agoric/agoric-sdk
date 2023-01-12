@@ -39,7 +39,7 @@ export function makeSnapStoreIO() {
  *
  * @typedef { import('./snapStore').SnapStore } SnapStore
  *
- * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
+ * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
  *
  * @typedef { number } StreamPosition
  *
@@ -425,13 +425,9 @@ function makeSwingStore(dirPath, forceReset, options) {
   };
 
   const streamStore = makeStreamStore(db, ensureTxn);
-  let snapStore;
-
-  if (dirPath) {
-    snapStore = makeSnapStore(db, makeSnapStoreIO(), {
-      keepSnapshots,
-    });
-  }
+  const snapStore = makeSnapStore(db, makeSnapStoreIO(), {
+    keepSnapshots,
+  });
 
   const savepoints = [];
   const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');

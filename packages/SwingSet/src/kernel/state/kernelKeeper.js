@@ -89,8 +89,7 @@ const enableKernelGC = true;
 // v$NN.reapInterval = $NN or 'never'
 // v$NN.reapCountdown = $NN or 'never'
 // exclude from consensus
-// local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
-// local.snapshot.$id = [vatID, ...]
+// local.*
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this
@@ -786,10 +785,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
 
-    const old = vatKeeper.getLastSnapshot();
-    if (old) {
-      vatKeeper.removeFromSnapshot(old.snapshotID);
-    }
+    vatKeeper.deleteSnapshots();
 
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a

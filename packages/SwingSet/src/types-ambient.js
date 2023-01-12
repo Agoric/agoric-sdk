@@ -118,7 +118,7 @@
  * @typedef { import('./types-external.js').VatManagerFactory } VatManagerFactory
  * @typedef { import('./types-external.js').VatManager } VatManager
  * @typedef { import('./types-external.js').SnapStore } SnapStore
- * @typedef { import('./types-external.js').SnapshotInfo } SnapshotInfo
+ * @typedef { import('./types-external.js').SnapshotResult } SnapshotResult
  * @typedef { import('./types-external.js').WaitUntilQuiescent } WaitUntilQuiescent
  */
 
