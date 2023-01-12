@@ -255,6 +255,15 @@ async function replay(transcriptFile) {
     lineNumber += 1;
     const data = JSON.parse(line);
     if (data.type === 'heap-snapshot-load') {
+      if (worker !== 'xs-worker') {
+        if (manager) {
+          continue; // eslint-disable-line no-continue
+        } else {
+          throw Error(
+            `Cannot replay transcript in ${worker} starting with a heap snapshot load.`,
+          );
+        }
+      }
       if (manager) {
         await manager.shutdown();
         manager = null;
