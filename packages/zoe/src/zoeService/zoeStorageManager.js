@@ -262,13 +262,12 @@ export const makeZoeStorageManager = (
         ) {
           const { state } = this;
 
-          // If the contract-provided customProperties include the
-          // properties 'description', 'handle', 'instance',
-          // 'installation', their corresponding
-          // values will be overwritten with the actual values. For
-          // example, the value for `instance` will always be the actual
-          // instance for the contract, even if customProperties includes
-          // a property called `instance`.
+          // If the contract-provided `customProps` include the properties
+          // 'description', 'handle', 'instance', 'installation', their
+          // corresponding values will be overwritten with the actual values.
+          // For example, the value for `instance` will always be the actual
+          // instance for the contract, even if `customProps` includes a
+          // property called `instance`.
           const invitationAmount = AmountMath.make(
             invitationKit.brand,
             harden([
