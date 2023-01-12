@@ -39,7 +39,7 @@ export function makeSnapStoreIO() {
  *
  * @typedef { import('./snapStore').SnapStore } SnapStore
  *
- * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
+ * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
  *
  * @typedef { number } StreamPosition
  *

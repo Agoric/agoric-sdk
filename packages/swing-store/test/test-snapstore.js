@@ -24,7 +24,7 @@ test('build temp file; compress to cache file', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   });
   let keepTmp = '';
-  const result = await store.save(async filePath => {
+  const result = await store.saveSnapshot('fakeVatID', 47, async filePath => {
     t.falsy(fs.existsSync(filePath));
     fs.writeFileSync(filePath, 'abc');
     keepTmp = filePath;
@@ -38,10 +38,18 @@ test('build temp file; compress to cache file', async t => {
     rawSaveSeconds: 0,
     compressSeconds: 0,
   });
-  t.is(store.has(hash), true);
+  const snapshotInfo = store.getSnapshotInfo('fakeVatID');
+  t.deepEqual(snapshotInfo, {
+    endPos: 47,
+    hash: expectedHash,
+    uncompressedSize: 3,
+    compressedSize: 23,
+  });
+  t.is(store.hasHash('fakeVatID', hash), true);
   const zero =
     '0000000000000000000000000000000000000000000000000000000000000000';
-  t.is(store.has(zero), false);
+  t.is(store.hasHash('fakeVatID', zero), false);
+  t.is(store.hasHash('nonexistentVatID', hash), false);
   t.falsy(
     fs.existsSync(keepTmp),
     'temp file should have been deleted after withTempName',
@@ -69,12 +77,12 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, io);
+  const store = makeSnapStore(db, io, { keepSnapshots: true });
 
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
     // eslint-disable-next-line no-await-in-loop
-    const { hash } = await store.save(async fn =>
+    const { hash } = await store.saveSnapshot('fakeVatID2', i, async fn =>
       fs.promises.writeFile(fn, `file ${i}`),
     );
     hashes.push(hash);
@@ -87,14 +95,29 @@ test('snapStore prepare / commit delete is robust', async t => {
 
   t.is(sqlCountSnapshots.get(), 5);
 
-  store.deleteSnapshot(hashes[2]);
+  store.deleteSnapshotByHash('fakeVatID2', hashes[2]);
   t.is(sqlCountSnapshots.get(), 4);
 
   // Restore (re-save) between prepare and commit.
-  store.deleteSnapshot(hashes[3]);
-  await store.save(async fn => fs.promises.writeFile(fn, `file 3`));
-  t.true(store.has(hashes[3]));
+  store.deleteSnapshotByHash('fakeVatID2', hashes[3]);
+  await store.saveSnapshot('fakeVatID3', 29, async fn =>
+    fs.promises.writeFile(fn, `file 3`),
+  );
+  t.true(store.hasHash('fakeVatID3', hashes[3]));
 
-  hashes.forEach(store.deleteSnapshot);
+  store.deleteVatSnapshots('fakeVatID2');
+  t.is(sqlCountSnapshots.get(), 1);
+  store.deleteVatSnapshots('fakeVatID3');
   t.is(sqlCountSnapshots.get(), 0);
+
+  for (let i = 0; i < 5; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    const { hash } = await store.saveSnapshot('fakeVatID4', i, async fn =>
+      fs.promises.writeFile(fn, `file ${i}`),
+    );
+    hashes.push(hash);
+  }
+  t.is(sqlCountSnapshots.get(), 5);
+  store.deleteAllUnusedSnapshots();
+  t.is(sqlCountSnapshots.get(), 1);
 });

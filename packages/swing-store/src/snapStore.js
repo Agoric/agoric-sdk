@@ -12,7 +12,7 @@ import {
 } from '@agoric/internal';
 
 /**
- * @typedef {object} SnapshotInfo
+ * @typedef {object} SnapshotResult
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number} rawByteCount size of (uncompressed) snapshot
  * @property {number} rawSaveSeconds time to save (uncompressed) snapshot
@@ -21,11 +21,22 @@ import {
  */
 
 /**
+ * @typedef {object} SnapshotInfo
+ * @property {number} endPos
+ * @property {string} hash
+ * @property {number} uncompressedSize
+ * @property {number} compressedSize
+ */
+
+/**
  * @typedef {{
- *   has: (hash: string) => boolean,
- *   load: <T>(hash: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
- *   save: (saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotInfo>,
- *   deleteSnapshot: (hash: string) => void,
+ *   hasHash: (vatID: string, hash: string) => boolean,
+ *   loadSnapshot: <T>(vatID: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
+ *   saveSnapshot: (vatID: string, endPos: number, saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotResult>,
+ *   deleteVatSnapshots: (vatID: string) => void,
+ *   deleteAllUnusedSnapshots: () => void,
+ *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
+ *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
  * }} SnapStore
  */
 
@@ -51,10 +62,13 @@ export const buffer = async inStream => {
 
 /** @type {SnapStore} */
 export const ephemeralSnapStore = {
-  has: fail,
-  load: fail,
-  save: fail,
-  deleteSnapshot: fail,
+  hasHash: fail,
+  loadSnapshot: fail,
+  saveSnapshot: fail,
+  deleteVatSnapshots: fail,
+  deleteAllUnusedSnapshots: fail,
+  deleteSnapshotByHash: fail,
+  getSnapshotInfo: fail,
 };
 
 const finished = promisify(finishedCallback);
@@ -96,15 +110,15 @@ export function makeSnapStore(
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
+      vatID TEXT,
+      endPos INTEGER,
+      inUse INTEGER,
       hash TEXT,
+      uncompressedSize INTEGER,
+      compressedSize INTEGER,
       compressedSnapshot BLOB,
-      PRIMARY KEY (hash)
+      PRIMARY KEY (vatID, endPos)
     )
-  `);
-  const sqlSaveSnapshot = db.prepare(`
-    INSERT INTO snapshots (hash, compressedSnapshot)
-    VALUES (?, ?)
-    ON CONFLICT DO NOTHING
   `);
 
   /** @type {(opts: unknown) => Promise<string>} */
@@ -123,15 +137,38 @@ export function makeSnapStore(
     });
   };
 
+  const sqlDeleteAllUnusedSnapshots = db.prepare(`
+    DELETE FROM snapshots
+    WHERE inUse = 0
+  `);
+
+  function deleteAllUnusedSnapshots() {
+    sqlDeleteAllUnusedSnapshots.run();
+  }
+
+  const sqlStopUsingLastSnapshot = db.prepare(`
+    UPDATE snapshots
+    SET inUse = 0
+    WHERE inUse = 1 AND vatID = ?
+  `);
+
+  const sqlSaveSnapshot = db.prepare(`
+    INSERT OR REPLACE INTO snapshots
+      (vatID, endPos, inUse, hash, uncompressedSize, compressedSize, compressedSnapshot)
+    VALUES (?, ?, 1, ?, ?, ?, ?)
+  `);
+
   /**
    * Generates a new XS heap snapshot, stores a gzipped copy of it into the
    * snapshots table, and reports information about the process, including
    * snapshot size and timing metrics.
    *
+   * @param {string} vatID
+   * @param {number} endPos
    * @param {(filePath: string) => Promise<void>} saveRaw
-   * @returns {Promise<SnapshotInfo>}
+   * @returns {Promise<SnapshotResult>}
    */
-  async function save(saveRaw) {
+  async function saveSnapshot(vatID, endPos, saveRaw) {
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
@@ -165,8 +202,19 @@ export function makeSnapStore(
             await finished(snapReader);
 
             const h = hashStream.digest('hex');
-            sqlSaveSnapshot.run(h, compressedSnapshot);
+            sqlStopUsingLastSnapshot.run(vatID);
+            if (!keepSnapshots) {
+              deleteAllUnusedSnapshots();
+            }
             compressedByteCount = compressedSnapshot.length;
+            sqlSaveSnapshot.run(
+              vatID,
+              endPos,
+              h,
+              rawByteCount,
+              compressedByteCount,
+              compressedSnapshot,
+            );
 
             return h;
           });
@@ -190,35 +238,41 @@ export function makeSnapStore(
   const sqlHasHash = db.prepare(`
     SELECT COUNT(*)
     FROM snapshots
-    WHERE hash = ?
+    WHERE vatID = ? AND hash = ?
   `);
   sqlHasHash.pluck(true);
 
   /**
+   * @param {string} vatID
    * @param {string} hash
    * @returns {boolean}
    */
-  function has(hash) {
-    return !!sqlHasHash.get(hash);
+  function hasHash(vatID, hash) {
+    return !!sqlHasHash.get(vatID, hash);
   }
 
   const sqlLoadSnapshot = db.prepare(`
-    SELECT compressedSnapshot
+    SELECT hash, compressedSnapshot
     FROM snapshots
-    WHERE hash = ?
+    WHERE vatID = ?
+    ORDER BY endPos DESC
+    LIMIT 1
   `);
-  sqlLoadSnapshot.pluck(true);
 
   /**
-   * @param {string} hash
+   * Loads the most recent snapshot for a given vat.
+   *
+   * @param {string} vatID
    * @param {(filePath: string) => Promise<T>} loadRaw
    * @template T
    */
-  async function load(hash, loadRaw) {
+  async function loadSnapshot(vatID, loadRaw) {
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
-        const compressedSnapshot = sqlLoadSnapshot.get(hash);
+        const loadInfo = sqlLoadSnapshot.get(vatID);
+        assert(loadInfo, `no snapshot available for vat ${vatID}`);
+        const { hash, compressedSnapshot } = loadInfo;
         const gzReader = Readable.from(compressedSnapshot);
         cleanup.push(() => gzReader.destroy());
         const snapReader = gzReader.pipe(createGunzip());
@@ -246,8 +300,7 @@ export function makeSnapStore(
         const snapWriterClose = cleanup.pop();
         snapWriterClose();
 
-        const result = await loadRaw(path);
-        return result;
+        return loadRaw(path);
       },
       async () => {
         await PromiseAllOrErrors(
@@ -257,19 +310,51 @@ export function makeSnapStore(
     );
   }
 
-  const sqlDeleteSnapshot = db.prepare(`
+  const sqlGetSnapshotInfo = db.prepare(`
+    SELECT endPos, hash, uncompressedSize, compressedSize
+    FROM snapshots
+    WHERE vatID = ?
+    ORDER BY endPos DESC
+    LIMIT 1
+  `);
+
+  function getSnapshotInfo(vatID) {
+    return /** @type {SnapshotInfo} */ (sqlGetSnapshotInfo.get(vatID));
+  }
+
+  const sqlDeleteVatSnapshots = db.prepare(`
     DELETE FROM snapshots
-    WHERE hash = ?
+    WHERE vatID = ?
   `);
 
   /**
-   * @param {string} hash
+   * @param {string} vatID
    */
-  function deleteSnapshot(hash) {
-    if (!keepSnapshots) {
-      sqlDeleteSnapshot.run(hash);
-    }
+  function deleteVatSnapshots(vatID) {
+    sqlDeleteVatSnapshots.run(vatID);
   }
 
-  return freeze({ has, load, save, deleteSnapshot });
+  const sqlDeleteSnapshotByHash = db.prepare(`
+    DELETE FROM snapshots
+    WHERE vatID = ? AND hash = ?
+  `);
+
+  /**
+   * @param {string} vatID
+   * @param {string} hash
+   */
+  function deleteSnapshotByHash(vatID, hash) {
+    sqlDeleteSnapshotByHash.run(vatID, hash);
+  }
+
+  return freeze({
+    loadSnapshot,
+    saveSnapshot,
+    deleteVatSnapshots,
+    getSnapshotInfo,
+
+    hasHash,
+    deleteAllUnusedSnapshots,
+    deleteSnapshotByHash,
+  });
 }

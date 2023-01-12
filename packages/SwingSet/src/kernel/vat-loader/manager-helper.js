@@ -47,7 +47,7 @@ import { makeTranscriptManager } from './transcript.js';
 /**
  *
  * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>) => VatManager,
+ *                           makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -259,7 +259,7 @@ function makeManagerKit(
   /**
    *
    * @param { () => Promise<void>} shutdown
-   * @param {(ss: SnapStore) => Promise<SnapshotInfo>} makeSnapshot
+   * @param {(endPos: number, ss: SnapStore) => Promise<SnapshotResult>} makeSnapshot
    * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {

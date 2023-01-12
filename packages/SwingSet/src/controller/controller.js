@@ -115,21 +115,23 @@ export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
   }
 
   /**
+   * @param {string} vatID
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
    * @param {boolean} [metered]
-   * @param {string} [snapshotHash]
+   * @param {boolean} [reload]
    */
   async function startXSnap(
+    vatID,
     name,
     handleCommand,
     metered,
-    snapshotHash = undefined,
+    reload = false,
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
-    if (snapStore && snapshotHash) {
+    if (snapStore && reload) {
       // console.log('startXSnap from', { snapshotHash });
-      return snapStore.load(snapshotHash, async snapshot => {
+      return snapStore.loadSnapshot(vatID, async snapshot => {
         const xs = doXSnap({
           snapshot,
           name,

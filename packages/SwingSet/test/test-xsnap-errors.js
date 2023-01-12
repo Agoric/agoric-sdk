@@ -38,7 +38,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   /** @type { any } */
   const kernelKeeper = {
     provideVatKeeper: () => ({
-      getLastSnapshot: () => undefined,
+      getSnapshotInfo: () => undefined,
       addToTranscript: () => undefined,
     }),
     getRelaxDurabilityRules: () => false,
@@ -60,6 +60,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   // @ts-expect-error close enough for this test
   const managerOptions = { useTranscript: true };
   const schandler = _vso => ['ok', null];
+
   const m = await xsWorkerFactory.createFromBundle(
     'v1',
     bundle,

@@ -697,11 +697,7 @@ test('crankhash - skip keys', t => {
   // certain local keys are excluded from consensus, and should not affect
   // the hash
   k.kvStore.set('one', '1');
-  k.kvStore.set('local.snapshot.XYZ', '["vat1234"]');
-  k.kvStore.set(
-    'local.v1234.lastSnapshot',
-    '{"snapshotID":"XYZ","startPos":4}',
-  );
+  k.kvStore.set('local.doNotHashMe', 'random nonsense');
   t.throws(() => k.kvStore.set('host.foo', 'bar'));
   t.is(k.emitCrankHashes().crankhash, expCrankhash);
 });
