@@ -79,22 +79,21 @@ const makeZoeKit = (
 
   const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
-  // XXX can we tell ts that this ensures vatAdminSvcP is non-null?
-  const assertVatAdminSvcP = () => {
-    vatAdminSvcP || Fail`createZCFVat did not get bundleCap`;
+  // guarantee that vatAdminSvcP has been defined.
+  const getActualVatAdminSvcP = () => {
+    if (!vatAdminSvcP) {
+      throw Fail`createZCFVat did not get bundleCap`;
+    }
+    return vatAdminSvcP;
   };
 
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID => {
-    assertVatAdminSvcP();
-    // @ts-expect-error assertVatAdminSvcP ensures vatAdminSvcP is defined
-    return E(vatAdminSvcP).waitForBundleCap(bundleID);
+    return E(getActualVatAdminSvcP()).waitForBundleCap(bundleID);
   };
 
   const getBundleCapByIdNow = id => {
-    assertVatAdminSvcP();
-    // @ts-expect-error assertVatAdminSvcP ensures vatAdminSvcP is defined
-    return E(vatAdminSvcP).getBundleCap(id);
+    return E(getActualVatAdminSvcP()).getBundleCap(id);
   };
 
   // This method contains the power to create a new ZCF Vat, and must
@@ -102,10 +101,7 @@ const makeZoeKit = (
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = contractBundleCap => {
     zcfBundleCap || Fail`createZCFVat did not get bundleCap`;
-    assertVatAdminSvcP();
-
-    // @ts-expect-error assertVatAdminSvcP ensures vatAdminSvcP is defined
-    return E(vatAdminSvcP).createVat(
+    return E(getActualVatAdminSvcP()).createVat(
       zcfBundleCap,
       harden({
         name: 'zcf',
