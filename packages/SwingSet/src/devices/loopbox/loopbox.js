@@ -13,7 +13,6 @@ import { Fail } from '@agoric/assert';
  * deliverMode='queued' will stall the message until the host invokes our
  * `passOneMessage()` message function. We need this to exercise bugs like
  * #1400 which are sensitive to cross-machine message delivery order.
- *
  */
 
 export function buildLoopbox(deliverMode) {

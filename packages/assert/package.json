@@ -19,7 +19,7 @@
   },
   "devDependencies": {
     "@endo/init": "^0.5.52",
-    "ava": "^5.0.1"
+    "ava": "^5.1.0"
   },
   "repository": {
     "type": "git",

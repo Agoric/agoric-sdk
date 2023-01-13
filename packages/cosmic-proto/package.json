@@ -5,7 +5,7 @@
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/Agoric/agoric-sdk/tree/master/packages/cosmic-proto#readme",
+  "homepage": "https://github.com/Agoric/agoric-sdk/tree/HEAD/packages/cosmic-proto#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Agoric/agoric-sdk.git"

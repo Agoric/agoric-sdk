@@ -28,7 +28,7 @@ import './types-ambient.js';
  * The purpose of building on the notifier protocol is to have a lossy
  * adaptor, where intermediate results can be missed in favor of more recent
  * results which are therefore less stale. See
- * https://github.com/Agoric/documentation/blob/master/main/distributed-programming.md#notifiers
+ * https://github.com/Agoric/documentation/blob/HEAD/main/guides/js-programming/notifiers.md
  *
  * @template T
  * @param {ERef<BaseNotifier<T>>} notifierP

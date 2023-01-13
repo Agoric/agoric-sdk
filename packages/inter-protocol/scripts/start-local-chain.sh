@@ -19,7 +19,10 @@ WALLET=$1
 
 if [ -z "$WALLET" ]; then
     echo "USAGE: $0 wallet-key"
-    echo "You can reference by name: agd keys list"
+    # The key must be from the 'test' keyring, for non-interactive use.
+    # To migrate one of your 'os' keys:
+    #   agd keys export the-wallet-key-name > wallet.key
+    #   agd keys import --keyring-backend=test the-wallet-key-name wallet.key
     exit 1
 fi
 
@@ -63,14 +66,14 @@ agoric wallet --keyring-backend=test provision --spend --account "$WALLET"
 echo "waiting for blocks"
 sleep 15
 # verify
-agoric wallet --keyring-backend=test list  
-agoric wallet --keyring-backend=test show --from "$WALLET"  
+agoric wallet --keyring-backend=test list
+agoric wallet --keyring-backend=test show --from "$WALLET"
 
 echo "Repeating for oracle2 account..."
 # this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
-# to use it run `agd keys --keyring-backend=test oracle2 --interactive` and enter this mnenomic:
+# to use it run `agd keys --keyring-backend=test add oracle2 --interactive` and enter this mnenomic:
 # dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
 WALLET2=oracle2
 WALLET2_BECH32=$(agd keys --keyring-backend=test show "$WALLET2" --output json | jq -r .address)
 make ACCT_ADDR="$WALLET2_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234 fund-acct
-agoric wallet  --keyring-backend=test provision --spend --account "$WALLET2"
+agoric wallet --keyring-backend=test provision --spend --account "$WALLET2"
