@@ -86,16 +86,13 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
   const vatAdminSvc = await E(vats.vatAdmin).createVatAdminService(
     devices.vatAdmin,
   );
-  const { zoe, feeMintAccessRetriever } = await E(vats.zoe).buildZoe(
-    vatAdminSvc,
-  );
+  const { zoe, feeMintAccess } = await E(vats.zoe).buildZoe(vatAdminSvc);
 
   const installations = await installContracts(zoe, cb);
   const voterCreator = E(vats.voter).build(zoe);
 
   const [testName, startingValues] = argv;
 
-  const feeMintAccess = await E(feeMintAccessRetriever).get();
   const {
     aliceP,
     governor,

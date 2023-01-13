@@ -32,22 +32,6 @@ import { InvitationHandleShape } from '../typeGuards.js';
 const { Fail } = assert;
 
 /**
- * Wrap getTerms so it checks the fit of the custom terms
- *
- * @param {InstanceRecordManagerGetTerms} getTerms
- * @param {Pattern} customTermsShape
- */
-const fitGetTerms = (getTerms, customTermsShape) => {
-  return () => {
-    const terms = getTerms();
-    // eslint-disable-next-line no-unused-vars -- assume brands and issuers are valid
-    const { brands, issuers, ...customTerms } = terms;
-    fit(harden(customTerms), customTermsShape);
-    return terms;
-  };
-};
-
-/**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
  * made, then the contract code is evaluated, then a particular
  * instance is made.
@@ -72,7 +56,14 @@ export const makeZCFZygote = async (
   /** @type {ERef<ZoeInstanceAdmin>} */
   let zoeInstanceAdmin;
   let seatManager;
+  let instanceRecHolder;
   const makeExiter = makeMakeExiter(zcfBaggage);
+
+  /** @type {() => InstanceState} */
+  const getInstanceRecHolder = () => {
+    instanceRecHolder || Fail`instanceRecord must be initialized before use.`;
+    return instanceRecHolder;
+  };
 
   const {
     storeIssuerRecord,
@@ -94,16 +85,10 @@ export const makeZCFZygote = async (
     makeOfferHandlerStorage(zcfBaggage);
 
   // Make the instanceRecord
-  const {
-    addIssuerToInstanceRecord,
-    getTerms,
-    assertUniqueKeyword,
-    getInstanceRecord,
-    instantiate: instantiateInstanceRecordStorage,
-  } = makeInstanceRecordStorage(zcfBaggage);
+  const makeInstanceRecord = makeInstanceRecordStorage(zcfBaggage);
 
   const recordIssuer = (keyword, issuerRecord) => {
-    addIssuerToInstanceRecord(keyword, issuerRecord);
+    getInstanceRecHolder().addIssuer(keyword, issuerRecord);
     storeIssuerRecord(issuerRecord);
   };
 
@@ -144,7 +129,7 @@ export const makeZCFZygote = async (
     assetKind = AssetKind.NAT,
     displayInfo,
   ) => {
-    assertUniqueKeyword(keyword);
+    getInstanceRecHolder().assertUniqueKeyword(keyword);
 
     const zoeMint = await E(zoeInstanceAdmin).makeZoeMint(
       keyword,
@@ -156,7 +141,7 @@ export const makeZCFZygote = async (
 
   /** @type {ZCFRegisterFeeMint} */
   const registerFeeMint = async (keyword, feeMintAccess) => {
-    assertUniqueKeyword(keyword);
+    getInstanceRecHolder().assertUniqueKeyword(keyword);
 
     const zoeMint = await E(zoeInstanceAdmin).registerFeeMint(
       keyword,
@@ -244,12 +229,12 @@ export const makeZCFZygote = async (
   // and has members.)
   const zcf = Remotable('Alleged: zcf', undefined, {
     reallocate: (...seats) => seatManager.reallocate(...seats),
-    assertUniqueKeyword,
+    assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
       // TODO: The checks of the keyword for uniqueness are
       // duplicated. Assess how waiting on promises to resolve might
       // affect those checks and see if one can be removed.
-      assertUniqueKeyword(keyword);
+      getInstanceRecHolder().assertUniqueKeyword(keyword);
       const record = await E(zoeInstanceAdmin).saveIssuer(issuerP, keyword);
       // AWAIT ///
       recordIssuer(keyword, record);
@@ -294,9 +279,17 @@ export const makeZCFZygote = async (
     // The methods below are pure and have no side-effects //
     getZoeService: () => zoeService,
     getInvitationIssuer: () => invitationIssuer,
-    getTerms: customTermsShape
-      ? fitGetTerms(getTerms, customTermsShape)
-      : getTerms,
+    getTerms: () => {
+      const terms = getInstanceRecHolder().getTerms();
+
+      // If the contract provided customTermsShape, validate the customTerms.
+      if (customTermsShape) {
+        const { brands: _b, issuers: _i, ...customTerms } = terms;
+        fit(harden(customTerms), customTermsShape);
+      }
+
+      return terms;
+    },
     getBrandForIssuer,
     getIssuerForBrand,
     getAssetKind: getAssetKindByBrand,
@@ -306,7 +299,7 @@ export const makeZCFZygote = async (
         testJigSetter({ ...testFn(), zcf });
       }
     },
-    getInstance: () => getInstanceRecord().instance,
+    getInstance: () => getInstanceRecHolder().getInstanceRecord().instance,
     setOfferFilter: strings => E(zoeInstanceAdmin).setOfferFilter(strings),
     getOfferFilter: () => E(zoeInstanceAdmin).getOfferFilter(),
   });
@@ -358,7 +351,7 @@ export const makeZCFZygote = async (
       initSeatMgrAndMintFactory();
 
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
-      instantiateInstanceRecordStorage(instanceRecordFromZoe);
+      instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 
       const startFn = start || vivify;

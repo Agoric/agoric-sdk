@@ -8,7 +8,7 @@ export function buildRootObject(vatPowers) {
   return Far('root', {
     buildZoe: vatAdminSvc => {
       const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const { zoeService: zoe, feeMintAccessRetriever } = makeZoeKit(
+      const { zoeService: zoe, feeMintAccess } = makeZoeKit(
         vatAdminSvc,
         shutdownZoeVat,
         {
@@ -18,7 +18,7 @@ export function buildRootObject(vatPowers) {
         },
       );
 
-      return { zoe, feeMintAccessRetriever };
+      return { zoe, feeMintAccess };
     },
   });
 }

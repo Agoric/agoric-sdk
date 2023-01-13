@@ -67,14 +67,14 @@ export const subscriptionKey = subscription => {
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccessRetriever } = await makeFar(
+  const { zoeService, feeMintAccess } = await makeFar(
     makeZoeKit(makeFakeVatAdmin(() => {}).admin),
   );
   /** @type {import('@endo/far').ERef<ZoeService>} */
   const zoe = makeFar(zoeService);
   return {
     zoe,
-    feeMintAccessRetriever,
+    feeMintAccess,
   };
 };
 harden(setUpZoeForTest);
@@ -121,9 +121,8 @@ export const makeMockTestSpace = async log => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { zoe, feeMintAccess } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
-  const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(feeMintAccess);
 
   const vatLoader = name => {

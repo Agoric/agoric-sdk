@@ -37,9 +37,7 @@ const InstanceAdminStorageIKit = harden({
     getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
     getTerms: M.call(InstanceHandleShape).returns(M.record()),
     getOfferFilter: M.call(InstanceHandleShape).returns(M.arrayOf(M.string())),
-    getInstallationForInstance: M.call(InstanceHandleShape).returns(
-      M.remotable(),
-    ),
+    getInstallation: M.call(InstanceHandleShape).returns(M.remotable()),
     getInstanceAdmin: M.call(InstanceHandleShape).returns(InstanceAdminShape),
   }),
   updater: M.interface('InstanceAdmin updater', {
@@ -86,11 +84,9 @@ export const makeInstanceAdminStorage = baggage => {
           const { state } = this;
           return state.instanceToInstanceAdmin.get(instance).getOfferFilter();
         },
-        getInstallationForInstance(instance) {
+        getInstallation(instance) {
           const { state } = this;
-          return state.instanceToInstanceAdmin
-            .get(instance)
-            .getInstallationForInstance();
+          return state.instanceToInstanceAdmin.get(instance).getInstallation();
         },
         getInstanceAdmin(instance) {
           const { state } = this;
@@ -134,8 +130,8 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       canBeDurable(publicFacet) || Fail`publicFacet must be durable`;
       state.publicFacet = publicFacet;
     },
-    getInstallationForInstance: ({ state }) =>
-      state.zoeInstanceStorageManager.getInstallationForInstance(),
+    getInstallation: ({ state }) =>
+      state.zoeInstanceStorageManager.getInstallation(),
     getInstance: ({ state }) => state.instanceHandle,
     assertAcceptingOffers: ({ state }) => {
       assert(state.acceptingOffers, `No further offers are accepted`);

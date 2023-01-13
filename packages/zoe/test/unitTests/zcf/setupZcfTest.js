@@ -26,16 +26,14 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   const setZCF = jig => (zcf = jig.zcf);
   // The contract provides the `zcf` via `setTestJig` upon `start`.
   const fakeVatAdmin = makeFakeVatAdmin(setZCF);
-  const { zoeService: zoe, feeMintAccessRetriever } = makeZoeKit(
-    fakeVatAdmin.admin,
-  );
+  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin.admin);
   const bundle = await bundleSource(contractRoot);
   fakeVatAdmin.vatAdminState.installBundle('b1-contract', bundle);
   const installation = await E(zoe).installBundleID('b1-contract');
   const startInstanceResult = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
-    // @ts-expect-error generics mismatch
+    // @ts-expect-error TS is confused between <T> above and Omit<> in utils.d.ts
     terms,
   );
   const { vatAdminState } = fakeVatAdmin;
@@ -48,7 +46,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
     installation,
     creatorFacet: startInstanceResult.creatorFacet,
     vatAdminState,
-    feeMintAccessRetriever,
+    feeMintAccess,
     startInstanceResult,
   };
 };

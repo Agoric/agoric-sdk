@@ -19,11 +19,10 @@ const contractRoot = `${dirname}/registerFeeMintContract.js`;
 
 test(`feeMintAccess`, async t => {
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe, feeMintAccessRetriever } = makeZoeKit(fakeVatAdmin);
+  const { zoeService: zoe, feeMintAccess } = makeZoeKit(fakeVatAdmin);
   const bundle = await bundleSource(contractRoot);
   vatAdminState.installBundle('b1-registerfee', bundle);
   const installation = await E(zoe).installBundleID('b1-registerfee');
-  const feeMintAccess = await E(feeMintAccessRetriever).get();
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     undefined,

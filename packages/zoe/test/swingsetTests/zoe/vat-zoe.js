@@ -2,12 +2,22 @@ import { Far } from '@endo/marshal';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, vatParams, baggage) {
+  const shutdownZoeVat = vatPowers.exitVatWithFailure;
+
+  // define all the durable kinds
+  const { zoeService, setVatAdminService } = makeZoeKit(
+    undefined,
+    shutdownZoeVat,
+    undefined,
+    undefined,
+    baggage,
+  );
+
   return Far('root', {
     buildZoe: vatAdminSvc => {
-      const shutdownZoeVat = vatPowers.exitVatWithFailure;
-      const { zoeService: zoe } = makeZoeKit(vatAdminSvc, shutdownZoeVat);
-      return zoe;
+      setVatAdminService(vatAdminSvc);
+      return zoeService;
     },
   });
 }

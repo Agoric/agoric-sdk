@@ -193,13 +193,11 @@ export const provideIssuerStorage = zcfBaggage => {
   };
 
   const instantiate = (issuerRecords = []) => {
-    assert(
-      !zcfBaggage.has(STORAGE_INSTANTIATED_KEY),
-      'issuerStorage can only be instantiated once',
-    );
-    zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
-    instantiated = true;
-    issuerRecords.forEach(storeIssuerRecord);
+    if (!zcfBaggage.has(STORAGE_INSTANTIATED_KEY)) {
+      zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
+      instantiated = true;
+      issuerRecords.forEach(storeIssuerRecord);
+    }
   };
 
   return {

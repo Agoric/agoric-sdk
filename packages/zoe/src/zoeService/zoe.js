@@ -15,27 +15,27 @@ import '@agoric/vats/exported.js';
 import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
-import {
-  makeScalarBigMapStore,
-  vivifyFarClassKit,
-  provide,
-} from '@agoric/vat-data';
+import { Far } from '@endo/marshal';
+import { makeScalarBigMapStore, vivifyFarInstance } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
-import { getZcfBundleCap, setupCreateZCFVat } from './createZCFVat.js';
+import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
-import { ZoeServiceIKit } from '../typeGuards.js';
+import { ZoeServiceI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+const { Fail } = assert;
 
 /**
  * Create an instance of Zoe.
  *
- * @param {VatAdminSvc} vatAdminSvc - The vatAdmin Service, which carries the power
- * to create a new vat.
+ * @param {ERef<VatAdminSvc>} [vatAdminSvcP] - The vatAdmin Service, which carries the
+ * power to create a new vat. If it's not available when makeZoe() is called, it
+ * must be provided later using setVatAdminService().
  * @param {ShutdownWithFailure} shutdownZoeVat - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
@@ -44,37 +44,82 @@ import { ZoeServiceIKit } from '../typeGuards.js';
  * @param {Baggage} [zoeBaggage]
  */
 const makeZoeKit = (
-  vatAdminSvc,
+  vatAdminSvcP = undefined,
   shutdownZoeVat = () => {},
   feeIssuerConfig = defaultFeeIssuerConfig,
   zcfSpec = { name: 'zcf' },
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
-  let zoeService;
+  let zcfBundleCap;
+
+  const saveBundleCap = () => {
+    E.when(
+      Promise.all([vatAdminSvcP, getZcfBundleCap(zcfSpec, vatAdminSvcP)]),
+      ([vatAdminService, bundleCap]) => {
+        zcfBundleCap = bundleCap;
+
+        zoeBaggage.init('vatAdminSvc', vatAdminService);
+        zoeBaggage.init('zcfBundleCap', zcfBundleCap);
+      },
+    );
+  };
+
+  const setVatAdminService = Far('setVatAdminService', lateVatAdminSvc => {
+    vatAdminSvcP = lateVatAdminSvc;
+    saveBundleCap();
+  });
+
+  if (vatAdminSvcP) {
+    saveBundleCap();
+  } else if (zoeBaggage.has('zcfBundleCap')) {
+    zcfBundleCap = zoeBaggage.get('zcfBundleCap');
+    // in this case, it'll be known to have been resolved, but that's fine
+    vatAdminSvcP = zoeBaggage.get('vatAdminSvc');
+  }
 
   const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
-  /** @type {GetBundleCapForID} */
-  const getBundleCapForID = bundleID =>
-    E(vatAdminSvc).waitForBundleCap(bundleID);
+  // guarantee that vatAdminSvcP has been defined.
+  const getActualVatAdminSvcP = () => {
+    if (!vatAdminSvcP) {
+      throw Fail`createZCFVat did not get bundleCap`;
+    }
+    return vatAdminSvcP;
+  };
 
-  const zcfBundleCap = getZcfBundleCap(zcfSpec, vatAdminSvc);
+  /** @type {GetBundleCapForID} */
+  const getBundleCapForID = bundleID => {
+    return E(getActualVatAdminSvcP()).waitForBundleCap(bundleID);
+  };
+
+  const getBundleCapByIdNow = id => {
+    return E(getActualVatAdminSvcP()).getBundleCap(id);
+  };
+
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = setupCreateZCFVat(
-    vatAdminSvc,
-    zcfBundleCap,
-    // eslint-disable-next-line no-use-before-define
-    () => invitationIssuerAccess.getInvitationIssuer(),
-    () => zoeService,
-  );
-  const getBundleCapByIdNow = id => E(vatAdminSvc).getBundleCap(id);
+  const createZCFVat = contractBundleCap => {
+    zcfBundleCap || Fail`createZCFVat did not get bundleCap`;
+    return E(getActualVatAdminSvcP()).createVat(
+      zcfBundleCap,
+      harden({
+        name: 'zcf',
+        vatParameters: {
+          contractBundleCap,
+          // eslint-disable-next-line no-use-before-define
+          zoeService,
+          // eslint-disable-next-line no-use-before-define
+          invitationIssuer: invitationIssuerAccess.getInvitationIssuer(),
+        },
+      }),
+    );
+  };
 
   // The ZoeStorageManager composes and consolidates capabilities
   // needed by Zoe according to POLA.
   const {
-    zoeServiceDataAccess,
+    zoeServiceDataAccess: dataAccess,
     makeOfferAccess,
     startInstanceAccess,
     invitationIssuerAccess,
@@ -89,7 +134,7 @@ const makeZoeKit = (
   // Pass the capabilities necessary to create E(zoe).startInstance
   const startInstance = makeStartInstance(
     startInstanceAccess,
-    zcfBundleCap,
+    () => zcfBundleCap,
     getBundleCapByIdNow,
     zoeBaggage,
   );
@@ -110,94 +155,66 @@ const makeZoeKit = (
     });
   };
 
-  const makeZoeService = vivifyFarClassKit(
-    zoeBaggage,
-    'ZoeService',
-    ZoeServiceIKit,
-    dataAccess => ({ dataAccess }),
-    {
-      /** @type {ZoeService} */
-      zoeService: {
-        install(bundleId) {
-          const { state } = this;
-          return state.dataAccess.installBundle(bundleId);
-        },
-        installBundleID(bundleId) {
-          const { state } = this;
-          return state.dataAccess.installBundleID(bundleId);
-        },
-        startInstance,
-        offer,
-        setOfferFilter(instance, filters) {
-          const { state } = this;
-          state.dataAccess.setOfferFilter(instance, filters);
-        },
-
-        // The functions below are getters only and have no impact on
-        // state within Zoe
-        getOfferFilter(instance) {
-          const { state } = this;
-          return state.dataAccess.getOfferFilter(instance);
-        },
-        async getInvitationIssuer() {
-          const { state } = this;
-          return state.dataAccess.getInvitationIssuer();
-        },
-        async getFeeIssuer() {
-          return feeMintKit.feeMint.getFeeIssuer();
-        },
-
-        getBrands(instance) {
-          const { state } = this;
-          return state.dataAccess.getBrands(instance);
-        },
-        getIssuers(instance) {
-          const { state } = this;
-          return state.dataAccess.getIssuers(instance);
-        },
-        getPublicFacet(instance) {
-          const { state } = this;
-          return state.dataAccess.getPublicFacet(instance);
-        },
-        getTerms(instance) {
-          const { state } = this;
-          return state.dataAccess.getTerms(instance);
-        },
-        getInstallationForInstance(instance) {
-          const { state } = this;
-          return state.dataAccess.getInstallationForInstance(instance);
-        },
-        getBundleIDFromInstallation(installation) {
-          const { state } = this;
-          return state.dataAccess.getBundleIDFromInstallation(installation);
-        },
-        getInstallation,
-
-        getInstance(invitation) {
-          return getInstance(invitation);
-        },
-        getConfiguration,
-        getInvitationDetails,
-        getProposalShapeForInvitation(invitation) {
-          const { state } = this;
-          return state.dataAccess.getProposalShapeForInvitation(invitation);
-        },
-      },
-      feeMintAccessRetriever: {
-        /** @type {() => FeeMintAccess} */
-        get() {
-          // @ts-expect-error type cast
-          return feeMintKit.feeMintAccess;
-        },
-      },
+  /** @type {ZoeService} */
+  const zoeService = vivifyFarInstance(zoeBaggage, 'ZoeService', ZoeServiceI, {
+    install(bundleId) {
+      return dataAccess.installBundle(bundleId);
     },
-  );
+    installBundleID(bundleId) {
+      return dataAccess.installBundleID(bundleId);
+    },
+    startInstance,
+    offer,
 
-  const zoeServices = provide(zoeBaggage, 'zoe', () =>
-    makeZoeService(zoeServiceDataAccess),
-  );
-  zoeService = zoeServices.zoeService;
-  return zoeServices;
+    // The functions below are getters only and have no impact on
+    // state within Zoe
+    getOfferFilter(instance) {
+      return dataAccess.getOfferFilter(instance);
+    },
+    async getInvitationIssuer() {
+      return dataAccess.getInvitationIssuer();
+    },
+    async getFeeIssuer() {
+      return feeMintKit.feeMint.getFeeIssuer();
+    },
+
+    getBrands(instance) {
+      return dataAccess.getBrands(instance);
+    },
+    getIssuers(instance) {
+      return dataAccess.getIssuers(instance);
+    },
+    getPublicFacet(instance) {
+      return dataAccess.getPublicFacet(instance);
+    },
+    getTerms(instance) {
+      return dataAccess.getTerms(instance);
+    },
+    getInstallationForInstance(instance) {
+      return dataAccess.getInstallation(instance);
+    },
+    getBundleIDFromInstallation(installation) {
+      return dataAccess.getBundleIDFromInstallation(installation);
+    },
+    getInstallation,
+
+    getInstance(invitation) {
+      return getInstance(invitation);
+    },
+    getConfiguration,
+    getInvitationDetails,
+    getProposalShapeForInvitation(invitation) {
+      return dataAccess.getProposalShapeForInvitation(invitation);
+    },
+  });
+
+  return harden({
+    zoeService,
+    /** @type {FeeMintAccess} */
+    // @ts-expect-error cast
+    feeMintAccess: feeMintKit.feeMintAccess,
+    setVatAdminService,
+  });
 };
 
 export { makeZoeKit };

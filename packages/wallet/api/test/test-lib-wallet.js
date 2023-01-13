@@ -189,7 +189,7 @@ const waitForUpdate = async (notifier, thunk) => {
 };
 
 test.before(async t => {
-  const zoe = makeZoeKit(fakeVatAdmin).zoeService;
+  const { zoeService: zoe } = makeZoeKit(fakeVatAdmin);
 
   // Create AutomaticRefund instance
   const automaticRefundContractUrl = await importMetaResolve(

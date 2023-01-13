@@ -5,6 +5,7 @@ import {
   IssuerShape,
   BrandShape,
   PaymentShape,
+  IssuerKitShape,
 } from '@agoric/ertp';
 import { M } from '@agoric/store';
 import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
@@ -24,7 +25,6 @@ export const AmountPatternKeywordRecordShape = M.recordOf(
   KeywordShape,
   M.pattern(),
 );
-export const PaymentKeywordRecordShape = M.recordOf(KeywordShape, PaymentShape);
 export const PaymentPKeywordRecordShape = M.recordOf(
   KeywordShape,
   M.eref(PaymentShape),
@@ -154,7 +154,7 @@ export const InstanceAdminShape = M.remotable('InstanceAdmin');
 export const InstanceAdminI = M.interface('InstanceAdmin', {
   makeInvitation: M.call(InvitationHandleShape, M.string())
     .optional(M.record(), M.pattern())
-    .returns(M.promise()),
+    .returns(InvitationShape),
   saveIssuer: M.callWhen(M.await(IssuerShape), KeywordShape).returns(
     IssuerRecordShape,
   ),
@@ -191,7 +191,7 @@ export const InstanceStorageManagerIKit = harden({
     getTerms: M.call().returns(M.splitRecord(TermsShape)),
     getIssuers: M.call().returns(IssuerKeywordRecordShape),
     getBrands: M.call().returns(BrandKeywordRecordShape),
-    getInstallationForInstance: M.call().returns(InstallationShape),
+    getInstallation: M.call().returns(InstallationShape),
     getInvitationIssuer: M.call().returns(IssuerShape),
 
     saveIssuer: M.call(IssuerShape, KeywordShape).returns(M.promise()),
@@ -215,7 +215,7 @@ export const InstanceStorageManagerIKit = harden({
     deleteInstanceAdmin: M.call(InstanceAdminI).returns(),
     makeInvitation: M.call(InvitationHandleShape, M.string())
       .optional(M.record(), M.pattern())
-      .returns(M.promise()),
+      .returns(PaymentShape),
     getRoot: M.call().returns(M.any()),
     getAdminNode: M.call().returns(M.remotable('adminNode')),
   }),
@@ -223,6 +223,13 @@ export const InstanceStorageManagerIKit = harden({
     withdrawPayments: M.call(AmountKeywordRecordShape).returns(
       PaymentPKeywordRecordShape,
     ),
+  }),
+  helpers: M.interface('InstanceStorageManager helper', {
+    wrapIssuerKitWithZoeMint: M.call(
+      KeywordShape,
+      IssuerKitShape,
+      M.remotable('adminNode'),
+    ).returns(ZoeMintShape),
   }),
 });
 
@@ -237,7 +244,7 @@ export const ZoeStorageManagerIKit = harden({
     getTerms: M.call(InstanceHandleShape).returns(M.splitRecord(TermsShape)),
     getIssuers: M.call(InstanceHandleShape).returns(IssuerKeywordRecordShape),
     getBrands: M.call(InstanceHandleShape).returns(BrandKeywordRecordShape),
-    getInstallationForInstance: M.call(InstanceHandleShape).returns(
+    getInstallation: M.call(InstanceHandleShape).returns(
       M.eref(M.remotable('Installation')),
     ),
     getInvitationIssuer: M.call().returns(IssuerShape),
@@ -254,10 +261,6 @@ export const ZoeStorageManagerIKit = harden({
       M.eref(M.remotable('PublicFacet')),
     ),
     getOfferFilter: M.call(InstanceHandleShape).returns(M.arrayOf(M.string())),
-    setOfferFilter: M.call(
-      InstanceHandleShape,
-      M.arrayOf(M.string()),
-    ).returns(),
     getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
       M.opt(M.pattern()),
     ),
@@ -291,60 +294,51 @@ export const ZoeStorageManagerIKit = harden({
   }),
 });
 
-export const ZoeServiceIKit = harden({
-  zoeService: M.interface('ZoeService', {
-    install: M.call(M.any()).returns(M.promise()),
-    installBundleID: M.call(M.string()).returns(M.promise()),
-    startInstance: M.call(M.eref(InstallationShape))
-      .optional(IssuerPKeywordRecordShape, M.any(), M.any())
-      .returns(M.promise()),
-    offer: M.call(M.eref(InvitationShape))
-      .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
-      .returns(M.promise()),
-    setOfferFilter: M.call(
-      InstanceHandleShape,
-      M.arrayOf(M.string()),
-    ).returns(),
+export const ZoeServiceI = M.interface('ZoeService', {
+  install: M.call(M.any()).returns(M.promise()),
+  installBundleID: M.call(M.string()).returns(M.promise()),
+  startInstance: M.call(M.eref(InstallationShape))
+    .optional(IssuerPKeywordRecordShape, M.any(), M.any())
+    .returns(M.promise()),
+  offer: M.call(M.eref(InvitationShape))
+    .optional(ProposalShape, PaymentPKeywordRecordShape, M.any())
+    .returns(M.promise()),
 
-    getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.arrayOf(M.string()),
-    ),
-    getInvitationIssuer: M.call().returns(M.promise()),
-    getFeeIssuer: M.call().returns(M.promise()),
-    getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
-      BrandKeywordRecordShape,
-    ),
-    getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
-      IssuerKeywordRecordShape,
-    ),
-    getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
-      M.remotable('PublicFacet'),
-    ),
-    getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(M.any()),
-    getInstallationForInstance: M.callWhen(
-      M.await(InstanceHandleShape),
-    ).returns(M.eref(M.remotable('Installation'))),
-    getBundleIDFromInstallation: M.call(InstallationShape).returns(
-      M.eref(M.string()),
-    ),
+  getOfferFilter: M.callWhen(M.await(InstanceHandleShape)).returns(
+    M.arrayOf(M.string()),
+  ),
+  getInvitationIssuer: M.call().returns(M.promise()),
+  getFeeIssuer: M.call().returns(M.promise()),
+  getBrands: M.callWhen(M.await(InstanceHandleShape)).returns(
+    BrandKeywordRecordShape,
+  ),
+  getIssuers: M.callWhen(M.await(InstanceHandleShape)).returns(
+    IssuerKeywordRecordShape,
+  ),
+  getPublicFacet: M.callWhen(M.await(InstanceHandleShape)).returns(
+    M.remotable('PublicFacet'),
+  ),
+  getTerms: M.callWhen(M.await(InstanceHandleShape)).returns(M.any()),
+  getInstallationForInstance: M.callWhen(M.await(InstanceHandleShape)).returns(
+    M.eref(M.remotable('Installation')),
+  ),
+  getBundleIDFromInstallation: M.call(InstallationShape).returns(
+    M.eref(M.string()),
+  ),
 
-    getInstallation: M.call(M.eref(InvitationShape)).returns(M.promise()),
-    getInstance: M.call(M.eref(InvitationShape)).returns(M.promise()),
-    getConfiguration: M.call().returns({
-      feeIssuerConfig: {
-        name: M.string(),
-        assetKind: 'nat',
-        displayInfo: DisplayInfoShape,
-      },
-    }),
-    getInvitationDetails: M.call(M.eref(InvitationShape)).returns(M.any()),
-    getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-      M.opt(ProposalShape),
-    ),
+  getInstallation: M.call(M.eref(InvitationShape)).returns(M.promise()),
+  getInstance: M.call(M.eref(InvitationShape)).returns(M.promise()),
+  getConfiguration: M.call().returns({
+    feeIssuerConfig: {
+      name: M.string(),
+      assetKind: 'nat',
+      displayInfo: DisplayInfoShape,
+    },
   }),
-  feeMintAccessRetriever: M.interface('FeeMintAccessRetriever', {
-    get: M.call().returns(M.any()),
-  }),
+  getInvitationDetails: M.call(M.eref(InvitationShape)).returns(M.any()),
+  getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
+    M.opt(ProposalShape),
+  ),
 });
 
 export const AdminFacetI = M.interface('ZcfAdminFacet', {

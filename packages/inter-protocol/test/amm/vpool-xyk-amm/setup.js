@@ -32,7 +32,7 @@ const trace = makeTracer('AmmTS', false);
 export const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
 
-  const { zoeService, feeMintAccessRetriever } = await makeFar(
+  const { zoeService, feeMintAccess } = await makeFar(
     makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
@@ -42,7 +42,7 @@ export const setUpZoeForTest = async () => {
 
   return {
     zoe: zoeService,
-    feeMintAccessP: E(feeMintAccessRetriever).get(),
+    feeMintAccessP: feeMintAccess,
   };
 };
 harden(setUpZoeForTest);

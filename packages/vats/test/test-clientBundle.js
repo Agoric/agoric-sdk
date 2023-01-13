@@ -28,7 +28,7 @@ import { devices } from './devices.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
-  const { zoeService, feeMintAccessRetriever } = await makeFar(
+  const { zoeService, feeMintAccess } = await makeFar(
     makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
@@ -37,7 +37,7 @@ const setUpZoeForTest = async () => {
   );
   return {
     zoe: zoeService,
-    feeMintAccessP: E(feeMintAccessRetriever).get(),
+    feeMintAccessP: feeMintAccess,
   };
 };
 harden(setUpZoeForTest);
@@ -59,8 +59,8 @@ test('connectFaucet produces payments', async t => {
 
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
-  const feeMintAccess = await feeMintAccessP;
-  produce.feeMintAccess.resolve(feeMintAccess);
+  const fma = await feeMintAccessP;
+  produce.feeMintAccess.resolve(fma);
   produce.bridgeManager.resolve(undefined);
 
   const vatLoader = name => {
