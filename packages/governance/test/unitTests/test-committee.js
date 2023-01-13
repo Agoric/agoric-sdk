@@ -130,6 +130,7 @@ test('committee-open question:one', async t => {
       tieOutcome: {
         text: 'why not?',
       },
+      winningThreshold: undefined,
     },
   );
 });
