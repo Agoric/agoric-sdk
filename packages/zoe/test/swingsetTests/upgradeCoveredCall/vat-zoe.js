@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 
-import { makeZoeKit } from '../../../src/zoeService/zoe';
+import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 
 export function buildRootObject(vatPowers) {
   return Far('root', {

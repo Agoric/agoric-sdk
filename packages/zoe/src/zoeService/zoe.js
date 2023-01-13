@@ -33,7 +33,7 @@ const { Fail } = assert;
 /**
  * Create an instance of Zoe.
  *
- * @param {ERef<VatAdminSvc>} [vatAdminSvcP] - The vatAdmin Service, which carries the
+ * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvcP] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
  * @param {ShutdownWithFailure} shutdownZoeVat - a function to
