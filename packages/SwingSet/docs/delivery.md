@@ -282,7 +282,7 @@ be recycled, but it seems less confusing to simply retire the number.
 We use the term `CapData` to describe a piece of data that can include
 capability references. Each reference is known as a `CapSlot`. The data is
 serialized into into our
-[augmented form of JSON](https://github.com/endojs/endo/tree/master/packages/marshal),
+[augmented form of JSON](https://github.com/endojs/endo/tree/HEAD/packages/marshal),
 which uses special `@qclass` keys to represent things not normally expressible
 by JSON (such as `NaN`, `Infinity`, `undefined`, BigInts, and `CapSlot`
 references) or not preserved by normal serialization/deserialization (such as

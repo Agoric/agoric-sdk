@@ -19,6 +19,8 @@ VOTE_PROPOSAL = 1
 VOTE_OPTION = yes
 
 GOSRC = ../../golang/cosmos
+# For deep (cross-vat) stacks, try...
+# DEBUG ?= SwingSet:ls,SwingSet:vat,track-turns
 DEBUG ?= SwingSet:ls,SwingSet:vat
 AG_SOLO = DEBUG=$(DEBUG) $(shell cd ../solo/bin && pwd)/ag-solo
 AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
@@ -150,10 +152,12 @@ scenario2-run-chain: ../vats/decentral-devnet-config.json
 		$(AGC) --home=t1/n0 start --log_level=warn $(AGC_START_ARGS)
 
 # Run a chain with an explicit halt.
+BLOCKS_TO_RUN=3
 scenario2-run-chain-to-halt: t1/decentral-economy-config.json
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
-		$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + 3)); \
+		$(AGC) --home=t1/n0 start --log_level=warn --halt-height=$$(($(INITIAL_HEIGHT) + $(BLOCKS_TO_RUN))); \
 		test "$$?" -eq 98
+	echo ran to $(INITIAL_HEIGHT) + $(BLOCKS_TO_RUN)
 
 # Blow away all client state to try again without resetting the chain.
 scenario2-reset-client:
@@ -224,6 +228,12 @@ fund-acct:
 provision-acct:
 	$(AGCH) --chain-id=$(CHAIN_ID) \
 	  --home=t1/bootstrap --keyring-backend=test --from=bootstrap \
+	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
+	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes
+
+provision-my-acct:
+	$(AGCH) --chain-id=$(CHAIN_ID) \
+	  --home t1/8000/ag-cosmos-helper-statedir --keyring-backend=test --from=ag-solo \
 	  tx swingset provision-one t1/$(BASE_PORT) $(ACCT_ADDR) SMART_WALLET \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) --broadcast-mode=block --yes
 

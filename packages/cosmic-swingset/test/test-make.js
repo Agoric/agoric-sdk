@@ -1,45 +1,41 @@
 import test from 'ava';
-import { spawn } from 'child_process';
-import path from 'path';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+// Use ambient authority only in test.before()
+import { spawn as ambientSpawn } from 'child_process';
+import * as ambientPath from 'path';
 
-test('make and exec', async t => {
-  await new Promise(resolve =>
-    spawn('make', ['scenario2-setup'], {
-      cwd: `${dirname}/..`,
-      stdio: ['ignore', 'ignore', 'inherit'],
-    }).addListener('exit', code => {
-      t.is(code, 0, 'make scenario2-setup exits successfully');
-      resolve();
-    }),
+import { makeScenario2, pspawn } from './scenario2.js';
+
+test.before(async t => {
+  const filename = new URL(import.meta.url).pathname;
+  const dirname = ambientPath.dirname(filename);
+  const makefileDir = ambientPath.join(dirname, '..');
+
+  const io = { spawn: ambientSpawn, cwd: makefileDir };
+  const pspawnMake = pspawn('make', io);
+  const pspawnAgd = pspawn('bin/ag-chain-cosmos', io);
+  const scenario2 = makeScenario2({ pspawnMake, pspawnAgd, log: t.log });
+  await scenario2.setup();
+
+  t.context = { scenario2, pspawnAgd };
+});
+
+test.serial('make and exec', async t => {
+  const { pspawnAgd, scenario2 } = t.context;
+  t.log('exec agd');
+  t.is(await pspawnAgd([]).exit, 0, 'exec agd exits successfully');
+  t.log('run chain to halt');
+  t.is(
+    await scenario2.runToHalt(),
+    0,
+    'make scenario2-run-chain-to-halt is successful',
   );
-  await new Promise(resolve =>
-    spawn('bin/ag-chain-cosmos', {
-      cwd: `${dirname}/..`,
-      stdio: ['ignore', 'ignore', 'inherit'],
-    }).addListener('exit', code => {
-      t.is(code, 0, 'exec exits successfully');
-      resolve();
-    }),
+  t.log('resume chain and halt');
+  t.is(
+    await scenario2.runToHalt(),
+    0,
+    'make scenario2-run-chain-to-halt succeeds again',
   );
-  await new Promise(resolve =>
-    spawn('make', ['scenario2-run-chain-to-halt'], {
-      cwd: `${dirname}/..`,
-      stdio: ['ignore', 'ignore', 'inherit'],
-    }).addListener('exit', code => {
-      t.is(code, 0, 'make scenario2-run-chain-to-halt is successful');
-      resolve();
-    }),
-  );
-  await new Promise(resolve =>
-    spawn('bin/ag-chain-cosmos', ['export', '--home=t1/n0'], {
-      cwd: `${dirname}/..`,
-      stdio: ['ignore', 'ignore', 'inherit'],
-    }).addListener('exit', code => {
-      t.is(code, 0, 'export exits successfully');
-      resolve();
-    }),
-  );
+  t.log('export');
+  t.is(await scenario2.export(), 0, 'export exits successfully');
 });

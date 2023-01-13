@@ -23,8 +23,6 @@ In any case, for now, you will be needing to build the solo node from the source
 
 To build and install from sources, first follow the instructions at [Before Using Agoric Software](https://agoric.com/documentation/getting-started/before-using-agoric.html) to install the Agoric SDK and its prerequisites.
 
-- **Warning:** There are some [known issues](https://github.com/Agoric/cosmic-swingset/issues/71) installing cosmic-swingset with [snap-based version of node.js on Ubuntu](https://github.com/nodesource/distributions/blob/master/README.md#snap). **We recommend** using a non-snap version
-
 You'll then need to install the following additional software:
 - [Golang](https://golang.org/doc/install) (you need at least version 1.17)
 - (scenarios 1 and 0) [Python3](https://www.python.org/downloads/)

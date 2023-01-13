@@ -6,7 +6,10 @@ import {
   defineDurableFarClass,
   defineDurableFarClassKit,
 } from '../src/far-class-utils.js';
-import { makeKindHandle } from '../src/vat-data-bindings.js';
+import {
+  makeKindHandle,
+  makeScalarBigMapStore,
+} from '../src/vat-data-bindings.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
@@ -103,6 +106,40 @@ test('test defineDurableFarClassKit', t => {
   makeCounterKit(3, 4);
   // @ts-expect-error type check
   makeCounterKit('str');
+});
+
+test('finish option', t => {
+  const counterRegistry = makeScalarBigMapStore('counters');
+  const upCounterKind = makeKindHandle('UpCounter');
+
+  const finishCounter = context => {
+    const { state, self } = context;
+    counterRegistry.init(state.name, self);
+  };
+
+  const makeUpCounter = defineDurableFarClass(
+    upCounterKind,
+    UpCounterI,
+    /**
+     * @param {string} name
+     * @param {number} x
+     */
+    (name, x = 0) => ({ name, x }),
+    {
+      incr(y = 1) {
+        // @ts-expect-error does not exist
+        this.incr;
+        assert(this.self.incr);
+        const { state } = this;
+        state.x += y;
+        return state.x;
+      },
+    },
+    { finish: finishCounter },
+  );
+
+  makeUpCounter('myCounter', 3);
+  t.truthy(counterRegistry.get('myCounter'));
 });
 
 test.todo('Add tests for durability');

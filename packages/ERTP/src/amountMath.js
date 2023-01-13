@@ -174,6 +174,24 @@ const coerceLR = (h, leftAmount, rightAmount) => {
 };
 
 /**
+ * Returns true if the leftAmount is greater than or equal to the
+ * rightAmount. The notion of "greater than or equal to" depends
+ * on the kind of amount, as defined by the MathHelpers. For example,
+ * whether rectangle A is greater than rectangle B depends on whether rectangle
+ * A includes rectangle B as defined by the logic in MathHelpers.
+ *
+ * @template {AssetKind} [K=AssetKind]
+ * @param {Amount<K>} leftAmount
+ * @param {Amount<K>} rightAmount
+ * @param {Brand<K>=} brand
+ * @returns {boolean}
+ */
+const isGTE = (leftAmount, rightAmount, brand = undefined) => {
+  const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
+  return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
+};
+
+/**
  * Logic for manipulating amounts.
  *
  * Amounts are the canonical description of tradable goods. They are manipulated
@@ -271,23 +289,7 @@ const AmountMath = {
     const h = assertValueGetHelpers(value);
     return h.doIsEmpty(h.doCoerce(value));
   },
-  /**
-   * Returns true if the leftAmount is greater than or equal to the
-   * rightAmount. For non-scalars, "greater than or equal to" depends
-   * on the kind of amount, as defined by the MathHelpers. For example,
-   * whether rectangle A is greater than rectangle B depends on whether rectangle
-   * A includes rectangle B as defined by the logic in MathHelpers.
-   *
-   * @template {AssetKind} [K=AssetKind]
-   * @param {Amount<K>} leftAmount
-   * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
-   * @returns {boolean}
-   */
-  isGTE: (leftAmount, rightAmount, brand = undefined) => {
-    const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-    return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
-  },
+  isGTE,
   /**
    * Returns true if the leftAmount equals the rightAmount. We assume
    * that if isGTE is true in both directions, isEqual is also true
@@ -348,7 +350,13 @@ const AmountMath = {
    * @param {Brand<K>=} brand
    * @returns {Amount<K>}
    */
-  min: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? y : x),
+  min: (x, y, brand = undefined) =>
+    // eslint-disable-next-line no-nested-ternary
+    isGTE(x, y, brand)
+      ? y
+      : isGTE(y, x, brand)
+      ? x
+      : Fail`${x} and ${y} are incomparable`,
   /**
    * Returns the max value between x and y using isGTE
    *
@@ -358,7 +366,13 @@ const AmountMath = {
    * @param {Brand<K>=} brand
    * @returns {Amount<K>}
    */
-  max: (x, y, brand = undefined) => (AmountMath.isGTE(x, y, brand) ? x : y),
+  max: (x, y, brand = undefined) =>
+    // eslint-disable-next-line no-nested-ternary
+    isGTE(x, y, brand)
+      ? x
+      : isGTE(y, x)
+      ? y
+      : Fail`${x} and ${y} are incomparable`,
 };
 harden(AmountMath);
 

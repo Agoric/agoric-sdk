@@ -51,7 +51,6 @@ import { makeTranscriptManager } from './transcript.js';
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
- *
  */
 
 /**

@@ -10,5 +10,4 @@ export {};
  *
  * @typedef { DynamicVatOptionsWithoutMeter & HasMeterID } InternalDynamicVatOptions
  * @typedef { import('./types-external.js').StaticVatOptions | ( InternalDynamicVatOptions & HasMeterID ) } RecordedVatOptions
- *
  */

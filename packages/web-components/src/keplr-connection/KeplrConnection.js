@@ -11,11 +11,11 @@ const DEFAULT_NETWORK_CONFIG = 'https://main.agoric.net/network-config';
 
 export const makeAgoricKeplrConnection = async (
   networkConfig = DEFAULT_NETWORK_CONFIG,
+  context = makeImportContext(),
 ) => {
   const chainId = await getChainId(networkConfig);
   const address = await getKeplrAddress(chainId);
 
-  const context = makeImportContext();
   const leader = makeLeader(networkConfig);
   const walletNotifiers = await watchWallet(leader, address, context);
 

@@ -52,7 +52,7 @@ const makeZoeKit = (
 ) => {
   let zcfBundleCap;
 
-  function saveBundleCap() {
+  const saveBundleCap = () => {
     E.when(
       Promise.all([vatAdminSvcP, getZcfBundleCap(zcfSpec, vatAdminSvcP)]),
       ([vatAdminService, bundleCap]) => {
@@ -62,7 +62,7 @@ const makeZoeKit = (
         zoeBaggage.init('zcfBundleCap', zcfBundleCap);
       },
     );
-  }
+  };
 
   const setVatAdminService = Far('setVatAdminService', lateVatAdminSvc => {
     vatAdminSvcP = lateVatAdminSvc;
@@ -79,27 +79,29 @@ const makeZoeKit = (
 
   const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
 
+  // guarantee that vatAdminSvcP has been defined.
+  const getActualVatAdminSvcP = () => {
+    if (!vatAdminSvcP) {
+      throw Fail`createZCFVat did not get bundleCap`;
+    }
+    return vatAdminSvcP;
+  };
+
   /** @type {GetBundleCapForID} */
   const getBundleCapForID = bundleID => {
-    if (!vatAdminSvcP) {
-      throw Fail`vatAdminSvc must be defined.`;
-    }
-    return E(vatAdminSvcP).waitForBundleCap(bundleID);
+    return E(getActualVatAdminSvcP()).waitForBundleCap(bundleID);
+  };
+
+  const getBundleCapByIdNow = id => {
+    return E(getActualVatAdminSvcP()).getBundleCap(id);
   };
 
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
   const createZCFVat = contractBundleCap => {
-    if (!zcfBundleCap) {
-      throw Fail`createZCFVat did not get bundleCap`;
-    }
-
-    if (!vatAdminSvcP) {
-      throw Fail`vatAdminSvc must be defined.`;
-    }
-
-    return E(vatAdminSvcP).createVat(
+    zcfBundleCap || Fail`createZCFVat did not get bundleCap`;
+    return E(getActualVatAdminSvcP()).createVat(
       zcfBundleCap,
       harden({
         name: 'zcf',
@@ -112,13 +114,6 @@ const makeZoeKit = (
         },
       }),
     );
-  };
-
-  const getBundleCapByIdNow = id => {
-    if (!vatAdminSvcP) {
-      throw Fail`vatAdminSvc must be defined.`;
-    }
-    return E(vatAdminSvcP).getBundleCap(id);
   };
 
   // The ZoeStorageManager composes and consolidates capabilities

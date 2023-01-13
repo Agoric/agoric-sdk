@@ -84,7 +84,7 @@ type DefineKindOptions<C> = {
   /**
    * Intended for internal use only.
    * If an `interfaceGuard` is provided, then the raw methods passed alongside
-   * it wrapped by a function that first checks that this method's guard
+   * it are wrapped by a function that first checks that this method's guard
    * pattern is satisfied before calling the raw method.
    *
    * In `defineDurableKind` and its siblings, this defaults to off.
