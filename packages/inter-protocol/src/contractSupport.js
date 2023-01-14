@@ -1,7 +1,13 @@
 import { AmountMath } from '@agoric/ertp';
 import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import {
+  makeScalarBigMapStore,
+  provide,
+  provideDurableSetStore,
+} from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 const { Fail, quote: q } = assert;
 
@@ -158,3 +164,37 @@ export const makeEphemeraProvider = init => {
   };
 };
 harden(makeEphemeraProvider);
+
+export const provideEmptySeat = (zcf, baggage, name) => {
+  return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
+};
+harden(provideEmptySeat);
+
+/**
+ * For making singletons, so that each baggage carries a separate kind definition (albeit of the definer)
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {string} category diagnostic tag
+ * @returns {import('@agoric/vat-data').Baggage}
+ */
+export const provideChildBaggage = (baggage, category) => {
+  const baggageSet = provideDurableSetStore(baggage, `${category}Set`);
+  return Far('childBaggageManager', {
+    /**
+     * @template {(baggage: import('@agoric/ertp').Baggage) => any} M Maker function
+     * @param {string} childName diagnostic tag
+     * @param {M} makeChild
+     * @returns {ReturnType<M>}
+     */
+    addChild: (childName, makeChild) => {
+      const childStore = makeScalarBigMapStore(`${childName}${category}`, {
+        durable: true,
+      });
+      const result = makeChild(childStore);
+      baggageSet.add(childStore);
+      return result;
+    },
+    children: () => baggageSet.values(),
+  });
+};
+harden(provideChildBaggage);
