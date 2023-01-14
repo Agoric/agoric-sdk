@@ -37,9 +37,10 @@ ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
 jq ".body | fromjson" <"$ORACLE_OFFER"
 agoric wallet send --keyring-backend="test" --from "$WALLET" --offer "$ORACLE_OFFER"
+ORACLE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
+
 # verify the offerId is readable from chain history
 agoric wallet show --keyring-backend="test" --from "$WALLET"
-ORACLE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 # repeat for oracle2
 ORACLE_OFFER=$(mktemp -t agops.XXX)
