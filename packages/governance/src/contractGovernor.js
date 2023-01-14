@@ -116,7 +116,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
  *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
- *     privateArgs: Record<string, unknown>,
  *   }
  * }>}
  */
@@ -129,7 +128,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
  *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
- *     privateArgs: Record<string, unknown>,
  *   }
  * }>} zcf
  * @param {{

@@ -10,9 +10,10 @@
     "moduleResolution": "node",
   },
   "include": [
-    "build/**/*.js",
-    "scripts/**/*.js",
-    "src/**/*.js",
-    "test/**/*.js",
+    "build",
+    "scripts",
+    "src",
+    "test",
+    "tools",
   ],
 }
