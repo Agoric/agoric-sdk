@@ -84,7 +84,7 @@ export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
 };
 
 /**
- * @deprecated use makeMetricsPublishKit
+ * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
  * @template T
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
@@ -119,6 +119,7 @@ harden(makeMetricsPublisherKit);
  */
 
 /**
+ * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
  * @template T
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller

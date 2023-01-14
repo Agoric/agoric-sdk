@@ -164,7 +164,7 @@ harden(makeStoredSubscription);
  */
 
 /**
- * @deprecated use makeStoredPublishKit
+ * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
  *
  * @template [T=unknown]
  * @param {ERef<StorageNode>} [storageNode]
@@ -193,6 +193,8 @@ export const makeStoredPublisherKit = (storageNode, marshaller, childPath) => {
 };
 
 /**
+ * @deprecated incompatible with durability; instead handle vstorage ephemerally on a durable PublishKit
+ *
  * Like makePublishKit this makes a `{ publisher, subscriber }` pair for doing efficient
  * distributed pub/sub supporting both "each" and "latest" iteration
  * of published values.
