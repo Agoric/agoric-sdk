@@ -37,7 +37,7 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: OfferId, invitationAmount: Amount<'set'>, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
+ * @param {(offerId: OfferId, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers: import('./types').PublicSubscribers ) => Promise<void>} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,
@@ -133,11 +133,13 @@ export const makeOfferExecutor = ({
                 // @ts-expect-error result narrowed by passStyle
                 if ('invitationMakers' in result) {
                   // save for continuing invitation offer
-                  onNewContinuingOffer(
+                  void onNewContinuingOffer(
                     id,
                     invitationAmount,
                     // @ts-expect-error result narrowed by passStyle
                     result.invitationMakers,
+                    // @ts-expect-error result narrowed by passStyle
+                    result.publicSubscribers,
                   );
                 }
                 // copyRecord is valid to publish but not safe as it may have private info

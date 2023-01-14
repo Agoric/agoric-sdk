@@ -21,6 +21,7 @@ import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
+import { objectMapStoreKeys } from './utils.js';
 
 const { Fail, quote: q } = assert;
 
@@ -56,6 +57,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   brands: BrandDescriptor[],
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Record<number, Amount>,
+ *   offerToPublicSubscriberPaths: Record<string, Record<string, VStorageKey>>,
  *   lastOfferId: string,
  * }} CurrentWalletRecord
  */
@@ -108,6 +110,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {ImmutableState & MutableState} State
  * - `brandPurses` is precious and closely held. defined as late as possible to reduce its scope.
  * - `offerToInvitationMakers` is precious and closely held.
+ * - `offerToPublicSubscriberPaths` is precious and closely held.
  * - `brandDescriptors` will be precious. Currently it includes invitation brand and  what we've received from the bank manager.
  * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
@@ -116,6 +119,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {Readonly<HeldParams & {
  *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
+ *   offerToPublicSubscriberPaths: MapStore<string, Record<string, VStorageKey>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
  *   brandDescriptors: MapStore<Brand, BrandDescriptor>,
  *   brandPurses: MapStore<Brand, RemotePurse>,
@@ -180,6 +184,10 @@ export const initState = (unique, shared) => {
     }),
     // Invitation makers yielded by offer results
     offerToInvitationMakers: makeScalarBigMapStore('invitation makers', {
+      durable: true,
+    }),
+    // Public subscribers yielded by offer results
+    offerToPublicSubscriberPaths: makeScalarBigMapStore('public subscribers', {
       durable: true,
     }),
   };
@@ -268,6 +276,7 @@ const SmartWalletKit = defineVirtualFarClassKit(
           brandDescriptors,
           currentPublishKit,
           offerToUsedInvitation,
+          offerToPublicSubscriberPaths,
           purseBalances,
         } = this.state;
         currentPublishKit.publisher.publish({
@@ -277,6 +286,9 @@ const SmartWalletKit = defineVirtualFarClassKit(
             balance: a,
           })),
           offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
+          offerToPublicSubscriberPaths: mapToRecord(
+            offerToPublicSubscriberPaths,
+          ),
           // @ts-expect-error FIXME leftover from offer id string conversion
           lastOfferId: ERROR_LAST_OFFER_ID,
         });
@@ -405,6 +417,7 @@ const SmartWalletKit = defineVirtualFarClassKit(
           invitationIssuer,
           offerToInvitationMakers,
           offerToUsedInvitation,
+          offerToPublicSubscriberPaths,
           updatePublishKit,
         } = this.state;
 
@@ -434,14 +447,20 @@ const SmartWalletKit = defineVirtualFarClassKit(
               status: offerStatus,
             });
           },
-          /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: object) => void} */
-          onNewContinuingOffer: (
+          /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers) => Promise<void>} */
+          onNewContinuingOffer: async (
             offerId,
             invitationAmount,
             invitationMakers,
+            publicSubscribers,
           ) => {
             offerToUsedInvitation.init(offerId, invitationAmount);
             offerToInvitationMakers.init(offerId, invitationMakers);
+            const pathMap = await objectMapStoreKeys(publicSubscribers);
+            if (pathMap) {
+              logger.info('recording pathMap', pathMap);
+              offerToPublicSubscriberPaths.init(offerId, pathMap);
+            }
             facets.helper.publishCurrentState();
           },
         });

@@ -125,3 +125,19 @@ export const assertHasData = async follower => {
     assert.fail(NO_SMART_WALLET_ERROR);
   }
 };
+
+/**
+ *
+ * Handles the case of falsy argument so the caller can consistently await.
+ *
+ * @param {Record<string, ERef<StoredFacet>>} [subscribers]
+ * @returns {ERef<Record<string, VStorageKey>> | null}
+ */
+export const objectMapStoreKeys = subscribers => {
+  if (!subscribers) {
+    return null;
+  }
+  return deeplyFulfilledObject(
+    objectMap(subscribers, sub => E(sub).getStoreKey()),
+  );
+};
