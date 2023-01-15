@@ -213,8 +213,9 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
       /**
        * @param {bigint} roundId
        * @param {Timestamp} blockTimestamp
+       * @param {string} oracleId
        */
-      initializeNewRound(roundId, blockTimestamp) {
+      initializeNewRound(roundId, blockTimestamp, oracleId) {
         const {
           details,
           latestRoundPublisher,
@@ -232,6 +233,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
         latestRoundPublisher.publish({
           roundId,
           startedAt: blockTimestamp,
+          startedBy: oracleId
         });
 
         details.init(
@@ -277,7 +279,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
         const lastStarted = status.lastStartedRound; // cache storage reads
         if (roundId <= add(lastStarted, restartDelay) && lastStarted !== 0n)
           return undefined;
-        helper.initializeNewRound(roundId, blockTimestamp);
+        helper.initializeNewRound(roundId, blockTimestamp, status.oracleId);
 
         return harden({
           ...status,
