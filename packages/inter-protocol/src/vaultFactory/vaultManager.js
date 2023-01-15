@@ -47,6 +47,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
+import { Fail } from '@agoric/assert';
 import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
@@ -189,7 +190,12 @@ export const prepareVaultManagerKit = (
 
   const { priceAuthority, timerService } = zcf.getTerms();
 
+  let singletonMade = false;
+
   const initState = () => {
+    !singletonMade || Fail`vaultManager singleton can be made just once`;
+    singletonMade = true;
+
     assert(
       storageNode && marshaller,
       'VaultManager missing storageNode or marshaller',
