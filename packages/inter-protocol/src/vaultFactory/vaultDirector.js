@@ -16,8 +16,10 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   makeStoredPublisherKit,
+  makeStoredSubscriber,
   observeIteration,
   SubscriberShape,
+  vivifyDurablePublishKit,
 } from '@agoric/notifier';
 import {
   defineDurableFarClassKit,
@@ -26,7 +28,6 @@ import {
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
-import { makeMetricsPublisherKit } from '../contractSupport.js';
 import {
   CHARGING_PERIOD_KEY,
   makeVaultParamManager,
@@ -34,17 +35,18 @@ import {
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
-import { makeVaultManager } from './vaultManager.js';
+import { vivifyVaultManagerKit } from './vaultManager.js';
+import { provideChildBaggage } from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
 
 /** @typedef {{
  * debtMint: ZCFMint<'nat'>,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
+ * managerBaggages: *,
  * marshaller: ERef<Marshaller>,
- * metricsPublication: IterationObserver<MetricsNotification>
- * metricsSubscription: StoredSubscription<MetricsNotification>
  * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
+ * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
  * storageNode: ERef<StorageNode>,
  * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
@@ -70,6 +72,8 @@ const ephemera = {};
  *
  * @typedef {Readonly<{
  * collateralTypes: Store<Brand,VaultManager>,
+ * metricsPublisher: Publisher<MetricsNotification>
+ * metricsSubscriber: Subscriber<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
  * shortfallInvitation: Invitation,
@@ -92,7 +96,7 @@ const ephemera = {};
  *   state: State;
  * }>} MethodContext
  */
-// FIXME find a way to type 'finish' with the context (state and facets)
+// TODO find a way to type 'finish' with the context (state and facets)
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -143,6 +147,16 @@ const metricsOf = state => {
   });
 };
 
+// UNTIL https://github.com/Agoric/agoric-sdk/issues/6791
+const baggage = makeScalarBigMapStore('Vault Director baggage', {
+  durable: true,
+});
+
+const makeVaultDirectorMetricsPublishKit = vivifyDurablePublishKit(
+  baggage,
+  'Vault Director metrics',
+);
+
 /**
  * @param {Ephemera['zcf']} zcf
  * @param {Ephemera['directorParamManager']} directorParamManager
@@ -170,18 +184,23 @@ const initState = (
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   const vaultParamManagers = makeScalarMap('vaultParamManagers');
 
-  const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
-    storageNode,
+  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
+    makeVaultDirectorMetricsPublishKit();
+
+  const storedMetricsSubscriber = makeStoredSubscriber(
+    metricsSubscriber,
+    E(storageNode).makeChildNode('metrics'),
     marshaller,
   );
+
+  const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
 
   Object.assign(ephemera, {
     debtMint,
     directorParamManager,
+    managerBaggages,
     marshaller,
-    metricsPublication,
-    // Subscription can't yet be held durably https://github.com/Agoric/agoric-sdk/issues/4567
-    metricsSubscription,
+    storedMetricsSubscriber,
     storageNode,
     vaultParamManagers,
     zcf,
@@ -190,6 +209,8 @@ const initState = (
   return {
     collateralTypes,
     managerCounter: 0,
+    metricsPublisher,
+    metricsSubscriber,
     mintSeat,
     rewardPoolSeat,
     // @ts-expect-error defined in finish()
@@ -445,7 +466,15 @@ const makeVaultDirector = defineDurableFarClassKit(
           burnDebt,
         });
 
-        const vm = makeVaultManager(
+        const { managerBaggages } = ephemera;
+        // alleged okay because used only as a diagnostic tag
+        const brandName = await E(collateralBrand).getAllegedName();
+        const makeVaultManager = managerBaggages.addChild(
+          brandName,
+          vivifyVaultManagerKit,
+        );
+
+        const { self: vm } = makeVaultManager(
           zcf,
           debtMint,
           collateralBrand,
@@ -479,9 +508,7 @@ const makeVaultDirector = defineDurableFarClassKit(
       },
       updateMetrics() {
         const { state } = this;
-        return ephemera.metricsPublication.updateState(
-          metricsOf(harden(state)),
-        );
+        return state.metricsPublisher.publish(metricsOf(harden(state)));
       },
       // XXX accessors for tests
       getRewardAllocation() {
@@ -527,7 +554,7 @@ const makeVaultDirector = defineDurableFarClassKit(
         );
       },
       getMetrics() {
-        return ephemera.metricsSubscription;
+        return ephemera.storedMetricsSubscriber;
       },
       /**
        * @deprecated use getCollateralManager and then makeVaultInvitation instead

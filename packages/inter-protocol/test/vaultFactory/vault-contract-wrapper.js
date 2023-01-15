@@ -20,7 +20,7 @@ import {
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
-import { makeVault } from '../../src/vaultFactory/vault.js';
+import { vivifyVault } from '../../src/vaultFactory/vault.js';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -31,8 +31,9 @@ const marshaller = makeFakeMarshaller();
 /**
  * @param {ZCF} zcf
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
+ * @param {import('@agoric/ertp').Baggage} baggage
  */
-export async function start(zcf, privateArgs) {
+export async function start(zcf, privateArgs, baggage) {
   console.log(`contract started`);
   assert.typeof(privateArgs.feeMintAccess, 'object');
 
@@ -155,7 +156,9 @@ export async function start(zcf, privateArgs) {
     },
   });
 
-  const vault = await makeVault(
+  const makeVault = vivifyVault(baggage);
+
+  const { self: vault } = await makeVault(
     zcf,
     managerMock,
     // eslint-disable-next-line no-plusplus
