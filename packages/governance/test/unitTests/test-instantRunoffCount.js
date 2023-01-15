@@ -103,6 +103,7 @@ test('instant run-off, 1 round', async t => {
 
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 9n,
     votes: 3,
     results: [
       { position: FISH, total: 5n, details: [5n] },
@@ -145,6 +146,7 @@ test('instant run-off, multiple rounds #1', async t => {
   const stats = await E(publicFacet).getStats();
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 100n,
     votes: 4,
     results: [
       { position: FISH, total: 46n, details: [36n, 10n] },
@@ -188,6 +190,7 @@ test('instant run-off, multiple rounds #2', async t => {
   const stats = await E(publicFacet).getStats();
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 120n,
     votes: 5,
     results: [
       { position: FISH, total: 46n, details: [36n, 0n, 10n] },
@@ -232,6 +235,7 @@ test('instant run-off, batch elminiation', async t => {
   const stats = await E(publicFacet).getStats();
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 110n,
     votes: 5,
     results: [
       // beef and goal are eliminated at once, so they only have 1 history entry
@@ -276,6 +280,7 @@ test('instant run-off, no winning-threshold', async t => {
   const stats = await E(publicFacet).getStats();
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 90n,
     votes: 4,
     results: [
       // still a win
@@ -319,6 +324,7 @@ test('instant run-off, tie break by vote history', async t => {
   const stats = await E(publicFacet).getStats();
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 100n,
     votes: 4,
     results: [
       // fish win for having higher first-preferential votes
@@ -362,6 +368,7 @@ test('instant run-off, tie break by shuffling', async t => {
   const stats = await E(publicFacet).getStats();
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 100n,
     votes: 4,
     results: [
       { position: FISH, total: 50n, details: [35n, 15n] },
@@ -406,6 +413,7 @@ test('instant run-off, revote, empty redistributed ballots', async t => {
 
   t.deepEqual(stats, {
     spoiled: 0n,
+    accepted: 9n,
     votes: 3,
     results: [
       { position: FISH, total: 5n, details: [5n, 0n] },
@@ -448,9 +456,9 @@ test('instant run-off, no quorum', async t => {
   const { publicFacet, creatorFacet, closeFacet, storageRoot } =
     prepareIrvElection({
       positions: [FISH, BEEF, PORK],
-      winningThreshold: 50n,
+      winningThreshold: 4n,
       tieOutcome: BEEF,
-      quorumThreshold: 3n,
+      quorumThreshold: 9n,
     });
 
   const question = publicFacet.getQuestion();

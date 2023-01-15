@@ -60,24 +60,32 @@ const makeInstantRunoffVoteCounter = (
   const countVotes = () => {
     !isOpen || Fail`can't count votes while the election is open`;
 
-    const ballots = Array.from(allBallots.values());
-    const result = countIRVVotes(ballots, positions, winningThreshold);
+    const result = countIRVVotes(
+      Array.from(allBallots.values()),
+      positions,
+      winningThreshold,
+    );
+
+    const positionRs = Object.values(result.stats).map(
+      ({ position, total, details }) => ({
+        position,
+        total,
+        details,
+      }),
+    );
 
     const stats = {
-      spoiled: 0n, // all votes should be validated while submitting
+      // all votes should be validated while submitting
+      spoiled: 0n,
+      // total first choice shares of all position
+      accepted: positionRs.reduce((acc, p) => acc + p.details[0], 0n),
       votes: allBallots.getSize(),
-      results: Object.values(result.stats).map(
-        ({ position, total, details }) => ({
-          position,
-          total,
-          details,
-        }),
-      ),
+      results: positionRs,
     };
 
     tallyPromise.resolve(stats);
 
-    if (stats.votes < threshold) {
+    if (stats.accepted < threshold) {
       outcomePromise.reject('No quorum');
       /** @type {OutcomeRecord} */
       const voteOutcome = {

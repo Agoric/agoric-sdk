@@ -5,33 +5,42 @@ import { keyEQ } from '@agoric/store';
  * @typedef {object} RecordedBallot
  * @property {Position[]} chosen
  * @property {bigint} shares
- *
+ */
+
+/**
  * @typedef {object} PositionStats
  * @property {Position} position
  * @property {string} positionKey
  * @property {bigint} total
  * @property {bigint[]} details
  * @property {BallotWithKey[]} votes
- *
+ */
+
+/**
  * @typedef {object} PositionWithKey
  * @property {string} key
  * @property {Position} inner
- *
+ */
+
+/**
  * @typedef {object} BallotWithKey
  * @property {PositionWithKey[]} chosen
  * @property {bigint} shares
- *
+ */
+
+/**
  * @typedef {object} RoundPositionStats
  * @property {bigint} count
  * @property {BallotWithKey[]} votes
- *
- * @typedef {Record<string, PositionStats>} VoteStatsRecord
- *
- * @typedef {Record<string, RoundPositionStats>} RoundStatsRecord
- * */
+ */
 
 /**
- * Compare 2 positions stats, randomly shuffle on equal to support tieBreak
+ * @typedef {Record<string, PositionStats>} VoteStatsRecord
+ * @typedef {Record<string, RoundPositionStats>} RoundStatsRecord
+ */
+
+/**
+ * Compare 2 positions stats, randomly shuffle on equal to support tie-breaking
  *
  * @param {PositionStats} a
  * @param {PositionStats} b
