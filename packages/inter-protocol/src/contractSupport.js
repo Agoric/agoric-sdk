@@ -174,6 +174,13 @@ export const makeEphemeraProvider = init => {
 };
 harden(makeEphemeraProvider);
 
+/**
+ *
+ * @param {ZCF} zcf
+ * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {string} name
+ * @returns {ZCFSeat}
+ */
 export const provideEmptySeat = (zcf, baggage, name) => {
   return provide(baggage, name, () => zcf.makeEmptySeatKit().zcfSeat);
 };
