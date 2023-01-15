@@ -43,7 +43,7 @@ const { details: X, quote: q, Fail } = assert;
 /** @typedef {{
  * debtMint: ZCFMint<'nat'>,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
- * managerBaggages: *,
+ * managerBaggages: import('../contractSupport.js').ChildBaggageManager,
  * marshaller: ERef<Marshaller>,
  * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
  * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
@@ -472,19 +472,16 @@ const makeVaultDirector = defineDurableExoClassKit(
         const makeVaultManager = managerBaggages.addChild(
           brandName,
           prepareVaultManagerKit,
-        );
-
-        const { self: vm } = makeVaultManager(
           zcf,
           debtMint,
           collateralBrand,
-          zcf.getTerms().priceAuthority,
           factoryPowers,
-          timerService,
           startTimeStamp,
           managerStorageNode,
-          ephemera.marshaller,
+          marshaller,
         );
+
+        const { self: vm } = makeVaultManager();
         collateralTypes.init(collateralBrand, vm);
         const { install, terms } = getLiquidationConfig(directorParamManager);
         await vm.setupLiquidator(install, terms);
