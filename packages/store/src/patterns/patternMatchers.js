@@ -6,7 +6,7 @@ import {
   passStyleOf,
   hasOwnPropertyOf,
   nameForPassableSymbol,
-} from '@endo/marshal';
+} from '@endo/pass-style';
 import { identChecker } from '@agoric/assert';
 import {
   applyLabelingError,
@@ -19,8 +19,9 @@ import {
   getPassStyleCover,
   intersectRankCovers,
   unionRankCovers,
-} from '@endo/marshal/src/rankOrder.js';
-import { recordNames, recordValues } from '@endo/marshal/src/encodePassable.js';
+  recordNames,
+  recordValues,
+} from '@endo/marshal';
 import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
 import {
   assertKey,

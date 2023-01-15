@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 // machine names, to link vattp messages and loopbox channels
 const A = 'A';

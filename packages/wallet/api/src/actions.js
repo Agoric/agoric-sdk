@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { E } from '@endo/eventual-send';
 
 export const makePaymentActions = ({

@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /**
  * Start an instance of an Oracle that follows a script. The Oracle has access

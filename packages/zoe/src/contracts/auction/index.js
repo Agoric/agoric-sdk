@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'

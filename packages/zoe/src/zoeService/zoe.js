@@ -13,8 +13,7 @@ import '@agoric/store/exported.js';
 
 import '../internal-types.js';
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';

@@ -10,7 +10,7 @@
  */
 import { E } from '@endo/eventual-send';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeWalletRoot } from './lib-wallet.js';
 import pubsub from './pubsub.js';

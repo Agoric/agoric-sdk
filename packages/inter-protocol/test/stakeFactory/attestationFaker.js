@@ -1,6 +1,6 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeCopyBag } from '@agoric/store';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export const start = zcf => {
   const a = makeIssuerKit('Bogus', AssetKind.COPY_BAG);

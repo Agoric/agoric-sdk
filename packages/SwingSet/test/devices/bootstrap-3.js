@@ -1,5 +1,5 @@
 import { Fail } from '@agoric/assert';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;

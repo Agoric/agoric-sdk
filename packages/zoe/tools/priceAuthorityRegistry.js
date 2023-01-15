@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { makeScalarMapStore } from '@agoric/store';
 import { Fail } from '@agoric/assert';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /**
  * @typedef {object} Deleter

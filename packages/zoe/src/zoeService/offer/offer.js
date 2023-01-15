@@ -1,4 +1,4 @@
-import { passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/far';
 import { fit } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 

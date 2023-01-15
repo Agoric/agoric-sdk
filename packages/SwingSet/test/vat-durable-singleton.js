@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { M } from '@agoric/store';
 import { provide, prepareExoClassKit } from '@agoric/vat-data';
 

@@ -6,7 +6,7 @@ import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeIssuerRecord } from '@agoric/zoe/src/issuerRecord.js';
 import {
   calculateCompoundedInterest,

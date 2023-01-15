@@ -5,10 +5,7 @@
 
 // XXX importing these that are declared to be used only for testing
 // until @agoric/store supports composite keys
-import {
-  makeDecodePassable,
-  makeEncodePassable,
-} from '@endo/marshal/src/encodePassable.js';
+import { makeDecodePassable, makeEncodePassable } from '@endo/marshal';
 
 /**
  * @typedef {import('@endo/marshal').PureData} PureData

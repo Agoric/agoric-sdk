@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeInstanceAdminStorage } from '../../../src/zoeService/instanceAdminStorage.js';

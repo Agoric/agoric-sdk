@@ -7,7 +7,7 @@ import {
   provideDurableSetStore,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 const { Fail, quote: q } = assert;
 

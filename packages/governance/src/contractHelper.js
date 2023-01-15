@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { getMethodNames, objectMap } from '@agoric/internal';
 import { ignoreContext } from '@agoric/vat-data';

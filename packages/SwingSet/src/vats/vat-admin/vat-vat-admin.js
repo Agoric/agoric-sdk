@@ -7,7 +7,7 @@
  */
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit } from '@agoric/notifier';
-import { Far, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/far';
 import { E } from '@endo/eventual-send';
 import { Nat, isNat } from '@agoric/nat';
 import {

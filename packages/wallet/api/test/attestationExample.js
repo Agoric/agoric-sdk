@@ -2,7 +2,7 @@
 import '@agoric/zoe/exported.js';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /** @param {ZCF} zcf */
 export const start = async zcf => {

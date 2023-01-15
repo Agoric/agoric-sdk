@@ -1,7 +1,7 @@
 import './types.js';
 import { assert, details as X, q, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { assertRecord } from '@endo/marshal';
+import { assertRecord } from '@endo/pass-style';
 import { isNat } from '@agoric/nat';
 
 import { natSafeMath } from './safeMath.js';

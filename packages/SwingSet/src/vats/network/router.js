@@ -1,5 +1,4 @@
-import { E as defaultE } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E as defaultE, Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';

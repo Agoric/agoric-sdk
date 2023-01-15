@@ -3,7 +3,7 @@
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
 
 import './types-ambient.js';

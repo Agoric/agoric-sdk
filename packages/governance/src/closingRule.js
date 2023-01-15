@@ -3,7 +3,7 @@
 // reached.
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /** @type {CloseVoting} */
 export const scheduleClose = (closingRule, closeVoting) => {

@@ -7,8 +7,7 @@ import {
   assertIssuerKeywords,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { initEmpty } from '@agoric/store';
 import {
   provideDurableMapStore,

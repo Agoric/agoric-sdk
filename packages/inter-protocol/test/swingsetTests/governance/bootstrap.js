@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
 import { INTEREST_RATE_KEY } from '../../../src/vaultFactory/params';

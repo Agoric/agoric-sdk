@@ -11,7 +11,7 @@ import {
   getAmountOut,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {

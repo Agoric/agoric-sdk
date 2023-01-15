@@ -1,6 +1,6 @@
 /* eslint-disable import/no-extraneous-dependencies,no-unused-vars,no-empty-function */
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import vaultFactoryBundle from '@agoric/inter-protocol/bundles/bundle-vaultFactory.js';
 import { makeIssuerKit } from '@agoric/ertp';
 

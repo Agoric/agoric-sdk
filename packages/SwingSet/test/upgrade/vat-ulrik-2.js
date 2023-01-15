@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
 import { initEmpty } from '@agoric/store';

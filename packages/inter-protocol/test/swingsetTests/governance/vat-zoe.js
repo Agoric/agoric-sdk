@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeZoeKit } from '@agoric/zoe';
 import { Stable } from '@agoric/vats/src/tokens.js';

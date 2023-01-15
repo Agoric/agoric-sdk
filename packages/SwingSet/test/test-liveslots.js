@@ -3,7 +3,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, Fail } from '@agoric/assert';
 import engineGC from '../src/lib-nodejs/engine-gc.js';

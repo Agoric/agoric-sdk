@@ -1,10 +1,10 @@
-import { assertChecker, makeTagged, passStyleOf } from '@endo/marshal';
+import { assertChecker, makeTagged, passStyleOf } from '@endo/pass-style';
 import {
   compareAntiRank,
   isRankSorted,
   makeFullOrderComparatorKit,
   sortByRank,
-} from '@endo/marshal/src/rankOrder.js';
+} from '@endo/marshal';
 
 /// <reference types="ses"/>
 

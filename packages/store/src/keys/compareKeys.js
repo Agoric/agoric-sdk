@@ -1,8 +1,7 @@
 /// <reference types="ses"/>
 
-import { passStyleOf, getTag } from '@endo/marshal';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
-import { recordNames, recordValues } from '@endo/marshal/src/encodePassable.js';
+import { passStyleOf, getTag } from '@endo/pass-style';
+import { compareRank, recordNames, recordValues } from '@endo/marshal';
 import { assertKey } from './checkKey.js';
 import { bagCompare } from './merge-bag-operators.js';
 import { setCompare } from './merge-set-operators.js';

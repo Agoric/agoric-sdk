@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject(vatPowers, _vatParameters) {
   const { D } = vatPowers;

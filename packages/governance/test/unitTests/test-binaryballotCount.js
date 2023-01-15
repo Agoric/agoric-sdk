@@ -3,7 +3,7 @@ import '@agoric/zoe/exported.js';
 import { E } from '@endo/eventual-send';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeStoredPublishKit } from '@agoric/notifier';
 import {
   eventLoopIteration,

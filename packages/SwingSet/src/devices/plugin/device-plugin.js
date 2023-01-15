@@ -1,5 +1,5 @@
 import { makeCapTP } from '@endo/captp';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { assert, details as X, Fail } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {

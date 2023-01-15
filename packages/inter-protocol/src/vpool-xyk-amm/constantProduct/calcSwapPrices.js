@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { swap } from './swap.js';
 import { assertKInvariantSellingX } from './invariants.js';

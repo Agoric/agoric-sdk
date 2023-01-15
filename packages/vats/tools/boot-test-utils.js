@@ -4,7 +4,7 @@ import {
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { devices } from '../test/devices.js';
 
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';

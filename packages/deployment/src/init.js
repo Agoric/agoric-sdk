@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Fail } from '@agoric/assert';
-import { isObject } from '@endo/marshal';
+import { isObject } from '@endo/pass-style';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup.js';
 import { shellEscape } from './run.js';
 

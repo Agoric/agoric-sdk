@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 
 import { charge, makeEstimator } from '../../../src/vpool-xyk-amm/estimate.js';

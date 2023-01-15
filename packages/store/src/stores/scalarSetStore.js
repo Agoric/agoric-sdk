@@ -1,5 +1,5 @@
-import { Far, filterIterable } from '@endo/marshal';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
+import { Far, filterIterable } from '@endo/pass-style';
+import { compareRank } from '@endo/marshal';
 import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';

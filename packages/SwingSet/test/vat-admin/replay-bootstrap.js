@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject() {
   const { promise: vatAdminSvc, resolve: gotVatAdminSvc } = makePromiseKit();

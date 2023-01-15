@@ -2,7 +2,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import buildManualTimer from '../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../tools/eventLoopIteration.js';
 

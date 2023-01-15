@@ -1,6 +1,6 @@
 import { assert, q, Fail } from '@agoric/assert';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
-import { assertRecord } from '@endo/marshal';
+import { assertRecord } from '@endo/pass-style';
 import { assertKey, assertPattern, fit, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 import { arrayToObj } from './objArrayConversion.js';

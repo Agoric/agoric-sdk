@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject() {
   // 'other' is not read but it's used to hold a hard ref

@@ -10,7 +10,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makePublishKit } from '@agoric/notifier';
 import {

@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority';
 

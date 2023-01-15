@@ -3,7 +3,7 @@
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { keyEQ, keyLT } from '@agoric/store';
 import { makeTracer } from '@agoric/internal';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';

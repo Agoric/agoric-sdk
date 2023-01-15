@@ -1,4 +1,4 @@
-import { isRemotable } from '@endo/marshal';
+import { isRemotable } from '@endo/pass-style';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 const { Fail } = assert;

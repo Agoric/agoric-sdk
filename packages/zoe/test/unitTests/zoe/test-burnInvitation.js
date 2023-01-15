@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 

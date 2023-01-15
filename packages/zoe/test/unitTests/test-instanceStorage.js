@@ -7,7 +7,7 @@ import path from 'path';
 
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeInstanceRecordStorage } from '../../src/instanceRecordStorage.js';

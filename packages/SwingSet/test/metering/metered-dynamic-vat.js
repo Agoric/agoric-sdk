@@ -1,5 +1,5 @@
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { meterMe } from './metered-code.js';
 
 export function buildRootObject(_dynamicVatPowers) {

@@ -1,6 +1,6 @@
 // @ts-check
 import { E, makeCapTP } from '@endo/captp';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export const getCapTPHandler = (send, getLocalBootstrap, fallback) => {
   let lastEpoch;

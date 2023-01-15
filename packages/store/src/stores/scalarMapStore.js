@@ -3,8 +3,8 @@ import {
   assertPassable,
   filterIterable,
   mapIterable,
-} from '@endo/marshal';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
+} from '@endo/pass-style';
+import { compareRank } from '@endo/marshal';
 import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';

@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
+import { passStyleOf, Remotable } from '@endo/pass-style';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assertPattern, fit } from '@agoric/store';

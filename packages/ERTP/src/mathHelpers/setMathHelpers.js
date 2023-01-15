@@ -1,4 +1,4 @@
-import { passStyleOf } from '@endo/marshal';
+import { passStyleOf } from '@endo/far';
 import {
   assertKey,
   elementsIsSuperset,

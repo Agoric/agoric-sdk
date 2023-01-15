@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject(vatPowers) {
   // we use testLog to attempt to deliver messages even after we're supposed

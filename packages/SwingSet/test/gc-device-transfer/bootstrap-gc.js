@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 async function sendAmy(D, dev, testLog, left) {
   const amy = Far('amy', {

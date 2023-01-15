@@ -3,7 +3,7 @@
 import { assert } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { mapIterable } from '@endo/marshal';
+import { mapIterable } from '@endo/pass-style';
 import { makeLegacyMap } from '@agoric/store';
 
 import './types.js';

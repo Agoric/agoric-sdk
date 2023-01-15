@@ -5,7 +5,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeFixture, E } from './captp-fixture.js';

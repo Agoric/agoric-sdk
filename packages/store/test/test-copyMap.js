@@ -1,5 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { getTag, passStyleOf } from '@endo/marshal';
+import { getTag, passStyleOf } from '@endo/pass-style';
 import { getCopyMapEntries, makeCopyMap } from '../src/keys/checkKey.js';
 import '../src/types.js';
 

@@ -4,7 +4,7 @@ import {
   fromOnly,
   toOnly,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeFeeRatio } from './constantProduct/calcFees.js';
 import {
   pricesForStatedInput,

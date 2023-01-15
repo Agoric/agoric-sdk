@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, _vatParameters, baggage) {
   console.log(`busy vat initializing`);

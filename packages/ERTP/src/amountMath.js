@@ -1,4 +1,4 @@
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
+import { passStyleOf, assertRemotable, assertRecord } from '@endo/pass-style';
 
 import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';

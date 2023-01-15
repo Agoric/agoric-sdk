@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { start } from './output';
 
 export const bootPlugin = () => {

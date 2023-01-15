@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
-import { assertCopyArray } from '@endo/marshal';
+import { assertCopyArray } from '@endo/pass-style';
 import { fit, M } from '@agoric/store';
 import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';

@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { fit, keyEQ } from '@agoric/store';
 import { M } from '@agoric/vat-data';
 

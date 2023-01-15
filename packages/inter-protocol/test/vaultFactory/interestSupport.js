@@ -3,7 +3,7 @@ import {
   floorMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { reverseInterest } from '../../src/interest-math.js';
 
 export const makeCompoundedInterestProvider = brand => {

@@ -8,13 +8,13 @@ import {
   isObject,
   makeTagged,
   passStyleOf,
-} from '@endo/marshal';
+} from '@endo/pass-style';
 import { identChecker } from '@agoric/assert';
 import {
   compareAntiRank,
   makeFullOrderComparatorKit,
   sortByRank,
-} from '@endo/marshal/src/rankOrder.js';
+} from '@endo/marshal';
 
 import { checkElements, makeSetOfElements } from './copySet.js';
 import { checkBagEntries, makeBagOfEntries } from './copyBag.js';

@@ -1,6 +1,6 @@
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';

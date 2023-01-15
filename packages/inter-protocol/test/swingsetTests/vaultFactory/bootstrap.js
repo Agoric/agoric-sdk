@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { installContracts, makeVats } from '../setup';
 
 function makeBootstrap(argv, cb, vatPowers) {

@@ -1,5 +1,5 @@
 import { Nat } from '@agoric/nat';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { Fail } from '@agoric/assert';
 

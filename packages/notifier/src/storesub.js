@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far, E } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { assertAllDefined } from '@agoric/internal';
 import { observeIteration } from './asyncIterableAdaptor.js';
 import { makePublishKit, subscribeEach } from './publish-kit.js';

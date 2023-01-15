@@ -1,6 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import '@agoric/zoe/exported.js';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { prepareVaultHolder } from './vaultHolder.js';
 
 const trace = makeTracer('IV');

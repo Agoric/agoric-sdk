@@ -5,7 +5,7 @@ import {
   subscribeLatest,
 } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/index.js';
 

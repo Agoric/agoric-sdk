@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
 

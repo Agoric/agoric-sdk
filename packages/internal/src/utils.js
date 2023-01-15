@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
-import { deeplyFulfilled, isObject } from '@endo/marshal';
+import { isObject } from '@endo/pass-style';
+import { deeplyFulfilled } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
 import { asyncGenerate } from 'jessie.js';
 

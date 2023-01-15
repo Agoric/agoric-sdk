@@ -2,7 +2,7 @@
 
 import { E } from '@endo/eventual-send';
 import { Fail } from '@agoric/assert';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeSharedMap } from '../../../src/sharedMap.js';
 import { makeSharingService } from '../../../src/sharing.js';
 

@@ -4,8 +4,8 @@ import {
   makeEncodePassable,
   makeDecodePassable,
   isEncodedRemotable,
-} from '@endo/marshal/src/encodePassable.js';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
+  compareRank,
+} from '@endo/marshal';
 import {
   getRankCover,
   assertKeyPattern,
@@ -15,7 +15,7 @@ import {
   makeCopySet,
   makeCopyMap,
 } from '@agoric/store';
-import { Far, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/pass-style';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 // XXX TODO: The following key length limit was put in place due to limitations

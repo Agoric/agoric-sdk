@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { M } from '@agoric/store';
 import { makeFakeCollectionManager } from '../../tools/fakeVirtualSupport.js';
 

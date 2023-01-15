@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
+import { E, passStyleOf } from '@endo/far';
 import {
   M,
   makeScalarBigMapStore,

@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { initEmpty } from '@agoric/store';
 
 import engineGC from '../../src/lib-nodejs/engine-gc.js';

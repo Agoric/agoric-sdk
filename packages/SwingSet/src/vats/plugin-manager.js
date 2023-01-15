@@ -2,7 +2,7 @@ import { makeScalarMapStore } from '@agoric/store';
 import { makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
-import { Remotable, Far } from '@endo/marshal';
+import { Remotable, Far } from '@endo/pass-style';
 
 import '@agoric/store/exported.js';
 

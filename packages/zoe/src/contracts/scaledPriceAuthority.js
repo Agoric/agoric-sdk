@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import {

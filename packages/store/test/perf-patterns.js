@@ -1,7 +1,7 @@
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { Far, makeTagged } from '@endo/marshal';
+import { Far, makeTagged } from '@endo/pass-style';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '@agoric/swingset-vat/src/lib-nodejs/gc-and-finalize.js';
 

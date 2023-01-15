@@ -5,7 +5,7 @@ import {
   atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeTracer } from '@agoric/internal';
 

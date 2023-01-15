@@ -8,7 +8,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeParamManagerBuilder, ParamTypes } from '../../src/index.js';
 
 test('two parameters', t => {

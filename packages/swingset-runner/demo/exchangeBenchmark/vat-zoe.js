@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeZoeKit } from '@agoric/zoe';
 

@@ -1,4 +1,4 @@
-import { Far, assertPassable, passStyleOf } from '@endo/marshal';
+import { Far, assertPassable, passStyleOf } from '@endo/pass-style';
 import { getCopyMapEntries, isCopyMap } from '../keys/checkKey.js';
 import { fit, assertPattern } from '../patterns/patternMatchers.js';
 

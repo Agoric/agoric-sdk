@@ -8,7 +8,7 @@ import { makeCache } from '@agoric/cache';
 // @ts-ignore
 import { makeCapTP as defaultMakeCapTP } from '@endo/captp';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import 'robot3/debug';

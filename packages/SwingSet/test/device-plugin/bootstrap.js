@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { Fail } from '@agoric/assert';
 import { makePluginManager } from '../../src/vats/plugin-manager.js';
 

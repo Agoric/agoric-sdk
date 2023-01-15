@@ -6,7 +6,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
 import {

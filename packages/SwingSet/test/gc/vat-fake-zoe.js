@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootObject() {
   const C = Far('Zoe Invitation payment', { hello() {} });

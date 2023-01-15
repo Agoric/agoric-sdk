@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { provide } from '@agoric/vat-data';
 import { prepareDurablePublishKit } from '../../src/index.js';
 

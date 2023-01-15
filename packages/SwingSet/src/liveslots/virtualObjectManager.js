@@ -3,7 +3,7 @@
 import { assert, Fail, q } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { defendPrototype, defendPrototypeKit } from '@agoric/store';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */

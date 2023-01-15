@@ -31,7 +31,7 @@ To support a spawner, your swingset must provide it with the `vatAdmin` facet
 in the new vat). Your `vat-spawner.js` should look like:
 
 ```js
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeSpawner } from '@agoric/spawner';
 function buildRootObject() {
   return Far('root', {

@@ -1,5 +1,5 @@
 /* global VatData */
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 // import { makeScalarBigMapStore } from '@agoric/vat-data';
 const { makeScalarBigMapStore } = VatData;

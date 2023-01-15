@@ -4,7 +4,7 @@ import '@endo/init/debug.js';
 import test from 'ava';
 
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
 export const mockBrand = Far('brand');

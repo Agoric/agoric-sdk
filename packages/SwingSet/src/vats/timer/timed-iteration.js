@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { TimeMath } from './timeMath.js';
 
 // TODO There's nothing SwingSet specific in this file. It should probably

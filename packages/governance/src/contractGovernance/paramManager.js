@@ -1,4 +1,4 @@
-import { Far, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { Nat } from '@agoric/nat';

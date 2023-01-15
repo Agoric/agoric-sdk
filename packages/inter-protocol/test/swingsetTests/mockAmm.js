@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 /** @type {any} */
 export const ammMock = Far('mock AMM', {

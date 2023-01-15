@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { makeLegacyMap } from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { satisfies, atomicRearrange } from '../contractSupport/index.js';

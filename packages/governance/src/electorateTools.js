@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
-import { deeplyFulfilled, Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
 
 /**
  * @typedef {object} QuestionRecord

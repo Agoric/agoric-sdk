@@ -4,7 +4,7 @@ import { makeStoredPublisherKit } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { ParamTypes } from '../../src/index.js';
