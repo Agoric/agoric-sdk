@@ -183,16 +183,19 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
-  observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote =>
-      pricePublisher.publish(priceDescriptionFromQuote(quote)),
-    fail: reason => {
-      throw Error(`priceAuthority observer failed: ${reason}`);
+  void observeNotifier(
+    priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
+    {
+      updateState: quote =>
+        pricePublisher.publish(priceDescriptionFromQuote(quote)),
+      fail: reason => {
+        throw Error(`priceAuthority observer failed: ${reason}`);
+      },
+      finish: done => {
+        throw Error(`priceAuthority observer died: ${done}`);
+      },
     },
-    finish: done => {
-      throw Error(`priceAuthority observer died: ${done}`);
-    },
-  });
+  );
 
   const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
     /**

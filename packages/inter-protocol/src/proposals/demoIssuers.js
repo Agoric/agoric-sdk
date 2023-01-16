@@ -1,3 +1,4 @@
+/* eslint-disable @jessie.js/no-nested-await -- demo file */
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import {
