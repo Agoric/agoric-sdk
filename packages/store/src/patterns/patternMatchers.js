@@ -19,8 +19,8 @@ import {
   getPassStyleCover,
   intersectRankCovers,
   unionRankCovers,
-} from './rankOrder.js';
-import { recordNames, recordValues } from './encodePassable.js';
+} from '@endo/marshal/src/rankOrder.js';
+import { recordNames, recordValues } from '@endo/marshal/src/encodePassable.js';
 import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
 import {
   assertKey,

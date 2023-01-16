@@ -63,14 +63,6 @@ export {
   makeHeapFarInstance,
 } from './patterns/interface-tools.js';
 
-export { compareRank, isRankSorted, sortByRank } from './patterns/rankOrder.js';
-export {
-  makeDecodePassable,
-  makeEncodePassable,
-  isEncodedRemotable,
-  zeroPad,
-} from './patterns/encodePassable.js';
-
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
 export {
@@ -87,6 +79,22 @@ export {
 export { provideLazy } from './stores/store-utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
+
+// Importing these from store is deprecated. Import directly from
+// '@endo/marshal/src/rankOrder.js' instead.
+export {
+  compareRank,
+  isRankSorted,
+  sortByRank,
+} from '@endo/marshal/src/rankOrder.js';
+// Importing these from store is deprecated. Import directly from
+// '@endo/marshal/src/encodePassable.js' instead.
+export {
+  makeDecodePassable,
+  makeEncodePassable,
+  isEncodedRemotable,
+  zeroPad,
+} from '@endo/marshal/src/encodePassable.js';
 
 // export default as well as makeLegacy* only for compatibility
 // during the transition.

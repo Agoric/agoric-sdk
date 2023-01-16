@@ -1,15 +1,17 @@
 import { assert, details as X, q, Fail } from '@agoric/assert';
 import {
-  getRankCover,
-  assertKeyPattern,
-  assertPattern,
-  matches,
-  compareRank,
-  M,
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
   isEncodedRemotable,
+} from '@endo/marshal/src/encodePassable.js';
+import { compareRank } from '@endo/marshal/src/rankOrder.js';
+import {
+  getRankCover,
+  assertKeyPattern,
+  assertPattern,
+  matches,
+  M,
   makeCopySet,
   makeCopyMap,
 } from '@agoric/store';

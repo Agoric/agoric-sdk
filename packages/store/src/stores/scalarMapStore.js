@@ -4,7 +4,7 @@ import {
   filterIterable,
   mapIterable,
 } from '@endo/marshal';
-import { compareRank } from '../patterns/rankOrder.js';
+import { compareRank } from '@endo/marshal/src/rankOrder.js';
 import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
 import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';

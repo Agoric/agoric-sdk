@@ -3,7 +3,7 @@ import {
   compareAntiRank,
   makeFullOrderComparatorKit,
   sortByRank,
-} from '../patterns/rankOrder.js';
+} from '@endo/marshal/src/rankOrder.js';
 import { assertNoDuplicates, makeSetOfElements } from './copySet.js';
 
 const { quote: q, Fail } = assert;
