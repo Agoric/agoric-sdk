@@ -102,7 +102,7 @@ export const makeWalletStateCoalescer = () => {
 export const coalesceUpdates = updates => {
   const coalescer = makeWalletStateCoalescer();
 
-  observeIteration(subscribeEach(updates), {
+  void observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {
       coalescer.update(updateRecord);
     },
