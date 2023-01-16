@@ -122,7 +122,7 @@ export const createPriceFeed = async (
 
   // Default to an empty Map and home.priceAuthority.
   produceAggregators.resolve(new Map());
-  E(client).assignBundle([_addr => ({ priceAuthority })]);
+  void E(client).assignBundle([_addr => ({ priceAuthority })]);
 
   const timer = await chainTimerService;
 
@@ -168,7 +168,7 @@ export const createPriceFeed = async (
       marshaller,
     },
   );
-  E(aggregators).set(terms, { aggregator });
+  await E(aggregators).set(terms, { aggregator });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
     AGORIC_INSTANCE_NAME,
@@ -177,7 +177,7 @@ export const createPriceFeed = async (
 
   // Publish price feed in home.priceAuthority.
   const forceReplace = true;
-  E(priceAuthorityAdmin)
+  void E(priceAuthorityAdmin)
     .registerPriceAuthority(
       E(aggregator.publicFacet).getPriceAuthority(),
       brandIn,

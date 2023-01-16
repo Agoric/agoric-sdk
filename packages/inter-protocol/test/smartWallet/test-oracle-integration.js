@@ -41,7 +41,7 @@ const makeTestSpace = async log => {
     },
     psmParams,
   );
-  psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
 
   // TODO mimic the proposals and manifest of price-feed-proposal and price-feed-core
   // calling ensureOracleBrands and createPriceFeed
@@ -237,7 +237,7 @@ test.serial('admin price', async t => {
     t.context.consume.chainTimerService
   );
   // trigger an aggregation (POLL_INTERVAL=1n in context)
-  E(manualTimer).tickN(1);
+  await E(manualTimer).tickN(1);
 
   const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
 

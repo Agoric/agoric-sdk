@@ -342,7 +342,7 @@ test('limit', async t => {
   const actualAnchor = await E(anchor.issuer).getAmountOf(anchorReturn);
   t.deepEqual(actualAnchor, give);
   // The pool should be unchanged
-  driver.assertPoolBalance(initialPool);
+  await driver.assertPoolBalance(initialPool);
 });
 
 test('limit is for minted', async t => {
@@ -354,7 +354,7 @@ test('limit is for minted', async t => {
   trace('test going over limit');
   const giveTooMuch = anchor.make(MINT_LIMIT);
   const seat1 = await driver.swapAnchorForMintedSeat(giveTooMuch);
-  t.throwsAsync(
+  await t.throwsAsync(
     () => E(seat1).getOfferResult(),
     {
       message: 'Request would exceed mint limit',
@@ -482,7 +482,7 @@ test('anchor is 2x minted', async t => {
   const actualRun = await E(minted.issuer).getAmountOf(runPayouts.Out);
   t.deepEqual(actualRun, expectedRun);
 
-  driver.assertPoolBalance(giveAnchor);
+  await driver.assertPoolBalance(giveAnchor);
 
   const giveRun = AmountMath.make(minted.brand, scale6(100));
   trace('get minted ratio', { giveRun, expectedRun, actualRun });
@@ -497,7 +497,9 @@ test('anchor is 2x minted', async t => {
     anchorPerMinted,
   );
   t.deepEqual(actualAnchor, expectedAnchor);
-  driver.assertPoolBalance(AmountMath.subtract(giveAnchor, expectedAnchor));
+  await driver.assertPoolBalance(
+    AmountMath.subtract(giveAnchor, expectedAnchor),
+  );
   trace('get anchor', { runGive: giveRun, expectedRun, actualAnchor });
 });
 

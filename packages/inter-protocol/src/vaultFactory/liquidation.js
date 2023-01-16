@@ -44,7 +44,7 @@ const makeQuote = (priceAuthority, highestDebtRatio, liquidationMargin) => {
  * @param {Ratio} liquidationMargin
  */
 const updateQuote = (quote, highestDebtRatio, liquidationMargin) => {
-  E(quote).updateLevel(
+  void E(quote).updateLevel(
     highestDebtRatio.denominator, // collateral
     liquidationThreshold(highestDebtRatio, liquidationMargin),
   );

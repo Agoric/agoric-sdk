@@ -165,7 +165,7 @@ const addInitialLiquidity = async (homeP, { now = () => Date.now() }) => {
 
     const payouts = await E(seat).getPayouts();
     console.log('initialLiquidityPayouts', keys(payouts));
-    E(scratch).set('initialLiquidityPayouts', payouts);
+    await E(scratch).set('initialLiquidityPayouts', payouts);
   };
 
   console.log(
