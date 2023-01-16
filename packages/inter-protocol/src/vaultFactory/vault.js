@@ -132,41 +132,6 @@ const validTransitions = {
 const provideEphemera = makeEphemeraProvider(() => ({}));
 
 /**
- * @param {ZCF} zcf
- * @param {VaultManager} manager
- * @param {VaultId} idInManager
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {ImmutableState & MutableState}
- */
-const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
-  trace('vault initState');
-
-  const ephemera = provideEphemera(idInManager);
-  ephemera.storageNode = storageNode;
-  ephemera.marshaller = marshaller;
-  ephemera.zcf = zcf;
-
-  return harden({
-    idInManager,
-    manager,
-    outerUpdater: null,
-    phase: Phase.ACTIVE,
-
-    // vaultSeat will hold the collateral until the loan is retired. The
-    // payout from it will be handed to the user: if the vault dies early
-    // (because the vaultFactory vat died), they'll get all their
-    // collateral back. If that happens, the issuer for the Minted will be dead,
-    // so their loan will be worthless.
-    vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
-
-    // Two values from the same moment
-    interestSnapshot: manager.getCompoundedInterest(),
-    debtSnapshot: AmountMath.makeEmpty(manager.getDebtBrand()),
-  });
-};
-
-/**
  * Check whether we can proceed with an `adjustBalances`.
  *
  * @param {Amount<'nat'>} newCollateralPre
@@ -215,11 +180,12 @@ export const VaultI = M.interface('Vault', {
   makeTransferInvitation: M.call().returns(M.promise()),
 });
 
+/**
+ * @param {import('@agoric/ertp').Baggage} baggage
+ */
 export const prepareVault = baggage => {
-  trace('prepareVault');
   const makeVaultKit = prepareVaultKit(baggage);
 
-  // TODO find a way to not have to indent a level deeper than defineDurableExoClassKit does
   const maker = prepareExoClassKit(
     baggage,
     'Vault',
@@ -227,7 +193,38 @@ export const prepareVault = baggage => {
       helper: UnguardedHelperI,
       self: VaultI,
     },
-    initState,
+    /**
+     * @param {ZCF} zcf
+     * @param {VaultManager} manager
+     * @param {VaultId} idInManager
+     * @param {ERef<StorageNode>} storageNode
+     * @param {ERef<Marshaller>} marshaller
+     * @returns {ImmutableState & MutableState}
+     */
+    (zcf, manager, idInManager, storageNode, marshaller) => {
+      const ephemera = provideEphemera(idInManager);
+      ephemera.storageNode = storageNode;
+      ephemera.marshaller = marshaller;
+      ephemera.zcf = zcf;
+
+      return harden({
+        idInManager,
+        manager,
+        outerUpdater: null,
+        phase: Phase.ACTIVE,
+
+        // vaultSeat will hold the collateral until the loan is retired. The
+        // payout from it will be handed to the user: if the vault dies early
+        // (because the vaultFactory vat died), they'll get all their
+        // collateral back. If that happens, the issuer for the Minted will be dead,
+        // so their loan will be worthless.
+        vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
+
+        // Two values from the same moment
+        interestSnapshot: manager.getCompoundedInterest(),
+        debtSnapshot: AmountMath.makeEmpty(manager.getDebtBrand()),
+      });
+    },
     {
       helper: {
         // #region Computed constants
