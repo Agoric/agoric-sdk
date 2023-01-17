@@ -121,12 +121,11 @@ export function makeVirtualReferenceManager(
       !facet,
       `setRefCount ${baseRef} should not receive individual facets`,
     );
-    syscall.vatstoreSet(`vom.rc.${baseRef}`, `${Nat(refCount)}`);
     if (refCount === 0) {
-      if (!virtual) {
-        syscall.vatstoreDelete(`vom.rc.${baseRef}`);
-      }
+      syscall.vatstoreDelete(`vom.rc.${baseRef}`);
       addToPossiblyDeadSet(baseRef);
+    } else {
+      syscall.vatstoreSet(`vom.rc.${baseRef}`, `${Nat(refCount)}`);
     }
   }
 
