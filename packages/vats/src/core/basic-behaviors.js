@@ -109,6 +109,12 @@ harden(makeVatsFromBundles);
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
   produce: { zoe, feeMintAccess },
+  brand: {
+    produce: { Invitation: invitationBrand },
+  },
+  issuer: {
+    produce: { Invitation: invitationIssuer },
+  },
 }) => {
   const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
   const { zoeService, feeMintAccess: fma } = await E(
@@ -116,6 +122,10 @@ export const buildZoe = async ({
   ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
+  const issuer = E(zoeService).getInvitationIssuer();
+  const brand = E(issuer).getBrand();
+  invitationIssuer.resolve(issuer);
+  invitationBrand.resolve(brand);
 
   feeMintAccess.resolve(fma);
   return Promise.all([

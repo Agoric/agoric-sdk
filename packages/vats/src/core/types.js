@@ -134,7 +134,7 @@
  *
  * @typedef {{
  *   issuer: |
- *     TokenKeyword | 'Attestation' | 'AUSD',
+ *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
  *     'walletFactory' | 'provisionPool' |
