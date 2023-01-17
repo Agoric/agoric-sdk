@@ -15,6 +15,7 @@ import { kslot, kser, kunser } from './kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   makeMessage,
+  makeStartVat,
   makeBringOutYourDead,
   makeResolve,
   makeReject,
@@ -62,7 +63,6 @@ test('calls', async t => {
   // root!two(pr.promise)
   // pr.resolve('result')
   await dispatch(makeMessage(rootA, 'two', [kslot('p-1')]));
-  matchIDCounterSet(t, log);
   t.deepEqual(log.shift(), { type: 'subscribe', target: 'p-1' });
   t.deepEqual(log.shift(), 'two true');
 
@@ -491,7 +491,6 @@ test('liveslots vs symbols', async t => {
     type: 'resolve',
     resolutions: [[rp1, false, kser(['ok', 'asyncIterator', 'one'])]],
   });
-  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // E(root)[arbitrarySymbol]('two')
@@ -939,7 +938,6 @@ test('disable disavow', async t => {
   // root~.one() // sendOnly
   await dispatch(makeMessage(rootA, 'one', []));
   t.deepEqual(log.shift(), false);
-  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
 
@@ -1021,7 +1019,6 @@ test('disavow', async t => {
   expectError(t, msg.info, /this Presence has been disavowed/);
   t.deepEqual(log.shift(), Error('this Presence has been disavowed'));
   t.deepEqual(log.shift(), 'tried to send to disavowed');
-  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 });
 
@@ -1098,11 +1095,6 @@ test('GC syscall.dropImports', async t => {
   t.falsy(wr.deref());
 
   // first it will check that there are no VO's holding onto it
-  t.deepEqual(log.shift(), {
-    type: 'vatstoreSet',
-    key: 'idCounters',
-    value: '{"exportID":10,"collectionID":5,"promiseID":5}',
-  });
   const l2 = log.shift();
   t.deepEqual(l2, {
     type: 'vatstoreGet',
@@ -1162,7 +1154,6 @@ test('GC dispatch.retireImports', async t => {
   // dispatch.retireImport into the vat
   await dispatch(makeRetireImports(arg));
   // for now, we only care that it doesn't crash
-  matchIDCounterSet(t, log);
   t.like(log.shift(), { type: 'vatstoreGetNextKey' });
   t.deepEqual(log, []);
 
@@ -1328,8 +1319,8 @@ test('dropImports', async t => {
   const ls = makeLiveSlots(syscall, 'vatA', {}, {}, gcTools, undefined, () => ({
     buildRootObject: build,
   }));
-  const { dispatch, startVat, possiblyDeadSet } = ls;
-  await startVat(kser());
+  const { dispatch, possiblyDeadSet } = ls;
+  await dispatch(makeStartVat(kser()));
   const allFRs = gcTools.getAllFRs();
   t.is(allFRs.length, 2);
   const FR = allFRs[0];
@@ -1459,7 +1450,7 @@ test('buildVatNamespace not called until after startVat', async t => {
     buildRootObject,
   }));
   t.falsy(buildCalled);
-  await ls.startVat(kser());
+  await ls.dispatch(makeStartVat(kser()));
   t.truthy(buildCalled);
 });
 

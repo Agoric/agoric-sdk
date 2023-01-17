@@ -138,7 +138,7 @@ export async function makeDispatch(
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl: makeDummyMeterControl(),
   });
-  const { dispatch, startVat, testHooks } = makeLiveSlots(
+  const { dispatch, testHooks } = makeLiveSlots(
     syscall,
     vatID,
     {},
@@ -149,7 +149,7 @@ export async function makeDispatch(
       return { buildRootObject: build };
     },
   );
-  await startVat(kser());
+  await dispatch(['startVat', kser()]);
   if (returnTestHooks) {
     returnTestHooks[0] = testHooks;
   }

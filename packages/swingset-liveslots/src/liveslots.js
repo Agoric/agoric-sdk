@@ -1634,9 +1634,6 @@ function build(
   // we return 'possiblyDeadSet' for unit tests
   return harden({
     dispatch,
-    startVat,
-    vatGlobals,
-    inescapableGlobalProperties,
     m,
     possiblyDeadSet,
     testHooks,
@@ -1655,7 +1652,7 @@ function build(
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]
  *
- * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
+ * @returns {*} { dispatch }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -1697,10 +1694,9 @@ export function makeLiveSlots(
     liveSlotsConsole,
     buildVatNamespace,
   );
-  const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
+  const { dispatch, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
     dispatch,
-    startVat,
     possiblyDeadSet,
     testHooks,
   });
