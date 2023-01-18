@@ -1,6 +1,9 @@
 // @ts-check
+/* global process */
 
-import { storageHelper } from './rpc.js';
+import { boardSlottingMarshaller, storageHelper } from './rpc.js';
+
+const marshaller = boardSlottingMarshaller();
 
 /**
  * @param {string} addr
@@ -17,4 +20,11 @@ export const getCurrent = async (addr, ctx, { vstorage }) => {
   const capDatas = storageHelper.unserializeTxt(capDataStr, ctx);
 
   return capDatas[0];
+};
+
+/** @param {import('../lib/psm.js').BridgeAction} bridgeAction */
+export const outputAction = bridgeAction => {
+  const capData = marshaller.serialize(bridgeAction);
+  process.stdout.write(JSON.stringify(capData));
+  process.stdout.write('\n');
 };

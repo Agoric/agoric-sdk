@@ -2,14 +2,11 @@
 /* eslint-disable @jessie.js/no-nested-await */
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, process */
+/* global fetch */
 import { Command } from 'commander';
 import { inspect } from 'util';
-import {
-  boardSlottingMarshaller,
-  makeRpcUtils,
-  storageHelper,
-} from '../lib/rpc.js';
+import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { outputAction } from '../lib/wallet.js';
 
 const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
 
@@ -49,13 +46,6 @@ export const makeOracleCommand = async logger => {
       throw new Error(`Unknown instance ${name}`);
     }
     return instance;
-  };
-  const marshaller = boardSlottingMarshaller();
-
-  /** @param {import('../lib/psm.js').BridgeAction} bridgeAction */
-  const outputAction = bridgeAction => {
-    const capData = marshaller.serialize(bridgeAction);
-    process.stdout.write(JSON.stringify(capData));
   };
 
   oracle
