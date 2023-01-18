@@ -18,7 +18,7 @@ import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
 import { shape } from './typeGuards.js';
-import { objectMapStoreKeys } from './utils.js';
+import { objectMapStoragePath } from './utils.js';
 
 const { Fail, quote: q } = assert;
 
@@ -54,7 +54,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   brands: BrandDescriptor[],
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Record<number, Amount>,
- *   offerToPublicSubscriberPaths: Record<string, Record<string, VStorageKey>>,
+ *   offerToPublicSubscriberPaths: Record<string, Record<string, string>>,
  *   lastOfferId: string,
  * }} CurrentWalletRecord
  */
@@ -120,7 +120,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {Readonly<HeldParams & {
  *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
- *   offerToPublicSubscriberPaths: MapStore<string, Record<string, VStorageKey>>,
+ *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
  *   brandPurses: MapStore<Brand, RemotePurse>,
  *   purseBalances: MapStore<RemotePurse, Amount>,
@@ -453,7 +453,7 @@ const SmartWalletKit = defineVirtualFarClassKit(
           ) => {
             offerToUsedInvitation.init(offerId, invitationAmount);
             offerToInvitationMakers.init(offerId, invitationMakers);
-            const pathMap = await objectMapStoreKeys(publicSubscribers);
+            const pathMap = await objectMapStoragePath(publicSubscribers);
             if (pathMap) {
               logger.info('recording pathMap', pathMap);
               offerToPublicSubscriberPaths.init(offerId, pathMap);

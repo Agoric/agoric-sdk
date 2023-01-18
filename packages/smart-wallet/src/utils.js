@@ -131,13 +131,11 @@ export const assertHasData = async follower => {
  * Handles the case of falsy argument so the caller can consistently await.
  *
  * @param {Record<string, ERef<StoredFacet>>} [subscribers]
- * @returns {ERef<Record<string, VStorageKey>> | null}
+ * @returns {ERef<Record<string, string>> | null}
  */
-export const objectMapStoreKeys = subscribers => {
+export const objectMapStoragePath = subscribers => {
   if (!subscribers) {
     return null;
   }
-  return deeplyFulfilledObject(
-    objectMap(subscribers, sub => E(sub).getStoreKey()),
-  );
+  return deeplyFulfilledObject(objectMap(subscribers, sub => E(sub).getPath()));
 };
