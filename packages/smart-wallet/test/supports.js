@@ -91,6 +91,7 @@ const makeFakeBridgeManager = () =>
           assert(handler, `No handler for ${bridgeId}`);
           switch (obj.type) {
             case ActionType.WALLET_ACTION:
+            case ActionType.WALLET_ORACLE_ACTION:
             case ActionType.WALLET_SPEND_ACTION: {
               // @ts-expect-error handler possibly undefined
               return E(handler).fromBridge(obj);

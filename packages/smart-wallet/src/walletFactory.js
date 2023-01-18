@@ -10,11 +10,13 @@ import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E } from '@endo/far';
-import { makeSmartWallet } from './smartWallet.js';
+import { makeSmartWallet, BridgeActionKinds } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
 import '@agoric/vats/exported.js';
+
+const { Fail } = assert;
 
 export const privateArgsShape = harden(
   M.splitRecord(
@@ -27,6 +29,23 @@ export const customTermsShape = harden({
   agoricNames: M.not(M.undefined()),
   board: M.not(M.undefined()),
 });
+
+/**
+ * @param {import('./types.js').WalletBridgeMsg} obj
+ * @returns {{kind: import('./smartWallet.js').BridgeActionKind, capData: import('@endo/marshal').CapData<string>}}
+ */
+const extractBridgeMessageActionAndKind = obj => {
+  for (const kind of BridgeActionKinds) {
+    if (kind in obj) {
+      // xxx capData body is also a JSON string so this is double-encoded
+      // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
+      const capData = harden(JSON.parse(obj[kind]));
+      fit(capData, shape.StringCapData);
+      return { kind, capData };
+    }
+  }
+  throw Fail`Unknown wallet bridge message`;
+};
 
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
@@ -99,25 +118,23 @@ export const start = async (zcf, privateArgs) => {
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);
 
-        const canSpend = 'spendAction' in obj;
-
-        // xxx capData body is also a JSON string so this is double-encoded
-        // revisit after https://github.com/Agoric/agoric-sdk/issues/2589
-        const actionCapData = JSON.parse(
-          canSpend ? obj.spendAction : obj.action,
-        );
-        fit(harden(actionCapData), shape.StringCapData);
+        const { kind, capData } = extractBridgeMessageActionAndKind(obj);
 
         const wallet = walletsByAddress.get(obj.owner); // or throw
 
-        console.log('walletFactory:', { wallet, actionCapData });
-        return E(wallet).handleBridgeAction(actionCapData, canSpend);
+        console.log('walletFactory:', {
+          wallet,
+          actionKind: kind,
+          actionCapData: capData,
+        });
+        return E(wallet).handleBridgeAction(capData, kind);
       },
     },
   );
 
-  // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
-  // by way of performAction() in cosmic-swingset/src/launch-chain.js
+  // NOTE: `MsgWalletAction`, `MsgWalletSpendAction`, and
+  // `MsgWalletOracleAction` all arrive as BRIDGE_ID.WALLET by way of
+  // performAction() in cosmic-swingset/src/launch-chain.js
   await (walletBridgeManager &&
     E(walletBridgeManager).setHandler(handleWalletAction));
 
@@ -139,6 +156,8 @@ export const start = async (zcf, privateArgs) => {
     zoe,
   });
 
+  // TODO: figure out provisioning of oracle wallet
+  // Which needs to be separate from regular smart wallet
   const creatorFacet = makeHeapFarInstance(
     'walletFactoryCreator',
     M.interface('walletFactoryCreatorI', {

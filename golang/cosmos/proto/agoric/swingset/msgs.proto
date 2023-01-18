@@ -83,6 +83,25 @@ message MsgWalletSpendAction {
 // MsgWalletSpendActionResponse is an empty reply.
 message MsgWalletSpendActionResponse {}
 
+// MsgWalletOracleAction defines an SDK message for the on-chain wallet to
+// perform an *oracle* action only.  This message type is granted priority 
+// processing and should be checked to be sent by authorized account owners.
+message MsgWalletOracleAction {
+    option (gogoproto.equal) = false;
+
+    bytes owner = 1 [
+        (gogoproto.casttype)   = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+        (gogoproto.jsontag)    = "owner",
+        (gogoproto.moretags)   = "yaml:\"owner\""
+    ];
+
+    // The action to perform, as JSON-stringified marshalled data.
+    string oracle_action = 2;
+}
+
+// MsgWalletOracleActionResponse is an empty reply.
+message MsgWalletOracleActionResponse {}
+
 // MsgProvision defines an SDK message for provisioning a client to the chain
 message MsgProvision {
     option (gogoproto.equal) = false;

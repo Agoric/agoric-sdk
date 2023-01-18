@@ -58,7 +58,11 @@ export const shape = {
       blockTime: M.number(),
     },
     {},
-    M.or({ action: M.string() }, { spendAction: M.string() }),
+    M.or(
+      { action: M.string() },
+      { spendAction: M.string() },
+      { oracleAction: M.string() },
+    ),
   ),
 };
 harden(shape);

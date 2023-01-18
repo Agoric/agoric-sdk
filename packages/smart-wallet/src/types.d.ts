@@ -7,7 +7,6 @@
 
 import { ERef, FarRef } from '@endo/far';
 import type { CapData } from '@endo/marshal';
-import type { MsgWalletSpendAction } from '@agoric/cosmic-proto/swingset/msgs';
 
 declare const CapDataShape: unique symbol;
 
@@ -37,7 +36,7 @@ export type BridgeActionCapData = WalletCapData<
 /**
  * Defined by walletAction struct in msg_server.go
  *
- * @see {MsgWalletSpendAction} and walletSpendAction in msg_server.go
+ * @see {MsgWalletAction} and walletAction in msg_server.go
  */
 export type WalletActionMsg = {
   type: 'WALLET_ACTION';
@@ -65,6 +64,21 @@ export type WalletSpendActionMsg = {
 };
 
 /**
+ * Defined by walletOracleAction struct in msg_server.go
+ *
+ * @see {MsgWalletOracleAction} and walletOracleAction in msg_server.go
+ */
+export type WalletOracleActionMsg = {
+  type: 'WALLET_ORACLE_ACTION';
+  /** base64 of Uint8Array of bech32 data  */
+  owner: string;
+  /** JSON of BridgeActionCapData */
+  oracleAction: string;
+  blockHeight: unknown; // int64
+  blockTime: unknown; // int64
+};
+
+/**
  * Messages transmitted over Cosmos chain, cryptographically verifying that the
  * message came from the 'owner'.
  *
@@ -72,5 +86,6 @@ export type WalletSpendActionMsg = {
  * the sending of the message (as is the case for WALLET_SPEND_ACTION).
  */
 export type WalletBridgeMsg =
-  | ({ owner: string } & WalletActionMsg)
-  | WalletSpendActionMsg;
+  | WalletActionMsg
+  | WalletSpendActionMsg
+  | WalletOracleActionMsg;

@@ -321,6 +321,99 @@ export const MsgWalletSpendActionResponse = {
     return message;
   },
 };
+function createBaseMsgWalletOracleAction() {
+  return { owner: new Uint8Array(), oracleAction: '' };
+}
+export const MsgWalletOracleAction = {
+  encode(message, writer = _m0.Writer.create()) {
+    if (message.owner.length !== 0) {
+      writer.uint32(10).bytes(message.owner);
+    }
+    if (message.oracleAction !== '') {
+      writer.uint32(18).string(message.oracleAction);
+    }
+    return writer;
+  },
+  decode(input, length) {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgWalletOracleAction();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.owner = reader.bytes();
+          break;
+        case 2:
+          message.oracleAction = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object) {
+    return {
+      owner: isSet(object.owner)
+        ? bytesFromBase64(object.owner)
+        : new Uint8Array(),
+      oracleAction: isSet(object.oracleAction)
+        ? String(object.oracleAction)
+        : '',
+    };
+  },
+  toJSON(message) {
+    const obj = {};
+    message.owner !== undefined &&
+      (obj.owner = base64FromBytes(
+        message.owner !== undefined ? message.owner : new Uint8Array(),
+      ));
+    message.oracleAction !== undefined &&
+      (obj.oracleAction = message.oracleAction);
+    return obj;
+  },
+  fromPartial(object) {
+    const message = createBaseMsgWalletOracleAction();
+    message.owner = object.owner ?? new Uint8Array();
+    message.oracleAction = object.oracleAction ?? '';
+    return message;
+  },
+};
+function createBaseMsgWalletOracleActionResponse() {
+  return {};
+}
+export const MsgWalletOracleActionResponse = {
+  encode(_, writer = _m0.Writer.create()) {
+    return writer;
+  },
+  decode(input, length) {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgWalletOracleActionResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_) {
+    return {};
+  },
+  toJSON(_) {
+    const obj = {};
+    return obj;
+  },
+  fromPartial(_) {
+    const message = createBaseMsgWalletOracleActionResponse();
+    return message;
+  },
+};
 function createBaseMsgProvision() {
   return {
     nickname: '',

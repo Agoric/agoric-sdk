@@ -122,6 +122,8 @@ test('bridge with offerId string', async t => {
 
 test.todo('spend action over bridge');
 
+test.todo('oracle action');
+
 test('notifiers', async t => {
   async function checkAddress(address) {
     const smartWallet = await t.context.simpleProvideWallet(address);

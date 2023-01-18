@@ -230,6 +230,7 @@ func (m *Params) GetQueueMax() []QueueSize {
 	return nil
 }
 
+// The current state of the module.
 type State struct {
 	// The allowed number of items to add to queues, as determined by SwingSet.
 	// Transactions which attempt to enqueue more should be rejected.

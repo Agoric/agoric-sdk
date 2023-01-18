@@ -34,6 +34,18 @@ export interface MsgWalletSpendAction {
 }
 /** MsgWalletSpendActionResponse is an empty reply. */
 export interface MsgWalletSpendActionResponse {}
+/**
+ * MsgWalletOracleAction defines an SDK message for the on-chain wallet to
+ * perform an *oracle* action only.  This message type is granted priority
+ * processing and should be checked to be sent by authorized account owners.
+ */
+export interface MsgWalletOracleAction {
+  owner: Uint8Array;
+  /** The action to perform, as JSON-stringified marshalled data. */
+  oracleAction: string;
+}
+/** MsgWalletOracleActionResponse is an empty reply. */
+export interface MsgWalletOracleActionResponse {}
 /** MsgProvision defines an SDK message for provisioning a client to the chain */
 export interface MsgProvision {
   nickname: string;
@@ -310,6 +322,38 @@ export declare const MsgWalletSpendActionResponse: {
   fromPartial<I extends {} & {} & { [K in Exclude<keyof I, never>]: never }>(
     _: I,
   ): MsgWalletSpendActionResponse;
+};
+export declare const MsgWalletOracleAction: {
+  encode(message: MsgWalletOracleAction, writer?: _m0.Writer): _m0.Writer;
+  decode(
+    input: _m0.Reader | Uint8Array,
+    length?: number,
+  ): MsgWalletOracleAction;
+  fromJSON(object: any): MsgWalletOracleAction;
+  toJSON(message: MsgWalletOracleAction): unknown;
+  fromPartial<
+    I extends {
+      owner?: Uint8Array | undefined;
+      oracleAction?: string | undefined;
+    } & {
+      owner?: Uint8Array | undefined;
+      oracleAction?: string | undefined;
+    } & { [K in Exclude<keyof I, keyof MsgWalletOracleAction>]: never },
+  >(
+    object: I,
+  ): MsgWalletOracleAction;
+};
+export declare const MsgWalletOracleActionResponse: {
+  encode(_: MsgWalletOracleActionResponse, writer?: _m0.Writer): _m0.Writer;
+  decode(
+    input: _m0.Reader | Uint8Array,
+    length?: number,
+  ): MsgWalletOracleActionResponse;
+  fromJSON(_: any): MsgWalletOracleActionResponse;
+  toJSON(_: MsgWalletOracleActionResponse): unknown;
+  fromPartial<I extends {} & {} & { [K in Exclude<keyof I, never>]: never }>(
+    _: I,
+  ): MsgWalletOracleActionResponse;
 };
 export declare const MsgProvision: {
   encode(message: MsgProvision, writer?: _m0.Writer): _m0.Writer;

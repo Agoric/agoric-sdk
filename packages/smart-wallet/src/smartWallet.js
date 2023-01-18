@@ -39,6 +39,12 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @see {@link ../README.md}}
  */
 
+export const BridgeActionKinds = harden(
+  /** @type {const} */ (['oracleAction', 'spendAction', 'action']),
+);
+
+/** @typedef {(typeof BridgeActionKinds)[number]} BridgeActionKind */
+
 // One method yet but structured to support more. For example,
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
@@ -227,9 +233,10 @@ const behaviorGuards = {
     getLastOfferId: M.call().returns(M.number()),
   }),
   self: M.interface('selfFacetI', {
-    handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
-      M.promise(),
-    ),
+    handleBridgeAction: M.call(
+      shape.StringCapData,
+      M.or(...BridgeActionKinds),
+    ).returns(M.promise()),
     getDepositFacet: M.call().returns(M.eref(M.any())),
     getOffersFacet: M.call().returns(M.eref(M.any())),
     getCurrentSubscriber: M.call().returns(M.eref(M.any())),
@@ -451,10 +458,10 @@ const SmartWalletKit = defineVirtualFarClassKit(
       /**
        *
        * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
-       * @param {boolean} [canSpend=false]
+       * @param {BridgeActionKind} actionKind
        * @returns {Promise<void>}
        */
-      handleBridgeAction(actionCapData, canSpend = false) {
+      handleBridgeAction(actionCapData, actionKind) {
         const { publicMarshaller } = this.state;
         const { offers } = this.facets;
 
@@ -464,7 +471,8 @@ const SmartWalletKit = defineVirtualFarClassKit(
           action => {
             switch (action.method) {
               case 'executeOffer': {
-                assert(canSpend, 'executeOffer requires spend authority');
+                actionKind === 'spendAction' ||
+                  Fail`executeOffer requires spend authority`;
                 return offers.executeOffer(action.offer);
               }
               default: {

@@ -31,8 +31,8 @@
   },
   "scripts": {
     "build": "echo Use yarn rebuild to update dist output",
-    "rebuild": "rm -rf gen && mkdir -p gen && yarn generate && tsc --build && yarn prettier -w swingset",
-    "generate": "protoc-gen-ts_proto --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=messages' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
+    "rebuild": "rm -rf gen && mkdir -p gen && yarn generate && tsc --build && yarn prettier -w dist/agoric && rm -rf gen",
+    "generate": "protoc --plugin=node_modules/.bin/protoc-gen-ts_proto --ts_proto_opt='esModuleInterop=true,forceLong=long,useOptionals=messages' --ts_proto_out=./gen --ts_proto_opt=importSuffix=.js ./proto/agoric/swingset/msgs.proto ./proto/agoric/swingset/query.proto -I./proto",
     "test": "node test/sanity-test.js",
     "test:xs": "exit 0",
     "lint": "exit 0",
