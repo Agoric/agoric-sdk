@@ -67,7 +67,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
 
 /**
  * @param {*} db
- * @param {string} root
  * @param {{
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
@@ -84,7 +83,6 @@ const noPath = /** @type {import('fs').PathLike} */ (
  */
 export function makeSnapStore(
   db,
-  root,
   {
     createReadStream,
     createWriteStream,

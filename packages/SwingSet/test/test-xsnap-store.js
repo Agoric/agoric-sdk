@@ -3,7 +3,6 @@ import '@endo/init/debug.js';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
-import tmp from 'tmp';
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
@@ -77,12 +76,8 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  await fs.promises.mkdir(pool.name, { recursive: true });
-
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   const { compressedByteCount } = await store.save(async snapFile => {
     await vat.snapshot(snapFile);
@@ -98,11 +93,8 @@ test('SES bootstrap, save, compress', async t => {
   const vat = await bootSESWorker('ses-boot1', async m => m);
   t.teardown(() => vat.close());
 
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
@@ -117,11 +109,8 @@ test('SES bootstrap, save, compress', async t => {
 });
 
 test('create SES worker, save, restore, resume', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
@@ -146,12 +135,8 @@ test('create SES worker, save, restore, resume', async t => {
  * They are also sensitive to the XS code itself.
  */
 test('XS + SES snapshots are long-term deterministic', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
@@ -197,13 +182,9 @@ Then commit the changes in .../snapshots/ path.
 `);
 });
 
-async function makeTestSnapshot(t) {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  // t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
+async function makeTestSnapshot() {
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   const bootScript = await ld.asset(
     '@agoric/xsnap/dist/bundle-ses-boot.umd.js',

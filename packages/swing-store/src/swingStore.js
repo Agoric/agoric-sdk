@@ -428,9 +428,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   let snapStore;
 
   if (dirPath) {
-    const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
-    fs.mkdirSync(snapshotDir, { recursive: true });
-    snapStore = makeSnapStore(db, snapshotDir, makeSnapStoreIO(), {
+    snapStore = makeSnapStore(db, makeSnapStoreIO(), {
       keepSnapshots,
     });
   }

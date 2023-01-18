@@ -1,7 +1,6 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import tmp from 'tmp';
 import sqlite3 from 'better-sqlite3';
 import {
   initSwingStore,
@@ -24,10 +23,8 @@ test('vat reload from snapshot', async t => {
     },
   };
 
-  const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
-
   const db = sqlite3(':memory:');
-  const snapStore = makeSnapStore(db, snapstorePath, makeSnapStoreIO());
+  const snapStore = makeSnapStore(db, makeSnapStoreIO());
   const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
   const argv = [];

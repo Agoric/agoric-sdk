@@ -14,12 +14,8 @@ import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 
 test('build temp file; compress to cache file', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, {
+  const store = makeSnapStore(db, {
     ...tmp,
     tmpFile: tmp.file,
     ...path,
@@ -64,9 +60,6 @@ test('build temp file; compress to cache file', async t => {
 });
 
 test('snapStore prepare / commit delete is robust', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
   const io = {
     ...tmp,
     tmpFile: tmp.file,
@@ -76,7 +69,7 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, pool.name, io);
+  const store = makeSnapStore(db, io);
 
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
