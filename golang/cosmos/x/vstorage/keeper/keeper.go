@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"encoding/json"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -23,14 +24,85 @@ type StreamCell struct {
 	Values      []string `json:"values"`
 }
 
+type ProposedChange struct {
+	Path               string
+	ValueFromLastBlock string
+	NewValue           string
+	LegacyEvents       bool
+}
+
+type ChangeManager interface {
+	Track(ctx sdk.Context, k Keeper, path, value string, isLegacy bool)
+	EmitEvents(ctx sdk.Context, k Keeper)
+	Rollback(ctx sdk.Context)
+}
+
+type BatchingChangeManager struct {
+	// Map from storage path to proposed change.
+	changes map[string]*ProposedChange
+}
+
+var _ ChangeManager = (*BatchingChangeManager)(nil)
+
 // Keeper maintains the link to data storage and exposes getter/setter methods
 // for the various parts of the state machine
 type Keeper struct {
-	storeKey sdk.StoreKey
+	changeManager ChangeManager
+	storeKey      sdk.StoreKey
+}
+
+func (bcm *BatchingChangeManager) Track(ctx sdk.Context, k Keeper, path, value string, isLegacy bool) {
+	if change, ok := bcm.changes[path]; ok {
+		change.NewValue = value
+		if isLegacy {
+			change.LegacyEvents = true
+		}
+		return
+	}
+	bcm.changes[path] = &ProposedChange{
+		Path:               path,
+		NewValue:           value,
+		ValueFromLastBlock: k.GetData(ctx, path),
+		LegacyEvents:       isLegacy,
+	}
+}
+
+func (bcm *BatchingChangeManager) Rollback(ctx sdk.Context) {
+	bcm.changes = make(map[string]*ProposedChange)
+}
+
+// EmitEvents emits events for all actual changes.
+// This does not clear the cache, so the caller must call Rollback() to do so.
+func (bcm *BatchingChangeManager) EmitEvents(ctx sdk.Context, k Keeper) {
+	changes := bcm.changes
+	if len(changes) == 0 {
+		return
+	}
+
+	// Deterministic order.
+	sortedPaths := make([]string, 0, len(changes))
+	for path := range changes {
+		sortedPaths = append(sortedPaths, path)
+	}
+	sort.Strings(sortedPaths)
+
+	for _, path := range sortedPaths {
+		change := bcm.changes[path]
+		k.EmitChange(ctx, change)
+	}
+}
+
+// The BatchingChangeManager needs to be a pointer because its state is mutated.
+func NewBatchingChangeManager() *BatchingChangeManager {
+	bcm := BatchingChangeManager{changes: make(map[string]*ProposedChange)}
+	return &bcm
 }
 
 func NewKeeper(storeKey sdk.StoreKey) Keeper {
-	return Keeper{storeKey}
+	return Keeper{
+		storeKey:      storeKey,
+		changeManager: NewBatchingChangeManager(),
+	}
 }
 
 // ExportStorage fetches all storage
@@ -59,6 +131,29 @@ func (k Keeper) ImportStorage(ctx sdk.Context, entries []*types.DataEntry) {
 		// complete tree.
 		k.SetStorage(ctx, entry.Path, entry.Value)
 	}
+}
+
+func (k Keeper) EmitChange(ctx sdk.Context, change *ProposedChange) {
+	if change.NewValue == change.ValueFromLastBlock {
+		// No change.
+		return
+	}
+
+	if change.LegacyEvents {
+		// Emit the legacy change event.
+		ctx.EventManager().EmitEvent(
+			types.NewLegacyStorageEvent(change.Path, change.NewValue),
+		)
+	}
+
+	// Emit the new state change event.
+	ctx.EventManager().EmitEvent(
+		agoric.NewStateChangeEvent(
+			k.GetStoreName(),
+			k.PathToEncodedKey(change.Path),
+			[]byte(change.NewValue),
+		),
+	)
 }
 
 // GetData gets generic storage.  The default value is an empty string.
@@ -117,26 +212,23 @@ func (k Keeper) HasChildren(ctx sdk.Context, path string) bool {
 	return iterator.Valid()
 }
 
-func (k Keeper) LegacySetStorageAndNotify(ctx sdk.Context, path, value string) {
-	k.SetStorage(ctx, path, value)
+func (k Keeper) NewChangeBatch(ctx sdk.Context) {
+	k.changeManager.Rollback(ctx)
+}
 
-	// Emit the legacy change event.
-	ctx.EventManager().EmitEvent(
-		types.NewLegacyStorageEvent(path, value),
-	)
+func (k Keeper) FlushChangeEvents(ctx sdk.Context) {
+	k.changeManager.EmitEvents(ctx, k)
+	k.changeManager.Rollback(ctx)
 }
 
 func (k Keeper) SetStorageAndNotify(ctx sdk.Context, path, value string) {
-	k.LegacySetStorageAndNotify(ctx, path, value)
+	k.changeManager.Track(ctx, k, path, value, false)
+	k.SetStorage(ctx, path, value)
+}
 
-	// Emit the new state change event.
-	ctx.EventManager().EmitEvent(
-		agoric.NewStateChangeEvent(
-			k.GetStoreName(),
-			k.PathToEncodedKey(path),
-			[]byte(value),
-		),
-	)
+func (k Keeper) LegacySetStorageAndNotify(ctx sdk.Context, path, value string) {
+	k.changeManager.Track(ctx, k, path, value, true)
+	k.SetStorage(ctx, path, value)
 }
 
 func (k Keeper) AppendStorageValueAndNotify(ctx sdk.Context, path, value string) error {

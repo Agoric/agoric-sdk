@@ -116,9 +116,11 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+	am.keeper.NewChangeBatch(ctx)
 }
 
 func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+	am.keeper.FlushChangeEvents(ctx)
 	// Prevent Cosmos SDK internal errors.
 	return []abci.ValidatorUpdate{}
 }

@@ -572,8 +572,8 @@ func NewAgoricApp(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		icaModule,
-		swingset.NewAppModule(app.SwingSetKeeper),
 		vstorage.NewAppModule(app.VstorageKeeper),
+		swingset.NewAppModule(app.SwingSetKeeper),
 		vibcModule,
 		vbankModule,
 		lienModule,
@@ -605,14 +605,13 @@ func NewAgoricApp(
 		feegrant.ModuleName,
 		paramstypes.ModuleName,
 		vestingtypes.ModuleName,
-		swingset.ModuleName,
 		vstorage.ModuleName,
+		swingset.ModuleName,
 		vibc.ModuleName,
 		vbank.ModuleName,
 		lien.ModuleName,
 	)
 	app.mm.SetOrderEndBlockers(
-		vstorage.ModuleName,
 		vibc.ModuleName,
 		vbank.ModuleName,
 		lien.ModuleName,
@@ -637,6 +636,8 @@ func NewAgoricApp(
 		vestingtypes.ModuleName,
 		// SwingSet needs to be last, for it to capture all the pushed actions.
 		swingset.ModuleName,
+		// And then vstorage, to produce SwingSet-induced events.
+		vstorage.ModuleName,
 	)
 
 	// NOTE: The genutils module must occur after staking so that pools are
