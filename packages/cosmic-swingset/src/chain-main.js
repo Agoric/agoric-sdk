@@ -46,7 +46,7 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
     prefix.endsWith('.') ||
     Fail`prefix ${prefix} must end with a dot`;
 
-  const { fromChainShape, toChainShape } = options;
+  const { fromChainShape, toChainShape, setterMethod = 'set' } = options;
 
   // In addition to the wrapping write buffer, keep a simple cache of
   // read values for has and get.
@@ -55,6 +55,7 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
     cache = new Map();
   }
   resetCache();
+
   const storage = {
     has(key) {
       return storage.get(key) !== undefined;
@@ -83,7 +84,7 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
       const valueStr = value === undefined ? '' : stringify(chainShapeValue);
       call(
         stringify({
-          method: 'set',
+          method: setterMethod,
           key: `${prefix}${key}`,
           value: valueStr,
         }),
@@ -246,12 +247,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
           return importMailbox({ outbox, ack });
         },
         toChainShape: exportMailbox,
+        setterMethod: 'legacySet',
       },
     );
     const actionQueue = makeQueue(
       makeChainStorage(
         msg => chainSend(portNums.storage, msg),
         `${STORAGE_PATH.ACTION_QUEUE}.`,
+        {
+          setterMethod: 'setWithoutNotify',
+        },
       ),
     );
     function setActivityhash(activityhash) {
