@@ -15,9 +15,9 @@
 /**
  * @typedef {object} PriceDescription
  * A description of a single quote
- * @property {Amount} amountIn
+ * @property {Amount<'nat'>} amountIn
  * The amount supplied to a trade
- * @property {Amount} amountOut
+ * @property {Amount<'nat'>} amountOut
  * The quoted result of trading `amountIn`
  * @property {TimerService} timer
  * The service that gave the `timestamp`

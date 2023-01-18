@@ -364,6 +364,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
         }
 
         /** @type {bigint | undefined} */
+        // @ts-expect-error faulty inference
         const newAnswer = calculateMedian(
           details
             .get(roundId)
@@ -484,7 +485,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
           }
 
           /**
-           * @param {Amount} amountIn the given amountIn
+           * @param {Amount<'nat'>} amountIn the given amountIn
            */
           const calcAmountOut = amountIn => {
             const valueIn = AmountMath.getValue(brandIn, amountIn);
@@ -495,7 +496,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
           };
 
           /**
-           * @param {Amount} amountOut the wanted amountOut
+           * @param {Amount<'nat'>} amountOut the wanted amountOut
            */
           const calcAmountIn = amountOut => {
             const valueOut = AmountMath.getValue(brandOut, amountOut);

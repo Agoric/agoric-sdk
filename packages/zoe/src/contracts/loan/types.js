@@ -62,7 +62,7 @@
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
  *
- * @property {() => Amount} getDebt
+ * @property {() => Amount<'nat'>} getDebt
  *
  *   A function to get the current debt
  *
@@ -148,9 +148,9 @@
 
 /**
  * @callback CalcInterestFn
- * @param {Amount} oldDebt
+ * @param {Amount<'nat'>} oldDebt
  * @param {Ratio} interestRate
- * @returns {Amount} interest
+ * @returns {Amount<'nat'>} interest
  */
 
 /**
@@ -160,7 +160,7 @@
  *   A function to calculate the interest, given the debt value and an
  *   interest rate in basis points.
  *
- * @property {Amount} originalDebt
+ * @property {Amount<'nat'>} originalDebt
  *
  *   The debt at the start of the loan, in Loan brand
  *

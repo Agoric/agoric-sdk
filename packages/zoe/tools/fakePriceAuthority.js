@@ -21,14 +21,14 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
 
 /**
  * @typedef {object} FakePriceAuthorityOptions
- * @property {Brand} actualBrandIn
- * @property {Brand} actualBrandOut
+ * @property {Brand<'nat'>} actualBrandIn
+ * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<TimerService>} timer
  * @property {RelativeTime} [quoteInterval]
  * @property {ERef<Mint<'set'>>} [quoteMint]
- * @property {Amount} [unitAmountIn]
+ * @property {Amount<'nat'>} [unitAmountIn]
  */
 
 /**
@@ -107,7 +107,7 @@ export async function makeFakePriceAuthority(options) {
 
   /**
    *
-   * @param {Amount} amountIn
+   * @param {Amount<'nat'>} amountIn
    * @param {Brand} brandOut
    * @param {Timestamp} quoteTime
    * @returns {PriceQuote}
@@ -139,8 +139,8 @@ export async function makeFakePriceAuthority(options) {
   }
 
   /**
-   * @param {Brand} brandIn
-   * @param {Amount} amountOut
+   * @param {Brand<'nat'>} brandIn
+   * @param {Amount<'nat'>} amountOut
    * @param {Timestamp} quoteTime
    * @returns {PriceQuote}
    */

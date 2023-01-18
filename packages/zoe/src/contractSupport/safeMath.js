@@ -1,5 +1,7 @@
 import { Nat } from '@agoric/nat';
 
+/** @typedef {(x: number | bigint, y: number | bigint) => NatValue} NatOp */
+
 /**
  * These operations should be used for calculations with the values of
  * basic fungible tokens.
@@ -8,11 +10,16 @@ import { Nat } from '@agoric/nat';
  * validate the inputs, as well as the outputs when necessary.
  */
 export const natSafeMath = harden({
+  /** @type {NatOp} */
   // BigInts don't observably overflow
   add: (x, y) => Nat(x) + Nat(y),
+  /** @type {NatOp} */
   subtract: (x, y) => Nat(Nat(x) - Nat(y)),
+  /** @type {NatOp} */
   multiply: (x, y) => Nat(x) * Nat(y),
+  /** @type {NatOp} */
   floorDivide: (x, y) => Nat(x) / Nat(y),
+  /** @type {NatOp} */
   ceilDivide: (x, y) => {
     y = Nat(y);
     return Nat(Nat(x) + y - 1n) / y;
@@ -20,8 +27,7 @@ export const natSafeMath = harden({
   /**
    * Divide using half-to-even (aka Banker's Rounding) as in IEEE 774 default rounding
    *
-   * @param {NatValue} a
-   * @param {NatValue} b
+   * @type {NatOp}
    */
   bankersDivide: (a, b) => {
     a = Nat(a);
@@ -38,5 +44,6 @@ export const natSafeMath = harden({
     }
     return div;
   },
+  /** @type {(x: number | bigint, y: number | bigint) => boolean} */
   isGTE: (x, y) => Nat(x) >= Nat(y),
 });

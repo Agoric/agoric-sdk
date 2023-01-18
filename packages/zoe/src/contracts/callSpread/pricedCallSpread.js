@@ -57,12 +57,12 @@ const BASIS_POINTS = 10000n;
  * + issue multiple option pairs with the same expiration from a single instance
  *
  * @param {ZCF<{
- * strikePrice1: Amount,
- * strikePrice2: Amount,
- * settlementAmount: Amount,
+ * strikePrice1: Amount<'nat'>,
+ * strikePrice2: Amount<'nat'>,
+ * settlementAmount: Amount<'nat'>,
  * priceAuthority: PriceAuthority,
  * expiration: bigint,
- * underlyingAmount: Amount,
+ * underlyingAmount: Amount<'nat'>,
  * }>} zcf
  */
 const start = zcf => {
