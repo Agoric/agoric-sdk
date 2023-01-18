@@ -479,7 +479,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
             overrideValueOut === undefined
               ? lastValueOutForUnitIn // Use the latest value.
               : overrideValueOut; // Override the value.
-          if (valueOutForUnitIn === undefined) {
+          if (valueOutForUnitIn === null) {
             // We don't have a quote, so abort.
             return undefined;
           }
