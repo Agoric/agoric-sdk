@@ -1,6 +1,8 @@
 // @ts-check
 /* global process */
 
+import { iterateReverse } from '@agoric/casting';
+import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { boardSlottingMarshaller, storageHelper } from './rpc.js';
 
 const marshaller = boardSlottingMarshaller();
@@ -27,4 +29,24 @@ export const outputAction = bridgeAction => {
   const capData = marshaller.serialize(bridgeAction);
   process.stdout.write(JSON.stringify(capData));
   process.stdout.write('\n');
+};
+
+/**
+ * @deprecated use `.current` node for current state
+ * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>>} follower
+ */
+export const coalesceWalletState = async follower => {
+  // values with oldest last
+  const history = [];
+  for await (const followerElement of iterateReverse(follower)) {
+    history.push(followerElement.value);
+  }
+
+  const coalescer = makeWalletStateCoalescer();
+  // update with oldest first
+  for (const record of history.reverse()) {
+    coalescer.update(record);
+  }
+
+  return coalescer.state;
 };
