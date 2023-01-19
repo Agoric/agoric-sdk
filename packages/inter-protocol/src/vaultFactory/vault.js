@@ -139,6 +139,8 @@ const provideEphemera = makeEphemeraProvider(() => ({}));
  * @returns {ImmutableState & MutableState}
  */
 const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
+  trace('vault initState');
+
   const ephemera = provideEphemera(idInManager);
   ephemera.storageNode = storageNode;
   ephemera.marshaller = marshaller;
@@ -213,6 +215,7 @@ export const VaultI = M.interface('Vault', {
 });
 
 export const vivifyVault = baggage => {
+  trace('vivifyVault');
   const makeVaultKit = vivifyVaultKit(baggage);
 
   // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
@@ -332,18 +335,14 @@ export const vivifyVault = baggage => {
         /**
          *
          * @param {Amount<'nat'>} collateralAmount
-         * @param {Amount<'nat'>} proposedRunDebt
+         * @param {Amount<'nat'>} proposedDebt
          */
-        async assertSufficientCollateral(collateralAmount, proposedRunDebt) {
+        async assertSufficientCollateral(collateralAmount, proposedDebt) {
           const { state, facets } = this;
-          const maxRun = await state.manager.maxDebtFor(collateralAmount);
-          AmountMath.isGTE(
-            maxRun,
-            proposedRunDebt,
-            facets.helper.debtBrand(),
-          ) ||
-            Fail`Requested ${q(proposedRunDebt)} exceeds max ${q(
-              maxRun,
+          const maxDebt = await state.manager.maxDebtFor(collateralAmount);
+          AmountMath.isGTE(maxDebt, proposedDebt, facets.helper.debtBrand()) ||
+            Fail`Proposed debt ${q(proposedDebt)} exceeds max ${q(
+              maxDebt,
             )} for ${q(collateralAmount)} collateral`;
         },
 
@@ -693,6 +692,7 @@ export const vivifyVault = baggage => {
             collateralPre,
             newDebtPre,
           );
+          trace('initVault updateDebtAccounting fired');
 
           const vaultKit = makeVaultKit(
             self,

@@ -1,8 +1,13 @@
+import { makeTracer } from '@agoric/internal';
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
 import { vivifyVaultHolder } from './vaultHolder.js';
 
+const trace = makeTracer('IV');
+
 export const vivifyVaultKit = baggage => {
+  trace('vivifyVaultKit', baggage);
+
   const makeVaultHolder = vivifyVaultHolder(baggage);
   /**
    * Create a kit of utilities for use of the vault.
@@ -13,6 +18,7 @@ export const vivifyVaultKit = baggage => {
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
   const makeVaultKit = (vault, storageNode, marshaller, assetSubscriber) => {
+    trace('vivifyVaultKit makeVaultKit');
     const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
     const vaultKit = harden({
       publicSubscribers: {

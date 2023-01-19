@@ -6,6 +6,9 @@ import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('PA', false);
 
 /**
  * @callback CompareAmount
@@ -269,6 +272,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return specificNotifier;
     },
     async quoteGiven(amountIn, brandOut) {
+      trace('quoteGiven', amountIn, brandOut);
       AmountMath.coerce(actualBrandIn, amountIn);
       assertBrands(amountIn.brand, brandOut);
 
