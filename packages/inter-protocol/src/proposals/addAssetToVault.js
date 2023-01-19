@@ -262,7 +262,11 @@ export const addAssetToVault = async (
   const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
-    debtLimit: AmountMath.make(stable, 0n),
+    // DONOTMERGE used for testing, but this script will run in production.
+    // Must the debtLimit start at zero?
+    // startStakeFactory starts at 1_000_000_000_000n
+    // How should we raise the debtLimit from zero for tests?
+    debtLimit: AmountMath.make(stable, 1_000_000_000_000n),
     // the rest of these are arbitrary, TBD by gov cttee
     interestRate: makeRatio(1n, stable),
     liquidationMargin: makeRatio(1n, stable),

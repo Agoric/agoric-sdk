@@ -49,7 +49,7 @@ import { Phase, vivifyVault } from './vault.js';
 
 const { details: X } = assert;
 
-const trace = makeTracer('VM', false);
+const trace = makeTracer('VM');
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 

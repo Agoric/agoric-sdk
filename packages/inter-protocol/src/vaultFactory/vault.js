@@ -24,7 +24,7 @@ import '@agoric/zoe/exported.js';
 
 const { quote: q, Fail } = assert;
 
-const trace = makeTracer('IV', false);
+const trace = makeTracer('IV');
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 

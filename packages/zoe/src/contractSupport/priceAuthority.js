@@ -8,7 +8,7 @@ import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
 
-const trace = makeTracer('PA', false);
+const trace = makeTracer('PA');
 
 /**
  * @callback CompareAmount
