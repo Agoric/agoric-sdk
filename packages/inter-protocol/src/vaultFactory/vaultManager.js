@@ -747,6 +747,7 @@ export const vivifyVaultManagerKit = baggage => {
          * @param {Amount<'nat'>} collateralAmount
          */
         async maxDebtFor(collateralAmount) {
+          trace('maxDebtFor', collateralAmount);
           const { state } = this;
           const { debtBrand } = state;
           const { priceAuthority, ...ephemera } = provideEphemera(
@@ -757,6 +758,7 @@ export const vivifyVaultManagerKit = baggage => {
             collateralAmount,
             debtBrand,
           );
+          trace('maxDebtFor got quote', quoteAmount);
           // floorDivide because we want the debt ceiling lower
           return floorDivideBy(
             getAmountOut(quoteAmount),
@@ -922,6 +924,7 @@ export const vivifyVaultManagerKit = baggage => {
          * @param {ZCFSeat} seat
          */
         async makeVaultKit(seat) {
+          trace('makevaultKit');
           const {
             state,
             facets: { manager },
@@ -951,6 +954,7 @@ export const vivifyVaultManagerKit = baggage => {
             vaultStorageNode,
             marshaller,
           );
+          trace('makevaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed
