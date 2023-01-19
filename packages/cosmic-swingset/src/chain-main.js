@@ -11,7 +11,6 @@ import {
   importMailbox,
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
-import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
 import { Fail } from '@agoric/assert';
 import { makeSlogSender } from '@agoric/telemetry';
@@ -22,6 +21,7 @@ import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeBufferedStorage } from './bufferedStorage.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
