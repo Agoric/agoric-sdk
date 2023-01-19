@@ -1,5 +1,5 @@
 /* eslint-disable no-undef-init */
-import { iterateReverse } from '@agoric/casting';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 
@@ -124,24 +124,4 @@ export const assertHasData = async follower => {
   if (el.done && !el.value) {
     assert.fail(NO_SMART_WALLET_ERROR);
   }
-};
-
-/**
- * @deprecated use `.current` node for current state
- * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('./smartWallet').UpdateRecord>>} follower
- */
-export const coalesceWalletState = async follower => {
-  // values with oldest last
-  const history = [];
-  for await (const followerElement of iterateReverse(follower)) {
-    history.push(followerElement.value);
-  }
-
-  const coalescer = makeWalletStateCoalescer();
-  // update with oldest first
-  for (const record of history.reverse()) {
-    coalescer.update(record);
-  }
-
-  return coalescer.state;
 };
