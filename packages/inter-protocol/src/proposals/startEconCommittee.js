@@ -1,9 +1,9 @@
+import { makeTracer } from '@agoric/internal';
 import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/vats/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('RunEconCommittee', false);
 

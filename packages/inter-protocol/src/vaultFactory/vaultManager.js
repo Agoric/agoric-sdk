@@ -15,6 +15,7 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import {
   makeStoredSubscriber,
   observeNotifier,
@@ -42,7 +43,6 @@ import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { makeTracer } from '../makeTracer.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, vivifyVault } from './vault.js';

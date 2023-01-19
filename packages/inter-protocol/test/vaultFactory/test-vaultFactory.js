@@ -3,7 +3,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManagerBuilder } from '@agoric/governance';
-import { objectMap } from '@agoric/internal';
+import { makeTracer, objectMap } from '@agoric/internal';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
@@ -25,7 +25,6 @@ import { deeplyFulfilled } from '@endo/marshal';
 import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
-import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,

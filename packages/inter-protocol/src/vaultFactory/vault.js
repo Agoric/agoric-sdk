@@ -1,4 +1,5 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
 import { M, vivifyFarClassKit } from '@agoric/vat-data';
 import {
@@ -16,7 +17,6 @@ import {
   stageDelta,
 } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { makeTracer } from '../makeTracer.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 import { vivifyVaultKit } from './vaultKit.js';
 

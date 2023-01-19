@@ -17,7 +17,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
-import { makeTracer } from '../src/makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 
 export { makeMockChainStorageRoot };
 

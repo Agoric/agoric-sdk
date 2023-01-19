@@ -2,7 +2,7 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
-import { makeTracer } from '../../src/makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 import '../../src/vaultFactory/types.js';
 import { subscriptionKey } from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';

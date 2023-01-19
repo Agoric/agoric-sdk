@@ -5,11 +5,10 @@ import {
   makeStorageNodeChild,
   assertPathSegment,
 } from '@agoric/vats/src/lib-chainStorage.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
-import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('RunPriceFeed');
 

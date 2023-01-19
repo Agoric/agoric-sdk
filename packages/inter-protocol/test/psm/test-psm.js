@@ -19,7 +19,7 @@ import { E } from '@endo/eventual-send';
 import { NonNullish } from '@agoric/assert';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { makeTracer } from '../../src/makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
