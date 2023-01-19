@@ -6,9 +6,9 @@ import { defineKindMulti } from '@agoric/vat-data';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { makeTracer } from '../makeTracer.js';
 import { ManagerKW as KW } from './constants.js';
 
 const { details: X } = assert;

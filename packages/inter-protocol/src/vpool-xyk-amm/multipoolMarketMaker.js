@@ -16,9 +16,9 @@ import {
   provide,
   vivifyKindMulti,
 } from '@agoric/vat-data';
+import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
-import { makeTracer } from '../makeTracer.js';
 import {
   makeMakeAddLiquidityAtRateInvitation,
   makeMakeAddLiquidityInvitation,

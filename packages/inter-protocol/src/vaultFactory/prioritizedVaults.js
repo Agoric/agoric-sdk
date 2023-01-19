@@ -5,9 +5,9 @@ import { AmountMath } from '@agoric/ertp';
 import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
 import { keyEQ, keyLT } from '@agoric/store';
+import { makeTracer } from '@agoric/internal';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { fromVaultKey, toVaultKey } from './storeUtils.js';
-import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('PV', false);
 

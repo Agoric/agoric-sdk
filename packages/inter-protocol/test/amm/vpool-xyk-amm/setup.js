@@ -1,6 +1,7 @@
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
+import { makeTracer } from '@agoric/internal';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
@@ -12,7 +13,6 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import * as Collect from '../../../src/collect.js';
-import { makeTracer } from '../../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,

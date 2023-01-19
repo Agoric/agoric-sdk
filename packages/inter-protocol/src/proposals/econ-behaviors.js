@@ -2,15 +2,14 @@ import '../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
 import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { Stable, Stake } from '@agoric/vats/src/tokens.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
 import * as Collect from '../collect.js';
-import { makeTracer } from '../makeTracer.js';
 import { LienBridgeId, makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeStakeFactoryTerms } from '../stakeFactory/params.js';

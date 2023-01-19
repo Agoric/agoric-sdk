@@ -11,8 +11,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { forever } from '@agoric/internal';
-import { makeTracer } from '../makeTracer.js';
+import { forever, makeTracer } from '@agoric/internal';
 
 const { Fail } = assert;
 const trace = makeTracer('LiqI', false);

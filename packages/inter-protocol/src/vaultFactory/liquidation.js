@@ -7,7 +7,7 @@ import {
   makeRatio,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeTracer } from '../makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('LIQ', false);
 

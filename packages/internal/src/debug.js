@@ -5,7 +5,7 @@ let debugInstance = 1;
  * @param {string} name
  * @param {boolean | 'verbose'} enable
  */
-const makeTracer = (name, enable = true) => {
+export const makeTracer = (name, enable = true) => {
   debugInstance += 1;
   let debugCount = 1;
   const key = `----- ${name}.${debugInstance} `;
@@ -37,5 +37,4 @@ const makeTracer = (name, enable = true) => {
     }
   }
 };
-
-export { makeTracer };
+harden(makeTracer);
