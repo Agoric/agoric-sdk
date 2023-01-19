@@ -3,7 +3,7 @@ import '@endo/init/debug.js';
 import fs from 'fs';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
-import tmp from 'tmp';
+import sqlite3 from 'better-sqlite3';
 import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { xsnap } from '@agoric/xsnap';
@@ -32,9 +32,9 @@ const ld = (() => {
   });
 })();
 
-/** @type {(fn: string, fullSize: number) => number} */
-const relativeSize = (fn, fullSize) =>
-  Math.round((fs.statSync(fn).size / 1024 / fullSize) * 10) / 10;
+/** @type {(compressedSize: number, fullSize: number) => number} */
+const relativeSize = (compressedSize, fullSize) =>
+  Math.round((compressedSize / 1024 / fullSize) * 10) / 10;
 
 const snapSize = {
   raw: 417,
@@ -76,18 +76,19 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  await fs.promises.mkdir(pool.name, { recursive: true });
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
-  const store = makeSnapStore(pool.name, makeMockSnapStoreIO());
-
-  const { filePath: zfile } = await store.save(async snapFile => {
-    await vat.snapshot(snapFile);
-  });
+  const { compressedSize } = await store.saveSnapshot(
+    'vat0',
+    1,
+    async snapFile => {
+      await vat.snapshot(snapFile);
+    },
+  );
 
   t.true(
-    relativeSize(zfile, snapSize.raw) < 0.5,
+    relativeSize(compressedSize, snapSize.raw) < 0.5,
     'compressed snapshots are smaller',
   );
 });
@@ -96,35 +97,35 @@ test('SES bootstrap, save, compress', async t => {
   const vat = await bootSESWorker('ses-boot1', async m => m);
   t.teardown(() => vat.close());
 
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
-  const store = makeSnapStore(pool.name, makeMockSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
-  const { filePath: zfile } = await store.save(async snapFile => {
-    await vat.snapshot(snapFile);
-  });
+  const { compressedSize } = await store.saveSnapshot(
+    'vat0',
+    1,
+    async snapFile => {
+      await vat.snapshot(snapFile);
+    },
+  );
 
   t.true(
-    relativeSize(zfile, snapSize.SESboot) < 0.5,
+    relativeSize(compressedSize, snapSize.SESboot) < 0.5,
     'compressed snapshots are smaller',
   );
 });
 
 test('create SES worker, save, restore, resume', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-
-  const store = makeSnapStore(pool.name, makeMockSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
   await vat0.evaluate('globalThis.x = harden({a: 1})');
-  const { hash } = await store.save(vat0.snapshot);
+  await store.saveSnapshot('vat0', 1, vat0.snapshot);
 
-  const worker = await store.load(hash, async snapshot => {
+  const worker = await store.loadSnapshot('vat0', async snapshot => {
     const xs = xsnap({ name: 'ses-resume', snapshot, os: osType(), spawn });
     await xs.isReady();
     return xs;
@@ -142,20 +143,17 @@ test('create SES worker, save, restore, resume', async t => {
  * They are also sensitive to the XS code itself.
  */
 test('XS + SES snapshots are long-term deterministic', async t => {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, makeMockSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
 
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
 
   const {
     filePath: _path1,
-    compressedByteCount: _csize1,
+    compressedSize: _csize1,
     ...info1
-  } = await store.save(vat.snapshot);
+  } = await store.saveSnapshot('vat0', 1, vat.snapshot);
   t.snapshot(info1, 'initial snapshot');
 
   const bootScript = await ld.asset(
@@ -165,9 +163,9 @@ test('XS + SES snapshots are long-term deterministic', async t => {
 
   const {
     filePath: _path2,
-    compressedByteCount: _csize2,
+    compressedSize: _csize2,
     ...info2
-  } = await store.save(vat.snapshot);
+  } = await store.saveSnapshot('vat0', 2, vat.snapshot);
   t.snapshot(
     info2,
     'after SES boot - sensitive to SES-shim, XS, and supervisor',
@@ -176,9 +174,9 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   await vat.evaluate('globalThis.x = harden({a: 1})');
   const {
     filePath: _path3,
-    compressedByteCount: _csize3,
+    compressedSize: _csize3,
     ...info3
-  } = await store.save(vat.snapshot);
+  } = await store.saveSnapshot('vat0', 3, vat.snapshot);
   t.snapshot(
     info3,
     'after use of harden() - sensitive to SES-shim, XS, and supervisor',
@@ -192,25 +190,22 @@ Then commit the changes in .../snapshots/ path.
 `);
 });
 
-async function makeTestSnapshot(t) {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  // t.log({ pool: pool.name });
-  await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, makeMockSnapStoreIO());
+async function makeTestSnapshot() {
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, makeMockSnapStoreIO());
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   const bootScript = await ld.asset(
     '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
   );
   await vat.evaluate(bootScript);
   await vat.evaluate('globalThis.x = harden({a: 1})');
-  const info = await store.save(vat.snapshot);
+  const info = await store.saveSnapshot('vat0', 1, vat.snapshot);
   await vat.close();
   return info;
 }
 
 test('XS + SES snapshots are short-term deterministic', async t => {
-  const { filePath: _path1, ...info1 } = await makeTestSnapshot(t);
-  const { filePath: _path2, ...info2 } = await makeTestSnapshot(t);
+  const info1 = await makeTestSnapshot(t);
+  const info2 = await makeTestSnapshot(t);
   t.deepEqual(info1, info2);
 });

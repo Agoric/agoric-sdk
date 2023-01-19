@@ -2,8 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { spawn } from 'child_process';
-import fs from 'fs';
-import tmp from 'tmp';
+import sqlite3 from 'better-sqlite3';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 
@@ -45,25 +44,22 @@ function checkMetered(t, args, metered) {
 }
 
 async function doTest(t, metered) {
-  const pool = tmp.dirSync({ unsafeCleanup: true });
-  t.teardown(() => pool.removeCallback());
-  await fs.promises.mkdir(pool.name, { recursive: true });
-  const store = makeSnapStore(pool.name, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const store = makeSnapStore(db, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);
-  let snapshotHash;
-  const worker1 = await start1('name', handleCommand, metered, snapshotHash);
+  const worker1 = await start1('vat', 'name', handleCommand, metered, false);
   const spawnArgs1 = await p1;
   checkMetered(t, spawnArgs1, metered);
   await worker1.evaluate('1+2');
   t.teardown(() => worker1.close());
 
   // now extract a snapshot
-  ({ hash: snapshotHash } = await store.save(worker1.snapshot));
+  await store.saveSnapshot('vat', 1, worker1.snapshot);
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);
-  const worker2 = await start2('name', handleCommand, metered, snapshotHash);
+  const worker2 = await start2('vat', 'name', handleCommand, metered, true);
   const spawnArgs2 = await p2;
   checkMetered(t, spawnArgs2, metered);
   await worker2.evaluate('1+2');

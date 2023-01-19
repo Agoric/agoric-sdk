@@ -125,9 +125,9 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
-    const lastSnapshot = vatKeeper.getLastSnapshot();
+    const snapshotInfo = vatKeeper.getSnapshotInfo();
     await manager.replayTranscript(
-      lastSnapshot ? lastSnapshot.startPos : undefined,
+      snapshotInfo ? snapshotInfo.endPos : undefined,
     );
 
     const result = {

@@ -22,6 +22,8 @@
   },
   "devDependencies": {
     "@types/microtime": "^2.1.0",
+    "better-sqlite3": "^7.5.0",
+    "@types/better-sqlite3": "^7.5.0",
     "@types/tmp": "^0.2.0",
     "tmp": "^0.2.1"
   },

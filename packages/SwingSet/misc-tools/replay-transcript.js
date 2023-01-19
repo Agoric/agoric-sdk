@@ -7,7 +7,6 @@ import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 import { spawn } from 'child_process';
-import path from 'path';
 import { promisify } from 'util';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream';
@@ -63,11 +62,8 @@ function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
-    fsync: fs.fsync,
     measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
-    rename: fs.promises.rename,
-    resolve: path.resolve,
     stat: fs.promises.stat,
     tmpFile,
     tmpName,

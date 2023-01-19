@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import tmp from 'tmp';
+import sqlite3 from 'better-sqlite3';
 import {
   initSwingStore,
   makeSnapStore,
@@ -23,9 +23,8 @@ test('vat reload from snapshot', async t => {
     },
   };
 
-  const snapstorePath = tmp.dirSync({ unsafeCleanup: true }).name;
-
-  const snapStore = makeSnapStore(snapstorePath, makeSnapStoreIO());
+  const db = sqlite3(':memory:');
+  const snapStore = makeSnapStore(db, makeSnapStoreIO());
   const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
   const argv = [];
@@ -36,14 +35,11 @@ test('vat reload from snapshot', async t => {
   const vatID = c1.vatNameToID('target');
 
   function getPositions() {
-    const lastSnapshot = kernelStorage.kvStore.get(
-      `local.${vatID}.lastSnapshot`,
-    );
-    const start = lastSnapshot
-      ? JSON.parse(lastSnapshot).startPos.itemCount
-      : 0;
+    const snapshotInfo = snapStore.getSnapshotInfo(vatID);
+
+    const start = snapshotInfo ? snapshotInfo.endPos : 0;
     const endPosition = kernelStorage.kvStore.get(`${vatID}.t.endPosition`);
-    const end = JSON.parse(endPosition).itemCount;
+    const end = Number(endPosition);
     return [start, end];
   }
 

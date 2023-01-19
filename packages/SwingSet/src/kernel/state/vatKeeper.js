@@ -45,14 +45,8 @@ export function initializeVatState(kvStore, streamStore, vatID) {
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
   kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   kvStore.set(`${vatID}.incarnationNumber`, `1`);
-  kvStore.set(
-    `${vatID}.t.startPosition`,
-    `${JSON.stringify(streamStore.STREAM_START)}`,
-  );
-  kvStore.set(
-    `${vatID}.t.endPosition`,
-    `${JSON.stringify(streamStore.STREAM_START)}`,
-  );
+  kvStore.set(`${vatID}.t.startPosition`, `${streamStore.STREAM_START}`);
+  kvStore.set(`${vatID}.t.endPosition`, `${streamStore.STREAM_START}`);
 }
 
 /**
@@ -486,9 +480,9 @@ export function makeVatKeeper(
    */
   function* getTranscript(startPos) {
     if (startPos === undefined) {
-      startPos = JSON.parse(getRequired(`${vatID}.t.startPosition`));
+      startPos = Number(getRequired(`${vatID}.t.startPosition`));
     }
-    const endPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));
+    const endPos = Number(getRequired(`${vatID}.t.endPosition`));
     for (const entry of streamStore.readStream(
       transcriptStream,
       /** @type { StreamPosition } */ (startPos),
@@ -504,88 +498,32 @@ export function makeVatKeeper(
    * @param {object} entry  The transcript entry to append.
    */
   function addToTranscript(entry) {
-    const oldPos = JSON.parse(getRequired(`${vatID}.t.endPosition`));
+    const oldPos = Number(getRequired(`${vatID}.t.endPosition`));
     const newPos = streamStore.writeStreamItem(
       transcriptStream,
       JSON.stringify(entry),
       oldPos,
     );
-    kvStore.set(`${vatID}.t.endPosition`, `${JSON.stringify(newPos)}`);
+    kvStore.set(`${vatID}.t.endPosition`, `${newPos}`);
   }
 
   /** @returns {StreamPosition} */
   function getTranscriptEndPosition() {
-    return JSON.parse(
+    const endPosition =
       kvStore.get(`${vatID}.t.endPosition`) ||
-        assert.fail('missing endPosition'),
-    );
+      assert.fail('missing endPosition');
+    return Number(endPosition);
   }
 
-  /**
-   * @returns {{ snapshotID: string, startPos: StreamPosition } | undefined}
-   */
-  function getLastSnapshot() {
-    const notation = kvStore.get(`local.${vatID}.lastSnapshot`);
-    if (!notation) {
-      return undefined;
-    }
-    const { snapshotID, startPos } = JSON.parse(notation);
-    assert.typeof(snapshotID, 'string');
-    assert(startPos);
-    return { snapshotID, startPos };
+  function getSnapshotInfo() {
+    return snapStore?.getSnapshotInfo(vatID);
   }
 
   function transcriptSnapshotStats() {
-    const totalEntries = getTranscriptEndPosition().itemCount;
-    const lastSnapshot = getLastSnapshot();
-    const snapshottedEntries = lastSnapshot
-      ? lastSnapshot.startPos.itemCount
-      : 0;
+    const totalEntries = getTranscriptEndPosition();
+    const snapshotInfo = getSnapshotInfo();
+    const snapshottedEntries = snapshotInfo ? snapshotInfo.endPos : 0;
     return { totalEntries, snapshottedEntries };
-  }
-
-  /**
-   * Add vatID to consumers of a snapshot.
-   *
-   * @param {string} snapshotID
-   */
-  function addToSnapshot(snapshotID) {
-    const key = `local.snapshot.${snapshotID}`;
-    const consumers = JSON.parse(kvStore.get(key) || '[]');
-    assert(Array.isArray(consumers));
-
-    // We can't completely rule out the possibility that
-    // a vat will use the same snapshot twice in a row.
-    //
-    // PERFORMANCE NOTE: we assume consumer lists are short;
-    // usually length 1. So O(n) search here is better
-    // than keeping the list sorted.
-    if (!consumers.includes(vatID)) {
-      consumers.push(vatID);
-      kvStore.set(key, JSON.stringify(consumers));
-      // console.log('addToSnapshot result:', { vatID, snapshotID, consumers });
-    }
-  }
-
-  /**
-   * Remove vatID from consumers of a snapshot.
-   *
-   * @param {string} snapshotID
-   */
-  function removeFromSnapshot(snapshotID) {
-    const key = `local.snapshot.${snapshotID}`;
-    const consumersJSON = kvStore.get(key);
-    if (!consumersJSON) {
-      throw Fail`cannot remove ${vatID}: ${key} key not defined`;
-    }
-    const consumers = JSON.parse(consumersJSON);
-    assert(Array.isArray(consumers));
-    const ix = consumers.indexOf(vatID);
-    assert(ix >= 0);
-    consumers.splice(ix, 1);
-    // console.log('removeFromSnapshot done:', { vatID, snapshotID, consumers });
-    kvStore.set(key, JSON.stringify(consumers));
-    return consumers.length;
   }
 
   /**
@@ -599,56 +537,38 @@ export function makeVatKeeper(
       return false;
     }
 
-    const info = await manager.makeSnapshot(snapStore);
+    const endPosition = getTranscriptEndPosition();
+    const info = await manager.makeSnapshot(endPosition, snapStore);
     const {
-      hash: snapshotID,
-      newFile,
-      rawByteCount,
+      hash,
+      uncompressedSize,
       rawSaveSeconds,
-      compressedByteCount,
+      compressedSize,
       compressSeconds,
     } = info;
-    const old = getLastSnapshot();
-    if (old && old.snapshotID !== snapshotID) {
-      if (removeFromSnapshot(old.snapshotID) === 0) {
-        snapStore.prepareToDelete(old.snapshotID);
-      }
-    }
-    const endPosition = getTranscriptEndPosition();
-    kvStore.set(
-      `local.${vatID}.lastSnapshot`,
-      JSON.stringify({ snapshotID, startPos: endPosition }),
-    );
-    addToSnapshot(snapshotID);
     kernelSlog.write({
       type: 'heap-snapshot-save',
       vatID,
-      snapshotID,
-      newFile,
-      rawByteCount,
+      hash,
+      uncompressedSize,
       rawSaveSeconds,
-      compressedByteCount,
+      compressedSize,
       compressSeconds,
       endPosition,
     });
     return true;
   }
 
-  function removeSnapshotAndTranscript() {
-    const skey = `local.${vatID}.lastSnapshot`;
+  function deleteSnapshots() {
     if (snapStore) {
-      const notation = kvStore.get(skey);
-      if (notation) {
-        const { snapshotID } = JSON.parse(notation);
-        if (removeFromSnapshot(snapshotID) === 0) {
-          // TODO: if we roll back (because the upgrade failed), we must
-          // not really delete the snapshot
-          snapStore.prepareToDelete(snapshotID);
-        }
-        kvStore.delete(skey);
-      }
+      snapStore.deleteVatSnapshots(vatID);
     }
-    // TODO: same rollback concern
+  }
+
+  function removeSnapshotAndTranscript() {
+    if (snapStore) {
+      snapStore.deleteVatSnapshots(vatID);
+    }
 
     const endPos = getRequired(`${vatID}.t.endPosition`);
     kvStore.set(`${vatID}.t.startPosition`, endPos);
@@ -663,12 +583,8 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const startCount = JSON.parse(
-      getRequired(`${vatID}.t.startPosition`),
-    ).itemCount;
-    const endCount = JSON.parse(
-      getRequired(`${vatID}.t.endPosition`),
-    ).itemCount;
+    const startCount = Number(getRequired(`${vatID}.t.startPosition`));
+    const endCount = Number(getRequired(`${vatID}.t.endPosition`));
     const transcriptCount = endCount - startCount;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
@@ -730,8 +646,8 @@ export function makeVatKeeper(
     vatStats,
     dumpState,
     saveSnapshot,
-    getLastSnapshot,
-    removeFromSnapshot,
+    deleteSnapshots,
+    getSnapshotInfo,
     removeSnapshotAndTranscript,
   });
 }

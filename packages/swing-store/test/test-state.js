@@ -117,13 +117,13 @@ async function testStreamStore(t, dbDir) {
   let s1pos = start;
   s1pos = streamStore.writeStreamItem('st1', 'first', s1pos);
   s1pos = streamStore.writeStreamItem('st1', 'second', s1pos);
-  const s1posAlt = { ...s1pos };
+  const s1posAlt = s1pos;
   s1pos = streamStore.writeStreamItem('st1', 'third', s1pos);
   let s2pos = streamStore.STREAM_START;
   s2pos = streamStore.writeStreamItem('st2', 'oneth', s2pos);
   s1pos = streamStore.writeStreamItem('st1', 'fourth', s1pos);
   s2pos = streamStore.writeStreamItem('st2', 'twoth', s2pos);
-  const s2posAlt = { ...s2pos };
+  const s2posAlt = s2pos;
   s2pos = streamStore.writeStreamItem('st2', 'threeth', s2pos);
   s2pos = streamStore.writeStreamItem('st2', 'fourst', s2pos);
   streamStore.closeStream('st1');
