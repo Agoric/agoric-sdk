@@ -96,7 +96,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 
 /**
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @param {*} divideOp
  */
@@ -136,7 +136,7 @@ export const multiplyBy = (amount, ratio) => {
 
 /**
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @param {*} divideOp
  */

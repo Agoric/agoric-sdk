@@ -7,8 +7,14 @@ import { BASIS_POINTS } from './constantProduct/defaults.js';
  * into account, and not requiring a round trip to the chain.
  */
 
+/** @typedef {{ centralAmount: Amount<'nat'>, secondaryAmount: Amount<'nat'> }} Pool */
+
 const { ceilDivide, floorDivide } = natSafeMath;
 
+/**
+ * @param {bigint} chargeBP
+ * @param {Amount<'nat'>} amount
+ */
 export const charge = (chargeBP, amount) => {
   return AmountMath.make(
     amount.brand,
@@ -16,6 +22,10 @@ export const charge = (chargeBP, amount) => {
   );
 };
 
+/**
+ * @param {bigint} chargeBP
+ * @param {Amount<'nat'>} amount
+ */
 export const chargeFloor = (chargeBP, amount) => {
   return AmountMath.make(
     amount.brand,
@@ -26,7 +36,13 @@ export const chargeFloor = (chargeBP, amount) => {
 const makeEstimator = (centralBrand, rates) => {
   const { poolFeeBP, protocolFeeBP, slippageBP } = rates;
 
-  // Proceeds less slippage when specifying the amount to add to a single pool
+  /**
+   * Proceeds less slippage when specifying the amount to add to a single pool
+   *
+   * @param {Amount<'nat'>} amountIn
+   * @param {Brand<'nat'>} brandOut
+   * @param {MapStore<Brand, Pool>} pools
+   */
   function estimateSinglePoolProceeds(amountIn, brandOut, pools) {
     const isCentralIn = amountIn.brand === centralBrand;
     const pool = isCentralIn ? pools.get(brandOut) : pools.get(amountIn.brand);
@@ -65,7 +81,13 @@ const makeEstimator = (centralBrand, rates) => {
     return amountReturned;
   }
 
-  // Payment w/slippage when specifying the amount to receive from a single pool
+  /**
+   * Payment w/slippage when specifying the amount to receive from a single pool
+   *
+   * @param {Brand<'nat'>} brandIn
+   * @param {Amount<'nat'>} amountOut
+   * @param {MapStore<Brand, Pool>} pools
+   */
   function estimateSinglePoolRequired(brandIn, amountOut, pools) {
     const isCentralIn = brandIn === centralBrand;
     const pool = isCentralIn ? pools.get(amountOut.brand) : pools.get(brandIn);

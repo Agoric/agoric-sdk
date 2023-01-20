@@ -56,7 +56,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   brands: BrandDescriptor[],
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: Record<number, Amount>,
- *   lastOfferId: number,
+ *   lastOfferId: string,
  * }} CurrentWalletRecord
  */
 
@@ -277,6 +277,7 @@ const SmartWalletKit = defineVirtualFarClassKit(
             balance: a,
           })),
           offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
+          // @ts-expect-error FIXME leftover from offer id string conversion
           lastOfferId: ERROR_LAST_OFFER_ID,
         });
       },

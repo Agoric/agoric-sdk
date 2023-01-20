@@ -85,7 +85,7 @@
 
 /**
  * @callback ScaleAmount
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @returns {Amount<'nat'>}
  */

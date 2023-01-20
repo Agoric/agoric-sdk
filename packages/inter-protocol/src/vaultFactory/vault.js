@@ -166,10 +166,10 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
 /**
  * Check whether we can proceed with an `adjustBalances`.
  *
- * @param {Amount} newCollateralPre
- * @param {Amount} maxDebtPre
- * @param {Amount} newCollateral
- * @param {Amount} newDebt
+ * @param {Amount<'nat'>} newCollateralPre
+ * @param {Amount<'nat'>} maxDebtPre
+ * @param {Amount<'nat'>} newCollateral
+ * @param {Amount<'nat'>} newDebt
  * @returns {boolean}
  */
 const checkRestart = (newCollateralPre, maxDebtPre, newCollateral, newDebt) => {
