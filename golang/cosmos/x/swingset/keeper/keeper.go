@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"math"
+	"strconv"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -20,7 +20,7 @@ import (
 )
 
 // Top-level paths for chain storage should remain synchronized with
-// packages/vats/src/chain-storage-paths.js
+// packages/internal/src/chain-storage-paths.js
 const (
 	StoragePathActionQueue  = "actionQueue"
 	StoragePathActivityhash = "activityhash"

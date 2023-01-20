@@ -20,7 +20,7 @@ import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
 import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 
-import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
