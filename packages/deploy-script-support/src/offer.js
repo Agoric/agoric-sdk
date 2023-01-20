@@ -2,19 +2,32 @@ import { E } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+
+/**
+ * @typedef {object} OfferHelperConfig
+ * @property {ERef<Invitation>=} invitation
+ * @property {Partial<InvitationDetails>=} partialInvitationDetails
+ * @property {Proposal} proposal
+ * @property {Record<Keyword, Petname>} paymentsWithPursePetnames
+ * @property {Record<Keyword, Petname>} payoutPursePetnames
+ */
+
 /**
  * @param {ERef<any>} walletAdmin - an internal type of the
  * wallet, not defined here
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Purse>} zoeInvitationPurse
- * @returns {{ offer: OfferHelper, findInvitationAmount: FindInvitationAmount }}
  */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
   zoe,
   zoeInvitationPurse,
 ) => {
-  /** @type {FindInvitationAmount} */
+  /**
+   * @param {Record<string, any>} invitationDetailsCriteria
+   * @returns {Promise<Amount>} invitationAmount
+   */
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();
 
@@ -86,7 +99,9 @@ export const makeOfferAndFindInvitationAmount = (
     return E.when(paymentsPP, handlePayments);
   };
 
-  /** @type {OfferHelper} */
+  /**
+   * @param {OfferHelperConfig} config
+   */
   const offer = async config => {
     const {
       invitation,

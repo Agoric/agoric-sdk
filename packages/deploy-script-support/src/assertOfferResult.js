@@ -1,7 +1,11 @@
 import { Fail } from '@agoric/assert';
 import { E } from '@endo/far';
 
-/** @type {AssertOfferResult} */
+/**
+ * @param {ERef<UserSeat>} seat
+ * @param {string} expectedOfferResult
+ * @returns {Promise<void>}
+ */
 export const assertOfferResult = async (seat, expectedOfferResult) => {
   const actualOfferResult = await E(seat).getOfferResult();
   actualOfferResult === expectedOfferResult ||
