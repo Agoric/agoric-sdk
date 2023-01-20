@@ -35,6 +35,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'wallet',
   );
 
+  const assetPublisher = await E(consume.bankManager).getBankForAddress(
+    'anyAddress',
+  );
   const bridgeManager = await consume.bridgeManager;
   const walletBridgeManager = await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET));
@@ -44,6 +47,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     {
       agoricNames,
       board: consume.board,
+      assetPublisher,
     },
     { storageNode, walletBridgeManager },
   );

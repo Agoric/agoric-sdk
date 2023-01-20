@@ -5,11 +5,12 @@
  */
 
 import { WalletName } from '@agoric/internal';
-import { fit, M, makeHeapFarInstance } from '@agoric/store';
+import { fit, M, makeHeapFarInstance, makeScalarMapStore } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
-import { E } from '@endo/far';
+import { observeIteration } from '@agoric/notifier';
+import { E, Far } from '@endo/far';
 import { makeSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
@@ -18,14 +19,15 @@ import '@agoric/vats/exported.js';
 
 export const privateArgsShape = harden(
   M.splitRecord(
-    { storageNode: M.eref(M.any()) },
-    { walletBridgeManager: M.eref(M.any()) },
+    { storageNode: M.eref(M.remotable('StorageNode')) },
+    { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
   ),
 );
 
 export const customTermsShape = harden({
-  agoricNames: M.not(M.undefined()),
-  board: M.not(M.undefined()),
+  agoricNames: M.eref(M.remotable('agoricNames')),
+  board: M.eref(M.remotable('board')),
+  assetPublisher: M.eref(M.remotable('Bank')),
 });
 
 /**
@@ -57,16 +59,67 @@ export const publishDepositFacet = async (
 };
 
 /**
+ * @param {AssetPublisher} assetPublisher
+ */
+const makeAssetRegistry = assetPublisher => {
+  /**
+   * @typedef {{
+   *   brand: Brand,
+   *   displayInfo: DisplayInfo,
+   *   issuer: Issuer,
+   *   petname: import('./types').Petname
+   * }} BrandDescriptor
+   * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
+   */
+  /** @type {MapStore<Brand, BrandDescriptor>} */
+  const brandDescriptors = makeScalarMapStore();
+
+  // watch the bank for new issuers to make purses out of
+  void observeIteration(E(assetPublisher).getAssetSubscription(), {
+    async updateState(desc) {
+      const { brand, issuer: issuerP, issuerName: petname } = desc;
+      // await issuer identity for use in chainStorage
+      const [issuer, displayInfo] = await Promise.all([
+        issuerP,
+        E(brand).getDisplayInfo(),
+      ]);
+
+      brandDescriptors.init(desc.brand, {
+        brand,
+        issuer,
+        petname,
+        displayInfo,
+      });
+    },
+  });
+
+  // XXX marshal requires Far, but clients make sync calls
+  const registry = Far('AssetRegistry', {
+    /** @param {Brand} brand */
+    getRegisteredAsset: brand => {
+      return brandDescriptors.get(brand);
+    },
+    getRegisteredBrands: () => [...brandDescriptors.values()],
+  });
+  return registry;
+};
+
+/**
  * @typedef {{
  *   agoricNames: ERef<NameHub>,
  *   board: ERef<import('@agoric/vats').Board>,
+ *   assetPublisher: AssetPublisher,
  * }} SmartWalletContractTerms
  *
  * @typedef {import('@agoric/vats').NameHub} NameHub
+ *
+ * @typedef {{
+ *   getAssetSubscription: () => ERef<Subscription<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
+ * }} AssetPublisher
  */
 
 // NB: even though all the wallets share this contract, they
-// 1. they should rely on that; they may be partitioned later
+// 1. they should not rely on that; they may be partitioned later
 // 2. they should never be able to detect behaviors from another wallet
 /**
  *
@@ -77,7 +130,7 @@ export const publishDepositFacet = async (
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  const { agoricNames, board } = zcf.getTerms();
+  const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager } = privateArgs;
@@ -122,19 +175,28 @@ export const start = async (zcf, privateArgs) => {
     E(walletBridgeManager).setHandler(handleWalletAction));
 
   // Resolve these first because the wallet maker must be synchronous
-  const getInvitationIssuer = E(zoe).getInvitationIssuer();
-  const [invitationIssuer, invitationBrand, publicMarshaller] =
-    await Promise.all([
-      getInvitationIssuer,
-      E(getInvitationIssuer).getBrand(),
-      E(board).getReadonlyMarshaller(),
-    ]);
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
+  const [
+    invitationIssuer,
+    invitationBrand,
+    invitationDisplayInfo,
+    publicMarshaller,
+  ] = await Promise.all([
+    invitationIssuerP,
+    E(invitationIssuerP).getBrand(),
+    E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
+    E(board).getReadonlyMarshaller(),
+  ]);
+
+  const registry = makeAssetRegistry(assetPublisher);
 
   const shared = harden({
     agoricNames,
     invitationBrand,
+    invitationDisplayInfo,
     invitationIssuer,
     publicMarshaller,
+    registry,
     storageNode,
     zoe,
   });
@@ -144,9 +206,9 @@ export const start = async (zcf, privateArgs) => {
     M.interface('walletFactoryCreatorI', {
       provideSmartWallet: M.callWhen(
         M.string(),
-        M.await(M.remotable()),
-        M.await(M.remotable()),
-      ).returns([M.remotable(), M.boolean()]),
+        M.await(M.remotable('Bank')),
+        M.await(M.remotable('namesByAddressAdmin')),
+      ).returns([M.remotable('SmartWallet'), M.boolean()]),
     }),
     {
       /**
