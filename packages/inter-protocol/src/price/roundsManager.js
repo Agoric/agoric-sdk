@@ -3,7 +3,7 @@ import { AmountMath } from '@agoric/ertp';
 import { isNat, Nat } from '@agoric/nat';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 import {
-  defineDurableFarClassKit,
+  makeDurableExoKitFactory,
   M,
   makeKindHandle,
   makeScalarBigMapStore,
@@ -94,7 +94,7 @@ const validRoundId = roundId => {
  */
 /** @typedef {ImmutableState & MutableState} State */
 
-export const makeRoundsManagerKit = defineDurableFarClassKit(
+export const makeRoundsManagerKit = makeDurableExoKitFactory(
   roundsManagerKind,
   {
     helper: UnguardedHelperI,

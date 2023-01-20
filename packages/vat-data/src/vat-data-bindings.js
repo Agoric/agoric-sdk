@@ -45,7 +45,7 @@ if ('VatData' in globalThis) {
 }
 
 /**
- * @deprecated Use FarClasses/FarInstances instead of kinds
+ * @deprecated Use Exo/ExoFactory/ExoKitFactory instead of kinds
  */
 export const {
   defineKind,

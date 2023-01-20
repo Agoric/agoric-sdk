@@ -3,7 +3,7 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  vivifyFarInstance,
+  defineExo,
   vivifyKind,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
@@ -102,7 +102,7 @@ export const makeInstallationStorage = (
     ),
   });
 
-  const installationStorage = vivifyFarInstance(
+  const installationStorage = defineExo(
     zoeBaggage,
     'InstallationStorage',
     InstallationStorageI,

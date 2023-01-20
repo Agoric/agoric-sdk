@@ -4,7 +4,7 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  vivifyFarClass,
+  defineExoFactory,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 
@@ -43,7 +43,7 @@ export const makeStartInstance = (
     seatHandleToZoeSeatAdmin,
   );
 
-  const makeZoeInstanceAdmin = vivifyFarClass(
+  const makeZoeInstanceAdmin = defineExoFactory(
     zoeBaggage,
     'zoeInstanceAdmin',
     InstanceAdminI,
@@ -143,7 +143,7 @@ export const makeStartInstance = (
   );
 
   const vivifyEmptyFacet = facetName =>
-    vivifyFarClass(
+    defineExoFactory(
       zoeBaggage,
       facetName,
       M.interface(facetName, {}),
@@ -153,7 +153,7 @@ export const makeStartInstance = (
   const makeEmptyCreatorFacet = vivifyEmptyFacet('emptyCreatorFacet');
   const makeEmptyPublicFacet = vivifyEmptyFacet('emptyPublicFacet');
 
-  const makeAdminFacet = vivifyFarClass(
+  const makeAdminFacet = defineExoFactory(
     zoeBaggage,
     'adminFacet',
     AdminFacetI,

@@ -3,9 +3,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  defineVirtualFarClass,
-  defineVirtualFarClassKit,
-} from '../src/far-class-utils.js';
+  makeVirtualExoFactory,
+  makeVirtualExoKitFactory,
+} from '../src/exo-utils.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
@@ -21,8 +21,8 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test defineVirtualFarClass', t => {
-  const makeUpCounter = defineVirtualFarClass(
+test('test makeVirtualExoFactory', t => {
+  const makeUpCounter = makeVirtualExoFactory(
     'UpCounter',
     UpCounterI,
     /** @param {number} x */
@@ -52,8 +52,8 @@ test('test defineVirtualFarClass', t => {
   makeUpCounter('str');
 });
 
-test('test defineVirtualFarClassKit', t => {
-  const makeCounterKit = defineVirtualFarClassKit(
+test('test makeVirtualExoKitFactory', t => {
+  const makeCounterKit = makeVirtualExoKitFactory(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} x */

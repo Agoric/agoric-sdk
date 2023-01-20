@@ -7,7 +7,7 @@ import {
   SubscriberShape,
   vivifyDurablePublishKit,
 } from '@agoric/notifier';
-import { M, vivifyFarClassKit } from '@agoric/vat-data';
+import { M, defineExoKitFactory } from '@agoric/vat-data';
 import { makeEphemeraProvider } from '../contractSupport.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
@@ -49,7 +49,7 @@ export const vivifyVaultHolder = baggage => {
     'Vault Holder publish kit',
   );
 
-  const makeVaultHolderKit = vivifyFarClassKit(
+  const makeVaultHolderKit = defineExoKitFactory(
     baggage,
     'Vault Holder',
     {

@@ -1,6 +1,6 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { M, vivifyFarClassKit } from '@agoric/vat-data';
+import { M, defineExoKitFactory } from '@agoric/vat-data';
 import {
   assertProposalShape,
   atomicTransfer,
@@ -215,8 +215,8 @@ export const VaultI = M.interface('Vault', {
 export const vivifyVault = baggage => {
   const makeVaultKit = vivifyVaultKit(baggage);
 
-  // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
-  const maker = vivifyFarClassKit(
+  // TODO find a way to not have to indent a level deeper than makeDurableExoKitFactory does
+  const maker = defineExoKitFactory(
     baggage,
     'Vault',
     {

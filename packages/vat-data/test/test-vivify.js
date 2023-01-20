@@ -3,10 +3,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  vivifyFarClass,
-  vivifyFarClassKit,
-  vivifyFarInstance,
-} from '../src/far-class-utils.js';
+  defineExoFactory,
+  defineExoKitFactory,
+  defineExo,
+} from '../src/exo-utils.js';
 import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
 
 const UpCounterI = M.interface('UpCounter', {
@@ -23,10 +23,10 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test vivifyFarClass', t => {
+test('test defineExoFactory', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
-  const makeUpCounter = vivifyFarClass(
+  const makeUpCounter = defineExoFactory(
     baggage,
     'UpCounter',
     UpCounterI,
@@ -57,10 +57,10 @@ test('test vivifyFarClass', t => {
   makeUpCounter('str');
 });
 
-test('test vivifyFarClassKit', t => {
+test('test defineExoKitFactory', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
-  const makeCounterKit = vivifyFarClassKit(
+  const makeCounterKit = defineExoKitFactory(
     baggage,
     'Counter',
     { up: UpCounterI, down: DownCounterI },
@@ -105,11 +105,11 @@ test('test vivifyFarClassKit', t => {
   makeCounterKit('str');
 });
 
-test('test vivifyFarInstance', t => {
+test('test defineExo', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
   let x = 3;
-  const upCounter = vivifyFarInstance(baggage, 'upCounter', UpCounterI, {
+  const upCounter = defineExo(baggage, 'upCounter', UpCounterI, {
     incr(y = 1) {
       x += y;
       return x;

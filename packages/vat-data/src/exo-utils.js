@@ -28,7 +28,7 @@ import {
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineVirtualFarClass = (
+export const makeVirtualExoFactory = (
   tag,
   interfaceGuard,
   init,
@@ -42,7 +42,7 @@ export const defineVirtualFarClass = (
     thisfulMethods: true,
     interfaceGuard,
   });
-harden(defineVirtualFarClass);
+harden(makeVirtualExoFactory);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -55,7 +55,7 @@ harden(defineVirtualFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineVirtualFarClassKit = (
+export const makeVirtualExoKitFactory = (
   tag,
   interfaceGuardKit,
   init,
@@ -69,7 +69,7 @@ export const defineVirtualFarClassKit = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(defineVirtualFarClassKit);
+harden(makeVirtualExoKitFactory);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -82,7 +82,7 @@ harden(defineVirtualFarClassKit);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineDurableFarClass = (
+export const makeDurableExoFactory = (
   kindHandle,
   interfaceGuard,
   init,
@@ -96,7 +96,7 @@ export const defineDurableFarClass = (
     thisfulMethods: true,
     interfaceGuard,
   });
-harden(defineDurableFarClass);
+harden(makeDurableExoFactory);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -109,7 +109,7 @@ harden(defineDurableFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I>}>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineDurableFarClassKit = (
+export const makeDurableExoKitFactory = (
   kindHandle,
   interfaceGuardKit,
   init,
@@ -123,7 +123,7 @@ export const defineDurableFarClassKit = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(defineDurableFarClassKit);
+harden(makeDurableExoKitFactory);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -137,7 +137,7 @@ harden(defineDurableFarClassKit);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const vivifyFarClass = (
+export const defineExoFactory = (
   baggage,
   kindName,
   interfaceGuard,
@@ -145,14 +145,14 @@ export const vivifyFarClass = (
   methods,
   options = undefined,
 ) =>
-  defineDurableFarClass(
+  makeDurableExoFactory(
     provideKindHandle(baggage, kindName),
     interfaceGuard,
     init,
     methods,
     options,
   );
-harden(vivifyFarClass);
+harden(defineExoFactory);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -166,7 +166,7 @@ harden(vivifyFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const vivifyFarClassKit = (
+export const defineExoKitFactory = (
   baggage,
   kindName,
   interfaceGuardKit,
@@ -174,14 +174,14 @@ export const vivifyFarClassKit = (
   facets,
   options = undefined,
 ) =>
-  defineDurableFarClassKit(
+  makeDurableExoKitFactory(
     provideKindHandle(baggage, kindName),
     interfaceGuardKit,
     init,
     facets,
     options,
   );
-harden(vivifyFarClassKit);
+harden(defineExoKitFactory);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -194,14 +194,14 @@ harden(vivifyFarClassKit);
  * @param {DefineKindOptions<{ self: M }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const vivifyFarInstance = (
+export const defineExo = (
   baggage,
   kindName,
   interfaceGuard,
   methods,
   options = undefined,
 ) => {
-  const makeSingleton = vivifyFarClass(
+  const makeSingleton = defineExoFactory(
     baggage,
     kindName,
     interfaceGuard,
@@ -214,10 +214,10 @@ export const vivifyFarInstance = (
   // @ts-ignore could be instantiated with an arbitrary type
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
-harden(vivifyFarInstance);
+harden(defineExo);
 
 /**
- * @deprecated Use vivifyFarInstance instead.
+ * @deprecated Use defineExo instead.
  * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {Baggage} baggage
  * @param {string} kindName
@@ -230,5 +230,5 @@ export const vivifySingleton = (
   kindName,
   methods,
   options = undefined,
-) => vivifyFarInstance(baggage, kindName, undefined, methods, options);
+) => defineExo(baggage, kindName, undefined, methods, options);
 harden(vivifySingleton);

@@ -3,7 +3,7 @@ import {
   makeScalarBigWeakMapStore,
   provideDurableMapStore,
   provideDurableWeakMapStore,
-  vivifyFarClassKit,
+  defineExoKitFactory,
   vivifyKind,
   provide,
 } from '@agoric/vat-data';
@@ -263,7 +263,7 @@ export const createSeatManager = (
     }),
   });
 
-  const makeSeatManagerKit = vivifyFarClassKit(
+  const makeSeatManagerKit = defineExoKitFactory(
     zcfBaggage,
     'ZcfSeatManager',
     ZcfSeatManagerIKit,

@@ -22,7 +22,7 @@ import {
   vivifyDurablePublishKit,
 } from '@agoric/notifier';
 import {
-  defineDurableFarClassKit,
+  makeDurableExoKitFactory,
   makeKindHandle,
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
@@ -276,7 +276,7 @@ const finish = async ({ state }) => {
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const makeVaultDirector = defineDurableFarClassKit(
+const makeVaultDirector = makeDurableExoKitFactory(
   makeKindHandle('VaultDirector'),
   {
     creator: M.interface('creator', {

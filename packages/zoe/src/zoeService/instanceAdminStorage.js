@@ -4,7 +4,7 @@ import {
   makeScalarBigSetStore,
   provide,
   provideDurableWeakMapStore,
-  vivifyFarClassKit,
+  defineExoKitFactory,
   vivifyKindMulti,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
@@ -50,7 +50,7 @@ const InstanceAdminStorageIKit = harden({
 
 /** @param {import('@agoric/vat-data').Baggage} baggage */
 export const makeInstanceAdminStorage = baggage => {
-  const makeIAS = vivifyFarClassKit(
+  const makeIAS = defineExoKitFactory(
     baggage,
     'InstanceAdmin',
     InstanceAdminStorageIKit,

@@ -16,7 +16,7 @@ import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore, vivifyFarInstance } from '@agoric/vat-data';
+import { makeScalarBigMapStore, defineExo } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
@@ -156,7 +156,7 @@ const makeZoeKit = (
   };
 
   /** @type {ZoeService} */
-  const zoeService = vivifyFarInstance(zoeBaggage, 'ZoeService', ZoeServiceI, {
+  const zoeService = defineExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
     install(bundleId) {
       return dataAccess.installBundle(bundleId);
     },

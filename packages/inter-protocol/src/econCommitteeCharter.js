@@ -1,5 +1,5 @@
 import '@agoric/governance/exported.js';
-import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
+import { makeScalarMapStore, M, makeHeapExo, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
@@ -89,14 +89,10 @@ export const start = async zcf => {
       TimestampShape,
     ).returns(M.promise()),
   });
-  const invitationMakers = makeHeapFarInstance(
-    'Charter Invitation Makers',
-    MakerI,
-    {
-      VoteOnParamChange: makeParamInvitation,
-      VoteOnPauseOffers: makeOfferFilterInvitation,
-    },
-  );
+  const invitationMakers = makeHeapExo('Charter Invitation Makers', MakerI, {
+    VoteOnParamChange: makeParamInvitation,
+    VoteOnPauseOffers: makeOfferFilterInvitation,
+  });
 
   const charterMemberHandler = seat => {
     seat.exit();
@@ -110,23 +106,19 @@ export const start = async zcf => {
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
-  const creatorFacet = makeHeapFarInstance(
-    'Charter creatorFacet',
-    charterCreatorI,
-    {
-      /**
-       * @param {Instance} governedInstance
-       * @param {GovernedContractFacetAccess<{},{}>} governorFacet
-       * @param {string} [label] for diagnostic use only
-       */
-      addInstance: (governedInstance, governorFacet, label) => {
-        console.log('charter: adding instance', label);
-        instanceToGovernor.init(governedInstance, governorFacet);
-      },
-      makeCharterMemberInvitation: () =>
-        zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
+  const creatorFacet = makeHeapExo('Charter creatorFacet', charterCreatorI, {
+    /**
+     * @param {Instance} governedInstance
+     * @param {GovernedContractFacetAccess<{},{}>} governorFacet
+     * @param {string} [label] for diagnostic use only
+     */
+    addInstance: (governedInstance, governorFacet, label) => {
+      console.log('charter: adding instance', label);
+      instanceToGovernor.init(governedInstance, governorFacet);
     },
-  );
+    makeCharterMemberInvitation: () =>
+      zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
+  });
 
   return harden({ creatorFacet });
 };

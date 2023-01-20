@@ -25,7 +25,7 @@ import {
   M,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
-  vivifyFarClassKit,
+  defineExoKitFactory,
 } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -332,8 +332,8 @@ export const vivifyVaultManagerKit = baggage => {
     return state;
   };
 
-  // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
-  return vivifyFarClassKit(
+  // TODO find a way to not have to indent a level deeper than makeDurableExoKitFactory does
+  return defineExoKitFactory(
     baggage,
     'VaultManagerKit',
     {
