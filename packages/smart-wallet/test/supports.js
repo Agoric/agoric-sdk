@@ -1,4 +1,4 @@
-import * as ActionType from '@agoric/cosmic-swingset/src/action-types.js';
+import * as ActionType from '@agoric/internal/src/action-types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {

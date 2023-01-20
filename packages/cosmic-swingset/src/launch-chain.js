@@ -17,6 +17,7 @@ import {
 import { assert, Fail } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
@@ -33,7 +34,6 @@ import {
   BeansPerXsnapComputron,
   QueueInbound,
 } from './sim-params.js';
-import * as ActionType from './action-types.js';
 import { parseParams, serializeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
 
