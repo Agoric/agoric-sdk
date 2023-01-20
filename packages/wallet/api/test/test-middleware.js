@@ -6,7 +6,7 @@ import {
   makeExportContext,
   makeImportContext,
   makeLoggingPresence,
-} from '../src/marshal-contexts.js';
+} from '@agoric/smart-wallet/src/marshal-contexts.js';
 
 const capData1 = {
   body: JSON.stringify([

@@ -33,12 +33,12 @@ import {
 } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import { makeExportContext } from '@agoric/smart-wallet/src/marshal-contexts.js';
 import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
-import { makeExportContext } from './marshal-contexts.js';
 
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
