@@ -50,13 +50,8 @@ export const makeWalletCommand = async () => {
     )
     .option('--spend', 'confirm you want to spend')
     .option('--nickname [string]', 'nickname to use', 'my-wallet')
-    .action(function () {
-      const {
-        account,
-        nickname,
-        spend,
-        // @ts-expect-error this implicit any
-      } = this.opts();
+    .action(function (opts) {
+      const { account, nickname, spend } = opts;
       const { home, keyringBackend: backend } = wallet.opts();
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
@@ -94,13 +89,8 @@ export const makeWalletCommand = async () => {
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
     .option('--dry-run', 'spit out the command instead of running it')
-    .action(function () {
-      const {
-        dryRun,
-        from,
-        offer,
-        // @ts-expect-error this implicit any
-      } = this.opts();
+    .action(function (opts) {
+      const { dryRun, from, offer } = opts;
       const { home, keyringBackend: backend } = wallet.opts();
 
       const offerBody = fs.readFileSync(offer).toString();
@@ -130,10 +120,7 @@ export const makeWalletCommand = async () => {
       'wallet address literal or name',
       normalizeAddress,
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({
         fetch,
       });
@@ -176,9 +163,7 @@ export const makeWalletCommand = async () => {
       'address literal or name',
       normalizeAddress,
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const { from } = this.opts();
+    .action(async function ({ from }) {
       const spec = `:published.wallet.${from}`;
 
       const leaderOptions = makeLeaderOptions({
