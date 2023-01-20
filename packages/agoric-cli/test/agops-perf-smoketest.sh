@@ -28,13 +28,13 @@ set -x
 
 # NB: fee percentages must be at least the governed param values
 
-# FIXME this one failing with: Error: cannot grab 10002ibc/toyellie coins: 0ibc/toyellie is smaller than 10002ibc/toyellie: insufficient funds
+# NOTE: USDC_axl = ibc/usdt1234
 # perf test wantMinted
 OFFER=$(mktemp -t agops.XXX)
-bin/agops psm swap --wantMinted 0.01 --feePct 0.01 >|"$OFFER"
-time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$WALLET"
+bin/agops psm swap --wantMinted 0.01 --feePct 0.01 --pair IST.USDC_axl >|"$OFFER"
+time bin/agops perf satisfaction --keyring-backend="test" --executeOffer "$OFFER" --from "$WALLET"
 
 # perf test giveMinted
 OFFER=$(mktemp -t agops.XXX)
-bin/agops psm swap --giveMinted 0.01 --feePct 0.03 >|"$OFFER"
-time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$WALLET"
+bin/agops psm swap --giveMinted 0.01 --feePct 0.03 --pair IST.USDC_axl >|"$OFFER"
+time bin/agops perf satisfaction --keyring-backend="test" --executeOffer "$OFFER" --from "$WALLET"
