@@ -59,7 +59,6 @@
     "@endo/promise-kit": "^0.2.52"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.9.4",
     "@endo/captp": "^2.0.18",
     "@endo/init": "^0.5.52",
     "ava": "^5.1.0",

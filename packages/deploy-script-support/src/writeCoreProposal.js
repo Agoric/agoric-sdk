@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { E } from '@endo/far';
 
+import { createBundles } from '@agoric/internal/src/createBundles.js';
 import {
   deeplyFulfilled,
   defangAndTrim,
@@ -8,7 +9,6 @@ import {
   stringify,
 } from './code-gen.js';
 import { makeCoreProposalBehavior, permits } from './coreProposalBehavior.js';
-import { createBundles } from './createBundles.js';
 
 export const makeWriteCoreProposal = (
   homeP,

@@ -36,7 +36,7 @@
     "@endo/marshal": "^0.8.1"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.9.4",
+    "@agoric/internal": "^0.2.1",
     "@agoric/swingset-vat": "^0.30.2",
     "@endo/bundle-source": "^2.4.2",
     "@endo/init": "^0.5.52",
