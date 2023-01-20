@@ -10,7 +10,7 @@ export const makeNotifierIterable = notifier =>
   makeNotifier(E(notifier).getSharableNotifierInternals());
 
 /**
- * TODO: Remove this function when we have `makePublisherKit`.
+ * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
  *
  * @template T
  * @param {ERef<PublicationRecord<T>>} tailP
@@ -29,7 +29,7 @@ const makeSubscriptionIterator = tailP => {
 };
 
 /**
- * TODO: Remove this function when we have `makePublisherKit`.
+ * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
  *
  * @template T
  * @param {ERef<Subscription<T>>} subscription
@@ -60,7 +60,7 @@ export const mapAsyncIterable = (iterable, transform) => {
 };
 
 /**
- * TODO: Remove this function when we have `makePublisherKit`.
+ * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
  *
  * @template T
  * @param {ERef<import('./types').Follower<T>>} follower
@@ -79,7 +79,7 @@ export const iterateLatest = follower =>
   });
 
 /**
- * TODO: Remove this function when we have `makePublisherKit`.
+ * TODO: Remove this function when we have an @endo/publish-kit that suppports pull topics
  *
  * @template T
  * @param {ERef<import('./types.js').Follower<T>>} follower

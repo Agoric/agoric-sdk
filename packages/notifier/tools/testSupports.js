@@ -21,8 +21,9 @@ export const makeFakeStorage = (path, publication) => {
     storeSubkey: `swingset/data:${fullPath}`,
     dataPrefixBytes: '',
   });
-  /** @type {StorageNode} */
+  /** @type {StorageNode & { countSetValueCalls: () => number}} */
   const storage = Far('StorageNode', {
+    getPath: () => path,
     getStoreKey: async () => storeKey,
     setValue: async value => {
       setValueCalls += 1;

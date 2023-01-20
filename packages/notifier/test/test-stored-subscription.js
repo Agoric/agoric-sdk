@@ -148,19 +148,16 @@ test('stored subscriber with setValue failure', async t => {
 
   makeStoredSubscriber(subscriber, storage, makeFakeMarshaller());
 
-  // @ts-expect-error test
   t.is(storage.countSetValueCalls(), 0);
   publisher.publish(initialValue); // fails setValue
   // should increment
   await eventLoopIteration();
-  // @ts-expect-error test
   t.is(storage.countSetValueCalls(), 1);
 
   // stops trying after a failure
   publisher.publish(initialValue); // fails setValue
   // should not increment
   await eventLoopIteration();
-  // @ts-expect-error test
   t.is(storage.countSetValueCalls(), 1);
 });
 
@@ -175,6 +172,7 @@ test('StoredPublisher', async t => {
 
   const { subscriber } = makeStoredPublishKit(storageNode, marshaller);
 
+  t.is(await subscriber.getPath(), 'publish.foo.bar');
   t.deepEqual(await subscriber.getStoreKey(), {
     dataPrefixBytes: '',
     storeName: 'swingset',
