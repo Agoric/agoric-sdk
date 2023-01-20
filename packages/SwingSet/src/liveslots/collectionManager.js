@@ -12,6 +12,7 @@ import {
   assertKeyPattern,
   assertPattern,
   matches,
+  fit,
   M,
   makeCopySet,
   makeCopyMap,
@@ -161,7 +162,7 @@ export function makeCollectionManager(
     return storeKindInfo[kindName].kindID;
   }
 
-  // Not that it's only used for this purpose, what should it be called?
+  // Now that it's only used for this purpose, what should it be called?
   // TODO Should we be using the new encodeBigInt scheme instead, anyway?
   const BIGINT_TAG_LEN = 10;
 
@@ -204,6 +205,24 @@ export function makeCollectionManager(
     const { hasWeakKeys, durable } = kindInfo;
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
+
+    const invalidKeyTypeMsg = `invalid key type for collection ${q(label)}`;
+    const invalidValueTypeMsg = `invalid value type for collection ${q(label)}`;
+
+    const serializeValue = value => {
+      if (valueShape !== undefined) {
+        fit(value, valueShape, invalidValueTypeMsg);
+      }
+      return serialize(value);
+    };
+
+    const unserializeValue = data => {
+      const value = unserialize(data);
+      if (valueShape !== undefined) {
+        fit(value, valueShape, invalidValueTypeMsg);
+      }
+      return value;
+    };
 
     function prefix(dbEntryKey) {
       return `${dbKeyPrefix}${dbEntryKey}`;
@@ -279,11 +298,10 @@ export function makeCollectionManager(
     }
 
     function get(key) {
-      matches(key, keyShape) ||
-        Fail`invalid key type for collection ${q(label)}`;
+      fit(key, keyShape, invalidKeyTypeMsg);
       const result = syscall.vatstoreGet(keyToDBKey(key));
       if (result) {
-        return unserialize(JSON.parse(result));
+        return unserializeValue(JSON.parse(result));
       }
       throw Fail`key ${key} not found in collection ${q(label)}`;
     }
@@ -299,16 +317,11 @@ export function makeCollectionManager(
     }
 
     function init(key, value) {
-      matches(key, keyShape) ||
-        Fail`invalid key type for collection ${q(label)}`;
+      fit(key, keyShape, invalidKeyTypeMsg);
       !has(key) ||
         Fail`key ${key} already registered in collection ${q(label)}`;
-      if (valueShape) {
-        matches(value, valueShape) ||
-          Fail`invalid value type for collection ${q(label)}`;
-      }
+      const serializedValue = serializeValue(value);
       currentGenerationNumber += 1;
-      const serializedValue = serialize(value);
       assertAcceptableSyscallCapdataSize([serializedValue]);
       if (durable) {
         serializedValue.slots.forEach((vref, slotIndex) => {
@@ -335,13 +348,8 @@ export function makeCollectionManager(
     }
 
     function set(key, value) {
-      matches(key, keyShape) ||
-        Fail`invalid key type for collection ${q(label)}`;
-      if (valueShape) {
-        matches(value, valueShape) ||
-          Fail`invalid value type for collection ${q(label)}`;
-      }
-      const after = serialize(harden(value));
+      fit(key, keyShape, invalidKeyTypeMsg);
+      const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
         after.slots.forEach((vref, i) => {
@@ -359,8 +367,7 @@ export function makeCollectionManager(
     }
 
     function deleteInternal(key) {
-      matches(key, keyShape) ||
-        Fail`invalid key type for collection ${q(label)}`;
+      fit(key, keyShape, invalidKeyTypeMsg);
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
       rawValue || Fail`key ${key} not found in collection ${q(label)}`;
@@ -430,7 +437,7 @@ export function makeCollectionManager(
             continue;
           }
           const value = needValues
-            ? unserialize(JSON.parse(syscall.vatstoreGet(dbKey)))
+            ? unserializeValue(JSON.parse(syscall.vatstoreGet(dbKey)))
             : undefined;
           if (needToMatchValue && !matches(value, valuePatt)) {
             continue;

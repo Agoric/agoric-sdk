@@ -132,6 +132,7 @@ export const preparePaymentLedger = (
   const paymentLedger = provideDurableWeakMapStore(
     issuerBaggage,
     'paymentLedger',
+    { valueShape: amountShape },
   );
 
   /**
