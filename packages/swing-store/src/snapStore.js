@@ -38,6 +38,11 @@ import {
  *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
  * }} SnapStore
+ *
+ * @typedef {{
+ *   dumpActiveSnapshots: () => {},
+ * }} SnapStoreDebug
+ *
  */
 
 /**
@@ -75,7 +80,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
  * }} io
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
- * @returns {SnapStore}
+ * @returns {SnapStore & SnapStoreDebug}
  */
 export function makeSnapStore(
   db,
@@ -354,6 +359,25 @@ export function makeSnapStore(
     sqlDeleteSnapshotByHash.run(vatID, hash);
   }
 
+  const sqlDumpActiveSnapshots = db.prepare(`
+    SELECT vatID, endPos, hash, compressedSnapshot
+    FROM snapshots
+    WHERE inUse = 1
+    ORDER BY vatID, endPos
+  `);
+
+  /**
+   * debug function to dump active snapshots
+   */
+  function dumpActiveSnapshots() {
+    const dump = {};
+    for (const row of sqlDumpActiveSnapshots.iterate()) {
+      const { vatID, endPos, hash, compressedSnapshot } = row;
+      dump[vatID] = { endPos, hash, compressedSnapshot };
+    }
+    return dump;
+  }
+
   return harden({
     saveSnapshot,
     loadSnapshot,
@@ -363,5 +387,7 @@ export function makeSnapStore(
 
     hasHash,
     deleteSnapshotByHash,
+
+    dumpActiveSnapshots,
   });
 }
