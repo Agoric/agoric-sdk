@@ -1,8 +1,44 @@
 // @ts-check
 
-import { E, Far } from '@endo/far';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 const { Fail } = assert;
+
+/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
+
+/**
+ * Defined by vstorageStoreKey in vstorage.go
+ *
+ * @typedef VStorageKey
+ * @property {string} storeName
+ * @property {string} storeSubkey
+ * @property {string} dataPrefixBytes
+ */
+
+/**
+ * This represents a node in an IAVL tree.
+ *
+ * The active implementation is x/vstorage, an Agoric extension of the Cosmos SDK.
+ *
+ * Vstorage is a hierarchical externally-reachable storage structure that
+ * identifies children by restricted ASCII name and is associated with arbitrary
+ * string-valued data for each node, defaulting to the empty string.
+ *
+ * @typedef {object} StorageNode
+ * @property {(data: string) => Promise<void>} setValue publishes some data
+ * @property {() => string} getPath the chain storage path at which the node was constructed
+ * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
+ * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
+ */
+
+/**
+ * @typedef {object} StoredFacet
+ * @property {() => Promise<string>} getPath the chain storage path at which the node was constructed
+ * @property {StorageNode['getStoreKey']} getStoreKey DEPRECATED use getPath
+ * @property {() => Unserializer} getUnserializer get the unserializer for the stored data
+ */
 
 // TODO: Formalize segment constraints.
 // Must be nonempty and disallow (unescaped) `.`, and for simplicity

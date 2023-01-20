@@ -1,6 +1,6 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { withAmountUtils } from './supports.js';

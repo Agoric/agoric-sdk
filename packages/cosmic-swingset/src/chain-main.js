@@ -16,7 +16,7 @@ import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js'
 import { Fail } from '@agoric/assert';
 import { makeSlogSender } from '@agoric/telemetry';
 
-import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
 import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 

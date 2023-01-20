@@ -4,7 +4,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import {
   makeStorageNodeChild,
   assertPathSegment,
-} from '@agoric/vats/src/lib-chainStorage.js';
+} from '@agoric/internal/src/lib-chainStorage.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
