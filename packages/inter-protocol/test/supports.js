@@ -21,6 +21,9 @@ import { makeTracer } from '@agoric/internal';
 
 export { makeMockChainStorageRoot };
 
+/** Common six-decimal places denom */
+export const DENOM_UNIT = 1_000_000n;
+
 /**
  * @param {*} t
  * @param {string} sourceRoot
