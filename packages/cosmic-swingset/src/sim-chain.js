@@ -13,7 +13,7 @@ import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, Fail } from '@agoric/assert';
-import { makeWithQueue } from '@agoric/vats/src/queue.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';

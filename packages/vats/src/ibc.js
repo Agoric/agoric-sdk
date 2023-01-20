@@ -12,7 +12,7 @@ import { Far } from '@endo/far';
 import '@agoric/store/exported.js';
 import '@agoric/swingset-vat/src/vats/network/types.js';
 
-import { makeWithQueue } from './queue.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 
 // CAVEAT: IBC acks cannot be empty, as the Cosmos IAVL tree cannot represent
 // empty acknowledgements as distinct from unacknowledged packets.
