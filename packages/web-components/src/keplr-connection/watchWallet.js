@@ -10,6 +10,13 @@ import { queryBankBalances } from './queryBankBalances';
 
 const POLL_INTERVAL_MS = 6000;
 
+/**
+ *
+ * @param {ERef<import('@agoric/casting').Leader>} leader
+ * @param {string} address
+ * @param {import('@agoric/smart-wallet/src/marshal-contexts.js').ImportContext} context
+ * @param {string[]} rpcs
+ */
 export const watchWallet = async (leader, address, context, rpcs) => {
   const followPublished = path =>
     makeFollower(`:published.${path}`, leader, {
@@ -32,13 +39,36 @@ export const watchWallet = async (leader, address, context, rpcs) => {
     pursesNotifierKit.updater.updateState(harden(purses));
   };
 
+  /** @type {import('@agoric/casting').ValueFollower<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>} */
   const currentFollower = await followPublished(`wallet.${address}.current`);
   try {
     // eslint-disable-next-line @jessie.js/no-nested-await
     await assertHasData(currentFollower);
   } catch {
+    // XXX: We can technically show vbank purses without a smart wallet
+    // existing, maybe don't throw but indicate no smart wallet in the result?
     throw new Error(Errors.noSmartWallet);
   }
+
+  const publicSubscriberPathsNotifierKit = makeNotifierKit(
+    /** @type {  import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['offerToPublicSubscriberPaths'] | null } */ (
+      null
+    ),
+  );
+
+  // NB: this watches '.current' but only notifies of changes to offerToPublicSubscriberPaths
+  const watchCurrent = async () => {
+    let lastPaths;
+    for await (const { value } of iterateLatest(currentFollower)) {
+      const { offerToPublicSubscriberPaths: currentPaths } = value;
+      // eslint-disable-next-line no-continue
+      if (currentPaths === lastPaths) continue;
+
+      publicSubscriberPathsNotifierKit.updater.updateState(
+        harden(currentPaths),
+      );
+    }
+  };
 
   const watchChainBalances = () => {
     const brandToPurse = new Map();
@@ -84,9 +114,11 @@ export const watchWallet = async (leader, address, context, rpcs) => {
     void watchBank();
   };
 
+  watchCurrent();
   watchChainBalances();
 
   return {
     pursesNotifier: pursesNotifierKit.notifier,
+    publicSubscribersNotifier: publicSubscriberPathsNotifierKit.notifier,
   };
 };
