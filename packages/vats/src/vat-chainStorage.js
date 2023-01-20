@@ -41,12 +41,7 @@ export function buildRootObject(vatPowers) {
 
     const toStorage = message => E(storageBridgeManager).toBridge(message);
 
-    const rootNode = makeChainStorageRoot(
-      toStorage,
-      'swingset',
-      rootPath,
-      options,
-    );
+    const rootNode = makeChainStorageRoot(toStorage, rootPath, options);
     return rootNode;
   };
 

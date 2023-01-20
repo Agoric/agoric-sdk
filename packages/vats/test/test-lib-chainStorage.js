@@ -1,7 +1,6 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeChainStorageRoot } from '../src/lib-chainStorage.js';
 import { makeFakeStorageKit } from '../tools/storage-test-utils.js';
 
 test('makeChainStorageRoot', async t => {
@@ -13,19 +12,6 @@ test('makeChainStorageRoot', async t => {
     rootStoreKey,
     { storeName: 'swingset', storeSubkey: `fake:${rootPath}` },
     'root store key matches initialization input',
-  );
-
-  t.throws(() =>
-    makeChainStorageRoot(
-      async () => {
-        t.fail(
-          'toStorage should not have been called for non-"swingset" storeName',
-        );
-      },
-      // @ts-expect-error
-      'notswingset',
-      rootPath,
-    ),
   );
 
   // Values must be strings.

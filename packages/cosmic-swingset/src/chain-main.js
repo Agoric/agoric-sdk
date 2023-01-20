@@ -288,7 +288,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const makeInstallationPublisher = () => {
       const installationStorageNode = makeChainStorageRoot(
         toStorage,
-        'swingset',
         STORAGE_PATH.BUNDLES,
         { sequence: true },
       );

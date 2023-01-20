@@ -28,22 +28,15 @@ harden(assertPathSegment);
  * Create a root storage node for a given backing function and root path.
  *
  * @param {(message: StorageMessage) => any} handleStorageMessage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
- * @param {'swingset'} storeName currently limited to "swingset"
  * @param {string} rootPath
  * @param {object} [rootOptions]
  * @param {boolean} [rootOptions.sequence] employ a wrapping structure that preserves each value set within a single block, and default child nodes to do the same
  */
 export function makeChainStorageRoot(
   handleStorageMessage,
-  storeName,
   rootPath,
   rootOptions = {},
 ) {
-  assert.equal(
-    storeName,
-    'swingset',
-    'the only currently-supported store is "swingset"',
-  );
   assert.typeof(rootPath, 'string');
 
   /**
@@ -105,7 +98,7 @@ export function makeChainStorageRoot(
  */
 const makeNullStorageNode = () => {
   // XXX re-use "ChainStorage" methods above which don't actually depend on chains
-  return makeChainStorageRoot(() => null, 'swingset', 'null');
+  return makeChainStorageRoot(() => null, 'null');
 };
 
 /**
