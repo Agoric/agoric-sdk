@@ -7,6 +7,7 @@ import { makeFakeStorageKit } from '../tools/storage-test-utils.js';
 test('makeChainStorageRoot', async t => {
   const rootPath = 'root';
   const { rootNode, messages } = makeFakeStorageKit(rootPath);
+  t.is(rootNode.getPath(), rootPath);
   const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
     rootStoreKey,
@@ -93,6 +94,7 @@ test('makeChainStorageRoot', async t => {
   for await (const segment of extremeSegments) {
     const child = rootNode.makeChildNode(segment);
     const childPath = `${rootPath}.${segment}`;
+    t.is(child.getPath(), childPath);
     const storeKey = await child.getStoreKey();
     t.deepEqual(
       storeKey,
@@ -136,6 +138,7 @@ test('makeChainStorageRoot', async t => {
   const childPath = `${rootPath}.child`;
   const deepNode = childNode.makeChildNode('grandchild');
   const deepPath = `${childPath}.grandchild`;
+  t.is(deepNode.getPath(), deepPath);
   t.deepEqual(await deepNode.getStoreKey(), {
     storeName: 'swingset',
     storeSubkey: `fake:${deepPath}`,

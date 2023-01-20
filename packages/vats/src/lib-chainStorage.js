@@ -55,7 +55,13 @@ export function makeChainStorageRoot(
   function makeChainStorageNode(path, options = {}) {
     const { sequence = false } = options;
     const node = {
-      /** @type {() => Promise<VStorageKey>} */
+      getPath() {
+        return path;
+      },
+      /**
+       * @deprecated use getPath
+       * @type {() => Promise<VStorageKey>}
+       */
       async getStoreKey() {
         return handleStorageMessage({
           key: path,

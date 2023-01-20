@@ -275,21 +275,25 @@
  *
  * @typedef {object} StorageNode
  * @property {(data: string) => Promise<void>} setValue publishes some data
- * @property {() => Promise<VStorageKey>} getStoreKey get the
- * externally-reachable store key for this storage item
+ * @property {() => string} getPath the chain storage path at which the node was constructed
+ * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
  * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
  */
 
 /**
  * @typedef {object} StoredFacet
- * @property {StorageNode['getStoreKey']} getStoreKey get the externally-reachable store key
+ * @property {() => Promise<string>} getPath the chain storage path at which the node was constructed
+ * @property {StorageNode['getStoreKey']} getStoreKey DEPRECATED use getPath
  * @property {() => Unserializer} getUnserializer get the unserializer for the stored data
  */
 
 /**
- * @deprecated
+ * @deprecated use StoredSubscriber
  * @template T
- * @typedef {Subscription<T> & StoredFacet} StoredSubscription
+ * @typedef {Subscription<T> & {
+ *   getStoreKey: () => Promise<VStorageKey & { subscription: Subscription<T> }>,
+ *   getUnserializer: () => Unserializer,
+ * }} StoredSubscription
  */
 
 /**
