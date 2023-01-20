@@ -5,12 +5,8 @@ const { Fail } = assert;
 const { entries } = Object;
 
 /**
- * Helper to perform numWantsSatisfied and satisfiesGive. How many times
+ * Helper to perform numWantsSatisfied and numGivesSatisfied. How many times
  * does the `allocation` satisfy the `giveOrWant`?
- *
- * To prepare for multiples, numWantsSatisfied and satisfiesGive return 0 or 1.
- * isOfferSafe will still be boolean. When we have Multiples, numWantsSatisfied and
- * satisfiesGive will tell how many times the offer was matched.
  *
  * @param {AmountKeywordRecord} giveOrWant
  * @param {AmountKeywordRecord} allocation
@@ -70,7 +66,7 @@ harden(numWantsSatisfied);
 /**
  * For this allocation to count as a full refund, the allocated
  * amounts must be greater than or equal to what was originally
- * offered (proposal.give).
+ * offered (proposal.give * proposal.multiples).
  *
  * @param  {ProposalRecord} proposal - the rules that accompanied the
  * escrow of payments that dictate what the user expected to get back
@@ -85,8 +81,9 @@ harden(numWantsSatisfied);
  * it an `Infinity` number of times.
  */
 // Commented out because not currently used
-// const satisfiesGive = (proposal, allocation) =>
-//   satisfiesInternal(proposal.give, allocation);
+// const numGivesSatisfied = (proposal, allocation) =>
+//   numSatisfied(proposal.give, allocation);
+// harden(numGivesSatisfied);
 
 /**
  * `isOfferSafe` checks offer safety for a single offer.

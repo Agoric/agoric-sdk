@@ -184,9 +184,10 @@ export const scaleAmount = (amount, multiples) => {
     return amount;
   }
   const { brand, value } = amount;
+  if (typeof value !== 'bigint') {
+    throw Fail`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`;
+  }
   assert(value >= 1n);
-  typeof value === 'bigint' ||
-    Fail`multiples > 1 not yet implemented for non-fungibles: ${multiples} * ${amount}`;
   return harden({ brand, value: natSafeMath.multiply(value, multiples) });
 };
 harden(scaleAmount);
