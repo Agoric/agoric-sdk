@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   buildVatController,
@@ -389,10 +389,10 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const kernelStorage1 = initSwingStore().kernelStorage;
+  const ss1 = initSwingStore();
   {
     const c1 = await buildVatController(config, [], {
-      kernelStorage: kernelStorage1,
+      kernelStorage: ss1.kernelStorage,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c1.shutdown);
@@ -407,13 +407,11 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       'done: Error: arbitrary reason',
     ]);
   }
-  const state1 = getAllState(kernelStorage1);
-  const kernelStorage2 = initSwingStore().kernelStorage;
-  // XXX TODO also copy transcripts
-  setAllState(kernelStorage2, state1);
+  const serialized = ss1.debug.serialize();
+  const ss2 = initSwingStore(null, { serialized });
   {
     const c2 = await buildVatController(config, [], {
-      kernelStorage: kernelStorage2,
+      kernelStorage: ss2.kernelStorage,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c2.shutdown);

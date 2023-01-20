@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -45,10 +45,10 @@ test('replay after upgrade', async t => {
   };
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
 
-  const kernelStorage1 = initSwingStore().kernelStorage;
+  const ss1 = initSwingStore();
   {
-    await initializeSwingset(copy(config), [], kernelStorage1, initOpts);
-    const c1 = await makeSwingsetController(kernelStorage1, {}, runtimeOpts);
+    await initializeSwingset(copy(config), [], ss1.kernelStorage, initOpts);
+    const c1 = await makeSwingsetController(ss1.kernelStorage, {}, runtimeOpts);
     t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');
     await c1.run();
@@ -66,11 +66,10 @@ test('replay after upgrade', async t => {
   }
 
   // copy the store just to be sure
-  const state1 = getAllState(kernelStorage1);
-  const kernelStorage2 = initSwingStore().kernelStorage;
-  setAllState(kernelStorage2, state1);
+  const serialized = ss1.debug.serialize();
+  const ss2 = initSwingStore(null, { serialized });
   {
-    const c2 = await makeSwingsetController(kernelStorage2, {}, runtimeOpts);
+    const c2 = await makeSwingsetController(ss2.kernelStorage, {}, runtimeOpts);
     t.teardown(c2.shutdown);
     c2.pinVatRoot('bootstrap');
     await c2.run();

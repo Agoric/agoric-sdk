@@ -3,7 +3,19 @@ import { assert, Fail, q } from '@agoric/assert';
 
 const STREAM_START = 0;
 /**
- * @typedef { import('./swingStore').StreamPosition } StreamPosition
+ * @typedef { number } StreamPosition
+ *
+ * @typedef {{
+ *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
+ *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => IterableIterator<string>,
+ *   closeStream: (streamName: string) => void,
+ *   STREAM_START: StreamPosition,
+ * }} StreamStore
+ *
+ * @typedef {{
+ *   dumpStreams: () => any,
+ * }} StreamStoreDebug
+ *
  */
 
 function* empty() {
@@ -33,6 +45,7 @@ function insistStreamPosition(position) {
 /**
  * @param {*} db
  * @param {() => void} ensureTxn
+ * @returns { StreamStore & StreamStoreDebug }
  */
 export function makeStreamStore(db, ensureTxn) {
   db.exec(`
@@ -49,21 +62,20 @@ export function makeStreamStore(db, ensureTxn) {
   const sqlDumpStreamsQuery = db.prepare(`
     SELECT streamName, position, item
     FROM streamItem
-    ORDER BY position
+    ORDER BY streamName, position
   `);
 
   function dumpStreams() {
-    const dump = new Map();
+    // debug function to return: dump[streamName][position] = item
+    const streams = {};
     for (const row of sqlDumpStreamsQuery.iterate()) {
       const { streamName, position, item } = row;
-      let entry = dump.get(streamName);
-      if (!entry) {
-        entry = [];
-        dump.set(streamName, entry);
+      if (!streams[streamName]) {
+        streams[streamName] = [];
       }
-      entry.push([position, item]);
+      streams[streamName][position] = item;
     }
-    return dump;
+    return streams;
   }
 
   const sqlReadStreamQuery = db.prepare(`
@@ -144,7 +156,7 @@ export function makeStreamStore(db, ensureTxn) {
     writeStreamItem,
     readStream,
     closeStream,
-    dumpStreams,
     STREAM_START,
+    dumpStreams,
   });
 }

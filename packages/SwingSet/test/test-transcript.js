@@ -1,19 +1,19 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 
 // import fs from 'fs';
 import { buildVatController, loadBasedir } from '../src/index.js';
 
-async function buildTrace(c, kernelStorage) {
-  const states = [];
+async function buildTrace(c, debug) {
+  const states = []; // list of { dump, serialized }
   while (c.dump().runQueue.length && c.dump().gcActions.length) {
-    states.push(getAllState(kernelStorage));
+    states.push({ dump: debug.dump(), serialized: debug.serialize() });
     // eslint-disable-next-line no-await-in-loop
     await c.step();
   }
-  states.push(getAllState(kernelStorage));
+  states.push({ dump: debug.dump(), serialized: debug.serialize() });
   await c.shutdown();
   return states;
 }
@@ -22,40 +22,27 @@ test('transcript-one save', async t => {
   const config = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const kernelStorage = initSwingStore().kernelStorage;
+  const { kernelStorage, debug } = initSwingStore();
   const c1 = await buildVatController(config, ['one'], {
     kernelStorage,
   });
-  const states1 = await buildTrace(c1, kernelStorage);
+  const states1 = await buildTrace(c1, debug);
   /*
   states1.forEach( (s, i) =>
-    fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s))
+    fs.writeFileSync(`kdata-${i}.json`, JSON.stringify(s.dump))
   ); */
 
   const config2 = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const kernelStorage2 = initSwingStore().kernelStorage;
+  const { kernelStorage: kernelStorage2, debug: debug2 } = initSwingStore();
   const c2 = await buildVatController(config2, ['one'], {
     kernelStorage: kernelStorage2,
   });
-  const states2 = await buildTrace(c2, kernelStorage2);
+  const states2 = await buildTrace(c2, debug2);
 
   states1.forEach((s, i) => {
-    // Too expensive!  If there is a difference in the 3MB data, AVA will spin
-    // for a long time trying to compute a "minimal" diff.
-    // t.deepEqual(s, states2[i]);
-
-    // Instead, we just do simple comparison.  Leave investigation to the
-    // experts.
-    const s2 = states2[i];
-    const extra = new Set(Object.keys(s2.kvStuff));
-    for (const k of Object.keys(s.kvStuff)) {
-      t.assert(s.kvStuff[k] === s2.kvStuff[k], `states[${i}][${k}] differs`);
-      extra.delete(k);
-    }
-    t.deepEqual([...extra.keys()], [], `states2[${i}] has missing keys`);
-    t.deepEqual(s.streamStuff, s2.streamStuff);
+    t.deepEqual(s.dump, states2[i].dump);
   });
 });
 
@@ -63,27 +50,27 @@ test('transcript-one load', async t => {
   const config = await loadBasedir(
     new URL('basedir-transcript', import.meta.url).pathname,
   );
-  const s0 = initSwingStore().kernelStorage;
+  const { kernelStorage: s0, debug: d0 } = initSwingStore();
   const c0 = await buildVatController(config, ['one'], { kernelStorage: s0 });
-  const states = await buildTrace(c0, s0);
+  const states = await buildTrace(c0, d0);
   // states.forEach((s,j) =>
   //               fs.writeFileSync(`kdata-${j}.json`,
-  //                                JSON.stringify(states[j])));
+  //                                JSON.stringify(states[j].dump)));
 
   for (let i = 0; i < states.length; i += 1) {
     // eslint-disable-next-line no-await-in-loop
     const cfg = await loadBasedir(
       new URL('basedir-transcript', import.meta.url).pathname,
     );
-    const s = initSwingStore().kernelStorage;
-    setAllState(s, states[i]);
+    const { serialized } = states[i];
+    const { kernelStorage: s, debug: d } = initSwingStore(null, { serialized });
     // eslint-disable-next-line no-await-in-loop
     const c = await buildVatController(cfg, ['one'], { kernelStorage: s });
     // eslint-disable-next-line no-await-in-loop
-    const newstates = await buildTrace(c, s);
+    const newstates = await buildTrace(c, d);
     // newstates.forEach((s,j) =>
     //                  fs.writeFileSync(`kdata-${i+j}-${i}+${j}.json`,
-    //                                   JSON.stringify(newstates[j])));
+    //                                   JSON.stringify(newstates[j].dump)));
     t.deepEqual(states.slice(i), newstates);
   }
 });
