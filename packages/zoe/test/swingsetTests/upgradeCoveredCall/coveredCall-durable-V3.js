@@ -1,5 +1,5 @@
 import { M, fit } from '@agoric/store';
-import { defineExoFactory, defineExo } from '@agoric/vat-data';
+import { prepareExoMaker, prepareExo } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import {
   InvitationShape,
@@ -22,7 +22,7 @@ const sellSeatExpiredMsg = 'The covered call option is expired.';
  * @param {unknown} _privateArgs
  * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  */
-const vivify = async (zcf, _privateArgs, instanceBaggage) => {
+const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   const firstTime = !instanceBaggage.has('DidStart');
   if (firstTime) {
     instanceBaggage.init('DidStart', true);
@@ -32,7 +32,7 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
   // TODO the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
-  const makeExerciser = defineExoFactory(
+  const makeExerciser = prepareExoMaker(
     instanceBaggage,
     'makeExerciserKindHandle',
     OfferHandlerI,
@@ -81,7 +81,7 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
     makeInvitation: M.call().returns(M.eref(InvitationShape)),
   });
 
-  const creatorFacet = defineExo(
+  const creatorFacet = prepareExo(
     instanceBaggage,
     'creatorFacet',
     CCallCreatorI,
@@ -94,5 +94,5 @@ const vivify = async (zcf, _privateArgs, instanceBaggage) => {
   return harden({ creatorFacet });
 };
 
-harden(vivify);
-export { vivify };
+harden(prepare);
+export { prepare };

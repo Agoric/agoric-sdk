@@ -1,6 +1,6 @@
-import { vivifyDurablePublishKit, SubscriberShape } from '@agoric/notifier';
+import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { M, defineExoKitFactory } from '@agoric/vat-data';
+import { M, prepareExoKitMaker } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -59,7 +59,7 @@ const assertHasNotExited = (c, msg) => {
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const makeZoeSeatAdminFactory = baggage => {
-  const makeDurablePublishKit = vivifyDurablePublishKit(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'zoe Seat publisher',
   );
@@ -88,7 +88,7 @@ export const makeZoeSeatAdminFactory = baggage => {
   // table entry.
   const ephemeralOfferResultStore = new Map();
 
-  return defineExoKitFactory(
+  return prepareExoKitMaker(
     baggage,
     'ZoeSeatKit',
     ZoeSeatIKit,

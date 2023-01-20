@@ -1,4 +1,4 @@
-import { provide, defineExoFactory, M } from '@agoric/vat-data';
+import { provide, prepareExoMaker, M } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 import {
   BrandKeywordRecordShape,
@@ -47,7 +47,7 @@ export const makeInstanceRecordStorage = baggage => {
     assertUniqueKeyword: M.call(KeywordShape).returns(),
   });
 
-  const makeInstanceRecord = defineExoFactory(
+  const makeInstanceRecord = prepareExoMaker(
     baggage,
     'InstanceRecord',
     InstanceRecordI,

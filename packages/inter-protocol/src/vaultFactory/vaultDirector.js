@@ -19,10 +19,10 @@ import {
   makeStoredSubscriber,
   observeIteration,
   SubscriberShape,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
 } from '@agoric/notifier';
 import {
-  makeDurableExoKitFactory,
+  makeDurableExoKitMaker,
   makeKindHandle,
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
@@ -35,7 +35,7 @@ import {
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
-import { vivifyVaultManagerKit } from './vaultManager.js';
+import { prepareVaultManagerKit } from './vaultManager.js';
 import { provideChildBaggage } from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
@@ -152,7 +152,7 @@ const baggage = makeScalarBigMapStore('Vault Director baggage', {
   durable: true,
 });
 
-const makeVaultDirectorMetricsPublishKit = vivifyDurablePublishKit(
+const makeVaultDirectorMetricsPublishKit = prepareDurablePublishKit(
   baggage,
   'Vault Director metrics',
 );
@@ -276,7 +276,7 @@ const finish = async ({ state }) => {
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  */
-const makeVaultDirector = makeDurableExoKitFactory(
+const makeVaultDirector = makeDurableExoKitMaker(
   makeKindHandle('VaultDirector'),
   {
     creator: M.interface('creator', {
@@ -471,7 +471,7 @@ const makeVaultDirector = makeDurableExoKitFactory(
         const brandName = await E(collateralBrand).getAllegedName();
         const makeVaultManager = managerBaggages.addChild(
           brandName,
-          vivifyVaultManagerKit,
+          prepareVaultManagerKit,
         );
 
         const { self: vm } = makeVaultManager(

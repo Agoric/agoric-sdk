@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { provide, defineExoKitFactory } from '@agoric/vat-data';
+import { provide, prepareExoKitMaker } from '@agoric/vat-data';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const { version } = vatParameters;
@@ -9,7 +9,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const emptyFacetI = M.interface('Facet', {});
   const iKit = harden({ facet1: emptyFacetI, facet2: emptyFacetI });
   const initState = () => ({});
-  const makeInstance = defineExoKitFactory(
+  const makeInstance = prepareExoKitMaker(
     baggage,
     'ClassKit',
     iKit,

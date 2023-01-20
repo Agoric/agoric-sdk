@@ -3,9 +3,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  defineExoFactory,
-  defineExoKitFactory,
-  defineExo,
+  prepareExoMaker,
+  prepareExoKitMaker,
+  prepareExo,
 } from '../src/exo-utils.js';
 import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
 
@@ -23,10 +23,10 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test defineExoFactory', t => {
+test('test prepareExoMaker', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
-  const makeUpCounter = defineExoFactory(
+  const makeUpCounter = prepareExoMaker(
     baggage,
     'UpCounter',
     UpCounterI,
@@ -57,10 +57,10 @@ test('test defineExoFactory', t => {
   makeUpCounter('str');
 });
 
-test('test defineExoKitFactory', t => {
+test('test prepareExoKitMaker', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
-  const makeCounterKit = defineExoKitFactory(
+  const makeCounterKit = prepareExoKitMaker(
     baggage,
     'Counter',
     { up: UpCounterI, down: DownCounterI },
@@ -105,11 +105,11 @@ test('test defineExoKitFactory', t => {
   makeCounterKit('str');
 });
 
-test('test defineExo', t => {
+test('test prepareExo', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
   let x = 3;
-  const upCounter = defineExo(baggage, 'upCounter', UpCounterI, {
+  const upCounter = prepareExo(baggage, 'upCounter', UpCounterI, {
     incr(y = 1) {
       x += y;
       return x;

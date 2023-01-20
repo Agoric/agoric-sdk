@@ -10,7 +10,7 @@ import {
 import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
 import { fit, M, makeScalarMapStore } from '@agoric/store';
 import {
-  makeVirtualExoKitFactory,
+  makeVirtualExoKitMaker,
   makeScalarBigMapStore,
   pickFacet,
 } from '@agoric/vat-data';
@@ -239,7 +239,7 @@ const behaviorGuards = {
   }),
 };
 
-const SmartWalletKit = makeVirtualExoKitFactory(
+const SmartWalletKit = makeVirtualExoKitMaker(
   'SmartWallet',
   behaviorGuards,
   initState,

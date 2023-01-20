@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
 import { initEmpty, makeHeapExo } from '@agoric/store';
-import { defineExoFactory } from '@agoric/vat-data';
+import { prepareExoMaker } from '@agoric/vat-data';
 
 import { HandleI } from './typeGuards.js';
 
@@ -16,7 +16,7 @@ const { Fail } = assert;
  */
 export const defineDurableHandle = (baggage, handleType) => {
   typeof handleType === 'string' || Fail`handleType must be a string`;
-  const makeHandle = defineExoFactory(
+  const makeHandle = prepareExoMaker(
     baggage,
     `${handleType}Handle`,
     HandleI,

@@ -2,10 +2,10 @@
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { fit, M } from '@agoric/store';
-import { provideDurableWeakMapStore, defineExo } from '@agoric/vat-data';
+import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
-import { vivifyPaymentKind } from './payment.js';
-import { vivifyPurseKind } from './purse.js';
+import { preparePaymentKind } from './payment.js';
+import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
@@ -72,7 +72,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {ShutdownWithFailure=} optShutdownWithFailure
  * @returns {PaymentLedger<K>}
  */
-export const vivifyPaymentLedger = (
+export const preparePaymentLedger = (
   issuerBaggage,
   name,
   assetKind,
@@ -81,7 +81,7 @@ export const vivifyPaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  const brand = defineExo(issuerBaggage, `${name} brand`, BrandI, {
+  const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -111,7 +111,7 @@ export const vivifyPaymentLedger = (
     amountShape,
   );
 
-  const makePayment = vivifyPaymentKind(issuerBaggage, name, brand, PaymentI);
+  const makePayment = preparePaymentKind(issuerBaggage, name, brand, PaymentI);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -363,7 +363,7 @@ export const vivifyPaymentLedger = (
     return payment;
   };
 
-  const makeEmptyPurse = vivifyPurseKind(
+  const makeEmptyPurse = preparePurseKind(
     issuerBaggage,
     name,
     assetKind,
@@ -376,7 +376,7 @@ export const vivifyPaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  const issuer = defineExo(issuerBaggage, `${name} issuer`, IssuerI, {
+  const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -474,7 +474,7 @@ export const vivifyPaymentLedger = (
   });
 
   /** @type {Mint<K>} */
-  const mint = defineExo(issuerBaggage, `${name} mint`, MintI, {
+  const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },
@@ -490,4 +490,4 @@ export const vivifyPaymentLedger = (
   const issuerKit = harden({ issuer, mint, brand });
   return issuerKit;
 };
-harden(vivifyPaymentLedger);
+harden(preparePaymentLedger);

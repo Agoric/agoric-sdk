@@ -58,8 +58,8 @@ export {
   defendPrototype,
   defendPrototypeKit,
   initEmpty,
-  makeHeapExoFactory,
-  makeHeapExoKitFactory,
+  makeHeapExoMaker,
+  makeHeapExoKitMaker,
   makeHeapExo,
 } from './patterns/interface-tools.js';
 

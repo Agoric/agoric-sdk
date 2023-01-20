@@ -1,6 +1,6 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { M, defineExoKitFactory } from '@agoric/vat-data';
+import { M, prepareExoKitMaker } from '@agoric/vat-data';
 import {
   assertProposalShape,
   atomicTransfer,
@@ -18,7 +18,7 @@ import {
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { makeTracer } from '../makeTracer.js';
 import { UnguardedHelperI } from '../typeGuards.js';
-import { vivifyVaultKit } from './vaultKit.js';
+import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
 
@@ -212,11 +212,11 @@ export const VaultI = M.interface('Vault', {
   makeTransferInvitation: M.call().returns(M.promise()),
 });
 
-export const vivifyVault = baggage => {
-  const makeVaultKit = vivifyVaultKit(baggage);
+export const prepareVault = baggage => {
+  const makeVaultKit = prepareVaultKit(baggage);
 
-  // TODO find a way to not have to indent a level deeper than makeDurableExoKitFactory does
-  const maker = defineExoKitFactory(
+  // TODO find a way to not have to indent a level deeper than makeDurableExoKitMaker does
+  const maker = prepareExoKitMaker(
     baggage,
     'Vault',
     {
@@ -846,4 +846,4 @@ export const vivifyVault = baggage => {
   return maker;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof vivifyVault>>['self']} Vault */
+/** @typedef {ReturnType<ReturnType<typeof prepareVault>>['self']} Vault */

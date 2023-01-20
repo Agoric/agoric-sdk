@@ -2,7 +2,7 @@ export {
   makePublishKit,
   subscribeEach,
   subscribeLatest,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
   SubscriberShape,
 } from './publish-kit.js';
 export {

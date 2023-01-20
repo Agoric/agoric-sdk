@@ -1,5 +1,5 @@
 import { initEmpty } from '@agoric/store';
-import { defineExoFactory } from '@agoric/vat-data';
+import { prepareExoMaker } from '@agoric/vat-data';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -11,8 +11,8 @@ import { defineExoFactory } from '@agoric/vat-data';
  * @param {InterfaceGuard} PaymentI
  * @returns {() => Payment<K>}
  */
-export const vivifyPaymentKind = (issuerBaggage, name, brand, PaymentI) => {
-  const makePayment = defineExoFactory(
+export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
+  const makePayment = prepareExoMaker(
     issuerBaggage,
     `${name} payment`,
     PaymentI,
@@ -25,4 +25,4 @@ export const vivifyPaymentKind = (issuerBaggage, name, brand, PaymentI) => {
   );
   return makePayment;
 };
-harden(vivifyPaymentKind);
+harden(preparePaymentKind);

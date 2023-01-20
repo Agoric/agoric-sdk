@@ -6,7 +6,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
-import { vivifyPaymentLedger } from './paymentLedger.js';
+import { preparePaymentLedger } from './paymentLedger.js';
 
 import './types-ambient.js';
 
@@ -24,7 +24,7 @@ import './types-ambient.js';
  * See https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit<K>}
  */
-export const vivifyIssuerKit = (
+export const prepareIssuerKit = (
   issuerBaggage,
   optShutdownWithFailure = undefined,
 ) => {
@@ -49,7 +49,7 @@ export const vivifyIssuerKit = (
   // Attenuate the powerful authority to mint and change balances
   /** @type {PaymentLedger<K>} */
   // @ts-expect-error could be instantiated with different subtype of AssetKind
-  const { issuer, mint, brand } = vivifyPaymentLedger(
+  const { issuer, mint, brand } = preparePaymentLedger(
     issuerBaggage,
     name,
     assetKind,
@@ -65,7 +65,7 @@ export const vivifyIssuerKit = (
     displayInfo: cleanDisplayInfo,
   });
 };
-harden(vivifyIssuerKit);
+harden(prepareIssuerKit);
 
 /**
  * @template {AssetKind} K
@@ -109,7 +109,7 @@ export const makeDurableIssuerKit = (
   issuerBaggage.init('assetKind', assetKind);
   issuerBaggage.init('displayInfo', displayInfo);
   issuerBaggage.init('elementShape', elementShape);
-  return vivifyIssuerKit(issuerBaggage, optShutdownWithFailure);
+  return prepareIssuerKit(issuerBaggage, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 

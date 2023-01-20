@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import {
-  makeHeapExoFactory,
-  makeHeapExoKitFactory,
+  makeHeapExoMaker,
+  makeHeapExoKitMaker,
   makeHeapExo,
 } from '../src/patterns/interface-tools.js';
 import { M } from '../src/patterns/patternMatchers.js';
@@ -20,8 +20,8 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test makeHeapExoFactory', t => {
-  const makeUpCounter = makeHeapExoFactory(
+test('test makeHeapExoMaker', t => {
+  const makeUpCounter = makeHeapExoMaker(
     'UpCounter',
     UpCounterI,
     /** @param {number} x */
@@ -47,8 +47,8 @@ test('test makeHeapExoFactory', t => {
   });
 });
 
-test('test makeHeapExoKitFactory', t => {
-  const makeCounterKit = makeHeapExoKitFactory(
+test('test makeHeapExoKitMaker', t => {
+  const makeCounterKit = makeHeapExoKitMaker(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} x */

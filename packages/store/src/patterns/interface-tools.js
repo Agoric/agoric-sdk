@@ -279,7 +279,7 @@ const emptyRecord = harden({});
 /**
  * When calling `defineDurableKind` and
  * its siblings, used as the `init` function argument to indicate that the
- * state record of the (virtual/durable) instances of the kind/ExoFactory
+ * state record of the (virtual/durable) instances of the kind/ExoMaker
  * should be empty, and that the returned maker function should have zero
  * parameters.
  *
@@ -306,7 +306,7 @@ export const initEmpty = () => emptyRecord;
  * @param {object} [options]
  * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
-export const makeHeapExoFactory = (
+export const makeHeapExoMaker = (
   tag,
   interfaceGuard,
   init,
@@ -343,7 +343,7 @@ export const makeHeapExoFactory = (
   // @ts-expect-error could be instantiated with different subtype
   return harden(makeInstance);
 };
-harden(makeHeapExoFactory);
+harden(makeHeapExoMaker);
 
 /**
  * @template A args to init
@@ -356,7 +356,7 @@ harden(makeHeapExoFactory);
  * @param {object} [options]
  * @returns {(...args: A[]) => F}
  */
-export const makeHeapExoKitFactory = (
+export const makeHeapExoKitMaker = (
   tag,
   interfaceGuardKit,
   init,
@@ -396,7 +396,7 @@ export const makeHeapExoKitFactory = (
   // @ts-ignore xxx
   return harden(makeInstanceKit);
 };
-harden(makeHeapExoKitFactory);
+harden(makeHeapExoKitMaker);
 
 /**
  * @template {Record<string, Method>} T
@@ -412,7 +412,7 @@ export const makeHeapExo = (
   methods,
   options = undefined,
 ) => {
-  const makeInstance = makeHeapExoFactory(
+  const makeInstance = makeHeapExoMaker(
     tag,
     interfaceGuard,
     initEmpty,

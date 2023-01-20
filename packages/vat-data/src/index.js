@@ -2,14 +2,14 @@
 export * from './vat-data-bindings.js';
 export * from './kind-utils.js';
 export {
-  makeVirtualExoFactory,
-  makeVirtualExoKitFactory,
-  makeDurableExoFactory,
-  makeDurableExoKitFactory,
-  defineExoFactory,
-  defineExoKitFactory,
-  defineExo,
-  vivifySingleton,
+  makeVirtualExoMaker,
+  makeVirtualExoKitMaker,
+  makeDurableExoMaker,
+  makeDurableExoKitMaker,
+  prepareExoMaker,
+  prepareExoKitMaker,
+  prepareExo,
+  prepareSingleton,
 } from './exo-utils.js';
 
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */

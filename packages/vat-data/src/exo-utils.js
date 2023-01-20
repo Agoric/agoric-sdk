@@ -28,7 +28,7 @@ import {
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const makeVirtualExoFactory = (
+export const makeVirtualExoMaker = (
   tag,
   interfaceGuard,
   init,
@@ -42,7 +42,7 @@ export const makeVirtualExoFactory = (
     thisfulMethods: true,
     interfaceGuard,
   });
-harden(makeVirtualExoFactory);
+harden(makeVirtualExoMaker);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -55,7 +55,7 @@ harden(makeVirtualExoFactory);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const makeVirtualExoKitFactory = (
+export const makeVirtualExoKitMaker = (
   tag,
   interfaceGuardKit,
   init,
@@ -69,7 +69,7 @@ export const makeVirtualExoKitFactory = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(makeVirtualExoKitFactory);
+harden(makeVirtualExoKitMaker);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -82,7 +82,7 @@ harden(makeVirtualExoKitFactory);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const makeDurableExoFactory = (
+export const makeDurableExoMaker = (
   kindHandle,
   interfaceGuard,
   init,
@@ -96,7 +96,7 @@ export const makeDurableExoFactory = (
     thisfulMethods: true,
     interfaceGuard,
   });
-harden(makeDurableExoFactory);
+harden(makeDurableExoMaker);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -109,7 +109,7 @@ harden(makeDurableExoFactory);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I>}>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const makeDurableExoKitFactory = (
+export const makeDurableExoKitMaker = (
   kindHandle,
   interfaceGuardKit,
   init,
@@ -123,7 +123,7 @@ export const makeDurableExoKitFactory = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(makeDurableExoKitFactory);
+harden(makeDurableExoKitMaker);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -137,7 +137,7 @@ harden(makeDurableExoKitFactory);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineExoFactory = (
+export const prepareExoMaker = (
   baggage,
   kindName,
   interfaceGuard,
@@ -145,14 +145,14 @@ export const defineExoFactory = (
   methods,
   options = undefined,
 ) =>
-  makeDurableExoFactory(
+  makeDurableExoMaker(
     provideKindHandle(baggage, kindName),
     interfaceGuard,
     init,
     methods,
     options,
   );
-harden(defineExoFactory);
+harden(prepareExoMaker);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -166,7 +166,7 @@ harden(defineExoFactory);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineExoKitFactory = (
+export const prepareExoKitMaker = (
   baggage,
   kindName,
   interfaceGuardKit,
@@ -174,14 +174,14 @@ export const defineExoKitFactory = (
   facets,
   options = undefined,
 ) =>
-  makeDurableExoKitFactory(
+  makeDurableExoKitMaker(
     provideKindHandle(baggage, kindName),
     interfaceGuardKit,
     init,
     facets,
     options,
   );
-harden(defineExoKitFactory);
+harden(prepareExoKitMaker);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -194,14 +194,14 @@ harden(defineExoKitFactory);
  * @param {DefineKindOptions<{ self: M }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const defineExo = (
+export const prepareExo = (
   baggage,
   kindName,
   interfaceGuard,
   methods,
   options = undefined,
 ) => {
-  const makeSingleton = defineExoFactory(
+  const makeSingleton = prepareExoMaker(
     baggage,
     kindName,
     interfaceGuard,
@@ -214,10 +214,10 @@ export const defineExo = (
   // @ts-ignore could be instantiated with an arbitrary type
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
-harden(defineExo);
+harden(prepareExo);
 
 /**
- * @deprecated Use defineExo instead.
+ * @deprecated Use prepareExo instead.
  * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {Baggage} baggage
  * @param {string} kindName
@@ -225,10 +225,10 @@ harden(defineExo);
  * @param {DefineKindOptions<{ self: T }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const vivifySingleton = (
+export const prepareSingleton = (
   baggage,
   kindName,
   methods,
   options = undefined,
-) => defineExo(baggage, kindName, undefined, methods, options);
-harden(vivifySingleton);
+) => prepareExo(baggage, kindName, undefined, methods, options);
+harden(prepareSingleton);

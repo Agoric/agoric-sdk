@@ -1,4 +1,4 @@
-import { makeDurableExoFactory, M, makeKindHandle } from '@agoric/vat-data';
+import { makeDurableExoMaker, M, makeKindHandle } from '@agoric/vat-data';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -52,7 +52,7 @@ const OracleAdminI = M.interface('OracleAdmin', {
   getStatus: M.call().returns(M.record()),
 });
 
-export const makeOracleAdmin = makeDurableExoFactory(
+export const makeOracleAdmin = makeDurableExoMaker(
   oracleAdminKind,
   OracleAdminI,
   initState,

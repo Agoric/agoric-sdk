@@ -3,8 +3,8 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  defineExo,
-  vivifyKind,
+  prepareExo,
+  prepareKind,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 import {
@@ -38,14 +38,14 @@ export const makeInstallationStorage = (
     'installationsBundle',
   );
 
-  const makeBundleIDInstallation = vivifyKind(
+  const makeBundleIDInstallation = prepareKind(
     zoeBaggage,
     'BundleIDInstallation',
     initEmpty,
     { getBundle: _context => assert.fail('bundleID-based Installation') },
   );
 
-  const makeBundleInstallation = vivifyKind(
+  const makeBundleInstallation = prepareKind(
     zoeBaggage,
     'BundleInstallation',
     bundle => ({ bundle }),
@@ -102,7 +102,7 @@ export const makeInstallationStorage = (
     ),
   });
 
-  const installationStorage = defineExo(
+  const installationStorage = prepareExo(
     zoeBaggage,
     'InstallationStorage',
     InstallationStorageI,

@@ -3,8 +3,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  makeDurableExoFactory,
-  makeDurableExoKitFactory,
+  makeDurableExoMaker,
+  makeDurableExoKitMaker,
 } from '../src/exo-utils.js';
 import {
   makeKindHandle,
@@ -25,10 +25,10 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test makeDurableExoFactory', t => {
+test('test makeDurableExoMaker', t => {
   const upCounterKind = makeKindHandle('UpCounter');
 
-  const makeUpCounter = makeDurableExoFactory(
+  const makeUpCounter = makeDurableExoMaker(
     upCounterKind,
     UpCounterI,
     /** @param {number} x */
@@ -61,10 +61,10 @@ test('test makeDurableExoFactory', t => {
   makeUpCounter('str');
 });
 
-test('test makeDurableExoKitFactory', t => {
+test('test makeDurableExoKitMaker', t => {
   const counterKindHandle = makeKindHandle('Counter');
 
-  const makeCounterKit = makeDurableExoKitFactory(
+  const makeCounterKit = makeDurableExoKitMaker(
     counterKindHandle,
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} x */
@@ -117,7 +117,7 @@ test('finish option', t => {
     counterRegistry.init(state.name, self);
   };
 
-  const makeUpCounter = makeDurableExoFactory(
+  const makeUpCounter = makeDurableExoMaker(
     upCounterKind,
     UpCounterI,
     /**

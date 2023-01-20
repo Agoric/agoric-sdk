@@ -1,9 +1,9 @@
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
-import { vivifyVaultHolder } from './vaultHolder.js';
+import { prepareVaultHolder } from './vaultHolder.js';
 
-export const vivifyVaultKit = baggage => {
-  const makeVaultHolder = vivifyVaultHolder(baggage);
+export const prepareVaultKit = baggage => {
+  const makeVaultHolder = prepareVaultHolder(baggage);
   /**
    * Create a kit of utilities for use of the vault.
    *
@@ -33,4 +33,4 @@ export const vivifyVaultKit = baggage => {
   return makeVaultKit;
 };
 
-/** @typedef {(ReturnType<ReturnType<typeof vivifyVaultKit>>)} VaultKit */
+/** @typedef {(ReturnType<ReturnType<typeof prepareVaultKit>>)} VaultKit */

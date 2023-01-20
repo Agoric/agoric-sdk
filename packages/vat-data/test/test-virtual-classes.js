@@ -3,8 +3,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  makeVirtualExoFactory,
-  makeVirtualExoKitFactory,
+  makeVirtualExoMaker,
+  makeVirtualExoKitMaker,
 } from '../src/exo-utils.js';
 
 const UpCounterI = M.interface('UpCounter', {
@@ -21,8 +21,8 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test makeVirtualExoFactory', t => {
-  const makeUpCounter = makeVirtualExoFactory(
+test('test makeVirtualExoMaker', t => {
+  const makeUpCounter = makeVirtualExoMaker(
     'UpCounter',
     UpCounterI,
     /** @param {number} x */
@@ -52,8 +52,8 @@ test('test makeVirtualExoFactory', t => {
   makeUpCounter('str');
 });
 
-test('test makeVirtualExoKitFactory', t => {
-  const makeCounterKit = makeVirtualExoKitFactory(
+test('test makeVirtualExoKitMaker', t => {
+  const makeCounterKit = makeVirtualExoKitMaker(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} x */

@@ -5,9 +5,9 @@ import { AmountShape } from '@agoric/ertp';
 import {
   makeStoredSubscriber,
   SubscriberShape,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
 } from '@agoric/notifier';
-import { M, defineExoKitFactory } from '@agoric/vat-data';
+import { M, prepareExoKitMaker } from '@agoric/vat-data';
 import { makeEphemeraProvider } from '../contractSupport.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
@@ -43,13 +43,13 @@ const HolderI = M.interface('holder', {
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const vivifyVaultHolder = baggage => {
-  const makeVaultHolderPublishKit = vivifyDurablePublishKit(
+export const prepareVaultHolder = baggage => {
+  const makeVaultHolderPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Holder publish kit',
   );
 
-  const makeVaultHolderKit = defineExoKitFactory(
+  const makeVaultHolderKit = prepareExoKitMaker(
     baggage,
     'Vault Holder',
     {

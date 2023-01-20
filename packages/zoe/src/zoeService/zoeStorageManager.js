@@ -2,8 +2,8 @@ import { AssetKind, makeDurableIssuerKit, AmountMath } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  defineExoKitFactory,
-  defineExoFactory,
+  prepareExoKitMaker,
+  prepareExoMaker,
   provideDurableSetStore,
 } from '@agoric/vat-data';
 
@@ -11,7 +11,7 @@ import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
 import { provideEscrowStorage } from './escrowStorage.js';
-import { vivifyInvitationKit } from './makeInvitation.js';
+import { prepareInvitationKit } from './makeInvitation.js';
 import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
 import { makeInstallationStorage } from './installationStorage.js';
 
@@ -84,7 +84,7 @@ export const makeZoeStorageManager = (
   // In order to participate in a contract, users must have invitations, which
   // are ERTP payments made by Zoe. This invitationKit must be closely held and
   // used only by the makeInvitation() method.
-  const { invitationIssuer, invitationKit } = vivifyInvitationKit(
+  const { invitationIssuer, invitationKit } = prepareInvitationKit(
     zoeBaggage,
     shutdownZoeVat,
   );
@@ -117,7 +117,7 @@ export const makeZoeStorageManager = (
     zoeMintBaggageSet(issuerBaggage);
   }
 
-  const makeZoeMint = defineExoFactory(
+  const makeZoeMint = prepareExoMaker(
     zoeBaggage,
     'ZoeMint',
     ZoeMintI,
@@ -154,7 +154,7 @@ export const makeZoeStorageManager = (
     },
   );
 
-  const makeInstanceStorageManager = defineExoKitFactory(
+  const makeInstanceStorageManager = prepareExoKitMaker(
     zoeBaggage,
     'InstanceStorageManager',
     InstanceStorageManagerIKit,
@@ -390,7 +390,7 @@ export const makeZoeStorageManager = (
 
   const getInvitationIssuer = () => invitationIssuer;
 
-  const makeStorageManager = defineExoKitFactory(
+  const makeStorageManager = prepareExoKitMaker(
     zoeBaggage,
     'ZoeStorageManager',
     ZoeStorageManagerIKit,

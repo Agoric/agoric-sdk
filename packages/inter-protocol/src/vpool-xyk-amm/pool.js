@@ -2,7 +2,7 @@ import '@agoric/zoe/exported.js';
 
 import { AmountMath, isNatValue } from '@agoric/ertp';
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { vivifyKindMulti } from '@agoric/vat-data';
+import { prepareKindMulti } from '@agoric/vat-data';
 import {
   calcLiqValueToMint,
   calcSecondaryRequired,
@@ -394,5 +394,5 @@ export const definePoolKind = (baggage, ammPowers, storageNode, marshaller) => {
     singlePool: makeSinglePool(ammPowers),
   });
 
-  return vivifyKindMulti(baggage, 'pool', poolInit, facets, { finish });
+  return prepareKindMulti(baggage, 'pool', poolInit, facets, { finish });
 };

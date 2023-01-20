@@ -45,7 +45,7 @@ if ('VatData' in globalThis) {
 }
 
 /**
- * @deprecated Use Exo/ExoFactory/ExoKitFactory instead of kinds
+ * @deprecated Use Exo/ExoMaker/ExoKitMaker instead of kinds
  */
 export const {
   defineKind,
@@ -103,7 +103,7 @@ harden(partialAssign);
  * where the total number of calls to `provide` must be
  * low cardinality, since we keep the bookkeeping to detect collisions
  * in normal language-heap memory. All the other baggage-oriented
- * `provide*` and `vivify*` functions call `provide`,
+ * `provide*` and `prepare*` functions call `provide`,
  * and so impose the same constraints. This is consistent with
  * our expected durability patterns: What we store in baggage are
  *    * kindHandles, which are per kind, which must be low cardinality

@@ -4,8 +4,8 @@ import {
   makeScalarBigSetStore,
   provide,
   provideDurableWeakMapStore,
-  defineExoKitFactory,
-  vivifyKindMulti,
+  prepareExoKitMaker,
+  prepareKindMulti,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { defineDurableHandle } from '../makeHandle.js';
@@ -50,7 +50,7 @@ const InstanceAdminStorageIKit = harden({
 
 /** @param {import('@agoric/vat-data').Baggage} baggage */
 export const makeInstanceAdminStorage = baggage => {
-  const makeIAS = defineExoKitFactory(
+  const makeIAS = prepareExoKitMaker(
     baggage,
     'InstanceAdmin',
     InstanceAdminStorageIKit,
@@ -265,7 +265,7 @@ export const makeInstanceAdminMaker = (
   seatHandleToZoeSeatAdmin,
 ) => {
   const makeZoeSeatAdminKit = makeZoeSeatAdminFactory(zoeBaggage);
-  const makeInstanceAdminMulti = vivifyKindMulti(
+  const makeInstanceAdminMulti = prepareKindMulti(
     zoeBaggage,
     'instanceAdmin',
     (instanceHandle, zoeInstanceStorageManager, adminNode) => {

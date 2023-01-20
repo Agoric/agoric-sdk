@@ -1,5 +1,9 @@
 import { provideDurableMapStore } from '@agoric/vat-data';
-import { AssetKind, makeDurableIssuerKit, vivifyIssuerKit } from '@agoric/ertp';
+import {
+  AssetKind,
+  makeDurableIssuerKit,
+  prepareIssuerKit,
+} from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
 
 const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
@@ -8,7 +12,7 @@ const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
  */
-export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
+export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
   let invitationKit;
 
   const invitationKitBaggage = provideDurableMapStore(
@@ -26,7 +30,7 @@ export const vivifyInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     );
     invitationKitBaggage.init(ZOE_INVITATION_KIT, invitationKit);
   } else {
-    invitationKit = vivifyIssuerKit(invitationKitBaggage);
+    invitationKit = prepareIssuerKit(invitationKitBaggage);
   }
 
   return harden({
