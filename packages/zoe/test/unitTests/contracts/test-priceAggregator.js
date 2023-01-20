@@ -13,7 +13,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 // eslint-disable-next-line import/no-extraneous-dependencies -- XXX refactor
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -59,7 +59,7 @@ const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {MakeFakePriceOracle} makeFakePriceOracle
- * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
+ * @property {(unitValueIn?: bigint) => Promise<PriceAggregatorKit & { instance: import('../../../src/zoeService/utils.js').Instance<typeof testStartFn>, mockStorageRoot: import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot }>} makeMedianAggregator
  * @property {Amount} feeAmount
  * @property {IssuerKit} link
  */

@@ -10,7 +10,7 @@ import {
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
 
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import {
   makeBinaryVoteCounter,
   ChoiceMethod,

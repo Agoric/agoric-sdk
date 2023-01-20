@@ -14,7 +14,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';

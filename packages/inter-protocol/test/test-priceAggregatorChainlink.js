@@ -13,7 +13,7 @@ import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe/src/zoeService/zoe.js';
