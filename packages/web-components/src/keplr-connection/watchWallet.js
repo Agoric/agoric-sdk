@@ -8,6 +8,14 @@ import { Errors } from './errors';
 
 /** @typedef {import('./fetchCurrent').PurseInfo} PurseInfo */
 
+/**
+ * @typedef {{
+ *   [offerId: string]: {
+ *     [subscriberName: string]: VStorageKey
+ *   }
+ * }} OfferToPublicSubscriberPaths
+ */
+
 export const watchWallet = async (leader, address, context) => {
   const followPublished = path =>
     makeFollower(`:published.${path}`, leader, {
@@ -30,13 +38,20 @@ export const watchWallet = async (leader, address, context) => {
     pursesNotifierKit.updater.updateState(harden(purses));
   };
 
+  const publicSubscriberPathsNotifierKit = makeNotifierKit(
+    /** @type {  OfferToPublicSubscriberPaths | null } */ (null),
+  );
+
+  const updatePublicSubscriberPaths =
+    publicSubscriberPathsNotifierKit.updater.updateState;
+
   const currentFollower = followPublished(`wallet.${address}.current`);
-  const { blockHeight, brandToPurse } = await fetchCurrent(
-    currentFollower,
-  ).catch(() => {
-    throw new Error(Errors.noSmartWallet);
-  });
+  const { blockHeight, brandToPurse, offerToPublicSubscriberPaths } =
+    await fetchCurrent(currentFollower).catch(() => {
+      throw new Error(Errors.noSmartWallet);
+    });
   updatePurses(brandToPurse);
+  updatePublicSubscriberPaths(harden(offerToPublicSubscriberPaths));
 
   const latestFollower = followPublished(`wallet.${address}`);
   followLatest({
@@ -48,5 +63,6 @@ export const watchWallet = async (leader, address, context) => {
 
   return {
     pursesNotifier: pursesNotifierKit.notifier,
+    publicSubscribersNotifier: publicSubscriberPathsNotifierKit.notifier,
   };
 };

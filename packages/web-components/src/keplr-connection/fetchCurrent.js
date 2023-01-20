@@ -23,6 +23,7 @@ export const fetchCurrent = async currentFollower => {
   /** @type {import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} */
   const currentEl = latest.value;
   const wallet = currentEl.value;
+  const { offerToPublicSubscriberPaths } = wallet;
 
   /** @type {Map<Brand, PurseInfo>} */
   const brandToPurse = new Map();
@@ -43,5 +44,6 @@ export const fetchCurrent = async currentFollower => {
   return {
     blockHeight: currentEl.blockHeight,
     brandToPurse,
+    offerToPublicSubscriberPaths,
   };
 };
