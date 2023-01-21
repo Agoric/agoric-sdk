@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { provide, vivifyFarClassKit } from '@agoric/vat-data';
+import { provide, prepareFarClassKit } from '@agoric/vat-data';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const { version } = vatParameters;
@@ -9,10 +9,16 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const emptyFacetI = M.interface('Facet', {});
   const iKit = harden({ facet1: emptyFacetI, facet2: emptyFacetI });
   const initState = () => ({});
-  const makeInstance = vivifyFarClassKit(baggage, 'ClassKit', iKit, initState, {
-    facet1: {},
-    facet2: {},
-  });
+  const makeInstance = prepareFarClassKit(
+    baggage,
+    'ClassKit',
+    iKit,
+    initState,
+    {
+      facet1: {},
+      facet2: {},
+    },
+  );
   const singleton = provide(baggage, 'durableSingleton', () => makeInstance());
 
   return Far('root', {

@@ -8,8 +8,8 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableMapStore,
-  vivifyFarInstance,
-  vivifyKind,
+  prepareFarInstance,
+  prepareKind,
 } from '@agoric/vat-data';
 
 import { cleanProposal } from '../cleanProposal.js';
@@ -154,7 +154,7 @@ export const makeZCFZygote = async (
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
   // added in offer(). ZCF responds with the exitObj and offerResult.
-  const makeHandleOfferObj = vivifyKind(
+  const makeHandleOfferObj = prepareKind(
     zcfBaggage,
     'handleOfferObj',
     offerHandlerTaker => ({ offerHandlerTaker }),
@@ -193,7 +193,7 @@ export const makeZCFZygote = async (
       .optional(M.string())
       .returns(OfferHandlerShape),
   });
-  const taker = vivifyFarInstance(zcfBaggage, 'offer handler taker', TakerI, {
+  const taker = prepareFarInstance(zcfBaggage, 'offer handler taker', TakerI, {
     take: takeOfferHandler,
   });
   const handleOfferObj = makeHandleOfferObj(taker);
@@ -210,17 +210,22 @@ export const makeZCFZygote = async (
     return evalContractBundle(bundle);
   };
   // evaluate the contract (either the first version, or an upgrade)
-  const { start, buildRootObject, privateArgsShape, customTermsShape, vivify } =
-    await evaluateContract();
+  const {
+    start,
+    buildRootObject,
+    privateArgsShape,
+    customTermsShape,
+    prepare,
+  } = await evaluateContract();
 
-  if (start === undefined && vivify === undefined) {
+  if (start === undefined && prepare === undefined) {
     buildRootObject === undefined ||
       Fail`Did you provide a vat bundle instead of a contract bundle?`;
     Fail`unrecognized contract exports`;
   }
   !start ||
-    !vivify ||
-    Fail`contract must provide exactly one of "start" and "vivify"`;
+    !prepare ||
+    Fail`contract must provide exactly one of "start" and "prepare"`;
 
   /** @type {ZCF} */
   // Using Remotable rather than Far because there are too many complications
@@ -354,7 +359,7 @@ export const makeZCFZygote = async (
       instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
 
-      const startFn = start || vivify;
+      const startFn = start || prepare;
       if (privateArgsShape) {
         fit(privateArgs, privateArgsShape);
       }
@@ -371,7 +376,7 @@ export const makeZCFZygote = async (
             publicFacet,
             creatorInvitation,
           ].every(canBeDurable);
-          if (vivify || allDurable) {
+          if (prepare || allDurable) {
             zcfBaggage.init('creatorFacet', creatorFacet);
             zcfBaggage.init('publicFacet', publicFacet);
             zcfBaggage.init('creatorInvitation', creatorInvitation);
@@ -390,12 +395,12 @@ export const makeZCFZygote = async (
     restartContract: async (privateArgs = undefined) => {
       const instanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
       zoeInstanceAdmin = instanceAdmin;
-      vivify || Fail`vivify must be defined to upgrade a contract`;
+      prepare || Fail`prepare must be defined to upgrade a contract`;
       initSeatMgrAndMintFactory();
 
       // restart an upgradeable contract
       return E.when(
-        vivify(zcf, privateArgs, contractBaggage),
+        prepare(zcf, privateArgs, contractBaggage),
         ({
           creatorFacet = undefined,
           publicFacet = undefined,

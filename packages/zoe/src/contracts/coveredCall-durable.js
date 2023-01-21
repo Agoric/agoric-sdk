@@ -1,5 +1,5 @@
 import { fit, M } from '@agoric/store';
-import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
+import { prepareKind, prepareSingleton } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
 
@@ -32,7 +32,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
   // XXX the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
-  const makeExerciser = vivifyKind(
+  const makeExerciser = prepareKind(
     instanceBaggage,
     'makeExerciserKindHandle',
     sellSeat => ({ sellSeat }),
@@ -78,7 +78,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
-  const creatorFacet = vivifySingleton(instanceBaggage, 'creatorFacet', {
+  const creatorFacet = prepareSingleton(instanceBaggage, 'creatorFacet', {
     makeInvitation: () => zcf.makeInvitation(makeOption, 'makeCallOption'),
   });
   return harden({ creatorFacet });

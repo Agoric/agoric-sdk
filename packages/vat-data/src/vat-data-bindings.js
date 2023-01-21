@@ -103,7 +103,7 @@ harden(partialAssign);
  * where the total number of calls to `provide` must be
  * low cardinality, since we keep the bookkeeping to detect collisions
  * in normal language-heap memory. All the other baggage-oriented
- * `provide*` and `vivify*` functions call `provide`,
+ * `provide*` and `prepare*` functions call `provide`,
  * and so impose the same constraints. This is consistent with
  * our expected durability patterns: What we store in baggage are
  *    * kindHandles, which are per kind, which must be low cardinality
@@ -117,7 +117,7 @@ harden(partialAssign);
  * TODO https://github.com/Agoric/agoric-sdk/pull/5875 :
  * Implement development-time instrumentation to detect when
  * `provide` violates the above prescription, and is called more
- * than one in the same vat incarnation with the same
+ * than once in the same vat incarnation with the same
  * baggage,key pair.
  *
  * @template K,V

@@ -3,8 +3,8 @@ import {
   makeScalarBigWeakMapStore,
   provideDurableMapStore,
   provideDurableWeakMapStore,
-  vivifyFarClassKit,
-  vivifyKind,
+  prepareFarClassKit,
+  prepareKind,
   provide,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
@@ -135,7 +135,7 @@ export const createSeatManager = (
     }
   };
 
-  const makeZCFSeatInternal = vivifyKind(
+  const makeZCFSeatInternal = prepareKind(
     zcfBaggage,
     'zcfSeat',
     proposal => ({ proposal }),
@@ -263,7 +263,7 @@ export const createSeatManager = (
     }),
   });
 
-  const makeSeatManagerKit = vivifyFarClassKit(
+  const makeSeatManagerKit = prepareFarClassKit(
     zcfBaggage,
     'ZcfSeatManager',
     ZcfSeatManagerIKit,

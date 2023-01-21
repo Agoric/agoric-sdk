@@ -6,10 +6,10 @@ export {
   defineVirtualFarClassKit,
   defineDurableFarClass,
   defineDurableFarClassKit,
-  vivifyFarClass,
-  vivifyFarClassKit,
-  vivifyFarInstance,
-  vivifySingleton,
+  prepareFarClass,
+  prepareFarClassKit,
+  prepareFarInstance,
+  prepareSingleton,
 } from './far-class-utils.js';
 
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */

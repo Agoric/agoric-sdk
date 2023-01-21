@@ -73,9 +73,9 @@ type DefineKindOptions<C> = {
    * Intended for internal use only.
    * Should the raw methods receive their `context` argument as their first
    * argument or as their `this` binding? For `defineDurableKind` and its
-   * siblings (including `vivifySingleton`), this defaults to off, meaning that
+   * siblings (including `prepareSingleton`), this defaults to off, meaning that
    * their behavior methods receive `context` as their first argument.
-   * `vivifyFarClass` and its siblings (including `vivifyFarInstance`) use
+   * `prepareFarClass` and its siblings (including `prepareFarInstance`) use
    * this flag internally to indicate that their methods receive `context`
    * as their `this` binding.
    */
@@ -88,7 +88,7 @@ type DefineKindOptions<C> = {
    * pattern is satisfied before calling the raw method.
    *
    * In `defineDurableKind` and its siblings, this defaults to off.
-   * `vivifyFarClass` use this internally to protect their raw class methods
+   * `prepareFarClass` use this internally to protect their raw class methods
    * using the provided interface.
    */
   interfaceGuard?: InterfaceGuard<unknown>;
@@ -173,8 +173,8 @@ interface PickFacet {
   ): (...args: Parameters<M>) => ReturnType<M>[F];
 }
 
-/** @deprecated Use vivifyFarClass instead */
-type VivifyKind = <P, S, F>(
+/** @deprecated Use prepareFarClass instead */
+type PrepareKind = <P, S, F>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,
@@ -182,8 +182,8 @@ type VivifyKind = <P, S, F>(
   options?: DefineKindOptions<KindContext<S, F>>,
 ) => (...args: P) => KindFacet<F>;
 
-/** @deprecated Use vivifyFarClassKit instead */
-type VivifyKindMulti = <P, S, B>(
+/** @deprecated Use prepareFarClassKit instead */
+type PrepareKindMulti = <P, S, B>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,

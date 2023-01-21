@@ -1,14 +1,14 @@
 import { makeTracer } from '@agoric/internal';
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
-import { vivifyVaultHolder } from './vaultHolder.js';
+import { prepareVaultHolder } from './vaultHolder.js';
 
 const trace = makeTracer('IV');
 
-export const vivifyVaultKit = baggage => {
-  trace('vivifyVaultKit', baggage);
+export const prepareVaultKit = baggage => {
+  trace('prepareVaultKit', baggage);
 
-  const makeVaultHolder = vivifyVaultHolder(baggage);
+  const makeVaultHolder = prepareVaultHolder(baggage);
   /**
    * Create a kit of utilities for use of the vault.
    *
@@ -18,7 +18,7 @@ export const vivifyVaultKit = baggage => {
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
   const makeVaultKit = (vault, storageNode, marshaller, assetSubscriber) => {
-    trace('vivifyVaultKit makeVaultKit');
+    trace('prepareVaultKit makeVaultKit');
     const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
     const vaultKit = harden({
       publicSubscribers: {
@@ -39,4 +39,4 @@ export const vivifyVaultKit = baggage => {
   return makeVaultKit;
 };
 
-/** @typedef {(ReturnType<ReturnType<typeof vivifyVaultKit>>)} VaultKit */
+/** @typedef {(ReturnType<ReturnType<typeof prepareVaultKit>>)} VaultKit */

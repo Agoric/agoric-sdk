@@ -20,7 +20,7 @@ import {
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
-import { vivifyVault } from '../../src/vaultFactory/vault.js';
+import { prepareVault } from '../../src/vaultFactory/vault.js';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -156,7 +156,7 @@ export async function start(zcf, privateArgs, baggage) {
     },
   });
 
-  const makeVault = vivifyVault(baggage);
+  const makeVault = prepareVault(baggage);
 
   const { self: vault } = await makeVault(
     zcf,

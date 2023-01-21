@@ -13,7 +13,7 @@ bootstrap -> Zoe: makeZoeKit(...)
 Zoe -> ZoeStorageManager : makeZoeStorageManager()
 ZoeStorageManager -> ZoeStorageManager : provideIssuerStorage()
 ZoeStorageManager -> ZoeStorageManager : provideEscrowStorage()
-ZoeStorageManager -> ZoeStorageManager : vivifyInvitationKit()
+ZoeStorageManager -> ZoeStorageManager : prepareInvitationKit()
 ZoeStorageManager -> InstanceAdminStorage : makeInstanceAdminStorage()
 InstanceAdminStorage -> InstanceAdminStorage : instanceToInstanceAdmin
 ZoeStorageManager /- InstanceAdminStorage : <font color=gray><size:12>getters..., \n<font color=gray><size:12>initInstanceAdmin

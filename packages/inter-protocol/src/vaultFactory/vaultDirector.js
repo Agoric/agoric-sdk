@@ -19,7 +19,7 @@ import {
   makeStoredSubscriber,
   observeIteration,
   SubscriberShape,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
 } from '@agoric/notifier';
 import {
   defineDurableFarClassKit,
@@ -35,7 +35,7 @@ import {
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
-import { vivifyVaultManagerKit } from './vaultManager.js';
+import { prepareVaultManagerKit } from './vaultManager.js';
 import { provideChildBaggage } from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
@@ -152,7 +152,7 @@ const baggage = makeScalarBigMapStore('Vault Director baggage', {
   durable: true,
 });
 
-const makeVaultDirectorMetricsPublishKit = vivifyDurablePublishKit(
+const makeVaultDirectorMetricsPublishKit = prepareDurablePublishKit(
   baggage,
   'Vault Director metrics',
 );
@@ -471,7 +471,7 @@ const makeVaultDirector = defineDurableFarClassKit(
         const brandName = await E(collateralBrand).getAllegedName();
         const makeVaultManager = managerBaggages.addChild(
           brandName,
-          vivifyVaultManagerKit,
+          prepareVaultManagerKit,
         );
 
         const { self: vm } = makeVaultManager(

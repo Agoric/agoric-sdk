@@ -9,7 +9,7 @@ import {
   makeStoredPublishKit,
   makeStoredSubscriber,
   observeNotifier,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/index.js';
@@ -115,12 +115,12 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { marshaller, storageNode } = privateArgs;
   assertAllDefined({ marshaller, storageNode });
 
-  const makeAnswerPublishKit = vivifyDurablePublishKit(
+  const makeAnswerPublishKit = prepareDurablePublishKit(
     baggage,
     'AnswerPublishKit',
   );
 
-  const makeLatestRoundPublishKit = vivifyDurablePublishKit(
+  const makeLatestRoundPublishKit = prepareDurablePublishKit(
     baggage,
     'LatestRoundPublishKit',
   );
