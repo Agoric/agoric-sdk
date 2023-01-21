@@ -5,7 +5,7 @@ import {
   offerTo,
   atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { provideDurableMapStore, vivifyKindMulti } from '@agoric/vat-data';
+import { provideDurableMapStore, prepareKindMulti } from '@agoric/vat-data';
 
 import { makeTracer } from '@agoric/internal';
 import { AMM_INSTANCE } from './params.js';
@@ -431,7 +431,7 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const makeAssetReserve = vivifyKindMulti(baggage, 'assetReserve', init, {
+  const makeAssetReserve = prepareKindMulti(baggage, 'assetReserve', init, {
     publicFacet,
     creatorFacet: governorFacet,
     shortfallReportingFacet,

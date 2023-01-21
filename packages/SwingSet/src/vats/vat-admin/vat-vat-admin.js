@@ -14,8 +14,8 @@ import {
   provide,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
-  vivifyKind,
-  vivifySingleton,
+  prepareKind,
+  prepareSingleton,
 } from '@agoric/vat-data';
 
 const { details: X, quote: q, Fail } = assert;
@@ -28,7 +28,7 @@ function producePRR() {
 }
 
 export function buildRootObject(vatPowers, _vatParameters, baggage) {
-  const criticalVatKey = vivifySingleton(baggage, 'criticalVatKey', {});
+  const criticalVatKey = prepareSingleton(baggage, 'criticalVatKey', {});
 
   const { D } = vatPowers;
   const pendingVatCreations = new Map(); // vatID -> { resolve, reject } for promise
@@ -70,7 +70,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   const meterNotifiersTemp = new WeakMap(); // meter -> { notifier, updater } // XXX TEMP
 
-  const makeMeter = vivifyKind(
+  const makeMeter = prepareKind(
     baggage,
     'meter',
     (remaining, threshold) => {
@@ -96,7 +96,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     { finish: finishMeter },
   );
 
-  const makeUnlimitedMeter = vivifyKind(
+  const makeUnlimitedMeter = prepareKind(
     baggage,
     'unlimitedMeter',
     () => {
@@ -268,59 +268,64 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     );
   }
 
-  const makeAdminNode = vivifyKind(baggage, 'adminNode', vatID => ({ vatID }), {
-    terminateWithFailure({ state }, reason) {
-      insistVatAdminServiceNotPaused();
-      assertRunningVat(state.vatID, 'terminateWithFailure');
-      exitingVats.add(state.vatID);
-      D(vatAdminDev).terminateWithFailure(state.vatID, reason);
-    },
-    done({ state }) {
-      // In some world it might make sense to allow this operation on
-      // terminated vats (since they *do* have a 'done' status after all,
-      // i.e., non-running) but we expect the promise that's returned here to
-      // reject if the vat fails, and if the vat has already exited then its
-      // exit status has been lost.  However, by rejecting the 'done'
-      // operation itself we can signal the non-running condition without
-      // promoting the illusion that we know whether it exited cleanly or not.
-      assertRunningVat(state.vatID, 'done', true);
-      const [doneP] = runningVats.get(state.vatID);
-      return doneP;
-    },
-    upgrade({ state }, bundlecap, options) {
-      insistVatAdminServiceNotPaused();
-      assertRunningVat(state.vatID, 'upgrade');
-      let bundleID;
-      try {
-        bundleID = D(bundlecap).getBundleID();
-      } catch (e) {
-        // 'bundlecap' probably wasn't a bundlecap
-        Fail`vatAdmin.upgrade() requires a bundlecap: ${e}`;
-      }
-      return upgradeVat(state.vatID, bundleID, options);
-    },
-    changeOptions({ state }, options) {
-      insistVatAdminServiceNotPaused();
-      assertRunningVat(state.vatID, 'changeOptions');
-      for (const option of Object.getOwnPropertyNames(options)) {
-        const value = options[option];
-        switch (option) {
-          case 'reapInterval':
-            assert(
-              value === 'never' || isNat(value),
-              'invalid reapInterval value',
-            );
-            break;
-          case 'virtualObjectCacheSize':
-            assert(isNat(value), 'invalid virtualObjectCacheSize value');
-            break;
-          default:
-            assert.fail(`invalid option "${option}"`);
+  const makeAdminNode = prepareKind(
+    baggage,
+    'adminNode',
+    vatID => ({ vatID }),
+    {
+      terminateWithFailure({ state }, reason) {
+        insistVatAdminServiceNotPaused();
+        assertRunningVat(state.vatID, 'terminateWithFailure');
+        exitingVats.add(state.vatID);
+        D(vatAdminDev).terminateWithFailure(state.vatID, reason);
+      },
+      done({ state }) {
+        // In some world it might make sense to allow this operation on
+        // terminated vats (since they *do* have a 'done' status after all,
+        // i.e., non-running) but we expect the promise that's returned here to
+        // reject if the vat fails, and if the vat has already exited then its
+        // exit status has been lost.  However, by rejecting the 'done'
+        // operation itself we can signal the non-running condition without
+        // promoting the illusion that we know whether it exited cleanly or not.
+        assertRunningVat(state.vatID, 'done', true);
+        const [doneP] = runningVats.get(state.vatID);
+        return doneP;
+      },
+      upgrade({ state }, bundlecap, options) {
+        insistVatAdminServiceNotPaused();
+        assertRunningVat(state.vatID, 'upgrade');
+        let bundleID;
+        try {
+          bundleID = D(bundlecap).getBundleID();
+        } catch (e) {
+          // 'bundlecap' probably wasn't a bundlecap
+          Fail`vatAdmin.upgrade() requires a bundlecap: ${e}`;
         }
-      }
-      D(vatAdminDev).changeOptions(state.vatID, options);
+        return upgradeVat(state.vatID, bundleID, options);
+      },
+      changeOptions({ state }, options) {
+        insistVatAdminServiceNotPaused();
+        assertRunningVat(state.vatID, 'changeOptions');
+        for (const option of Object.getOwnPropertyNames(options)) {
+          const value = options[option];
+          switch (option) {
+            case 'reapInterval':
+              assert(
+                value === 'never' || isNat(value),
+                'invalid reapInterval value',
+              );
+              break;
+            case 'virtualObjectCacheSize':
+              assert(isNat(value), 'invalid virtualObjectCacheSize value');
+              break;
+            default:
+              assert.fail(`invalid option "${option}"`);
+          }
+        }
+        D(vatAdminDev).changeOptions(state.vatID, options);
+      },
     },
-  });
+  );
 
   function finishVatCreation(vatID) {
     const [pendingP, pendingRR] = producePRR();
@@ -427,7 +432,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     return harden(options);
   }
 
-  const vatAdminService = vivifySingleton(baggage, 'vatAdminService', {
+  const vatAdminService = prepareSingleton(baggage, 'vatAdminService', {
     waitForBundleCap(bundleID) {
       insistVatAdminServiceNotPaused();
       const bundlecap = D(vatAdminDev).getBundleCap(bundleID);

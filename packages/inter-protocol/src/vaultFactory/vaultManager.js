@@ -20,13 +20,13 @@ import {
   makeStoredSubscriber,
   observeNotifier,
   SubscriberShape,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
 } from '@agoric/notifier';
 import {
   M,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
-  vivifyFarClassKit,
+  prepareFarClassKit,
 } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -45,7 +45,7 @@ import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
-import { Phase, vivifyVault } from './vault.js';
+import { Phase, prepareVault } from './vault.js';
 
 const { details: X } = assert;
 
@@ -188,13 +188,13 @@ const finish = context => {
 
 // TODO move params of initState here because it's a singleton
 // and remove from State what doesn't need to be stored between upgrades
-export const vivifyVaultManagerKit = baggage => {
-  const makeVault = vivifyVault(baggage);
-  const makeVaultManagerMetricsPublishKit = vivifyDurablePublishKit(
+export const prepareVaultManagerKit = baggage => {
+  const makeVault = prepareVault(baggage);
+  const makeVaultManagerMetricsPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Manager metrics',
   );
-  const makeVaultManagerAssetsPublishKit = vivifyDurablePublishKit(
+  const makeVaultManagerAssetsPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Manager assets',
   );
@@ -333,7 +333,7 @@ export const vivifyVaultManagerKit = baggage => {
   };
 
   // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
-  return vivifyFarClassKit(
+  return prepareFarClassKit(
     baggage,
     'VaultManagerKit',
     {
@@ -1068,7 +1068,7 @@ export const vivifyVaultManagerKit = baggage => {
 };
 
 /**
- * @typedef {ReturnType<ReturnType<typeof vivifyVaultManagerKit>>['self']} VaultManager
+ * @typedef {ReturnType<ReturnType<typeof prepareVaultManagerKit>>['self']} VaultManager
  * Each VaultManager manages a single collateral type.
  *
  * It manages some number of outstanding loans, each called a Vault, for which

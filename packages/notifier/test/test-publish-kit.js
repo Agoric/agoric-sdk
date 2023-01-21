@@ -16,7 +16,7 @@ import {
   makePublishKit,
   subscribeEach,
   subscribeLatest,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
 } from '../src/index.js';
 import '../src/types-ambient.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
@@ -32,7 +32,7 @@ const makeBaggage = () => makeScalarBigMapStore('baggage', { durable: true });
 
 const makers = {
   publishKit: makePublishKit,
-  durablePublishKit: vivifyDurablePublishKit(
+  durablePublishKit: prepareDurablePublishKit(
     makeBaggage(),
     'DurablePublishKit',
   ),
@@ -203,7 +203,7 @@ test('publish kit allows non-durable values', async t => {
   await assertTransmission(t, makePublishKit(), nonPassable, 'fail');
 });
 test('durable publish kit rejects non-durable values', async t => {
-  const makeDurablePublishKit = vivifyDurablePublishKit(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     makeBaggage(),
     'DurablePublishKit',
   );
@@ -374,7 +374,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
 // https://github.com/Agoric/agoric-sdk/pull/6502#discussion_r1008492055
 test.skip('durable publish kit upgrade trauma', async t => {
   const baggage = makeBaggage();
-  const makeDurablePublishKit = vivifyDurablePublishKit(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'DurablePublishKit',
   );

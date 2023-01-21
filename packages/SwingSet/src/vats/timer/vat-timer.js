@@ -10,8 +10,8 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   defineDurableKindMulti,
-  vivifyKind,
-  vivifySingleton,
+  prepareKind,
+  prepareSingleton,
 } from '@agoric/vat-data';
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { TimeMath } from './timeMath.js';
@@ -241,7 +241,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
 
   // These Kinds are the ongoing obligations of the vat: all future
   // versions must define behaviors for these. Search for calls to
-  // 'vivifyKind', 'vivifySingleton', or 'defineDurableKindMulti'.
+  // 'prepareKind', 'prepareSingleton', or 'defineDurableKindMulti'.
   // * oneShotEvent
   // * promiseEvent
   // * repeaterEvent
@@ -397,7 +397,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   };
 
-  const makeOneShotEvent = vivifyKind(
+  const makeOneShotEvent = prepareKind(
     baggage,
     'oneShotEvent',
     initOneShotEvent,
@@ -443,7 +443,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   /**
    * @returns { PromiseEvent }
    */
-  const makePromiseEvent = vivifyKind(
+  const makePromiseEvent = prepareKind(
     baggage,
     'promiseEvent',
     initPromiseEvent,
@@ -546,7 +546,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   };
 
-  const makeRepeaterEvent = vivifyKind(
+  const makeRepeaterEvent = prepareKind(
     baggage,
     'repeaterEvent',
     initRepeaterEvent,
@@ -740,7 +740,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
         });
     },
   };
-  const createIterator = vivifyKind(
+  const createIterator = prepareKind(
     baggage,
     'timerIterator',
     initIterator,
@@ -882,11 +882,11 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
 
   // -- now we finally build the TimerService
 
-  const wakeupHandler = vivifySingleton(baggage, 'wakeupHandler', {
+  const wakeupHandler = prepareSingleton(baggage, 'wakeupHandler', {
     wake: processAndReschedule,
   });
 
-  const timerService = vivifySingleton(baggage, 'timerService', {
+  const timerService = prepareSingleton(baggage, 'timerService', {
     getCurrentTimestamp,
     setWakeup /* one-shot with handler (absolute) */,
     wakeAt /* one-shot with Promise (absolute) */,
@@ -900,13 +900,13 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   });
 
   // attenuated read-only facet
-  const timerClock = vivifySingleton(baggage, 'timerClock', {
+  const timerClock = prepareSingleton(baggage, 'timerClock', {
     getCurrentTimestamp,
     getTimerBrand: () => timerBrand,
   });
 
   // powerless identifier
-  const timerBrand = vivifySingleton(baggage, 'timerBrand', {
+  const timerBrand = prepareSingleton(baggage, 'timerBrand', {
     isMyTimerService: alleged => alleged === timerService,
     isMyClock: alleged => alleged === timerClock,
   });

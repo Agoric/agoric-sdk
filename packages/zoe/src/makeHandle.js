@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
 import { initEmpty, makeHeapFarInstance } from '@agoric/store';
-import { vivifyFarClass } from '@agoric/vat-data';
+import { prepareFarClass } from '@agoric/vat-data';
 
 import { HandleI } from './typeGuards.js';
 
@@ -16,7 +16,7 @@ const { Fail } = assert;
  */
 export const defineDurableHandle = (baggage, handleType) => {
   typeof handleType === 'string' || Fail`handleType must be a string`;
-  const makeHandle = vivifyFarClass(
+  const makeHandle = prepareFarClass(
     baggage,
     `${handleType}Handle`,
     HandleI,

@@ -6,7 +6,7 @@ import {
   provideDurableMapStore,
   provideDurableSetStore,
   provideKindHandle,
-  vivifySingleton,
+  prepareSingleton,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
@@ -286,7 +286,7 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   };
 
   // Expose a durable service singleton.
-  return vivifySingleton(baggage, serviceSingletonBaggageKey, {
+  return prepareSingleton(baggage, serviceSingletonBaggageKey, {
     ...serviceMailboxFunctions,
     ...serviceNetworkFunctions,
   });

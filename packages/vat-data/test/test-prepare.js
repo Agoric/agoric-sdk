@@ -3,9 +3,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  vivifyFarClass,
-  vivifyFarClassKit,
-  vivifyFarInstance,
+  prepareFarClass,
+  prepareFarClassKit,
+  prepareFarInstance,
 } from '../src/far-class-utils.js';
 import { makeScalarBigMapStore } from '../src/vat-data-bindings.js';
 
@@ -23,10 +23,10 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test vivifyFarClass', t => {
+test('test prepareFarClass', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
-  const makeUpCounter = vivifyFarClass(
+  const makeUpCounter = prepareFarClass(
     baggage,
     'UpCounter',
     UpCounterI,
@@ -57,10 +57,10 @@ test('test vivifyFarClass', t => {
   makeUpCounter('str');
 });
 
-test('test vivifyFarClassKit', t => {
+test('test prepareFarClassKit', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
-  const makeCounterKit = vivifyFarClassKit(
+  const makeCounterKit = prepareFarClassKit(
     baggage,
     'Counter',
     { up: UpCounterI, down: DownCounterI },
@@ -105,11 +105,11 @@ test('test vivifyFarClassKit', t => {
   makeCounterKit('str');
 });
 
-test('test vivifyFarInstance', t => {
+test('test prepareFarInstance', t => {
   const baggage = makeScalarBigMapStore('baggage', { durable: true });
 
   let x = 3;
-  const upCounter = vivifyFarInstance(baggage, 'upCounter', UpCounterI, {
+  const upCounter = prepareFarInstance(baggage, 'upCounter', UpCounterI, {
     incr(y = 1) {
       x += y;
       return x;

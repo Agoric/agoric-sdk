@@ -137,7 +137,7 @@ harden(defineDurableFarClassKit);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const vivifyFarClass = (
+export const prepareFarClass = (
   baggage,
   kindName,
   interfaceGuard,
@@ -152,7 +152,7 @@ export const vivifyFarClass = (
     methods,
     options,
   );
-harden(vivifyFarClass);
+harden(prepareFarClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -166,7 +166,7 @@ harden(vivifyFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const vivifyFarClassKit = (
+export const prepareFarClassKit = (
   baggage,
   kindName,
   interfaceGuardKit,
@@ -181,7 +181,7 @@ export const vivifyFarClassKit = (
     facets,
     options,
   );
-harden(vivifyFarClassKit);
+harden(prepareFarClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -194,14 +194,14 @@ harden(vivifyFarClassKit);
  * @param {DefineKindOptions<{ self: M }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const vivifyFarInstance = (
+export const prepareFarInstance = (
   baggage,
   kindName,
   interfaceGuard,
   methods,
   options = undefined,
 ) => {
-  const makeSingleton = vivifyFarClass(
+  const makeSingleton = prepareFarClass(
     baggage,
     kindName,
     interfaceGuard,
@@ -214,10 +214,10 @@ export const vivifyFarInstance = (
   // @ts-ignore could be instantiated with an arbitrary type
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
-harden(vivifyFarInstance);
+harden(prepareFarInstance);
 
 /**
- * @deprecated Use vivifyFarInstance instead.
+ * @deprecated Use prepareFarInstance instead.
  * @template {Record<string | symbol, CallableFunction>} T methods
  * @param {Baggage} baggage
  * @param {string} kindName
@@ -225,10 +225,10 @@ harden(vivifyFarInstance);
  * @param {DefineKindOptions<{ self: T }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const vivifySingleton = (
+export const prepareSingleton = (
   baggage,
   kindName,
   methods,
   options = undefined,
-) => vivifyFarInstance(baggage, kindName, undefined, methods, options);
-harden(vivifySingleton);
+) => prepareFarInstance(baggage, kindName, undefined, methods, options);
+harden(prepareSingleton);

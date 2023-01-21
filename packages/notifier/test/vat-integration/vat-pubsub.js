@@ -1,9 +1,9 @@
 import { Far } from '@endo/marshal';
 import { provide } from '@agoric/vat-data';
-import { vivifyDurablePublishKit } from '../../src/index.js';
+import { prepareDurablePublishKit } from '../../src/index.js';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
-  const makeDurablePublishKit = vivifyDurablePublishKit(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'DurablePublishKit',
   );

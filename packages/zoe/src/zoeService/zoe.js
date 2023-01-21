@@ -16,14 +16,14 @@ import '../internal-types.js';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore, vivifyFarInstance } from '@agoric/vat-data';
+import { makeScalarBigMapStore, prepareFarInstance } from '@agoric/vat-data';
 
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
 import { makeInvitationQueryFns } from './invitationQueries.js';
 import { getZcfBundleCap } from './createZCFVat.js';
-import { defaultFeeIssuerConfig, vivifyFeeMint } from './feeMint.js';
+import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -77,7 +77,11 @@ const makeZoeKit = (
     vatAdminSvcP = zoeBaggage.get('vatAdminSvc');
   }
 
-  const feeMintKit = vivifyFeeMint(zoeBaggage, feeIssuerConfig, shutdownZoeVat);
+  const feeMintKit = prepareFeeMint(
+    zoeBaggage,
+    feeIssuerConfig,
+    shutdownZoeVat,
+  );
 
   // guarantee that vatAdminSvcP has been defined.
   const getActualVatAdminSvcP = () => {
@@ -156,7 +160,7 @@ const makeZoeKit = (
   };
 
   /** @type {ZoeService} */
-  const zoeService = vivifyFarInstance(zoeBaggage, 'ZoeService', ZoeServiceI, {
+  const zoeService = prepareFarInstance(zoeBaggage, 'ZoeService', ZoeServiceI, {
     install(bundleId) {
       return dataAccess.installBundle(bundleId);
     },

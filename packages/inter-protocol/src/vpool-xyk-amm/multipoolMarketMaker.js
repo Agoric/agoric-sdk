@@ -14,7 +14,7 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   provide,
-  vivifyKindMulti,
+  prepareKindMulti,
 } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -479,7 +479,7 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const makeAMM = vivifyKindMulti(baggage, 'AMM', initEmpty, {
+  const makeAMM = prepareKindMulti(baggage, 'AMM', initEmpty, {
     publicFacet,
     creatorFacet: governorFacet,
     limitedCreatorFacet,

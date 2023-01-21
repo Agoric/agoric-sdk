@@ -1,7 +1,11 @@
-import { makeDurableIssuerKit, AssetKind, vivifyIssuerKit } from '@agoric/ertp';
+import {
+  makeDurableIssuerKit,
+  AssetKind,
+  prepareIssuerKit,
+} from '@agoric/ertp';
 import { initEmpty } from '@agoric/store';
 import {
-  vivifyKindMulti,
+  prepareKindMulti,
   provideDurableMapStore,
   provide,
 } from '@agoric/vat-data';
@@ -21,7 +25,7 @@ export const defaultFeeIssuerConfig = harden(
  * @param {FeeIssuerConfig} feeIssuerConfig
  * @param {ShutdownWithFailure} shutdownZoeVat
  */
-const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
+const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');
   if (!mintBaggage.has(FEE_MINT_KIT)) {
     /** @type {IssuerKit} */
@@ -34,7 +38,7 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
     );
     mintBaggage.init(FEE_MINT_KIT, feeIssuerKit);
   } else {
-    vivifyIssuerKit(mintBaggage, shutdownZoeVat);
+    prepareIssuerKit(mintBaggage, shutdownZoeVat);
   }
 
   const getFeeIssuerKit = ({ facets }, allegedFeeMintAccess) => {
@@ -45,7 +49,7 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
     return mintBaggage.get(FEE_MINT_KIT);
   };
 
-  const makeFeeMintKit = vivifyKindMulti(mintBaggage, 'FeeMint', initEmpty, {
+  const makeFeeMintKit = prepareKindMulti(mintBaggage, 'FeeMint', initEmpty, {
     feeMint: {
       getFeeIssuerKit,
       getFeeIssuer: () => mintBaggage.get(FEE_MINT_KIT).issuer,
@@ -59,4 +63,4 @@ const vivifyFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   return provide(zoeBaggage, 'theFeeMint', () => makeFeeMintKit());
 };
 
-export { vivifyFeeMint };
+export { prepareFeeMint };
