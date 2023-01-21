@@ -4,7 +4,7 @@ import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { canBeDurable, prepareFarClassKit } from '@agoric/vat-data';
+import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
 import './types-ambient.js';
 
@@ -385,7 +385,7 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
   /**
    * @returns {() => PublishKit<*>}
    */
-  return prepareFarClassKit(
+  return prepareExoClassKit(
     baggage,
     kindName,
     publishKitIKit,

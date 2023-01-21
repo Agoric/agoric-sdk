@@ -1,5 +1,5 @@
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { makeStore, makeHeapFarInstance, M } from '@agoric/store';
+import { makeStore, makeHeapExo, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
@@ -79,27 +79,23 @@ const start = (zcf, privateArgs) => {
       // Ensure that the voter can't get access to the unwrapped voteCap, and
       // has no control over the voteHandle or weight
       return harden({
-        voter: makeHeapFarInstance(`voter${index}`, VoterI, {
+        voter: makeHeapExo(`voter${index}`, VoterI, {
           castBallotFor(questionHandle, positions) {
             const { voteCap } = allQuestions.get(questionHandle);
             return E(voteCap).submitVote(voterHandle, positions, 1n);
           },
         }),
-        invitationMakers: makeHeapFarInstance(
-          'invitation makers',
-          InvitationMakerI,
-          {
-            makeVoteInvitation(positions, questionHandle) {
-              const continuingVoteHandler = cSeat => {
-                cSeat.exit();
-                const { voteCap } = allQuestions.get(questionHandle);
-                return E(voteCap).submitVote(voterHandle, positions, 1n);
-              };
+        invitationMakers: makeHeapExo('invitation makers', InvitationMakerI, {
+          makeVoteInvitation(positions, questionHandle) {
+            const continuingVoteHandler = cSeat => {
+              cSeat.exit();
+              const { voteCap } = allQuestions.get(questionHandle);
+              return E(voteCap).submitVote(voterHandle, positions, 1n);
+            };
 
-              return zcf.makeInvitation(continuingVoteHandler, 'vote');
-            },
+            return zcf.makeInvitation(continuingVoteHandler, 'vote');
           },
-        ),
+        }),
       });
     };
 
@@ -116,29 +112,25 @@ const start = (zcf, privateArgs) => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  const publicFacet = makeHeapFarInstance(
-    'Committee publicFacet',
-    ElectoratePublicI,
-    {
-      getQuestionSubscriber() {
-        return questionsSubscriber;
-      },
-      getOpenQuestions() {
-        return getOpenQuestions(allQuestions);
-      },
-      getName() {
-        return committeeName;
-      },
-      getInstance() {
-        return zcf.getInstance();
-      },
-      getQuestion(handleP) {
-        return getQuestion(handleP, allQuestions);
-      },
+  const publicFacet = makeHeapExo('Committee publicFacet', ElectoratePublicI, {
+    getQuestionSubscriber() {
+      return questionsSubscriber;
     },
-  );
+    getOpenQuestions() {
+      return getOpenQuestions(allQuestions);
+    },
+    getName() {
+      return committeeName;
+    },
+    getInstance() {
+      return zcf.getInstance();
+    },
+    getQuestion(handleP) {
+      return getQuestion(handleP, allQuestions);
+    },
+  });
 
-  const creatorFacet = makeHeapFarInstance(
+  const creatorFacet = makeHeapExo(
     'Committee creatorFacet',
     ElectorateCreatorI,
     {

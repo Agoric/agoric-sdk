@@ -30,7 +30,7 @@ export const provideKindHandle = (baggage, kindName) =>
 harden(provideKindHandle);
 
 /**
- * @deprecated Use prepareFarClass instead
+ * @deprecated Use prepareExoClass instead
  * @type {import('./types.js').PrepareKind}
  */
 export const prepareKind = (
@@ -49,7 +49,7 @@ export const prepareKind = (
 harden(prepareKind);
 
 /**
- * @deprecated Use prepareFarClassKit instead
+ * @deprecated Use prepareExoClassKit instead
  * @type {import('./types.js').PrepareKindMulti}
  */
 export const prepareKindMulti = (

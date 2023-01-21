@@ -1,6 +1,6 @@
 import { prepareDurablePublishKit, SubscriberShape } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import { M, prepareFarClassKit } from '@agoric/vat-data';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
@@ -88,7 +88,7 @@ export const makeZoeSeatAdminFactory = baggage => {
   // table entry.
   const ephemeralOfferResultStore = new Map();
 
-  return prepareFarClassKit(
+  return prepareExoClassKit(
     baggage,
     'ZoeSeatKit',
     ZoeSeatIKit,

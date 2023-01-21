@@ -15,7 +15,7 @@ import {
   ParamTypes,
   publicMixinAPI,
 } from '@agoric/governance';
-import { M, provide, prepareFarInstance } from '@agoric/vat-data';
+import { M, provide, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
@@ -275,7 +275,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     ...publicMixin,
   };
-  const publicFacet = prepareFarInstance(
+  const publicFacet = prepareExo(
     baggage,
     'Parity Stability Module',
     PSMI,

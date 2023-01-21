@@ -1,6 +1,6 @@
 import { Fail, q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
-import { prepareFarClass, provideDurableSetStore } from '@agoric/vat-data';
+import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
 import { M, initEmpty } from '@agoric/store';
 
 import {
@@ -24,7 +24,7 @@ const WakerI = M.interface('Waker', {
 export const makeMakeExiter = baggage => {
   const activeWakers = provideDurableSetStore(baggage, 'activeWakers');
 
-  const makeExitable = prepareFarClass(
+  const makeExitable = prepareExoClass(
     baggage,
     'ExitObject',
     ExitObjectI,
@@ -36,7 +36,7 @@ export const makeMakeExiter = baggage => {
       },
     },
   );
-  const makeWaived = prepareFarClass(
+  const makeWaived = prepareExoClass(
     baggage,
     'ExitWaived',
     ExitObjectI,
@@ -50,7 +50,7 @@ export const makeMakeExiter = baggage => {
       },
     },
   );
-  const makeWaker = prepareFarClass(
+  const makeWaker = prepareExoClass(
     baggage,
     'Waker',
     WakerI,

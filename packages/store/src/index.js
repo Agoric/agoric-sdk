@@ -58,9 +58,9 @@ export {
   defendPrototype,
   defendPrototypeKit,
   initEmpty,
-  defineHeapFarClass,
-  defineHeapFarClassKit,
-  makeHeapFarInstance,
+  defineHeapExoClass,
+  defineHeapExoClassKit,
+  makeHeapExo,
 } from './patterns/interface-tools.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';

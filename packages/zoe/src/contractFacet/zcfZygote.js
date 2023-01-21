@@ -8,7 +8,7 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableMapStore,
-  prepareFarInstance,
+  prepareExo,
   prepareKind,
 } from '@agoric/vat-data';
 
@@ -193,7 +193,7 @@ export const makeZCFZygote = async (
       .optional(M.string())
       .returns(OfferHandlerShape),
   });
-  const taker = prepareFarInstance(zcfBaggage, 'offer handler taker', TakerI, {
+  const taker = prepareExo(zcfBaggage, 'offer handler taker', TakerI, {
     take: takeOfferHandler,
   });
   const handleOfferObj = makeHandleOfferObj(taker);

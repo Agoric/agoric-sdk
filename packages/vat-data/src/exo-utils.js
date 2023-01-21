@@ -28,7 +28,7 @@ import {
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineVirtualFarClass = (
+export const defineVirtualExoClass = (
   tag,
   interfaceGuard,
   init,
@@ -42,7 +42,7 @@ export const defineVirtualFarClass = (
     thisfulMethods: true,
     interfaceGuard,
   });
-harden(defineVirtualFarClass);
+harden(defineVirtualExoClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -55,7 +55,7 @@ harden(defineVirtualFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineVirtualFarClassKit = (
+export const defineVirtualExoClassKit = (
   tag,
   interfaceGuardKit,
   init,
@@ -69,7 +69,7 @@ export const defineVirtualFarClassKit = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(defineVirtualFarClassKit);
+harden(defineVirtualExoClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -82,7 +82,7 @@ harden(defineVirtualFarClassKit);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineDurableFarClass = (
+export const defineDurableExoClass = (
   kindHandle,
   interfaceGuard,
   init,
@@ -96,7 +96,7 @@ export const defineDurableFarClass = (
     thisfulMethods: true,
     interfaceGuard,
   });
-harden(defineDurableFarClass);
+harden(defineDurableExoClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -109,7 +109,7 @@ harden(defineDurableFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I>}>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const defineDurableFarClassKit = (
+export const defineDurableExoClassKit = (
   kindHandle,
   interfaceGuardKit,
   init,
@@ -123,7 +123,7 @@ export const defineDurableFarClassKit = (
     thisfulMethods: true,
     interfaceGuard: interfaceGuardKit,
   });
-harden(defineDurableFarClassKit);
+harden(defineDurableExoClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -137,7 +137,7 @@ harden(defineDurableFarClassKit);
  * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const prepareFarClass = (
+export const prepareExoClass = (
   baggage,
   kindName,
   interfaceGuard,
@@ -145,14 +145,14 @@ export const prepareFarClass = (
   methods,
   options = undefined,
 ) =>
-  defineDurableFarClass(
+  defineDurableExoClass(
     provideKindHandle(baggage, kindName),
     interfaceGuard,
     init,
     methods,
     options,
   );
-harden(prepareFarClass);
+harden(prepareExoClass);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -166,7 +166,7 @@ harden(prepareFarClass);
  * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
  * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
  */
-export const prepareFarClassKit = (
+export const prepareExoClassKit = (
   baggage,
   kindName,
   interfaceGuardKit,
@@ -174,14 +174,14 @@ export const prepareFarClassKit = (
   facets,
   options = undefined,
 ) =>
-  defineDurableFarClassKit(
+  defineDurableExoClassKit(
     provideKindHandle(baggage, kindName),
     interfaceGuardKit,
     init,
     facets,
     options,
   );
-harden(prepareFarClassKit);
+harden(prepareExoClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
@@ -194,14 +194,14 @@ harden(prepareFarClassKit);
  * @param {DefineKindOptions<{ self: M }>} [options]
  * @returns {T & RemotableBrand<{}, T>}
  */
-export const prepareFarInstance = (
+export const prepareExo = (
   baggage,
   kindName,
   interfaceGuard,
   methods,
   options = undefined,
 ) => {
-  const makeSingleton = prepareFarClass(
+  const makeSingleton = prepareExoClass(
     baggage,
     kindName,
     interfaceGuard,
@@ -214,11 +214,11 @@ export const prepareFarInstance = (
   // @ts-ignore could be instantiated with an arbitrary type
   return provide(baggage, `the_${kindName}`, () => makeSingleton());
 };
-harden(prepareFarInstance);
+harden(prepareExo);
 
 /**
- * @deprecated Use prepareFarInstance instead.
  * @template {Record<string | symbol, CallableFunction>} T methods
+ * @deprecated Use prepareExo instead.
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {T} methods
@@ -230,5 +230,5 @@ export const prepareSingleton = (
   kindName,
   methods,
   options = undefined,
-) => prepareFarInstance(baggage, kindName, undefined, methods, options);
+) => prepareExo(baggage, kindName, undefined, methods, options);
 harden(prepareSingleton);

@@ -3,13 +3,13 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { M } from '@agoric/store';
 import {
-  defineDurableFarClass,
-  defineDurableFarClassKit,
-} from '../src/far-class-utils.js';
-import {
   makeKindHandle,
   makeScalarBigMapStore,
 } from '../src/vat-data-bindings.js';
+import {
+  defineDurableExoClass,
+  defineDurableExoClassKit,
+} from '../src/exo-utils.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
@@ -25,10 +25,10 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test defineDurableFarClass', t => {
+test('test defineDurableExoClass', t => {
   const upCounterKind = makeKindHandle('UpCounter');
 
-  const makeUpCounter = defineDurableFarClass(
+  const makeUpCounter = defineDurableExoClass(
     upCounterKind,
     UpCounterI,
     /** @param {number} x */
@@ -61,10 +61,10 @@ test('test defineDurableFarClass', t => {
   makeUpCounter('str');
 });
 
-test('test defineDurableFarClassKit', t => {
+test('test defineDurableExoClassKit', t => {
   const counterKindHandle = makeKindHandle('Counter');
 
-  const makeCounterKit = defineDurableFarClassKit(
+  const makeCounterKit = defineDurableExoClassKit(
     counterKindHandle,
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} x */
@@ -117,7 +117,7 @@ test('finish option', t => {
     counterRegistry.init(state.name, self);
   };
 
-  const makeUpCounter = defineDurableFarClass(
+  const makeUpCounter = defineDurableExoClass(
     upCounterKind,
     UpCounterI,
     /**

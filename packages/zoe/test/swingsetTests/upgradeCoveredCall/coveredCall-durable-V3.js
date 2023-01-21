@@ -1,5 +1,7 @@
 import { M, fit } from '@agoric/store';
-import { prepareFarClass, prepareFarInstance } from '@agoric/vat-data';
+import '../../../exported.js';
+
+import { prepareExoClass, prepareExo } from '@agoric/vat-data';
 import { swapExact } from '../../../src/contractSupport/index.js';
 import {
   InvitationShape,
@@ -32,7 +34,7 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   // TODO the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
-  const makeExerciser = prepareFarClass(
+  const makeExerciser = prepareExoClass(
     instanceBaggage,
     'makeExerciserKindHandle',
     OfferHandlerI,
@@ -81,7 +83,7 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
     makeInvitation: M.call().returns(M.eref(InvitationShape)),
   });
 
-  const creatorFacet = prepareFarInstance(
+  const creatorFacet = prepareExo(
     instanceBaggage,
     'creatorFacet',
     CCallCreatorI,
