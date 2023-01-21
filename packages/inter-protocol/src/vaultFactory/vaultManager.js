@@ -15,6 +15,7 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import {
   makeStoredSubscriber,
   observeNotifier,
@@ -42,7 +43,6 @@ import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { makeTracer } from '../makeTracer.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, vivifyVault } from './vault.js';
@@ -747,6 +747,7 @@ export const vivifyVaultManagerKit = baggage => {
          * @param {Amount<'nat'>} collateralAmount
          */
         async maxDebtFor(collateralAmount) {
+          trace('maxDebtFor', collateralAmount);
           const { state } = this;
           const { debtBrand } = state;
           const { priceAuthority, ...ephemera } = provideEphemera(
@@ -757,6 +758,7 @@ export const vivifyVaultManagerKit = baggage => {
             collateralAmount,
             debtBrand,
           );
+          trace('maxDebtFor got quote', quoteAmount);
           // floorDivide because we want the debt ceiling lower
           return floorDivideBy(
             getAmountOut(quoteAmount),
@@ -922,6 +924,7 @@ export const vivifyVaultManagerKit = baggage => {
          * @param {ZCFSeat} seat
          */
         async makeVaultKit(seat) {
+          trace('makevaultKit');
           const {
             state,
             facets: { manager },
@@ -937,6 +940,8 @@ export const vivifyVaultManagerKit = baggage => {
             want: { Minted: null },
           });
 
+          // NB: This increments even when a vault fails to init and is removed
+          // from the manager, creating a sparse series of published vaults.
           state.vaultCounter += 1;
           const vaultId = String(state.vaultCounter);
 
@@ -951,6 +956,7 @@ export const vivifyVaultManagerKit = baggage => {
             vaultStorageNode,
             marshaller,
           );
+          trace('makevaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed

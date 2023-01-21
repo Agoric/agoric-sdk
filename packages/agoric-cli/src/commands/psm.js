@@ -6,11 +6,8 @@
 import { Command } from 'commander';
 import { asPercent } from '../lib/format.js';
 import { makePSMSpendAction } from '../lib/psm.js';
-import {
-  makeRpcUtils,
-  boardSlottingMarshaller,
-  storageHelper,
-} from '../lib/rpc.js';
+import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { outputAction } from '../lib/wallet.js';
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 
@@ -84,8 +81,6 @@ export const makePsmCommand = async logger => {
   `,
   );
 
-  const marshaller = boardSlottingMarshaller();
-
   const lookupPsmInstance = ([minted, anchor]) => {
     const name = `psm-${minted}-${anchor}`;
     const instance = agoricNames.instance[name];
@@ -94,12 +89,6 @@ export const makePsmCommand = async logger => {
       throw new Error(`Unknown instance ${name}`);
     }
     return instance;
-  };
-
-  /** @param {import('../lib/psm.js').BridgeAction} bridgeAction */
-  const outputAction = bridgeAction => {
-    const capData = marshaller.serialize(bridgeAction);
-    process.stdout.write(JSON.stringify(capData));
   };
 
   psm

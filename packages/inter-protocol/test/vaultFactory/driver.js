@@ -3,7 +3,7 @@ import '@agoric/zoe/exported.js';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { objectMap } from '@agoric/internal';
+import { makeTracer, objectMap } from '@agoric/internal';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
@@ -14,7 +14,6 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import * as Collect from '../../src/collect.js';
-import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,

@@ -8,7 +8,6 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { coalesceWalletState } from '@agoric/smart-wallet/src/utils.js';
 import { Command } from 'commander';
 import fs from 'fs';
 import util from 'util';
@@ -25,7 +24,7 @@ import {
   fetchSwingsetParams,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
-import { getCurrent } from '../lib/wallet.js';
+import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
 const SLEEP_SECONDS = 3;
 

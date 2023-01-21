@@ -7,8 +7,8 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { provideDurableMapStore, vivifyKindMulti } from '@agoric/vat-data';
 
+import { makeTracer } from '@agoric/internal';
 import { AMM_INSTANCE } from './params.js';
-import { makeTracer } from '../makeTracer.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { Fail, quote: q } = assert;

@@ -241,6 +241,7 @@ export const registerScaledPriceAuthority = async (
  * @param {object} config
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
+ * @param {bigint} config.options.debtLimitValue
  */
 export const addAssetToVault = async (
   {
@@ -249,7 +250,13 @@ export const addAssetToVault = async (
       consume: { [Stable.symbol]: stableP },
     },
   },
-  { options: { interchainAssetOptions } },
+  {
+    options: {
+      // Default to 1000 IST to simplify testing. A production proposal will set this.
+      debtLimitValue = 1_000n * 1_000_000n,
+      interchainAssetOptions,
+    },
+  },
 ) => {
   const { keyword, oracleBrand } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
@@ -262,7 +269,7 @@ export const addAssetToVault = async (
   const stable = await stableP;
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
-    debtLimit: AmountMath.make(stable, 0n),
+    debtLimit: AmountMath.make(stable, debtLimitValue),
     // the rest of these are arbitrary, TBD by gov cttee
     interestRate: makeRatio(1n, stable),
     liquidationMargin: makeRatio(1n, stable),

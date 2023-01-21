@@ -67,7 +67,8 @@ make fund-provision-pool
 echo "Funding your wallet account..."
 # After `fund-provision-pool` there is 900 IST remaining for other account funding.
 # A wallet can be tested with 20 BLD for provisioning wallet and 20 USDC for psm trading
-make ACCT_ADDR="$WALLET_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234 fund-acct
+# Also include 1M IbcATOM
+make ACCT_ADDR="$WALLET_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234,1000000000000ibc/atom1234 fund-acct
 agd query bank balances "$WALLET_BECH32" | grep ubld || exit 1
 
 echo "Provisioning your smart wallet..."

@@ -25,6 +25,8 @@ export type RemoteInvitationMakers = FarRef<
   Record<string, (...args: any[]) => Promise<Invitation>>
 >;
 
+export type PublicSubscribers = Record<string, ERef<StoredFacet>>;
+
 export type Cell<T> = {
   get: () => T;
   set(val: T): void;

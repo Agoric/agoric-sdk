@@ -7,7 +7,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 
-import { makeTracer } from '../makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('LiqMin', false);
 

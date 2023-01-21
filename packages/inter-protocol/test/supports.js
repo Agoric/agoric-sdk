@@ -17,9 +17,12 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
-import { makeTracer } from '../src/makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 
 export { makeMockChainStorageRoot };
+
+/** Common six-decimal places denom */
+export const DENOM_UNIT = 1_000_000n;
 
 /**
  * @param {*} t
