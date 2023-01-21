@@ -88,12 +88,12 @@ function check(t, mode, objMaker) {
 }
 
 test('store', t => {
-  // makeScalarMap
+  // makeScalarMapStore
   check(t, 'strong', count => count); // simple numeric keys
   check(t, 'strong', count => `${count}`); // simple strings
   check(t, 'strong', () => Far('handle', {}));
 
-  // makeScalarWeakMap
+  // makeScalarWeakMapStore
   check(t, 'weak', () => Far('handle', {}));
 });
 

@@ -1,5 +1,5 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
@@ -12,8 +12,8 @@ export const setup = () => {
     simoleans: simoleanKit,
     bucks: bucksKit,
   };
-  /** @type {Store<string, Brand<'nat'>>} */
-  const brands = makeStore('brandName');
+  /** @type {MapStore<string, Brand<'nat'>>} */
+  const brands = makeScalarMapStore('brandName');
 
   for (const k of Object.getOwnPropertyNames(allIssuerKits)) {
     brands.init(k, allIssuerKits[k].brand);

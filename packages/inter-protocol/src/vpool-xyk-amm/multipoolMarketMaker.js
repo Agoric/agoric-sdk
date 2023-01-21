@@ -185,7 +185,7 @@ const start = async (zcf, privateArgs, baggage) => {
     )}`,
   );
 
-  /** @type {Store<Brand,PoolFacets>} */
+  /** @type {MapStore<Brand,PoolFacets>} */
   const secondaryBrandToPool = provideDurableMapStore(
     baggage,
     'secondaryBrandToPool',

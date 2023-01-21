@@ -54,11 +54,11 @@
  * @property {(petname: Petname) => string} implode
  * @property {(str: string) => Petname} explode
  * @property {LegacyWeakMap<T, Petname>} valToPetname
- * @property {WeakStore<T, string[][]>} valToPaths
+ * @property {WeakMapStore<T, string[][]>} valToPaths
  *   TODO What about when useLegacyMap is true because contact have
  *   identity? `T` would be `Contact`. Shouldn't `valToPaths` be
  *   a `LegacyWeakMap`?
- * @property {Store<Petname, T>} petnameToVal
+ * @property {MapStore<Petname, T>} petnameToVal
  * @property {(petname: Petname, val: T) => void} addPetname
  * @property {(path: string[], val: T) => void} addPath
  * @property {(petname: Petname, val: T) => void} renamePetname

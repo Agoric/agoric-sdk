@@ -2,7 +2,13 @@
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
-import { fit, M, makeCopyBag, makeStore, provideLazy } from '@agoric/store';
+import {
+  fit,
+  M,
+  makeCopyBag,
+  makeScalarMapStore,
+  provideLazy,
+} from '@agoric/store';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { AttKW as KW } from './constants.js';
 import { makeAttestationTool } from './attestationTool.js';
@@ -85,9 +91,9 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   /**
    * Non-authoritative store of nonzero lien amounts.
    *
-   * @type {Store<Address, Amount<'nat'>>}
+   * @type {MapStore<Address, Amount<'nat'>>}
    */
-  const amountByAddress = makeStore('amount');
+  const amountByAddress = makeScalarMapStore('amount');
 
   /**
    * Get non-authoritative liened amount from the JS store, without using the lienBridge.
@@ -226,8 +232,8 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
  * The keyword for use in returnAttestation offers is `Attestation`.
  */
 export const makeAttestationFacets = async (zcf, stakeBrand, lienBridge) => {
-  /** @type {Store<Address, AttestationTool>} */
-  const attMakerByAddress = makeStore('address');
+  /** @type {MapStore<Address, AttestationTool>} */
+  const attMakerByAddress = makeScalarMapStore('address');
 
   const { issuer, brand, lienMint } = await makeAttestationIssuerKit(
     zcf,

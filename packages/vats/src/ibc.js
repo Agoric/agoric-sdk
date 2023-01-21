@@ -4,7 +4,7 @@ import {
   dataToBase64,
   base64ToBytes,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
-import { makeStore, makeLegacyMap } from '@agoric/store';
+import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
@@ -57,9 +57,9 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
     return rawCallIBCDevice(method, params);
   };
   /**
-   * @type {Store<string, Promise<Connection>>}
+   * @type {MapStore<string, Promise<Connection>>}
    */
-  const channelKeyToConnP = makeStore('CHANNEL:PORT');
+  const channelKeyToConnP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
    * @typedef {object} Counterparty
@@ -88,14 +88,14 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
   const srcPortToOutbounds = makeLegacyMap('SRC-PORT');
 
   /**
-   * @type {Store<string, ConnectingInfo>}
+   * @type {MapStore<string, ConnectingInfo>}
    */
-  const channelKeyToInfo = makeStore('CHANNEL:PORT');
+  const channelKeyToInfo = makeScalarMapStore('CHANNEL:PORT');
 
   /**
-   * @type {Store<string, Promise<InboundAttempt>>}
+   * @type {MapStore<string, Promise<InboundAttempt>>}
    */
-  const channelKeyToAttemptP = makeStore('CHANNEL:PORT');
+  const channelKeyToAttemptP = makeScalarMapStore('CHANNEL:PORT');
 
   /**
    * @type {LegacyMap<string, LegacyMap<number, PromiseRecord<Bytes>>>}

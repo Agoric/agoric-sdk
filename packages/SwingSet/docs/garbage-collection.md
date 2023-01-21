@@ -189,7 +189,7 @@ The kernel is responsible for managing these per-vat states, and reacting to sys
 
 ## Virtualized Data
 
-To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use. The second is a "virtual collection" (e.g. what `makeWeakStore()` returns), which is like a WeakMap except that any values keyed by a virtual object are also stored as serialized data on disk.
+To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use. The second is a "virtual collection" (e.g. what `makeScalarWeakMapStore()` returns), which is like a WeakMap except that any values keyed by a virtual object are also stored as serialized data on disk.
 
 Instead of Remotables, virtual objects use "Representatives" as the handle with which the object is sent, received, and manipulated. The Representative is a JS `Object`, however it goes away when userspace drops the last strong reference. But a new one might be created the next time the object is received (or retrieved from offline data), As a result, a virtual object might be defined and populated, and even reachable/recognizable by other vats (or serialized local data), even though there is no local Representative object at that moment.
 
@@ -238,7 +238,7 @@ When the kernel makes a delivery into the vat which introduces a vref for the fi
 
 ![Imported Presence](./images/gc/imported-presence.png "Imported Presence")
 
-The SwingSet object is kept "reachable" by two sources: a live Presence, and the vref being reachable from any of the vat's virtualized data (i.e. in a property of a virtual object, or as the value of a `makeWeakStore` instance). Liveslots uses the `droppedRegistry` to keep track of the former, and the virtual object manager can be queried about the state of the latter. When both sources have gone away, liveslots uses `syscall.dropImports` to inform the kernel that this vat can no longer reach the vref. If the vref is not also recognizable at that time (i.e. it is not in used as a *key* of a `WeakMap`, `WeakStore` or a `makeWeakStore` instance), liveslots also calls `syscall.retireImports` to inform the kernel that the vat can't recognize the vref either.
+The SwingSet object is kept "reachable" by two sources: a live Presence, and the vref being reachable from any of the vat's virtualized data (i.e. in a property of a virtual object, or as the value of a `makeScalarWeakMapStore` instance). Liveslots uses the `droppedRegistry` to keep track of the former, and the virtual object manager can be queried about the state of the latter. When both sources have gone away, liveslots uses `syscall.dropImports` to inform the kernel that this vat can no longer reach the vref. If the vref is not also recognizable at that time (i.e. it is not in used as a *key* of a `WeakMap`, `WeakStore` or a `makeScalarWeakMapStore` instance), liveslots also calls `syscall.retireImports` to inform the kernel that the vat can't recognize the vref either.
 
 ## Virtual Objects, Virtualized Data
 

@@ -4,7 +4,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 import { E } from '@endo/eventual-send';
 
-import { fit, keyEQ, M, makeScalarMap } from '@agoric/store';
+import { fit, keyEQ, M, makeScalarMapStore } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountIn,
@@ -48,7 +48,7 @@ const { details: X, quote: q, Fail } = assert;
  * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
  * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
  * storageNode: ERef<StorageNode>,
- * vaultParamManagers: Store<Brand, import('./params.js').VaultParamManager>,
+ * vaultParamManagers: MapStore<Brand, import('./params.js').VaultParamManager>,
  * zcf: import('./vaultFactory.js').VaultFactoryZCF,
  * }} Ephemera
  */
@@ -71,7 +71,7 @@ const ephemera = {};
  * }} MetricsNotification
  *
  * @typedef {Readonly<{
- * collateralTypes: Store<Brand,VaultManager>,
+ * collateralTypes: MapStore<Brand,VaultManager>,
  * metricsPublisher: Publisher<MetricsNotification>
  * metricsSubscriber: Subscriber<MetricsNotification>
  * mintSeat: ZCFSeat,
@@ -182,7 +182,7 @@ const initState = (
 
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
-  const vaultParamManagers = makeScalarMap('vaultParamManagers');
+  const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultDirectorMetricsPublishKit();

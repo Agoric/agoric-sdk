@@ -30,15 +30,15 @@ export const createSeatManager = (
   shutdownWithFailure,
   zcfBaggage = makeScalarBigMapStore('zcfBaggage', { durable: true }),
 ) => {
-  /** @type {WeakStore<ZCFSeat, Allocation>}  */
+  /** @type {WeakMapStore<ZCFSeat, Allocation>}  */
   let activeZCFSeats = provideDurableWeakMapStore(zcfBaggage, 'activeZCFSeats');
-  /** @type {Store<ZCFSeat, Allocation>} */
+  /** @type {MapStore<ZCFSeat, Allocation>} */
   const zcfSeatToStagedAllocations = provideDurableMapStore(
     zcfBaggage,
     'zcfSeatToStagedAllocations',
   );
 
-  /** @type {WeakStore<ZCFSeat, SeatHandle>} */
+  /** @type {WeakMapStore<ZCFSeat, SeatHandle>} */
   let zcfSeatToSeatHandle = provideDurableWeakMapStore(
     zcfBaggage,
     'zcfSeatToSeatHandle',

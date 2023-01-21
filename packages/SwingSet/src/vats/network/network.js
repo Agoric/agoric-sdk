@@ -1,4 +1,4 @@
-import { makeScalarMap, makeLegacyMap } from '@agoric/store';
+import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -222,14 +222,14 @@ export function makeNetworkProtocol(protocolHandler) {
    * Currently must be a single listenHandler.
    * TODO: Do something sensible with multiple handlers?
    *
-   * @type {Store<Endpoint, [Port, ListenHandler]>}
+   * @type {MapStore<Endpoint, [Port, ListenHandler]>}
    */
-  const listening = makeScalarMap('localAddr');
+  const listening = makeScalarMapStore('localAddr');
 
   /**
-   * @type {Store<string, Port>}
+   * @type {MapStore<string, Port>}
    */
-  const boundPorts = makeScalarMap('localAddr');
+  const boundPorts = makeScalarMapStore('localAddr');
 
   /**
    * @param {Endpoint} localAddr
@@ -554,9 +554,9 @@ export function makeLoopbackProtocolHandler(
   onInstantiate = makeNonceMaker('nonce/'),
 ) {
   /**
-   * @type {Store<string, [Port, ListenHandler]>}
+   * @type {MapStore<string, [Port, ListenHandler]>}
    */
-  const listeners = makeScalarMap('localAddr');
+  const listeners = makeScalarMapStore('localAddr');
 
   const makePortID = makeNonceMaker('port');
 

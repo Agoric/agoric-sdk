@@ -32,7 +32,7 @@ export const makeStartInstance = (
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
 
-  /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
+  /** @type {WeakMapStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = provideDurableWeakMapStore(
     zoeBaggage,
     'seatHandleToZoeSeatAdmin',

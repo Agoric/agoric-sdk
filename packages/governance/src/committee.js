@@ -1,5 +1,5 @@
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { makeStore, makeHeapExo, M } from '@agoric/store';
+import { makeScalarMapStore, makeHeapExo, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
@@ -43,8 +43,8 @@ const { ceilDivide } = natSafeMath;
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
 const start = (zcf, privateArgs) => {
-  /** @type {Store<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
-  const allQuestions = makeStore('Question');
+  /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
+  const allQuestions = makeScalarMapStore('Question');
   assert(privateArgs?.storageNode, 'Missing storageNode');
   assert(privateArgs?.marshaller, 'Missing marshaller');
   const questionNode = E(privateArgs.storageNode).makeChildNode(
