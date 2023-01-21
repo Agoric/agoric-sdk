@@ -28,15 +28,11 @@ harden(makeSimpleMarshaller);
 
 const setup = () => {
   const storageNodeState = {};
-  const chainStorage = makeChainStorageRoot(
-    message => {
-      assert(message.key === 'cache');
-      assert(message.method === 'set');
-      storageNodeState.cache = message.value;
-    },
-    'swingset',
-    'cache',
-  );
+  const chainStorage = makeChainStorageRoot(message => {
+    assert(message.key === 'cache');
+    assert(message.method === 'set');
+    storageNodeState.cache = message.value;
+  }, 'cache');
   const cache = makeCache(
     makeChainStorageCoordinator(chainStorage, makeSimpleMarshaller()),
   );

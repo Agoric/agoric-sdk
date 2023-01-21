@@ -36,16 +36,6 @@ const defaultConfig = {
   maxSubmissionValue: 10000,
 };
 
-/**
- *
- * @param {Promise<StoredSubscriber<unknown>>} subscriber
- */
-export const subscriberSubkey = subscriber => {
-  return E(subscriber)
-    .getStoreKey()
-    .then(storeKey => storeKey.storeSubkey);
-};
-
 const makeContext = async () => {
   // Outside of tests, we should use the long-lived Zoe on the
   // testnet. In this test, we must create a new Zoe.
@@ -778,7 +768,7 @@ test('storage keys', async t => {
   );
 
   t.is(
-    await subscriberSubkey(E(publicFacet).getSubscriber()),
-    'fake:mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    await E(E(publicFacet).getSubscriber()).getPath(),
+    'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
   );
 });

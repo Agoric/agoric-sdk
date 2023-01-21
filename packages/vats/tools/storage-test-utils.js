@@ -59,12 +59,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
         throw new Error(`unsupported method: ${message.method}`);
     }
   };
-  const rootNode = makeChainStorageRoot(
-    toStorage,
-    'swingset',
-    rootPath,
-    rootOptions,
-  );
+  const rootNode = makeChainStorageRoot(toStorage, rootPath, rootOptions);
   return { rootNode, data, messages };
 };
 harden(makeFakeStorageKit);

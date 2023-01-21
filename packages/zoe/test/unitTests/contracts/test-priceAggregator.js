@@ -70,16 +70,6 @@ const dirname = path.dirname(filename);
 const oraclePath = `${dirname}/../../../src/contracts/oracle.js`;
 const aggregatorPath = `${dirname}/../../../src/contracts/priceAggregator.js`;
 
-/**
- *
- * @param {Promise<StoredSubscriber<unknown>>} subscriber
- */
-export const subscriberSubkey = subscriber => {
-  return E(subscriber)
-    .getStoreKey()
-    .then(storeKey => storeKey.storeSubkey);
-};
-
 const makePublicationChecker = async (t, aggregatorPublicFacet) => {
   const publications = E(
     subscribeEach(E(aggregatorPublicFacet).getSubscriber()),
@@ -1075,8 +1065,8 @@ test('storage keys', async t => {
   const { publicFacet } = await t.context.makeMedianAggregator();
 
   t.is(
-    await subscriberSubkey(E(publicFacet).getSubscriber()),
-    'fake:mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
+    await E(E(publicFacet).getSubscriber()).getPath(),
+    'mockChainStorageRoot.priceAggregator.ATOM-USD_price_feed',
   );
 });
 
