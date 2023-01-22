@@ -66,6 +66,10 @@ const argv = yargsParser(process.argv.slice(2), {
     // input transcript.
     'forcedReloadFromSnapshot',
 
+    // Keep all snapshots generated during the test. By default only divergent
+    // snapshots are kept. Not implemented is using custom snapStore
+    'keepAllSnapshots',
+
     // Mark workers loaded from an explicit transcript load instruction as
     // being ineligible from being reaped.
     'keepWorkerExplicitLoad',
@@ -134,6 +138,7 @@ const argv = yargsParser(process.argv.slice(2), {
     forcedSnapshotInitial: 2,
     forcedSnapshotInterval: 1000,
     forcedReloadFromSnapshot: true,
+    keepAllSnapshots: false,
     keepWorkerInitial: 0,
     keepWorkerRecent: 10,
     keepWorkerInterval: 10,
@@ -258,7 +263,7 @@ async function replay(transcriptFile) {
           return loadRaw(snapFile);
         },
       })
-    : makeSnapStore(process.cwd(), makeSnapStoreIO(), { keepSnapshots: true });
+    : makeSnapStore(process.cwd(), makeSnapStoreIO());
   const testLog = () => {};
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -895,6 +900,15 @@ async function replay(transcriptFile) {
             );
           }
         }
+
+        if (!divergent && !argv.keepAllSnapshots && !argv.useCustomSnapStore) {
+          for (const snapshotID of uniqueSnapshotIDs) {
+            if (snapshotID) {
+              snapStore.prepareToDelete(snapshotID);
+            }
+          }
+          await snapStore.commitDeletes(true);
+        }
       } else {
         const { transcriptNum, d: delivery, syscalls } = data;
         lastTranscriptNum = transcriptNum;
@@ -1011,6 +1025,15 @@ async function replay(transcriptFile) {
                 (loadSnapshots.length > 1 ||
                   !uniqueSnapshotIDs.includes(snapshotID))),
           );
+        }
+
+        if (!divergent && !argv.keepAllSnapshots && !argv.useCustomSnapStore) {
+          for (const snapshotID of uniqueSnapshotIDs) {
+            if (snapshotID) {
+              snapStore.prepareToDelete(snapshotID);
+            }
+          }
+          await snapStore.commitDeletes(true);
         }
       }
     }
