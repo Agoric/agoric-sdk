@@ -315,7 +315,7 @@ export function makeVirtualReferenceManager(
 
   /**
    * Map of all Remotables which are reachable by our virtualized data, e.g.
-   * `makeWeakStore().set(key, remotable)` or `virtualObject.state.foo =
+   * `makeScalarWeakMapStore().set(key, remotable)` or `virtualObject.state.foo =
    * remotable`. The serialization process stores the Remotable's vref to disk,
    * but doesn't actually retain the Remotable. To correctly unserialize that
    * offline data later, we must ensure the Remotable remains alive. This Map
@@ -470,7 +470,7 @@ export function makeVirtualReferenceManager(
    * A recognizer is one of:
    *   Map - the map contained within a VirtualObjectAwareWeakMap to point to its vref-keyed entries.
    *   Set - the set contained within a VirtualObjectAwareWeakSet to point to its vref-keyed entries.
-   *   deleter - a function within a WeakStore that can be called to remove an entry from that store.
+   *   deleter - a function within a WeakMapStore that can be called to remove an entry from that store.
    *
    * It is critical that each collection have exactly one recognizer that is
    * unique to that collection, because the recognizers themselves will be

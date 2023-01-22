@@ -13,12 +13,12 @@ const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage
  */
 export const provideIssuerStorage = zcfBaggage => {
-  /** @type {WeakStore<Brand,IssuerRecord>} */
+  /** @type {WeakMapStore<Brand,IssuerRecord>} */
   const brandToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,
     'brandToIssuerRecord',
   );
-  /** @type {WeakStore<Issuer,IssuerRecord>} */
+  /** @type {WeakMapStore<Issuer,IssuerRecord>} */
   const issuerToIssuerRecord = provideDurableWeakMapStore(
     zcfBaggage,
     'issuerToIssuerRecord',
@@ -49,7 +49,7 @@ export const provideIssuerStorage = zcfBaggage => {
    *
    * The reason why we need the `has` check below is for the 4th case
    * above, in which we store an issuer record in ZCF that we obtained
-   * from Zoe. `WeakStore.init` errors if the key is already present,
+   * from Zoe. `WeakMapStore.init` errors if the key is already present,
    * and because an issuer can be used more than once in the same
    * contract, we need to make sure we aren't trying to `init` twice.
    * If the issuer and its record are already present, we do not need

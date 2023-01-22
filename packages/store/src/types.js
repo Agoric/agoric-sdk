@@ -130,7 +130,7 @@
  *
  * WeakStores have the lookup and update methods but not the query
  * or query-update methods.
- * Non-weak Stores are like their corresponding WeakStore, but with the
+ * Non-weak Stores are like their corresponding WeakStores, but with the
  * additional query and query-update methods.
  */
 

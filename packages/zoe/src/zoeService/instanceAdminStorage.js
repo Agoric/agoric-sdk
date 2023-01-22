@@ -258,7 +258,7 @@ const helperBehavior = {
 
 /**
  * @param {import('@agoric/vat-data').Baggage} zoeBaggage
- * @param {WeakStore<SeatHandle, ZoeSeatAdmin>} seatHandleToZoeSeatAdmin
+ * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToZoeSeatAdmin
  */
 export const makeInstanceAdminMaker = (
   zoeBaggage,

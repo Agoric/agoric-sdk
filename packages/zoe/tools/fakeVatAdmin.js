@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
@@ -29,10 +29,10 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   let exitMessage;
   let hasExited = false;
   let exitWithFailure;
-  /** @type {Store<BundleID, BundleCap>} */
-  const idToBundleCap = makeStore('idToBundleCap');
-  /** @type {Store<BundleCap, EndoZipBase64Bundle>} */
-  const bundleCapToBundle = makeStore('bundleCapToBundle');
+  /** @type {MapStore<BundleID, BundleCap>} */
+  const idToBundleCap = makeScalarMapStore('idToBundleCap');
+  /** @type {MapStore<BundleCap, EndoZipBase64Bundle>} */
+  const bundleCapToBundle = makeScalarMapStore('bundleCapToBundle');
   const fakeVatPowers = {
     exitVatWithFailure: reason => {
       exitMessage = reason;

@@ -3,7 +3,7 @@
 import { assert, details as X, q, Fail } from '@agoric/assert';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { crc6 } from './crc.js';
 
 import './types.js';
@@ -41,8 +41,8 @@ function makeBoard(
 ) {
   const DIGITS_REGEXP = new RegExp(`^[0-9]{${crcDigits + 1},}$`);
   let lastSequence = BigInt(initSequence);
-  const idToVal = makeStore('boardId');
-  const valToId = makeStore('value');
+  const idToVal = makeScalarMapStore('boardId');
+  const valToId = makeScalarMapStore('value');
 
   const ifaceAllegedPrefix = 'Alleged: ';
   const ifaceInaccessiblePrefix = 'SEVERED: ';

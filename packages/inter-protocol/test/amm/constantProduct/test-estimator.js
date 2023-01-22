@@ -4,7 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { Far } from '@endo/marshal';
-import { makeScalarMap } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 
 import { charge, makeEstimator } from '../../../src/vpool-xyk-amm/estimate.js';
 import { withAmountUtils } from '../../supports.js';
@@ -28,8 +28,8 @@ const DEFAULT_3_POOLS = [
 
 const makePools = (issuerKits, poolValues) => {
   const centralBrand = issuerKits[0].brand;
-  const internalPools = makeScalarMap('poolBrand');
-  const uiPools = makeScalarMap('poolBrand');
+  const internalPools = makeScalarMapStore('poolBrand');
+  const uiPools = makeScalarMapStore('poolBrand');
   for (let i = 1; i < issuerKits.length; i += 1) {
     const brand = issuerKits[i].brand;
     const internalPool = Far(`pool ${brand.getAllegedName()}`, {

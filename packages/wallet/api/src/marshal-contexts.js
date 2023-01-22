@@ -1,5 +1,5 @@
 // @ts-check
-import { makeScalarMap } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 
@@ -119,25 +119,25 @@ export const makeExportContext = () => {
   const walletObjects = {
     /** @type {IdTable<number, Purse>} */
     purse: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMapStore(),
+      byVal: makeScalarMapStore(),
     },
     /** @type {IdTable<number, Payment>} */
     payment: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMapStore(),
+      byVal: makeScalarMapStore(),
     },
     // TODO: offer, contact, dapp
     /** @type {IdTable<number, unknown>} */
     unknown: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMapStore(),
+      byVal: makeScalarMapStore(),
     },
   };
   /** @type {IdTable<BoardId, unknown>} */
   const boardObjects = {
-    bySlot: makeScalarMap(),
-    byVal: makeScalarMap(),
+    bySlot: makeScalarMapStore(),
+    byVal: makeScalarMapStore(),
   };
 
   /**
@@ -245,24 +245,24 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
   const walletObjects = {
     /** @type {IdTable<number, unknown>} */
     purse: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMapStore(),
+      byVal: makeScalarMapStore(),
     },
     /** @type {IdTable<number, unknown>} */
     payment: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMapStore(),
+      byVal: makeScalarMapStore(),
     },
     /** @type {IdTable<number, unknown>} */
     unknown: {
-      bySlot: makeScalarMap(),
-      byVal: makeScalarMap(),
+      bySlot: makeScalarMapStore(),
+      byVal: makeScalarMapStore(),
     },
   };
   /** @type {IdTable<BoardId, unknown>} */
   const boardObjects = {
-    bySlot: makeScalarMap(),
-    byVal: makeScalarMap(),
+    bySlot: makeScalarMapStore(),
+    byVal: makeScalarMapStore(),
   };
 
   /**

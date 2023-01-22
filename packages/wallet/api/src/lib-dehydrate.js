@@ -1,7 +1,7 @@
 // @ts-check
 
 import { makeMarshal, mapIterable } from '@endo/marshal';
-import { makeLegacyMap, makeScalarMap } from '@agoric/store';
+import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
 import { assert, Fail, q } from '@agoric/assert';
 
 /**
@@ -40,8 +40,8 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
   // Paths are kept across all kinds.
   // TODO What about when useLegacyMap is true because contact have
   // identity?
-  /** @type {Store<any, Path[]>} */
-  const valToPaths = makeScalarMap('value');
+  /** @type {MapStore<any, Path[]>} */
+  const valToPaths = makeScalarMapStore('value');
 
   /**
    * @param {string} data
@@ -93,7 +93,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
    */
   const makeMapping = (kind, { useLegacyMap = false } = {}) => {
     typeof kind === 'string' || `kind ${kind} must be a string`;
-    const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMap;
+    const makeMap = useLegacyMap ? makeLegacyMap : makeScalarMapStore;
     // These are actually either a LegacyMap or a MapStore depending on
     // useLegacyMap. Fortunately, the LegacyMap type is approximately the
     // intersection of these, so we can just use it.
@@ -121,9 +121,9 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
         return mapIterable(rawValToPetname.values(), val => explode(val));
       },
     };
-    /** @type {Store<string, T>} */
-    const rawPetnameToVal = makeScalarMap('petname');
-    /** @type {Store<Path | string, T>} */
+    /** @type {MapStore<string, T>} */
+    const rawPetnameToVal = makeScalarMapStore('petname');
+    /** @type {MapStore<Path | string, T>} */
     const petnameToVal = {
       ...rawPetnameToVal,
       init(key, val) {

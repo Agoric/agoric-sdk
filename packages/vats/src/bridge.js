@@ -1,6 +1,6 @@
 // @ts-check
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
@@ -27,9 +27,9 @@ import { makeWithQueue } from './queue.js';
  */
 export function makeBridgeManager(E, D, bridgeDevice) {
   /**
-   * @type {Store<string, import('./types.js').ScopedBridgeManager>}
+   * @type {MapStore<string, import('./types.js').ScopedBridgeManager>}
    */
-  const scopedManagers = makeStore('bridgeId');
+  const scopedManagers = makeScalarMapStore('bridgeId');
 
   function bridgeInbound(srcID, obj) {
     // console.log(

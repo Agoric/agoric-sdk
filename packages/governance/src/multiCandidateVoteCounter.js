@@ -1,4 +1,4 @@
-import { keyEQ, makeHeapExo, makeStore } from '@agoric/store';
+import { keyEQ, makeHeapExo, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
@@ -56,8 +56,8 @@ const makeMultiCandidateVoteCounter = (
    * @property {Position[]} chosen
    * @property {bigint} shares
    */
-  /** @type {Store<Handle<'Voter'>,RecordedBallot> } */
-  const allBallots = makeStore('voterHandle');
+  /** @type {MapStore<Handle<'Voter'>,RecordedBallot> } */
+  const allBallots = makeScalarMapStore('voterHandle');
 
   const countVotes = () => {
     !isOpen || Fail`can't count votes while the election is open`;

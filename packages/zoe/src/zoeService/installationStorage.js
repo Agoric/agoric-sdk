@@ -27,12 +27,12 @@ export const makeInstallationStorage = (
   getBundleCapForID,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
-  /** @type {WeakStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
+  /** @type {WeakMapStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
   const installationsBundleCap = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundleCap',
   );
-  /** @type {WeakStore<Installation, SourceBundle>} */
+  /** @type {WeakMapStore<Installation, SourceBundle>} */
   const installationsBundle = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundle',

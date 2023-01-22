@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
@@ -37,8 +37,8 @@ export const makePriceAuthorityRegistry = () => {
    * given input and output brand pair
    */
 
-  /** @type {Store<Brand, Store<Brand, PriceAuthorityRecord>>} */
-  const assetToPriceStore = makeStore('brandIn');
+  /** @type {MapStore<Brand, MapStore<Brand, PriceAuthorityRecord>>} */
+  const assetToPriceStore = makeScalarMapStore('brandIn');
 
   /**
    * Get the registered price authority for a given input and output pair.
@@ -135,12 +135,12 @@ export const makePriceAuthorityRegistry = () => {
   /** @type {PriceAuthorityRegistryAdmin} */
   const adminFacet = Far('price authority admin facet', {
     registerPriceAuthority(pa, brandIn, brandOut, force = false) {
-      /** @type {Store<Brand, PriceAuthorityRecord>} */
+      /** @type {MapStore<Brand, PriceAuthorityRecord>} */
       let priceStore;
       if (assetToPriceStore.has(brandIn)) {
         priceStore = assetToPriceStore.get(brandIn);
       } else {
-        priceStore = makeStore('brandOut');
+        priceStore = makeScalarMapStore('brandOut');
         assetToPriceStore.init(brandIn, priceStore);
       }
 
