@@ -220,5 +220,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   });
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
-  return makeBatchedDeliver(deliver, batchDelayMs);
+  return makeBatchedDeliver(
+    deliver,
+    { clearTimeout, setTimeout },
+    batchDelayMs,
+  );
 }

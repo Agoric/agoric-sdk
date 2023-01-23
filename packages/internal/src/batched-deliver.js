@@ -1,14 +1,27 @@
-/* global setTimeout clearTimeout */
 export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 
+/**
+ * @typedef {(message: any[], ackNum: number) => void} DeliverMessages
+ */
+
+/**
+ *
+ * @param {DeliverMessages} deliver
+ * @param {{ clearTimeout: NodeJS.clearTimeout, setTimeout: NodeJS.setTimeout }} io
+ * @param {number} batchTimeoutMs
+ */
 export function makeBatchedDeliver(
   deliver,
+  { clearTimeout, setTimeout },
   batchTimeoutMs = DEFAULT_BATCH_TIMEOUT_MS,
 ) {
   let batchedMessages = [];
   let latestAckNum = 0;
   let deliverTimeout;
 
+  /**
+   * @type {DeliverMessages}
+   */
   async function batchedDeliver(newMessages, ackNum) {
     // If we have no existing messages, reset the deliver timeout.
     //
