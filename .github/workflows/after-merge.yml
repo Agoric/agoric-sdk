@@ -90,7 +90,7 @@ jobs:
         run: 'yarn test:c8-all || :'
       - name: generate coverage/html reports
         run: mkdir -p coverage/tmp && yarn c8 report --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: coverage
           path: coverage
@@ -134,7 +134,7 @@ jobs:
         env:
           AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
         run: cd packages/swingset-runner && yarn ci:autobench
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: benchmarkstats.json
           path: packages/swingset-runner/benchstats*.json

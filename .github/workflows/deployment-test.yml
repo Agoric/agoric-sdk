@@ -107,7 +107,7 @@ jobs:
         working-directory: /usr/src/agoric-sdk
         env:
           NETWORK_NAME: chaintest
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
