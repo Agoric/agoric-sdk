@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout agoric-sdk
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: agoric-sdk
       - name: Use Node.js ${{ matrix.node-version }}
@@ -67,7 +67,7 @@ jobs:
         working-directory: ./agoric-sdk
 
       - name: Check out dapp
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: Agoric/dapp-treasury
           path: dapp

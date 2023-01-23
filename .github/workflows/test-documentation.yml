@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout agoric-sdk
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
@@ -61,7 +61,7 @@ jobs:
           echo "/home/runner/bin" >> $GITHUB_PATH
 
       - name: Check out dapp
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: Agoric/documentation
           path: dapp

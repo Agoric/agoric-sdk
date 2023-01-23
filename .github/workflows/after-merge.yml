@@ -16,7 +16,7 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x', '18.x']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
@@ -39,7 +39,7 @@ jobs:
         # note: only use one node-version
         node-version: ['14.x']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -81,7 +81,7 @@ jobs:
         node-version: ['14.x']
     if: ${{github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -125,7 +125,7 @@ jobs:
         node-version: ['14.x']
     if: ${{github.event_name == 'push'}}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}

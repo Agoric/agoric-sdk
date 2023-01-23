@@ -16,7 +16,7 @@ runs:
     - name: set default environment variables
       run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         clean: 'false'
         submodules: 'true'
