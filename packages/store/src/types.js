@@ -222,20 +222,8 @@
 
 /**
  * @template K,V
- * @typedef {WeakMapStore<K,V>} WeakStore
- * Deprecated type name `WeakStore`. Use `WeakMapStore` instead.
- */
-
-/**
- * @template K,V
- * @typedef {MapStore<K,V>} Store
- * Deprecated type name `Store`. Use `MapStore` instead.
- */
-
-/**
- * @template K,V
  * @typedef {object} LegacyWeakMap
- * LegacyWeakMap is deprecated. Use WeakMapStore instead.
+ * LegacyWeakMap is deprecated. Use WeakMapStore instead if possible.
  * @property {(key: K) => boolean} has
  * Check if a key exists
  * @property {(key: K) => V} get
@@ -252,7 +240,7 @@
 /**
  * @template K,V
  * @typedef {object} LegacyMap
- * LegacyWeakMap is deprecated. Use WeakMapStore instead.
+ * LegacyMap is deprecated. Use MapStore instead if possible.
  * @property {(key: K) => boolean} has
  * Check if a key exists
  * @property {(key: K) => V} get
