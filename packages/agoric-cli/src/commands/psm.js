@@ -114,9 +114,8 @@ export const makePsmCommand = async logger => {
       s => s.split('.'),
       ['IST', 'AUSD'],
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const { pair } = this.opts();
+    .action(async function (opts) {
+      const { pair } = opts;
       const { governance } = await getGovernanceState(pair);
       console.log('psm governance params', Object.keys(governance));
       console.log('MintLimit', governance.MintLimit.value);
@@ -148,9 +147,7 @@ export const makePsmCommand = async logger => {
     .option('--giveMinted [DOLLARS]', 'amount of minted tokens to give', Number)
     .option('--feePct [%]', 'Gas fee percentage', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
+    .action(async function (opts) {
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
       // @ts-expect-error xxx RpcRemote
@@ -162,10 +159,7 @@ export const makePsmCommand = async logger => {
     .command('committee')
     .description('join the economic committee')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const { economicCommittee } = agoricNames.instance;
       assert(economicCommittee, 'missing economicCommittee');
 
@@ -193,10 +187,7 @@ export const makePsmCommand = async logger => {
     .command('charter')
     .description('prepare an offer to accept the charter invitation')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const { econCommitteeCharter } = agoricNames.instance;
       assert(econCommitteeCharter, 'missing econCommitteeCharter');
 
@@ -247,10 +238,7 @@ export const makePsmCommand = async logger => {
       Number,
       1,
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const psmInstance = lookupPsmInstance(opts.pair);
 
       /** @type {import('../lib/psm.js').OfferSpec} */
@@ -305,10 +293,7 @@ export const makePsmCommand = async logger => {
       Number,
       1,
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const psmInstance = lookupPsmInstance(opts.pair);
 
       const istBrand = agoricNames.brand.IST;
@@ -360,10 +345,7 @@ export const makePsmCommand = async logger => {
       'index of one position to vote for (within the question description.positions); ',
       Number,
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const questionHandleCapDataStr = await vstorage.readLatest(
         'published.committees.Economic_Committee.latestQuestion',
       );

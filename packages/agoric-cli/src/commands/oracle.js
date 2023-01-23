@@ -58,10 +58,7 @@ export const makeOracleCommand = async logger => {
       ['ATOM', 'USD'],
     )
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
       /** @type {import('../lib/psm.js').OfferSpec} */
@@ -94,10 +91,7 @@ export const makeOracleCommand = async logger => {
       Number,
     )
     .requiredOption('--price [number]', 'price (format TODO)', String)
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       /** @type {import('../lib/psm.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -129,10 +123,7 @@ export const makeOracleCommand = async logger => {
     )
     .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
     .requiredOption('--roundId [number]', 'round', Number)
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       /** @type {import('../lib/psm.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -163,9 +154,8 @@ export const makeOracleCommand = async logger => {
       s => s.split('.'),
       ['ATOM', 'USD'],
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const { pair } = this.opts();
+    .action(async function (opts) {
+      const { pair } = opts;
 
       const capDataStr = await vstorage.readLatest(
         `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,
