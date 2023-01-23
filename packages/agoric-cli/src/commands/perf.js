@@ -50,9 +50,7 @@ export const makePerfCommand = async logger => {
       'address literal or name',
       normalizeAddress,
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
+    .action(async function (opts) {
       const sharedOpts = perf.opts();
       logger.warn({ sharedOpts, opts });
       const payloadStr = fs.readFileSync(opts.executeOffer).toString();

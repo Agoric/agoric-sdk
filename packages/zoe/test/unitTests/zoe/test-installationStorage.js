@@ -28,6 +28,25 @@ test('install, unwrap installation of bundlecap', async t => {
   t.is(unwrapped.bundleCap, bundleCaps.id);
 });
 
+test('install HashBundle, unwrap installation of bundlecap', async t => {
+  const bundleHash = 'somehash';
+  const bundleID = `b1-${bundleHash}`;
+  const bundleCaps = { [bundleID]: makeHandle('BundleCap') };
+  const getBundleCapFromID = async id => bundleCaps[id];
+
+  const installationStorage = makeInstallationStorage(getBundleCapFromID);
+  const fakeBundle = {
+    endoZipBase64Sha512: bundleHash,
+    moduleFormat: 'endoZipBase64Sha512',
+  };
+
+  const installation = await installationStorage.installBundle(fakeBundle);
+  const unwrapped = await installationStorage.unwrapInstallation(installation);
+  t.is(unwrapped.installation, installation);
+  t.is(unwrapped.bundleID, bundleID);
+  t.is(unwrapped.bundleCap, bundleCaps[bundleID]);
+});
+
 test('unwrap promise for installation', async t => {
   // @ts-expect-error omitting required param during tests
   const installationStorage = makeInstallationStorage();

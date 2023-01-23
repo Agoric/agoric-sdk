@@ -108,6 +108,8 @@ export const makeInstallationStorage = (
     InstallationStorageI,
     {
       async installBundle(allegedBundle) {
+        // @ts-expect-error TS doesn't understand context
+        const { self } = this;
         // Bundle is a very open-ended type and we must decide here whether to
         // treat it as either a HashBundle or SourceBundle. So we have to
         // inspect it.
@@ -121,7 +123,7 @@ export const makeInstallationStorage = (
             'string',
             `bundle endoZipBase64Sha512 must be a string, got ${endoZipBase64Sha512}`,
           );
-          return this.installBundleID(`b1-${endoZipBase64Sha512}`);
+          return self.installBundleID(`b1-${endoZipBase64Sha512}`);
         }
         return installSourceBundle(allegedBundle);
       },
