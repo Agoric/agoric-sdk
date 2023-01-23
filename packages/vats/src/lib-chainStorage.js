@@ -106,7 +106,7 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<StorageNode?>} storageNodeRef
+ * @param {import('@endo/far').ERef<StorageNode?>} storageNodeRef
  * @param {string} childName
  * @returns {Promise<StorageNode>}
  */
