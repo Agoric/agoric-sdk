@@ -1,9 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
 wait_for_rosetta() {
-  timeout 90 sh -c 'until nc -z $0 $1; do sleep 1; done' rosetta 8080
+  TIMEOUT=90
+  I=0
+
+  while [ $I -lt $TIMEOUT ]; do
+	if nc -z rosetta 8080; then
+		break
+	else
+		sleep 1
+	fi
+	I=$(( I++ ))
+  done;
 }
 
 echo "waiting for rosetta instance to be up"
