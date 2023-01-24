@@ -92,6 +92,8 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
       zoe: 'zoe',
       feeMintAccess: 'zoe',
     },
+    issuer: { produce: { Invitation: 'zoe' } },
+    brand: { produce: { Invitation: 'zoe' } },
   },
   [makeBoard.name]: {
     consume: {
