@@ -31,9 +31,16 @@ set -x
 
 # open a vault
 OFFER=$(mktemp -t agops.XXX)
-bin/agops vaults open >|"$OFFER"
+bin/agops vaults open --wantMinted 5.00 --giveCollateral 9.0 >|"$OFFER"
 jq ".body | fromjson" <"$OFFER"
 agoric wallet send --keyring-backend="test" --from "$WALLET" --offer "$OFFER"
 
 # list my vaults
 bin/agops vaults list --keyring-backend="test" --from "$WALLET"
+
+# close a vault
+OFFER=$(mktemp -t agops.XXX)
+# 5.05 for 5.00 debt plus 1% fee
+bin/agops vaults close --giveMinted 5.05 --from "$WALLET" --vaultId vault1 >|"$OFFER"
+jq ".body | fromjson" <"$OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET" --offer "$OFFER"

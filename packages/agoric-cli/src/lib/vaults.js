@@ -1,5 +1,6 @@
 // @ts-check
 
+import { Fail } from '@agoric/assert';
 import { COSMOS_UNIT } from './format.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
@@ -52,7 +53,7 @@ const makeProposal = (brands, opts) => {
 /**
  * @param {Instance} instance
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: number, wantMinted: number, giveCollateral: number }} opts
+ * @param {{ offerId: string, wantMinted: number, giveCollateral: number }} opts
  * @returns {BridgeAction}
  */
 export const makeOpenSpendAction = (instance, brands, opts) => {
@@ -82,4 +83,51 @@ export const makeOpenSpendAction = (instance, brands, opts) => {
     offer,
   };
   return harden(spendAction);
+};
+
+/**
+ * @param {Record<string, Brand>} brands
+ * @param {{ offerId: string, giveMinted: number }} opts
+ * @param {string} previousOffer
+ * @returns {BridgeAction}
+ */
+export const makeCloseSpendAction = (brands, opts, previousOffer) => {
+  const proposal = makeProposal(brands, opts);
+  console.warn('vaults close give', proposal.give);
+
+  /** @type {OfferSpec} */
+  const offer = {
+    id: opts.offerId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer,
+      invitationMakerName: 'CloseVault',
+    },
+    proposal,
+  };
+
+  /** @type {BridgeAction} */
+  const spendAction = {
+    method: 'executeOffer',
+    offer,
+  };
+  return harden(spendAction);
+};
+
+/**
+ * @param {string} vaultId
+ * @param {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>} currentP
+ * @returns {Promise<string>} offer id in which the vault was made
+ */
+export const lookupOfferIdForVault = async (vaultId, currentP) => {
+  const { offerToPublicSubscriberPaths } = await currentP;
+
+  for (const [offerId, publicSubscribers] of Object.entries(
+    offerToPublicSubscriberPaths,
+  )) {
+    if (publicSubscribers.vault?.endsWith(vaultId)) {
+      return offerId;
+    }
+  }
+  throw Fail`vault ${vaultId} not found`;
 };
