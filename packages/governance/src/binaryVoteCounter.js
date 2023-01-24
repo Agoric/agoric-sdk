@@ -1,5 +1,5 @@
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeHeapExo, keyEQ, makeScalarMapStore } from '@agoric/store';
+import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import {
@@ -133,7 +133,7 @@ const makeBinaryVoteCounter = (
     });
   };
 
-  const closeFacet = makeHeapExo(
+  const closeFacet = makeExo(
     'BinaryVoteCounter close',
     BinaryVoteCounterCloseI,
     {
@@ -144,7 +144,7 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  const creatorFacet = makeHeapExo(
+  const creatorFacet = makeExo(
     'BinaryVoteCounter creator',
     BinaryVoteCounterAdminI,
     {
@@ -165,7 +165,7 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  const publicFacet = makeHeapExo(
+  const publicFacet = makeExo(
     'BinaryVoteCounter public',
     BinaryVoteCounterPublicI,
     {

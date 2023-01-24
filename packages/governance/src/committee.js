@@ -1,5 +1,5 @@
 import { makeStoredPublishKit } from '@agoric/notifier';
-import { makeScalarMapStore, makeHeapExo, M } from '@agoric/store';
+import { makeScalarMapStore, makeExo, M } from '@agoric/store';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
@@ -79,13 +79,13 @@ const start = (zcf, privateArgs) => {
       // Ensure that the voter can't get access to the unwrapped voteCap, and
       // has no control over the voteHandle or weight
       return harden({
-        voter: makeHeapExo(`voter${index}`, VoterI, {
+        voter: makeExo(`voter${index}`, VoterI, {
           castBallotFor(questionHandle, positions) {
             const { voteCap } = allQuestions.get(questionHandle);
             return E(voteCap).submitVote(voterHandle, positions, 1n);
           },
         }),
-        invitationMakers: makeHeapExo('invitation makers', InvitationMakerI, {
+        invitationMakers: makeExo('invitation makers', InvitationMakerI, {
           makeVoteInvitation(positions, questionHandle) {
             const continuingVoteHandler = cSeat => {
               cSeat.exit();
@@ -112,7 +112,7 @@ const start = (zcf, privateArgs) => {
     [...Array(committeeSize).keys()].map(makeCommitteeVoterInvitation),
   );
 
-  const publicFacet = makeHeapExo('Committee publicFacet', ElectoratePublicI, {
+  const publicFacet = makeExo('Committee publicFacet', ElectoratePublicI, {
     getQuestionSubscriber() {
       return questionsSubscriber;
     },
@@ -130,62 +130,58 @@ const start = (zcf, privateArgs) => {
     },
   });
 
-  const creatorFacet = makeHeapExo(
-    'Committee creatorFacet',
-    ElectorateCreatorI,
-    {
-      getPoserInvitation() {
-        return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
-          creatorFacet.addQuestion(voteCounter, questionSpec),
-        );
-      },
-      /** @type {AddQuestion} */
-      async addQuestion(voteCounter, questionSpec) {
-        const quorumThreshold = quorumRule => {
-          switch (quorumRule) {
-            case QuorumRule.MAJORITY:
-              return ceilDivide(committeeSize, 2);
-            case QuorumRule.ALL:
-              return committeeSize;
-            case QuorumRule.NO_QUORUM:
-              return 0;
-            default:
-              throw Error(`${quorumRule} is not a recognized quorum rule`);
-          }
-        };
-
-        const outcomeNode = E(privateArgs.storageNode).makeChildNode(
-          'latestOutcome',
-        );
-
-        /** @type {StoredPublishKit<OutcomeRecord>} */
-        const { publisher: outcomePublisher } = makeStoredPublishKit(
-          outcomeNode,
-          privateArgs.marshaller,
-        );
-
-        return startCounter(
-          zcf,
-          questionSpec,
-          quorumThreshold(questionSpec.quorumRule),
-          voteCounter,
-          allQuestions,
-          questionsPublisher,
-          outcomePublisher,
-        );
-      },
-      getVoterInvitations() {
-        return invitations;
-      },
-      getQuestionSubscriber() {
-        return questionsSubscriber;
-      },
-
-      getPublicFacet() {
-        return publicFacet;
-      },
+  const creatorFacet = makeExo('Committee creatorFacet', ElectorateCreatorI, {
+    getPoserInvitation() {
+      return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
+        creatorFacet.addQuestion(voteCounter, questionSpec),
+      );
     },
-  );
+    /** @type {AddQuestion} */
+    async addQuestion(voteCounter, questionSpec) {
+      const quorumThreshold = quorumRule => {
+        switch (quorumRule) {
+          case QuorumRule.MAJORITY:
+            return ceilDivide(committeeSize, 2);
+          case QuorumRule.ALL:
+            return committeeSize;
+          case QuorumRule.NO_QUORUM:
+            return 0;
+          default:
+            throw Error(`${quorumRule} is not a recognized quorum rule`);
+        }
+      };
+
+      const outcomeNode = E(privateArgs.storageNode).makeChildNode(
+        'latestOutcome',
+      );
+
+      /** @type {StoredPublishKit<OutcomeRecord>} */
+      const { publisher: outcomePublisher } = makeStoredPublishKit(
+        outcomeNode,
+        privateArgs.marshaller,
+      );
+
+      return startCounter(
+        zcf,
+        questionSpec,
+        quorumThreshold(questionSpec.quorumRule),
+        voteCounter,
+        allQuestions,
+        questionsPublisher,
+        outcomePublisher,
+      );
+    },
+    getVoterInvitations() {
+      return invitations;
+    },
+    getQuestionSubscriber() {
+      return questionsSubscriber;
+    },
+
+    getPublicFacet() {
+      return publicFacet;
+    },
+  });
 
   return { publicFacet, creatorFacet };
 };

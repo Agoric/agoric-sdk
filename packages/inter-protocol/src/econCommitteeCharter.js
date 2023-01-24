@@ -1,5 +1,5 @@
 import '@agoric/governance/exported.js';
-import { makeScalarMapStore, M, makeHeapExo, fit } from '@agoric/store';
+import { makeScalarMapStore, M, makeExo, fit } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
@@ -89,7 +89,7 @@ export const start = async zcf => {
       TimestampShape,
     ).returns(M.promise()),
   });
-  const invitationMakers = makeHeapExo('Charter Invitation Makers', MakerI, {
+  const invitationMakers = makeExo('Charter Invitation Makers', MakerI, {
     VoteOnParamChange: makeParamInvitation,
     VoteOnPauseOffers: makeOfferFilterInvitation,
   });
@@ -106,7 +106,7 @@ export const start = async zcf => {
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
-  const creatorFacet = makeHeapExo('Charter creatorFacet', charterCreatorI, {
+  const creatorFacet = makeExo('Charter creatorFacet', charterCreatorI, {
     /**
      * @param {Instance} governedInstance
      * @param {GovernedContractFacetAccess<{},{}>} governorFacet

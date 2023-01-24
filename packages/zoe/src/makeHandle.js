@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { initEmpty, makeHeapExo } from '@agoric/store';
+import { initEmpty, makeExo } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 
 import { HandleI } from './typeGuards.js';
@@ -39,8 +39,6 @@ export const makeHandle = handleType => {
   typeof handleType === 'string' || Fail`handleType must be a string`;
   // Return the intersection type (really just an empty object).
   // @ts-expect-error Bit by our own opaque types.
-  return /** @type {Handle<H>} */ (
-    makeHeapExo(`${handleType}Handle`, HandleI, {})
-  );
+  return /** @type {Handle<H>} */ (makeExo(`${handleType}Handle`, HandleI, {}));
 };
 harden(makeHandle);

@@ -1,4 +1,4 @@
-import { keyEQ, makeHeapExo, makeScalarMapStore } from '@agoric/store';
+import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
@@ -150,7 +150,7 @@ const makeMultiCandidateVoteCounter = (
     });
   };
 
-  const closeFacet = makeHeapExo(
+  const closeFacet = makeExo(
     'MultiCandidateVoteCounter close',
     VoteCounterCloseI,
     {
@@ -161,7 +161,7 @@ const makeMultiCandidateVoteCounter = (
     },
   );
 
-  const creatorFacet = makeHeapExo(
+  const creatorFacet = makeExo(
     'MultiCandidateVoteCounter creator',
     VoteCounterAdminI,
     {
@@ -184,7 +184,7 @@ const makeMultiCandidateVoteCounter = (
     },
   );
 
-  const publicFacet = makeHeapExo(
+  const publicFacet = makeExo(
     'MultiCandidateVoteCounter public',
     VoteCounterPublicI,
     {

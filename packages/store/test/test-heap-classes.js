@@ -1,8 +1,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import {
-  defineHeapExoClass,
-  defineHeapExoClassKit,
-  makeHeapExo,
+  defineExoClass,
+  defineExoClassKit,
+  makeExo,
 } from '../src/patterns/interface-tools.js';
 import { M } from '../src/patterns/patternMatchers.js';
 
@@ -20,8 +20,8 @@ const DownCounterI = M.interface('DownCounter', {
     .returns(M.number()),
 });
 
-test('test defineHeapExoClass', t => {
-  const makeUpCounter = defineHeapExoClass(
+test('test defineExoClass', t => {
+  const makeUpCounter = defineExoClass(
     'UpCounter',
     UpCounterI,
     /** @param {number} x */
@@ -47,8 +47,8 @@ test('test defineHeapExoClass', t => {
   });
 });
 
-test('test defineHeapExoClassKit', t => {
-  const makeCounterKit = defineHeapExoClassKit(
+test('test defineExoClassKit', t => {
+  const makeCounterKit = defineExoClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
     /** @param {number} x */
@@ -93,9 +93,9 @@ test('test defineHeapExoClassKit', t => {
   });
 });
 
-test('test makeHeapExo', t => {
+test('test makeExo', t => {
   let x = 3;
-  const upCounter = makeHeapExo('upCounter', UpCounterI, {
+  const upCounter = makeExo('upCounter', UpCounterI, {
     incr(y = 1) {
       x += y;
       return x;
@@ -115,13 +115,13 @@ test('test makeHeapExo', t => {
 // For code sharing with defineKind which does not support an interface
 test('missing interface', t => {
   t.notThrows(() =>
-    makeHeapExo('greeter', undefined, {
+    makeExo('greeter', undefined, {
       sayHello() {
         return 'hello';
       },
     }),
   );
-  const greeterMaker = makeHeapExo('greeterMaker', undefined, {
+  const greeterMaker = makeExo('greeterMaker', undefined, {
     makeSayHello() {
       return () => 'hello';
     },
@@ -134,7 +134,7 @@ test('missing interface', t => {
 
 test('sloppy option', t => {
   const emptyBehavior = {};
-  const greeter = makeHeapExo(
+  const greeter = makeExo(
     'greeter',
     M.interface('greeter', emptyBehavior, { sloppy: true }),
     {
@@ -147,7 +147,7 @@ test('sloppy option', t => {
 
   t.throws(
     () =>
-      makeHeapExo(
+      makeExo(
         'greeter',
         M.interface('greeter', emptyBehavior, { sloppy: false }),
         {
@@ -161,7 +161,7 @@ test('sloppy option', t => {
 });
 
 test('naked function call', t => {
-  const greeter = makeHeapExo(
+  const greeter = makeExo(
     'greeter',
     M.interface('greeter', { sayHello: M.call().returns('hello') }),
     {
@@ -183,7 +183,7 @@ test('naked function call', t => {
 // needn't run. we just don't have a better place to write these.
 test.skip('types', () => {
   // any methods can be defined if there's no interface
-  const unguarded = makeHeapExo('upCounter', undefined, {
+  const unguarded = makeExo('upCounter', undefined, {
     /** @param {number} val */
     incr(val) {
       return val;
@@ -199,7 +199,7 @@ test.skip('types', () => {
   unguarded.notInBehavior;
 
   // TODO when there is an interface, error if a method is missing from it
-  const guarded = makeHeapExo('upCounter', UpCounterI, {
+  const guarded = makeExo('upCounter', UpCounterI, {
     /** @param {number} val */
     incr(val) {
       return val;
