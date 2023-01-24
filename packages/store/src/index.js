@@ -65,38 +65,12 @@ export {
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
-export {
-  makeScalarWeakMapStore,
-  makeScalarWeakMapStore as makeScalarWeakMap, // Deprecated legacy
-  makeScalarWeakMapStore as makeWeakStore, // Deprecated legacy
-} from './stores/scalarWeakMapStore.js';
-export {
-  makeScalarMapStore,
-  makeScalarMapStore as makeScalarMap, // Deprecated legacy
-  makeScalarMapStore as makeStore, // Deprecated legacy
-} from './stores/scalarMapStore.js';
+export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
+export { makeScalarMapStore } from './stores/scalarMapStore.js';
 
 export { provideLazy } from './stores/store-utils.js';
 
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 
-// Importing these from store is deprecated. Import directly from
-// '@endo/marshal/src/rankOrder.js' instead.
-export {
-  compareRank,
-  isRankSorted,
-  sortByRank,
-} from '@endo/marshal/src/rankOrder.js';
-// Importing these from store is deprecated. Import directly from
-// '@endo/marshal/src/encodePassable.js' instead.
-export {
-  makeDecodePassable,
-  makeEncodePassable,
-  isEncodedRemotable,
-  zeroPad,
-} from '@endo/marshal/src/encodePassable.js';
-
-// export default as well as makeLegacy* only for compatibility
-// during the transition.
-export { makeLegacyMap, makeLegacyMap as default } from './legacy/legacyMap.js';
+export { makeLegacyMap } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
