@@ -36,4 +36,4 @@ jq ".body | fromjson" <"$OFFER"
 agoric wallet send --keyring-backend="test" --from "$WALLET" --offer "$OFFER"
 
 # list my vaults
-bin/agops vaults list --from dev-wallet
+bin/agops vaults list --keyring-backend="test" --from "$WALLET"

@@ -529,8 +529,8 @@ const SmartWalletKit = defineVirtualExoClassKit(
       // Schedule creation of a purse for each registered brand.
       state.registry.getRegisteredBrands().forEach(desc => {
         // In this sync method, we can't await the outcome.
-        void E(desc.issuer)
-          .makeEmptyPurse()
+        void E(state.bank)
+          .getPurse(desc.brand)
           // @ts-expect-error cast
           .then((/** @type {RemotePurse} */ purse) =>
             helper.addBrand(desc, purse),
