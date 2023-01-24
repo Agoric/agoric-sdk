@@ -1,4 +1,4 @@
-/* global setTimeout Buffer */
+/* global clearTimeout setTimeout Buffer */
 import path from 'path';
 import fs from 'fs';
 import url from 'url';
@@ -15,7 +15,7 @@ import { assert, Fail } from '@agoric/assert';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
-} from '@agoric/vats/src/batched-deliver.js';
+} from '@agoric/internal/src/batched-deliver.js';
 import { forever, whileTrue } from '@agoric/internal';
 
 const console = anylogger('chain-cosmos-sdk');
@@ -806,5 +806,9 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
 
   // Now that we've started consuming blocks, tell our caller how to deliver
   // messages.
-  return makeBatchedDeliver(deliver, Math.min(DEFAULT_BATCH_TIMEOUT_MS, 2000));
+  return makeBatchedDeliver(
+    deliver,
+    { clearTimeout, setTimeout },
+    Math.min(DEFAULT_BATCH_TIMEOUT_MS, 2000),
+  );
 }

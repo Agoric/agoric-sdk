@@ -2,6 +2,8 @@ import './externalTypes.js';
 
 import { E } from '@endo/far';
 
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+
 /**
  * @callback BundleSource
  * @param {string} startFilename - the filepath to start the bundling from
@@ -17,10 +19,13 @@ import { E } from '@endo/far';
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<import('./startInstance.js').InstallationManager>} installationManager
  * @param {ERef<any>} board
- * @returns {InstallSaveAndPublish}
  */
 export const makeInstall = (bundleSource, zoe, installationManager, board) => {
-  /** @type {InstallSaveAndPublish} */
+  /**
+   * @param {string} resolvedPath
+   * @param {Petname} contractPetname
+   * @returns {Promise<{ installation: Installation, id: string}>}
+   * */
   const install = async (resolvedPath, contractPetname) => {
     console.log(`- Installing Contract Name: ${contractPetname}`);
 

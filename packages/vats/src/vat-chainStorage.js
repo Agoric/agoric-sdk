@@ -1,8 +1,8 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
 import { E, Far } from '@endo/far';
+import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeBridgeManager } from './bridge.js';
-import { makeChainStorageRoot } from './lib-chainStorage.js';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;

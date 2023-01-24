@@ -17,9 +17,6 @@
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.2.1",
-    "@agoric/cosmic-swingset": "^0.39.2",
-    "@agoric/deploy-script-support": "^0.9.4",
-    "@agoric/wallet-backend": "^0.13.3",
     "@endo/captp": "^2.0.18",
     "@endo/init": "^0.5.52",
     "ava": "^5.1.0"
@@ -35,7 +32,9 @@
     "@agoric/vat-data": "^0.4.3",
     "@agoric/vats": "^0.13.0",
     "@agoric/zoe": "^0.25.3",
-    "@endo/far": "^0.2.14"
+    "@endo/eventual-send": "^0.16.8",
+    "@endo/far": "^0.2.14",
+    "@endo/marshal": "^0.8.1"
   },
   "files": [
     "src/"

@@ -11,7 +11,7 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 
 import {

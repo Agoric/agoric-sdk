@@ -4,7 +4,7 @@
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 
 import test from 'ava';
-import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 
 import { Far, makeMarshal } from '@endo/marshal';
 import { M } from '@agoric/store';

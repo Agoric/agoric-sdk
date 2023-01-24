@@ -10,7 +10,7 @@ import {
 } from './vat-data-bindings.js';
 
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
-/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef */
+/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 /** @typedef {import('./types.js').Baggage} Baggage */
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
 /** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */

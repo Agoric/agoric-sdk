@@ -17,7 +17,7 @@ import {
 import { importBundle } from '@endo/import-bundle';
 import * as Collect from '@agoric/inter-protocol/src/collect.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import * as STORAGE_PATH from '../chain-storage-paths.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 import { PowerFlags } from './basic-behaviors.js';

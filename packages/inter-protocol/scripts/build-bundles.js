@@ -3,7 +3,7 @@ import '@endo/init';
 import {
   createBundles,
   extractProposalBundles,
-} from '@agoric/deploy-script-support';
+} from '@agoric/internal/src/createBundles.js';
 import url from 'url';
 import process from 'process';
 

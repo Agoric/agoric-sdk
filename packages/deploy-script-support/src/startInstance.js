@@ -1,6 +1,8 @@
 import { assert } from '@agoric/assert';
 import { E, passStyleOf } from '@endo/far';
 
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
+
 /**
  * @template T
  * @typedef {object} PetnameManager

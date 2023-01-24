@@ -13,8 +13,8 @@ import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { assert, Fail } from '@agoric/assert';
-import { makeWithQueue } from '@agoric/vats/src/queue.js';
-import { makeBatchedDeliver } from '@agoric/vats/src/batched-deliver.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
@@ -220,5 +220,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   });
 
   const batchDelayMs = delay ? delay * 1000 : undefined;
-  return makeBatchedDeliver(deliver, batchDelayMs);
+  return makeBatchedDeliver(
+    deliver,
+    { clearTimeout, setTimeout },
+    batchDelayMs,
+  );
 }

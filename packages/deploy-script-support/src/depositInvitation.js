@@ -2,10 +2,12 @@ import { E } from '@endo/far';
 
 /**
  * @param {ERef<Purse>} zoeInvitationPurse
- * @returns {DepositInvitation}
  */
 export const makeDepositInvitation = zoeInvitationPurse => {
-  /** @type {DepositInvitation} */
+  /**
+   * @param {ERef<Invitation>} invitationP
+   * @returns {Promise<InvitationDetails>}
+   * */
   const depositInvitation = async invitationP => {
     const invitation = await invitationP;
     // Deposit returns the amount deposited

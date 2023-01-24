@@ -10,7 +10,6 @@
 // Ambient types. https://github.com/Agoric/agoric-sdk/issues/6512
 import '@agoric/ertp/exported.js';
 import '@agoric/store/exported.js';
-import '@agoric/vats/exported.js';
 
 import '../internal-types.js';
 

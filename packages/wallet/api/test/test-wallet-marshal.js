@@ -7,7 +7,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
   makeExportContext,
   makeImportContext,
-} from '../src/marshal-contexts.js';
+} from '@agoric/smart-wallet/src/marshal-contexts.js';
 
 /** @param {ReturnType<typeof makeBoard>} board */
 const makeAMM = board => {

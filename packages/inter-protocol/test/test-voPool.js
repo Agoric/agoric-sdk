@@ -12,7 +12,7 @@ import { objectMap } from '@agoric/internal';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
-import { makeFakeStorageKit } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 

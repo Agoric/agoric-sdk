@@ -4,7 +4,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { makeStorageNodeChild } from '../lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '../tokens.js';
 
 // Ambient types (globals)

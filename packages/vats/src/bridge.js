@@ -4,7 +4,7 @@ import { makeScalarMapStore } from '@agoric/store';
 import '@agoric/store/exported.js';
 import { Fail } from '@agoric/assert';
 import { Far } from '@endo/far';
-import { makeWithQueue } from './queue.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 
 /**
  * @template T

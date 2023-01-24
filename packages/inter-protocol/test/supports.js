@@ -9,7 +9,7 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';

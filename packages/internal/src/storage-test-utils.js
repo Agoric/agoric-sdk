@@ -1,6 +1,6 @@
 // @ts-check
 import { Far, makeMarshal } from '@endo/marshal';
-import { makeChainStorageRoot } from '../src/lib-chainStorage.js';
+import { makeChainStorageRoot } from './lib-chainStorage.js';
 
 /**
  * For testing, creates a chainStorage root node over an in-memory map
@@ -79,7 +79,7 @@ export const makeMockChainStorageRoot = () => {
      * are dropped and `iface` is _added_ for repeat references.
      *
      * @param {string} path
-     * @param {Marshaller} marshaller
+     * @param {import('./lib-chainStorage.js').Marshaller} marshaller
      * @returns {unknown}
      */
     getBody: (path, marshaller = defaultMarshaller) => {

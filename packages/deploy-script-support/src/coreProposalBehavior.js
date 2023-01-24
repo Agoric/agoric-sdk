@@ -1,5 +1,12 @@
 const t = 'makeCoreProposalBehavior';
 
+/**
+ * TODO import these from @agoric/vats when the types are better managed
+ *
+ * @typedef {*} ChainBootstrapSpace
+ * @typedef {*} BootstrapPowers
+ */
+
 export const permits = {
   consume: { board: t, agoricNamesAdmin: t },
   evaluateInstallation: t,

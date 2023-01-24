@@ -1,9 +1,9 @@
 /* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
+import { makeImportContext } from '../src/marshal-contexts.js';
 import { makeDefaultTestContext } from './contexts.js';
 import {
   ActionType,
