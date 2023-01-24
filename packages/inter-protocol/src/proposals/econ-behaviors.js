@@ -580,10 +580,6 @@ export const configureVaultFactoryUI = async ({
   const boardIdValue = [
     ['INSTANCE_BOARD_ID', instances.vaultFactory],
     ['INSTALLATION_BOARD_ID', installs.vaultFactory],
-    // @deprecated
-    ['RUN_ISSUER_BOARD_ID', stableIssuer],
-    // @deprecated
-    ['RUN_BRAND_BOARD_ID', stableBrand],
     ['STABLE_ISSUER_BOARD_ID', stableIssuer],
     ['STABLE_BRAND_BOARD_ID', stableBrand],
     ['AMM_INSTALLATION_BOARD_ID', installs.amm],
