@@ -80,6 +80,38 @@ export const makeVaultsCommand = async logger => {
     });
 
   vaults
+    .command('adjust')
+    .description('adjust an existing vault')
+    .requiredOption(
+      '--from <address>',
+      'wallet address literal or name',
+      normalizeAddress,
+    )
+    .option('--giveCollateral [number]', 'More collateral to lend', Number)
+    .option('--wantCollateral [number]', 'Collateral to get back', Number)
+    .option('--giveMinted [number]', 'Minted to give back', Number)
+    .option('--wantMinted [number]', 'More minted to borrow', Number)
+    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    // TODO method to disambiguate between managers
+    .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
+    .action(async function (opts) {
+      logger.warn('running with options', opts);
+
+      const previousOfferId = await lookupOfferIdForVault(
+        opts.vaultId,
+        getCurrent(opts.from, fromBoard, { vstorage }),
+      );
+
+      const spendAction = makeAdjustSpendAction(
+        // @ts-expect-error xxx RpcRemote
+        agoricNames.brand,
+        opts,
+        previousOfferId,
+      );
+      outputAction(spendAction);
+    });
+
+  vaults
     .command('close')
     .description('close an existing vault')
     .requiredOption(

@@ -87,6 +87,37 @@ export const makeOpenSpendAction = (instance, brands, opts) => {
 
 /**
  * @param {Record<string, Brand>} brands
+ * @param {{ offerId: string, giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number }} opts
+ * @param {string} previousOffer
+ * @returns {BridgeAction}
+ */
+export const makeAdjustSpendAction = (brands, opts, previousOffer) => {
+  // NB: not really a Proposal because the brands are not remotes
+  // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
+  // fit(harden(proposal), ProposalShape);
+  const proposal = makeProposal(brands, opts);
+
+  /** @type {OfferSpec} */
+  const offer = {
+    id: opts.offerId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer,
+      invitationMakerName: 'AdjustBalances',
+    },
+    proposal,
+  };
+
+  /** @type {BridgeAction} */
+  const spendAction = {
+    method: 'executeOffer',
+    offer,
+  };
+  return harden(spendAction);
+};
+
+/**
+ * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, giveMinted: number }} opts
  * @param {string} previousOffer
  * @returns {BridgeAction}

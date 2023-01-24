@@ -38,6 +38,12 @@ agoric wallet send --keyring-backend="test" --from "$WALLET" --offer "$OFFER"
 # list my vaults
 bin/agops vaults list --keyring-backend="test" --from "$WALLET"
 
+# adjust
+OFFER=$(mktemp -t agops.XXX)
+bin/agops vaults adjust --giveCollateral 1.0 --from "$WALLET" --vaultId vault2 >|"$OFFER"
+jq ".body | fromjson" <"$OFFER"
+agoric wallet send --keyring-backend="test" --from "$WALLET" --offer "$OFFER"
+
 # close a vault
 OFFER=$(mktemp -t agops.XXX)
 # 5.05 for 5.00 debt plus 1% fee
