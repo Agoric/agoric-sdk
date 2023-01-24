@@ -411,37 +411,53 @@ export const assertAllDefined = obj => {
   }
 };
 
-const neverDone = harden({ done: false, value: null });
+/** @type {IteratorResult<undefined, never>} */
+const notDone = harden({ done: false, value: undefined });
 
-/** @type {AsyncIterable<null>} */
-export const forever = asyncGenerate(() => neverDone);
+/** @type {IteratorResult<never, void>} */
+const alwaysDone = harden({ done: true, value: undefined });
 
-/**
- * @param {() => unknown} boolFunc
- * `boolFunc`'s return value is used for its truthiness vs falsiness.
- * IOW, it is coerced to a boolean so the caller need not bother doing this
- * themselves.
- * @returns {AsyncIterable<null>}
- */
-export const whileTrue = boolFunc =>
-  asyncGenerate(() =>
-    harden({
-      done: !boolFunc(),
-      value: null,
-    }),
-  );
+export const forever = asyncGenerate(() => notDone);
 
 /**
- * @param {() => unknown} boolFunc
- * `boolFunc`'s return value is used for its truthiness vs falsiness.
+ * @template T
+ * @param {() => T} produce
+ * The value of `await produce()` is used for its truthiness vs falsiness.
  * IOW, it is coerced to a boolean so the caller need not bother doing this
  * themselves.
- * @returns {AsyncIterable<null>}
+ * @returns {AsyncIterable<Awaited<T>>}
  */
-export const untilTrue = boolFunc =>
-  asyncGenerate(() =>
-    harden({
-      done: !!boolFunc(),
-      value: null,
-    }),
-  );
+export const whileTrue = produce =>
+  asyncGenerate(async () => {
+    const value = await produce();
+    if (!value) {
+      return alwaysDone;
+    }
+    return harden({
+      done: false,
+      value,
+    });
+  });
+
+/**
+ * @template T
+ * @param {() => T} produce
+ * The value of `await produce()` is used for its truthiness vs falsiness.
+ * IOW, it is coerced to a boolean so the caller need not bother doing this
+ * themselves.
+ * @returns {AsyncIterable<Awaited<T>>}
+ */
+export const untilTrue = produce =>
+  asyncGenerate(async () => {
+    const value = await produce();
+    if (value) {
+      return harden({
+        done: true,
+        value,
+      });
+    }
+    return harden({
+      done: false,
+      value,
+    });
+  });
