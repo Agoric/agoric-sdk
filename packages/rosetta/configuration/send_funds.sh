@@ -32,3 +32,4 @@ rm "UNSIGNED_$DESTINATION.json"
 # Broadcast it
 agd --home t1/bootstrap tx broadcast "SIGNED_$DESTINATION.json" --from bootstrap --chain-id="agoriclocal" --node tcp://agoric:26657 --yes --keyring-backend=test
 rm "SIGNED_$DESTINATION.json"
+
