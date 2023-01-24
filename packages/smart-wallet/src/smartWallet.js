@@ -181,17 +181,26 @@ export const initState = (unique, shared) => {
       durable: true,
     }),
     // Invitation amounts to save for persistent lookup
-    offerToUsedInvitation: makeScalarBigMapStore('invitation amounts', {
-      durable: true,
-    }),
+    offerToUsedInvitation: makeScalarBigMapStore(
+      'invitation amounts by offer',
+      {
+        durable: true,
+      },
+    ),
     // Invitation makers yielded by offer results
-    offerToInvitationMakers: makeScalarBigMapStore('invitation makers', {
-      durable: true,
-    }),
+    offerToInvitationMakers: makeScalarBigMapStore(
+      'invitation makers by offer',
+      {
+        durable: true,
+      },
+    ),
     // Public subscribers yielded by offer results
-    offerToPublicSubscriberPaths: makeScalarBigMapStore('public subscribers', {
-      durable: true,
-    }),
+    offerToPublicSubscriberPaths: makeScalarBigMapStore(
+      'public subscribers by offer',
+      {
+        durable: true,
+      },
+    ),
   };
 
   const nonpreciousState = {
