@@ -60,10 +60,15 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     }
   }
 
-  function clearSorted() {
-    sortedKeys = undefined;
+  function clearGetNextKeyCache() {
     priorKeyReturned = undefined;
     priorKeyIndex = -1;
+  }
+  clearGetNextKeyCache();
+
+  function clearSorted() {
+    sortedKeys = undefined;
+    clearGetNextKeyCache();
   }
 
   function dumpStore() {
@@ -80,6 +85,35 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       const result = fakeStore.get(key);
       if (log) {
         log.push(`get ${s(key)} => ${s(result)}`);
+      }
+      return result;
+    },
+    vatstoreGetNextKey(priorKey) {
+      assert.typeof(priorKey, 'string');
+      ensureSorted();
+      // TODO: binary search for priorKey (maybe missing), then get
+      // the one after that. For now we go simple and slow. But cache
+      // a starting point, because the main use case is a full
+      // iteration. OTOH, the main use case also deletes everything,
+      // which will clobber the cache on each deletion, so it might
+      // not help.
+      const start = priorKeyReturned === priorKey ? priorKeyIndex : 0;
+      let result;
+      for (let i = start; i < sortedKeys.length; i += 1) {
+        const key = sortedKeys[i];
+        if (key > priorKey) {
+          priorKeyReturned = key;
+          priorKeyIndex = i;
+          result = key;
+          break;
+        }
+      }
+      if (!result) {
+        // reached end without finding the key, so clear our cache
+        clearGetNextKeyCache();
+      }
+      if (log) {
+        log.push(`getNextKey ${s(priorKey)} => ${s(result)}`);
       }
       return result;
     },
@@ -100,38 +134,6 @@ export function makeFakeLiveSlotsStuff(options = {}) {
         clearSorted();
       }
       fakeStore.delete(key);
-    },
-    vatstoreGetAfter(priorKey, start, end) {
-      let actualEnd = end;
-      if (!end) {
-        const lastChar = String.fromCharCode(start.slice(-1).charCodeAt(0) + 1);
-        actualEnd = `${start.slice(0, -1)}${lastChar}`;
-      }
-      ensureSorted();
-      let from = 0;
-      if (priorKeyReturned === priorKey) {
-        from = priorKeyIndex;
-      }
-      let result = [undefined, undefined];
-      for (let i = from; i < sortedKeys.length; i += 1) {
-        const key = sortedKeys[i];
-        if (key >= actualEnd) {
-          priorKeyReturned = undefined;
-          priorKeyIndex = -1;
-          break;
-        } else if (key > priorKey && key >= start) {
-          priorKeyReturned = key;
-          priorKeyIndex = i;
-          result = [key, fakeStore.get(key)];
-          break;
-        }
-      }
-      if (log) {
-        log.push(
-          `getAfter ${s(priorKey)} ${s(start)} ${s(end)} => ${s(result)}`,
-        );
-      }
-      return result;
     },
   };
 

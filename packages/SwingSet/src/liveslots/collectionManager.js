@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 import { assert, details as X, q, Fail } from '@agoric/assert';
 import {
   zeroPad,
@@ -17,6 +18,10 @@ import {
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
+import {
+  enumerateKeysStartEnd,
+  enumerateKeysWithPrefix,
+} from './vatstore-iterators.js';
 
 // XXX TODO: The following key length limit was put in place due to limitations
 // in LMDB.  With the move away from LMDB, it is no longer relevant, but I'm
@@ -380,61 +385,60 @@ export function makeCollectionManager(
     }
 
     function entriesInternal(
-      needKeys,
-      needValues,
+      yieldKeys,
+      yieldValues,
       keyPatt = M.any(),
       valuePatt = M.any(),
     ) {
-      assert(needKeys || needValues);
+      assert(yieldKeys || yieldValues, 'useless entries()');
       assertKeyPattern(keyPatt);
       assertPattern(valuePatt);
+
       const [coverStart, coverEnd] = getRankCover(keyPatt, encodeKey);
-      let priorDBKey = '';
-      const start = prefix(coverStart);
-      const end = prefix(coverEnd);
-      const ignoreKeys = !needKeys && matchAny(keyPatt);
-      const ignoreValues = !needValues && matchAny(valuePatt);
+      const start = prefix(coverStart); // inclusive
+      const end = prefix(coverEnd); // exclusive
+
+      const generationAtStart = currentGenerationNumber;
+      function checkGen() {
+        if (generationAtStart !== currentGenerationNumber) {
+          Fail`keys in store cannot be added to during iteration`;
+        }
+      }
+
+      const needToMatchKey = !matchAny(keyPatt);
+      const needToMatchValue = !matchAny(valuePatt);
+
+      // we always get the dbKey, but we might not need to unserialize it
+      const needKeys = yieldKeys || needToMatchKey;
+      // we don't always need the dbValue
+      const needValues = yieldValues || needToMatchValue;
+
       /**
        * @yields {[any, any]}
        * @returns {Generator<[any, any], void, unknown>}
        */
       function* iter() {
-        const generationAtStart = currentGenerationNumber;
-        while (priorDBKey !== undefined) {
-          generationAtStart === currentGenerationNumber ||
-            Fail`keys in store cannot be added to during iteration`;
-          const [dbKey, dbValue] = syscall.vatstoreGetAfter(
-            priorDBKey,
-            start,
-            end,
-          );
-          if (!dbKey) {
-            break;
+        // the inner iterator yields all keys for which (start <= key < end)
+        const iterKeys = enumerateKeysStartEnd(syscall, start, end, checkGen);
+
+        // and the outer iterator filters by keyPatt/valuePatt and
+        // yields the right [key,value] tuples
+        for (const dbKey of iterKeys) {
+          const key = needKeys ? dbKeyToKey(dbKey) : undefined;
+          // safe because needToMatchKey implies needKeys
+          if (needToMatchKey && !matches(key, keyPatt)) {
+            continue;
           }
-          if (dbKey < end) {
-            priorDBKey = dbKey;
-            if (ignoreKeys) {
-              const value = unserialize(JSON.parse(dbValue));
-              if (matches(value, valuePatt)) {
-                yield [undefined, value];
-              }
-            } else if (ignoreValues) {
-              const key = dbKeyToKey(dbKey);
-              if (matches(key, keyPatt)) {
-                yield [key, undefined];
-              }
-            } else {
-              const key = dbKeyToKey(dbKey);
-              if (matches(key, keyPatt)) {
-                const value = unserialize(JSON.parse(dbValue));
-                if (matches(value, valuePatt)) {
-                  yield [key, value];
-                }
-              }
-            }
+          const value = needValues
+            ? unserialize(JSON.parse(syscall.vatstoreGet(dbKey)))
+            : undefined;
+          if (needToMatchValue && !matches(value, valuePatt)) {
+            continue;
           }
+          yield [yieldKeys ? key : undefined, yieldValues ? value : undefined];
         }
       }
+
       return iter();
     }
 
@@ -450,7 +454,7 @@ export function makeCollectionManager(
     /**
      * Clear the entire contents of a collection non-selectively.  Since we are
      * being unconditional, we don't need to inspect any of the keys to decide
-     * what to do and therefor can avoid deserializing the keys.  In particular,
+     * what to do and therefore can avoid deserializing the keys. In particular,
      * this avoids swapping in any virtual objects that were used as keys, which
      * can needlessly thrash the virtual object cache when an entire collection
      * is being deleted.
@@ -461,33 +465,23 @@ export function makeCollectionManager(
     function clearInternalFull() {
       let doMoreGC = false;
       const [coverStart, coverEnd] = getRankCover(M.any(), encodeKey);
-      let priorDBKey = '';
       const start = prefix(coverStart);
       const end = prefix(coverEnd);
-      while (priorDBKey !== undefined) {
-        const [dbKey, dbValue] = syscall.vatstoreGetAfter(
-          priorDBKey,
-          start,
-          end,
-        );
-        if (!dbKey) {
-          break;
-        }
-        if (dbKey < end) {
-          priorDBKey = dbKey;
-          const value = JSON.parse(dbValue);
-          doMoreGC =
-            value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
-          syscall.vatstoreDelete(dbKey);
-          if (isEncodedRemotable(dbKey)) {
-            const keyVref = vrefFromDBKey(dbKey);
-            if (hasWeakKeys) {
-              vrm.removeRecognizableVref(keyVref, `${collectionID}`, true);
-            } else {
-              doMoreGC = vrm.removeReachableVref(keyVref) || doMoreGC;
-            }
-            syscall.vatstoreDelete(prefix(`|${keyVref}`));
+
+      // this yields all keys for which (start <= key < end)
+      for (const dbKey of enumerateKeysStartEnd(syscall, start, end)) {
+        const value = JSON.parse(syscall.vatstoreGet(dbKey));
+        doMoreGC =
+          value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
+        syscall.vatstoreDelete(dbKey);
+        if (isEncodedRemotable(dbKey)) {
+          const keyVref = vrefFromDBKey(dbKey);
+          if (hasWeakKeys) {
+            vrm.removeRecognizableVref(keyVref, `${collectionID}`, true);
+          } else {
+            doMoreGC = vrm.removeReachableVref(keyVref) || doMoreGC;
           }
+          syscall.vatstoreDelete(prefix(`|${keyVref}`));
         }
       }
       return doMoreGC;
@@ -645,14 +639,8 @@ export function makeCollectionManager(
     allCollectionObjIDs.delete(vobjID);
 
     const doMoreGC = collection.clearInternal(true);
-    let priorKey = '';
-    const keyPrefix = prefixc(subid, '|');
-    while (priorKey !== undefined) {
-      [priorKey] = syscall.vatstoreGetAfter(priorKey, keyPrefix);
-      if (!priorKey) {
-        break;
-      }
-      syscall.vatstoreDelete(priorKey);
+    for (const dbKey of enumerateKeysWithPrefix(syscall, prefixc(subid, '|'))) {
+      syscall.vatstoreDelete(dbKey);
     }
     return doMoreGC;
   }

@@ -8,6 +8,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
 import { restartVatAdminVat } from '../util.js';
 import { kunser, krefOf } from '../../src/lib/kmarshal.js';
+import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 
 async function prepare() {
   const kernelBundles = await buildKernelBundles();
@@ -212,7 +213,7 @@ async function overflowCrank(t, explosion) {
   await c.run();
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 1);
   t.is(kvStore.get(`${root}.owner`), vatID);
-  t.true(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length > 0);
+  t.true(Array.from(enumeratePrefixedKeys(kvStore, vatID)).length > 0);
   // neverP and doneP should still be unresolved
   t.is(c.kpStatus(neverKPID), 'unresolved');
   t.is(c.kpStatus(doneKPID), 'unresolved');
@@ -227,7 +228,7 @@ async function overflowCrank(t, explosion) {
   kpidRejected(t, c, kp4, 'vat terminated');
   t.is(JSON.parse(kvStore.get('vat.dynamicIDs')).length, 0);
   t.is(kvStore.get(`${root}.owner`), undefined);
-  t.is(Array.from(kvStore.getKeys(`${vatID}`, `${vatID}/`)).length, 0);
+  t.is(Array.from(enumeratePrefixedKeys(kvStore, vatID)).length, 0);
   // neverP should be rejected, without revealing details
   kpidRejected(t, c, neverKPID, 'vat terminated');
 

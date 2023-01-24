@@ -118,7 +118,7 @@ export {};
  * @typedef { [tag: 'resolve', resolutions: VatOneResolution[] ]} VatSyscallResolve
  * @typedef { [tag: 'exit', isFailure: boolean, info: SwingSetCapData ]} VatSyscallExit
  * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined ]} VatSyscallVatstoreGetAfter
+ * @typedef { [tag: 'vatstoreGetNextKey', priorKey: string ]} VatSyscallVatstoreGetNextKey
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
@@ -127,12 +127,12 @@ export {};
  * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
- *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
+ *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetNextKey
  *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
  *    | VatSyscallRetireImports | VatSyscallRetireExports | VatSyscallAbandonExports
  * } VatSyscallObject
  *
- * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} VatSyscallResultOk
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | null ]} VatSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } VatSyscallResultError
  * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
  * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
@@ -158,7 +158,7 @@ export {};
  * @typedef { [tag: 'resolve', vatID: string, resolutions: KernelOneResolution[] ]} KernelSyscallResolve
  * @typedef { [tag: 'exit', vatID: string, isFailure: boolean, info: SwingSetCapData ]} KernelSyscallExit
  * @typedef { [tag: 'vatstoreGet', vatID: string, key: string ]} KernelSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetAfter', vatID: string, priorKey: string, lowerBound: string, upperBound: string | undefined ]} KernelSyscallVatstoreGetAfter
+ * @typedef { [tag: 'vatstoreGetNextKey', vatID: string, priorKey: string ]} KernelSyscallVatstoreGetNextKey
  * @typedef { [tag: 'vatstoreSet', vatID: string, key: string, data: string ]} KernelSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', vatID: string, key: string ]} KernelSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
@@ -168,7 +168,7 @@ export {};
  * @typedef { [tag: 'callKernelHook', hookName: string, args: SwingSetCapData]} KernelSyscallCallKernelHook
  *
  * @typedef { KernelSyscallSend | KernelSyscallInvoke | KernelSyscallSubscribe
- *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
+ *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetNextKey
  *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
  *    | KernelSyscallRetireImports | KernelSyscallRetireExports | KernelSyscallAbandonExports
  *    | KernelSyscallCallKernelHook

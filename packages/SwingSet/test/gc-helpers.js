@@ -2,19 +2,8 @@
 
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import {
-  matchResolveOne,
-  matchVatstoreGet,
-  matchVatstoreGetAfter,
-  matchVatstoreDelete,
-  matchVatstoreSet,
-  matchRetireExports,
-  validate,
-  validateDone,
-  validateReturned,
-} from './liveslots-helpers.js';
-import { vstr } from './util.js';
 import { kslot, kser } from '../src/lib/kmarshal.js';
+import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
@@ -133,11 +122,11 @@ export function buildRootObject(vatPowers) {
       }
     },
     prepareStoreLinked() {
-      let holder = makeHolder(heldStore);
-      holder = makeHolder(holder);
-      holder = makeHolder(holder);
-      holders.push(holder);
-      heldStore = null;
+      let holder = makeHolder(heldStore); // Map7->Map6
+      holder = makeHolder(holder); // Map8->Map7
+      holder = makeHolder(holder); // Map9->Map8
+      holders.push(holder); // RAM->Map9
+      heldStore = null; // remove RAM->Map6
     },
     noOp() {
       // used when an extra cycle is needed to pump GC
@@ -145,11 +134,15 @@ export function buildRootObject(vatPowers) {
   });
 }
 
-export const NONE = undefined;
-export const DONE = [undefined, undefined];
-export const anySchema = M.any();
-export const stringSchema = M.string();
-export const scalarSchema = M.scalar();
+export function deduceCollectionID(fakestore, ctype, offset) {
+  const kindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
+  const nextCollectionID = JSON.parse(fakestore.get(`idCounters`)).collectionID;
+  const kindID = kindIDs[ctype];
+  assert(kindID);
+  const collectionID = nextCollectionID - offset;
+  const vref = `o+${kindID}/${collectionID}`;
+  return [collectionID, vref];
+}
 
 export function refVal(vref, type) {
   return kser(kslot(vref, type));
@@ -157,10 +150,6 @@ export function refVal(vref, type) {
 
 export function refValString(vref, type) {
   return JSON.stringify(refVal(vref, type));
-}
-
-export function thingRefValString(vref) {
-  return refValString(vref, 'thing');
 }
 
 export function mapRef(idx) {
@@ -175,353 +164,43 @@ export function mapRefValString(idx) {
   return refValString(mapRef(idx), 'mapStore');
 }
 
-export function validateRefCountCheck(v, vref, rc) {
-  validate(v, matchVatstoreGet(`vom.rc.${vref}`, rc));
-}
+// return an iterator of all existing keys that start with 'prefix'
+// (excluding the prefix itself)
 
-export function validateExportStatusCheck(v, vref, es) {
-  validate(v, matchVatstoreGet(`vom.es.${vref}`, es));
-}
-
-export function validateStatusCheck(v, vref, rc, es) {
-  validateRefCountCheck(v, vref, rc);
-  validateExportStatusCheck(v, vref, es);
-}
-
-function validateCreateBuiltInNonDurableTable(v, idx, schema, label) {
-  validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
-  validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, vstr([schema])));
-  validate(v, matchVatstoreSet(`vc.${idx}.|label`, label));
-}
-
-function validateCreatePromiseRegistrationTable(v, idx) {
-  validateCreateBuiltInNonDurableTable(
-    v,
-    idx,
-    scalarSchema,
-    'promiseRegistrations',
-  );
-}
-
-export function validateCreateBuiltInTable(v, idx, idKey, schema, label) {
-  validate(v, matchVatstoreGet(idKey, NONE));
-  validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
-  validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, vstr([schema])));
-  validate(v, matchVatstoreSet(`vc.${idx}.|label`, label));
-  validate(v, matchVatstoreSet(idKey, `o+6/${idx}`));
-  validate(v, matchVatstoreGet(`vom.rc.o+6/${idx}`, NONE));
-  validate(v, matchVatstoreSet(`vom.rc.o+6/${idx}`, '1'));
-}
-
-export function validateCreatePromiseWatcherKindTable(v, idx) {
-  validateCreateBuiltInTable(
-    v,
-    idx,
-    'watcherTableID',
-    scalarSchema,
-    'promiseWatcherByKind',
-  );
-}
-
-export function validateCreateWatchedPromiseTable(v, idx) {
-  validateCreateBuiltInTable(
-    v,
-    idx,
-    'watchedPromiseTableID',
-    stringSchema,
-    'watchedPromises',
-  );
-}
-
-export function validateCreateBaggage(v, idx) {
-  validateCreateBuiltInTable(v, idx, 'baggageID', stringSchema, 'baggage');
-}
-
-export function validateCreateBuiltInTables(v) {
-  validateCreateBaggage(v, 1);
-  validateCreatePromiseRegistrationTable(v, 2);
-  validateCreatePromiseWatcherKindTable(v, 3);
-  validateCreateWatchedPromiseTable(v, 4);
-}
-
-export function validateCreate(v, idx, isWeak = false) {
-  validate(v, matchVatstoreSet(`vc.${idx}.|nextOrdinal`, `1`));
-  if (!isWeak) {
-    validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, `0`));
-  }
-  validate(v, matchVatstoreSet(`vc.${idx}.|schemata`, vstr([anySchema])));
-  validate(v, matchVatstoreSet(`vc.${idx}.|label`, `store #${idx}`));
-}
-
-export function validateCreateStore(v, idx, isWeak) {
-  validateCreate(v, idx, isWeak);
-}
-
-export function validateUpdate(v, key, before, after) {
-  validate(v, matchVatstoreGet(key, before));
-  validate(v, matchVatstoreSet(key, after));
-}
-
-export function validateMakeAndHold(v, rp) {
-  validateCreateStore(v, mainHeldIdx);
-  validateReturned(v, rp);
-  validate(v, matchVatstoreSet('idCounters'));
-  validateDone(v);
-}
-
-export function validateStoreHeld(v, rp, rcBefore, rcAfter) {
-  validate(v, matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, vstr(null)));
-  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, rcBefore, rcAfter);
-  validate(
-    v,
-    matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(mainHeldIdx)),
-  );
-  validateReturned(v, rp);
-  validateDone(v);
-}
-
-export function validateDeleteMetadataOnly(
-  v,
-  idx,
-  entries,
-  contentRef,
-  contentType,
-  rc,
-  nonVirtual,
-) {
-  if (contentRef !== NONE) {
-    validate(
-      v,
-      matchVatstoreGetAfter('', `vc.${idx}.`, `vc.${idx}.{`, [
-        `vc.${idx}.sfoo`,
-        refValString(contentRef, contentType),
-      ]),
-    );
-    if (!nonVirtual) {
-      validateUpdate(v, `vom.rc.${contentRef}`, `${rc}`, `${rc - 1}`);
-    }
-    if (contentType === 'thing' && rc === 1 && !nonVirtual) {
-      validate(v, matchVatstoreDelete(`vom.rc.${contentRef}`));
-    }
-    validate(v, matchVatstoreDelete(`vc.${idx}.sfoo`));
-    validate(
-      v,
-      matchVatstoreGetAfter(
-        `vc.${idx}.sfoo`,
-        `vc.${idx}.`,
-        `vc.${idx}.{`,
-        DONE,
-      ),
-    );
-  } else {
-    validate(v, matchVatstoreGetAfter('', `vc.${idx}.`, `vc.${idx}.{`, DONE));
-  }
-  let priorKey = '';
-  if (entries >= 0) {
-    validate(
-      v,
-      matchVatstoreGetAfter('', `vc.${idx}.|`, NONE, [
-        `vc.${idx}.|entryCount`,
-        `${entries}`,
-      ]),
-    );
-    validate(v, matchVatstoreDelete(`vc.${idx}.|entryCount`));
-    priorKey = `vc.${idx}.|entryCount`;
-  }
-  validate(
-    v,
-    matchVatstoreGetAfter(priorKey, `vc.${idx}.|`, NONE, [
-      `vc.${idx}.|label`,
-      `store #${idx}`,
-    ]),
-  );
-  validate(v, matchVatstoreDelete(`vc.${idx}.|label`));
-  validate(
-    v,
-    matchVatstoreGetAfter(`vc.${idx}.|label`, `vc.${idx}.|`, NONE, [
-      `vc.${idx}.|nextOrdinal`,
-      '1',
-    ]),
-  );
-  validate(v, matchVatstoreDelete(`vc.${idx}.|nextOrdinal`));
-  validate(
-    v,
-    matchVatstoreGetAfter(`vc.${idx}.|nextOrdinal`, `vc.${idx}.|`, NONE, [
-      `vc.${idx}.|schemata`,
-      vstr([anySchema]),
-    ]),
-  );
-  validate(v, matchVatstoreDelete(`vc.${idx}.|schemata`));
-  validate(
-    v,
-    matchVatstoreGetAfter(`vc.${idx}.|schemata`, `vc.${idx}.|`, NONE, DONE),
-  );
-  validate(v, matchVatstoreDelete(`vom.rc.${mapRef(idx)}`));
-  validate(v, matchVatstoreDelete(`vom.es.${mapRef(idx)}`));
-}
-
-export function validateWeakCheckEmpty(v, ref) {
-  validate(v, matchVatstoreGetAfter('', `vom.ir.${ref}|`, NONE, [NONE, NONE]));
-}
-
-export function validateDeleteMetadata(
-  v,
-  es,
-  idx,
-  entries,
-  contentRef,
-  contentType,
-  rc,
-  nonVirtual,
-) {
-  validateExportStatusCheck(v, mapRef(idx), es);
-  validateDeleteMetadataOnly(
-    v,
-    idx,
-    entries,
-    contentRef,
-    contentType,
-    rc,
-    nonVirtual,
-  );
-  validateWeakCheckEmpty(v, mapRef(idx));
-}
-
-export function validateDropStored(v, rp, postCheck, rc, es, deleteMetadata) {
-  validate(
-    v,
-    matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(mainHeldIdx)),
-  );
-  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '1', '0');
-  validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, vstr(null)));
-  validateReturned(v, rp);
-  if (postCheck) {
-    validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
-    if (deleteMetadata) {
-      validateDeleteMetadata(v, es, mainHeldIdx, 0);
-    } else {
-      validateExportStatusCheck(v, mapRef(mainHeldIdx), es);
+export function* enumerateKeysWithPrefix(fakestore, prefix) {
+  const keys = [...fakestore.keys()];
+  keys.sort();
+  for (const key of keys) {
+    if (key.startsWith(prefix)) {
+      yield key;
     }
   }
-  validateDone(v);
 }
 
-export function validateDropStoredWithGCAndRetire(v, rp, postCheck, rc, es) {
-  validate(
-    v,
-    matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(mainHeldIdx)),
+export function recognizersOf(v, baseref) {
+  // the | is followed by the collectionID that can recognize baseref
+  const keys = [...enumerateKeysWithPrefix(v.fakestore, `vom.ir.${baseref}|`)];
+  const collections = keys.map(key => key.split('|')[1]);
+  return collections;
+}
+
+export function assertCollectionDeleted(v, baseref) {
+  // baseref is like o+2/8 , where o+2 is a type (BigWeakMapStore),
+  // and 8 is the collectionID
+  const { subid: cID } = parseVatSlot(baseref);
+  const { t, fakestore } = v;
+  t.is(fakestore.get(`vom.rc.${baseref}`), undefined);
+  t.is(fakestore.get(`vc.${cID}.|label`), undefined);
+  t.is(fakestore.get(`vc.${cID}.|schemata`), undefined);
+  t.is(fakestore.get(`vc.${cID}.|nextOrdinal`), undefined);
+  // there should be no ordinal mappings: vc.${cid}.|${vref}
+  t.deepEqual([...enumerateKeysWithPrefix(fakestore, `vc.${cID}.|`)], []);
+  // in fact there should be no entries at all
+  t.deepEqual([...enumerateKeysWithPrefix(fakestore, `vc.${cID}.`)], []);
+
+  // and there should be no recognizers of the baseref left
+  t.deepEqual(
+    [...enumerateKeysWithPrefix(fakestore, `vom.ir.${baseref}|`)],
+    [],
   );
-  validateUpdate(v, `vom.rc.${mapRef(mainHeldIdx)}`, '1', '0');
-  validate(v, matchVatstoreSet(`vc.${mainHolderIdx}.sfoo`, vstr(null)));
-  validateReturned(v, rp);
-  if (postCheck) {
-    validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
-    validateDeleteMetadata(v, es, mainHeldIdx, 0);
-  }
-  validate(v, matchRetireExports(mapRef(mainHeldIdx)));
-  validateDone(v);
-}
-
-export function validateFetchAndHold(v, rp, idx) {
-  validate(
-    v,
-    matchVatstoreGet(`vc.${mainHolderIdx}.sfoo`, mapRefValString(idx)),
-  );
-  validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, vstr([anySchema])));
-  validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
-  validateReturned(v, rp);
-  validateDone(v);
-}
-
-export function validateExportHeld(v, rp, idx) {
-  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, NONE));
-  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 'r'));
-  validate(v, matchResolveOne(rp, mapRefVal(idx)));
-  validateDone(v);
-}
-
-export function validateImportAndHold(v, rp, idx) {
-  if (idx !== NONE) {
-    validate(v, matchVatstoreGet(`vc.${idx}.|schemata`, vstr([anySchema])));
-    validate(v, matchVatstoreGet(`vc.${idx}.|label`, `store #${idx}`));
-  }
-  validateReturned(v, rp);
-  if (idx === NONE) {
-    validate(v, matchVatstoreSet('idCounters'));
-  }
-  validateDone(v);
-}
-
-export function validateDropHeldWithGC(v, rp, rc, es) {
-  validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
-  validateDeleteMetadata(v, es, mainHeldIdx, 0);
-  validateDone(v);
-}
-
-export function validateCreateHolder(v, idx) {
-  validateCreate(v, idx);
-  validate(v, matchVatstoreGet(`vc.${idx}.sfoo`));
-  validate(v, matchVatstoreSet(`vc.${idx}.sfoo`, vstr(null)));
-  validate(v, matchVatstoreGet(`vc.${idx}.|entryCount`, '0'));
-  validate(v, matchVatstoreSet(`vc.${idx}.|entryCount`, '1'));
-}
-
-export function validateInit(v) {
-  validate(v, matchVatstoreGet('idCounters', NONE));
-  validate(v, matchVatstoreGet('kindIDID', NONE));
-  validate(v, matchVatstoreSet('kindIDID', '1'));
-  validate(v, matchVatstoreGet('storeKindIDTable', NONE));
-  validate(
-    v,
-    matchVatstoreSet(
-      'storeKindIDTable',
-      '{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}',
-    ),
-  );
-  validateCreateBuiltInTables(v);
-  validateCreateHolder(v, 5);
-
-  validate(v, matchVatstoreGet('deadPromises', NONE));
-  validate(v, matchVatstoreGetAfter('', 'vom.dkind.', NONE, [NONE, NONE]));
-}
-
-export function validateDropHeld(v, rp, rc, es) {
-  validateReturned(v, rp);
-  validate(v, matchVatstoreGet(`vom.rc.${mapRef(mainHeldIdx)}`, rc));
-  validate(v, matchVatstoreGet(`vom.es.${mapRef(mainHeldIdx)}`, es));
-  validateDone(v);
-}
-
-export function validateDropHeldWithGCAndRetire(v, rp) {
-  validateReturned(v, rp);
-  validateRefCountCheck(v, mapRef(mainHeldIdx), NONE);
-  validateDeleteMetadata(v, 's', mainHeldIdx, 0);
-  validate(v, matchRetireExports(mapRef(mainHeldIdx)));
-  validateDone(v);
-}
-
-export function validateDropExports(v, idx, rc) {
-  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 'r'));
-  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 's'));
-  validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
-  validateDone(v);
-}
-
-export function validateDropExportsWithGCAndRetire(v, idx, rc) {
-  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 'r'));
-  validate(v, matchVatstoreSet(`vom.es.${mapRef(idx)}`, 's'));
-  validate(v, matchVatstoreGet(`vom.rc.${mapRef(idx)}`, rc));
-  validateRefCountCheck(v, mapRef(mainHeldIdx), rc);
-  validateDeleteMetadata(v, 's', mainHeldIdx, 0);
-  validate(v, matchRetireExports(mapRef(mainHeldIdx)));
-  validateDone(v);
-}
-
-export function validateRetireExports(v, idx) {
-  validate(v, matchVatstoreGet(`vom.es.${mapRef(idx)}`, 's'));
-  validate(v, matchVatstoreDelete(`vom.es.${mapRef(idx)}`));
-  validateDone(v);
 }

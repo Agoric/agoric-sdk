@@ -5,6 +5,7 @@ import { objectMap } from '@agoric/internal';
 import { defendPrototype, defendPrototypeKit } from '@agoric/store';
 import { Far } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
+import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
@@ -981,13 +982,12 @@ export function makeVirtualObjectManager(
     // identify all user-defined durable kinds by iterating `vom.dkind.*`
     const missing = [];
     const prefix = 'vom.dkind.';
-    let [key, value] = syscall.vatstoreGetAfter('', prefix);
-    while (key) {
+    for (const key of enumerateKeysWithPrefix(syscall, prefix)) {
+      const value = syscall.vatstoreGet(key);
       const durableKindDescriptor = JSON.parse(value);
       if (!definedDurableKinds.has(durableKindDescriptor.kindID)) {
         missing.push(durableKindDescriptor.tag);
       }
-      [key, value] = syscall.vatstoreGetAfter(key, prefix);
     }
     if (missing.length) {
       const tags = missing.join(',');

@@ -111,24 +111,10 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
     return harden(['vatstoreSet', deviceID, key, value]);
   }
 
-  function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
-    if (priorKey !== '') {
-      assertValidVatstoreKey(priorKey);
-    }
-    assertValidVatstoreKey(lowerBound);
-    if (upperBound) {
-      assertValidVatstoreKey(upperBound);
-    }
-    kdebug(
-      `syscall[${deviceID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
-    );
-    return harden([
-      'vatstoreGetAfter',
-      deviceID,
-      priorKey,
-      lowerBound,
-      upperBound,
-    ]);
+  function translateVatstoreGetNextKey(priorKey) {
+    assertValidVatstoreKey(priorKey);
+    kdebug(`syscall[${deviceID}].vatstoreGetNextKey(${priorKey})`);
+    return harden(['vatstoreGetNextKey', deviceID, priorKey]);
   }
 
   function translateVatstoreDelete(key) {
@@ -165,8 +151,8 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
         return translateVatstoreGet(...args);
       case 'vatstoreSet':
         return translateVatstoreSet(...args);
-      case 'vatstoreGetAfter':
-        return translateVatstoreGetAfter(...args);
+      case 'vatstoreGetNextKey':
+        return translateVatstoreGetNextKey(...args);
       case 'vatstoreDelete':
         return translateVatstoreDelete(...args);
       case 'callKernelHook':
@@ -195,13 +181,8 @@ function makeKRTranslator(deviceID, kernelKeeper) {
           return harden(['ok', undefined]);
         }
       }
-      case 'vatstoreGetAfter': {
-        if (resultData) {
-          assert(Array.isArray(resultData));
-          return harden(['ok', resultData]);
-        } else {
-          return harden(['ok', undefined]);
-        }
+      case 'vatstoreGetNextKey': {
+        return harden(['ok', resultData]);
       }
       case 'callKernelHook': {
         insistCapData(resultData);

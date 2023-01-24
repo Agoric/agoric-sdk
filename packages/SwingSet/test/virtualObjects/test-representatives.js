@@ -11,6 +11,7 @@ import {
 import makeNextLog from '../make-nextlog.js';
 
 import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 import { vstr } from '../util.js';
 
 test.serial('exercise cache', async t => {
@@ -41,7 +42,6 @@ test.serial('exercise cache', async t => {
   }
   const loggingKVStore = {
     has: key => kvStore.has(key),
-    getKeys: (start, end) => kvStore.getKeys(start, end),
     get(key) {
       const result = kvStore.get(key);
       if (vsKey(key)) {
@@ -49,6 +49,7 @@ test.serial('exercise cache', async t => {
       }
       return result;
     },
+    getNextKey: priorKey => kvStore.getNextKey(priorKey),
     set(key, value) {
       if (vsKey(key)) {
         log.push(['set', key, value]);
@@ -361,7 +362,7 @@ test('virtual object gc', async t => {
   t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
-  for (const key of kernelStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
+  for (const key of enumeratePrefixedKeys(kernelStorage.kvStore, `${v}.vs.`)) {
     remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
   // prettier-ignore
