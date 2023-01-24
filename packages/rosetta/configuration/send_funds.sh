@@ -10,10 +10,10 @@ set -e
 DESTINATION=$1
 SOURCE=$(agd --home t1/bootstrap keys show bootstrap -a --keyring-backend=test)
 
-echo "Funding $addr with 10 BLD and 10 IST"
+echo "Funding $DESTINATION with 10 BLD and 10 IST"
 
 # Manually build a Send of both BLD and IST
-cat > "UNSIGNED_$ADDR.json" << EOF
+cat > "UNSIGNED_$DESTINATION.json" << EOF
 {"body":{
 "messages":[
   {"@type":"/cosmos.bank.v1beta1.MsgSend","from_address":"${SOURCE}","to_address":"$DESTINATION","amount":[{"denom":"ubld","amount":"10000000"}]},
@@ -26,9 +26,9 @@ cat > "UNSIGNED_$ADDR.json" << EOF
 EOF
 
 # Sign it
-agd --home t1/bootstrap tx sign "UNSIGNED_$ADDR.json" --from bootstrap --output-document "SIGNED_$ADDR.json" --chain-id="agoriclocal" --node tcp://agoric:26657 --yes --keyring-backend=test
-rm "UNSIGNED_$ADDR.json"
+agd --home t1/bootstrap tx sign "UNSIGNED_$DESTINATION.json" --from bootstrap --output-document "SIGNED_$DESTINATION.json" --chain-id="agoriclocal" --node tcp://agoric:26657 --yes --keyring-backend=test
+rm "UNSIGNED_$DESTINATION.json"
 
 # Broadcast it
-agd --home t1/bootstrap tx broadcast "SIGNED_$ADDR.json" --from bootstrap --chain-id="agoriclocal" --node tcp://agoric:26657 --yes --keyring-backend=test
-rm "SIGNED_$ADDR.json"
+agd --home t1/bootstrap tx broadcast "SIGNED_$DESTINATION.json" --from bootstrap --chain-id="agoriclocal" --node tcp://agoric:26657 --yes --keyring-backend=test
+rm "SIGNED_$DESTINATION.json"
