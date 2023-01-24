@@ -44,7 +44,7 @@ import '@agoric/zoe/exported.js';
  * @param {ERef<ZoeService>} zoe
  * @param {Brand<'set'>} invitationBrand
  * @param {Purse<'set'>} invitationsPurse
- * @param {(fromOfferId: import('./offers.js').OfferId) => import('./types').RemoteInvitationMakers} getInvitationContinuation
+ * @param {(fromOfferId: string) => import('./types').RemoteInvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
   zoe,
@@ -104,7 +104,7 @@ export const makeInvitationsHelper = (
       fit(spec, shape.ContinuingInvitationSpec);
 
       const { previousOffer, invitationArgs = [], invitationMakerName } = spec;
-      const makers = getInvitationContinuation(previousOffer);
+      const makers = getInvitationContinuation(String(previousOffer));
       assert(
         makers,
         `invalid value stored for previous offer ${previousOffer}`,
