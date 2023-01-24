@@ -24,3 +24,4 @@ RUN make scenario2-setup-nobuild
 # Install netcat for service checks, and musl because rosetta-cli was built on alpine
 RUN apt install -y netcat musl
 RUN ln -s /lib/x86_64-linux-musl/libc.so /lib/libc.musl-x86_64.so.1
+

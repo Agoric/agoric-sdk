@@ -7,3 +7,4 @@ SDK_REAL_DIR="$(cd "$(dirname "$(readlink -f -- "$0")")/.." > /dev/null && pwd -
 
 # Build a container the rosetta-ci container for packages/rosetta
 docker build -t rosetta-ci:latest -f "$SDK_REAL_DIR/packages/rosetta/rosetta-ci/Dockerfile" .
+
