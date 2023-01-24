@@ -48,6 +48,14 @@ export const assertOnlyKeys = (proposal, keys) => {
 };
 
 /**
+ * @param {Amount[]} amounts
+ * @returns {boolean}
+ */
+export const allEmpty = amounts => {
+  return amounts.every(a => AmountMath.isEmpty(a));
+};
+
+/**
  * Stage a transfer between `fromSeat` and `toSeat`, specified as the delta between
  * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
  * give/want respectively of a proposal. The `key` is the allocation keyword.

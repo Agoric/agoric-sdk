@@ -12,6 +12,7 @@ import {
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   addSubtract,
+  allEmpty,
   assertOnlyKeys,
   makeEphemeraProvider,
   stageDelta,
@@ -506,10 +507,6 @@ export const prepareVault = baggage => {
           const { vaultSeat } = state;
           const proposal = clientSeat.getProposal();
           assertOnlyKeys(proposal, ['Collateral', 'Minted']);
-
-          const allEmpty = amounts => {
-            return amounts.every(a => AmountMath.isEmpty(a));
-          };
 
           const normalizedDebtPre = self.getNormalizedDebt();
           const collateralPre = helper.getCollateralAllocated(vaultSeat);
