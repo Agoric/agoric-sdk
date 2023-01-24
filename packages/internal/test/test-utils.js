@@ -7,6 +7,9 @@ import {
   objectMap,
   makeMeasureSeconds,
   assertAllDefined,
+  whileTrue,
+  untilTrue,
+  forever,
 } from '../src/utils.js';
 
 test('fromUniqueEntries', t => {
@@ -91,4 +94,50 @@ test('assertAllDefined', t => {
       // @ts-expect-error key presence not checked
       foo.prop.toFixed,
   );
+});
+
+test('whileTrue', async t => {
+  const elems = [1, 2, 3];
+  /** @type {any} */
+  let cur;
+  let count = 0;
+  for await (const produced of whileTrue(() => {
+    cur = elems.shift();
+    count += 1;
+    return count % 2 === 0 ? cur : Promise.resolve(cur);
+  })) {
+    t.is(produced, cur, 'cur is produced');
+    t.not(produced, undefined, 'produced is not undefined');
+  }
+  t.is(cur, undefined, 'cur is done');
+  t.is(count, 4, 'count is expected');
+});
+
+test('untilTrue', async t => {
+  const elems = [0, false, null, NaN, '', 'truey', 1.39];
+  /** @type {any} */
+  let cur;
+  let count = 0;
+  for await (const produced of untilTrue(() => {
+    cur = elems.shift();
+    count += 1;
+    return count % 2 === 0 ? cur : Promise.resolve(cur);
+  })) {
+    t.is(produced, cur, 'cur is produced');
+    t.assert(!produced, 'produced is falsy');
+  }
+  t.is(cur, 'truey', 'cur is done');
+  t.is(count, 6, 'count is expected');
+});
+
+test('forever', async t => {
+  let count = 0;
+  for await (const produced of forever) {
+    t.is(produced, undefined, 'produced is undefined');
+    count += 1;
+    if (count > 3) {
+      break;
+    }
+  }
+  t.is(count, 4, 'count is expected');
 });
