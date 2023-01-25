@@ -102,8 +102,6 @@ const trace = makeTracer('VM', false);
  * assetSubscriber: Subscriber<AssetState>,
  * assetPublisher: Publisher<AssetState>,
  * collateralBrand: Brand<'nat'>,
- * debtBrand: Brand<'nat'>,
- * debtMint: ZCFMint<'nat'>,
  * metricsPublisher: Publisher<MetricsNotification>,
  * metricsSubscriber: Subscriber<MetricsNotification>,
  * poolIncrementSeat: ZCFSeat,
@@ -190,6 +188,10 @@ export const prepareVaultManagerKit = (
 
   const { priceAuthority, timerService } = zcf.getTerms();
 
+  const debtBrand = debtMint.getIssuerRecord().brand;
+  const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
+  const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
+
   let singletonMade = false;
 
   const initState = () => {
@@ -205,10 +207,6 @@ export const prepareVaultManagerKit = (
       0n,
       factoryPowers.getGovernedParams().getChargingPeriod(),
     );
-
-    const debtBrand = debtMint.getIssuerRecord().brand;
-    const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
-    const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
     const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
       makeVaultManagerMetricsPublishKit();
@@ -235,8 +233,6 @@ export const prepareVaultManagerKit = (
     /** @type {ImmutableState} */
     const fixed = {
       collateralBrand,
-      debtBrand,
-      debtMint,
       poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
       retainedCollateralSeat: zcf.makeEmptySeatKit().zcfSeat,
       unsettledVaults,
@@ -247,7 +243,7 @@ export const prepareVaultManagerKit = (
       metricsSubscriber,
     };
 
-    const compoundedInterest = makeRatio(100n, fixed.debtBrand); // starts at 1.0, no interest
+    const compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
     // timestamp of most recent update to interest
     const latestInterestUpdate = startTimeStamp;
 
@@ -290,7 +286,6 @@ export const prepareVaultManagerKit = (
     const state = {
       ...fixed,
       compoundedInterest,
-      debtBrand: fixed.debtBrand,
       latestInterestUpdate,
       liquidator: undefined,
       liquidatorInstance: undefined,
@@ -410,7 +405,7 @@ export const prepareVaultManagerKit = (
 
           const changes = chargeInterest(
             {
-              mint: state.debtMint,
+              mint: debtMint,
               mintAndReallocateWithFee: factoryPowers.mintAndReallocate,
               poolIncrementSeat,
               seatAllocationKeyword: 'Minted',
@@ -718,8 +713,6 @@ export const prepareVaultManagerKit = (
          */
         async maxDebtFor(collateralAmount) {
           trace('maxDebtFor', collateralAmount);
-          const { state } = this;
-          const { debtBrand } = state;
           assert(factoryPowers && priceAuthority);
           const quoteAmount = await E(priceAuthority).quoteGiven(
             collateralAmount,
@@ -779,7 +772,7 @@ export const prepareVaultManagerKit = (
           return this.state.collateralBrand;
         },
         getDebtBrand() {
-          return this.state.debtBrand;
+          return debtBrand;
         },
         /**
          * coefficient on existing debt to calculate new debt
@@ -959,7 +952,6 @@ export const prepareVaultManagerKit = (
          */
         async setupLiquidator(liquidationInstall, liquidationTerms) {
           const { state, facets } = this;
-          const { debtBrand } = state;
           const { ammPublicFacet, reservePublicFacet } = zcf.getTerms();
           const zoe = zcf.getZoeService();
           const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
@@ -995,7 +987,6 @@ export const prepareVaultManagerKit = (
         async getCollateralQuote() {
           const { state } = this;
 
-          const { debtBrand } = state;
           // get a quote for one unit of the collateral
           return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
         },
