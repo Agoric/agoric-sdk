@@ -128,16 +128,20 @@ harden(partialAssign);
  */
 export const provide = provideLazy;
 
-export const provideDurableMapStore = (baggage, name) =>
-  provide(baggage, name, () => makeScalarBigMapStore(name, { durable: true }));
+export const provideDurableMapStore = (baggage, name, options = {}) =>
+  provide(baggage, name, () =>
+    makeScalarBigMapStore(name, { durable: true, ...options }),
+  );
 harden(provideDurableMapStore);
 
-export const provideDurableWeakMapStore = (baggage, name) =>
+export const provideDurableWeakMapStore = (baggage, name, options = {}) =>
   provide(baggage, name, () =>
-    makeScalarBigWeakMapStore(name, { durable: true }),
+    makeScalarBigWeakMapStore(name, { durable: true, ...options }),
   );
 harden(provideDurableWeakMapStore);
 
-export const provideDurableSetStore = (baggage, name) =>
-  provide(baggage, name, () => makeScalarBigSetStore(name, { durable: true }));
+export const provideDurableSetStore = (baggage, name, options = {}) =>
+  provide(baggage, name, () =>
+    makeScalarBigSetStore(name, { durable: true, ...options }),
+  );
 harden(provideDurableSetStore);

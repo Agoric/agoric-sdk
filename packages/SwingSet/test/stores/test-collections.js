@@ -174,7 +174,9 @@ test('constrain map key shape', t => {
   t.is(stringsOnly.get('skey'), 'this should work');
   t.throws(
     () => stringsOnly.init(29, 'this should not work'),
-    m('invalid key type for collection "map key strings only"'),
+    m(
+      'invalid key type for collection "map key strings only": number 29 - Must be a string',
+    ),
   );
 
   const noStrings = makeScalarBigMapStore('map key no strings', {
@@ -184,27 +186,31 @@ test('constrain map key shape', t => {
   noStrings.init(true, 'boolean ok');
   t.throws(
     () => noStrings.init('foo', 'string not ok?'),
-    m('invalid key type for collection "map key no strings"'),
+    m(
+      'invalid key type for collection "map key no strings": "foo" - Must fail negated pattern: "[match:string]"',
+    ),
   );
   t.is(noStrings.get(47), 'number ok');
   t.is(noStrings.get(true), 'boolean ok');
   t.falsy(noStrings.has('foo'));
   t.throws(
     () => noStrings.get('foo'),
-    m('invalid key type for collection "map key no strings"'),
+    m(
+      'invalid key type for collection "map key no strings": "foo" - Must fail negated pattern: "[match:string]"',
+    ),
   );
 
   const only47 = makeScalarBigMapStore('map key only 47', { keyShape: 47 });
   only47.init(47, 'this number ok');
   t.throws(
     () => only47.init(29, 'this number not ok?'),
-    m('invalid key type for collection "map key only 47"'),
+    m('invalid key type for collection "map key only 47": 29 - Must be: 47'),
   );
   t.is(only47.get(47), 'this number ok');
   t.falsy(only47.has(29));
   t.throws(
     () => only47.get(29),
-    m('invalid key type for collection "map key only 47"'),
+    m('invalid key type for collection "map key only 47": 29 - Must be: 47'),
   );
 
   const lt47 = makeScalarBigMapStore('map key less than 47', {
@@ -213,13 +219,17 @@ test('constrain map key shape', t => {
   lt47.init(29, 'this number ok');
   t.throws(
     () => lt47.init(53, 'this number not ok?'),
-    m('invalid key type for collection "map key less than 47"'),
+    m(
+      'invalid key type for collection "map key less than 47": 53 - Must be < 47',
+    ),
   );
   t.is(lt47.get(29), 'this number ok');
   t.falsy(lt47.has(53));
   t.throws(
     () => lt47.get(53),
-    m('invalid key type for collection "map key less than 47"'),
+    m(
+      'invalid key type for collection "map key less than 47": 53 - Must be < 47',
+    ),
   );
   lt47.init(11, 'lower value');
   lt47.init(46, 'higher value');
@@ -235,7 +245,9 @@ test('constrain map value shape', t => {
   t.is(stringsOnly.get('sval'), 'string value');
   t.throws(
     () => stringsOnly.init('nval', 29),
-    m('invalid value type for collection "map value strings only"'),
+    m(
+      'invalid value type for collection "map value strings only": number 29 - Must be a string',
+    ),
   );
 
   const noStrings = makeScalarBigMapStore('map value no strings', {
@@ -245,7 +257,9 @@ test('constrain map value shape', t => {
   noStrings.init('bkey', true);
   t.throws(
     () => noStrings.init('skey', 'string not ok?'),
-    m('invalid value type for collection "map value no strings"'),
+    m(
+      'invalid value type for collection "map value no strings": "string not ok?" - Must fail negated pattern: "[match:string]"',
+    ),
   );
   t.is(noStrings.get('nkey'), 47);
   t.is(noStrings.get('bkey'), true);
@@ -257,7 +271,9 @@ test('constrain map value shape', t => {
   only47.init('47key', 47);
   t.throws(
     () => only47.init('29key', 29),
-    m('invalid value type for collection "map value only 47"'),
+    m(
+      'invalid value type for collection "map value only 47": 29 - Must be: 47',
+    ),
   );
   t.is(only47.get('47key'), 47);
   t.falsy(only47.has('29key'));
@@ -268,7 +284,9 @@ test('constrain map value shape', t => {
   lt47.init('29key', 29);
   t.throws(
     () => lt47.init('53key', 53),
-    m('invalid value type for collection "map value less than 47"'),
+    m(
+      'invalid value type for collection "map value less than 47": 53 - Must be < 47',
+    ),
   );
   t.is(lt47.get('29key'), 29);
   t.falsy(lt47.has('53key'));
@@ -288,7 +306,9 @@ test('constrain set key shape', t => {
   t.truthy(stringsOnly.has('skey'));
   t.throws(
     () => stringsOnly.add(29),
-    m('invalid key type for collection "strings only set"'),
+    m(
+      'invalid key type for collection "strings only set": number 29 - Must be a string',
+    ),
   );
 
   const noStrings = makeScalarBigSetStore('no strings set', {
@@ -298,7 +318,9 @@ test('constrain set key shape', t => {
   noStrings.add(true);
   t.throws(
     () => noStrings.add('foo?'),
-    m('invalid key type for collection "no strings set"'),
+    m(
+      'invalid key type for collection "no strings set": "foo?" - Must fail negated pattern: "[match:string]"',
+    ),
   );
   t.truthy(noStrings.has(47));
   t.truthy(noStrings.has(true));
@@ -311,7 +333,7 @@ test('constrain set key shape', t => {
   t.falsy(only47.has(29));
   t.throws(
     () => only47.add(29),
-    m('invalid key type for collection "only 47 set"'),
+    m('invalid key type for collection "only 47 set": 29 - Must be: 47'),
   );
 
   const lt47 = makeScalarBigSetStore('less than 47 set', {
@@ -320,7 +342,7 @@ test('constrain set key shape', t => {
   lt47.add(29);
   t.throws(
     () => lt47.add(53),
-    m('invalid key type for collection "less than 47 set"'),
+    m('invalid key type for collection "less than 47 set": 53 - Must be < 47'),
   );
   t.truthy(lt47.has(29));
   t.falsy(lt47.has(53));

@@ -1,13 +1,21 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
-import { defendPrototype, defendPrototypeKit } from '@agoric/store';
-import { Far } from '@endo/marshal';
+import {
+  assertPattern,
+  defendPrototype,
+  defendPrototypeKit,
+  fit,
+} from '@agoric/store';
+import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
+
+const { ownKeys } = Reflect;
+const { details: X, quote: q } = assert;
 
 // import { kdebug } from './kdebug.js';
 
@@ -29,7 +37,7 @@ const unweakable = new WeakSet();
  * @param {(baseRef: string, rawState: object) => void} store  Function to
  *   store raw object state by its baseRef
  *
- * @returns An LRU cache of (up to) the given size
+ * @returns {object} An LRU cache of (up to) the given size
  *
  * This cache is part of the virtual object manager and is not intended to be
  * used independently; it is exported only for the benefit of test code.
@@ -164,7 +172,7 @@ export function makeCache(size, fetch, store) {
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
  *
- * @returns a new virtual object manager.
+ * @returns {object} a new virtual object manager.
  *
  * The virtual object manager allows the creation of persistent objects that do
  * not need to occupy memory when they are not in use.  It provides five
@@ -586,12 +594,46 @@ export function makeVirtualObjectManager(
   ) {
     const {
       finish,
+      stateShape = undefined,
       thisfulMethods = false,
       interfaceGuard = undefined,
     } = options;
     let facetNames;
     let contextMapTemplate;
     let prototypeTemplate;
+
+    harden(stateShape);
+    stateShape === undefined ||
+      passStyleOf(stateShape) === 'copyRecord' ||
+      assert.fail(X`A stateShape must be a copyRecord: ${q(stateShape)}`);
+    assertPattern(stateShape);
+
+    const serializeSlot = (slotState, prop) => {
+      if (stateShape !== undefined) {
+        hasOwnPropertyOf(stateShape, prop) ||
+          assert.fail(
+            X`State must only have fields described by stateShape: ${q(
+              ownKeys(stateShape),
+            )}`,
+          );
+        fit(slotState, stateShape[prop], prop);
+      }
+      return serialize(slotState);
+    };
+
+    const unserializeSlot = (slotData, prop) => {
+      const slotValue = unserialize(slotData);
+      if (stateShape !== undefined) {
+        hasOwnPropertyOf(stateShape, prop) ||
+          assert.fail(
+            X`State only has fields described by stateShape: ${q(
+              ownKeys(stateShape),
+            )}`,
+          );
+        fit(slotValue, stateShape[prop]);
+      }
+      return slotValue;
+    };
 
     const facetiousness = assessFacetiousness(behavior);
     switch (facetiousness) {
@@ -687,12 +729,12 @@ export function makeVirtualObjectManager(
         Object.defineProperty(state, prop, {
           get: () => {
             ensureState();
-            return unserialize(innerSelf.rawState[prop]);
+            return unserializeSlot(innerSelf.rawState[prop], prop);
           },
           set: value => {
             ensureState();
             const before = innerSelf.rawState[prop];
-            const after = serialize(value);
+            const after = serializeSlot(value, prop);
             assertAcceptableSyscallCapdataSize([after]);
             if (isDurable) {
               after.slots.forEach((vref, index) => {
@@ -783,7 +825,7 @@ export function makeVirtualObjectManager(
       const initialData = init ? init(...args) : {};
       const rawState = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
-        const data = serialize(initialData[prop]);
+        const data = serializeSlot(initialData[prop], prop);
         assertAcceptableSyscallCapdataSize([data]);
         if (isDurable) {
           data.slots.forEach(vref => {

@@ -296,6 +296,27 @@ export const initEmpty = () => emptyRecord;
  */
 
 /**
+ * @template [S = any]
+ * @template [F = any]
+ * @typedef {object} KitContext
+ * @property {S} state
+ * @property {F} facets
+ */
+
+/**
+ * @typedef {{[name: string]: Pattern}} StateShape
+ * It looks like a copyRecord pattern, but the interpretation is different.
+ * Each property is distinct, is checked and changed separately.
+ */
+
+/**
+ * @template C
+ * @typedef {object} FarClassOptions
+ * @property {(context: C) => void} [finish]
+ * @property {StateShape} [stateShape]
+ */
+
+/**
  * @template A args to init
  * @template S state from init
  * @template {Record<string | symbol, CallableFunction>} T methods
@@ -303,7 +324,7 @@ export const initEmpty = () => emptyRecord;
  * @param {any} interfaceGuard
  * @param {(...args: A[]) => S} init
  * @param {T & ThisType<{ self: T, state: S }>} methods
- * @param {object} [options]
+ * @param {FarClassOptions<Context<S,T>>} [options]
  * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
  */
 export const defineHeapExoClass = (
@@ -311,7 +332,7 @@ export const defineHeapExoClass = (
   interfaceGuard,
   init,
   methods,
-  options = undefined,
+  { finish = undefined } = {},
 ) => {
   /** @type {WeakMap<T,Context<S, T>>} */
   const contextMap = new WeakMap();
@@ -332,11 +353,8 @@ export const defineHeapExoClass = (
     /** @type {Context<S,T>} */
     const context = freeze({ state, self });
     contextMap.set(self, context);
-    if (options) {
-      const { finish = undefined } = options;
-      if (finish) {
-        finish(context);
-      }
+    if (finish) {
+      finish(context);
     }
     return self;
   };
@@ -353,7 +371,7 @@ harden(defineHeapExoClass);
  * @param {any} interfaceGuardKit
  * @param {(...args: A[]) => S} init
  * @param {F & ThisType<{ facets: F, state: S }> } methodsKit
- * @param {object} [options]
+ * @param {FarClassOptions<KitContext<S,F>>} [options]
  * @returns {(...args: A[]) => F}
  */
 export const defineHeapExoClassKit = (
@@ -361,7 +379,7 @@ export const defineHeapExoClassKit = (
   interfaceGuardKit,
   init,
   methodsKit,
-  options = undefined,
+  { finish = undefined } = {},
 ) => {
   const contextMapKit = objectMap(methodsKit, () => new WeakMap());
   const prototypeKit = defendPrototypeKit(
@@ -384,11 +402,9 @@ export const defineHeapExoClassKit = (
     context.facets = facets;
     // Be careful not to freeze the state record
     freeze(context);
-    if (options) {
-      const { finish = undefined } = options;
-      if (finish) {
-        finish(context);
-      }
+    if (finish) {
+      // @ts-expect-error `facets` was added
+      finish(context);
     }
     return facets;
   };
@@ -403,7 +419,7 @@ harden(defineHeapExoClassKit);
  * @param {string} tag
  * @param {InterfaceGuard | undefined} interfaceGuard CAVEAT: static typing does not yet support `callWhen` transformation
  * @param {T} methods
- * @param {object} [options]
+ * @param {FarClassOptions<Context<{},T>>} [options]
  * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
  */
 export const makeHeapExo = (
