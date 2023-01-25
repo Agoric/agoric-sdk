@@ -904,7 +904,8 @@ export const prepareVaultManagerKit = (
           state.vaultCounter += 1;
           const vaultId = String(state.vaultCounter);
 
-          const vaultStorageNode = E(
+          // must be a presence to be stored in vault state
+          const vaultStorageNode = await E(
             E(storageNode).makeChildNode(`vaults`),
           ).makeChildNode(`vault${vaultId}`);
 

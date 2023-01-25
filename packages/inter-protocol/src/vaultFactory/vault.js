@@ -14,7 +14,6 @@ import {
   addSubtract,
   allEmpty,
   assertOnlyKeys,
-  makeEphemeraProvider,
   stageDelta,
 } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
@@ -102,6 +101,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  * idInManager: VaultId,
  * manager: VaultManager,
+ * storageNode: StorageNode,
  * vaultSeat: ZCFSeat,
  * }>} ImmutableState
  */
@@ -113,21 +113,9 @@ const validTransitions = {
  *   interestSnapshot: Ratio,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
+ *   outerUpdater: Publisher<VaultNotification> | null,
  * }} MutableState
  */
-
-/**
- * Ephemera are the elements of state that cannot (or need not) be durable.
- * When there's a single instance it can be held in a closure, but there are
- * many vault manaager objects. So we hold their ephemera keyed by the durable
- * vault manager object reference.
- *
- * @type {(key: VaultId) => {
- * storageNode: ERef<StorageNode>,
- * outerUpdater: Publisher<VaultNotification> | null,
- * }} */
-// @ts-expect-error not yet defined
-const provideEphemera = makeEphemeraProvider(() => ({}));
 
 /**
  * Check whether we can proceed with an `adjustBalances`.
@@ -168,9 +156,7 @@ export const VaultI = M.interface('Vault', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getVaultSeat: M.call().returns(SeatShape),
-  initVaultKit: M.call(SeatShape, M.eref(StorageNodeShape)).returns(
-    M.promise(),
-  ),
+  initVaultKit: M.call(SeatShape, StorageNodeShape).returns(M.promise()),
   liquidated: M.call().returns(undefined),
   liquidating: M.call().returns(undefined),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
@@ -196,18 +182,17 @@ export const prepareVault = (baggage, marshaller, zcf) => {
     /**
      * @param {VaultManager} manager
      * @param {VaultId} idInManager
-     * @param {ERef<StorageNode>} storageNode
+     * @param {StorageNode} storageNode
      * @returns {ImmutableState & MutableState}
      */
     (manager, idInManager, storageNode) => {
-      const ephemera = provideEphemera(idInManager);
-      ephemera.storageNode = storageNode;
-
       return harden({
         idInManager,
         manager,
         outerUpdater: null,
         phase: Phase.ACTIVE,
+
+        storageNode,
 
         // vaultSeat will hold the collateral until the loan is retired. The
         // payout from it will be handed to the user: if the vault dies early
@@ -363,8 +348,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          */
         updateUiState() {
           const { state, facets } = this;
-          const ephemera = provideEphemera(state.idInManager);
-          const { outerUpdater } = ephemera;
+          const { outerUpdater } = state;
           if (!outerUpdater) {
             // It's not an error to change to liquidating during transfer
             return;
@@ -381,7 +365,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
               break;
             case Phase.CLOSED:
               outerUpdater.finish(uiState);
-              ephemera.outerUpdater = null;
+              state.outerUpdater = null;
               break;
             default:
               throw Error(`unreachable vault phase: ${phase}`);
@@ -494,8 +478,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const { state, facets } = this;
 
           const { self, helper } = facets;
-          const ephemera = provideEphemera(state.idInManager);
-          const { outerUpdater: updaterPre } = ephemera;
+          const { outerUpdater: updaterPre } = state;
           const { vaultSeat } = state;
           const proposal = clientSeat.getProposal();
           assertOnlyKeys(proposal, ['Collateral', 'Minted']);
@@ -513,7 +496,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           // max debt supported by current Collateral as modified by proposal
           const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
-          updaterPre === ephemera.outerUpdater ||
+          updaterPre === state.outerUpdater ||
             Fail`Transfer during vault adjustment`;
           helper.assertActive();
 
@@ -603,16 +586,14 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           helper.assertCloseable();
           seat.exit();
 
-          const ephemera = provideEphemera(state.idInManager);
-
           // eslint-disable-next-line no-use-before-define
           const vaultKit = makeVaultKit(
             self,
-            ephemera.storageNode,
+            state.storageNode,
             marshaller,
             state.manager.getAssetSubscriber(),
           );
-          ephemera.outerUpdater = vaultKit.vaultUpdater;
+          state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
 
           return vaultKit;
@@ -629,8 +610,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          */
         async initVaultKit(seat, storageNode) {
           const { state, facets } = this;
-
-          const ephemera = provideEphemera(state.idInManager);
 
           const { self, helper } = facets;
 
@@ -689,7 +668,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             marshaller,
             state.manager.getAssetSubscriber(),
           );
-          ephemera.outerUpdater = vaultKit.vaultUpdater;
+          state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
           return vaultKit;
         },
@@ -747,8 +726,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          */
         makeTransferInvitation() {
           const { state, facets } = this;
-          const ephemera = provideEphemera(state.idInManager);
-          const { outerUpdater } = ephemera;
+          const { outerUpdater } = state;
           const { self, helper } = facets;
           // Bring the debt snapshot current for the final report before transfer
           helper.updateDebtSnapshot(self.getCurrentDebt());
@@ -759,7 +737,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           } = state;
           if (outerUpdater) {
             outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
-            ephemera.outerUpdater = null;
+            state.outerUpdater = null;
           }
           const transferState = {
             debtSnapshot: { debt, interest },
