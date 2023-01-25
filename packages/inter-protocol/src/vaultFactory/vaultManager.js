@@ -101,7 +101,6 @@ const trace = makeTracer('VM', false);
  * @typedef {Readonly<{
  * assetSubscriber: Subscriber<AssetState>,
  * assetPublisher: Publisher<AssetState>,
- * collateralBrand: Brand<'nat'>,
  * metricsPublisher: Publisher<MetricsNotification>,
  * metricsSubscriber: Subscriber<MetricsNotification>,
  * poolIncrementSeat: ZCFSeat,
@@ -232,7 +231,6 @@ export const prepareVaultManagerKit = (
 
     /** @type {ImmutableState} */
     const fixed = {
-      collateralBrand,
       poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
       retainedCollateralSeat: zcf.makeEmptySeatKit().zcfSeat,
       unsettledVaults,
@@ -360,23 +358,17 @@ export const prepareVaultManagerKit = (
           );
         },
         getSubscriber() {
-          const { storedAssetSubscriber } = provideEphemera(
-            this.state.collateralBrand,
-          );
+          const { storedAssetSubscriber } = provideEphemera(collateralBrand);
           assert(storedAssetSubscriber);
           return storedAssetSubscriber;
         },
         getMetrics() {
-          const { storedMetricsSubscriber } = provideEphemera(
-            this.state.collateralBrand,
-          );
+          const { storedMetricsSubscriber } = provideEphemera(collateralBrand);
           assert(storedMetricsSubscriber);
           return storedMetricsSubscriber;
         },
         getQuotes() {
-          const { storedQuotesNotifier } = provideEphemera(
-            this.state.collateralBrand,
-          );
+          const { storedQuotesNotifier } = provideEphemera(collateralBrand);
           assert(storedQuotesNotifier);
           return storedQuotesNotifier;
         },
@@ -393,7 +385,7 @@ export const prepareVaultManagerKit = (
          */
         async chargeAllVaults(updateTime, poolIncrementSeat) {
           const { state, facets } = this;
-          trace('chargeAllVaults', state.collateralBrand, {
+          trace('chargeAllVaults', collateralBrand, {
             updateTime,
           });
 
@@ -432,7 +424,7 @@ export const prepareVaultManagerKit = (
           state.totalDebt = changes.totalDebt;
 
           facets.helper.assetNotify();
-          trace('chargeAllVaults complete', state.collateralBrand);
+          trace('chargeAllVaults complete', collateralBrand);
           // price to check against has changed
           return facets.helper.reschedulePriceCheck();
         },
@@ -459,12 +451,12 @@ export const prepareVaultManagerKit = (
 
         updateMetrics() {
           const { state } = this;
-          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+          const { prioritizedVaults } = provideEphemera(collateralBrand);
           assert(prioritizedVaults);
 
           const retainedCollateral =
             state.retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
-            AmountMath.makeEmpty(state.collateralBrand, 'nat');
+            AmountMath.makeEmpty(collateralBrand, 'nat');
           /** @type {MetricsNotification} */
           const payload = harden({
             numActiveVaults: prioritizedVaults.getCount(),
@@ -498,12 +490,11 @@ export const prepareVaultManagerKit = (
          * @returns {Promise<void>}
          */
         async reschedulePriceCheck(highestRatio) {
-          const { state, facets } = this;
-          const { prioritizedVaults, ...ephemera } = provideEphemera(
-            state.collateralBrand,
-          );
+          const { facets } = this;
+          const { prioritizedVaults, ...ephemera } =
+            provideEphemera(collateralBrand);
           assert(prioritizedVaults);
-          trace('reschedulePriceCheck', state.collateralBrand, ephemera);
+          trace('reschedulePriceCheck', collateralBrand, ephemera);
           // INTERLOCK: the first time through, start the activity to wait for
           // and process liquidations over time.
           if (!ephemera.liquidationQueueing) {
@@ -541,14 +532,13 @@ export const prepareVaultManagerKit = (
             highestDebtRatio,
             liquidationMargin,
           );
-          trace('update quote', state.collateralBrand, highestDebtRatio);
+          trace('update quote', collateralBrand, highestDebtRatio);
         },
 
         async processLiquidations() {
-          const { state, facets } = this;
-          const { prioritizedVaults, ...ephemera } = provideEphemera(
-            state.collateralBrand,
-          );
+          const { facets } = this;
+          const { prioritizedVaults, ...ephemera } =
+            provideEphemera(collateralBrand);
           const govParams = factoryPowers.getGovernedParams();
 
           async function* eventualLiquidations() {
@@ -568,11 +558,7 @@ export const prepareVaultManagerKit = (
                 highestDebtRatio,
                 liquidationMargin,
               );
-              trace(
-                'posted quote request',
-                state.collateralBrand,
-                highestDebtRatio,
-              );
+              trace('posted quote request', collateralBrand, highestDebtRatio);
 
               // The rest of this method will not happen until after a quote is received.
               // This may not happen until much later, when the market changes.
@@ -587,12 +573,7 @@ export const prepareVaultManagerKit = (
                 ceilDivideBy(getAmountOut(quote), liquidationMargin),
                 getAmountIn(quote),
               );
-              trace(
-                'quote',
-                state.collateralBrand,
-                quote,
-                quoteRatioPlusMargin,
-              );
+              trace('quote', collateralBrand, quote, quoteRatioPlusMargin);
 
               // Liquidate the head of the queue
               const [next] =
@@ -604,7 +585,7 @@ export const prepareVaultManagerKit = (
           }
           for await (const next of eventualLiquidations()) {
             await facets.helper.liquidateAndRemove(next);
-            trace('price check liq', state.collateralBrand, next && next[0]);
+            trace('price check liq', collateralBrand, next && next[0]);
           }
         },
 
@@ -613,10 +594,10 @@ export const prepareVaultManagerKit = (
          */
         liquidateAndRemove([key, vault]) {
           const { state, facets } = this;
-          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+          const { prioritizedVaults } = provideEphemera(collateralBrand);
           assert(factoryPowers && prioritizedVaults && zcf);
           const vaultSeat = vault.getVaultSeat();
-          trace('liquidating', state.collateralBrand, vaultSeat.getProposal());
+          trace('liquidating', collateralBrand, vaultSeat.getProposal());
 
           const collateralPre = vault.getCollateralAmount();
 
@@ -630,7 +611,7 @@ export const prepareVaultManagerKit = (
             zcf,
             vault,
             liquidator,
-            state.collateralBrand,
+            collateralBrand,
             factoryPowers.getGovernedParams().getLiquidationPenalty(),
           )
             .then(accounting => {
@@ -681,7 +662,7 @@ export const prepareVaultManagerKit = (
                 accounting.shortfall,
               );
               state.liquidatingVaults.delete(vault);
-              trace('liquidated', state.collateralBrand);
+              trace('liquidated', collateralBrand);
               state.numLiquidationsCompleted += 1;
               facets.helper.updateMetrics();
 
@@ -753,7 +734,7 @@ export const prepareVaultManagerKit = (
          */
         burnAndRecord(toBurn, seat) {
           const { state } = this;
-          trace('burnAndRecord', state.collateralBrand, {
+          trace('burnAndRecord', collateralBrand, {
             toBurn,
             totalDebt: state.totalDebt,
           });
@@ -762,14 +743,12 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          const { storedAssetSubscriber } = provideEphemera(
-            this.state.collateralBrand,
-          );
+          const { storedAssetSubscriber } = provideEphemera(collateralBrand);
           assert(storedAssetSubscriber);
           return storedAssetSubscriber;
         },
         getCollateralBrand() {
-          return this.state.collateralBrand;
+          return collateralBrand;
         },
         getDebtBrand() {
           return debtBrand;
@@ -797,7 +776,7 @@ export const prepareVaultManagerKit = (
           vault,
         ) {
           const { state, facets } = this;
-          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+          const { prioritizedVaults } = provideEphemera(collateralBrand);
           assert(prioritizedVaults);
 
           // the manager holds only vaults that can accrue interest or be liquidated;
@@ -862,10 +841,9 @@ export const prepareVaultManagerKit = (
          */
         async liquidateAll() {
           const {
-            state,
             facets: { helper },
           } = this;
-          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+          const { prioritizedVaults } = provideEphemera(collateralBrand);
           assert(prioritizedVaults);
           const toLiquidate = Array.from(prioritizedVaults.entries()).map(
             entry => helper.liquidateAndRemove(entry),
@@ -882,7 +860,7 @@ export const prepareVaultManagerKit = (
             state,
             facets: { manager },
           } = this;
-          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
+          const { prioritizedVaults } = provideEphemera(collateralBrand);
           assert(marshaller, 'makeVaultKit missing marshaller');
           assert(prioritizedVaults, 'makeVaultKit missing prioritizedVaults');
           assert(storageNode, 'makeVaultKit missing storageNode');
@@ -956,7 +934,7 @@ export const prepareVaultManagerKit = (
           const zoe = zcf.getZoeService();
           const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
           const debtIssuer = zcf.getIssuerForBrand(debtBrand);
-          trace('setup liquidator', state.collateralBrand, {
+          trace('setup liquidator', collateralBrand, {
             debtBrand,
             debtIssuer,
             collateralBrand,
@@ -974,7 +952,7 @@ export const prepareVaultManagerKit = (
               timerService,
             }),
           );
-          trace('setup liquidator complete', state.collateralBrand, {
+          trace('setup liquidator complete', collateralBrand, {
             instance,
             old: state.liquidatorInstance,
             equal: state.liquidatorInstance === instance,
@@ -985,8 +963,6 @@ export const prepareVaultManagerKit = (
         },
 
         async getCollateralQuote() {
-          const { state } = this;
-
           // get a quote for one unit of the collateral
           return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
         },
@@ -1003,9 +979,8 @@ export const prepareVaultManagerKit = (
           state,
           facets: { helper },
         } = context;
-        const { periodNotifier, prioritizedVaults } = provideEphemera(
-          state.collateralBrand,
-        );
+        const { periodNotifier, prioritizedVaults } =
+          provideEphemera(collateralBrand);
         assert(periodNotifier && prioritizedVaults && zcf);
 
         prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
