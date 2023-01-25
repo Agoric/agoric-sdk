@@ -1,7 +1,7 @@
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
-import { fit, getCopyBagEntries, M } from '@agoric/store';
+import { mustMatch, getCopyBagEntries, M } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -203,7 +203,7 @@ const manager = {
       brands.Attestation,
       X`Invalid Attestation ${attestationGiven}. Expected brand ${brands.Attestation}`,
     );
-    fit(attestationGiven.value, M.bagOf(M.string()), 'attestationGiven');
+    mustMatch(attestationGiven.value, M.bagOf(M.string()), 'attestationGiven');
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxDebt = floorMultiplyBy(amountLiened, mintingRatio);

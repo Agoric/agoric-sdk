@@ -2,7 +2,7 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf, Remotable } from '@endo/marshal';
 import { AssetKind } from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assertPattern, fit } from '@agoric/store';
+import { assertPattern, mustMatch } from '@agoric/store';
 import {
   canBeDurable,
   M,
@@ -290,7 +290,7 @@ export const makeZCFZygote = async (
       // If the contract provided customTermsShape, validate the customTerms.
       if (customTermsShape) {
         const { brands: _b, issuers: _i, ...customTerms } = terms;
-        fit(harden(customTerms), customTermsShape);
+        mustMatch(harden(customTerms), customTermsShape);
       }
 
       return terms;
@@ -361,7 +361,7 @@ export const makeZCFZygote = async (
 
       const startFn = start || prepare;
       if (privateArgsShape) {
-        fit(privateArgs, privateArgsShape);
+        mustMatch(privateArgs, privateArgsShape);
       }
       // start a contract for the first time
       return E.when(

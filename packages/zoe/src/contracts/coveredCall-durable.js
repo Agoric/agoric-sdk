@@ -1,4 +1,4 @@
-import { fit, M } from '@agoric/store';
+import { mustMatch, M } from '@agoric/store';
 import { prepareKind, prepareSingleton } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
@@ -56,7 +56,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    fit(
+    mustMatch(
       sellSeat.getProposal(),
       M.splitRecord({ exit: { afterDeadline: M.any() } }),
       'exit afterDeadline',

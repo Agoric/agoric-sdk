@@ -1,4 +1,4 @@
-import { fit, M } from '@agoric/store';
+import { mustMatch, M } from '@agoric/store';
 import { assertRightsConserved } from '../contractFacet/rightsConservation.js';
 
 const { Fail, quote: q } = assert;
@@ -50,7 +50,7 @@ const { Fail, quote: q } = assert;
  * @param {TransferPart[]} transfers
  */
 export const atomicRearrange = (zcf, transfers) => {
-  fit(transfers, M.arrayOf(M.array()), 'transfers');
+  mustMatch(transfers, M.arrayOf(M.array()), 'transfers');
   const uniqueSeatSet = new Set();
   for (const [
     fromSeat = undefined,

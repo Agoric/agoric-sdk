@@ -1,4 +1,4 @@
-import { fit, keyEQ } from '@agoric/store';
+import { mustMatch, keyEQ } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AssetKind } from '@agoric/ertp';
@@ -116,7 +116,7 @@ export const swapExact = (zcf, leftSeat, rightSeat) => {
  */
 export const fitProposalShape = (seat, proposalShape) =>
   // TODO remove this harden, obligating our caller to harden.
-  fit(seat.getProposal(), harden(proposalShape), 'proposal');
+  mustMatch(seat.getProposal(), harden(proposalShape), 'proposal');
 
 /**
  * Check the seat's proposal against an `expected` record that says

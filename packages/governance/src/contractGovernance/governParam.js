@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
-import { fit, keyEQ } from '@agoric/store';
+import { mustMatch, keyEQ } from '@agoric/store';
 
 import {
   ChoiceMethod,
@@ -41,7 +41,7 @@ const makeParamChangePositions = changes => {
  * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
-  fit(questionSpec, ParamChangesQuestionDetailsShape);
+  mustMatch(questionSpec, ParamChangesQuestionDetailsShape);
 
   const { parameterName, paramPath } = paramSpec;
   const { issue } = questionSpec;

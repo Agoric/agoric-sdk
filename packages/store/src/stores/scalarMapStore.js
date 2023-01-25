@@ -6,7 +6,11 @@ import {
 } from '@endo/marshal';
 import { compareRank } from '@endo/marshal/src/rankOrder.js';
 import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
-import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
+import {
+  matches,
+  mustMatch,
+  assertPattern,
+} from '../patterns/patternMatchers.js';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
@@ -145,7 +149,7 @@ export const makeScalarMapStore = (
 
     assertPassable(value);
     if (valueShape !== undefined) {
-      fit(value, valueShape, 'mapStore value');
+      mustMatch(value, valueShape, 'mapStore value');
     }
   };
 
@@ -156,7 +160,7 @@ export const makeScalarMapStore = (
 
     assertScalarKey(key);
     if (keyShape !== undefined) {
-      fit(key, keyShape, 'mapStore key');
+      mustMatch(key, keyShape, 'mapStore key');
     }
     assertKVOkToSet(key, value);
   };

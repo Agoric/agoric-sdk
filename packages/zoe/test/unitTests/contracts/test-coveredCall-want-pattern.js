@@ -5,7 +5,7 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { M, fit, keyEQ } from '@agoric/store';
+import { M, mustMatch, keyEQ } from '@agoric/store';
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -197,7 +197,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     ],
   });
 
-  fit(optionAmount, optionAmountPattern1);
+  mustMatch(optionAmount, optionAmountPattern1);
 
   const optionAmountPattern2 = harden({
     brand: BrandShape,
@@ -213,7 +213,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     ],
   });
 
-  fit(optionAmount, optionAmountPattern2);
+  mustMatch(optionAmount, optionAmountPattern2);
 
   // What's actually up to be bought? Is it the kind of invitation that
   // Dave wants? What's the price for that invitation? Is it acceptable

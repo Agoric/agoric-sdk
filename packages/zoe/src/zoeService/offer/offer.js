@@ -1,5 +1,5 @@
 import { passStyleOf } from '@endo/marshal';
-import { fit } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import { cleanProposal } from '../../cleanProposal.js';
@@ -47,7 +47,7 @@ export const makeOfferMethod = offerDataAccess => {
     const proposalShape =
       offerDataAccess.getProposalShapeForInvitation(invitationHandle);
     if (proposalShape !== undefined) {
-      fit(proposal, proposalShape, `${q(description)} proposal`);
+      mustMatch(proposal, proposalShape, `${q(description)} proposal`);
     }
 
     if (offerArgs !== undefined) {

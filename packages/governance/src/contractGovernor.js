@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { fit } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
 
 import {
   CONTRACT_ELECTORATE,
@@ -26,7 +26,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
     counterInstance,
     issue: { contract: governedInstance },
   } = details;
-  fit(details, ParamChangesQuestionDetailsShape);
+  mustMatch(details, ParamChangesQuestionDetailsShape);
 
   const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
     .electionManager;

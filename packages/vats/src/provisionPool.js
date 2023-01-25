@@ -1,7 +1,7 @@
 // @jessie-check
 // @ts-check
 
-import { fit, M, makeScalarMapStore } from '@agoric/store';
+import { mustMatch, M, makeScalarMapStore } from '@agoric/store';
 import { E, Far } from '@endo/far';
 // TODO: move to narrower package?
 import { observeIteration, observeNotifier } from '@agoric/notifier';
@@ -95,7 +95,7 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
  * }} privateArgs
  */
 export const start = async (zcf, privateArgs) => {
-  fit(privateArgs, privateArgsShape, 'provisionPool privateArgs');
+  mustMatch(privateArgs, privateArgsShape, 'provisionPool privateArgs');
   const { poolBank } = privateArgs;
 
   // Governance
@@ -246,8 +246,8 @@ export const start = async (zcf, privateArgs) => {
       metrics.onProvisioned,
     ),
     initPSM: (brand, instance) => {
-      fit(brand, M.remotable('brand'));
-      fit(instance, M.remotable('instance'));
+      mustMatch(brand, M.remotable('brand'));
+      mustMatch(instance, M.remotable('instance'));
       brandToPSM.init(brand, instance);
     },
     ...creatorMixin,

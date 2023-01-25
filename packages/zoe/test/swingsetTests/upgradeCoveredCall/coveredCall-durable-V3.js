@@ -1,4 +1,4 @@
-import { M, fit } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
 import '../../../exported.js';
 
 import { prepareExoClass, prepareExo } from '@agoric/vat-data';
@@ -60,7 +60,10 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    fit(sellSeat.getProposal(), M.split({ exit: { afterDeadline: M.any() } }));
+    mustMatch(
+      sellSeat.getProposal(),
+      M.split({ exit: { afterDeadline: M.any() } }),
+    );
     const sellSeatExitRule = sellSeat.getProposal().exit;
     if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
       // TypeScript confused about `||` control flow so use `if` instead

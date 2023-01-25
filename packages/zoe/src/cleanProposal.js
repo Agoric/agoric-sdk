@@ -1,7 +1,7 @@
 import { assert, q, Fail } from '@agoric/assert';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
-import { assertKey, assertPattern, fit, isKey } from '@agoric/store';
+import { assertKey, assertPattern, mustMatch, isKey } from '@agoric/store';
 import { FullProposalShape } from './typeGuards.js';
 import { arrayToObj } from './objArrayConversion.js';
 
@@ -157,7 +157,7 @@ export const cleanProposal = (proposal, getAssetKindByBrand) => {
     give: cleanedGive,
     exit,
   });
-  fit(cleanedProposal, FullProposalShape, 'proposal');
+  mustMatch(cleanedProposal, FullProposalShape, 'proposal');
   assertExit(exit);
   assertKeywordNotInBoth(cleanedWant, cleanedGive);
   return cleanedProposal;

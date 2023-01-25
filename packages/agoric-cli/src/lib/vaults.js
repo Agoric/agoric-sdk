@@ -64,7 +64,7 @@ export const makeOpenSpendAction = (instance, brands, opts) => {
 
   // NB: not really a Proposal because the brands are not remotes
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
-  // fit(harden(proposal), ProposalShape);
+  // mustMatch(harden(proposal), ProposalShape);
 
   /** @type {OfferSpec} */
   const offer = {
