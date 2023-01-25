@@ -261,7 +261,7 @@ export const prepareVault = baggage => {
 
         assertActive() {
           const { phase } = this.state;
-          assert(phase === Phase.ACTIVE);
+          phase === Phase.ACTIVE || Fail`vault not active`;
         },
 
         assertCloseable() {
