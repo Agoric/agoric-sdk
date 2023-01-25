@@ -124,9 +124,7 @@ const validTransitions = {
  *
  * @type {(key: VaultId) => {
  * storageNode: ERef<StorageNode>,
- * marshaller: ERef<Marshaller>,
  * outerUpdater: Publisher<VaultNotification> | null,
- * zcf: ZCF,
  * }} */
 // @ts-expect-error not yet defined
 const provideEphemera = makeEphemeraProvider(() => ({}));
@@ -182,8 +180,10 @@ export const VaultI = M.interface('Vault', {
 
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
+ * @param {ZCF} zcf
  */
-export const prepareVault = baggage => {
+export const prepareVault = (baggage, marshaller, zcf) => {
   const makeVaultKit = prepareVaultKit(baggage);
 
   const maker = prepareExoClassKit(
@@ -194,18 +194,14 @@ export const prepareVault = baggage => {
       self: VaultI,
     },
     /**
-     * @param {ZCF} zcf
      * @param {VaultManager} manager
      * @param {VaultId} idInManager
      * @param {ERef<StorageNode>} storageNode
-     * @param {ERef<Marshaller>} marshaller
      * @returns {ImmutableState & MutableState}
      */
-    (zcf, manager, idInManager, storageNode, marshaller) => {
+    (manager, idInManager, storageNode) => {
       const ephemera = provideEphemera(idInManager);
       ephemera.storageNode = storageNode;
-      ephemera.marshaller = marshaller;
-      ephemera.zcf = zcf;
 
       return harden({
         idInManager,
@@ -401,7 +397,6 @@ export const prepareVault = baggage => {
           const { self, helper } = facets;
           helper.assertCloseable();
           const { phase, vaultSeat } = state;
-          const { zcf } = provideEphemera(state.idInManager);
 
           // Held as keys for cleanup in the manager
           const oldDebtNormalized = self.getNormalizedDebt();
@@ -614,7 +609,7 @@ export const prepareVault = baggage => {
           const vaultKit = makeVaultKit(
             self,
             ephemera.storageNode,
-            ephemera.marshaller,
+            marshaller,
             state.manager.getAssetSubscriber(),
           );
           ephemera.outerUpdater = vaultKit.vaultUpdater;
@@ -691,7 +686,7 @@ export const prepareVault = baggage => {
           const vaultKit = makeVaultKit(
             self,
             storageNode,
-            ephemera.marshaller,
+            marshaller,
             state.manager.getAssetSubscriber(),
           );
           ephemera.outerUpdater = vaultKit.vaultUpdater;
@@ -728,10 +723,9 @@ export const prepareVault = baggage => {
         },
 
         makeAdjustBalancesInvitation() {
-          const { state, facets } = this;
+          const { facets } = this;
           const { helper } = facets;
           helper.assertActive();
-          const { zcf } = provideEphemera(state.idInManager);
           return zcf.makeInvitation(
             seat => helper.adjustBalancesHook(seat),
             'AdjustBalances',
@@ -739,10 +733,9 @@ export const prepareVault = baggage => {
         },
 
         makeCloseInvitation() {
-          const { state, facets } = this;
+          const { facets } = this;
           const { helper } = facets;
           helper.assertCloseable();
-          const { zcf } = provideEphemera(state.idInManager);
           return zcf.makeInvitation(
             seat => helper.closeHook(seat),
             'CloseVault',
@@ -773,7 +766,6 @@ export const prepareVault = baggage => {
             locked: self.getCollateralAmount(),
             vaultState: phase,
           };
-          const { zcf } = provideEphemera(state.idInManager);
           return zcf.makeInvitation(
             seat => helper.makeTransferInvitationHook(seat),
             'TransferVault',

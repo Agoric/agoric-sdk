@@ -178,7 +178,7 @@ export const prepareVaultManagerKit = (
   storageNode,
   marshaller,
 ) => {
-  const makeVault = prepareVault(baggage);
+  const makeVault = prepareVault(baggage, marshaller, zcf);
   const makeVaultManagerMetricsPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Manager metrics',
@@ -908,13 +908,7 @@ export const prepareVaultManagerKit = (
             E(storageNode).makeChildNode(`vaults`),
           ).makeChildNode(`vault${vaultId}`);
 
-          const { self: vault } = makeVault(
-            zcf,
-            manager,
-            vaultId,
-            vaultStorageNode,
-            marshaller,
-          );
+          const { self: vault } = makeVault(manager, vaultId, vaultStorageNode);
           trace('makevaultKit made vault', vault);
 
           try {
@@ -933,7 +927,7 @@ export const prepareVaultManagerKit = (
             // remove it from the store if it got in
             /** @type {NormalizedDebt} */
             // @ts-expect-error cast
-            const normalizedDebt = AmountMath.makeEmpty(state.debtBrand);
+            const normalizedDebt = AmountMath.makeEmpty(debtBrand);
             const collateralPre = seat.getCurrentAllocation().Collateral;
             try {
               prioritizedVaults.removeVaultByAttributes(
