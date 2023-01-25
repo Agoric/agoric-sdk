@@ -1,13 +1,13 @@
-// eslint-disable-next-line import/order
-import { test } from '../../../tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@endo/init/debug.js';
 
 import {
   setupTestLiveslots,
   findSyscallsByType,
-} from '../../liveslots-helpers.js';
-import { buildRootObject, mainHeldIdx, mapRef } from '../../gc-helpers.js';
-import { kslot } from '../../../src/lib/kmarshal.js';
-import { parseVatSlot } from '../../../src/lib/parseVatSlots.js';
+} from '../liveslots-helpers.js';
+import { buildRootObject, mainHeldIdx, mapRef } from '../gc-helpers.js';
+import { kslot } from '../kmarshal.js';
+import { parseVatSlot } from '../../src/parseVatSlots.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js

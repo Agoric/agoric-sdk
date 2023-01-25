@@ -1,6 +1,4 @@
 import { Fail } from '@agoric/assert';
-import { passStyleOf } from '@endo/marshal';
-import { kunser, krefOf } from './kmarshal.js';
 
 /* eslint-disable jsdoc/require-returns-check */
 /**
@@ -19,19 +17,4 @@ export function insistCapData(capdata) {
   Array.isArray(capdata.slots) ||
     Fail`capdata has non-Array slots ${capdata.slots}`;
   // TODO check that the .slots array elements are actually strings
-}
-
-/**
- * Returns the slot of a presence if the provided capdata is composed
- * of a single presence, `null` otherwise
- *
- * @param {import('@endo/marshal').CapData<string>} data
- */
-export function extractSingleSlot(data) {
-  const value = kunser(data);
-  const style = passStyleOf(value);
-  if (style === 'remotable' || style === 'promise') {
-    return krefOf(value);
-  }
-  return null;
 }

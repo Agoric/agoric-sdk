@@ -2,7 +2,7 @@
 
 import { assert, Fail } from '@agoric/assert';
 import { Nat } from '@agoric/nat';
-import { parseVatSlot } from '../lib/parseVatSlots.js';
+import { parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysWithPrefix,
   prefixedKeysExist,

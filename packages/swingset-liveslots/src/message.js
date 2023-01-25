@@ -2,6 +2,13 @@ import { assert, details as X } from '@agoric/assert';
 import { insistCapData } from './capdata.js';
 
 /**
+ * @typedef {{
+ * methargs: SwingSetCapData, // of [method, args]
+ * result: string | undefined | null,
+ * }} Message
+ */
+
+/**
  * Assert function to ensure that something expected to be a message object
  * actually is.  A message object should have a .method property that's a
  * string, a .args property that's a capdata object, and optionally a .result
@@ -12,7 +19,7 @@ import { insistCapData } from './capdata.js';
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
  *
- * @returns {asserts message is import('../types-external.js').Message}
+ * @returns {asserts message is Message}
  */
 
 export function insistMessage(message) {

@@ -4,7 +4,7 @@
 import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
-import { parseVatSlot } from '../lib/parseVatSlots.js';
+import { parseVatSlot } from './parseVatSlots.js';
 
 /**
  *

@@ -5,7 +5,7 @@ import { objectMap } from '@agoric/internal';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@agoric/store/tools.js';
 import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
-import { parseVatSlot } from '../lib/parseVatSlots.js';
+import { parseVatSlot } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */

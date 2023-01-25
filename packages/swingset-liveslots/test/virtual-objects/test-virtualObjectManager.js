@@ -6,7 +6,7 @@ import {
   makeFakeVirtualStuff,
 } from '../../tools/fakeVirtualSupport.js';
 
-import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { kser, kslot } from '../kmarshal.js';
 import { vstr } from '../util.js';
 
 function initThing(label = 'thing', counter = 0) {

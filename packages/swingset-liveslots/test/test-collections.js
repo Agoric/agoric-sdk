@@ -3,7 +3,7 @@ import '@endo/init/debug.js';
 
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { makeFakeCollectionManager } from '../../tools/fakeVirtualSupport.js';
+import { makeFakeCollectionManager } from '../tools/fakeVirtualSupport.js';
 
 const {
   makeScalarBigMapStore,

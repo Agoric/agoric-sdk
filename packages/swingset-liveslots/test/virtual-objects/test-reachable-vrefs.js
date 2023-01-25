@@ -4,7 +4,7 @@ import '@endo/init/debug.js';
 import { Remotable } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
 
-import { makeVatSlot } from '../../src/lib/parseVatSlots.js';
+import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 test('VOM tracks reachable vrefs', async t => {

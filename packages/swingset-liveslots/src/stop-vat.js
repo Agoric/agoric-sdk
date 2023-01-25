@@ -1,4 +1,4 @@
-import { makeVatSlot, parseVatSlot } from '../lib/parseVatSlots.js';
+import { makeVatSlot, parseVatSlot } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 // This file has tools to run during the last delivery of the old vat

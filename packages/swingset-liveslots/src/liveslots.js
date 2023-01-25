@@ -8,14 +8,10 @@ import { assert, details as X, Fail } from '@agoric/assert';
 import { isNat } from '@agoric/nat';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
-import {
-  insistVatType,
-  makeVatSlot,
-  parseVatSlot,
-} from '../lib/parseVatSlots.js';
-import { insistCapData } from '../lib/capdata.js';
-import { extractMethod, legibilizeMethod } from '../lib/kdebug.js';
-import { insistMessage } from '../lib/message.js';
+import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
+import { insistCapData } from './capdata.js';
+import { extractMethod, legibilizeMethod } from './kdebug.js';
+import { insistMessage } from './message.js';
 import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';

@@ -2,8 +2,8 @@
 
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { kslot, kser } from '../src/lib/kmarshal.js';
-import { parseVatSlot } from '../src/lib/parseVatSlots.js';
+import { kslot, kser } from './kmarshal.js';
+import { parseVatSlot } from '../src/parseVatSlots.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js
@@ -154,14 +154,6 @@ export function refValString(vref, type) {
 
 export function mapRef(idx) {
   return `o+2/${idx}`; // see 'assert known scalarMapStore ID' below
-}
-
-export function mapRefVal(idx) {
-  return refVal(mapRef(idx), 'mapStore');
-}
-
-export function mapRefValString(idx) {
-  return refValString(mapRef(idx), 'mapStore');
 }
 
 // return an iterator of all existing keys that start with 'prefix'

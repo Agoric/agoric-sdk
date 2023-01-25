@@ -1,7 +1,7 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import { makeCache } from '../../src/liveslots/virtualObjectManager.js';
+import { makeCache } from '../../src/virtualObjectManager.js';
 
 function makeFakeStore() {
   const backing = new Map();

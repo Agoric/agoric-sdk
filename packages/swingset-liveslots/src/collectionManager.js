@@ -17,7 +17,7 @@ import {
   makeCopyMap,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
-import { parseVatSlot } from '../lib/parseVatSlots.js';
+import { parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,
   enumerateKeysWithPrefix,

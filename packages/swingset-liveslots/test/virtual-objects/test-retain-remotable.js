@@ -5,8 +5,8 @@ import '@endo/init/debug.js';
 import { Far } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
 
-import engineGC from '../../src/lib-nodejs/engine-gc.js';
-import { makeGcAndFinalize } from '../../src/lib-nodejs/gc-and-finalize.js';
+import engineGC from '../engine-gc.js';
+import { makeGcAndFinalize } from '../gc-and-finalize.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 function makeHeld() {

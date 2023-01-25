@@ -1,10 +1,10 @@
 /* global WeakRef, FinalizationRegistry */
-import engineGC from '../src/lib-nodejs/engine-gc.js';
+import engineGC from './engine-gc.js';
 
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
-import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeLiveSlots } from '../src/liveslots/liveslots.js';
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { makeDummyMeterControl } from './dummyMeterControl.js';
+import { makeLiveSlots } from '../src/liveslots.js';
 import {
   makeMessage,
   makeDropExports,
@@ -12,7 +12,7 @@ import {
   makeRetireExports,
   makeBringOutYourDead,
 } from './util.js';
-import { kser } from '../src/lib/kmarshal.js';
+import { kser } from './kmarshal.js';
 
 /**
  * @param {boolean} [skipLogging = false]

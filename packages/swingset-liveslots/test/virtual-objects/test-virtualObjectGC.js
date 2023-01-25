@@ -6,8 +6,8 @@ import {
   setupTestLiveslots,
   findSyscallsByType,
 } from '../liveslots-helpers.js';
-import { krefOf, kser, kslot } from '../../src/lib/kmarshal.js';
-import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
+import { krefOf, kser, kslot } from '../kmarshal.js';
+import { parseVatSlot } from '../../src/parseVatSlots.js';
 
 // Legs:
 //

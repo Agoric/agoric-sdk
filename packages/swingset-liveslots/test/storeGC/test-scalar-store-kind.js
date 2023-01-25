@@ -1,11 +1,10 @@
-// eslint-disable-next-line import/order
-import { test } from '../../../tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@endo/init/debug.js';
 
-import { setupTestLiveslots } from '../../liveslots-helpers.js';
-import { buildRootObject, mapRef } from '../../gc-helpers.js';
+import { setupTestLiveslots } from '../liveslots-helpers.js';
+import { buildRootObject, mapRef } from '../gc-helpers.js';
 
-// These tests follow the model described in
-// ../virtualObjects/test-virtualObjectGC.js
+// These tests follow the model described in test-virtualObjectGC.js
 
 // NOTE: these tests must be run serially, since they share a heap and garbage
 // collection during one test can interfere with the deterministic behavior of a

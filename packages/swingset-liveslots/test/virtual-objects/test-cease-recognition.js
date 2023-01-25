@@ -3,7 +3,7 @@ import test from 'ava';
 import '@endo/init/debug.js';
 
 import { buildSyscall } from '../liveslots-helpers.js';
-import { makeVirtualReferenceManager } from '../../src/liveslots/virtualReferences.js';
+import { makeVirtualReferenceManager } from '../../src/virtualReferences.js';
 
 function makeVRM() {
   const { log, syscall } = buildSyscall();

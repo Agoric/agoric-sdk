@@ -1,4 +1,4 @@
-import { makeCollectionManager } from '../src/liveslots/collectionManager.js';
+import { makeCollectionManager } from '../src/collectionManager.js';
 
 export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
   const {

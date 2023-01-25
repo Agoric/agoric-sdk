@@ -4,7 +4,7 @@ import '@endo/init/debug.js';
 import { Far } from '@endo/marshal';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { vstr } from './util.js';
-import { parseVatSlot } from '../src/lib/parseVatSlots.js';
+import { parseVatSlot } from '../src/parseVatSlots.js';
 
 function buildRootObject(vatPowers, vatParameters, baggage) {
   baggage.has('outside');

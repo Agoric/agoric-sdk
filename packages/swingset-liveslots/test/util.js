@@ -1,49 +1,7 @@
-/* global WeakRef, FinalizationRegistry */
-import anylogger from 'anylogger';
+import { vstr } from './vat-util.js';
+import { kser } from './kmarshal.js';
 
-import bundleSource from '@endo/bundle-source';
-
-import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { extractMessage, ignore, vstr } from './vat-util.js';
-import { kser } from '../src/lib/kmarshal.js';
-
-export { extractMessage, ignore, vstr };
-
-function compareArraysOfStrings(a, b) {
-  a = a.join(' ');
-  b = b.join(' ');
-  if (a > b) {
-    return 1;
-  }
-  if (a < b) {
-    return -1;
-  }
-  return 0;
-}
-
-export function checkKT(t, kernel, expected) {
-  // extract the "kernel table" (a summary of all Vat clists) and assert that
-  // the contents match the expected list. This does a sort of the two lists
-  // before a t.deepEqual, which makes it easier to incrementally add
-  // expected mappings.
-
-  const got = Array.from(kernel.dump().kernelTable);
-  got.sort(compareArraysOfStrings);
-  expected = Array.from(expected);
-  expected.sort(compareArraysOfStrings);
-  t.deepEqual(got, expected);
-}
-
-export function dumpKT(kernel) {
-  const got = Array.from(kernel.dump().kernelTable).map(
-    ([kid, vatdev, vid]) => [vatdev, vid, kid],
-  );
-  got.sort(compareArraysOfStrings);
-  for (const [vatdev, vid, kid] of got) {
-    console.log(`${vatdev}:${vid} <-> ${kid}`);
-  }
-}
+export { vstr };
 
 /**
  * @param {(d: unknown) => void} [onDispatchCallback ]
@@ -135,40 +93,4 @@ export function makeRetireExports(...vrefs) {
 export function makeRetireImports(...vrefs) {
   const vatDeliverObject = harden(['retireImports', vrefs]);
   return vatDeliverObject;
-}
-
-function makeConsole(tag) {
-  const log = anylogger(tag);
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = log[level];
-  }
-  return harden(cons);
-}
-
-export function makeKernelEndowments() {
-  return {
-    waitUntilQuiescent,
-    kernelStorage: initSwingStore().kernelStorage,
-    runEndOfCrank: () => {},
-    makeConsole,
-    WeakRef,
-    FinalizationRegistry,
-  };
-}
-
-export function bundleOpts(data, extraRuntimeOpts) {
-  const { kernel: kernelBundle, ...kernelBundles } = data.kernelBundles;
-  const initOpts = { kernelBundles };
-  const runtimeOpts = { kernelBundle, ...extraRuntimeOpts };
-  return { initOpts, runtimeOpts };
-}
-
-export async function restartVatAdminVat(controller) {
-  const vaBundle = await bundleSource(
-    new URL('../src/vats/vat-admin/vat-vat-admin.js', import.meta.url).pathname,
-  );
-  const bundleID = await controller.validateAndInstallBundle(vaBundle);
-  controller.upgradeStaticVat('vatAdmin', true, bundleID, {});
-  await controller.run();
 }

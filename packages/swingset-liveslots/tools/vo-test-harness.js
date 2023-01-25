@@ -1,11 +1,5 @@
-// eslint-disable-next-line import/order
-import { test } from './prepare-test-env-ava.js';
-
-// eslint-disable-next-line import/order
 import { Far } from '@endo/marshal';
 import { setupTestLiveslots } from '../test/liveslots-helpers.js';
-
-export { test };
 
 // This file contains a test harness for virtual objects. runVOTest()
 // is to to help verify that a VO can be garbage collected and then

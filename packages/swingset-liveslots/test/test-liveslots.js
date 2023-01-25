@@ -6,12 +6,12 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, Fail } from '@agoric/assert';
-import engineGC from '../src/lib-nodejs/engine-gc.js';
-import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
-import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeLiveSlots, makeMarshaller } from '../src/liveslots/liveslots.js';
-import { kslot, kser, kunser } from '../src/lib/kmarshal.js';
+import engineGC from './engine-gc.js';
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { makeDummyMeterControl } from './dummyMeterControl.js';
+import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
+import { kslot, kser, kunser } from './kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
   makeMessage,

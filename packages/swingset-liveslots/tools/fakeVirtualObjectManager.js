@@ -1,4 +1,4 @@
-import { makeVirtualObjectManager } from '../src/liveslots/virtualObjectManager.js';
+import { makeVirtualObjectManager } from '../src/virtualObjectManager.js';
 
 // Note: `fakeVirtualObjectManager` is something of a misnomer here.  The
 // virtual object manager being used to implement this realized by the actual

@@ -7,7 +7,7 @@ import { Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import { makeMessage, makeResolve, makeReject } from './util.js';
-import { kser, kslot } from '../src/lib/kmarshal.js';
+import { kser, kslot } from './kmarshal.js';
 
 function hush(p) {
   p.then(
