@@ -27,9 +27,9 @@ export const prepareVaultKit = baggage => {
         vault: holder.getSubscriber(),
       },
       invitationMakers: Far('invitation makers', {
-        AdjustBalances: holder.makeAdjustBalancesInvitation,
-        CloseVault: holder.makeCloseInvitation,
-        TransferVault: holder.makeTransferInvitation,
+        AdjustBalances: () => holder.makeAdjustBalancesInvitation(),
+        CloseVault: () => holder.makeCloseInvitation(),
+        TransferVault: () => holder.makeTransferInvitation(),
       }),
       vault: holder,
       vaultUpdater: helper.getUpdater(),
