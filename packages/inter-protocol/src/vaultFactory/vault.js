@@ -102,6 +102,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  * idInManager: VaultId,
  * manager: VaultManager,
+ * storageNode: StorageNode,
  * vaultSeat: ZCFSeat,
  * }>} ImmutableState
  */
@@ -123,7 +124,6 @@ const validTransitions = {
  * vault manager object reference.
  *
  * @type {(key: VaultId) => {
- * storageNode: ERef<StorageNode>,
  * marshaller: ERef<Marshaller>,
  * outerUpdater: Publisher<VaultNotification> | null,
  * zcf: ZCF,
@@ -135,7 +135,7 @@ const provideEphemera = makeEphemeraProvider(() => ({}));
  * @param {ZCF} zcf
  * @param {VaultManager} manager
  * @param {VaultId} idInManager
- * @param {ERef<StorageNode>} storageNode
+ * @param {StorageNode} storageNode
  * @param {ERef<Marshaller>} marshaller
  * @returns {ImmutableState & MutableState}
  */
@@ -143,7 +143,6 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
   trace('vault initState');
 
   const ephemera = provideEphemera(idInManager);
-  ephemera.storageNode = storageNode;
   ephemera.marshaller = marshaller;
   ephemera.zcf = zcf;
 
@@ -152,6 +151,8 @@ const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
     manager,
     outerUpdater: null,
     phase: Phase.ACTIVE,
+
+    storageNode,
 
     // vaultSeat will hold the collateral until the loan is retired. The
     // payout from it will be handed to the user: if the vault dies early
@@ -616,7 +617,7 @@ export const prepareVault = baggage => {
           // eslint-disable-next-line no-use-before-define
           const vaultKit = makeVaultKit(
             self,
-            ephemera.storageNode,
+            state.storageNode,
             ephemera.marshaller,
             state.manager.getAssetSubscriber(),
           );
