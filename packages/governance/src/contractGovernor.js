@@ -160,7 +160,8 @@ const start = async (zcf, privateArgs) => {
   } = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
-    // @ts-expect-error XXX governance types
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore XXX governance types
     augmentedTerms,
     privateArgs.governed,
   );
@@ -217,7 +218,8 @@ const start = async (zcf, privateArgs) => {
    */
   const replaceElectorate = poserInvitation => {
     /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
-    // @ts-expect-error cast
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore cast
     const paramMgr = E(E(governedCF).getParamMgrRetriever()).get({
       key: 'governedParams',
     });
