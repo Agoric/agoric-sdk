@@ -196,7 +196,8 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
     const { instance, installation } = await E(zoe).getInvitationDetails(i);
-    // @ts-expect-error typescript thinks they're guaranteed True. I'm not sure.
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore typedefs say they're guaranteed truthy but just to be safe
     assert(instance && installation, 'must be an invitation');
   };
 
