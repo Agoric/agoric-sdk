@@ -503,6 +503,7 @@ export const makeManagerDriver = async (
         t.like(payouts, expected);
       }
     },
+    /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
     setGovernedParam: async (name, newValue) => {
       const deadline = 3n;

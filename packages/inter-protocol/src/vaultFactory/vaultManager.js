@@ -14,13 +14,20 @@
  */
 import '@agoric/zoe/exported.js';
 
-import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
+import {
+  AmountMath,
+  AmountShape,
+  BrandShape,
+  NotifierShape,
+  RatioShape,
+} from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import {
   makeStoredSubscriber,
   observeNotifier,
   SubscriberShape,
   prepareDurablePublishKit,
+  makeStoredNotifier,
 } from '@agoric/notifier';
 import {
   M,
@@ -139,6 +146,7 @@ const trace = makeTracer('VM', false);
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
  * storedAssetSubscriber: StoredSubscriber<AssetState>,
  * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
+ * storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>,
  * }>} */
 const provideEphemera = makeEphemeraProvider(() => ({
   liquidationQueueing: false,
@@ -257,12 +265,19 @@ export const prepareVaultManagerKit = (
       marshaller,
     );
 
+    const storedQuotesNotifier = makeStoredNotifier(
+      E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
+      E(storageNode).makeChildNode('quotes'),
+      marshaller,
+    );
+
     const ephemera = provideEphemera(collateralBrand);
     Object.assign(ephemera, {
       periodNotifier,
       prioritizedVaults: makePrioritizedVaults(unsettledVaults),
       storedAssetSubscriber,
       storedMetricsSubscriber,
+      storedQuotesNotifier,
     });
 
     /** @type {MutableState & ImmutableState} */
@@ -295,6 +310,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getSubscriber: M.call().returns(SubscriberShape),
         getMetrics: M.call().returns(SubscriberShape),
+        getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
       }),
       helper: M.interface(
@@ -355,6 +371,13 @@ export const prepareVaultManagerKit = (
           );
           assert(storedMetricsSubscriber);
           return storedMetricsSubscriber;
+        },
+        getQuotes() {
+          const { storedQuotesNotifier } = provideEphemera(
+            this.state.collateralBrand,
+          );
+          assert(storedQuotesNotifier);
+          return storedQuotesNotifier;
         },
         getCompoundedInterest() {
           return this.state.compoundedInterest;
