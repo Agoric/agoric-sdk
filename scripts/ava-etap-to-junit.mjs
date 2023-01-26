@@ -1,6 +1,7 @@
 #! /usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import process from 'node:process';
 
 const resultFile = process.argv[2] || 'results.txt';
@@ -20,14 +21,36 @@ let buffer = [];
 let currentSuite = null;
 
 function runtimeProp() {
-  if (process.env.engine) {
-    console.log(`<properties>`);
+  console.log(`<properties>`);
+  if (process.env.GH_ENGINE) {
     console.log(
-      `  <property name="dd_tags[runtime.name]" value="${process.env.engine}"></property>`,
+      `  <property name="dd_tags[runtime.name]" value="${process.env.GH_ENGINE}"></property>`,
     );
-    console.log(`</properties>`);
+    if (process.env.GH_ENGINE !== 'xs') {
+      console.log(
+        `  <property name="dd_tags[runtime.version]" value="${process.version}"></property>`,
+      );
+    }
   }
+
+  if (typeof os.machine === 'function') {
+    console.log(
+      `  <property name="dd_tags[runtime.architecture]" value="${os.machine()}"></property>`,
+    );
+  }
+  if (typeof os.platform === 'function') {
+    console.log(
+      `  <property name="dd_tags[os.platform]" value="${os.platform()}"></property>`,
+    );
+  }
+  if (typeof os.release === 'function') {
+    console.log(
+      `  <property name="dd_tags[os.version]" value="${os.release()}"></property>`,
+    );
+  }
+  console.log(`</properties>`);
 }
+
 function processTAP(tapbody) {
   let m;
   // eslint-disable-next-line no-cond-assign
