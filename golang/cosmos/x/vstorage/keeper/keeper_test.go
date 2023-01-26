@@ -10,6 +10,7 @@ import (
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
@@ -168,4 +169,91 @@ func TestStorage(t *testing.T) {
 		t.Errorf("got export %q, want %q", got, expectedExport)
 	}
 	keeper.ImportStorage(ctx, got)
+}
+
+func TestStorageNotify(t *testing.T) {
+	tk := makeTestKit()
+	ctx, keeper := tk.ctx, tk.vstorageKeeper
+
+	keeper.SetStorageAndNotify(ctx, "notify.noLegacy", "noLegacyValue")
+	keeper.LegacySetStorageAndNotify(ctx, "notify.legacy", "legacyValue")
+	keeper.SetStorageAndNotify(ctx, "notify.noLegacy2", "noLegacyValue2")
+	keeper.SetStorageAndNotify(ctx, "notify.legacy2", "legacyValue2")
+	keeper.LegacySetStorageAndNotify(ctx, "notify.legacy2", "legacyValue2b")
+	keeper.SetStorageAndNotify(ctx, "notify.noLegacy2", "noLegacyValue2b")
+
+	// Check the batched events.
+	expectedBeforeFlushEvents := sdk.Events{}
+	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedBeforeFlushEvents) {
+		t.Errorf("got before flush events %#v, want %#v", got, expectedBeforeFlushEvents)
+	}
+
+	expectedAfterFlushEvents := sdk.Events{
+		{
+			Type: "storage",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("path"), Value: []byte("notify.legacy")},
+				{Key: []byte("value"), Value: []byte("legacyValue")},
+			},
+		},
+		{
+			Type: "state_change",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("store"), Value: []byte("vstorage")},
+				{Key: []byte("key"), Value: []byte("2\x00notify\x00legacy")},
+				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00legacy\x01")},
+				{Key: []byte("value"), Value: []byte("legacyValue")},
+			},
+		},
+		{
+			Type: "storage",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("path"), Value: []byte("notify.legacy2")},
+				{Key: []byte("value"), Value: []byte("legacyValue2b")},
+			},
+		},
+		{
+			Type: "state_change",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("store"), Value: []byte("vstorage")},
+				{Key: []byte("key"), Value: []byte("2\x00notify\x00legacy2")},
+				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00legacy2\x01")},
+				{Key: []byte("value"), Value: []byte("legacyValue2b")},
+			},
+		},
+		{
+			Type: "state_change",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("store"), Value: []byte("vstorage")},
+				{Key: []byte("key"), Value: []byte("2\x00notify\x00noLegacy")},
+				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00noLegacy\x01")},
+				{Key: []byte("value"), Value: []byte("noLegacyValue")},
+			},
+		},
+		{
+			Type: "state_change",
+			Attributes: []abci.EventAttribute{
+				{Key: []byte("store"), Value: []byte("vstorage")},
+				{Key: []byte("key"), Value: []byte("2\x00notify\x00noLegacy2")},
+				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00noLegacy2\x01")},
+				{Key: []byte("value"), Value: []byte("noLegacyValue2b")},
+			},
+		},
+	}
+
+	keeper.FlushChangeEvents(ctx)
+	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedAfterFlushEvents) {
+		for _, e := range got {
+			t.Logf("got event: %s", e.Type)
+			for _, a := range e.Attributes {
+				t.Logf("got attr: %s = %s", a.Key, a.Value)
+			}
+		}
+		t.Errorf("got after flush events %#v, want %#v", got, expectedAfterFlushEvents)
+	}
+
+	keeper.FlushChangeEvents(ctx)
+	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedAfterFlushEvents) {
+		t.Errorf("got after second flush events %#v, want %#v", got, expectedAfterFlushEvents)
+	}
 }
