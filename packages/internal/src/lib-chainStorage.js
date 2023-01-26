@@ -152,3 +152,19 @@ export async function makeStorageNodeChild(storageNodeRef, childName) {
   return E(storageNode).makeChildNode(childName);
 }
 harden(makeStorageNodeChild);
+
+/**
+ *
+ * @param {import('@endo/far').ERef<StorageNode>} storageNode
+ * @param {import('@endo/far').ERef<Marshaller>} marshaller
+ * @returns {(value: unknown) => Promise<void>}
+ */
+export const makeMarshallToStorage = (storageNode, marshaller) => {
+  return value =>
+    E(marshaller)
+      .serialize(value)
+      .then(serialized => {
+        const encoded = JSON.stringify(serialized);
+        return E(storageNode).setValue(encoded);
+      });
+};
