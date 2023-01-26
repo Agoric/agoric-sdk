@@ -14,7 +14,7 @@ index afe5528..67f523f 100644
  		workerArgv: argv['--'],
  	});
  
-+	if (process.env.AVA_USE_TAP){
++	if (process.env.AGORIC_AVA_USE_TAP){
 +		combined.tap = true;
 +	}
 +

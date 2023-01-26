@@ -8,7 +8,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
-  AVA_USE_TAP: true
+  AGORIC_AVA_USE_TAP: true
   DD_ENV: ci
   DATADOG_SITE: us3.datadoghq.com
   DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
