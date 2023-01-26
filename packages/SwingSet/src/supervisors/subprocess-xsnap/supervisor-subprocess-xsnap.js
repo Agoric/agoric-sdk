@@ -2,6 +2,7 @@
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
+import { makeLiveSlots } from '@agoric/swingset-liveslots';
 import '../../types-ambient.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
@@ -11,7 +12,6 @@ import {
   insistVatSyscallResult,
 } from '../../lib/message.js';
 
-import { makeLiveSlots } from '../../liveslots/liveslots.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,

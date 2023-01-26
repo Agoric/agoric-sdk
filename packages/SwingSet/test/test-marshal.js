@@ -4,9 +4,9 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeMarshaller } from '@agoric/swingset-liveslots';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
-import { makeMarshaller } from '../src/liveslots/liveslots.js';
 import { kser, makeError } from '../src/lib/kmarshal.js';
 
 const gcTools = harden({

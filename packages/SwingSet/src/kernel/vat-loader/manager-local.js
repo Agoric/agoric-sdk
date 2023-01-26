@@ -2,7 +2,7 @@
 
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
-import { makeLiveSlots } from '../../liveslots/liveslots.js';
+import { makeLiveSlots } from '@agoric/swingset-liveslots';
 import { makeManagerKit } from './manager-helper.js';
 import {
   makeSupervisorDispatch,
