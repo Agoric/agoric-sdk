@@ -1,6 +1,6 @@
-import { test } from '../../tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@endo/init/debug.js';
 
-// eslint-disable-next-line import/order
 import { makeFakeVirtualObjectManager } from '../../tools/fakeVirtualSupport.js';
 
 test('weakMap vref handling', async t => {

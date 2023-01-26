@@ -1,6 +1,6 @@
 /* global WeakRef */
-// eslint-disable-next-line import/order
-import { test } from '../tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@endo/init/debug.js';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

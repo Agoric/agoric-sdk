@@ -1,4 +1,5 @@
-import { test } from '../../tools/prepare-test-env-ava.js';
+import test from 'ava';
+import '@endo/init/debug.js';
 
 import { makeCache } from '../../src/liveslots/virtualObjectManager.js';
 
