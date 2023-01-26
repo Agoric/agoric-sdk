@@ -27,6 +27,7 @@ import {
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
+import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   CHARGING_PERIOD_KEY,
@@ -469,12 +470,15 @@ const makeVaultDirector = defineDurableExoClassKit(
         const { managerBaggages } = ephemera;
         // alleged okay because used only as a diagnostic tag
         const brandName = await E(collateralBrand).getAllegedName();
+        const collateralUnit = await unitAmount(collateralBrand);
+
         const makeVaultManager = managerBaggages.addChild(
           brandName,
           prepareVaultManagerKit,
           zcf,
           debtMint,
           collateralBrand,
+          collateralUnit,
           factoryPowers,
           startTimeStamp,
           managerStorageNode,

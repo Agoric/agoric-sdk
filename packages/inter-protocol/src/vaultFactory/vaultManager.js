@@ -38,7 +38,6 @@ import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
@@ -153,6 +152,7 @@ const provideEphemera = makeEphemeraProvider(() => ({
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {Brand<'nat'>} collateralBrand
+ * @param {Amount<'nat'>} collateralUnit
  * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
  * @param {Timestamp} startTimeStamp
  * @param {ERef<StorageNode>} storageNode
@@ -163,6 +163,7 @@ export const prepareVaultManagerKit = (
   zcf,
   debtMint,
   collateralBrand,
+  collateralUnit,
   factoryPowers,
   startTimeStamp,
   storageNode,
@@ -972,7 +973,6 @@ export const prepareVaultManagerKit = (
 
           const { debtBrand } = state;
           // get a quote for one unit of the collateral
-          const collateralUnit = await unitAmount(state.collateralBrand);
           return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
         },
 
