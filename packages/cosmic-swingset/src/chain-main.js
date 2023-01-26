@@ -21,7 +21,7 @@ import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { makeBufferedStorage } from './bufferedStorage.js';
+import { makeReadCachingStorage } from './bufferedStorage.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
@@ -41,47 +41,28 @@ const toNumber = specimen => {
   return number;
 };
 
-const makeChainStorage = (call, prefix = '', options = {}) => {
-  prefix === '' ||
-    prefix.endsWith('.') ||
-    Fail`prefix ${prefix} must end with a dot`;
+const makePrefixedBridgeStorage = (
+  call,
+  prefix,
+  setterMethod,
+  fromBridgeValue = x => x,
+  toBridgeValue = x => x,
+) => {
+  prefix.endsWith('.') || Fail`prefix ${prefix} must end with a dot`;
 
-  const { fromChainShape, toChainShape, setterMethod = 'set' } = options;
-
-  // In addition to the wrapping write buffer, keep a simple cache of
-  // read values for has and get.
-  let cache;
-  function resetCache() {
-    cache = new Map();
-  }
-  resetCache();
-
-  const storage = {
-    has(key) {
-      return storage.get(key) !== undefined;
-    },
-    get(key) {
-      if (cache.has(key)) return cache.get(key);
-
-      // Fetch the value and cache it until the next commit or abort.
+  return harden({
+    get: key => {
       const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
       const ret = JSON.parse(retStr);
-      const chainShapeValue = ret ? JSON.parse(ret) : undefined;
-      const value =
-        chainShapeValue === undefined || !fromChainShape
-          ? chainShapeValue
-          : fromChainShape(chainShapeValue);
-      cache.set(key, value);
-      return value;
+      if (!ret) {
+        return undefined;
+      }
+      const bridgeValue = JSON.parse(ret);
+      return fromBridgeValue(bridgeValue);
     },
-    set(key, value) {
-      // Set the value and cache it until the next commit or abort (which is
-      // expected immediately, since the buffered wrapper only calls set
-      // *during* a commit).
-      cache.set(key, value);
-      const chainShapeValue =
-        value === undefined || !toChainShape ? value : toChainShape(value);
-      const valueStr = value === undefined ? '' : stringify(chainShapeValue);
+    set: (key, value) => {
+      const valueStr =
+        value === undefined ? '' : stringify(toBridgeValue(value));
       call(
         stringify({
           method: setterMethod,
@@ -90,31 +71,7 @@ const makeChainStorage = (call, prefix = '', options = {}) => {
         }),
       );
     },
-    delete(key) {
-      // Deletion in chain storage manifests as set-to-undefined.
-      storage.set(key, undefined);
-    },
-    // eslint-disable-next-line require-yield
-    *getKeys(_start, _end) {
-      throw new Error('not implemented');
-    },
-  };
-  const {
-    kvStore: buffered,
-    commit,
-    abort,
-  } = makeBufferedStorage(storage, {
-    // Enqueue a write of any retrieved value, to handle callers like mailbox.js
-    // that expect local mutations to be automatically written back.
-    onGet(key, value) {
-      buffered.set(key, value);
-    },
-
-    // Reset the read cache upon commit or abort.
-    onCommit: resetCache,
-    onAbort: resetCache,
   });
-  return { ...buffered, commit, abort };
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -236,27 +193,29 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // so the 'externalStorage' object can close over the single mutable
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
   async function launchAndInitializeSwingSet(bootMsg) {
+    const sendToChain = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
-    const mailboxStorage = makeChainStorage(
-      msg => chainSend(portNums.storage, msg),
-      `${STORAGE_PATH.MAILBOX}.`,
-      {
-        fromChainShape: data => {
-          const ack = toNumber(data.ack);
-          const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
-          return importMailbox({ outbox, ack });
-        },
-        toChainShape: exportMailbox,
-        setterMethod: 'legacySet',
-      },
+    const fromBridgeMailbox = data => {
+      const ack = toNumber(data.ack);
+      const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
+      return importMailbox({ outbox, ack });
+    };
+    const mailboxStorage = makeReadCachingStorage(
+      makePrefixedBridgeStorage(
+        sendToChain,
+        `${STORAGE_PATH.MAILBOX}.`,
+        'legacySet',
+        fromBridgeMailbox,
+        exportMailbox,
+      ),
     );
     const actionQueue = makeQueue(
-      makeChainStorage(
-        msg => chainSend(portNums.storage, msg),
-        `${STORAGE_PATH.ACTION_QUEUE}.`,
-        {
-          setterMethod: 'setWithoutNotify',
-        },
+      makeReadCachingStorage(
+        makePrefixedBridgeStorage(
+          sendToChain,
+          `${STORAGE_PATH.ACTION_QUEUE}.`,
+          'setWithoutNotify',
+        ),
       ),
     );
     function setActivityhash(activityhash) {

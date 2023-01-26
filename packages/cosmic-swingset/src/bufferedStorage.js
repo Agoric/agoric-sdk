@@ -228,3 +228,61 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
   }
   return { kvStore: buffered, commit, abort };
 }
+
+/**
+ * @param {{ get(key: string) => unknown, set(key: string, value: unknown): void }} getterSetter
+ */
+export const makeReadCachingStorage = getterSetter => {
+  // In addition to the wrapping write buffer, keep a simple cache of
+  // read values for has and get.
+  let cache;
+  function resetCache() {
+    cache = new Map();
+  }
+  resetCache();
+
+  const storage = harden({
+    has(key) {
+      return storage.get(key) !== undefined;
+    },
+    get(key) {
+      if (cache.has(key)) return cache.get(key);
+
+      // Fetch the value and cache it until the next commit or abort.
+      const value = getterSetter.get(key);
+      cache.set(key, value);
+      return value;
+    },
+    set(key, value) {
+      // Set the value and cache it until the next commit or abort (which is
+      // expected immediately, since the buffered wrapper only calls set
+      // *during* a commit).
+      cache.set(key, value);
+      getterSetter.set(key, value);
+    },
+    delete(key) {
+      // Deletion in chain storage manifests as set-to-undefined.
+      storage.set(key, undefined);
+    },
+    // eslint-disable-next-line require-yield
+    *getKeys(_start, _end) {
+      throw new Error('not implemented');
+    },
+  });
+  const {
+    kvStore: buffered,
+    commit,
+    abort,
+  } = makeBufferedStorage(storage, {
+    // Enqueue a write of any retrieved value, to handle callers like mailbox.js
+    // that expect local mutations to be automatically written back.
+    onGet(key, value) {
+      buffered.set(key, value);
+    },
+
+    // Reset the read cache upon commit or abort.
+    onCommit: resetCache,
+    onAbort: resetCache,
+  });
+  return harden({ ...buffered, commit, abort });
+};
