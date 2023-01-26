@@ -12,7 +12,7 @@ import {
   assertKeyPattern,
   assertPattern,
   matches,
-  fit,
+  mustMatch,
   M,
   makeCopySet,
   makeCopyMap,
@@ -211,7 +211,7 @@ export function makeCollectionManager(
 
     const serializeValue = value => {
       if (valueShape !== undefined) {
-        fit(value, valueShape, invalidValueTypeMsg);
+        mustMatch(value, valueShape, invalidValueTypeMsg);
       }
       return serialize(value);
     };
@@ -219,7 +219,7 @@ export function makeCollectionManager(
     const unserializeValue = data => {
       const value = unserialize(data);
       if (valueShape !== undefined) {
-        fit(value, valueShape, invalidValueTypeMsg);
+        mustMatch(value, valueShape, invalidValueTypeMsg);
       }
       return value;
     };
@@ -298,7 +298,7 @@ export function makeCollectionManager(
     }
 
     function get(key) {
-      fit(key, keyShape, invalidKeyTypeMsg);
+      mustMatch(key, keyShape, invalidKeyTypeMsg);
       const result = syscall.vatstoreGet(keyToDBKey(key));
       if (result) {
         return unserializeValue(JSON.parse(result));
@@ -317,7 +317,7 @@ export function makeCollectionManager(
     }
 
     function init(key, value) {
-      fit(key, keyShape, invalidKeyTypeMsg);
+      mustMatch(key, keyShape, invalidKeyTypeMsg);
       !has(key) ||
         Fail`key ${key} already registered in collection ${q(label)}`;
       const serializedValue = serializeValue(value);
@@ -348,7 +348,7 @@ export function makeCollectionManager(
     }
 
     function set(key, value) {
-      fit(key, keyShape, invalidKeyTypeMsg);
+      mustMatch(key, keyShape, invalidKeyTypeMsg);
       const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
@@ -367,7 +367,7 @@ export function makeCollectionManager(
     }
 
     function deleteInternal(key) {
-      fit(key, keyShape, invalidKeyTypeMsg);
+      mustMatch(key, keyShape, invalidKeyTypeMsg);
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
       rawValue || Fail`key ${key} not found in collection ${q(label)}`;

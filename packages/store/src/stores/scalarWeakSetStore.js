@@ -1,6 +1,6 @@
 import { Far, passStyleOf } from '@endo/marshal';
 import { getCopySetKeys, isCopySet } from '../keys/checkKey.js';
-import { fit, assertPattern } from '../patterns/patternMatchers.js';
+import { mustMatch, assertPattern } from '../patterns/patternMatchers.js';
 
 const { quote: q, Fail } = assert;
 
@@ -86,7 +86,7 @@ export const makeScalarWeakSetStore = (
     passStyleOf(key) === 'remotable' ||
       Fail`Only remotables can be keys of scalar WeakStores: ${key}`;
     if (keyShape !== undefined) {
-      fit(key, keyShape, 'weakSetStore key');
+      mustMatch(key, keyShape, 'weakSetStore key');
     }
   };
 

@@ -591,7 +591,7 @@ const makePatternKit = () => {
    * @param {Pattern} patt
    * @param {string|number} [label]
    */
-  const fit = (specimen, patt, label = undefined) => {
+  const mustMatch = (specimen, patt, label = undefined) => {
     if (checkMatches(specimen, patt, identChecker, label)) {
       return;
     }
@@ -1810,7 +1810,7 @@ const makePatternKit = () => {
   return harden({
     checkMatches,
     matches,
-    fit,
+    mustMatch,
     assertPattern,
     isPattern,
     assertKeyPattern,
@@ -1829,7 +1829,7 @@ const makePatternKit = () => {
 export const {
   checkMatches,
   matches,
-  fit,
+  mustMatch,
   assertPattern,
   isPattern,
   assertKeyPattern,

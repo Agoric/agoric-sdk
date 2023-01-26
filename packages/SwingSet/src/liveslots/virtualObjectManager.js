@@ -6,7 +6,7 @@ import {
   assertPattern,
   defendPrototype,
   defendPrototypeKit,
-  fit,
+  mustMatch,
 } from '@agoric/store';
 import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
@@ -616,7 +616,7 @@ export function makeVirtualObjectManager(
               ownKeys(stateShape),
             )}`,
           );
-        fit(slotState, stateShape[prop], prop);
+        mustMatch(slotState, stateShape[prop], prop);
       }
       return serialize(slotState);
     };
@@ -630,7 +630,7 @@ export function makeVirtualObjectManager(
               ownKeys(stateShape),
             )}`,
           );
-        fit(slotValue, stateShape[prop]);
+        mustMatch(slotValue, stateShape[prop]);
       }
       return slotValue;
     };

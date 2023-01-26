@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
-import { fit, M } from '@agoric/store';
+import { mustMatch, M } from '@agoric/store';
 import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
@@ -216,7 +216,7 @@ export const preparePaymentLedger = (
    */
   const assertAmountConsistent = (paymentBalance, optAmountShape) => {
     if (optAmountShape !== undefined) {
-      fit(paymentBalance, optAmountShape, 'amount');
+      mustMatch(paymentBalance, optAmountShape, 'amount');
     }
   };
 
@@ -481,7 +481,7 @@ export const preparePaymentLedger = (
     },
     mintPayment(newAmount) {
       newAmount = coerce(newAmount);
-      fit(newAmount, amountShape, 'minted amount');
+      mustMatch(newAmount, amountShape, 'minted amount');
       const payment = makePayment();
       initPayment(payment, newAmount, undefined);
       return payment;

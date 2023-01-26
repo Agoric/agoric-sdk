@@ -3,7 +3,7 @@
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import {
-  fit,
+  mustMatch,
   M,
   makeCopyBag,
   makeScalarMapStore,
@@ -77,7 +77,7 @@ const makeAttestationIssuerKit = async (zcf, stakeBrand, lienBridge) => {
   const unwrapLienedAmount = attestationAmount => {
     attestationAmount.brand === attBrand ||
       Fail`The escrowed attestation ${attestationAmount} was not of the attestation brand ${attBrand}`;
-    fit(
+    mustMatch(
       attestationAmount.value.payload,
       harden([[M.string(), M.bigint()]]),
       'attestationAmount',

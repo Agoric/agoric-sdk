@@ -5,7 +5,7 @@
  */
 
 import { WalletName } from '@agoric/internal';
-import { fit, M, makeExo, makeScalarMapStore } from '@agoric/store';
+import { mustMatch, M, makeExo, makeScalarMapStore } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
@@ -159,7 +159,7 @@ export const start = async (zcf, privateArgs) => {
         const actionCapData = JSON.parse(
           canSpend ? obj.spendAction : obj.action,
         );
-        fit(harden(actionCapData), shape.StringCapData);
+        mustMatch(harden(actionCapData), shape.StringCapData);
 
         const wallet = walletsByAddress.get(obj.owner); // or throw
 

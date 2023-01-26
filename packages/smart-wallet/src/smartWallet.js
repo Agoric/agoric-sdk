@@ -8,7 +8,7 @@ import {
   PurseShape,
 } from '@agoric/ertp';
 import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
-import { fit, M, makeScalarMapStore } from '@agoric/store';
+import { mustMatch, M, makeScalarMapStore } from '@agoric/store';
 import {
   defineVirtualExoClassKit,
   makeScalarBigMapStore,
@@ -140,7 +140,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  */
 export const initState = (unique, shared) => {
   // Some validation of inputs.
-  fit(
+  mustMatch(
     unique,
     harden({
       address: M.string(),
@@ -148,7 +148,7 @@ export const initState = (unique, shared) => {
       invitationPurse: PurseShape,
     }),
   );
-  fit(
+  mustMatch(
     shared,
     harden({
       agoricNames: M.eref(M.remotable('agoricNames')),

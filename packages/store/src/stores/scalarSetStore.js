@@ -1,7 +1,11 @@
 import { Far, filterIterable } from '@endo/marshal';
 import { compareRank } from '@endo/marshal/src/rankOrder.js';
 import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
-import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
+import {
+  matches,
+  mustMatch,
+  assertPattern,
+} from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
@@ -100,7 +104,7 @@ export const makeScalarSetStore = (
 
     assertScalarKey(key);
     if (keyShape !== undefined) {
-      fit(key, keyShape, 'setStore key');
+      mustMatch(key, keyShape, 'setStore key');
     }
   };
 

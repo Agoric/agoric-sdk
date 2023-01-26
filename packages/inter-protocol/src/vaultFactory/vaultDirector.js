@@ -4,7 +4,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 import { E } from '@endo/eventual-send';
 
-import { fit, keyEQ, M, makeScalarMapStore } from '@agoric/store';
+import { mustMatch, keyEQ, M, makeScalarMapStore } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountIn,
@@ -368,9 +368,9 @@ const makeVaultDirector = defineDurableExoClassKit(
           zcf,
         } = ephemera;
         const { collateralTypes, mintSeat, rewardPoolSeat } = state;
-        fit(collateralIssuer, M.remotable(), 'collateralIssuer');
+        mustMatch(collateralIssuer, M.remotable(), 'collateralIssuer');
         assertKeywordName(collateralKeyword);
-        fit(initialParamValues, vaultParamPattern, 'initialParamValues');
+        mustMatch(initialParamValues, vaultParamPattern, 'initialParamValues');
         await zcf.saveIssuer(collateralIssuer, collateralKeyword);
         const collateralBrand = zcf.getBrandForIssuer(collateralIssuer);
         // We create only one vault per collateralType.

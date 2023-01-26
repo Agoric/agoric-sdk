@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { fit, keyEQ } from '@agoric/store';
+import { mustMatch, keyEQ } from '@agoric/store';
 import { M } from '@agoric/vat-data';
 
 import {
@@ -45,7 +45,7 @@ const setupFilterGovernance = async (
 
   /** @type {VoteOnOfferFilter} */
   const voteOnFilter = async (voteCounterInstallation, deadline, strings) => {
-    fit(strings, M.arrayOf(M.string()));
+    mustMatch(strings, M.arrayOf(M.string()));
     const { positive, negative } = makeOfferFilterPositions(strings);
 
     /** @type {OfferFilterIssue} */

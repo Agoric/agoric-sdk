@@ -1,5 +1,5 @@
 import '@agoric/governance/exported.js';
-import { makeScalarMapStore, M, makeExo, fit } from '@agoric/store';
+import { makeScalarMapStore, M, makeExo, mustMatch } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
@@ -51,7 +51,7 @@ export const start = async zcf => {
      * @param {ParamChangesOfferArgs} args
      */
     const voteOnParamChanges = (seat, args) => {
-      fit(args, ParamChangesOfferArgsShape);
+      mustMatch(args, ParamChangesOfferArgsShape);
       seat.exit();
 
       const {

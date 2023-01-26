@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { M, fit } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { setup } from '../setupBasicMints.js';
 import {
@@ -289,7 +289,7 @@ test(`zoeHelper with zcf - assertIssuerKeywords`, async t => {
   t.notThrows(() => assertIssuerKeywords(zcf, ['A', 'B']));
 });
 
-test(`zoeHelper with zcf - fit proposal patterns`, async t => {
+test(`zoeHelper with zcf - mustMatch proposal patterns`, async t => {
   const { moola, simoleans } = setup();
 
   const proposal = harden({
@@ -297,21 +297,21 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     give: { B: simoleans(3n) },
   });
 
-  t.throws(() => fit(proposal, harden([])), {
+  t.throws(() => mustMatch(proposal, harden([])), {
     message: /.* - Must be: \[\]/,
   });
   t.throws(
-    () => fit(proposal, M.split({ want: { C: M.any() } })),
+    () => mustMatch(proposal, M.split({ want: { C: M.any() } })),
     {
       message:
         'want: {"A":{"brand":"[Alleged: moola brand]","value":"[20n]"}} - Must have missing properties ["C"]',
     },
     'empty keywordRecord does not match',
   );
-  t.notThrows(() => fit(proposal, M.split({ want: { A: M.any() } })));
-  t.notThrows(() => fit(proposal, M.split({ give: { B: M.any() } })));
+  t.notThrows(() => mustMatch(proposal, M.split({ want: { A: M.any() } })));
+  t.notThrows(() => mustMatch(proposal, M.split({ give: { B: M.any() } })));
   t.throws(
-    () => fit(proposal, M.split({ give: { c: M.any() } })),
+    () => mustMatch(proposal, M.split({ give: { c: M.any() } })),
     {
       message:
         'give: {"B":{"brand":"[Alleged: simoleans brand]","value":"[3n]"}} - Must have missing properties ["c"]',
@@ -319,7 +319,7 @@ test(`zoeHelper with zcf - fit proposal patterns`, async t => {
     'wrong key in keywordRecord does not match',
   );
   t.throws(
-    () => fit(proposal, M.split({ exit: { onDemaind: M.any() } })),
+    () => mustMatch(proposal, M.split({ exit: { onDemaind: M.any() } })),
     {
       message: '{} - Must have missing properties ["exit"]',
     },
@@ -608,7 +608,7 @@ test(`zoeHelper w/zcf - swapExact w/extra payments`, async t => {
   );
 });
 
-test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {
+test(`zcf/zoeHelper - mustMatch proposal pattern w/bad Expected`, async t => {
   const { moola, simoleans } = setup();
 
   const proposal = harden({
@@ -616,7 +616,7 @@ test(`zcf/zoeHelper - fit proposal pattern w/bad Expected`, async t => {
     give: { B: simoleans(3n) },
   });
 
-  t.throws(() => fit(proposal, M.split({ give: { B: moola(3n) } })), {
+  t.throws(() => mustMatch(proposal, M.split({ give: { B: moola(3n) } })), {
     message: /.* - Must be: .*/,
   });
 });

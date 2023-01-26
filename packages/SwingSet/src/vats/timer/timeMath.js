@@ -1,7 +1,7 @@
 // TODO Move this module somewhere more pleasantly reusable
 
 import { Nat } from '@agoric/nat';
-import { fit } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
 
 import { RelativeTimeShape, TimestampShape } from './typeGuards.js';
 
@@ -122,7 +122,7 @@ const toAbs = (ts, brand = undefined) => {
   } else {
     const { timerBrand } = ts;
     agreedTimerBrand(timerBrand, brand);
-    fit(ts, TimestampShape, 'timestamp');
+    mustMatch(ts, TimestampShape, 'timestamp');
     return ts;
   }
 };
@@ -143,7 +143,7 @@ const toRel = (rt, brand = undefined) => {
   } else {
     const { timerBrand } = rt;
     agreedTimerBrand(timerBrand, brand);
-    fit(rt, RelativeTimeShape, 'relativeTime');
+    mustMatch(rt, RelativeTimeShape, 'relativeTime');
     return rt;
   }
 };
