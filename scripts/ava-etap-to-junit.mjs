@@ -19,6 +19,15 @@ const lines = resultsBody.split(/\n/);
 let buffer = [];
 let currentSuite = null;
 
+function runtimeProp() {
+  if (process.env.engine) {
+    console.log(`<properties>`);
+    console.log(
+      `  <property name="dd_tags[runtime.name]" value="${process.env.engine}"></property>`,
+    );
+    console.log(`</properties>`);
+  }
+}
 function processTAP(tapbody) {
   let m;
   // eslint-disable-next-line no-cond-assign
@@ -34,6 +43,7 @@ function processTAP(tapbody) {
           '>',
         ),
       );
+
       let skipped = false;
       let succeeded = true;
       let todo = false;
@@ -100,6 +110,7 @@ for (let i = 0; i < lines.length; i += 1) {
     buffer = [];
     currentSuite = suiteName[1].replace(/@/g, '');
     console.log(`<testsuite name="${currentSuite}">`);
+    runtimeProp();
     i += 1;
     continue;
   }
@@ -110,6 +121,7 @@ if (currentSuite === null) {
   // try to get package name from input path
   currentSuite = `agoric.${resultFile.split(path.sep).slice(-2, -1)[0]}`;
   console.log(`<testsuite name="${currentSuite}">`);
+  runtimeProp();
 }
 
 if (buffer.length > 0) {

@@ -12,7 +12,6 @@ env:
   DD_ENV: ci
   DATADOG_SITE: us3.datadoghq.com
   DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
-
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
@@ -76,6 +75,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -146,6 +146,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -201,6 +202,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -225,6 +227,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -252,6 +255,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -275,6 +279,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -304,6 +309,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -327,6 +333,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
         with:
@@ -352,6 +359,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
@@ -378,6 +386,7 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}
+          echo ::set-output name=engine::${{ matrix.engine }}
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v2
       - uses: ./.github/actions/restore-node
