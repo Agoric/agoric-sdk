@@ -150,28 +150,29 @@ const metricsOf = state => {
 
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {Ephemera['zcf']} zcf
+ * @param {Ephemera['directorParamManager']} directorParamManager
+ * @param {Ephemera['debtMint']} debtMint
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
  */
-export const prepareVaultDirector = baggage => {
+export const prepareVaultDirector = (
+  baggage,
+  zcf,
+  directorParamManager,
+  debtMint,
+  storageNode,
+  marshaller,
+) => {
   const makeVaultDirectorMetricsPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Director metrics',
   );
 
   /**
-   * @param {Ephemera['zcf']} zcf
-   * @param {Ephemera['directorParamManager']} directorParamManager
-   * @param {Ephemera['debtMint']} debtMint
-   * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
    * @returns {State}
    */
-  const initState = (
-    zcf,
-    directorParamManager,
-    debtMint,
-    storageNode,
-    marshaller,
-  ) => {
+  const initState = () => {
     /** For temporary staging of newly minted tokens */
     const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
     const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();

@@ -93,15 +93,16 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf.getTerms().governedParams,
   );
 
-  const makeVaultDirector = prepareVaultDirector(baggage);
-
-  const factory = makeVaultDirector(
+  const makeVaultDirector = prepareVaultDirector(
+    baggage,
     zcf,
     vaultDirectorParamManager,
     debtMint,
     storageNode,
     marshaller,
   );
+
+  const factory = makeVaultDirector();
 
   return harden({
     creatorFacet: factory.creator,
