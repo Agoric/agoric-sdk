@@ -42,8 +42,9 @@ const HolderI = M.interface('holder', {
 /**
  *
  * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
  */
-export const prepareVaultHolder = baggage => {
+export const prepareVaultHolder = (baggage, marshaller) => {
   const makeVaultHolderPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Holder publish kit',
@@ -60,10 +61,9 @@ export const prepareVaultHolder = baggage => {
      *
      * @param {Vault} vault
      * @param {ERef<StorageNode>} storageNode
-     * @param {ERef<Marshaller>} marshaller
      * @returns {State}
      */
-    (vault, storageNode, marshaller) => {
+    (vault, storageNode) => {
       /** @type {PublishKit<VaultNotification>} */
       const { subscriber, publisher } = makeVaultHolderPublishKit();
 
