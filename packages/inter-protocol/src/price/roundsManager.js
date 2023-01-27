@@ -1,7 +1,7 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { isNat, Nat } from '@agoric/nat';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 import {
   defineDurableExoClassKit,
   M,

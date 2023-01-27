@@ -1,7 +1,7 @@
 import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 import './types-ambient.js';
 import './internal-types.js';

@@ -1,4 +1,4 @@
-/// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
+/// <reference path="../../../time/src/types.d.ts" />
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

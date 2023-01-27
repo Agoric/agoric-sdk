@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/eventual-send';
 import { assert } from '@agoric/assert';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 import buildManualTimer from '../../tools/manualTimer.js';
 
 import { setup } from './setupBasicMints.js';

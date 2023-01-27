@@ -1,5 +1,5 @@
 import { M } from '@agoric/store';
-import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { TimestampShape } from '@agoric/time';
 import {
   InstanceHandleShape,
   TimerShape,

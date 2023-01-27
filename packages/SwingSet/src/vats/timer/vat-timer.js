@@ -14,7 +14,7 @@ import {
   prepareSingleton,
 } from '@agoric/vat-data';
 import { makeScalarWeakMapStore } from '@agoric/store';
-import { TimeMath } from './timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
 // delay(), and Notifiers/Iterators (for each actively-waiting

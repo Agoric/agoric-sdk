@@ -1,4 +1,4 @@
-/// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
+/// <reference path="../../../time/src/types.d.ts" />
 
 import { Fail, q } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';

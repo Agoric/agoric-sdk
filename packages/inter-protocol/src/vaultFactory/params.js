@@ -8,7 +8,7 @@ import {
 } from '@agoric/governance';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';

@@ -3,7 +3,7 @@ import { makeScalarMapStore, M, makeExo, mustMatch } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { TimestampShape } from '@agoric/time';
 import { E } from '@endo/far';
 
 /**
