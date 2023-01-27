@@ -65,7 +65,6 @@ const ephemera = {};
  *
  * @typedef {Readonly<{
  * collateralTypes: MapStore<Brand,VaultManager>,
- * metricsPublisher: Publisher<MetricsNotification>
  * metricsSubscriber: Subscriber<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
@@ -130,17 +129,6 @@ const updateShortfallReporter = async (
 };
 
 /**
- * @param {Pick<State, 'collateralTypes' | 'rewardPoolSeat'>} state
- * @returns {MetricsNotification}
- */
-const metricsOf = state => {
-  return harden({
-    collaterals: Array.from(state.collateralTypes.keys()),
-    rewardPoolAllocation: state.rewardPoolSeat.getCurrentAllocation(),
-  });
-};
-
-/**
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
@@ -188,7 +176,6 @@ export const prepareVaultDirector = (
     return {
       collateralTypes,
       managerCounter: 0,
-      metricsPublisher,
       metricsSubscriber,
       mintSeat,
       rewardPoolSeat,
@@ -201,6 +188,16 @@ export const prepareVaultDirector = (
     install: directorParamManager.getLiquidationInstall(),
     terms: directorParamManager.getLiquidationTerms(),
   });
+
+  /**
+   * @returns {MetricsNotification}
+   */
+  const sampleMetrics = () => {
+    return harden({
+      collaterals: Array.from(collateralTypes.keys()),
+      rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
+    });
+  };
 
   /**
    *
@@ -465,8 +462,7 @@ export const prepareVaultDirector = (
           return zcf.getTerms().electionManager;
         },
         updateMetrics() {
-          const { state } = this;
-          return state.metricsPublisher.publish(metricsOf(harden(state)));
+          return metricsPublisher.publish(sampleMetrics());
         },
         // XXX accessors for tests
         getRewardAllocation() {
