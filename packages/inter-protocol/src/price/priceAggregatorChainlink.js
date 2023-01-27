@@ -20,7 +20,14 @@ import { makeRoundsManagerKit } from './roundsManager.js';
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/**
+ * @typedef {import('@agoric/vat-data').Baggage} Baggage
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * // TODO: use RelativeTime, not RelativeTimeValue
+ * @typedef {import('@agoric/time/src/types').RelativeTimeValue} RelativeTimeValue
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
 
 /** @type {(quote: PriceQuote) => PriceDescription} */
 const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];

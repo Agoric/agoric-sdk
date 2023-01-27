@@ -14,6 +14,11 @@ import { ManagerKW as KW } from './constants.js';
 const { details: X } = assert;
 
 const trace = makeTracer('RSM', false);
+/**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
 
 /**
  * @typedef {{

@@ -11,7 +11,7 @@ import './internal-types.js';
 
 /**
  * @typedef {{
- *  timeStep?: RelativeTime,
+ *  timeStep?: import('@agoric/time/src/types').RelativeTime,
  *  eventLoopIteration?: () => Promise<unknown>,
  * }} ZoeManualTimerOptions
  */
@@ -52,7 +52,7 @@ const nolog = (..._args) => {};
  * boundaries
  *
  * @param {(...args: any[]) => void} [log]
- * @param {Timestamp} [startValue=0n]
+ * @param {import('@agoric/time/src/types').Timestamp} [startValue=0n]
  * @param {ZoeManualTimerOptions} [options]
  * @returns {ManualTimer}
  */

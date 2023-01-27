@@ -7,9 +7,6 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '../tokens.js';
 
-// Ambient types (globals)
-import '@agoric/swingset-vat/src/vats/timer/types.js';
-
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Installation<import('@agoric/smart-wallet/src/walletFactory').start>} inst
@@ -31,7 +28,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * }} zoeArgs
  * @param {{
  *   governedParams: Record<string, unknown>,
- *   timer: ERef<TimerService>,
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   contractGovernor: ERef<Installation>,
  *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
  * }} govArgs

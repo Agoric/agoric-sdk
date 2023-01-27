@@ -25,8 +25,8 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Brand<'nat'>} actualBrandOut
  * @property {Array<number>} [priceList]
  * @property {Array<[number, number]>} [tradeList]
- * @property {ERef<TimerService>} timer
- * @property {RelativeTime} [quoteInterval]
+ * @property {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @property {import('@agoric/time/src/types').RelativeTime} [quoteInterval]
  * @property {ERef<Mint<'set'>>} [quoteMint]
  * @property {Amount<'nat'>} [unitAmountIn]
  */
@@ -90,7 +90,8 @@ export async function makeFakePriceAuthority(options) {
   const quoteBrand = await E(quoteIssuer).getBrand();
 
   /**
-   * @type {NotifierRecord<Timestamp>} We need to have a notifier driven by the
+   * @type {NotifierRecord<import('@agoric/time/src/types').Timestamp>}
+   * We need to have a notifier driven by the
    * TimerService because if the timer pushes updates to individual
    * QuoteNotifiers, we have a dependency inversion and the timer can never know
    * when the QuoteNotifier goes away.  (Don't even mention WeakRefs... they're
@@ -109,7 +110,7 @@ export async function makeFakePriceAuthority(options) {
    *
    * @param {Amount<'nat'>} amountIn
    * @param {Brand} brandOut
-   * @param {Timestamp} quoteTime
+   * @param {import('@agoric/time/src/types').Timestamp} quoteTime
    * @returns {PriceQuote}
    */
   function priceInQuote(amountIn, brandOut, quoteTime) {
@@ -141,7 +142,7 @@ export async function makeFakePriceAuthority(options) {
   /**
    * @param {Brand<'nat'>} brandIn
    * @param {Amount<'nat'>} amountOut
-   * @param {Timestamp} quoteTime
+   * @param {import('@agoric/time/src/types').Timestamp} quoteTime
    * @returns {PriceQuote}
    */
   function priceOutQuote(brandIn, amountOut, quoteTime) {
@@ -163,7 +164,7 @@ export async function makeFakePriceAuthority(options) {
   let latestTick;
 
   // clients who are waiting for a specific timestamp
-  /** @type { [when: Timestamp, resolve: (quote: PriceQuote) => void][] } */
+  /** @type { [when: import('@agoric/time/src/types').Timestamp, resolve: (quote: PriceQuote) => void][] } */
   let timeClients = [];
 
   // Check if a comparison request has been satisfied.

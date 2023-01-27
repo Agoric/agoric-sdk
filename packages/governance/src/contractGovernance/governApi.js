@@ -32,7 +32,7 @@ const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
  * @param {Instance} governedInstance
  * @param {ERef<{ [methodName: string]: (...args: any) => unknown }>} governedApis
  * @param {Array<string | symbol>} governedNames names of the governed API methods
- * @param {ERef<TimerService>} timer
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {Promise<ApiGovernor>}
  */

@@ -50,7 +50,7 @@ harden(setUpZoeForTest);
 
 /**
  *
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {ERef<FarZoeKit>} [farZoeKit]
  */
 export const setupAMMBootstrap = async (

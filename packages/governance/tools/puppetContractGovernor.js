@@ -14,7 +14,7 @@ import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 /**
  * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
  * @param {ZCF<{
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,

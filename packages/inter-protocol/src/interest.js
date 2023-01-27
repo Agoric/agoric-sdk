@@ -8,6 +8,11 @@ import {
 import { Fail } from '@agoric/assert';
 import { TimeMath } from '@agoric/time';
 
+/**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ */
+
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;
 const BASIS_POINTS = 10000;
 // single digit APR is less than a basis point per day.

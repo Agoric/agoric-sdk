@@ -133,7 +133,7 @@ harden(makeVaultDirectorParamManager);
  *   minInitialDebt: Amount,
  *   bootstrapPaymentValue: bigint,
  *   priceAuthority: ERef<PriceAuthority>,
- *   timer: ERef<TimerService>,
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   liquidationInstall: Installation,
  *   loanTiming: LoanTiming,

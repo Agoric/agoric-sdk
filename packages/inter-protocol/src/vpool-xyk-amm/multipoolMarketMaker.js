@@ -47,7 +47,7 @@ const trace = makeTracer('XykAmm', false);
 
 /** @typedef {GovernanceTerms< {MinInitialPoolLiquidity: 'amount'} & {ProtocolFee: 'amount'} & {PoolFee: 'amount'}>} AmmGovernanceParams */
 
-/** @typedef {{brands:BrandKeywordRecord,timer:TimerService}} AmmTerms */
+/** @typedef {{brands:BrandKeywordRecord,timer:import('@agoric/time/src/types').TimerService}} AmmTerms */
 
 /**
  * @typedef {Readonly<{
@@ -55,7 +55,7 @@ const trace = makeTracer('XykAmm', false);
  * secondaryBrandToPool: WeakMapStore<Brand,PoolFacets>,
  * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint<'nat'>>,
  * centralBrand: Brand<'nat'>,
- * timer: TimerService,
+ * timer: import('@agoric/time/src/types').TimerService,
  * quoteIssuerKit: IssuerKit<'set'>,
  * params: import('@agoric/governance/src/contractGovernance/typedParamManager').Getters<import('./params.js').AmmParams>,
  * protocolSeat: ZCFSeat,
@@ -509,7 +509,7 @@ export { start };
  * }> & {
  *   brands: { Central: Brand },
  *   issuers: {},
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
  *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
  * }} AMMTerms

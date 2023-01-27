@@ -198,7 +198,7 @@
  *   board: import('@agoric/vats').Board,
  *   bridgeManager: import('../types.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
- *   chainTimerService: TimerService,
+ *   chainTimerService: import('@agoric/time/src/types').TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: unknown,

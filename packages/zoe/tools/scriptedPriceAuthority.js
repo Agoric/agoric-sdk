@@ -63,7 +63,7 @@ export function makeScriptedPriceAuthority(options) {
       );
   }
 
-  /** @type {ERef<Notifier<Timestamp>>} */
+  /** @type {ERef<Notifier<import('@agoric/time/src/types').Timestamp>>} */
   const notifier = E(timer).makeNotifier(0n, quoteInterval);
   const priceAuthorityOptions = harden({
     timer,

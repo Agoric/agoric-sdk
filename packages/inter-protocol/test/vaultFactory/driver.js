@@ -86,7 +86,7 @@ const defaultParamValues = debt =>
  * rates: any,
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * runInitialLiquidity: Amount<'nat'>,
- * timer: TimerService,
+ * timer: import('@agoric/time/src/types').TimerService,
  * zoe: ZoeService,
  * }} DriverContext
  */
@@ -252,7 +252,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
  * @param {import('ava').ExecutionContext<DriverContext>} t
  * @param {Amount} initialPrice
  * @param {Amount} priceBase
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  */
 const setupServices = async (
   t,

@@ -36,7 +36,7 @@ import { prepareVaultDirector } from './vaultDirector.js';
  *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,
- *   timerService: TimerService,
+ *   timerService: import('@agoric/time/src/types').TimerService,
  *   shortfallInvitation: 'invitation',
  * }>} VaultFactoryZCF
  */

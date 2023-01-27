@@ -50,7 +50,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * is a stub until we complete what is now in `priceAggregatorChainlink.js`.
  *
  * @param {ZCF<{
- * timer: TimerService,
+ * timer: import('@agoric/time/src/types').TimerService,
  * POLL_INTERVAL: bigint,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
@@ -120,7 +120,7 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: Timestamp) => Promise<void>=} querier
+   * @property {(timestamp: import('@agoric/time/src/types').Timestamp) => Promise<void>=} querier
    * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
    */
@@ -136,7 +136,7 @@ const start = async (zcf, privateArgs) => {
 
   // Wake every POLL_INTERVAL and run the queriers.
   const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
-  /** @type {TimerWaker} */
+  /** @type {import('@agoric/time/src/types').TimerWaker} */
   const waker = Far('waker', {
     async wake(timestamp) {
       // Run all the queriers.
@@ -159,7 +159,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {object} param0
    * @param {Ratio} [param0.overridePrice]
-   * @param {Timestamp} [param0.timestamp]
+   * @param {import('@agoric/time/src/types').Timestamp} [param0.timestamp]
    */
   const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
@@ -249,7 +249,7 @@ const start = async (zcf, privateArgs) => {
     );
 
   /**
-   * @param {Timestamp} timestamp
+   * @param {import('@agoric/time/src/types').Timestamp} timestamp
    */
   const updateQuote = async timestamp => {
     const submitted = [...oracleRecords.values()].map(
@@ -581,11 +581,11 @@ const start = async (zcf, privateArgs) => {
       const oracle = await E(zoe).getPublicFacet(oracleInstance);
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {Timestamp} */
+      /** @type {import('@agoric/time/src/types').Timestamp} */
       let lastWakeTimestamp = 0n;
 
       /**
-       * @param {Timestamp} timestamp
+       * @param {import('@agoric/time/src/types').Timestamp} timestamp
        */
       record.querier = async timestamp => {
         // Submit the query.
