@@ -26,7 +26,7 @@ import {
   LIQUIDATION_TERMS_KEY,
   MIN_INITIAL_DEBT_KEY,
 } from './params.js';
-import { makeVaultDirector } from './vaultDirector.js';
+import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
@@ -50,8 +50,9 @@ import { makeVaultDirector } from './vaultDirector.js';
  *   storageNode: ERef<StorageNode>,
  *   marshaller: ERef<Marshaller>,
  * }} privateArgs
+ * @param {import('@agoric/ertp').Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const {
     feeMintAccess,
     initialPoserInvitation,
@@ -92,13 +93,16 @@ export const start = async (zcf, privateArgs) => {
     zcf.getTerms().governedParams,
   );
 
-  const factory = makeVaultDirector(
+  const makeVaultDirector = prepareVaultDirector(
+    baggage,
     zcf,
     vaultDirectorParamManager,
     debtMint,
     storageNode,
     marshaller,
   );
+
+  const factory = makeVaultDirector();
 
   return harden({
     creatorFacet: factory.creator,

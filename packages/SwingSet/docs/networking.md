@@ -14,9 +14,9 @@ vaguely like the BSD socket API. This code can:
 The type of connection is limited by the host in which the vat is running. Chain-based machines must operate in a platonic realm of replicated consensus, so their network options are limited to protocols like IBC, which allow one gestalt chain to talk to other chain-like entities. Each such entity is defined by an evolving set of consensus rules, which typically include a current set of validator public keys and a particular history of hashed block identifiers.
 
 **CAVEAT:** IBC uses
-[Connection](https://github.com/cosmos/ibc/tree/HEAD/spec/core/ics-003-connection-semantics/README.md)
+[Connection](https://github.com/cosmos/ibc/tree/main/spec/core/ics-003-connection-semantics/README.md)
 to mean a chain-to-chain hop, and
-[Channel](https://github.com/cosmos/ibc/tree/HEAD/spec/core/ics-004-channel-and-packet-semantics/README.md)
+[Channel](https://github.com/cosmos/ibc/tree/main/spec/core/ics-004-channel-and-packet-semantics/README.md)
 to mean a Port-to-Port pathway through a series of hops.
 This is unfortunate, because IBC "Channels" correspond most precisely to
 TCP "connections", and most discussions of network APIs (including this one,

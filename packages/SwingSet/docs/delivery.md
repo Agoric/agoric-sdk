@@ -282,7 +282,7 @@ be recycled, but it seems less confusing to simply retire the number.
 We use the term `CapData` to describe a piece of data that can include
 capability references. Each reference is known as a `CapSlot`. The data is
 serialized into into our
-[augmented form of JSON](https://github.com/endojs/endo/tree/HEAD/packages/marshal),
+[augmented form of JSON](https://github.com/endojs/endo/tree/master/packages/marshal),
 which uses special `@qclass` keys to represent things not normally expressible
 by JSON (such as `NaN`, `Infinity`, `undefined`, BigInts, and `CapSlot`
 references) or not preserved by normal serialization/deserialization (such as
@@ -511,7 +511,7 @@ trait Syscall {
     fn vatstoreDelete(key: String);
     fn dropImports(refs: &CapSlot[]);
 }
- 
+
 trait Dispatch {
     fn deliver(target: CapSlot, msg: Message);
     fn notify(resolutions: Vec<Resolution>);
@@ -1412,7 +1412,7 @@ struct CommsTables {
     next_promise_id: u32,
     promise_routes: HashMap<VatPromiseID, RemoteID>,
 }
- 
+
 ```
 
 The two routing tables (`object_routes` and `promise_routes`) are used to
@@ -1700,4 +1700,3 @@ which messages must be delivered.
 * What do we need from the relative ordering of a `dispatch.notify()` and the
   queued messages now headed to that resolution? The current design has the
   notify first, then the messages, is that ok?
-
