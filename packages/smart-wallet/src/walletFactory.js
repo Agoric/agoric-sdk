@@ -5,13 +5,13 @@
  */
 
 import { WalletName } from '@agoric/internal';
-import { mustMatch, M, makeExo, makeScalarMapStore } from '@agoric/store';
+import { observeIteration } from '@agoric/notifier';
+import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
-import { observeIteration } from '@agoric/notifier';
 import { E, Far } from '@endo/far';
-import { makeSmartWallet } from './smartWallet.js';
+import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
@@ -201,6 +201,13 @@ export const start = async (zcf, privateArgs) => {
     zoe,
   });
 
+  /**
+   * Holders of this object:
+   * - vat (transitively from holding the wallet factory)
+   * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
+   */
+  const makeSmartWallet = prepareSmartWallet();
+
   const creatorFacet = makeExo(
     'walletFactoryCreator',
     M.interface('walletFactoryCreatorI', {
@@ -227,7 +234,7 @@ export const start = async (zcf, privateArgs) => {
           const wallet = makeSmartWallet(
             harden({ address, bank, invitationPurse }),
             shared,
-          );
+          ).self;
 
           // An await here would deadlock with invitePSMCommitteeMembers
           void publishDepositFacet(address, wallet, namesByAddressAdmin);
