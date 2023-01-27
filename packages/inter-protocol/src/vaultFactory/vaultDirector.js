@@ -48,10 +48,6 @@ const { details: X, quote: q, Fail } = assert;
  * }} MetricsNotification
  *
  * @typedef {Readonly<{
- * collateralTypes: MapStore<Brand,VaultManager>,
- * metricsSubscriber: Subscriber<MetricsNotification>
- * mintSeat: ZCFSeat,
- * rewardPoolSeat: ZCFSeat,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -124,11 +120,7 @@ export const prepareVaultDirector = (
    */
   const initState = () => {
     return {
-      collateralTypes,
       managerCounter: 0,
-      metricsSubscriber,
-      mintSeat,
-      rewardPoolSeat,
     };
   };
 
@@ -429,7 +421,7 @@ export const prepareVaultDirector = (
         },
         // XXX accessors for tests
         getRewardAllocation() {
-          return this.state.rewardPoolSeat.getCurrentAllocation();
+          return rewardPoolSeat.getCurrentAllocation();
         },
       },
       public: {

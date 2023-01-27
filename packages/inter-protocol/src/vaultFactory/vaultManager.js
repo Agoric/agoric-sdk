@@ -98,8 +98,6 @@ const trace = makeTracer('VM', false);
 
 /**
  * @typedef {Readonly<{
- * unsettledVaults: MapStore<string, Vault>,
- * liquidatingVaults: SetStore<Vault>,
  * }>} ImmutableState
  */
 
