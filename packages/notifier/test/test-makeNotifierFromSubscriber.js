@@ -1,6 +1,10 @@
 import { test } from './prepare-test-env-ava.js';
 
-import { makePublishKit, makeNotifierFromSubscriber } from '../src/index.js';
+import {
+  makePublishKit,
+  makeNotifierFromSubscriber,
+  makeNotifierKit,
+} from '../src/index.js';
 import {
   delayByTurns,
   invertPromiseSettlement,
@@ -45,7 +49,7 @@ test('makeNotifierFromSubscriber(finishes) - for-await-of iteration', async t =>
     conclusionMethod: 'finish',
     conclusionValue: 'done',
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
+  const notifier = makeNotifierFromSubscriber(subscriber);
   initialize();
 
   const results = [];
@@ -66,7 +70,7 @@ test('makeNotifierFromSubscriber(finishes) - getUpdateSince', async t => {
     conclusionMethod: 'finish',
     conclusionValue: 'done',
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
+  const notifier = makeNotifierFromSubscriber(subscriber);
   initialize();
 
   const results = [];
@@ -103,7 +107,7 @@ test('makeNotifierFromSubscriber(fails) - for-await-of iteration', async t => {
     conclusionMethod: 'fail',
     conclusionValue: failure,
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
+  const notifier = makeNotifierFromSubscriber(subscriber);
   initialize();
 
   const results = [];
@@ -130,7 +134,7 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
     conclusionMethod: 'fail',
     conclusionValue: failure,
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
+  const notifier = makeNotifierFromSubscriber(subscriber);
   initialize();
 
   const results = [];
@@ -163,12 +167,25 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
   await t.throwsAsync(() => notifier.getUpdateSince(), { is: failure });
 });
 
+test('makeNotifierKit - getUpdateSince timing', async t => {
+  const { notifier, updater } = makeNotifierKit();
+  const results = [];
+  const firstP = notifier.getUpdateSince();
+  void firstP.then(_ => results.push('first'));
+
+  await delayByTurns(2);
+  t.deepEqual(results, [], 'no results yet');
+  updater.updateState('first');
+  await delayByTurns(2);
+  t.deepEqual(results, ['first'], 'first promise should resolve');
+});
+
 test('makeNotifierFromSubscriber - getUpdateSince timing', async t => {
   const { initialize, publishNextBatch, subscriber } = makeBatchPublishKit({
     conclusionMethod: 'finish',
     conclusionValue: 'done',
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
+  const notifier = makeNotifierFromSubscriber(subscriber);
 
   const sequence = [];
   const firstP = notifier.getUpdateSince();
@@ -184,7 +201,7 @@ test('makeNotifierFromSubscriber - getUpdateSince timing', async t => {
   );
 
   initialize();
-  await delayByTurns(4);
+  await delayByTurns(2);
   t.deepEqual(
     sequence,
     ['resolve firstP', 'resolve firstP2'],
@@ -237,8 +254,8 @@ test('makeNotifierFromSubscriber - updateCount validation', async t => {
     conclusionMethod: 'finish',
     conclusionValue: 'done',
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
-  t.throws(() => notifier.getUpdateSince(1n));
+  const notifier = makeNotifierFromSubscriber(subscriber);
+  await t.throwsAsync(() => notifier.getUpdateSince(1n));
 });
 
 test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t => {
@@ -246,7 +263,7 @@ test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t =>
     conclusionMethod: 'finish',
     conclusionValue: 'done',
   });
-  const notifier = await makeNotifierFromSubscriber(subscriber);
+  const notifier = makeNotifierFromSubscriber(subscriber);
   const firstP = notifier.getUpdateSince();
   const firstP2 = notifier.getUpdateSince();
   t.not(firstP, firstP2, 'early getUpdateSince() promises should be distinct');
@@ -331,7 +348,7 @@ test('makeNotifierFromSubscriber - getUpdateSince() result identity', async t =>
   );
 
   const { publisher, subscriber: failureSubscriber } = makePublishKit();
-  const failureNotifier = await makeNotifierFromSubscriber(failureSubscriber);
+  const failureNotifier = makeNotifierFromSubscriber(failureSubscriber);
   publisher.publish('first value');
   ({ updateCount } = await failureNotifier.getUpdateSince());
   const failureP = failureNotifier.getUpdateSince();
