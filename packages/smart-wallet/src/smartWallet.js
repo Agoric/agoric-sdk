@@ -114,9 +114,7 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * - `offerToPublicSubscriberPaths` is precious and closely held.
  * - `purseBalances` is a cache of what we've received from purses. Held so we can publish all balances on change.
  *
- * @typedef {UniqueParams & SharedParams} HeldParams
- *
- * @typedef {Readonly<HeldParams & {
+ * @typedef {Readonly<UniqueParams & {
  *   paymentQueues: MapStore<Brand, Array<import('@endo/far').FarRef<Payment>>>,
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
@@ -131,14 +129,32 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * }} MutableState
  */
 
-export const prepareSmartWallet = () => {
+/**
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {SharedParams} shared
+ */
+export const prepareSmartWallet = (baggage, shared) => {
+  mustMatch(
+    shared,
+    harden({
+      agoricNames: M.eref(M.remotable('agoricNames')),
+      invitationIssuer: IssuerShape,
+      invitationBrand: BrandShape,
+      invitationDisplayInfo: DisplayInfoShape,
+      publicMarshaller: M.remotable('Marshaller'),
+      storageNode: M.eref(M.remotable('StorageNode')),
+      zoe: M.eref(M.remotable('ZoeService')),
+      registry: M.remotable('AssetRegistry'),
+    }),
+  );
+
   /**
    *
    * @param {UniqueParams} unique
-   * @param {SharedParams} shared
    * @returns {State}
    */
-  const initState = (unique, shared) => {
+  const initState = unique => {
     // Some validation of inputs.
     mustMatch(
       unique,
@@ -146,19 +162,6 @@ export const prepareSmartWallet = () => {
         address: M.string(),
         bank: M.eref(M.remotable()),
         invitationPurse: PurseShape,
-      }),
-    );
-    mustMatch(
-      shared,
-      harden({
-        agoricNames: M.eref(M.remotable('agoricNames')),
-        invitationIssuer: IssuerShape,
-        invitationBrand: BrandShape,
-        invitationDisplayInfo: DisplayInfoShape,
-        publicMarshaller: M.remotable('Marshaller'),
-        storageNode: M.eref(M.remotable('StorageNode')),
-        zoe: M.eref(M.remotable('ZoeService')),
-        registry: M.remotable('AssetRegistry'),
       }),
     );
 
@@ -220,7 +223,6 @@ export const prepareSmartWallet = () => {
     };
 
     return {
-      ...shared,
       ...unique,
       ...nonpreciousState,
       ...preciousState,
@@ -291,8 +293,9 @@ export const prepareSmartWallet = () => {
             offerToUsedInvitation,
             offerToPublicSubscriberPaths,
             purseBalances,
-            registry,
           } = this.state;
+          const { registry } = shared;
+
           currentPublishKit.publisher.publish({
             brands: registry.getRegisteredBrands(),
             purses: [...purseBalances.values()].map(a => ({
@@ -407,17 +410,14 @@ export const prepareSmartWallet = () => {
           const { facets } = this;
           const {
             address,
-            zoe,
             brandPurses,
-            invitationBrand,
             invitationPurse,
-            invitationIssuer,
             offerToInvitationMakers,
             offerToUsedInvitation,
             offerToPublicSubscriberPaths,
-            registry,
             updatePublishKit,
           } = this.state;
+          const { invitationBrand, zoe, invitationIssuer, registry } = shared;
 
           const logger = {
             info: (...args) => console.info('wallet', address, ...args),
@@ -488,7 +488,8 @@ export const prepareSmartWallet = () => {
          * @returns {Promise<void>}
          */
         handleBridgeAction(actionCapData, canSpend = false) {
-          const { publicMarshaller } = this.state;
+          const { publicMarshaller } = shared;
+
           const { offers } = this.facets;
 
           return E.when(
@@ -523,12 +524,9 @@ export const prepareSmartWallet = () => {
     },
     {
       finish: ({ state, facets }) => {
-        const {
-          invitationBrand,
-          invitationDisplayInfo,
-          invitationIssuer,
-          invitationPurse,
-        } = state;
+        const { invitationBrand, invitationDisplayInfo, invitationIssuer } =
+          shared;
+        const { invitationPurse } = state;
         const { helper } = facets;
         // Ensure a purse for each issuer
         void helper.addBrand(
@@ -543,7 +541,7 @@ export const prepareSmartWallet = () => {
         );
 
         // Schedule creation of a purse for each registered brand.
-        state.registry.getRegisteredBrands().forEach(desc => {
+        shared.registry.getRegisteredBrands().forEach(desc => {
           // In this sync method, we can't await the outcome.
           void E(state.bank)
             .getPurse(desc.brand)

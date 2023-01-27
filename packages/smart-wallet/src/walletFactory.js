@@ -128,8 +128,9 @@ const makeAssetRegistry = assetPublisher => {
  *   storageNode: ERef<StorageNode>,
  *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
  * }} privateArgs
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
@@ -206,7 +207,7 @@ export const start = async (zcf, privateArgs) => {
    * - vat (transitively from holding the wallet factory)
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
-  const makeSmartWallet = prepareSmartWallet();
+  const makeSmartWallet = prepareSmartWallet(baggage, shared);
 
   const creatorFacet = makeExo(
     'walletFactoryCreator',
@@ -233,7 +234,6 @@ export const start = async (zcf, privateArgs) => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const wallet = makeSmartWallet(
             harden({ address, bank, invitationPurse }),
-            shared,
           ).self;
 
           // An await here would deadlock with invitePSMCommitteeMembers
