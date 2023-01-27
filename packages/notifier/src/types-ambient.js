@@ -18,7 +18,7 @@
 /**
  * @template T
  * @typedef {{
- *   [Symbol.asyncIterator]: () => AsyncIterator<T, T>
+ *   [Symbol.asyncIterator]: () => AsyncIterableIterator<T, T>
  * }} ConsistentAsyncIterable
  * An AsyncIterable that returns the same type as it yields.
  */
@@ -50,19 +50,45 @@
 
 /**
  * @template T
- * @typedef {ERef<PublicationRecord<T>>} PublicationList
- * Will be shared between machines, so it must be safe to expose. But other
- * software should consider it opaque, not depending on its internal structure.
+ * @typedef {Promise<PublicationRecord<T>>} PublicationList
+ * Will be shared between machines, so it must be safe to expose. But software
+ * outside the current package should consider it opaque, not depending on its
+ * internal structure.
  */
 
 /**
  * @template T
- * @typedef {object} Subscriber
+ * @typedef {object} EachTopic
  * @property {(publishCount?: bigint) => PublicationList<T>} subscribeAfter
  * Internally used to get the "current" SharableSubscriptionInternals
  * in order to make a subscription iterator that starts there.
  * The answer is "current" in that it was accurate at some moment between
  * when you asked and when you got the answer.
+ */
+
+/**
+ * @template T
+ * @typedef {object} LatestTopic
+ * @property {(updateCount?: UpdateCount | number) => Promise<UpdateRecord<T>>} getUpdateSince
+ * Returns the current or next update record as of an update count. If the
+ * `updateCount` argument is omitted or differs from the current update count,
+ * return the current record.  Otherwise, after the next state change, the
+ * promise will resolve to the then-current value of the record.  This is an
+ * attenuated form of `subscribeAfter` whose return value does not directly
+ * reference the spine of the PublicationList to ensure clients do not pin
+ * historical PublicationRecords.
+ */
+
+/**
+ * @template T
+ * @typedef {LatestTopic<T>} BaseNotifier This type is deprecated but is still
+ * used externally.
+ */
+
+/**
+ * @template T
+ * @typedef {LatestTopic<T> & EachTopic<T>} Subscriber Allows the consumer
+ * choose to subscribe to each update in a topic or just its latest.
  */
 
 /**
@@ -140,9 +166,8 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
-// TODO: Narrow to exclude number.
 /**
- * @typedef {number | bigint | undefined} UpdateCount a value used to mark the position
+ * @typedef {bigint | undefined} UpdateCount a value used to mark the position
  * in the update stream. For the last state, the updateCount is undefined.
  */
 
@@ -155,27 +180,6 @@
 
 /**
  * @template T
- * @callback GetUpdateSince<T> Can be called repeatedly to get a sequence of
- * update records
- * @param {UpdateCount} [updateCount] return update record as of an update
- * count. If the `updateCount` argument is omitted or differs from the current
- * update count, return the current record.
- * Otherwise, after the next state change, the promise will resolve to the
- * then-current value of the record.
- * @returns {Promise<UpdateRecord<T>>} resolves to the corresponding
- * update
- */
-
-/**
- * @template T
- * @typedef {object} BaseNotifier<T> an object that can be used to get the
- * current state or updates
- * @property {GetUpdateSince<T>} getUpdateSince return update record as of an
- * update count.
- */
-
-/**
- * @template T
  * @typedef {BaseNotifier<T>} NotifierInternals Will be shared between machines,
  * so it must be safe to expose. But other software should avoid depending on
  * its internal structure.
@@ -183,7 +187,7 @@
 
 /**
  * @template T
- * @typedef {BaseNotifier<T> &
+ * @typedef {NotifierInternals<T> &
  *   ConsistentAsyncIterable<T> &
  *   SharableNotifier<T>
  * } Notifier<T> an object that can be used to get the current state or updates
@@ -192,7 +196,7 @@
 /**
  * @template T
  * @typedef {object} SharableNotifier
- * @property {() => ERef<NotifierInternals<T>>} getSharableNotifierInternals
+ * @property {() => Promise<NotifierInternals<T>>} getSharableNotifierInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Notification, do
  * ```js
@@ -214,7 +218,7 @@
 
 /**
  * @template T
- * @typedef {ConsistentAsyncIterable<T> &
+ * @typedef {ConsistentAsyncIterable<T> & EachTopic<T> &
  *   SharableSubscription<T>} Subscription<T>
  * A form of AsyncIterable supporting distributed and multicast usage.
  */
@@ -222,7 +226,7 @@
 /**
  * @template T
  * @typedef {object} SharableSubscription
- * @property {() => ERef<PublicationRecord<T>>} getSharableSubscriptionInternals
+ * @property {() => Promise<EachTopic<T>>} getSharableSubscriptionInternals
  * Used to replicate the multicast values at other sites. To manually create a
  * local representative of a Subscription, do
  * ```js
@@ -231,16 +235,6 @@
  * ```
  * The resulting `localIterable` also supports such remote use, and
  * will return access to the same representation.
- */
-
-/**
- * @template T
- * @typedef {AsyncIterator<T, T> & ConsistentAsyncIterable<T>} SubscriptionIterator<T>
- * an AsyncIterator supporting distributed and multicast usage.
- *
- * @property {() => Subscription<T>} subscribe
- * Get a new subscription whose starting position is this iterator's current
- * position.
  */
 
 /**

@@ -1,23 +1,23 @@
 /// <reference types="ses"/>
 
 import { assert } from '@agoric/assert';
-import { makePromiseKit } from '@endo/promise-kit';
-import { makeAsyncIterableFromNotifier } from './asyncIterableAdaptor.js';
 import { E, Far } from '@endo/far';
 
 import './types-ambient.js';
+import { makePublishKit } from './publish-kit.js';
+import { subscribeLatest } from '../tools/subscribe.js';
 
 /**
  * @template T
  * @param {ERef<BaseNotifier<T> | NotifierInternals<T>>} sharableInternalsP
- * @returns {AsyncIterable<T> & SharableNotifier<T>}
+ * @returns {Notifier<T>}
  */
 export const makeNotifier = sharableInternalsP => {
-  const asyncIterable = makeAsyncIterableFromNotifier(sharableInternalsP);
-
-  /** @type {AsyncIterable<T> & SharableNotifier<T>} */
+  /** @type {Notifier<T>} */
   const notifier = Far('notifier', {
-    ...asyncIterable,
+    ...subscribeLatest(sharableInternalsP),
+    getUpdateSince: async updateCount =>
+      E(sharableInternalsP).getUpdateSince(updateCount),
 
     /**
      * Use this to distribute a Notifier efficiently over the network,
@@ -25,7 +25,7 @@ export const makeNotifier = sharableInternalsP => {
      * `makeNotifier` to it at the new site to get an equivalent local
      * Notifier at that site.
      */
-    getSharableNotifierInternals: () => sharableInternalsP,
+    getSharableNotifierInternals: async () => sharableInternalsP,
     getStoreKey: () => harden({ notifier }),
   });
   return notifier;
@@ -49,37 +49,11 @@ export const makeNotifier = sharableInternalsP => {
  * @returns {NotifierRecord<T>} the notifier and updater
  */
 export const makeNotifierKit = (...initialStateArr) => {
-  /** @type {PromiseRecord<UpdateRecord<T>>|undefined} */
-  let optNextPromiseKit;
-  /** @type {UpdateCount & (number | undefined)} */
-  let currentUpdateCount = 1; // avoid falsy numbers
-  /** @type {UpdateRecord<T>|undefined} */
-  let currentResponse;
+  /** @type {PublishKit<T>} */
+  const { publisher, subscriber } = makePublishKit();
 
-  const hasState = () => currentResponse !== undefined;
-
-  const final = () => currentUpdateCount === undefined;
-
-  const baseNotifier = Far('baseNotifier', {
-    // NaN matches nothing
-    getUpdateSince(updateCount = NaN) {
-      if (
-        hasState() &&
-        (final() ||
-          (currentResponse && currentResponse.updateCount !== updateCount))
-      ) {
-        // If hasState() and either it is final() or it is
-        // not the state of updateCount, return the current state.
-        assert(currentResponse !== undefined);
-        return Promise.resolve(currentResponse);
-      }
-      // otherwise return a promise for the next state.
-      if (!optNextPromiseKit) {
-        optNextPromiseKit = makePromiseKit();
-      }
-      return optNextPromiseKit.promise;
-    },
-  });
+  // eslint-disable-next-line no-use-before-define
+  const baseNotifier = makeNotifierFromSubscriber(subscriber);
 
   const notifier = Far('notifier', {
     ...makeNotifier(baseNotifier),
@@ -87,56 +61,9 @@ export const makeNotifierKit = (...initialStateArr) => {
   });
 
   const updater = Far('updater', {
-    updateState(state) {
-      if (final()) {
-        throw new Error('Cannot update state after termination.');
-      }
-
-      // become hasState() && !final()
-      assert(currentUpdateCount);
-      currentUpdateCount += 1;
-      currentResponse = harden({
-        value: state,
-        updateCount: currentUpdateCount,
-      });
-      if (optNextPromiseKit) {
-        optNextPromiseKit.resolve(currentResponse);
-        optNextPromiseKit = undefined;
-      }
-    },
-
-    finish(finalState) {
-      if (final()) {
-        throw new Error('Cannot finish after termination.');
-      }
-
-      // become hasState() && final()
-      currentUpdateCount = undefined;
-      currentResponse = harden({
-        value: finalState,
-        updateCount: currentUpdateCount,
-      });
-      if (optNextPromiseKit) {
-        optNextPromiseKit.resolve(currentResponse);
-        optNextPromiseKit = undefined;
-      }
-    },
-
-    fail(reason) {
-      if (final()) {
-        throw new Error('Cannot fail after termination.');
-      }
-
-      // become !hasState() && final()
-      currentUpdateCount = undefined;
-      currentResponse = undefined;
-      if (!optNextPromiseKit) {
-        optNextPromiseKit = makePromiseKit();
-      }
-      // Don't trigger Node.js's UnhandledPromiseRejectionWarning
-      optNextPromiseKit.promise.catch(_ => {});
-      optNextPromiseKit.reject(reason);
-    },
+    updateState: state => publisher.publish(state),
+    finish: completion => publisher.finish(completion),
+    fail: reason => publisher.fail(reason),
   });
 
   assert(initialStateArr.length <= 1, 'too many arguments');
@@ -151,78 +78,22 @@ export const makeNotifierKit = (...initialStateArr) => {
 
 /**
  * @template T
- * @param {ERef<Subscriber<T>>} subscriberP
+ * @param {ERef<Subscriber<T>>} subscriber
  * @returns {Notifier<T>}
  */
-export const makeNotifierFromSubscriber = subscriberP => {
-  /** @type {bigint} */
-  let latestInboundCount;
-  /** @type {UpdateCount & bigint} */
-  let latestUpdateCount = 0n;
-  /** @type {WeakMap<PublicationRecord<T>, Promise<UpdateRecord<T>>>} */
-  const outboundResults = new WeakMap();
-
-  /**
-   * @param {PublicationRecord<T>} record
-   * @returns {Promise<UpdateRecord<T>>}
-   */
-  const translateInboundPublicationRecord = record => {
-    // Leverage identity preservation of `record`.
-    const existingOutboundResult = outboundResults.get(record);
-    if (existingOutboundResult) {
-      return existingOutboundResult;
-    }
-
-    latestInboundCount = record.publishCount;
-    latestUpdateCount += 1n;
-    const resultP = E.when(record.head, ({ value, done }) => {
-      if (done) {
-        // Final results have undefined updateCount.
-        return harden({ value, updateCount: undefined });
-      }
-      return harden({ value, updateCount: latestUpdateCount });
-    });
-    outboundResults.set(record, resultP);
-    return resultP;
-  };
-
+export const makeNotifierFromSubscriber = subscriber => {
   /**
    * @template T
    * @type {BaseNotifier<T>}
    */
-  const baseNotifier = Far('baseNotifier', {
-    getUpdateSince(updateCount = -1n) {
-      assert(
-        updateCount <= latestUpdateCount,
-        'argument must be a previously-issued updateCount.',
-      );
-
-      if (updateCount < latestUpdateCount) {
-        // Return the most recent result possible without imposing an unnecessary delay.
-        return E(subscriberP)
-          .subscribeAfter()
-          .then(translateInboundPublicationRecord);
-      }
-
-      // Return a result that follows the last-returned result,
-      // skipping over intermediate results if latestInboundCount
-      // no longer corresponds with the latest result.
-      // Note that unlike notifiers and subscribers respectively returned by
-      // makeNotifierKit and makePublishKit, this result is not guaranteed
-      // to follow the result returned when a non-latest updateCount is provided
-      // (e.g., it is possible for `notifierFromSubscriber.getUpdateSince()` and
-      // `notifierFromSubscriber.getUpdateSince(latestUpdateCount)` to both
-      // settle to the same object `newLatest` where `newLatest.updateCount`
-      // is one greater than `latestUpdateCount`).
-      return E(subscriberP)
-        .subscribeAfter(latestInboundCount)
-        .then(translateInboundPublicationRecord);
-    },
+  const baseNotifier = Far('Notifier', {
+    getUpdateSince: (updateCount = undefined) =>
+      E(subscriber).getUpdateSince(updateCount),
   });
 
   /** @type {Notifier<T>} */
   const notifier = Far('notifier', {
-    ...makeAsyncIterableFromNotifier(baseNotifier),
+    ...subscribeLatest(baseNotifier),
     ...baseNotifier,
 
     /**
@@ -231,7 +102,7 @@ export const makeNotifierFromSubscriber = subscriberP => {
      * `makeNotifier` to it at the new site to get an equivalent local
      * Notifier at that site.
      */
-    getSharableNotifierInternals: () => baseNotifier,
+    getSharableNotifierInternals: async () => baseNotifier,
     getStoreKey: () => harden({ notifier }),
   });
   return notifier;
@@ -317,7 +188,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
   const notifier = Far('notifier', {
     // Don't leak the original asyncIterableP since it may be remote and we also
     // want the same semantics for this exposed iterable and the baseNotifier.
-    ...makeAsyncIterableFromNotifier(baseNotifier),
+    ...subscribeLatest(baseNotifier),
     ...baseNotifier,
 
     /**
@@ -326,7 +197,7 @@ export const makeNotifierFromAsyncIterable = asyncIterableP => {
      * `makeNotifier` to it at the new site to get an equivalent local
      * Notifier at that site.
      */
-    getSharableNotifierInternals: () => baseNotifier,
+    getSharableNotifierInternals: async () => baseNotifier,
     getStoreKey: () => harden({ notifier }),
   });
   return notifier;

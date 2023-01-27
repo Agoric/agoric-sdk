@@ -5,6 +5,23 @@ import '../src/types-ambient.js';
 const sink = () => {};
 
 /**
+ * Create a near iterable that corresponds to a potentially far one.
+ *
+ * @template T
+ * @param {ERef<AsyncIterable<T>>} itP
+ * @returns {AsyncIterable<T>}
+ */
+export const subscribe = itP =>
+  Far('AsyncIterable', {
+    [Symbol.asyncIterator]: () => {
+      const it = E(itP)[Symbol.asyncIterator]();
+      return Far('AsyncIterator', {
+        next: async () => E(it).next(),
+      });
+    },
+  });
+
+/**
  * Asyncronously iterates over the contents of a PublicationList as they appear.
  * This iteration must drop parts of publication records that are no longer
  * needed so they can be garbage collected.
@@ -44,7 +61,6 @@ const makeEachIterator = pubList => {
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
- * @returns {AsyncIterable<T>}
  */
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
@@ -122,7 +138,6 @@ const makeLatestIterator = (topic, localUpdateCount) => {
  *
  * @template T
  * @param {ERef<LatestTopic<T>>} topic
- * @returns {AsyncIterable<T>}
  */
 export const subscribeLatest = topic => {
   const iterable = Far('LatestIterable', {
