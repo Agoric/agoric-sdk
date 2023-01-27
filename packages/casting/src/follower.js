@@ -1,8 +1,8 @@
 import { Far } from '@endo/far';
 import {
   mapAsyncIterable,
-  makeNotifierIterable,
-  makeSubscriptionIterable,
+  subscribeEach,
+  subscribeLatest,
 } from './iterable.js';
 import { makeCosmjsFollower } from './follower-cosmjs.js';
 import { makeCastingSpec } from './casting-spec.js';
@@ -20,10 +20,10 @@ const makeSubscriptionFollower = spec => {
       const { notifier, subscription } = await spec;
       let ai;
       if (notifier) {
-        ai = makeNotifierIterable(notifier);
+        ai = subscribeLatest(notifier);
       } else {
         assert(subscription);
-        ai = makeSubscriptionIterable(subscription);
+        ai = subscribeEach(subscription);
       }
       return mapAsyncIterable(ai, transform);
     },
@@ -32,10 +32,10 @@ const makeSubscriptionFollower = spec => {
       const { notifier, subscription } = await spec;
       let ai;
       if (subscription) {
-        ai = makeSubscriptionIterable(subscription);
+        ai = subscribeEach(subscription);
       } else {
         assert(notifier);
-        ai = makeNotifierIterable(notifier);
+        ai = subscribeLatest(notifier);
       }
       return mapAsyncIterable(ai, transform);
     },
