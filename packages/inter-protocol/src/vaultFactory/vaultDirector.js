@@ -27,6 +27,7 @@ import {
   makeScalarBigMapStore,
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
+import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   CHARGING_PERIOD_KEY,
@@ -43,7 +44,7 @@ const { details: X, quote: q, Fail } = assert;
 /** @typedef {{
  * debtMint: ZCFMint<'nat'>,
  * directorParamManager: import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>,
- * managerBaggages: *,
+ * managerBaggages: import('../contractSupport.js').ChildBaggageManager,
  * marshaller: ERef<Marshaller>,
  * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
  * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
@@ -469,22 +470,22 @@ const makeVaultDirector = defineDurableExoClassKit(
         const { managerBaggages } = ephemera;
         // alleged okay because used only as a diagnostic tag
         const brandName = await E(collateralBrand).getAllegedName();
+        const collateralUnit = await unitAmount(collateralBrand);
+
         const makeVaultManager = managerBaggages.addChild(
           brandName,
           prepareVaultManagerKit,
-        );
-
-        const { self: vm } = makeVaultManager(
           zcf,
           debtMint,
           collateralBrand,
-          zcf.getTerms().priceAuthority,
+          collateralUnit,
           factoryPowers,
-          timerService,
           startTimeStamp,
           managerStorageNode,
-          ephemera.marshaller,
+          marshaller,
         );
+
+        const { self: vm } = makeVaultManager();
         collateralTypes.init(collateralBrand, vm);
         const { install, terms } = getLiquidationConfig(directorParamManager);
         await vm.setupLiquidator(install, terms);

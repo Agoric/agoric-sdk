@@ -78,3 +78,38 @@ test('storage keys', async t => {
     'mockChainStorageRoot.vaultFactory.manager0.vaults.vault2',
   );
 });
+
+test('quotes storage', async t => {
+  const { aeth, run } = t.context;
+  const d = await makeManagerDriver(t);
+
+  const aethManager = await E(d.getVaultDirectorPublic()).getCollateralManager(
+    aeth.brand,
+  );
+
+  const storedNotifier = await E(aethManager).getQuotes();
+  t.is(
+    await E(storedNotifier).getPath(),
+    'mockChainStorageRoot.vaultFactory.manager0.quotes',
+  );
+
+  let latest = await E(storedNotifier).getUpdateSince();
+  t.deepEqual(Object.keys(latest), ['updateCount', 'value']);
+  let quoteValue = latest.value.quoteAmount.value[0];
+  t.deepEqual(quoteValue.amountIn, aeth.make(1n));
+  t.deepEqual(quoteValue.amountOut, run.make(5n));
+
+  const base = 100n; // driver's Aeth base price is 100
+  const highPrice = 1234n;
+  d.setPrice(run.make(highPrice * base));
+  latest = await E(storedNotifier).getUpdateSince();
+  quoteValue = latest.value.quoteAmount.value[0];
+  t.log(
+    quoteValue,
+    quoteValue.amountOut.value,
+    quoteValue.amountIn.value,
+    quoteValue.amountOut.value / quoteValue.amountIn.value,
+  );
+  // @ts-expect-error thinks the left argument is Number
+  t.is(quoteValue.amountOut.value / quoteValue.amountIn.value, highPrice);
+});

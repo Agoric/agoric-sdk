@@ -184,22 +184,23 @@ harden(provideEmptySeat);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @param {string} category diagnostic tag
- * @returns {import('@agoric/vat-data').Baggage}
  */
 export const provideChildBaggage = (baggage, category) => {
   const baggageSet = provideDurableSetStore(baggage, `${category}Set`);
   return Far('childBaggageManager', {
+    // TODO(types) infer args
     /**
-     * @template {(baggage: import('@agoric/ertp').Baggage) => any} M Maker function
+     * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: any) => any} M Maker function
      * @param {string} childName diagnostic tag
      * @param {M} makeChild
+     * @param {...any} nonBaggageArgs
      * @returns {ReturnType<M>}
      */
-    addChild: (childName, makeChild) => {
+    addChild: (childName, makeChild, ...nonBaggageArgs) => {
       const childStore = makeScalarBigMapStore(`${childName}${category}`, {
         durable: true,
       });
-      const result = makeChild(childStore);
+      const result = makeChild(childStore, ...nonBaggageArgs);
       baggageSet.add(childStore);
       return result;
     },
@@ -207,3 +208,4 @@ export const provideChildBaggage = (baggage, category) => {
   });
 };
 harden(provideChildBaggage);
+/** @typedef {ReturnType<typeof provideChildBaggage>} ChildBaggageManager */

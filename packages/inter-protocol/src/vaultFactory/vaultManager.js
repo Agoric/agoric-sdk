@@ -14,13 +14,20 @@
  */
 import '@agoric/zoe/exported.js';
 
-import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
+import {
+  AmountMath,
+  AmountShape,
+  BrandShape,
+  NotifierShape,
+  RatioShape,
+} from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import {
   makeStoredSubscriber,
   observeNotifier,
   SubscriberShape,
   prepareDurablePublishKit,
+  makeStoredNotifier,
 } from '@agoric/notifier';
 import {
   M,
@@ -38,7 +45,6 @@ import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
@@ -134,61 +140,43 @@ const trace = makeTracer('VM', false);
  * using a proxy for the manager object, collateralBrand.
  *
  * @type {(collateralBrand: Brand) => Partial<{
- * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet?,
  * liquidationQueueing: boolean,
  * outstandingQuote: Promise<MutableQuote>?,
- * marshaller: ERef<Marshaller>,
  * periodNotifier: ERef<Notifier<Timestamp>>,
- * priceAuthority: ERef<PriceAuthority>,
  * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
  * storedAssetSubscriber: StoredSubscriber<AssetState>,
  * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
- * storageNode: ERef<StorageNode>,
- * zcf: import('./vaultFactory.js').VaultFactoryZCF,
+ * storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>,
  * }>} */
 const provideEphemera = makeEphemeraProvider(() => ({
   liquidationQueueing: false,
 }));
 
-// XXX type error when destructuring params
-const finish = context => {
-  const {
-    state,
-    facets: { helper },
-  } = context;
-  const { periodNotifier, prioritizedVaults, zcf } = provideEphemera(
-    state.collateralBrand,
-  );
-  assert(periodNotifier && prioritizedVaults && zcf);
-
-  prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
-
-  // push initial state of metrics
-  helper.updateMetrics();
-
-  void observeNotifier(periodNotifier, {
-    updateState: updateTime =>
-      helper
-        .chargeAllVaults(updateTime, state.poolIncrementSeat)
-        .catch(e =>
-          console.error('🚨 vaultManager failed to charge interest', e),
-        ),
-    fail: reason => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${reason}`),
-      );
-    },
-    finish: done => {
-      zcf.shutdownWithFailure(
-        assert.error(X`Unable to continue without a timer: ${done}`),
-      );
-    },
-  });
-};
-
 // TODO move params of initState here because it's a singleton
 // and remove from State what doesn't need to be stored between upgrades
-export const prepareVaultManagerKit = baggage => {
+/**
+ *
+ * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
+ * @param {ZCFMint<'nat'>} debtMint
+ * @param {Brand<'nat'>} collateralBrand
+ * @param {Amount<'nat'>} collateralUnit
+ * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
+ * @param {Timestamp} startTimeStamp
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<Marshaller>} marshaller
+ */
+export const prepareVaultManagerKit = (
+  baggage,
+  zcf,
+  debtMint,
+  collateralBrand,
+  collateralUnit,
+  factoryPowers,
+  startTimeStamp,
+  storageNode,
+  marshaller,
+) => {
   const makeVault = prepareVault(baggage);
   const makeVaultManagerMetricsPublishKit = prepareDurablePublishKit(
     baggage,
@@ -199,30 +187,9 @@ export const prepareVaultManagerKit = baggage => {
     'Vault Manager assets',
   );
 
-  /**
-   * Create state for the Vault Manager kind
-   *
-   * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
-   * @param {ZCFMint<'nat'>} debtMint
-   * @param {Brand<'nat'>} collateralBrand
-   * @param {ERef<PriceAuthority>} priceAuthority
-   * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
-   * @param {ERef<TimerService>} timerService
-   * @param {Timestamp} startTimeStamp
-   * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
-   */
-  const initState = (
-    zcf,
-    debtMint,
-    collateralBrand,
-    priceAuthority,
-    factoryPowers,
-    timerService,
-    startTimeStamp,
-    storageNode,
-    marshaller,
-  ) => {
+  const { priceAuthority, timerService } = zcf.getTerms();
+
+  const initState = () => {
     assert(
       storageNode && marshaller,
       'VaultManager missing storageNode or marshaller',
@@ -298,17 +265,19 @@ export const prepareVaultManagerKit = baggage => {
       marshaller,
     );
 
+    const storedQuotesNotifier = makeStoredNotifier(
+      E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
+      E(storageNode).makeChildNode('quotes'),
+      marshaller,
+    );
+
     const ephemera = provideEphemera(collateralBrand);
     Object.assign(ephemera, {
-      factoryPowers,
-      marshaller,
       periodNotifier,
-      priceAuthority,
       prioritizedVaults: makePrioritizedVaults(unsettledVaults),
       storedAssetSubscriber,
       storedMetricsSubscriber,
-      storageNode,
-      zcf,
+      storedQuotesNotifier,
     });
 
     /** @type {MutableState & ImmutableState} */
@@ -341,6 +310,7 @@ export const prepareVaultManagerKit = baggage => {
         makeVaultInvitation: M.call().returns(M.promise()),
         getSubscriber: M.call().returns(SubscriberShape),
         getMetrics: M.call().returns(SubscriberShape),
+        getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
       }),
       helper: M.interface(
@@ -383,8 +353,6 @@ export const prepareVaultManagerKit = baggage => {
     {
       collateral: {
         makeVaultInvitation() {
-          const { zcf } = provideEphemera(this.state.collateralBrand);
-          assert(zcf);
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
             'MakeVault',
@@ -404,6 +372,13 @@ export const prepareVaultManagerKit = baggage => {
           assert(storedMetricsSubscriber);
           return storedMetricsSubscriber;
         },
+        getQuotes() {
+          const { storedQuotesNotifier } = provideEphemera(
+            this.state.collateralBrand,
+          );
+          assert(storedQuotesNotifier);
+          return storedQuotesNotifier;
+        },
         getCompoundedInterest() {
           return this.state.compoundedInterest;
         },
@@ -420,8 +395,6 @@ export const prepareVaultManagerKit = baggage => {
           trace('chargeAllVaults', state.collateralBrand, {
             updateTime,
           });
-          const { factoryPowers } = provideEphemera(state.collateralBrand);
-          assert(factoryPowers);
 
           const interestRate = factoryPowers
             .getGovernedParams()
@@ -465,9 +438,7 @@ export const prepareVaultManagerKit = baggage => {
 
         assetNotify() {
           const { state } = this;
-          const ephemera = provideEphemera(state.collateralBrand);
-          assert(ephemera.factoryPowers);
-          const interestRate = ephemera.factoryPowers
+          const interestRate = factoryPowers
             .getGovernedParams()
             .getInterestRate();
           /** @type {AssetState} */
@@ -530,7 +501,7 @@ export const prepareVaultManagerKit = baggage => {
           const { prioritizedVaults, ...ephemera } = provideEphemera(
             state.collateralBrand,
           );
-          assert(ephemera.factoryPowers && prioritizedVaults);
+          assert(prioritizedVaults);
           trace('reschedulePriceCheck', state.collateralBrand, ephemera);
           // INTERLOCK: the first time through, start the activity to wait for
           // and process liquidations over time.
@@ -561,7 +532,7 @@ export const prepareVaultManagerKit = baggage => {
           // There is already an activity processing liquidations. It may be
           // waiting for the oracle price to cross a threshold.
           // Update the current in-progress quote.
-          const govParams = ephemera.factoryPowers.getGovernedParams();
+          const govParams = factoryPowers.getGovernedParams();
           const liquidationMargin = govParams.getLiquidationMargin();
           // Safe to call extraneously (lightweight and idempotent)
           updateQuote(
@@ -577,9 +548,7 @@ export const prepareVaultManagerKit = baggage => {
           const { prioritizedVaults, ...ephemera } = provideEphemera(
             state.collateralBrand,
           );
-          assert(ephemera.factoryPowers && ephemera.priceAuthority);
-          const { priceAuthority } = ephemera;
-          const govParams = ephemera.factoryPowers.getGovernedParams();
+          const govParams = factoryPowers.getGovernedParams();
 
           async function* eventualLiquidations() {
             assert(prioritizedVaults);
@@ -643,9 +612,7 @@ export const prepareVaultManagerKit = baggage => {
          */
         liquidateAndRemove([key, vault]) {
           const { state, facets } = this;
-          const { factoryPowers, prioritizedVaults, zcf } = provideEphemera(
-            state.collateralBrand,
-          );
+          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
           assert(factoryPowers && prioritizedVaults && zcf);
           const vaultSeat = vault.getVaultSeat();
           trace('liquidating', state.collateralBrand, vaultSeat.getProposal());
@@ -737,10 +704,7 @@ export const prepareVaultManagerKit = baggage => {
       },
       manager: {
         getGovernedParams() {
-          const { state } = this;
-          const ephemera = provideEphemera(state.collateralBrand);
-          assert(ephemera.factoryPowers);
-          return ephemera.factoryPowers.getGovernedParams();
+          return factoryPowers.getGovernedParams();
         },
 
         /**
@@ -750,10 +714,7 @@ export const prepareVaultManagerKit = baggage => {
           trace('maxDebtFor', collateralAmount);
           const { state } = this;
           const { debtBrand } = state;
-          const { priceAuthority, ...ephemera } = provideEphemera(
-            state.collateralBrand,
-          );
-          assert(ephemera.factoryPowers && priceAuthority);
+          assert(factoryPowers && priceAuthority);
           const quoteAmount = await E(priceAuthority).quoteGiven(
             collateralAmount,
             debtBrand,
@@ -762,7 +723,7 @@ export const prepareVaultManagerKit = baggage => {
           // floorDivide because we want the debt ceiling lower
           return floorDivideBy(
             getAmountOut(quoteAmount),
-            ephemera.factoryPowers.getGovernedParams().getLiquidationMargin(),
+            factoryPowers.getGovernedParams().getLiquidationMargin(),
           );
         },
         /**
@@ -778,8 +739,6 @@ export const prepareVaultManagerKit = baggage => {
         mintAndReallocate(toMint, fee, seat, ...otherSeats) {
           const { state } = this;
           const { totalDebt } = state;
-          const { factoryPowers } = provideEphemera(state.collateralBrand);
-          assert(factoryPowers);
 
           checkDebtLimit(
             factoryPowers.getGovernedParams().getDebtLimit(),
@@ -795,8 +754,6 @@ export const prepareVaultManagerKit = baggage => {
          */
         burnAndRecord(toBurn, seat) {
           const { state } = this;
-          const { factoryPowers } = provideEphemera(state.collateralBrand);
-          assert(factoryPowers);
           trace('burnAndRecord', state.collateralBrand, {
             toBurn,
             totalDebt: state.totalDebt,
@@ -897,9 +854,6 @@ export const prepareVaultManagerKit = baggage => {
       },
       self: {
         getGovernedParams() {
-          const { state } = this;
-          const { factoryPowers } = provideEphemera(state.collateralBrand);
-          assert(factoryPowers);
           return factoryPowers.getGovernedParams();
         },
 
@@ -929,8 +883,7 @@ export const prepareVaultManagerKit = baggage => {
             state,
             facets: { manager },
           } = this;
-          const { marshaller, prioritizedVaults, storageNode, zcf } =
-            provideEphemera(state.collateralBrand);
+          const { prioritizedVaults } = provideEphemera(state.collateralBrand);
           assert(marshaller, 'makeVaultKit missing marshaller');
           assert(prioritizedVaults, 'makeVaultKit missing prioritizedVaults');
           assert(storageNode, 'makeVaultKit missing storageNode');
@@ -1005,15 +958,8 @@ export const prepareVaultManagerKit = baggage => {
          */
         async setupLiquidator(liquidationInstall, liquidationTerms) {
           const { state, facets } = this;
-          const { zcf } = provideEphemera(state.collateralBrand);
-          assert(zcf);
-          const { debtBrand, collateralBrand } = state;
-          const {
-            ammPublicFacet,
-            priceAuthority,
-            reservePublicFacet,
-            timerService,
-          } = zcf.getTerms();
+          const { debtBrand } = state;
+          const { ammPublicFacet, reservePublicFacet } = zcf.getTerms();
           const zoe = zcf.getZoeService();
           const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
           const debtIssuer = zcf.getIssuerForBrand(debtBrand);
@@ -1047,12 +993,9 @@ export const prepareVaultManagerKit = baggage => {
 
         async getCollateralQuote() {
           const { state } = this;
-          const { priceAuthority } = provideEphemera(state.collateralBrand);
-          assert(priceAuthority);
 
           const { debtBrand } = state;
           // get a quote for one unit of the collateral
-          const collateralUnit = await unitAmount(state.collateralBrand);
           return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
         },
 
@@ -1062,7 +1005,41 @@ export const prepareVaultManagerKit = baggage => {
       },
     },
     {
-      finish,
+      // XXX type error when destructuring params
+      finish: context => {
+        const {
+          state,
+          facets: { helper },
+        } = context;
+        const { periodNotifier, prioritizedVaults } = provideEphemera(
+          state.collateralBrand,
+        );
+        assert(periodNotifier && prioritizedVaults && zcf);
+
+        prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
+
+        // push initial state of metrics
+        helper.updateMetrics();
+
+        void observeNotifier(periodNotifier, {
+          updateState: updateTime =>
+            helper
+              .chargeAllVaults(updateTime, state.poolIncrementSeat)
+              .catch(e =>
+                console.error('🚨 vaultManager failed to charge interest', e),
+              ),
+          fail: reason => {
+            zcf.shutdownWithFailure(
+              assert.error(X`Unable to continue without a timer: ${reason}`),
+            );
+          },
+          finish: done => {
+            zcf.shutdownWithFailure(
+              assert.error(X`Unable to continue without a timer: ${done}`),
+            );
+          },
+        });
+      },
     },
   );
 };
