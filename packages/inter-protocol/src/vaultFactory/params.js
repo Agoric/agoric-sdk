@@ -23,6 +23,7 @@ export const LIQUIDATION_INSTALL_KEY = 'LiquidationInstall';
 export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
+export const UI_VERSION_HASH_KEY = 'UiVersionHash';
 
 /**
  * @param {Amount} electorateInvitationAmount
@@ -30,6 +31,7 @@ export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
  * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
  * @param {Amount} minInitialDebt
  * @param {Amount} shortfallInvitationAmount
+ * @param {string} [uiVersionHash]
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
@@ -37,6 +39,7 @@ const makeVaultDirectorParams = (
   liquidationTerms,
   minInitialDebt,
   shortfallInvitationAmount,
+  uiVersionHash = 'UNDECIDED',
 ) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
@@ -59,6 +62,7 @@ const makeVaultDirectorParams = (
       type: ParamTypes.INVITATION,
       value: shortfallInvitationAmount,
     },
+    [UI_VERSION_HASH_KEY]: { type: ParamTypes.STRING, value: uiVersionHash },
   });
 };
 
@@ -94,6 +98,7 @@ export const vaultParamPattern = M.splitRecord({
  * @param {object} liquidationTerms
  * @param {Amount} minInitialDebt
  * @param {Invitation} shortfallInvitation
+ * @param {string} [uiVersionHash]
  */
 const makeVaultDirectorParamManager = async (
   publisherKit,
@@ -103,6 +108,7 @@ const makeVaultDirectorParamManager = async (
   liquidationTerms,
   minInitialDebt,
   shortfallInvitation,
+  uiVersionHash = 'UNDECIDED',
 ) => {
   return makeParamManager(
     publisherKit,
@@ -112,6 +118,7 @@ const makeVaultDirectorParamManager = async (
       [LIQUIDATION_TERMS_KEY]: [ParamTypes.UNKNOWN, liquidationTerms],
       [MIN_INITIAL_DEBT_KEY]: [ParamTypes.AMOUNT, minInitialDebt],
       [SHORTFALL_INVITATION_KEY]: [ParamTypes.INVITATION, shortfallInvitation],
+      [UI_VERSION_HASH_KEY]: [ParamTypes.STRING, uiVersionHash],
     },
     zoe,
   );
@@ -131,6 +138,7 @@ const makeVaultDirectorParamManager = async (
  *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
  *   ammPublicFacet: XYKAMMPublicFacet,
  *   shortfallInvitationAmount: Amount,
+ *   uiVersionHash?: string,
  * }} opts
  */
 const makeGovernedTerms = (
@@ -147,6 +155,7 @@ const makeGovernedTerms = (
     reservePublicFacet,
     timer,
     shortfallInvitationAmount,
+    uiVersionHash = 'UNDECIDED',
   },
 ) => {
   const loanTimingParams = makeParamManagerSync(
@@ -175,6 +184,7 @@ const makeGovernedTerms = (
       liquidationTerms,
       minInitialDebt,
       shortfallInvitationAmount,
+      uiVersionHash,
     ),
     bootstrapPaymentValue,
   });
