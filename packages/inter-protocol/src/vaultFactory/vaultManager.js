@@ -14,7 +14,6 @@
  */
 import '@agoric/zoe/exported.js';
 
-import { Fail } from '@agoric/assert';
 import {
   AmountMath,
   AmountShape,
@@ -121,8 +120,6 @@ const trace = makeTracer('VM', false);
  * }} MutableState
  */
 
-// TODO move params of initState here because it's a singleton
-// and remove from State what doesn't need to be stored between upgrades
 /**
  *
  * @param {import('@agoric/ertp').Baggage} baggage
@@ -221,28 +218,14 @@ export const prepareVaultManagerKit = (
   /** @type {Promise<MutableQuote>?} */
   let outstandingQuote = null;
 
-  let singletonMade = false;
-
+  /**
+   * This class is a singleton kind so initState will be called only once per prepare.
+   */
   const initState = () => {
-    !singletonMade || Fail`vaultManager singleton can be made just once`;
-    singletonMade = true;
-
-    const compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
-    // timestamp of most recent update to interest
-    const latestInterestUpdate = startTimeStamp;
-
-    assetPublisher.publish(
-      harden({
-        compoundedInterest,
-        interestRate: factoryPowers.getGovernedParams().getInterestRate(),
-        latestInterestUpdate,
-      }),
-    );
-
     /** @type {MutableState} */
-    const state = {
-      compoundedInterest,
-      latestInterestUpdate,
+    return {
+      compoundedInterest: makeRatio(100n, debtBrand), // starts at 1.0, no interest
+      latestInterestUpdate: startTimeStamp,
       liquidator: undefined,
       liquidatorInstance: undefined,
       numLiquidationsCompleted: 0,
@@ -254,8 +237,6 @@ export const prepareVaultManagerKit = (
       totalShortfallReceived: zeroDebt,
       vaultCounter: 0,
     };
-
-    return state;
   };
 
   // TODO find a way to not have to indent a level deeper than defineDurableExoClassKit does
@@ -904,12 +885,16 @@ export const prepareVaultManagerKit = (
       },
     },
     {
-      // XXX type error when destructuring params
-      finish: context => {
-        const {
-          facets: { helper },
-        } = context;
+      finish: ({ state, facets: { helper } }) => {
         prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
+
+        assetPublisher.publish(
+          harden({
+            compoundedInterest: state.compoundedInterest,
+            interestRate: factoryPowers.getGovernedParams().getInterestRate(),
+            latestInterestUpdate: state.latestInterestUpdate,
+          }),
+        );
 
         // push initial state of metrics
         helper.updateMetrics();
