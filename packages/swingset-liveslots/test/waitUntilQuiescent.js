@@ -1,5 +1,6 @@
 /* global setImmediate */
 import { makePromiseKit } from '@endo/promise-kit';
+/** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
 
 // This can only be imported from the Start Compartment, where 'setImmediate'
 // is available.

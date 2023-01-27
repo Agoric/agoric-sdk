@@ -18,6 +18,12 @@ import {
   makeVatConsole,
 } from '../supervisor-helper.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
+ * @typedef {import('@agoric/swingset-liveslots').MeterControl} MeterControl
+ */
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 

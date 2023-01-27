@@ -6,6 +6,7 @@ import {
 import '../types-ambient.js';
 
 /**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
  */

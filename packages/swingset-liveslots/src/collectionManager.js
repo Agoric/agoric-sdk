@@ -772,10 +772,12 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {MapStore<K,V>}
    */
-  function makeScalarBigMapStore(
-    label = 'map',
-    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
-  ) {
+  function makeScalarBigMapStore(label = 'map', options = {}) {
+    const {
+      keyShape = M.scalar(),
+      valueShape = undefined,
+      durable = false,
+    } = options;
     const kindName = durable ? 'scalarDurableMapStore' : 'scalarMapStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -814,10 +816,12 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {WeakMapStore<K,V>}
    */
-  function makeScalarBigWeakMapStore(
-    label = 'weakMap',
-    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
-  ) {
+  function makeScalarBigWeakMapStore(label = 'weakMap', options = {}) {
+    const {
+      keyShape = M.scalar(),
+      valueShape = undefined,
+      durable = false,
+    } = options;
     const kindName = durable
       ? 'scalarDurableWeakMapStore'
       : 'scalarWeakMapStore';
@@ -841,10 +845,12 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {SetStore<K>}
    */
-  function makeScalarBigSetStore(
-    label = 'set',
-    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
-  ) {
+  function makeScalarBigSetStore(label = 'set', options = {}) {
+    const {
+      keyShape = M.scalar(),
+      valueShape = undefined,
+      durable = false,
+    } = options;
     const kindName = durable ? 'scalarDurableSetStore' : 'scalarSetStore';
     const [vobjID, collection] = makeCollection(
       label,
@@ -866,10 +872,12 @@ export function makeCollectionManager(
    * @param {StoreOptions=} options
    * @returns {WeakSetStore<K>}
    */
-  function makeScalarBigWeakSetStore(
-    label = 'weakSet',
-    { keyShape = M.scalar(), valueShape = undefined, durable = false } = {},
-  ) {
+  function makeScalarBigWeakSetStore(label = 'weakSet', options = {}) {
+    const {
+      keyShape = M.scalar(),
+      valueShape = undefined,
+      durable = false,
+    } = options;
     const kindName = durable
       ? 'scalarDurableWeakSetStore'
       : 'scalarWeakSetStore';

@@ -30,6 +30,10 @@ import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ */
+
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
     return Number(arg);

@@ -75,10 +75,10 @@ function exerciseMapOperations(t, collectionName, testStore) {
     t.is(testStore.get(item[0]), item[1]);
   }
   for (const item of stuff) {
-    testStore.set(item[0], `${item[1]} updated`);
+    testStore.set(item[0], `${String(item[1])} updated`);
   }
   for (const item of stuff) {
-    t.is(testStore.get(item[0]), `${item[1]} updated`);
+    t.is(testStore.get(item[0]), `${String(item[1])} updated`);
   }
 
   t.truthy(testStore.has(47));
@@ -400,7 +400,7 @@ test('map fail on concurrent modification', t => {
   });
   primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
 
-  let iter = primeMap.keys();
+  let iter = primeMap.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
   // insert behind iterator, still kills iterator
   primeMap.init(1, 'pretty clever, wiseguy');
@@ -409,7 +409,7 @@ test('map fail on concurrent modification', t => {
     m(`keys in store cannot be added to during iteration`),
   );
 
-  iter = primeMap.keys();
+  iter = primeMap.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 1 });
   t.deepEqual(iter.next(), { done: false, value: 2 });
   t.deepEqual(iter.next(), { done: false, value: 3 });
@@ -428,7 +428,7 @@ test('set fail on concurrent modification', t => {
   });
   primes.forEach(v => primeSet.add(v));
 
-  let iter = primeSet.keys();
+  let iter = primeSet.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
   // insert behind iterator, still kills iterator
   primeSet.add(1);
@@ -437,7 +437,7 @@ test('set fail on concurrent modification', t => {
     m(`keys in store cannot be added to during iteration`),
   );
 
-  iter = primeSet.keys();
+  iter = primeSet.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 1 });
   t.deepEqual(iter.next(), { done: false, value: 2 });
   t.deepEqual(iter.next(), { done: false, value: 3 });
@@ -455,7 +455,7 @@ test('map ok with concurrent deletion', t => {
     keyShape: M.number(),
   });
   primes.forEach((v, i) => primeMap.init(v, `${v} is prime #${i + 1}`));
-  const iter = primeMap.keys();
+  const iter = primeMap.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
   primeMap.delete(3);
   // so we skip 3:
@@ -471,7 +471,7 @@ test('set ok with concurrent deletion', t => {
   });
   primes.forEach(v => primeSet.add(v));
 
-  const iter = primeSet.keys();
+  const iter = primeSet.keys()[Symbol.iterator]();
   t.deepEqual(iter.next(), { done: false, value: 2 });
   primeSet.delete(3);
   // so we skip 3:
@@ -760,6 +760,7 @@ test('set queries', t => {
     undefined,
   ]);
 
+  // @ts-expect-error our BigSetStore has .entries, but not the SetStore type
   t.deepEqual(Array.from(testStore.entries(M.number())), [
     [-29, -29],
     [3, 3],

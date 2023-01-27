@@ -951,6 +951,9 @@ export function makeVirtualObjectManager(
     const kindID = `${allocateExportID()}`;
     const kindIDvref = `o+${kindIDID}/${kindID}`;
     const durableKindDescriptor = { kindID, tag, nextInstanceID: 1 };
+    /** @type {import('@agoric/vat-data').DurableKindHandle} */
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
+    // @ts-ignore cast
     const kindHandle = Far('kind', {});
     linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);
     unweakable.add(Object.getPrototypeOf(kindHandle));
@@ -958,7 +961,6 @@ export function makeVirtualObjectManager(
     kindIDToDescriptor.set(kindID, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
     saveDurableKindDescriptor(durableKindDescriptor);
-    // @ts-expect-error cast
     return kindHandle;
   };
 

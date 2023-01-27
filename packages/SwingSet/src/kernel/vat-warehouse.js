@@ -4,6 +4,10 @@ import { isNat } from '@agoric/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ */
+
 /** @param {number} max */
 export const makeLRU = max => {
   /** @type { string[] } */
