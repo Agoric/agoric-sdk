@@ -2,7 +2,7 @@
 
 import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { M } from '@agoric/store';
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 

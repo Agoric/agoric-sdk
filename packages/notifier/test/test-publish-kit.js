@@ -3,7 +3,7 @@
 
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import {
   buildKernelBundles,
   initializeSwingset,
