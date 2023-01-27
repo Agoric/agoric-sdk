@@ -41,22 +41,6 @@ import { provideChildBaggage, provideEmptySeat } from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
 
-/** @typedef {{
- * shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
- * }} Ephemera
- */
-
-/**
- * Ephemera is the state we cannot (or merely need not) keep durably. For
- * vaultDirector we can keep it in module scope because there is (exactly) one
- * vaultDirector per vaultFactory contract and (exactly) one contract per vat.
- *
- * @type {Ephemera}
- */
-// @ts-expect-error not actually full until after initState
-// UNTIL resolution to https://github.com/Agoric/agoric-sdk/issues/5759
-const ephemera = {};
-
 /**
  * @typedef {{
  * collaterals: Brand[],
@@ -89,43 +73,7 @@ const ephemera = {};
  */
 // TODO find a way to type 'finish' with the context (state and facets)
 
-/**
- * @param {ERef<ZoeService>} zoe
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} paramMgr
- * @param {import('../reserve/assetReserve.js').ShortfallReporter} [oldShortfallReporter]
- * @param {ERef<Invitation>} [oldInvitation]
- * @returns {Promise<{
- *   shortfallInvitation: ERef<Invitation>,
- *   shortfallReporter: import('../reserve/assetReserve.js').ShortfallReporter,
- * }>}
- */
-const updateShortfallReporter = async (
-  zoe,
-  paramMgr,
-  oldShortfallReporter,
-  oldInvitation,
-) => {
-  const newInvitation = paramMgr.getInternalParamValue(
-    SHORTFALL_INVITATION_KEY,
-  );
-
-  if (newInvitation !== oldInvitation) {
-    return {
-      // @ts-expect-error cast
-      shortfallReporter: E(E(zoe).offer(newInvitation)).getOfferResult(),
-      shortfallInvitation: newInvitation,
-    };
-  } else {
-    assert(
-      oldShortfallReporter,
-      'updateShortFallReported called with repeat invitation and no oldShortfallReporter',
-    );
-    return {
-      shortfallReporter: oldShortfallReporter,
-      shortfallInvitation: oldInvitation,
-    };
-  }
-};
+const shortfallInvitationKey = 'shortfallInvitation';
 
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
@@ -167,6 +115,9 @@ export const prepareVaultDirector = (
   );
 
   const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
+
+  /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
+  let shortfallReporter;
 
   /**
    * @returns {State}
@@ -219,11 +170,33 @@ export const prepareVaultDirector = (
     });
   };
 
+  const updateShortfallReporter = async () => {
+    const oldInvitation = baggage.has(shortfallInvitationKey)
+      ? baggage.get(shortfallInvitationKey)
+      : undefined;
+    const newInvitation = directorParamManager.getInternalParamValue(
+      SHORTFALL_INVITATION_KEY,
+    );
+
+    if (newInvitation === oldInvitation) {
+      shortfallReporter ||
+        'updateShortFallReported called with repeat invitation and no prior shortfallReporter';
+      return;
+    }
+
+    // Update the values
+    const zoe = zcf.getZoeService();
+    // @ts-expect-error cast
+    shortfallReporter = E(E(zoe).offer(newInvitation)).getOfferResult();
+    if (oldInvitation === undefined) {
+      baggage.init(shortfallInvitationKey, newInvitation);
+    } else {
+      baggage.set(shortfallInvitationKey, newInvitation);
+    }
+  };
+
   const finish = async () => {
-    const { shortfallReporter, shortfallInvitation } =
-      await updateShortfallReporter(zcf.getZoeService(), directorParamManager);
-    ephemera.shortfallReporter = shortfallReporter;
-    baggage.init('shortfallInvitation', shortfallInvitation);
+    await updateShortfallReporter();
   };
 
   /**
@@ -409,13 +382,8 @@ export const prepareVaultDirector = (
               }),
             mintAndReallocate,
             getShortfallReporter: async () => {
-              const reporterKit = await updateShortfallReporter(
-                zcf.getZoeService(),
-                directorParamManager,
-                ephemera.shortfallReporter,
-                baggage.get('shortfallInvitation'),
-              );
-              return reporterKit.shortfallReporter;
+              await updateShortfallReporter();
+              return shortfallReporter;
             },
             burnDebt,
           });
