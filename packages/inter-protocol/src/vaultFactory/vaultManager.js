@@ -14,6 +14,7 @@
  */
 import '@agoric/zoe/exported.js';
 
+import { Fail } from '@agoric/assert';
 import {
   AmountMath,
   AmountShape,
@@ -23,11 +24,11 @@ import {
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import {
+  makeStoredNotifier,
   makeStoredSubscriber,
   observeNotifier,
-  SubscriberShape,
   prepareDurablePublishKit,
-  makeStoredNotifier,
+  SubscriberShape,
 } from '@agoric/notifier';
 import {
   M,
@@ -47,8 +48,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { Fail } from '@agoric/assert';
-import { checkDebtLimit, makeEphemeraProvider } from '../contractSupport.js';
+import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
@@ -123,29 +123,6 @@ const trace = makeTracer('VM', false);
  * }} MutableState
  */
 
-/**
- * Ephemera are the elements of state that cannot (or need not) be durable.
- * When there's a single instance it can be held in a closure, but there are
- * many vault manaager objects. So we hold their ephemera keyed by the durable
- * vault manager.
- *
- * XXX However since we don't have the vault manager object during
- * initState when we hold values that need to go into ephemera, we key for now
- * using a proxy for the manager object, collateralBrand.
- *
- * @type {(collateralBrand: Brand) => Partial<{
- * liquidationQueueing: boolean,
- * outstandingQuote: Promise<MutableQuote>?,
- * periodNotifier: ERef<Notifier<Timestamp>>,
- * prioritizedVaults: ReturnType<typeof makePrioritizedVaults>,
- * storedAssetSubscriber: StoredSubscriber<AssetState>,
- * storedMetricsSubscriber: StoredSubscriber<MetricsNotification>,
- * storedQuotesNotifier: import('@agoric/notifier').StoredNotifier<PriceQuote>,
- * }>} */
-const provideEphemera = makeEphemeraProvider(() => ({
-  liquidationQueueing: false,
-}));
-
 // TODO move params of initState here because it's a singleton
 // and remove from State what doesn't need to be stored between upgrades
 /**
@@ -171,13 +148,27 @@ export const prepareVaultManagerKit = (
   storageNode,
   marshaller,
 ) => {
+  assert(
+    storageNode && marshaller,
+    'VaultManager missing storageNode or marshaller',
+  );
+
+  const { priceAuthority, timerService } = zcf.getTerms();
+
   const makeVault = prepareVault(baggage, marshaller, zcf);
   const makeVaultManagerPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Manager publish kit',
   );
+  const periodNotifier = E(timerService).makeNotifier(
+    0n,
+    factoryPowers.getGovernedParams().getChargingPeriod(),
+  );
 
-  const { priceAuthority, timerService } = zcf.getTerms();
+  /** @type {MapStore<string, Vault>} */
+  const unsettledVaults = makeScalarBigMapStore('orderedVaultStore', {
+    durable: true,
+  });
 
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultManagerPublishKit();
@@ -190,26 +181,37 @@ export const prepareVaultManagerKit = (
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
+  const storedMetricsSubscriber = makeStoredSubscriber(
+    metricsSubscriber,
+    E(storageNode).makeChildNode('metrics'),
+    marshaller,
+  );
+
+  const storedAssetSubscriber = makeStoredSubscriber(
+    assetSubscriber,
+    storageNode,
+    marshaller,
+  );
+
+  const storedQuotesNotifier = makeStoredNotifier(
+    E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
+    E(storageNode).makeChildNode('quotes'),
+    marshaller,
+  );
+
+  const prioritizedVaults = makePrioritizedVaults(unsettledVaults);
+
+  // ephemeral state
+  /** @type {boolean} */
+  let liquidationQueueing = false;
+  /** @type {Promise<MutableQuote>?} */
+  let outstandingQuote = null;
+
   let singletonMade = false;
 
   const initState = () => {
     !singletonMade || Fail`vaultManager singleton can be made just once`;
     singletonMade = true;
-
-    assert(
-      storageNode && marshaller,
-      'VaultManager missing storageNode or marshaller',
-    );
-
-    const periodNotifier = E(timerService).makeNotifier(
-      0n,
-      factoryPowers.getGovernedParams().getChargingPeriod(),
-    );
-
-    /** @type {MapStore<string, Vault>} */
-    const unsettledVaults = makeScalarBigMapStore('orderedVaultStore', {
-      durable: true,
-    });
 
     /**
      * If things are going well, the set will contain at most one Vault. Otherwise
@@ -240,33 +242,6 @@ export const prepareVaultManagerKit = (
         latestInterestUpdate,
       }),
     );
-
-    const storedMetricsSubscriber = makeStoredSubscriber(
-      metricsSubscriber,
-      E(storageNode).makeChildNode('metrics'),
-      marshaller,
-    );
-
-    const storedAssetSubscriber = makeStoredSubscriber(
-      assetSubscriber,
-      storageNode,
-      marshaller,
-    );
-
-    const storedQuotesNotifier = makeStoredNotifier(
-      E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
-      E(storageNode).makeChildNode('quotes'),
-      marshaller,
-    );
-
-    const ephemera = provideEphemera(collateralBrand);
-    Object.assign(ephemera, {
-      periodNotifier,
-      prioritizedVaults: makePrioritizedVaults(unsettledVaults),
-      storedAssetSubscriber,
-      storedMetricsSubscriber,
-      storedQuotesNotifier,
-    });
 
     /** @type {MutableState & ImmutableState} */
     const state = {
@@ -346,18 +321,12 @@ export const prepareVaultManagerKit = (
           );
         },
         getSubscriber() {
-          const { storedAssetSubscriber } = provideEphemera(collateralBrand);
-          assert(storedAssetSubscriber);
           return storedAssetSubscriber;
         },
         getMetrics() {
-          const { storedMetricsSubscriber } = provideEphemera(collateralBrand);
-          assert(storedMetricsSubscriber);
           return storedMetricsSubscriber;
         },
         getQuotes() {
-          const { storedQuotesNotifier } = provideEphemera(collateralBrand);
-          assert(storedQuotesNotifier);
           return storedQuotesNotifier;
         },
         getCompoundedInterest() {
@@ -439,8 +408,6 @@ export const prepareVaultManagerKit = (
 
         updateMetrics() {
           const { state } = this;
-          const { prioritizedVaults } = provideEphemera(collateralBrand);
-          assert(prioritizedVaults);
 
           const retainedCollateral =
             state.retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
@@ -479,24 +446,23 @@ export const prepareVaultManagerKit = (
          */
         async reschedulePriceCheck(highestRatio) {
           const { facets } = this;
-          const { prioritizedVaults, ...ephemera } =
-            provideEphemera(collateralBrand);
-          assert(prioritizedVaults);
-          trace('reschedulePriceCheck', collateralBrand, ephemera);
+          trace('reschedulePriceCheck', collateralBrand, {
+            liquidationQueueing,
+          });
           // INTERLOCK: the first time through, start the activity to wait for
           // and process liquidations over time.
-          if (!ephemera.liquidationQueueing) {
-            ephemera.liquidationQueueing = true;
+          if (!liquidationQueueing) {
+            liquidationQueueing = true;
             // eslint-disable-next-line consistent-return
             return facets.helper
               .processLiquidations()
               .catch(e => console.error('Liquidator failed', e))
               .finally(() => {
-                ephemera.liquidationQueueing = false;
+                liquidationQueueing = false;
               });
           }
 
-          if (!ephemera.outstandingQuote) {
+          if (!outstandingQuote) {
             // the new threshold will be picked up by the next quote request
             return;
           }
@@ -515,22 +481,15 @@ export const prepareVaultManagerKit = (
           const govParams = factoryPowers.getGovernedParams();
           const liquidationMargin = govParams.getLiquidationMargin();
           // Safe to call extraneously (lightweight and idempotent)
-          updateQuote(
-            ephemera.outstandingQuote,
-            highestDebtRatio,
-            liquidationMargin,
-          );
+          updateQuote(outstandingQuote, highestDebtRatio, liquidationMargin);
           trace('update quote', collateralBrand, highestDebtRatio);
         },
 
         async processLiquidations() {
           const { facets } = this;
-          const { prioritizedVaults, ...ephemera } =
-            provideEphemera(collateralBrand);
           const govParams = factoryPowers.getGovernedParams();
 
           async function* eventualLiquidations() {
-            assert(prioritizedVaults);
             while (true) {
               const highestDebtRatio = prioritizedVaults.highestRatio();
               if (!highestDebtRatio) {
@@ -541,7 +500,7 @@ export const prepareVaultManagerKit = (
               // ask to be alerted when the price level falls enough that the vault
               // with the highest debt to collateral ratio will no longer be valued at the
               // liquidationMargin above its debt.
-              ephemera.outstandingQuote = makeQuote(
+              outstandingQuote = makeQuote(
                 priceAuthority,
                 highestDebtRatio,
                 liquidationMargin,
@@ -551,8 +510,8 @@ export const prepareVaultManagerKit = (
               // The rest of this method will not happen until after a quote is received.
               // This may not happen until much later, when the market changes.
               // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await -- loop/nesting to yield each unconditionally
-              const quote = await E(ephemera.outstandingQuote).getPromise();
-              ephemera.outstandingQuote = null;
+              const quote = await E(outstandingQuote).getPromise();
+              outstandingQuote = null;
               // When we receive a quote, we check whether the vault with the highest
               // ratio of debt to collateral is below the liquidationMargin, and if so,
               // we liquidate it. We use ceilDivide to round up because ratios above
@@ -582,8 +541,6 @@ export const prepareVaultManagerKit = (
          */
         liquidateAndRemove([key, vault]) {
           const { state, facets } = this;
-          const { prioritizedVaults } = provideEphemera(collateralBrand);
-          assert(factoryPowers && prioritizedVaults && zcf);
           const vaultSeat = vault.getVaultSeat();
           trace('liquidating', collateralBrand, vaultSeat.getProposal());
 
@@ -731,8 +688,6 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          const { storedAssetSubscriber } = provideEphemera(collateralBrand);
-          assert(storedAssetSubscriber);
           return storedAssetSubscriber;
         },
         getCollateralBrand() {
@@ -764,8 +719,6 @@ export const prepareVaultManagerKit = (
           vault,
         ) {
           const { state, facets } = this;
-          const { prioritizedVaults } = provideEphemera(collateralBrand);
-          assert(prioritizedVaults);
 
           // the manager holds only vaults that can accrue interest or be liquidated;
           // i.e. vaults that have debt. The one exception is at the outset when
@@ -831,8 +784,6 @@ export const prepareVaultManagerKit = (
           const {
             facets: { helper },
           } = this;
-          const { prioritizedVaults } = provideEphemera(collateralBrand);
-          assert(prioritizedVaults);
           const toLiquidate = Array.from(prioritizedVaults.entries()).map(
             entry => helper.liquidateAndRemove(entry),
           );
@@ -848,9 +799,7 @@ export const prepareVaultManagerKit = (
             state,
             facets: { manager },
           } = this;
-          const { prioritizedVaults } = provideEphemera(collateralBrand);
           assert(marshaller, 'makeVaultKit missing marshaller');
-          assert(prioritizedVaults, 'makeVaultKit missing prioritizedVaults');
           assert(storageNode, 'makeVaultKit missing storageNode');
           assert(zcf, 'makeVaultKit missing zcf');
           assertProposalShape(seat, {
@@ -967,10 +916,6 @@ export const prepareVaultManagerKit = (
           state,
           facets: { helper },
         } = context;
-        const { periodNotifier, prioritizedVaults } =
-          provideEphemera(collateralBrand);
-        assert(periodNotifier && prioritizedVaults && zcf);
-
         prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
 
         // push initial state of metrics
