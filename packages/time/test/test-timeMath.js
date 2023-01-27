@@ -5,6 +5,15 @@ import test from 'ava';
 import { Far } from '@endo/far';
 import { TimeMath } from '../src/timeMath.js';
 
+/**
+ * @typedef {import('../src/types').TimerBrand} TimerBrand
+ * @typedef {import('../src/types').Timestamp} Timestamp
+ * @typedef {import('../src/types').RelativeTime} RelativeTime
+ * @typedef {import('../src/types').TimestampValue} TimestampValue
+ * @typedef {import('../src/types').TimeMathType} TimeMathType
+ *
+ */
+
 // TODO Although TimeMath is altogether rather simple, to test it well
 // requires testing an explosion of combinations. It is an ideal case
 // for property-based testing, so we should eventually do that.

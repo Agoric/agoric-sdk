@@ -3,6 +3,10 @@ import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 
+/**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
 // adapted from 'setup()' in test-vat-timer.js
 
 const setup = () => {
