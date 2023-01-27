@@ -10,7 +10,7 @@ prefix to the title and Zoe tag to Zoe-related issues.
 
 ## Installing, Testing
 
-You'll need Node.js version 11 or higher. 
+You'll need Node.js version 11 or higher.
 
 * `git clone https://github.com/Agoric/agoric-sdk/`
 * `cd agoric-sdk`
@@ -62,4 +62,4 @@ To test that that the Zoe update works (in the most basic sense) with cosmic-swi
 
 
 To test that the update works with agoric-cli, follow the instructions
-for [Developing Agoric CLI](https://github.com/Agoric/agoric-sdk/tree/HEAD/packages/agoric-cli#developing-agoric-cli).
+for [Developing Agoric CLI](https://github.com/Agoric/agoric-sdk/tree/master/packages/agoric-cli#developing-agoric-cli).
