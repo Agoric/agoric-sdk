@@ -224,15 +224,14 @@ An iteration’s  *suffix subset* is defined by its *starting point* in the orig
 The values published using the publication define the original iteration. Each subscription has a starting
 point in that iteration and provides access to a suffix subset of that iteration starting at that starting
 point. The initial subscription created by the `makeSubscriptionKit()` call provides the entire iteration.
-Each subscription is a kind of `AsyncIterable` which produces any number of `AsyncIterators`, each of which
-advance independently starting with that subscription's starting point. These `AsyncIterators` 
-are `SubsciptionIterators` which also have a `subscribe()` method. Calling a `SubscriptionIterator`'s `subscribe()` 
-method makes a `Subscription` whose starting point is that `SubscriptionIterator`'s current position at that time.
+Each subscription is an `ForkableAsyncIterable` capable of producing any number of `ForkableAsyncIterator`s,
+each of which advances independently from the subscription's starting point.
+Each produced `ForkableAsyncIterator` is an `AsyncIterator`,
+with a `fork()` method that when called
+produces a new `ForkableAsyncIterator`
+whose starting point is the current position of its parent `ForkableAsyncIterator`.
 
-Neither Alice nor Bob are good starting points to construct an example of `subscribe()` since their code uses
-only a `Subscription`, not a `SubscriptionIterator`. Carol's code is like Bob's except lower level, using 
-a `SubscriptionIterator` directly. Where Bob uses `observeIteration` which takes an `AsyncIterable`, Carol's
-uses the lower level `observeIterator` which takes an `AsyncIterator`.
+Carol's code is like Bob's except lower level, using the `ForkableAsyncIterable` interface directly.
 
 ```js
 import { makePromiseKit } from '@agoric/promiseKit';
@@ -243,7 +242,7 @@ const { promise: afterA, resolve: afterAResolve } = makePromiseKit();
 const observer = harden({
   updateState: val => {
     if (val === 'a') {
-      afterAResolve(subscriptionIterator.subscribe());
+      afterAResolve(subscriptionIterator.fork());
     }
     console.log('non-final', val);
   },
@@ -257,8 +256,8 @@ observeIterator(subscriptionIterator, observer);
 // non-final b
 // finished done
 
-// afterA is an ERef<Subscription> so we use observeIteration on it.
-observeIteration(afterA, observer);
+// afterA is a Promise<ForkableAsyncIterator> so we use observeIterator on it.
+observeIterator(afterA, observer);
 // eventually prints
 // non-final b
 // finished done
