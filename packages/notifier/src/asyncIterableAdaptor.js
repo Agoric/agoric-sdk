@@ -1,12 +1,12 @@
 /// <reference types="ses"/>
 
 import { E } from '@endo/far';
-import { subscribeLatest } from '../tools/subscribe.js';
+import { subscribeLatest } from './subscribe.js';
 
 import './types-ambient.js';
 
 /**
- * @deprecated Use `subscribeLatest` from `@agoric/notifier/tools/subscribe.js` instead.
+ * @deprecated Use `subscribeLatest` from `@agoric/notifier/subscribe.js` instead.
  *
  * Adaptor from a notifierP to an async iterable.
  * The notifierP can be any object that has an eventually invocable

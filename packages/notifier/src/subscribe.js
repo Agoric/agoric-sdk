@@ -1,6 +1,6 @@
 import { E, Far } from '@endo/far';
 
-import '../src/types-ambient.js';
+import './types-ambient.js';
 
 const sink = () => {};
 
@@ -22,13 +22,13 @@ export const subscribe = itP =>
   });
 
 /**
- * Asyncronously iterates over the contents of a PublicationList as they appear.
- * This iteration must drop parts of publication records that are no longer
- * needed so they can be garbage collected.
+ * Asyncronously iterates over the contents of a PublicationRecord chain as they
+ * appear.  This iteration must drop parts of publication records that are no
+ * longer needed so they can be garbage collected.
  *
  * @template T
- * @param {PublicationList<T>} pubList
- * @returns {AsyncIterableIterator<T, T>}
+ * @param {ERef<PublicationRecord<T>>} pubList
+ * @returns {ForkableAsyncIterator<T, T>}
  */
 const makeEachIterator = pubList => {
   // To understand the implementation, start with
@@ -45,7 +45,7 @@ const makeEachIterator = pubList => {
       void E.when(pubList, sink, sink);
       return resultP;
     },
-    [Symbol.asyncIterator]: () => makeEachIterator(pubList),
+    fork: () => makeEachIterator(pubList),
   });
 };
 
@@ -61,6 +61,7 @@ const makeEachIterator = pubList => {
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
+ * @returns {AsyncIterable<T>}
  */
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
@@ -77,55 +78,84 @@ harden(subscribeEach);
  * @template T
  * @param {ERef<LatestTopic<T>>} topic
  * @param {bigint} [localUpdateCount]
- * @returns {AsyncIterableIterator<T>}
+ * @param {IteratorReturnResult<T>} [terminalResult]
+ * @returns {ForkableAsyncIterator<T, T>}
  */
-const makeLatestIterator = (topic, localUpdateCount) => {
-  let myIterationResultP;
+const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
+  let mutex = Promise.resolve();
+
+  /**
+   * Request the next update record from the topic, updating our local state,
+   * and convert it to an iterator result.
+   *
+   * @returns {Promise<IteratorResult<T, T>>}
+   */
+  const maybeRequestNextResult = async () => {
+    if (terminalResult) {
+      // We've reached the end of the topic, just keep returning the last result
+      // without further requests.
+      return terminalResult;
+    }
+
+    // Send the next request now, skipping past intermediate updates.
+    const { value, updateCount } = await E(topic).getUpdateSince(
+      localUpdateCount,
+    );
+    // Make sure the next request is for a fresher value.
+    localUpdateCount = updateCount;
+
+    // Make an IteratorResult.
+    if (updateCount === undefined) {
+      terminalResult = harden({ done: true, value });
+      return terminalResult;
+    }
+    return harden({ done: false, value });
+  };
+
   return Far('LatestIterator', {
-    [Symbol.asyncIterator]: () => makeLatestIterator(topic, localUpdateCount),
-    next: () => {
-      // In this adaptor, once `next()` is called and returns an
-      // unresolved promise, `myIterationResultP`, and until
-      // `myIterationResultP` is fulfilled with an
-      // iteration result, further `next()` calls will return the same
-      // `myIterationResultP` promise again without asking the notifier
-      // for more updates. If there's already an unanswered ask in the
-      // air, all further asks should just reuse the result of that one.
+    fork: () => cloneLatestIterator(topic, localUpdateCount, terminalResult),
+    next: async () => {
+      // In this adaptor, once `next()` is called and returns an unresolved
+      // promise, further `next()` calls will also return unresolved promises
+      // but each call will not trigger another `topic` request until the prior
+      // one has settled.
       //
-      // This reuse behavior is only needed for code that uses the async
-      // iterator protocol explicitly. When this async iterator is
-      // consumed by a for/await/of loop, `next()` will only be called
-      // after the promise for the previous iteration result has
-      // fulfilled. If it fulfills with `done: true`, the for/await/of
-      // loop will never call `next()` again.
+      // This linear queueing behavior is only needed for code that uses the
+      // async iterator protocol explicitly. When this async iterator is
+      // consumed by a for/await/of loop, `next()` will only be called after the
+      // promise for the previous iteration result has fulfilled. If it fulfills
+      // with `done: true`, the for/await/of loop will never call `next()`
+      // again.
       //
       // See
       // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
       // for an explicit use that sends `next()` without waiting.
-      if (myIterationResultP) {
-        return myIterationResultP;
+
+      if (terminalResult) {
+        // We've reached the end of the topic, just keep returning the last
+        // result.
+        return terminalResult;
       }
 
-      myIterationResultP = E(topic)
-        .getUpdateSince(localUpdateCount)
-        .then(({ value, updateCount }) => {
-          localUpdateCount = updateCount;
-          const done = localUpdateCount === undefined;
-          if (!done) {
-            // Once the outstanding question has been answered, stop
-            // using that answer, so any further `next()` questions
-            // cause a new `getUpdateSince` request.
-            //
-            // But only if more answers are expected.  Once the topic
-            // is `done`, that was the last answer so reuse it forever.
-            myIterationResultP = undefined;
-          }
-          return harden({ value, done });
-        });
-      return myIterationResultP;
+      // BEGIN CRITICAL SECTION - synchronously enqueue and reassign `mutex`
+      //
+      // Use `mutex` to ensure that we have no more than a single request in
+      // flight.
+      const nextResult = mutex.then(maybeRequestNextResult);
+      mutex = nextResult.then(sink, sink);
+      // END CRITICAL SECTION
+
+      return nextResult;
     },
   });
 };
+
+/**
+ * @template T
+ * @param {ERef<LatestTopic<T>>} topic
+ * @returns {ForkableAsyncIterator<T, T>}
+ */
+const makeLatestIterator = topic => cloneLatestIterator(topic);
 
 /**
  * Given a local or remote subscriber, returns a local AsyncIterable which
@@ -138,6 +168,7 @@ const makeLatestIterator = (topic, localUpdateCount) => {
  *
  * @template T
  * @param {ERef<LatestTopic<T>>} topic
+ * @returns {AsyncIterable<T>}
  */
 export const subscribeLatest = topic => {
   const iterable = Far('LatestIterable', {

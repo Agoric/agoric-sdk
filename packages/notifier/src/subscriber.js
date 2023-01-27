@@ -1,7 +1,7 @@
 /// <reference types="ses"/>
 
 import { E, Far } from '@endo/far';
-import { subscribeEach } from '../tools/subscribe.js';
+import { subscribeEach } from './subscribe.js';
 import { makePublishKit } from './publish-kit.js';
 
 import { makePinnedHistoryTopic } from './topic.js';
@@ -34,11 +34,16 @@ harden(makeSubscription);
 export { makeSubscription };
 
 /**
- * @deprecated Producers should use `const { publisher, subscriber } =
- * makePublishKit(); const topic = makePinnedHistoryTopic(subscriber);`
+ * @deprecated Producers should use
+ * ```js
+ * const { publisher, subscriber } = makePublishKit();
+ * const topic = makePinnedHistoryTopic(subscriber);
+ * ```
  * instead, which makes it clearer that all the subscriber's history is
- * retained, preventing GC.  Potentially remote consumers use `for await (const
- * value of subscribeEach(topic)) { ... }`.
+ * retained, preventing GC.  Potentially remote consumers use
+ * ```js
+ * for await (const value of subscribeEach(topic)) { ... }
+ * ```
  *
  * Makes a `{ publication, subscription }` for doing lossless efficient
  * distributed pub/sub.

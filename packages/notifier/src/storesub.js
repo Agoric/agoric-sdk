@@ -5,7 +5,7 @@ import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js
 import { observeIteration } from './asyncIterableAdaptor.js';
 import { makePublishKit } from './publish-kit.js';
 import { makeSubscriptionKit } from './subscriber.js';
-import { subscribeEach } from '../tools/subscribe.js';
+import { subscribeEach } from './subscribe.js';
 
 /**
  * NB: does not yet survive upgrade https://github.com/Agoric/agoric-sdk/issues/6893

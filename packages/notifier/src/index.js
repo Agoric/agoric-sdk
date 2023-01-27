@@ -3,7 +3,7 @@ export {
   prepareDurablePublishKit,
   SubscriberShape,
 } from './publish-kit.js';
-export { subscribeEach, subscribeLatest } from '../tools/subscribe.js';
+export { subscribeEach, subscribeLatest } from './subscribe.js';
 export {
   makeNotifier,
   makeNotifierKit,

@@ -5,7 +5,7 @@ import { E, Far } from '@endo/far';
 
 import './types-ambient.js';
 import { makePublishKit } from './publish-kit.js';
-import { subscribeLatest } from '../tools/subscribe.js';
+import { subscribeLatest } from './subscribe.js';
 
 /**
  * @template T
