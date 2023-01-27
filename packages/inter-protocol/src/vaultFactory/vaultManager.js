@@ -99,10 +99,6 @@ const trace = makeTracer('VM', false);
 
 /**
  * @typedef {Readonly<{
- * assetSubscriber: Subscriber<AssetState>,
- * assetPublisher: Publisher<AssetState>,
- * metricsPublisher: Publisher<MetricsNotification>,
- * metricsSubscriber: Subscriber<MetricsNotification>,
  * poolIncrementSeat: ZCFSeat,
  * retainedCollateralSeat: ZCFSeat,
  * unsettledVaults: MapStore<string, Vault>,
@@ -176,16 +172,19 @@ export const prepareVaultManagerKit = (
   marshaller,
 ) => {
   const makeVault = prepareVault(baggage, marshaller, zcf);
-  const makeVaultManagerMetricsPublishKit = prepareDurablePublishKit(
+  const makeVaultManagerPublishKit = prepareDurablePublishKit(
     baggage,
-    'Vault Manager metrics',
-  );
-  const makeVaultManagerAssetsPublishKit = prepareDurablePublishKit(
-    baggage,
-    'Vault Manager assets',
+    'Vault Manager publish kit',
   );
 
   const { priceAuthority, timerService } = zcf.getTerms();
+
+  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
+    makeVaultManagerPublishKit();
+
+  /** @type {PublishKit<AssetState>} */
+  const { publisher: assetPublisher, subscriber: assetSubscriber } =
+    makeVaultManagerPublishKit();
 
   const debtBrand = debtMint.getIssuerRecord().brand;
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
@@ -206,13 +205,6 @@ export const prepareVaultManagerKit = (
       0n,
       factoryPowers.getGovernedParams().getChargingPeriod(),
     );
-
-    const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
-      makeVaultManagerMetricsPublishKit();
-
-    /** @type {PublishKit<AssetState>} */
-    const { publisher: assetPublisher, subscriber: assetSubscriber } =
-      makeVaultManagerAssetsPublishKit();
 
     /** @type {MapStore<string, Vault>} */
     const unsettledVaults = makeScalarBigMapStore('orderedVaultStore', {
@@ -235,10 +227,6 @@ export const prepareVaultManagerKit = (
       retainedCollateralSeat: zcf.makeEmptySeatKit().zcfSeat,
       unsettledVaults,
       liquidatingVaults,
-      assetSubscriber,
-      assetPublisher,
-      metricsPublisher,
-      metricsSubscriber,
     };
 
     const compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
@@ -446,7 +434,7 @@ export const prepareVaultManagerKit = (
             // that doesn't seem to be cost-effective.
             liquidatorInstance: state.liquidatorInstance,
           });
-          state.assetPublisher.publish(payload);
+          assetPublisher.publish(payload);
         },
 
         updateMetrics() {
@@ -471,7 +459,7 @@ export const prepareVaultManagerKit = (
             totalProceedsReceived: state.totalProceedsReceived,
             totalShortfallReceived: state.totalShortfallReceived,
           });
-          state.metricsPublisher.publish(payload);
+          metricsPublisher.publish(payload);
         },
 
         /**
