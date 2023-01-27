@@ -1,10 +1,13 @@
 /// <reference types="ses"/>
 
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { subscribeLatest } from '../tools/subscribe.js';
 
 import './types-ambient.js';
 
 /**
+ * @deprecated Use `subscribeLatest` from `@agoric/notifier/tools/subscribe.js` instead.
+ *
  * Adaptor from a notifierP to an async iterable.
  * The notifierP can be any object that has an eventually invocable
  * `getUpdateSince` method that behaves according to the notifier
@@ -31,61 +34,9 @@ import './types-ambient.js';
  *
  * @template T
  * @param {ERef<BaseNotifier<T>>} notifierP
- * @returns {ConsistentAsyncIterable<T>}
+ * @returns {ForkableAsyncIterable<T>}
  */
-export const makeAsyncIterableFromNotifier = notifierP => {
-  return Far('asyncIterableFromNotifier', {
-    [Symbol.asyncIterator]: () => {
-      /** @type {UpdateCount} */
-      let localUpdateCount;
-      /** @type {Promise<{value: T, done: boolean}> | undefined} */
-      let myIterationResultP;
-      return Far('asyncIteratorFromNotifier', {
-        next: () => {
-          if (!myIterationResultP) {
-            // In this adaptor, once `next()` is called and returns an
-            // unresolved promise, `myIterationResultP`, and until
-            // `myIterationResultP` is fulfilled with an
-            // iteration result, further `next()` calls will return the same
-            // `myIterationResultP` promise again without asking the notifier
-            // for more updates. If there's already an unanswered ask in the
-            // air, all further asks should just reuse the result of that one.
-            //
-            // This reuse behavior is only needed for code that uses the async
-            // iterator protocol explicitly. When this async iterator is
-            // consumed by a for/await/of loop, `next()` will only be called
-            // after the promise for the previous iteration result has
-            // fulfilled. If it fulfills with `done: true`, the for/await/of
-            // loop will never call `next()` again.
-            //
-            // See
-            // https://2ality.com/2016/10/asynchronous-iteration.html#queuing-next()-invocations
-            // for an explicit use that sends `next()` without waiting.
-            myIterationResultP = E(notifierP)
-              .getUpdateSince(localUpdateCount)
-              .then(({ value, updateCount }) => {
-                localUpdateCount = updateCount;
-                const done = localUpdateCount === undefined;
-                if (!done) {
-                  // Once the outstanding question has been answered, stop
-                  // using that answer, so any further `next()` questions
-                  // cause a new `getUpdateSince` request.
-                  //
-                  // But only if more answers are expected. Once the notifier
-                  // is `done`, that was the last answer so reuse it forever.
-                  myIterationResultP = undefined;
-                }
-                return harden({ value, done });
-              });
-          }
-          // xxx hint for type checker
-          assert(myIterationResultP);
-          return myIterationResultP;
-        },
-      });
-    },
-  });
-};
+export const makeAsyncIterableFromNotifier = subscribeLatest;
 
 /**
  * This advances `asyncIteratorP` updating `iterationObserver` with each
@@ -140,16 +91,6 @@ export const observeIteration = (asyncIterableP, iterationObserver) => {
 };
 
 /**
- * @deprecated Use `observeIteration` instead
- * @template T
- * @param {Partial<IterationObserver<T>>} iterationObserver
- * @param {ERef<AsyncIterable<T>>} asyncIterableP
- * @returns {Promise<undefined>}
- */
-export const updateFromIterable = (iterationObserver, asyncIterableP) =>
-  observeIteration(asyncIterableP, iterationObserver);
-
-/**
  * As updates come in from the possibly remote `notifierP`, update
  * the local `updater`. Since the updates come from a notifier, they
  * are lossy, i.e., once a more recent state can be reported, less recent
@@ -161,14 +102,4 @@ export const updateFromIterable = (iterationObserver, asyncIterableP) =>
  * @returns {Promise<undefined>}
  */
 export const observeNotifier = (notifierP, iterationObserver) =>
-  observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);
-
-/**
- * @deprecated Use 'observeNotifier` instead.
- * @template T
- * @param {Partial<IterationObserver<T>>} iterationObserver
- * @param {ERef<Notifier<T>>} notifierP
- * @returns {Promise<undefined>}
- */
-export const updateFromNotifier = (iterationObserver, notifierP) =>
-  observeIteration(makeAsyncIterableFromNotifier(notifierP), iterationObserver);
+  observeIteration(subscribeLatest(notifierP), iterationObserver);

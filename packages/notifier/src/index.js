@@ -1,10 +1,9 @@
 export {
   makePublishKit,
-  subscribeEach,
-  subscribeLatest,
   prepareDurablePublishKit,
   SubscriberShape,
 } from './publish-kit.js';
+export { subscribeEach, subscribeLatest } from '../tools/subscribe.js';
 export {
   makeNotifier,
   makeNotifierKit,
@@ -16,10 +15,7 @@ export {
   observeNotifier,
   observeIterator,
   observeIteration,
-  // deprecated. Consider not reexporting
-  updateFromIterable,
-  updateFromNotifier,
-  // Consider deprecating or not reexporting
+  // deprecated, consider removing
   makeAsyncIterableFromNotifier,
 } from './asyncIterableAdaptor.js';
 export * from './storesub.js';

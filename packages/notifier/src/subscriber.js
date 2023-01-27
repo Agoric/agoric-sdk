@@ -1,30 +1,30 @@
-/* eslint-disable no-underscore-dangle */
 /// <reference types="ses"/>
 
 import { E, Far } from '@endo/far';
+import { subscribeEach } from '../tools/subscribe.js';
 import { makePublishKit } from './publish-kit.js';
+
+import { makePinnedHistoryTopic } from './topic.js';
 
 import './types-ambient.js';
 
 /**
  * @template T
- * @param {ERef<PublicationRecord<T>>} sharableInternalsP
+ * @param {ERef<EachTopic<T>>} topic
  * @returns {Subscription<T>}
  */
-const makeSubscription = sharableInternalsP => {
+const makeSubscription = topic => {
   const subscription = Far('Subscription', {
-    // eslint-disable-next-line no-use-before-define
-    [Symbol.asyncIterator]: () => makeSubscriptionIterator(sharableInternalsP),
+    ...subscribeEach(topic),
+    subscribeAfter: async publishCount => E(topic).subscribeAfter(publishCount),
 
     /**
      * Use this to distribute a Subscription efficiently over the network,
      * by obtaining this from the Subscription to be replicated, and applying
      * `makeSubscription` to it at the new site to get an equivalent local
      * Subscription at that site.
-     *
-     * @returns {ERef<PublicationRecord<T>>}
      */
-    getSharableSubscriptionInternals: () => sharableInternalsP,
+    getSharableSubscriptionInternals: async () => topic,
 
     getStoreKey: () => harden({ subscription }),
   });
@@ -34,26 +34,12 @@ harden(makeSubscription);
 export { makeSubscription };
 
 /**
- * @template T
- * @param {ERef<PublicationRecord<T>>} tailP
- * @returns {SubscriptionIterator<T>}
- */
-const makeSubscriptionIterator = tailP => {
-  // To understand the implementation, start with
-  // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  return Far('SubscriptionIterator', {
-    subscribe: () => makeSubscription(tailP),
-    [Symbol.asyncIterator]: () => makeSubscriptionIterator(tailP),
-    next: () => {
-      const resultP = E.get(tailP).head;
-      tailP = E.get(tailP).tail;
-      Promise.resolve(tailP).catch(() => {}); // suppress unhandled rejection error
-      return resultP;
-    },
-  });
-};
-
-/**
+ * @deprecated Producers should use `const { publisher, subscriber } =
+ * makePublishKit(); const topic = makePinnedHistoryTopic(subscriber);`
+ * instead, which makes it clearer that all the subscriber's history is
+ * retained, preventing GC.  Potentially remote consumers use `for await (const
+ * value of subscribeEach(topic)) { ... }`.
+ *
  * Makes a `{ publication, subscription }` for doing lossless efficient
  * distributed pub/sub.
  *
@@ -64,16 +50,16 @@ const makeSubscriptionKit = () => {
   const { publisher, subscriber } = makePublishKit();
 
   // The publish kit subscriber is prefix-lossy, so making *this* subscriber completely
-  // lossless requires eager consumption of the former.
-  // Such losslessness inhibits GC, which is why we're moving away from it.
-  const pubList = subscriber.subscribeAfter();
-  const subscription = makeSubscription(pubList);
+  // lossless from initialisation requires pinning the former's history.
+
+  const pinnedHistoryTopic = makePinnedHistoryTopic(subscriber);
+  const subscription = makeSubscription(pinnedHistoryTopic);
 
   /** @type {IterationObserver<T>} */
   const publication = Far('publication', {
-    updateState: publisher.publish,
-    finish: publisher.finish,
-    fail: publisher.fail,
+    updateState: nonFinalValue => publisher.publish(nonFinalValue),
+    finish: completion => publisher.finish(completion),
+    fail: reason => publisher.fail(reason),
   });
 
   return harden({ publication, subscription });

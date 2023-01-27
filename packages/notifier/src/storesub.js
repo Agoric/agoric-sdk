@@ -3,8 +3,9 @@ import { makeMarshal } from '@endo/marshal';
 import { assertAllDefined } from '@agoric/internal';
 import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { observeIteration } from './asyncIterableAdaptor.js';
-import { makePublishKit, subscribeEach } from './publish-kit.js';
+import { makePublishKit } from './publish-kit.js';
 import { makeSubscriptionKit } from './subscriber.js';
+import { subscribeEach } from '../tools/subscribe.js';
 
 /**
  * NB: does not yet survive upgrade https://github.com/Agoric/agoric-sdk/issues/6893
@@ -14,13 +15,15 @@ import { makeSubscriptionKit } from './subscriber.js';
  * @param {(v: T) => void} consumeValue
  */
 export const forEachPublicationRecord = async (subscriber, consumeValue) => {
-  const iteratorP = E(subscribeEach(subscriber))[Symbol.asyncIterator]();
+  // We open-code the for-await-of implementation rather than using that syntax
+  // directly because we want to run the consumer on the done value as well.
+  const iterator = subscribeEach(subscriber)[Symbol.asyncIterator]();
 
   let finished = false;
   while (!finished) {
     // Allow nested awaits (in loop) because it's safe for each to run in a turn
     // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
-    const { value, done } = await E(iteratorP).next();
+    const { value, done } = await iterator.next();
     // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
     await consumeValue(value);
     finished = !!done;
@@ -62,6 +65,7 @@ export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
   /** @type {StoredSubscriber<T>} */
   const storesub = Far('StoredSubscriber', {
     subscribeAfter: publishCount => subscriber.subscribeAfter(publishCount),
+    getUpdateSince: updateCount => subscriber.getUpdateSince(updateCount),
     getPath: () => E(storageNode).getPath(),
     getStoreKey: () => E(storageNode).getStoreKey(),
     getUnserializer: () => unserializer,
@@ -145,9 +149,9 @@ export const makeStoredSubscription = (
       return harden({ ...storeKey, subscription });
     },
     getUnserializer: () => unserializer,
-    getSharableSubscriptionInternals:
-      subscription.getSharableSubscriptionInternals,
-    [Symbol.asyncIterator]: subscription[Symbol.asyncIterator],
+    getSharableSubscriptionInternals: () =>
+      subscription.getSharableSubscriptionInternals(),
+    [Symbol.asyncIterator]: () => subscription[Symbol.asyncIterator](),
   });
   return storesub;
 };
