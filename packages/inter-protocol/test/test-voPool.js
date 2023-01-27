@@ -1,4 +1,7 @@
-import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
+import { runVOTest } from '@agoric/swingset-liveslots/tools/vo-test-harness.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManager } from '@agoric/governance';
