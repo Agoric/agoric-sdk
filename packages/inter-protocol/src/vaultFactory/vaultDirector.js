@@ -156,9 +156,9 @@ export const prepareVaultDirector = (
   storageNode,
   marshaller,
 ) => {
-  const makeVaultDirectorMetricsPublishKit = prepareDurablePublishKit(
+  const makeVaultDirectorPublishKit = prepareDurablePublishKit(
     baggage,
-    'Vault Director metrics',
+    'Vault Director publish kit',
   );
   /** For temporary staging of newly minted tokens */
   const mintSeat = provideEmptySeat(zcf, baggage, 'mintSeat');
@@ -171,7 +171,7 @@ export const prepareVaultDirector = (
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
-    makeVaultDirectorMetricsPublishKit();
+    makeVaultDirectorPublishKit();
 
   const storedMetricsSubscriber = makeStoredSubscriber(
     metricsSubscriber,
