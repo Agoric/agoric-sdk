@@ -68,7 +68,6 @@ const ephemera = {};
  * metricsSubscriber: Subscriber<MetricsNotification>
  * mintSeat: ZCFSeat,
  * rewardPoolSeat: ZCFSeat,
- * shortfallInvitation: Invitation,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -179,8 +178,6 @@ export const prepareVaultDirector = (
       metricsSubscriber,
       mintSeat,
       rewardPoolSeat,
-      // @ts-expect-error defined in finish()
-      shortfallInvitation: undefined,
     };
   };
 
@@ -222,13 +219,11 @@ export const prepareVaultDirector = (
     });
   };
 
-  /** @param {MethodContext} context */
-  const finish = async ({ state }) => {
+  const finish = async () => {
     const { shortfallReporter, shortfallInvitation } =
       await updateShortfallReporter(zcf.getZoeService(), directorParamManager);
     ephemera.shortfallReporter = shortfallReporter;
-    // @ts-expect-error write once
-    state.shortfallInvitation = shortfallInvitation;
+    baggage.init('shortfallInvitation', shortfallInvitation);
   };
 
   /**
@@ -418,7 +413,7 @@ export const prepareVaultDirector = (
                 zcf.getZoeService(),
                 directorParamManager,
                 ephemera.shortfallReporter,
-                state.shortfallInvitation,
+                baggage.get('shortfallInvitation'),
               );
               return reporterKit.shortfallReporter;
             },
