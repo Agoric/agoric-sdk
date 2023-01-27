@@ -1,5 +1,3 @@
-// TODO Move this module somewhere more pleasantly reusable
-
 import { Nat } from '@agoric/nat';
 import { mustMatch } from '@agoric/store';
 
