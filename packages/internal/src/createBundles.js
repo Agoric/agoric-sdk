@@ -3,10 +3,10 @@ import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
 
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
-const require = createRequire(import.meta.url);
+const req = createRequire(import.meta.url);
 
 export const createBundlesFromAbsolute = async sourceBundles => {
-  const prog = require.resolve(`.bin/${BUNDLE_SOURCE_PROGRAM}`);
+  const prog = req.resolve(`.bin/${BUNDLE_SOURCE_PROGRAM}`);
 
   const cacheToArgs = new Map();
   for (const [srcPath, bundlePath] of sourceBundles) {
@@ -35,7 +35,7 @@ export const createBundlesFromAbsolute = async sourceBundles => {
 
 export const createBundles = async (sourceBundles, dirname = '.') => {
   const absBundleSources = sourceBundles.map(([srcPath, bundlePath]) => [
-    require.resolve(srcPath, { paths: [dirname] }),
+    req.resolve(srcPath, { paths: [dirname] }),
     path.resolve(dirname, bundlePath),
   ]);
   return createBundlesFromAbsolute(absBundleSources);
@@ -54,7 +54,7 @@ export const extractProposalBundles = async (
       const install = async (src, bundleName) => {
         if (bundleName) {
           const bundlePath = path.resolve(home, bundleName);
-          const srcPath = require.resolve(src, { paths: [home] });
+          const srcPath = req.resolve(src, { paths: [home] });
           if (toBundle.has(bundlePath)) {
             const oldSrc = toBundle.get(bundlePath);
             assert.equal(

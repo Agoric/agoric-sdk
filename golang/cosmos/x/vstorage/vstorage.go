@@ -57,8 +57,19 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 	// Handle generic paths.
 	switch msg.Method {
 	case "set":
-		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
 		keeper.SetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
+		return "true", nil
+
+		// We sometimes need to use LegacySetStorageAndNotify, because the solo's
+		// chain-cosmos-sdk.js consumes legacy events for `mailbox.*` and `egress.*`.
+		// FIXME: Use just "set" and remove this case.
+	case "legacySet":
+		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
+		keeper.LegacySetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
+		return "true", nil
+
+	case "setWithoutNotify":
+		keeper.SetStorage(cctx.Context, msg.Path, msg.Value)
 		return "true", nil
 
 	case "append":

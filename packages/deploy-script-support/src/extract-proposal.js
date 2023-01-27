@@ -10,7 +10,7 @@ import {
 
 const { details: X, Fail } = assert;
 
-const require = createRequire(import.meta.url);
+const req = createRequire(import.meta.url);
 
 /**
  * @param {(ModuleSpecifier | FilePath)[]} paths
@@ -21,7 +21,7 @@ const pathResolve = (...paths) => {
   const fileName = paths.pop();
   assert(fileName, '>=1 paths required');
   try {
-    return require.resolve(fileName, {
+    return req.resolve(fileName, {
       paths,
     });
   } catch (e) {

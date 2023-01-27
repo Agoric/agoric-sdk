@@ -1,6 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far, makeMarshal } from '@endo/marshal';
 import { assertAllDefined } from '@agoric/internal';
+import { makeMarshallToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { observeIteration } from './asyncIterableAdaptor.js';
 import { makePublishKit, subscribeEach } from './publish-kit.js';
 import { makeSubscriptionKit } from './subscriber.js';
@@ -42,16 +43,10 @@ const forEachPublicationRecord = async (subscriber, consumeValue) => {
 export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
   assertAllDefined({ subscriber, storageNode, marshaller });
 
-  const storeValue = value =>
-    E(marshaller)
-      .serialize(value)
-      .then(serialized => {
-        const encoded = JSON.stringify(serialized);
-        return E(storageNode).setValue(encoded);
-      });
+  const marshallToStorage = makeMarshallToStorage(storageNode, marshaller);
 
   // Start publishing the source.
-  forEachPublicationRecord(subscriber, storeValue).catch(err => {
+  forEachPublicationRecord(subscriber, marshallToStorage).catch(err => {
     // TODO: How should we handle and/or surface this failure?
     // https://github.com/Agoric/agoric-sdk/pull/5766#discussion_r922498088
     console.error('StoredSubscriber failed to iterate', err);

@@ -5,7 +5,7 @@ export const IssuerShape = M.remotable('Issuer');
 export const PaymentShape = M.remotable('Payment');
 export const PurseShape = M.remotable('Purse');
 export const DepositFacetShape = M.remotable('DepositFacet');
-const NotifierShape = M.remotable('Notifier');
+export const NotifierShape = M.remotable('Notifier');
 export const MintShape = M.remotable('Mint');
 
 /**
