@@ -170,7 +170,7 @@ export const VaultI = M.interface('Vault', {
  * @param {ZCF} zcf
  */
 export const prepareVault = (baggage, marshaller, zcf) => {
-  const makeVaultKit = prepareVaultKit(baggage);
+  const makeVaultKit = prepareVaultKit(baggage, marshaller);
 
   const maker = prepareExoClassKit(
     baggage,
@@ -590,7 +590,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const vaultKit = makeVaultKit(
             self,
             state.storageNode,
-            marshaller,
             state.manager.getAssetSubscriber(),
           );
           state.outerUpdater = vaultKit.vaultUpdater;
@@ -665,7 +664,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const vaultKit = makeVaultKit(
             self,
             storageNode,
-            marshaller,
             state.manager.getAssetSubscriber(),
           );
           state.outerUpdater = vaultKit.vaultUpdater;

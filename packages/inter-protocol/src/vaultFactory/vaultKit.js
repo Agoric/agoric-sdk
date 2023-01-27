@@ -5,21 +5,25 @@ import { prepareVaultHolder } from './vaultHolder.js';
 
 const trace = makeTracer('IV');
 
-export const prepareVaultKit = baggage => {
+/**
+ *
+ * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
+ */
+export const prepareVaultKit = (baggage, marshaller) => {
   trace('prepareVaultKit', baggage);
 
-  const makeVaultHolder = prepareVaultHolder(baggage);
+  const makeVaultHolder = prepareVaultHolder(baggage, marshaller);
   /**
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
    * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
-  const makeVaultKit = (vault, storageNode, marshaller, assetSubscriber) => {
+  const makeVaultKit = (vault, storageNode, assetSubscriber) => {
     trace('prepareVaultKit makeVaultKit');
-    const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
+    const { holder, helper } = makeVaultHolder(vault, storageNode);
     const vaultKit = harden({
       publicSubscribers: {
         // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
