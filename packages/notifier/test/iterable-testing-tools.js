@@ -1,4 +1,4 @@
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { observeIteration, observeIterator } from '../src/index.js';
 

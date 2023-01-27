@@ -39,7 +39,7 @@
     "@agoric/swingset-vat": "^0.30.2",
     "@agoric/swing-store": "^0.8.1",
     "@agoric/vat-data": "^0.4.3",
-    "@endo/eventual-send": "^0.16.8",
+    "@endo/far": "^0.2.14",
     "@endo/marshal": "^0.8.1",
     "@endo/promise-kit": "^0.2.52"
   },

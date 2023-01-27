@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
-import { Far, makeMarshal } from '@endo/marshal';
+import { E, Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { assertAllDefined } from '@agoric/internal';
 import { makeMarshallToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { observeIteration } from './asyncIterableAdaptor.js';

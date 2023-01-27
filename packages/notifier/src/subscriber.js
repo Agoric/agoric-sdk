@@ -1,8 +1,7 @@
 /* eslint-disable no-underscore-dangle */
 /// <reference types="ses"/>
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { makePublishKit } from './publish-kit.js';
 
 import './types-ambient.js';
