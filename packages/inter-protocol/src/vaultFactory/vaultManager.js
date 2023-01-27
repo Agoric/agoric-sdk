@@ -32,9 +32,9 @@ import {
 } from '@agoric/notifier';
 import {
   M,
-  makeScalarBigMapStore,
-  makeScalarBigSetStore,
   prepareExoClassKit,
+  provideDurableMapStore,
+  provideDurableSetStore,
 } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -48,7 +48,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { checkDebtLimit } from '../contractSupport.js';
+import { checkDebtLimit, provideEmptySeat } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
@@ -99,8 +99,6 @@ const trace = makeTracer('VM', false);
 
 /**
  * @typedef {Readonly<{
- * poolIncrementSeat: ZCFSeat,
- * retainedCollateralSeat: ZCFSeat,
  * unsettledVaults: MapStore<string, Vault>,
  * liquidatingVaults: SetStore<Vault>,
  * }>} ImmutableState
@@ -165,17 +163,15 @@ export const prepareVaultManagerKit = (
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
-  /** @type {MapStore<string, Vault>} */
-  const unsettledVaults = makeScalarBigMapStore('orderedVaultStore', {
-    durable: true,
-  });
-
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultManagerPublishKit();
 
   /** @type {PublishKit<AssetState>} */
   const { publisher: assetPublisher, subscriber: assetSubscriber } =
     makeVaultManagerPublishKit();
+
+  /** @type {MapStore<string, Vault>} */
+  const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
 
   const debtBrand = debtMint.getIssuerRecord().brand;
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
@@ -201,6 +197,24 @@ export const prepareVaultManagerKit = (
 
   const prioritizedVaults = makePrioritizedVaults(unsettledVaults);
 
+  /**
+   * If things are going well, the set will contain at most one Vault. Otherwise
+   * failures remain and are available to be repaired via contract upgrade.
+   *
+   * @type {SetStore<Vault>}
+   */
+  const liquidatingVaults = provideDurableSetStore(
+    baggage,
+    'liquidatingVaults',
+  );
+
+  const poolIncrementSeat = provideEmptySeat(zcf, baggage, 'pool increment');
+  const retainedCollateralSeat = provideEmptySeat(
+    zcf,
+    baggage,
+    'retained collateral',
+  );
+
   // ephemeral state
   /** @type {boolean} */
   let liquidationQueueing = false;
@@ -212,24 +226,6 @@ export const prepareVaultManagerKit = (
   const initState = () => {
     !singletonMade || Fail`vaultManager singleton can be made just once`;
     singletonMade = true;
-
-    /**
-     * If things are going well, the set will contain at most one Vault. Otherwise
-     * failures remain and are available to be repaired via contract upgrade.
-     *
-     * @type {SetStore<Vault>}
-     */
-    const liquidatingVaults = makeScalarBigSetStore('liquidatingVaults', {
-      durable: true,
-    });
-
-    /** @type {ImmutableState} */
-    const fixed = {
-      poolIncrementSeat: zcf.makeEmptySeatKit().zcfSeat,
-      retainedCollateralSeat: zcf.makeEmptySeatKit().zcfSeat,
-      unsettledVaults,
-      liquidatingVaults,
-    };
 
     const compoundedInterest = makeRatio(100n, debtBrand); // starts at 1.0, no interest
     // timestamp of most recent update to interest
@@ -243,9 +239,8 @@ export const prepareVaultManagerKit = (
       }),
     );
 
-    /** @type {MutableState & ImmutableState} */
+    /** @type {MutableState} */
     const state = {
-      ...fixed,
       compoundedInterest,
       latestInterestUpdate,
       liquidator: undefined,
@@ -338,9 +333,8 @@ export const prepareVaultManagerKit = (
       helper: {
         /**
          * @param {Timestamp} updateTime
-         * @param {ZCFSeat} poolIncrementSeat
          */
-        async chargeAllVaults(updateTime, poolIncrementSeat) {
+        async chargeAllVaults(updateTime) {
           const { state, facets } = this;
           trace('chargeAllVaults', collateralBrand, {
             updateTime,
@@ -410,12 +404,12 @@ export const prepareVaultManagerKit = (
           const { state } = this;
 
           const retainedCollateral =
-            state.retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
+            retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
             AmountMath.makeEmpty(collateralBrand, 'nat');
           /** @type {MetricsNotification} */
           const payload = harden({
             numActiveVaults: prioritizedVaults.getCount(),
-            numLiquidatingVaults: state.liquidatingVaults.getSize(),
+            numLiquidatingVaults: liquidatingVaults.getSize(),
             totalCollateral: state.totalCollateral,
             totalDebt: state.totalDebt,
             retainedCollateral,
@@ -549,7 +543,7 @@ export const prepareVaultManagerKit = (
           // Start liquidation (vaultState: LIQUIDATING)
           const liquidator = state.liquidator;
           assert(liquidator);
-          state.liquidatingVaults.add(vault);
+          liquidatingVaults.add(vault);
           prioritizedVaults.removeVault(key);
 
           return liquidate(
@@ -577,7 +571,7 @@ export const prepareVaultManagerKit = (
                 // it. We could hold it until it crosses some threshold, then sell it
                 // to the AMM, or we could transfer it to the reserve. At least it's
                 // visible in the accounting.
-                atomicTransfer(zcf, vaultSeat, state.retainedCollateralSeat, {
+                atomicTransfer(zcf, vaultSeat, retainedCollateralSeat, {
                   Collateral: collateralPost,
                 });
               }
@@ -606,7 +600,7 @@ export const prepareVaultManagerKit = (
                 state.totalShortfallReceived,
                 accounting.shortfall,
               );
-              state.liquidatingVaults.delete(vault);
+              liquidatingVaults.delete(vault);
               trace('liquidated', collateralBrand);
               state.numLiquidationsCompleted += 1;
               facets.helper.updateMetrics();
@@ -913,7 +907,6 @@ export const prepareVaultManagerKit = (
       // XXX type error when destructuring params
       finish: context => {
         const {
-          state,
           facets: { helper },
         } = context;
         prioritizedVaults.onHigherHighest(() => helper.reschedulePriceCheck());
@@ -924,7 +917,7 @@ export const prepareVaultManagerKit = (
         void observeNotifier(periodNotifier, {
           updateState: updateTime =>
             helper
-              .chargeAllVaults(updateTime, state.poolIncrementSeat)
+              .chargeAllVaults(updateTime)
               .catch(e =>
                 console.error('🚨 vaultManager failed to charge interest', e),
               ),
