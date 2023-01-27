@@ -55,13 +55,11 @@ export {
 } from './patterns/patternMatchers.js';
 
 export {
-  defendPrototype,
-  defendPrototypeKit,
   initEmpty,
   defineExoClass,
   defineExoClassKit,
   makeExo,
-} from './patterns/interface-tools.js';
+} from './patterns/exo-makers.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
@@ -74,3 +72,10 @@ export { provideLazy } from './stores/store-utils.js';
 
 export { makeLegacyMap } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
+
+// Deprecated to import these from `@agoric/store`. Inport insteas from
+// `@agoric/store/exo-tools.js`
+export {
+  defendPrototype,
+  defendPrototypeKit,
+} from './patterns/interface-tools.js';
