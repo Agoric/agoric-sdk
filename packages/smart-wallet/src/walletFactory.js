@@ -198,7 +198,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     invitationIssuer,
     publicMarshaller,
     registry,
-    storageNode,
     zoe,
   });
 
@@ -232,9 +231,10 @@ export const start = async (zcf, privateArgs, baggage) => {
         /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
-          const wallet = makeSmartWallet(
-            harden({ address, bank, invitationPurse }),
-          ).self;
+          const walletStorageNode = E(storageNode).makeChildNode(address);
+          const wallet = await makeSmartWallet(
+            harden({ address, walletStorageNode, bank, invitationPurse }),
+          );
 
           // An await here would deadlock with invitePSMCommitteeMembers
           void publishDepositFacet(address, wallet, namesByAddressAdmin);

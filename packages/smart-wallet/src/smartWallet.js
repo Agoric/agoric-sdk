@@ -7,12 +7,11 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
-import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
-import {
-  defineVirtualExoClassKit,
-  makeScalarBigMapStore,
-} from '@agoric/vat-data';
+import { observeNotifier, prepareDurablePublishKit } from '@agoric/notifier';
+import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { M, mustMatch } from '@agoric/store';
+import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
+import { makeEphemeralStoredSubscriberProvider } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
@@ -91,7 +90,9 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {{
  *   address: string,
  *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
+ *   currentStorageNode: StorageNode,
  *   invitationPurse: Purse<'set'>,
+ *   walletStorageNode: StorageNode,
  * }} UniqueParams
  *
  * @typedef {{
@@ -104,7 +105,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   invitationBrand: Brand<'set'>,
  *   invitationDisplayInfo: DisplayInfo,
  *   publicMarshaller: Marshaller,
- *   storageNode: ERef<StorageNode>,
  *   zoe: ERef<ZoeService>,
  * }} SharedParams
  *
@@ -121,13 +121,15 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   offerToUsedInvitation: MapStore<string, Amount>,
  *   brandPurses: MapStore<Brand, RemotePurse>,
  *   purseBalances: MapStore<RemotePurse, Amount>,
- *   updatePublishKit: StoredPublishKit<UpdateRecord>,
- *   currentPublishKit: StoredPublishKit<CurrentWalletRecord>,
+ *   updatePublishKit: PublishKit<UpdateRecord>,
+ *   currentPublishKit: PublishKit<CurrentWalletRecord>,
  * }>} ImmutableState
  *
  * @typedef {{
  * }} MutableState
  */
+
+const provideStoredSubscriber = makeEphemeralStoredSubscriberProvider();
 
 /**
  *
@@ -143,10 +145,14 @@ export const prepareSmartWallet = (baggage, shared) => {
       invitationBrand: BrandShape,
       invitationDisplayInfo: DisplayInfoShape,
       publicMarshaller: M.remotable('Marshaller'),
-      storageNode: M.eref(M.remotable('StorageNode')),
       zoe: M.eref(M.remotable('ZoeService')),
       registry: M.remotable('AssetRegistry'),
     }),
+  );
+
+  const makeWalletPublishKit = prepareDurablePublishKit(
+    baggage,
+    'Smart Wallet publish kit',
   );
 
   /**
@@ -162,18 +168,10 @@ export const prepareSmartWallet = (baggage, shared) => {
         address: M.string(),
         bank: M.eref(M.remotable()),
         invitationPurse: PurseShape,
+        currentStorageNode: M.eref(StorageNodeShape),
+        walletStorageNode: M.eref(StorageNodeShape),
       }),
     );
-
-    // NB: state size must not grow monotonically
-    // This is the node that UIs subscribe to for everything they need.
-    // e.g. agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
-    const myWalletStorageNode = E(shared.storageNode).makeChildNode(
-      unique.address,
-    );
-
-    const myCurrentStateStorageNode =
-      E(myWalletStorageNode).makeChildNode('current');
 
     const preciousState = {
       // Private purses. This assumes one purse per brand, which will be valid in MN-1 but not always.
@@ -206,20 +204,32 @@ export const prepareSmartWallet = (baggage, shared) => {
       ),
     };
 
+    /** @type {PublishKit<UpdateRecord>} */
+    const updatePublishKit = makeWalletPublishKit();
+    // NB: state size must not grow monotonically
+    // This is the node that UIs subscribe to for everything they need.
+    // e.g. agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
+    /** @type {PublishKit<CurrentWalletRecord>} */
+    const currentPublishKit = makeWalletPublishKit();
+
+    const { walletStorageNode } = unique;
+
+    // TODO(turadg) replace StoredSubscriber with TopicMeta
+    // Start the publishing loops
+    provideStoredSubscriber(
+      updatePublishKit.subscriber,
+      walletStorageNode,
+      shared.publicMarshaller,
+    );
+
     const nonpreciousState = {
       // What purses have reported on construction and by getCurrentAmountNotifier updates.
-      purseBalances: makeScalarMapStore(),
-      /** @type {StoredPublishKit<UpdateRecord>} */
-      updatePublishKit: harden(
-        makeStoredPublishKit(myWalletStorageNode, shared.publicMarshaller),
-      ),
-      /** @type {StoredPublishKit<CurrentWalletRecord>} */
-      currentPublishKit: harden(
-        makeStoredPublishKit(
-          myCurrentStateStorageNode,
-          shared.publicMarshaller,
-        ),
-      ),
+      purseBalances: makeScalarBigMapStore('purse balances', { durable: true }),
+      /** @type {PublishKit<UpdateRecord>} */
+      updatePublishKit,
+      /** @type {PublishKit<CurrentWalletRecord>} */
+      currentPublishKit,
+      walletStorageNode,
     };
 
     return {
@@ -261,7 +271,13 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
   };
 
-  return defineVirtualExoClassKit(
+  /**
+   * Make the durable object to return, but taking some parameters that are awaited by a wrapping function.
+   * This is necessary because the class kit construction helpers, `initState` and `finish` run synchronously
+   * and the child storage node must be awaited until we have durable promises.
+   */
+  const makeWalletWithResolvedStorageNodes = prepareExoClassKit(
+    baggage,
     'SmartWallet',
     behaviorGuards,
     initState,
@@ -514,20 +530,33 @@ export const prepareSmartWallet = (baggage, shared) => {
         getOffersFacet() {
           return this.facets.offers;
         },
+        /** @returns {StoredSubscriber<CurrentWalletRecord>} */
         getCurrentSubscriber() {
-          return this.state.currentPublishKit.subscriber;
+          const { state } = this;
+          return provideStoredSubscriber(
+            state.currentPublishKit.subscriber,
+            state.currentStorageNode,
+            shared.publicMarshaller,
+          );
         },
+        /** @returns {StoredSubscriber<UpdateRecord>} */
         getUpdatesSubscriber() {
-          return this.state.updatePublishKit.subscriber;
+          const { state } = this;
+          return provideStoredSubscriber(
+            state.updatePublishKit.subscriber,
+            state.walletStorageNode,
+            shared.publicMarshaller,
+          );
         },
       },
     },
     {
-      finish: ({ state, facets }) => {
+      finish: async ({ state, facets }) => {
         const { invitationBrand, invitationDisplayInfo, invitationIssuer } =
           shared;
-        const { invitationPurse } = state;
+
         const { helper } = facets;
+
         // Ensure a purse for each issuer
         void helper.addBrand(
           {
@@ -537,7 +566,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             displayInfo: invitationDisplayInfo,
           },
           // @ts-expect-error cast to RemotePurse
-          /** @type {RemotePurse} */ (invitationPurse),
+          /** @type {RemotePurse} */ (state.invitationPurse),
         );
 
         // Schedule creation of a purse for each registered brand.
@@ -553,7 +582,26 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
     },
   );
+
+  /**
+   * @param {Omit<UniqueParams, 'currentStorageNode' | 'walletStorageNode'> & {walletStorageNode: ERef<StorageNode>}} uniqueWithoutChildNodes
+   */
+  const makeSmartWallet = async uniqueWithoutChildNodes => {
+    const [walletStorageNode, currentStorageNode] = await Promise.all([
+      uniqueWithoutChildNodes.walletStorageNode,
+      E(uniqueWithoutChildNodes.walletStorageNode).makeChildNode('current'),
+    ]);
+
+    return makeWalletWithResolvedStorageNodes(
+      harden({
+        ...uniqueWithoutChildNodes,
+        currentStorageNode,
+        walletStorageNode,
+      }),
+    ).self;
+  };
+  return makeSmartWallet;
 };
 harden(prepareSmartWallet);
 
-/** @typedef {ReturnType<ReturnType<typeof prepareSmartWallet>>['self']} SmartWallet */
+/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareSmartWallet>>>} SmartWallet */
