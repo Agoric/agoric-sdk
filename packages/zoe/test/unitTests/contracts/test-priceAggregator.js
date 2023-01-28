@@ -518,6 +518,8 @@ test('oracle invitation', async t => {
   t.deepEqual(value4.quoteAmount.value, makeQuoteValue(9n, 1_234_000n));
 
   updater2.updateState('1234.567890');
+
+  await eventLoopIteration(); // pretend this is a new kernel delivery
   await E(oracleTimer).tick();
   const { value: value5, updateCount: uc5 } = await E(notifier).getUpdateSince(
     uc4,
@@ -525,6 +527,8 @@ test('oracle invitation', async t => {
   t.deepEqual(value5.quoteAmount.value, makeQuoteValue(10n, 1_234_567n));
 
   updater2.updateState(makeRatio(987_654n, brandOut, 500_000n, brandIn));
+
+  await eventLoopIteration(); // pretend this is a new kernel delivery
   await E(oracleTimer).tick();
   const { value: value6, updateCount: _uc6 } = await E(notifier).getUpdateSince(
     uc5,
