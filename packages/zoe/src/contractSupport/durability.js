@@ -1,9 +1,12 @@
+import { makeStoredSubscriber } from '@agoric/notifier';
 import {
   makeScalarBigMapStore,
   provide,
   provideDurableSetStore,
 } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
+
+/// <reference types="@agoric/notifier/src/types-ambient.js"/>
 
 /**
  * @template K Key
@@ -32,6 +35,45 @@ export const makeEphemeraProvider = init => {
 harden(makeEphemeraProvider);
 
 /**
+ *
+ */
+export const makeEphemeralStoredSubscriberProvider = () => {
+  /** @type {WeakMap<Subscriber<any>, StoredSubscriber<any>>} */
+  const extant = new WeakMap();
+
+  /**
+   * Provide a StoredSubscriber for the specified durable subscriber.
+   *
+   * @template {object} T
+   * @param {Subscriber<T>} durableSubscriber
+   * @param {ERef<StorageNode>} storageNode
+   * @param {ERef<Marshaller>} marshaller
+   * @returns {StoredSubscriber<T>}
+   */
+  const provideEphemeralStoredSubscriber = (
+    durableSubscriber,
+    storageNode,
+    marshaller,
+  ) => {
+    if (extant.has(durableSubscriber)) {
+      // @ts-expect-error cast
+      return extant.get(durableSubscriber);
+    }
+
+    const newSub = makeStoredSubscriber(
+      durableSubscriber,
+      storageNode,
+      marshaller,
+    );
+    extant.set(durableSubscriber, newSub);
+    return newSub;
+  };
+  return provideEphemeralStoredSubscriber;
+};
+harden(makeEphemeralStoredSubscriberProvider);
+
+/**
+ * Provide an empty ZCF seat.
  *
  * @param {ZCF} zcf
  * @param {import('@agoric/ertp').Baggage} baggage
