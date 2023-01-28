@@ -3,10 +3,7 @@
 import { assert, Fail } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { assertPattern, mustMatch } from '@agoric/store';
-import {
-  defendPrototype,
-  defendPrototypeKit,
-} from '@agoric/store/exo-tools.js';
+import { defendPrototype, defendPrototypeKit } from '@agoric/store/tools.js';
 import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
 import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';

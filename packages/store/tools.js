@@ -1,4 +1,4 @@
 export {
   defendPrototype,
   defendPrototypeKit,
-} from './src/patterns/interface-tools.js';
+} from './src/patterns/exo-tools.js';

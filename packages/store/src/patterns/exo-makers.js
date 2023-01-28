@@ -1,6 +1,6 @@
 import { objectMap } from '@agoric/internal';
 
-import { defendPrototype, defendPrototypeKit } from './interface-tools.js';
+import { defendPrototype, defendPrototypeKit } from './exo-tools.js';
 
 const { seal, freeze } = Object;
 

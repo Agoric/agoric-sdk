@@ -72,10 +72,3 @@ export { provideLazy } from './stores/store-utils.js';
 
 export { makeLegacyMap } from './legacy/legacyMap.js';
 export { makeLegacyWeakMap } from './legacy/legacyWeakMap.js';
-
-// Deprecated to import these from `@agoric/store`. Inport insteas from
-// `@agoric/store/exo-tools.js`
-export {
-  defendPrototype,
-  defendPrototypeKit,
-} from './patterns/interface-tools.js';
