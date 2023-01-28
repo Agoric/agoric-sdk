@@ -9,26 +9,25 @@ import { Far } from '@endo/marshal';
 /// <reference types="@agoric/notifier/src/types-ambient.js"/>
 
 /**
- * @template K Key
  * @template {{}} E Ephemeral state
  * @param {() => E} init
  */
 export const makeEphemeraProvider = init => {
-  /** @type {Map<K, E>} */
-  const ephemeras = new Map();
+  /** @type {WeakMap<any, E>} */
+  const extant = new WeakMap();
 
   /**
    * Provide an object to hold state that need not (or cannot) be durable.
    *
-   * @type {(key: K) => E}
+   * @type {(key: any) => E}
    */
   return key => {
-    if (ephemeras.has(key)) {
+    if (extant.has(key)) {
       // @ts-expect-error cast
-      return ephemeras.get(key);
+      return extant.get(key);
     }
     const newEph = init();
-    ephemeras.set(key, newEph);
+    extant.set(key, newEph);
     return newEph;
   };
 };
