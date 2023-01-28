@@ -318,13 +318,13 @@ const SmartWalletKit = defineVirtualExoClassKit(
 
         const { helper } = this.facets;
         // publish purse's balance and changes
-        E.when(
+        void E.when(
           E(purse).getCurrentAmount(),
           balance => helper.updateBalance(purse, balance, 'init'),
           err =>
             console.error(address, 'initial purse balance publish failed', err),
         );
-        observeNotifier(E(purse).getCurrentAmountNotifier(), {
+        void observeNotifier(E(purse).getCurrentAmountNotifier(), {
           updateState(balance) {
             helper.updateBalance(purse, balance);
           },
@@ -441,7 +441,7 @@ const SmartWalletKit = defineVirtualExoClassKit(
               /** @type {RemotePurse} */
               // @ts-expect-error cast to RemotePurse
               const purse = E(bank).getPurse(desc.brand);
-              facets.helper.addBrand(desc, purse);
+              await facets.helper.addBrand(desc, purse);
               return purse;
             },
             logger,
@@ -470,7 +470,7 @@ const SmartWalletKit = defineVirtualExoClassKit(
             facets.helper.publishCurrentState();
           },
         });
-        executor.executeOffer(offerSpec);
+        await executor.executeOffer(offerSpec);
       },
     },
     self: {
@@ -524,7 +524,7 @@ const SmartWalletKit = defineVirtualExoClassKit(
       } = state;
       const { helper } = facets;
       // Ensure a purse for each issuer
-      helper.addBrand(
+      void helper.addBrand(
         {
           brand: invitationBrand,
           issuer: invitationIssuer,
