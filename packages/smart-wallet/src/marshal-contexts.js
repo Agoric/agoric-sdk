@@ -229,6 +229,7 @@ export const makeExportContext = () => {
     ...makeMarshal(valToSlot, slotToVal),
   });
 };
+/** @typedef {ReturnType<typeof makeExportContext>} ExportContext */
 
 const defaultMakePresence = iface => {
   const severed = `SEVERED: ${iface.replace(/^Alleged: /, '')}`;
@@ -353,6 +354,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
     fromBoard: Far('board marshaller', { ...marshal.fromBoard }),
   });
 };
+/** @typedef {ReturnType<typeof makeImportContext>} ImportContext */
 
 /**
  * @param {string} iface
