@@ -1,5 +1,9 @@
 import { AmountMath } from '@agoric/ertp';
-import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
+import {
+  makeStoredPublisherKit,
+  makeStoredPublishKit,
+  SubscriberShape,
+} from '@agoric/notifier';
 import { M } from '@agoric/store';
 import {
   makeScalarBigMapStore,
@@ -16,6 +20,11 @@ export const ratioPattern = harden({
   numerator: amountPattern,
   denominator: amountPattern,
 });
+
+export const SubscribersRecordShape = M.recordOf(M.string(), [
+  SubscriberShape,
+  M.string(),
+]);
 
 /**
  * Apply a delta to the `base` Amount, where the delta is represented as

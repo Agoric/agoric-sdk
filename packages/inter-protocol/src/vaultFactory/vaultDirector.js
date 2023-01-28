@@ -37,7 +37,11 @@ import {
   vaultParamPattern,
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
-import { provideChildBaggage, provideEmptySeat } from '../contractSupport.js';
+import {
+  provideChildBaggage,
+  provideEmptySeat,
+  SubscribersRecordShape,
+} from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -220,7 +224,7 @@ export const prepareVaultDirector = (
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
-        getMetrics: M.call().returns(SubscriberShape),
+        getSubscribers: M.call().returns(SubscribersRecordShape),
         makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
@@ -459,9 +463,6 @@ export const prepareVaultDirector = (
             ),
           );
         },
-        getMetrics() {
-          return storedMetricsSubscriber;
-        },
         /**
          * @deprecated use getCollateralManager and then makeVaultInvitation instead
          *
@@ -500,12 +501,19 @@ export const prepareVaultDirector = (
           return debtMint.getIssuerRecord().issuer;
         },
         /**
+         * @deprecated ask the vault manager
+         *
          * subscription for the paramManager for a particular vaultManager
          *
          * @param {{ collateralBrand: Brand }} selector
          */
         getSubscription({ collateralBrand }) {
           return vaultParamManagers.get(collateralBrand).getSubscription();
+        },
+        getSubscribers() {
+          return {
+            metrics: [metricsSubscriber, storedMetricsSubscriber.getPath()],
+          };
         },
         /**
          * subscription for the paramManager for the vaultFactory's electorate

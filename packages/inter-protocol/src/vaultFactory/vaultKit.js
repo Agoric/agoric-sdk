@@ -26,9 +26,9 @@ export const prepareVaultKit = (baggage, marshaller) => {
     const { holder, helper } = makeVaultHolder(vault, storageNode);
     const vaultKit = harden({
       publicSubscribers: {
-        // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
+        // @deprecated get from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
         asset: assetSubscriber,
-        vault: holder.getSubscriber(),
+        vault: holder.getSubscribers().vault,
       },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () => holder.makeAdjustBalancesInvitation(),

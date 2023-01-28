@@ -245,7 +245,6 @@ export const prepareVaultManagerKit = (
       collateral: M.interface('collateral', {
         makeVaultInvitation: M.call().returns(M.promise()),
         getSubscriber: M.call().returns(SubscriberShape),
-        getMetrics: M.call().returns(SubscriberShape),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
       }),
@@ -294,11 +293,11 @@ export const prepareVaultManagerKit = (
             'MakeVault',
           );
         },
-        getSubscriber() {
-          return storedAssetSubscriber;
-        },
-        getMetrics() {
-          return storedMetricsSubscriber;
+        getSubscribers() {
+          return {
+            asset: [assetSubscriber, storedAssetSubscriber.getPath()],
+            metrics: [metricsSubscriber, storedMetricsSubscriber.getPath()],
+          };
         },
         getQuotes() {
           return storedQuotesNotifier;
