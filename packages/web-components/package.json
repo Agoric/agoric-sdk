@@ -39,6 +39,7 @@
   "devDependencies": {
     "@custom-elements-manifest/analyzer": "^0.4.17",
     "@endo/init": "^0.5.52",
+    "@keplr-wallet/types": "^0.11.37",
     "@open-wc/eslint-config": "^4.3.0",
     "@open-wc/testing": "next",
     "@web/dev-server": "^0.1.22",

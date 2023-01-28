@@ -53,8 +53,8 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @typedef {{
  *   brands: BrandDescriptor[],
  *   purses: Array<{brand: Brand, balance: Amount}>,
- *   offerToUsedInvitation: Record<number, Amount>,
- *   offerToPublicSubscriberPaths: Record<string, Record<string, string>>,
+ *   offerToUsedInvitation: { [offerId: string]: Amount },
+ *   offerToPublicSubscriberPaths: { [offerId: string]: { [subscriberName: string]: string } },
  *   lastOfferId: string,
  * }} CurrentWalletRecord
  */
