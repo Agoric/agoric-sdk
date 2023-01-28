@@ -55,13 +55,11 @@ export {
 } from './patterns/patternMatchers.js';
 
 export {
-  defendPrototype,
-  defendPrototypeKit,
   initEmpty,
   defineExoClass,
   defineExoClassKit,
   makeExo,
-} from './patterns/interface-tools.js';
+} from './patterns/exo-makers.js';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
