@@ -1,4 +1,3 @@
-/* eslint-disable no-continue */
 import { assert, details as X, q, Fail } from '@agoric/assert';
 import {
   zeroPad,
