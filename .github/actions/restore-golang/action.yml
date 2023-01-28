@@ -12,7 +12,7 @@ runs:
     - name: set default environment variables
       run: echo GOPATH="$HOME/go" >> $GITHUB_ENV
       shell: bash
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
       with:
         clean: 'false'
         submodules: 'true'
@@ -23,7 +23,7 @@ runs:
       id: system-info
     - name: cache Go modules
       id: cache
-      uses: actions/cache@v1
+      uses: actions/cache@v3
       with:
         path: ${{ env.GOPATH }}/pkg/mod
         key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-go-${{ inputs.go-version }}-built-${{ hashFiles('go.sum') }}

@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout agoric-sdk
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           path: agoric-sdk
       - name: Use Node.js ${{ matrix.node-version }}
@@ -22,7 +22,7 @@ jobs:
           cache: 'yarn'
           cache-dependency-path: agoric-sdk/yarn.lock
       - name: cache node modules
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('agoric-sdk/yarn.lock') }}
@@ -64,7 +64,7 @@ jobs:
         working-directory: ./agoric-sdk
 
       - name: Check out dapp
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: Agoric/[[INSERT_DAPP_NAME]]
           path: dapp

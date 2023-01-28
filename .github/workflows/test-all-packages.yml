@@ -25,7 +25,7 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x', '18.x']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
@@ -41,7 +41,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -57,7 +57,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -82,7 +82,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -153,7 +153,7 @@ jobs:
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -210,7 +210,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -236,7 +236,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -265,7 +265,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -290,7 +290,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -320,7 +320,7 @@ jobs:
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -344,7 +344,7 @@ jobs:
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -371,7 +371,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -398,7 +398,7 @@ jobs:
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
