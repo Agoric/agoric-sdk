@@ -31,7 +31,7 @@ export const UI_VERSION_HASH_KEY = 'UiVersionHash';
  * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
  * @param {Amount} minInitialDebt
  * @param {Amount} shortfallInvitationAmount
- * @param {string} [uiVersionHash]
+ * @param {string} uiVersionHash
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
@@ -65,6 +65,7 @@ const makeVaultDirectorParams = (
     [UI_VERSION_HASH_KEY]: { type: ParamTypes.STRING, value: uiVersionHash },
   });
 };
+harden(makeVaultDirectorParams);
 
 /** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
 
@@ -72,7 +73,7 @@ const makeVaultDirectorParams = (
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
-const makeVaultParamManager = (publisherKit, initial) =>
+export const makeVaultParamManager = (publisherKit, initial) =>
   makeParamManagerSync(publisherKit, {
     [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, initial.debtLimit],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, initial.liquidationMargin],
@@ -100,7 +101,7 @@ export const vaultParamPattern = M.splitRecord({
  * @param {Invitation} shortfallInvitation
  * @param {string} [uiVersionHash]
  */
-const makeVaultDirectorParamManager = async (
+export const makeVaultDirectorParamManager = async (
   publisherKit,
   zoe,
   electorateInvitation,
@@ -123,6 +124,7 @@ const makeVaultDirectorParamManager = async (
     zoe,
   );
 };
+harden(makeVaultDirectorParamManager);
 
 /**
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
@@ -141,7 +143,7 @@ const makeVaultDirectorParamManager = async (
  *   uiVersionHash?: string,
  * }} opts
  */
-const makeGovernedTerms = (
+export const makeGovernedTerms = (
   { storageNode, marshaller },
   {
     ammPublicFacet,
@@ -189,13 +191,4 @@ const makeGovernedTerms = (
     bootstrapPaymentValue,
   });
 };
-
-harden(makeVaultParamManager);
-harden(makeVaultDirectorParamManager);
 harden(makeGovernedTerms);
-
-export {
-  makeVaultDirectorParamManager,
-  makeVaultParamManager,
-  makeGovernedTerms,
-};
