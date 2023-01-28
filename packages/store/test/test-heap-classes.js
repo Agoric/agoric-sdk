@@ -3,7 +3,7 @@ import {
   defineExoClass,
   defineExoClassKit,
   makeExo,
-} from '../src/patterns/interface-tools.js';
+} from '../src/patterns/exo-makers.js';
 import { M } from '../src/patterns/patternMatchers.js';
 
 const UpCounterI = M.interface('UpCounter', {
