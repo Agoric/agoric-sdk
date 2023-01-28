@@ -4,7 +4,10 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
 import { makeTracer } from '@agoric/internal';
 import '../../src/vaultFactory/types.js';
-import { subscriptionKey } from '../supports.js';
+import {
+  subscriptionKey,
+  subscriptionPath as publicationPath,
+} from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {
@@ -26,7 +29,7 @@ test('storage keys', async t => {
   // Root vault factory
   const vdp = d.getVaultDirectorPublic();
   t.is(
-    await subscriptionKey(E(vdp).getMetrics()),
+    await publicationPath(E(vdp), 'metrics'),
     'mockChainStorageRoot.vaultFactory.metrics',
   );
   t.is(
@@ -37,7 +40,7 @@ test('storage keys', async t => {
   // First manager
   const managerA = await E(vdp).getCollateralManager(aeth.brand);
   t.is(
-    await subscriptionKey(E(managerA).getMetrics()),
+    await publicationPath(E(managerA), 'metrics'),
     'mockChainStorageRoot.vaultFactory.manager0.metrics',
   );
   t.is(
@@ -52,7 +55,7 @@ test('storage keys', async t => {
   // Second manager
   const [managerC, chit] = await d.addVaultType('Chit');
   t.is(
-    await subscriptionKey(E(E(managerC).getPublicFacet()).getMetrics()),
+    await publicationPath(E(managerC).getPublicFacet(), 'metrics'),
     'mockChainStorageRoot.vaultFactory.manager1.metrics',
   );
   t.is(

@@ -207,6 +207,18 @@ export const subscriptionKey = subscription => {
     });
 };
 
+/**
+ *
+ * @param {ERef<{getSubscribers: () => Promise<import('../src/contractSupport.js').SubscribersRecord>}>} hasSubscribers
+ * @param {string} subscriberName
+ */
+export const subscriptionPath = (hasSubscribers, subscriberName) => {
+  return E(hasSubscribers)
+    .getSubscribers()
+    .then(subscribers => subscribers[subscriberName])
+    .then(([_subscriber, path]) => path);
+};
+
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
 export const headValue = async subscriber => {
   await eventLoopIteration();
