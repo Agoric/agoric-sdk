@@ -11,7 +11,7 @@ import {
   provideDurableSetStore,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 
 const { Fail, quote: q } = assert;
 
@@ -25,6 +25,22 @@ export const SubscribersRecordShape = M.recordOf(M.string(), [
   SubscriberShape,
   M.string(),
 ]);
+/**
+ * @typedef {{
+ *   [subscriberKey: string]: [ERef<Subscriber<unknown>>, string?]
+ * }} SubscribersRecord */
+
+/**
+ * @template {Readonly<{
+ *   [subscriberKey: string]: readonly [Subscriber<unknown>, Promise<string>?]
+ * }>} T
+ * @param {T} unfulfilled
+ * @returns {Promise<Readonly<{ [K in keyof T]: [T[K][0], Awaited<T[K][1]>] }>>}
+ */
+export const fulfilledSubscribersRecord = async unfulfilled => {
+  return deeplyFulfilled(harden(unfulfilled));
+};
+harden(fulfilledSubscribersRecord);
 
 /**
  * Apply a delta to the `base` Amount, where the delta is represented as
