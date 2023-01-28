@@ -8,7 +8,7 @@ import {
   PurseShape,
 } from '@agoric/ertp';
 import { makeStoredPublishKit, observeNotifier } from '@agoric/notifier';
-import { mustMatch, M, makeScalarMapStore } from '@agoric/store';
+import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   defineVirtualExoClassKit,
   makeScalarBigMapStore,
