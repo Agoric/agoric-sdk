@@ -2901,7 +2901,7 @@ test('governance publisher', async t => {
   t.is(current.LiquidationTerms.type, 'unknown');
   t.is(current.MinInitialDebt.type, 'amount');
   t.is(current.ShortfallInvitation.type, 'invitation');
-  t.is(current.UiVersionHash.type, 'string');
+  t.is(current.EndorsedUI.type, 'string');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
     E(lender).getSubscription({
