@@ -8,7 +8,7 @@ import {
   prepareDurablePublishKit,
 } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { makeEphemeraProvider } from '../contractSupport.js';
+import { makeEphemeraProvider } from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
