@@ -93,10 +93,12 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         },
       },
       holder: {
-        /** @returns {StoredSubscriber<VaultNotification>} */
-        getSubscriber() {
+        getSubscribers() {
+          const { subscriber } = this.state;
           const ephemera = provideEphemera(this.state.subscriber);
-          return ephemera.storedSubscriber;
+          return {
+            vault: [subscriber, ephemera.storedSubscriber.getPath()],
+          };
         },
         makeAdjustBalancesInvitation() {
           return this.facets.helper.owned().makeAdjustBalancesInvitation();
