@@ -4,11 +4,14 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 import { E } from '@endo/eventual-send';
 
-import { mustMatch, keyEQ, M, makeScalarMapStore } from '@agoric/store';
+import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   assertProposalShape,
   getAmountIn,
   getAmountOut,
+  provideChildBaggage,
+  provideEmptySeat,
+  unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
@@ -18,8 +21,8 @@ import {
   makeStoredPublisherKit,
   makeStoredSubscriber,
   observeIteration,
-  SubscriberShape,
   prepareDurablePublishKit,
+  SubscriberShape,
 } from '@agoric/notifier';
 import {
   defineDurableExoClassKit,
@@ -27,7 +30,6 @@ import {
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   CHARGING_PERIOD_KEY,
@@ -37,7 +39,6 @@ import {
   vaultParamPattern,
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
-import { provideChildBaggage, provideEmptySeat } from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
 

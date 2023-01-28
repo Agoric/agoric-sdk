@@ -44,10 +44,11 @@ import {
   getAmountOut,
   makeRatio,
   makeRatioFromAmounts,
+  provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { checkDebtLimit, provideEmptySeat } from '../contractSupport.js';
+import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
