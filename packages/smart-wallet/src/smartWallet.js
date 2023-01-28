@@ -441,7 +441,7 @@ const SmartWalletKit = defineVirtualExoClassKit(
               /** @type {RemotePurse} */
               // @ts-expect-error cast to RemotePurse
               const purse = E(bank).getPurse(desc.brand);
-              facets.helper.addBrand(desc, purse);
+              await facets.helper.addBrand(desc, purse);
               return purse;
             },
             logger,
@@ -470,7 +470,7 @@ const SmartWalletKit = defineVirtualExoClassKit(
             facets.helper.publishCurrentState();
           },
         });
-        executor.executeOffer(offerSpec);
+        await executor.executeOffer(offerSpec);
       },
     },
     self: {
