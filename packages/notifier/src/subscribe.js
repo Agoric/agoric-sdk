@@ -9,7 +9,6 @@ const sink = () => {};
  *
  * @template T
  * @param {ERef<AsyncIterable<T>>} itP
- * @returns {AsyncIterable<T>}
  */
 export const subscribe = itP =>
   Far('AsyncIterable', {
@@ -61,7 +60,6 @@ const makeEachIterator = pubList => {
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
- * @returns {AsyncIterable<T>}
  */
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
@@ -168,7 +166,6 @@ const makeLatestIterator = topic => cloneLatestIterator(topic);
  *
  * @template T
  * @param {ERef<LatestTopic<T>>} topic
- * @returns {AsyncIterable<T>}
  */
 export const subscribeLatest = topic => {
   const iterable = Far('LatestIterable', {

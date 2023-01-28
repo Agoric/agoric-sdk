@@ -10,9 +10,9 @@ import { makeTracer } from '@agoric/internal';
 const trace = makeTracer('TestMetrics', false);
 
 /**
- * @param {import('ava').ExecutionContext} t
- * @param {ConsistentAsyncIterable<N>} subscription
  * @template {object} N
+ * @param {import('ava').ExecutionContext} t
+ * @param {AsyncIterable<N, N>} subscription
  */
 export const subscriptionTracker = async (t, subscription) => {
   const metrics = makeNotifierFromAsyncIterable(subscription);
@@ -44,9 +44,9 @@ export const subscriptionTracker = async (t, subscription) => {
 /**
  * For public facets that have a `getMetrics` method.
  *
- * @param {import('ava').ExecutionContext} t
- * @param {ERef<{getMetrics?: () => Subscriber<unknown>}>} publicFacet
  * @template {object} N
+ * @param {import('ava').ExecutionContext} t
+ * @param {ERef<{getMetrics?: () => Subscriber<N>}>} publicFacet
  */
 export const metricsTracker = async (t, publicFacet) => {
   const metricsSub = await E(publicFacet).getMetrics();
