@@ -20,8 +20,6 @@ import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/controller.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
-import { makeNodeSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-node.js';
-import { startSubprocessWorker } from '../src/lib-nodejs/spawnSubprocessWorker.js';
 import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
@@ -194,22 +192,6 @@ async function replay(transcriptFile) {
       vatEndowments: {},
       gcTools,
       kernelSlog,
-    });
-  } else if (worker === 'node-subprocess') {
-    // this worker type cannot do blocking syscalls like vatstoreGet, so it's
-    // kind of useless for vats that use virtual objects
-    function startSubprocessWorkerNode() {
-      const supercode = new URL(
-        '../src/supervisors/subprocess-node/supervisor-subprocess-node.js',
-        import.meta.url,
-      ).pathname;
-      return startSubprocessWorker(process.execPath, ['-r', 'esm', supercode]);
-    }
-    factory = makeNodeSubprocessFactory({
-      startSubprocessWorker: startSubprocessWorkerNode,
-      kernelKeeper: fakeKernelKeeper,
-      kernelSlog,
-      testLog,
     });
   } else {
     throw Error(`unhandled worker type ${worker}`);
