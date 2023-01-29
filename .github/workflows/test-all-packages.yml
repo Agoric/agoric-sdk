@@ -17,6 +17,9 @@ env:
   DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
+# this is required, since explicitly setting bash as shell enables pipefail, which is not
+# on by default.  This is required to fail correctly when teeing output to a file to collect
+# test instrumentation
 defaults:
   run:
     shell: bash
