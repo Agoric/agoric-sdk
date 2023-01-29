@@ -9,6 +9,10 @@ import {
   provide,
 } from './vat-data-bindings.js';
 
+/** @template I,M @typedef {import('@agoric/store/exported').DefineExo<M>} DefineExo */
+/** @template I,M @typedef {import('@agoric/store/exported').DefineExoClass<I,M>} DefineExoClass */
+/** @template I,F @typedef {import('@agoric/store/exported').DefineExoClassKit<I,F>} DefineExoClassKit */
+
 /** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 /** @template T @typedef {import('@endo/far').ERef<T>} ERef */
 /** @typedef {import('./types.js').Baggage} Baggage */
@@ -17,16 +21,10 @@ import {
 /** @template T @typedef {import('./types.js').KindFacets<T>} KindFacets */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 
-// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template {(...args: any) => any} I init state function
- * @template T behavior
- * @param {string} tag
- * @param {any} interfaceGuard
- * @param {I} init
- * @param {T & ThisType<{ self: T, state: ReturnType<I> }>} methods
- * @param {DefineKindOptions<{ self: T, state: ReturnType<I> }>} [options]
- * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+ * @template {Record<string | symbol, CallableFunction>} M methods
+ * @type {DefineExoClass<I,M>}
  */
 export const defineVirtualExoClass = (
   tag,
@@ -35,8 +33,6 @@ export const defineVirtualExoClass = (
   methods,
   options,
 ) =>
-  // @ts-expect-error The use of `thisfulMethods` to change
-  // the appropriate static type is the whole point of this method.
   defineKind(tag, init, methods, {
     ...options,
     thisfulMethods: true,
@@ -47,13 +43,8 @@ harden(defineVirtualExoClass);
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
  * @template {(...args: any) => any} I init state function
- * @template {Record<string, Record<string | symbol, CallableFunction>>} T facets
- * @param {string} tag
- * @param {any} interfaceGuardKit
- * @param {I} init
- * @param {T & ThisType<{ facets: T, state: ReturnType<I> }> } facets
- * @param {DefineKindOptions<{ facets: T, state: ReturnType<I> }>} [options]
- * @returns {(...args: Parameters<I>) => (T & RemotableBrand<{}, T>)}
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} F facets
+ * @type {DefineExoClassKit<I,F>}
  */
 export const defineVirtualExoClassKit = (
   tag,
@@ -62,8 +53,6 @@ export const defineVirtualExoClassKit = (
   facets,
   options,
 ) =>
-  // @ts-expect-error The use of `thisfulMethods` to change
-  // the appropriate static type is the whole point of this method.
   defineKindMulti(tag, init, facets, {
     ...options,
     thisfulMethods: true,

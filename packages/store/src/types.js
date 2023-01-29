@@ -6,6 +6,7 @@
 /** @template T @typedef {import('@endo/marshal').CopyRecord<T>} CopyRecord */
 /** @template T @typedef {import('@endo/marshal').CopyArray<T>} CopyArray */
 /** @typedef {import('@endo/marshal').Checker} Checker */
+/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
 
 /**
  * @typedef {Passable} Key
@@ -786,4 +787,149 @@
  * ) => boolean} checkKeyPattern
  * Assumes this is the payload of a CopyTagged with the corresponding
  * matchTag. Is this a valid pattern for use as a query key or key shape?
+ */
+
+// ////////////////////////////// Place API ////////////////////////////////////
+
+// TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
+
+// TODO The InterfaceGuard for a given Exo should actually define two types:
+// An internal one for the methods to implement, and an external one for
+// callers to invoke. For method guards defined with `M.callWhen` and `M.await`
+// these can meaningfully differ.
+
+/**
+ * @template M methods
+ * @typedef {M & RemotableBrand<{}, M>} Exo
+ */
+
+/**
+ * @typedef {{[name: string]: Pattern}} StateShape
+ * It looks like a copyRecord pattern, but the interpretation is different.
+ * Each property is distinct, is checked and changed separately.
+ */
+
+/**
+ * @template C
+ * @typedef {object} ExoOptions
+ *
+ * @property {(context: C) => void} [finish]
+ * @property {StateShape} [stateShape]
+ */
+
+/**
+ * @template {Record<string | symbol, CallableFunction>} M methods
+ * @callback MakeExo
+ *
+ * @param {string} label
+ * @param {InterfaceGuard} interfaceGuard
+ * @param {M} methods
+ * @param {ExoOptions<{ self: M }>} [options]
+ * @returns {Exo<M>}
+ */
+
+/**
+ * @template {(...args: any) => any} I init state function
+ * @template {Record<string | symbol, CallableFunction>} M methods
+ * @callback DefineExoClass
+ *
+ * @param {string} label
+ * @param {InterfaceGuard} interfaceGuard
+ * @param {I} init
+ * @param {M & ThisType<{ self: M, state: ReturnType<I> }>} methods
+ * @param {ExoOptions<{ self: M, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => Exo<M>}
+ */
+
+// TODO The result type of DefineExoClassKit<I,F> should be a record shaped like
+// F, where for each M member of F, the result has a correponding Exo<M>.
+// The `any` is just a placeholder until we figure out
+// how to say this in TypeScript
+/**
+ * @template {(...args: any) => any} I init state function
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} F facets
+ * @callback DefineExoClassKit
+ *
+ * @param {string} label
+ * @param {Record<string, InterfaceGuard>} interfaceGuardKit
+ * @param {I} init
+ * @param {F & ThisType<{ facets: F, state: ReturnType<I> }> } facets
+ * @param {ExoOptions<{ facets: F, state: ReturnType<I> }>} [options]
+ * @returns {(...args: Parameters<I>) => Record<string, Exo<any>>}
+ */
+
+/**
+ * @template {Key} K
+ * @template {Passable} V
+ * @callback MakeMapStore
+ *
+ * @param {string} label
+ * @param {StoreOptions=} options
+ * @returns {MapStore<K,V>}
+ */
+
+/**
+ * @template {Key} K
+ * @template {Passable} V
+ * @callback MakeWeakMapStore
+ *
+ * @param {string} label
+ * @param {StoreOptions} [options]
+ * @returns {WeakMapStore<K,V>}
+ */
+
+/**
+ * @template {Key} K
+ * @callback MakeSetStore
+ *
+ * @param {string} label
+ * @param {StoreOptions=} options
+ * @returns {SetStore<K>}
+ */
+
+/**
+ * @template {Key} K
+ * @callback MakeWeakSetStore
+ *
+ * @param {string} label
+ * @param {StoreOptions=} options
+ * @returns {WeakSetStore<K>}
+ */
+
+/**
+ * @callback MakeSubPlace
+ *
+ * @param {string} label
+ * @param {StoreOptions} [options]
+ * @returns {Place}
+ */
+
+// TODO The type parameters on Place below are intended to be per method
+// invocation, not per Place.
+
+/**
+ * @template {(...args: any) => any} [I=any] init state function
+ * @template {Record<string | symbol, CallableFunction>} [M=any] methods
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} [F=any] facets
+ * @template {Key} [K=any]
+ * @template {Passable} [V=any]
+ *
+ * @typedef {object} Place
+ * The name `Place` is intentionally both a noun and a verb. Its verb sense
+ * suggests the `provide`/`prepare` functionality of these methods as supplied
+ * by the Baggage Place: `place.exo(label, ...)` either gets the exo at the label
+ * within that place, or places a (new) exo at that label within that place.
+ * Thus, we can drop the initial verb part from each of the following
+ * method names.
+ *
+ * @property {MakeExo<M>} exo
+ * @property {DefineExoClass<I,M>} exoClass
+ * @property {DefineExoClassKit<I,F>} exoClassKit
+ *
+ * @property {MakeMapStore<K,V>} mapStore
+ * @property {MakeWeakMapStore<K,V>} weakMapStore
+ * @property {MakeSetStore<K>} setStore
+ * @property {MakeWeakSetStore<K>} weakSetStore
+ *
+ * @property {MakeSubPlace} subPlace
  */

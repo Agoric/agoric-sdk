@@ -187,3 +187,14 @@ export const provideDurableSetStore = (baggage, name, options = {}) =>
     makeScalarBigSetStore(name, { durable: true, ...options }),
   );
 harden(provideDurableSetStore);
+
+/**
+ * @param {import('./types').Baggage} baggage
+ * @param {string} name
+ * @param {Omit<StoreOptions, 'durable'>} options
+ */
+export const provideDurableWeakSetStore = (baggage, name, options = {}) =>
+  provide(baggage, name, () =>
+    makeScalarBigWeakSetStore(name, { durable: true, ...options }),
+  );
+harden(provideDurableSetStore);
