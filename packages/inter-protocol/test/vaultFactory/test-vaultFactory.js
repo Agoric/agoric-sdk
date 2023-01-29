@@ -263,15 +263,17 @@ const getRunFromFaucet = async (t, amount) => {
 const legacyOfferResult = vaultSeat => {
   return E(vaultSeat)
     .getOfferResult()
-    .then(result => {
-      const { vault, publicSubscribers } = result;
+    .then(async result => {
+      const { vault, publicSubscribers } = await result;
       assert(vault, 'missing vault');
       assert(publicSubscribers, 'missing publicSubscribers');
+      assert(publicSubscribers.asset, 'missing publicSubscribers asset');
+      assert(publicSubscribers.vault, 'missing publicSubscribers vault');
       return {
         vault,
         publicNotifiers: {
-          asset: makeNotifierFromSubscriber(publicSubscribers.asset),
-          vault: makeNotifierFromSubscriber(publicSubscribers.vault),
+          asset: makeNotifierFromSubscriber(publicSubscribers.asset.subscriber),
+          vault: makeNotifierFromSubscriber(publicSubscribers.vault.subscriber),
         },
       };
     });
@@ -651,9 +653,9 @@ test('price drop', async t => {
   );
   t.is(notification.value.vaultState, Phase.LIQUIDATED);
   t.truthy(await E(vaultSeat).hasExited());
+  trace(t, 'DEbUG got notification', notification);
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
 
@@ -778,7 +780,6 @@ test('price falls precipitously', async t => {
   };
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   await manualTimer.tick(); // t 0->1, p 2200->19180
@@ -1754,7 +1755,6 @@ test('mutable liquidity triggers and interest', async t => {
   } = services;
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   let shortfallBalance = 0n;

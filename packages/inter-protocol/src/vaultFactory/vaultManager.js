@@ -48,7 +48,11 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { checkDebtLimit } from '../contractSupport.js';
+import {
+  checkDebtLimit,
+  fulfilledTopicMetasRecord,
+  TopicMetasRecordShape,
+} from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
@@ -245,9 +249,9 @@ export const prepareVaultManagerKit = (
     {
       collateral: M.interface('collateral', {
         makeVaultInvitation: M.call().returns(M.promise()),
-        getSubscriber: M.call().returns(SubscriberShape),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
+        getTopics: M.call().returns(M.promise()), // TopicMetasRecord
       }),
       helper: M.interface(
         'helper',
@@ -294,11 +298,19 @@ export const prepareVaultManagerKit = (
             'MakeVault',
           );
         },
-        getSubscribers() {
-          return {
-            asset: [assetSubscriber, storedAssetSubscriber.getPath()],
-            metrics: [metricsSubscriber, storedMetricsSubscriber.getPath()],
-          };
+        getTopics() {
+          return fulfilledTopicMetasRecord(
+            /** @type {const} */ ({
+              asset: {
+                subscriber: assetSubscriber,
+                vstoragePath: storedAssetSubscriber.getPath(),
+              },
+              metrics: {
+                subscriber: metricsSubscriber,
+                vstoragePath: storedMetricsSubscriber.getPath(),
+              },
+            }),
+          );
         },
         getQuotes() {
           return storedQuotesNotifier;

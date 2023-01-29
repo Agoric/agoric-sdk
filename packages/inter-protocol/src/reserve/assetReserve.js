@@ -459,7 +459,7 @@ export { start };
  * @property {() => Allocation} getAllocations
  * @property {(issuer: Issuer) => void} addIssuer
  * @property {() => Invitation<ShortfallReporter>} makeShortfallReportingInvitation
- * @property {() => MetricsNotification} getMetrics
+ * @property {() => StoredSubscription<MetricsNotification>} getMetrics
  */
 
 /**

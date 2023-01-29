@@ -496,6 +496,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           // max debt supported by current Collateral as modified by proposal
           const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
+          console.log('DEBUG', { updaterPre }, state);
           updaterPre === state.outerUpdater ||
             Fail`Transfer during vault adjustment`;
           helper.assertActive();
@@ -577,9 +578,8 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         /**
          *
          * @param {ZCFSeat} seat
-         * @returns {VaultKit}
          */
-        makeTransferInvitationHook(seat) {
+        async makeTransferInvitationHook(seat) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
@@ -587,7 +587,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           seat.exit();
 
           // eslint-disable-next-line no-use-before-define
-          const vaultKit = makeVaultKit(
+          const vaultKit = await makeVaultKit(
             self,
             state.storageNode,
             state.manager.getAssetSubscriber(),
@@ -661,7 +661,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           trace('initVault updateDebtAccounting fired');
 
-          const vaultKit = makeVaultKit(
+          const vaultKit = await makeVaultKit(
             self,
             storageNode,
             state.manager.getAssetSubscriber(),

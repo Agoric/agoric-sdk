@@ -16,26 +16,42 @@ export const ratioPattern = harden({
   denominator: amountPattern,
 });
 
-export const SubscribersRecordShape = M.recordOf(M.string(), [
-  SubscriberShape,
-  M.string(),
-]);
+export const TopicMetaShape = M.splitRecord(
+  {
+    subscriber: SubscriberShape,
+    vstoragePath: M.string(),
+  },
+  { description: M.string() },
+);
+// TODO rename 'subscriber' field to 'topic'
+/**
+ * @template {object} T topic value
+ * @typedef {{
+ *   description?: string,
+ *   subscriber: ERef<Subscriber<T>>,
+ *   vstoragePath: string,
+ * }} TopicMeta
+ */
+
+export const TopicMetasRecordShape = M.recordOf(M.string(), TopicMetaShape);
+
 /**
  * @typedef {{
- *   [subscriberKey: string]: [ERef<Subscriber<unknown>>, string?]
- * }} SubscribersRecord */
+ *   [topicName: string]: TopicMeta<unknown>,
+ * }} TopicMetasRecord
+ */
 
 /**
  * @template {Readonly<{
- *   [subscriberKey: string]: readonly [Subscriber<unknown>, Promise<string>?]
- * }>} T
- * @param {T} unfulfilled
- * @returns {Promise<Readonly<{ [K in keyof T]: [T[K][0], Awaited<T[K][1]>] }>>}
+ *   [subscriberKey: string]: Omit<TopicMeta<any>, 'vstoragePath'> & { vstoragePath: Promise<string>}
+ * }>} R
+ * @param {R} unfulfilled
+ * @returns {Promise<Readonly<{ [K in keyof R]: R[K]['subscriber'] extends Subscriber<infer T> ? TopicMeta<T> : never }>>}
  */
-export const fulfilledSubscribersRecord = async unfulfilled => {
+export const fulfilledTopicMetasRecord = async unfulfilled => {
   return deeplyFulfilled(harden(unfulfilled));
 };
-harden(fulfilledSubscribersRecord);
+harden(fulfilledTopicMetasRecord);
 
 /**
  * Apply a delta to the `base` Amount, where the delta is represented as

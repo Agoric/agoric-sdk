@@ -18,7 +18,7 @@ import {
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
-const trace = makeTracer('TestLiq', false);
+const trace = makeTracer('TestLiq');
 
 test.before(async t => {
   t.context = await makeDriverContext();
@@ -36,10 +36,12 @@ test('price drop', async t => {
     recordingPeriod: 10n,
   };
 
+  console.log('PD making driver');
   const d = await makeManagerDriver(t, run.make(1000n), aeth.make(900n));
   // Create a loan for 270 RUN with 400 aeth collateral
   const collateralAmount = aeth.make(400n);
   const loanAmount = run.make(270n);
+  console.log('PD making vault driver');
   const dv = await d.makeVaultDriver(collateralAmount, loanAmount);
   trace(t, 'loan made', loanAmount, dv);
   const debtAmount = await dv.checkBorrowed(loanAmount, rates.loanFee);
@@ -52,16 +54,21 @@ test('price drop', async t => {
   });
   await dv.checkBalance(debtAmount, collateralAmount);
 
+  console.log('PD1');
+
   // small change doesn't cause liquidation
   await d.setPrice(run.make(677n));
   trace(t, 'price dropped a little');
   await d.tick();
   await dv.notified(Phase.ACTIVE);
 
+  console.log('PD2');
+
   await d.setPrice(run.make(636n));
   trace(t, 'price dropped enough to liquidate');
   await dv.notified(Phase.LIQUIDATING, undefined, AT_NEXT);
 
+  console.log('PD3');
   // Collateral consumed while liquidating
   // Debt remains while liquidating
   await dv.checkBalance(debtAmount, aeth.makeEmpty());
@@ -70,13 +77,20 @@ test('price drop', async t => {
   await dv.notified(Phase.LIQUIDATED, { locked: collateralExpected }, AT_NEXT);
   await dv.checkBalance(debtExpected, collateralExpected);
 
+  console.log('PD4');
+
   await d.checkRewards(run.make(14n));
+
+  console.log('PD5');
 
   await dv.close();
   await dv.notified(Phase.CLOSED, {
     locked: aeth.makeEmpty(),
     updateCount: undefined,
   });
+
+  console.log('PD6');
+
   await d.checkPayouts(debtExpected, collateralExpected);
   await dv.checkBalance(debtExpected, aeth.makeEmpty());
 });
