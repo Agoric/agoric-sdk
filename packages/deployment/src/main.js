@@ -736,7 +736,6 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
       let sep = '';
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
         if (!isPublicRpc(prov.roles.value, CLUSTER)) {
-          // eslint-disable-next-line no-continue
           continue;
         }
         const ips = prov.public_ips.value[CLUSTER];
@@ -781,7 +780,6 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
       for (const CLUSTER of Object.keys(prov.public_ips.value)) {
         if (!selector(CLUSTER)) {
-          // eslint-disable-next-line no-continue
           continue;
         }
         const ips = prov.public_ips.value[CLUSTER];

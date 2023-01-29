@@ -1,7 +1,6 @@
 #! /usr/bin/env node
 // crunch.mjs - crunch a kvstore trace file's writes into TSV
 
-/* eslint-disable no-continue */
 /* global process,Buffer */
 
 import fs from 'fs';
