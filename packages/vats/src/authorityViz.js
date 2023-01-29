@@ -1,4 +1,3 @@
-/* eslint-disable no-continue */
 // @ts-check
 import '@endo/init';
 import process from 'process';

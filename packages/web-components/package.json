@@ -56,7 +56,7 @@
   "eslintConfig": {
     "extends": [
       "@open-wc",
-      "@endo"
+      "@agoric"
     ],
     "rules": {
       "import/no-extraneous-dependencies": "off",
