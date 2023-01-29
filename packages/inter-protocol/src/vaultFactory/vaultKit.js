@@ -21,14 +21,16 @@ export const prepareVaultKit = (baggage, marshaller) => {
    * @param {ERef<StorageNode>} storageNode
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
-  const makeVaultKit = (vault, storageNode, assetSubscriber) => {
+  const makeVaultKit = async (vault, storageNode, assetSubscriber) => {
     trace('prepareVaultKit makeVaultKit');
     const { holder, helper } = makeVaultHolder(vault, storageNode);
+    const holderTopics = await holder.getTopics();
+    console.log('DEBUG', { holderTopics });
     const vaultKit = harden({
       publicSubscribers: {
         // @deprecated get from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
-        asset: assetSubscriber,
-        vault: holder.getSubscribers().vault,
+        asset: { subscriber: assetSubscriber },
+        vault: holderTopics.vault,
       },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () => holder.makeAdjustBalancesInvitation(),
@@ -43,4 +45,4 @@ export const prepareVaultKit = (baggage, marshaller) => {
   return makeVaultKit;
 };
 
-/** @typedef {(ReturnType<ReturnType<typeof prepareVaultKit>>)} VaultKit */
+/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultKit>>>} VaultKit */

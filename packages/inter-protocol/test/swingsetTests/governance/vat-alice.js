@@ -48,6 +48,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     );
 
     const assetNotifier = makeNotifierFromSubscriber(
+      // @ts-expect-error legit error broken in refactoring
       E(collateralManager).getSubscriber(),
     );
     const { vault } = await E(loanSeat).getOfferResult();

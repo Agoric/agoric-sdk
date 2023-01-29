@@ -370,8 +370,11 @@ export const makeManagerDriver = async (
     vaultFactory: { lender, vaultFactory },
     priceAuthority,
   } = services;
+  const managerTopics = await E(
+    E(lender).getCollateralManager(aeth.brand),
+  ).getTopics();
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(E(lender).getCollateralManager(aeth.brand)).getSubscriber(),
+    managerTopics.asset.subscriber,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
@@ -401,7 +404,9 @@ export const makeManagerDriver = async (
     );
     const { vault, publicSubscribers } = await E(vaultSeat).getOfferResult();
     t.true(await E(vaultSeat).hasExited());
-    const notifier = makeNotifierFromSubscriber(publicSubscribers.vault);
+    const notifier = makeNotifierFromSubscriber(
+      publicSubscribers.vault.subscriber,
+    );
     return {
       getVaultSubscriber: () => publicSubscribers.vault,
       vault: () => vault,

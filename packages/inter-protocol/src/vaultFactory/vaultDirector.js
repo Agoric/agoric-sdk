@@ -32,6 +32,10 @@ import {
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
+  fulfilledTopicMetasRecord,
+  TopicMetasRecordShape,
+} from '../contractSupport.js';
+import {
   CHARGING_PERIOD_KEY,
   makeVaultParamManager,
   RECORDING_PERIOD_KEY,
@@ -102,6 +106,7 @@ export const prepareVaultDirector = (
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
+  /** @type {PublishKit<MetricsNotification>} */
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultDirectorPublishKit();
 
@@ -221,7 +226,7 @@ export const prepareVaultDirector = (
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
-        getSubscribers: M.call().returns(SubscribersRecordShape),
+        getTopics: M.call().returns(M.promise()), // TopicMetasRecord
         makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
@@ -428,11 +433,11 @@ export const prepareVaultDirector = (
       public: {
         /**
          * @param {Brand} brandIn
+         * @returns {CollateralManager}
          */
         getCollateralManager(brandIn) {
           collateralTypes.has(brandIn) ||
             Fail`Not a supported collateral type ${brandIn}`;
-          /** @type {VaultManager} */
           return collateralTypes.get(brandIn).getPublicFacet();
         },
         /**
@@ -507,10 +512,15 @@ export const prepareVaultDirector = (
         getSubscription({ collateralBrand }) {
           return vaultParamManagers.get(collateralBrand).getSubscription();
         },
-        getSubscribers() {
-          return {
-            metrics: [metricsSubscriber, storedMetricsSubscriber.getPath()],
-          };
+        getTopics() {
+          return fulfilledTopicMetasRecord(
+            /** @type {const} */ ({
+              metrics: {
+                subscriber: metricsSubscriber,
+                vstoragePath: storedMetricsSubscriber.getPath(),
+              },
+            }),
+          );
         },
         /**
          * subscription for the paramManager for the vaultFactory's electorate

@@ -11,7 +11,7 @@ const trace = makeTracer('TestMetrics', false);
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {ConsistentAsyncIterable<N>} subscription
+ * @param {AsyncIterable<N>} subscription
  * @template {object} N
  */
 export const subscriptionTracker = async (t, subscription) => {
@@ -40,17 +40,22 @@ export const subscriptionTracker = async (t, subscription) => {
   };
   return { assertChange, assertInitial, assertState, getLastNotif };
 };
+/** @typedef {Awaited<ReturnType<typeof subscriptionTracker>>} SubscriptionTracker */
 
 /**
  * For public facets that have a `getMetrics` method.
  *
+ * @template {import('../src/contractSupport.js').TopicMetasRecord} R
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics?: () => Subscriber<unknown>}} publicFacet
- * @template {object} N
+ * @param {{getTopics: () => Promise<R>}} publicFacet
+ *
  */
 export const metricsTracker = async (t, publicFacet) => {
-  const metricsSub = await E(publicFacet).getMetrics();
-  return subscriptionTracker(t, subscribeEach(metricsSub));
+  const topics = await E(publicFacet).getTopics();
+  /** @type {R['metrics']} */
+  // @ts-expect-error cast
+  const metrics = topics.metrics;
+  return subscriptionTracker(t, subscribeEach(metrics.subscriber));
 };
 
 /**
@@ -59,7 +64,9 @@ export const metricsTracker = async (t, publicFacet) => {
  */
 export const vaultManagerMetricsTracker = async (t, publicFacet) => {
   let totalDebtEver = 0n;
+
   /** @type {Awaited<ReturnType<typeof subscriptionTracker<import('../src/vaultFactory/vaultManager').MetricsNotification>>>} */
+  // @ts-expect-error cast
   const m = await metricsTracker(t, publicFacet);
 
   /** @returns {bigint} Proceeds - overage + shortfall */

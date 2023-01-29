@@ -172,7 +172,6 @@ test('governance add Liquidity to the AMM', async t => {
   );
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
 
@@ -341,7 +340,6 @@ test('reserve track shortfall', async t => {
   let runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
@@ -394,7 +392,6 @@ test('reserve burn IST', async t => {
   const runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
@@ -467,7 +464,6 @@ test('storage keys', async t => {
   );
 
   t.is(
-    // @ts-expect-error Type confusion
     await subscriptionKey(E(reserve.reserveCreatorFacet).getMetrics()),
     'mockChainStorageRoot.reserve.metrics',
   );

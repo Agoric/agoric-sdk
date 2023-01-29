@@ -209,14 +209,14 @@ export const subscriptionKey = subscription => {
 
 /**
  *
- * @param {ERef<{getSubscribers: () => Promise<import('../src/contractSupport.js').SubscribersRecord>}>} hasSubscribers
+ * @param {ERef<{getTopics: () => Promise<import('../src/contractSupport.js').TopicMetasRecord>}>} hasTopics
  * @param {string} subscriberName
  */
-export const subscriptionPath = (hasSubscribers, subscriberName) => {
-  return E(hasSubscribers)
-    .getSubscribers()
+export const topicPath = (hasTopics, subscriberName) => {
+  return E(hasTopics)
+    .getTopics()
     .then(subscribers => subscribers[subscriberName])
-    .then(([_subscriber, path]) => path);
+    .then(tr => tr.vstoragePath);
 };
 
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
