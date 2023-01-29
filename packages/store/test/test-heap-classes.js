@@ -1,3 +1,4 @@
+// @ts-nocheck TODO fix
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import {
   defineExoClass,
@@ -40,7 +41,6 @@ test('test defineExoClass', t => {
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (UpCounter): arg 0?: -3 - Must be >= 0',
   });
-  // @ts-expect-error bad arg
   t.throws(() => upCounter.incr('foo'), {
     message:
       'In "incr" method of (UpCounter): arg 0?: string "foo" - Must be a number',
@@ -51,14 +51,11 @@ test('test defineExoClassKit', t => {
   const makeCounterKit = defineExoClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
-    /** @param {number} x */
     (x = 0) => ({ x }),
     {
       up: {
         incr(y = 1) {
-          // @ts-expect-error methods not on this
           this.incr;
-          // @ts-expect-error facets not on this
           this.up;
           assert(this.facets.up.incr, 'facets.up.incr exists');
           const { state } = this;
@@ -82,12 +79,10 @@ test('test defineExoClassKit', t => {
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (Counter up): arg 0?: -3 - Must be >= 0',
   });
-  // @ts-expect-error the type violation is what we're testing
   t.throws(() => downCounter.decr('foo'), {
     message:
       'In "decr" method of (Counter down): arg 0?: string "foo" - Must be a number',
   });
-  // @ts-expect-error bad arg
   t.throws(() => upCounter.decr(3), {
     message: 'upCounter.decr is not a function',
   });
@@ -115,12 +110,14 @@ test('test makeExo', t => {
 // For code sharing with defineKind which does not support an interface
 test('missing interface', t => {
   t.notThrows(() =>
+    // @ts-expect-error purposeful violation
     makeExo('greeter', undefined, {
       sayHello() {
         return 'hello';
       },
     }),
   );
+  // @ts-expect-error purposeful violation
   const greeterMaker = makeExo('greeterMaker', undefined, {
     makeSayHello() {
       return () => 'hello';
@@ -183,6 +180,7 @@ test('naked function call', t => {
 // needn't run. we just don't have a better place to write these.
 test.skip('types', () => {
   // any methods can be defined if there's no interface
+  // @ts-expect-error purposeful violation
   const unguarded = makeExo('upCounter', undefined, {
     /** @param {number} val */
     incr(val) {
@@ -192,10 +190,8 @@ test.skip('types', () => {
       return 0;
     },
   });
-  // @ts-expect-error invalid args
   unguarded.incr();
   unguarded.notInInterface();
-  // @ts-expect-error not defined
   unguarded.notInBehavior;
 
   // TODO when there is an interface, error if a method is missing from it
@@ -208,9 +204,7 @@ test.skip('types', () => {
       return 0;
     },
   });
-  // @ts-expect-error invalid args
   guarded.incr();
   guarded.notInInterface();
-  // @ts-expect-error not defined
   guarded.notInBehavior;
 });

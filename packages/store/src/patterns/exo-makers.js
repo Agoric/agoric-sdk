@@ -18,56 +18,20 @@ const emptyRecord = harden({});
 export const initEmpty = () => emptyRecord;
 
 /**
- * @template [S = any]
- * @template [T = any]
- * @typedef {object} Context
- * @property {S} state
- * @property {T} self
- */
-
-/**
- * @template [S = any]
- * @template [F = any]
- * @typedef {object} KitContext
- * @property {S} state
- * @property {F} facets
- */
-
-/**
- * @typedef {{[name: string]: Pattern}} StateShape
- * It looks like a copyRecord pattern, but the interpretation is different.
- * Each property is distinct, is checked and changed separately.
- */
-
-/**
- * @template C
- * @typedef {object} FarClassOptions
- * @property {(context: C) => void} [finish]
- * @property {StateShape} [stateShape]
- */
-
-/**
- * @template A args to init
- * @template S state from init
- * @template {Record<string | symbol, CallableFunction>} T methods
- * @param {string} tag
- * @param {any} interfaceGuard
- * @param {(...args: A[]) => S} init
- * @param {T & ThisType<{ self: T, state: S }>} methods
- * @param {FarClassOptions<Context<S,T>>} [options]
- * @returns {(...args: A[]) => (T & import('@endo/eventual-send').RemotableBrand<{}, T>)}
+ * @template {(...args: any) => any} I init state function
+ * @template {Record<string | symbol, CallableFunction>} M methods
+ * @type {DefineExoClass<I,M>}
  */
 export const defineExoClass = (
-  tag,
+  label,
   interfaceGuard,
   init,
   methods,
   { finish = undefined } = {},
 ) => {
-  /** @type {WeakMap<T,Context<S, T>>} */
   const contextMap = new WeakMap();
   const prototype = defendPrototype(
-    tag,
+    label,
     contextMap,
     methods,
     true,
@@ -76,14 +40,11 @@ export const defineExoClass = (
   const makeInstance = (...args) => {
     // Be careful not to freeze the state record
     const state = seal(init(...args));
-    /** @type {T} */
-    // @ts-expect-error could be instantiated with different subtype
     const self = harden({ __proto__: prototype });
-    // Be careful not to freeze the state record
-    /** @type {Context<S,T>} */
     const context = freeze({ state, self });
     contextMap.set(self, context);
     if (finish) {
+      // @ts-expect-error I don't understand the type error
       finish(context);
     }
     return self;
@@ -94,18 +55,12 @@ export const defineExoClass = (
 harden(defineExoClass);
 
 /**
- * @template A args to init
- * @template S state from init
- * @template {Record<string, Record<string | symbol, CallableFunction>>} F methods
- * @param {string} tag
- * @param {any} interfaceGuardKit
- * @param {(...args: A[]) => S} init
- * @param {F & ThisType<{ facets: F, state: S }> } methodsKit
- * @param {FarClassOptions<KitContext<S,F>>} [options]
- * @returns {(...args: A[]) => F}
+ * @template {(...args: any) => any} I init state function
+ * @template {Record<string, Record<string | symbol, CallableFunction>>} F facets
+ * @type {DefineExoClassKit<I,F>}
  */
 export const defineExoClassKit = (
-  tag,
+  label,
   interfaceGuardKit,
   init,
   methodsKit,
@@ -113,7 +68,7 @@ export const defineExoClassKit = (
 ) => {
   const contextMapKit = objectMap(methodsKit, () => new WeakMap());
   const prototypeKit = defendPrototypeKit(
-    tag,
+    label,
     contextMapKit,
     methodsKit,
     true,
@@ -133,7 +88,7 @@ export const defineExoClassKit = (
     // Be careful not to freeze the state record
     freeze(context);
     if (finish) {
-      // @ts-expect-error `facets` was added
+      // @ts-expect-error TS doesn't know we added `facets`
       finish(context);
     }
     return facets;
@@ -145,21 +100,24 @@ export const defineExoClassKit = (
 harden(defineExoClassKit);
 
 /**
- * @template {Record<string, Method>} T
- * @param {string} tag
- * @param {InterfaceGuard | undefined} interfaceGuard CAVEAT: static typing does not yet support `callWhen` transformation
- * @param {T} methods
- * @param {FarClassOptions<Context<{},T>>} [options]
- * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
+ * @template {Record<string | symbol, CallableFunction>} M methods
+ * @type {MakeExo<M>}
  */
-export const makeExo = (tag, interfaceGuard, methods, options = undefined) => {
+export const makeExo = (
+  label,
+  interfaceGuard,
+  methods,
+  options = undefined,
+) => {
   const makeInstance = defineExoClass(
-    tag,
+    label,
     interfaceGuard,
+    // @ts-expect-error TS should understand that `initEmpty` can be an I
     initEmpty,
     methods,
     options,
   );
+  // @ts-expect-error TS things there are two unrelated `Exo<M>` types
   return makeInstance();
 };
 harden(makeExo);

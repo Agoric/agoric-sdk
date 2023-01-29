@@ -84,9 +84,7 @@ export const makeWeakMapStoreMethods = (
  * remotables, since the other primitives may always reappear.
  *
  * @template K,V
- * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
- * @returns {WeakMapStore<K,V>}
+ * @type {MakeWeakMapStore<K,V>}
  */
 export const makeScalarWeakMapStore = (
   tag = 'key',

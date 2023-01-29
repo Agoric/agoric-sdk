@@ -126,9 +126,7 @@ export const makeMapStoreMethods = (
  * copyRecords, as keys and look them up based on equality of their contents.
  *
  * @template K,V
- * @param {string} [tag='key'] - the column name for the key
- * @param {StoreOptions=} options
- * @returns {MapStore<K,V>}
+ * @type {MakeMapStore<K,V>}
  */
 export const makeScalarMapStore = (
   tag = 'key',

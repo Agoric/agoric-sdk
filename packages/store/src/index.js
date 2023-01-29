@@ -68,6 +68,8 @@ export { makeScalarMapStore } from './stores/scalarMapStore.js';
 
 export { provideLazy } from './stores/store-utils.js';
 
+export { heapPlace } from './heap-place.js';
+
 // /////////////////////// Deprecated Legacy ///////////////////////////////////
 
 export { makeLegacyMap } from './legacy/legacyMap.js';
