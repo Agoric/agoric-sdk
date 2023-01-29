@@ -17,6 +17,10 @@ env:
   DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
   TEST_COLLECT: 'tee -a _testoutput.txt'
 
+defaults:
+  run:
+    shell: bash
+
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
