@@ -19,7 +19,7 @@ to use Web Components is ReactJS, for which we provide a [React-specific wrapper
 
 You will need to ensure your app first installs and locks down the JS
 environment using
-[SES](https://github.com/endojs/endo/tree/master/packages/ses#readme).
+[SES](https://github.com/endojs/endo/blob/master/packages/ses/README.md).
 
 You can create an `install-ses-lockdown.js` module that does all the setup
 needed by your app:
