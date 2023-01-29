@@ -1,6 +1,6 @@
 /* global setImmediate */
 
-import './types.js';
+import './types-ambient.js';
 import './internal-types.js';
 
 /**

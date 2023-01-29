@@ -10,7 +10,7 @@ import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 
-import './types.js';
+import './types-ambient.js';
 
 const { details: X } = assert;
 
