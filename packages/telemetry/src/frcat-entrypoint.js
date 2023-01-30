@@ -46,7 +46,6 @@ const main = async () => {
         process.stdout.write(bufStr);
       }
       if (process.stdout.write('\n')) {
-        // eslint-disable-next-line no-continue
         continue;
       }
 

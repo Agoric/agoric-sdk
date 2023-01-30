@@ -173,7 +173,6 @@ async function runTestScript(
 
     for (const name of testNames) {
       if (titleMatch && !isMatch(name, titleMatch)) {
-        // eslint-disable-next-line no-continue
         continue;
       }
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
@@ -357,7 +356,7 @@ export async function main(
   for (const filename of files) {
     if (exclude && exclude.filter(s => filename.match(s)).length > 0) {
       console.warn('# SKIP test excluded on XS', filename);
-      // eslint-disable-next-line no-continue
+
       continue;
     } else if (verbose) {
       console.log('# test script:', filename);

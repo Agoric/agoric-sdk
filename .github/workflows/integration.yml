@@ -32,7 +32,7 @@ jobs:
         # cli: [link-cli, local-npm]
         cli: [link-cli]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Prerequisites
 
@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: '14.x'
       - name: cache node modules
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}

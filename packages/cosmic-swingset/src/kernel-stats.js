@@ -177,7 +177,6 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
             // Add to aggregated metering stats.
             for (const [key, value] of Object.entries(meterUsage)) {
               if (key === 'meterType') {
-                // eslint-disable-next-line no-continue
                 continue;
               }
               getGroupedRecorder(`swingset_meter_usage`, group, {

@@ -372,7 +372,6 @@ const doInit =
         // eslint-disable-next-line no-await-in-loop
         const { PROVIDER } = await askProvider({ inquirer })(PROVIDERS);
         if (!PROVIDER) {
-          // eslint-disable-next-line no-continue
           continue;
         }
         provider = PROVIDERS[PROVIDER];
@@ -400,7 +399,6 @@ const doInit =
             myDetails,
           );
           if (CANCEL) {
-            // eslint-disable-next-line no-continue
             continue;
           }
           // Out with the old, in with the new.
@@ -504,7 +502,7 @@ const doInit =
 
       if (instance === offset) {
         // No nodes added.
-        // eslint-disable-next-line no-continue
+
         continue;
       }
 

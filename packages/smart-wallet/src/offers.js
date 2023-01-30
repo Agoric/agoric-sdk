@@ -79,7 +79,7 @@ export const makeOfferExecutor = ({
       const handleError = err => {
         logger.error('OFFER ERROR:', err);
         updateStatus({ error: err.toString() });
-        paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
+        void paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
           if (result) {
             updateStatus({ result });
           }
@@ -113,7 +113,7 @@ export const makeOfferExecutor = ({
         logger.info(id, 'seated');
 
         // publish 'result'
-        E.when(
+        void E.when(
           E(seatRef).getOfferResult(),
           result => {
             const passStyle = passStyleOf(result);
@@ -154,7 +154,7 @@ export const makeOfferExecutor = ({
         );
 
         // publish 'numWantsSatisfied'
-        E.when(
+        void E.when(
           E(seatRef).numWantsSatisfied(),
           numSatisfied => {
             logger.info(id, 'numSatisfied', numSatisfied);
@@ -171,7 +171,7 @@ export const makeOfferExecutor = ({
         // publish 'payouts'
         // This will block until all payouts succeed, but user will be updated
         // as each payout will trigger its corresponding purse notifier.
-        E.when(
+        void E.when(
           E(seatRef).getPayouts(),
           payouts =>
             paymentsManager.depositPayouts(payouts).then(amountsOrDeferred => {
