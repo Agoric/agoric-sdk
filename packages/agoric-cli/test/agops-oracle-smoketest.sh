@@ -57,6 +57,14 @@ bin/agops oracle pushPriceRound --price 101 --roundId 1 --oracleAdminAcceptOffer
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from "$WALLET" --keyring-backend="test"
 
+# submit another price in the round from the second oracle
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops oracle pushPriceRound --price 201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from "$WALLET2" --keyring-backend="test"
+
+## Additional validation
+
 # verify that the offer was satisfied
 echo "Offer $ORACLE_OFFER_ID should have numWantsSatisfied: 1"
 agoric wallet show --from "$WALLET" --keyring-backend="test"
@@ -66,12 +74,6 @@ agd query vstorage keys published.priceFeed
 
 # verify that the round started
 agoric follow :published.priceFeed.ATOM-USD_price_feed.latestRound
-
-# submit another price in the round from the second oracle
-PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
-jq ".body | fromjson" <"$PROPOSAL_OFFER"
-agoric wallet send --offer "$PROPOSAL_OFFER" --from "$WALLET2" --keyring-backend="test"
 
 # second round, first oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
