@@ -252,6 +252,7 @@ export async function launch({
     commit: () => {}, // disable
     abort: () => {}, // disable
   });
+  /** @type {ReturnType<typeof makeQueue<{inboundNum: string; action: unknown}>>} */
   const inboundQueue = makeQueue(inboundQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
@@ -343,10 +344,11 @@ export async function launch({
     await commit();
   }
 
-  async function deliverInbound(sender, messages, ack) {
+  async function deliverInbound(sender, messages, ack, inboundNum) {
     assert(Array.isArray(messages), X`inbound given non-Array: ${messages}`);
     controller.writeSlogObject({
       type: 'cosmic-swingset-deliver-inbound',
+      inboundNum,
       sender,
       count: messages.length,
     });
@@ -356,9 +358,10 @@ export async function launch({
     console.debug(`mboxDeliver:   ADDED messages`);
   }
 
-  async function doBridgeInbound(source, body) {
+  async function doBridgeInbound(source, body, inboundNum) {
     controller.writeSlogObject({
       type: 'cosmic-swingset-bridge-inbound',
+      inboundNum,
       source,
     });
     // console.log(`doBridgeInbound`);
@@ -412,27 +415,32 @@ export async function launch({
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
 
-  async function performAction(action) {
+  async function performAction(action, inboundNum) {
     // blockManagerConsole.error('Performing action', action);
     let p;
     switch (action.type) {
       case ActionType.DELIVER_INBOUND: {
-        p = deliverInbound(action.peer, action.messages, action.ack);
+        p = deliverInbound(
+          action.peer,
+          action.messages,
+          action.ack,
+          inboundNum,
+        );
         break;
       }
 
       case ActionType.VBANK_BALANCE_UPDATE: {
-        p = doBridgeInbound(BRIDGE_ID.BANK, action);
+        p = doBridgeInbound(BRIDGE_ID.BANK, action, inboundNum);
         break;
       }
 
       case ActionType.IBC_EVENT: {
-        p = doBridgeInbound(BRIDGE_ID.DIBC, action);
+        p = doBridgeInbound(BRIDGE_ID.DIBC, action, inboundNum);
         break;
       }
 
       case ActionType.PLEASE_PROVISION: {
-        p = doBridgeInbound(BRIDGE_ID.PROVISION, action);
+        p = doBridgeInbound(BRIDGE_ID.PROVISION, action, inboundNum);
         break;
       }
 
@@ -442,17 +450,17 @@ export async function launch({
       }
 
       case ActionType.CORE_EVAL: {
-        p = doBridgeInbound(BRIDGE_ID.CORE, action);
+        p = doBridgeInbound(BRIDGE_ID.CORE, action, inboundNum);
         break;
       }
 
       case ActionType.WALLET_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action, inboundNum);
         break;
       }
 
       case ActionType.WALLET_SPEND_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        p = doBridgeInbound(BRIDGE_ID.WALLET, action, inboundNum);
         break;
       }
 
@@ -499,10 +507,10 @@ export async function launch({
     // first the old actions followed by the newActions, running the
     // kernel to completion after each.
     if (keepGoing) {
-      for (const a of inboundQueue.consumeAll()) {
+      for (const { action, inboundNum } of inboundQueue.consumeAll()) {
         inboundQueueMetrics.decStat();
         // eslint-disable-next-line no-await-in-loop
-        await performAction(a);
+        await performAction(action, inboundNum);
         // eslint-disable-next-line no-await-in-loop
         keepGoing = await runSwingset();
         if (!keepGoing) {
@@ -527,8 +535,11 @@ export async function launch({
     // First, push all newActions onto the end of the inboundQueue,
     // remembering that inboundQueue might still have work from the
     // previous block
-    for (const a of newActions) {
-      inboundQueue.push(a);
+    let actionNum = 0;
+    for (const action of newActions) {
+      const inboundNum = `${blockHeight}-${actionNum}`;
+      inboundQueue.push({ action, inboundNum });
+      actionNum += 1;
       inboundQueueMetrics.incStat();
     }
 
