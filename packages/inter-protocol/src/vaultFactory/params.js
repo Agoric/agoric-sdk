@@ -23,6 +23,7 @@ export const LIQUIDATION_INSTALL_KEY = 'LiquidationInstall';
 export const LIQUIDATION_TERMS_KEY = 'LiquidationTerms';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
+export const ENDORSED_UI_KEY = 'EndorsedUI';
 
 /**
  * @param {Amount} electorateInvitationAmount
@@ -30,6 +31,7 @@ export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
  * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
  * @param {Amount} minInitialDebt
  * @param {Amount} shortfallInvitationAmount
+ * @param {string} endorsedUi
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
@@ -37,6 +39,7 @@ const makeVaultDirectorParams = (
   liquidationTerms,
   minInitialDebt,
   shortfallInvitationAmount,
+  endorsedUi,
 ) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
@@ -59,8 +62,10 @@ const makeVaultDirectorParams = (
       type: ParamTypes.INVITATION,
       value: shortfallInvitationAmount,
     },
+    [ENDORSED_UI_KEY]: { type: ParamTypes.STRING, value: endorsedUi },
   });
 };
+harden(makeVaultDirectorParams);
 
 /** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
 
@@ -68,7 +73,7 @@ const makeVaultDirectorParams = (
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
-const makeVaultParamManager = (publisherKit, initial) =>
+export const makeVaultParamManager = (publisherKit, initial) =>
   makeParamManagerSync(publisherKit, {
     [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, initial.debtLimit],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, initial.liquidationMargin],
@@ -94,8 +99,9 @@ export const vaultParamPattern = M.splitRecord({
  * @param {object} liquidationTerms
  * @param {Amount} minInitialDebt
  * @param {Invitation} shortfallInvitation
+ * @param {string} [endorsedUi]
  */
-const makeVaultDirectorParamManager = async (
+export const makeVaultDirectorParamManager = async (
   publisherKit,
   zoe,
   electorateInvitation,
@@ -103,6 +109,7 @@ const makeVaultDirectorParamManager = async (
   liquidationTerms,
   minInitialDebt,
   shortfallInvitation,
+  endorsedUi = 'NO ENDORSEMENT',
 ) => {
   return makeParamManager(
     publisherKit,
@@ -112,10 +119,12 @@ const makeVaultDirectorParamManager = async (
       [LIQUIDATION_TERMS_KEY]: [ParamTypes.UNKNOWN, liquidationTerms],
       [MIN_INITIAL_DEBT_KEY]: [ParamTypes.AMOUNT, minInitialDebt],
       [SHORTFALL_INVITATION_KEY]: [ParamTypes.INVITATION, shortfallInvitation],
+      [ENDORSED_UI_KEY]: [ParamTypes.STRING, endorsedUi],
     },
     zoe,
   );
 };
+harden(makeVaultDirectorParamManager);
 
 /**
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
@@ -131,9 +140,10 @@ const makeVaultDirectorParamManager = async (
  *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
  *   ammPublicFacet: XYKAMMPublicFacet,
  *   shortfallInvitationAmount: Amount,
+ *   endorsedUi?: string,
  * }} opts
  */
-const makeGovernedTerms = (
+export const makeGovernedTerms = (
   { storageNode, marshaller },
   {
     ammPublicFacet,
@@ -147,6 +157,7 @@ const makeGovernedTerms = (
     reservePublicFacet,
     timer,
     shortfallInvitationAmount,
+    endorsedUi = 'NO ENDORSEMENT',
   },
 ) => {
   const loanTimingParams = makeParamManagerSync(
@@ -175,17 +186,9 @@ const makeGovernedTerms = (
       liquidationTerms,
       minInitialDebt,
       shortfallInvitationAmount,
+      endorsedUi,
     ),
     bootstrapPaymentValue,
   });
 };
-
-harden(makeVaultParamManager);
-harden(makeVaultDirectorParamManager);
 harden(makeGovernedTerms);
-
-export {
-  makeVaultDirectorParamManager,
-  makeVaultParamManager,
-  makeGovernedTerms,
-};
