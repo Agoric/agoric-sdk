@@ -27,7 +27,8 @@ defaults:
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         node-version: ['14.x', '16.x', '18.x']
@@ -46,7 +47,8 @@ jobs:
   # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
@@ -62,7 +64,8 @@ jobs:
 
   lint-rest:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
@@ -77,7 +80,8 @@ jobs:
   test-quick:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -88,7 +92,6 @@ jobs:
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
-
       - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
@@ -149,7 +152,8 @@ jobs:
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -205,7 +209,8 @@ jobs:
   test-solo:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -231,7 +236,8 @@ jobs:
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -260,7 +266,8 @@ jobs:
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -285,7 +292,8 @@ jobs:
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -316,7 +324,8 @@ jobs:
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -340,7 +349,8 @@ jobs:
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -365,7 +375,8 @@ jobs:
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']
@@ -392,7 +403,8 @@ jobs:
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
     needs: build
-    runs-on: ubuntu-latest
+    runs-on:
+      labels: large-4c-ubuntu-latest
     strategy:
       matrix:
         engine: ['14.x', '16.x', '18.x', 'xs']

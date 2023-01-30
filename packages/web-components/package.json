@@ -8,7 +8,7 @@
   "module": "index.js",
   "scripts": {
     "build": "exit 0",
-    "test": "node -e 'process.exit(process.env.SKIP_BROWSER_TESTS==\"true\" ? 0 : 1)' || web-test-runner --coverage",
+    "test": "node -e 'process.exit(process.env.SKIP_BROWSER_TESTS==\"true\" ? 0 : 1)' || web-test-runner --coverage --puppeteer",
     "test:c8": "exit 0",
     "test:xs": "exit 0",
     "test:watch": "web-test-runner --watch",
