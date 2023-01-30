@@ -34,7 +34,7 @@ import {
   BeansPerXsnapComputron,
   QueueInbound,
 } from './sim-params.js';
-import { parseParams, serializeQueueSizes } from './params.js';
+import { parseParams, encodeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
 
 const console = anylogger('launch-chain');
@@ -716,7 +716,7 @@ export async function launch({
           queueAllowed: savedQueueAllowed,
         });
 
-        return { queue_allowed: serializeQueueSizes(savedQueueAllowed) };
+        return { queue_allowed: encodeQueueSizes(savedQueueAllowed) };
       }
 
       case ActionType.END_BLOCK: {
