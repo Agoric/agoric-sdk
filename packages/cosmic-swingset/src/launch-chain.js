@@ -784,8 +784,13 @@ export async function launch({
     }
   }
 
+  function shutdown() {
+    return controller.shutdown();
+  }
+
   return {
     blockingSend,
+    shutdown,
     savedHeight,
     savedBlockTime,
     savedChainSends: JSON.parse(kvStore.get(getHostKey('chainSends')) || '[]'),
