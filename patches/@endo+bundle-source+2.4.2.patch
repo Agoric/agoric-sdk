@@ -1,0 +1,14 @@
+diff --git a/node_modules/@endo/bundle-source/src/tool.js b/node_modules/@endo/bundle-source/src/tool.js
+index fac8b82..782f850 100755
+--- a/node_modules/@endo/bundle-source/src/tool.js
++++ b/node_modules/@endo/bundle-source/src/tool.js
+@@ -237,5 +237,8 @@ if (isEntrypoint(import.meta.url)) {
+     path: await import('path'),
+     url: await import('url'),
+     crypto: await import('crypto'),
+-  }).catch(console.error);
++  }).catch(err => {
++    console.error(err);
++    process.exit(process.exitCode || 1);
++  });
+ }
