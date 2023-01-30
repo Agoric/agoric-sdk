@@ -1,5 +1,6 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -155,8 +156,7 @@ export const VaultI = M.interface('Vault', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getVaultSeat: M.call().returns(SeatShape),
-  // FIXME m.any
-  initVaultKit: M.call(SeatShape, M.any()).returns(M.promise()),
+  initVaultKit: M.call(SeatShape, StorageNodeShape).returns(M.promise()),
   liquidated: M.call().returns(undefined),
   liquidating: M.call().returns(undefined),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
@@ -578,7 +578,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          *
          * @param {ZCFSeat} seat
          */
-        async makeTransferInvitationHook(seat) {
+        makeTransferInvitationHook(seat) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
