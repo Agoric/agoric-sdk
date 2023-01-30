@@ -3,29 +3,20 @@
  */
 import { AmountShape } from '@agoric/ertp';
 import {
-  makeStoredSubscriber,
+  pipeTopicToStorage,
   prepareDurablePublishKit,
+  TopicMetasRecordShape,
 } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { makeEphemeraProvider } from '@agoric/zoe/src/contractSupport/index.js';
-import { TopicMetasRecordShape } from '../contractSupport.js';
+import { makeTopicMetaProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
 
 /**
- * Ephemera are the elements of state that cannot (or need not) be durable.
- *
- * @type {(durableSubscriber: Subscriber<VaultNotification>) => {
- * storedSubscriber: StoredSubscriber<VaultNotification>,
- * }} */
-// @ts-expect-error not yet defined
-const provideEphemera = makeEphemeraProvider(() => ({}));
-
-/**
  * @typedef {{
  * publisher: PublishKit<VaultNotification>['publisher'],
- * storageNodeKit: StorageNodeKit,
+ * storageNode: StorageNode,
  * subscriber: PublishKit<VaultNotification>['subscriber'],
  * vault: Vault | null,
  * }} State
@@ -51,6 +42,8 @@ export const prepareVaultHolder = (baggage, marshaller) => {
     'Vault Holder publish kit',
   );
 
+  const provideTopicMeta = makeTopicMetaProvider();
+
   const makeVaultHolderKit = prepareExoClassKit(
     baggage,
     'Vault Holder',
@@ -59,23 +52,19 @@ export const prepareVaultHolder = (baggage, marshaller) => {
       holder: HolderI,
     },
     /**
+     * Init state of new Vault Holder
      *
      * @param {Vault} vault
-     * @param {StorageNodeKit} storageNodeKit
+     * @param {StorageNode} storageNode
      * @returns {State}
      */
-    (vault, storageNodeKit) => {
+    (vault, storageNode) => {
       /** @type {PublishKit<VaultNotification>} */
       const { subscriber, publisher } = makeVaultHolderPublishKit();
 
-      const ephemera = provideEphemera(subscriber);
-      ephemera.storedSubscriber = makeStoredSubscriber(
-        subscriber,
-        storageNodeKit.node,
-        marshaller,
-      );
+      pipeTopicToStorage(subscriber, storageNode, marshaller);
 
-      return { subscriber, publisher, storageNodeKit, vault };
+      return { subscriber, publisher, storageNode, vault };
     },
     {
       helper: {
@@ -95,12 +84,10 @@ export const prepareVaultHolder = (baggage, marshaller) => {
       },
       holder: {
         getTopics() {
-          const { storageNodeKit, subscriber } = this.state;
+          const { subscriber, storageNode } = this.state;
+
           return /** @type {const} */ ({
-            vault: {
-              subscriber,
-              storagePath: storageNodeKit.path,
-            },
+            vault: provideTopicMeta('Vault changes', subscriber, storageNode),
           });
         },
         makeAdjustBalancesInvitation() {

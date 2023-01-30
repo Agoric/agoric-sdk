@@ -18,22 +18,20 @@ export const prepareVaultKit = (baggage, marshaller) => {
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
-   * @param {StorageNodeKit} storageNodeKit
+   * @param {StorageNode} storageNode
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
-  const makeVaultKit = (vault, storageNodeKit, assetSubscriber) => {
+  // MUST BE SYNC FOR TRANSFER
+  const makeVaultKit = (vault, storageNode, assetSubscriber) => {
     trace('prepareVaultKit makeVaultKit');
-    const { holder, helper } = makeVaultHolder(vault, storageNodeKit);
+    const { holder, helper } = makeVaultHolder(vault, storageNode);
     const holderTopics = holder.getTopics();
     console.log('DEBUG', { holderTopics });
     const vaultKit = harden({
       publicSubscribers: {
         // @deprecated get from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
-        asset: { subscriber: assetSubscriber },
+        asset: { topic: assetSubscriber },
         vault: holderTopics.vault,
-      },
-      publicPaths: {
-        vault: '',
       },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () => holder.makeAdjustBalancesInvitation(),

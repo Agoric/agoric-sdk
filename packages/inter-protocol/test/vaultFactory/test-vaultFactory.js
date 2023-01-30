@@ -272,8 +272,8 @@ const legacyOfferResult = vaultSeat => {
       return {
         vault,
         publicNotifiers: {
-          asset: makeNotifierFromSubscriber(publicSubscribers.asset.subscriber),
-          vault: makeNotifierFromSubscriber(publicSubscribers.vault.subscriber),
+          asset: makeNotifierFromSubscriber(publicSubscribers.asset.topic),
+          vault: makeNotifierFromSubscriber(publicSubscribers.vault.topic),
         },
       };
     });
@@ -1489,6 +1489,8 @@ test('transfer vault', async t => {
     return amount.value[0];
   };
 
+  trace('make transfer invitation');
+
   /** @type {Promise<Invitation<VaultKit>>} */
   const transferInvite = E(aliceVault).makeTransferInvitation();
   const inviteProps = await getInvitationProperties(transferInvite);
@@ -1498,6 +1500,7 @@ test('transfer vault', async t => {
     vault: transferVault,
     publicNotifiers: { vault: transferNotifier },
   } = await legacyOfferResult(transferSeat);
+  trace('got public transferNotifier', transferNotifier);
   await t.throwsAsync(() => E(aliceVault).getCurrentDebt());
   const debtAfter = await E(transferVault).getCurrentDebt();
   t.deepEqual(debtAfter, debtAmount, 'vault lent 5000 Minted + fees');
@@ -1528,6 +1531,8 @@ test('transfer vault', async t => {
     'new notifier is active',
   );
 
+  trace('interleaving adjustVault');
+
   // Interleave with `adjustVault`
   // make the invitation first so that we can arrange the interleaving
   // of adjust and tranfer
@@ -1541,6 +1546,8 @@ test('transfer vault', async t => {
     borrowedRun,
     payoffRun2,
   );
+
+  trace('making adjust offer');
 
   // Adjust is multi-turn. Confirm that an interleaved transfer prevents it
   const adjustSeatPromise = E(zoe).offer(
@@ -1557,6 +1564,8 @@ test('transfer vault', async t => {
     vault: t2Vault,
     publicNotifiers: { vault: t2Notifier },
   } = await legacyOfferResult(t2Seat);
+
+  trace('offer result');
   await t.throwsAsync(
     () => E(adjustSeatPromise).getOfferResult(),
     {
@@ -1567,6 +1576,8 @@ test('transfer vault', async t => {
   await t.throwsAsync(() => E(transferVault).getCurrentDebt());
   const debtAfter2 = await E(t2Vault).getCurrentDebt();
   t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 Minted + fees');
+
+  trace('checking balances');
 
   const collateralAfter2 = await E(t2Vault).getCollateralAmount();
   t.deepEqual(collateralAmount, collateralAfter2, 'vault has 1000n aEth');

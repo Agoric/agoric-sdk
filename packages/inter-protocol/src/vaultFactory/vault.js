@@ -100,7 +100,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  * idInManager: VaultId,
  * manager: VaultManager,
- * storageNodeKit: StorageNodeKit,
+ * storageNode: StorageNode,
  * vaultSeat: ZCFSeat,
  * }>} ImmutableState
  */
@@ -182,17 +182,17 @@ export const prepareVault = (baggage, marshaller, zcf) => {
     /**
      * @param {VaultManager} manager
      * @param {VaultId} idInManager
-     * @param {StorageNodeKit} storageNodeKit
+     * @param {StorageNode} storageNode
      * @returns {ImmutableState & MutableState}
      */
-    (manager, idInManager, storageNodeKit) => {
+    (manager, idInManager, storageNode) => {
       return harden({
         idInManager,
         manager,
         outerUpdater: null,
         phase: Phase.ACTIVE,
 
-        storageNodeKit,
+        storageNode,
 
         // vaultSeat will hold the collateral until the loan is retired. The
         // payout from it will be handed to the user: if the vault dies early
@@ -589,7 +589,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // eslint-disable-next-line no-use-before-define
           const vaultKit = makeVaultKit(
             self,
-            state.storageNodeKit,
+            state.storageNode,
             state.manager.getAssetSubscriber(),
           );
           state.outerUpdater = vaultKit.vaultUpdater;
@@ -605,9 +605,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
         /**
          * @param {ZCFSeat} seat
-         * @param {StorageNodeKit} storageNodeKit
+         * @param {StorageNode} storageNode
          */
-        async initVaultKit(seat, storageNodeKit) {
+        async initVaultKit(seat, storageNode) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
@@ -663,7 +663,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
           const vaultKit = makeVaultKit(
             self,
-            storageNodeKit,
+            storageNode,
             state.manager.getAssetSubscriber(),
           );
           state.outerUpdater = vaultKit.vaultUpdater;

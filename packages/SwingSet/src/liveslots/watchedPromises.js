@@ -164,6 +164,14 @@ export function makeWatchedPromiseManager(
     }
   }
 
+  /**
+   *
+   * @template {object} T
+   * @template {any[]} A args
+   * @param {Promise<T>} p
+   * @param {{onFulfilled: (T, ...A) => void, onRejected: (reason: any, ...A) => void}} watcher durable object handling resolution of the promise
+   * @param {A} args added to calls to the watcher's handlers
+   */
   function watchPromise(p, watcher, ...args) {
     // The following wrapping defers setting up the promise watcher itself to a
     // later turn so that if the promise to be watched was the return value from

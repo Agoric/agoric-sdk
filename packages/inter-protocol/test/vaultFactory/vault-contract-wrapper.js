@@ -162,11 +162,7 @@ export async function start(zcf, privateArgs, baggage) {
     managerMock,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
-    // TODO makeFakeStorageKit
-    {
-      node: makeFakeStorage('test.vaultContractWrapper'),
-      path: 'test.vaultContractWrapper',
-    },
+    makeFakeStorage('test.vaultContractWrapper'),
   );
 
   const advanceRecordingPeriod = async () => {
@@ -196,10 +192,7 @@ export async function start(zcf, privateArgs, baggage) {
   }));
 
   async function makeHook(seat) {
-    const vaultKit = await vault.initVaultKit(seat, {
-      node: makeFakeStorage('test'),
-      path: 'test',
-    });
+    const vaultKit = await vault.initVaultKit(seat, makeFakeStorage('test'));
     return {
       vault,
       runMint,

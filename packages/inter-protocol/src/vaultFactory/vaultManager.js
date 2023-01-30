@@ -24,10 +24,11 @@ import {
 import { makeTracer } from '@agoric/internal';
 import {
   makeStoredNotifier,
-  makeStoredSubscriber,
   observeNotifier,
+  pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
+  TopicMetasRecordShape,
 } from '@agoric/notifier';
 import {
   M,
@@ -44,14 +45,12 @@ import {
   getAmountOut,
   makeRatio,
   makeRatioFromAmounts,
+  makeTopicMetaProvider,
   provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import {
-  checkDebtLimit,
-  fulfilledTopicMetasRecord,
-} from '../contractSupport.js';
+import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
@@ -162,6 +161,7 @@ export const prepareVaultManagerKit = (
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
+  /** @type {PublishKit<MetricsNotification>} */
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultManagerPublishKit();
 
@@ -176,17 +176,10 @@ export const prepareVaultManagerKit = (
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
-  const storedMetricsSubscriber = makeStoredSubscriber(
-    metricsSubscriber,
-    E(storageNode).makeChildNode('metrics'),
-    marshaller,
-  );
+  pipeTopicToStorage(assetSubscriber, storageNode, marshaller);
 
-  const storedAssetSubscriber = makeStoredSubscriber(
-    assetSubscriber,
-    storageNode,
-    marshaller,
-  );
+  const metricsNode = E(storageNode).makeChildNode('metrics');
+  pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
   const storedQuotesNotifier = makeStoredNotifier(
     E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
@@ -195,6 +188,8 @@ export const prepareVaultManagerKit = (
   );
 
   const prioritizedVaults = makePrioritizedVaults(unsettledVaults);
+
+  const provideTopicMeta = makeTopicMetaProvider();
 
   /**
    * If things are going well, the set will contain at most one Vault. Otherwise
@@ -250,7 +245,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
-        getTopics: M.call().returns(M.promise()), // TopicMetasRecord
+        getTopics: M.call().returns(TopicMetasRecordShape),
       }),
       helper: M.interface(
         'helper',
@@ -298,18 +293,18 @@ export const prepareVaultManagerKit = (
           );
         },
         getTopics() {
-          return fulfilledTopicMetasRecord(
-            /** @type {const} */ ({
-              asset: {
-                topic: assetSubscriber,
-                storagePath: storedAssetSubscriber.getPath(),
-              },
-              metrics: {
-                topic: metricsSubscriber,
-                storagePath: storedMetricsSubscriber.getPath(),
-              },
-            }),
-          );
+          return /** @type {const} */ ({
+            asset: provideTopicMeta(
+              'Vault Manager asset updates',
+              assetSubscriber,
+              storageNode,
+            ),
+            metrics: provideTopicMeta(
+              'Vault Manager metrics',
+              metricsSubscriber,
+              metricsNode,
+            ),
+          });
         },
         getQuotes() {
           return storedQuotesNotifier;
@@ -672,7 +667,7 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          return storedAssetSubscriber;
+          return assetSubscriber;
         },
         getCollateralBrand() {
           return collateralBrand;
@@ -797,17 +792,17 @@ export const prepareVaultManagerKit = (
           const vaultId = String(state.vaultCounter);
 
           // must be a presence to be stored in vault state
-          const vaultNodeKit = await E(
+          const vaultNode = await E(
             E(storageNode).makeChildNode(`vaults`),
-          ).makeChildNodeKit(`vault${vaultId}`);
+          ).makeChildNode(`vault${vaultId}`);
 
-          const { self: vault } = makeVault(manager, vaultId, vaultNodeKit);
+          const { self: vault } = makeVault(manager, vaultId, vaultNode);
           trace('makevaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed
             // eslint-disable-next-line @jessie.js/no-nested-await
-            const vaultKit = await vault.initVaultKit(seat, vaultNodeKit);
+            const vaultKit = await vault.initVaultKit(seat, vaultNode);
             // initVaultKit calls back to handleBalanceChange() which will add the
             // vault to prioritizedVaults
             seat.exit();

@@ -19,10 +19,10 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   makeStoredPublisherKit,
-  makeStoredSubscriber,
   observeIteration,
   prepareDurablePublishKit,
   SubscriberShape,
+  TopicMetasRecordShape,
 } from '@agoric/notifier';
 import {
   defineDurableExoClassKit,
@@ -31,7 +31,6 @@ import {
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
-import { fulfilledTopicMetasRecord } from '../contractSupport.js';
 import {
   CHARGING_PERIOD_KEY,
   makeVaultParamManager,
@@ -107,11 +106,7 @@ export const prepareVaultDirector = (
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultDirectorPublishKit();
 
-  const storedMetricsSubscriber = makeStoredSubscriber(
-    metricsSubscriber,
-    E(storageNode).makeChildNode('metrics'),
-    marshaller,
-  );
+  const metricsNode = E(storageNode).makeChildNode('metrics');
 
   const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
 
@@ -223,7 +218,7 @@ export const prepareVaultDirector = (
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
-        getTopics: M.call().returns(M.promise()), // TopicMetasRecord
+        getTopics: M.call().returns(TopicMetasRecordShape),
         makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
@@ -510,14 +505,12 @@ export const prepareVaultDirector = (
           return vaultParamManagers.get(collateralBrand).getSubscription();
         },
         getTopics() {
-          return fulfilledTopicMetasRecord(
-            /** @type {const} */ ({
-              metrics: {
-                topic: metricsSubscriber,
-                storagePath: storedMetricsSubscriber.getPath(),
-              },
-            }),
-          );
+          return /** @type {const} */ ({
+            metrics: {
+              topic: metricsSubscriber,
+              storagePath: E(metricsNode).getPath(),
+            },
+          });
         },
         /**
          * subscription for the paramManager for the vaultFactory's electorate

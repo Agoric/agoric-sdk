@@ -4,6 +4,7 @@ import {
   provide,
   provideDurableSetStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /// <reference types="@agoric/notifier/src/types-ambient.js"/>
@@ -37,40 +38,37 @@ harden(makeEphemeraProvider);
 /**
  *
  */
-export const makeEphemeralStoredSubscriberProvider = () => {
-  /** @type {WeakMap<Subscriber<any>, StoredSubscriber<any>>} */
+export const makeTopicMetaProvider = () => {
+  /** @type {WeakMap<Subscriber<any>, import('@agoric/notifier').TopicMeta<any>>} */
   const extant = new WeakMap();
 
   /**
    * Provide a StoredSubscriber for the specified durable subscriber.
    *
    * @template {object} T
+   * @param {string} description
    * @param {Subscriber<T>} durableSubscriber
    * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
-   * @returns {StoredSubscriber<T>}
+   * @returns {import('@agoric/notifier').TopicMeta<T>}
    */
-  const provideEphemeralStoredSubscriber = (
-    durableSubscriber,
-    storageNode,
-    marshaller,
-  ) => {
+  const provideTopicMeta = (description, durableSubscriber, storageNode) => {
     if (extant.has(durableSubscriber)) {
       // @ts-expect-error cast
       return extant.get(durableSubscriber);
     }
 
-    const newSub = makeStoredSubscriber(
-      durableSubscriber,
-      storageNode,
-      marshaller,
-    );
-    extant.set(durableSubscriber, newSub);
-    return newSub;
+    /** @type {import('@agoric/notifier').TopicMeta<T>} */
+    const newMeta = {
+      description,
+      topic: durableSubscriber,
+      storagePath: E(storageNode).getPath(),
+    };
+    extant.set(durableSubscriber, newMeta);
+    return newMeta;
   };
-  return provideEphemeralStoredSubscriber;
+  return provideTopicMeta;
 };
-harden(makeEphemeralStoredSubscriberProvider);
+harden(makeTopicMetaProvider);
 
 /**
  * Provide an empty ZCF seat.

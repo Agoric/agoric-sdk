@@ -1,9 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import {
-  makeStoredPublisherKit,
-  makeStoredPublishKit,
-  SubscriberShape,
-} from '@agoric/notifier';
+import { makeStoredPublisherKit, makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
@@ -16,36 +12,12 @@ export const ratioPattern = harden({
   denominator: amountPattern,
 });
 
-export const TopicMetaShape = M.splitRecord(
-  {
-    topic: SubscriberShape,
-    storagePath: M.string(),
-  },
-  { description: M.string() },
-);
-/**
- * @template {object} T topic value
- * @typedef {{
- *   description?: string,
- *   topic: ERef<Subscriber<T>>,
- *   storagePath: string,
- * }} TopicMeta
- */
-
-export const TopicMetasRecordShape = M.recordOf(M.string(), TopicMetaShape);
-
-/**
- * @typedef {{
- *   [topicName: string]: TopicMeta<unknown>,
- * }} TopicMetasRecord
- */
-
 /**
  * @template {Readonly<{
- *   [subscriberKey: string]: Omit<TopicMeta<any>, 'storagePath'> & { storagePath: Promise<string>}
+ *   [subscriberKey: string]: Omit<import('@agoric/notifier').TopicMeta<any>, 'storagePath'> & { storagePath: Promise<string>}
  * }>} R
  * @param {R} unfulfilled
- * @returns {Promise<Readonly<{ [K in keyof R]: R[K]['subscriber'] extends Subscriber<infer T> ? TopicMeta<T> : never }>>}
+ * @returns {Promise<Readonly<{ [K in keyof R]: R[K]['subscriber'] extends Subscriber<infer T> ? import('@agoric/notifier').TopicMeta<T> : never }>>}
  */
 export const fulfilledTopicMetasRecord = async unfulfilled => {
   return deeplyFulfilled(harden(unfulfilled));

@@ -209,7 +209,7 @@ export const subscriptionKey = subscription => {
 
 /**
  *
- * @param {ERef<{getTopics: () => Promise<import('../src/contractSupport.js').TopicMetasRecord>}>} hasTopics
+ * @param {ERef<{getTopics: () => Promise<import('@agoric/notifier').TopicMetasRecord>}>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {
