@@ -31,6 +31,13 @@ const { Fail } = assert;
  * @property {() => string} getPath the chain storage path at which the node was constructed
  * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
  * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
+ * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNodeKit} makeChildNodeKit
+ */
+
+/**
+ * @typedef {object} StorageNodeKit
+ * @property {StorageNode} node
+ * @property {string} path
  */
 
 /**
@@ -104,6 +111,15 @@ export function makeChainStorageRoot(
         assertPathSegment(name);
         const mergedOptions = { sequence, ...childNodeOptions };
         return makeChainStorageNode(`${path}.${name}`, mergedOptions);
+      },
+      /** @type {(name: string, childNodeOptions?: {sequence?: boolean}) => StorageNodeKit} */
+      makeChildNodeKit(name, childNodeOptions = {}) {
+        assert.typeof(name, 'string');
+        assertPathSegment(name);
+        const mergedOptions = { sequence, ...childNodeOptions };
+        const childPath = `${path}.${name}`;
+        const childNode = makeChainStorageNode(childPath, mergedOptions);
+        return { node: childNode, path: childPath };
       },
       /** @type {(value: string) => Promise<void>} */
       async setValue(value) {

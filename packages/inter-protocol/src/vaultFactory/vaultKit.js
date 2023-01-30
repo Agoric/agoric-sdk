@@ -18,13 +18,13 @@ export const prepareVaultKit = (baggage, marshaller) => {
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
-   * @param {ERef<StorageNode>} storageNode
+   * @param {StorageNodeKit} storageNodeKit
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
-  const makeVaultKit = async (vault, storageNode, assetSubscriber) => {
+  const makeVaultKit = (vault, storageNodeKit, assetSubscriber) => {
     trace('prepareVaultKit makeVaultKit');
-    const { holder, helper } = makeVaultHolder(vault, storageNode);
-    const holderTopics = await holder.getTopics();
+    const { holder, helper } = makeVaultHolder(vault, storageNodeKit);
+    const holderTopics = holder.getTopics();
     console.log('DEBUG', { holderTopics });
     const vaultKit = harden({
       publicSubscribers: {

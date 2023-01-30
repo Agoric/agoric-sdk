@@ -51,7 +51,6 @@ import { E } from '@endo/eventual-send';
 import {
   checkDebtLimit,
   fulfilledTopicMetasRecord,
-  TopicMetasRecordShape,
 } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
@@ -798,17 +797,17 @@ export const prepareVaultManagerKit = (
           const vaultId = String(state.vaultCounter);
 
           // must be a presence to be stored in vault state
-          const vaultStorageNode = await E(
+          const vaultNodeKit = await E(
             E(storageNode).makeChildNode(`vaults`),
-          ).makeChildNode(`vault${vaultId}`);
+          ).makeChildNodeKit(`vault${vaultId}`);
 
-          const { self: vault } = makeVault(manager, vaultId, vaultStorageNode);
+          const { self: vault } = makeVault(manager, vaultId, vaultNodeKit);
           trace('makevaultKit made vault', vault);
 
           try {
             // TODO `await` is allowed until the above ordering is fixed
             // eslint-disable-next-line @jessie.js/no-nested-await
-            const vaultKit = await vault.initVaultKit(seat, vaultStorageNode);
+            const vaultKit = await vault.initVaultKit(seat, vaultNodeKit);
             // initVaultKit calls back to handleBalanceChange() which will add the
             // vault to prioritizedVaults
             seat.exit();

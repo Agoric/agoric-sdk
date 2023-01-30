@@ -7,12 +7,8 @@ import {
   prepareDurablePublishKit,
 } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { makeEphemeralStoredSubscriberProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { makeEphemeraProvider } from '@agoric/zoe/src/contractSupport/index.js';
-import {
-  fulfilledTopicMetasRecord,
-  TopicMetasRecordShape,
-} from '../contractSupport.js';
+import { TopicMetasRecordShape } from '../contractSupport.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
@@ -26,11 +22,10 @@ const { Fail } = assert;
 // @ts-expect-error not yet defined
 const provideEphemera = makeEphemeraProvider(() => ({}));
 
-const provideStoredSubscriber = makeEphemeralStoredSubscriberProvider();
-
 /**
  * @typedef {{
  * publisher: PublishKit<VaultNotification>['publisher'],
+ * storageNodeKit: StorageNodeKit,
  * subscriber: PublishKit<VaultNotification>['subscriber'],
  * vault: Vault | null,
  * }} State
@@ -40,7 +35,7 @@ const HolderI = M.interface('holder', {
   getCollateralAmount: M.call().returns(AmountShape),
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
-  getTopics: M.call().returns(M.promise()), // TopicMetasRecord
+  getTopics: M.call().returns(TopicMetasRecordShape),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
@@ -66,21 +61,21 @@ export const prepareVaultHolder = (baggage, marshaller) => {
     /**
      *
      * @param {Vault} vault
-     * @param {ERef<StorageNode>} storageNode
+     * @param {StorageNodeKit} storageNodeKit
      * @returns {State}
      */
-    (vault, storageNode) => {
+    (vault, storageNodeKit) => {
       /** @type {PublishKit<VaultNotification>} */
       const { subscriber, publisher } = makeVaultHolderPublishKit();
 
       const ephemera = provideEphemera(subscriber);
       ephemera.storedSubscriber = makeStoredSubscriber(
         subscriber,
-        storageNode,
+        storageNodeKit.node,
         marshaller,
       );
 
-      return { subscriber, publisher, vault };
+      return { subscriber, publisher, storageNodeKit, vault };
     },
     {
       helper: {
@@ -99,17 +94,14 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         },
       },
       holder: {
-        async getTopics() {
-          const { subscriber } = this.state;
-          const ephemera = provideEphemera(this.state.subscriber);
-          return fulfilledTopicMetasRecord(
-            /** @type {const} */ ({
-              vault: {
-                subscriber,
-                vstoragePath: ephemera.storedSubscriber.getPath(),
-              },
-            }),
-          );
+        getTopics() {
+          const { storageNodeKit, subscriber } = this.state;
+          return /** @type {const} */ ({
+            vault: {
+              subscriber,
+              vstoragePath: storageNodeKit.path,
+            },
+          });
         },
         makeAdjustBalancesInvitation() {
           return this.facets.helper.owned().makeAdjustBalancesInvitation();

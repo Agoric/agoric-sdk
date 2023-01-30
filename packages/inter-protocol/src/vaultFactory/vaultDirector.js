@@ -31,10 +31,7 @@ import {
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
-import {
-  fulfilledTopicMetasRecord,
-  TopicMetasRecordShape,
-} from '../contractSupport.js';
+import { fulfilledTopicMetasRecord } from '../contractSupport.js';
 import {
   CHARGING_PERIOD_KEY,
   makeVaultParamManager,

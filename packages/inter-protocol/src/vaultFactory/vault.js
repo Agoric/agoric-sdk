@@ -1,6 +1,5 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -101,7 +100,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  * idInManager: VaultId,
  * manager: VaultManager,
- * storageNode: StorageNode,
+ * storageNodeKit: StorageNodeKit,
  * vaultSeat: ZCFSeat,
  * }>} ImmutableState
  */
@@ -156,7 +155,8 @@ export const VaultI = M.interface('Vault', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getVaultSeat: M.call().returns(SeatShape),
-  initVaultKit: M.call(SeatShape, StorageNodeShape).returns(M.promise()),
+  // FIXME m.any
+  initVaultKit: M.call(SeatShape, M.any()).returns(M.promise()),
   liquidated: M.call().returns(undefined),
   liquidating: M.call().returns(undefined),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
@@ -182,17 +182,17 @@ export const prepareVault = (baggage, marshaller, zcf) => {
     /**
      * @param {VaultManager} manager
      * @param {VaultId} idInManager
-     * @param {StorageNode} storageNode
+     * @param {StorageNodeKit} storageNodeKit
      * @returns {ImmutableState & MutableState}
      */
-    (manager, idInManager, storageNode) => {
+    (manager, idInManager, storageNodeKit) => {
       return harden({
         idInManager,
         manager,
         outerUpdater: null,
         phase: Phase.ACTIVE,
 
-        storageNode,
+        storageNodeKit,
 
         // vaultSeat will hold the collateral until the loan is retired. The
         // payout from it will be handed to the user: if the vault dies early
@@ -587,9 +587,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           seat.exit();
 
           // eslint-disable-next-line no-use-before-define
-          const vaultKit = await makeVaultKit(
+          const vaultKit = makeVaultKit(
             self,
-            state.storageNode,
+            state.storageNodeKit,
             state.manager.getAssetSubscriber(),
           );
           state.outerUpdater = vaultKit.vaultUpdater;
@@ -605,9 +605,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
         /**
          * @param {ZCFSeat} seat
-         * @param {ERef<StorageNode>} storageNode
+         * @param {StorageNodeKit} storageNodeKit
          */
-        async initVaultKit(seat, storageNode) {
+        async initVaultKit(seat, storageNodeKit) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
@@ -661,9 +661,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           trace('initVault updateDebtAccounting fired');
 
-          const vaultKit = await makeVaultKit(
+          const vaultKit = makeVaultKit(
             self,
-            storageNode,
+            storageNodeKit,
             state.manager.getAssetSubscriber(),
           );
           state.outerUpdater = vaultKit.vaultUpdater;

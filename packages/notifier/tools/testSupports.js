@@ -34,6 +34,7 @@ export const makeFakeStorage = (path, publication) => {
       publication.updateState(value);
     },
     makeChildNode: () => storage,
+    makeChildNodeKit: () => ({ node: storage, path }),
     countSetValueCalls: () => setValueCalls,
   });
   return storage;

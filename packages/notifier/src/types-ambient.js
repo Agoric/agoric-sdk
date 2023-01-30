@@ -278,6 +278,13 @@
  * @property {() => string} getPath the chain storage path at which the node was constructed
  * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
  * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
+ * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNodeKit} makeChildNodeKit
+ */
+
+/**
+ * @typedef {object} StorageNodeKit
+ * @property {StorageNode} node
+ * @property {string} path
  */
 
 /**
