@@ -341,16 +341,6 @@ export async function launch({
     kvStore.set(getHostKey('queueAllowed'), JSON.stringify(savedQueueAllowed));
 
     await commit();
-    void Promise.resolve()
-      .then(afterCommitCallback)
-      .then((afterCommitStats = {}) => {
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-after-commit-block',
-          blockHeight,
-          blockTime,
-          ...afterCommitStats,
-        });
-      });
   }
 
   async function deliverInbound(sender, messages, ack) {
@@ -420,6 +410,7 @@ export async function launch({
   let chainTime;
   let blockParams;
   let decohered;
+  let afterCommitWorkDone = Promise.resolve();
 
   async function performAction(action) {
     // blockManagerConsole.error('Performing action', action);
@@ -624,10 +615,30 @@ export async function launch({
     throw decohered;
   }
 
+  async function afterCommit(blockHeight, blockTime) {
+    await Promise.resolve()
+      .then(afterCommitCallback)
+      .then(
+        (afterCommitStats = {}) => {
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-after-commit-stats',
+            blockHeight,
+            blockTime,
+            ...afterCommitStats,
+          });
+        },
+        error => {
+          console.warn('Error during afterCommitCallback', error);
+        },
+      );
+  }
+
   async function blockingSend(action) {
     if (decohered) {
       throw decohered;
     }
+
+    await afterCommitWorkDone;
 
     // blockManagerConsole.warn(
     //   'FIGME: blockHeight',
@@ -698,6 +709,8 @@ export async function launch({
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
+
+        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
         return undefined;
       }
