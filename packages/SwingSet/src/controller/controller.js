@@ -8,7 +8,6 @@ import crypto from 'crypto';
 import { performance } from 'perf_hooks';
 import { spawn as ambientSpawn } from 'child_process';
 import { type as osType } from 'os';
-import { Worker } from 'worker_threads';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
@@ -19,7 +18,6 @@ import { initSwingStore } from '@agoric/swing-store';
 
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import engineGC from '../lib-nodejs/engine-gc.js';
-import { startSubprocessWorker } from '../lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '../lib-nodejs/waitUntilQuiescent.js';
 import { makeGcAndFinalize } from '../lib-nodejs/gc-and-finalize.js';
 import { kslot } from '../lib/kmarshal.js';
@@ -266,27 +264,6 @@ export async function makeSwingsetController(
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({});
 
-  // this launches a worker in a Node.js thread (aka "Worker")
-  function makeNodeWorker() {
-    const supercode = new URL(
-      '../supervisors/nodeworker/supervisor-nodeworker.js',
-      import.meta.url,
-    ).pathname;
-    return new Worker(supercode);
-  }
-
-  // launch a worker in a subprocess (which runs Node.js)
-  function startSubprocessWorkerNode() {
-    const supercode = new URL(
-      '../supervisors/subprocess-node/supervisor-subprocess-node.js',
-      import.meta.url,
-    ).pathname;
-    const args = [supercode];
-    return startSubprocessWorker(process.execPath, args, {
-      netsringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
-    });
-  }
-
   const bundles = [
     // @ts-ignore assume lockdownBundle is set
     JSON.parse(kvStore.get('lockdownBundle')),
@@ -305,8 +282,6 @@ export async function makeSwingsetController(
     debugPrefix,
     vatEndowments,
     makeConsole,
-    makeNodeWorker,
-    startSubprocessWorkerNode,
     startXSnap,
     slogCallbacks,
     writeSlogObject,

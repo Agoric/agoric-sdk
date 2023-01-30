@@ -1,16 +1,12 @@
 import { assert, Fail } from '@agoric/assert';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeLocalVatManagerFactory } from './manager-local.js';
-import { makeNodeWorkerVatManagerFactory } from './manager-nodeworker.js';
-import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
 import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
 export function makeVatManagerFactory({
   allVatPowers,
   kernelKeeper,
   vatEndowments,
-  makeNodeWorker,
-  startSubprocessWorkerNode,
   startXSnap,
   gcTools,
   defaultManagerType,
@@ -22,20 +18,6 @@ export function makeVatManagerFactory({
     vatEndowments,
     gcTools,
     kernelSlog,
-  });
-
-  const nodeWorkerFactory = makeNodeWorkerVatManagerFactory({
-    makeNodeWorker,
-    kernelKeeper,
-    kernelSlog,
-    testLog: allVatPowers.testLog,
-  });
-
-  const nodeSubprocessFactory = makeNodeSubprocessFactory({
-    startSubprocessWorker: startSubprocessWorkerNode,
-    kernelKeeper,
-    kernelSlog,
-    testLog: allVatPowers.testLog,
   });
 
   const xsWorkerFactory = makeXsSubprocessFactory({
@@ -121,26 +103,6 @@ export function makeVatManagerFactory({
       );
     }
 
-    if (managerType === 'nodeWorker') {
-      return nodeWorkerFactory.createFromBundle(
-        vatID,
-        bundle,
-        managerOptions,
-        liveSlotsOptions,
-        vatSyscallHandler,
-      );
-    }
-
-    if (managerType === 'node-subprocess') {
-      return nodeSubprocessFactory.createFromBundle(
-        vatID,
-        bundle,
-        managerOptions,
-        liveSlotsOptions,
-        vatSyscallHandler,
-      );
-    }
-
     if (managerType === 'xs-worker') {
       return xsWorkerFactory.createFromBundle(
         vatID,
@@ -151,9 +113,7 @@ export function makeVatManagerFactory({
       );
     }
 
-    throw Error(
-      `unknown type ${managerType}, not local/nodeWorker/node-subprocess`,
-    );
+    throw Error(`unknown type ${managerType}, not 'local' or 'xs-worker'`);
   }
 
   return harden(vatManagerFactory);

@@ -20,7 +20,7 @@ import {
 
 const { details: X, quote: q, Fail } = assert;
 
-const managerTypes = ['local', 'nodeWorker', 'node-subprocess', 'xs-worker'];
+const managerTypes = ['local', 'xs-worker'];
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
