@@ -463,23 +463,7 @@ export async function launch({
     return p;
   }
 
-  async function runKernel(blockHeight, blockTime, params, newActions) {
-    // This is called once per block, during the END_BLOCK event, and
-    // only when we know that cosmos is in sync (else we'd skip kernel
-    // execution). 'newActions' are the bridge/mailbox/etc events that
-    // cosmos stored up for delivery to swingset in this block.
-
-    // First, push all newActions onto the end of the inboundQueue,
-    // remembering that inboundQueue might still have work from the
-    // previous block
-    for (const a of newActions) {
-      inboundQueue.push(a);
-      inboundQueueMetrics.incStat();
-    }
-
-    // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit);
-
+  async function runKernel(runPolicy, blockHeight) {
     let runNum = 0;
     async function runSwingset() {
       const initialBeans = runPolicy.remainingBeans();
@@ -509,17 +493,6 @@ export async function launch({
       return runPolicy.shouldRun();
     }
 
-    // We update the timer device at the start of each block, which might push
-    // work onto the end of the kernel run-queue (if any timers were ready to
-    // wake), where it will be followed by actions triggered by the block's
-    // swingset transactions.
-    // If the queue was empty, the timer work gets the first "cycle", and might
-    // run to completion before the block actions get their own cycles.
-    const addedToQueue = timer.poll(blockTime);
-    console.debug(
-      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
-      addedToQueue,
-    );
     let keepGoing = await runSwingset();
 
     // Then process as much as we can from the inboundQueue, which contains
@@ -543,6 +516,38 @@ export async function launch({
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
     }
+  }
+
+  async function endBlock(blockHeight, blockTime, params, newActions) {
+    // This is called once per block, during the END_BLOCK event, and
+    // only when we know that cosmos is in sync (else we'd skip kernel
+    // execution). 'newActions' are the bridge/mailbox/etc events that
+    // cosmos stored up for delivery to swingset in this block.
+
+    // First, push all newActions onto the end of the inboundQueue,
+    // remembering that inboundQueue might still have work from the
+    // previous block
+    for (const a of newActions) {
+      inboundQueue.push(a);
+      inboundQueueMetrics.incStat();
+    }
+
+    // We update the timer device at the start of each block, which might push
+    // work onto the end of the kernel run-queue (if any timers were ready to
+    // wake), where it will be followed by actions triggered by the block's
+    // swingset transactions.
+    // If the queue was empty, the timer work gets the first "cycle", and might
+    // run to completion before the block actions get their own cycles.
+    const addedToQueue = timer.poll(blockTime);
+    console.debug(
+      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
+      addedToQueue,
+    );
+
+    // make a runPolicy that will be shared across all cycles
+    const runPolicy = computronCounter(params.beansPerUnit);
+
+    await runKernel(runPolicy, blockHeight);
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
@@ -770,7 +775,7 @@ export async function launch({
           provideInstallationPublisher();
 
           await processAction(action.type, async () =>
-            runKernel(
+            endBlock(
               blockHeight,
               blockTime,
               blockParams,
