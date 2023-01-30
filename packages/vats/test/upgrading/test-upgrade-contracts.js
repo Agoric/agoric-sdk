@@ -37,7 +37,6 @@ test('upgrade mintHolder', async t => {
     vats: {
       bootstrap: { sourceSpec: bfile('./bootstrap.js') },
       zoe: { sourceSpec: bfile('../../src/vat-zoe.js') },
-      ertp: { sourceSpec: bfile('./vat-ertp-service.js') },
     },
     bundles: {
       zcf: {
@@ -61,14 +60,11 @@ test('upgrade mintHolder', async t => {
     return [status, capdata];
   };
 
-  // create initial version
-  const [v1status] = await run('buildV1', []);
+  t.log('create initial version');
+  const [v1status] = await run('startV1', []);
   t.is(v1status, 'fulfilled');
 
-  // now perform the upgrade
-  t.log(`-- starting upgradeV2`);
-
+  t.log('now perform the upgrade');
   const [v2status] = await run('upgradeV1', []);
-
   t.is(v2status, 'fulfilled');
 });
