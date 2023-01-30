@@ -25,8 +25,11 @@ export const parseQueueSizes = queueSizeEntries =>
   );
 
 /** @param {Record<string, number>} queueSizes */
-export const serializeQueueSizes = queueSizes =>
-  Object.entries(queueSizes).map(([key, size]) => ({ key, size }));
+export const encodeQueueSizes = queueSizes =>
+  Object.entries(queueSizes).map(([key, size]) => {
+    isNat(size) || assert.fail(X`Size ${size} is not a positive integer`);
+    return { key, size };
+  });
 
 // Map the SwingSet parameters to a deterministic data structure.
 export const parseParams = params => {
