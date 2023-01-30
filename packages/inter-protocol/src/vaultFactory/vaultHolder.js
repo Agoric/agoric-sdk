@@ -99,7 +99,7 @@ export const prepareVaultHolder = (baggage, marshaller) => {
           return /** @type {const} */ ({
             vault: {
               subscriber,
-              vstoragePath: storageNodeKit.path,
+              storagePath: storageNodeKit.path,
             },
           });
         },

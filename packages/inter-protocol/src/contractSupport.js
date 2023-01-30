@@ -19,7 +19,7 @@ export const ratioPattern = harden({
 export const TopicMetaShape = M.splitRecord(
   {
     subscriber: SubscriberShape,
-    vstoragePath: M.string(),
+    storagePath: M.string(),
   },
   { description: M.string() },
 );
@@ -29,7 +29,7 @@ export const TopicMetaShape = M.splitRecord(
  * @typedef {{
  *   description?: string,
  *   subscriber: ERef<Subscriber<T>>,
- *   vstoragePath: string,
+ *   storagePath: string,
  * }} TopicMeta
  */
 
@@ -43,7 +43,7 @@ export const TopicMetasRecordShape = M.recordOf(M.string(), TopicMetaShape);
 
 /**
  * @template {Readonly<{
- *   [subscriberKey: string]: Omit<TopicMeta<any>, 'vstoragePath'> & { vstoragePath: Promise<string>}
+ *   [subscriberKey: string]: Omit<TopicMeta<any>, 'storagePath'> & { storagePath: Promise<string>}
  * }>} R
  * @param {R} unfulfilled
  * @returns {Promise<Readonly<{ [K in keyof R]: R[K]['subscriber'] extends Subscriber<infer T> ? TopicMeta<T> : never }>>}

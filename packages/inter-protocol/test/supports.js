@@ -216,7 +216,7 @@ export const topicPath = (hasTopics, subscriberName) => {
   return E(hasTopics)
     .getTopics()
     .then(subscribers => subscribers[subscriberName])
-    .then(tr => tr.vstoragePath);
+    .then(tr => tr.storagePath);
 };
 
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */

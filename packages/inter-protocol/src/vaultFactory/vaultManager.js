@@ -302,11 +302,11 @@ export const prepareVaultManagerKit = (
             /** @type {const} */ ({
               asset: {
                 subscriber: assetSubscriber,
-                vstoragePath: storedAssetSubscriber.getPath(),
+                storagePath: storedAssetSubscriber.getPath(),
               },
               metrics: {
                 subscriber: metricsSubscriber,
-                vstoragePath: storedMetricsSubscriber.getPath(),
+                storagePath: storedMetricsSubscriber.getPath(),
               },
             }),
           );

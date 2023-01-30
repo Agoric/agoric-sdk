@@ -514,7 +514,7 @@ export const prepareVaultDirector = (
             /** @type {const} */ ({
               metrics: {
                 subscriber: metricsSubscriber,
-                vstoragePath: storedMetricsSubscriber.getPath(),
+                storagePath: storedMetricsSubscriber.getPath(),
               },
             }),
           );

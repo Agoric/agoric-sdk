@@ -32,6 +32,9 @@ export const prepareVaultKit = (baggage, marshaller) => {
         asset: { subscriber: assetSubscriber },
         vault: holderTopics.vault,
       },
+      publicPaths: {
+        vault: '',
+      },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () => holder.makeAdjustBalancesInvitation(),
         CloseVault: () => holder.makeCloseInvitation(),
