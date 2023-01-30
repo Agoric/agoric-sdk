@@ -301,11 +301,11 @@ export const prepareVaultManagerKit = (
           return fulfilledTopicMetasRecord(
             /** @type {const} */ ({
               asset: {
-                subscriber: assetSubscriber,
+                topic: assetSubscriber,
                 storagePath: storedAssetSubscriber.getPath(),
               },
               metrics: {
-                subscriber: metricsSubscriber,
+                topic: metricsSubscriber,
                 storagePath: storedMetricsSubscriber.getPath(),
               },
             }),

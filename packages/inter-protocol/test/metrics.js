@@ -55,7 +55,7 @@ export const metricsTracker = async (t, publicFacet) => {
   /** @type {R['metrics']} */
   // @ts-expect-error cast
   const metrics = topics.metrics;
-  return subscriptionTracker(t, subscribeEach(metrics.subscriber));
+  return subscriptionTracker(t, subscribeEach(metrics.topic));
 };
 
 /**

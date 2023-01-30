@@ -18,17 +18,16 @@ export const ratioPattern = harden({
 
 export const TopicMetaShape = M.splitRecord(
   {
-    subscriber: SubscriberShape,
+    topic: SubscriberShape,
     storagePath: M.string(),
   },
   { description: M.string() },
 );
-// TODO rename 'subscriber' field to 'topic'
 /**
  * @template {object} T topic value
  * @typedef {{
  *   description?: string,
- *   subscriber: ERef<Subscriber<T>>,
+ *   topic: ERef<Subscriber<T>>,
  *   storagePath: string,
  * }} TopicMeta
  */

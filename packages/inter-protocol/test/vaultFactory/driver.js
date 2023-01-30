@@ -374,7 +374,7 @@ export const makeManagerDriver = async (
     E(lender).getCollateralManager(aeth.brand),
   ).getTopics();
   const managerNotifier = await makeNotifierFromSubscriber(
-    managerTopics.asset.subscriber,
+    managerTopics.asset.topic,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 

@@ -513,7 +513,7 @@ export const prepareVaultDirector = (
           return fulfilledTopicMetasRecord(
             /** @type {const} */ ({
               metrics: {
-                subscriber: metricsSubscriber,
+                topic: metricsSubscriber,
                 storagePath: storedMetricsSubscriber.getPath(),
               },
             }),
