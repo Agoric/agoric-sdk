@@ -21,16 +21,15 @@ export const prepareVaultKit = (baggage, marshaller) => {
    * @param {StorageNode} storageNode
    * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
    */
-  // MUST BE SYNC FOR TRANSFER
   const makeVaultKit = (vault, storageNode, assetSubscriber) => {
     trace('prepareVaultKit makeVaultKit');
     const { holder, helper } = makeVaultHolder(vault, storageNode);
     const holderTopics = holder.getTopics();
-    console.log('DEBUG', { holderTopics });
     const vaultKit = harden({
       publicSubscribers: {
+        // NB this is a plain Subscriber, before the introduction of TopicMeta
         // @deprecated get from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
-        asset: { topic: assetSubscriber },
+        asset: assetSubscriber,
         vault: holderTopics.vault,
       },
       invitationMakers: Far('invitation makers', {

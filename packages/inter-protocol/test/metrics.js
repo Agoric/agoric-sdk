@@ -45,12 +45,13 @@ export const subscriptionTracker = async (t, subscription) => {
 /**
  * For public facets that have a `getMetrics` method.
  *
- * @template {{metrics: import('@agoric/notifier').TopicMeta<unknown>}} R
+ * @template {{ metrics: import('@agoric/notifier').TopicMeta<unknown> }} R
  * @param {import('ava').ExecutionContext} t
  * @param {{getTopics: () => R}} publicFacet
  */
 export const metricsTracker = async (t, publicFacet) => {
   /** @type {R['metrics']} */
+  // @ts-expect-error xxx ERef types
   const metrics = await E.get(E(publicFacet).getTopics()).metrics;
   return subscriptionTracker(t, subscribeEach(metrics.topic));
 };

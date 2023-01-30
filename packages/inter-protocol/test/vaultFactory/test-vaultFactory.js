@@ -272,7 +272,7 @@ const legacyOfferResult = vaultSeat => {
       return {
         vault,
         publicNotifiers: {
-          asset: makeNotifierFromSubscriber(publicSubscribers.asset.topic),
+          asset: makeNotifierFromSubscriber(publicSubscribers.asset),
           vault: makeNotifierFromSubscriber(publicSubscribers.vault.topic),
         },
       };

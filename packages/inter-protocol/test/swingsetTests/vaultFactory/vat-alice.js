@@ -38,7 +38,6 @@ const build = async (log, zoe, brands, payments, timer) => {
       publicSubscribers: { asset: assetSubscriber },
       vault,
     } = await E(loanSeat).getOfferResult();
-    // @ts-expect-error legit error broken in refactoring
     const assetNotifier = makeNotifierFromSubscriber(assetSubscriber);
     const firstNotif = await E(assetNotifier).getUpdateSince();
     log(`Alice owes ${q(await E(vault).getCurrentDebt())} after borrowing`);

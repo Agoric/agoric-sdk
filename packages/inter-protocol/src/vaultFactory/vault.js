@@ -496,7 +496,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           // max debt supported by current Collateral as modified by proposal
           const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
-          console.log('DEBUG', { updaterPre }, state);
           updaterPre === state.outerUpdater ||
             Fail`Transfer during vault adjustment`;
           helper.assertActive();

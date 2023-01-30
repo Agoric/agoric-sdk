@@ -1,4 +1,3 @@
-import { makeStoredSubscriber } from '@agoric/notifier';
 import {
   makeScalarBigMapStore,
   provide,
@@ -43,11 +42,12 @@ export const makeTopicMetaProvider = () => {
   const extant = new WeakMap();
 
   /**
-   * Provide a StoredSubscriber for the specified durable subscriber.
+   * Provide a TopicMeta for the specified durable subscriber.
+   * Caches the resolution of the promise for the storageNode's path.
    *
    * @template {object} T
    * @param {string} description
-   * @param {Subscriber<T>} durableSubscriber
+   * @param {Subscriber<T>} durableSubscriber primary key
    * @param {ERef<StorageNode>} storageNode
    * @returns {import('@agoric/notifier').TopicMeta<T>}
    */
