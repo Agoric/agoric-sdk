@@ -460,20 +460,20 @@ export function makeVirtualReferenceManager(
   }
 
   /**
-   * A map from vrefs (those which are recognizable by (i.e., used as keys in)
-   * VOM aware collections) to sets of recognizers (the collections for which
-   * they are respectively used as keys).  These vrefs correspond to either
-   * imported Presences or virtual objects (Remotables do not participate in
-   * this as they are not keyed by vref but by the actual Remotable objects
-   * themselves). We add to a vref's recognizer set whenever we use a Presence
-   * or virtual object as a key into a weak store instance or an instance of
-   * VirtualObjectAwareWeakMap or VirtualObjectAwareWeakSet.  We remove it
-   * whenever that key (or the whole collection containing it) is deleted.
+   * A vref is "recognizable" when it is used as the key of a weak Map
+   * or Set: that Map/Set can be used to query whether a future
+   * specimen matches the original or not, without holding onto the
+   * original.
    *
-   * A recognizer is one of:
-   *   Map - the map contained within a VirtualObjectAwareWeakMap to point to its vref-keyed entries.
-   *   Set - the set contained within a VirtualObjectAwareWeakSet to point to its vref-keyed entries.
-   *   deleter - a function within a WeakMapStore that can be called to remove an entry from that store.
+   * This 'vrefRecognizers' is a Map from those vrefs to the set of
+   * recognizing weak collections, for virtual keys and non-virtual
+   * collections. Specifically, the vrefs correspond to imported
+   * Presences or virtual-object Representatives (Remotables do not
+   * participate: they are keyed by the actual Remotable object, not
+   * its vref). The collections are either a VirtualObjectAwareWeakMap
+   * or a VirtualObjectAwareWeakSet. We remove the entry when the key
+   * is removed from the collection, and when the entire collection is
+   * deleted.
    *
    * It is critical that each collection have exactly one recognizer that is
    * unique to that collection, because the recognizers themselves will be
