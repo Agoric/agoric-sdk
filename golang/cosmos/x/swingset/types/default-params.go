@@ -14,7 +14,7 @@ const (
 	BeansPerFeeUnit                = "feeUnit"
 	BeansPerInboundTx              = "inboundTx"
 	BeansPerBlockComputeLimit      = "blockComputeLimit"
-	BeansPerIntraBlockComputeLimit = "intraBlockComputeLimit"
+	BeansPerInterBlockComputeLimit = "interBlockComputeLimit"
 	BeansPerMessage                = "message"
 	BeansPerMessageByte            = "messageByte"
 	BeansPerMinFeeDebit            = "minFeeDebit"
@@ -35,7 +35,7 @@ var (
 	// about 2/3rds utilization, based on 5 sec voting time and up to 10 sec of
 	// computation.
 	DefaultBeansPerBlockComputeLimit      = sdk.NewUint(8000000).Mul(DefaultBeansPerXsnapComputron)
-	DefaultBeansPerIntraBlockComputeLimit = sdk.NewUint(24000000).Mul(DefaultBeansPerXsnapComputron)
+	DefaultBeansPerInterBlockComputeLimit = sdk.NewUint(24000000).Mul(DefaultBeansPerXsnapComputron)
 	// observed: 0.385 sec
 	DefaultBeansPerVatCreation = sdk.NewUint(300000).Mul(DefaultBeansPerXsnapComputron)
 
@@ -67,7 +67,7 @@ var (
 func DefaultBeansPerUnit() []StringBeans {
 	return []StringBeans{
 		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
-		NewStringBeans(BeansPerIntraBlockComputeLimit, DefaultBeansPerIntraBlockComputeLimit),
+		NewStringBeans(BeansPerInterBlockComputeLimit, DefaultBeansPerInterBlockComputeLimit),
 		NewStringBeans(BeansPerFeeUnit, DefaultBeansPerFeeUnit),
 		NewStringBeans(BeansPerInboundTx, DefaultBeansPerInboundTx),
 		NewStringBeans(BeansPerMessage, DefaultBeansPerMessage),
