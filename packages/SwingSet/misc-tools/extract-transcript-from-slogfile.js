@@ -26,7 +26,6 @@ async function run() {
     // lineNumber += 1;
     const e = JSON.parse(line);
     if (e.vatID !== vatID) {
-      // eslint-disable-next-line no-continue
       continue; // wrong vat, or not associated with any vat
     }
     console.log(`e:`, e.type);

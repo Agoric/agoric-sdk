@@ -26,7 +26,7 @@ export {};
  *   enableSetup: true,
  * }} HasSetup
  *
- * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
+ * @typedef { 'local' | 'xs-worker' } ManagerType
  * @typedef {{
  *   enablePipelining?: boolean,
  *   managerType: ManagerType,

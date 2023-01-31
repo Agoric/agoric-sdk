@@ -320,8 +320,6 @@ export async function initializeSwingset(
   const defaultManagerType = SWINGSET_WORKER_TYPE || config.defaultManagerType;
   switch (defaultManagerType) {
     case 'local':
-    case 'nodeWorker':
-    case 'node-subprocess':
     case 'xs-worker':
       config.defaultManagerType = defaultManagerType;
       break;

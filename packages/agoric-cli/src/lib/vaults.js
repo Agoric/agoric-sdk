@@ -10,7 +10,7 @@ import { COSMOS_UNIT } from './format.js';
 // TODO handle other collateral types
 // NB: not really a Proposal because the brands are not remotes
 // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
-// fit(harden(proposal), ProposalShape);
+// mustMatch(harden(proposal), ProposalShape);
 /**
  * Give/want, assuming IbcATOM collateral
  *
@@ -94,7 +94,7 @@ export const makeOpenSpendAction = (instance, brands, opts) => {
 export const makeAdjustSpendAction = (brands, opts, previousOffer) => {
   // NB: not really a Proposal because the brands are not remotes
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
-  // fit(harden(proposal), ProposalShape);
+  // mustMatch(harden(proposal), ProposalShape);
   const proposal = makeProposal(brands, opts);
 
   /** @type {OfferSpec} */

@@ -54,23 +54,3 @@ test('xs vat manager', async t => {
   t.deepEqual(c.dump().log, ['testLog works']);
   t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
 });
-
-test.skip('nodeWorker vat manager', async t => {
-  const c = await makeController('nodeWorker');
-  t.teardown(c.shutdown);
-
-  await c.run();
-  t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
-  t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
-});
-
-test.skip('node-subprocess vat manager', async t => {
-  const c = await makeController('node-subprocess');
-  t.teardown(c.shutdown);
-
-  await c.run();
-  t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
-  t.deepEqual(c.dump().log, ['testLog works']);
-  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
-});

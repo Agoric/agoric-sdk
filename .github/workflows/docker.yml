@@ -39,7 +39,7 @@ jobs:
           - linux/amd64
           - linux/arm64/v8
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Save BUILD_TAG
         run: |
           ARCH=$(echo '${{ matrix.platform }}' | tr / _)
@@ -166,7 +166,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ needs.docker-sdk.outputs.tag }} != dev
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Save SDK_TAG
         run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
       - name: Prefix tags
@@ -210,7 +210,7 @@ jobs:
     needs: [docker-sdk, snapshot]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Save SDK_TAG
         run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
       - name: Prefix tags

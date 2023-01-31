@@ -15,14 +15,14 @@ jobs:
 
     steps:
       - name: Checkout agoric-sdk
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
       - name: cache node modules
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         with:
           path: ~/.cache/yarn
           key: ${{ runner.os }}-yarn-${{ hashFiles('yarn.lock') }}
@@ -61,7 +61,7 @@ jobs:
           echo "/home/runner/bin" >> $GITHUB_PATH
 
       - name: Check out dapp
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: Agoric/documentation
           path: dapp

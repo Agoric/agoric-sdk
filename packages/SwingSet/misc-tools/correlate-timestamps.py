@@ -22,7 +22,7 @@ for d in deliveries:
         kerneltime = d.tx_delivery - prev_d.rx_result
         print("                                          %.6f kern between-cranks" % kerneltime)
     prev_d = d
-    print("c%d %s" % (d.cranknum, d.description))
+    print("c%d %s %s" % (d.cranknum, d.vatID, d.description))
     if d.rx_delivery:
         print("                                                          k -> %.6f -> w   (send delivery)" % (d.rx_delivery - d.tx_delivery))
         #d.tx_result - d.rx_delivery,
