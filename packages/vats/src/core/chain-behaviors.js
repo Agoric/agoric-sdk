@@ -403,7 +403,7 @@ export const publishAgoricNames = async (
       const kindNode = await E(nameStorage).makeChildNode(kind);
       const { publisher } = makeStoredPublishKit(kindNode, marshaller);
       publisher.publish([]);
-      kindAdmin.onUpdate(publisher.publish);
+      kindAdmin.onUpdate(v => publisher.publish(v));
     }),
   );
 };
