@@ -81,8 +81,8 @@ const assertCells = (t, label, cells, publishCount, result, options = {}) => {
 };
 
 // eslint-disable-next-line no-shadow
-const verifyPublishKit = test.macro(async (t, makePublishKit) => {
-  const publishKit = /** @type {makePublishKit} */ (makePublishKit)();
+const verifyPublishKit = test.macro(async (t, maker) => {
+  const publishKit = /** @type {typeof makePublishKit} */ (maker)();
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
   const { publisher, subscriber } = publishKit;
 
@@ -132,7 +132,7 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   cells.set(thirdPublishCount, thirdCells[0]);
 
   t.throws(
-    // @ts-ignore deliberate testing of invalid invocation
+    // @ts-expect-error deliberate testing of invalid invocation
     () => subscriber.subscribeAfter(Number(secondPublishCount)),
     {
       message: /bigint/,

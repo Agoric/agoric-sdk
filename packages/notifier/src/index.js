@@ -1,8 +1,10 @@
 export {
   makePublishKit,
   prepareDurablePublishKit,
+  placePublishKit,
   SubscriberShape,
 } from './publish-kit.js';
+export * from './fake-place.js';
 export { subscribeEach, subscribeLatest } from '../tools/subscribe.js';
 export {
   makeNotifier,

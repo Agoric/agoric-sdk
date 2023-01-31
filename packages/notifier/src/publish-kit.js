@@ -1,11 +1,11 @@
 /// <reference types="ses"/>
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { M } from '@agoric/store';
-import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
 import './types-ambient.js';
+import { heapPlace, makeDurablePlace } from './fake-place.js';
 
 const { Fail, quote: q } = assert;
 
@@ -70,115 +70,10 @@ const translatePublicationRecord = record => {
 };
 
 /**
- * Makes a `{ publisher, subscriber }` pair for doing efficient
- * distributed pub/sub supporting both "each" and "latest" iteration
- * of published values.
- *
- * @template T
- * @returns {PublishKit<T>}
+ * @returns {PublishKitState}
  */
-export const makePublishKit = () => {
-  /** @type {Promise<PublicationRecord<T>>} */
-  let tailP;
-  /** @type {undefined | ((value: ERef<PublicationRecord<T>>) => void)} */
-  let tailR;
-  ({ promise: tailP, resolve: tailR } = makePromiseKit());
-
-  let currentPublishCount = 0n;
-  let currentP = tailP;
-  const advanceCurrent = (done, value, rejection) => {
-    if (tailR === undefined) {
-      throw new Error('Cannot update state after termination.');
-    }
-
-    currentPublishCount += 1n;
-    currentP = tailP;
-    const resolveCurrent = tailR;
-
-    if (done) {
-      tailP = makeQuietRejection(
-        new Error('Cannot read past end of iteration.'),
-      );
-      tailR = undefined;
-    } else {
-      ({ promise: tailP, resolve: tailR } = makePromiseKit());
-    }
-
-    if (rejection) {
-      resolveCurrent(rejection);
-    } else {
-      resolveCurrent(
-        harden({
-          head: { value, done },
-          publishCount: currentPublishCount,
-          tail: tailP,
-        }),
-      );
-    }
-  };
-
-  const makeUpdateRecord = weakMemoizeUnary(translatePublicationRecord);
-
-  /**
-   * @template T
-   * @type {Subscriber<T>}
-   */
-  const subscriber = Far('Subscriber', {
-    subscribeAfter: (publishCount = -1n) => {
-      assert.typeof(publishCount, 'bigint');
-      if (publishCount === currentPublishCount) {
-        return tailP;
-      } else if (publishCount < currentPublishCount) {
-        return currentP;
-      } else {
-        throw new Error(
-          'subscribeAfter argument must be a previously-issued publishCount.',
-        );
-      }
-    },
-    getUpdateSince: updateCount => {
-      if (updateCount === undefined) {
-        return subscriber.subscribeAfter().then(makeUpdateRecord);
-      }
-      updateCount = BigInt(updateCount);
-      // We ensure we're at a fresh publication record in case they came in a
-      // big batch.
-      return subscriber
-        .subscribeAfter(updateCount)
-        .then(() => subscriber.getUpdateSince());
-    },
-  });
-
-  /** @type {Publisher<T>} */
-  const publisher = Far('Publisher', {
-    publish: value => {
-      advanceCurrent(false, value);
-    },
-    finish: finalValue => {
-      advanceCurrent(true, finalValue);
-    },
-    fail: reason => {
-      advanceCurrent(true, undefined, makeQuietRejection(reason));
-    },
-  });
-  return harden({ publisher, subscriber });
-};
-harden(makePublishKit);
-
-// TODO: Move durable publish kit to a new file?
-
-/**
- * @param {object} [options]
- * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
- * @returns {DurablePublishKitState}
- */
-const initDurablePublishKitState = (options = {}) => {
-  const { valueDurability = 'mandatory' } = options;
-  assert.equal(valueDurability, 'mandatory');
+const initPublishKitState = () => {
   return {
-    // configuration
-    valueDurability,
-
     // lifecycle progress
     publishCount: 0n,
     status: 'live', // | 'finished' | 'failed'
@@ -193,32 +88,30 @@ const initDurablePublishKitState = (options = {}) => {
 
 // We need the WeakMap key for a kit to be a vref-bearing object
 // in its cohort, and have arbitrarily chosen the publisher facet.
-/** @typedef {Publisher<*>} DurablePublishKitEphemeralKey */
+/** @typedef {Publisher<*>} PublishKitEphemeralKey */
 /**
  * @param {PublishKit<*>} facets
- * @returns {DurablePublishKitEphemeralKey}
+ * @returns {PublishKitEphemeralKey}
  */
 const getEphemeralKey = facets => facets.publisher;
 
-/** @type {WeakMap<DurablePublishKitEphemeralKey, {currentP, tailP, tailR}>} */
-const durablePublishKitEphemeralData = new WeakMap();
+/** @type {WeakMap<PublishKitEphemeralKey, {currentP, tailP, tailR}>} */
+const publishKitEphemeralData = new WeakMap();
 
 /**
  * Returns the current/next-result promises and next-result resolver
- * associated with a given durable publish kit.
+ * associated with a given publish kit.
  * They are lost on upgrade, but recreated on-demand.
  * Such recreation preserves the value in (but not the identity of) the
- * current { value, done } result when possible, which is always the
- * case when that value is terminal (i.e., from `finish` or `fail`) or
- * when the durable publish kit is configured with
- * `valueDurability: 'mandatory'`.
+ * current { value, done } result when possible.
  *
- * @param {DurablePublishKitState} state
- * @param {PublishKit<*>} facets
+ * @template T
+ * @param {PublishKitState} state
+ * @param {PublishKit<T>} facets
  */
-const provideDurablePublishKitEphemeralData = (state, facets) => {
+const providePublishKitEphemeralData = (state, facets) => {
   const ephemeralKey = getEphemeralKey(facets);
-  const foundData = durablePublishKitEphemeralData.get(ephemeralKey);
+  const foundData = publishKitEphemeralData.get(ephemeralKey);
   if (foundData) {
     return foundData;
   }
@@ -265,33 +158,34 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
       tailR,
     };
   } else {
-    Fail`Invalid durable promise kit status: ${q(status)}`;
+    Fail`Invalid promise kit status: ${q(status)}`;
   }
-  durablePublishKitEphemeralData.set(ephemeralKey, harden(newData));
+  publishKitEphemeralData.set(ephemeralKey, harden(newData));
   return newData;
 };
 
 /**
  * Extends the sequence of results.
  *
- * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
+ * @param {import('./fake-place').Place} place
+ * @param {{state: PublishKitState, facets: PublishKit<*>}} context
  * @param {boolean} done
  * @param {any} value
  * @param {any} [rejection]
  */
-const advanceDurablePublishKit = (context, done, value, rejection) => {
+const advancePublishKit = (place, context, done, value, rejection) => {
   const { state, facets } = context;
-  const { valueDurability, status } = state;
+  const { status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
   }
-  if (done || valueDurability === 'mandatory') {
-    canBeDurable(value) || Fail`Cannot accept non-durable value: ${value}`;
-    canBeDurable(rejection) ||
-      Fail`Cannot accept non-durable rejection: ${rejection}`;
+  if (done) {
+    place.isValidExoState(value) || Fail`Invalid exo state value: ${value}`;
+    place.isValidExoState(rejection) ||
+      Fail`Invalid exo state rejection: ${rejection}`;
   }
   const { tailP: currentP, tailR: resolveCurrent } =
-    provideDurablePublishKitEphemeralData(state, facets);
+    providePublishKitEphemeralData(state, facets);
 
   const publishCount = state.publishCount + 1n;
   state.publishCount = publishCount;
@@ -306,7 +200,7 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
     ({ promise: tailP, resolve: tailR } = makePromiseKit());
     void E.when(tailP, sink, sink);
   }
-  durablePublishKitEphemeralData.set(
+  publishKitEphemeralData.set(
     getEphemeralKey(facets),
     harden({ currentP, tailP, tailR }),
   );
@@ -318,7 +212,7 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
   } else {
     // Persist a terminal value, or a non-terminal value
     // if configured as 'mandatory' or 'opportunistic'.
-    if (done || (valueDurability !== 'ignored' && canBeDurable(value))) {
+    if (done || place.isValidExoState(value)) {
       state.hasValue = true;
       state.value = value;
     } else {
@@ -337,44 +231,49 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
 };
 
 /**
- * @param {import('../../vat-data/src/types.js').Baggage} baggage
- * @param {string} kindName
+ * @param {import('./fake-place').Place} place
+ * @param {object} [options]
+ * @param {string} [options.kindName='PublishKit']
+ * @param {Record<string, InterfaceGuard>} [options.interfaceGuardKit]
  */
-export const prepareDurablePublishKit = (baggage, kindName) => {
-  // TODO: Investigate whether memoization is compatible with durability.
+export const placePublishKit = (
+  place,
+  { interfaceGuardKit = publishKitIKit, kindName = 'PublishKit' } = {},
+) => {
   const makeUpdateRecord = weakMemoizeUnary(translatePublicationRecord);
 
   /**
-   * @returns {() => PublishKit<*>}
+   * Makes a `{ publisher, subscriber }` pair for doing efficient
+   * distributed pub/sub supporting both "each" and "latest" iteration
+   * of published values.
+   *
+   * @type {<T>(...args: Parameters<typeof initPublishKitState>) => PublishKit<T>}
    */
-  return prepareExoClassKit(
-    baggage,
+  const maker = place.exoClassKit(
     kindName,
-    publishKitIKit,
-    initDurablePublishKitState,
+    interfaceGuardKit,
+    initPublishKitState,
     {
-      // The publisher facet of a durable publish kit
-      // accepts new values.
+      // The publisher facet of a publish kit accepts new values.
       publisher: {
         publish(value) {
-          advanceDurablePublishKit(this, false, value);
+          advancePublishKit(place, this, false, value);
         },
         finish(finalValue) {
-          advanceDurablePublishKit(this, true, finalValue);
+          advancePublishKit(place, this, true, finalValue);
         },
         fail(reason) {
           const rejection = makeQuietRejection(reason);
-          advanceDurablePublishKit(this, true, undefined, rejection);
+          advancePublishKit(place, this, true, undefined, rejection);
         },
       },
 
-      // The subscriber facet of a durable publish kit
-      // propagates values.
+      // The subscriber facet of a publish kit propagates values.
       subscriber: {
         subscribeAfter(publishCount = -1n) {
           const { state, facets } = this;
           const { publishCount: currentPublishCount } = state;
-          const { currentP, tailP } = provideDurablePublishKitEphemeralData(
+          const { currentP, tailP } = providePublishKitEphemeralData(
             state,
             facets,
           );
@@ -396,14 +295,44 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
             return subscriber.subscribeAfter().then(makeUpdateRecord);
           }
           updateCount = BigInt(updateCount);
-          return subscriber
-            .subscribeAfter(updateCount)
-            .then(() => subscriber.getUpdateSince());
+          return (
+            subscriber
+              .subscribeAfter(updateCount)
+              // We ensure we're at a fresh publication record in case they were the
+              // first of a big batch.
+              .then(() => subscriber.getUpdateSince())
+          );
         },
       },
     },
   );
+  return maker;
 };
-harden(prepareDurablePublishKit);
+harden(placePublishKit);
 
 export const SubscriberShape = M.remotable('Subscriber');
+
+/**
+ * @deprecated Use `placePublishKit(makeDurablePlace(baggage))` instead.
+ * @param {import('../../vat-data/src/types.js').Baggage} baggage
+ * @param {string} kindName
+ */
+export const prepareDurablePublishKit = (baggage, kindName) =>
+  placePublishKit(makeDurablePlace(baggage), { kindName });
+harden(prepareDurablePublishKit);
+
+/**
+ * In-memory publish kit, with no publisher interface pattern assertions.
+ */
+export const makePublishKit = placePublishKit(heapPlace, {
+  interfaceGuardKit: harden({
+    publisher: M.interface('UnguardedPublisher', {
+      /* eslint-disable no-underscore-dangle */
+      publish: M.__NO_METHOD_GUARD__(),
+      finish: M.__NO_METHOD_GUARD__(),
+      fail: M.__NO_METHOD_GUARD__(),
+    }),
+    subscriber: SubscriberI,
+  }),
+});
+harden(makePublishKit);

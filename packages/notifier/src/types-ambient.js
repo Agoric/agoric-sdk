@@ -146,9 +146,7 @@
  */
 
 /**
- * @typedef {object} DurablePublishKitState
- *
- * @property {DurablePublishKitValueDurability} valueDurability
+ * @typedef {object} PublishKitState
  *
  * @property {bigint} publishCount
  *
