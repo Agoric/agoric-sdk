@@ -144,6 +144,7 @@ jobs:
       - name: yarn test (cosmic-proto)
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-quick2:
@@ -198,6 +199,7 @@ jobs:
       - name: Check for untested packages
         run: node ./scripts/check-untested-packages.mjs
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   ##############
@@ -226,6 +228,7 @@ jobs:
         timeout-minutes: 20
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-cosmic-swingset:
@@ -254,6 +257,7 @@ jobs:
       - name: yarn test (cosmic-swingset)
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   # The test-swingset* tests are split by alphabetical test name.
@@ -280,6 +284,7 @@ jobs:
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js' | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-swingset2:
@@ -311,6 +316,7 @@ jobs:
         if: matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-swingset3:
@@ -335,6 +341,7 @@ jobs:
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js' | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-swingset4:
@@ -360,6 +367,7 @@ jobs:
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js' | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-zoe-unit:
@@ -387,6 +395,7 @@ jobs:
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
 
   test-zoe-swingset:
@@ -414,4 +423,5 @@ jobs:
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: report tests
+        if: success() || failure()
         run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
