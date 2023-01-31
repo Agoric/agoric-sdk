@@ -2,13 +2,10 @@
  * @file Use-object for the owner of a vault
  */
 import { AmountShape } from '@agoric/ertp';
-import {
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
-  TopicMetasRecordShape,
-} from '@agoric/notifier';
+import { pipeTopicToStorage, prepareDurablePublishKit } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { makeTopicMetaProvider } from '@agoric/zoe/src/contractSupport/durability.js';
+import { fulfilledTopicMetasRecord } from '../contractSupport.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
@@ -26,7 +23,7 @@ const HolderI = M.interface('holder', {
   getCollateralAmount: M.call().returns(AmountShape),
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
-  getTopics: M.call().returns(TopicMetasRecordShape),
+  getTopics: M.call().returns(M.promise()), // TopicMetasRecordShape,
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
@@ -83,12 +80,14 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         },
       },
       holder: {
-        getTopics() {
+        async getTopics() {
           const { subscriber, storageNode } = this.state;
 
-          return /** @type {const} */ ({
-            vault: provideTopicMeta('Vault changes', subscriber, storageNode),
-          });
+          return fulfilledTopicMetasRecord(
+            /** @type {const} */ ({
+              vault: provideTopicMeta('Vault changes', subscriber, storageNode),
+            }),
+          );
         },
         makeAdjustBalancesInvitation() {
           return this.facets.helper.owned().makeAdjustBalancesInvitation();

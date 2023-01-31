@@ -14,10 +14,10 @@ export const ratioPattern = harden({
 
 /**
  * @template {Readonly<{
- *   [subscriberKey: string]: Omit<import('@agoric/notifier').TopicMeta<any>, 'storagePath'> & { storagePath: Promise<string>}
+ *   [subscriberKey: string]: Omit<import('@agoric/notifier').TopicMeta<any>, 'storagePath'> & { storagePath: ERef<string>}
  * }>} R
  * @param {R} unfulfilled
- * @returns {Promise<Readonly<{ [K in keyof R]: R[K]['subscriber'] extends Subscriber<infer T> ? import('@agoric/notifier').TopicMeta<T> : never }>>}
+ * @returns {Promise<Readonly<{ [K in keyof R]: R[K]['topic'] extends Subscriber<infer T> ? import('@agoric/notifier').TopicMeta<T> : never }>>}
  */
 export const fulfilledTopicMetasRecord = async unfulfilled => {
   return deeplyFulfilled(harden(unfulfilled));

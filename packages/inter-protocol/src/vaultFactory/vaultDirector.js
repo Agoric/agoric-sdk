@@ -22,7 +22,6 @@ import {
   observeIteration,
   prepareDurablePublishKit,
   SubscriberShape,
-  TopicMetasRecordShape,
 } from '@agoric/notifier';
 import {
   defineDurableExoClassKit,
@@ -39,6 +38,7 @@ import {
   vaultParamPattern,
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
+import { fulfilledTopicMetasRecord } from '../contractSupport.js';
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -218,7 +218,7 @@ export const prepareVaultDirector = (
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
-        getTopics: M.call().returns(TopicMetasRecordShape),
+        getTopics: M.call().returns(M.promise()), // TopicMetasRecordShape
         makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
@@ -504,13 +504,15 @@ export const prepareVaultDirector = (
         getSubscription({ collateralBrand }) {
           return vaultParamManagers.get(collateralBrand).getSubscription();
         },
-        getTopics() {
-          return /** @type {const} */ ({
-            metrics: {
-              topic: metricsSubscriber,
-              storagePath: E(metricsNode).getPath(),
-            },
-          });
+        async getTopics() {
+          return fulfilledTopicMetasRecord(
+            /** @type {const} */ ({
+              metrics: {
+                topic: metricsSubscriber,
+                storagePath: E(metricsNode).getPath(),
+              },
+            }),
+          );
         },
         /**
          * subscription for the paramManager for the vaultFactory's electorate

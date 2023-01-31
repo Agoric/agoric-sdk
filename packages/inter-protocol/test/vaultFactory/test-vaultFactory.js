@@ -269,11 +269,14 @@ const legacyOfferResult = vaultSeat => {
       assert(publicSubscribers, 'missing publicSubscribers');
       assert(publicSubscribers.asset, 'missing publicSubscribers asset');
       assert(publicSubscribers.vault, 'missing publicSubscribers vault');
+      /** @type {import('@agoric/notifier').TopicMeta<VaultNotification>} */
+      const vaultMeta = await publicSubscribers.vault;
+      assert(vaultMeta, 'missing vault topic');
       return {
         vault,
         publicNotifiers: {
           asset: makeNotifierFromSubscriber(publicSubscribers.asset),
-          vault: makeNotifierFromSubscriber(publicSubscribers.vault.topic),
+          vault: makeNotifierFromSubscriber(vaultMeta.topic),
         },
       };
     });

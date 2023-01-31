@@ -28,7 +28,6 @@ import {
   pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
-  TopicMetasRecordShape,
 } from '@agoric/notifier';
 import {
   M,
@@ -50,7 +49,10 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { checkDebtLimit } from '../contractSupport.js';
+import {
+  checkDebtLimit,
+  fulfilledTopicMetasRecord,
+} from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
@@ -245,7 +247,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
-        getTopics: M.call().returns(TopicMetasRecordShape),
+        getTopics: M.call().returns(M.promise()), // TopicMetasRecordShape,
       }),
       helper: M.interface(
         'helper',
@@ -292,19 +294,21 @@ export const prepareVaultManagerKit = (
             'MakeVault',
           );
         },
-        getTopics() {
-          return /** @type {const} */ ({
-            asset: provideTopicMeta(
-              'Vault Manager asset updates',
-              assetSubscriber,
-              storageNode,
-            ),
-            metrics: provideTopicMeta(
-              'Vault Manager metrics',
-              metricsSubscriber,
-              metricsNode,
-            ),
-          });
+        async getTopics() {
+          return fulfilledTopicMetasRecord(
+            /** @type {const} */ ({
+              asset: provideTopicMeta(
+                'Vault Manager asset updates',
+                assetSubscriber,
+                storageNode,
+              ),
+              metrics: provideTopicMeta(
+                'Vault Manager metrics',
+                metricsSubscriber,
+                metricsNode,
+              ),
+            }),
+          );
         },
         getQuotes() {
           return storedQuotesNotifier;
