@@ -1792,7 +1792,7 @@ const makePatternKit = () => {
     interface: (interfaceName, methodGuards, { sloppy = false } = {}) => {
       for (const [_, methodGuard] of entries(methodGuards)) {
         methodGuard.klass === 'methodGuard' ||
-          Fail`unrecognize method guard ${methodGuard}`;
+          Fail`unrecognized method guard ${methodGuard}`;
       }
       return harden({
         klass: 'Interface',
@@ -1803,6 +1803,13 @@ const makePatternKit = () => {
     },
     call: (...argGuards) => makeMethodGuardMaker('sync', argGuards),
     callWhen: (...argGuards) => makeMethodGuardMaker('async', argGuards),
+
+    __NO_METHOD_GUARD__: () =>
+      harden({
+        klass: 'methodGuard',
+        callKind: '__NO_METHOD_GUARD__',
+        returnGuard: undefined,
+      }),
 
     await: argGuard => makeAwaitArgGuard(argGuard),
   });

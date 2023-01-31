@@ -100,9 +100,11 @@ const defendMethod = (method, methodGuard, label) => {
   assert(klass === 'methodGuard');
   if (callKind === 'sync') {
     return defendSyncMethod(method, methodGuard, label);
-  } else {
-    assert(callKind === 'async');
+  } else if (callKind === 'async') {
     return defendAsyncMethod(method, methodGuard, label);
+  } else {
+    callKind === '__NO_METHOD_GUARD__' || Fail`Unknown callKind ${callKind}`;
+    return method;
   }
 };
 

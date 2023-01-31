@@ -696,6 +696,8 @@
  *
  * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} callWhen Guard an async call
  *
+ * @property {() => MethodGuard} __NO_METHOD_GUARD__ Do not guard a method
+ *
  * @property {(argGuard: ArgGuard) => ArgGuard} await Guard an await
  */
 
@@ -715,14 +717,15 @@
  * }} InterfaceGuard
  */
 
-/** @typedef {any} MethodGuardMaker
+/**
+ * @typedef {any} MethodGuardMaker
  * a parameter list like foo(a, b, c = d, …e) => f should be guarded by
  * something like
  * foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape)
  * optional is for optional (=) params. rest is for … (varargs) params
  */
 
-/** @typedef {{ klass: 'methodGuard', callKind: 'sync' | 'async', returnGuard: unknown }} MethodGuard */
+/** @typedef {{ klass: 'methodGuard', callKind: 'sync' | 'async' | '__NO_METHOD_GUARD__', returnGuard: unknown }} MethodGuard */
 /** @typedef {any} ArgGuard */
 
 /**
