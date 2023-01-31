@@ -275,7 +275,7 @@ test('median aggregator', async t => {
       increment: 8n,
     },
   );
-  // Publications can get more than one record per timestamp but tickAndQuote getUpdateSince ensures one
+  // Publications and tickAndQuote getUpdateSince ensures one record per update
   await publications.nextMatches({
     amountOut: 1169n,
     timestamp: 2n,
@@ -284,18 +284,10 @@ test('median aggregator', async t => {
   const quote2 = await tickAndQuote();
   t.deepEqual(quote2, { amountOut: 1178n, timestamp: 3n });
   await publications.nextMatches(quote2);
-  await publications.nextMatches({
-    amountOut: 1178n,
-    timestamp: 3n,
-  });
 
   const quote3 = await tickAndQuote();
   t.deepEqual(quote3, { amountOut: 1187n, timestamp: 4n });
   await publications.nextMatches(quote3);
-  await publications.nextMatches({
-    amountOut: 1187n,
-    timestamp: 4n,
-  });
 
   await E(aggregator.creatorFacet).initOracle(price800.instance, {
     increment: 17n,
