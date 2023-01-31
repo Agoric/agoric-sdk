@@ -5,7 +5,7 @@ import path from 'path';
 import { deeplyFulfilled, defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
-  makeEnactCoreProposalsFromBundleCap,
+  makeEnactCoreProposalsFromBundleID,
 } from './coreProposalBehavior.js';
 
 const { details: X, Fail } = assert;
@@ -43,13 +43,13 @@ const pathResolve = (...paths) => {
  * @param {(ModuleSpecifier | FilePath)[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
- * @param {typeof makeEnactCoreProposalsFromBundleCap} [makeEnactCoreProposals]
+ * @param {typeof makeEnactCoreProposalsFromBundleID} [makeEnactCoreProposals]
  * @param {(i: number) => number} [getSequenceForProposal]
  */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
-  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleCap,
+  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleID,
   getSequenceForProposal,
 ) => {
   if (!getSequenceForProposal) {
@@ -167,6 +167,9 @@ export const extractCoreProposalBundles = async (
       ](harden({ restoreRef: () => null }), ...manifestArgs);
 
       const behaviorBundleHandle = harden({
+        // TODO: calling this a "bundleID" is confusing, because we
+        // use that term for the hash-based identifier. Better to call
+        // it a bundleName. Change coreProposalBehavior.js to match.
         bundleID: `coreProposal${thisProposalSequence}_behaviors`,
       });
       const behaviorAbsolutePaths = harden({

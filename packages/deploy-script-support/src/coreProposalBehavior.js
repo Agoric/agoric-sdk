@@ -119,19 +119,19 @@ export const makeCoreProposalBehavior = ({
   return behavior;
 };
 
-export const makeEnactCoreProposalsFromBundleCap =
+export const makeEnactCoreProposalsFromBundleID =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
     const {
-      vatPowers: { D },
-      devices: { vatAdmin },
-      consume: { zoe },
+      consume: { vatAdminService, zoe },
     } = allPowers;
     const restoreRef = async ref => {
-      const { bundleID } = ref;
-      const bundleCap = D(vatAdmin).getNamedBundleCap(bundleID);
-      const bundle = D(bundleCap).getBundle();
-      const install = await E(zoe).install(bundle);
+      // extract-proposal.js creates these records, and uses a field
+      // named "bundleID", but it's really referring to the *name*
+      // under which the bundle was installed into config.bundles
+      const { bundleID: name } = ref;
+      const bundleID = await E(vatAdminService).getBundleIDByName(name);
+      const install = await E(zoe).installBundleID(bundleID);
       return install;
     };
 
