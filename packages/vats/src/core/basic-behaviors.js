@@ -294,11 +294,9 @@ export const makeClientBanks = async ({
 };
 harden(makeClientBanks);
 
-/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+/** @param {BootstrapSpace} powers */
 export const installBootContracts = async ({
-  vatPowers: { D },
-  devices: { vatAdmin },
-  consume: { zoe },
+  consume: { vatAdminSvc, zoe },
   installation: {
     produce: { centralSupply, mintHolder },
   },
@@ -307,14 +305,11 @@ export const installBootContracts = async ({
     centralSupply,
     mintHolder,
   })) {
-    // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
-    // good enough to do D(vatAdmin).getBundleIDByName
-    const bundleCap = D(vatAdmin).getNamedBundleCap(name);
-
-    const bundle = D(bundleCap).getBundle();
-    // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
-    const installation = E(zoe).install(bundle);
-    producer.resolve(installation);
+    const idP = E(vatAdminSvc).getBundleIDByName(name);
+    const installationP = idP.then(bundleID =>
+      E(zoe).installBundleID(bundleID),
+    );
+    producer.resolve(installationP);
   }
 };
 

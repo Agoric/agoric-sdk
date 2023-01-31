@@ -163,9 +163,7 @@ const SHARED_CHAIN_BOOTSTRAP_MANIFEST = harden({
     home: { produce: { bank: 'bank' } },
   },
   [installBootContracts.name]: {
-    vatPowers: { D: true },
-    devices: { vatAdmin: true },
-    consume: { zoe: 'zoe' },
+    consume: { zoe: 'zoe', vatAdminSvc: true },
     installation: {
       produce: {
         centralSupply: 'zoe',
