@@ -54,10 +54,12 @@ export function makeBridgeManager(E, D, bridgeDevice) {
   const resultHandler = Far('bridgeCallOutboundResultHandler', {
     /** @param {BridgeOutboundResultOneNotify[]} notifies */
     async fromBridge(notifies) {
+      const unknownBpids = [];
       for (const { bpid, result } of notifies) {
         const resolveKit = pendingResults.get(bpid);
         if (!resolveKit) {
-          throw Fail`Unknown bridge result promise ${bpid}`;
+          unknownBpids.push(bpid);
+          continue;
         }
         pendingResults.delete(bpid);
         if (result.status === 'fulfilled') {
@@ -66,6 +68,9 @@ export function makeBridgeManager(E, D, bridgeDevice) {
           // The content must be JSON serializable so reconstruct the error here
           resolveKit.reject(new Error(result.reason));
         }
+      }
+      if (unknownBpids.length) {
+        throw Fail`Unknown bridge result promises: ${unknownBpids.join(', ')}`;
       }
     },
     allocateResult() {
