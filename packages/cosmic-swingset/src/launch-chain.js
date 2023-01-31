@@ -85,14 +85,14 @@ export async function buildSwingset(
     config = loadBasedir(vatconfig);
   }
 
-  const mailboxStateMap = buildMailboxStateMap(mailboxStorage);
-  const activeMailboxStateMap = {
-    add: whenActiveWrap(mailboxStateMap.add),
-    remove: whenActiveWrap(mailboxStateMap.remove),
-    setAcknum: whenActiveWrap(mailboxStateMap.setAcknum),
+  const rawMailboxStateMap = buildMailboxStateMap(mailboxStorage);
+  const mailboxStateMap = {
+    add: whenActiveWrap(rawMailboxStateMap.add),
+    remove: whenActiveWrap(rawMailboxStateMap.remove),
+    setAcknum: whenActiveWrap(rawMailboxStateMap.setAcknum),
   };
   const timer = buildTimer();
-  const mb = buildMailbox(activeMailboxStateMap);
+  const mb = buildMailbox(mailboxStateMap);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
