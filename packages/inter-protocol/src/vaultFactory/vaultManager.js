@@ -24,8 +24,8 @@ import {
 import { makeTracer } from '@agoric/internal';
 import {
   makeStoredNotifier,
-  makeStoredSubscriber,
   observeNotifier,
+  pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
 } from '@agoric/notifier';
@@ -174,17 +174,8 @@ export const prepareVaultManagerKit = (
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
-  const storedMetricsSubscriber = makeStoredSubscriber(
-    metricsSubscriber,
-    E(storageNode).makeChildNode('metrics'),
-    marshaller,
-  );
-
-  const storedAssetSubscriber = makeStoredSubscriber(
-    assetSubscriber,
-    storageNode,
-    marshaller,
-  );
+  const metricsNode = E(storageNode).makeChildNode('metrics');
+  pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
   const storedQuotesNotifier = makeStoredNotifier(
     E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
@@ -297,10 +288,10 @@ export const prepareVaultManagerKit = (
           );
         },
         getSubscriber() {
-          return storedAssetSubscriber;
+          return assetSubscriber;
         },
         getMetrics() {
-          return storedMetricsSubscriber;
+          return metricsSubscriber;
         },
         getQuotes() {
           return storedQuotesNotifier;
@@ -663,7 +654,7 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          return storedAssetSubscriber;
+          return assetSubscriber;
         },
         getCollateralBrand() {
           return collateralBrand;

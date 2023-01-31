@@ -19,8 +19,8 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   makeStoredPublisherKit,
-  makeStoredSubscriber,
   observeIteration,
+  pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
 } from '@agoric/notifier';
@@ -105,11 +105,8 @@ export const prepareVaultDirector = (
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultDirectorPublishKit();
 
-  const storedMetricsSubscriber = makeStoredSubscriber(
-    metricsSubscriber,
-    E(storageNode).makeChildNode('metrics'),
-    marshaller,
-  );
+  const metricsNode = E(storageNode).makeChildNode('metrics');
+  pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
   const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
 
@@ -461,7 +458,7 @@ export const prepareVaultDirector = (
           );
         },
         getMetrics() {
-          return storedMetricsSubscriber;
+          return metricsSubscriber;
         },
         /**
          * @deprecated use getCollateralManager and then makeVaultInvitation instead

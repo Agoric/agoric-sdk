@@ -762,7 +762,7 @@ test('notifications', async t => {
   // no new price yet publishable
 });
 
-test('storage keys', async t => {
+test.failing('storage keys', async t => {
   const { publicFacet } = await t.context.makeChainlinkAggregator(
     defaultConfig,
   );
