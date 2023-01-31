@@ -237,27 +237,6 @@
  */
 
 /**
- * @typedef {object} RootAndAdminNode
- * @property {object} root
- * @property {AdminNode} adminNode
- */
-
-/**
- * @typedef {object} AdminNode
- * A powerful object that can be used to terminate the vat in which a contract
- * is running, to get statistics, or to be notified when it terminates.
- *
- * @property {() => Promise<Completion>} done
- * returns a promise that will be fulfilled or rejected when the contract is
- * terminated. If the contract terminates with a failure, the promise will be
- * rejected with the reason. If the contract terminates successfully, the
- * promise will fulfill to the completion value.
- * @property {ShutdownWithFailure} terminateWithFailure
- * Terminate the vat in which the contract is running as a failure.
- * @property {(bundleCap: *, options?: Record<string, any>) => Promise<RootAndAdminNode>} upgrade
- */
-
-/**
  * @callback GetAssetKindByBrand
  * Get the assetKind for a brand known by Zoe
  *

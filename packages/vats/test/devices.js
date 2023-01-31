@@ -9,7 +9,7 @@ import centralSupply from '../bundles/bundle-centralSupply.js';
 import mintHolder from '../bundles/bundle-mintHolder.js';
 import provisionPool from '../bundles/bundle-provisionPool.js';
 
-const bundles = {
+export const bundles = {
   binaryVoteCounter,
   centralSupply,
   committee,

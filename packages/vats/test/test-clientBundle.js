@@ -4,7 +4,6 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
@@ -24,12 +23,13 @@ import {
 } from '../src/core/basic-behaviors.js';
 import { Stable, Stake } from '../src/tokens.js';
 
-import { devices } from './devices.js';
+import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
+  const { vatAdminService } = makePopulatedFakeVatAdmin();
   const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(() => {}).admin, undefined, {
+    makeZoeKit(vatAdminService, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
@@ -38,6 +38,7 @@ const setUpZoeForTest = async () => {
   return {
     zoe: zoeService,
     feeMintAccessP: feeMintAccess,
+    vatAdminService,
   };
 };
 harden(setUpZoeForTest);
@@ -57,11 +58,13 @@ test('connectFaucet produces payments', async t => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP, vatAdminService } = await setUpZoeForTest();
   produce.zoe.resolve(zoe);
   const fma = await feeMintAccessP;
   produce.feeMintAccess.resolve(fma);
   produce.bridgeManager.resolve(undefined);
+
+  produce.vatAdminSvc.resolve(vatAdminService);
 
   const vatLoader = name => {
     switch (name) {
@@ -118,15 +121,11 @@ test('connectFaucet produces payments', async t => {
     void E(client).assignBundle([_a => stub]);
   };
 
-  const vatPowers = {
-    D: x => x,
-  };
-
   await Promise.all([
     // @ts-expect-error missing keys: devices, vats, vatPowers, vatParameters, and 2 more.
     makeBoard({ consume, produce, ...spaces }),
     makeAddressNameHubs({ consume, produce, ...spaces }),
-    installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
+    installBootContracts({ consume, produce, ...spaces }),
     setupClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
     makeClientBanks({ consume, produce, ...spaces }),

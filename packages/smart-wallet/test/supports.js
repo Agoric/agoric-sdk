@@ -21,7 +21,6 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
-import { devices } from './devices.js';
 
 export { ActionType };
 
@@ -166,15 +165,11 @@ export const makeMockTestSpace = async log => {
     ),
   );
 
-  const vatPowers = {
-    D: x => x,
-  };
-
   await Promise.all([
     // @ts-expect-error
     makeBoard({ consume, produce, ...spaces }),
     makeAddressNameHubs({ consume, produce, ...spaces }),
-    installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
+    installBootContracts({ consume, produce, ...spaces }),
     setupClientManager({ consume, produce, ...spaces }),
   ]);
 

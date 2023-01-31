@@ -279,16 +279,7 @@
  */
 
 /**
- * @callback ShutdownWithFailure
- * Called to shut something down because something went wrong, where the reason
- * is supposed to be an Error that describes what went wrong. Some valid
- * implementations of `ShutdownWithFailure` will never return, either
- * because they throw or because they immediately shutdown the enclosing unit
- * of computation. However, they also might return, so the caller should
- * follow this call by their own defensive `throw reason;` if appropriate.
- *
- * @param {Error} reason
- * @returns {void}
+ * @typedef {import('@agoric/swingset-vat').ShutdownWithFailure} ShutdownWithFailure
  */
 
 /**

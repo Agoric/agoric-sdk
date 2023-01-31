@@ -1,12 +1,9 @@
 // @ts-check
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import {
-  makeFakeVatAdmin,
-  zcfBundleCap,
-} from '@agoric/zoe/tools/fakeVatAdmin.js';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
-import { E, Far, passStyleOf } from '@endo/far';
+import { E, passStyleOf } from '@endo/far';
 
 import { makeZoeKit } from '@agoric/zoe';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
@@ -20,7 +17,7 @@ import {
   makeMock,
   mockDProxy,
   mockPsmBootstrapArgs,
-  vatRoots,
+  mockSwingsetVats,
 } from '../tools/boot-test-utils.js';
 
 const argvByRole = {
@@ -49,50 +46,7 @@ const testRole = (ROLE, governanceActions) => {
         governanceActions,
       },
     );
-
-    const fakeVatAdmin = makeFakeVatAdmin(() => {}).admin;
-    const fakeBundleCaps = new Map(); // {} -> name
-    const getNamedBundleCap = name => {
-      const bundleCap = harden({});
-      fakeBundleCaps.set(bundleCap, name);
-      return bundleCap;
-    };
-    const createVat = (bundleCap, options) => {
-      const name = fakeBundleCaps.get(bundleCap);
-      assert(name);
-      switch (name) {
-        case 'zcf':
-          return fakeVatAdmin.createVat(zcfBundleCap, options);
-        default: {
-          const buildRoot = vatRoots[name];
-          if (!buildRoot) {
-            throw Error(`TODO: load vat ${name}`);
-          }
-          const vatParameters = { ...options?.vatParameters };
-          if (name === 'zoe') {
-            // basic-behaviors.js:buildZoe() provides hard-coded zcf BundleName
-            // and vat-zoe.js ignores vatParameters, but this would be the
-            // preferred way to pass the name.
-            vatParameters.zcfBundleName = 'zcf';
-          }
-          return { root: buildRoot({}, vatParameters), admin: {} };
-        }
-      }
-    };
-    const createVatByName = name => {
-      const bundleCap = getNamedBundleCap(name);
-      return createVat(bundleCap);
-    };
-
-    const criticalVatKey = harden({});
-    const vats = {
-      ...mock.vats,
-      vatAdmin: /** @type { any } */ ({
-        getCriticalVatKey: () => criticalVatKey,
-        createVatAdminService: () =>
-          Far('vatAdminSvc', { getNamedBundleCap, createVat, createVatByName }),
-      }),
-    };
+    const vats = mockSwingsetVats(mock);
     const actual = await E(root).bootstrap(vats, mock.devices);
     t.deepEqual(actual, undefined);
   });
