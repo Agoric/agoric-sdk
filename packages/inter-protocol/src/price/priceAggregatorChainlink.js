@@ -11,7 +11,10 @@ import {
   prepareDurablePublishKit,
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeOnewayPriceAuthorityKit,
+  makePublicTopicProvider,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeOracleAdmin } from './priceOracleAdmin.js';
@@ -137,6 +140,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeDurablePublishKit();
   const latestRoundStorageNode = E(storageNode).makeChildNode('latestRound');
   pipeTopicToStorage(latestRoundSubscriber, latestRoundStorageNode, marshaller);
+
+  const providePublicTopic = makePublicTopicProvider();
 
   /** @type {MapStore<string, *>} */
   const oracles = makeScalarBigMapStore('oracles', {
@@ -318,6 +323,20 @@ export const start = async (zcf, privateArgs, baggage) => {
     /** @returns {Subscriber<import('./roundsManager.js').LatestRound>} */
     getRoundStartNotifier() {
       return latestRoundSubscriber;
+    },
+    getPublicTopics() {
+      return {
+        quotes: providePublicTopic(
+          'Quotes from this price aggregator',
+          quoteSubscriber,
+          storageNode,
+        ),
+        latestRound: providePublicTopic(
+          'Notification of each round',
+          latestRoundSubscriber,
+          latestRoundStorageNode,
+        ),
+      };
     },
   });
 

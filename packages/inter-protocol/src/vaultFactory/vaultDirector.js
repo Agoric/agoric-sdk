@@ -19,10 +19,12 @@ import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   makeStoredPublisherKit,
+  makePublicTopic,
   observeIteration,
   pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
+  TopicsRecordShape,
 } from '@agoric/notifier';
 import {
   defineDurableExoClassKit,
@@ -102,11 +104,19 @@ export const prepareVaultDirector = (
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
+  /** @type {PublishKit<MetricsNotification>} */
   const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
     makeVaultDirectorPublishKit();
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
   pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
+  const topics = harden({
+    metrics: makePublicTopic(
+      'Vault Factory metrics',
+      metricsSubscriber,
+      metricsNode,
+    ),
+  });
 
   const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
 
@@ -230,6 +240,7 @@ export const prepareVaultDirector = (
         ),
         getContractGovernor: M.call().returns(M.remotable()),
         getInvitationAmount: M.call(M.string()).returns(AmountShape),
+        getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
     },
     initState,
@@ -498,12 +509,17 @@ export const prepareVaultDirector = (
           return debtMint.getIssuerRecord().issuer;
         },
         /**
+         * @deprecated get from the CollateralManager directly
+         *
          * subscription for the paramManager for a particular vaultManager
          *
          * @param {{ collateralBrand: Brand }} selector
          */
         getSubscription({ collateralBrand }) {
           return vaultParamManagers.get(collateralBrand).getSubscription();
+        },
+        getPublicTopics() {
+          return topics;
         },
         /**
          * subscription for the paramManager for the vaultFactory's electorate

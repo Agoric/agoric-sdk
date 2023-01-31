@@ -24,10 +24,12 @@ import {
 import { makeTracer } from '@agoric/internal';
 import {
   makeStoredNotifier,
+  makePublicTopic,
   observeNotifier,
   pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
+  TopicsRecordShape,
 } from '@agoric/notifier';
 import {
   M,
@@ -166,6 +168,7 @@ export const prepareVaultManagerKit = (
   /** @type {PublishKit<AssetState>} */
   const { publisher: assetPublisher, subscriber: assetSubscriber } =
     makeVaultManagerPublishKit();
+  pipeTopicToStorage(metricsSubscriber, storageNode, marshaller);
 
   /** @type {MapStore<string, Vault>} */
   const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
@@ -203,6 +206,19 @@ export const prepareVaultManagerKit = (
     'retained collateral',
   );
 
+  const topics = harden({
+    asset: makePublicTopic(
+      'State of the assets managed',
+      assetSubscriber,
+      storageNode,
+    ),
+    metrics: makePublicTopic(
+      'Vault Factory metrics',
+      metricsSubscriber,
+      metricsNode,
+    ),
+  });
+
   // ephemeral state
   /** @type {boolean} */
   let liquidationQueueing = false;
@@ -239,6 +255,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getSubscriber: M.call().returns(SubscriberShape),
         getMetrics: M.call().returns(SubscriberShape),
+        getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
       }),
@@ -298,6 +315,9 @@ export const prepareVaultManagerKit = (
         },
         getCompoundedInterest() {
           return this.state.compoundedInterest;
+        },
+        getPublicTopics() {
+          return topics;
         },
       },
 

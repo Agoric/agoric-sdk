@@ -1,4 +1,6 @@
-import { makePublicTopic } from '@agoric/notifier';
+import { makePublicTopic, SubscriberShape } from '@agoric/notifier';
+import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { M, mustMatch } from '@agoric/store';
 import {
   makeScalarBigMapStore,
   provide,
@@ -55,6 +57,14 @@ export const makePublicTopicProvider = () => {
       // @ts-expect-error cast
       return extant.get(durableSubscriber);
     }
+    mustMatch(
+      harden({ description, durableSubscriber, storageNode }),
+      harden({
+        description: M.string(),
+        durableSubscriber: SubscriberShape,
+        storageNode: M.eref(StorageNodeShape),
+      }),
+    );
 
     /** @type {import('@agoric/notifier').PublicTopic<T>} */
     const newMeta = makePublicTopic(

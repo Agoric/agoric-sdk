@@ -18,6 +18,7 @@ import { subscribeEach } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe/src/zoeService/zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { topicPath } from './supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
 const test = unknownTest;
@@ -762,13 +763,13 @@ test('notifications', async t => {
   // no new price yet publishable
 });
 
-test.failing('storage keys', async t => {
+test('storage keys', async t => {
   const { publicFacet } = await t.context.makeChainlinkAggregator(
     defaultConfig,
   );
 
   t.is(
-    await E(E(publicFacet).getSubscriber()).getPath(),
+    await topicPath(publicFacet, 'quotes'),
     'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
   );
 });

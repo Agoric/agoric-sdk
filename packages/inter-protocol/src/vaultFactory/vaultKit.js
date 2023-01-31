@@ -18,14 +18,15 @@ export const prepareVaultKit = (baggage, marshaller) => {
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
-   * @param {ERef<StorageNode>} storageNode
+   * @param {StorageNode} storageNode
    */
   const makeVaultKit = (vault, storageNode) => {
     trace('prepareVaultKit makeVaultKit');
     const { holder, helper } = makeVaultHolder(vault, storageNode);
+    const holderTopics = holder.getPublicTopics();
     const vaultKit = harden({
       publicSubscribers: {
-        vault: holder.getSubscriber(),
+        vault: holderTopics.vault,
       },
       invitationMakers: Far('invitation makers', {
         AdjustBalances: () => holder.makeAdjustBalancesInvitation(),

@@ -601,9 +601,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
         /**
          * @param {ZCFSeat} seat
-         * @param {ERef<StorageNode>} storageNode
+         * @param {ERef<StorageNode>} storageNodeP
          */
-        async initVaultKit(seat, storageNode) {
+        async initVaultKit(seat, storageNodeP) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
@@ -657,6 +657,8 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           trace('initVault updateDebtAccounting fired');
 
+          // So that makeVaultKit can be synchronous
+          const storageNode = await storageNodeP;
           const vaultKit = makeVaultKit(self, storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();

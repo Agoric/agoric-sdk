@@ -9,7 +9,7 @@ import {
   ActionType,
   headValue,
   makeMockTestSpace,
-  subscriptionKey,
+  topicPath,
 } from './supports.js';
 
 import '@agoric/vats/src/core/types.js';
@@ -126,18 +126,13 @@ test('notifiers', async t => {
   async function checkAddress(address) {
     const smartWallet = await t.context.simpleProvideWallet(address);
 
-    // xxx no type of getUpdatesSubscriber()
-    const updates = await E(smartWallet).getUpdatesSubscriber();
-
     t.is(
-      await subscriptionKey(updates),
+      await topicPath(smartWallet, 'updates'),
       `mockChainStorageRoot.wallet.${address}`,
     );
 
-    const current = await E(smartWallet).getCurrentSubscriber();
-
     t.is(
-      await subscriptionKey(current),
+      await topicPath(smartWallet, 'current'),
       `mockChainStorageRoot.wallet.${address}.current`,
     );
   }
