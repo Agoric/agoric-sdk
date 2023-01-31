@@ -57,8 +57,8 @@ export const makeCoreProposalBehavior = ({
   /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateInstallation: any }} allPowers */
   const behavior = async allPowers => {
     const {
-      consume: { board, agoricNamesAdmin },
-      evaluateInstallation,
+      consume: { vatAdminService, zoe, agoricNamesAdmin },
+      evaluateBundleCap,
       installation: { produce: produceInstallations },
       modules: {
         utils: { runModuleBehaviors },
@@ -66,25 +66,32 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
-    const restoreRef = overrideRestoreRef || (x => E(board).getValue(x));
+    const restoreRef = overrideRestoreRef || (({bundleID}) => E(zoe).installBundleID(bundleID));
 
     // Get the on-chain installation containing the manifest and behaviors.
     console.info('restoreRef, evaluateInstallation', {
       manifestInstallRef,
       exportedGetManifest,
     });
-    const manifestInstallation = await restoreRef(manifestInstallRef);
-    const behaviors = await evaluateInstallation(manifestInstallation);
+    const { bundleName, bundleID } = manifestInstallRef;
+    let bundleCap;
+    if (bundleName) {
+      bundleCap = await E(vatAdminService).getNamedBundleCap(bundleName);
+    } else {
+      bundleCap = await E(vatAdminService).getBundleCap(bundleID);
+    }
+
+    const manifestNS = await evaluateBundleCap(bundleCap);
 
     console.error('execute', {
       exportedGetManifest,
-      behaviors: Object.keys(behaviors),
+      behaviors: Object.keys(manifestNS),
     });
     const {
       manifest,
       options: rawOptions,
       installations: rawInstallations,
-    } = await behaviors[exportedGetManifest](
+    } = await manifestNS[exportedGetManifest](
       harden({ restoreRef }),
       ...manifestArgs,
     );
@@ -106,7 +113,7 @@ export const makeCoreProposalBehavior = ({
     // Evaluate the manifest for our behaviors.
     return runModuleBehaviors({
       allPowers,
-      behaviors,
+      behaviors: manifestNS,
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
@@ -119,18 +126,18 @@ export const makeCoreProposalBehavior = ({
   return behavior;
 };
 
-export const makeEnactCoreProposalsFromBundleID =
+export const makeEnactCoreProposalsFromBundleName =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
     const {
       consume: { vatAdminService, zoe },
     } = allPowers;
     const restoreRef = async ref => {
-      // extract-proposal.js creates these records, and uses a field
-      // named "bundleID", but it's really referring to the *name*
-      // under which the bundle was installed into config.bundles
-      const { bundleID: name } = ref;
-      const bundleID = await E(vatAdminService).getBundleIDByName(name);
+      // extract-proposal.js creates these records, and bundleName is
+      // the name under which the bundle was installed into
+      // config.bundles
+      const { bundleName } = ref;
+      const bundleID = await E(vatAdminService).getBundleIDByName(bundleName);
       const install = await E(zoe).installBundleID(bundleID);
       return install;
     };
