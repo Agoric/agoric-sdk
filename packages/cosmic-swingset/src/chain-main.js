@@ -17,7 +17,7 @@ import { makeSlogSender } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
-import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
+import { makePublishKit, pipeTopicToStorage } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -295,7 +295,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       );
       const marshaller = makeMarshal();
       const { publisher, subscriber } = makePublishKit();
-      makeStoredSubscriber(subscriber, installationStorageNode, marshaller);
+      pipeTopicToStorage(subscriber, installationStorageNode, marshaller);
       return publisher;
     };
 
