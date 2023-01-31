@@ -8,20 +8,22 @@ export const makeActiveGuard = () => {
   const pendingJobs = [];
 
   const maybeProcessJobs = () => {
-    if (active) {
-      const jobs = pendingJobs.splice(0);
-      jobsCompleted = Promise.all([
-        jobsCompleted,
-        ...jobs.map(({ job, resolve }) => {
-          const result = Promise.resolve().then(job);
-          resolve(result);
-          return result.then(
-            () => {},
-            () => {},
-          );
-        }),
-      ]).then(() => {});
+    if (!active) {
+      return;
     }
+
+    const jobs = pendingJobs.splice(0);
+    jobsCompleted = Promise.all([
+      jobsCompleted,
+      ...jobs.map(({ job, resolve }) => {
+        const result = Promise.resolve().then(job);
+        resolve(result);
+        return result.then(
+          () => {},
+          () => {},
+        );
+      }),
+    ]).then(() => {});
   };
 
   /** @param {() => any} job */
