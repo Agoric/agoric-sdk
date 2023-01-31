@@ -30,6 +30,5 @@ export const devices = {
         return bundle;
       },
     }),
-    getBundleIDByName: name => `bundleID-${name}`,
   },
 };
