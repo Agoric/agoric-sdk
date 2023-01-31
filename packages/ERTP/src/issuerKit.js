@@ -68,6 +68,18 @@ export const prepareIssuerKit = (
 harden(prepareIssuerKit);
 
 /**
+ * Does baggage already have an issuer from prepareIssuerKit()?
+ * That is: does it have the relevant keys defined?
+ *
+ * @param {Baggage} baggage
+ */
+export const hasIssuer = baggage =>
+  baggage.has('name') &&
+  baggage.has('assetKind') &&
+  baggage.has('displayInfo') &&
+  baggage.has('elementShape');
+
+/**
  * @template {AssetKind} K
  * The name becomes part of the brand in asset descriptions.
  * The name is useful for debugging and double-checking

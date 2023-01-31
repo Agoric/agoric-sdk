@@ -1,7 +1,36 @@
 // @ts-check
 // @jessie-check
 
-import { makeDurableIssuerKit } from '@agoric/ertp';
+import {
+  hasIssuer,
+  makeDurableIssuerKit,
+  prepareIssuerKit,
+} from '@agoric/ertp';
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+
+/**
+ * @template {AssetKind} K
+ * @typedef {{
+ *   keyword: string,
+ *   assetKind: K,
+ *   displayInfo: DisplayInfo,
+ * }} IssuerInfo<K>
+ */
+
+/**
+ * @template {AssetKind} K
+ * @param {ZCF<IssuerInfo<K>>} zcf
+ * @param {Baggage} baggage
+ */
+function provideIssuerKit(zcf, baggage) {
+  if (!hasIssuer(baggage)) {
+    const { keyword, assetKind, displayInfo } = zcf.getTerms();
+    return makeDurableIssuerKit(baggage, keyword, assetKind, displayInfo);
+  } else {
+    return prepareIssuerKit(baggage);
+  }
+}
 
 /**
  * This contract holds one mint; it basically wraps
@@ -9,27 +38,16 @@ import { makeDurableIssuerKit } from '@agoric/ertp';
  * its own vat.
  *
  * @template {AssetKind} K
- * @param {ZCF<{
- *   keyword: string,
- *   assetKind: K,
- *   displayInfo: DisplayInfo,
- * }>} zcf
- * @param {unknown} _privateArgs
- * @param {import('@agoric/vat-data').Baggage} instanceBaggage
+ * @param {ZCF<IssuerInfo<K>>} zcf
+ * @param {undefined} _privateArgs
+ * @param {Baggage} instanceBaggage
  */
-export const start = (zcf, _privateArgs, instanceBaggage) => {
-  const { keyword, assetKind, displayInfo } = zcf.getTerms();
-
-  const { mint, issuer } = makeDurableIssuerKit(
-    instanceBaggage,
-    keyword,
-    assetKind,
-    displayInfo,
-  );
+export const prepare = (zcf, _privateArgs, instanceBaggage) => {
+  const { mint, issuer } = provideIssuerKit(zcf, instanceBaggage);
 
   return {
     publicFacet: issuer,
     creatorFacet: mint,
   };
 };
-harden(start);
+harden(prepare);
