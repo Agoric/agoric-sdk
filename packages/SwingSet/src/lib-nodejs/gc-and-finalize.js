@@ -21,9 +21,9 @@
  * any way to reach the object, and never will again. A finalizer callback
  * has been queued, but not yet executed.
  *
- * FINALIZED: The JS engine has run the finalizer callback. After this point,
- * the object is thoroughly dead and unremembered, and no longer exists in
- * one of these four states.
+ * FINALIZED: The JS engine has run the finalizer callback. Once the
+ * callback completes, the object is thoroughly dead and unremembered,
+ * and no longer exists in one of these four states.
  *
  * The transition from REACHABLE to UNREACHABLE always happens as a result of
  * a message delivery or resolution notification (e.g when userspace
