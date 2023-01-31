@@ -282,11 +282,7 @@
  */
 
 /**
- * @typedef {object} VatAdminSvc
- * @property {(id: BundleID) => ERef<import('@agoric/swingset-vat').BundleCap>} waitForBundleCap
- * @property {(id: BundleID) => ERef<import('@agoric/swingset-vat').BundleCap>} getBundleCap
- * @property {(name: string) => ERef<import('@agoric/swingset-vat').BundleCap>} getNamedBundleCap
- * @property {(bundleCap: import('@agoric/swingset-vat').BundleCap, options?: Record<string, any>) => ERef<RootAndAdminNode>} createVat
+ * @typedef {import('@agoric/swingset-vat').VatAdminSvc} VatAdminSvc
  */
 
 /**

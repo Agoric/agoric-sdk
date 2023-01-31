@@ -62,8 +62,8 @@ const bootMsgEx = {
  *   produce: {vatStore: Producer<VatStore> }
  * }} powers
  *
- * @typedef {{adminNode: any, root: unknown}} VatInfo as from createVatByName
- * @typedef {MapStore<string, Promise<VatInfo>>} VatStore
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
@@ -81,7 +81,7 @@ export const makeVatsFromBundles = async ({
     return bundleName => {
       const vatInfoP = provideLazy(store, bundleName, _k => {
         console.info(`createVatByName(${bundleName})`);
-        /** @type { Promise<VatInfo> } */
+        /** @type { Promise<CreateVatResults> } */
         const vatInfo = E(svc).createVatByName(bundleName, {
           ...defaultVatCreationOptions,
           name: bundleName,

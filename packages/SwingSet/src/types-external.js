@@ -339,6 +339,7 @@ export {};
  */
 
 /**
+ * Vat Creation and Management
  *
  * @typedef { string } BundleID
  * @typedef {*} BundleCap
@@ -366,4 +367,49 @@ export {};
  *
  * @typedef { { enableDisavow?: boolean } } HasEnableDisavow
  * @typedef { DynamicVatOptions & HasEnableDisavow } StaticVatOptions
+ *
+ * @typedef { { vatParameters?: object, upgradeMessage: string } } VatUpgradeOptions
+ * @typedef { { incarnationNumber: number } } VatUpgradeResults
+ *
+ * @callback ShutdownWithFailure
+ * Called to shut something down because something went wrong, where the reason
+ * is supposed to be an Error that describes what went wrong. Some valid
+ * implementations of `ShutdownWithFailure` will never return, either
+ * because they throw or because they immediately shutdown the enclosing unit
+ * of computation. However, they also might return, so the caller should
+ * follow this call by their own defensive `throw reason;` if appropriate.
+ *
+ * @param {Error} reason
+ * @returns {void}
+ *
+ * @typedef {object} VatAdminFacet
+ * A powerful object corresponding with a vat
+ * that can be used to upgrade it with new code or parameters,
+ * terminate it, or be notified when it terminates.
+ *
+ * @property {() => Promise<any>} done
+ * returns a promise that will be fulfilled or rejected when the vat is
+ * terminated. If the vat terminates with a failure, the promise will be
+ * rejected with the reason. If the vat terminates successfully, the
+ * promise will fulfill to the completion value.
+ * @property {ShutdownWithFailure} terminateWithFailure
+ * Terminate the vat with a failure reason.
+ * @property {(bundlecap: BundleCap, options?: VatUpgradeOptions) => Promise<VatUpgradeResults>} upgrade
+ * Restart the vat with the specified bundle and options. This is a "baggage-style" upgrade,
+ * in which the JS memory space is abandoned. The new image is launched with access to 'baggage'
+ * and any durable storage reachable from it, and must fulfill all the obligations of the previous
+ * incarnation.
+ *
+ *
+ * @typedef {object} CreateVatResults
+ * @property {object} root
+ * @property {VatAdminFacet} adminNode
+ *
+ * @typedef {object} VatAdminSvc
+ * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => ERef<BundleID>} getBundleIDByName
+ * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
+ *
  */
