@@ -22,6 +22,13 @@ export const PublicTopicShape = M.splitRecord(
  * }} PublicTopic
  */
 
+export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
+
+/**
+ * @typedef {{
+ *   [topicName: string]: PublicTopic<unknown>,
+ * }} TopicsRecord
+ */
 /**
  * NB: caller must ensure that `publisher.finish()` or `publisher.fail()` is
  * called when the publisher stores its final value.
@@ -49,14 +56,14 @@ harden(pipeTopicToStorage);
 /**
  * @template T
  * @param {string} description
- * @param {Subscriber<T>} topic
+ * @param {Subscriber<T>} subscriber
  * @param {ERef<StorageNode>} storageNode
  * @returns {PublicTopic<T>}
  */
-export const makePublicTopic = (description, topic, storageNode) => {
+export const makePublicTopic = (description, subscriber, storageNode) => {
   return {
     description,
-    topic,
+    subscriber,
     storagePath: E(storageNode).getPath(),
   };
 };

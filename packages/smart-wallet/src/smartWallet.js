@@ -479,7 +479,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 status: offerStatus,
               });
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers) => Promise<void>} */
+            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,
