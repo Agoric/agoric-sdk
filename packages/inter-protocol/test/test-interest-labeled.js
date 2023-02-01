@@ -9,7 +9,7 @@ import { TimeMath } from '@agoric/time';
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 
 const timerBrand = Far('fake timer brand', {
-  isMyTimer: () => true,
+  isMyTimerService: () => true,
   isMyClock: () => true,
 });
 // const otherTimerBrand = Far('other fake timer brand', {});

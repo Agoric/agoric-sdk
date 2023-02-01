@@ -17,7 +17,7 @@ import type { RankComparison } from '@agoric/store';
  * and https://github.com/Agoric/agoric-sdk/pull/5821
  */
 export type TimerBrand = {
-  isMyTimer: (timer: TimerService) => ERef<boolean>;
+  isMyTimerService: (timer: TimerService) => ERef<boolean>;
   isMyClock: (clock: Clock) => ERef<boolean>;
 };
 

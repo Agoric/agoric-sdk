@@ -19,7 +19,7 @@ import { TimeMath } from '../src/timeMath.js';
 // for property-based testing, so we should eventually do that.
 
 const makeTimerBrand = name => {
-  return Far(name, { isMyTimer: () => false, isMyClock: () => false });
+  return Far(name, { isMyTimerService: () => false, isMyClock: () => false });
 };
 
 test('timeMath same label', t => {
