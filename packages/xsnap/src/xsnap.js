@@ -310,6 +310,11 @@ export function xsnap(options) {
    */
   async function close() {
     baton = baton.then(async () => {
+      const running = await racePromises([
+        vatExit.promise.then(() => false),
+        Promise.resolve(true),
+      ]);
+      await (running && messagesToXsnap.next(encoder.encode(`q`)));
       await messagesToXsnap.return(undefined);
       throw new Error(`${name} closed`);
     });
