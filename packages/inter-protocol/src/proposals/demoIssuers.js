@@ -511,7 +511,7 @@ export const fundAMM = async ({
     kits[Stable.symbol]
   );
 
-  /** @type {[ XYKAMMPublicFacet, TimerService]} */
+  /** @type {[ XYKAMMPublicFacet, import('@agoric/time/src/types').TimerService]} */
   const [ammPublicFacet, timer] = await Promise.all([
     E(zoe).getPublicFacet(ammInstance),
     chainTimerService,

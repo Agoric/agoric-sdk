@@ -1,11 +1,18 @@
-// TODO Move this module somewhere more pleasantly reusable
-
 import { Nat } from '@agoric/nat';
 import { mustMatch } from '@agoric/store';
 
 import { RelativeTimeShape, TimestampShape } from './typeGuards.js';
 
 const { details: X, quote: q } = assert;
+/**
+ * @typedef {import('./types').TimerBrand} TimerBrand
+ * @typedef {import('./types').Timestamp} Timestamp
+ * @typedef {import('./types').RelativeTime} RelativeTime
+ * @typedef {import('./types').RelativeTimeValue} RelativeTimeValue
+ * @typedef {import('./types').TimestampValue} TimestampValue
+ * @typedef {import('./types').TimeMathType} TimeMathType
+ *
+ */
 
 /**
  * `agreedTimerBrand` is internal to this module.

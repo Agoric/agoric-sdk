@@ -57,7 +57,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
- * @property {TimerService} timer
+ * @property {import('@agoric/time/src/types').TimerService} timer
  * @property {Installation} governedContractInstallation
  */
 
@@ -111,7 +111,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * GovernorPublic,
  * GovernedContractFacetAccess<PF,CF>,
  * {
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -123,7 +123,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 /**
  * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
  * @param {ZCF<{
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,

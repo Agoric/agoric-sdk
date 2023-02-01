@@ -32,7 +32,7 @@ const { values } = Object;
  * charge interest according to `chargingPeriod` and `recordingPeriod`.
  *
  * @typedef { GovernanceTerms<StakeFactoryParams> & {
- *   timerService: TimerService,
+ *   timerService: import('@agoric/time/src/types').TimerService,
  *   chargingPeriod: bigint,
  *   recordingPeriod: bigint,
  *   lienAttestationName?: string,

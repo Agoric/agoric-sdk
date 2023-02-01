@@ -1,15 +1,30 @@
-import { test } from '../../tools/prepare-test-env-ava.js';
+import '@endo/init';
 
 // eslint-disable-next-line import/order
-import { Far } from '@endo/marshal';
-import { TimeMath } from '../../src/vats/timer/timeMath.js';
+import test from 'ava';
+import { Far } from '@endo/far';
+import { TimeMath } from '../src/timeMath.js';
+
+/**
+ * @typedef {import('../src/types').TimerBrand} TimerBrand
+ * @typedef {import('../src/types').Timestamp} Timestamp
+ * @typedef {import('../src/types').RelativeTime} RelativeTime
+ * @typedef {import('../src/types').TimestampValue} TimestampValue
+ * @typedef {import('../src/types').TimeMathType} TimeMathType
+ *
+ */
 
 // TODO Although TimeMath is altogether rather simple, to test it well
 // requires testing an explosion of combinations. It is an ideal case
 // for property-based testing, so we should eventually do that.
 
+const makeTimerBrand = name => {
+  return Far(name, { isMyTimer: () => false, isMyClock: () => false });
+};
+
 test('timeMath same label', t => {
-  const timerBrand = Far('fake timer brand', {});
+  /** @type {TimerBrand} */
+  const timerBrand = makeTimerBrand('fake timer brand');
   const t100 = harden({ timerBrand, absValue: 100n });
   const r3 = harden({ timerBrand, relValue: 3n });
   const t103 = harden({ timerBrand, absValue: 103n });
@@ -17,8 +32,8 @@ test('timeMath same label', t => {
 });
 
 test('timeMath different labels', t => {
-  const b1 = Far('fake timer brand 1', {});
-  const b2 = Far('fake timer brand 2', {});
+  const b1 = makeTimerBrand('fake timer brand 1');
+  const b2 = makeTimerBrand('fake timer brand 2');
   const t100 = harden({ timerBrand: b1, absValue: 100n });
   const r3 = harden({ timerBrand: b2, relValue: 3n });
   t.throws(() => TimeMath.addAbsRel(t100, r3), {
@@ -27,7 +42,7 @@ test('timeMath different labels', t => {
 });
 
 test('timeMath one label', t => {
-  const timerBrand = Far('fake timer brand', {});
+  const timerBrand = makeTimerBrand('fake timer brand');
   const t100 = harden({ timerBrand, absValue: 100n });
   const r3 = harden({ timerBrand, relValue: 3n });
   const t103 = harden({ timerBrand, absValue: 103n });

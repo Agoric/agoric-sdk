@@ -243,7 +243,7 @@
  */
 
 /**
- * @typedef {Timestamp} Deadline
+ * @typedef {import('@agoric/time/src/types').Timestamp} Deadline
  */
 
 /**

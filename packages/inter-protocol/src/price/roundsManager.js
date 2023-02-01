@@ -1,7 +1,7 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { isNat, Nat } from '@agoric/nat';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 import {
   defineDurableExoClassKit,
   M,
@@ -19,6 +19,10 @@ import { UnguardedHelperI } from '../typeGuards.js';
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /** @typedef {import('./priceOracleAdmin.js').OracleStatus} OracleStatus */
+/**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
 
 /** @type {string} */
 const V3_NO_DATA_ERROR = 'No data present';

@@ -283,7 +283,7 @@ const legacyOfferResult = vaultSeat => {
  * @param {import('ava').ExecutionContext<Context>} t
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} runInitialLiquidity
  */

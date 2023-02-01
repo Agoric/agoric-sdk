@@ -8,7 +8,7 @@ import {
   IssuerKitShape,
 } from '@agoric/ertp';
 import { M } from '@agoric/store';
-import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { TimestampValueShape } from '@agoric/time';
 import { SubscriberShape } from '@agoric/notifier';
 
 // keywords have an initial cap

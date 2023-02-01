@@ -7,6 +7,8 @@
  * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
  * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
+ *
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
  */
 
 /**

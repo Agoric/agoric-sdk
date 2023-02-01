@@ -5,8 +5,8 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/store';
+import { TimeMath } from '@agoric/time';
 import { buildRootObject, debugTools } from '../src/vats/timer/vat-timer.js';
-import { TimeMath } from '../src/vats/timer/timeMath.js';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 
 test('schedule', t => {

@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -35,7 +35,7 @@ const SECOND_PRICE = 'second-price';
  * null } want: { Asset: null } }.
  *
  * @param {ZCF<{
- * timeAuthority: TimerService,
+ * timeAuthority: import('@agoric/time/src/types').TimerService,
  * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf

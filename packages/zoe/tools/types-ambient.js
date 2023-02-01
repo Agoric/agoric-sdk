@@ -19,9 +19,9 @@
  * The amount supplied to a trade
  * @property {Amount<'nat'>} amountOut
  * The quoted result of trading `amountIn`
- * @property {TimerService} timer
+ * @property {import('@agoric/time/src/types').TimerService} timer
  * The service that gave the `timestamp`
- * @property {Timestamp} timestamp
+ * @property {import('@agoric/time/src/types').Timestamp} timestamp
  * A timestamp according to `timer` for the quote
  * @property {any=} conditions
  * Additional conditions for the quote
@@ -66,7 +66,7 @@
  *
  * @property {(brandIn: Brand,
  *             brandOut: Brand
- * ) => ERef<TimerService>} getTimerService
+ * ) => ERef<import('@agoric/time/src/types').TimerService>} getTimerService
  * Get the timer used in PriceQuotes for a given brandIn/brandOut pair
  *
  * @property {(amountIn: Amount<'nat'>,
@@ -76,7 +76,7 @@
  * `amountIn`.  The rate at which these are issued may be very different between
  * `priceAuthorities`.
  *
- * @property {(deadline: Timestamp,
+ * @property {(deadline: import('@agoric/time/src/types').Timestamp,
  *             amountIn: Amount<'nat'>,
  *             brandOut: Brand<'nat'>
  * ) => Promise<PriceQuote>} quoteAtTime
@@ -144,5 +144,5 @@
  * @callback PriceQuery
  * @param {PriceCalculator} calcAmountIn
  * @param {PriceCalculator} calcAmountOut
- * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: Timestamp }=}
+ * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: import('@agoric/time/src/types').Timestamp }=}
  */

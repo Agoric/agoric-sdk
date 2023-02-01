@@ -22,7 +22,7 @@ import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 import {
   setupBootstrap,

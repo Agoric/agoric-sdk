@@ -31,6 +31,7 @@ export default [
   "@agoric/swingset-runner",
   "@agoric/swingset-vat",
   "@agoric/telemetry",
+  "@agoric/time",
   "@agoric/ui-components",
   "@agoric/vat-data",
   "@agoric/vats",

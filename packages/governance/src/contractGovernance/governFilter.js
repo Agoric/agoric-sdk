@@ -28,7 +28,7 @@ const makeOfferFilterPositions = strings => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {Instance} governedInstance
- * @param {ERef<TimerService>} timer
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @param {GovernorFacet<{}>} governorFacet
  * @returns {Promise<FilterGovernor>}

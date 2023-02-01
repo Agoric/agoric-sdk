@@ -4,7 +4,7 @@ import '@agoric/zoe/exported.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 

@@ -18,6 +18,7 @@
  */
 
 /**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
  * @typedef {{getTime: () => Timestamp, updateTime: (currentTime:
  * Timestamp) => void}} StoredTime
  */

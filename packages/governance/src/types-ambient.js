@@ -329,7 +329,7 @@
 /**
  * @typedef {object} ClosingRule
  * @property {ERef<Timer>} timer
- * @property {Timestamp} deadline
+ * @property {import('@agoric/time/src/types').Timestamp} deadline
  */
 
 /**
@@ -343,7 +343,7 @@
  * @property {VoteCounterPublicFacet} publicFacet
  * @property {VoteCounterCreatorFacet} creatorFacet
  * @property {import('@agoric/zoe/src/zoeService/utils.js').Instance<typeof import('./binaryVoteCounter.js').start>} instance
- * @property {Timestamp} deadline
+ * @property {import('@agoric/time/src/types').Timestamp} deadline
  * @property {Handle<'Question'>} questionHandle
  */
 
@@ -640,7 +640,7 @@
  *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
- * @param {Timestamp} deadline
+ * @param {import('@agoric/time/src/types').Timestamp} deadline
  * @param {ParamChangesSpec<P>} paramSpec
  * @returns {ContractGovernanceVoteResult}
  */
@@ -650,14 +650,14 @@
  * @param {string} apiMethodName
  * @param {unknown[]} methodArgs
  * @param {Installation} voteCounterInstallation
- * @param {Timestamp} deadline
+ * @param {import('@agoric/time/src/types').Timestamp} deadline
  * @returns {ContractGovernanceVoteResult}
  */
 
 /**
  * @callback VoteOnOfferFilter
  * @param {Installation} voteCounterInstallation
- * @param {Timestamp} deadline
+ * @param {import('@agoric/time/src/types').Timestamp} deadline
  * @param {string[]} strings
  * @returns {ContractGovernanceVoteResult}
  */
@@ -685,7 +685,7 @@
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {Instance} contractInstance
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
@@ -706,7 +706,7 @@
 
 /**
  * @typedef {object} GovernedContractTerms
- * @property {TimerService} timer
+ * @property {import('@agoric/time/src/types').TimerService} timer
  * @property {IssuerKeywordRecord} issuerKeywordRecord
  * @property {object} privateArgs
  */

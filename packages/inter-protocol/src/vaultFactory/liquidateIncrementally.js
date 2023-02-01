@@ -51,7 +51,7 @@ const trace = makeTracer('LiqI', false);
  *   amm: XYKAMMPublicFacet,
  *   priceAuthority: PriceAuthority,
  *   reservePublicFacet: AssetReservePublicFacet,
- *   timerService: TimerService,
+ *   timerService: import('@agoric/time/src/types').TimerService,
  *   debtBrand: Brand<'nat'>,
  *   MaxImpactBP: NatValue,
  *   OracleTolerance: Ratio,

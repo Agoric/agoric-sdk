@@ -5,7 +5,7 @@ import { deeplyFulfilled, Far } from '@endo/marshal';
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
  * @property {VoteCounterPublicFacet} publicFacet
- * @property {Timestamp} deadline
+ * @property {import('@agoric/time/src/types').Timestamp} deadline
  */
 
 /**

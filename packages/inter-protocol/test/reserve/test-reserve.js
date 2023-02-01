@@ -6,7 +6,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 import { setupReserveServices } from './setup.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
