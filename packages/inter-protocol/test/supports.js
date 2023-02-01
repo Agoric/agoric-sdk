@@ -2,6 +2,7 @@ import { AmountMath } from '@agoric/ertp';
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import {
   makeAgoricNamesAccess,
@@ -98,6 +99,21 @@ export const setupBootstrap = (t, optTimer) => {
 export const installGovernance = (zoe, produce) => {
   produce.committee.resolve(E(zoe).install(committeeBundle));
   produce.contractGovernor.resolve(E(zoe).install(contractGovernorBundle));
+  produce.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
+};
+
+/**
+ * Install governance contracts, with a "puppet" governor for use in tests.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Space['installation']['produce']} produce
+ */
+export const installPuppetGovernance = (zoe, produce) => {
+  produce.committee.resolve(E(zoe).install(committeeBundle));
+  produce.contractGovernor.resolve(
+    E(zoe).install(puppetContractGovernorBundle),
+  );
+  // ignored by puppetContractGovernor but expected by something
   produce.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
 };
 

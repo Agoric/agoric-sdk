@@ -1,9 +1,9 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeTracer, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeTracer, objectMap } from '@agoric/internal';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
@@ -22,7 +22,7 @@ import {
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import '../../src/vaultFactory/types.js';
 import {
-  installGovernance,
+  installPuppetGovernance,
   makeVoterTool,
   setupBootstrap,
   setUpZoeForTest,
@@ -151,7 +151,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
-  installGovernance(zoe, space.installation.produce);
+  installPuppetGovernance(zoe, space.installation.produce);
   // TODO consider using produceInstallations()
   space.installation.produce.amm.resolve(t.context.installation.amm);
   space.installation.produce.reserve.resolve(t.context.installation.reserve);

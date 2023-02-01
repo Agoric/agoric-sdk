@@ -42,7 +42,7 @@ import {
   vaultManagerMetricsTracker,
 } from '../metrics.js';
 import {
-  installGovernance,
+  installPuppetGovernance,
   produceInstallations,
   setupBootstrap,
   setUpZoeForTest,
@@ -167,7 +167,7 @@ const setupAmmAndElectorateAndReserve = async (
 
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
-  installGovernance(zoe, space.installation.produce);
+  installPuppetGovernance(zoe, space.installation.produce);
   produceInstallations(space, t.context.installation);
 
   await startEconomicCommittee(space, electorateTerms);
