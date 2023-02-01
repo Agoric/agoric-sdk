@@ -3,7 +3,7 @@ import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
-import './types.js';
+import './types-ambient.js';
 import './internal-types.js';
 
 // we wrap SwingSet's buildManualTimer to accomodate the needs of

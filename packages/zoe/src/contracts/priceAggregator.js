@@ -12,7 +12,7 @@ import { makeLegacyMap } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import '../../tools/types.js';
+import '../../tools/types-ambient.js';
 import {
   calculateMedian,
   makeOnewayPriceAuthorityKit,
