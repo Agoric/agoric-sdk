@@ -438,7 +438,8 @@ test('first', async t => {
     undefined,
     500n,
   );
-  const { vaultFactory, lender, aethVaultManager } = services.vaultFactory;
+  const { vaultFactory, lender, aethVaultManager, aethCollateralManager } =
+    services.vaultFactory;
   trace(t, 'services', { services, vaultFactory, lender });
 
   // Create a loan for 470 Minted with 1100 aeth collateral
@@ -446,7 +447,7 @@ test('first', async t => {
   const loanAmount = run.make(470n);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -562,7 +563,7 @@ test('price drop', async t => {
   trace(t, 'setup');
 
   const {
-    vaultFactory: { vaultFactory, lender },
+    vaultFactory: { vaultFactory, lender, aethCollateralManager },
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
   } = services;
@@ -572,7 +573,7 @@ test('price drop', async t => {
   const loanAmount = run.make(270n);
   /** @type {UserSeat<VaultKit>} */
   const vaultSeat = await E(zoe).offer(
-    await E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -715,7 +716,7 @@ test('price falls precipitously', async t => {
   );
   // we start with time=0, price=2200
 
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender, aethCollateralManager } = services.vaultFactory;
 
   const { reserveCreatorFacet } = services.reserveKit;
   // Create a loan for 370 Minted with 400 aeth collateral
@@ -723,7 +724,7 @@ test('price falls precipitously', async t => {
   const loanAmount = run.make(370n);
   /** @type {UserSeat<VaultKit>} */
   const userSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: loanAmount },
@@ -889,14 +890,14 @@ test('interest on multiple vaults', async t => {
     SECONDS_PER_DAY,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender, aethCollateralManager } = services.vaultFactory;
 
   // Create a loan for Alice for 4700 Minted with 1100 aeth collateral
   const collateralAmount = aeth.make(1100n);
   const aliceLoanAmount = run.make(4700n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -935,7 +936,7 @@ test('interest on multiple vaults', async t => {
   const bobLoanAmount = run.make(3200n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -1017,7 +1018,7 @@ test('interest on multiple vaults', async t => {
   // try opening a vault that can't cover fees
   /** @type {UserSeat<VaultKit>} */
   const caroleLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(200n) },
       want: { Minted: run.make(0n) }, // no debt
@@ -1035,7 +1036,7 @@ test('interest on multiple vaults', async t => {
   const wantedRun = 1_000n;
   /** @type {UserSeat<VaultKit>} */
   const danLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aeth.make(2_000n) },
       want: { Minted: run.make(wantedRun) },
@@ -1074,7 +1075,8 @@ test('adjust balances', async t => {
     undefined,
     500n,
   );
-  const { lender } = services.vaultFactory;
+  const { lender, aethCollateralManager } = services.vaultFactory;
+  console.log('inside test :::: LENDER', { lender, ELender: E(lender) });
 
   // initial loan /////////////////////////////////////
 
@@ -1083,7 +1085,7 @@ test('adjust balances', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1598,7 +1600,7 @@ test('overdeposit', async t => {
     undefined,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { vaultFactory, lender, aethCollateralManager } = services.vaultFactory;
 
   // Alice's loan /////////////////////////////////////
 
@@ -1607,7 +1609,7 @@ test('overdeposit', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: collateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1649,7 +1651,7 @@ test('overdeposit', async t => {
   const bobLoanAmount = run.make(1000n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
@@ -1748,7 +1750,7 @@ test('mutable liquidity triggers and interest', async t => {
   );
 
   const {
-    vaultFactory: { lender },
+    vaultFactory: { lender, aethCollateralManager },
     priceAuthority,
     reserveKit: { reserveCreatorFacet },
   } = services;
@@ -1769,7 +1771,7 @@ test('mutable liquidity triggers and interest', async t => {
   const aliceLoanAmount = run.make(5000n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: aliceCollateralAmount },
       want: { Minted: aliceLoanAmount },
@@ -1817,7 +1819,7 @@ test('mutable liquidity triggers and interest', async t => {
   const bobLoanAmount = run.make(512n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
+    E(aethCollateralManager).makeVaultInvitation(),
     harden({
       give: { Collateral: bobCollateralAmount },
       want: { Minted: bobLoanAmount },
