@@ -52,6 +52,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     { storageNode, walletBridgeManager },
   );
 
+  /** @param {string} address */
   const simpleProvideWallet = async address => {
     // copied from makeClientBanks()
     const bank = E(consume.bankManager).getBankForAddress(address);

@@ -5,13 +5,13 @@
  */
 
 import { WalletName } from '@agoric/internal';
-import { mustMatch, M, makeExo, makeScalarMapStore } from '@agoric/store';
+import { observeIteration } from '@agoric/notifier';
+import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
-import { observeIteration } from '@agoric/notifier';
 import { E, Far } from '@endo/far';
-import { makeSmartWallet } from './smartWallet.js';
+import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
 // Ambient types. Needed only for dev but this does a runtime import.
@@ -128,8 +128,9 @@ const makeAssetRegistry = assetPublisher => {
  *   storageNode: ERef<StorageNode>,
  *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
  * }} privateArgs
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const start = async (zcf, privateArgs) => {
+export const start = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
@@ -197,9 +198,15 @@ export const start = async (zcf, privateArgs) => {
     invitationIssuer,
     publicMarshaller,
     registry,
-    storageNode,
     zoe,
   });
+
+  /**
+   * Holders of this object:
+   * - vat (transitively from holding the wallet factory)
+   * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
+   */
+  const makeSmartWallet = prepareSmartWallet(baggage, shared);
 
   const creatorFacet = makeExo(
     'walletFactoryCreator',
@@ -224,9 +231,9 @@ export const start = async (zcf, privateArgs) => {
         /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
-          const wallet = makeSmartWallet(
-            harden({ address, bank, invitationPurse }),
-            shared,
+          const walletStorageNode = E(storageNode).makeChildNode(address);
+          const wallet = await makeSmartWallet(
+            harden({ address, walletStorageNode, bank, invitationPurse }),
           );
 
           // An await here would deadlock with invitePSMCommitteeMembers

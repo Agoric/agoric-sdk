@@ -147,7 +147,7 @@ const pushPrice = async (wallet, adminOfferId, priceRound) => {
 // The tests are serial because they mutate shared state
 
 test.serial('invitations', async t => {
-  const operatorAddress = 'invitation test';
+  const operatorAddress = 'agoric1invitationTest';
   const wallet = await t.context.simpleProvideWallet(operatorAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
