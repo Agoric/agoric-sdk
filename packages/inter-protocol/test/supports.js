@@ -118,6 +118,8 @@ export const installPuppetGovernance = (zoe, produce) => {
 };
 
 /**
+ * @deprecated use the puppet governor
+ *
  * Economic Committee of one.
  *
  * @param {ERef<ZoeService>} zoe

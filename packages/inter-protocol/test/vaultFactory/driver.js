@@ -23,7 +23,6 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 import '../../src/vaultFactory/types.js';
 import {
   installPuppetGovernance,
-  makeVoterTool,
   setupBootstrap,
   setUpZoeForTest,
   withAmountUtils,
@@ -76,7 +75,7 @@ const defaultParamValues = debt =>
  * @typedef {{
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
  * aethInitialLiquidity: Amount<'nat'>,
- * committee: any,
+ * puppetGovernors: { [contractName: string]: ERef<import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<any>['creatorFacet']> },
  * electorateTerms: any,
  * feeMintAccess: FeeMintAccess,
  * installation: Record<string, any>,
@@ -168,14 +167,6 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
 
-  const counter = await space.installation.consume.binaryVoteCounter;
-  t.context.committee = makeVoterTool(
-    zoe,
-    space.consume.economicCommitteeCreatorFacet,
-    E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
-    counter,
-  );
-
   /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
@@ -202,6 +193,11 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
       Central: runLiquidity.payment,
     }),
   );
+
+  t.context.puppetGovernors = {
+    // @ts-expect-error cast regular governor to puppet
+    vaultFactory: E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
+  };
 
   // TODO get the creator directly
   const newAmm = {
@@ -508,17 +504,13 @@ export const makeManagerDriver = async (
     /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
     setGovernedParam: async (name, newValue) => {
-      const deadline = 3n;
-      const { cast, outcome } = await E(t.context.committee).changeParam(
+      const vfGov = await t.context.puppetGovernors.vaultFactory;
+      await E(vfGov).changeParams(
         harden({
           paramPath: { key: 'governedParams' },
           changes: { [name]: newValue },
         }),
-        deadline,
       );
-      await cast;
-      await driver.tick(3);
-      await outcome;
     },
     /**
      *
