@@ -1,6 +1,26 @@
 import { assertAllDefined } from '@agoric/internal';
 import { makeMarshallToStorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { M } from '@agoric/store';
+import { E } from '@endo/eventual-send';
+import { SubscriberShape } from './publish-kit.js';
 import { forEachPublicationRecord } from './storesub.js';
+
+export const PublicTopicShape = M.splitRecord(
+  {
+    subscriber: SubscriberShape,
+    storagePath: M.promise(/* string */),
+  },
+  { description: M.string() },
+);
+
+/**
+ * @template {object} T topic value
+ * @typedef {{
+ *   description?: string,
+ *   subscriber: Subscriber<T>,
+ *   storagePath: ERef<string>,
+ * }} PublicTopic
+ */
 
 /**
  * NB: caller must ensure that `publisher.finish()` or `publisher.fail()` is
@@ -25,3 +45,18 @@ export const pipeTopicToStorage = (topic, storageNode, marshaller) => {
   });
 };
 harden(pipeTopicToStorage);
+
+/**
+ * @template T
+ * @param {string} description
+ * @param {Subscriber<T>} topic
+ * @param {ERef<StorageNode>} storageNode
+ * @returns {PublicTopic<T>}
+ */
+export const makePublicTopic = (description, topic, storageNode) => {
+  return {
+    description,
+    topic,
+    storagePath: E(storageNode).getPath(),
+  };
+};

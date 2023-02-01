@@ -214,7 +214,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
     const { walletStorageNode } = unique;
 
-    // TODO(turadg) replace StoredSubscriber with TopicMeta
+    // TODO(turadg) replace StoredSubscriber with PublicTopic
     // Start the publishing loops
     provideStoredSubscriber(
       updatePublishKit.subscriber,
