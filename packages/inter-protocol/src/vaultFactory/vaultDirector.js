@@ -468,6 +468,7 @@ export const prepareVaultDirector = (
             ),
           );
         },
+        /** @deprecated use getPublicTopics */
         getMetrics() {
           return metricsSubscriber;
         },

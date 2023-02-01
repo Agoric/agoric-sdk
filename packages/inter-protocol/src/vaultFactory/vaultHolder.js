@@ -84,7 +84,7 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         },
       },
       holder: {
-        /** @returns {Subscriber<VaultNotification>} */
+        /** @deprecated use getPublicTopics */
         getSubscriber() {
           return this.state.subscriber;
         },

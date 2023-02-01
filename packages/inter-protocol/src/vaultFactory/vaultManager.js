@@ -304,9 +304,11 @@ export const prepareVaultManagerKit = (
             'MakeVault',
           );
         },
+        /** @deprecated use getPublicTopics */
         getSubscriber() {
           return assetSubscriber;
         },
+        /** @deprecated use getPublicTopics */
         getMetrics() {
           return metricsSubscriber;
         },

@@ -541,11 +541,11 @@ export const prepareSmartWallet = (baggage, shared) => {
         getOffersFacet() {
           return this.facets.offers;
         },
-        /** @returns {Subscriber<CurrentWalletRecord>} */
+        /** @deprecated use getPublicTopics */
         getCurrentSubscriber() {
           return this.state.currentPublishKit.subscriber;
         },
-        /** @returns {Subscriber<UpdateRecord>} */
+        /** @deprecated use getPublicTopics */
         getUpdatesSubscriber() {
           return this.state.updatePublishKit.subscriber;
         },

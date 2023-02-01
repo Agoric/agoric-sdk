@@ -316,11 +316,11 @@ export const start = async (zcf, privateArgs, baggage) => {
     getPriceAuthority() {
       return priceAuthority;
     },
-    /** @returns {Subscriber<PriceDescription>} */
+    /** @deprecated use getPublicTopics */
     getSubscriber: () => {
       return quoteSubscriber;
     },
-    /** @returns {Subscriber<import('./roundsManager.js').LatestRound>} */
+    /** @deprecated use getPublicTopics */
     getRoundStartNotifier() {
       return latestRoundSubscriber;
     },
