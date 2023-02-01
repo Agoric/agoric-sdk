@@ -256,6 +256,8 @@ const getRunFromFaucet = async (t, amount) => {
 };
 
 /**
+ * @deprecated use the subscriber directly
+ *
  * Vault offer result used to include `publicNotifiers` but now is `publicSubscribers`.
  *
  * @param {UserSeat<VaultKit>} vaultSeat
@@ -270,7 +272,6 @@ const legacyOfferResult = vaultSeat => {
       return {
         vault,
         publicNotifiers: {
-          asset: makeNotifierFromSubscriber(publicSubscribers.asset),
           vault: makeNotifierFromSubscriber(publicSubscribers.vault),
         },
       };
@@ -889,7 +890,7 @@ test('interest on multiple vaults', async t => {
     SECONDS_PER_DAY,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { aethCollateralManager, vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for Alice for 4700 Minted with 1100 aeth collateral
   const collateralAmount = aeth.make(1100n);
@@ -907,7 +908,7 @@ test('interest on multiple vaults', async t => {
   );
   const {
     vault: aliceVault,
-    publicNotifiers: { vault: aliceNotifier, asset: assetNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await legacyOfferResult(aliceLoanSeat);
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -973,7 +974,9 @@ test('interest on multiple vaults', async t => {
   // Advance 8 days, past one charging and recording period
   await manualTimer.tickN(8);
 
-  const assetUpdate = await E(assetNotifier).getUpdateSince();
+  const assetUpdate = (
+    await E(E(aethCollateralManager).getSubscriber()).subscribeAfter()
+  ).head;
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 

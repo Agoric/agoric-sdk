@@ -587,11 +587,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           seat.exit();
 
           // eslint-disable-next-line no-use-before-define
-          const vaultKit = makeVaultKit(
-            self,
-            state.storageNode,
-            state.manager.getAssetSubscriber(),
-          );
+          const vaultKit = makeVaultKit(self, state.storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
 
@@ -661,11 +657,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
           trace('initVault updateDebtAccounting fired');
 
-          const vaultKit = makeVaultKit(
-            self,
-            storageNode,
-            state.manager.getAssetSubscriber(),
-          );
+          const vaultKit = makeVaultKit(self, storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
           return vaultKit;
