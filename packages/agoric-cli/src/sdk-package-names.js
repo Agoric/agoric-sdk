@@ -28,6 +28,7 @@ export default [
   "@agoric/stat-logger",
   "@agoric/store",
   "@agoric/swing-store",
+  "@agoric/swingset-liveslots",
   "@agoric/swingset-runner",
   "@agoric/swingset-vat",
   "@agoric/telemetry",

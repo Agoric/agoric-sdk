@@ -196,6 +196,8 @@ jobs:
         run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (time)
         run: cd packages/time && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (swingset-liveslots)
+        run: cd packages/swingset-liveslots && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
         # The meta-test!
       - name: Check for untested packages

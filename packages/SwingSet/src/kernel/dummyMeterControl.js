@@ -41,7 +41,7 @@ export function makeDummyMeterControl() {
     return harden(wrapped);
   }
 
-  /** @type { MeterControl } */
+  /** @type { import('@agoric/swingset-liveslots').MeterControl } */
   const meterControl = {
     isMeteringDisabled,
     assertIsMetered,

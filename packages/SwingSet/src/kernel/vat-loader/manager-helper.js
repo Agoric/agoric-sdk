@@ -3,6 +3,10 @@ import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
 import { makeTranscriptManager } from './transcript.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ */
+
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
 // the local kernel.

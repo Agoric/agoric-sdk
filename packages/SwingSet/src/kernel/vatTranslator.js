@@ -14,6 +14,22 @@ export function assertValidVatstoreKey(key) {
 }
 
 /**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryMessage} VatDeliveryMessage
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryNotify} VatDeliveryNotify
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryDropExports} VatDeliveryDropExports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireExports} VatDeliveryRetireExports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireImports} VatDeliveryRetireImports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryChangeVatOptions} VatDeliveryChangeVatOptions
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStartVat} VatDeliveryStartVat
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStopVat} VatDeliveryStopVat
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryBringOutYourDead} VatDeliveryBringOutYourDead
+ *
+ * @typedef {import('@agoric/swingset-liveslots').VatOneResolution} VatOneResolution
+ *
+ */
+
+/**
  * Return a function that converts KernelDelivery objects into VatDelivery
  * objects
  *
@@ -170,7 +186,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   /**
    * @param { SwingSetCapData } disconnectObjectCapData
-   * @returns { import('../types-external.js').VatDeliveryStopVat }
+   * @returns { VatDeliveryStopVat }
    */
   function translateStopVat(disconnectObjectCapData) {
     return harden(['stopVat', disconnectObjectCapData]);

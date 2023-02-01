@@ -1,4 +1,4 @@
-import { test, runDVOTest } from '../../tools/vo-test-harness.js';
+import { test, runDVOTest } from '../../tools/dvo-test-harness.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

@@ -9,6 +9,11 @@ import {
 import '../../types-ambient.js';
 import './types.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
+ */
+
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
