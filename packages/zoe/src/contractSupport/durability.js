@@ -16,23 +16,24 @@ import { Far } from '@endo/marshal';
  * representative also remains.
  *
  * @template {{}} E Ephemeral state
- * @param {() => E} init
+ * @template {{}} [K=any] key on which to provision
+ * @param {(key: K) => E} init
  */
 export const makeEphemeraProvider = init => {
-  /** @type {WeakMap<any, E>} */
+  /** @type {WeakMap<K, E>} */
   const extant = new WeakMap();
 
   /**
    * Provide an object to hold state that need not (or cannot) be durable.
    *
-   * @type {(key: any) => E}
+   * @type {(key: K) => E}
    */
   return key => {
     if (extant.has(key)) {
       // @ts-expect-error cast
       return extant.get(key);
     }
-    const newEph = init();
+    const newEph = init(key);
     extant.set(key, newEph);
     return newEph;
   };
