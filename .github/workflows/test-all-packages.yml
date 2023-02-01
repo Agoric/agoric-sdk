@@ -143,9 +143,12 @@ jobs:
         run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -202,9 +205,13 @@ jobs:
         # The meta-test!
       - name: Check for untested packages
         run: node ./scripts/check-untested-packages.mjs
-      - name: report tests
+
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   ##############
   # Long-running tests are executed individually.
@@ -231,9 +238,12 @@ jobs:
       - name: yarn test (solo)
         timeout-minutes: 20
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -260,9 +270,12 @@ jobs:
           go-version: 1.17
       - name: yarn test (cosmic-swingset)
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
@@ -287,9 +300,12 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js' | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -319,9 +335,12 @@ jobs:
       - name: yarn test (SwingSet XS Worker)
         if: matrix.engine != 'xs'
         run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -344,9 +363,12 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js' | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -370,9 +392,12 @@ jobs:
 
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js' | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -398,9 +423,12 @@ jobs:
       - name: yarn test (zoe)
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -426,6 +454,9 @@ jobs:
       - name: yarn test (zoe)
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: report tests
+      - name: Report tests
         if: success() || failure()
-        run: ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
