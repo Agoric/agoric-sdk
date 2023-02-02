@@ -499,11 +499,21 @@ export const makeManagerDriver = async (
     },
     /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
-    setGovernedParam: async (name, newValue) => {
+    /**
+     *
+     * @param {string} name
+     * @param {*} newValue
+     * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
+     */
+    setGovernedParam: async (
+      name,
+      newValue,
+      paramPath = { key: 'governedParams' },
+    ) => {
       const vfGov = await t.context.puppetGovernors.vaultFactory;
       await E(vfGov).changeParams(
         harden({
-          paramPath: { key: 'governedParams' },
+          paramPath,
           changes: { [name]: newValue },
         }),
       );
