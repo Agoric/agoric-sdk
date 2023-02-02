@@ -41,7 +41,6 @@ import {
   assertProposalShape,
   atomicTransfer,
   ceilDivideBy,
-  floorDivideBy,
   getAmountIn,
   getAmountOut,
   makeRatio,
@@ -53,6 +52,7 @@ import { E } from '@endo/eventual-send';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
+import { maxDebtForVault } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
@@ -632,9 +632,8 @@ export const prepareVaultManagerKit = (
             debtBrand,
           );
           trace('maxDebtFor got quote', quoteAmount);
-          // floorDivide because we want the debt ceiling lower
-          return floorDivideBy(
-            getAmountOut(quoteAmount),
+          return maxDebtForVault(
+            quoteAmount,
             factoryPowers.getGovernedParams().getLiquidationMargin(),
           );
         },
