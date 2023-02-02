@@ -6,17 +6,7 @@ import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 
 const { Fail, quote: q } = assert;
 
-/**
- * For a value with a known id in the board, we can use
- * that board id as a slot to preserve identity when marshaling.
- *
- * The contents of the string depend on the `prefix` and `crcDigits` options:
- *    \`${prefix}${serialNum}${crc}\`
- *
- * For example, 'board0371' for 'board0', 3, 2 digits crc.
- *
- * @typedef {string} BoardId
- */
+/** @typedef {import('@agoric/vats/src/lib-board.js').BoardId} BoardId */
 
 /**
  * ID from a board made with { prefix: DEFAULT_PREFIX }

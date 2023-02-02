@@ -12,7 +12,19 @@ export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
 /**
- * We calculate a CRC, ensuring it's of CRC_NUM_DIGITS length.
+ * For a value with a known id in the board, we can use
+ * that board id as a slot to preserve identity when marshaling.
+ *
+ * The contents of the string depend on the `prefix` and `crcDigits` options:
+ *    \`${prefix}${crc}${seq}\`
+ *
+ * For example, 'board0371' for prefix: 'board0', seq: 1, 2 digits crc.
+ *
+ * @typedef {string} BoardId
+ */
+
+/**
+ * Calculate a CRC, padding to crcDigits.
  *
  * @param {number | string} data
  * @param {number} crcDigits
@@ -46,6 +58,12 @@ function makeBoard(
 
   const ifaceAllegedPrefix = 'Alleged: ';
   const ifaceInaccessiblePrefix = 'SEVERED: ';
+
+  /**
+   * @param {BoardId} slot
+   * @param {string} iface
+   * @returns {unknown}
+   */
   const slotToVal = (slot, iface) => {
     if (slot !== null) {
       // eslint-disable-next-line no-use-before-define
