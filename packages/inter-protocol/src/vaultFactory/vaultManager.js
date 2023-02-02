@@ -94,6 +94,7 @@ const trace = makeTracer('VM', false);
  *  getRecordingPeriod: () => RelativeTime,
  *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
+ *  getLiquidationPadding: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
@@ -635,6 +636,7 @@ export const prepareVaultManagerKit = (
           return maxDebtForVault(
             quoteAmount,
             factoryPowers.getGovernedParams().getLiquidationMargin(),
+            factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
         },
         /**

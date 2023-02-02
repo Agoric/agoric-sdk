@@ -102,6 +102,7 @@ const defaultParamValues = debtBrand =>
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
+    // NB: liquidationPadding defaults to zero in contract
   });
 
 test.before(async t => {
