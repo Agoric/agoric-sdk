@@ -6,13 +6,15 @@ import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import {
   makeNotifierFromSubscriber,
-  makeStoredPublishKit,
-  makeStoredSubscriber,
   observeNotifier,
+  pipeTopicToStorage,
   prepareDurablePublishKit,
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  makeOnewayPriceAuthorityKit,
+  makePublicTopicProvider,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeOracleAdmin } from './priceOracleAdmin.js';
@@ -122,30 +124,24 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { marshaller, storageNode } = privateArgs;
   assertAllDefined({ marshaller, storageNode });
 
-  const makeAnswerPublishKit = prepareDurablePublishKit(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
-    'AnswerPublishKit',
-  );
-
-  const makeLatestRoundPublishKit = prepareDurablePublishKit(
-    baggage,
-    'LatestRoundPublishKit',
+    'Price Aggregator publish kit',
   );
 
   // For publishing priceAuthority values to off-chain storage
-  /** @type {StoredPublishKit<PriceDescription>} */
+  /** @type {PublishKit<PriceDescription>} */
   const { publisher: pricePublisher, subscriber: quoteSubscriber } =
-    makeStoredPublishKit(storageNode, marshaller);
+    makeDurablePublishKit();
+  pipeTopicToStorage(quoteSubscriber, storageNode, marshaller);
 
   /** @type {PublishKit<import('./roundsManager.js').LatestRound>} */
   const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
-    makeLatestRoundPublishKit({ valueDurability: 'mandatory' });
+    makeDurablePublishKit();
+  const latestRoundStorageNode = E(storageNode).makeChildNode('latestRound');
+  pipeTopicToStorage(latestRoundSubscriber, latestRoundStorageNode, marshaller);
 
-  const latestRoundStoredSubscriber = makeStoredSubscriber(
-    latestRoundSubscriber,
-    E(storageNode).makeChildNode('latestRound'),
-    marshaller,
-  );
+  const providePublicTopic = makePublicTopicProvider();
 
   /** @type {MapStore<string, *>} */
   const oracles = makeScalarBigMapStore('oracles', {
@@ -160,7 +156,7 @@ export const start = async (zcf, privateArgs, baggage) => {
    * @type {PublishKit<void>}
    */
   const { publisher: answerPublisher, subscriber: answerSubscriber } =
-    makeAnswerPublishKit({ valueDurability: 'mandatory' });
+    makeDurablePublishKit();
 
   const roundsManagerKit = makeRoundsManagerKit(
     harden({
@@ -320,9 +316,27 @@ export const start = async (zcf, privateArgs, baggage) => {
     getPriceAuthority() {
       return priceAuthority;
     },
-    getSubscriber: () => quoteSubscriber,
+    /** @deprecated use getPublicTopics */
+    getSubscriber: () => {
+      return quoteSubscriber;
+    },
+    /** @deprecated use getPublicTopics */
     getRoundStartNotifier() {
-      return latestRoundStoredSubscriber;
+      return latestRoundSubscriber;
+    },
+    getPublicTopics() {
+      return {
+        quotes: providePublicTopic(
+          'Quotes from this price aggregator',
+          quoteSubscriber,
+          storageNode,
+        ),
+        latestRound: providePublicTopic(
+          'Notification of each round',
+          latestRoundSubscriber,
+          latestRoundStorageNode,
+        ),
+      };
     },
   });
 

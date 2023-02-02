@@ -130,12 +130,16 @@ export const assertHasData = async follower => {
  *
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {Record<string, ERef<StoredFacet>>} [subscribers]
+ * @param {import('./types.js').PublicSubscribers | import('@agoric/notifier').TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {
   if (!subscribers) {
     return null;
   }
-  return deeplyFulfilledObject(objectMap(subscribers, sub => E(sub).getPath()));
+  return deeplyFulfilledObject(
+    objectMap(subscribers, sub =>
+      'subscriber' in sub ? sub.storagePath : E(sub).getPath(),
+    ),
+  );
 };

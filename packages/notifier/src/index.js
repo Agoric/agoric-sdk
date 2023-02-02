@@ -24,3 +24,4 @@ export {
 } from './asyncIterableAdaptor.js';
 export * from './storesub.js';
 export * from './stored-notifier.js';
+export * from './stored-topic.js';

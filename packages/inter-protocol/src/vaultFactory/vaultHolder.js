@@ -3,29 +3,22 @@
  */
 import { AmountShape } from '@agoric/ertp';
 import {
-  makeStoredSubscriber,
   SubscriberShape,
   prepareDurablePublishKit,
+  pipeTopicToStorage,
+  TopicsRecordShape,
 } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { makeEphemeraProvider } from '@agoric/zoe/src/contractSupport/index.js';
+import { makePublicTopicProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
 
 /**
- * Ephemera are the elements of state that cannot (or need not) be durable.
- *
- * @type {(durableSubscriber: Subscriber<VaultNotification>) => {
- * storedSubscriber: StoredSubscriber<VaultNotification>,
- * }} */
-// @ts-expect-error not yet defined
-const provideEphemera = makeEphemeraProvider(() => ({}));
-
-/**
  * @typedef {{
  * publisher: PublishKit<VaultNotification>['publisher'],
  * subscriber: PublishKit<VaultNotification>['subscriber'],
+ * storageNode: StorageNode,
  * vault: Vault | null,
  * }} State
  */
@@ -35,6 +28,7 @@ const HolderI = M.interface('holder', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getSubscriber: M.call().returns(SubscriberShape),
+  getPublicTopics: M.call().returns(TopicsRecordShape),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
@@ -45,6 +39,8 @@ const HolderI = M.interface('holder', {
  * @param {ERef<Marshaller>} marshaller
  */
 export const prepareVaultHolder = (baggage, marshaller) => {
+  const providePublicTopic = makePublicTopicProvider();
+
   const makeVaultHolderPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Holder publish kit',
@@ -60,21 +56,16 @@ export const prepareVaultHolder = (baggage, marshaller) => {
     /**
      *
      * @param {Vault} vault
-     * @param {ERef<StorageNode>} storageNode
+     * @param {StorageNode} storageNode
      * @returns {State}
      */
     (vault, storageNode) => {
       /** @type {PublishKit<VaultNotification>} */
       const { subscriber, publisher } = makeVaultHolderPublishKit();
 
-      const ephemera = provideEphemera(subscriber);
-      ephemera.storedSubscriber = makeStoredSubscriber(
-        subscriber,
-        storageNode,
-        marshaller,
-      );
+      pipeTopicToStorage(subscriber, storageNode, marshaller);
 
-      return { subscriber, publisher, vault };
+      return { publisher, storageNode, subscriber, vault };
     },
     {
       helper: {
@@ -93,10 +84,19 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         },
       },
       holder: {
-        /** @returns {StoredSubscriber<VaultNotification>} */
+        /** @deprecated use getPublicTopics */
         getSubscriber() {
-          const ephemera = provideEphemera(this.state.subscriber);
-          return ephemera.storedSubscriber;
+          return this.state.subscriber;
+        },
+        getPublicTopics() {
+          const { subscriber, storageNode } = this.state;
+          return harden({
+            vault: providePublicTopic(
+              'Vault holder status',
+              subscriber,
+              storageNode,
+            ),
+          });
         },
         makeAdjustBalancesInvitation() {
           return this.facets.helper.owned().makeAdjustBalancesInvitation();

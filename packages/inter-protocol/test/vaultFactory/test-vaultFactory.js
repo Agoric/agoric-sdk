@@ -272,7 +272,7 @@ const legacyOfferResult = vaultSeat => {
       return {
         vault,
         publicNotifiers: {
-          vault: makeNotifierFromSubscriber(publicSubscribers.vault),
+          vault: makeNotifierFromSubscriber(publicSubscribers.vault.subscriber),
         },
       };
     });
@@ -654,7 +654,6 @@ test('price drop', async t => {
   t.truthy(await E(vaultSeat).hasExited());
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
 
@@ -779,7 +778,6 @@ test('price falls precipitously', async t => {
   };
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   await manualTimer.tick(); // t 0->1, p 2200->19180
@@ -1757,7 +1755,6 @@ test('mutable liquidity triggers and interest', async t => {
   } = services;
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   let shortfallBalance = 0n;

@@ -1,4 +1,6 @@
-import { makeStoredSubscriber } from '@agoric/notifier';
+import { makePublicTopic, SubscriberShape } from '@agoric/notifier';
+import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { M, mustMatch } from '@agoric/store';
 import {
   makeScalarBigMapStore,
   provide,
@@ -36,40 +38,46 @@ harden(makeEphemeraProvider);
 /**
  *
  */
-export const makeEphemeralStoredSubscriberProvider = () => {
-  /** @type {WeakMap<Subscriber<any>, StoredSubscriber<any>>} */
+export const makePublicTopicProvider = () => {
+  /** @type {WeakMap<Subscriber<any>, import('@agoric/notifier').PublicTopic<any>>} */
   const extant = new WeakMap();
 
   /**
-   * Provide a StoredSubscriber for the specified durable subscriber.
+   * Provide a PublicTopic for the specified durable subscriber.
+   * Memoizes the resolution of the promise for the storageNode's path, for the lifetime of the vat.
    *
    * @template {object} T
-   * @param {Subscriber<T>} durableSubscriber
+   * @param {string} description
+   * @param {Subscriber<T>} durableSubscriber primary key
    * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
-   * @returns {StoredSubscriber<T>}
+   * @returns {import('@agoric/notifier').PublicTopic<T>}
    */
-  const provideEphemeralStoredSubscriber = (
-    durableSubscriber,
-    storageNode,
-    marshaller,
-  ) => {
+  const providePublicTopic = (description, durableSubscriber, storageNode) => {
     if (extant.has(durableSubscriber)) {
       // @ts-expect-error cast
       return extant.get(durableSubscriber);
     }
+    mustMatch(
+      harden({ description, durableSubscriber, storageNode }),
+      harden({
+        description: M.string(),
+        durableSubscriber: SubscriberShape,
+        storageNode: M.eref(StorageNodeShape),
+      }),
+    );
 
-    const newSub = makeStoredSubscriber(
+    /** @type {import('@agoric/notifier').PublicTopic<T>} */
+    const newMeta = makePublicTopic(
+      description,
       durableSubscriber,
       storageNode,
-      marshaller,
     );
-    extant.set(durableSubscriber, newSub);
-    return newSub;
+    extant.set(durableSubscriber, newMeta);
+    return newMeta;
   };
-  return provideEphemeralStoredSubscriber;
+  return providePublicTopic;
 };
-harden(makeEphemeralStoredSubscriberProvider);
+harden(makePublicTopicProvider);
 
 /**
  * Provide an empty ZCF seat.

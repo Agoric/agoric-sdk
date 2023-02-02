@@ -4,7 +4,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
 import { makeTracer } from '@agoric/internal';
 import '../../src/vaultFactory/types.js';
-import { subscriptionKey } from '../supports.js';
+import { subscriptionKey, topicPath } from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {
@@ -26,7 +26,7 @@ test('storage keys', async t => {
   // Root vault factory
   const vdp = d.getVaultDirectorPublic();
   t.is(
-    await subscriptionKey(E(vdp).getMetrics()),
+    await topicPath(vdp, 'metrics'),
     'mockChainStorageRoot.vaultFactory.metrics',
   );
   t.is(
@@ -37,7 +37,7 @@ test('storage keys', async t => {
   // First manager
   const managerA = await E(vdp).getCollateralManager(aeth.brand);
   t.is(
-    await subscriptionKey(E(managerA).getMetrics()),
+    await topicPath(managerA, 'metrics'),
     'mockChainStorageRoot.vaultFactory.manager0.metrics',
   );
   t.is(
@@ -52,7 +52,7 @@ test('storage keys', async t => {
   // Second manager
   const [managerC, chit] = await d.addVaultType('Chit');
   t.is(
-    await subscriptionKey(E(E(managerC).getPublicFacet()).getMetrics()),
+    await topicPath(E(managerC).getPublicFacet(), 'metrics'),
     'mockChainStorageRoot.vaultFactory.manager1.metrics',
   );
   t.is(
@@ -67,14 +67,14 @@ test('storage keys', async t => {
   // First aeth vault
   const vda1 = await d.makeVaultDriver(aeth.make(1000n), run.make(50n));
   t.is(
-    await subscriptionKey(vda1.getVaultSubscriber()),
+    await E.get(vda1.getVaultSubscriber()).storagePath,
     'mockChainStorageRoot.vaultFactory.manager0.vaults.vault1',
   );
 
   // Second aeth vault
   const vda2 = await d.makeVaultDriver(aeth.make(1000n), run.make(50n));
   t.is(
-    await subscriptionKey(vda2.getVaultSubscriber()),
+    await E.get(vda2.getVaultSubscriber()).storagePath,
     'mockChainStorageRoot.vaultFactory.manager0.vaults.vault2',
   );
 });

@@ -207,6 +207,18 @@ export const subscriptionKey = subscription => {
     });
 };
 
+/**
+ *
+ * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {string} subscriberName
+ */
+export const topicPath = (hasTopics, subscriberName) => {
+  return E(hasTopics)
+    .getPublicTopics()
+    .then(subscribers => subscribers[subscriberName])
+    .then(tr => tr.storagePath);
+};
+
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
 export const headValue = async subscriber => {
   await eventLoopIteration();

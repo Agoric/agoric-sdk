@@ -401,7 +401,9 @@ export const makeManagerDriver = async (
     );
     const { vault, publicSubscribers } = await E(vaultSeat).getOfferResult();
     t.true(await E(vaultSeat).hasExited());
-    const notifier = makeNotifierFromSubscriber(publicSubscribers.vault);
+    const notifier = makeNotifierFromSubscriber(
+      publicSubscribers.vault.subscriber,
+    );
     return {
       getVaultSubscriber: () => publicSubscribers.vault,
       vault: () => vault,

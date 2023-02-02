@@ -24,10 +24,12 @@ import {
 import { makeTracer } from '@agoric/internal';
 import {
   makeStoredNotifier,
-  makeStoredSubscriber,
+  makePublicTopic,
   observeNotifier,
+  pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
+  TopicsRecordShape,
 } from '@agoric/notifier';
 import {
   M,
@@ -166,6 +168,7 @@ export const prepareVaultManagerKit = (
   /** @type {PublishKit<AssetState>} */
   const { publisher: assetPublisher, subscriber: assetSubscriber } =
     makeVaultManagerPublishKit();
+  pipeTopicToStorage(metricsSubscriber, storageNode, marshaller);
 
   /** @type {MapStore<string, Vault>} */
   const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
@@ -174,17 +177,8 @@ export const prepareVaultManagerKit = (
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
-  const storedMetricsSubscriber = makeStoredSubscriber(
-    metricsSubscriber,
-    E(storageNode).makeChildNode('metrics'),
-    marshaller,
-  );
-
-  const storedAssetSubscriber = makeStoredSubscriber(
-    assetSubscriber,
-    storageNode,
-    marshaller,
-  );
+  const metricsNode = E(storageNode).makeChildNode('metrics');
+  pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
   const storedQuotesNotifier = makeStoredNotifier(
     E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
@@ -211,6 +205,19 @@ export const prepareVaultManagerKit = (
     baggage,
     'retained collateral',
   );
+
+  const topics = harden({
+    asset: makePublicTopic(
+      'State of the assets managed',
+      assetSubscriber,
+      storageNode,
+    ),
+    metrics: makePublicTopic(
+      'Vault Factory metrics',
+      metricsSubscriber,
+      metricsNode,
+    ),
+  });
 
   // ephemeral state
   /** @type {boolean} */
@@ -248,6 +255,7 @@ export const prepareVaultManagerKit = (
         makeVaultInvitation: M.call().returns(M.promise()),
         getSubscriber: M.call().returns(SubscriberShape),
         getMetrics: M.call().returns(SubscriberShape),
+        getPublicTopics: M.call().returns(TopicsRecordShape),
         getQuotes: M.call().returns(NotifierShape),
         getCompoundedInterest: M.call().returns(RatioShape),
       }),
@@ -296,17 +304,22 @@ export const prepareVaultManagerKit = (
             'MakeVault',
           );
         },
+        /** @deprecated use getPublicTopics */
         getSubscriber() {
-          return storedAssetSubscriber;
+          return assetSubscriber;
         },
+        /** @deprecated use getPublicTopics */
         getMetrics() {
-          return storedMetricsSubscriber;
+          return metricsSubscriber;
         },
         getQuotes() {
           return storedQuotesNotifier;
         },
         getCompoundedInterest() {
           return this.state.compoundedInterest;
+        },
+        getPublicTopics() {
+          return topics;
         },
       },
 
@@ -663,7 +676,7 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          return storedAssetSubscriber;
+          return assetSubscriber;
         },
         getCollateralBrand() {
           return collateralBrand;

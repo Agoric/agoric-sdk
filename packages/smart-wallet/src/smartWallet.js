@@ -7,11 +7,17 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
-import { observeNotifier, prepareDurablePublishKit } from '@agoric/notifier';
+import {
+  observeNotifier,
+  pipeTopicToStorage,
+  prepareDurablePublishKit,
+  SubscriberShape,
+  TopicsRecordShape,
+} from '@agoric/notifier';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
 import { M, mustMatch } from '@agoric/store';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
-import { makeEphemeralStoredSubscriberProvider } from '@agoric/zoe/src/contractSupport/index.js';
+import { makePublicTopicProvider } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
@@ -129,8 +135,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * }} MutableState
  */
 
-const provideStoredSubscriber = makeEphemeralStoredSubscriberProvider();
-
 /**
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
@@ -154,6 +158,8 @@ export const prepareSmartWallet = (baggage, shared) => {
     baggage,
     'Smart Wallet publish kit',
   );
+
+  const providePublicTopic = makePublicTopicProvider();
 
   /**
    *
@@ -212,13 +218,17 @@ export const prepareSmartWallet = (baggage, shared) => {
     /** @type {PublishKit<CurrentWalletRecord>} */
     const currentPublishKit = makeWalletPublishKit();
 
-    const { walletStorageNode } = unique;
+    const { currentStorageNode, walletStorageNode } = unique;
 
-    // TODO(turadg) replace StoredSubscriber with TopicMeta
     // Start the publishing loops
-    provideStoredSubscriber(
+    pipeTopicToStorage(
       updatePublishKit.subscriber,
       walletStorageNode,
+      shared.publicMarshaller,
+    );
+    pipeTopicToStorage(
+      currentPublishKit.subscriber,
+      currentStorageNode,
       shared.publicMarshaller,
     );
 
@@ -266,8 +276,9 @@ export const prepareSmartWallet = (baggage, shared) => {
       ),
       getDepositFacet: M.call().returns(M.remotable()),
       getOffersFacet: M.call().returns(M.remotable()),
-      getCurrentSubscriber: M.call().returns(M.remotable()),
-      getUpdatesSubscriber: M.call().returns(M.remotable()),
+      getCurrentSubscriber: M.call().returns(SubscriberShape),
+      getUpdatesSubscriber: M.call().returns(SubscriberShape),
+      getPublicTopics: M.call().returns(TopicsRecordShape),
     }),
   };
 
@@ -476,7 +487,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 status: offerStatus,
               });
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers) => Promise<void>} */
+            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,
@@ -530,23 +541,33 @@ export const prepareSmartWallet = (baggage, shared) => {
         getOffersFacet() {
           return this.facets.offers;
         },
-        /** @returns {StoredSubscriber<CurrentWalletRecord>} */
+        /** @deprecated use getPublicTopics */
         getCurrentSubscriber() {
-          const { state } = this;
-          return provideStoredSubscriber(
-            state.currentPublishKit.subscriber,
-            state.currentStorageNode,
-            shared.publicMarshaller,
-          );
+          return this.state.currentPublishKit.subscriber;
         },
-        /** @returns {StoredSubscriber<UpdateRecord>} */
+        /** @deprecated use getPublicTopics */
         getUpdatesSubscriber() {
-          const { state } = this;
-          return provideStoredSubscriber(
-            state.updatePublishKit.subscriber,
-            state.walletStorageNode,
-            shared.publicMarshaller,
-          );
+          return this.state.updatePublishKit.subscriber;
+        },
+        getPublicTopics() {
+          const {
+            currentPublishKit,
+            currentStorageNode,
+            updatePublishKit,
+            walletStorageNode,
+          } = this.state;
+          return harden({
+            current: providePublicTopic(
+              'Current state of wallet',
+              currentPublishKit.subscriber,
+              currentStorageNode,
+            ),
+            updates: providePublicTopic(
+              'Changes to wallet',
+              updatePublishKit.subscriber,
+              walletStorageNode,
+            ),
+          });
         },
       },
     },
