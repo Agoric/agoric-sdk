@@ -1,12 +1,12 @@
 import { M } from '@agoric/store';
-import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
+import { makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
 const { Fail } = assert;
 
 export const preparePurseKind = (
-  issuerBaggage,
+  issuerPlace,
   name,
   assetKind,
   brand,
@@ -31,8 +31,7 @@ export const preparePurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const makePurseKit = prepareExoClassKit(
-    issuerBaggage,
+  const makePurseKit = issuerPlace.exoClassKit(
     `${name} Purse`,
     PurseIKit,
     () => {

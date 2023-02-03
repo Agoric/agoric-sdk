@@ -2,15 +2,12 @@
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
 import { mustMatch, M } from '@agoric/store';
-import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
-
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -64,7 +61,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * payments. All minting and transfer authority originates here.
  *
  * @template {AssetKind} K
- * @param {Baggage} issuerBaggage
+ * @param {Place} issuerPlace
  * @param {string} name
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
@@ -73,7 +70,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
-  issuerBaggage,
+  issuerPlace,
   name,
   assetKind,
   displayInfo,
@@ -81,7 +78,7 @@ export const preparePaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
+  const brand = issuerPlace.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -111,7 +108,7 @@ export const preparePaymentLedger = (
     amountShape,
   );
 
-  const makePayment = preparePaymentKind(issuerBaggage, name, brand, PaymentI);
+  const makePayment = preparePaymentKind(issuerPlace, name, brand, PaymentI);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -129,11 +126,9 @@ export const preparePaymentLedger = (
   };
 
   /** @type {WeakMapStore<Payment, Amount>} */
-  const paymentLedger = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentLedger',
-    { valueShape: amountShape },
-  );
+  const paymentLedger = issuerPlace.weakMapStore('paymentLedger', {
+    valueShape: amountShape,
+  });
 
   /**
    * A withdrawn live payment is associated with the recovery set of
@@ -155,10 +150,7 @@ export const preparePaymentLedger = (
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
-  const paymentRecoverySets = provideDurableWeakMapStore(
-    issuerBaggage,
-    'paymentRecoverySets',
-  );
+  const paymentRecoverySets = issuerPlace.weakMapStore('paymentRecoverySets');
 
   /**
    * To maintain the invariants listed in the `paymentRecoverySets` comment,
@@ -365,7 +357,7 @@ export const preparePaymentLedger = (
   };
 
   const makeEmptyPurse = preparePurseKind(
-    issuerBaggage,
+    issuerPlace,
     name,
     assetKind,
     brand,
@@ -377,7 +369,7 @@ export const preparePaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
+  const issuer = issuerPlace.exo(`${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -475,7 +467,7 @@ export const preparePaymentLedger = (
   });
 
   /** @type {Mint<K>} */
-  const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
+  const mint = issuerPlace.exo(`${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },

@@ -2,7 +2,7 @@
 
 import { assert } from '@agoric/assert';
 import { assertPattern } from '@agoric/store';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeBaggagePlace, makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
@@ -24,7 +24,7 @@ import './types-ambient.js';
 /**
  * @template {AssetKind} K
  * @param {IssuerRecord<K>} issuerRecord
- * @param {Baggage} issuerBaggage
+ * @param {Place} issuerPlace
  * @param {ShutdownWithFailure | undefined} optShutdownWithFailure If this issuer
  * fails in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
@@ -36,7 +36,7 @@ import './types-ambient.js';
  */
 const setupIssuerKit = (
   { name, assetKind, displayInfo, elementShape },
-  issuerBaggage,
+  issuerPlace,
   optShutdownWithFailure,
 ) => {
   assert.typeof(name, 'string');
@@ -56,7 +56,7 @@ const setupIssuerKit = (
   /** @type {PaymentLedger<K>} */
   // @ts-expect-error could be instantiated with different subtype of AssetKind
   const { issuer, mint, brand } = preparePaymentLedger(
-    issuerBaggage,
+    issuerPlace,
     name,
     assetKind,
     cleanDisplayInfo,
@@ -93,7 +93,8 @@ export const prepareIssuerKit = (
   optShutdownWithFailure = undefined,
 ) => {
   const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
-  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
+  const issuerPlace = makeBaggagePlace(issuerBaggage);
+  return setupIssuerKit(issuerRecord, issuerPlace, optShutdownWithFailure);
 };
 harden(prepareIssuerKit);
 
@@ -137,7 +138,8 @@ export const makeDurableIssuerKit = (
 ) => {
   const issuerData = harden({ name, assetKind, displayInfo, elementShape });
   issuerBaggage.init(INSTANCE_KEY, issuerData);
-  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
+  const issuerPlace = makeBaggagePlace(issuerBaggage);
+  return setupIssuerKit(issuerData, issuerPlace, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 
