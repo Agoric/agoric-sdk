@@ -45,7 +45,7 @@ Each export represents an obligation. Other vats might send a message to the exp
 
 There are three basic categories of exports (cf. [A Taxonomy of Exo-making Functions](https://github.com/endojs/endo/blob/master/packages/exo/docs/exo-taxonomy.md#heap-vs-virtual-vs-durable)):
 
-* Ephemeral "heap" objects in vat RAM
+* Heap objects in vat RAM
   * one-off objects created with `Far()` or `makeExo()`
   * instances created with a "make" function from `defineExoClass()`
   * multifaceted kit instances created with a "makeKit" function from `defineExoClassKit()`
@@ -67,10 +67,10 @@ As a special case, the root object returned from v2's `buildRootObject()` is aut
 
 The v2 code runs in a brand new JavaScript environment; nothing is carried over from the RAM image of the v1 vat. To fulfill its obligations, v1 must arrange to deliver data and imported object references to v2. This uses two mechanisms: durable storage, and the "baggage" (better name TBD).
 
-Vat code has access to three categories of collection objects, each of which offers both Map and Set collections in both strong and weak forms. The simplest category consists of "_ephemeral_" collections provided by JavaScript as `Map`, `Set`, `WeakMap`, and `WeakSet`; their data is held only in RAM.
+Vat code has access to three categories of collection objects, each of which offers both Map and Set collections in both strong and weak forms. The simplest category consists of "_heap_" collections provided by JavaScript as `Map`, `Set`, `WeakMap`, and `WeakSet`; their data is held only in RAM.
 The second two categories are both referred to as "[Stores](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/src/vatstore-usage.md#virtualdurable-collections-aka-stores)"; they are created by `makeScalarBigMapStore()`, `makeScalarBigWeakMapStore()`, `makeScalarBigSetStore()`, or `makeScalarBigWeakSetStore()`, and their contents are held in disk-based storage. What differentiates the second two categories from each other is use of the `durable` option: when it is false, the collection is "_[merely-]virtual_" and not preserved across upgrade, but when it is true, the collection is "_durable_" and **is** preserved. Durable collections can only hold durable objects.
 
-Ephemeral and merely-virtual collections are discarded during upgrade. More precisely, the v2 code has no way to reach anything but durable data, so even if the kernel did not delete the DB records, the v2 code could not ever read them.
+Heap and merely-virtual collections are _ephemeral_ and discarded during upgrade. More precisely, the v2 code has no way to reach anything but durable data, so even if the kernel did not delete the DB records, the v2 code could not ever read them.
 
 The v2 code gets exactly one special object during the upgrade phase, currently known as "the baggage". This is a durable Map (i.e., the kind of object returned from `makeScalarBigMapStore('label', { durable: true })`). All versions get access to the baggage: the v1 code should add data to it, so that the v2 code can read it back out. This provides the bridge between versions that allows v2 to assume responsibility for the obligations created by v1. It also provides a way for v1 to deliver authorities (in the form of imported object references) to v2, so v2 can talk to the world as if it were v1.
 
