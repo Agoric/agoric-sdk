@@ -2,6 +2,7 @@
 import { makeScalarMapStore } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
+import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 
 const { Fail, quote: q } = assert;
 
@@ -9,15 +10,22 @@ const { Fail, quote: q } = assert;
  * For a value with a known id in the board, we can use
  * that board id as a slot to preserve identity when marshaling.
  *
- * @typedef {`board${Digits}`} BoardId
+ * The contents of the string depend on the `prefix` and `crcDigits` options:
+ *    \`${prefix}${serialNum}${crc}\`
+ *
+ * For example, 'board0371' for 'board0', 3, 2 digits crc.
+ *
+ * @typedef {string} BoardId
  */
 
 /**
+ * ID from a board made with { prefix: DEFAULT_PREFIX }
+ *
  * @param {unknown} specimen
  * @returns {specimen is BoardId}
  */
-const isBoardId = specimen => {
-  return typeof specimen === 'string' && !!specimen.match(/^board[^:]/);
+const isDefaultBoardId = specimen => {
+  return typeof specimen === 'string' && specimen.startsWith(DEFAULT_PREFIX);
 };
 
 /**
@@ -151,7 +159,7 @@ export const makeExportContext = () => {
    * @param {string} _iface
    */
   const slotToVal = (slot, _iface) => {
-    if (isBoardId(slot) && boardObjects.bySlot.has(slot)) {
+    if (isDefaultBoardId(slot) && boardObjects.bySlot.has(slot)) {
       return boardObjects.bySlot.get(slot);
     }
     const { kind, id } = parseWalletSlot(walletObjects, slot);
@@ -288,7 +296,7 @@ export const makeImportContext = (makePresence = defaultMakePresence) => {
      * @param {string} iface
      */
     fromBoard: (slot, iface) => {
-      isBoardId(slot) || Fail`bad board slot ${q(slot)}`;
+      isDefaultBoardId(slot) || Fail`bad board slot ${q(slot)}`;
       return provideVal(boardObjects, slot, iface);
     },
 

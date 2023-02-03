@@ -111,12 +111,12 @@ test('ensureBoardId allows re-registration; initBoardId does not', t => {
   const brandS = Far('Semolean brand', {});
 
   const context = makeExportContext();
-  context.initBoardId('board1', brandM);
-  t.throws(() => context.initBoardId('board1', brandM));
-  context.ensureBoardId('board1', brandM);
-  t.throws(() => context.ensureBoardId('board12', brandM));
-  context.ensureBoardId('board12', brandS);
-  t.throws(() => context.initBoardId('board12', brandM));
+  context.initBoardId('board01', brandM);
+  t.throws(() => context.initBoardId('board01', brandM));
+  context.ensureBoardId('board01', brandM);
+  t.throws(() => context.ensureBoardId('board012', brandM));
+  context.ensureBoardId('board012', brandS);
+  t.throws(() => context.initBoardId('board012', brandM));
 });
 
 test('makeExportContext.serialize handles unregistered identites', t => {
@@ -125,7 +125,7 @@ test('makeExportContext.serialize handles unregistered identites', t => {
   const invitationAmount = harden({ brand, value: [{ instance }] });
 
   const context = makeExportContext();
-  context.initBoardId('board1', brand);
+  context.initBoardId('board01', brand);
   const actual = context.serialize(invitationAmount);
 
   t.deepEqual(actual, {
@@ -145,7 +145,7 @@ test('makeExportContext.serialize handles unregistered identites', t => {
         },
       ],
     }),
-    slots: ['board1', 'unknown:1'],
+    slots: ['board01', 'unknown:1'],
   });
 
   t.deepEqual(context.unserialize(actual), invitationAmount);
@@ -176,9 +176,9 @@ test('fromBoard.serialize requires board ids', t => {
     message: '"key" not found: "[Alleged: InstanceHandle]"',
   });
 
-  context.ensureBoardId('board123', unpassable.instance);
+  context.ensureBoardId('board0123', unpassable.instance);
   t.deepEqual(context.fromBoard.serialize(unpassable), {
     body: '{"instance":{"@qclass":"slot","iface":"Alleged: InstanceHandle","index":0}}',
-    slots: ['board123'],
+    slots: ['board0123'],
   });
 });
