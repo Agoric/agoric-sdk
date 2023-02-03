@@ -61,7 +61,7 @@ Most state is discarded, however "durable" collections are retained for use by t
 The upgrade process is triggered through the "adminFacet" of the instance, and requires specifying the new source bundle. (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
 
 ```js
-const results = E(adminFacet).upgradeContract(newBundleId);
+const results = E(instanceAdminFacet).upgradeContract(newBundleId);
 ```
 
 The new bundle itself must export a `prepare` function in place of `start`, and is obligated to redefine every durable Kind that was created by its predecessor.
@@ -73,7 +73,7 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
     instanceBaggage.init('version', 1);
   } else {
     const previousVersion = instanceBaggage.get('version');
-    instanceBaggage.init('version', previousVersion + 1);
+    instanceBaggage.set('version', previousVersion + 1);
   }
 
   const CounterI = M.interface('Counter', {
@@ -103,6 +103,8 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   );
   return harden({ creatorFacet });
 };
+harden(prepare);
+export { prepare };
 ```
 
 For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .
