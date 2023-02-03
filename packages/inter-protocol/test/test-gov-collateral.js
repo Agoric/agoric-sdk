@@ -24,6 +24,7 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { TimeMath } from '@agoric/time';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   setupBootstrap,
   setUpZoeForTest,
@@ -124,8 +125,12 @@ test.before(async t => {
 const makeScenario = async (t, { env = process.env } = {}) => {
   const space = await setupBootstrap(t);
 
-  const loadVat = name =>
-    import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
+  const loadVat = name => {
+    const baggage = makeScalarBigMapStore('baggage');
+    return import(`@agoric/vats/src/vat-${name}.js`).then(ns =>
+      ns.buildRootObject({}, {}, baggage),
+    );
+  };
   space.produce.loadVat.resolve(loadVat);
   space.produce.loadCriticalVat.resolve(loadVat);
 
