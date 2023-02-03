@@ -4,11 +4,11 @@ Dynamic vats can be upgraded to use a new code bundle. This might be used to fix
 
 Swingset vats are normally orthogonally persistent and assume they will live forever. So the ability to retain meaningful identity across an upgrade requires careful planning, starting with the very first version of the code being deployed.
 
-For convenience, this description will use "v1" to describe the old version of the vat, and "v2" to describe the new version, but the process applies to any sequential pair of versions. The very first version is special, because we use `createVat` instead of `upgrade`. Also note that the v2 code bundle can actually be the same as the v1 bundle: "cross-grade" is a legitimate approach to deleting accumulated state.
+For convenience, this description will use "v1" to describe the old version of the vat, and "v2" to describe the new version, but the process applies to any sequential pair of versions. The very first version is special, because we use `createVat` instead of `upgrade`. Also note that the v2 code bundle can actually be the same as the v1 bundle, such a "null upgrade" is a legitimate approach to deleting accumulated state.
 
 ## The Upgrade Sequence
 
-Vat upgrade is triggered by an `upgrade()` message to the vat's "adminNode" (the one returned by `E(vatAdminService).createVat()`). This schedules an upgrade event on the kernel run-queue. When this event is processed, the following takes place:
+Vat upgrade is triggered by an `upgrade()` message to the vat's "adminNode" control facet (the one returned by `E(vatAdminService).createVat()`). This schedules an upgrade event on the kernel run-queue. When this event is processed, the following takes place:
 
 * the vat's current worker (if any) is shut down
   * outstanding promises are rejected
@@ -43,30 +43,36 @@ As vats run, they send and receive messages. When these messages carry object re
 
 Each export represents an obligation. Other vats might send a message to the exported object, or they might send a message that references the exported object, and we must be prepared to handle it. So the primary job of the v2 vat code is to satisfy all the obligations incurred by v1. Another way to express this is that the kernel c-list, which maps kernel "krefs" to vat "vrefs" for each object, must be satisfied: every vref must be reassociated somehow, or marked as broken.
 
-There are two basic kinds of exports:
+There are three basic categories of exports (cf. [A Taxonomy of Exo-making Functions](https://github.com/endojs/endo/blob/master/packages/exo/docs/exo-taxonomy.md#heap-vs-virtual-vs-durable)):
 
-* singleton in-RAM objects (created with `Far()` from a standard JavaScript
-  `Object`, using the standard objects-as-closures pattern)
+* Ephemeral "heap" objects in vat RAM
+  * one-off objects created with `Far()` or `makeExo()`
+  * instances created with a "make" function from `defineExoClass()`
+  * multifaceted kit instances created with a "makeKit" function from `defineExoClassKit()`
 
-* virtual objects (defined with `makeKind()` or `makeDurableKind()`, created
-  by invoking the function those return, and whose state is kept in the
-  database rather than in RAM)
+* Virtual objects in disk-based storage
+  * instances created with a "make" function from `defineVirtualExoClass()`
+  * multifaceted kit instances created with a "makeKit" function from `defineVirtualExoClassKit()`
 
-The v2 code is obligated to re-define all durable virtual-object Kinds created by v1 during the upgrade phase. Once complete, this allows liveslots to satisfy deserialization of any inbound message addressed to (or referencing) a previously-exported virtual object.
+* Durable objects in disk-based storage
+  * instances created with a "make" function from `defineDurableExoClass()` or `prepareExoClass()`
+  * multifaceted kit instances created with a "makeKit" function from `defineDurableExoClassKit()` or `prepareExoClassKit()`
+  * singleton objects created with `prepareExo()`
 
-The v2 code is also obligated to reattach any singleton objects. The API for this is still under consideration. The root object may be a special case: if the upgrade invocation is simply a new call to `buildRootObject()`, then whatever object that returns will be associated with the root-object vref (`o+0`).
+During the upgrade phase, v2 code is obligated to re-define all durable Kinds created by v1 (i.e., those associated with objects in the third category). Once complete, this allows liveslots to satisfy deserialization of any inbound message addressed to (or referencing) a previously-exported durable object.
+
+As a special case, the root object returned from v2's `buildRootObject()` is automatically associated with exportID `o+0` (see [How Liveslots Uses the Vatstore](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/src/vatstore-usage.md#counters)).
 
 ## Durable State
 
-The v2 code runs in a brand new JavaScript environment: nothing is carried over from the RAM image of the v1 vat. To fulfill its obligations, v1 must arrange to deliver data and imported object references to v2. This uses two mechanisms: durable storage, and the "baggage" (better name TBD).
+The v2 code runs in a brand new JavaScript environment; nothing is carried over from the RAM image of the v1 vat. To fulfill its obligations, v1 must arrange to deliver data and imported object references to v2. This uses two mechanisms: durable storage, and the "baggage" (better name TBD).
 
-Vat code has access to three categories of collection objects. Each category offers both Map and Set collections, in strong and weak forms (parallel to the standard JavaScript `Map`, `Set`, `WeakMap`, and `WeakSet` facilities).
-
-The simplest category are the "ephemeral" collections: their data is held only in RAM. The second are "virtual": data is held in a disk-based database. The third are "durable": in addition to using a DB, the data is preserved across vat upgrade. Durable collections can only hold durable objects.
+Vat code has access to three categories of collection objects, each of which offers both Map and Set collections in both strong and weak forms. The simplest category consists of "_ephemeral_" collections provided by JavaScript as `Map`, `Set`, `WeakMap`, and `WeakSet`; their data is held only in RAM.
+The second two categories are both referred to as "[Stores](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/src/vatstore-usage.md#virtualdurable-collections-aka-stores)"; they are created by `makeScalarBigMapStore()`, `makeScalarBigWeakMapStore()`, `makeScalarBigSetStore()`, or `makeScalarBigWeakSetStore()`, and their contents are held in disk-based storage. What differentiates the second two categories from each other is use of the `durable` option: when it is false, the collection is "_[merely-]virtual_" and not preserved across upgrade, but when it is true, the collection is "_durable_" and **is** preserved. Durable collections can only hold durable objects.
 
 Ephemeral and merely-virtual collections are discarded during upgrade. More precisely, the v2 code has no way to reach anything but durable data, so even if the kernel did not delete the DB records, the v2 code could not ever read them.
 
-The v2 code gets exactly one special object during the upgrade phase, currently known as "the baggage". This is a durable Map. All versions get access to the baggage: the v1 code should add data to it, so that the v2 code can read it back out. This provides the bridge between versions that allows v2 to assume responsibility for the obligations created by v1. It also provides way for v1 to deliver authorities (in the form of imported object references) to v2, so v2 can talk to the world as if it were v1.
+The v2 code gets exactly one special object during the upgrade phase, currently known as "the baggage". This is a durable Map (i.e., the kind of object returned from `makeScalarBigMapStore('label', { durable: true })`). All versions get access to the baggage: the v1 code should add data to it, so that the v2 code can read it back out. This provides the bridge between versions that allows v2 to assume responsibility for the obligations created by v1. It also provides a way for v1 to deliver authorities (in the form of imported object references) to v2, so v2 can talk to the world as if it were v1.
 
 ## Promises Are Broken
 
@@ -94,32 +100,33 @@ To enable upgrade, the v1 code must stash important data in durable storage, and
 
 For upgrade-important in-RAM objects, the v1 code needs to store a "reattachment handle" (name and API TBD) in durable storage. This gives the v2 code the authority to take over the identity of these exported objects.
 
-For upgrade-important virtual objects (specifically durable virtual objects), the v1 code must store the "durable kind handle" in durable storage. This handle is created before calling `makeDurableKind`, like this:
+For upgrade-important durable objects, the v1 code must store the "durable kind handle" in durable storage. This is done automatically by `prepareExoClass()` and `prepareExoClassKit()`, but can also be done manually (see [Virtual and Durable Objects](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md#virtual-and-durable-objects)).
 
 ```js
-const fooHandle = allocateDurableKindHandle();
-const makeFoo = makeDurableKind(fooHandle, fooBehavior);
-someDurableStorage.set('foo handle', fooHandle);
+import { M } from '@agoric/store';
+const FooI = M.interface('foo', fooMethodGuards);
+// someDurableMap should generally be reachable from baggage.
+const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods);
 ```
 
 The v1 code can also store imported objects (Presences) and plain data in a durable collection. Durable collections are themselves durable objects, so they can be nested:
 
 ```js
-const childMap = makeScalarDurableMapStore();
-const parentMap = makeScalarDurableMapStore();
-parentMap.init('child', childMap);
+const parentMap = makeScalarBigMapStore(parentLabel, { durable: true });
 baggage.init('parent', parentMap);
+const childMap = makeScalarBigMapStore(childLabel, { durable: true });
+parentMap.init('child', childMap);
 ```
 
-The 'baggage' is a special instance of `makeScalarDurableMapStore()`. The backing data is stored in a well-known per-vat location, so each version can be given a reference. These are, of course, distinct JavaScript `Object`s, just like running the same program twice results in distinct objects within each invocation. But for every piece of data that v1 wrote into the baggage, v2 can read an equivalent item from the baggage it receives.
+The 'baggage' is a special instance of `makeScalarBigMapStore`. The backing data is stored in a well-known per-vat location, so each version can be given a reference. These are, of course, distinct objects, just like running the same program twice results in distinct objects within each invocation. But for every piece of data that v1 wrote into the baggage, v2 can read an equivalent item from the baggage it receives.
 
-While the baggage can use any suitable keys, at least one of the baggage keys should be a string or a number, some piece of plain data. The v2 vat starts out with nothing but baggage and a pile of source code, and source code can carry strings but not object references. So to allow v2 to get started, it must be able to do at least one `baggage.get('string')`. The value it retrieves from that initial call can be a durable object, which then might be usable as a second key. But without at least one plain-data key, v2 won't be able to extract anything from the baggage.
+While the baggage can use any suitable keys, at least one of the baggage keys should be a piece of plain data such as a string. The v2 vat starts out with nothing but baggage and a pile of source code, and source code can carry strings but not object references. So to allow v2 to get started, it must be able to do at least one `baggage.get('string')`. The value it retrieves from that initial call can be a durable object, which then might be usable as a second key. But without at least one plain-data key, v2 won't be able to extract anything from the baggage.
 
 As v1 runs, it may need to add more data to the baggage, or remove stale data. The nested nature of the durable object storage graph means you can provide child objects to individual subsystems, to limit their authority:
 
 ```js
-const fooData = makeScalarDurableMapStore();
-const barData = makeScalarDurableMapStore();
+const fooData = makeScalarBigMapStore(fooLabel, { durable: true });
+const barData = makeScalarBigMapStore(barLabel, { durable: true });
 baggage.set('foo data', fooData);
 baggage.set('bar data', barData);
 initializeFoo(fooData);
@@ -128,9 +135,9 @@ initializeBar(barData);
 
 ## From Outside: the AdminNode Upgrade API
 
-The upgrade must be triggered by something holding the vat's `adminNode` object. This is typically the same thing that created the vat in the first place, but a common pattern is to hand the `adminNode` to some sort of governance object. The ability to upgrade a vat is also the ability to control its behavior, and any users who expect some particular vat behavior (e.g. they auditing some contract code) must take into account the possibility of upgrade, which means they'll care about who exactly can cause an upgrade to occur.
+The upgrade must be triggered by something holding the vat's "adminNode" control facet. This is typically the same thing that created the vat in the first place, but a common pattern is to hand it to some sort of governance object. The ability to upgrade a vat is also the ability to control its behavior, and any users who expect some particular vat behavior (e.g. when auditing some contract code) must take into account the possibility of upgrade, which means they'll care about who exactly can cause an upgrade to occur.
 
-Upgrades use bundlecaps, just like the initial `createVat()` call. So the first step of an upgrade is to install the v2 source bundle (unless it is a "cross-grade" that re-uses the original bundle). This uses `controller.validateAndInstallBundle()` from the outside, and `D(devices.bundle).getBundleCap()` from the inside. See docs/bundles.md for details.
+Upgrades use bundlecaps, just like the initial `createVat()` call. So the first step of an upgrade is to install the v2 source bundle (unless it is a "null upgrade" that re-uses the original bundle). This uses `controller.validateAndInstallBundle()` from the outside, and `D(devices.bundle).getBundleCap()` from the inside. See [bundles.md](./bundles.md) for details.
 
 Once the governance object is holding the v2 bundlecap, it triggers the upgrade with `E(adminNode).upgrade(newBundlecap, options)`. This schedules the upgrade sequence (described above), and returns a Promise that resolves when the upgrade is complete. If the upgrade fails, the Promise is rejected and the old vat is reinstalled. An upgrade might fail because the new source bundle has a syntax error (preventing evaluation), or because the upgrade phase throws an exception or returns a Promise that rejects. It will also fail if the ugprade phase does not fulfill all of its obligations, such as leaving a durable Kind unattached.
 
@@ -138,13 +145,16 @@ An important property of the `options` bag is `vatParameters`. This value is pas
 
 ## From Inside: V2 Executes the Upgrade
 
-The v2 code wakes up inside the upgrade phase. The exact function signature is TBD, but for now let's assume that the v2 code is expected to provide the same `buildRootObject()` export as v1. In this case, the upgrade phase begins with `buildRootObject(vatPowers, vatParameters, baggage)` being called, where `vatParameters` will come from the call to `upgrade`. This `buildRootObject()` is expected to return an object, or a Promise that resolves to an object, and that object will assume the identity of the root object.
+The v2 code wakes up inside the upgrade phase when `buildRootObject(vatPowers, vatParameters, baggage)` is called, where `vatParameters` will come from the call to `upgrade`. This `buildRootObject()` is expected to return an object, or a Promise that resolves to an object, and that object will assume the identity of the root object.
 
-Before `buildRootObject()` returns (and/or its return Promise is resolved), the v2 code is obligated to call `makeDurableKind()` for every Kind that was created by the v1 code. It needs the stored handles to identify which Kind is being replaced:
+Before `buildRootObject()` returns (and/or its return Promise is resolved), the v2 code is obligated to redefine every Kind that was created by the v1 code.
 
 ```js
-const fooHandle = baggage.get('foo handle');
-const makeFoo = makeDurableKind(fooHandle, newFooBehavior);
+import { M } from '@agoric/store';
+// fooMethodGuards and fooMethods must match or be a superset of their v1 analogs.
+const FooI = M.interface('foo', fooMethodGuards);
+// someDurableMap is `baggage` or was retrieved from it.
+const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods);
 ```
 
 It also needs to reattach every singleton `Far()` object exported by the v1 code.

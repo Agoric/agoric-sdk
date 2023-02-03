@@ -14,7 +14,7 @@ The ability to create new vats is not ambient: it requires access to the Vat Adm
 
 ### Making the Source Bundle
 
-Vats are created from "bundlecaps", which are objects that represent installed source code bundles. See docs/bundles.md for details.
+Vats are created from "bundlecaps", which are objects that represent installed source code bundles. See [bundles.md](./bundles.md) for details.
 
 The first step is to create a source bundle. To do this, you'll want to point the `bundleSource` function (from the `@endo/bundle-source` package) at a local source file. This file should export a function named `buildRootObject` (it can export other things too, perhaps for unit tests, but only `buildRootObject` will be used by the dynamic vat loader). Suppose your vat code is stored in `vat-counter.js`:
 
@@ -69,7 +69,7 @@ const control = await E(vatAdminService).createVat(bundlecap, options);
 `createVat()` recognizes the following options:
 
 * `name` (string): used in debug messages and the `ps`-visible worker argments, to name the vat
-* `meter` (`Meter` object, default none): a Meter object to impose upon the vat. If provided, the Meter will be deducted for each computron spent executing, and the vat will be terminated if the Meter runs out. See docs/metering.md for details.
+* `meter` (`Meter` object, default none): a Meter object to impose upon the vat. If provided, the Meter will be deducted for each computron spent executing, and the vat will be terminated if the Meter runs out. See [metering.md](./metering.md) for details.
 * `managerType` (`'local'` or `'xs-worker'` or `'nodeWorker'` or `'node-subprocess'`): the type of worker that will host the vat. `xs-worker` is the only sensible choice. Defaults to a value set by `config.defaultManagerType`, or `xs-worker` if that is not set
 * `vatParameters` (JSON-serializable object): data passed to `buildRootObject` in the `vatParameters` argument
 * `enableSetup` (boolean, default `false`): only used for specialized vats like comms, bypasses `buildRootObject` and the liveslots layer
@@ -160,10 +160,11 @@ When the vat halted due to a metering fault, `error` will be a `RangeError` with
 
 ## Upgrade
 
-Dynamic vats can be upgraded to use a new source code bundle. Most vat state is discarded, however "durable" collections are retained for use by the replacement version. For full details, see docs/vat-upgrade.md .
+Dynamic vats can be upgraded to use a new source code bundle. Most vat state is discarded, however "durable" collections are retained for use by the replacement version. For full details, see [vat-upgrade.md](./vat-upgrade.md).
 
-The upgrade process is triggered through the admin node, and requires a bundlecap for the new source. (Note that "upgrading" to the same source bundle as the original vat is valid, and can serve as a sort of "spring cleaning").
+The upgrade process is triggered through the vat's "adminNode" control facet, and requires specifying the new source bundle. (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
 
 ```js
-const results = E(adminNode).upgrade(newBundlecap, newVatParameters, options);
+const upgradeDetails = { upgradeMessage, vatParameters: newVatParameters };
+const results = E(adminNode).upgrade(newBundlecap, upgradeDetails);
 ```

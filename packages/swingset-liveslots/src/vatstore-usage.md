@@ -115,7 +115,7 @@ Collections are created by functions on the `VatStore` global:
 * `makeScalarBigSetStore`
 * `makeScalarBigWeakSetStore`
 
-Each function accepts an `isDurable` argument, so there are currently 8 collection types.
+Each function accepts a boolean `durable` option, so there are currently 8 collection types.
 
 Each collection type is assigned a Kind index, just like the user-defined Kinds. The 8 collection types are allocated before userspace gets a chance to call `defineKind` or `defineDurableKind`, so they claim earlier ID numbers.
 

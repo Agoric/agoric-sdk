@@ -51,3 +51,58 @@ agoric follow :published.priceFeed.ATOM-USD_price_feed
 ```
 
  TODO document more of https://github.com/Agoric/documentation/issues/672
+
+## Upgrade
+
+A contract instance can be upgraded to use a new source code bundle in a process that is very similar to
+[upgrading a vat](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/vat-upgrade.md).
+Most state is discarded, however "durable" collections are retained for use by the replacement version.
+
+The upgrade process is triggered through the "adminFacet" of the instance, and requires specifying the new source bundle. (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
+
+```js
+const results = E(adminFacet).upgradeContract(newBundleId);
+```
+
+The new bundle itself must export a `prepare` function in place of `start`, and is obligated to redefine every durable Kind that was created by its predecessor.
+
+```js
+const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+  const isFirstVersion = !instanceBaggage.has('version');
+  if (isFirstVersion) {
+    instanceBaggage.init('version', 1);
+  } else {
+    const previousVersion = instanceBaggage.get('version');
+    instanceBaggage.init('version', previousVersion + 1);
+  }
+
+  const CounterI = M.interface('Counter', {
+    increment: M.call().returns(M.bigint()),
+    read: M.call().returns(M.bigint()),
+  });
+  const initCounterState = () => ({ value: 0n });
+  const makeCounter = prepareExoClass(
+    instanceBaggage,
+    'Counter',
+    CounterI,
+    initCounterState,
+    {
+      increment() { return this.state.value += 1n; },
+      read() { return this.state.value; },
+    },
+  );
+
+  const creatorI = M.interface('CounterExample', {
+    makeCounter: M.call().returns(M.remotable('Counter')),
+  });
+  const creatorFacet = prepareExo(
+    instanceBaggage,
+    'creatorFacet',
+    creatorI,
+    { makeCounter },
+  );
+  return harden({ creatorFacet });
+};
+```
+
+For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .
