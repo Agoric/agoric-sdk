@@ -513,6 +513,18 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const { vaultSeat } = state;
           const fp = helper.fullProposal(clientSeat.getProposal());
 
+          if (
+            allEmpty([
+              fp.give.Collateral,
+              fp.give.Minted,
+              fp.want.Collateral,
+              fp.want.Minted,
+            ])
+          ) {
+            clientSeat.exit();
+            return 'no transaction, as requested';
+          }
+
           const normalizedDebtPre = self.getNormalizedDebt();
           const collateralPre = helper.getCollateralAllocated(vaultSeat);
 
@@ -539,17 +551,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
           const debt = self.getCurrentDebt();
           const giveMinted = AmountMath.min(fp.give.Minted, debt);
-          if (
-            allEmpty([
-              fp.give.Collateral,
-              giveMinted,
-              fp.want.Collateral,
-              fp.want.Minted,
-            ])
-          ) {
-            clientSeat.exit();
-            return 'no transaction, as requested';
-          }
 
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
