@@ -3,12 +3,16 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { maxDebtForVault } from '../../src/vaultFactory/math.js';
+import {
+  calculateLoanCosts,
+  maxDebtForVault,
+} from '../../src/vaultFactory/math.js';
 import { withAmountUtils } from '../supports.js';
 
 const stable = withAmountUtils(makeIssuerKit('Stable'));
 const aeth = withAmountUtils(makeIssuerKit('Aeth'));
 
+// #region maxDebtForVaults
 /**
  * Max debt for a fixed collateral of 1_000 aeth
  *
@@ -65,3 +69,56 @@ test('negative liquidationPadding throws', t => {
     message: 'value "[-50n]" must be a natural number',
   });
 });
+// #endregion
+
+// #region calculateLoanFees
+
+/**
+ * Max debt for a fixed collateral of 1_000 aeth
+ *
+ * @param {*} t
+ * @param {readonly [Number, Number, Number]} input
+ * @param {{ fee: number, newDebt: number, toMint: number, surplus: number }} result
+ */
+function checkLoanCosts(
+  t,
+  [currentDebtN, giveN, wantN],
+  { fee, newDebt, toMint, surplus },
+) {
+  const currentDebt = stable.make(BigInt(currentDebtN));
+  const give = stable.make(BigInt(giveN));
+  const want = stable.make(BigInt(wantN));
+
+  // 5%
+  const loanFee = stable.makeRatio(5n, 100n);
+
+  t.deepEqual(calculateLoanCosts(currentDebt, give, want, loanFee), {
+    fee: stable.make(BigInt(fee)),
+    newDebt: stable.make(BigInt(newDebt)),
+    surplus: stable.make(BigInt(surplus)),
+    toMint: stable.make(BigInt(toMint)),
+  });
+}
+
+test('give greater than current', checkLoanCosts, [1_000, 2_000, 0], {
+  fee: 0,
+  newDebt: 0,
+  surplus: 1_000,
+  toMint: 0,
+});
+
+test('current greater than give', checkLoanCosts, [2_000, 1_000, 0], {
+  fee: 0,
+  newDebt: 1_000,
+  surplus: 0,
+  toMint: 0,
+});
+
+test('give=want', checkLoanCosts, [2_000, 1_000, 1_000], {
+  fee: 50,
+  newDebt: 2_050,
+  surplus: 0,
+  toMint: 1_050,
+});
+
+// #endregion

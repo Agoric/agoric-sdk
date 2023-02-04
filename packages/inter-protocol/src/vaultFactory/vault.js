@@ -548,16 +548,12 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             fp.want.Collateral,
           );
 
-          const debt = self.getCurrentDebt();
-          const giveMinted = AmountMath.min(fp.give.Minted, debt);
-
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
           // then mint, reallocate, and burn.
-          const { newDebt, fee, toMint } = helper.loanFee(
-            debt,
-            // XXX why do we pretend that the give is the min with current debt?
-            giveMinted,
+          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+            self.getCurrentDebt(),
+            fp.give.Minted,
             fp.want.Minted,
           );
 
@@ -583,6 +579,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             return helper.adjustBalancesHook(clientSeat);
           }
 
+          const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
+
+          // TODO use atomicRearrange https://github.com/Agoric/agoric-sdk/issues/5605
           stageDelta(
             clientSeat,
             vaultSeat,
@@ -594,7 +593,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           stageDelta(
             clientSeat,
             vaultSeat,
-            giveMinted,
+            giveMintedTaken,
             helper.emptyDebt(),
             'Minted',
           );
@@ -602,7 +601,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           /** @type {Array<ZCFSeat>} */
           const vaultSeatOpt = allEmpty([
             fp.give.Collateral,
-            giveMinted,
+            giveMintedTaken,
             fp.want.Collateral,
           ])
             ? []
@@ -620,7 +619,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             collateralPre,
             newDebt,
           );
-          state.manager.burnAndRecord(giveMinted, vaultSeat);
+          state.manager.burnAndRecord(giveMintedTaken, vaultSeat);
           helper.assertVaultHoldsNoMinted();
 
           helper.updateUiState();

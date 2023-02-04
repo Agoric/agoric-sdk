@@ -56,13 +56,15 @@ export const maxDebtForVault = (
  * so the simple math works.
  *
  * @param {Amount<'nat'>} currentDebt
- * @param {Amount<'nat'>} give
+ * @param {Amount<'nat'>} give excess of currentDebt is returned in 'surplus'
  * @param {Amount<'nat'>} want
  * @param {Ratio} loanFee
  */
 export const calculateLoanCosts = (currentDebt, give, want, loanFee) => {
+  const maxGive = AmountMath.min(currentDebt, give);
+  const surplus = AmountMath.subtract(give, maxGive);
   const fee = ceilMultiplyBy(want, loanFee);
   const toMint = AmountMath.add(want, fee);
-  const newDebt = addSubtract(currentDebt, toMint, give);
-  return { newDebt, toMint, fee };
+  const newDebt = addSubtract(currentDebt, toMint, maxGive);
+  return { newDebt, toMint, fee, surplus };
 };
