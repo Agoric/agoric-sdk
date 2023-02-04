@@ -5,7 +5,6 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
   atomicTransfer,
-  ceilMultiplyBy,
   floorMultiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -21,6 +20,7 @@ import { UnguardedHelperI } from '../typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
+import { calculateLoanCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
 
@@ -490,13 +490,12 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         loanFee(currentDebt, giveAmount, wantAmount) {
           const { state } = this;
 
-          const fee = ceilMultiplyBy(
+          return calculateLoanCosts(
+            currentDebt,
+            giveAmount,
             wantAmount,
             state.manager.getGovernedParams().getLoanFee(),
           );
-          const toMint = AmountMath.add(wantAmount, fee);
-          const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-          return { newDebt, toMint, fee };
         },
 
         /**
@@ -557,6 +556,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // then mint, reallocate, and burn.
           const { newDebt, fee, toMint } = helper.loanFee(
             debt,
+            // XXX why do we pretend that the give is the min with current debt?
             giveMinted,
             fp.want.Minted,
           );
