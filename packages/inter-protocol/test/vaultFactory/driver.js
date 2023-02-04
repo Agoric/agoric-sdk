@@ -214,9 +214,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 /**
  *
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {Amount<'nat'>} runInitialLiquidity
+ * @param {Amount<'nat'>} amt
  */
-const getRunFromFaucet = async (t, runInitialLiquidity) => {
+const getRunFromFaucet = async (t, amt) => {
   const {
     installation: { faucet: installation },
     zoe,
@@ -235,7 +235,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: runInitialLiquidity },
+      want: { RUN: amt },
     }),
   );
 
@@ -552,13 +552,14 @@ export const makeManagerDriver = async (
      * @param {*} newValue
      * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
      */
-    setGovernedParam: async (
+    setGovernedParam: (
       name,
       newValue,
       paramPath = { key: 'governedParams' },
     ) => {
-      const vfGov = await t.context.puppetGovernors.vaultFactory;
-      await E(vfGov).changeParams(
+      trace(t, 'setGovernedParam', name);
+      const vfGov = t.context.puppetGovernors.vaultFactory;
+      return E(vfGov).changeParams(
         harden({
           paramPath,
           changes: { [name]: newValue },

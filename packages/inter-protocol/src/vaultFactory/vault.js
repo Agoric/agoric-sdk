@@ -545,7 +545,10 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             newDebt,
           });
 
+          const hasWants = !allEmpty([wantColl, wantMinted]);
           if (
+            // Skip allocations check if there are no wants. Always allow pure gives.
+            hasWants &&
             allocationsChangedSinceQuote(
               newCollateralPre,
               maxDebtPre,

@@ -9,11 +9,11 @@ import { makeDriverContext, makeManagerDriver } from './driver.js';
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
-const trace = makeTracer('TestMCR');
+const trace = makeTracer('TestVC');
 
 test.before(async t => {
   t.context = await makeDriverContext();
-  trace(t, 'CONTEXT', t.context.rates);
+  trace(t, 'CONTEXT');
 });
 
 test('excessive loan', async t => {
