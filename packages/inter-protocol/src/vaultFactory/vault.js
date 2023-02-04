@@ -126,7 +126,18 @@ const validTransitions = {
  * @param {Amount<'nat'>} newDebt
  * @returns {boolean}
  */
-const checkRestart = (newCollateralPre, maxDebtPre, newCollateral, newDebt) => {
+const allocationsChangedSinceQuote = (
+  newCollateralPre,
+  maxDebtPre,
+  newCollateral,
+  newDebt,
+) => {
+  trace('allocationsChangedSinceQuote', {
+    newCollateralPre,
+    maxDebtPre,
+    newCollateral,
+    newDebt,
+  });
   if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
     // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
     // We can pro-rate maxDebt because the quote is either linear (price is
@@ -494,12 +505,13 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             giveColl,
             wantColl,
           );
-          // max debt supported by current Collateral as modified by proposal
+          // max debt supported by the vault Collateral implied by the proposal
           const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
           updaterPre === state.outerUpdater ||
             Fail`Transfer during vault adjustment`;
           helper.assertActive();
 
+          // While awaiting maxDebtFor, the allocations may have changed.
           // After the `await`, we retrieve the vault's allocations again,
           // so we can compare to the debt limit based on the new values.
           const collateral = helper.getCollateralAllocated(vaultSeat);
@@ -534,7 +546,12 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           });
 
           if (
-            checkRestart(newCollateralPre, maxDebtPre, newCollateral, newDebt)
+            allocationsChangedSinceQuote(
+              newCollateralPre,
+              maxDebtPre,
+              newCollateral,
+              newDebt,
+            )
           ) {
             return helper.adjustBalancesHook(clientSeat);
           }

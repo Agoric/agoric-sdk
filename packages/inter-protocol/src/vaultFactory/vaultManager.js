@@ -436,6 +436,7 @@ export const prepareVaultManagerKit = (
           const { facets } = this;
           trace('reschedulePriceCheck', collateralBrand, {
             liquidationQueueing,
+            outstandingQuote: !!outstandingQuote,
           });
           // INTERLOCK: the first time through, start the activity to wait for
           // and process liquidations over time.
@@ -623,18 +624,21 @@ export const prepareVaultManagerKit = (
         },
 
         /**
+         * Consults a price authority to determine the max debt this manager
+         * config will allow for the collateral.
+         *
          * @param {Amount<'nat'>} collateralAmount
          */
         async maxDebtFor(collateralAmount) {
           trace('maxDebtFor', collateralAmount);
           assert(factoryPowers && priceAuthority);
-          const quoteAmount = await E(priceAuthority).quoteGiven(
+          const quote = await E(priceAuthority).quoteGiven(
             collateralAmount,
             debtBrand,
           );
-          trace('maxDebtFor got quote', quoteAmount);
+          trace('maxDebtFor got quote', quote.quoteAmount.value[0]);
           return maxDebtForVault(
-            quoteAmount,
+            quote,
             factoryPowers.getGovernedParams().getLiquidationMargin(),
             factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
