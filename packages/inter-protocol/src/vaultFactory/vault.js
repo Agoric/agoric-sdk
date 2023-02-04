@@ -234,7 +234,11 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           return AmountMath.makeEmpty(this.facets.helper.debtBrand());
         },
         /**
+         * @typedef {{ give: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> }, want: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> } }} FullProposal
+         */
+        /**
          * @param {ProposalRecord} partial
+         * @returns {FullProposal}
          */
         fullProposal(partial) {
           assertOnlyKeys(partial, ['Collateral', 'Minted']);
@@ -578,6 +582,39 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           ) {
             return helper.adjustBalancesHook(clientSeat);
           }
+
+          return helper.commitBalanceAdjustment(
+            clientSeat,
+            fp,
+            {
+              newDebt,
+              fee,
+              surplus,
+              toMint,
+            },
+            { normalizedDebtPre, collateralPre },
+          );
+        },
+
+        /**
+         *
+         * @param {ZCFSeat} clientSeat
+         * @param {FullProposal} fp
+         * @param {ReturnType<typeof calculateLoanCosts>} costs
+         * @param {object} accounting
+         * @param {NormalizedDebt} accounting.normalizedDebtPre
+         * @param {Amount<'nat'>} accounting.collateralPre
+         * @returns {Promise<string>} success message
+         */
+        async commitBalanceAdjustment(
+          clientSeat,
+          fp,
+          { newDebt, fee, surplus, toMint },
+          { normalizedDebtPre, collateralPre },
+        ) {
+          const { state, facets } = this;
+          const { helper } = facets;
+          const { vaultSeat } = state;
 
           const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
 
