@@ -3,7 +3,7 @@
 import { E } from '@endo/eventual-send';
 import { Far, passStyleOf } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert } from '@agoric/assert';
 import {
   provideKindHandle,

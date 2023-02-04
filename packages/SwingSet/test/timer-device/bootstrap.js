@@ -1,5 +1,5 @@
 import { Fail } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { Far } from '@endo/marshal';
 
 export function buildRootObject(vatPowers, vatParameters) {

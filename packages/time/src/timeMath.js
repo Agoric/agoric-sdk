@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { mustMatch } from '@agoric/store';
 
 import { RelativeTimeShape, TimestampShape } from './typeGuards.js';

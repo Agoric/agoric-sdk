@@ -5,7 +5,7 @@ import {
   makeMarshal,
 } from '@endo/marshal';
 import { assert, details as X, Fail } from '@agoric/assert';
-import { isNat } from '@agoric/nat';
+import { isNat } from '@endo/nat';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';

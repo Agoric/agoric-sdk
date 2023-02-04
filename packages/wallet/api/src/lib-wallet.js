@@ -24,7 +24,7 @@ import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import {
   makeNotifierFromSubscriber,
   makeNotifierKit,

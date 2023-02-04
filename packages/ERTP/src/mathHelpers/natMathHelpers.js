@@ -1,4 +1,4 @@
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 
 import '../types-ambient.js';
 

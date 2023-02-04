@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 
 /** @typedef {(x: number | bigint, y: number | bigint) => NatValue} NatOp */
 

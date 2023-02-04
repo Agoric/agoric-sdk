@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';

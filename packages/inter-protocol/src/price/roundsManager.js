@@ -1,6 +1,6 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { isNat, Nat } from '@agoric/nat';
+import { isNat, Nat } from '@endo/nat';
 import { TimeMath } from '@agoric/time';
 import {
   defineDurableExoClassKit,
