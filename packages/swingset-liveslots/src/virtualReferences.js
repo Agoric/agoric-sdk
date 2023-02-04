@@ -423,19 +423,20 @@ export function makeVirtualReferenceManager(
     // to which appear in the after state must look only at the presence or
     // absence of individual elements from the slots arrays and pay no attention
     // to the organization of the slots arrays themselves.
-    const vrefStatus = {};
+    const vrefStatus = new Map();
     for (const vref of beforeSlots) {
-      vrefStatus[vref] = 'drop';
+      vrefStatus.set(vref, 'drop');
     }
     for (const vref of afterSlots) {
-      if (vrefStatus[vref] === 'drop') {
-        vrefStatus[vref] = 'keep';
-      } else if (!vrefStatus[vref]) {
-        vrefStatus[vref] = 'add';
+      if (vrefStatus.get(vref) === 'drop') {
+        vrefStatus.set(vref, 'keep');
+      } else if (!vrefStatus.has(vref)) {
+        vrefStatus.set(vref, 'add');
       }
     }
-    for (const [vref, status] of Object.entries(vrefStatus)) {
-      switch (status) {
+    const keys = [...vrefStatus.keys()].sort();
+    for (const vref of keys) {
+      switch (vrefStatus.get(vref)) {
         case 'add':
           addReachableVref(vref);
           break;
