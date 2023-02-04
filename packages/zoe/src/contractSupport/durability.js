@@ -1,9 +1,5 @@
-import { SubscriberShape, makePublicTopic } from '@agoric/notifier';
-import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
-  M,
   makeScalarBigMapStore,
   provide,
   provideDurableMapStore,
@@ -42,50 +38,6 @@ export const makeEphemeraProvider = init => {
   };
 };
 harden(makeEphemeraProvider);
-
-/**
- *
- */
-export const makePublicTopicProvider = () => {
-  /** @type {WeakMap<Subscriber<any>, import('@agoric/notifier').PublicTopic<any>>} */
-  const extant = new WeakMap();
-
-  /**
-   * Provide a PublicTopic for the specified durable subscriber.
-   * Memoizes the resolution of the promise for the storageNode's path, for the lifetime of the vat.
-   *
-   * @template {object} T
-   * @param {string} description
-   * @param {Subscriber<T>} durableSubscriber primary key
-   * @param {ERef<StorageNode>} storageNode
-   * @returns {import('@agoric/notifier').PublicTopic<T>}
-   */
-  const providePublicTopic = (description, durableSubscriber, storageNode) => {
-    if (extant.has(durableSubscriber)) {
-      // @ts-expect-error cast
-      return extant.get(durableSubscriber);
-    }
-    mustMatch(
-      harden({ description, durableSubscriber, storageNode }),
-      harden({
-        description: M.string(),
-        durableSubscriber: SubscriberShape,
-        storageNode: M.eref(StorageNodeShape),
-      }),
-    );
-
-    /** @type {import('@agoric/notifier').PublicTopic<T>} */
-    const newMeta = makePublicTopic(
-      description,
-      durableSubscriber,
-      storageNode,
-    );
-    extant.set(durableSubscriber, newMeta);
-    return newMeta;
-  };
-  return providePublicTopic;
-};
-harden(makePublicTopicProvider);
 
 /**
  *
