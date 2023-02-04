@@ -528,8 +528,33 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             return 'no transaction, as requested';
           }
 
+          // Calculate the fee, the amount to mint and the resulting debt. We'll
+          // verify that the target debt doesn't violate the collateralization ratio,
+          // then mint, reallocate, and burn.
+          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+            self.getCurrentDebt(),
+            fp.give.Minted,
+            fp.want.Minted,
+          );
+
           const normalizedDebtPre = self.getNormalizedDebt();
           const collateralPre = helper.getCollateralAllocated(vaultSeat);
+          const hasWants = !allEmpty([fp.want.Collateral, fp.want.Minted]);
+
+          if (!hasWants) {
+            // allow deposits regardless of max debt allowed
+            return helper.commitBalanceAdjustment(
+              clientSeat,
+              fp,
+              {
+                newDebt,
+                fee,
+                surplus,
+                toMint,
+              },
+              { normalizedDebtPre, collateralPre },
+            );
+          }
 
           const newCollateralPre = addSubtract(
             collateralPre,
@@ -542,6 +567,14 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             Fail`Transfer during vault adjustment`;
           helper.assertActive();
 
+          trace('adjustBalancesHook after quote', state.idInManager, {
+            newCollateralPre,
+            fee,
+            toMint,
+            maxDebtPre,
+            newDebt,
+          });
+
           // While awaiting maxDebtFor, the allocations may have changed.
           // After the `await`, we retrieve the vault's allocations again,
           // so we can compare to the debt limit based on the new values.
@@ -551,28 +584,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             fp.give.Collateral,
             fp.want.Collateral,
           );
-
-          // Calculate the fee, the amount to mint and the resulting debt. We'll
-          // verify that the target debt doesn't violate the collateralization ratio,
-          // then mint, reallocate, and burn.
-          const { newDebt, fee, surplus, toMint } = helper.loanFee(
-            self.getCurrentDebt(),
-            fp.give.Minted,
-            fp.want.Minted,
-          );
-
-          trace('adjustBalancesHook', state.idInManager, {
-            newCollateralPre,
-            newCollateral,
-            fee,
-            toMint,
-            newDebt,
-          });
-
-          const hasWants = !allEmpty([fp.want.Collateral, fp.want.Minted]);
           if (
-            // Skip allocations check if there are no wants. Always allow pure gives.
-            hasWants &&
             allocationsChangedSinceQuote(
               newCollateralPre,
               maxDebtPre,

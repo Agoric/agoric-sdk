@@ -1548,6 +1548,8 @@ test('transfer vault', async t => {
     adjustInvitation,
     harden({
       give: { Minted: payoffRun2 },
+      // it's only multi-turn if there is a want
+      want: { Collateral: aeth.make(1n) },
     }),
     harden({ Minted: paybackPayment }),
   );
