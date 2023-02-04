@@ -307,10 +307,7 @@ const setupServices = async (
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
   ).governorCreatorFacet;
-  /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<any>>} */
-  const vaultFactoryCreatorFacet = /** @type { any } */ (
-    E(governorCreatorFacet).getCreatorFacet()
-  );
+  const vaultFactoryCreatorFacet = E(governorCreatorFacet).getCreatorFacet();
 
   // Add a vault that will lend on aeth collateral
   const aethVaultManagerP = E(vaultFactoryCreatorFacet).addVaultType(
@@ -320,7 +317,6 @@ const setupServices = async (
   );
 
   /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
-  // @ts-expect-error cast
   const [governorInstance, vaultFactory, lender, aethVaultManager] =
     await Promise.all([
       E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),

@@ -16,7 +16,7 @@ const DISPLAY_INFO = harden({ decimalPlaces: 6 });
 /**
  * @param {ZCF} zcf
  * @param {(Brand) => boolean} isInSecondaries
- * @param {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<Brand, ZCFMint>} brandToLiquidityMintProvider
+ * @param {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<Brand<'nat'>, ZCFMint<'nat'>>} brandToLiquidityMintProvider
  * @param {() => (secondaryBrand: Brand<'nat'>) => Promise<void>} getAddIssuerToReserve
  */
 export const makeAddIssuer = (
@@ -30,7 +30,7 @@ export const makeAddIssuer = (
    * we'll return the issuer or a promise for it.
    *
    * @param {import('./pool.js').MethodContext} _context
-   * @param {Issuer} secondaryIssuer
+   * @param {Issuer<'nat'>} secondaryIssuer
    * @param {string} keyword
    */
   const addIssuer = async (_context, secondaryIssuer, keyword) => {
@@ -42,7 +42,7 @@ export const makeAddIssuer = (
     secondaryAssetKind === AssetKind.NAT ||
       Fail`${q(keyword)} asset not fungible (must use NAT math)`;
 
-    /** @type {(brand: Brand) => Promise<ZCFMint>} */
+    /** @type {(brand: Brand<'nat'>) => Promise<ZCFMint<'nat'>>} */
     const makeLiquidityMint = brand => {
       !isInSecondaries(brand) ||
         Fail`issuer ${secondaryIssuer} already has a pool`;

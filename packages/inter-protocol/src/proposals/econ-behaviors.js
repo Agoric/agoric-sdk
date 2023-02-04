@@ -78,7 +78,7 @@ const MILLI = 1_000_000n;
  *   vaultFactoryKit: {
  *     publicFacet: VaultFactoryPublicFacet,
  *     creatorFacet: VaultFactoryCreatorFacet,
- *     governorCreatorFacet: GovernedContractFacetAccess<{},{}>,
+ *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
  *     adminFacet: AdminFacet,
  *   },
  *   minInitialDebt: NatValue,
