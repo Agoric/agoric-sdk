@@ -1,11 +1,15 @@
-import { makePublicTopic, SubscriberShape } from '@agoric/notifier';
+import { SubscriberShape, makePublicTopic } from '@agoric/notifier';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { M, mustMatch } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
+  M,
   makeScalarBigMapStore,
   provide,
+  provideDurableMapStore,
   provideDurableSetStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /// <reference types="@agoric/notifier/src/types-ambient.js"/>
@@ -82,6 +86,22 @@ export const makePublicTopicProvider = () => {
   return providePublicTopic;
 };
 harden(makePublicTopicProvider);
+
+/**
+ *
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ */
+export const makeStorageNodePathProvider = baggage => {
+  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<StorageNode, string>} */
+  const nodePaths = makeAtomicProvider(
+    provideDurableMapStore(baggage, 'storage node paths'),
+  );
+  /** @param {ERef<StorageNode>} nodeP */
+  return async nodeP => {
+    const node = await nodeP;
+    return nodePaths.provideAsync(node, n => E(n).getPath());
+  };
+};
 
 /**
  * Provide an empty ZCF seat.
