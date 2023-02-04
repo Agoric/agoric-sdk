@@ -233,6 +233,26 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         emptyDebt() {
           return AmountMath.makeEmpty(this.facets.helper.debtBrand());
         },
+        /**
+         * @param {ProposalRecord} partial
+         */
+        fullProposal(partial) {
+          assertOnlyKeys(partial, ['Collateral', 'Minted']);
+          return {
+            give: {
+              Collateral:
+                partial.give?.Collateral ||
+                this.facets.helper.emptyCollateral(),
+              Minted: partial.give?.Minted || this.facets.helper.emptyDebt(),
+            },
+            want: {
+              Collateral:
+                partial.want?.Collateral ||
+                this.facets.helper.emptyCollateral(),
+              Minted: partial.want?.Minted || this.facets.helper.emptyDebt(),
+            },
+          };
+        },
         // #endregion
 
         // #region Phase logic
@@ -491,19 +511,15 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const { self, helper } = facets;
           const { outerUpdater: updaterPre } = state;
           const { vaultSeat } = state;
-          const proposal = clientSeat.getProposal();
-          assertOnlyKeys(proposal, ['Collateral', 'Minted']);
+          const fp = helper.fullProposal(clientSeat.getProposal());
 
           const normalizedDebtPre = self.getNormalizedDebt();
           const collateralPre = helper.getCollateralAllocated(vaultSeat);
 
-          const giveColl = proposal.give.Collateral || helper.emptyCollateral();
-          const wantColl = proposal.want.Collateral || helper.emptyCollateral();
-
           const newCollateralPre = addSubtract(
             collateralPre,
-            giveColl,
-            wantColl,
+            fp.give.Collateral,
+            fp.want.Collateral,
           );
           // max debt supported by the vault Collateral implied by the proposal
           const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
@@ -515,15 +531,22 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // After the `await`, we retrieve the vault's allocations again,
           // so we can compare to the debt limit based on the new values.
           const collateral = helper.getCollateralAllocated(vaultSeat);
-          const newCollateral = addSubtract(collateral, giveColl, wantColl);
+          const newCollateral = addSubtract(
+            collateral,
+            fp.give.Collateral,
+            fp.want.Collateral,
+          );
 
           const debt = self.getCurrentDebt();
-          const giveMinted = AmountMath.min(
-            proposal.give.Minted || helper.emptyDebt(),
-            debt,
-          );
-          const wantMinted = proposal.want.Minted || helper.emptyDebt();
-          if (allEmpty([giveColl, giveMinted, wantColl, wantMinted])) {
+          const giveMinted = AmountMath.min(fp.give.Minted, debt);
+          if (
+            allEmpty([
+              fp.give.Collateral,
+              giveMinted,
+              fp.want.Collateral,
+              fp.want.Minted,
+            ])
+          ) {
             clientSeat.exit();
             return 'no transaction, as requested';
           }
@@ -534,7 +557,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const { newDebt, fee, toMint } = helper.loanFee(
             debt,
             giveMinted,
-            wantMinted,
+            fp.want.Minted,
           );
 
           trace('adjustBalancesHook', state.idInManager, {
@@ -545,7 +568,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             newDebt,
           });
 
-          const hasWants = !allEmpty([wantColl, wantMinted]);
+          const hasWants = !allEmpty([fp.want.Collateral, fp.want.Minted]);
           if (
             // Skip allocations check if there are no wants. Always allow pure gives.
             hasWants &&
@@ -559,7 +582,13 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             return helper.adjustBalancesHook(clientSeat);
           }
 
-          stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
+          stageDelta(
+            clientSeat,
+            vaultSeat,
+            fp.give.Collateral,
+            fp.want.Collateral,
+            'Collateral',
+          );
           // `wantMinted` is allocated in the reallocate and mint operation, and so not here
           stageDelta(
             clientSeat,
@@ -570,7 +599,11 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           );
 
           /** @type {Array<ZCFSeat>} */
-          const vaultSeatOpt = allEmpty([giveColl, giveMinted, wantColl])
+          const vaultSeatOpt = allEmpty([
+            fp.give.Collateral,
+            giveMinted,
+            fp.want.Collateral,
+          ])
             ? []
             : [vaultSeat];
           state.manager.mintAndReallocate(
