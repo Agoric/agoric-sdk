@@ -17,7 +17,7 @@ import {
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
 import { M, mustMatch } from '@agoric/store';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
-import { makePublicTopicProvider } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
@@ -159,7 +159,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     'Smart Wallet publish kit',
   );
 
-  const providePublicTopic = makePublicTopicProvider();
+  const memoizedPath = makeStorageNodePathProvider(baggage);
 
   /**
    *
@@ -557,16 +557,16 @@ export const prepareSmartWallet = (baggage, shared) => {
             walletStorageNode,
           } = this.state;
           return harden({
-            current: providePublicTopic(
-              'Current state of wallet',
-              currentPublishKit.subscriber,
-              currentStorageNode,
-            ),
-            updates: providePublicTopic(
-              'Changes to wallet',
-              updatePublishKit.subscriber,
-              walletStorageNode,
-            ),
+            current: {
+              description: 'Current state of wallet',
+              subscriber: currentPublishKit.subscriber,
+              storagePath: memoizedPath(currentStorageNode),
+            },
+            updates: {
+              description: 'Changes to wallet',
+              subscriber: updatePublishKit.subscriber,
+              storagePath: memoizedPath(walletStorageNode),
+            },
           });
         },
       },
