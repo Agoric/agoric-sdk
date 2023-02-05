@@ -7,7 +7,7 @@ import '@endo/init/debug.js';
 import path from 'path';
 import process from 'process';
 import fs, { createReadStream } from 'node:fs';
-import { Transform } from 'stream';
+import { PassThrough, Readable, Transform } from 'stream';
 import zlib from 'zlib';
 
 import '../src/anylogger-agoric.js';
@@ -49,7 +49,7 @@ const sink = harden(() => {});
  */
 const getTranscriptStream = filePath => {
   /** @type {import('stream').Readable} */
-  let rawStream = createReadStream(filePath);
+  let rawStream = filePath === '-' ? process.stdin : createReadStream(filePath);
   if (filePath.endsWith('.gz')) {
     rawStream = rawStream.pipe(zlib.createGunzip());
   }
@@ -684,6 +684,16 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
       getTranscriptStream(inputFile)[Symbol.asyncIterator]()
     ),
   );
+  /** @type {import('stream').Readable | undefined} */
+  let chainInputTranscriptTail;
+  const chainTranscriptPassthroughForModules = new PassThrough({
+    objectMode: true,
+  });
+  const chainTranscriptForModules = streamCloner(
+    /** @type {AsyncIterator<TranscriptEvent, void, void>} */ (
+      chainTranscriptPassthroughForModules[Symbol.asyncIterator]()
+    ),
+  );
 
   // TODO: add swingset active check and chainSend transcript output
 
@@ -729,8 +739,9 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
     return {};
   };
 
-  const { startingStep, stop, produce } =
-    aggregateModules(chainInputTranscript);
+  const { startingStep, stop, produce } = aggregateModules(
+    chainTranscriptForModules,
+  );
 
   const chainTranscript = harden({
     /** @param {TranscriptEvent} obj */
@@ -744,6 +755,10 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
 
   /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
   let blockingSend;
+  /** @type {Awaited<ReturnType<typeof launch>>['shutdown'] | undefined} */
+  let shutdown;
+
+  let savedHeight = -1;
 
   for await (const event of chainInputTranscript) {
     if (!matchEventType(event, allEventTypes)) {
@@ -754,6 +769,27 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
     }
 
     if (!matchEventType(event, blockingSendTypes)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    if (savedHeight === 0) {
+      if (event.type !== 'bootstrap-block') {
+        throw Fail`Bootstrap block should follow initialize`;
+      } else {
+        savedHeight = -2;
+        chainInputTranscriptTail = Readable.from(chainInputTranscript);
+        chainTranscriptPassthroughForModules.write(event);
+        chainInputTranscriptTail.pipe(chainTranscriptPassthroughForModules);
+      }
+    } else if (savedHeight > 0) {
+      // FIXME: Transcript modules may fail if they rely on transcript data
+      // that spans across blocks.
+      if (event.type === 'commit-block' && event.blockHeight === savedHeight) {
+        savedHeight = -2;
+        chainInputTranscriptTail = Readable.from(chainInputTranscript);
+        chainInputTranscriptTail.pipe(chainTranscriptPassthroughForModules);
+      }
       // eslint-disable-next-line no-continue
       continue;
     }
@@ -788,11 +824,9 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
         afterCommitCallback,
       });
 
-      if (s.savedHeight || s.savedBlockTime) {
-        throw Fail`Restart from saved state not yet implemented`;
-      }
-
-      ({ blockingSend } = s);
+      blockingSend = s.blockingSend;
+      shutdown = s.shutdown;
+      savedHeight = s.savedHeight || 0;
     } else if (!blockingSend) {
       throw Fail`Chain transcript must start with initialize`;
     } else {
@@ -800,8 +834,19 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
     }
   }
 
+  await shutdown?.();
   await stop();
   await chainOutputTranscriptStream?.close();
+  await chainTranscriptForModules.close();
+  await new Promise((resolve, reject) => {
+    if (!chainInputTranscriptTail || chainInputTranscriptTail.destroyed) {
+      resolve(undefined);
+      return;
+    }
+    chainInputTranscriptTail.once('close', resolve);
+    chainInputTranscriptTail.once('error', reject);
+    chainInputTranscriptTail.destroy();
+  });
   await chainInputTranscript.close();
 };
 
