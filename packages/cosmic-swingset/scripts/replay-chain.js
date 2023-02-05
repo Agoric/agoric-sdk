@@ -790,7 +790,7 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
 
     if (savedHeight === 0) {
       if (event.type !== 'bootstrap-block') {
-        throw Fail`Bootstrap block should follow initialize`;
+        assert.fail(`Bootstrap block should follow initialize`);
       } else {
         savedHeight = -2;
         chainInputTranscriptTail = Readable.from(chainInputTranscript);
