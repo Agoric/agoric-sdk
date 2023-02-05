@@ -71,13 +71,13 @@ export function makeXsSubprocessFactory({
       kernelSlog,
       kernelKeeper,
       vatSyscallHandler,
-      true,
+      'async-blocking',
       compareSyscalls,
       useTranscript,
     );
 
-    /** @type { (item: Tagged) => unknown } */
-    function handleUpstream([type, ...args]) {
+    /** @type { (item: Tagged) => Promise<unknown> } */
+    async function handleUpstream([type, ...args]) {
       parentLog(vatID, `handleUpstream`, type, args.length);
       switch (type) {
         case 'syscall': {
@@ -107,7 +107,7 @@ export function makeXsSubprocessFactory({
     /** @type { (msg: Uint8Array) => Promise<Uint8Array> } */
     async function handleCommand(msg) {
       // parentLog('handleCommand', { length: msg.byteLength });
-      const tagged = handleUpstream(JSON.parse(decoder.decode(msg)));
+      const tagged = await handleUpstream(JSON.parse(decoder.decode(msg)));
       return encoder.encode(JSON.stringify(tagged));
     }
 
