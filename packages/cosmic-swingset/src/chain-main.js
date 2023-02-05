@@ -21,10 +21,12 @@ import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeFsStreamWriter } from '@agoric/internal/src/fs-stream.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { makeQueue } from './make-queue.js';
+import { makeJSONEventWriter } from './json-event-writer.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -184,6 +186,17 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   const cosmosHome = getFlagValue('home', `${homedir}/.ag-chain-cosmos`);
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
   fs.mkdirSync(stateDBDir, { recursive: true });
+
+  const chainTranscriptStream = await makeFsStreamWriter(
+    getPathFromEnv({
+      envName: 'CHAIN_TRANSCRIPT',
+      flagName: 'chain-transcript',
+      trueValue: path.resolve(stateDBDir, 'chain-transcript.log'),
+    }),
+  );
+  const chainTranscript = chainTranscriptStream
+    ? makeJSONEventWriter(chainTranscriptStream)
+    : undefined;
 
   // console.log('Have AG_COSMOS', agcc);
 
@@ -388,9 +401,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
 
     const afterCommitCallback = async () => {
+      const chainTranscriptFlushed = Promise.resolve(
+        chainTranscriptStream?.flush?.(),
+      ).catch(err => {
+        console.warn('Failed to flush chain transcript', err);
+      });
+
       // delay until all current promise reactions are drained so we can be sure
       // that the commit-block reply has been sent to agcc through replier.resolve
-      await waitUntilQuiescent();
+      await Promise.all([chainTranscriptFlushed, waitUntilQuiescent()]);
 
       let heapSnapshot;
       let heapSnapshotTime;
@@ -452,6 +471,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       mapSize,
       swingStoreTraceFile,
       keepSnapshots,
+      chainTranscript,
       afterCommitCallback,
     });
 
