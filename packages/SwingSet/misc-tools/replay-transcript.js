@@ -10,6 +10,7 @@ import readline from 'readline';
 import process from 'process';
 import { spawn } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { promisify } from 'util';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream';
@@ -42,6 +43,13 @@ const argv = yargsParser(process.argv.slice(2), {
     // to match the path of the SDK that produced the initial transcript
     // For e.g. set to '/src' if replaying a docker based loadgen transcript
     'absoluteSdkPath',
+
+    // Overrides the xsnap-worker binary to use when creating a new vat, or
+    // when loading a snapshot. By default the binary used is the one bundled
+    // with the agoric-sdk for both. The path is first resolved relative to the
+    // replay tool, and if that fails, falls-back relative to the cwd.
+    'startXsnapWorkerPath',
+    'loadXsnapWorkerPath',
   ],
 
   boolean: [
@@ -138,6 +146,8 @@ const argv = yargsParser(process.argv.slice(2), {
   ],
   default: {
     absoluteSdkPath: '',
+    startXsnapWorkerPath: '',
+    loadXsnapWorkerPath: '',
     rebuildBundles: false,
     ignoreSnapshotHashDifference: true,
     ignoreConcurrentWorkerDivergences: true,
@@ -173,6 +183,28 @@ if (argv.keepAllSnapshots && argv.keepNoSnapshots) {
   throw new Error(
     `Mutually exclusive options configured: 'keepAllSnapshots' and 'keepNoSnapshots'`,
   );
+}
+
+for (const xsnapWorkerPathArg of [
+  'startXsnapWorkerPath',
+  'loadXsnapWorkerPath',
+]) {
+  const xsnapWorkerPath = argv[xsnapWorkerPathArg];
+  if (!xsnapWorkerPath) continue; // eslint-disable-line no-continue
+  const sdkRoot = new URL('../../../', import.meta.url);
+  const sdkRelativeWorkerPath = fileURLToPath(
+    new URL(xsnapWorkerPath, sdkRoot),
+  );
+  const cwdRelativeWorkerPath = path.resolve(xsnapWorkerPath);
+  if (fs.existsSync(sdkRelativeWorkerPath)) {
+    argv[xsnapWorkerPathArg] = sdkRelativeWorkerPath;
+  } else if (fs.existsSync(cwdRelativeWorkerPath)) {
+    argv[xsnapWorkerPathArg] = cwdRelativeWorkerPath;
+  } else {
+    throw new Error(
+      `Couldn't resolve path "${xsnapWorkerPath}" for argument "${xsnapWorkerPathArg}"`,
+    );
+  }
 }
 
 /** @type {(filename: string) => Promise<string>} */
@@ -296,6 +328,7 @@ async function replay(transcriptFile) {
    * @typedef {{
    *  manager: import('../src/types-external.js').VatManager;
    *  xsnapPID: number | undefined;
+   *  explicitWorkerPath: string | undefined;
    *  deliveryTimeTotal: number;
    *  deliveryTimeSinceLastSnapshot: number;
    *  loadSnapshotID: string | undefined;
@@ -331,8 +364,13 @@ async function replay(transcriptFile) {
     const capturePIDSpawn = /** @type {typeof spawn} */ (
       /** @param  {Parameters<typeof spawn>} args */
       (...args) => {
-        const child = spawn(...args);
-        workers[workers.length - 1].xsnapPID = child.pid;
+        const [command, ...rest] = args;
+        const spawnedWorker = workers[workers.length - 1];
+        const child = spawn(
+          spawnedWorker.explicitWorkerPath || command,
+          ...rest,
+        );
+        spawnedWorker.xsnapPID = child.pid;
         return child;
       }
     );
@@ -661,11 +699,21 @@ async function replay(transcriptFile) {
 
   /** @param {boolean} keep */
   const createManager = async keep => {
+    let explicitWorkerPath;
+    if (worker === 'xs-worker') {
+      if (loadSnapshotID && argv.loadXsnapWorkerPath) {
+        explicitWorkerPath = argv.loadXsnapWorkerPath;
+      } else if (!loadSnapshotID && argv.startXsnapWorkerPath) {
+        explicitWorkerPath = argv.startXsnapWorkerPath;
+      }
+    }
+
     /** @type {WorkerData} */
     const workerData = {
       manager: /** @type {WorkerData['manager']} */ (
         /** @type {unknown} */ (undefined)
       ),
+      explicitWorkerPath,
       xsnapPID: NaN,
       deliveryTimeTotal: 0,
       deliveryTimeSinceLastSnapshot: 0,
