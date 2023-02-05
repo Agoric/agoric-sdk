@@ -27,7 +27,10 @@ import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { makeQueue } from './make-queue.js';
-import { makeJSONEventWriter } from './json-event-writer.js';
+import {
+  bufferStreamWrites,
+  makeJSONEventWriter,
+} from './json-event-writer.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -152,7 +155,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       flagName: 'chain-transcript',
       trueValue: path.resolve(stateDBDir, 'chain-transcript.log'),
     }),
-  );
+  ).then(bufferStreamWrites);
   const chainTranscript = chainTranscriptStream
     ? makeJSONEventWriter(chainTranscriptStream)
     : undefined;
