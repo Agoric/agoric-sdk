@@ -98,11 +98,12 @@ import { makeTranscriptManager } from './transcript.js';
  * The returned getManager() function will return a VatManager suitable for
  * handing to the kernel, which can use it to send deliveries to the vat.
  *
+ * @template {'sync' | 'async-blocking' | 'async-dropping'} WorkerAsyncKind
  * @param {string} vatID
  * @param {KernelKeeper} kernelKeeper
  * @param {KernelSlog} kernelSlog
  * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
- * @param {boolean} workerCanBlock
+ * @param {WorkerAsyncKind} workerAsyncKind
  * @param {import('./transcript.js').CompareSyscalls} [compareSyscalls]
  * @param {boolean} [useTranscript]
  * @returns {ManagerKit}
@@ -113,7 +114,7 @@ function makeManagerKit(
   kernelSlog,
   kernelKeeper,
   vatSyscallHandler,
-  workerCanBlock,
+  workerAsyncKind,
   compareSyscalls,
   useTranscript,
 ) {
@@ -243,7 +244,7 @@ function makeManagerKit(
     const vres = vatSyscallHandler(vso);
     // vres is ['error', reason] or ['ok', null] or ['ok', capdata] or ['ok', string]
     const [successFlag, data] = vres;
-    if (successFlag === 'ok' && data && !workerCanBlock) {
+    if (successFlag === 'ok' && data && workerAsyncKind === 'async-dropping') {
       console.log(`warning: syscall returns data, but worker cannot get it`);
     }
     return vres;

@@ -26,7 +26,7 @@ export function makeLocalVatManagerFactory(tools) {
       kernelSlog,
       kernelKeeper,
       vatSyscallHandler,
-      true,
+      'sync',
       compareSyscalls,
       useTranscript,
     );
