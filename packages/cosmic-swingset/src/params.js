@@ -67,15 +67,16 @@ export const encodeParams = parsedParams => {
 
   // eslint-disable-next-line camelcase
   const beans_per_unit = Object.entries(beansPerUnit).map(([key, beans]) => {
-    isNat(beans) || Fail`beans ${beans} for ${key} is not a positive integer`;
+    isNat(beans) ||
+      assert.fail(X`beans ${beans} for ${key} is not a positive integer`);
     return { key, beans: String(beans) };
   });
 
   Array.isArray(feeUnitPrice) ||
-    Fail`feeUnitPrice ${feeUnitPrice} must be an array`;
+    assert.fail(X`feeUnitPrice ${feeUnitPrice} must be an array`);
   // eslint-disable-next-line camelcase
   const fee_unit_price = feeUnitPrice.map(({ denom, amount }) => {
-    denom || Fail`denom ${denom} must be non-empty`;
+    denom || assert.fail(X`denom ${denom} must be non-empty`);
     return { denom, amount: String(amount) };
   });
 

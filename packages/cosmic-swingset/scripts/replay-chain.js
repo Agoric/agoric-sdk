@@ -1,6 +1,11 @@
 #! /usr/bin/env node
 // @ts-check
 
+import '@endo/init/pre-bundle-source.js';
+
+// import lmdb early to work around SES incompatibility
+import 'lmdb';
+
 // import '@endo/init';
 import '@endo/init/debug.js';
 
@@ -24,7 +29,7 @@ import { makeSlogSender } from '@agoric/telemetry';
 // import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 import '@agoric/notifier/exported.js';
 
-import { assert, details as X, quote as q, Fail } from '@agoric/assert';
+import { assert, details as X, quote as q } from '@agoric/assert';
 import { makeQueue } from '@endo/stream';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeFsStreamWriter } from '@agoric/internal/src/fs-stream.js';
@@ -70,7 +75,7 @@ const getTranscriptStream = filePath => {
 };
 
 const notImplemented = hint => () => {
-  throw Fail`${hint} not implemented`;
+  assert.fail(X`${hint} not implemented`);
 };
 
 const blockingSendTypes = /** @type {const} */ ([
@@ -152,7 +157,7 @@ const makeBlockingSendActionFromEvent = event => {
         blockTime: event.blockTime,
       };
     default:
-      throw Fail`Unexpected blocking send event type ${event.type}`;
+      assert.fail(X`Unexpected blocking send event type ${event.type}`);
   }
 };
 
@@ -360,7 +365,7 @@ const makeExactTranscriptBridgeReplayer =
         log.error(`anachrophobia strikes "${bridgeID}" module`);
         log.error(`expected:`, expected);
         log.error(`got     :`, actual);
-        throw Fail`historical inaccuracy in replay of "${bridgeID}" module`;
+        assert.fail(X`historical inaccuracy in replay of "${bridgeID}" module`);
       }
       return currentChainActions.shift().result;
     };
@@ -373,12 +378,14 @@ const makeExactTranscriptBridgeReplayer =
         log.error(`anachrophobia strikes "${bridgeID}" module`);
         log.error(`expected:`, stringify(currentChainActions));
         log.error(`got     :`, '');
-        throw Fail`Remaining chain actions from previous inbound action for module ${bridgeID}`;
+        assert.fail(
+          X`Remaining chain actions from previous inbound action for module ${bridgeID}`,
+        );
       }
 
       const actionEventsIterResult = await actionEventsStream.next();
       if (actionEventsIterResult.done) {
-        throw Fail`Missing transcript action ${event.inboundNum}`;
+        throw assert.fail(X`Missing transcript action ${event.inboundNum}`);
       }
       const { groupEvents } = actionEventsIterResult.value;
 
@@ -436,7 +443,9 @@ const makeActionOrderChecker = transcriptStream => {
         ? 'none'
         : result.value.startEvent.inboundNum;
       if (expectedNum !== event.inboundNum) {
-        throw Fail`Unexpected perform-action ${event.inboundNum}, expected ${expectedNum}`;
+        assert.fail(
+          X`Unexpected perform-action ${event.inboundNum}, expected ${expectedNum}`,
+        );
       }
     },
     stop: async () => {
@@ -470,7 +479,7 @@ const makeActionQueue = transcriptStream => {
     },
     consumeAll() {
       if (!currentBlockInboundActions) {
-        throw Fail`Cannot consume actionQueue outside of block`;
+        throw assert.fail(X`Cannot consume actionQueue outside of block`);
       }
 
       return yieldInboundActions();
@@ -481,7 +490,7 @@ const makeActionQueue = transcriptStream => {
     startingStep: async event => {
       if (event.type === 'commit-block') {
         if (currentBlockInboundActions?.length) {
-          throw Fail`Remaining inbound actions in queue`;
+          throw assert.fail(X`Remaining inbound actions in queue`);
         }
         currentBlockInboundActions = undefined;
       }
@@ -493,7 +502,9 @@ const makeActionQueue = transcriptStream => {
         ? 'none'
         : result.value.startEvent.blockHeight;
       if (result.done || expectedHeight !== event.blockHeight) {
-        throw Fail`Unexpected end-block ${event.blockHeight}, expected ${expectedHeight}`;
+        throw assert.fail(
+          X`Unexpected end-block ${event.blockHeight}, expected ${expectedHeight}`,
+        );
       }
 
       currentBlockInboundActions = [...result.value.groupEvents];
@@ -515,7 +526,7 @@ const makeDummyMailboxStorage = () => {
     commit: () => {},
     has: notImplemented('mailboxStorage.has'),
     get: notImplemented('mailboxStorage.get'),
-    getNextKey: notImplemented('mailboxStorage.getKeys'),
+    getKeys: notImplemented('mailboxStorage.getKeys'),
     set: notImplemented('mailboxStorage.set'),
     delete: notImplemented('mailboxStorage.delete'),
   };
@@ -650,7 +661,7 @@ const aggregateModules = transcriptStream => {
   };
 
   if (!requiredLaunchParams.every(param => param in aggregatedProduce)) {
-    throw Fail`Configured modules missing required launch param`;
+    throw assert.fail(X`Configured modules missing required launch param`);
   }
 
   return harden({
@@ -696,12 +707,14 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
     serviceName: TELEMETRY_SERVICE_NAME,
   });
 
-  const { XSNAP_KEEP_SNAPSHOTS } = env;
+  const { LMDB_MAP_SIZE, XSNAP_KEEP_SNAPSHOTS } = env;
   const slogSender = await makeSlogSender({
     stateDir: stateDBDir,
     env,
     serviceName: TELEMETRY_SERVICE_NAME,
   });
+
+  const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
   const swingStoreTraceFile =
     XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true'
@@ -747,10 +760,12 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
 
   for await (const event of chainInputTranscript) {
     if (!matchEventType(event, allEventTypes)) {
-      throw Fail`Unsupported transcript event ${
-        // @ts-expect-error exhaustive check
-        event.type
-      }`;
+      assert.fail(
+        X`Unsupported transcript event ${
+          // @ts-expect-error exhaustive check
+          event.type
+        }`,
+      );
     }
 
     if (!matchEventType(event, blockingSendTypes)) {
@@ -782,6 +797,7 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
         verboseBlocks: true,
         metricsProvider,
         slogSender,
+        mapSize,
         swingStoreTraceFile,
         keepSnapshots,
         chainTranscript,
@@ -789,12 +805,12 @@ const main = async ({ env = process.env, baseDir = '.', inputFile }) => {
       });
 
       if (s.savedHeight || s.savedBlockTime) {
-        throw Fail`Restart from saved state not yet implemented`;
+        throw assert.fail`Restart from saved state not yet implemented`;
       }
 
       ({ blockingSend } = s);
     } else if (!blockingSend) {
-      throw Fail`Chain transcript must start with initialize`;
+      assert.fail(X`Chain transcript must start with initialize`);
     } else {
       await blockingSend(makeBlockingSendActionFromEvent(event));
     }
