@@ -150,16 +150,50 @@ export function makeTranscriptManager(
 
   let replayError;
 
+  const failReplay = error => {
+    replayError =
+      error ||
+      replayError ||
+      new Error(`historical inaccuracy in replay of ${vatID}`);
+    throw replayError;
+  };
+
+  const checkReplayError = () => {
+    if (replayError) {
+      throw replayError;
+    }
+  };
+
   /** @param {VatSyscallObject} newSyscall */
   function simulateSyscall(newSyscall) {
-    while (playbackSyscalls.length) {
-      const compareError = compareSyscalls(
-        vatID,
-        playbackSyscalls[0].d,
-        newSyscall,
-        playbackSyscalls[0].response,
-      );
+    function simulateSyscallNext() {
+      if (!playbackSyscalls.length) {
+        // Error if the vat performs a syscall for which we don't have a
+        // corresponding entry in the transcript.
 
+        // Note that if a vat performed an "allowed" vc metadata get syscall after
+        // we reach the end of the transcript, we would error instead of
+        // falling through and performing the syscall. However liveslots does not
+        // perform vc metadata get syscalls unless it needs to provide an entry
+        // to the program, which always results in subsequent syscalls.
+        return failReplay();
+      }
+
+      // eslint-disable-next-line no-use-before-define
+      return handleCompareResult(
+        compareSyscalls(
+          vatID,
+          playbackSyscalls[0].d,
+          newSyscall,
+          playbackSyscalls[0].response,
+        ),
+      );
+    }
+    /**
+     * @param {CompareSyscallsResult} compareError
+     * @returns {VatSyscallResult | undefined}
+     */
+    function handleCompareResult(compareError) {
       if (compareError === missingSyscall) {
         // return `undefined` to indicate that this syscall cannot be simulated
         // and needs to be performed (virtual collection metadata get)
@@ -172,26 +206,14 @@ export function makeTranscriptManager(
       if (!compareError) {
         return s.response;
       } else if (compareError !== extraSyscall) {
-        replayError = compareError;
-        break;
+        return failReplay(compareError);
+      } else {
+        // Check the next transcript entry, skipping any extra syscalls recorded
+        // in the transcript (virtual collection metadata get)
+        return simulateSyscallNext();
       }
-
-      // Check the next transcript entry, skipping any extra syscalls recorded
-      // in the transcript (virtual collection metadata get)
     }
-
-    if (!replayError) {
-      // Error if the vat performs a syscall for which we don't have a
-      // corresponding entry in the transcript.
-
-      // Note that if a vat performed an "allowed" vc metadata get syscall after
-      // we reach the end of the transcript, we would error instead of
-      // falling through and performing the syscall. However liveslots does not
-      // perform vc metadata get syscalls unless it needs to provide an entry
-      // to the program, which always results in subsequent syscalls.
-      replayError = new Error(`historical inaccuracy in replay of ${vatID}`);
-    }
-    throw replayError;
+    return simulateSyscallNext();
   }
 
   function finishReplayDelivery(dnum) {
@@ -203,16 +225,7 @@ export function makeTranscriptManager(
       for (const s of playbackSyscalls) {
         console.log(`expected:`, djson.stringify(s.d));
       }
-      if (!replayError) {
-        replayError = new Error(`historical inaccuracy in replay of ${vatID}`);
-      }
-      throw replayError;
-    }
-  }
-
-  function checkReplayError() {
-    if (replayError) {
-      throw replayError;
+      failReplay();
     }
   }
 
