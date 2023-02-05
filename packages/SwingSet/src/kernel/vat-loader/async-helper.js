@@ -19,7 +19,7 @@
  * @returns {T extends PromiseLike<any> ? Promise<Awaited<R>> : R}
  */
 export function maybeAsync(v, handle) {
-  if (typeof v === 'object' && v !== null && 'then' in v) {
+  if (Object(v) === v && typeof v.then === 'function') {
     return Promise.resolve(v).then(handle);
   } else {
     return handle(v);
@@ -37,7 +37,7 @@ export function ensureSync(fn) {
   // eslint-disable-next-line func-names
   return function (...args) {
     const result = Reflect.apply(fn, this, args);
-    if (typeof result === 'object' && result !== null && 'then' in result) {
+    if (Object(result) === result && typeof result.then === 'function') {
       throw new Error('Unexpected async result');
     } else {
       return result;
