@@ -181,18 +181,18 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function convertSlotToVal(slot) {
-    const { type, virtual, facet, baseRef } = parseVatSlot(slot);
+    const { type, virtual, durable, facet, baseRef } = parseVatSlot(slot);
     assert.equal(type, 'object');
     let val = getValForSlot(baseRef);
     if (val) {
-      if (virtual) {
+      if (virtual || durable) {
         if (facet !== undefined) {
           return val[facet];
         }
       }
       return val;
     }
-    if (virtual) {
+    if (virtual || durable) {
       if (vrm) {
         val = vrm.reanimate(slot);
         if (facet !== undefined) {

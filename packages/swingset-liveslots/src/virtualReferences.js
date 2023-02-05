@@ -257,7 +257,7 @@ export function makeVirtualReferenceManager(
    * @returns {boolean}  true if the indicated object reference is durable.
    */
   function isDurable(vref) {
-    const { type, id, virtual, allocatedByVat } = parseVatSlot(vref);
+    const { type, id, virtual, durable, allocatedByVat } = parseVatSlot(vref);
     if (relaxDurabilityRules) {
       // we'll pretend an object is durable if running with relaxed rules
       return true;
@@ -270,7 +270,7 @@ export function makeVirtualReferenceManager(
     } else if (!allocatedByVat) {
       // imports are durable
       return true;
-    } else if (virtual) {
+    } else if (virtual || durable) {
       // stores and virtual objects are durable if their kinds are so configured
       return isDurableKind(id);
     } else {
@@ -336,10 +336,11 @@ export function makeVirtualReferenceManager(
   // from the `remotableRefCounts` map).
 
   function addReachableVref(vref) {
-    const { type, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
+    const { type, virtual, durable, allocatedByVat, baseRef } =
+      parseVatSlot(vref);
     if (type === 'object') {
       if (allocatedByVat) {
-        if (virtual) {
+        if (virtual || durable) {
           incRefCount(baseRef);
         } else {
           // exported non-virtual object: Remotable
@@ -362,10 +363,11 @@ export function makeVirtualReferenceManager(
 
   function removeReachableVref(vref) {
     let droppedMemoryReference = false;
-    const { type, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
+    const { type, virtual, durable, allocatedByVat, baseRef } =
+      parseVatSlot(vref);
     if (type === 'object') {
       if (allocatedByVat) {
-        if (virtual) {
+        if (virtual || durable) {
           decRefCount(baseRef);
         } else {
           // exported non-virtual object: Remotable
@@ -402,10 +404,11 @@ export function makeVirtualReferenceManager(
 
   // for testing only
   function getReachableRefCount(vref) {
-    const { type, virtual, allocatedByVat, baseRef } = parseVatSlot(vref);
+    const { type, virtual, durable, allocatedByVat, baseRef } =
+      parseVatSlot(vref);
     assert(type === 'object');
     if (allocatedByVat) {
-      if (virtual) {
+      if (virtual || durable) {
         return getRefCount(baseRef);
       } else {
         const remotable = requiredValForSlot(baseRef);
@@ -499,8 +502,8 @@ export function makeVirtualReferenceManager(
   function addRecognizableValue(value, recognizer, recognizerIsVirtual) {
     const vref = getSlotForVal(value);
     if (vref) {
-      const { type, allocatedByVat, virtual } = parseVatSlot(vref);
-      if (type === 'object' && (!allocatedByVat || virtual)) {
+      const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
+      if (type === 'object' && (!allocatedByVat || virtual || durable)) {
         if (recognizerIsVirtual) {
           syscall.vatstoreSet(`vom.ir.${vref}|${recognizer}`, '1');
         } else {
@@ -516,8 +519,8 @@ export function makeVirtualReferenceManager(
   }
 
   function removeRecognizableVref(vref, recognizer, recognizerIsVirtual) {
-    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
-    if (type === 'object' && (!allocatedByVat || virtual)) {
+    const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
+    if (type === 'object' && (!allocatedByVat || virtual || durable)) {
       if (recognizerIsVirtual) {
         syscall.vatstoreDelete(`vom.ir.${vref}|${recognizer}`);
       } else {
@@ -557,7 +560,7 @@ export function makeVirtualReferenceManager(
   function ceaseRecognition(vref) {
     let doMoreGC = false;
     const p = parseVatSlot(vref);
-    if (p.allocatedByVat && p.virtual && p.facet === undefined) {
+    if (p.allocatedByVat && (p.virtual || p.durable) && p.facet === undefined) {
       // If `vref` identifies a multi-faceted object that should no longer be
       // "recognized", what that really means that all references to its
       // individual facets should no longer be recognized -- nobody actually
@@ -621,8 +624,8 @@ export function makeVirtualReferenceManager(
   function vrefKey(value) {
     const vobjID = getSlotForVal(value);
     if (vobjID) {
-      const { type, virtual, allocatedByVat } = parseVatSlot(vobjID);
-      if (type === 'object' && (virtual || !allocatedByVat)) {
+      const { type, virtual, durable, allocatedByVat } = parseVatSlot(vobjID);
+      if (type === 'object' && (virtual || durable || !allocatedByVat)) {
         return vobjID;
       }
     }

@@ -51,7 +51,7 @@ test('calls', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
 
@@ -96,7 +96,7 @@ test('liveslots pipelines to syscall.send', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const x = 'o-5';
@@ -151,7 +151,7 @@ test('liveslots pipeline/non-pipeline calls', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -226,7 +226,7 @@ async function doOutboundPromise(t, mode) {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -329,7 +329,7 @@ test('liveslots retains pending exported promise', async t => {
     return root;
   }
 
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const resultP = 'p-1';
@@ -373,7 +373,7 @@ async function doResultPromise(t, mode) {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -479,7 +479,7 @@ test('liveslots vs symbols', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const target = 'o-1';
@@ -539,7 +539,7 @@ test('remote function call', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
 
@@ -676,15 +676,13 @@ test('capdata size limit on syscalls', async t => {
       },
     });
   }
-  const returnTestHooks = [];
-  const dispatch = await makeDispatch(
+  const { dispatch, testHooks } = await makeDispatch(
     syscall,
     build,
     'vatA',
     {},
-    returnTestHooks,
   );
-  const { setSyscallCapdataLimits } = returnTestHooks[0];
+  const { setSyscallCapdataLimits } = testHooks;
   setSyscallCapdataLimits(130, 1);
 
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -931,7 +929,7 @@ test('disable disavow', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {});
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {});
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
 
@@ -988,7 +986,7 @@ test('disavow', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1041,7 +1039,7 @@ test('liveslots retains device nodes', async t => {
     return root;
   }
 
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   const rootA = 'o+0';
   const device = 'd-1';
   await dispatch(makeMessage(rootA, 'first', [kslot(device)]));
@@ -1069,7 +1067,7 @@ test('GC syscall.dropImports', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1106,7 +1104,7 @@ test('GC syscall.dropImports', async t => {
   t.deepEqual(l3, {
     type: 'vatstoreGetNextKey',
     priorKey: 'vom.ir.o-1|',
-    result: 'vom.rc.o+6/1',
+    result: 'vom.rc.o+d6/1',
   });
 
   // since nothing else is holding onto it, the vat should emit a dropImports
@@ -1139,7 +1137,7 @@ test('GC dispatch.retireImports', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1171,7 +1169,7 @@ test('GC dispatch.retireExports', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1469,7 +1467,7 @@ test('GC dispatch.dropExports', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1538,7 +1536,7 @@ test('GC dispatch.retireExports inhibits syscall.retireExports', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1614,7 +1612,7 @@ test('simple promise resolution', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1658,7 +1656,7 @@ test('promise cycle', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1721,7 +1719,7 @@ test('unserializable promise resolution', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1781,7 +1779,7 @@ test('unserializable promise rejection', async t => {
     });
     return root;
   }
-  const dispatch = await makeDispatch(syscall, build, 'vatA', {
+  const { dispatch } = await makeDispatch(syscall, build, 'vatA', {
     enableDisavow: true,
   });
   log.length = 0; // assume pre-build vatstore operations are correct
@@ -1892,7 +1890,7 @@ test('result promise in args', async t => {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // ignore pre-build vatstore operations
   const rootA = 'o+0';
   const target = 'o-1';

@@ -180,8 +180,8 @@ export function makeWatchedPromiseManager(
     void Promise.resolve().then(() => {
       const watcherVref = convertValToSlot(watcher);
       assert(watcherVref, 'invalid watcher');
-      const { virtual } = parseVatSlot(watcherVref);
-      assert(virtual, 'promise watcher must be a virtual object');
+      const { virtual, durable } = parseVatSlot(watcherVref);
+      assert(virtual || durable, 'promise watcher must be a virtual object');
       if (watcher.onFulfilled) {
         assert.typeof(watcher.onFulfilled, 'function');
       }

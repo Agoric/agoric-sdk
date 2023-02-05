@@ -16,7 +16,7 @@ function getLastCollection(v) {
   // makeAndHold() uses makeScalarBigMapStore, and since we call it
   // early, it always gets "store #6", in vref o+2/6 (o+2 means
   // scalarMapStore, non-durable, and /6 means collectionID=6)
-  const vref = 'o+2/6';
+  const vref = 'o+v2/6';
   // double-check that at least the collectionID is right
   const { t, fakestore } = v;
   t.is(JSON.parse(fakestore.get('idCounters')).collectionID, 7); // last was 6
