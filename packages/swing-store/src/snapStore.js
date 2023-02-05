@@ -4,11 +4,8 @@ import { finished as finishedCallback } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { assert, details as d } from '@agoric/assert';
-import {
-  aggregateTryFinally,
-  fsStreamReady,
-  PromiseAllOrErrors,
-} from '@agoric/internal';
+import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
+import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
 
 /**
  * @typedef {object} SnapshotInfo

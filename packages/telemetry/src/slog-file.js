@@ -1,63 +1,21 @@
-import { createWriteStream } from 'fs';
-import { open } from 'fs/promises';
-import { fsStreamReady, makeAggregateError } from '@agoric/internal';
+import { makeFsStreamWriter } from '@agoric/internal/src/fs-stream.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
-const noPath = /** @type {import('fs').PathLike} */ (
-  /** @type {unknown} */ (undefined)
-);
-
-// @ts-check
 /** @param {import('./index.js').MakeSlogSenderOptions} opts */
 export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
-  if (!SLOGFILE) {
+  const stream = await makeFsStreamWriter(SLOGFILE);
+
+  if (!stream) {
     return undefined;
   }
 
-  const handle = await open(SLOGFILE, 'a');
-
-  const stream = createWriteStream(noPath, { fd: handle.fd });
-  await fsStreamReady(stream);
-
-  let flushed = Promise.resolve();
-
-  const writeNewLine = () => {
-    const written = new Promise((resolve, reject) => {
-      stream.write('\n', err => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
-    flushed = flushed.then(
-      () => written,
-      async err =>
-        Promise.reject(
-          written.then(
-            () => err,
-            writtenError => makeAggregateError([err, writtenError]),
-          ),
-        ),
-    );
-  };
-
   const slogSender = (slogObj, jsonObj = serializeSlogObj(slogObj)) => {
-    stream.write(jsonObj);
-    writeNewLine();
+    // eslint-disable-next-line prefer-template
+    void stream.write(jsonObj + '\n');
   };
 
   return Object.assign(slogSender, {
-    forceFlush: async () => {
-      await flushed;
-      await handle.sync().catch(err => {
-        if (err.code === 'EINVAL') {
-          return;
-        }
-        throw err;
-      });
-    },
+    forceFlush: async () => stream.flush(),
     usesJsonObject: true,
   });
 };

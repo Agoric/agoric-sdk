@@ -142,10 +142,48 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return flagValue;
   }
 
+  /**
+   * @param {object} options
+   * @param {string} [options.envName]
+   * @param {string} [options.flagName]
+   * @param {string} options.trueValue
+   * @returns {string | undefined}
+   */
+  function getPathFromEnv({ envName, flagName, trueValue }) {
+    let option;
+    if (envName) {
+      option = env[envName];
+    } else if (flagName) {
+      option = getFlagValue(flagName);
+    } else {
+      return undefined;
+    }
+
+    switch (option) {
+      case '0':
+      case 'false':
+      case false:
+        return undefined;
+      case '1':
+      case 'true':
+      case true:
+        return trueValue;
+      default:
+        if (option) {
+          return path.resolve(option);
+        } else if (envName && flagName) {
+          return getPathFromEnv({ flagName, trueValue });
+        } else {
+          return undefined;
+        }
+    }
+  }
+
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
   const cosmosHome = getFlagValue('home', `${homedir}/.ag-chain-cosmos`);
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
+  fs.mkdirSync(stateDBDir, { recursive: true });
 
   // console.log('Have AG_COSMOS', agcc);
 
@@ -319,7 +357,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     const {
       LMDB_MAP_SIZE,
-      SWING_STORE_TRACE,
       XSNAP_KEEP_SNAPSHOTS,
       NODE_HEAP_SNAPSHOTS = -1,
     } = env;
@@ -331,23 +368,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     const mapSize = (LMDB_MAP_SIZE && parseInt(LMDB_MAP_SIZE, 10)) || undefined;
 
-    const defaultTraceFile = path.resolve(stateDBDir, 'store-trace.log');
-    let swingStoreTraceFile;
-    switch (SWING_STORE_TRACE) {
-      case '0':
-      case 'false':
-        break;
-      case '1':
-      case 'true':
-        swingStoreTraceFile = defaultTraceFile;
-        break;
-      default:
-        if (SWING_STORE_TRACE) {
-          swingStoreTraceFile = path.resolve(SWING_STORE_TRACE);
-        } else if (getFlagValue('trace-store')) {
-          swingStoreTraceFile = defaultTraceFile;
-        }
-    }
+    const swingStoreTraceFile = getPathFromEnv({
+      envName: 'SWING_STORE_TRACE',
+      flagName: 'trace-store',
+      trueValue: path.resolve(stateDBDir, 'store-trace.log'),
+    });
 
     const keepSnapshots =
       XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
