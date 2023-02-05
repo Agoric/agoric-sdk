@@ -68,7 +68,13 @@ const argv = yargsParser(process.argv.slice(2), {
 
     // Keep all snapshots generated during the test. By default only divergent
     // snapshots are kept. Not implemented is using custom snapStore
+    // Mutually exclusive with `keepNoSnapshots`
     'keepAllSnapshots',
+
+    // Keep no snapshots generated during the test. By default only divergent
+    // snapshots are kept. Not implemented is using custom snapStore
+    // Mutually exclusive with `keepAllSnapshots`
+    'keepNoSnapshots',
 
     // Mark workers loaded from an explicit transcript load instruction as
     // being ineligible from being reaped.
@@ -139,6 +145,7 @@ const argv = yargsParser(process.argv.slice(2), {
     forcedSnapshotInterval: 1000,
     forcedReloadFromSnapshot: true,
     keepAllSnapshots: false,
+    keepNoSnapshots: false,
     keepWorkerInitial: 0,
     keepWorkerRecent: 10,
     keepWorkerInterval: 10,
@@ -161,6 +168,12 @@ const argv = yargsParser(process.argv.slice(2), {
     'greedy-arrays': true,
   },
 });
+
+if (argv.keepAllSnapshots && argv.keepNoSnapshots) {
+  throw new Error(
+    `Mutually exclusive options configured: 'keepAllSnapshots' and 'keepNoSnapshots'`,
+  );
+}
 
 /** @type {(filename: string) => Promise<string>} */
 async function fileHash(filename) {
@@ -901,7 +914,10 @@ async function replay(transcriptFile) {
           }
         }
 
-        if (!divergent && !argv.keepAllSnapshots && !argv.useCustomSnapStore) {
+        if (
+          !argv.useCustomSnapStore &&
+          (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
+        ) {
           for (const snapshotID of uniqueSnapshotIDs) {
             if (snapshotID) {
               snapStore.prepareToDelete(snapshotID);
@@ -1027,7 +1043,10 @@ async function replay(transcriptFile) {
           );
         }
 
-        if (!divergent && !argv.keepAllSnapshots && !argv.useCustomSnapStore) {
+        if (
+          !argv.useCustomSnapStore &&
+          (argv.keepNoSnapshots || (!divergent && !argv.keepAllSnapshots))
+        ) {
           for (const snapshotID of uniqueSnapshotIDs) {
             if (snapshotID) {
               snapStore.prepareToDelete(snapshotID);
