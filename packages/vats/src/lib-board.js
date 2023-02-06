@@ -272,7 +272,12 @@ export const prepareBoardKit = baggage => {
           return getValue(id, this.state);
         },
         /**
-         * Adapter for NameHub lookup() protocol.
+         * Convenience method for recursively traversing boards and
+         * board-like remotables to get data associated with a sequence of ids
+         * corresponding to each successive board.
+         * For example, `lookup("foo", "bar")` gets the value associated with
+         * id "foo" and returns the result of invoking `lookup("bar")` upon it
+         * to get the value it associates with id "bar".
          *
          * @param  {...string} path
          */
