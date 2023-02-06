@@ -13,7 +13,12 @@ export {
   startLienBridge,
   startStakeFactory,
 } from './econ-behaviors.js';
-export * from './sim-behaviors.js';
+export {
+  connectFaucet,
+  fundAMM,
+  installSimEgress,
+  grantRunBehaviors,
+} from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
 export {
