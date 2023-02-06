@@ -119,6 +119,63 @@ func marshal(event vm.Jsonable) ([]byte, error) {
 	return json.Marshal(event)
 }
 
+// HandleCall implements the Handler interface.
+func (ch portHandler) HandleCall(ctx *vm.ControllerContext, method string, params []json.RawMessage) (json.RawMessage, json.RawMessage) {
+	switch method {
+	case "VBANK_GET_BALANCE":
+		if len(params) != 1 {
+			return json.RawMessage(`null`), json.RawMessage(`"wrong number of arguments"`)
+		}
+		var msg portMessage
+		err := json.Unmarshal(params[0], &msg)
+		if err != nil {
+			errmsg := "cannot convert parameter: " + err.Error()
+			bz, err := json.Marshal(errmsg)
+			if err != nil {
+				return json.RawMessage(`null`), json.RawMessage(`"cannot marshal string"`)
+			}
+			return json.RawMessage(`null`), json.RawMessage(bz)
+		}
+		res, err := ch.getBalance(ctx, msg)
+		if err != nil {
+			errmsg := err.Error()
+			bz, err := json.Marshal(errmsg)
+			if err != nil {
+				return json.RawMessage(`null`), json.RawMessage(`"cannot marshal string"`)
+			}
+			return json.RawMessage(`null`), json.RawMessage(bz)
+		}
+		bz, err := json.Marshal(&res)
+		if err != nil {
+			errmsg := "cannot convert parameter: " + err.Error()
+			bz, err := json.Marshal(errmsg)
+			if err != nil {
+				return json.RawMessage(`null`), json.RawMessage(`"cannot marshal string"`)
+			}
+			return json.RawMessage(`null`), json.RawMessage(bz)
+		}
+		return json.RawMessage(bz), json.RawMessage(`null`)
+
+	case "VBANK_GRAB":
+	case "VBANK_GIVE":
+	case "VBANK_GET_MODULE_ACCOUNT_ADDRESS":
+
+	}
+	return json.RawMessage(`null`), json.RawMessage(`"unknown method"`)
+}
+
+func (ch portHandler) getBalance(ctx *vm.ControllerContext, msg portMessage) (string, error) {
+	addr, err := sdk.AccAddressFromBech32(msg.Address)
+	if err != nil {
+		return "", fmt.Errorf("cannot convert %s to address: %w", msg.Address, err)
+	}
+	if err = sdk.ValidateDenom(msg.Denom); err != nil {
+		return "", fmt.Errorf("invalid denom %s: %w", msg.Denom, err)
+	}
+	coin := ch.keeper.GetBalance(ctx.Context, addr, msg.Denom)
+	return coin.Amount.String(), nil
+}
+
 func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string, err error) {
 	// fmt.Println("vbank.go downcall", str)
 	keeper := ch.keeper
