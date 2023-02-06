@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 
 // Object/promise references (in the kernel) contain a two-tuple of (type,

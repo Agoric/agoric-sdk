@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;

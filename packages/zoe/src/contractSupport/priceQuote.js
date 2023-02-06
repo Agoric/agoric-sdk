@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';
 
 // PriceAuthorities return quotes as a pair of an amount and a payment, both

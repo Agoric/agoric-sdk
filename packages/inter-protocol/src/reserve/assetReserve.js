@@ -217,6 +217,7 @@ const start = async (zcf, privateArgs, baggage) => {
   /**
    * @param {MethodContext} context
    * @param {Brand<'nat'>} ammSecondaryBrand
+   * @returns {Promise<void>}
    */
   const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
     assert(

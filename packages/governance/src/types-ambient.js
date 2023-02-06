@@ -438,6 +438,7 @@
 /**
  * @callback UpdateParams
  * @param {Record<string,ParamValue>} paramChanges
+ * @returns {Promise<void>}
  */
 
 /**

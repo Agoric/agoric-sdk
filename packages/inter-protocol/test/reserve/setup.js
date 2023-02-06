@@ -106,6 +106,8 @@ export const setupReserveServices = async (
   const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(await feeMintAccess);
 
+  /** @type {Promise<import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<import('../../src/reserve/assetReserve.js').start>['creatorFacet']>} */
+  // @ts-expect-error cast for testing env
   const governorCreatorFacet = E.get(consume.reserveKit).governorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
@@ -116,10 +118,8 @@ export const setupReserveServices = async (
   };
   const governedInstance = E(governorPublicFacet).getGovernedContract();
 
-  /** @type { AssetReservePublicFacet } */
   const reservePublicFacet = await E(governorCreatorFacet).getPublicFacet();
 
-  /** @type {ReserveKit} */
   const reserve = {
     reserveCreatorFacet: await E.get(consume.reserveKit).creatorFacet,
     reservePublicFacet,

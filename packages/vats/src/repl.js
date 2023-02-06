@@ -3,7 +3,7 @@ import { isPromise } from '@endo/promise-kit';
 import { E, Far } from '@endo/far';
 import * as farExports from '@endo/far';
 
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 
 const UNJSONABLES = new Map([
   [NaN, 'NaN'],
