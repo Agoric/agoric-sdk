@@ -9,7 +9,7 @@ import {
   makeScalarBigMapStore,
   provideDurableMapStore,
   prepareExo,
-  prepareKind,
+  prepareExoClass,
 } from '@agoric/vat-data';
 
 import { cleanProposal } from '../cleanProposal.js';
@@ -27,7 +27,7 @@ import '../internal-types.js';
 import './internal-types.js';
 
 import '@agoric/swingset-vat/src/types-ambient.js';
-import { InvitationHandleShape } from '../typeGuards.js';
+import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 
 const { Fail } = assert;
 
@@ -154,12 +154,14 @@ export const makeZCFZygote = async (
 
   // handleOfferObject gives Zoe the ability to notify ZCF when a new seat is
   // added in offer(). ZCF responds with the exitObj and offerResult.
-  const makeHandleOfferObj = prepareKind(
+  const makeHandleOfferObj = prepareExoClass(
     zcfBaggage,
     'handleOfferObj',
+    HandleOfferI,
     offerHandlerTaker => ({ offerHandlerTaker }),
     {
-      handleOffer: ({ state }, invitationHandle, seatData) => {
+      handleOffer(invitationHandle, seatData) {
+        const { state } = this;
         const zcfSeat = seatManager.makeZCFSeat(seatData);
         // TODO: provide a details that's a better diagnostic for the
         // ephemeral offerHandler that did not survive upgrade.

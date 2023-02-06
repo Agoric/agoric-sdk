@@ -4,8 +4,8 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   prepareExoClassKit,
-  prepareKind,
   provide,
+  prepareExoClass,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
@@ -17,7 +17,7 @@ import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import {
   AmountKeywordRecordShape,
-  ProposalShape,
+  SeatDataShape,
   SeatShape,
 } from '../typeGuards.js';
 
@@ -135,29 +135,37 @@ export const createSeatManager = (
     }
   };
 
-  const makeZCFSeatInternal = prepareKind(
+  const ZCFSeatI = M.interface('ZCFSeat', {}, { sloppy: true });
+
+  const makeZCFSeatInternal = prepareExoClass(
     zcfBaggage,
     'zcfSeat',
+    ZCFSeatI,
     proposal => ({ proposal }),
     {
-      getSubscriber: ({ self }) => {
+      getSubscriber() {
+        const { self } = this;
         return E(zoeInstanceAdmin).getExitSubscriber(
           zcfSeatToSeatHandle.get(self),
         );
       },
-      getProposal: ({ state }) => state.proposal,
-      exit: ({ self }, completion) => {
+      getProposal() {
+        const { state } = this;
+        return state.proposal;
+      },
+      exit(completion) {
+        const { self } = this;
         assertActive(self);
         assertNoStagedAllocation(self);
         doExitSeat(self);
         E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
       },
-      fail: (
-        { self },
+      fail(
         reason = new Error(
           'Seat exited with failure. Please check the log for more information.',
         ),
-      ) => {
+      ) {
+        const { self } = this;
         if (typeof reason === 'string') {
           reason = Error(reason);
           assert.note(
@@ -174,9 +182,13 @@ export const createSeatManager = (
         }
         return reason;
       },
-      hasExited: ({ self }) => hasExited(self),
+      hasExited() {
+        const { self } = this;
+        return hasExited(self);
+      },
 
-      getAmountAllocated: ({ self }, keyword, brand) => {
+      getAmountAllocated(keyword, brand) {
+        const { self } = this;
         assertActive(self);
         const currentAllocation = getCurrentAllocation(self);
         if (currentAllocation[keyword] !== undefined) {
@@ -189,9 +201,16 @@ export const createSeatManager = (
         const assetKind = getAssetKindByBrand(brand);
         return AmountMath.makeEmpty(brand, assetKind);
       },
-      getCurrentAllocation: ({ self }) => getCurrentAllocation(self),
-      getStagedAllocation: ({ self }) => getStagedAllocation(self),
-      isOfferSafe: ({ state, self }, newAllocation) => {
+      getCurrentAllocation() {
+        const { self } = this;
+        return getCurrentAllocation(self);
+      },
+      getStagedAllocation() {
+        const { self } = this;
+        return getStagedAllocation(self);
+      },
+      isOfferSafe(newAllocation) {
+        const { state, self } = this;
         assertActive(self);
         const currentAllocation = getCurrentAllocation(self);
         const reallocation = harden({
@@ -201,7 +220,8 @@ export const createSeatManager = (
 
         return isOfferSafe(state.proposal, reallocation);
       },
-      incrementBy: ({ self }, amountKeywordRecord) => {
+      incrementBy(amountKeywordRecord) {
+        const { self } = this;
         assertActive(self);
         amountKeywordRecord = coerceAmountKeywordRecord(
           amountKeywordRecord,
@@ -213,7 +233,8 @@ export const createSeatManager = (
         );
         return amountKeywordRecord;
       },
-      decrementBy: ({ self }, amountKeywordRecord) => {
+      decrementBy(amountKeywordRecord) {
+        const { self } = this;
         assertActive(self);
         amountKeywordRecord = coerceAmountKeywordRecord(
           amountKeywordRecord,
@@ -228,12 +249,16 @@ export const createSeatManager = (
         );
         return amountKeywordRecord;
       },
-      clear: ({ self }) => {
+      clear() {
+        const { self } = this;
         if (zcfSeatToStagedAllocations.has(self)) {
           zcfSeatToStagedAllocations.delete(self);
         }
       },
-      hasStagedAllocation: ({ self }) => hasStagedAllocation(self),
+      hasStagedAllocation() {
+        const { self } = this;
+        return hasStagedAllocation(self);
+      },
     },
   );
 
@@ -245,14 +270,7 @@ export const createSeatManager = (
 
   const ZcfSeatManagerIKit = harden({
     seatManager: M.interface('ZcfSeatManager', {
-      makeZCFSeat: M.call(
-        M.partial({
-          proposal: ProposalShape,
-          initialAllocation: AmountKeywordRecordShape,
-          seatHandle: SeatShape,
-          offerArgs: M.any(),
-        }),
-      ).returns(M.remotable('zcfSeat')),
+      makeZCFSeat: M.call(SeatDataShape).returns(M.remotable('zcfSeat')),
       reallocate: M.call(M.remotable('zcfSeat'), M.remotable('zcfSeat'))
         .rest(M.arrayOf(M.remotable('zcfSeat')))
         .returns(),
