@@ -67,3 +67,4 @@ export const makePublicTopic = (description, subscriber, storageNode) => {
     storagePath: E(storageNode).getPath(),
   };
 };
+harden(makePublicTopic);

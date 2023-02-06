@@ -22,6 +22,17 @@ export {
   // Consider deprecating or not reexporting
   makeAsyncIterableFromNotifier,
 } from './asyncIterableAdaptor.js';
-export * from './storesub.js';
-export * from './stored-notifier.js';
-export * from './stored-topic.js';
+export {
+  forEachPublicationRecord,
+  makeStoredSubscriber,
+  makeStoredSubscription,
+  makeStoredPublisherKit,
+  makeStoredPublishKit,
+} from './storesub.js';
+export { makeStoredNotifier } from './stored-notifier.js';
+export {
+  PublicTopicShape,
+  TopicsRecordShape,
+  pipeTopicToStorage,
+  makePublicTopic,
+} from './stored-topic.js';

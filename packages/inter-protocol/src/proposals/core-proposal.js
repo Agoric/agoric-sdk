@@ -3,12 +3,36 @@ import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 import * as simBehaviors from './sim-behaviors.js';
 
-export * from './econ-behaviors.js';
+export {
+  startInterchainPool,
+  setupAmm,
+  setupReserve,
+  startVaultFactory,
+  grantVaultFactoryControl,
+  startRewardDistributor,
+  startLienBridge,
+  startStakeFactory,
+} from './econ-behaviors.js';
 export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
-export * from './startPSM.js'; // eslint-disable-line import/export
-export * from './startEconCommittee.js'; // eslint-disable-line import/export
+export {
+  inviteCommitteeMembers,
+  startEconCharter,
+  inviteToEconCharter,
+  startPSM,
+  makeAnchorAsset,
+  installGovAndPSMContracts,
+  PSM_GOV_MANIFEST,
+  INVITE_PSM_COMMITTEE_MANIFEST,
+  PSM_MANIFEST,
+  getManifestForPsmGovernance,
+  getManifestForPsm,
+} from './startPSM.js'; // eslint-disable-line import/export
+export {
+  startEconomicCommittee,
+  ECON_COMMITTEE_MANIFEST,
+} from './startEconCommittee.js'; // eslint-disable-line import/export
 
 /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({

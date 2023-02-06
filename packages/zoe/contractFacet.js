@@ -1,1 +1,1 @@
-export * from './src/contractFacet/vatRoot.js';
+export { buildRootObject } from './src/contractFacet/vatRoot.js';

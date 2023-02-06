@@ -336,7 +336,8 @@ export const PromiseAllOrErrors = async values => {
  *   trier: () => Promise<T>,
  *  finalizer: (error?: unknown) => Promise<void>,
  * ) => Promise<T>}
- */ export const aggregateTryFinally = async (trier, finalizer) =>
+ */
+export const aggregateTryFinally = async (trier, finalizer) =>
   trier().then(
     async result => finalizer().then(() => result),
     async tryError =>

@@ -13,7 +13,7 @@ const { quote: q, Fail } = assert;
  *
  * @type {{ NAT: 'nat', SET: 'set', COPY_SET: 'copySet', COPY_BAG: 'copyBag' }}
  */
-const AssetKind = harden({
+export const AssetKind = harden({
   NAT: 'nat',
   SET: 'set',
   COPY_SET: 'copySet',
@@ -25,7 +25,7 @@ const assetKindNames = harden(Object.values(AssetKind).sort());
  *
  * @param {AssetKind} allegedAK
  */
-const assertAssetKind = allegedAK => {
+export const assertAssetKind = allegedAK => {
   assetKindNames.includes(allegedAK) ||
     Fail`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`;
 };
@@ -200,7 +200,7 @@ const isGTE = (leftAmount, rightAmount, brand = undefined) => {
  * payments. They can be used to represent things like currency, stock, and the
  * abstract right to participate in a particular exchange.
  */
-const AmountMath = {
+export const AmountMath = {
   /**
    * Make an amount from a value by adding the brand.
    *
@@ -380,12 +380,10 @@ harden(AmountMath);
  *
  * @param {Amount} amount
  */
-const getAssetKind = amount => {
+export const getAssetKind = amount => {
   assertRecord(amount, 'amount');
   const { value } = amount;
   // @ts-expect-error cast (ignore b/c erroring in CI but not my IDE)
   return assertValueGetAssetKind(value);
 };
 harden(getAssetKind);
-
-export { AmountMath, AssetKind, getAssetKind, assertAssetKind };

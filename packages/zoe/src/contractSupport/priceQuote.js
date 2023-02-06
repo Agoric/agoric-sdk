@@ -18,13 +18,19 @@ export const getPriceDescription = quote => {
   );
   return quote.quoteAmount.value[0];
 };
+harden(getPriceDescription);
 
 /** @param {PriceQuote} quote */
 export const getAmountIn = quote => getPriceDescription(quote).amountIn;
+harden(getAmountIn);
+
 /** @param {PriceQuote} quote */
 export const getAmountOut = quote => getPriceDescription(quote).amountOut;
+harden(getAmountOut);
+
 /** @type {(quote: PriceQuote) => import('@agoric/time/src/types').Timestamp} */
 export const getTimestamp = quote => getPriceDescription(quote).timestamp;
+harden(getTimestamp);
 
 /** @param {Brand<'nat'>} brand */
 export const unitAmount = async brand => {

@@ -6,17 +6,28 @@ export {
   calcSecondaryRequired,
 } from './bondingCurves.js';
 
-export * from './durability.js';
+export {
+  makeEphemeraProvider,
+  makeStorageNodePathProvider,
+  provideEmptySeat,
+  provideChildBaggage,
+} from './durability.js';
 
-export * from './priceAuthority.js';
+export { makeOnewayPriceAuthorityKit } from './priceAuthority.js';
 
-export * from './priceQuote.js';
+export {
+  getPriceDescription,
+  getAmountIn,
+  getAmountOut,
+  getTimestamp,
+  unitAmount,
+} from './priceQuote.js';
 
 export { natSafeMath } from './safeMath.js';
 
 export { makeStateMachine } from './stateMachine.js';
 
-export * from './statistics.js';
+export { calculateMedian } from './statistics.js';
 
 export {
   atomicRearrange,

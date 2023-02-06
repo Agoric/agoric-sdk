@@ -1,5 +1,22 @@
 /// <reference types="ses"/>
 
-export * from './config.js';
-export * from './debug.js';
-export * from './utils.js';
+export { BridgeId, WalletName } from './config.js';
+export { makeTracer } from './debug.js';
+export {
+  fromUniqueEntries,
+  objectMap,
+  listDifference,
+  throwLabeled,
+  applyLabelingError,
+  getMethodNames,
+  bindAllMethods,
+  deeplyFulfilledObject,
+  makeMeasureSeconds,
+  makeAggregateError,
+  PromiseAllOrErrors,
+  aggregateTryFinally,
+  assertAllDefined,
+  forever,
+  whileTrue,
+  untilTrue,
+} from './utils.js';

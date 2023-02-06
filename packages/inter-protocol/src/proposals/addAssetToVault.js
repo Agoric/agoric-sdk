@@ -5,7 +5,19 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
 import { reserveThenGetNames } from './utils.js';
 
-export * from './startPSM.js';
+export {
+  inviteCommitteeMembers,
+  startEconCharter,
+  inviteToEconCharter,
+  startPSM,
+  makeAnchorAsset,
+  installGovAndPSMContracts,
+  PSM_GOV_MANIFEST,
+  INVITE_PSM_COMMITTEE_MANIFEST,
+  PSM_MANIFEST,
+  getManifestForPsmGovernance,
+  getManifestForPsm,
+} from './startPSM.js';
 
 /**
  * @typedef {object} InterchainAssetOptions

@@ -1,2 +1,10 @@
-export * from './src/timeMath.js';
-export * from './src/typeGuards.js';
+export { TimeMath } from './src/timeMath.js';
+export {
+  TimerBrandShape,
+  TimestampValueShape,
+  RelativeTimeValueShape,
+  TimestampRecordShape,
+  RelativeTimeRecordShape,
+  TimestampShape,
+  RelativeTimeShape,
+} from './src/typeGuards.js';
