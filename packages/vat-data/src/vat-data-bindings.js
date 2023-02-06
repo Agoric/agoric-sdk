@@ -1,22 +1,7 @@
 /* global globalThis */
 
 import { assert } from '@agoric/assert';
-import {
-  M,
-  makeScalarMapStore,
-  makeScalarWeakMapStore,
-  makeScalarSetStore,
-  makeScalarWeakSetStore,
-  provideLazy,
-} from '@agoric/store';
-
-export {
-  M,
-  makeScalarMapStore,
-  makeScalarWeakMapStore,
-  makeScalarSetStore,
-  makeScalarWeakSetStore,
-};
+import { provideLazy } from '@agoric/store';
 
 /** @type {import('./types').VatData} */
 let VatDataGlobal;
