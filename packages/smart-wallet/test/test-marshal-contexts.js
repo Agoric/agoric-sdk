@@ -7,7 +7,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import {
   makeExportContext,
   makeImportContext,
-} from '@agoric/smart-wallet/src/marshal-contexts.js';
+} from '../src/marshal-contexts.js';
 
 /** @param {ReturnType<typeof makeBoard>} board */
 const makeAMM = board => {
@@ -119,7 +119,7 @@ test('ensureBoardId allows re-registration; initBoardId does not', t => {
   t.throws(() => context.initBoardId('board012', brandM));
 });
 
-test('makeExportContext.serialize handles unregistered identites', t => {
+test('makeExportContext.serialize handles unregistered identities', t => {
   const brand = Far('Zoe invitation brand', {});
   const instance = Far('amm instance', {});
   const invitationAmount = harden({ brand, value: [{ instance }] });

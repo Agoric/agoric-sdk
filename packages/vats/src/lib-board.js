@@ -199,14 +199,10 @@ const makeSlotToVal = state => {
   return slotToVal;
 };
 
-/**
- * @typedef {ReturnType<typeof makeMarshal<string>>} StringSlotMarshaller
- * TODO make Marshall type generic on slot
- */
-
+// TODO make Marshaller type generic on slot
 /**
  * @param {BoardState} state
- * @returns {StringSlotMarshaller}
+ * @returns {ReturnType<typeof makeMarshal<string?>>}
  */
 const makeReadonlyMarshaller = state => {
   const { valToId } = state;
@@ -225,7 +221,7 @@ const makeReadonlyMarshaller = state => {
 
 /**
  * @param {BoardState} state
- * @returns {StringSlotMarshaller}
+ * @returns {ReturnType<typeof makeMarshal<string>>}
  */
 const makePublishingMarshaller = state => {
   const slotToVal = makeSlotToVal(state);
