@@ -162,13 +162,10 @@ export const prepareVaultManagerKit = (
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
-  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
-    makeVaultManagerPublishKit();
-
   /** @type {PublishKit<AssetState>} */
   const { publisher: assetPublisher, subscriber: assetSubscriber } =
     makeVaultManagerPublishKit();
-  pipeTopicToStorage(metricsSubscriber, storageNode, marshaller);
+  pipeTopicToStorage(assetSubscriber, storageNode, marshaller);
 
   /** @type {MapStore<string, Vault>} */
   const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
@@ -178,6 +175,8 @@ export const prepareVaultManagerKit = (
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
+  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
+    makeVaultManagerPublishKit();
   pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
   const storedQuotesNotifier = makeStoredNotifier(

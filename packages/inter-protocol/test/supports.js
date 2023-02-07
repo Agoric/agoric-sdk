@@ -233,8 +233,8 @@ export const subscriptionKey = subscription => {
 export const topicPath = (hasTopics, subscriberName) => {
   return E(hasTopics)
     .getPublicTopics()
-    .then(subscribers => subscribers[subscriberName])
-    .then(tr => tr.storagePath);
+    .then(topics => topics[subscriberName])
+    .then(t => t.storagePath);
 };
 
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
@@ -242,4 +242,31 @@ export const headValue = async subscriber => {
   await eventLoopIteration();
   const record = await E(subscriber).subscribeAfter();
   return record.head.value;
+};
+
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {string} topicName
+ * @param {string} path
+ * @param {string[]} [dataKeys]
+ */
+export const assertTopicPathData = async (
+  t,
+  hasTopics,
+  topicName,
+  path,
+  dataKeys,
+) => {
+  const topic = await E(hasTopics)
+    .getPublicTopics()
+    .then(topics => topics[topicName]);
+  t.is(await topic.storagePath, path, 'topic storagePath must match');
+  const latest = /** @type {Record<string, unknown>} */ (
+    await headValue(topic.subscriber)
+  );
+  if (dataKeys !== undefined) {
+    // TODO consider making this a shape instead
+    t.deepEqual(Object.keys(latest), dataKeys, 'keys in topic feed must match');
+  }
 };
