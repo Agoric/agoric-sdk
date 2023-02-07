@@ -61,14 +61,14 @@ There are three basic categories of exports (cf. [A Taxonomy of Exo-making Funct
 
 During the upgrade phase, v2 code is obligated to re-define all durable Kinds created by v1 (i.e., those associated with objects in the third category). Once complete, this allows liveslots to satisfy deserialization of any inbound message addressed to (or referencing) a previously-exported durable object.
 
-As a special case, the root object returned from v2's `buildRootObject()` is automatically associated with exportID `o+0` (see [How Liveslots Uses the Vatstore](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/src/vatstore-usage.md#counters)).
+As a special case, the root object returned from v2's `buildRootObject()` is automatically associated with exportID `o+0` (see [How Liveslots Uses the Vatstore](../../swingset-liveslots/src/vatstore-usage.md#counters)).
 
 ## Durable State
 
 The v2 code runs in a brand new JavaScript environment; nothing is carried over from the RAM image of the v1 vat. To fulfill its obligations, v1 must arrange to deliver data and imported object references to v2. This uses two mechanisms: durable storage, and the "baggage" (better name TBD).
 
 Vat code has access to three categories of collection objects, each of which offers both Map and Set collections in both strong and weak forms. The simplest category consists of "_heap_" collections provided by JavaScript as `Map`, `Set`, `WeakMap`, and `WeakSet`; their data is held only in RAM.
-The second two categories are both referred to as "[Stores](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/src/vatstore-usage.md#virtualdurable-collections-aka-stores)"; they are created by `makeScalarBigMapStore()`, `makeScalarBigWeakMapStore()`, `makeScalarBigSetStore()`, or `makeScalarBigWeakSetStore()`, and their contents are held in disk-based storage. What differentiates the second two categories from each other is use of the `durable` option: when it is false, the collection is "_[merely-]virtual_" and not preserved across upgrade, but when it is true, the collection is "_durable_" and **is** preserved. Durable collections can only hold durable objects.
+The second two categories are both referred to as "[Stores](../../swingset-liveslots/src/vatstore-usage.md#virtualdurable-collections-aka-stores)"; they are created by `makeScalarBigMapStore()`, `makeScalarBigWeakMapStore()`, `makeScalarBigSetStore()`, or `makeScalarBigWeakSetStore()`, and their contents are held in disk-based storage. What differentiates the second two categories from each other is use of the `durable` option: when it is false, the collection is "_[merely-]virtual_" and not preserved across upgrade, but when it is true, the collection is "_durable_" and **is** preserved. Durable collections can only hold durable objects.
 
 Heap and merely-virtual collections are _ephemeral_ and discarded during upgrade. More precisely, the v2 code has no way to reach anything but durable data, so even if the kernel did not delete the DB records, the v2 code could not ever read them.
 
@@ -100,7 +100,7 @@ To enable upgrade, the v1 code must stash important data in durable storage, and
 
 For upgrade-important in-RAM objects, the v1 code needs to store a "reattachment handle" (name and API TBD) in durable storage. This gives the v2 code the authority to take over the identity of these exported objects.
 
-For upgrade-important durable objects, the v1 code must store the "durable kind handle" in durable storage. This is done automatically by `prepareExoClass()` and `prepareExoClassKit()`, but can also be done manually (see [Virtual and Durable Objects](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md#virtual-and-durable-objects)).
+For upgrade-important durable objects, the v1 code must store the "durable kind handle" in durable storage. This is done automatically by `prepareExoClass()` and `prepareExoClassKit()`, but can also be done manually (see [Virtual and Durable Objects](./virtual-objects.md#virtual-and-durable-objects)).
 
 ```js
 import { M } from '@agoric/store';
