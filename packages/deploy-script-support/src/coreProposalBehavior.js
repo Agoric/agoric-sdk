@@ -22,7 +22,7 @@ export const permits = {
  * definitions.
  *
  * @param {object} opts
- * @param {{ bundleName: string?, bundleID: string?}} opts.manifestInstallRef
+ * @param {{ bundleName?: string, bundleID?: string}} opts.manifestInstallRef
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
@@ -66,7 +66,7 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
-    const defaultRestoreRef = async (args) => {
+    const defaultRestoreRef = async args => {
       let p;
       if (args.bundleName) {
         p = E(vatAdminSvc).getNamedBundleID(args.bundleName);

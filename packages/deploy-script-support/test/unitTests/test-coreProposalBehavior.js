@@ -13,7 +13,7 @@ import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 // test doesn't exercise that.
 
 test.failing('coreProposalBehavior', async t => {
-  const manifestInstallRef = 'manifestInstallRef';
+  const manifestInstallRef = { bundleID: 'manifestInstallRef' };
   /** @type {[string, ...unknown[]]} */
   const getManifestCall = ['getManifestForTest', 'arg1', 'arg2'];
   const behavior = makeCoreProposalBehavior({
@@ -35,6 +35,7 @@ test.failing('coreProposalBehavior', async t => {
     bParams: 'bparms',
     cParams: 'cparms',
     evaluateInstallation: inst => {
+      // XX replace with evaluateBundleCap
       t.is(inst, 'boardValue:manifestInstallRef');
       return {
         fromInstallation: inst,
