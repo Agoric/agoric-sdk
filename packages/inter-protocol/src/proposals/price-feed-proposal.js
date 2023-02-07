@@ -86,7 +86,7 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregator.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
  */
 export const createPriceFeed = async (
   {
@@ -128,7 +128,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [

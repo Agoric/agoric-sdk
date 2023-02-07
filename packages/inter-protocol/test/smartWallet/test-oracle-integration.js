@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { INVITATION_MAKERS_DESC } from '../../src/price/priceAggregatorChainlink.js';
+import { INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregator.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { makeDefaultTestContext } from './contexts.js';
@@ -88,7 +88,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
 
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
+  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
