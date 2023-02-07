@@ -17,6 +17,7 @@ test('coveredCall service upgrade', async t => {
     // defaultReapInterval: 1,
     vats: {
       bootstrap: {
+        // TODO refactor to use bootstrap-relay.js
         sourceSpec: bfile('bootstrap-coveredCall-service-upgrade.js'),
       },
       zoe: { sourceSpec: bfile('./vat-zoe.js') },
