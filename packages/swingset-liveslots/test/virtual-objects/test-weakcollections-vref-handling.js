@@ -45,7 +45,7 @@ test('weakMap vref handling', async t => {
 
   checkMap('o-1', 'imported presence', true);
   checkMap('o+2', 'exported remotable', false);
-  checkMap('o+3/4', 'exported virtual object', true);
+  checkMap('o+v3/4', 'exported virtual object', true);
   checkMap('p-5', 'imported promise', false);
   checkMap('p+6', 'exported promise', false);
   checkMap('d-7', 'imported device', false);
@@ -71,7 +71,7 @@ test('weakMap vref handling', async t => {
 
   checkSet('o-8', true);
   checkSet('o+9', false);
-  checkSet('o+10/11', true);
+  checkSet('o+v10/11', true);
   checkSet('p-12', false);
   checkSet('p+13', false);
   checkSet('d-14', false);

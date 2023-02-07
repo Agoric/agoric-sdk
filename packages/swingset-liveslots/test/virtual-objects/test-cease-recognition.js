@@ -49,10 +49,10 @@ test('only enumerate virtual objects', async t => {
   // checked, not the baseref
   vrm.registerKind('5');
   vrm.rememberFacetNames('5', ['facet0', 'facet1']);
-  vrm.ceaseRecognition('o+5/2');
-  weakKeyCheck(t, log, 'o+5/2:0');
-  weakKeyCheck(t, log, 'o+5/2:1');
-  // skips 'vom.ir.o+5/2|'
+  vrm.ceaseRecognition('o+v5/2');
+  weakKeyCheck(t, log, 'o+v5/2:0');
+  weakKeyCheck(t, log, 'o+v5/2:1');
+  // skips 'vom.ir.o+v5/2|'
   t.is(log.length, 0);
 
   // retiring an import does the weak-key check, even though the ID

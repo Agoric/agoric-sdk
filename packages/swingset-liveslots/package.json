@@ -29,6 +29,7 @@
     "@endo/promise-kit": "^0.2.52"
   },
   "peerDependencies": {
+    "@endo/far": "^0.2.14",
     "@endo/ses-ava": "^0.2.36",
     "ava": "^5.1.0"
   },

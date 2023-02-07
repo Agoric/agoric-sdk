@@ -129,7 +129,6 @@ export async function makeDispatch(
   build,
   vatID = 'vatA',
   liveSlotsOptions = {},
-  returnTestHooks,
 ) {
   const gcTools = harden({
     WeakRef,
@@ -150,10 +149,7 @@ export async function makeDispatch(
     },
   );
   await dispatch(['startVat', kser()]);
-  if (returnTestHooks) {
-    returnTestHooks[0] = testHooks;
-  }
-  return dispatch;
+  return { dispatch, testHooks };
 }
 
 function makeRPMaker() {
@@ -173,15 +169,12 @@ export async function setupTestLiveslots(
 ) {
   const { log, syscall, fakestore } = buildSyscall(skipLogging);
   const nextRP = makeRPMaker();
-  const th = [];
-  const dispatch = await makeDispatch(
+  const { dispatch, testHooks } = await makeDispatch(
     syscall,
     buildRootObject,
     vatName,
     { virtualObjectCacheSize: 0 },
-    th,
   );
-  const [testHooks] = th;
 
   async function dispatchMessage(message, ...args) {
     const rp = nextRP();

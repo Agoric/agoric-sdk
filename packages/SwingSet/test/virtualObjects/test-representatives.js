@@ -118,13 +118,13 @@ test.serial('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function dataKey(num) {
-    return `v1.vs.vom.o+10/${num}`;
+    return `v1.vs.vom.o+v10/${num}`;
   }
   function esKey(num) {
-    return `v1.vs.vom.es.o+10/${num}`;
+    return `v1.vs.vom.es.o+v10/${num}`;
   }
   function rcKey(num) {
-    return `v1.vs.vom.rc.o+10/${num}`;
+    return `v1.vs.vom.rc.o+v10/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
@@ -367,7 +367,7 @@ test('virtual object gc', async t => {
   }
   // prettier-ignore
   t.deepEqual(remainingVOs, {
-    [`${v}.vs.baggageID`]: 'o+6/1',
+    [`${v}.vs.baggageID`]: 'o+d6/1',
     [`${v}.vs.idCounters`]: '{"exportID":11,"collectionID":5,"promiseID":8}',
     [`${v}.vs.kindIDID`]: '1',
     [`${v}.vs.storeKindIDTable`]:
@@ -388,17 +388,17 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.4.|label`]: 'watchedPromises',
     [`${v}.vs.vc.4.|nextOrdinal`]: '1',
     [`${v}.vs.vc.4.|schemata`]: vstr([M.string()]),
-    [`${v}.vs.vom.es.o+10/3`]: 'r',
-    [`${v}.vs.vom.o+10/2`]: `{"label":${vstr('thing #2')}}`,
-    [`${v}.vs.vom.o+10/3`]: `{"label":${vstr('thing #3')}}`,
-    [`${v}.vs.vom.o+10/8`]: `{"label":${vstr('thing #8')}}`,
-    [`${v}.vs.vom.o+10/9`]: `{"label":${vstr('thing #9')}}`,
-    [`${v}.vs.vom.rc.o+6/1`]: '1',
-    [`${v}.vs.vom.rc.o+6/3`]: '1',
-    [`${v}.vs.vom.rc.o+6/4`]: '1',
+    [`${v}.vs.vom.es.o+v10/3`]: 'r',
+    [`${v}.vs.vom.o+v10/2`]: `{"label":${vstr('thing #2')}}`,
+    [`${v}.vs.vom.o+v10/3`]: `{"label":${vstr('thing #3')}}`,
+    [`${v}.vs.vom.o+v10/8`]: `{"label":${vstr('thing #8')}}`,
+    [`${v}.vs.vom.o+v10/9`]: `{"label":${vstr('thing #9')}}`,
+    [`${v}.vs.vom.rc.o+d6/1`]: '1',
+    [`${v}.vs.vom.rc.o+d6/3`]: '1',
+    [`${v}.vs.vom.rc.o+d6/4`]: '1',
     [`${v}.vs.vom.vkind.10`]: '{"kindID":"10","tag":"thing"}',
-    [`${v}.vs.watchedPromiseTableID`]: 'o+6/4',
-    [`${v}.vs.watcherTableID`]: 'o+6/3',
+    [`${v}.vs.watchedPromiseTableID`]: 'o+d6/4',
+    [`${v}.vs.watcherTableID`]: 'o+d6/3',
   });
 });
 

@@ -32,7 +32,7 @@ test.serial('exercise baggage', async t => {
   console.log(`baggageID`, baggageID);
   const kindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
   // baggage is the first collection created, a scalarDurableMapStore
-  t.is(baggageVref, `o+${kindIDs.scalarDurableMapStore}/1`);
+  t.is(baggageVref, `o+d${kindIDs.scalarDurableMapStore}/1`);
   t.is(fakestore.get(`vc.${baggageID}.|label`), 'baggage');
   const outsideVal = fakestore.get(`vc.${baggageID}.soutside`);
   t.is(outsideVal, vstr('outer val'));

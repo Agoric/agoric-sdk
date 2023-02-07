@@ -91,7 +91,10 @@ function identifyExportedFacets(vrefSet, { syscall, vrm }) {
     const value = syscall.vatstoreGet(key);
     const baseRef = key.slice(prefix.length);
     const parsed = parseVatSlot(baseRef);
-    assert(parsed.virtual && parsed.baseRef === baseRef, baseRef);
+    assert(
+      (parsed.virtual || parsed.durable) && parsed.baseRef === baseRef,
+      baseRef,
+    );
     if (!vrm.isDurableKind(parsed.id)) {
       if (value.length === 1) {
         // single-facet
@@ -208,7 +211,7 @@ function deleteVirtualObjectsWithDecref({ syscall, vrm }) {
       for (const capdata of Object.values(raw)) {
         for (const vref of capdata.slots) {
           const p2 = parseVatSlot(vref);
-          if (p2.virtual && vrm.isDurableKind(p2.id)) {
+          if ((p2.virtual || p2.durable) && vrm.isDurableKind(p2.id)) {
             const count = durableDecrefs.get(p2.baseRef) || 0;
             durableDecrefs.set(p2.baseRef, count + 1);
           }
@@ -268,7 +271,7 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
     if (!isDurable && !isMeta) {
       for (const vref of JSON.parse(value).slots) {
         const p = parseVatSlot(vref);
-        if (p.virtual && vrm.isDurableKind(p.id)) {
+        if ((p.virtual || p.durable) && vrm.isDurableKind(p.id)) {
           const count = durableDecrefs.get(p.baseRef) || 0;
           durableDecrefs.set(p.baseRef, count + 1);
         }

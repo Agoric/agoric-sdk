@@ -112,7 +112,7 @@ test('multifaceted virtual objects', t => {
       },
     },
   );
-  const kid = 'o+2';
+  const kid = 'o+v2';
   const { incr, decr } = makeMultiThing('foo');
   t.is(incr.getName(), 'foo');
   t.is(incr.getCount(), 0);
@@ -166,9 +166,9 @@ test('virtual object operations', t => {
   const { defineKind, flushCache, dumpStore } = makeFakeVirtualObjectManager({ cacheSize: 3, log });
 
   const makeThing = defineKind('thing', initThing, thingBehavior);
-  const tid = 'o+2';
+  const tid = 'o+v2';
   const makeZot = defineKind('zot', initZot, zotBehavior);
-  const zid = 'o+3';
+  const zid = 'o+v3';
 
   // phase 0: start
   t.deepEqual(dumpStore(), [
@@ -418,7 +418,7 @@ test('symbol named methods', t => {
   };
 
   const makeThing = defineKind('symthing', initThing, symThingBehavior);
-  const tid = 'o+2';
+  const tid = 'o+v2';
 
   // phase 0: start
   t.deepEqual(dumpStore(), [
@@ -547,7 +547,7 @@ test('durable kind IDs can be reanimated', t => {
     'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1}',
   );
   t.deepEqual(log, []);
-  const khid = `o+1/10`;
+  const khid = `o+d1/10`;
   const kind = kslot(khid, 'kind');
 
   // Store it in the store without having used it
@@ -592,7 +592,7 @@ test('durable kind IDs can be reanimated', t => {
     log.shift(),
     'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2,"unfaceted":true}',
   );
-  t.is(log.shift(), `set vom.o+10/1 ${thingVal(0, 'laterThing', 0)}`);
+  t.is(log.shift(), `set vom.o+d10/1 ${thingVal(0, 'laterThing', 0)}`);
   t.deepEqual(log, []);
 });
 
@@ -604,7 +604,7 @@ test('virtual object gc', t => {
   const { deleteEntry, dumpStore } = fakeStuff;
 
   const makeThing = defineKind('thing', initThing, thingBehavior);
-  const tbase = 'o+10';
+  const tbase = 'o+v10';
   const makeRef = defineKind('ref', value => ({ value }), {
     setVal: ({ state }, value) => {
       state.value = value;
