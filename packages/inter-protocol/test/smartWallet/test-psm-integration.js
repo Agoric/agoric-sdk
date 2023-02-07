@@ -52,19 +52,6 @@ test.before(async t => {
 });
 
 /**
- * @param {Awaited<ReturnType<typeof coalesceUpdates>>} state
- * @param {Brand<'nat'>} brand
- */
-const purseBalance = (state, brand) => {
-  const balances = Array.from(state.balances.values());
-  const match = balances.find(b => b.brand === brand);
-  if (!match) {
-    console.debug('balances', ...balances);
-    assert.fail(`${brand} not found in record`);
-  }
-  return match.value;
-};
-/**
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
  * @param {Brand<'nat'>} brand
  */
@@ -83,8 +70,9 @@ test('null swap', async t => {
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
 
-  const wallet = await t.context.simpleProvideWallet('agoric1nullswap');
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
+    'agoric1nullswap',
+  );
   const offersFacet = wallet.getOffersFacet();
 
   const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
@@ -112,8 +100,8 @@ test('null swap', async t => {
   await offersFacet.executeOffer(offerSpec);
   await eventLoopIteration();
 
-  t.is(purseBalance(computedState, anchor.brand), 0n);
-  t.is(purseBalance(computedState, mintedBrand), 0n);
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
 
   // success if nothing threw
   t.pass();
@@ -130,21 +118,16 @@ test('want stable', async t => {
   const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
-  const wallet = await t.context.simpleProvideWallet('agoric1wantstable');
-  const current = await E(E(wallet).getCurrentSubscriber())
-    .subscribeAfter()
-    .then(pub => pub.head.value);
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
+    'agoric1wantstable',
+  );
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
   // let promises settle to notify brands and create purses
   await eventLoopIteration();
 
-  t.deepEqual(current.purses.find(b => b.brand === anchor.brand).balance, {
-    brand: anchor.brand,
-    value: 0n,
-  });
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
 
   t.log('Fund the wallet');
   assert(anchor.mint);
@@ -173,8 +156,8 @@ test('want stable', async t => {
   t.log('Execute the swap');
   await offersFacet.executeOffer(offerSpec);
   await eventLoopIteration();
-  t.is(purseBalance(computedState, anchor.brand), 0n);
-  t.is(purseBalance(computedState, stableBrand), swapSize); // assume 0% fee
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(stableBrand)).value, swapSize); // assume 0% fee
 });
 
 test('govern offerFilter', async t => {
@@ -184,7 +167,10 @@ test('govern offerFilter', async t => {
   const { psm: psmInstance } = await E(psmKit).get(anchor.brand);
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const computedState = coalesceUpdates(
+    E(wallet).getUpdatesSubscriber(),
+    invitationBrand,
+  );
   const currentSub = E(wallet).getCurrentSubscriber();
 
   const offersFacet = wallet.getOffersFacet();
@@ -212,9 +198,14 @@ test('govern offerFilter', async t => {
     E(E(zoe).getInvitationIssuer())
       .getBrand()
       .then(brand => {
+        t.is(
+          brand,
+          invitationBrand,
+          'invitation brand from context matches zoe',
+        );
         /** @type {Amount<'set'>} */
         const invitationsAmount = NonNullish(balances.get(brand));
-        t.is(invitationsAmount?.value.length, len);
+        t.is(invitationsAmount?.value.length, len, 'invitation count');
         return invitationsAmount.value.filter(i => i.description === desc);
       });
 

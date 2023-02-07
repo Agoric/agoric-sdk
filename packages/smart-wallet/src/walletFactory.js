@@ -10,7 +10,7 @@ import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 
@@ -93,14 +93,13 @@ const makeAssetRegistry = assetPublisher => {
     },
   });
 
-  // XXX marshal requires Far, but clients make sync calls
-  const registry = Far('AssetRegistry', {
+  const registry = {
     /** @param {Brand} brand */
-    getRegisteredAsset: brand => {
-      return brandDescriptors.get(brand);
-    },
-    getRegisteredBrands: () => [...brandDescriptors.values()],
-  });
+    has: brand => brandDescriptors.has(brand),
+    /** @param {Brand} brand */
+    get: brand => brandDescriptors.get(brand),
+    values: () => brandDescriptors.values(),
+  };
   return registry;
 };
 

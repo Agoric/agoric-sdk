@@ -55,7 +55,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * Purses is an array to support a future requirement of multiple purses per brand.
  *
  * @typedef {{
- *   brands: BrandDescriptor[],
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: { [offerId: string]: Amount },
  *   offerToPublicSubscriberPaths: { [offerId: string]: { [subscriberName: string]: string } },
@@ -65,14 +64,13 @@ const mapToRecord = map => Object.fromEntries(map.entries());
 
 /**
  * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus } |
- * { updated: 'balance'; currentAmount: Amount } |
- * { updated: 'brand', descriptor: BrandDescriptor }
+ *  { updated: 'balance'; currentAmount: Amount }
  * } UpdateRecord Record of an update to the state of this wallet.
  *
  * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
  *
- * The reason for this burden on the client is that transferring the full state is untenable
- * (because it would grow monotonically).
+ * The reason for this burden on the client is that publishing
+ * the full history of offers with each change is untenable.
  *
  * `balance` update supports forward-compatibility for more than one purse per
  * brand. An additional key will be needed to disambiguate. For now the brand in
@@ -101,12 +99,10 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   walletStorageNode: StorageNode,
  * }} UniqueParams
  *
+ * @typedef {Pick<MapStore<Brand, BrandDescriptor>, 'has' | 'get' | 'values'>} BrandDescriptorRegistry
  * @typedef {{
  *   agoricNames: ERef<import('@agoric/vats').NameHub>,
- *   registry: {
- *     getRegisteredAsset: (b: Brand) => BrandDescriptor,
- *     getRegisteredBrands: () => BrandDescriptor[],
- *   },
+ *   registry: BrandDescriptorRegistry,
  *   invitationIssuer: Issuer<'set'>,
  *   invitationBrand: Brand<'set'>,
  *   invitationDisplayInfo: DisplayInfo,
@@ -125,7 +121,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   offerToInvitationMakers: MapStore<string, import('./types').RemoteInvitationMakers>,
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
- *   brandPurses: MapStore<Brand, RemotePurse>,
  *   purseBalances: MapStore<RemotePurse, Amount>,
  *   updatePublishKit: PublishKit<UpdateRecord>,
  *   currentPublishKit: PublishKit<CurrentWalletRecord>,
@@ -141,8 +136,9 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  * @param {SharedParams} shared
  */
 export const prepareSmartWallet = (baggage, shared) => {
+  const { registry: _, ...passableShared } = shared;
   mustMatch(
-    shared,
+    harden(passableShared),
     harden({
       agoricNames: M.eref(M.remotable('agoricNames')),
       invitationIssuer: IssuerShape,
@@ -150,7 +146,6 @@ export const prepareSmartWallet = (baggage, shared) => {
       invitationDisplayInfo: DisplayInfoShape,
       publicMarshaller: M.remotable('Marshaller'),
       zoe: M.eref(M.remotable('ZoeService')),
-      registry: M.remotable('AssetRegistry'),
     }),
   );
 
@@ -180,8 +175,6 @@ export const prepareSmartWallet = (baggage, shared) => {
     );
 
     const preciousState = {
-      // Private purses. This assumes one purse per brand, which will be valid in MN-1 but not always.
-      brandPurses: makeScalarBigMapStore('brand purses', { durable: true }),
       // Payments that couldn't be deposited when received.
       // NB: vulnerable to uncapped growth by unpermissioned deposits.
       paymentQueues: makeScalarBigMapStore('payments queues', {
@@ -253,15 +246,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     helper: M.interface('helperFacetI', {
       updateBalance: M.call(PurseShape, AmountShape).optional('init').returns(),
       publishCurrentState: M.call().returns(),
-      addBrand: M.call(
-        {
-          brand: BrandShape,
-          issuer: M.eref(IssuerShape),
-          petname: M.string(),
-          displayInfo: DisplayInfoShape,
-        },
-        M.eref(PurseShape),
-      ).returns(M.promise()),
+      watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
     }),
     deposit: M.interface('depositFacetI', {
       receive: M.callWhen(M.await(M.eref(PaymentShape))).returns(AmountShape),
@@ -321,10 +306,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             offerToPublicSubscriberPaths,
             purseBalances,
           } = this.state;
-          const { registry } = shared;
-
           currentPublishKit.publisher.publish({
-            brands: registry.getRegisteredBrands(),
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
               balance: a,
@@ -338,16 +320,11 @@ export const prepareSmartWallet = (baggage, shared) => {
           });
         },
 
-        /** @type {(desc: BrandDescriptor, purse: ERef<RemotePurse>) => Promise<void>} */
-        async addBrand(desc, purseRef) {
-          const { address, brandPurses, paymentQueues, updatePublishKit } =
-            this.state;
-          const pursesHas = brandPurses.has(desc.brand);
-          assert(!pursesHas, 'repeated brand from bank asset subscription');
+        /** @type {(purse: ERef<RemotePurse>) => Promise<void>} */
+        async watchPurse(purseRef) {
+          const { address } = this.state;
 
           const purse = await purseRef; // promises don't fit in durable storage
-
-          brandPurses.init(desc.brand, purse);
 
           const { helper } = this.facets;
           // publish purse's balance and changes
@@ -369,21 +346,6 @@ export const prepareSmartWallet = (baggage, shared) => {
               console.error(address, `failed updateState observer`, reason);
             },
           });
-
-          updatePublishKit.publisher.publish({
-            updated: 'brand',
-            descriptor: desc,
-          });
-
-          // deposit queued payments
-          const payments = paymentQueues.has(desc.brand)
-            ? paymentQueues.get(desc.brand)
-            : [];
-          // @ts-expect-error xxx with DataOnly / FarRef types
-          const deposits = payments.map(p => E(purse).deposit(p));
-          Promise.all(deposits).catch(err =>
-            console.error('ERROR depositing queued payments', err),
-          );
         },
       },
       /**
@@ -399,21 +361,25 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @returns {Promise<Amount>} amounts for deferred deposits will be empty
          */
         async receive(payment) {
-          const { brandPurses, paymentQueues: queues } = this.state;
+          const { paymentQueues: queues, bank, invitationPurse } = this.state;
+          const { registry, invitationBrand } = shared;
           const brand = await E(payment).getAllegedBrand();
 
           // When there is a purse deposit into it
-          if (brandPurses.has(brand)) {
-            const purse = brandPurses.get(brand);
+          if (registry.has(brand)) {
+            const purse = E(bank).getPurse(brand);
             // @ts-expect-error deposit does take a FarRef<Payment>
             return E(purse).deposit(payment);
+          } else if (invitationBrand === brand) {
+            // @ts-expect-error deposit does take a FarRef<Payment>
+            return E(invitationPurse).deposit(payment);
           }
 
           // When there is no purse, queue the payment
           if (queues.has(brand)) {
             queues.get(brand).push(payment);
           } else {
-            queues.init(brand, harden([payment]));
+            queues.init(brand, harden([payment])); // TODO: #6961 fix this.
           }
           return AmountMath.makeEmpty(brand);
         },
@@ -437,7 +403,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           const { facets } = this;
           const {
             address,
-            brandPurses,
+            bank,
             invitationPurse,
             offerToInvitationMakers,
             offerToUsedInvitation,
@@ -467,16 +433,14 @@ export const prepareSmartWallet = (baggage, shared) => {
                * @returns {Promise<RemotePurse>}
                */
               purseForBrand: async brand => {
-                if (brandPurses.has(brand)) {
-                  return brandPurses.get(brand);
+                if (registry.has(brand)) {
+                  // @ts-expect-error RemotePurse cast
+                  return E(bank).getPurse(brand);
+                } else if (invitationBrand === brand) {
+                  // @ts-expect-error RemotePurse cast
+                  return invitationPurse;
                 }
-                const desc = registry.getRegisteredAsset(brand);
-                const { bank } = this.state;
-                /** @type {RemotePurse} */
-                // @ts-expect-error cast to RemotePurse
-                const purse = E(bank).getPurse(desc.brand);
-                await facets.helper.addBrand(desc, purse);
-                return purse;
+                throw Fail`cannot find/make purse for ${brand}`;
               },
               logger,
             },
@@ -573,33 +537,11 @@ export const prepareSmartWallet = (baggage, shared) => {
     },
     {
       finish: async ({ state, facets }) => {
-        const { invitationBrand, invitationDisplayInfo, invitationIssuer } =
-          shared;
-
+        const { invitationPurse } = state;
         const { helper } = facets;
 
-        // Ensure a purse for each issuer
-        void helper.addBrand(
-          {
-            brand: invitationBrand,
-            issuer: invitationIssuer,
-            petname: 'invitations',
-            displayInfo: invitationDisplayInfo,
-          },
-          // @ts-expect-error cast to RemotePurse
-          /** @type {RemotePurse} */ (state.invitationPurse),
-        );
-
-        // Schedule creation of a purse for each registered brand.
-        shared.registry.getRegisteredBrands().forEach(desc => {
-          // In this sync method, we can't await the outcome.
-          void E(state.bank)
-            .getPurse(desc.brand)
-            // @ts-expect-error cast
-            .then((/** @type {RemotePurse} */ purse) =>
-              helper.addBrand(desc, purse),
-            );
-        });
+        // @ts-expect-error RemotePurse cast
+        helper.watchPurse(invitationPurse);
       },
     },
   );
