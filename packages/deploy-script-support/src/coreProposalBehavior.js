@@ -9,7 +9,7 @@ const t = 'makeCoreProposalBehavior';
 
 export const permits = {
   consume: { board: t, agoricNamesAdmin: t },
-  evaluateInstallation: t,
+  evaluateBundleCap: t,
   installation: { produce: t },
   modules: { utils: { runModuleBehaviors: t } },
 };
@@ -54,10 +54,10 @@ export const makeCoreProposalBehavior = ({
     return fromEntries(ents);
   };
 
-  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateInstallation: any }} allPowers */
+  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} allPowers */
   const behavior = async allPowers => {
     const {
-      consume: { vatAdminService, zoe, agoricNamesAdmin },
+      consume: { vatAdminSvc, zoe, agoricNamesAdmin },
       evaluateBundleCap,
       installation: { produce: produceInstallations },
       modules: {
@@ -66,19 +66,29 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
-    const restoreRef = overrideRestoreRef || (({bundleID}) => E(zoe).installBundleID(bundleID));
+    const defaultRestoreRef = async (args) => {
+      let p;
+      if (args.bundleName) {
+        p = E(vatAdminSvc).getNamedBundleID(args.bundleName);
+      } else {
+        p = Promise.resolve(args.bundleID);
+      }
+      const bundleID = await p;
+      return E(zoe).installBundleID(bundleID);
+    };
+    const restoreRef = overrideRestoreRef || defaultRestoreRef;
 
     // Get the on-chain installation containing the manifest and behaviors.
-    console.info('restoreRef, evaluateInstallation', {
+    console.info('restoreRef, evaluateBundleCap', {
       manifestInstallRef,
       exportedGetManifest,
     });
     const { bundleName, bundleID } = manifestInstallRef;
     let bundleCap;
     if (bundleName) {
-      bundleCap = await E(vatAdminService).getNamedBundleCap(bundleName);
+      bundleCap = await E(vatAdminSvc).getNamedBundleCap(bundleName);
     } else {
-      bundleCap = await E(vatAdminService).getBundleCap(bundleID);
+      bundleCap = await E(vatAdminSvc).getBundleCap(bundleID);
     }
 
     const manifestNS = await evaluateBundleCap(bundleCap);
@@ -130,14 +140,14 @@ export const makeEnactCoreProposalsFromBundleName =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
     const {
-      consume: { vatAdminService, zoe },
+      consume: { vatAdminSvc, zoe },
     } = allPowers;
     const restoreRef = async ref => {
       // extract-proposal.js creates these records, and bundleName is
       // the name under which the bundle was installed into
       // config.bundles
       const { bundleName } = ref;
-      const bundleID = await E(vatAdminService).getBundleIDByName(bundleName);
+      const bundleID = await E(vatAdminSvc).getBundleIDByName(bundleName);
       const install = await E(zoe).installBundleID(bundleID);
       return install;
     };

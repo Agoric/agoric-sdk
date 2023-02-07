@@ -77,7 +77,7 @@ test('evaluateBundleCap is available to core eval', async t => {
         handler = fn;
       },
     };
-    produce.vatAdminService.resolve(admin);
+    produce.vatAdminSvc.resolve(admin);
     produce.bridgeManager.resolve(bridgeManager);
     return bundleID;
   };
@@ -89,12 +89,12 @@ test('evaluateBundleCap is available to core eval', async t => {
   t.truthy(handler);
 
   const produceThing = async ({
-    consume: { vatAdminService },
+    consume: { vatAdminSvc },
     produce: { thing },
     evaluateBundleCap,
   }) => {
     const myBundleID = 'REPLACE_WITH_BUNDLE_ID';
-    const bcap = await E(vatAdminService).getBundleCap(myBundleID);
+    const bcap = await E(vatAdminSvc).getBundleCap(myBundleID);
     const ns = await evaluateBundleCap(bcap);
     thing.resolve(ns);
   };
