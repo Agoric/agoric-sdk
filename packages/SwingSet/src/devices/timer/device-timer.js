@@ -22,7 +22,7 @@
  * expose only capabilities that don't reveal them.
  */
 
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 

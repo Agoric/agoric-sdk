@@ -1,7 +1,7 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 import { assert, q, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';

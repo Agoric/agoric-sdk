@@ -755,6 +755,7 @@ const makeWorld = async t => {
         makeRatio(n, runBrand, d, brand2);
       const newValue = pairToRatio(newRunToBld, bldBrand);
 
+      // TODO use the puppet governor like vaultFactory driver.js does
       const deadline = 3n * SECONDS_PER_DAY;
       const { cast, outcome } = await E(committee).changeParam(
         harden({

@@ -1,5 +1,5 @@
 import { Far } from '@endo/marshal';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';
 import {
   makeNotifierKit,

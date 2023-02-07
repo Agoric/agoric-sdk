@@ -1,5 +1,5 @@
 import { assert, Fail } from '@agoric/assert';
-import { isNat } from '@agoric/nat';
+import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';

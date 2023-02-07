@@ -1,7 +1,7 @@
 import { mustMatch, M } from '@agoric/store';
-import { prepareKind, prepareSingleton } from '@agoric/vat-data';
+import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
-import { isAfterDeadlineExitRule } from '../typeGuards.js';
+import { isAfterDeadlineExitRule, OfferHandlerI } from '../typeGuards.js';
 
 const { Fail } = assert;
 
@@ -32,12 +32,16 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
   // XXX the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
-  const makeExerciser = prepareKind(
+  const makeExerciser = prepareExoClass(
     instanceBaggage,
     'makeExerciserKindHandle',
+    OfferHandlerI,
     sellSeat => ({ sellSeat }),
     {
-      handle: ({ state: { sellSeat } }, buySeat) => {
+      handle(buySeat) {
+        const {
+          state: { sellSeat },
+        } = this;
         assert(!sellSeat.hasExited(), sellSeatExpiredMsg);
         try {
           swapExact(zcf, sellSeat, buySeat);
@@ -78,9 +82,20 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
-  const creatorFacet = prepareSingleton(instanceBaggage, 'creatorFacet', {
-    makeInvitation: () => zcf.makeInvitation(makeOption, 'makeCallOption'),
+  const CoveredCallCratorFacetI = M.interface('CoveredCallCratorFacet', {
+    makeInvitation: M.call().returns(M.promise()),
   });
+
+  const creatorFacet = prepareExo(
+    instanceBaggage,
+    'creatorFacet',
+    CoveredCallCratorFacetI,
+    {
+      makeInvitation() {
+        return zcf.makeInvitation(makeOption, 'makeCallOption');
+      },
+    },
+  );
   return harden({ creatorFacet });
 };
 

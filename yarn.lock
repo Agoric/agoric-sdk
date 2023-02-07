@@ -11,11 +11,6 @@
     jsesc "^2.5.1"
     source-map "^0.5.0"
 
-"@agoric/nat@^4.1.0":
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/@agoric/nat/-/nat-4.1.0.tgz#102794e033ffc183a20b0f86031a2e76d204b9f6"
-  integrity sha512-2oMoh3DMn0Fx8HChPPiH8irBNdT/33ttxAZJohhd3nU3gyBRQ1u+eEoOQWfSkrE6M02iMkQM7GE9MzGmjQ6bHg==
-
 "@agoric/wallet-ui@0.1.3-solo.0":
   version "0.1.3-solo.0"
   resolved "https://registry.yarnpkg.com/@agoric/wallet-ui/-/wallet-ui-0.1.3-solo.0.tgz#5f05c3dd2820d4f1efcbccbd2dc1292847ecbd2b"
@@ -1376,10 +1371,10 @@
     "@endo/nat" "^4.1.23"
     "@endo/promise-kit" "^0.2.52"
 
-"@endo/nat@^4.1.23":
-  version "4.1.23"
-  resolved "https://registry.yarnpkg.com/@endo/nat/-/nat-4.1.23.tgz#ce8c9e1def409f44a5a9a85962942338e2c9e2e9"
-  integrity sha512-n7cOUJt1neJLswQpKd9Mv3k7xaKT43fAfDDE+WT0dalUmBvevkUi+plkS9X3jyrDebtW/lN/kYdfS3bdObVn2A==
+"@endo/nat@^4.1.0", "@endo/nat@^4.1.23":
+  version "4.1.24"
+  resolved "https://registry.yarnpkg.com/@endo/nat/-/nat-4.1.24.tgz#5c20ae97e0ccf4b292ae90f176f6a7bc66f95c9c"
+  integrity sha512-NYjwmZF4ScGmFl/oB7D3SDyRT7ZJ9BhRLf1VtUQmgNztNRl97tYSl6eLQIRwtTweluqhd5Ti11WKZkNhRFecBg==
 
 "@endo/netstring@^0.3.22":
   version "0.3.22"

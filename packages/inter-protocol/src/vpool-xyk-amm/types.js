@@ -128,7 +128,7 @@
  * using makeSwapOutInvitation at the current price
  * @property {(brand: Brand) => Record<string, Amount<'nat'>>} getPoolAllocation get an
  * AmountKeywordRecord showing the current balances in the pool for brand.
- * @property {() => Issuer<'nat'>} getQuoteIssuer - get the Issuer that attests to
+ * @property {() => Issuer<'set'>} getQuoteIssuer - get the Issuer that attests to
  * the prices in the priceQuotes issued by the PriceAuthorities
  * @property {(brand: Brand) => {toCentral: PriceAuthority, fromCentral: PriceAuthority}} getPriceAuthorities
  * get a pair of PriceAuthorities { toCentral, fromCentral } for requesting
@@ -139,7 +139,7 @@
  * @property {(brand: Brand) => StoredSubscription<PoolMetricsNotification>} getPoolMetrics
  * @property {() => bigint} getProtocolFee
  * @property {() => bigint} getPoolFee
- * @property {() => bigint} getMinInitialPoolLiquidity
+ * @property {() => Amount<'nat'>} getMinInitialPoolLiquidity
  */
 
 /**

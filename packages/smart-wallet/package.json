@@ -25,7 +25,7 @@
     "@agoric/casting": "^0.3.2",
     "@agoric/ertp": "^0.15.3",
     "@agoric/internal": "^0.2.1",
-    "@agoric/nat": "^4.1.0",
+    "@endo/nat": "^4.1.0",
     "@agoric/notifier": "^0.5.1",
     "@agoric/store": "^0.8.3",
     "@agoric/swingset-vat": "^0.30.2",

@@ -1,16 +1,20 @@
-import { makePublicTopic, SubscriberShape } from '@agoric/notifier';
-import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { M, mustMatch } from '@agoric/store';
+import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
   makeScalarBigMapStore,
   provide,
+  provideDurableMapStore,
   provideDurableSetStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /// <reference types="@agoric/notifier/src/types-ambient.js"/>
 
 /**
+ * SCALE: Only for low cardinality provisioning. Every value from init() will
+ * remain in the map for the lifetime of the heap. If a key object is GCed, its
+ * representative also remains.
+ *
  * @template {{}} E Ephemeral state
  * @param {() => E} init
  */
@@ -37,47 +41,19 @@ harden(makeEphemeraProvider);
 
 /**
  *
+ * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const makePublicTopicProvider = () => {
-  /** @type {WeakMap<Subscriber<any>, import('@agoric/notifier').PublicTopic<any>>} */
-  const extant = new WeakMap();
-
-  /**
-   * Provide a PublicTopic for the specified durable subscriber.
-   * Memoizes the resolution of the promise for the storageNode's path, for the lifetime of the vat.
-   *
-   * @template {object} T
-   * @param {string} description
-   * @param {Subscriber<T>} durableSubscriber primary key
-   * @param {ERef<StorageNode>} storageNode
-   * @returns {import('@agoric/notifier').PublicTopic<T>}
-   */
-  const providePublicTopic = (description, durableSubscriber, storageNode) => {
-    if (extant.has(durableSubscriber)) {
-      // @ts-expect-error cast
-      return extant.get(durableSubscriber);
-    }
-    mustMatch(
-      harden({ description, durableSubscriber, storageNode }),
-      harden({
-        description: M.string(),
-        durableSubscriber: SubscriberShape,
-        storageNode: M.eref(StorageNodeShape),
-      }),
-    );
-
-    /** @type {import('@agoric/notifier').PublicTopic<T>} */
-    const newMeta = makePublicTopic(
-      description,
-      durableSubscriber,
-      storageNode,
-    );
-    extant.set(durableSubscriber, newMeta);
-    return newMeta;
+export const makeStorageNodePathProvider = baggage => {
+  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<StorageNode, string>} */
+  const nodePaths = makeAtomicProvider(
+    provideDurableMapStore(baggage, 'storage node paths'),
+  );
+  /** @param {ERef<StorageNode>} nodeP */
+  return async nodeP => {
+    const node = await nodeP;
+    return nodePaths.provideAsync(node, n => E(n).getPath());
   };
-  return providePublicTopic;
 };
-harden(makePublicTopicProvider);
 
 /**
  * Provide an empty ZCF seat.

@@ -4,7 +4,7 @@ import { createHash } from 'crypto';
 import path from 'path';
 import { createRequire } from 'module';
 
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 import { untilTrue } from '@agoric/internal';
 
 import {

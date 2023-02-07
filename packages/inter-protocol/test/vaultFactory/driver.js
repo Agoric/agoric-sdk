@@ -1,9 +1,9 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeTracer, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeTracer, objectMap } from '@agoric/internal';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
@@ -22,8 +22,7 @@ import {
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import '../../src/vaultFactory/types.js';
 import {
-  installGovernance,
-  makeVoterTool,
+  installPuppetGovernance,
   setupBootstrap,
   setUpZoeForTest,
   withAmountUtils,
@@ -76,7 +75,7 @@ const defaultParamValues = debt =>
  * @typedef {{
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
  * aethInitialLiquidity: Amount<'nat'>,
- * committee: any,
+ * puppetGovernors: { [contractName: string]: ERef<import('@agoric/governance/tools/puppetContractGovernor').PuppetContractGovernorKit<any>['creatorFacet']> },
  * electorateTerms: any,
  * feeMintAccess: FeeMintAccess,
  * installation: Record<string, any>,
@@ -151,7 +150,7 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
-  installGovernance(zoe, space.installation.produce);
+  installPuppetGovernance(zoe, space.installation.produce);
   // TODO consider using produceInstallations()
   space.installation.produce.amm.resolve(t.context.installation.amm);
   space.installation.produce.reserve.resolve(t.context.installation.reserve);
@@ -167,14 +166,6 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
   const governedInstance = E(governorPublicFacet).getGovernedContract();
-
-  const counter = await space.installation.consume.binaryVoteCounter;
-  t.context.committee = makeVoterTool(
-    zoe,
-    space.consume.economicCommitteeCreatorFacet,
-    E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
-    counter,
-  );
 
   /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
@@ -202,6 +193,11 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
       Central: runLiquidity.payment,
     }),
   );
+
+  t.context.puppetGovernors = {
+    // @ts-expect-error cast regular governor to puppet
+    vaultFactory: E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
+  };
 
   // TODO get the creator directly
   const newAmm = {
@@ -311,10 +307,7 @@ const setupServices = async (
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
   ).governorCreatorFacet;
-  /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<any>>} */
-  const vaultFactoryCreatorFacet = /** @type { any } */ (
-    E(governorCreatorFacet).getCreatorFacet()
-  );
+  const vaultFactoryCreatorFacet = E(governorCreatorFacet).getCreatorFacet();
 
   // Add a vault that will lend on aeth collateral
   const aethVaultManagerP = E(vaultFactoryCreatorFacet).addVaultType(
@@ -324,7 +317,6 @@ const setupServices = async (
   );
 
   /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
-  // @ts-expect-error cast
   const [governorInstance, vaultFactory, lender, aethVaultManager] =
     await Promise.all([
       E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
@@ -507,18 +499,24 @@ export const makeManagerDriver = async (
     },
     /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
-    setGovernedParam: async (name, newValue) => {
-      const deadline = 3n;
-      const { cast, outcome } = await E(t.context.committee).changeParam(
+    /**
+     *
+     * @param {string} name
+     * @param {*} newValue
+     * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
+     */
+    setGovernedParam: async (
+      name,
+      newValue,
+      paramPath = { key: 'governedParams' },
+    ) => {
+      const vfGov = await t.context.puppetGovernors.vaultFactory;
+      await E(vfGov).changeParams(
         harden({
-          paramPath: { key: 'governedParams' },
+          paramPath,
           changes: { [name]: newValue },
         }),
-        deadline,
       );
-      await cast;
-      await driver.tick(3);
-      await outcome;
     },
     /**
      *
