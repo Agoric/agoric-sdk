@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:stable
 LABEL maintainer="mfig@agoric.com"
 
 RUN apt-get update --allow-releaseinfo-change \
