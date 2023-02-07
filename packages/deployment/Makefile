@@ -1,7 +1,7 @@
 REPOSITORY = agoric/cosmic-swingset
 REPOSITORY_SDK = agoric/agoric-sdk
 SS := ../cosmic-swingset/
-VERSION := $(shell node -e 'console.log(require("../../package.json").version)' 2>/dev/null)
+VERSION := $(shell node -e 'console.log(require("../../package.json").version??"")' 2>/dev/null)
 
 TAG := $(if $(VERSION),$(VERSION),latest)
 GIT_REVISION := $(shell hash=$$(git rev-parse --short HEAD); \
@@ -14,6 +14,8 @@ DONT_PUSH_LATEST := :
 else
 DONT_PUSH_LATEST := $(if $(findstring -,$(TAG)),:,)
 endif
+
+default: docker-build
 
 docker-show-fat:
 	date > show-fat-bust-cache.stamp
