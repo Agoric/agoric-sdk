@@ -39,7 +39,7 @@ export const bridgeCoreEval = async allPowers => {
   // We need all of the powers to be available to the evaluator, but we only
   // need the bridgeManager to install our handler.
   const {
-    vatPowers: { D },
+    vatPowers,
     consume: { bridgeManager: bridgeManagerP },
     produce: { coreEvalBridgeHandler },
   } = allPowers;
@@ -54,7 +54,7 @@ export const bridgeCoreEval = async allPowers => {
 
   /** @param {BundleCap} bundleCap */
   const evaluateBundleCap = async bundleCap => {
-    const bundle = await D(bundleCap).getBundle();
+    const bundle = await vatPowers.D(bundleCap).getBundle();
     const imported = await importBundle(bundle, { endowments });
     return imported;
   };

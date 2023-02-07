@@ -62,7 +62,7 @@ let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP, vatAdminService, vatAdminState } = await setUpZoeForTest();
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -79,35 +79,41 @@ const makeTestContext = async () => {
     ),
   };
 
-  const bundleIDToAbsolutePaths = new Map();
+  const bundleNameToAbsolutePaths = new Map();
   const bundlePathToInstallP = new Map();
-  const restoreBundleID = bundleID => {
-    const absolutePaths = bundleIDToAbsolutePaths.get(bundleID);
-    absolutePaths || Fail`bundleID ${bundleID} not found`;
+  const restoreBundleName = bundleName => {
+    console.log(`-- restoreBundleName`, bundleName);
+    const absolutePaths = bundleNameToAbsolutePaths.get(bundleName);
+    absolutePaths || Fail`bundleName ${bundleName} not found`;
     const { source, bundle } = absolutePaths;
     const bundlePath = bundle || source.replace(/(\\|\/|:)/g, '_');
     if (!bundlePathToInstallP.has(bundlePath)) {
       const match = path.basename(bundlePath).match(/^bundle-(.*)\.js$/);
       const actualBundle = match ? match[1] : bundlePath;
+      console.log(`-- install`, source);
       bundlePathToInstallP.set(bundlePath, install(source, actualBundle));
     }
     return bundlePathToInstallP.get(bundlePath);
   };
 
   const registerBundleHandles = bundleHandleMap => {
-    for (const [{ bundleID }, paths] of bundleHandleMap.entries()) {
-      !bundleIDToAbsolutePaths.has(bundleID) ||
-        Fail`bundleID ${bundleID} already registered`;
-      bundleIDToAbsolutePaths.set(bundleID, paths);
+    console.log(`-- registerBundleHandles`, bundleHandleMap);
+    for (const [{ bundleName }, paths] of bundleHandleMap.entries()) {
+      !bundleNameToAbsolutePaths.has(bundleName) ||
+        Fail`bundleName ${bundleName} already registered`;
+      bundleNameToAbsolutePaths.set(bundleName, paths);
+      vatAdminState. XXX
     }
   };
 
   return {
     registerBundleHandles,
-    restoreBundleID,
+    restoreBundleName,
     cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccessP,
+    vatAdminService,
+    vatAdminState,
     run: { issuer: runIssuer, brand: runBrand },
     installation,
   };
@@ -216,16 +222,16 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   };
 
   /** @type {any} */
-  const { restoreBundleID: produceRestoreBundleID } = space.produce;
-  produceRestoreBundleID.resolve(t.context.restoreBundleID);
+  const { restoreBundleName: produceRestoreBundleName } = space.produce;
+  produceRestoreBundleName.resolve(t.context.restoreBundleName);
   const makeEnactCoreProposalsFromBundleHandle =
     ({ makeCoreProposalArgs, E: cpE }) =>
     async allPowers => {
       const {
-        consume: { restoreBundleID },
+        consume: { restoreBundleName },
       } = allPowers;
-      const restoreRef = async ({ bundleID }) => {
-        return cpE(restoreBundleID)(bundleID);
+      const restoreRef = async ({ bundleName }) => {
+        return cpE(restoreBundleName)(bundleName);
       };
 
       await Promise.all(

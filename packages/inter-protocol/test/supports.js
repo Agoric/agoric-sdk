@@ -49,8 +49,9 @@ harden(provideBundle);
 export const setUpZoeForTest = async (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
 
+  const { admin, vatAdminState } = makeFakeVatAdmin(setJig);
   const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
+    makeZoeKit(admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
@@ -59,6 +60,8 @@ export const setUpZoeForTest = async (setJig = () => {}) => {
   return {
     zoe: zoeService,
     feeMintAccessP: feeMintAccess,
+    vatAdminService: admin,
+    vatAdminState,
   };
 };
 harden(setUpZoeForTest);
@@ -84,6 +87,9 @@ export const setupBootstrap = (t, optTimer) => {
   const { zoe, feeMintAccess, run } = t.context;
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
+
+  const { vatAdminService } = t.context;
+  produce.vatAdminService.resolve(vatAdminService);
 
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
