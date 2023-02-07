@@ -1,6 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far, isObject, makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
+import { objectMap } from '@agoric/internal';
 import { buildManualTimer } from '../tools/manual-timer.js';
 
 const { Fail, quote: q } = assert;
@@ -96,6 +97,20 @@ export const buildRootObject = () => {
       vat.incarnationNumber = incarnationNumber;
       return incarnationNumber;
     },
+
+    /**
+     * Turns an object into a remotable by ensuring that each property is a function
+     *
+     * @param {string} label
+     * @param {Record<string, any>} methodReturnValues
+     */
+    makeSimpleRemotable: (label, methodReturnValues) =>
+      // braces to unharden so it can be hardened
+      encodePassable(
+        Far(label, {
+          ...objectMap(methodReturnValues, v => () => decodePassable(v)),
+        }),
+      ),
 
     messageVat: async ({ name, methodName, args = [] }) => {
       const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
