@@ -759,14 +759,14 @@ export async function launch({
         blockParams || Fail`blockParams missing`;
 
         if (!blockNeedsExecution(blockHeight)) {
-          // We are reevaluating, so send exactly the same downcalls to the chain.
+          // We are reevaluating, so do not do any work, and send exactly the
+          // same downcalls to the chain.
           //
           // This is necessary only after a restart when Tendermint is reevaluating the
           // block that was interrupted and not committed.
           //
           // We assert that the return values are identical, which allows us to silently
           // clear the queue.
-          for (const _ of actionQueue.consumeAll());
           try {
             replayChainSends();
           } catch (e) {
