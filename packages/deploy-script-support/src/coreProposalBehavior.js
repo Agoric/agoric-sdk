@@ -22,7 +22,7 @@ export const permits = {
  * definitions.
  *
  * @param {object} opts
- * @param {string} opts.manifestInstallRef
+ * @param {{ bundleName: string?, bundleID: string?}} opts.manifestInstallRef
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
