@@ -1173,15 +1173,16 @@ test.serial('remotable refcount management 1', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const { fakestore } = v;
 
-  await dispatchMessageSuccessfully('makeAndHoldRemotable');
-  // the Remotable is currently held by RAM, and doesn't get a vref
-  // until it is stored somewhere or exported
-
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
   t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
 
+  await dispatchMessageSuccessfully('makeAndHoldRemotable');
+  // the Remotable is currently held by RAM, and doesn't get a vref
+  // until it is stored somewhere or exported
+
   await dispatchMessageSuccessfully('prepareStore3');
+
   // Now there are three VirtualHolder objects, each holding our
   // Remotable. The Remotable's vref was the last thing assigned.
   const remotableID = JSON.parse(fakestore.get(`idCounters`)).exportID - 1;
@@ -1215,12 +1216,11 @@ test.serial('remotable refcount management 2', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const { fakestore } = v;
 
-  await dispatchMessageSuccessfully('makeAndHoldRemotable');
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
   t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
 
+  await dispatchMessageSuccessfully('makeAndHoldRemotable');
   await dispatchMessageSuccessfully('prepareStore3');
-
   await dispatchMessageSuccessfully('finishDropHolders');
   // all three holders are gone
   const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
