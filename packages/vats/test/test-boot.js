@@ -5,13 +5,11 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSource from '@endo/bundle-source';
 import { E, passStyleOf } from '@endo/far';
 
-import { makeZoeKit } from '@agoric/zoe';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
 import { buildRootObject } from '../src/core/boot.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
 import { makePromiseSpace } from '../src/core/utils.js';
-import { buildRootObject as boardRoot } from '../src/vat-board.js';
 
 import {
   makeMock,
@@ -58,47 +56,46 @@ testRole('chain', true);
 testRole('sim-chain', false);
 testRole('sim-chain', true);
 
-// TODO: rewrite to check on evaluateBundleCap instead of evaluateInstallation
-test.failing('evaluateInstallation is available to core eval', async t => {
+test('evaluateBundleCap is available to core eval', async t => {
   let handler;
   const modulePath = new URL('../src/core/utils.js', import.meta.url).pathname;
   const { produce, consume } = makePromiseSpace(t.log);
+  const { admin, vatAdminState } = makeFakeVatAdmin();
+  let vatPowers;
 
   const prepare = async () => {
+    const bundle = await bundleSource(modulePath);
+    const bundleID = bundle.endoZipBase64Sha512;
+    const bcap = vatAdminState.installBundle(bundleID, bundle);
+    const D = node => {
+      assert.equal(node, bcap, 'single-purpose D');
+      return harden({ getBundle: () => bundle });
+    };
+    vatPowers = { D };
     const bridgeManager = {
       register: (name, fn) => {
         handler = fn;
       },
     };
-
-    const { zoeService } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
-
-    const theBoard = boardRoot().getBoard();
-    const bundle = await bundleSource(modulePath);
-
-    const installation = await E(zoeService).install(bundle);
-    const instId = await E(theBoard).getId(installation);
-
-    produce.zoe.resolve(zoeService);
-    produce.board.resolve(theBoard);
+    produce.vatAdminService.resolve(admin);
     produce.bridgeManager.resolve(bridgeManager);
-    return instId;
+    return bundleID;
   };
 
-  const instId = await prepare();
+  const bundleID = await prepare();
 
   // @ts-expect-error
-  await bridgeCoreEval({ produce, consume });
+  await bridgeCoreEval({ vatPowers, produce, consume });
   t.truthy(handler);
 
   const produceThing = async ({
-    consume: { board },
+    consume: { vatAdminService },
     produce: { thing },
-    evaluateInstallation,
+    evaluateBundleCap,
   }) => {
-    const id = 'REPLACE_WITH_BOARD_ID';
-    const inst = await E(board).getValue(id);
-    const ns = await evaluateInstallation(inst);
+    const myBundleID = 'REPLACE_WITH_BUNDLE_ID';
+    const bcap = await E(vatAdminService).getBundleCap(myBundleID);
+    const ns = await evaluateBundleCap(bcap);
     thing.resolve(ns);
   };
 
@@ -107,7 +104,7 @@ test.failing('evaluateInstallation is available to core eval', async t => {
     evals: [
       {
         json_permits: 'true',
-        js_code: `${produceThing}`.replace('REPLACE_WITH_BOARD_ID', instId),
+        js_code: `${produceThing}`.replace('REPLACE_WITH_BUNDLE_ID', bundleID),
       },
     ],
   };
