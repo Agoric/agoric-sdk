@@ -10,7 +10,7 @@ import sqlite3 from 'better-sqlite3';
 import { assert, Fail } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
-import { makeStreamStore } from './streamStore.js';
+import { makeTranscriptStore } from './transcriptStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { createSHA256 } from './hasher.js';
 
@@ -30,6 +30,18 @@ export function makeSnapStoreIO() {
 }
 
 /**
+ * @param {string} key
+ */
+function getKeyType(key) {
+  if (key.startsWith('local.')) {
+    return 'local';
+  } else if (key.startsWith('host.')) {
+    return 'host';
+  }
+  return 'consensus';
+}
+
+/**
  * @typedef {{
  *   has: (key: string) => boolean,
  *   get: (key: string) => string | undefined,
@@ -41,14 +53,13 @@ export function makeSnapStoreIO() {
  * @typedef { import('./snapStore').SnapStore } SnapStore
  * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
  *
- * @typedef { import('./streamStore').StreamPosition } StreamPosition
- * @typedef { import('./streamStore').StreamStore } StreamStore
- * @typedef { import('./streamStore').StreamStoreDebug } StreamStoreDebug
+ * @typedef { import('./transcriptStore').TranscriptStore } TranscriptStore
+ * @typedef { import('./transcriptStore').TranscriptStoreDebug } TranscriptStoreDebug
  *
  * @typedef {{
- *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the kernel
- *   streamStore: StreamStore, // a stream-oriented API object to append and read streams of data
- *   snapStore?: SnapStore,
+ *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
+ *   transcriptStore: TranscriptStore, // a stream-oriented API object to append and read transcript entries
+ *   snapStore: SnapStore,
  *   startCrank: () => void,
  *   establishCrankSavepoint: (savepoint: string) => void,
  *   rollbackCrank: (savepoint: string) => void,
@@ -58,20 +69,26 @@ export function makeSnapStoreIO() {
  * }} SwingStoreKernelStorage
  *
  * @typedef {{
- *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the host
+ *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the host
  *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
+ *   setExportCallback: (cb: (updates: KVPair[]) => void) => void, // Set a callback invoked by swingStore when new serializable data is available for export
  * }} SwingStoreHostStorage
- *
+ */
+/*
+ *   getExporter(): SwingStoreExporter, // Creates an exporter of the swingStore's content as of
+ *     // the most recent commit point
+ */
+/**
  * @typedef {{
  *   kvEntries: {},
- *   streams: {},
+ *   transcripts: {},
  *   snapshots: {},
  * }} SwingStoreDebugDump
  *
  * @typedef {{
- *   dump: () => SwingStoreDebugDump,
+ *   dump: (includeHistorical?: boolean) => SwingStoreDebugDump,
  *   serialize: () => Buffer,
  * }} SwingStoreDebugTools
  *
@@ -80,6 +97,166 @@ export function makeSnapStoreIO() {
  *  hostStorage: SwingStoreHostStorage,
  *  debug: SwingStoreDebugTools,
  * }} SwingStore
+ */
+
+/**
+ * @typedef {[
+ *   key: string,
+ *   value: string|undefined,
+ * ]} KVPair
+ *
+ * @typedef {object} SwingStoreExporter
+ *
+ * Allows export of data from a swingStore as a fixed view onto the content as
+ * of the most recent commit point at the time the exporter was created.  The
+ * exporter may be used while another SwingStore instance is active for the same
+ * DB, possibly in another thread or process.  It guarantees that regardless of
+ * the concurrent activity of other swingStore instances, the data representing
+ * the commit point will stay consistent and available.
+ *
+ * @property {() => AsyncIterable<KVPair>} getKVData
+ *
+ * Get a full dump of KV data from the swingStore. This represents both the
+ * KVStore (excluding host and local prefixes), as well as any data needed to
+ * validate all artifacts, both current and historical. As such it represents
+ * the root of trust for the application.
+ *
+ * Content of validation data (with supporting entries for indexing):
+ * - export.snapshot.${vatID}.${endPos} = ${{ vatID, endPos, hash, size });
+ * - export.snapshot.${vatID}.current = `snapshot.${vatID}.${endPos}`
+ * - export.transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash, size }}
+ * - export.transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash, size }}
+ *
+ * @property {(includeHistorical: boolean) => AsyncIterable<string>} getArtifactNames
+ *
+ * Get a list of name of artifacts available from the swingStore.  A name returned
+ * by this method guarantees that a call to `getArtifact` on the same exporter
+ * instance will succeed. Options control the filtering of the artifact names
+ * yielded.
+ *
+ * Artifact names:
+ * - transcript.${vatID}.${startPos}.${endPos}
+ * - snapshot.${vatID}.${endPos}
+ *
+ * @property {(name: string) => AsyncIterable<Uint8Array>} getArtifact
+ *
+ * Retrieve an artifact by name.  May throw if the artifact is not available,
+ * which can occur if the artifact is historical and wasn't been preserved.
+ *
+ * @property {() => Promise<void>} close
+ *
+ * Dispose of all resources held by this exporter. Any further operation on this
+ * exporter or its outstanding iterators will fail.
+ */
+
+/**
+ * @param {string} dirPath
+ * @returns {SwingStoreExporter}
+ */
+export function makeSwingStoreExporter(dirPath) {
+  assert.typeof(dirPath, 'string');
+  const filePath = path.join(dirPath, 'swingstore.sqlite');
+  const db = sqlite3(filePath);
+
+  // Execute the data export in a (read) transaction, to ensure that we are
+  // capturing the state of the database at a single point in time.
+  const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
+  sqlBeginTransaction.run();
+
+  const snapStore = makeSnapStore(db, makeSnapStoreIO());
+  const transcriptStore = makeTranscriptStore(
+    db,
+    () => {},
+    () => {},
+  );
+
+  const sqlGetAllKVData = db.prepare(`
+    SELECT key, value
+    FROM kvStore
+    ORDER BY key
+  `);
+
+  /**
+   * @returns {AsyncIterable<KVPair>}
+   * @yields {KVPair}
+   */
+  async function* getKVData() {
+    const kvPairs = sqlGetAllKVData.iterate();
+    for (const kv of kvPairs) {
+      if (getKeyType(kv.key) === 'consensus') {
+        yield [kv.key, kv.value];
+      }
+    }
+    for (const exportRecord of snapStore.getExportRecords(true)) {
+      yield exportRecord;
+    }
+    for (const exportRecord of transcriptStore.getExportRecords(true)) {
+      yield exportRecord;
+    }
+  }
+
+  /**
+   * @param {boolean} includeHistorical
+   * @returns {AsyncIterable<string>}
+   * @yields {string}
+   */
+  async function* getArtifactNames(includeHistorical) {
+    yield* snapStore.getArtifactNames(includeHistorical);
+    yield* transcriptStore.getArtifactNames(includeHistorical);
+  }
+
+  /**
+   * @param {string} name
+   * @returns {AsyncIterable<Uint8Array>}
+   */
+  function getArtifact(name) {
+    assert.typeof(name, 'string');
+    const parts = name.split('.');
+    const [type, vatID, pos] = parts;
+
+    if (type === 'snapshot') {
+      // `snapshot.${vatID}.${endPos}`;
+      assert(
+        parts.length === 3,
+        `expected artifact name of the form 'snapshot.{vatID}.{endPos}', saw ${name}`,
+      );
+      return snapStore.getSnapshot(vatID, Number(pos));
+    } else if (type === 'transcript') {
+      // `transcript.${vatID}.${startPos}.${endPos}`;
+      assert(
+        parts.length === 4,
+        `expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${name}`,
+      );
+      return transcriptStore.exportSpan(vatID, Number(pos));
+    } else {
+      assert.fail(`invalid artifact type ${type}`);
+    }
+  }
+
+  const sqlAbort = db.prepare('ROLLBACK');
+
+  async function close() {
+    // After all the data has been extracted, always abort the export
+    // transaction to ensure that the export was read-only (i.e., that no bugs
+    // inadvertantly modified the database).
+    sqlAbort.run();
+    db.close();
+  }
+
+  return harden({
+    getKVData,
+    getArtifactNames,
+    getArtifact,
+    close,
+  });
+}
+
+/**
+ * Function used to create a new swingStore from an object implementing the
+ * exporter API. The exporter API may be provided by a swingStore instance, or
+ * implemented by a host to restore data that was previously exported.
+ *
+ * @typedef {(exporter: SwingStoreExporter) => Promise<SwingStore>} ImportSwingStore
  */
 
 /**
@@ -95,7 +272,7 @@ export function makeSnapStoreIO() {
  *   and values are both strings.  Provides random access to a large number of
  *   mostly small data items.  Persistently stored in a sqlite table.
  *
- * streamStore - a streaming store used to hold kernel transcripts.  Transcripts
+ * transcriptStore - a streaming store used to hold kernel transcripts.  Transcripts
  *   are both written and read (if they are read at all) sequentially, according
  *   to metadata kept in the kvStore.  Persistently stored in a sqllite table.
  *
@@ -219,6 +396,22 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pendingExports (
+      key TEXT,
+      value TEXT,
+      PRIMARY KEY (key)
+    )
+  `);
+  let exportCallback;
+  function setExportCallback(cb) {
+    assert.typeof(cb, 'function');
+    exportCallback = cb;
+  }
+  if (options.exportCallback) {
+    setExportCallback(options.exportCallback);
+  }
+
   const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
   let inCrank = false;
 
@@ -247,18 +440,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       assert(db.inTransaction);
     }
     return db;
-  }
-
-  /**
-   * @param {string} key
-   */
-  function getKeyType(key) {
-    if (key.startsWith('local.')) {
-      return 'local';
-    } else if (key.startsWith('host.')) {
-      return 'host';
-    }
-    return 'consensus';
   }
 
   function diskUsage() {
@@ -400,14 +581,27 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     delete: del,
   };
 
+  const sqlAddPendingExport = db.prepare(`
+    INSERT INTO pendingExports (key, value)
+    VALUES (?, ?)
+    ON CONFLICT DO UPDATE SET value = excluded.value
+  `);
+
+  function noteExport(key, value) {
+    if (exportCallback) {
+      sqlAddPendingExport.run(key, value);
+    }
+  }
+
   const kernelKVStore = {
     ...kvStore,
-    set(key, value, bypassHash) {
+    set(key, value) {
       assert.typeof(key, 'string');
       const keyType = getKeyType(key);
       assert(keyType !== 'host');
       set(key, value);
-      if (keyType === 'consensus' && !bypassHash) {
+      if (keyType === 'consensus') {
+        noteExport(key, value);
         crankhasher.add('add');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -422,6 +616,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       assert(keyType !== 'host');
       del(key);
       if (keyType === 'consensus') {
+        noteExport(key, undefined);
         crankhasher.add('delete');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -444,10 +639,15 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     },
   };
 
-  const { dumpStreams, ...streamStore } = makeStreamStore(db, ensureTxn);
-  const { dumpActiveSnapshots, ...snapStore } = makeSnapStore(
+  const { dumpTranscripts, ...transcriptStore } = makeTranscriptStore(
+    db,
+    ensureTxn,
+    noteExport,
+  );
+  const { dumpSnapshots, ...snapStore } = makeSnapStore(
     db,
     makeSnapStoreIO(),
+    noteExport,
     {
       keepSnapshots,
     },
@@ -514,12 +714,35 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     return get('activityhash') || '';
   }
 
+  const sqlExportsGet = db.prepare(`
+    SELECT *
+    FROM pendingExports
+    ORDER BY key
+  `);
+  sqlExportsGet.raw(true);
+
+  const sqlExportsClear = db.prepare(`
+    DELETE
+    FROM pendingExports
+  `);
+
+  function flushPendingExports() {
+    if (exportCallback) {
+      const exports = sqlExportsGet.all();
+      if (exports.length > 0) {
+        sqlExportsClear.run();
+        exportCallback(exports);
+      }
+    }
+  }
+
   function endCrank() {
     inCrank || Fail`not in crank`;
     if (savepoints.length > 0) {
       sqlReleaseSavepoints.run();
       savepoints.length = 0;
     }
+    flushPendingExports();
     inCrank = false;
   }
 
@@ -531,6 +754,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   async function commit() {
     assert(db);
     if (db.inTransaction) {
+      flushPendingExports();
       sqlCommit.run();
     }
   }
@@ -569,18 +793,18 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     return Object.fromEntries(s.all());
   }
 
-  function dump() {
+  function dump(includeHistorical = true) {
     // return comparable JS object graph with entire DB state
     return harden({
       kvEntries: dumpKVEntries(),
-      streams: dumpStreams(),
-      snapshots: dumpActiveSnapshots(),
+      transcripts: dumpTranscripts(includeHistorical),
+      snapshots: dumpSnapshots(includeHistorical),
     });
   }
 
   const kernelStorage = {
     kvStore: kernelKVStore,
-    streamStore,
+    transcriptStore,
     snapStore,
     startCrank,
     establishCrankSavepoint,
@@ -594,6 +818,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     commit,
     close,
     diskUsage,
+    setExportCallback,
   };
   const debug = {
     serialize,
@@ -628,6 +853,180 @@ export function initSwingStore(dirPath = null, options = {}) {
     assert.typeof(dirPath, 'string');
   }
   return makeSwingStore(dirPath, true, options);
+}
+
+function parseExportKey(key) {
+  const parts = key.split('.');
+  const [tag, type, vatID, rawPos] = parts;
+  assert(
+    parts.length === 4 && tag === 'export',
+    `expected artifact name of the form 'export.{type}.{vatID}.{pos}', saw ${key}`,
+  );
+  assert(
+    type === 'snapshot' || type === 'transcript',
+    `invalid artifact type ${type}`,
+  );
+  const isCurrent = rawPos === 'current';
+  let pos;
+  if (isCurrent) {
+    pos = -1;
+  } else {
+    pos = Number(rawPos);
+  }
+
+  return { type, vatID, isCurrent, pos };
+}
+
+function artifactKey(type, vatID, pos) {
+  return `${type}.${vatID}.${pos}`;
+}
+
+/**
+ * @param {SwingStoreExporter} exporter
+ * @param {string | null} [dirPath]
+ * @param {object} options
+ * @returns {Promise<SwingStore>}
+ */
+export async function importSwingStore(exporter, dirPath = null, options = {}) {
+  if (dirPath) {
+    assert.typeof(dirPath, 'string');
+  }
+  const { includeHistorical = false } = options;
+  const store = makeSwingStore(dirPath, true, options);
+  const { kernelStorage } = store;
+
+  // Artifact metadata, keyed as `${type}.${vatID}.${pos}`
+  //
+  // Note that this key is almost but not quite the artifact name, since the
+  // names of transcript span artifacts also include the endPos, but the endPos
+  // value is in flux until the span is complete.
+  const artifactMetadata = new Map();
+
+  // Each vat requires a transcript span and (usually) a snapshot.  This table
+  // tracks which of these we've seen, keyed by vatID.
+  // vatID -> { snapshotKey: metadataKey, transcriptKey: metatdataKey }
+  const vatArtifacts = new Map();
+
+  for await (const [key, value] of exporter.getKVData()) {
+    if (key.startsWith('export.')) {
+      // Keys starting with 'export.' contain artifact description info,
+      // intended for us here in the import stage rather than items destined for
+      // the KV store.
+      assert(value); // make TypeScript shut up
+      const { type, vatID, isCurrent, pos } = parseExportKey(key);
+      if (isCurrent) {
+        const vatInfo = vatArtifacts.get(vatID) || {};
+        if (type === 'snapshot') {
+          // `export.snapshot.{vatID}.current` directly identifies the current snapshot artifact
+          vatInfo.snapshotKey = value;
+        } else if (type === 'transcript') {
+          // `export.transcript.${vatID}.current` contains a metadata record for the current
+          // state of the current transcript span as of the time of export
+          const metadata = JSON.parse(value);
+          vatInfo.transcriptKey = artifactKey(type, vatID, metadata.startPos);
+          artifactMetadata.set(vatInfo.transcriptKey, metadata);
+        }
+        vatArtifacts.set(vatID, vatInfo);
+      } else {
+        artifactMetadata.set(artifactKey(type, vatID, pos), JSON.parse(value));
+      }
+    } else if (value == null) {
+      // Note '==' rather than '===': any nullish value implies deletion
+      kernelStorage.kvStore.delete(key);
+    } else {
+      kernelStorage.kvStore.set(key, value);
+    }
+  }
+
+  // At this point we should have acquired the entire KV store state, plus
+  // sufficient metadata to identify the complete set of artifacts we'll need to
+  // fetch along with the information required to validate each of them after
+  // fetching.
+  //
+  // Depending on how the export was parameterized, the metadata may also include
+  // information about historical artifacts that we might or might not actually
+  // fetch depending on how this import was parameterized
+
+  // Fetch the set of current artifacts.
+
+  // Keep track of fetched artifacts in this set so we don't fetch them a second
+  // time if we are trying for historical artifacts also.
+  const fetchedArtifacts = new Set();
+
+  for await (const [vatID, vatInfo] of vatArtifacts.entries()) {
+    // For each vat, we *must* have a transcript span.  If this is not the very
+    // first transcript span in the history of that vat, then we also must have
+    // a snapshot for the state of the vat immediately prior to when the
+    // transcript span begins.
+    assert(
+      vatInfo.transcriptKey,
+      `missing current transcript key for vat ${vatID}`,
+    );
+    const transcriptInfo = artifactMetadata.get(vatInfo.transcriptKey);
+    assert(transcriptInfo, `missing transcript metadata for vat ${vatID}`);
+    let snapshotInfo;
+    if (vatInfo.snapshotKey) {
+      snapshotInfo = artifactMetadata.get(vatInfo.snapshotKey);
+      assert(snapshotInfo, `missing snapshot metadata for vat ${vatID}`);
+    }
+    if (!snapshotInfo) {
+      assert(
+        transcriptInfo.startPos === 0,
+        `missing current snapshot for vat ${vatID}`,
+      );
+    } else {
+      assert(
+        snapshotInfo.endPos === transcriptInfo.startPos,
+        `current transcript for vat ${vatID} doesn't go with snapshot`,
+      );
+      fetchedArtifacts.add(vatInfo.snapshotKey);
+    }
+    await (!snapshotInfo ||
+      kernelStorage.snapStore.importSnapshot(
+        vatInfo.snapshotKey,
+        exporter,
+        snapshotInfo,
+      ));
+    const transcriptArtifactName = `${vatInfo.transcriptKey}.${transcriptInfo.endPos}`;
+    await kernelStorage.transcriptStore.importSpan(
+      transcriptArtifactName,
+      exporter,
+      transcriptInfo,
+    );
+    fetchedArtifacts.add(transcriptArtifactName);
+  }
+  if (!includeHistorical) {
+    return store;
+  }
+
+  // If we're also importing historical artifacts, have the exporter enumerate
+  // the complete set of artifacts it has and fetch all of them except for the
+  // ones we've already fetched.
+  for await (const artifactName of exporter.getArtifactNames(true)) {
+    if (fetchedArtifacts.has(artifactName)) {
+      continue;
+    }
+    let fetchedP;
+    if (artifactName.startsWith('snapshot.')) {
+      fetchedP = kernelStorage.snapStore.importSnapshot(
+        artifactName,
+        exporter,
+        artifactMetadata.get(artifactName),
+      );
+    } else if (artifactName.startsWith('transcript.')) {
+      // strip endPos off artifact name
+      const metadataKey = artifactName.split('.').slice(0, 3).join('.');
+      fetchedP = kernelStorage.transcriptStore.importSpan(
+        artifactName,
+        exporter,
+        artifactMetadata.get(metadataKey),
+      );
+    } else {
+      Fail`unknown artifact type: ${artifactName}`;
+    }
+    await fetchedP;
+  }
+  return store;
 }
 
 /**

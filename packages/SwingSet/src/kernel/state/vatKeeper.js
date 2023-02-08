@@ -18,8 +18,7 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-external.js').ManagerOptions } ManagerOptions
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
- * @typedef { import('../../types-external.js').StreamPosition } StreamPosition
- * @typedef { import('../../types-external.js').StreamStore } StreamStore
+ * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatManager } VatManager
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-external.js').TranscriptEntry } TranscriptEntry
@@ -36,25 +35,24 @@ const FIRST_DEVICE_ID = 70n;
  * Establish a vat's state.
  *
  * @param {*} kvStore  The key-value store in which the persistent state will be kept
- * @param {*} streamStore  Accompanying stream store
+ * @param {*} transcriptStore  Accompanying transcript store
  * @param {string} vatID The vat ID string of the vat in question
  * TODO: consider making this part of makeVatKeeper
  */
-export function initializeVatState(kvStore, streamStore, vatID) {
+export function initializeVatState(kvStore, transcriptStore, vatID) {
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
   kvStore.set(`${vatID}.nextDeliveryNum`, `0`);
   kvStore.set(`${vatID}.incarnationNumber`, `1`);
-  kvStore.set(`${vatID}.t.startPosition`, `${streamStore.STREAM_START}`);
-  kvStore.set(`${vatID}.t.endPosition`, `${streamStore.STREAM_START}`);
+  transcriptStore.initTranscript(vatID);
 }
 
 /**
  * Produce a vat keeper for a vat.
  *
  * @param {KVStore} kvStore  The keyValue store in which the persistent state will be kept
- * @param {StreamStore} streamStore  Accompanying stream store, for the transcripts
+ * @param {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
  * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
  * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
@@ -76,7 +74,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  */
 export function makeVatKeeper(
   kvStore,
-  streamStore,
+  transcriptStore,
   kernelSlog,
   vatID,
   addKernelObject,
@@ -94,7 +92,6 @@ export function makeVatKeeper(
   snapStore = undefined,
 ) {
   insistVatID(vatID);
-  const transcriptStream = `transcript-${vatID}`;
 
   function getRequired(key) {
     const value = kvStore.get(key);
@@ -475,20 +472,12 @@ export function makeVatKeeper(
   /**
    * Generator function to return the vat's transcript, one entry at a time.
    *
-   * @param {StreamPosition} [startPos]  Optional position to begin reading from
+   * @param {number} [startPos]  Optional position to begin reading from
    *
    * @yields { TranscriptEntry } a stream of transcript entries
    */
   function* getTranscript(startPos) {
-    if (startPos === undefined) {
-      startPos = Number(getRequired(`${vatID}.t.startPosition`));
-    }
-    const endPos = Number(getRequired(`${vatID}.t.endPosition`));
-    for (const entry of streamStore.readStream(
-      transcriptStream,
-      /** @type { StreamPosition } */ (startPos),
-      endPos,
-    )) {
+    for (const entry of transcriptStore.readSpan(vatID, startPos)) {
       yield /** @type { TranscriptEntry } */ (JSON.parse(entry));
     }
   }
@@ -499,21 +488,13 @@ export function makeVatKeeper(
    * @param {object} entry  The transcript entry to append.
    */
   function addToTranscript(entry) {
-    const oldPos = Number(getRequired(`${vatID}.t.endPosition`));
-    const newPos = streamStore.writeStreamItem(
-      transcriptStream,
-      JSON.stringify(entry),
-      oldPos,
-    );
-    kvStore.set(`${vatID}.t.endPosition`, `${newPos}`);
+    transcriptStore.addItem(vatID, JSON.stringify(entry));
   }
 
-  /** @returns {StreamPosition} */
+  /** @returns {number} */
   function getTranscriptEndPosition() {
-    const endPosition =
-      kvStore.get(`${vatID}.t.endPosition`) ||
-      assert.fail('missing endPosition');
-    return Number(endPosition);
+    const { endPos } = transcriptStore.getCurrentSpanBounds(vatID);
+    return endPos;
   }
 
   function getSnapshotInfo() {
@@ -540,6 +521,7 @@ export function makeVatKeeper(
 
     const endPosition = getTranscriptEndPosition();
     const info = await manager.makeSnapshot(endPosition, snapStore);
+    transcriptStore.rolloverSpan(vatID);
     const {
       hash,
       uncompressedSize,
@@ -570,9 +552,7 @@ export function makeVatKeeper(
     if (snapStore) {
       snapStore.deleteVatSnapshots(vatID);
     }
-
-    const endPos = getRequired(`${vatID}.t.endPosition`);
-    kvStore.set(`${vatID}.t.startPosition`, endPos);
+    transcriptStore.rolloverSpan(vatID);
   }
 
   function vatStats() {
@@ -584,9 +564,8 @@ export function makeVatKeeper(
     const objectCount = getCount(`${vatID}.o.nextID`, FIRST_OBJECT_ID);
     const promiseCount = getCount(`${vatID}.p.nextID`, FIRST_PROMISE_ID);
     const deviceCount = getCount(`${vatID}.d.nextID`, FIRST_DEVICE_ID);
-    const startCount = Number(getRequired(`${vatID}.t.startPosition`));
-    const endCount = Number(getRequired(`${vatID}.t.endPosition`));
-    const transcriptCount = endCount - startCount;
+    const { startPos, endPos } = transcriptStore.getCurrentSpanBounds(vatID);
+    const transcriptCount = endPos - startPos;
 
     // TODO: Fix the downstream JSON.stringify to allow the counts to be BigInts
     return harden({
