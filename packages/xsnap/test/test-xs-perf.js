@@ -46,7 +46,7 @@ test('meter details', async t => {
 
   t.like(
     meters,
-    { compute: 1_380_187, allocate: 42_074_144 },
+    { compute: 1_380_185, allocate: 42_074_144 },
     'compute, allocate meters should be stable; update METER_TYPE?',
   );
 
@@ -170,7 +170,7 @@ test('metering regex - REDOS', async t => {
   'aaaaaaaaa!'.match(/^(([a-z])+.)+/)
   `);
   const { meterUsage: meters } = result;
-  t.like(meters, { compute: 142 });
+  t.like(meters, { compute: 140 });
 });
 
 test('meter details are still available with no limit', async t => {
