@@ -89,17 +89,10 @@ const makeFakeBridgeManager = () =>
         },
         toBridge(obj) {
           assert(handler, `No handler for ${bridgeId}`);
-          switch (obj.type) {
-            case ActionType.WALLET_ACTION:
-            case ActionType.WALLET_SPEND_ACTION: {
-              // @ts-expect-error handler possibly undefined
-              return E(handler).fromBridge(obj);
-            }
-
-            default: {
-              assert.fail(`Unsupported bridge object type ${obj.type}`);
-            }
-          }
+          // Rely on interface guard for validation.
+          // This should also be validated upstream but don't rely on it.
+          // @ts-expect-error handler possibly undefined
+          return E(handler).fromBridge(obj);
         },
         setHandler(newHandler) {
           handler = newHandler;
