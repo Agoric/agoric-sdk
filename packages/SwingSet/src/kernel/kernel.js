@@ -373,7 +373,7 @@ export default function buildKernel(
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
    *    consumeMessage?: boolean, // discard the aborted delivery
-   *    didDelivery?: boolean, // we made a delivery to a vat, for run policy
+   *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
    *    computrons?: BigInt, // computron count for run policy
    *    meterID?: string, // deduct those computrons from a meter
    *    decrementReapCount?: { vatID: VatID }, // the reap counter should decrement
@@ -462,7 +462,7 @@ export default function buildKernel(
     // TODO metering.allocate, some day
 
     /** @type {CrankResults} */
-    const results = { didDelivery: true, computrons };
+    const results = { didDelivery: vatID, computrons };
 
     if (meterID && computrons) {
       results.meterID = meterID; // decrement meter when we're done
@@ -702,7 +702,7 @@ export default function buildKernel(
       console.log('error during createDynamicVat', err);
       const info = makeError(`${err}`);
       const results = {
-        didDelivery: true, // ok, it failed, but we did spend the time
+        didDelivery: vatID, // ok, it failed, but we did spend the time
         abort: true, // delete partial vat state
         consumeMessage: true, // don't repeat createVat
         terminate: { vatID, reject: true, info },
@@ -1266,8 +1266,11 @@ export default function buildKernel(
         crankResults.consumeMessage ? 'deliver' : 'start',
       );
     } else {
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      await vatWarehouse.maybeSaveSnapshot();
+      const vatID = crankResults.didDelivery;
+      if (vatID) {
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await vatWarehouse.maybeSaveSnapshot(vatID);
+      }
     }
     const { computrons, meterID } = crankResults;
     if (computrons) {

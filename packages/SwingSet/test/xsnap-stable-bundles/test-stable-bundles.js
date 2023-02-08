@@ -87,7 +87,7 @@ test('xsnap bundles are stable', async t => {
   const config = {
     includeDevDependencies: true, // for @endo/far
     defaultManagerType: 'local',
-    snapshotInitial: 1,
+    snapshotInitial: 2,
     bootstrap: 'bootstrap',
     bundles: {
       bootstrap: {
@@ -168,11 +168,16 @@ test('xsnap bundles are stable', async t => {
   t.deepEqual(log, preloadV1);
   log.length = 0;
 
-  // now allow the bootstrap message to be delivered, which should
-  // trigger a snapshot
+  // the preload pushes an initialize-worker to the transcript, which
+  // counts as the first delivery (deliveryNum=0), towards our
+  // snapshotInitial: 2
+
+  // now allow the bootstrap message to be delivered as deliveryNum=1,
+  // which should trigger a snapshot, which is recorded in a
+  // save-snapshot as deliveryNum=2
   t.is(snapStore.getSnapshotInfo('v1'), undefined);
   await c2.run();
-  t.is(snapStore.getSnapshotInfo('v1')?.endPos, 1);
+  t.is(snapStore.getSnapshotInfo('v1')?.endPos, 2);
   await c2.shutdown;
 
   // now that the worker has a snapshot, the vat preload won't fetch

@@ -35,6 +35,7 @@ test('load empty', async t => {
 
 async function simpleCall(t) {
   const config = {
+    defaultManagerType: 'local',
     vats: {
       vat1: {
         sourceSpec: new URL('vat-controller-1.js', import.meta.url).pathname,
@@ -55,12 +56,37 @@ async function simpleCall(t) {
   const vattpVatID = controller.vatNameToID('vattp');
   const timerVatID = controller.vatNameToID('timer');
 
+  // snoop the bundleID to use
+  const stateFor = vatID => {
+    const source = JSON.parse(kernelStorage.kvStore.get(`${vatID}.source`));
+    const { bundleID } = source;
+    const transcript = [
+      [
+        0,
+        {
+          d: [
+            'initialize-worker',
+            {
+              source: { bundleID },
+              workerOptions: {
+                type: 'local',
+              },
+            },
+          ],
+          sc: [],
+          r: { status: 'ok' },
+        },
+      ],
+    ];
+    const state = { transcript };
+    return { vatID, state };
+  };
   t.deepEqual(data.vatTables, [
-    { vatID: adminVatID, state: { transcript: [] } },
-    { vatID: commsVatID, state: { transcript: [] } },
-    { vatID: vattpVatID, state: { transcript: [] } },
-    { vatID: timerVatID, state: { transcript: [] } },
-    { vatID: vat1ID, state: { transcript: [] } },
+    stateFor(adminVatID),
+    { vatID: commsVatID, state: { transcript: [] } }, // transcriptless
+    stateFor(vattpVatID),
+    stateFor(timerVatID),
+    stateFor(vat1ID),
   ]);
   // the vatAdmin root is pre-registered
   const vatAdminRoot = ['ko20', adminVatID, 'o+0'];

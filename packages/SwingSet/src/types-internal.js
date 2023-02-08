@@ -98,7 +98,22 @@ export {};
  */
 
 /**
+ * @typedef { { source: { bundleID?: BundleID }, workerOptions: WorkerOptions } } TranscriptDeliveryInitializeWorkerOptions
+ * @typedef { [tag: 'initialize-worker', options: TranscriptDeliveryInitializeWorkerOptions] } TranscriptDeliveryInitializeWorker
+ * @typedef { [tag: 'save-snapshot'] } TranscriptDeliverySaveSnapshot
+ * @typedef { { snapshotID: string } } TranscriptDeliverySnapshotConfig
+ * @typedef { [tag: 'load-snapshot', config: TranscriptDeliverySnapshotConfig] } TranscriptDeliveryLoadSnapshot
+ * @typedef { [tag: 'shutdown-worker'] } TranscriptDeliveryShutdownWorker
+ * @typedef { VatDeliveryObject
+ *             | TranscriptDeliveryInitializeWorker
+ *             | TranscriptDeliverySaveSnapshot
+ *             | TranscriptDeliveryLoadSnapshot
+ *             | TranscriptDeliveryShutdownWorker
+ *          } TranscriptDelivery
  * @typedef { { s: VatSyscallObject, r: VatSyscallResult } } TranscriptSyscall
- * @typedef { { status: string } } TranscriptDeliveryResults
- * @typedef { { d: VatDeliveryObject, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
+ * @typedef { { status: string, snapshotID: string } } TranscriptDeliverySaveSnapshotResults
+ * @typedef { { status: string } } TranscriptDeliveryGenericResults
+ * @typedef { TranscriptDeliverySaveSnapshotResults | TranscriptDeliveryGenericResults } TranscriptDeliveryResults
+ * @typedef { { d: TranscriptDelivery, sc: TranscriptSyscall[], r: TranscriptDeliveryResults } } TranscriptEntry
+ *
  */

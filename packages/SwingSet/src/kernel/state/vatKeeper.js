@@ -21,6 +21,8 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-internal.js').VatManager } VatManager
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-internal.js').TranscriptEntry } TranscriptEntry
+ * @typedef {import('../../types-internal.js').TranscriptDeliverySaveSnapshot} TDSaveSnapshot
+ * @typedef {import('../../types-internal.js').TranscriptDeliveryLoadSnapshot} TDLoadSnapshot
  */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object
@@ -463,16 +465,28 @@ export function makeVatKeeper(
     }
   }
 
+  function transcriptSize() {
+    const bounds = transcriptStore.getCurrentSpanBounds(vatID);
+    const { startPos, endPos } = bounds;
+    return endPos - startPos;
+  }
+
   /**
-   * Generator function to return the vat's transcript, one entry at a time.
+   * Generator function to return the vat's current-span transcript,
+   * one entry at a time.
    *
-   * @param {number} [startPos]  Optional position to begin reading from
-   *
-   * @yields { TranscriptEntry } a stream of transcript entries
+   * @yields { [number, TranscriptEntry] } a stream of deliveryNum and transcript entries
    */
-  function* getTranscript(startPos) {
-    for (const entry of transcriptStore.readSpan(vatID, startPos)) {
-      yield /** @type { TranscriptEntry } */ (JSON.parse(entry));
+  function* getTranscript() {
+    const bounds = transcriptStore.getCurrentSpanBounds(vatID);
+    let deliveryNum = bounds.startPos;
+    // readSpan() starts at startPos and ends just before endPos
+    for (const entry of transcriptStore.readSpan(vatID)) {
+      const te = /** @type { TranscriptEntry } */ (JSON.parse(entry));
+      /** @type { [number, TranscriptEntry]} */
+      const retval = [deliveryNum, te];
+      yield retval;
+      deliveryNum += 1;
     }
   }
 
@@ -506,34 +520,55 @@ export function makeVatKeeper(
    * Store a snapshot, if given a snapStore.
    *
    * @param {VatManager} manager
-   * @returns {Promise<boolean>}
+   * @returns {Promise<void>}
    */
   async function saveSnapshot(manager) {
     if (!snapStore || !manager.makeSnapshot) {
-      return false;
+      return;
     }
 
+    // tell the manager to save a heap snapshot to the snapStore
     const endPosition = getTranscriptEndPosition();
     const info = await manager.makeSnapshot(endPosition, snapStore);
-    transcriptStore.rolloverSpan(vatID);
+
     const {
-      hash,
+      hash: snapshotID,
       uncompressedSize,
       rawSaveSeconds,
       compressedSize,
       compressSeconds,
     } = info;
+
+    // push a save-snapshot transcript entry
+    addToTranscript({
+      d: /** @type {TDSaveSnapshot} */ ['save-snapshot'],
+      sc: [],
+      r: { status: 'ok', snapshotID },
+    });
+
+    // then start a new transcript span
+    transcriptStore.rolloverSpan(vatID);
+
+    // then push a load-snapshot entry, so that the current span
+    // always starts with an initialize-worker or load-snapshot
+    // pseudo-delivery
+    const loadConfig = { snapshotID };
+    addToTranscript({
+      d: /** @type {TDLoadSnapshot} */ ['load-snapshot', loadConfig],
+      sc: [],
+      r: { status: 'ok' },
+    });
+
     kernelSlog.write({
       type: 'heap-snapshot-save',
       vatID,
-      hash,
+      snapshotID,
       uncompressedSize,
       rawSaveSeconds,
       compressedSize,
       compressSeconds,
       endPosition,
     });
-    return true;
   }
 
   function deleteSnapshotsAndTranscript() {
@@ -611,6 +646,7 @@ export function makeVatKeeper(
     hasCListEntry,
     deleteCListEntry,
     deleteCListEntriesForKernelSlots,
+    transcriptSize,
     getTranscript,
     transcriptSnapshotStats,
     addToTranscript,
