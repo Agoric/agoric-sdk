@@ -2,13 +2,14 @@ import './types.js';
 
 import {
   CONTRACT_ELECTORATE,
-  makeParamManagerSync,
   makeParamManager,
+  makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -16,6 +17,7 @@ export const RECORDING_PERIOD_KEY = 'RecordingPeriod';
 
 export const DEBT_LIMIT_KEY = 'DebtLimit';
 export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
+export const LIQUIDATION_PADDING_KEY = 'LiquidationPadding';
 export const LIQUIDATION_PENALTY_KEY = 'LiquidationPenalty';
 export const INTEREST_RATE_KEY = 'InterestRate';
 export const LOAN_FEE_KEY = 'LoanFee';
@@ -69,27 +71,48 @@ harden(makeVaultDirectorParams);
 
 /** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').ParamTypesMapFromRecord<ReturnType<typeof makeVaultDirectorParams>>} VaultDirectorParams */
 
+/** @type {(liquidationMargin: Ratio) => Ratio} */
+const zeroRatio = liquidationMargin =>
+  subtractRatios(liquidationMargin, liquidationMargin);
+
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
-export const makeVaultParamManager = (publisherKit, initial) =>
+export const makeVaultParamManager = (
+  publisherKit,
+  {
+    debtLimit,
+    interestRate,
+    liquidationMargin,
+    liquidationPadding = zeroRatio(liquidationMargin),
+    liquidationPenalty,
+    loanFee,
+  },
+) =>
   makeParamManagerSync(publisherKit, {
-    [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, initial.debtLimit],
-    [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, initial.liquidationMargin],
-    [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, initial.liquidationPenalty],
-    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, initial.interestRate],
-    [LOAN_FEE_KEY]: [ParamTypes.RATIO, initial.loanFee],
+    [DEBT_LIMIT_KEY]: [ParamTypes.AMOUNT, debtLimit],
+    [INTEREST_RATE_KEY]: [ParamTypes.RATIO, interestRate],
+    [LIQUIDATION_PADDING_KEY]: [ParamTypes.RATIO, liquidationPadding],
+    [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, liquidationMargin],
+    [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
+    [LOAN_FEE_KEY]: [ParamTypes.RATIO, loanFee],
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
-export const vaultParamPattern = M.splitRecord({
-  liquidationMargin: ratioPattern,
-  liquidationPenalty: ratioPattern,
-  interestRate: ratioPattern,
-  loanFee: ratioPattern,
-  debtLimit: amountPattern,
-});
+export const vaultParamPattern = M.splitRecord(
+  {
+    liquidationMargin: ratioPattern,
+    liquidationPenalty: ratioPattern,
+    interestRate: ratioPattern,
+    loanFee: ratioPattern,
+    debtLimit: amountPattern,
+  },
+  {
+    // optional for backwards compatibility, e.g. with loadgen
+    liquidationPadding: ratioPattern,
+  },
+);
 
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit

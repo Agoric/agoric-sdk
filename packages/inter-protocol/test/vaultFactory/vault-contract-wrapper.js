@@ -130,6 +130,10 @@ export async function start(zcf, privateArgs, baggage) {
         getChargingPeriod() {
           return DAY;
         },
+        getLiquidationPadding() {
+          // XXX re-use
+          return LIQUIDATION_MARGIN;
+        },
         getRecordingPeriod() {
           return DAY;
         },
