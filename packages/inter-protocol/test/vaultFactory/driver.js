@@ -54,7 +54,7 @@ const contractRoots = {
 };
 
 /**
- * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500
+ * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500, lP: 0%
  *
  * @param {import('../supports.js').AmountUtils} debt
  */
@@ -69,6 +69,7 @@ const defaultParamValues = debt =>
     interestRate: debt.makeRatio(100n, BASIS_POINTS),
     // charge to create or increase loan balance
     loanFee: debt.makeRatio(500n, BASIS_POINTS),
+    // NB: liquidationPadding defaults to zero in contract
   });
 
 /**
@@ -213,9 +214,9 @@ const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
 /**
  *
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {Amount<'nat'>} runInitialLiquidity
+ * @param {Amount<'nat'>} amt
  */
-const getRunFromFaucet = async (t, runInitialLiquidity) => {
+const getRunFromFaucet = async (t, amt) => {
   const {
     installation: { faucet: installation },
     zoe,
@@ -234,7 +235,7 @@ const getRunFromFaucet = async (t, runInitialLiquidity) => {
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: runInitialLiquidity },
+      want: { RUN: amt },
     }),
   );
 
@@ -401,6 +402,52 @@ export const makeManagerDriver = async (
       vault: () => vault,
       vaultSeat: () => vaultSeat,
       notification: () => notification,
+      /**
+       *
+       * @param {bigint} collValue
+       * @param {import('../supports.js').AmountUtils} collUtils
+       * @param {bigint} [mintedValue]
+       */
+      giveCollateral: async (collValue, collUtils, mintedValue = 0n) => {
+        trace(t, 'giveCollateral', collValue);
+        const invitation = await E(vault).makeAdjustBalancesInvitation();
+        const amount = collUtils.make(collValue);
+        const seat = await E(services.zoe).offer(
+          invitation,
+          harden({
+            give: { Collateral: amount },
+            want: mintedValue ? { Minted: run.make(mintedValue) } : undefined,
+          }),
+          harden({
+            Collateral: collUtils.mint.mintPayment(amount),
+          }),
+        );
+        return E(seat).getOfferResult();
+      },
+      /**
+       *
+       * @param {bigint} mintedValue
+       * @param {import('../supports.js').AmountUtils} collUtils
+       * @param {bigint} [collValue]
+       */
+      giveMinted: async (mintedValue, collUtils, collValue = 0n) => {
+        trace(t, 'giveCollateral', mintedValue);
+        const invitation = await E(vault).makeAdjustBalancesInvitation();
+        const mintedAmount = run.make(mintedValue);
+        const seat = await E(services.zoe).offer(
+          invitation,
+          harden({
+            give: { Minted: mintedAmount },
+            want: collValue
+              ? { Collateral: collUtils.make(collValue) }
+              : undefined,
+          }),
+          harden({
+            Minted: getRunFromFaucet(t, mintedAmount),
+          }),
+        );
+        return E(seat).getOfferResult();
+      },
       close: async () => {
         currentSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
         currentOfferResult = await E(currentSeat).getOfferResult();
@@ -505,13 +552,14 @@ export const makeManagerDriver = async (
      * @param {*} newValue
      * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
      */
-    setGovernedParam: async (
+    setGovernedParam: (
       name,
       newValue,
       paramPath = { key: 'governedParams' },
     ) => {
-      const vfGov = await t.context.puppetGovernors.vaultFactory;
-      await E(vfGov).changeParams(
+      trace(t, 'setGovernedParam', name);
+      const vfGov = t.context.puppetGovernors.vaultFactory;
+      return E(vfGov).changeParams(
         harden({
           paramPath,
           changes: { [name]: newValue },

@@ -21,6 +21,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 export { ActionType };
 
@@ -121,8 +122,10 @@ export const makeMockTestSpace = async log => {
     switch (name) {
       case 'mints':
         return mintsRoot();
-      case 'board':
-        return boardRoot();
+      case 'board': {
+        const baggage = makeScalarBigMapStore('baggage');
+        return boardRoot({}, {}, baggage);
+      }
       default:
         throw Error('unknown loadVat name');
     }

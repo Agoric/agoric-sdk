@@ -102,6 +102,7 @@ const defaultParamValues = debtBrand =>
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
+    // NB: liquidationPadding defaults to zero in contract
   });
 
 test.before(async t => {
@@ -1547,6 +1548,8 @@ test('transfer vault', async t => {
     adjustInvitation,
     harden({
       give: { Minted: payoffRun2 },
+      // it's only multi-turn if there is a want
+      want: { Collateral: aeth.make(1n) },
     }),
     harden({ Minted: paybackPayment }),
   );
@@ -2163,39 +2166,7 @@ test('close loan', async t => {
   t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.makeEmpty());
 });
 
-test('excessive loan', async t => {
-  const { zoe, aeth, run } = t.context;
-
-  const services = await setupServices(
-    t,
-    [15n],
-    aeth.make(1n),
-    buildManualTimer(t.log),
-    undefined,
-    500n,
-  );
-  const { lender } = services.vaultFactory;
-
-  // Try to Create a loan for Alice for 5000 Minted with 100 aeth collateral
-  const collateralAmount = aeth.make(100n);
-  const aliceLoanAmount = run.make(5000n);
-  /** @type {UserSeat<VaultKit>} */
-  const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
-    harden({
-      give: { Collateral: collateralAmount },
-      want: { Minted: aliceLoanAmount },
-    }),
-    harden({
-      Collateral: aeth.mint.mintPayment(collateralAmount),
-    }),
-  );
-  await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
-    message: /exceeds max/,
-  });
-});
-
-test('loan too small', async t => {
+test('loan too small - MinInitialDebt', async t => {
   const { zoe, aeth, run } = t.context;
   t.context.minInitialDebt = 50_000n;
 
@@ -2236,7 +2207,7 @@ test('loan too small', async t => {
  * Attempts to adjust balances on vaults beyond the debt limit fail.
  * In other words, minting for anything other than charging interest fails.
  */
-test('excessive debt on collateral type', async t => {
+test('excessive debt on collateral type - debtLimit', async t => {
   const { zoe, aeth, run } = t.context;
 
   const services = await setupServices(

@@ -41,7 +41,6 @@ import {
   assertProposalShape,
   atomicTransfer,
   ceilDivideBy,
-  floorDivideBy,
   getAmountIn,
   getAmountOut,
   makeRatio,
@@ -53,6 +52,7 @@ import { E } from '@endo/eventual-send';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
+import { maxDebtForVault } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
@@ -94,6 +94,7 @@ const trace = makeTracer('VM', false);
  *  getRecordingPeriod: () => RelativeTime,
  *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
+ *  getLiquidationPadding: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
@@ -435,6 +436,7 @@ export const prepareVaultManagerKit = (
           const { facets } = this;
           trace('reschedulePriceCheck', collateralBrand, {
             liquidationQueueing,
+            outstandingQuote: !!outstandingQuote,
           });
           // INTERLOCK: the first time through, start the activity to wait for
           // and process liquidations over time.
@@ -622,20 +624,23 @@ export const prepareVaultManagerKit = (
         },
 
         /**
+         * Consults a price authority to determine the max debt this manager
+         * config will allow for the collateral.
+         *
          * @param {Amount<'nat'>} collateralAmount
          */
         async maxDebtFor(collateralAmount) {
           trace('maxDebtFor', collateralAmount);
           assert(factoryPowers && priceAuthority);
-          const quoteAmount = await E(priceAuthority).quoteGiven(
+          const quote = await E(priceAuthority).quoteGiven(
             collateralAmount,
             debtBrand,
           );
-          trace('maxDebtFor got quote', quoteAmount);
-          // floorDivide because we want the debt ceiling lower
-          return floorDivideBy(
-            getAmountOut(quoteAmount),
+          trace('maxDebtFor got quote', quote.quoteAmount.value[0]);
+          return maxDebtForVault(
+            quote,
             factoryPowers.getGovernedParams().getLiquidationMargin(),
+            factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
         },
         /**

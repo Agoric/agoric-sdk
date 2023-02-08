@@ -3,7 +3,7 @@ import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
 import { prepareVaultHolder } from './vaultHolder.js';
 
-const trace = makeTracer('IV', false);
+const trace = makeTracer('VK', false);
 
 /**
  *
