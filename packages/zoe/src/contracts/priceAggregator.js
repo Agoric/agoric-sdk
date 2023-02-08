@@ -43,11 +43,11 @@ import '@agoric/ertp/src/types-ambient.js';
 const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
- * @deprecated use priceAggregatorChainlink
+ * @deprecated use fluxAggregator
  *
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median. This naive method is game-able and so this module
- * is a stub until we complete what is now in `priceAggregatorChainlink.js`.
+ * is a stub until we complete what is now in `fluxAggregator.js`.
  *
  * @param {ZCF<{
  * timer: import('@agoric/time/src/types').TimerService,

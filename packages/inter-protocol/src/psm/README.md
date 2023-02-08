@@ -9,7 +9,7 @@ separately.
 
 ## Usage
 
-See the [Smart Wallet integration test](/packages/smart-wallet/test/test-psm-integration.js) for how it's used.
+See the [Smart Wallet integration test](/packages/inter-protocol/test/smartWallet/test-psm-integration.js) for how it's used.
 
 End users can make swap offers in the CLI or GUI.
 
