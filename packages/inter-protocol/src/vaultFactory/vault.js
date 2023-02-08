@@ -5,7 +5,6 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
   atomicTransfer,
-  ceilMultiplyBy,
   floorMultiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -21,6 +20,7 @@ import { UnguardedHelperI } from '../typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
+import { calculateLoanCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
 
@@ -126,7 +126,18 @@ const validTransitions = {
  * @param {Amount<'nat'>} newDebt
  * @returns {boolean}
  */
-const checkRestart = (newCollateralPre, maxDebtPre, newCollateral, newDebt) => {
+const allocationsChangedSinceQuote = (
+  newCollateralPre,
+  maxDebtPre,
+  newCollateral,
+  newDebt,
+) => {
+  trace('allocationsChangedSinceQuote', {
+    newCollateralPre,
+    maxDebtPre,
+    newCollateral,
+    newDebt,
+  });
   if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
     // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
     // We can pro-rate maxDebt because the quote is either linear (price is
@@ -221,6 +232,30 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         },
         emptyDebt() {
           return AmountMath.makeEmpty(this.facets.helper.debtBrand());
+        },
+        /**
+         * @typedef {{ give: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> }, want: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> } }} FullProposal
+         */
+        /**
+         * @param {ProposalRecord} partial
+         * @returns {FullProposal}
+         */
+        fullProposal(partial) {
+          assertOnlyKeys(partial, ['Collateral', 'Minted']);
+          return {
+            give: {
+              Collateral:
+                partial.give?.Collateral ||
+                this.facets.helper.emptyCollateral(),
+              Minted: partial.give?.Minted || this.facets.helper.emptyDebt(),
+            },
+            want: {
+              Collateral:
+                partial.want?.Collateral ||
+                this.facets.helper.emptyCollateral(),
+              Minted: partial.want?.Minted || this.facets.helper.emptyDebt(),
+            },
+          };
         },
         // #endregion
 
@@ -459,13 +494,12 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         loanFee(currentDebt, giveAmount, wantAmount) {
           const { state } = this;
 
-          const fee = ceilMultiplyBy(
+          return calculateLoanCosts(
+            currentDebt,
+            giveAmount,
             wantAmount,
             state.manager.getGovernedParams().getLoanFee(),
           );
-          const toMint = AmountMath.add(wantAmount, fee);
-          const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-          return { newDebt, toMint, fee };
         },
 
         /**
@@ -480,38 +514,16 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const { self, helper } = facets;
           const { outerUpdater: updaterPre } = state;
           const { vaultSeat } = state;
-          const proposal = clientSeat.getProposal();
-          assertOnlyKeys(proposal, ['Collateral', 'Minted']);
+          const fp = helper.fullProposal(clientSeat.getProposal());
 
-          const normalizedDebtPre = self.getNormalizedDebt();
-          const collateralPre = helper.getCollateralAllocated(vaultSeat);
-
-          const giveColl = proposal.give.Collateral || helper.emptyCollateral();
-          const wantColl = proposal.want.Collateral || helper.emptyCollateral();
-
-          const newCollateralPre = addSubtract(
-            collateralPre,
-            giveColl,
-            wantColl,
-          );
-          // max debt supported by current Collateral as modified by proposal
-          const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
-          updaterPre === state.outerUpdater ||
-            Fail`Transfer during vault adjustment`;
-          helper.assertActive();
-
-          // After the `await`, we retrieve the vault's allocations again,
-          // so we can compare to the debt limit based on the new values.
-          const collateral = helper.getCollateralAllocated(vaultSeat);
-          const newCollateral = addSubtract(collateral, giveColl, wantColl);
-
-          const debt = self.getCurrentDebt();
-          const giveMinted = AmountMath.min(
-            proposal.give.Minted || helper.emptyDebt(),
-            debt,
-          );
-          const wantMinted = proposal.want.Minted || helper.emptyDebt();
-          if (allEmpty([giveColl, giveMinted, wantColl, wantMinted])) {
+          if (
+            allEmpty([
+              fp.give.Collateral,
+              fp.give.Minted,
+              fp.want.Collateral,
+              fp.want.Minted,
+            ])
+          ) {
             clientSeat.exit();
             return 'no transaction, as requested';
           }
@@ -519,38 +531,128 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
           // then mint, reallocate, and burn.
-          const { newDebt, fee, toMint } = helper.loanFee(
-            debt,
-            giveMinted,
-            wantMinted,
+          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+            self.getCurrentDebt(),
+            fp.give.Minted,
+            fp.want.Minted,
           );
 
-          trace('adjustBalancesHook', state.idInManager, {
+          const normalizedDebtPre = self.getNormalizedDebt();
+          const collateralPre = helper.getCollateralAllocated(vaultSeat);
+          const hasWants = !allEmpty([fp.want.Collateral, fp.want.Minted]);
+
+          if (!hasWants) {
+            // allow deposits regardless of max debt allowed
+            return helper.commitBalanceAdjustment(
+              clientSeat,
+              fp,
+              {
+                newDebt,
+                fee,
+                surplus,
+                toMint,
+              },
+              { normalizedDebtPre, collateralPre },
+            );
+          }
+
+          const newCollateralPre = addSubtract(
+            collateralPre,
+            fp.give.Collateral,
+            fp.want.Collateral,
+          );
+          // max debt supported by the vault Collateral implied by the proposal
+          const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
+          updaterPre === state.outerUpdater ||
+            Fail`Transfer during vault adjustment`;
+          helper.assertActive();
+
+          trace('adjustBalancesHook after quote', state.idInManager, {
             newCollateralPre,
-            newCollateral,
             fee,
             toMint,
+            maxDebtPre,
             newDebt,
           });
 
+          // While awaiting maxDebtFor, the allocations may have changed.
+          // After the `await`, we retrieve the vault's allocations again,
+          // so we can compare to the debt limit based on the new values.
+          const collateral = helper.getCollateralAllocated(vaultSeat);
+          const newCollateral = addSubtract(
+            collateral,
+            fp.give.Collateral,
+            fp.want.Collateral,
+          );
           if (
-            checkRestart(newCollateralPre, maxDebtPre, newCollateral, newDebt)
+            allocationsChangedSinceQuote(
+              newCollateralPre,
+              maxDebtPre,
+              newCollateral,
+              newDebt,
+            )
           ) {
             return helper.adjustBalancesHook(clientSeat);
           }
 
-          stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
+          return helper.commitBalanceAdjustment(
+            clientSeat,
+            fp,
+            {
+              newDebt,
+              fee,
+              surplus,
+              toMint,
+            },
+            { normalizedDebtPre, collateralPre },
+          );
+        },
+
+        /**
+         *
+         * @param {ZCFSeat} clientSeat
+         * @param {FullProposal} fp
+         * @param {ReturnType<typeof calculateLoanCosts>} costs
+         * @param {object} accounting
+         * @param {NormalizedDebt} accounting.normalizedDebtPre
+         * @param {Amount<'nat'>} accounting.collateralPre
+         * @returns {Promise<string>} success message
+         */
+        async commitBalanceAdjustment(
+          clientSeat,
+          fp,
+          { newDebt, fee, surplus, toMint },
+          { normalizedDebtPre, collateralPre },
+        ) {
+          const { state, facets } = this;
+          const { helper } = facets;
+          const { vaultSeat } = state;
+
+          const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
+
+          // TODO use atomicRearrange https://github.com/Agoric/agoric-sdk/issues/5605
+          stageDelta(
+            clientSeat,
+            vaultSeat,
+            fp.give.Collateral,
+            fp.want.Collateral,
+            'Collateral',
+          );
           // `wantMinted` is allocated in the reallocate and mint operation, and so not here
           stageDelta(
             clientSeat,
             vaultSeat,
-            giveMinted,
+            giveMintedTaken,
             helper.emptyDebt(),
             'Minted',
           );
 
           /** @type {Array<ZCFSeat>} */
-          const vaultSeatOpt = allEmpty([giveColl, giveMinted, wantColl])
+          const vaultSeatOpt = allEmpty([
+            fp.give.Collateral,
+            giveMintedTaken,
+            fp.want.Collateral,
+          ])
             ? []
             : [vaultSeat];
           state.manager.mintAndReallocate(
@@ -566,7 +668,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             collateralPre,
             newDebt,
           );
-          state.manager.burnAndRecord(giveMinted, vaultSeat);
+          state.manager.burnAndRecord(giveMintedTaken, vaultSeat);
           helper.assertVaultHoldsNoMinted();
 
           helper.updateUiState();
