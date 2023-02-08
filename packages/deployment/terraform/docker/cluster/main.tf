@@ -8,8 +8,6 @@ resource "docker_container" "cluster" {
     "/run" = ""
   }
 
-  privileged = "true"
-
   volumes = "${var.volumes}"
 
   upload {
