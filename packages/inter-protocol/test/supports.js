@@ -60,7 +60,7 @@ export const setUpZoeForTest = async (setJig = () => {}) => {
   return {
     zoe: zoeService,
     feeMintAccessP: feeMintAccess,
-    vatAdminService: admin,
+    vatAdminSvc: admin,
     vatAdminState,
   };
 };
@@ -88,8 +88,8 @@ export const setupBootstrap = (t, optTimer) => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  const { vatAdminService } = t.context;
-  produce.vatAdminService.resolve(vatAdminService);
+  const { vatAdminSvc } = t.context;
+  produce.vatAdminSvc.resolve(vatAdminSvc);
 
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);

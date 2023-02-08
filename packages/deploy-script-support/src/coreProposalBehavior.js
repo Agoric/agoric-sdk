@@ -82,6 +82,7 @@ export const makeCoreProposalBehavior = ({
     console.info('restoreRef, evaluateBundleCap', {
       manifestInstallRef,
       exportedGetManifest,
+      vatAdminSvc,
     });
     const { bundleName, bundleID } = manifestInstallRef;
     let bundleCap;

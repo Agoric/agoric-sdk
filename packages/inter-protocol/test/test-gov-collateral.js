@@ -4,6 +4,7 @@ import url from 'url';
 import path from 'path';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import bundleSource from '@endo/bundle-source';
 import {
   addBankAssets,
   makeAddressNameHubs,
@@ -62,7 +63,8 @@ let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
-  const { zoe, feeMintAccessP, vatAdminService, vatAdminState } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP, vatAdminSvc, vatAdminState } =
+    await setUpZoeForTest();
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -96,14 +98,34 @@ const makeTestContext = async () => {
     return bundlePathToInstallP.get(bundlePath);
   };
 
-  const registerBundleHandles = bundleHandleMap => {
-    console.log(`-- registerBundleHandles`, bundleHandleMap);
-    for (const [{ bundleName }, paths] of bundleHandleMap.entries()) {
-      !bundleNameToAbsolutePaths.has(bundleName) ||
-        Fail`bundleName ${bundleName} already registered`;
-      bundleNameToAbsolutePaths.set(bundleName, paths);
-      vatAdminState. XXX
+  const registerOne = async (bundleName, paths) => {
+    !bundleNameToAbsolutePaths.has(bundleName) ||
+      Fail`bundleName ${bundleName} already registered`;
+    bundleNameToAbsolutePaths.set(bundleName, paths);
+    // use vatAdminState to install this bundle
+    console.log(`--registerOne`, bundleName, paths);
+    let bundleP;
+    if (paths.bundle) {
+      bundleP = import(paths.bundle).then(ns => ns.default);
+    } else {
+      assert(paths.source);
+      bundleP = bundleSource(paths.source);
     }
+    const bundle = await bundleP;
+    console.log(`-- installing ${bundleName}`);
+    const bundleID = bundle.endoZipBase64Sha512;
+    console.log(`--  got bundleID ${bundleID}`);
+    assert(bundleID);
+    vatAdminState.installNamedBundle(bundleName, bundleID, bundle);
+  };
+
+  const registerBundleHandles = async bundleHandleMap => {
+    console.log(`-- registerBundleHandles`, bundleHandleMap);
+    const allP = [];
+    for (const [{ bundleName }, paths] of bundleHandleMap.entries()) {
+      allP.push(registerOne(bundleName, paths));
+    }
+    await Promise.all(allP);
   };
 
   return {
@@ -112,7 +134,7 @@ const makeTestContext = async () => {
     cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccessP,
-    vatAdminService,
+    vatAdminSvc,
     vatAdminState,
     run: { issuer: runIssuer, brand: runBrand },
     installation,
@@ -134,6 +156,8 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
   space.produce.loadVat.resolve(loadVat);
   space.produce.loadCriticalVat.resolve(loadVat);
+
+  space.vatPowers = t.context.vatAdminState.getVatPowers();
 
   const emptyRunPayment = async () => {
     const {
@@ -231,11 +255,13 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         consume: { restoreBundleName },
       } = allPowers;
       const restoreRef = async ({ bundleName }) => {
+        console.log(`--tgc.mS.rR(${bundleName})`);
         return cpE(restoreBundleName)(bundleName);
       };
 
       await Promise.all(
         makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
+          console.log(`--tgc.mS 1`, ref);
           const subBehavior = makeCoreProposalBehavior({
             manifestInstallRef: ref,
             getManifestCall: call,
@@ -259,7 +285,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         makeEnactCoreProposalsFromBundleHandle,
         () => (lastProposalSequence += 1),
       );
-    t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
+    await t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
 
     const coreEvalMessage = {
       type: 'CORE_EVAL',
