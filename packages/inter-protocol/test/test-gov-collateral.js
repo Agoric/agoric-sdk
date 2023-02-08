@@ -150,14 +150,15 @@ test.before(async t => {
  * @param {{ env?: Record<string, string|undefined> }} [io]
  */
 const makeScenario = async (t, { env = process.env } = {}) => {
-  const space = await setupBootstrap(t);
+  const rawSpace = await setupBootstrap(t);
+  const vatPowers = t.context.vatAdminState.getVatPowers();
+  const space = { vatPowers, ...rawSpace };
+  space.produce.vatAdminSvc.resolve(t.context.vatAdminSvc);
 
   const loadVat = name =>
     import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
   space.produce.loadVat.resolve(loadVat);
   space.produce.loadCriticalVat.resolve(loadVat);
-
-  space.vatPowers = t.context.vatAdminState.getVatPowers();
 
   const emptyRunPayment = async () => {
     const {

@@ -88,9 +88,6 @@ export const setupBootstrap = (t, optTimer) => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  const { vatAdminSvc } = t.context;
-  produce.vatAdminSvc.resolve(vatAdminSvc);
-
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
