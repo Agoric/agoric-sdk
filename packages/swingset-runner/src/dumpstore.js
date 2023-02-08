@@ -3,7 +3,7 @@ import process from 'process';
 
 /* eslint-disable no-use-before-define */
 export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
-  const streamStore = kernelStorage.streamStore;
+  const transcriptStore = kernelStorage.transcriptStore;
   let out;
   if (outfile) {
     out = fs.createWriteStream(outfile);
@@ -178,11 +178,7 @@ export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
     p(`// transcript of vat ${v} (${vn})`);
     if (endPos) {
       let idx = 1;
-      for (const item of streamStore.readStream(
-        `transcript-${v}`,
-        streamStore.STREAM_START,
-        endPos,
-      )) {
+      for (const item of transcriptStore.readTranscript(v, 0, endPos)) {
         pkvBig('transcript', `${v}.${idx}`, item, 500);
         idx += 1;
       }

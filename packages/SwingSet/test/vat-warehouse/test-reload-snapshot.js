@@ -38,8 +38,8 @@ test('vat reload from snapshot', async t => {
     const snapshotInfo = snapStore.getSnapshotInfo(vatID);
 
     const start = snapshotInfo ? snapshotInfo.endPos : 0;
-    const endPosition = kernelStorage.kvStore.get(`${vatID}.t.endPosition`);
-    const end = Number(endPosition);
+    const bounds = kernelStorage.transcriptStore.getCurrentSpanBounds(vatID);
+    const end = bounds.endPos;
     return [start, end];
   }
 

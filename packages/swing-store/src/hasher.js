@@ -3,8 +3,8 @@ import { assert } from '@agoric/assert';
 import { createHash } from 'crypto';
 
 /**
- * @typedef { (initial?: string) => {
- *             add: (more: string) => void,
+ * @typedef { (initial?: string | Buffer) => {
+ *             add: (more: string | Buffer) => void,
  *             finish: () => string,
  *            }
  *          } CreateSHA256

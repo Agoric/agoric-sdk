@@ -135,8 +135,7 @@
  */
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
- * @typedef { import('@agoric/swing-store').StreamStore } StreamStore
- * @typedef { import('@agoric/swing-store').StreamPosition } StreamPosition
+ * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
  * @typedef { import('@agoric/swing-store').SwingStoreKernelStorage } SwingStoreKernelStorage
  * @typedef { import('@agoric/swing-store').SwingStoreHostStorage } SwingStoreHostStorage

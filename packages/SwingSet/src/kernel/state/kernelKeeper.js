@@ -38,8 +38,7 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
  * @typedef { import('../../types-external.js').ManagerType } ManagerType
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').StreamPosition } StreamPosition
- * @typedef { import('../../types-external.js').StreamStore } StreamStore
+ * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
  * @typedef { import('../../types-external.js').VatManager } VatManager
  */
@@ -86,8 +85,6 @@ const enableKernelGC = true;
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.nextDeliveryNum = $NN
-// v$NN.t.startPosition = $NN // inclusive
-// v$NN.t.endPosition = $NN  // exclusive
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN // XXX does this exist?
 // v$NN.reapInterval = $NN or 'never'
@@ -174,7 +171,7 @@ const FIRST_METER_ID = 1n;
  * @param {KernelSlog|null} kernelSlog
  */
 export default function makeKernelKeeper(kernelStorage, kernelSlog) {
-  const { kvStore, streamStore, snapStore } = kernelStorage;
+  const { kvStore, transcriptStore, snapStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
 
@@ -1297,11 +1294,11 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       return found;
     }
     if (!kvStore.has(`${vatID}.o.nextID`)) {
-      initializeVatState(kvStore, streamStore, vatID);
+      initializeVatState(kvStore, transcriptStore, vatID);
     }
     const vk = makeVatKeeper(
       kvStore,
-      streamStore,
+      transcriptStore,
       kernelSlog,
       vatID,
       addKernelObject,
@@ -1328,20 +1325,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   * Cease writing to the vat's transcript.
-   *
-   * @param {string} vatID
-   */
-  function closeVatTranscript(vatID) {
-    insistVatID(vatID);
-    const transcriptStream = `transcript-${vatID}`;
-    streamStore.closeStream(transcriptStream);
-  }
-
-  /**
-   * NOTE: caller is responsible to closeVatTranscript()
-   * before evicting a VatKeeper.
-   *
    * @param {string} vatID
    */
   function evictVatKeeper(vatID) {
@@ -1448,7 +1431,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       if (vk) {
         // TODO: find some way to expose the liveSlots internal tables, the
         // kernel doesn't see them
-        closeVatTranscript(vatID);
         const vatTable = {
           vatID,
           state: { transcript: Array.from(vk.getTranscript()) },
@@ -1615,7 +1597,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     provideVatKeeper,
     vatIsAlive,
     evictVatKeeper,
-    closeVatTranscript,
     cleanupAfterTerminatedVat,
     addDynamicVatID,
     getDynamicVats,
