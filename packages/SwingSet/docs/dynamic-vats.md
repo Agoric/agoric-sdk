@@ -162,9 +162,9 @@ When the vat halted due to a metering fault, `error` will be a `RangeError` with
 
 Dynamic vats can be upgraded to use a new source code bundle. Most vat state is discarded, however "durable" collections are retained for use by the replacement version. For full details, see [vat-upgrade.md](./vat-upgrade.md).
 
-The upgrade process is triggered through the vat's "adminNode" control facet, and requires specifying the new source bundle. (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
+The upgrade process is triggered through the vat's "adminNode" control facet, and requires specifying the new source code (as a BundleCap). (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
 
 ```js
-const upgradeDetails = { upgradeMessage, vatParameters: newVatParameters };
-const results = E(adminNode).upgrade(newBundlecap, upgradeDetails);
+const upgradeOptions = { upgradeMessage, vatParameters: newVatParameters };
+const results = E(adminNode).upgrade(newBundlecap, upgradeOptions);
 ```
