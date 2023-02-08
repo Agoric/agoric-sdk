@@ -54,6 +54,8 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
         - `pool0`
             - `init`
             - `metrics`
+    - `priceFeed`
+      - '<inputBrand>_<outputBrand>_price_feed'
     - `psm`
       - `<minted>`
         - `<anchor>`
