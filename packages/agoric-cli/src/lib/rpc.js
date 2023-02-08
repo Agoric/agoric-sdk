@@ -239,12 +239,25 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<{ brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>, reverse: Record<string, string> }>}
+ * @returns {Promise<{
+ *   brand: Record<string, RpcRemote>,
+ *   instance: Record<string, RpcRemote>,
+ *   vbankAsset: Record<string, VBankAssetDetail>,
+ *   reverse: Record<string, string>,
+ * }>}
+ * @typedef {{
+ *   brand: RpcRemote,
+ *   denom: string,
+ *   displayInfo: DisplayInfo,
+ *   issuer: RpcRemote,
+ *   issuerName: string,
+ *   proposedName: string,
+ * }} VBankAssetDetail
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   const reverse = {};
   const entries = await Promise.all(
-    ['brand', 'instance'].map(async kind => {
+    ['brand', 'instance', 'vbankAsset'].map(async kind => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
