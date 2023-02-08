@@ -4,6 +4,7 @@
     src: '{{HELPER_BINARY}}'
     dest: /usr/local/bin/
     mode: push
+    use_ssh_args: true
   when: HELPER_BINARY is defined
 
 - name: Synchronize Agoric SDK
@@ -14,6 +15,7 @@
     delete: yes
     checksum: yes
     mode: push
+    use_ssh_args: true
 
 - name: 'Symlink ag-chain-cosmos'
   file:

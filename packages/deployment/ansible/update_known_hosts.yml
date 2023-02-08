@@ -2,6 +2,7 @@
 - hosts: all
   gather_facts: no
   become: no
+  serial: 1
   vars:
     ssh_known_hosts: '{{ SETUP_HOME }}/provision/ssh_known_hosts'
   tasks:

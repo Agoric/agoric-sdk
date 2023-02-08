@@ -4,8 +4,11 @@ set -ueo pipefail
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 
+export GOBIN="$thisdir/../../../golang/cosmos/build"
 export NETWORK_NAME=${NETWORK_NAME-localtest}
 
+SOLO_ADDR=
+VAT_CONFIG=
 RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
 mkdir -p "$RESULTSDIR"
 pushd "$RESULTSDIR"

@@ -2,8 +2,11 @@ FROM debian:stable
 LABEL maintainer="mfig@agoric.com"
 
 RUN apt-get update --allow-releaseinfo-change \
-    && apt-get install -y init openssh-server sudo curl \
-      python python3-venv python3-dev vim jq less \
+    && apt-get install -y curl python3 vim jq less \
+    && curl -sL https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py > /usr/bin/systemctl \
+    && chmod +x /usr/bin/systemctl \
+    && mkdir -p /run/systemd/system \
+    && apt-get install -y openssh-server \
     && apt-get clean
 
-CMD ["/sbin/init"]
+CMD ["/usr/bin/systemctl"]
