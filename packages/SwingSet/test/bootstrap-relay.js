@@ -1,11 +1,19 @@
 import { E } from '@endo/eventual-send';
 import { Far, isObject, makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
+import { objectMap } from '@agoric/internal';
 import { buildManualTimer } from '../tools/manual-timer.js';
 
 const { Fail, quote: q } = assert;
 
 const sink = () => {};
+
+// TODO define these somewhere more accessible. https://github.com/endojs/endo/issues/1488
+/**
+ * @typedef {Promise | import('@agoric/internal').Remotable} PassByRef
+ * Gets transformed by a marshaller encoding.
+ * As opposed to pass-by-copy
+ */
 
 export const buildRootObject = () => {
   const timer = buildManualTimer();
@@ -14,12 +22,21 @@ export const buildRootObject = () => {
 
   // Represent all data as passable by replacing non-passable values
   // with special-prefix registered symbols.
+  /** @type {Map<symbol, PassByRef>} */
   const replaced = new Map();
+  /** @type {Map<PassByRef, symbol>} */
+  const replacements = new Map(); // inverse of 'replaced'
+
   // This is testing code, so we don't enforce absence of this prefix
   // from manually created symbols.
   const replacementPrefix = 'replaced:';
-  const makeReplacement = value => {
+  const provideReplacement = value => {
+    if (replacements.has(value)) {
+      return replacements.get(value);
+    }
+
     const replacement = Symbol.for(`${replacementPrefix}${replaced.size}`);
+    replacements.set(value, replacement);
     replaced.set(replacement, value);
 
     // Suppress unhandled promise rejection warnings.
@@ -28,7 +45,7 @@ export const buildRootObject = () => {
     return replacement;
   };
   const { serialize: encodeReplacements } = makeMarshal(
-    makeReplacement,
+    provideReplacement,
     undefined,
     {
       marshalSaveError: () => {},
@@ -57,7 +74,7 @@ export const buildRootObject = () => {
     } else if (
       typeof arg !== 'symbol' ||
       !Symbol.keyFor(arg) ||
-      !arg.description.startsWith(replacementPrefix)
+      !arg.description?.startsWith(replacementPrefix)
     ) {
       return arg;
     }
@@ -96,6 +113,20 @@ export const buildRootObject = () => {
       vat.incarnationNumber = incarnationNumber;
       return incarnationNumber;
     },
+
+    /**
+     * Turns an object into a remotable by ensuring that each property is a function
+     *
+     * @param {string} label
+     * @param {Record<string, any>} methodReturnValues
+     */
+    makeSimpleRemotable: (label, methodReturnValues) =>
+      // braces to unharden so it can be hardened
+      encodePassable(
+        Far(label, {
+          ...objectMap(methodReturnValues, v => () => decodePassable(v)),
+        }),
+      ),
 
     messageVat: async ({ name, methodName, args = [] }) => {
       const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;

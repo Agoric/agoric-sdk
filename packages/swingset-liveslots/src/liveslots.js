@@ -160,9 +160,9 @@ function build(
   function retainExportedVref(vref) {
     // if the vref corresponds to a Remotable, keep a strong reference to it
     // until the kernel tells us to release it
-    const { type, allocatedByVat, virtual } = parseVatSlot(vref);
+    const { type, allocatedByVat, virtual, durable } = parseVatSlot(vref);
     if (type === 'object' && allocatedByVat) {
-      if (virtual) {
+      if (virtual || durable) {
         // eslint-disable-next-line no-use-before-define
         vrm.setExportStatus(vref, 'reachable');
       } else {
@@ -292,9 +292,10 @@ function build(
       const deadBaseRefs = Array.from(deadSet);
       deadBaseRefs.sort();
       for (const baseRef of deadBaseRefs) {
-        const { virtual, allocatedByVat, type } = parseVatSlot(baseRef);
+        const { virtual, durable, allocatedByVat, type } =
+          parseVatSlot(baseRef);
         assert(type === 'object', `unprepared to track ${type}`);
-        if (virtual) {
+        if (virtual || durable) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
           const [gcAgain, retirees] = vrm.possibleVirtualObjectDeath(baseRef);
@@ -752,11 +753,11 @@ function build(
   // m.unserialize) must be wrapped by unmetered().
   function convertSlotToVal(slot, iface = undefined) {
     meterControl.assertNotMetered();
-    const { type, allocatedByVat, virtual, facet, baseRef } =
+    const { type, allocatedByVat, virtual, durable, facet, baseRef } =
       parseVatSlot(slot);
     let val = getValForSlot(baseRef);
     if (val) {
-      if (virtual) {
+      if (virtual || durable) {
         if (facet !== undefined) {
           return val[facet];
         }
@@ -764,7 +765,7 @@ function build(
       return val;
     }
     let result;
-    if (virtual) {
+    if (virtual || durable) {
       assert.equal(type, 'object');
       val = vrm.reanimate(baseRef);
       if (facet !== undefined) {
@@ -1237,8 +1238,8 @@ function build(
       if (o) {
         exportedRemotables.delete(o);
       }
-      const { virtual } = parseVatSlot(vref);
-      if (virtual) {
+      const { virtual, durable } = parseVatSlot(vref);
+      if (virtual || durable) {
         vrm.setExportStatus(vref, 'recognizable');
       }
     }
@@ -1246,11 +1247,11 @@ function build(
 
   function retireOneExport(vref) {
     insistVatType('object', vref);
-    const { virtual, allocatedByVat, type } = parseVatSlot(vref);
+    const { virtual, durable, allocatedByVat, type } = parseVatSlot(vref);
     assert(allocatedByVat);
     assert.equal(type, 'object');
     // console.log(`-- liveslots acting on retireExports ${vref}`);
-    if (virtual) {
+    if (virtual || durable) {
       vrm.setExportStatus(vref, 'none');
     } else {
       // Remotable
@@ -1338,6 +1339,7 @@ function build(
     ...vrm.testHooks,
     ...collectionManager.testHooks,
     setSyscallCapdataLimits,
+    vatGlobals,
   });
 
   function setVatOption(option, value) {
@@ -1634,9 +1636,6 @@ function build(
   // we return 'possiblyDeadSet' for unit tests
   return harden({
     dispatch,
-    startVat,
-    vatGlobals,
-    inescapableGlobalProperties,
     m,
     possiblyDeadSet,
     testHooks,
@@ -1655,7 +1654,7 @@ function build(
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]
  *
- * @returns {*} { vatGlobals, inescapableGlobalProperties, dispatch }
+ * @returns {*} { dispatch }
  *
  * setBuildRootObject should be called, once, with a function that will
  * create a root object for the new vat The caller provided buildRootObject
@@ -1697,10 +1696,9 @@ export function makeLiveSlots(
     liveSlotsConsole,
     buildVatNamespace,
   );
-  const { dispatch, startVat, possiblyDeadSet, testHooks } = r; // omit 'm'
+  const { dispatch, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
     dispatch,
-    startVat,
     possiblyDeadSet,
     testHooks,
   });

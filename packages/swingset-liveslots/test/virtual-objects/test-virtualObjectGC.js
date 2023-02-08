@@ -133,11 +133,11 @@ let aWeakMap;
 let aWeakSet;
 
 const unfacetedThingKindID = '10';
-const unfacetedThingBaseRef = `o+${unfacetedThingKindID}`;
+const unfacetedThingBaseRef = `o+v${unfacetedThingKindID}`;
 const facetedThingKindID = '11';
-const facetedThingBaseRef = `o+${facetedThingKindID}`;
+const facetedThingBaseRef = `o+v${facetedThingKindID}`;
 const markerKindID = '13';
-const markerBaseRef = `o+${markerKindID}`;
+const markerBaseRef = `o+v${markerKindID}`;
 
 function thingVref(isf, instance) {
   return `${isf ? facetedThingBaseRef : unfacetedThingBaseRef}/${instance}`;
@@ -976,7 +976,7 @@ async function voRefcountManagementTest1(t, isf) {
 
   await dispatchMessageSuccessfully('prepareStore3');
   // create three VOs (tag "holder") which hold our vref in their vdata
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
   const holderdata = JSON.stringify({ held: kser(thing) }); // state of holders
   for (const holderVref of holderVrefs) {
     t.is(fakestore.get(`vom.${holderVref}`), holderdata);
@@ -1017,7 +1017,7 @@ async function voRefcountManagementTest2(t, isf) {
 
   await dispatchMessageSuccessfully('prepareStore3');
   // create three VOs (tag "holder") which hold our vref in their vdata
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
   const vdata = JSON.stringify({ held: kser(thing) }); // state of holders
   for (const holderVref of holderVrefs) {
     t.is(fakestore.get(`vom.${holderVref}`), vdata);
@@ -1058,7 +1058,7 @@ async function voRefcountManagementTest3(t, isf) {
 
   // make a linked list with virtual "holder" objects
   await dispatchMessageSuccessfully('prepareStoreLinked');
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
 
   t.is(fakestore.get(`vom.rc.${baseRef}`), '1'); // target held by holder[0]
   t.is(fakestore.get(`vom.rc.${holderVrefs[0]}`), '1'); // held by holder[1]
@@ -1109,7 +1109,7 @@ test.serial('presence refcount management 1', async t => {
   // create three VOs (tag "holder") which hold our vref in their vdata
   await dispatchMessageSuccessfully('prepareStore3');
 
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
   const holderdata = JSON.stringify({ held: kser(presence) }); // state of holders
   for (const holderVref of holderVrefs) {
     t.is(fakestore.get(`vom.${holderVref}`), holderdata);
@@ -1147,7 +1147,7 @@ test.serial('presence refcount management 2', async t => {
 
   await dispatchMessageSuccessfully('prepareStore3');
 
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
   const holderdata = JSON.stringify({ held: kser(presence) }); // state of holders
   for (const holderVref of holderVrefs) {
     t.is(fakestore.get(`vom.${holderVref}`), holderdata);
@@ -1173,15 +1173,16 @@ test.serial('remotable refcount management 1', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const { fakestore } = v;
 
-  await dispatchMessageSuccessfully('makeAndHoldRemotable');
-  // the Remotable is currently held by RAM, and doesn't get a vref
-  // until it is stored somewhere or exported
-
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
   t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
 
+  await dispatchMessageSuccessfully('makeAndHoldRemotable');
+  // the Remotable is currently held by RAM, and doesn't get a vref
+  // until it is stored somewhere or exported
+
   await dispatchMessageSuccessfully('prepareStore3');
+
   // Now there are three VirtualHolder objects, each holding our
   // Remotable. The Remotable's vref was the last thing assigned.
   const remotableID = JSON.parse(fakestore.get(`idCounters`)).exportID - 1;
@@ -1194,7 +1195,7 @@ test.serial('remotable refcount management 1', async t => {
   t.is(fakestore.get(`vom.rc.${vref}`), undefined);
 
   // however all three holders should have the vref in their vdata
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
   const holderdata = JSON.stringify({ held: kser(remotable) }); // state of holders
   for (const holderVref of holderVrefs) {
     t.is(fakestore.get(`vom.${holderVref}`), holderdata);
@@ -1215,15 +1216,14 @@ test.serial('remotable refcount management 2', async t => {
   const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const { fakestore } = v;
 
-  await dispatchMessageSuccessfully('makeAndHoldRemotable');
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
   t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
 
+  await dispatchMessageSuccessfully('makeAndHoldRemotable');
   await dispatchMessageSuccessfully('prepareStore3');
-
   await dispatchMessageSuccessfully('finishDropHolders');
   // all three holders are gone
-  const holderVrefs = [2,3,4].map(instanceID => `o+${holderKindID}/${instanceID}`);
+  const holderVrefs = [2,3,4].map(instanceID => `o+v${holderKindID}/${instanceID}`);
   for (const holderVref of holderVrefs) {
     t.is(fakestore.get(`vom.${holderVref}`), undefined);
   }
@@ -1325,7 +1325,7 @@ test.serial('VO holding non-VO', async t => {
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
   t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
   // holder is first instance created of that kind
-  const holderVref = `o+${holderKindID}/1`;
+  const holderVref = `o+v${holderKindID}/1`;
 
   // Lerv -> LERv  Export non-VO
   const value = await dispatchMessageSuccessfully('exportHeld');

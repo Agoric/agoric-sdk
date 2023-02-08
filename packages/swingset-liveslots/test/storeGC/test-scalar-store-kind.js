@@ -21,5 +21,5 @@ test.serial('assert known scalarMapStore ID', async t => {
   const { testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
   const id = testHooks.obtainStoreKindID('scalarMapStore');
   t.is(id, 2);
-  t.is(mapRef('INDEX'), 'o+2/INDEX');
+  t.is(mapRef('INDEX'), 'o+v2/INDEX');
 });

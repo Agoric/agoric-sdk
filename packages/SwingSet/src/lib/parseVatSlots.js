@@ -21,15 +21,16 @@ import { assert, Fail } from '@agoric/assert';
  *      subid: Nat,
  *      baseRef: STRING,
  *      facet: Nat,
- *      virtual: BOOL, // true=>vref designates a virtual object
+ *      virtual: BOOL, // true=>vref designates a "merely virtual" object (not durable, not ephemeral)
+ *      durable: BOOL, // designates a durable (not merely virtual, not ephemeral)
  *   }
  *
  * A vref string can take one of the forms:
  *
  *   T-N
  *   T+N
- *   T+N/I
- *   T+N/I:F
+ *   T+DN/I
+ *   T+DN/I:F
  *
  * Where:
  *
@@ -41,6 +42,13 @@ import { assert, Fail } from '@agoric/assert';
  *   '+' or '-' encodes who allocated the reference: '-' for the kernel
  *      (typically an import) or '+ for the vat (typically an export).  This is
  *      returned in the `allocatedByVat` property of the result as a boolean.
+ *
+ *   D is the durability status: for object exports ("o+"), this will
+ *      be the letter 'd' for durable objects, the letter 'v' for
+ *      non-durable ("merely virtual") objects, or empty for
+ *      "Remotable" (ephemeral) objects. It is empty for object
+ *      imports ("o-"), and both both imports and exports of all other
+ *      types (promises, devices)
  *
  *   N is a decimal integer representing the identity of the referenced entity.
  *      This is returned in the `id` property of the result as a BigInt.
@@ -79,7 +87,7 @@ import { assert, Fail } from '@agoric/assert';
  * XXX TODO: The previous comment suggests some renaming is warranted:
  *
  * In the current implementation, a vref string may only include decimal digits,
- * the letters 'd', 'o', and 'p', and the punctuation characters '+', '-', '/',
+ * the letters 'd'/'o'/'p'/'v', and the punctuation characters '+', '-', '/',
  * and ':'.  Future evolution of the vref syntax might add more characters to
  * this set, but the characters '|' and ',' are permanently excluded: '|' is
  * used (notably by the collection manager) as delimiter in vatstore keys that
@@ -113,7 +121,7 @@ export function parseVatSlot(vref) {
   let allocatedByVat;
   const typechar = baseRef[0];
   const allocchar = baseRef[1];
-  const idSuffix = baseRef.slice(2);
+  let idSuffix = baseRef.slice(2);
 
   if (typechar === 'o') {
     type = 'object';
@@ -133,14 +141,22 @@ export function parseVatSlot(vref) {
     Fail`invalid vref ${vref}`;
   }
 
+  let virtual = false;
+  let durable = false;
+  if (idSuffix.startsWith('d')) {
+    durable = true;
+    idSuffix = idSuffix.slice(1);
+  } else if (idSuffix.startsWith('v')) {
+    virtual = true; // merely virtual
+    idSuffix = idSuffix.slice(1);
+  }
   const delim = idSuffix.indexOf('/');
   let id;
   let subid;
   let facet;
-  let virtual = false;
   if (delim > 0) {
     (type === 'object' && allocatedByVat) || Fail`invalid vref ${vref}`;
-    virtual = true;
+    virtual || durable || Fail`invalid vref ${vref}`; // subid only exists for virtuals/durables
     id = Nat(BigInt(idSuffix.substr(0, delim)));
     subid = Nat(BigInt(idSuffix.slice(delim + 1)));
   } else {
@@ -150,7 +166,7 @@ export function parseVatSlot(vref) {
     facet = Nat(BigInt(facetStr));
   }
 
-  return { type, allocatedByVat, virtual, id, subid, baseRef, facet };
+  return { type, allocatedByVat, virtual, durable, id, subid, baseRef, facet };
 }
 
 /**

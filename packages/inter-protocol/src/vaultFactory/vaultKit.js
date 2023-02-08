@@ -3,7 +3,7 @@ import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
 import { prepareVaultHolder } from './vaultHolder.js';
 
-const trace = makeTracer('IV');
+const trace = makeTracer('VK', false);
 
 /**
  *
@@ -11,7 +11,7 @@ const trace = makeTracer('IV');
  * @param {ERef<Marshaller>} marshaller
  */
 export const prepareVaultKit = (baggage, marshaller) => {
-  trace('prepareVaultKit', baggage);
+  trace('prepareVaultKit', [...baggage.keys()]);
 
   const makeVaultHolder = prepareVaultHolder(baggage, marshaller);
   /**

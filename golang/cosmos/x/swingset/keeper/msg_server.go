@@ -87,7 +87,7 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 }
 
 type walletSpendAction struct {
-	Type        string `json:"type"` // WALLET_ACTION
+	Type        string `json:"type"` // WALLET_SPEND_ACTION
 	Owner       string `json:"owner"`
 	SpendAction string `json:"spendAction"`
 	BlockHeight int64  `json:"blockHeight"`

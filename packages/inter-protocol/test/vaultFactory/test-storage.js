@@ -1,10 +1,10 @@
 import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
 import { makeTracer } from '@agoric/internal';
+import { E } from '@endo/eventual-send';
 import '../../src/vaultFactory/types.js';
-import { subscriptionKey, topicPath } from '../supports.js';
+import { assertTopicPathData, subscriptionKey } from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {
@@ -25,9 +25,12 @@ test('storage keys', async t => {
 
   // Root vault factory
   const vdp = d.getVaultDirectorPublic();
-  t.is(
-    await topicPath(vdp, 'metrics'),
+  await assertTopicPathData(
+    t,
+    vdp,
+    'metrics',
     'mockChainStorageRoot.vaultFactory.metrics',
+    ['collaterals', 'rewardPoolAllocation'],
   );
   t.is(
     await subscriptionKey(E(vdp).getElectorateSubscription()),
@@ -36,9 +39,35 @@ test('storage keys', async t => {
 
   // First manager
   const managerA = await E(vdp).getCollateralManager(aeth.brand);
-  t.is(
-    await topicPath(managerA, 'metrics'),
+  await assertTopicPathData(
+    t,
+    managerA,
+    'asset',
+    'mockChainStorageRoot.vaultFactory.manager0',
+    [
+      'compoundedInterest',
+      'interestRate',
+      'latestInterestUpdate',
+      'liquidatorInstance',
+    ],
+  );
+  await assertTopicPathData(
+    t,
+    managerA,
+    'metrics',
     'mockChainStorageRoot.vaultFactory.manager0.metrics',
+    [
+      'numActiveVaults',
+      'numLiquidatingVaults',
+      'numLiquidationsCompleted',
+      'retainedCollateral',
+      'totalCollateral',
+      'totalCollateralSold',
+      'totalDebt',
+      'totalOverageReceived',
+      'totalProceedsReceived',
+      'totalShortfallReceived',
+    ],
   );
   t.is(
     await subscriptionKey(
@@ -51,8 +80,16 @@ test('storage keys', async t => {
 
   // Second manager
   const [managerC, chit] = await d.addVaultType('Chit');
-  t.is(
-    await topicPath(E(managerC).getPublicFacet(), 'metrics'),
+  await assertTopicPathData(
+    t,
+    E(managerC).getPublicFacet(),
+    'asset',
+    'mockChainStorageRoot.vaultFactory.manager1',
+  );
+  await assertTopicPathData(
+    t,
+    E(managerC).getPublicFacet(),
+    'metrics',
     'mockChainStorageRoot.vaultFactory.manager1.metrics',
   );
   t.is(

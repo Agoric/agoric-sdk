@@ -7,6 +7,7 @@ import { E, passStyleOf } from '@endo/far';
 
 import { makeZoeKit } from '@agoric/zoe';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
 import { buildRootObject } from '../src/core/boot.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
@@ -72,7 +73,8 @@ test('evaluateInstallation is available to core eval', async t => {
 
     const { zoeService } = makeZoeKit(makeFakeVatAdmin(() => {}).admin);
 
-    const theBoard = boardRoot().getBoard();
+    const baggage = makeScalarBigMapStore('baggage');
+    const theBoard = boardRoot({}, {}, baggage).getBoard();
     const bundle = await bundleSource(modulePath);
 
     const installation = await E(zoeService).install(bundle);

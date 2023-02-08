@@ -148,7 +148,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       /**
        *
-       * @param {import('./types.js').WalletBridgeMsg} obj
+       * @param {import('./types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
        */
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);

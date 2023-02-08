@@ -35,6 +35,7 @@ test('upgrade mintHolder', async t => {
     defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     vats: {
+      // TODO refactor to use bootstrap-relay.js
       bootstrap: { sourceSpec: bfile('./bootstrap.js') },
       zoe: { sourceSpec: bfile('../../src/vat-zoe.js') },
     },

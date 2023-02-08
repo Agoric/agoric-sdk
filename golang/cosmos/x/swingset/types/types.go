@@ -25,7 +25,7 @@ func NewEgress(nickname string, peer sdk.AccAddress, powerFlags []string) *Egres
 	}
 }
 
-// FIXME: Should have @agoric/nat
+// FIXME: Should have @endo/nat
 func Nat(num float64) (uint64, error) {
 	if num < 0 {
 		return 0, errors.New("Not a natural")

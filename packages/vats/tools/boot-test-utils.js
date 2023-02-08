@@ -5,6 +5,7 @@ import {
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { bundles, devices } from '../test/devices.js';
 
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
@@ -119,9 +120,10 @@ export const makePopulatedFakeVatAdmin = () => {
       // preferred way to pass the name.
       vatParameters.zcfBundleName = 'zcf';
     }
+    const baggage = makeScalarBigMapStore('baggage');
     const adminNode =
       /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
-    return { root: buildRoot({}, vatParameters), adminNode };
+    return { root: buildRoot({}, vatParameters, baggage), adminNode };
   };
   const createVatByName = name => {
     return createVat(fakeNameToCap.get(name));
