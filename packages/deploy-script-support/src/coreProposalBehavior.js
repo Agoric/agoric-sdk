@@ -9,7 +9,7 @@ const t = 'makeCoreProposalBehavior';
 
 export const permits = {
   consume: { board: t, agoricNamesAdmin: t },
-  evaluateInstallation: t,
+  evaluateBundleCap: t,
   installation: { produce: t },
   modules: { utils: { runModuleBehaviors: t } },
 };
@@ -22,7 +22,7 @@ export const permits = {
  * definitions.
  *
  * @param {object} opts
- * @param {string} opts.manifestInstallRef
+ * @param {{ bundleName?: string, bundleID?: string}} opts.manifestInstallRef
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
@@ -54,11 +54,11 @@ export const makeCoreProposalBehavior = ({
     return fromEntries(ents);
   };
 
-  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateInstallation: any }} allPowers */
+  /** @param {ChainBootstrapSpace & BootstrapPowers & { evaluateBundleCap: any }} allPowers */
   const behavior = async allPowers => {
     const {
-      consume: { board, agoricNamesAdmin },
-      evaluateInstallation,
+      consume: { vatAdminSvc, zoe, agoricNamesAdmin },
+      evaluateBundleCap,
       installation: { produce: produceInstallations },
       modules: {
         utils: { runModuleBehaviors },
@@ -66,25 +66,43 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
-    const restoreRef = overrideRestoreRef || (x => E(board).getValue(x));
+    const defaultRestoreRef = async args => {
+      let p;
+      if (args.bundleName) {
+        p = E(vatAdminSvc).getNamedBundleID(args.bundleName);
+      } else {
+        p = Promise.resolve(args.bundleID);
+      }
+      const bundleID = await p;
+      return E(zoe).installBundleID(bundleID);
+    };
+    const restoreRef = overrideRestoreRef || defaultRestoreRef;
 
     // Get the on-chain installation containing the manifest and behaviors.
-    console.info('restoreRef, evaluateInstallation', {
+    console.info('restoreRef, evaluateBundleCap', {
       manifestInstallRef,
       exportedGetManifest,
+      vatAdminSvc,
     });
-    const manifestInstallation = await restoreRef(manifestInstallRef);
-    const behaviors = await evaluateInstallation(manifestInstallation);
+    const { bundleName, bundleID } = manifestInstallRef;
+    let bundleCap;
+    if (bundleName) {
+      bundleCap = await E(vatAdminSvc).getNamedBundleCap(bundleName);
+    } else {
+      bundleCap = await E(vatAdminSvc).getBundleCap(bundleID);
+    }
+
+    const manifestNS = await evaluateBundleCap(bundleCap);
 
     console.error('execute', {
       exportedGetManifest,
-      behaviors: Object.keys(behaviors),
+      behaviors: Object.keys(manifestNS),
     });
     const {
       manifest,
       options: rawOptions,
       installations: rawInstallations,
-    } = await behaviors[exportedGetManifest](
+    } = await manifestNS[exportedGetManifest](
       harden({ restoreRef }),
       ...manifestArgs,
     );
@@ -106,7 +124,7 @@ export const makeCoreProposalBehavior = ({
     // Evaluate the manifest for our behaviors.
     return runModuleBehaviors({
       allPowers,
-      behaviors,
+      behaviors: manifestNS,
       manifest: overrideManifest || manifest,
       makeConfig: (name, _permit) => {
         log('coreProposal:', name);
@@ -119,19 +137,19 @@ export const makeCoreProposalBehavior = ({
   return behavior;
 };
 
-export const makeEnactCoreProposalsFromBundleCap =
+export const makeEnactCoreProposalsFromBundleName =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
     const {
-      vatPowers: { D },
-      devices: { vatAdmin },
-      consume: { zoe },
+      consume: { vatAdminSvc, zoe },
     } = allPowers;
     const restoreRef = async ref => {
-      const { bundleID } = ref;
-      const bundleCap = D(vatAdmin).getNamedBundleCap(bundleID);
-      const bundle = D(bundleCap).getBundle();
-      const install = await E(zoe).install(bundle);
+      // extract-proposal.js creates these records, and bundleName is
+      // the name under which the bundle was installed into
+      // config.bundles
+      const { bundleName } = ref;
+      const bundleID = await E(vatAdminSvc).getBundleIDByName(bundleName);
+      const install = await E(zoe).installBundleID(bundleID);
       return install;
     };
 

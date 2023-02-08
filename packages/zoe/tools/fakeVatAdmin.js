@@ -1,3 +1,4 @@
+import { Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
@@ -121,6 +122,13 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     },
   });
   const criticalVatKey = harden({});
+  const vatPowers = harden({
+    D: bcap => {
+      const bundle = bundleCapToBundle.get(bcap);
+      bundle || Fail`fake D only does fake bundlecaps`;
+      return harden({ getBundle: () => bundle });
+    },
+  });
   const vatAdminState = {
     getExitMessage: () => exitMessage,
     getHasExited: () => hasExited,
@@ -143,6 +151,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return vatAdminState.installBundle(id, bundle);
     },
     getCriticalVatKey: () => criticalVatKey,
+    getVatPowers: () => vatPowers,
   };
   return { admin, vatAdminState };
 }

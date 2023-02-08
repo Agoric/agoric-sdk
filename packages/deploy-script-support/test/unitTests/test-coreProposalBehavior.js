@@ -8,8 +8,11 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 
+// TODO: we need to rewrite writeCoreProposal.js to produce BundleIDs,
+// although this test doesn't exercise that.
+
 test('coreProposalBehavior', async t => {
-  const manifestInstallRef = 'manifestInstallRef';
+  const manifestInstallRef = { bundleName: 'manifestInstallRef' };
   /** @type {[string, ...unknown[]]} */
   const getManifestCall = ['getManifestForTest', 'arg1', 'arg2'];
   const behavior = makeCoreProposalBehavior({
@@ -19,20 +22,37 @@ test('coreProposalBehavior', async t => {
     log: t.log,
   });
   const { agoricNamesAdmin } = makeAgoricNamesAccess(t.log);
+  const bundleID = 'the-bundleID';
+  const bundleCap = {};
+  const vatAdminSvc = {
+    getNamedBundleID: bundleName => {
+      t.is(bundleName, manifestInstallRef.bundleName);
+      return bundleID;
+    },
+    getNamedBundleCap: bundleName => {
+      t.is(bundleName, manifestInstallRef.bundleName);
+      return bundleCap;
+    },
+  };
+  const fromInstallation = {};
   const result = await behavior({
     consume: {
-      board: {
-        getValue: id => `boardValue:${id}`,
+      vatAdminSvc,
+      zoe: {
+        installBundleID: id => {
+          t.is(id, bundleID);
+          return `installation:${id}`;
+        },
       },
       agoricNamesAdmin,
     },
     aParams: 'aparms',
     bParams: 'bparms',
     cParams: 'cparms',
-    evaluateInstallation: inst => {
-      t.is(inst, 'boardValue:manifestInstallRef');
+    evaluateBundleCap: bcap => {
+      t.is(bcap, bundleCap);
       return {
-        fromInstallation: inst,
+        fromInstallation,
         getManifestForTest: (powers, ...args) => {
           t.deepEqual(args, ['arg1', 'arg2']);
           return {
@@ -92,7 +112,7 @@ test('coreProposalBehavior', async t => {
     },
     installation: {
       produce: {
-        foo: { resolve: x => t.is(x.fromInstallation, 'boardValue:xxx') },
+        foo: { resolve: x => t.is(x.fromInstallation, fromInstallation) },
       },
     },
     modules: {

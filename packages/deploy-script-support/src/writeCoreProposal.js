@@ -80,6 +80,10 @@ export const makeWriteCoreProposal = (
 
     // Await a reference then publish to the board.
     const publishRef = async refP => {
+      throw Error('writeCoreProposal publishRef not implemented yet');
+      // TODO: rewrite to get a BundleID, and then:
+      // return harden({ bundleID });
+      // eslint-disable-next-line no-unreachable
       const ref = await refP;
       console.log('published', { filePrefix, ref });
       return E(board).getId(ref);
