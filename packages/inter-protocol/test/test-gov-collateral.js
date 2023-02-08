@@ -84,7 +84,6 @@ const makeTestContext = async () => {
   const bundleNameToAbsolutePaths = new Map();
   const bundlePathToInstallP = new Map();
   const restoreBundleName = bundleName => {
-    console.log(`-- restoreBundleName`, bundleName);
     const absolutePaths = bundleNameToAbsolutePaths.get(bundleName);
     absolutePaths || Fail`bundleName ${bundleName} not found`;
     const { source, bundle } = absolutePaths;
@@ -92,7 +91,6 @@ const makeTestContext = async () => {
     if (!bundlePathToInstallP.has(bundlePath)) {
       const match = path.basename(bundlePath).match(/^bundle-(.*)\.js$/);
       const actualBundle = match ? match[1] : bundlePath;
-      console.log(`-- install`, source);
       bundlePathToInstallP.set(bundlePath, install(source, actualBundle));
     }
     return bundlePathToInstallP.get(bundlePath);
@@ -103,7 +101,6 @@ const makeTestContext = async () => {
       Fail`bundleName ${bundleName} already registered`;
     bundleNameToAbsolutePaths.set(bundleName, paths);
     // use vatAdminState to install this bundle
-    console.log(`--registerOne`, bundleName, paths);
     let bundleP;
     if (paths.bundle) {
       bundleP = import(paths.bundle).then(ns => ns.default);
@@ -112,15 +109,12 @@ const makeTestContext = async () => {
       bundleP = bundleSource(paths.source);
     }
     const bundle = await bundleP;
-    console.log(`-- installing ${bundleName}`);
     const bundleID = bundle.endoZipBase64Sha512;
-    console.log(`--  got bundleID ${bundleID}`);
     assert(bundleID);
     vatAdminState.installNamedBundle(bundleName, bundleID, bundle);
   };
 
   const registerBundleHandles = async bundleHandleMap => {
-    console.log(`-- registerBundleHandles`, bundleHandleMap);
     const allP = [];
     for (const [{ bundleName }, paths] of bundleHandleMap.entries()) {
       allP.push(registerOne(bundleName, paths));
@@ -256,13 +250,11 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         consume: { restoreBundleName },
       } = allPowers;
       const restoreRef = async ({ bundleName }) => {
-        console.log(`--tgc.mS.rR(${bundleName})`);
         return cpE(restoreBundleName)(bundleName);
       };
 
       await Promise.all(
         makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
-          console.log(`--tgc.mS 1`, ref);
           const subBehavior = makeCoreProposalBehavior({
             manifestInstallRef: ref,
             getManifestCall: call,

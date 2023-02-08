@@ -54,7 +54,6 @@ export const bridgeCoreEval = async allPowers => {
 
   /** @param {BundleCap} bundleCap */
   const evaluateBundleCap = async bundleCap => {
-    console.log(`-- evaluateBundleCap`, bundleCap);
     const bundle = await D(bundleCap).getBundle();
     const imported = await importBundle(bundle, { endowments });
     return imported;
