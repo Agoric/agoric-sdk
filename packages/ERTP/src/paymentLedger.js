@@ -69,7 +69,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
- * @param {ShutdownWithFailure=} optShutdownWithFailure
+ * @param {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
 export const preparePaymentLedger = (
@@ -211,7 +211,7 @@ export const preparePaymentLedger = (
    * Note: `optAmountShape` is user-supplied with no previous validation.
    *
    * @param {Amount} paymentBalance
-   * @param {Pattern=} optAmountShape
+   * @param {Pattern} [optAmountShape]
    * @returns {void}
    */
   const assertAmountConsistent = (paymentBalance, optAmountShape) => {
@@ -298,7 +298,7 @@ export const preparePaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
    * commit the purse balance
    * @param {Payment} srcPayment
-   * @param {Pattern=} optAmountShape
+   * @param {Pattern} [optAmountShape]
    * @returns {Amount}
    */
   const depositInternal = (

@@ -22,7 +22,7 @@
  * @typedef {object} NoFeeSwapFnInput
  * @property {Amount} amountGiven
  * @property {Amount} amountWanted
- * @property {Brand=} brand
+ * @property {Brand} [brand]
  * @property {PoolAllocation} poolAllocation
  */
 
@@ -65,14 +65,14 @@
  * @callback CalcSwapInPrices
  * @param {Amount} amountGiven
  * @param {PoolAllocation} poolAllocation
- * @param {Amount=} amountWanted
+ * @param {Amount} [amountWanted]
  * @param {Ratio} protocolFeeRatio
  * @param {Ratio} poolFeeRatio
  * @returns {SinglePoolSwapResult}
  */
 /**
  * @callback CalcSwapOutPrices
- * @param {Amount=} amountGiven
+ * @param {Amount} [amountGiven]
  * @param {PoolAllocation} poolAllocation
  * @param {Amount} amountWanted
  * @param {Ratio} protocolFeeRatio
@@ -82,9 +82,9 @@
 
 /**
  * @typedef {object} GetXYParam
- * @property {Amount=} amountGiven
+ * @property {Amount} [amountGiven]
  * @property {PoolAllocation} poolAllocation
- * @property {Amount=} amountWanted
+ * @property {Amount} [amountWanted]
  */
 
 /**

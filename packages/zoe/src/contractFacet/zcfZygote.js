@@ -120,7 +120,7 @@ export const makeZCFZygote = async (
    * @template {AssetKind} [K='nat']
    * @param {Keyword} keyword
    * @param {K} [assetKind]
-   * @param {AdditionalDisplayInfo=} displayInfo
+   * @param {AdditionalDisplayInfo} [displayInfo]
    * @returns {Promise<ZCFMint<K>>}
    */
   const makeZCFMint = async (

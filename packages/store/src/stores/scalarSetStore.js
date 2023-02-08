@@ -15,8 +15,8 @@ const { quote: q } = assert;
  * @template K
  * @param {Set<K>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
- * @param {((k: K) => void)=} assertKeyOkToDelete
- * @param {string=} keyName
+ * @param {(k: K) => void} [assertKeyOkToDelete]
+ * @param {string} [keyName]
  * @returns {SetStore<K>}
  */
 export const makeSetStoreMethods = (
@@ -36,7 +36,7 @@ export const makeSetStoreMethods = (
     );
 
   /**
-   * @param {Pattern=} keyPatt
+   * @param {Pattern} [keyPatt]
    * @returns {Iterable<K>}
    */
   const keys = (keyPatt = undefined) =>
@@ -85,7 +85,7 @@ export const makeSetStoreMethods = (
  *
  * @template K
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} [options]
  * @returns {SetStore<K>}
  */
 export const makeScalarSetStore = (

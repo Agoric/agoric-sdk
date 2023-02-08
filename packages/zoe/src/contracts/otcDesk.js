@@ -117,7 +117,7 @@ const start = zcf => {
      * The inventory can be added in bulk before any quotes are made
      * or can be added immediately before a quote.
      *
-     * @param {IssuerKeywordRecord=} issuerKeywordRecord
+     * @param {IssuerKeywordRecord} [issuerKeywordRecord]
      * @returns {Promise<Payment>}
      */
     makeAddInventoryInvitation: async (issuerKeywordRecord = harden({})) => {

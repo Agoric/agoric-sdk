@@ -103,7 +103,7 @@ harden(listDifference);
 /**
  * @param {Error} innerErr
  * @param {string|number} label
- * @param {ErrorConstructor=} ErrorConstructor
+ * @param {ErrorConstructor} [ErrorConstructor]
  * @returns {never}
  */
 export const throwLabeled = (innerErr, label, ErrorConstructor = undefined) => {

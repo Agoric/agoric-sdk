@@ -307,7 +307,7 @@ const reverse = (keywordRecord = {}) => {
  * @param {ZCFSeat} fromSeat
  *   The seat in contractA to take the offer payments from.
  *
- * @param {ZCFSeat=} [toSeat=fromSeat]
+ * @param {ZCFSeat} [toSeat=fromSeat]
  *   The seat in contractA to deposit the payout of the offer to.
  *   If `toSeat` is not provided, this defaults to the `fromSeat`.
  *
@@ -320,8 +320,8 @@ const reverse = (keywordRecord = {}) => {
  *   deposited to the `toSeat`.
  *   Any failures of the invitation will be returned by `userSeatPromise.getOfferResult()`.
  *
- * @template {object=} Args Offer args
- * @template {object=} Result Offer result
+ * @template {object} Args Offer args
+ * @template {object} Result Offer result
  */
 export const offerTo = async (
   zcf,

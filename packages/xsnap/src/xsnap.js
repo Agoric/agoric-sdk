@@ -50,11 +50,11 @@ function echoCommand(arg) {
  * @property {string} os
  * @property {Spawn} spawn
  * @property {(request:Uint8Array) => Promise<Uint8Array>} [handleCommand]
- * @property {string=} [name]
- * @property {boolean=} [debug]
+ * @property {string} [name]
+ * @property {boolean} [debug]
  * @property {number} [netstringMaxChunkSize] in bytes (must be an integer)
- * @property {number=} [parserBufferSize] in kB (must be an integer)
- * @property {string=} [snapshot]
+ * @property {number} [parserBufferSize] in kB (must be an integer)
+ * @property {string} [snapshot]
  * @property {'ignore' | 'inherit'} [stdout]
  * @property {'ignore' | 'inherit'} [stderr]
  * @property {number} [meteringLimit]

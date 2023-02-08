@@ -57,8 +57,8 @@ export const assertIsRatio = ratio => {
 /**
  * @param {bigint} numerator
  * @param {Brand} numeratorBrand
- * @param {bigint=} denominator The default denominator is 100
- * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
+ * @param {bigint} [denominator] The default denominator is 100
+ * @param {Brand} [denominatorBrand] The default is to reuse the numeratorBrand
  * @returns {Ratio}
  */
 export const makeRatio = (

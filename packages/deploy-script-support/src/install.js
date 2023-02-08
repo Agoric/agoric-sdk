@@ -7,10 +7,10 @@ import { E } from '@endo/far';
 /**
  * @callback BundleSource
  * @param {string} startFilename - the filepath to start the bundling from
- * @param {(ModuleFormat | BundleOptions)=} moduleFormat
- * @param {object=} powers
- * @param {ReadFn=} powers.read
- * @param {CanonicalFn=} powers.canonical
+ * @param {ModuleFormat | BundleOptions} [moduleFormat]
+ * @param {object} [powers]
+ * @param {ReadFn} [powers.read]
+ * @param {CanonicalFn} [powers.canonical]
  */
 
 // XXX board is Board but specifying that leads to type errors with imports which aren't worth fixing right now

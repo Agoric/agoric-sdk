@@ -8,13 +8,16 @@
 import type {
   InterfaceGuard,
   MapStore,
+  Pattern,
   SetStore,
   StoreOptions,
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
 
-type Baggage = MapStore<string, unknown>;
+export type { Pattern };
+
+export type Baggage = MapStore<string, unknown>;
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
@@ -162,7 +165,7 @@ export type VatData = {
 
 // The JSDoc is repeated here and at the function definition so it appears
 // in IDEs where it's used, regardless of type resolution.
-interface PickFacet {
+export interface PickFacet {
   /**
    * When making a multi-facet kind, it's common to pick one facet to
    * expose. E.g.,

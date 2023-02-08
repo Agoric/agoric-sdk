@@ -53,7 +53,7 @@ export const makeLRU = max => {
  * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
  * @param {{
  *   maxVatsOnline?: number,
- * }=} policyOptions
+ * }} [policyOptions]
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata

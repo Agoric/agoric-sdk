@@ -117,8 +117,8 @@
  *   intended to eventually be durable has not yet been made durable.  A store
  *   marked as fakeDurable will appear to operate normally but any attempt to
  *   upgrade its containing vat will fail with an error.
- * @property {Pattern=} keyShape
- * @property {Pattern=} valueShape
+ * @property {Pattern} [keyShape]
+ * @property {Pattern} [valueShape]
  */
 
 /**
@@ -441,7 +441,7 @@
  * return that string. Else return `undefined`. For example, a scalar-only
  * encodePassable would return `undefined` for all non-scalar keys.
  * @param {Passable} key
- * @returns {string=}
+ * @returns {string | undefined}
  */
 
 /**

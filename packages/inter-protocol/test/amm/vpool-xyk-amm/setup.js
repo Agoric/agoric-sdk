@@ -89,7 +89,7 @@ export const setupAMMBootstrap = async (
  * @param {*} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {{ brand: Brand, issuer: Issuer }} centralR
- * @param {ManualTimer | undefined=} timer
+ * @param {ManualTimer} [timer]
  * @param {ERef<FarZoeKit>} [farZoeKit]
  */
 export const setupAmmServices = async (
