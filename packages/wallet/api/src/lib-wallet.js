@@ -1521,7 +1521,6 @@ export function makeWalletRoot({
     return E(board)
       .getValue(boardId)
       .then(value => {
-        // @ts-expect-error type is too specific
         context.ensureBoardId(boardId, value);
         return acceptFn(petname, value);
       });

@@ -11,6 +11,7 @@ import {
   connectFaucet,
   showAmount,
 } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
@@ -70,8 +71,10 @@ test('connectFaucet produces payments', async t => {
     switch (name) {
       case 'mints':
         return mintsRoot();
-      case 'board':
-        return boardRoot();
+      case 'board': {
+        const baggage = makeScalarBigMapStore('baggage');
+        return boardRoot({}, {}, baggage);
+      }
       default:
         throw Error('unknown loadVat name');
     }
