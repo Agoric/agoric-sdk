@@ -45,7 +45,7 @@ function checkMetered(t, args, metered) {
 
 async function doTest(t, metered) {
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, makeSnapStoreIO());
+  const store = makeSnapStore(db, () => {}, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);
   const worker1 = await start1('vat', 'name', handleCommand, metered, false);

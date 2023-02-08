@@ -35,7 +35,7 @@ test('only preload maxVatsOnline vats', async t => {
   const argv = [];
 
   const db = sqlite3(':memory:');
-  const snapStore = makeSnapStore(db, makeSnapStoreIO());
+  const snapStore = makeSnapStore(db, () => {}, makeSnapStoreIO());
   const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
   await initializeSwingset(config, argv, kernelStorage, initOpts);

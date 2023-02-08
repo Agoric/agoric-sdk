@@ -13,16 +13,36 @@ import tmp from 'tmp';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
 
+function makeExportLog() {
+  const exportLog = [];
+  return {
+    noteExport(key, value) {
+      exportLog.push([key, value]);
+    },
+    getLog() {
+      return exportLog;
+    },
+  };
+}
+
+function ensureTxn() {}
+
 test('build temp file; compress to cache file', async t => {
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, {
-    ...tmp,
-    tmpFile: tmp.file,
-    ...path,
-    ...fs,
-    ...fs.promises,
-    measureSeconds: makeMeasureSeconds(() => 0),
-  });
+  const exportLog = makeExportLog();
+  const store = makeSnapStore(
+    db,
+    ensureTxn,
+    {
+      ...tmp,
+      tmpFile: tmp.file,
+      ...path,
+      ...fs,
+      ...fs.promises,
+      measureSeconds: makeMeasureSeconds(() => 0),
+    },
+    exportLog.noteExport,
+  );
   let keepTmp = '';
   const result = await store.saveSnapshot('fakeVatID', 47, async filePath => {
     t.falsy(fs.existsSync(filePath));
@@ -32,7 +52,7 @@ test('build temp file; compress to cache file', async t => {
   const { hash } = result;
   const expectedHash =
     'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
-  t.like(result, {
+  t.deepEqual(result, {
     hash: expectedHash,
     uncompressedSize: 3,
     compressedSize: 23,
@@ -40,12 +60,18 @@ test('build temp file; compress to cache file', async t => {
     compressSeconds: 0,
   });
   const snapshotInfo = store.getSnapshotInfo('fakeVatID');
-  t.deepEqual(snapshotInfo, {
+  const dbInfo = {
     endPos: 47,
     hash: expectedHash,
     uncompressedSize: 3,
     compressedSize: 23,
-  });
+  };
+  const exportInfo = {
+    endPos: 47,
+    hash: expectedHash,
+    inUse: 1,
+  };
+  t.deepEqual(snapshotInfo, dbInfo);
   t.is(store.hasHash('fakeVatID', hash), true);
   const zero =
     '0000000000000000000000000000000000000000000000000000000000000000';
@@ -66,6 +92,11 @@ test('build temp file; compress to cache file', async t => {
   t.truthy(snapshotGZ);
   const contents = zlib.gunzipSync(snapshotGZ);
   t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
+  const logInfo = { vatID: 'fakeVatID', ...exportInfo };
+  t.deepEqual(exportLog.getLog(), [
+    ['snapshot.fakeVatID.47', JSON.stringify(logInfo)],
+    ['snapshot.fakeVatID.current', `snapshot.fakeVatID.47`],
+  ]);
 });
 
 test('snapStore prepare / commit delete is robust', async t => {
@@ -78,7 +109,9 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, io, { keepSnapshots: true });
+  const store = makeSnapStore(db, ensureTxn, io, () => {}, {
+    keepSnapshots: true,
+  });
 
   const hashes = [];
   for (let i = 0; i < 5; i += 1) {
