@@ -163,10 +163,12 @@ function makeManagerKit(
     /** @type { VatDeliveryResult } */
     const status = await deliverToWorker(delivery);
     insistVatDeliveryResult(status);
+    /** @type { import('../../types-external.js').TranscriptDeliveryResults} */
+    const tdr = { status: status[0] };
     // TODO: if the dispatch failed for whatever reason, and we choose to
     // destroy the vat, change what we do with the transcript here.
     if (transcriptManager) {
-      transcriptManager.finishDispatch();
+      transcriptManager.finishDispatch(tdr);
     }
     return status;
   }

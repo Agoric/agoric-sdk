@@ -38,7 +38,7 @@ async function makeKernel() {
   return buildKernel(endowments, {}, {});
 }
 
-const tsv = [{ d: ['startVat', kser({})], syscalls: [] }];
+const tsv = [{ d: ['startVat', kser({})], syscalls: [], r: { status: 'ok' } }];
 
 test('build kernel', async t => {
   const kernel = await makeKernel();
@@ -1193,6 +1193,7 @@ test('transcript', async t => {
         response: ['ok', null],
       },
     ],
+    r: { status: 'ok' },
   });
 });
 

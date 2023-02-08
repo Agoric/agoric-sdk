@@ -44,6 +44,10 @@ export function makeTranscriptManager(
   let playbackSyscalls;
   let currentEntry;
 
+  /**
+   *
+   * @param {import('../../types-external.js').VatDeliveryObject} d
+   */
   function startDispatch(d) {
     currentEntry = {
       d,
@@ -51,15 +55,23 @@ export function makeTranscriptManager(
     };
   }
 
+  /**
+   *
+   * @param {import('../../types-external.js').VatSyscallObject} d
+   * @param {import('../../types-external.js').VatSyscallResult} response
+   */
   function addSyscall(d, response) {
     if (currentEntry) {
       currentEntry.syscalls.push({ d, response });
     }
   }
 
-  function finishDispatch() {
+  /**
+   * @param {import('../../types-external.js').TranscriptDeliveryResults} results
+   */
+  function finishDispatch(results) {
     if (!weAreInReplay) {
-      vatKeeper.addToTranscript(currentEntry);
+      vatKeeper.addToTranscript({ ...currentEntry, r: results });
     }
   }
 
@@ -69,6 +81,10 @@ export function makeTranscriptManager(
     weAreInReplay = true;
   }
 
+  /**
+   *
+   * @param {import('../../types-external.js').VatSyscallObject[]} syscalls
+   */
   function startReplayDelivery(syscalls) {
     playbackSyscalls = Array.from(syscalls);
   }
@@ -83,7 +99,11 @@ export function makeTranscriptManager(
 
   let replayError;
 
-  /** @param {VatSyscallObject} newSyscall */
+  /**
+   *
+   * @param {import('../../types-external.js').VatSyscallObject} newSyscall
+   * @returns {import('../../types-external.js').VatSyscallResult}
+   */
   function simulateSyscall(newSyscall) {
     /** @type {{d: VatSyscallObject; response: VatSyscallResult}} */
     const s = playbackSyscalls.shift();
