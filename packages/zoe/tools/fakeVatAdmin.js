@@ -15,7 +15,10 @@ import zcfBundle from '../bundles/bundle-contractFacet.js';
 // this simulates a bundlecap, which is normally a swingset "device node"
 /** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
 /** @type {() => BundleCap} */
+// @ts-expect-error cast mock
 const fakeBundleCap = () => makeHandle('FakeBundleCap');
+/** @type {() => BundleCap} */
+// @ts-expect-error cast mock
 const bogusBundleCap = () => makeHandle('BogusBundleCap');
 export const zcfBundleCap = fakeBundleCap();
 
@@ -125,6 +128,11 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getExitMessage: () => exitMessage,
     getHasExited: () => hasExited,
     getExitWithFailure: () => exitWithFailure,
+    /**
+     *
+     * @param {string} id
+     * @param {EndoZipBase64Bundle} bundle
+     */
     installBundle: (id, bundle) => {
       if (idToBundleCap.has(id)) {
         assert.equal(

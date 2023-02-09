@@ -303,7 +303,7 @@ export {};
  * Vat Creation and Management
  *
  * @typedef { string } BundleID
- * @typedef {*} BundleCap
+ * @typedef {'BundleCap' & import("@endo/marshal").Remotable<'BundleCap'>} BundleCap
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter
