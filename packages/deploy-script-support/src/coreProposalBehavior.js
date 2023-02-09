@@ -22,7 +22,7 @@ export const permits = {
  * definitions.
  *
  * @param {object} opts
- * @param {{ bundleName?: string, bundleID?: string}} opts.manifestInstallRef
+ * @param {{ bundleName: string } | { bundleID: string }} opts.manifestBundleRef
  * @param {[string, ...unknown[]]} opts.getManifestCall
  * @param {Record<string, Record<string, unknown>>} [opts.overrideManifest]
  * @param {typeof import('@endo/far').E} opts.E
@@ -31,7 +31,7 @@ export const permits = {
  * @returns {(vatPowers: unknown) => Promise<unknown>}
  */
 export const makeCoreProposalBehavior = ({
-  manifestInstallRef,
+  manifestBundleRef,
   getManifestCall,
   overrideManifest,
   E,
@@ -67,30 +67,27 @@ export const makeCoreProposalBehavior = ({
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
     const defaultRestoreRef = async args => {
-      let p;
-      if (args.bundleName) {
-        p = E(vatAdminSvc).getNamedBundleID(args.bundleName);
-      } else {
-        p = Promise.resolve(args.bundleID);
-      }
+      const p = args.bundleName
+        ? E(vatAdminSvc).getNamedBundleID(args.bundleName)
+        : args.bundleID;
       const bundleID = await p;
       return E(zoe).installBundleID(bundleID);
     };
     const restoreRef = overrideRestoreRef || defaultRestoreRef;
 
     // Get the on-chain installation containing the manifest and behaviors.
-    console.info('restoreRef, evaluateBundleCap', {
-      manifestInstallRef,
+    console.info('evaluateBundleCap', {
+      manifestBundleRef,
       exportedGetManifest,
       vatAdminSvc,
     });
-    const { bundleName, bundleID } = manifestInstallRef;
-    let bundleCap;
-    if (bundleName) {
-      bundleCap = await E(vatAdminSvc).getNamedBundleCap(bundleName);
+    let bcapP;
+    if ('bundleName' in manifestBundleRef) {
+      bcapP = E(vatAdminSvc).getNamedBundleCap(manifestBundleRef.bundleName);
     } else {
-      bundleCap = await E(vatAdminSvc).getBundleCap(bundleID);
+      bcapP = E(vatAdminSvc).getBundleCap(manifestBundleRef.bundleID);
     }
+    const bundleCap = await bcapP;
 
     const manifestNS = await evaluateBundleCap(bundleCap);
 
@@ -156,7 +153,7 @@ export const makeEnactCoreProposalsFromBundleName =
     await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
         const subBehavior = makeCoreProposalBehavior({
-          manifestInstallRef: ref,
+          manifestBundleRef: ref,
           getManifestCall: call,
           overrideManifest,
           E,

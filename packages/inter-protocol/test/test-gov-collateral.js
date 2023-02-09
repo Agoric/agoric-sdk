@@ -261,7 +261,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       await Promise.all(
         makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
           const subBehavior = makeCoreProposalBehavior({
-            manifestInstallRef: ref,
+            manifestBundleRef: ref,
             getManifestCall: call,
             overrideManifest,
             E: cpE,

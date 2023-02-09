@@ -12,12 +12,12 @@ import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 // although this test doesn't exercise that.
 
 test('coreProposalBehavior', async t => {
-  const manifestInstallRef = { bundleName: 'manifestInstallRef' };
+  const manifestBundleRef = { bundleName: 'manifestBundleRef' };
   /** @type {[string, ...unknown[]]} */
   const getManifestCall = ['getManifestForTest', 'arg1', 'arg2'];
   const behavior = makeCoreProposalBehavior({
     E,
-    manifestInstallRef,
+    manifestBundleRef,
     getManifestCall,
     log: t.log,
   });
@@ -26,11 +26,11 @@ test('coreProposalBehavior', async t => {
   const bundleCap = {};
   const vatAdminSvc = {
     getNamedBundleID: bundleName => {
-      t.is(bundleName, manifestInstallRef.bundleName);
+      t.is(bundleName, manifestBundleRef.bundleName);
       return bundleID;
     },
     getNamedBundleCap: bundleName => {
-      t.is(bundleName, manifestInstallRef.bundleName);
+      t.is(bundleName, manifestBundleRef.bundleName);
       return bundleCap;
     },
   };
