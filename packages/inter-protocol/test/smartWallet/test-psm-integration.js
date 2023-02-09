@@ -369,6 +369,71 @@ test('deposit unknown brand', async t => {
   t.deepEqual(result, { brand: rial.brand, value: 0n });
 });
 
+test.failing('deposit > 1 payment to unknown brand #6961', async t => {
+  const rial = withAmountUtils(makeIssuerKit('rial'));
+
+  const wallet = await t.context.simpleProvideWallet('agoric1queue');
+
+  for await (const _ of [1, 2]) {
+    const payment = rial.mint.mintPayment(rial.make(1_000n));
+    // @ts-expect-error deposit does take a FarRef<Payment>
+    const result = await wallet.getDepositFacet().receive(harden(payment));
+    // successful request but not deposited
+    t.deepEqual(result, { brand: rial.brand, value: 0n });
+  }
+});
+
+// XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
+test('recover when some withdrawals succeed and others fail', async t => {
+  const { fromEntries } = Object;
+  const { make } = AmountMath;
+  const { anchor } = t.context;
+  const { agoricNames, bankManager } = t.context.consume;
+  const getBalance = (addr, brand) => {
+    const bank = E(bankManager).getBankForAddress(addr);
+    const purse = E(bank).getPurse(brand);
+    return E(purse).getCurrentAmount();
+  };
+  const namedBrands = kws =>
+    Promise.all(
+      kws.map(kw =>
+        E(agoricNames)
+          .lookup('brand', kw)
+          .then(b => [kw, b]),
+      ),
+    ).then(fromEntries);
+
+  t.log('Johnny has 10 AUSD');
+  const jAddr = 'addrForJohnny';
+  const smartWallet = await t.context.simpleProvideWallet(jAddr);
+  await E(E(smartWallet).getDepositFacet()).receive(
+    // @ts-expect-error FarRef grumble
+    E(anchor.mint).mintPayment(make(anchor.brand, 10n)),
+  );
+  t.deepEqual(await getBalance(jAddr, anchor.brand), make(anchor.brand, 10n));
+
+  t.log('He accidentally offers 10 BLD as well in a trade for IST');
+  const instance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
+  const brand = await namedBrands(['BLD', 'IST']);
+  const proposal = harden({
+    give: { Anchor: make(anchor.brand, 10n), Oops: make(brand.BLD, 10n) },
+    want: { Proceeds: make(brand.IST, 1n) },
+  });
+  await E(smartWallet.getOffersFacet()).executeOffer({
+    id: '1',
+    invitationSpec: {
+      source: 'contract',
+      instance,
+      publicInvitationMaker: 'makeWantMintedInvitation',
+      invitationArgs: [],
+    },
+    proposal,
+  });
+
+  t.log('He still has 10 AUSD');
+  t.deepEqual(await getBalance(jAddr, anchor.brand), make(anchor.brand, 10n));
+});
+
 test.todo('bad offer schema');
 test.todo('not enough funds');
 test.todo(
