@@ -360,6 +360,20 @@ test('deposit unknown brand', async t => {
   t.deepEqual(result, { brand: rial.brand, value: 0n });
 });
 
+test.failing('deposit > 1 payment to unknown brand #6961', async t => {
+  const rial = withAmountUtils(makeIssuerKit('rial'));
+
+  const wallet = await t.context.simpleProvideWallet('agoric1queue');
+
+  for await (const _ of [1, 2]) {
+    const payment = rial.mint.mintPayment(rial.make(1_000n));
+    // @ts-expect-error deposit does take a FarRef<Payment>
+    const result = await wallet.getDepositFacet().receive(harden(payment));
+    // successful request but not deposited
+    t.deepEqual(result, { brand: rial.brand, value: 0n });
+  }
+});
+
 test.todo('bad offer schema');
 test.todo('not enough funds');
 test.todo(
