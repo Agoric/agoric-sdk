@@ -69,7 +69,12 @@ The new bundle itself must export a `prepare` function in place of `start`, and 
 For example, suppose v1 code of a simple single-increment-counter contract anticipated extension of exported functionality  and decided to track it by means of "codeVersion" data in baggage. v2 code could add multi-increment behavior like so:
 
 ```js
-const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+import { M } from '@agoric/store';
+import { prepareExo, prepareExoClass } from '@agoric/vat-data';
+
+const { quote: q, Fail } = assert;
+
+export const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   const CODE_VERSION = 2;
   const isFirstIncarnation = !instanceBaggage.has('codeVersion');
   if (isFirstIncarnation) {
@@ -78,7 +83,7 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   } else {
     const previousVersion = instanceBaggage.get('codeVersion');
     previousVersion <= CODE_VERSION ||
-      assert.Fail`Cannot downgrade to codeVersion ${q(CODE_VERSION)} from ${q(previousVersion)}`;
+      Fail`Cannot downgrade to codeVersion ${q(CODE_VERSION)} from ${q(previousVersion)}`;
     instanceBaggage.set('codeVersion', CODE_VERSION);
   }
 
@@ -97,7 +102,7 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
     {
       // v1 code used `increment() { return this.state.value += 1n; }`.
       increment(incrementBy = 1n) {
-        incrementBy > 0n || assert.Fail`increment must be positive`;
+        incrementBy > 0n || Fail`increment must be positive`;
         return this.state.value += incrementBy;
       },
       read() { return this.state.value; },
@@ -116,7 +121,6 @@ const prepare = async (zcf, _privateArgs, instanceBaggage) => {
   return harden({ creatorFacet });
 };
 harden(prepare);
-export { prepare };
 ```
 
 For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .
