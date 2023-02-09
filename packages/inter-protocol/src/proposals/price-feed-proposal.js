@@ -128,7 +128,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
