@@ -729,9 +729,11 @@ func NewAgoricApp(
 
 	app.UpgradeKeeper.SetUpgradeHandler(
 		upgradeName,
-		func(ctx sdk.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
-			return vm, nil
-		},
+		upgrade9Handler(app, upgradeName),
+	)
+	app.UpgradeKeeper.SetUpgradeHandler(
+		upgradeNameTest,
+		upgrade9Handler(app, upgradeNameTest),
 	)
 
 	if loadLatest {
@@ -746,6 +748,12 @@ func NewAgoricApp(
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
 
 	return app
+}
+
+func upgrade9Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
+		return fromVm, nil
+	}
 }
 
 type cosmosInitAction struct {
