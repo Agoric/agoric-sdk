@@ -26,7 +26,7 @@ const test = unknownTest;
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const aggregatorPath = `${dirname}/../src/price/fluxAggregator.js`;
+const aggregatorPath = `${dirname}/../src/price/priceAggregatorChainlink.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -52,7 +52,7 @@ const makeContext = async () => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../src/price/fluxAggregator.js').start>} */
+  /** @type {Installation<import('../src/price/priceAggregatorChainlink.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
@@ -689,6 +689,7 @@ test('notifications', async t => {
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 1n,
     startedAt: 1n,
+    startedBy: 'agorice1priceOracleA',
   });
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
 
@@ -719,6 +720,7 @@ test('notifications', async t => {
     {
       roundId: 1n,
       startedAt: 1n,
+      startedBy: 'agorice1priceOracleA'
     },
   );
   // B gets to start it
@@ -727,6 +729,7 @@ test('notifications', async t => {
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 2n,
     startedAt: 1n,
+    startedBy: 'agorice1priceOracleB'
   });
   // A joins in
   await E(pricePushAdminA).pushPrice({ roundId: 2, unitPrice: 1000n });
@@ -735,7 +738,7 @@ test('notifications', async t => {
     aggregator.mockStorageRoot.getBody(
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
     ),
-    { roundId: 2n, startedAt: 1n },
+    { roundId: 2n, startedAt: 1n, startedBy: 'agorice1priceOracleB' },
   );
 
   await eventLoopIteration();
@@ -759,6 +762,7 @@ test('notifications', async t => {
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 3n,
     startedAt: 1n,
+    startedBy: 'agorice1priceOracleA'
   });
   // no new price yet publishable
 });
