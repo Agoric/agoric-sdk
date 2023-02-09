@@ -121,7 +121,11 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
+ * @typedef {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}} GovernableStartFn
+ */
+
+/**
+ * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
