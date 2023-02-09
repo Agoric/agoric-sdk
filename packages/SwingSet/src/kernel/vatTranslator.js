@@ -14,6 +14,22 @@ export function assertValidVatstoreKey(key) {
 }
 
 /**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryMessage} VatDeliveryMessage
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryNotify} VatDeliveryNotify
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryDropExports} VatDeliveryDropExports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireExports} VatDeliveryRetireExports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryRetireImports} VatDeliveryRetireImports
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryChangeVatOptions} VatDeliveryChangeVatOptions
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStartVat} VatDeliveryStartVat
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryStopVat} VatDeliveryStopVat
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryBringOutYourDead} VatDeliveryBringOutYourDead
+ *
+ * @typedef {import('@agoric/swingset-liveslots').VatOneResolution} VatOneResolution
+ *
+ */
+
+/**
  * Return a function that converts KernelDelivery objects into VatDelivery
  * objects
  *
@@ -170,7 +186,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   /**
    * @param { SwingSetCapData } disconnectObjectCapData
-   * @returns { import('../types-external.js').VatDeliveryStopVat }
+   * @returns { VatDeliveryStopVat }
    */
   function translateStopVat(disconnectObjectCapData) {
     return harden(['stopVat', disconnectObjectCapData]);
@@ -354,31 +370,12 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   /**
    *
    * @param {string} priorKey
-   * @param {string} lowerBound
-   * @param {string | undefined} upperBound
-   * @returns {KernelSyscallVatstoreGetAfter}
+   * @returns {KernelSyscallVatstoreGetNextKey}
    */
-  function translateVatstoreGetAfter(priorKey, lowerBound, upperBound) {
-    if (priorKey !== '') {
-      assertValidVatstoreKey(priorKey);
-    }
-    assertValidVatstoreKey(lowerBound);
-    if (upperBound) {
-      assertValidVatstoreKey(upperBound);
-    }
-    if (upperBound === null) {
-      upperBound = undefined;
-    }
-    kdebug(
-      `syscall[${vatID}].vatstoreGetAfter(${priorKey}, ${lowerBound}, ${upperBound})`,
-    );
-    return harden([
-      'vatstoreGetAfter',
-      vatID,
-      priorKey,
-      lowerBound,
-      upperBound,
-    ]);
+  function translateVatstoreGetNextKey(priorKey) {
+    assertValidVatstoreKey(priorKey);
+    kdebug(`syscall[${vatID}].vatstoreGetNextKey(${priorKey})`);
+    return harden(['vatstoreGetNextKey', vatID, priorKey]);
   }
 
   /**
@@ -602,9 +599,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
         const [_, ...args] = vsc;
         return translateVatstoreSet(...args);
       }
-      case 'vatstoreGetAfter': {
+      case 'vatstoreGetNextKey': {
         const [_, ...args] = vsc;
-        return translateVatstoreGetAfter(...args);
+        return translateVatstoreGetNextKey(...args);
       }
       case 'vatstoreDelete': {
         const [_, ...args] = vsc;
@@ -647,9 +644,13 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
 
   const { mapKernelSlotToVatSlot } = vatKeeper;
 
-  // Most syscalls return ['ok', null], but callNow() returns ['ok', capdata]
-  // and vatstoreGet() returns ['ok', string] or ['ok', undefined], and
-  // invoke() can return ['error', problem].
+  // Most syscalls return ['ok', null], but callNow() returns ['ok',
+  // capdata] and vatstoreGet() returns ['ok', string] or ['ok',
+  // undefined], and invoke() can return ['error', problem]. We
+  // translate all 'undefined' into 'null' because the syscall
+  // responses will be recorded in the transcript, which uses JSON
+  // (actually djson.js), which cannot round-trip 'undefined'.
+
   /**
    *
    * @param {string} type
@@ -681,13 +682,13 @@ function makeTranslateKernelSyscallResultToVatSyscallResult(
         } else {
           return harden(['ok', null]);
         }
-      case 'vatstoreGetAfter':
+      case 'vatstoreGetNextKey':
         assert(successFlag === 'ok', 'unexpected KSR error');
         if (resultData) {
-          assert(Array.isArray(resultData));
+          assert.typeof(resultData, 'string');
           return harden(['ok', resultData]);
         } else {
-          return harden(['ok', [undefined, undefined]]);
+          return harden(['ok', null]);
         }
       default:
         assert(successFlag === 'ok', 'unexpected KSR error');

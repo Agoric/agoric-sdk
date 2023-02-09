@@ -103,7 +103,7 @@ harden(listDifference);
 /**
  * @param {Error} innerErr
  * @param {string|number} label
- * @param {ErrorConstructor=} ErrorConstructor
+ * @param {ErrorConstructor} [ErrorConstructor]
  * @returns {never}
  */
 export const throwLabeled = (innerErr, label, ErrorConstructor = undefined) => {
@@ -266,7 +266,7 @@ harden(bindAllMethods);
  * A more constrained version of {deeplyFulfilled} for type safety until https://github.com/endojs/endo/issues/1257
  * Useful in starting contracts that need all terms to be fulfilled in order to be durable.
  *
- * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/eventual-send').ERef<DeeplyAwaited<T>>}
+ * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/far').ERef<DeeplyAwaited<T>>}
  */
 export const deeplyFulfilledObject = obj => {
   assert(isObject(obj), 'param must be an object');
@@ -349,42 +349,6 @@ export const PromiseAllOrErrors = async values => {
   );
 
 /**
- * @param {import("fs").ReadStream | import("fs").WriteStream} stream
- * @returns {Promise<void>}
- */
-export const fsStreamReady = stream =>
-  new Promise((resolve, reject) => {
-    if (stream.destroyed) {
-      reject(new Error('Stream already destroyed'));
-      return;
-    }
-
-    if (!stream.pending) {
-      resolve();
-      return;
-    }
-
-    const onReady = () => {
-      cleanup(); // eslint-disable-line no-use-before-define
-      resolve();
-    };
-
-    /** @param {Error} err */
-    const onError = err => {
-      cleanup(); // eslint-disable-line no-use-before-define
-      reject(err);
-    };
-
-    const cleanup = () => {
-      stream.off('ready', onReady);
-      stream.off('error', onError);
-    };
-
-    stream.on('ready', onReady);
-    stream.on('error', onError);
-  });
-
-/**
  * @template {Record<string, unknown>} T
  * @typedef {{[P in keyof T]: Exclude<T[P], undefined>;}} AllDefined
  */
@@ -411,37 +375,53 @@ export const assertAllDefined = obj => {
   }
 };
 
-const neverDone = harden({ done: false, value: null });
+/** @type {IteratorResult<undefined, never>} */
+const notDone = harden({ done: false, value: undefined });
 
-/** @type {AsyncIterable<null>} */
-export const forever = asyncGenerate(() => neverDone);
+/** @type {IteratorResult<never, void>} */
+const alwaysDone = harden({ done: true, value: undefined });
 
-/**
- * @param {() => unknown} boolFunc
- * `boolFunc`'s return value is used for its truthiness vs falsiness.
- * IOW, it is coerced to a boolean so the caller need not bother doing this
- * themselves.
- * @returns {AsyncIterable<null>}
- */
-export const whileTrue = boolFunc =>
-  asyncGenerate(() =>
-    harden({
-      done: !boolFunc(),
-      value: null,
-    }),
-  );
+export const forever = asyncGenerate(() => notDone);
 
 /**
- * @param {() => unknown} boolFunc
- * `boolFunc`'s return value is used for its truthiness vs falsiness.
+ * @template T
+ * @param {() => T} produce
+ * The value of `await produce()` is used for its truthiness vs falsiness.
  * IOW, it is coerced to a boolean so the caller need not bother doing this
  * themselves.
- * @returns {AsyncIterable<null>}
+ * @returns {AsyncIterable<Awaited<T>>}
  */
-export const untilTrue = boolFunc =>
-  asyncGenerate(() =>
-    harden({
-      done: !!boolFunc(),
-      value: null,
-    }),
-  );
+export const whileTrue = produce =>
+  asyncGenerate(async () => {
+    const value = await produce();
+    if (!value) {
+      return alwaysDone;
+    }
+    return harden({
+      done: false,
+      value,
+    });
+  });
+
+/**
+ * @template T
+ * @param {() => T} produce
+ * The value of `await produce()` is used for its truthiness vs falsiness.
+ * IOW, it is coerced to a boolean so the caller need not bother doing this
+ * themselves.
+ * @returns {AsyncIterable<Awaited<T>>}
+ */
+export const untilTrue = produce =>
+  asyncGenerate(async () => {
+    const value = await produce();
+    if (value) {
+      return harden({
+        done: true,
+        value,
+      });
+    }
+    return harden({
+      done: false,
+      value,
+    });
+  });

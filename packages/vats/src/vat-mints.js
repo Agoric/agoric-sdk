@@ -2,14 +2,14 @@
 import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.
 
 export function buildRootObject() {
-  /** @type {Store<string, { mint: Mint, brand: Brand}>} */
-  const mintsAndBrands = makeStore('issuerName');
+  /** @type {MapStore<string, { mint: Mint, brand: Brand}>} */
+  const mintsAndBrands = makeScalarMapStore('issuerName');
 
   const api = Far('api', {
     getAllIssuerNames: () => [...mintsAndBrands.keys()],

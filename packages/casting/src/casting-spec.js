@@ -15,6 +15,7 @@ const swingsetPathToCastingSpec = storagePath =>
     storeSubkey: toAscii(`swingset/data:${storagePath}`),
   });
 
+const KEY_SEPARATOR_BYTE = 0;
 const PATH_SEPARATOR_BYTE = '.'.charCodeAt(0);
 const DATA_PREFIX_BYTES = new Uint8Array([0]);
 
@@ -28,9 +29,30 @@ const vstoragePathToCastingSpec = (storagePath, storeName = 'vstorage') => {
   const buf = toAscii(`${elems.length}.${storagePath}`);
   return harden({
     storeName,
-    storeSubkey: buf.map(b => (b === PATH_SEPARATOR_BYTE ? 0 : b)),
+    storeSubkey: buf.map(b =>
+      b === PATH_SEPARATOR_BYTE ? KEY_SEPARATOR_BYTE : b,
+    ),
     dataPrefixBytes: DATA_PREFIX_BYTES,
   });
+};
+
+// TODO make a similar castingSpecToPath.
+// This one uses VStorageKey which has storeSubkey:string, not UInt8Array
+/**
+ *
+ * @param {VStorageKey} vstorageKey
+ * @returns {string}
+ */
+export const vstorageKeySpecToPath = ({ storeName, storeSubkey }) => {
+  assert.equal(storeName, 'vstorage');
+  const firstSeperator = storeSubkey.indexOf(
+    String.fromCharCode(KEY_SEPARATOR_BYTE),
+  );
+  const published = storeSubkey.slice(firstSeperator);
+  const elements = published.split(String.fromCharCode(KEY_SEPARATOR_BYTE));
+  // drop the empty
+  elements.shift();
+  return `vstorage:${elements.join('.')}`;
 };
 
 export const DEFAULT_PATH_CONVERTER = vstoragePathToCastingSpec;
@@ -40,7 +62,7 @@ export const DEFAULT_PATH_CONVERTER = vstoragePathToCastingSpec;
  */
 export const pathPrefixToConverters = harden({
   'swingset:': swingsetPathToCastingSpec,
-  'vstore:': vstoragePathToCastingSpec,
+  'vstorage:': vstoragePathToCastingSpec,
   ':': DEFAULT_PATH_CONVERTER,
 });
 

@@ -1,0 +1,13 @@
+diff --git a/node_modules/@endo/static-module-record/src/transformSource.js b/node_modules/@endo/static-module-record/src/transformSource.js
+index cba7f8e..3a814d9 100644
+--- a/node_modules/@endo/static-module-record/src/transformSource.js
++++ b/node_modules/@endo/static-module-record/src/transformSource.js
+@@ -1,7 +1,7 @@
+ import * as babelParser from '@babel/parser';
+ import babelGenerate from '@agoric/babel-generator';
+ import babelTraverse from '@babel/traverse';
+-import babelTypes from '@babel/types';
++import * as babelTypes from '@babel/types';
+ 
+ const parseBabel = babelParser.default
+   ? babelParser.default.parse

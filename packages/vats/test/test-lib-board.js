@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { makeBoard } from '../src/lib-board.js';
 
 test('makeBoard', async t => {
@@ -47,6 +47,14 @@ test('makeBoard', async t => {
   t.is(idObj1b, 'tooboard311');
   const idObj2b = board2.getId(obj2);
   t.is(idObj2b, 'tooboard012');
+});
+
+test('board values must be scalar keys', async t => {
+  const board = makeBoard();
+  const nonKey = harden({ a: 1 });
+  await t.throwsAsync(() => E(board).getId(nonKey), {
+    message: /arg 0: A "copyRecord" cannot be a scalar key: {"a":1}/,
+  });
 });
 
 const testBoardMarshaller = async (t, board, marshaller, publishing) => {

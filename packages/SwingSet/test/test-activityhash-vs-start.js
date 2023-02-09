@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import { buildTimer } from '../src/devices/timer/timer.js';
 
@@ -11,14 +11,16 @@ const TimerSrc = new URL(
   import.meta.url,
 ).pathname;
 
-// all tests that are sensitive to GC timing (which means anything that
-// exercises transcript replay or looks at activityHash) need to use
-// test.serial or config.defaultManagerType='xsnap', until we figure out why
-// gcAndFinalize sometimes doesn't work (details in #3240 and #4617)
+// all tests that are sensitive to GC timing (which means anything
+// that exercises transcript replay or looks at activityHash) need to
+// use test.serial or config.defaultManagerType='xs-worker', until we
+// figure out why gcAndFinalize sometimes doesn't work (details in
+// #3240 and #4617). And even test.serial doesn't seem to be enough.
 
-test.serial('restarting kernel does not change activityhash', async t => {
+test('restarting kernel does not change activityhash', async t => {
   const sourceSpec = new URL('vat-empty-setup.js', import.meta.url).pathname;
   const config = {
+    defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     vats: {
       bootstrap: {
@@ -38,7 +40,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   const deviceEndowments1 = {
     timer: { ...timer1.endowments },
   };
-  const ks1 = initSwingStore().kernelStorage;
+  const { kernelStorage: ks1, debug: debug1 } = initSwingStore();
   // console.log(`--c1 build`);
   await initializeSwingset(config, [], ks1);
   const c1 = await makeSwingsetController(ks1, deviceEndowments1);
@@ -48,8 +50,8 @@ test.serial('restarting kernel does not change activityhash', async t => {
   // console.log(`--c1 run1`);
   await c1.run();
 
-  // console.log(`--c1 getAllState`);
-  const state = getAllState(ks1);
+  // console.log(`--c1 serialize`);
+  const serialized = debug1.serialize();
   // console.log(`ah: ${c1.getActivityhash()}`);
 
   // console.log(`--c1 poll1`);
@@ -70,8 +72,7 @@ test.serial('restarting kernel does not change activityhash', async t => {
   const deviceEndowments2 = {
     timer: { ...timer2.endowments },
   };
-  const ks2 = initSwingStore().kernelStorage;
-  setAllState(ks2, state);
+  const { kernelStorage: ks2 } = initSwingStore(null, { serialized });
   // console.log(`--c2 build`);
   const c2 = await makeSwingsetController(ks2, deviceEndowments2);
   // console.log(`ah: ${c2.getActivityhash()}`);
@@ -92,24 +93,24 @@ test.serial('restarting kernel does not change activityhash', async t => {
   t.is(c1ah, c2ah);
 });
 
-test.serial('comms initialize is deterministic', async t => {
+test('comms initialize is deterministic', async t => {
   // bug #3726: comms was calling vatstoreGet('initialize') and
   // vatstoreSet('meta.o+0') during the first message after process restart,
   // which makes it a nondeterministic function of the input events.
 
   const sourceSpec = new URL('vat-activityhash-comms.js', import.meta.url)
     .pathname;
-  const config = {};
+  const config = { defaultManagerType: 'xs-worker' };
   config.bootstrap = 'bootstrap';
   config.vats = { bootstrap: { sourceSpec } };
-  const ks1 = initSwingStore().kernelStorage;
+  const { kernelStorage: ks1, debug: debug1 } = initSwingStore();
   await initializeSwingset(config, [], ks1);
   const c1 = await makeSwingsetController(ks1, {});
   c1.pinVatRoot('bootstrap');
   // the bootstrap message will cause comms to initialize itself
   await c1.run();
 
-  const state = getAllState(ks1);
+  const serialized = debug1.serialize();
 
   // but the second message should not
   c1.queueToVatRoot('bootstrap', 'addRemote', ['remote2']);
@@ -118,8 +119,7 @@ test.serial('comms initialize is deterministic', async t => {
   await c1.shutdown();
 
   // a kernel restart is loading a new kernel from the same state
-  const ks2 = initSwingStore().kernelStorage;
-  setAllState(ks2, state);
+  const { kernelStorage: ks2 } = initSwingStore(null, { serialized });
   const c2 = await makeSwingsetController(ks2, {});
 
   // the "am I already initialized?" check must be identical to the

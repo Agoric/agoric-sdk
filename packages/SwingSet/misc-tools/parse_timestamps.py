@@ -85,7 +85,8 @@ class Console:
         return 0
 
 class Delivery:
-    def __init__(self, cranknum, vd, when, monotime):
+    def __init__(self, vatID, cranknum, vd, when, monotime):
+        self.vatID = vatID
         self.cranknum = cranknum
         self.syscalls = []
         self.consoles = []
@@ -168,7 +169,7 @@ def parse_file(fn, vatID):
                 cranknum = data["crankNum"]
                 deliverynum = data["deliveryNum"]
                 monotime = data["monotime"]
-                d = Delivery(cranknum, data["vd"], when, monotime)
+                d = Delivery(data.get("vatID"), cranknum, data["vd"], when, monotime)
                 deliveries.append(d)
             if type == "console":
                 deliveries[-1].add_console(when)

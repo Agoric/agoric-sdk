@@ -3,7 +3,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManagerBuilder } from '@agoric/governance';
-import { objectMap } from '@agoric/internal';
+import { makeTracer, objectMap } from '@agoric/internal';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
@@ -25,7 +25,6 @@ import { deeplyFulfilled } from '@endo/marshal';
 import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
-import { makeTracer } from '../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
@@ -43,7 +42,7 @@ import {
   vaultManagerMetricsTracker,
 } from '../metrics.js';
 import {
-  installGovernance,
+  installPuppetGovernance,
   produceInstallations,
   setupBootstrap,
   setUpZoeForTest,
@@ -103,6 +102,7 @@ const defaultParamValues = debtBrand =>
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
+    // NB: liquidationPadding defaults to zero in contract
   });
 
 test.before(async t => {
@@ -168,7 +168,7 @@ const setupAmmAndElectorateAndReserve = async (
 
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
-  installGovernance(zoe, space.installation.produce);
+  installPuppetGovernance(zoe, space.installation.produce);
   produceInstallations(space, t.context.installation);
 
   await startEconomicCommittee(space, electorateTerms);
@@ -257,6 +257,8 @@ const getRunFromFaucet = async (t, amount) => {
 };
 
 /**
+ * @deprecated use the subscriber directly
+ *
  * Vault offer result used to include `publicNotifiers` but now is `publicSubscribers`.
  *
  * @param {UserSeat<VaultKit>} vaultSeat
@@ -271,8 +273,7 @@ const legacyOfferResult = vaultSeat => {
       return {
         vault,
         publicNotifiers: {
-          asset: makeNotifierFromSubscriber(publicSubscribers.asset),
-          vault: makeNotifierFromSubscriber(publicSubscribers.vault),
+          vault: makeNotifierFromSubscriber(publicSubscribers.vault.subscriber),
         },
       };
     });
@@ -284,7 +285,7 @@ const legacyOfferResult = vaultSeat => {
  * @param {import('ava').ExecutionContext<Context>} t
  * @param {Array<NatValue> | Ratio} priceOrList
  * @param {Amount | undefined} unitAmountIn
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
  * @param {bigint} runInitialLiquidity
  */
@@ -654,7 +655,6 @@ test('price drop', async t => {
   t.truthy(await E(vaultSeat).hasExited());
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
 
@@ -779,7 +779,6 @@ test('price falls precipitously', async t => {
   };
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   await manualTimer.tick(); // t 0->1, p 2200->19180
@@ -890,7 +889,7 @@ test('interest on multiple vaults', async t => {
     SECONDS_PER_DAY,
     500n,
   );
-  const { vaultFactory, lender } = services.vaultFactory;
+  const { aethCollateralManager, vaultFactory, lender } = services.vaultFactory;
 
   // Create a loan for Alice for 4700 Minted with 1100 aeth collateral
   const collateralAmount = aeth.make(1100n);
@@ -908,7 +907,7 @@ test('interest on multiple vaults', async t => {
   );
   const {
     vault: aliceVault,
-    publicNotifiers: { vault: aliceNotifier, asset: assetNotifier },
+    publicNotifiers: { vault: aliceNotifier },
   } = await legacyOfferResult(aliceLoanSeat);
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
@@ -974,7 +973,9 @@ test('interest on multiple vaults', async t => {
   // Advance 8 days, past one charging and recording period
   await manualTimer.tickN(8);
 
-  const assetUpdate = await E(assetNotifier).getUpdateSince();
+  const assetUpdate = (
+    await E(E(aethCollateralManager).getSubscriber()).subscribeAfter()
+  ).head;
   const aliceUpdate = await E(aliceNotifier).getUpdateSince();
   const bobUpdate = await E(bobNotifier).getUpdateSince();
 
@@ -1547,6 +1548,8 @@ test('transfer vault', async t => {
     adjustInvitation,
     harden({
       give: { Minted: payoffRun2 },
+      // it's only multi-turn if there is a want
+      want: { Collateral: aeth.make(1n) },
     }),
     harden({ Minted: paybackPayment }),
   );
@@ -1755,7 +1758,6 @@ test('mutable liquidity triggers and interest', async t => {
   } = services;
 
   const metricsSub = await E(reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(run.makeEmpty()));
   let shortfallBalance = 0n;
@@ -2164,39 +2166,7 @@ test('close loan', async t => {
   t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.makeEmpty());
 });
 
-test('excessive loan', async t => {
-  const { zoe, aeth, run } = t.context;
-
-  const services = await setupServices(
-    t,
-    [15n],
-    aeth.make(1n),
-    buildManualTimer(t.log),
-    undefined,
-    500n,
-  );
-  const { lender } = services.vaultFactory;
-
-  // Try to Create a loan for Alice for 5000 Minted with 100 aeth collateral
-  const collateralAmount = aeth.make(100n);
-  const aliceLoanAmount = run.make(5000n);
-  /** @type {UserSeat<VaultKit>} */
-  const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
-    harden({
-      give: { Collateral: collateralAmount },
-      want: { Minted: aliceLoanAmount },
-    }),
-    harden({
-      Collateral: aeth.mint.mintPayment(collateralAmount),
-    }),
-  );
-  await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
-    message: /exceeds max/,
-  });
-});
-
-test('loan too small', async t => {
+test('loan too small - MinInitialDebt', async t => {
   const { zoe, aeth, run } = t.context;
   t.context.minInitialDebt = 50_000n;
 
@@ -2237,7 +2207,7 @@ test('loan too small', async t => {
  * Attempts to adjust balances on vaults beyond the debt limit fail.
  * In other words, minting for anything other than charging interest fails.
  */
-test('excessive debt on collateral type', async t => {
+test('excessive debt on collateral type - debtLimit', async t => {
   const { zoe, aeth, run } = t.context;
 
   const services = await setupServices(
@@ -2902,6 +2872,7 @@ test('governance publisher', async t => {
   t.is(current.LiquidationTerms.type, 'unknown');
   t.is(current.MinInitialDebt.type, 'amount');
   t.is(current.ShortfallInvitation.type, 'invitation');
+  t.is(current.EndorsedUI.type, 'string');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
     E(lender).getSubscription({

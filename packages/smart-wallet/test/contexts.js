@@ -1,6 +1,6 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { withAmountUtils } from './supports.js';
@@ -34,6 +34,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'wallet',
   );
 
+  const assetPublisher = await E(consume.bankManager).getBankForAddress(
+    'anyAddress',
+  );
   const bridgeManager = await consume.bridgeManager;
   const walletBridgeManager = await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET));
@@ -43,6 +46,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     {
       agoricNames,
       board: consume.board,
+      assetPublisher,
     },
     { storageNode, walletBridgeManager },
   );

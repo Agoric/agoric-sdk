@@ -3,7 +3,7 @@ import { AmountMath } from '@agoric/ertp';
 import {
   provideDurableSetStore,
   makeScalarBigMapStore,
-  vivifySingleton,
+  prepareSingleton,
 } from '@agoric/vat-data';
 
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
@@ -52,7 +52,7 @@ export const makeZCFMintFactory = async (
     const add = (total, amountToAdd) =>
       AmountMath.add(total, amountToAdd, mintyBrand);
 
-    return vivifySingleton(
+    return prepareSingleton(
       zcfMintBaggage,
       'zcfMint',
       /** @type {ZCFMint} */
@@ -140,7 +140,7 @@ export const makeZCFMintFactory = async (
    * baggage for the state of the zcfMint, makes a durableZcfMint from that
    * baggage, and registers that baggage to be revived with the factory.
    */
-  const zcfMintFactory = vivifySingleton(zcfBaggage, 'zcfMintFactory', {
+  const zcfMintFactory = prepareSingleton(zcfBaggage, 'zcfMintFactory', {
     makeZCFMintInternal: async (keyword, zoeMint) => {
       const zcfMintBaggage = makeScalarBigMapStore('zcfMintBaggage', {
         durable: true,

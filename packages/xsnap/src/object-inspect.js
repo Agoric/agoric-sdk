@@ -497,11 +497,9 @@ function arrObjKeys(obj, inspect) {
   const syms = getOwnPropertySymbols(obj);
   for (const key of getOwnPropertyNames(obj)) {
     if (!isEnumerable.call(obj, key)) {
-      // eslint-disable-next-line no-continue
       continue;
     }
     if (isArr && String(Number(key)) === key && key < obj.length) {
-      // eslint-disable-next-line no-continue
       continue;
     }
     if ($test.call(/[^\w$]/, key)) {

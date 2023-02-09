@@ -113,28 +113,6 @@ const SHARED_MAIN_MANIFEST = harden({
       },
     },
   },
-
-  [econBehaviors.configureVaultFactoryUI.name]: {
-    consume: {
-      board: true,
-      zoe: true,
-    },
-    issuer: { consume: { [Stable.symbol]: 'zoe' } },
-    brand: { consume: { [Stable.symbol]: 'zoe' } },
-    installation: {
-      consume: {
-        amm: 'zoe',
-        VaultFactory: 'zoe',
-        contractGovernor: 'zoe',
-        binaryVoteCounter: 'zoe',
-        liquidate: 'zoe',
-      },
-    },
-    instance: {
-      consume: { amm: 'amm', VaultFactory: 'VaultFactory' },
-    },
-    uiConfig: { produce: { Treasury: true, VaultFactory: true } },
-  },
 });
 
 const REWARD_MANIFEST = harden({

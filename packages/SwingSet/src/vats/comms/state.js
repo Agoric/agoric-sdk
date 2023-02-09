@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 import { insistCapData } from '../../lib/capdata.js';
 import {
@@ -192,7 +192,7 @@ export function makeState(syscall) {
     deleteLocalPromiseState(lpid);
   }
 
-  /* we need syscall.vatstoreGetKeys to do it this way
+  /* we need syscall.vatstoreGetNextKey to do it this way
   function addImporter(lref, remoteID) {
     assert(!lref.includes('.'), lref);
     const key = `imps.${lref}.${remoteID}`;
@@ -205,11 +205,9 @@ export function makeState(syscall) {
   }
   function getImporters(lref) {
     const remoteIDs = [];
-    const prefix = `imps.${lref}`;
-    const startKey = `${prefix}.`;
-    const endKey = `${prefix}/`; // '.' and '/' are adjacent
-    for (const k of store.getKeys(startKey, endKey)) {
-      const remoteID = k.slice(0, prefix.length);
+    const prefix = `imps.${lref}.`;
+    for (const k of enumeratePrefixedKeys(store, prefix)) {
+      const remoteID = k.slice(prefix.length);
       if (remoteID !== 'kernel') {
         insistRemoteID(remoteID);
       }

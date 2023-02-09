@@ -9,6 +9,11 @@ import {
 import '../../types-ambient.js';
 import './types.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
+ */
+
 // eslint-disable-next-line no-unused-vars
 function parentLog(first, ...args) {
   // console.error(`--parent: ${first}`, ...args);
@@ -22,7 +27,7 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (name: string, handleCommand: AsyncHandler, metered?: boolean, snapshotHash?: string) => Promise<XSnap>,
+ *   startXSnap: (vatID: string, name: string, handleCommand: AsyncHandler, metered?: boolean, reload?: boolean) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -112,10 +117,9 @@ export function makeXsSubprocessFactory({
     }
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const lastSnapshot = vatKeeper.getLastSnapshot();
-    if (lastSnapshot) {
-      const { snapshotID } = lastSnapshot;
-      kernelSlog.write({ type: 'heap-snapshot-load', vatID, snapshotID });
+    const snapshotInfo = vatKeeper.getSnapshotInfo();
+    if (snapshotInfo) {
+      kernelSlog.write({ type: 'heap-snapshot-load', vatID, ...snapshotInfo });
     }
 
     // `startXSnap` adds `argName` as a dummy argument so that 'ps'
@@ -125,10 +129,11 @@ export function makeXsSubprocessFactory({
 
     // start the worker and establish a connection
     const worker = await startXSnap(
+      vatID,
       argName,
       handleCommand,
       metered,
-      lastSnapshot ? lastSnapshot.snapshotID : undefined,
+      !!snapshotInfo,
     );
 
     /** @type { (item: Tagged) => Promise<CrankResults> } */
@@ -144,7 +149,7 @@ export function makeXsSubprocessFactory({
       return { ...result, reply: [tag, ...rest] };
     }
 
-    if (lastSnapshot) {
+    if (snapshotInfo) {
       parentLog(vatID, `snapshot loaded. dispatch ready.`);
     } else {
       parentLog(vatID, `instructing worker to load bundle..`);
@@ -209,11 +214,12 @@ export function makeXsSubprocessFactory({
       return worker.close().then(_ => undefined);
     }
     /**
+     * @param {number} endPos
      * @param {SnapStore} snapStore
-     * @returns {Promise<SnapshotInfo>}
+     * @returns {Promise<SnapshotResult>}
      */
-    function makeSnapshot(snapStore) {
-      return snapStore.save(fn => worker.snapshot(fn));
+    function makeSnapshot(endPos, snapStore) {
+      return snapStore.saveSnapshot(vatID, endPos, fn => worker.snapshot(fn));
     }
 
     return mk.getManager(shutdown, makeSnapshot);

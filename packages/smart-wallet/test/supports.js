@@ -1,4 +1,4 @@
-import * as ActionType from '@agoric/cosmic-swingset/src/action-types.js';
+import * as ActionType from '@agoric/internal/src/action-types.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import {
@@ -14,14 +14,14 @@ import {
 } from '@agoric/vats/src/core/utils.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
-import { devices } from './devices.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 export { ActionType };
 
@@ -89,17 +89,10 @@ const makeFakeBridgeManager = () =>
         },
         toBridge(obj) {
           assert(handler, `No handler for ${bridgeId}`);
-          switch (obj.type) {
-            case ActionType.WALLET_ACTION:
-            case ActionType.WALLET_SPEND_ACTION: {
-              // @ts-expect-error handler possibly undefined
-              return E(handler).fromBridge(obj);
-            }
-
-            default: {
-              assert.fail(`Unsupported bridge object type ${obj.type}`);
-            }
-          }
+          // Rely on interface guard for validation.
+          // This should also be validated upstream but don't rely on it.
+          // @ts-expect-error handler possibly undefined
+          return E(handler).fromBridge(obj);
         },
         setHandler(newHandler) {
           handler = newHandler;
@@ -129,8 +122,10 @@ export const makeMockTestSpace = async log => {
     switch (name) {
       case 'mints':
         return mintsRoot();
-      case 'board':
-        return boardRoot();
+      case 'board': {
+        const baggage = makeScalarBigMapStore('baggage');
+        return boardRoot({}, {}, baggage);
+      }
       default:
         throw Error('unknown loadVat name');
     }
@@ -166,15 +161,11 @@ export const makeMockTestSpace = async log => {
     ),
   );
 
-  const vatPowers = {
-    D: x => x,
-  };
-
   await Promise.all([
     // @ts-expect-error
     makeBoard({ consume, produce, ...spaces }),
     makeAddressNameHubs({ consume, produce, ...spaces }),
-    installBootContracts({ vatPowers, devices, consume, produce, ...spaces }),
+    installBootContracts({ consume, produce, ...spaces }),
     setupClientManager({ consume, produce, ...spaces }),
   ]);
 
@@ -204,6 +195,18 @@ export const mintCentralPayment = async (
     { feeMintAccess },
   );
   return E(supplier).getBootstrapPayment();
+};
+
+/**
+ *
+ * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {string} subscriberName
+ */
+export const topicPath = (hasTopics, subscriberName) => {
+  return E(hasTopics)
+    .getPublicTopics()
+    .then(subscribers => subscribers[subscriberName])
+    .then(tr => tr.storagePath);
 };
 
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */

@@ -1,26 +1,26 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
-import { M, vivifyFarClassKit } from '@agoric/vat-data';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
   atomicTransfer,
-  ceilMultiplyBy,
   floorMultiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   addSubtract,
+  allEmpty,
   assertOnlyKeys,
-  makeEphemeraProvider,
   stageDelta,
 } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
-import { makeTracer } from '../makeTracer.js';
 import { UnguardedHelperI } from '../typeGuards.js';
-import { vivifyVaultKit } from './vaultKit.js';
+import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
+import { calculateLoanCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
 
@@ -101,6 +101,7 @@ const validTransitions = {
  * @typedef {Readonly<{
  * idInManager: VaultId,
  * manager: VaultManager,
+ * storageNode: StorageNode,
  * vaultSeat: ZCFSeat,
  * }>} ImmutableState
  */
@@ -112,67 +113,31 @@ const validTransitions = {
  *   interestSnapshot: Ratio,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
+ *   outerUpdater: Publisher<VaultNotification> | null,
  * }} MutableState
  */
 
 /**
- * Ephemera are the elements of state that cannot (or need not) be durable.
- * When there's a single instance it can be held in a closure, but there are
- * many vault manaager objects. So we hold their ephemera keyed by the durable
- * vault manager object reference.
- *
- * @type {(key: VaultId) => {
- * storageNode: ERef<StorageNode>,
- * marshaller: ERef<Marshaller>,
- * outerUpdater: Publisher<VaultNotification> | null,
- * zcf: ZCF,
- * }} */
-// @ts-expect-error not yet defined
-const provideEphemera = makeEphemeraProvider(() => ({}));
-
-/**
- * @param {ZCF} zcf
- * @param {VaultManager} manager
- * @param {VaultId} idInManager
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {ImmutableState & MutableState}
- */
-const initState = (zcf, manager, idInManager, storageNode, marshaller) => {
-  const ephemera = provideEphemera(idInManager);
-  ephemera.storageNode = storageNode;
-  ephemera.marshaller = marshaller;
-  ephemera.zcf = zcf;
-
-  return harden({
-    idInManager,
-    manager,
-    outerUpdater: null,
-    phase: Phase.ACTIVE,
-
-    // vaultSeat will hold the collateral until the loan is retired. The
-    // payout from it will be handed to the user: if the vault dies early
-    // (because the vaultFactory vat died), they'll get all their
-    // collateral back. If that happens, the issuer for the Minted will be dead,
-    // so their loan will be worthless.
-    vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
-
-    // Two values from the same moment
-    interestSnapshot: manager.getCompoundedInterest(),
-    debtSnapshot: AmountMath.makeEmpty(manager.getDebtBrand()),
-  });
-};
-
-/**
  * Check whether we can proceed with an `adjustBalances`.
  *
- * @param {Amount} newCollateralPre
- * @param {Amount} maxDebtPre
- * @param {Amount} newCollateral
- * @param {Amount} newDebt
+ * @param {Amount<'nat'>} newCollateralPre
+ * @param {Amount<'nat'>} maxDebtPre
+ * @param {Amount<'nat'>} newCollateral
+ * @param {Amount<'nat'>} newDebt
  * @returns {boolean}
  */
-const checkRestart = (newCollateralPre, maxDebtPre, newCollateral, newDebt) => {
+const allocationsChangedSinceQuote = (
+  newCollateralPre,
+  maxDebtPre,
+  newCollateral,
+  newDebt,
+) => {
+  trace('allocationsChangedSinceQuote', {
+    newCollateralPre,
+    maxDebtPre,
+    newCollateral,
+    newDebt,
+  });
   if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
     // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
     // We can pro-rate maxDebt because the quote is either linear (price is
@@ -202,9 +167,7 @@ export const VaultI = M.interface('Vault', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getVaultSeat: M.call().returns(SeatShape),
-  initVaultKit: M.call(SeatShape, M.eref(StorageNodeShape)).returns(
-    M.promise(),
-  ),
+  initVaultKit: M.call(SeatShape, StorageNodeShape).returns(M.promise()),
   liquidated: M.call().returns(undefined),
   liquidating: M.call().returns(undefined),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
@@ -212,18 +175,48 @@ export const VaultI = M.interface('Vault', {
   makeTransferInvitation: M.call().returns(M.promise()),
 });
 
-export const vivifyVault = baggage => {
-  const makeVaultKit = vivifyVaultKit(baggage);
+/**
+ * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
+ * @param {ZCF} zcf
+ */
+export const prepareVault = (baggage, marshaller, zcf) => {
+  const makeVaultKit = prepareVaultKit(baggage, marshaller);
 
-  // TODO find a way to not have to indent a level deeper than defineDurableFarClassKit does
-  const maker = vivifyFarClassKit(
+  const maker = prepareExoClassKit(
     baggage,
     'Vault',
     {
       helper: UnguardedHelperI,
       self: VaultI,
     },
-    initState,
+    /**
+     * @param {VaultManager} manager
+     * @param {VaultId} idInManager
+     * @param {StorageNode} storageNode
+     * @returns {ImmutableState & MutableState}
+     */
+    (manager, idInManager, storageNode) => {
+      return harden({
+        idInManager,
+        manager,
+        outerUpdater: null,
+        phase: Phase.ACTIVE,
+
+        storageNode,
+
+        // vaultSeat will hold the collateral until the loan is retired. The
+        // payout from it will be handed to the user: if the vault dies early
+        // (because the vaultFactory vat died), they'll get all their
+        // collateral back. If that happens, the issuer for the Minted will be dead,
+        // so their loan will be worthless.
+        vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
+
+        // Two values from the same moment
+        interestSnapshot: manager.getCompoundedInterest(),
+        debtSnapshot: AmountMath.makeEmpty(manager.getDebtBrand()),
+      });
+    },
     {
       helper: {
         // #region Computed constants
@@ -239,6 +232,30 @@ export const vivifyVault = baggage => {
         },
         emptyDebt() {
           return AmountMath.makeEmpty(this.facets.helper.debtBrand());
+        },
+        /**
+         * @typedef {{ give: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> }, want: { Collateral: Amount<'nat'>, Minted: Amount<'nat'> } }} FullProposal
+         */
+        /**
+         * @param {ProposalRecord} partial
+         * @returns {FullProposal}
+         */
+        fullProposal(partial) {
+          assertOnlyKeys(partial, ['Collateral', 'Minted']);
+          return {
+            give: {
+              Collateral:
+                partial.give?.Collateral ||
+                this.facets.helper.emptyCollateral(),
+              Minted: partial.give?.Minted || this.facets.helper.emptyDebt(),
+            },
+            want: {
+              Collateral:
+                partial.want?.Collateral ||
+                this.facets.helper.emptyCollateral(),
+              Minted: partial.want?.Minted || this.facets.helper.emptyDebt(),
+            },
+          };
         },
         // #endregion
 
@@ -258,7 +275,7 @@ export const vivifyVault = baggage => {
 
         assertActive() {
           const { phase } = this.state;
-          assert(phase === Phase.ACTIVE);
+          phase === Phase.ACTIVE || Fail`vault not active`;
         },
 
         assertCloseable() {
@@ -332,18 +349,14 @@ export const vivifyVault = baggage => {
         /**
          *
          * @param {Amount<'nat'>} collateralAmount
-         * @param {Amount<'nat'>} proposedRunDebt
+         * @param {Amount<'nat'>} proposedDebt
          */
-        async assertSufficientCollateral(collateralAmount, proposedRunDebt) {
+        async assertSufficientCollateral(collateralAmount, proposedDebt) {
           const { state, facets } = this;
-          const maxRun = await state.manager.maxDebtFor(collateralAmount);
-          AmountMath.isGTE(
-            maxRun,
-            proposedRunDebt,
-            facets.helper.debtBrand(),
-          ) ||
-            Fail`Requested ${q(proposedRunDebt)} exceeds max ${q(
-              maxRun,
+          const maxDebt = await state.manager.maxDebtFor(collateralAmount);
+          AmountMath.isGTE(maxDebt, proposedDebt, facets.helper.debtBrand()) ||
+            Fail`Proposed debt ${q(proposedDebt)} exceeds max ${q(
+              maxDebt,
             )} for ${q(collateralAmount)} collateral`;
         },
 
@@ -370,8 +383,7 @@ export const vivifyVault = baggage => {
          */
         updateUiState() {
           const { state, facets } = this;
-          const ephemera = provideEphemera(state.idInManager);
-          const { outerUpdater } = ephemera;
+          const { outerUpdater } = state;
           if (!outerUpdater) {
             // It's not an error to change to liquidating during transfer
             return;
@@ -388,7 +400,7 @@ export const vivifyVault = baggage => {
               break;
             case Phase.CLOSED:
               outerUpdater.finish(uiState);
-              ephemera.outerUpdater = null;
+              state.outerUpdater = null;
               break;
             default:
               throw Error(`unreachable vault phase: ${phase}`);
@@ -404,7 +416,6 @@ export const vivifyVault = baggage => {
           const { self, helper } = facets;
           helper.assertCloseable();
           const { phase, vaultSeat } = state;
-          const { zcf } = provideEphemera(state.idInManager);
 
           // Held as keys for cleanup in the manager
           const oldDebtNormalized = self.getNormalizedDebt();
@@ -483,13 +494,12 @@ export const vivifyVault = baggage => {
         loanFee(currentDebt, giveAmount, wantAmount) {
           const { state } = this;
 
-          const fee = ceilMultiplyBy(
+          return calculateLoanCosts(
+            currentDebt,
+            giveAmount,
             wantAmount,
             state.manager.getGovernedParams().getLoanFee(),
           );
-          const toMint = AmountMath.add(wantAmount, fee);
-          const newDebt = addSubtract(currentDebt, toMint, giveAmount);
-          return { newDebt, toMint, fee };
         },
 
         /**
@@ -502,45 +512,18 @@ export const vivifyVault = baggage => {
           const { state, facets } = this;
 
           const { self, helper } = facets;
-          const ephemera = provideEphemera(state.idInManager);
-          const { outerUpdater: updaterPre } = ephemera;
+          const { outerUpdater: updaterPre } = state;
           const { vaultSeat } = state;
-          const proposal = clientSeat.getProposal();
-          assertOnlyKeys(proposal, ['Collateral', 'Minted']);
+          const fp = helper.fullProposal(clientSeat.getProposal());
 
-          const allEmpty = amounts => {
-            return amounts.every(a => AmountMath.isEmpty(a));
-          };
-
-          const normalizedDebtPre = self.getNormalizedDebt();
-          const collateralPre = helper.getCollateralAllocated(vaultSeat);
-
-          const giveColl = proposal.give.Collateral || helper.emptyCollateral();
-          const wantColl = proposal.want.Collateral || helper.emptyCollateral();
-
-          const newCollateralPre = addSubtract(
-            collateralPre,
-            giveColl,
-            wantColl,
-          );
-          // max debt supported by current Collateral as modified by proposal
-          const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
-          updaterPre === ephemera.outerUpdater ||
-            Fail`Transfer during vault adjustment`;
-          helper.assertActive();
-
-          // After the `await`, we retrieve the vault's allocations again,
-          // so we can compare to the debt limit based on the new values.
-          const collateral = helper.getCollateralAllocated(vaultSeat);
-          const newCollateral = addSubtract(collateral, giveColl, wantColl);
-
-          const debt = self.getCurrentDebt();
-          const giveMinted = AmountMath.min(
-            proposal.give.Minted || helper.emptyDebt(),
-            debt,
-          );
-          const wantMinted = proposal.want.Minted || helper.emptyDebt();
-          if (allEmpty([giveColl, giveMinted, wantColl, wantMinted])) {
+          if (
+            allEmpty([
+              fp.give.Collateral,
+              fp.give.Minted,
+              fp.want.Collateral,
+              fp.want.Minted,
+            ])
+          ) {
             clientSeat.exit();
             return 'no transaction, as requested';
           }
@@ -548,38 +531,128 @@ export const vivifyVault = baggage => {
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
           // then mint, reallocate, and burn.
-          const { newDebt, fee, toMint } = helper.loanFee(
-            debt,
-            giveMinted,
-            wantMinted,
+          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+            self.getCurrentDebt(),
+            fp.give.Minted,
+            fp.want.Minted,
           );
 
-          trace('adjustBalancesHook', state.idInManager, {
+          const normalizedDebtPre = self.getNormalizedDebt();
+          const collateralPre = helper.getCollateralAllocated(vaultSeat);
+          const hasWants = !allEmpty([fp.want.Collateral, fp.want.Minted]);
+
+          if (!hasWants) {
+            // allow deposits regardless of max debt allowed
+            return helper.commitBalanceAdjustment(
+              clientSeat,
+              fp,
+              {
+                newDebt,
+                fee,
+                surplus,
+                toMint,
+              },
+              { normalizedDebtPre, collateralPre },
+            );
+          }
+
+          const newCollateralPre = addSubtract(
+            collateralPre,
+            fp.give.Collateral,
+            fp.want.Collateral,
+          );
+          // max debt supported by the vault Collateral implied by the proposal
+          const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
+          updaterPre === state.outerUpdater ||
+            Fail`Transfer during vault adjustment`;
+          helper.assertActive();
+
+          trace('adjustBalancesHook after quote', state.idInManager, {
             newCollateralPre,
-            newCollateral,
             fee,
             toMint,
+            maxDebtPre,
             newDebt,
           });
 
+          // While awaiting maxDebtFor, the allocations may have changed.
+          // After the `await`, we retrieve the vault's allocations again,
+          // so we can compare to the debt limit based on the new values.
+          const collateral = helper.getCollateralAllocated(vaultSeat);
+          const newCollateral = addSubtract(
+            collateral,
+            fp.give.Collateral,
+            fp.want.Collateral,
+          );
           if (
-            checkRestart(newCollateralPre, maxDebtPre, newCollateral, newDebt)
+            allocationsChangedSinceQuote(
+              newCollateralPre,
+              maxDebtPre,
+              newCollateral,
+              newDebt,
+            )
           ) {
             return helper.adjustBalancesHook(clientSeat);
           }
 
-          stageDelta(clientSeat, vaultSeat, giveColl, wantColl, 'Collateral');
+          return helper.commitBalanceAdjustment(
+            clientSeat,
+            fp,
+            {
+              newDebt,
+              fee,
+              surplus,
+              toMint,
+            },
+            { normalizedDebtPre, collateralPre },
+          );
+        },
+
+        /**
+         *
+         * @param {ZCFSeat} clientSeat
+         * @param {FullProposal} fp
+         * @param {ReturnType<typeof calculateLoanCosts>} costs
+         * @param {object} accounting
+         * @param {NormalizedDebt} accounting.normalizedDebtPre
+         * @param {Amount<'nat'>} accounting.collateralPre
+         * @returns {Promise<string>} success message
+         */
+        async commitBalanceAdjustment(
+          clientSeat,
+          fp,
+          { newDebt, fee, surplus, toMint },
+          { normalizedDebtPre, collateralPre },
+        ) {
+          const { state, facets } = this;
+          const { helper } = facets;
+          const { vaultSeat } = state;
+
+          const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
+
+          // TODO use atomicRearrange https://github.com/Agoric/agoric-sdk/issues/5605
+          stageDelta(
+            clientSeat,
+            vaultSeat,
+            fp.give.Collateral,
+            fp.want.Collateral,
+            'Collateral',
+          );
           // `wantMinted` is allocated in the reallocate and mint operation, and so not here
           stageDelta(
             clientSeat,
             vaultSeat,
-            giveMinted,
+            giveMintedTaken,
             helper.emptyDebt(),
             'Minted',
           );
 
           /** @type {Array<ZCFSeat>} */
-          const vaultSeatOpt = allEmpty([giveColl, giveMinted, wantColl])
+          const vaultSeatOpt = allEmpty([
+            fp.give.Collateral,
+            giveMintedTaken,
+            fp.want.Collateral,
+          ])
             ? []
             : [vaultSeat];
           state.manager.mintAndReallocate(
@@ -595,7 +668,7 @@ export const vivifyVault = baggage => {
             collateralPre,
             newDebt,
           );
-          state.manager.burnAndRecord(giveMinted, vaultSeat);
+          state.manager.burnAndRecord(giveMintedTaken, vaultSeat);
           helper.assertVaultHoldsNoMinted();
 
           helper.updateUiState();
@@ -615,16 +688,9 @@ export const vivifyVault = baggage => {
           helper.assertCloseable();
           seat.exit();
 
-          const ephemera = provideEphemera(state.idInManager);
-
           // eslint-disable-next-line no-use-before-define
-          const vaultKit = makeVaultKit(
-            self,
-            ephemera.storageNode,
-            ephemera.marshaller,
-            state.manager.getAssetSubscriber(),
-          );
-          ephemera.outerUpdater = vaultKit.vaultUpdater;
+          const vaultKit = makeVaultKit(self, state.storageNode);
+          state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
 
           return vaultKit;
@@ -637,12 +703,10 @@ export const vivifyVault = baggage => {
 
         /**
          * @param {ZCFSeat} seat
-         * @param {ERef<StorageNode>} storageNode
+         * @param {ERef<StorageNode>} storageNodeP
          */
-        async initVaultKit(seat, storageNode) {
+        async initVaultKit(seat, storageNodeP) {
           const { state, facets } = this;
-
-          const ephemera = provideEphemera(state.idInManager);
 
           const { self, helper } = facets;
 
@@ -693,14 +757,12 @@ export const vivifyVault = baggage => {
             collateralPre,
             newDebtPre,
           );
+          trace('initVault updateDebtAccounting fired');
 
-          const vaultKit = makeVaultKit(
-            self,
-            storageNode,
-            ephemera.marshaller,
-            state.manager.getAssetSubscriber(),
-          );
-          ephemera.outerUpdater = vaultKit.vaultUpdater;
+          // So that makeVaultKit can be synchronous
+          const storageNode = await storageNodeP;
+          const vaultKit = makeVaultKit(self, storageNode);
+          state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
           return vaultKit;
         },
@@ -734,10 +796,9 @@ export const vivifyVault = baggage => {
         },
 
         makeAdjustBalancesInvitation() {
-          const { state, facets } = this;
+          const { facets } = this;
           const { helper } = facets;
           helper.assertActive();
-          const { zcf } = provideEphemera(state.idInManager);
           return zcf.makeInvitation(
             seat => helper.adjustBalancesHook(seat),
             'AdjustBalances',
@@ -745,10 +806,9 @@ export const vivifyVault = baggage => {
         },
 
         makeCloseInvitation() {
-          const { state, facets } = this;
+          const { facets } = this;
           const { helper } = facets;
           helper.assertCloseable();
-          const { zcf } = provideEphemera(state.idInManager);
           return zcf.makeInvitation(
             seat => helper.closeHook(seat),
             'CloseVault',
@@ -760,8 +820,7 @@ export const vivifyVault = baggage => {
          */
         makeTransferInvitation() {
           const { state, facets } = this;
-          const ephemera = provideEphemera(state.idInManager);
-          const { outerUpdater } = ephemera;
+          const { outerUpdater } = state;
           const { self, helper } = facets;
           // Bring the debt snapshot current for the final report before transfer
           helper.updateDebtSnapshot(self.getCurrentDebt());
@@ -772,14 +831,13 @@ export const vivifyVault = baggage => {
           } = state;
           if (outerUpdater) {
             outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
-            ephemera.outerUpdater = null;
+            state.outerUpdater = null;
           }
           const transferState = {
             debtSnapshot: { debt, interest },
             locked: self.getCollateralAmount(),
             vaultState: phase,
           };
-          const { zcf } = provideEphemera(state.idInManager);
           return zcf.makeInvitation(
             seat => helper.makeTransferInvitationHook(seat),
             'TransferVault',
@@ -846,4 +904,4 @@ export const vivifyVault = baggage => {
   return maker;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof vivifyVault>>['self']} Vault */
+/** @typedef {ReturnType<ReturnType<typeof prepareVault>>['self']} Vault */

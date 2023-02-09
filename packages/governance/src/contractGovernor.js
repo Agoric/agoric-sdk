@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { fit } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
 
 import {
   CONTRACT_ELECTORATE,
@@ -26,7 +26,7 @@ const validateQuestionDetails = async (zoe, electorate, details) => {
     counterInstance,
     issue: { contract: governedInstance },
   } = details;
-  fit(details, ParamChangesQuestionDetailsShape);
+  mustMatch(details, ParamChangesQuestionDetailsShape);
 
   const governorInstance = await E.get(E(zoe).getTerms(governedInstance))
     .electionManager;
@@ -57,7 +57,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
- * @property {TimerService} timer
+ * @property {import('@agoric/time/src/types').TimerService} timer
  * @property {Installation} governedContractInstallation
  */
 
@@ -111,7 +111,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * GovernorPublic,
  * GovernedContractFacetAccess<PF,CF>,
  * {
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -123,7 +123,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 /**
  * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
  * @param {ZCF<{
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -160,7 +160,8 @@ const start = async (zcf, privateArgs) => {
   } = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
-    // @ts-expect-error XXX governance types
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore XXX governance types
     augmentedTerms,
     privateArgs.governed,
   );
@@ -217,7 +218,8 @@ const start = async (zcf, privateArgs) => {
    */
   const replaceElectorate = poserInvitation => {
     /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
-    // @ts-expect-error cast
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore cast
     const paramMgr = E(E(governedCF).getParamMgrRetriever()).get({
       key: 'governedParams',
     });

@@ -1,15 +1,19 @@
 import { Far } from '@endo/marshal';
 import {
   makeScalarBigMapStore,
-  vivifySingleton,
+  prepareSingleton,
   provideDurableSetStore,
 } from '@agoric/vat-data';
 
-import { AssetKind, makeDurableIssuerKit, vivifyIssuerKit } from '../../../src';
+import {
+  AssetKind,
+  makeDurableIssuerKit,
+  prepareIssuerKit,
+} from '../../../src';
 
-export const vivifyErtpService = (baggage, exitVatWithFailure) => {
+export const prepareErtpService = (baggage, exitVatWithFailure) => {
   const issuerBaggageSet = provideDurableSetStore(baggage, 'BaggageSet');
-  const ertpService = vivifySingleton(baggage, 'ERTPService', {
+  const ertpService = prepareSingleton(baggage, 'ERTPService', {
     makeIssuerKit: (
       name,
       assetKind = AssetKind.NAT,
@@ -32,15 +36,15 @@ export const vivifyErtpService = (baggage, exitVatWithFailure) => {
   });
 
   for (const issuerBaggage of issuerBaggageSet.values()) {
-    vivifyIssuerKit(issuerBaggage);
+    prepareIssuerKit(issuerBaggage);
   }
 
   return ertpService;
 };
-harden(vivifyErtpService);
+harden(prepareErtpService);
 
 export const buildRootObject = async (vatPowers, _vatParams, baggage) => {
-  const ertpService = vivifyErtpService(baggage, vatPowers.exitVatWithFailure);
+  const ertpService = prepareErtpService(baggage, vatPowers.exitVatWithFailure);
   return Far('root', {
     getErtpService: () => ertpService,
   });

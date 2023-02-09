@@ -14,11 +14,11 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   provide,
-  vivifyKindMulti,
+  prepareKindMulti,
 } from '@agoric/vat-data';
+import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
-import { makeTracer } from '../makeTracer.js';
 import {
   makeMakeAddLiquidityAtRateInvitation,
   makeMakeAddLiquidityInvitation,
@@ -47,7 +47,7 @@ const trace = makeTracer('XykAmm', false);
 
 /** @typedef {GovernanceTerms< {MinInitialPoolLiquidity: 'amount'} & {ProtocolFee: 'amount'} & {PoolFee: 'amount'}>} AmmGovernanceParams */
 
-/** @typedef {{brands:BrandKeywordRecord,timer:TimerService}} AmmTerms */
+/** @typedef {{brands:BrandKeywordRecord,timer:import('@agoric/time/src/types').TimerService}} AmmTerms */
 
 /**
  * @typedef {Readonly<{
@@ -55,7 +55,7 @@ const trace = makeTracer('XykAmm', false);
  * secondaryBrandToPool: WeakMapStore<Brand,PoolFacets>,
  * secondaryBrandToLiquidityMint: WeakMapStore<Brand,ZCFMint<'nat'>>,
  * centralBrand: Brand<'nat'>,
- * timer: TimerService,
+ * timer: import('@agoric/time/src/types').TimerService,
  * quoteIssuerKit: IssuerKit<'set'>,
  * params: import('@agoric/governance/src/contractGovernance/typedParamManager').Getters<import('./params.js').AmmParams>,
  * protocolSeat: ZCFSeat,
@@ -185,7 +185,7 @@ const start = async (zcf, privateArgs, baggage) => {
     )}`,
   );
 
-  /** @type {Store<Brand,PoolFacets>} */
+  /** @type {MapStore<Brand,PoolFacets>} */
   const secondaryBrandToPool = provideDurableMapStore(
     baggage,
     'secondaryBrandToPool',
@@ -204,7 +204,7 @@ const start = async (zcf, privateArgs, baggage) => {
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
-  /** @type {WeakMapStore<Brand,ZCFMint<'nat'>>} */
+  /** @type {WeakMapStore<Brand<'nat'>, ZCFMint<'nat'>>} */
   const secondaryBrandToLiquidityMint = provideDurableWeakMapStore(
     baggage,
     'secondaryBrandToLiquidityMint',
@@ -236,7 +236,7 @@ const start = async (zcf, privateArgs, baggage) => {
     () => zcf.makeEmptySeatKit().zcfSeat,
   );
 
-  /** @type {AssetReservePublicFacet=} */
+  /** @type {AssetReservePublicFacet | undefined} */
   let reserveFacet = baggage.has('reserveFacet')
     ? baggage.get('reserveFacet')
     : undefined;
@@ -292,7 +292,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {MethodContext} _context
-   * @param {Brand} brand
+   * @param {Brand<'nat'>} brand
    */
   const getLiquidityIssuer = (_context, brand) =>
     secondaryBrandToLiquidityMint.get(brand).getIssuerRecord().issuer;
@@ -305,7 +305,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {MethodContext} _context
-   * @param {Brand} brand
+   * @param {Brand<'nat'>} brand
    */
   const getSecondaryIssuer = (_context, brand) => {
     assert(
@@ -359,6 +359,10 @@ const start = async (zcf, privateArgs, baggage) => {
   const getPoolAllocation = (_context, brand) =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
 
+  /**
+   * @param {*} _context xxx
+   * @param {Brand} brand
+   */
   const getPriceAuthorities = (_context, brand) => {
     const pool = getPool(brand);
     return {
@@ -398,11 +402,21 @@ const start = async (zcf, privateArgs, baggage) => {
     return pool.getVPool();
   };
 
+  /**
+   * @param {*} _context xxx
+   * @param {Amount<'nat'>} amountIn
+   * @param {Amount<'nat'>} amountOut
+   */
   const getInputPrice = (_context, amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     return publicPrices(pool.getPriceForInput(amountIn, amountOut));
   };
 
+  /**
+   * @param {*} _context xxx
+   * @param {Amount<'nat'>} amountIn
+   * @param {Amount<'nat'>} amountOut
+   */
   const getOutputPrice = (_context, amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     return publicPrices(pool.getPriceForOutput(amountIn, amountOut));
@@ -479,7 +493,7 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const makeAMM = vivifyKindMulti(baggage, 'AMM', initEmpty, {
+  const makeAMM = prepareKindMulti(baggage, 'AMM', initEmpty, {
     publicFacet,
     creatorFacet: governorFacet,
     limitedCreatorFacet,
@@ -509,7 +523,7 @@ export { start };
  * }> & {
  *   brands: { Central: Brand },
  *   issuers: {},
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   poolFeeBP: BasisPoints, // portion of the fees that go into the pool
  *   protocolFeeBP: BasisPoints, // portion of the fees that are shared with validators
  * }} AMMTerms

@@ -11,17 +11,17 @@ import {
   importMailbox,
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
-import { makeBufferedStorage } from '@agoric/swingset-vat/src/lib/storageAPI.js';
 
 import { Fail } from '@agoric/assert';
 import { makeSlogSender } from '@agoric/telemetry';
 
-import { makeChainStorageRoot } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
-import { makeStoredSubscriber, makePublishKit } from '@agoric/notifier';
+import { makePublishKit, pipeTopicToStorage } from '@agoric/notifier';
 
-import * as STORAGE_PATH from '@agoric/vats/src/chain-storage-paths.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeReadCachingStorage } from './bufferedStorage.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
@@ -41,79 +41,37 @@ const toNumber = specimen => {
   return number;
 };
 
-const makeChainStorage = (call, prefix = '', options = {}) => {
-  prefix === '' ||
-    prefix.endsWith('.') ||
-    Fail`prefix ${prefix} must end with a dot`;
+const makePrefixedBridgeStorage = (
+  call,
+  prefix,
+  setterMethod,
+  fromBridgeValue = x => x,
+  toBridgeValue = x => x,
+) => {
+  prefix.endsWith('.') || Fail`prefix ${prefix} must end with a dot`;
 
-  const { fromChainShape, toChainShape } = options;
-
-  // In addition to the wrapping write buffer, keep a simple cache of
-  // read values for has and get.
-  let cache;
-  function resetCache() {
-    cache = new Map();
-  }
-  resetCache();
-  const storage = {
-    has(key) {
-      return storage.get(key) !== undefined;
-    },
-    get(key) {
-      if (cache.has(key)) return cache.get(key);
-
-      // Fetch the value and cache it until the next commit or abort.
+  return harden({
+    get: key => {
       const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
       const ret = JSON.parse(retStr);
-      const chainShapeValue = ret ? JSON.parse(ret) : undefined;
-      const value =
-        chainShapeValue === undefined || !fromChainShape
-          ? chainShapeValue
-          : fromChainShape(chainShapeValue);
-      cache.set(key, value);
-      return value;
+      if (!ret) {
+        return undefined;
+      }
+      const bridgeValue = JSON.parse(ret);
+      return fromBridgeValue(bridgeValue);
     },
-    set(key, value) {
-      // Set the value and cache it until the next commit or abort (which is
-      // expected immediately, since the buffered wrapper only calls set
-      // *during* a commit).
-      cache.set(key, value);
-      const chainShapeValue =
-        value === undefined || !toChainShape ? value : toChainShape(value);
-      const valueStr = value === undefined ? '' : stringify(chainShapeValue);
+    set: (key, value) => {
+      const valueStr =
+        value === undefined ? '' : stringify(toBridgeValue(value));
       call(
         stringify({
-          method: 'set',
+          method: setterMethod,
           key: `${prefix}${key}`,
           value: valueStr,
         }),
       );
     },
-    delete(key) {
-      // Deletion in chain storage manifests as set-to-undefined.
-      storage.set(key, undefined);
-    },
-    // eslint-disable-next-line require-yield
-    *getKeys(_start, _end) {
-      throw new Error('not implemented');
-    },
-  };
-  const {
-    kvStore: buffered,
-    commit,
-    abort,
-  } = makeBufferedStorage(storage, {
-    // Enqueue a write of any retrieved value, to handle callers like mailbox.js
-    // that expect local mutations to be automatically written back.
-    onGet(key, value) {
-      buffered.set(key, value);
-    },
-
-    // Reset the read cache upon commit or abort.
-    onCommit: resetCache,
-    onAbort: resetCache,
   });
-  return { ...buffered, commit, abort };
 };
 
 export default async function main(progname, args, { env, homedir, agcc }) {
@@ -143,10 +101,48 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return flagValue;
   }
 
+  /**
+   * @param {object} options
+   * @param {string} [options.envName]
+   * @param {string} [options.flagName]
+   * @param {string} options.trueValue
+   * @returns {string | undefined}
+   */
+  function getPathFromEnv({ envName, flagName, trueValue }) {
+    let option;
+    if (envName) {
+      option = env[envName];
+    } else if (flagName) {
+      option = getFlagValue(flagName);
+    } else {
+      return undefined;
+    }
+
+    switch (option) {
+      case '0':
+      case 'false':
+      case false:
+        return undefined;
+      case '1':
+      case 'true':
+      case true:
+        return trueValue;
+      default:
+        if (option) {
+          return path.resolve(option);
+        } else if (envName && flagName) {
+          return getPathFromEnv({ flagName, trueValue });
+        } else {
+          return undefined;
+        }
+    }
+  }
+
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
   const cosmosHome = getFlagValue('home', `${homedir}/.ag-chain-cosmos`);
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
+  fs.mkdirSync(stateDBDir, { recursive: true });
 
   // console.log('Have AG_COSMOS', agcc);
 
@@ -235,23 +231,29 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // so the 'externalStorage' object can close over the single mutable
   // instance, and we update the 'portNums.storage' value each time toSwingSet is called
   async function launchAndInitializeSwingSet(bootMsg) {
+    const sendToChain = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
-    const mailboxStorage = makeChainStorage(
-      msg => chainSend(portNums.storage, msg),
-      `${STORAGE_PATH.MAILBOX}.`,
-      {
-        fromChainShape: data => {
-          const ack = toNumber(data.ack);
-          const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
-          return importMailbox({ outbox, ack });
-        },
-        toChainShape: exportMailbox,
-      },
+    const fromBridgeMailbox = data => {
+      const ack = toNumber(data.ack);
+      const outbox = data.outbox.map(([seq, msg]) => [toNumber(seq), msg]);
+      return importMailbox({ outbox, ack });
+    };
+    const mailboxStorage = makeReadCachingStorage(
+      makePrefixedBridgeStorage(
+        sendToChain,
+        `${STORAGE_PATH.MAILBOX}.`,
+        'legacySet',
+        fromBridgeMailbox,
+        exportMailbox,
+      ),
     );
     const actionQueue = makeQueue(
-      makeChainStorage(
-        msg => chainSend(portNums.storage, msg),
-        `${STORAGE_PATH.ACTION_QUEUE}.`,
+      makeReadCachingStorage(
+        makePrefixedBridgeStorage(
+          sendToChain,
+          `${STORAGE_PATH.ACTION_QUEUE}.`,
+          'setWithoutNotify',
+        ),
       ),
     );
     function setActivityhash(activityhash) {
@@ -288,13 +290,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const makeInstallationPublisher = () => {
       const installationStorageNode = makeChainStorageRoot(
         toStorage,
-        'swingset',
         STORAGE_PATH.BUNDLES,
         { sequence: true },
       );
       const marshaller = makeMarshal();
       const { publisher, subscriber } = makePublishKit();
-      makeStoredSubscriber(subscriber, installationStorageNode, marshaller);
+      pipeTopicToStorage(subscriber, installationStorageNode, marshaller);
       return publisher;
     };
 
@@ -315,34 +316,18 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const {
-      SWING_STORE_TRACE,
-      XSNAP_KEEP_SNAPSHOTS,
-      NODE_HEAP_SNAPSHOTS = -1,
-    } = env;
+    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
     const slogSender = await makeSlogSender({
       stateDir: stateDBDir,
       env,
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const defaultTraceFile = path.resolve(stateDBDir, 'store-trace.log');
-    let swingStoreTraceFile;
-    switch (SWING_STORE_TRACE) {
-      case '0':
-      case 'false':
-        break;
-      case '1':
-      case 'true':
-        swingStoreTraceFile = defaultTraceFile;
-        break;
-      default:
-        if (SWING_STORE_TRACE) {
-          swingStoreTraceFile = path.resolve(SWING_STORE_TRACE);
-        } else if (getFlagValue('trace-store')) {
-          swingStoreTraceFile = defaultTraceFile;
-        }
-    }
+    const swingStoreTraceFile = getPathFromEnv({
+      envName: 'SWING_STORE_TRACE',
+      flagName: 'trace-store',
+      trueValue: path.resolve(stateDBDir, 'store-trace.log'),
+    });
 
     const keepSnapshots =
       XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';

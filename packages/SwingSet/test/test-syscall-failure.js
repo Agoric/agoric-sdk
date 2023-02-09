@@ -3,6 +3,7 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
+import { enumeratePrefixedKeys } from '../src/kernel/state/storageHelper.js';
 
 async function vatSyscallFailure(t, beDynamic) {
   const config = {
@@ -43,7 +44,7 @@ async function vatSyscallFailure(t, beDynamic) {
     );
     t.is(kvStore.get(`${badVatRootObject}.owner`), badVatID);
     t.true(
-      Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length > 0,
+      Array.from(enumeratePrefixedKeys(kvStore, `${badVatID}.`)).length > 0,
     );
     t.is(kvStore.get('vat.name.badvatStatic'), badVatID);
   }
@@ -56,7 +57,7 @@ async function vatSyscallFailure(t, beDynamic) {
       '["bootstrap","vatAdmin","comms","vattp","timer"]',
     );
     t.is(kvStore.get(`${badVatID}.owner`), undefined);
-    t.is(Array.from(kvStore.getKeys(`${badVatID}.`, `${badVatID}/`)).length, 0);
+    t.is(Array.from(enumeratePrefixedKeys(kvStore, `${badVatID}.`)).length, 0);
     t.is(kvStore.get('vat.name.badvatStatic'), undefined);
   }
   const log = controller.dump().log;

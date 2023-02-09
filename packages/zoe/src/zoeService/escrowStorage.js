@@ -17,7 +17,7 @@ import { arrayToObj } from '../objArrayConversion.js';
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const provideEscrowStorage = baggage => {
-  /** @type {WeakStore<Brand, ERef<Purse>>} */
+  /** @type {WeakMapStore<Brand, ERef<Purse>>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
   /** @type {CreatePurse} */

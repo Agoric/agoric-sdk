@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { fit } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
 import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
@@ -44,7 +44,7 @@ import '@agoric/zoe/exported.js';
  * @param {ERef<ZoeService>} zoe
  * @param {Brand<'set'>} invitationBrand
  * @param {Purse<'set'>} invitationsPurse
- * @param {(fromOfferId: import('./offers.js').OfferId) => import('./types').RemoteInvitationMakers} getInvitationContinuation
+ * @param {(fromOfferId: string) => import('./types').RemoteInvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
   zoe,
@@ -55,7 +55,7 @@ export const makeInvitationsHelper = (
   const invitationGetters = /** @type {const} */ ({
     /** @type {(spec: ContractInvitationSpec) => Promise<Invitation>} */
     contract(spec) {
-      fit(spec, shape.ContractInvitationSpec);
+      mustMatch(spec, shape.ContractInvitationSpec);
 
       const { instance, publicInvitationMaker, invitationArgs = [] } = spec;
       const pf = E(zoe).getPublicFacet(instance);
@@ -63,7 +63,7 @@ export const makeInvitationsHelper = (
     },
     /** @type {(spec: PurseInvitationSpec) => Promise<Invitation>} */
     async purse(spec) {
-      fit(spec, shape.PurseInvitationSpec);
+      mustMatch(spec, shape.PurseInvitationSpec);
 
       const { instance, description } = spec;
       // @ts-expect-error TS thinks it's always true. I'm doubtful.
@@ -101,10 +101,10 @@ export const makeInvitationsHelper = (
     },
     /** @type {(spec: ContinuingInvitationSpec) => Promise<Invitation>} */
     continuing(spec) {
-      fit(spec, shape.ContinuingInvitationSpec);
+      mustMatch(spec, shape.ContinuingInvitationSpec);
 
       const { previousOffer, invitationArgs = [], invitationMakerName } = spec;
-      const makers = getInvitationContinuation(previousOffer);
+      const makers = getInvitationContinuation(String(previousOffer));
       assert(
         makers,
         `invalid value stored for previous offer ${previousOffer}`,

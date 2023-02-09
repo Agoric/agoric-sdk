@@ -2,15 +2,13 @@ import '../../exported.js';
 
 import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
-import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
+import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { Stable, Stake } from '@agoric/vats/src/tokens.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
-import * as Collect from '../collect.js';
-import { makeTracer } from '../makeTracer.js';
 import { LienBridgeId, makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeStakeFactoryTerms } from '../stakeFactory/params.js';
@@ -80,7 +78,7 @@ const MILLI = 1_000_000n;
  *   vaultFactoryKit: {
  *     publicFacet: VaultFactoryPublicFacet,
  *     creatorFacet: VaultFactoryCreatorFacet,
- *     governorCreatorFacet: GovernedContractFacetAccess<{},{}>,
+ *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
  *     adminFacet: AdminFacet,
  *   },
  *   minInitialDebt: NatValue,
@@ -526,92 +524,6 @@ export const grantVaultFactoryControl = async (
   ]);
 };
 harden(grantVaultFactoryControl);
-
-/** @param {BootstrapPowers} powers */
-export const configureVaultFactoryUI = async ({
-  consume: { board, zoe },
-  issuer: {
-    consume: { [Stable.symbol]: stableIssuerP },
-  },
-  brand: {
-    consume: { [Stable.symbol]: stableBrandP },
-  },
-  installation: {
-    consume: {
-      amm: ammInstallation,
-      VaultFactory: vaultInstallation,
-      contractGovernor,
-      binaryVoteCounter,
-      liquidate,
-    },
-  },
-  instance: {
-    consume: { amm: ammInstance, VaultFactory: vaultInstance },
-  },
-  uiConfig,
-}) => {
-  const installs = await Collect.allValues({
-    vaultFactory: vaultInstallation,
-    amm: ammInstallation,
-    contractGovernor,
-    binaryVoteCounter,
-    liquidate,
-  });
-  const instances = await Collect.allValues({
-    amm: ammInstance,
-    vaultFactory: vaultInstance,
-  });
-  const [stableIssuer, stableBrand] = await Promise.all([
-    stableIssuerP,
-    stableBrandP,
-  ]);
-
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
-
-  const vaultFactoryUiDefaults = {
-    CONTRACT_NAME: 'VaultFactory',
-    AMM_NAME: 'amm',
-    BRIDGE_URL: 'http://127.0.0.1:8000',
-    // Avoid setting API_URL, so that the UI uses the same origin it came from,
-    // if it has an api server.
-    // API_URL: 'http://127.0.0.1:8000',
-  };
-
-  // Look up all the board IDs.
-  const boardIdValue = [
-    ['INSTANCE_BOARD_ID', instances.vaultFactory],
-    ['INSTALLATION_BOARD_ID', installs.vaultFactory],
-    // @deprecated
-    ['RUN_ISSUER_BOARD_ID', stableIssuer],
-    // @deprecated
-    ['RUN_BRAND_BOARD_ID', stableBrand],
-    ['STABLE_ISSUER_BOARD_ID', stableIssuer],
-    ['STABLE_BRAND_BOARD_ID', stableBrand],
-    ['AMM_INSTALLATION_BOARD_ID', installs.amm],
-    ['LIQ_INSTALLATION_BOARD_ID', installs.liquidate],
-    ['BINARY_COUNTER_INSTALLATION_BOARD_ID', installs.binaryVoteCounter],
-    ['CONTRACT_GOVERNOR_INSTALLATION_BOARD_ID', installs.contractGovernor],
-    ['AMM_INSTANCE_BOARD_ID', instances.amm],
-    ['INVITE_BRAND_BOARD_ID', E(invitationIssuer).getBrand()],
-  ];
-  await Promise.all(
-    boardIdValue.map(async ([key, valP]) => {
-      const val = await valP;
-      const boardId = await E(board).getId(val);
-      vaultFactoryUiDefaults[key] = boardId;
-    }),
-  );
-
-  // Stash the defaults where the UI can find them.
-  harden(vaultFactoryUiDefaults);
-
-  // Install the names in agoricNames.
-  uiConfig.produce[vaultFactoryUiDefaults.CONTRACT_NAME].resolve(
-    vaultFactoryUiDefaults,
-  );
-  uiConfig.produce.Treasury.resolve(vaultFactoryUiDefaults); // compatibility
-};
-harden(configureVaultFactoryUI);
 
 /**
  * Start the reward distributor.

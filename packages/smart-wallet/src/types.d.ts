@@ -25,6 +25,8 @@ export type RemoteInvitationMakers = FarRef<
   Record<string, (...args: any[]) => Promise<Invitation>>
 >;
 
+export type PublicSubscribers = Record<string, ERef<StoredFacet>>;
+
 export type Cell<T> = {
   get: () => T;
   set(val: T): void;
@@ -71,6 +73,4 @@ export type WalletSpendActionMsg = {
  * The two wallet actions are distinguished by whether the user had to confirm
  * the sending of the message (as is the case for WALLET_SPEND_ACTION).
  */
-export type WalletBridgeMsg =
-  | ({ owner: string } & WalletActionMsg)
-  | WalletSpendActionMsg;
+export type WalletBridgeMsg = WalletActionMsg | WalletSpendActionMsg;

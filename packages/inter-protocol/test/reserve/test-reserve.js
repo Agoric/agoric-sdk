@@ -6,7 +6,6 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
 
 import { setupReserveServices } from './setup.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
@@ -172,7 +171,6 @@ test('governance add Liquidity to the AMM', async t => {
   );
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
 
@@ -191,26 +189,11 @@ test('governance add Liquidity to the AMM', async t => {
     `added moola to the collateral Reserve`,
   );
 
-  const [voterInvitation] = await E(
-    space.consume.economicCommitteeCreatorFacet,
-  ).getVoterInvitations();
-
-  const { voter } = await E(E(zoe).offer(voterInvitation)).getOfferResult();
-
   const params = harden([moola(90_000n), AmountMath.make(runBrand, 80_000n)]);
-  const { details: detailsP } = await E(
-    governor.governorCreatorFacet,
-  ).voteOnApiInvocation(
+  await E(governor.governorCreatorFacet).invokeAPI(
     'addLiquidityToAmmPool',
     params,
-    await space.installation.consume.binaryVoteCounter,
-    TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
   );
-  const details = await detailsP;
-
-  await E(voter).castBallotFor(details.questionHandle, [details.positions[0]]);
-  await timer.tick();
-  await timer.tick();
   await eventLoopIteration();
 
   t.deepEqual(
@@ -277,30 +260,11 @@ test('request more collateral than available', async t => {
     `added moola to the collateral Reserve`,
   );
 
-  const [voterInvitation] = await E(
-    space.consume.economicCommitteeCreatorFacet,
-  ).getVoterInvitations();
-
-  const { voter } = await E(E(zoe).offer(voterInvitation)).getOfferResult();
-
   const params = harden([moola(90_000n), AmountMath.make(runBrand, 80_000n)]);
-  const { details: detailsP, outcomeOfUpdate } = await E(
-    governor.governorCreatorFacet,
-  ).voteOnApiInvocation(
-    'addLiquidityToAmmPool',
-    params,
-    await space.installation.consume.binaryVoteCounter,
-    TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
+  await t.throwsAsync(
+    E(governor.governorCreatorFacet).invokeAPI('addLiquidityToAmmPool', params),
+    { message: 'insufficient reserves for that transaction' },
   );
-  const details = await detailsP;
-
-  await E(voter).castBallotFor(details.questionHandle, [details.positions[0]]);
-  await timer.tick();
-  await timer.tick();
-
-  await outcomeOfUpdate
-    .then(() => t.fail('expecting failure'))
-    .catch(e => t.is(e.message, 'insufficient reserves for that transaction'));
 
   const { ammPublicFacet } = space.amm;
   const moolaLiquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(
@@ -341,7 +305,6 @@ test('reserve track shortfall', async t => {
   let runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
@@ -394,7 +357,6 @@ test('reserve burn IST', async t => {
   const runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
-  // @ts-expect-error type confusion
   const m = await subscriptionTracker(t, metricsSub);
   await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
   await m.assertChange({
@@ -428,25 +390,11 @@ test('reserve burn IST', async t => {
     'expecting more',
   );
 
-  const [voterInvitation] = await E(
-    space.consume.economicCommitteeCreatorFacet,
-  ).getVoterInvitations();
-
-  const { voter } = await E(E(zoe).offer(voterInvitation)).getOfferResult();
-
   const params = harden([oneKRun]);
-  const { details: detailsP } = await E(
-    governor.governorCreatorFacet,
-  ).voteOnApiInvocation(
+  await E(governor.governorCreatorFacet).invokeAPI(
     'burnFeesToReduceShortfall',
     params,
-    await space.installation.consume.binaryVoteCounter,
-    TimeMath.addAbsRel(timer.getCurrentTimestamp(), 2n),
   );
-  const details = await detailsP;
-  await E(voter).castBallotFor(details.questionHandle, [details.positions[0]]);
-  await timer.tick();
-  await timer.tick();
 
   await m.assertChange({
     allocations: { Fee: AmountMath.makeEmpty(runBrand) },
@@ -467,7 +415,6 @@ test('storage keys', async t => {
   );
 
   t.is(
-    // @ts-expect-error Type confusion
     await subscriptionKey(E(reserve.reserveCreatorFacet).getMetrics()),
     'mockChainStorageRoot.reserve.metrics',
   );

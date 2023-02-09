@@ -11,8 +11,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
-import { forever } from '@agoric/internal';
-import { makeTracer } from '../makeTracer.js';
+import { forever, makeTracer } from '@agoric/internal';
 
 const { Fail } = assert;
 const trace = makeTracer('LiqI', false);
@@ -52,7 +51,7 @@ const trace = makeTracer('LiqI', false);
  *   amm: XYKAMMPublicFacet,
  *   priceAuthority: PriceAuthority,
  *   reservePublicFacet: AssetReservePublicFacet,
- *   timerService: TimerService,
+ *   timerService: import('@agoric/time/src/types').TimerService,
  *   debtBrand: Brand<'nat'>,
  *   MaxImpactBP: NatValue,
  *   OracleTolerance: Ratio,
@@ -106,10 +105,10 @@ const start = async zcf => {
    * a price impact of MAX_IMPACT_BP.
    * This doesn't use ratios so that it is usable for any brand
    *
-   * @param {Amount} poolSize
+   * @param {Amount<'nat'>} poolSize
    * @param {bigint} maxImpactBP
    * @param {bigint} feeBP
-   * @returns {Amount}
+   * @returns {Amount<'nat'>}
    */
   const maxTrancheWithFees = (poolSize, maxImpactBP, feeBP) => {
     trace('maxTrancheWithFees', poolSize, maxImpactBP, feeBP);
@@ -143,6 +142,14 @@ const start = async zcf => {
 
   const AMMFeeBP = await getAMMFeeBP();
 
+  /**
+   *
+   * @param {Amount<'nat'>} poolCentral
+   * @param {Amount<'nat'>} poolCollateral
+   * @param {Amount<'nat'>} tranche
+   * @param {Amount<'nat'>} debt
+   * @param {Ratio} maxSlip
+   */
   const estimateAMMProceeds = (
     poolCentral,
     poolCollateral,

@@ -1,5 +1,5 @@
 /* eslint-disable no-undef-init */
-import { iterateReverse } from '@agoric/casting';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 
@@ -13,7 +13,7 @@ export const makeWalletStateCoalescer = () => {
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
 
-  /** @type {Brand=} */
+  /** @type {Brand | undefined} */
   let allegedInvitationBrand = undefined;
 
   /**
@@ -102,7 +102,7 @@ export const makeWalletStateCoalescer = () => {
 export const coalesceUpdates = updates => {
   const coalescer = makeWalletStateCoalescer();
 
-  observeIteration(subscribeEach(updates), {
+  void observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {
       coalescer.update(updateRecord);
     },
@@ -127,21 +127,19 @@ export const assertHasData = async follower => {
 };
 
 /**
- * @deprecated use `.current` node for current state
- * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('./smartWallet').UpdateRecord>>} follower
+ *
+ * Handles the case of falsy argument so the caller can consistently await.
+ *
+ * @param {import('./types.js').PublicSubscribers | import('@agoric/notifier').TopicsRecord} [subscribers]
+ * @returns {ERef<Record<string, string>> | null}
  */
-export const coalesceWalletState = async follower => {
-  // values with oldest last
-  const history = [];
-  for await (const followerElement of iterateReverse(follower)) {
-    history.push(followerElement.value);
+export const objectMapStoragePath = subscribers => {
+  if (!subscribers) {
+    return null;
   }
-
-  const coalescer = makeWalletStateCoalescer();
-  // update with oldest first
-  for (const record of history.reverse()) {
-    coalescer.update(record);
-  }
-
-  return coalescer.state;
+  return deeplyFulfilledObject(
+    objectMap(subscribers, sub =>
+      'subscriber' in sub ? sub.storagePath : E(sub).getPath(),
+    ),
+  );
 };

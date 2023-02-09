@@ -3,8 +3,8 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  vivifyFarInstance,
-  vivifyKind,
+  prepareExo,
+  prepareKind,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 import {
@@ -27,25 +27,25 @@ export const makeInstallationStorage = (
   getBundleCapForID,
   zoeBaggage = makeScalarBigMapStore('zoe baggage', { durable: true }),
 ) => {
-  /** @type {WeakStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
+  /** @type {WeakMapStore<Installation, { bundleCap: BundleCap, bundleID: BundleID }>} */
   const installationsBundleCap = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundleCap',
   );
-  /** @type {WeakStore<Installation, SourceBundle>} */
+  /** @type {WeakMapStore<Installation, SourceBundle>} */
   const installationsBundle = provideDurableWeakMapStore(
     zoeBaggage,
     'installationsBundle',
   );
 
-  const makeBundleIDInstallation = vivifyKind(
+  const makeBundleIDInstallation = prepareKind(
     zoeBaggage,
     'BundleIDInstallation',
     initEmpty,
     { getBundle: _context => assert.fail('bundleID-based Installation') },
   );
 
-  const makeBundleInstallation = vivifyKind(
+  const makeBundleInstallation = prepareKind(
     zoeBaggage,
     'BundleInstallation',
     bundle => ({ bundle }),
@@ -102,12 +102,14 @@ export const makeInstallationStorage = (
     ),
   });
 
-  const installationStorage = vivifyFarInstance(
+  const installationStorage = prepareExo(
     zoeBaggage,
     'InstallationStorage',
     InstallationStorageI,
     {
       async installBundle(allegedBundle) {
+        // @ts-expect-error TS doesn't understand context
+        const { self } = this;
         // Bundle is a very open-ended type and we must decide here whether to
         // treat it as either a HashBundle or SourceBundle. So we have to
         // inspect it.
@@ -121,7 +123,7 @@ export const makeInstallationStorage = (
             'string',
             `bundle endoZipBase64Sha512 must be a string, got ${endoZipBase64Sha512}`,
           );
-          return this.installBundleID(`b1-${endoZipBase64Sha512}`);
+          return self.installBundleID(`b1-${endoZipBase64Sha512}`);
         }
         return installSourceBundle(allegedBundle);
       },

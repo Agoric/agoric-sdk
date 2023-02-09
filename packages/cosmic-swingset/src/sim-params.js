@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
 const makePowerFlagFee = (powerFlag, fee) => ({ powerFlag, fee });

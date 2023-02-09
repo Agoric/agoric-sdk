@@ -1,9 +1,9 @@
 import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer as build } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
-import './types.js';
+import './types-ambient.js';
 import './internal-types.js';
 
 // we wrap SwingSet's buildManualTimer to accomodate the needs of
@@ -11,7 +11,7 @@ import './internal-types.js';
 
 /**
  * @typedef {{
- *  timeStep?: RelativeTime,
+ *  timeStep?: import('@agoric/time/src/types').RelativeTime,
  *  eventLoopIteration?: () => Promise<unknown>,
  * }} ZoeManualTimerOptions
  */
@@ -52,7 +52,7 @@ const nolog = (..._args) => {};
  * boundaries
  *
  * @param {(...args: any[]) => void} [log]
- * @param {Timestamp} [startValue=0n]
+ * @param {import('@agoric/time/src/types').Timestamp} [startValue=0n]
  * @param {ZoeManualTimerOptions} [options]
  * @returns {ManualTimer}
  */

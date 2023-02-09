@@ -3,7 +3,7 @@ import { assert, Fail } from '@agoric/assert';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeNotifierKit, makeSubscriptionKit } from '@agoric/notifier';
-import { makeStore, makeWeakStore } from '@agoric/store';
+import { makeScalarMapStore, makeScalarWeakMapStore } from '@agoric/store';
 import { whileTrue } from '@agoric/internal';
 import { makeVirtualPurse } from './virtual-purse.js';
 
@@ -123,11 +123,11 @@ export function buildRootObject() {
       nameAdmin = undefined,
     ) {
       const bankBridgeManager = await bankBridgeManagerP;
-      /** @type {WeakStore<Brand, AssetRecord>} */
-      const brandToAssetRecord = makeWeakStore('brand');
+      /** @type {WeakMapStore<Brand, AssetRecord>} */
+      const brandToAssetRecord = makeScalarWeakMapStore('brand');
 
-      /** @type {Store<string, Store<string, BalanceUpdater>>} */
-      const denomToAddressUpdater = makeStore('denom');
+      /** @type {MapStore<string, MapStore<string, BalanceUpdater>>} */
+      const denomToAddressUpdater = makeScalarMapStore('denom');
 
       const updateBalances = obj => {
         switch (obj && obj.type) {
@@ -182,8 +182,8 @@ export function buildRootObject() {
       const { subscription: assetSubscription, publication: assetPublication } =
         makeSubscriptionKit();
 
-      /** @type {Store<string, Bank>} */
-      const addressToBank = makeStore('address');
+      /** @type {MapStore<string, Bank>} */
+      const addressToBank = makeScalarMapStore('address');
 
       /**
        * Create a new personal bank interface for a given address.
@@ -197,8 +197,8 @@ export function buildRootObject() {
           return addressToBank.get(address);
         }
 
-        /** @type {WeakStore<Brand, VirtualPurse>} */
-        const brandToVPurse = makeWeakStore('brand');
+        /** @type {WeakMapStore<Brand, VirtualPurse>} */
+        const brandToVPurse = makeScalarWeakMapStore('brand');
 
         /** @type {Bank} */
         const bank = Far('bank', {
@@ -367,7 +367,7 @@ export function buildRootObject() {
             brand,
           });
           brandToAssetRecord.init(brand, assetRecord);
-          denomToAddressUpdater.init(denom, makeStore('address'));
+          denomToAddressUpdater.init(denom, makeScalarMapStore('address'));
           assetPublication.updateState(
             harden({
               brand,

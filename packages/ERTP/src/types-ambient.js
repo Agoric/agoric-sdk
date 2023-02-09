@@ -68,7 +68,7 @@
 /**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} DisplayInfo
- * @property {number=} decimalPlaces Tells the display software how
+ * @property {number} [decimalPlaces] Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
  *   other words, which position corresponds to whole numbers. We
  *   require fungible digital assets to be represented in integers, in
@@ -145,7 +145,7 @@
  * resolution.
  *
  * @param {ERef<Payment>} payment
- * @param {Pattern=} optAmountShape
+ * @param {Pattern} [optAmountShape]
  * @returns {Promise<Amount>}
  */
 
@@ -163,7 +163,7 @@
  * resolution.
  *
  * @param {ERef<Payment<K>>} payment
- * @param {Pattern=} optAmountShape
+ * @param {Pattern} [optAmountShape]
  * @returns {Promise<Payment<K>>}
  */
 
@@ -177,7 +177,7 @@
  * upon resolution.
  *
  * @param {ERef<Payment<K>>[]} paymentsArray
- * @param {Amount<K>=} optTotalAmount
+ * @param {Amount<K>} [optTotalAmount]
  * @returns {Promise<Payment<K>>}
  */
 
@@ -265,7 +265,7 @@
 /**
  * @typedef {object} AdditionalDisplayInfo
  *
- * @property {number=} decimalPlaces Tells the display software how
+ * @property {number} [decimalPlaces] Tells the display software how
  *   many decimal places to move the decimal over to the left, or in
  *   other words, which position corresponds to whole numbers. We
  *   require fungible digital assets to be represented in integers, in
@@ -275,20 +275,11 @@
  *   assets, should not be specified. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
- * @property {AssetKind=} assetKind
+ * @property {AssetKind} [assetKind]
  */
 
 /**
- * @callback ShutdownWithFailure
- * Called to shut something down because something went wrong, where the reason
- * is supposed to be an Error that describes what went wrong. Some valid
- * implementations of `ShutdownWithFailure` will never return, either
- * because they throw or because they immediately shutdown the enclosing unit
- * of computation. However, they also might return, so the caller should
- * follow this call by their own defensive `throw reason;` if appropriate.
- *
- * @param {Error} reason
- * @returns {void}
+ * @typedef {import('@agoric/swingset-vat').ShutdownWithFailure} ShutdownWithFailure
  */
 
 /**
@@ -305,7 +296,7 @@
 /**
  * @callback DepositFacetReceive
  * @param {Payment} payment
- * @param {Pattern=} optAmountShape
+ * @param {Pattern} [optAmountShape]
  * @returns {Amount}
  */
 
@@ -323,7 +314,7 @@
  * @template {AssetKind} K
  * @callback PurseDeposit
  * @param {Payment<K>} payment
- * @param {Pattern=} optAmountShape
+ * @param {Pattern} [optAmountShape]
  * @returns {Amount<K>}
  */
 

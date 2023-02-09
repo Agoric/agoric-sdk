@@ -11,6 +11,7 @@ import {
 import makeNextLog from '../make-nextlog.js';
 
 import { kser, kslot } from '../../src/lib/kmarshal.js';
+import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 import { vstr } from '../util.js';
 
 test.serial('exercise cache', async t => {
@@ -41,7 +42,6 @@ test.serial('exercise cache', async t => {
   }
   const loggingKVStore = {
     has: key => kvStore.has(key),
-    getKeys: (start, end) => kvStore.getKeys(start, end),
     get(key) {
       const result = kvStore.get(key);
       if (vsKey(key)) {
@@ -49,6 +49,7 @@ test.serial('exercise cache', async t => {
       }
       return result;
     },
+    getNextKey: priorKey => kvStore.getNextKey(priorKey),
     set(key, value) {
       if (vsKey(key)) {
         log.push(['set', key, value]);
@@ -117,13 +118,13 @@ test.serial('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function dataKey(num) {
-    return `v1.vs.vom.o+10/${num}`;
+    return `v1.vs.vom.o+v10/${num}`;
   }
   function esKey(num) {
-    return `v1.vs.vom.es.o+10/${num}`;
+    return `v1.vs.vom.es.o+v10/${num}`;
   }
   function rcKey(num) {
-    return `v1.vs.vom.rc.o+10/${num}`;
+    return `v1.vs.vom.rc.o+v10/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
@@ -361,12 +362,12 @@ test('virtual object gc', async t => {
   t.deepEqual(c.kpResolution(c.bootstrapResult), kser(undefined));
   const v = 'v6';
   const remainingVOs = {};
-  for (const key of kernelStorage.kvStore.getKeys(`${v}.vs.`, `${v}.vs/`)) {
+  for (const key of enumeratePrefixedKeys(kernelStorage.kvStore, `${v}.vs.`)) {
     remainingVOs[key] = kernelStorage.kvStore.get(key);
   }
   // prettier-ignore
   t.deepEqual(remainingVOs, {
-    [`${v}.vs.baggageID`]: 'o+6/1',
+    [`${v}.vs.baggageID`]: 'o+d6/1',
     [`${v}.vs.idCounters`]: '{"exportID":11,"collectionID":5,"promiseID":8}',
     [`${v}.vs.kindIDID`]: '1',
     [`${v}.vs.storeKindIDTable`]:
@@ -387,17 +388,17 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.4.|label`]: 'watchedPromises',
     [`${v}.vs.vc.4.|nextOrdinal`]: '1',
     [`${v}.vs.vc.4.|schemata`]: vstr([M.string()]),
-    [`${v}.vs.vom.es.o+10/3`]: 'r',
-    [`${v}.vs.vom.o+10/2`]: `{"label":${vstr('thing #2')}}`,
-    [`${v}.vs.vom.o+10/3`]: `{"label":${vstr('thing #3')}}`,
-    [`${v}.vs.vom.o+10/8`]: `{"label":${vstr('thing #8')}}`,
-    [`${v}.vs.vom.o+10/9`]: `{"label":${vstr('thing #9')}}`,
-    [`${v}.vs.vom.rc.o+6/1`]: '1',
-    [`${v}.vs.vom.rc.o+6/3`]: '1',
-    [`${v}.vs.vom.rc.o+6/4`]: '1',
+    [`${v}.vs.vom.es.o+v10/3`]: 'r',
+    [`${v}.vs.vom.o+v10/2`]: `{"label":${vstr('thing #2')}}`,
+    [`${v}.vs.vom.o+v10/3`]: `{"label":${vstr('thing #3')}}`,
+    [`${v}.vs.vom.o+v10/8`]: `{"label":${vstr('thing #8')}}`,
+    [`${v}.vs.vom.o+v10/9`]: `{"label":${vstr('thing #9')}}`,
+    [`${v}.vs.vom.rc.o+d6/1`]: '1',
+    [`${v}.vs.vom.rc.o+d6/3`]: '1',
+    [`${v}.vs.vom.rc.o+d6/4`]: '1',
     [`${v}.vs.vom.vkind.10`]: '{"kindID":"10","tag":"thing"}',
-    [`${v}.vs.watchedPromiseTableID`]: 'o+6/4',
-    [`${v}.vs.watcherTableID`]: 'o+6/3',
+    [`${v}.vs.watchedPromiseTableID`]: 'o+d6/4',
+    [`${v}.vs.watcherTableID`]: 'o+d6/3',
   });
 });
 

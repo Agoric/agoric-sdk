@@ -20,7 +20,7 @@ import {
 import { getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
-import { vivifyVault } from '../../src/vaultFactory/vault.js';
+import { prepareVault } from '../../src/vaultFactory/vault.js';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -108,7 +108,7 @@ export async function start(zcf, privateArgs, baggage) {
     runMint.burnLosses(harden({ Minted: toBurn }), seat);
   };
 
-  /** @type {Parameters<typeof makeVault>[1]} */
+  /** @type {Parameters<typeof makeVault>[0]} */
   const managerMock = Far('vault manager mock', {
     getGovernedParams() {
       return {
@@ -129,6 +129,10 @@ export async function start(zcf, privateArgs, baggage) {
         },
         getChargingPeriod() {
           return DAY;
+        },
+        getLiquidationPadding() {
+          // XXX re-use
+          return LIQUIDATION_MARGIN;
         },
         getRecordingPeriod() {
           return DAY;
@@ -156,15 +160,13 @@ export async function start(zcf, privateArgs, baggage) {
     },
   });
 
-  const makeVault = vivifyVault(baggage);
+  const makeVault = prepareVault(baggage, marshaller, zcf);
 
   const { self: vault } = await makeVault(
-    zcf,
     managerMock,
     // eslint-disable-next-line no-plusplus
     String(vaultCounter++),
     makeFakeStorage('test.vaultContractWrapper'),
-    marshaller,
   );
 
   const advanceRecordingPeriod = async () => {

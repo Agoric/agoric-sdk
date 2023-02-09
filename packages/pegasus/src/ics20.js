@@ -1,5 +1,5 @@
 // @ts-check
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
 import { assert, details as X, Fail } from '@agoric/assert';
 
@@ -82,7 +82,6 @@ export const makeICS20TransferPacket = async ({
   depositAddress,
 }) => {
   // We're using Nat as a dynamic check for overflow.
-  // @ts-expect-error - this causes errors on some versions of TS, but not others.
   const stringValue = String(Nat(value));
 
   // Generate the ics20-1 packet.

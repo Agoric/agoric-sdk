@@ -6,6 +6,11 @@ import { makeScalarSetStore } from '@agoric/store';
 const { details: X } = assert;
 
 /**
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
+
+/**
  * @typedef {object} FeeCollector
  *
  * @property {() => ERef<Payment<'nat'>>} collectFees

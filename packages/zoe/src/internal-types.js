@@ -3,7 +3,7 @@
  * @property {ProposalRecord} proposal
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
- * @property {object=} offerArgs
+ * @property {object} [offerArgs]
  */
 
 /**
@@ -45,7 +45,7 @@
 
 /**
  * @callback ZoeSeatAdminExit
- * @param {Completion=} completion
+ * @param {Completion} [completion]
  * @returns {void}
  */
 
@@ -111,7 +111,7 @@
  * @callback ZoeInstanceAdminMakeInvitation
  * @param {InvitationHandle} invitationHandle
  * @param {string} description
- * @param {Record<string, any>=} customProperties
+ * @param {Record<string, any>} [customProperties]
  * @param {Pattern} [proposalShape]
  * @returns {Invitation}
  */
@@ -154,8 +154,8 @@
 /**
  * @callback MakeZoeMint
  * @param {Keyword} keyword
- * @param {AssetKind=} assetKind
- * @param {AdditionalDisplayInfo=} displayInfo
+ * @param {AssetKind} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
  * @param {Partial<{elementShape: Pattern}>} [options]
  * @returns {ZoeMint}
  */
@@ -210,13 +210,13 @@
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
- * @param {object=} privateArgs
+ * @param {object} [privateArgs]
  * @returns {Promise<ExecuteContractResult>}
  */
 
 /**
  * @callback RestartContract
- * @param {object=} privateArgs
+ * @param {object} [privateArgs]
  * @returns {Promise<ExecuteUpgradeableContractResult>}
  */
 
@@ -234,27 +234,6 @@
 
 /**
  * @typedef {Handle<'Seat'>} SeatHandle
- */
-
-/**
- * @typedef {object} RootAndAdminNode
- * @property {object} root
- * @property {AdminNode} adminNode
- */
-
-/**
- * @typedef {object} AdminNode
- * A powerful object that can be used to terminate the vat in which a contract
- * is running, to get statistics, or to be notified when it terminates.
- *
- * @property {() => Promise<Completion>} done
- * returns a promise that will be fulfilled or rejected when the contract is
- * terminated. If the contract terminates with a failure, the promise will be
- * rejected with the reason. If the contract terminates successfully, the
- * promise will fulfill to the completion value.
- * @property {ShutdownWithFailure} terminateWithFailure
- * Terminate the vat in which the contract is running as a failure.
- * @property {(bundleCap: *, options?: Record<string, any>) => Promise<RootAndAdminNode>} upgrade
  */
 
 /**

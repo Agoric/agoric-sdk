@@ -1,29 +1,37 @@
+import { makeTracer } from '@agoric/internal';
 import '@agoric/zoe/exported.js';
 import { Far } from '@endo/marshal';
-import { vivifyVaultHolder } from './vaultHolder.js';
+import { prepareVaultHolder } from './vaultHolder.js';
 
-export const vivifyVaultKit = baggage => {
-  const makeVaultHolder = vivifyVaultHolder(baggage);
+const trace = makeTracer('VK', false);
+
+/**
+ *
+ * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
+ */
+export const prepareVaultKit = (baggage, marshaller) => {
+  trace('prepareVaultKit', [...baggage.keys()]);
+
+  const makeVaultHolder = prepareVaultHolder(baggage, marshaller);
   /**
    * Create a kit of utilities for use of the vault.
    *
    * @param {Vault} vault
-   * @param {ERef<StorageNode>} storageNode
-   * @param {ERef<Marshaller>} marshaller
-   * @param {Subscriber<import('./vaultManager').AssetState>} assetSubscriber
+   * @param {StorageNode} storageNode
    */
-  const makeVaultKit = (vault, storageNode, marshaller, assetSubscriber) => {
-    const { holder, helper } = makeVaultHolder(vault, storageNode, marshaller);
+  const makeVaultKit = (vault, storageNode) => {
+    trace('prepareVaultKit makeVaultKit');
+    const { holder, helper } = makeVaultHolder(vault, storageNode);
+    const holderTopics = holder.getPublicTopics();
     const vaultKit = harden({
       publicSubscribers: {
-        // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
-        asset: assetSubscriber,
-        vault: holder.getSubscriber(),
+        vault: holderTopics.vault,
       },
       invitationMakers: Far('invitation makers', {
-        AdjustBalances: holder.makeAdjustBalancesInvitation,
-        CloseVault: holder.makeCloseInvitation,
-        TransferVault: holder.makeTransferInvitation,
+        AdjustBalances: () => holder.makeAdjustBalancesInvitation(),
+        CloseVault: () => holder.makeCloseInvitation(),
+        TransferVault: () => holder.makeTransferInvitation(),
       }),
       vault: holder,
       vaultUpdater: helper.getUpdater(),
@@ -33,4 +41,4 @@ export const vivifyVaultKit = baggage => {
   return makeVaultKit;
 };
 
-/** @typedef {(ReturnType<ReturnType<typeof vivifyVaultKit>>)} VaultKit */
+/** @typedef {(ReturnType<ReturnType<typeof prepareVaultKit>>)} VaultKit */

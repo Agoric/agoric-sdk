@@ -3,29 +3,22 @@
  */
 import { AmountShape } from '@agoric/ertp';
 import {
-  makeStoredSubscriber,
+  pipeTopicToStorage,
+  prepareDurablePublishKit,
   SubscriberShape,
-  vivifyDurablePublishKit,
+  TopicsRecordShape,
 } from '@agoric/notifier';
-import { M, vivifyFarClassKit } from '@agoric/vat-data';
-import { makeEphemeraProvider } from '../contractSupport.js';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
+import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
 
 /**
- * Ephemera are the elements of state that cannot (or need not) be durable.
- *
- * @type {(durableSubscriber: Subscriber<VaultNotification>) => {
- * storedSubscriber: StoredSubscriber<VaultNotification>,
- * }} */
-// @ts-expect-error not yet defined
-const provideEphemera = makeEphemeraProvider(() => ({}));
-
-/**
  * @typedef {{
  * publisher: PublishKit<VaultNotification>['publisher'],
  * subscriber: PublishKit<VaultNotification>['subscriber'],
+ * storageNode: StorageNode,
  * vault: Vault | null,
  * }} State
  */
@@ -35,6 +28,7 @@ const HolderI = M.interface('holder', {
   getCurrentDebt: M.call().returns(AmountShape),
   getNormalizedDebt: M.call().returns(AmountShape),
   getSubscriber: M.call().returns(SubscriberShape),
+  getPublicTopics: M.call().returns(TopicsRecordShape),
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
@@ -42,14 +36,17 @@ const HolderI = M.interface('holder', {
 /**
  *
  * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {ERef<Marshaller>} marshaller
  */
-export const vivifyVaultHolder = baggage => {
-  const makeVaultHolderPublishKit = vivifyDurablePublishKit(
+export const prepareVaultHolder = (baggage, marshaller) => {
+  const memoizedPath = makeStorageNodePathProvider(baggage);
+
+  const makeVaultHolderPublishKit = prepareDurablePublishKit(
     baggage,
     'Vault Holder publish kit',
   );
 
-  const makeVaultHolderKit = vivifyFarClassKit(
+  const makeVaultHolderKit = prepareExoClassKit(
     baggage,
     'Vault Holder',
     {
@@ -59,22 +56,16 @@ export const vivifyVaultHolder = baggage => {
     /**
      *
      * @param {Vault} vault
-     * @param {ERef<StorageNode>} storageNode
-     * @param {ERef<Marshaller>} marshaller
+     * @param {StorageNode} storageNode
      * @returns {State}
      */
-    (vault, storageNode, marshaller) => {
+    (vault, storageNode) => {
       /** @type {PublishKit<VaultNotification>} */
       const { subscriber, publisher } = makeVaultHolderPublishKit();
 
-      const ephemera = provideEphemera(subscriber);
-      ephemera.storedSubscriber = makeStoredSubscriber(
-        subscriber,
-        storageNode,
-        marshaller,
-      );
+      pipeTopicToStorage(subscriber, storageNode, marshaller);
 
-      return { subscriber, publisher, vault };
+      return { publisher, storageNode, subscriber, vault };
     },
     {
       helper: {
@@ -93,10 +84,19 @@ export const vivifyVaultHolder = baggage => {
         },
       },
       holder: {
-        /** @returns {StoredSubscriber<VaultNotification>} */
+        /** @deprecated use getPublicTopics */
         getSubscriber() {
-          const ephemera = provideEphemera(this.state.subscriber);
-          return ephemera.storedSubscriber;
+          return this.state.subscriber;
+        },
+        getPublicTopics() {
+          const { subscriber, storageNode } = this.state;
+          return harden({
+            vault: {
+              description: 'Vault holder status',
+              subscriber,
+              storagePath: memoizedPath(storageNode),
+            },
+          });
         },
         makeAdjustBalancesInvitation() {
           return this.facets.helper.owned().makeAdjustBalancesInvitation();

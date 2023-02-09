@@ -4,7 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
-import { initSwingStore, getAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
 import { kunser, krefOf } from '../../src/lib/kmarshal.js';
@@ -24,8 +24,8 @@ test.before(async t => {
 });
 
 // eslint-disable-next-line no-unused-vars
-const dumpState = (kernelStorage, vatID) => {
-  const s = getAllState(kernelStorage).kvStuff;
+const dumpState = (debug, vatID) => {
+  const s = debug.dump().kvEntries;
   const keys = Array.from(Object.keys(s)).sort();
   for (const k of keys) {
     if (k.startsWith(`${vatID}.vs.`)) {
@@ -130,6 +130,7 @@ const testUpgrade = async (
     },
   };
 
+  // const { kernelStorage, debug } = initSwingStore();
   const { kernelStorage } = initSwingStore();
   const { kvStore } = kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
@@ -195,7 +196,7 @@ const testUpgrade = async (
     return kvStore.has(`${vatID}.vs.vom.${vref}`);
   };
 
-  // dumpState(kernelStorage, vatID);
+  // dumpState(debug, vatID);
 
   // deduce exporter vrefs for all durable/virtual objects, and assert
   // that they're still in DB
@@ -261,7 +262,7 @@ const testUpgrade = async (
   t.is(c.kpStatus(v1p2Kref), 'rejected');
   t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
 
-  // dumpState(kernelStorage, vatID);
+  // dumpState(debug, vatID);
 
   // all the merely-virtual exports should be gone
   // for (let i = 1; i < NUM_SENSORS + 1; i += 1) {

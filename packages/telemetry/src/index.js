@@ -101,7 +101,7 @@ const getPrometheusMeterProvider = ({
 /**
  * Obtain the telemetry providers used by the `@opentelemetry` packages.
  *
- * @param {Partial<Powers>=} powers
+ * @param {Partial<Powers>} [powers]
  * @returns {{ metricsProvider?: MeterProvider }}
  */
 export const getTelemetryProviders = powers => {

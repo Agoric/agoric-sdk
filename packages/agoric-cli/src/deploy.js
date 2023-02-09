@@ -326,7 +326,10 @@ export default async function deployMain(progname, rawArgs, powers, opts) {
             const fileName = paths.pop();
             try {
               return require.resolve(fileName, {
-                paths: [...paths, path.dirname(moduleFile)],
+                paths: [
+                  path.resolve(path.dirname(moduleFile), ...paths),
+                  path.dirname(moduleFile),
+                ],
               });
             } catch (e) {
               return path.resolve(path.dirname(moduleFile), ...paths, fileName);

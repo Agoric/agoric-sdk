@@ -2,7 +2,7 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
-import { initSwingStore, getAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import { parse } from '@endo/marshal';
 
 import {
@@ -211,7 +211,7 @@ test.serial('d2.5', async t => {
 });
 
 test.serial('device state', async t => {
-  const kernelStorage = initSwingStore().kernelStorage;
+  const { kernelStorage, debug } = initSwingStore();
   const config = {
     bootstrap: 'bootstrap',
     vats: {
@@ -236,7 +236,7 @@ test.serial('device state', async t => {
   const d3 = c1.deviceNameToID('d3');
   await c1.run();
   t.deepEqual(c1.dump().log, ['undefined', 'w+r', 'called', 'got {"s":"new"}']);
-  const s = getAllState(kernelStorage).kvStuff;
+  const s = debug.dump().kvEntries;
   t.deepEqual(JSON.parse(s[`${d3}.deviceState`]), kser({ s: 'new' }));
   t.deepEqual(JSON.parse(s[`${d3}.o.nextID`]), 10);
 });

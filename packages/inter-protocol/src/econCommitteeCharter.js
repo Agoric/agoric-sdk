@@ -1,9 +1,9 @@
 import '@agoric/governance/exported.js';
-import { makeScalarMapStore, M, makeHeapFarInstance, fit } from '@agoric/store';
+import { makeScalarMapStore, M, makeExo, mustMatch } from '@agoric/store';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { TimestampShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { TimestampShape } from '@agoric/time';
 import { E } from '@endo/far';
 
 /**
@@ -24,17 +24,15 @@ export const INVITATION_MAKERS_DESC = 'charter member invitation';
  * @property {Record<string, unknown>} params
  * @property {{paramPath: { key: string }}} [path]
  */
-const ParamChangesOfferArgsShape = harden(
-  M.split(
-    {
-      deadline: TimestampShape,
-      instance: InstanceHandleShape,
-      params: M.recordOf(M.string(), M.any()),
-    },
-    M.partial({
-      path: { paramPath: { key: M.any() } },
-    }),
-  ),
+const ParamChangesOfferArgsShape = M.splitRecord(
+  {
+    deadline: TimestampShape,
+    instance: InstanceHandleShape,
+    params: M.recordOf(M.string(), M.any()),
+  },
+  {
+    path: { paramPath: { key: M.any() } },
+  },
 );
 
 /**
@@ -51,7 +49,7 @@ export const start = async zcf => {
      * @param {ParamChangesOfferArgs} args
      */
     const voteOnParamChanges = (seat, args) => {
-      fit(args, ParamChangesOfferArgsShape);
+      mustMatch(args, ParamChangesOfferArgsShape);
       seat.exit();
 
       const {
@@ -89,14 +87,10 @@ export const start = async zcf => {
       TimestampShape,
     ).returns(M.promise()),
   });
-  const invitationMakers = makeHeapFarInstance(
-    'Charter Invitation Makers',
-    MakerI,
-    {
-      VoteOnParamChange: makeParamInvitation,
-      VoteOnPauseOffers: makeOfferFilterInvitation,
-    },
-  );
+  const invitationMakers = makeExo('Charter Invitation Makers', MakerI, {
+    VoteOnParamChange: makeParamInvitation,
+    VoteOnPauseOffers: makeOfferFilterInvitation,
+  });
 
   const charterMemberHandler = seat => {
     seat.exit();
@@ -110,23 +104,19 @@ export const start = async zcf => {
     makeCharterMemberInvitation: M.call().returns(M.promise()),
   });
 
-  const creatorFacet = makeHeapFarInstance(
-    'Charter creatorFacet',
-    charterCreatorI,
-    {
-      /**
-       * @param {Instance} governedInstance
-       * @param {GovernedContractFacetAccess<{},{}>} governorFacet
-       * @param {string} [label] for diagnostic use only
-       */
-      addInstance: (governedInstance, governorFacet, label) => {
-        console.log('charter: adding instance', label);
-        instanceToGovernor.init(governedInstance, governorFacet);
-      },
-      makeCharterMemberInvitation: () =>
-        zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
+  const creatorFacet = makeExo('Charter creatorFacet', charterCreatorI, {
+    /**
+     * @param {Instance} governedInstance
+     * @param {GovernedContractFacetAccess<{},{}>} governorFacet
+     * @param {string} [label] for diagnostic use only
+     */
+    addInstance: (governedInstance, governorFacet, label) => {
+      console.log('charter: adding instance', label);
+      instanceToGovernor.init(governedInstance, governorFacet);
     },
-  );
+    makeCharterMemberInvitation: () =>
+      zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
+  });
 
   return harden({ creatorFacet });
 };

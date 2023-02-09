@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
@@ -22,7 +22,11 @@ import {
 import { kdebug } from '../../lib/kdebug.js';
 import { KERNEL_STATS_METRICS } from '../metrics.js';
 import { makeKernelStats } from './stats.js';
-import { getPrefixedValues, deletePrefixedKeys } from './storageHelper.js';
+import {
+  enumeratePrefixedKeys,
+  getPrefixedValues,
+  deletePrefixedKeys,
+} from './storageHelper.js';
 
 const enableKernelGC = true;
 
@@ -89,8 +93,7 @@ const enableKernelGC = true;
 // v$NN.reapInterval = $NN or 'never'
 // v$NN.reapCountdown = $NN or 'never'
 // exclude from consensus
-// local.v$NN.lastSnapshot = JSON({ snapshotID, startPos })
-// local.snapshot.$id = [vatID, ...]
+// local.*
 
 // m$NN.remaining = $NN // remaining capacity (in computrons) or 'unlimited'
 // m$NN.threshold = $NN // notify when .remaining first drops below this
@@ -337,9 +340,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
 
   function insistManagerType(mt) {
-    assert(
-      ['local', 'nodeWorker', 'node-subprocess', 'xs-worker'].includes(mt),
-    );
+    assert(['local', 'xs-worker'].includes(mt));
   }
 
   function getDefaultManagerType() {
@@ -786,10 +787,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
 
-    const old = vatKeeper.getLastSnapshot();
-    if (old) {
-      vatKeeper.removeFromSnapshot(old.snapshotID);
-    }
+    vatKeeper.deleteSnapshots();
 
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
@@ -805,8 +803,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     // used.
 
     // first, scan for exported objects, which must be orphaned
-    for (const k of kvStore.getKeys(`${vatID}.c.o+`, `${vatID}.c.o,`)) {
-      assert(k.startsWith(exportPrefix), k);
+    for (const k of enumeratePrefixedKeys(kvStore, exportPrefix)) {
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
       // importing it) and therefore the object is owned by (i.e., within) the
@@ -819,19 +816,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     }
 
     // then scan for imported objects, which must be decrefed
-    for (const k of kvStore.getKeys(`${vatID}.c.o-`, `${vatID}.c.o.`)) {
-      assert(k.startsWith(importPrefix), k);
+    for (const k of enumeratePrefixedKeys(kvStore, importPrefix)) {
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
-      const kref = kvStore.get(k) || assert.fail('getKeys ensures get');
+      const kref = kvStore.get(k) || assert.fail('getNextKey ensures get');
       const vref = k.slice(`${vatID}.c.`.length);
       vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
     }
 
     // now find all orphaned promises, which must be rejected
-    for (const k of kvStore.getKeys(`${vatID}.c.p`, `${vatID}.c.p.`)) {
-      assert(k.startsWith(promisePrefix), k);
+    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
       // The vpid for a promise imported or exported by a vat (and thus
       // potentially a promise for which the vat *might* be the decider) will
       // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
@@ -849,7 +844,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     }
 
     // now loop back through everything and delete it all
-    for (const k of kvStore.getKeys(`${vatID}.`, `${vatID}/`)) {
+    for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
       kvStore.delete(k);
     }
 
@@ -865,7 +860,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       kvStore.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
     } else {
       kdebug(`removing static vat ${vatID}`);
-      for (const k of kvStore.getKeys('vat.name.', 'vat.name/')) {
+      for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
         if (kvStore.get(k) === vatID) {
           kvStore.delete(k);
           const VAT_NAMES_KEY = 'vat.names';
@@ -1107,9 +1102,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getStaticVats() {
     const result = [];
-    for (const k of kvStore.getKeys('vat.name.', 'vat.name/')) {
+    for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
       const name = k.slice(9);
-      const vatID = kvStore.get(k) || assert.fail('getKeys ensures get');
+      const vatID = kvStore.get(k) || assert.fail('getNextKey ensures get');
       result.push([name, vatID]);
     }
     return result;
@@ -1117,9 +1112,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getDevices() {
     const result = [];
-    for (const k of kvStore.getKeys('device.name.', 'device.name/')) {
+    for (const k of enumeratePrefixedKeys(kvStore, 'device.name.')) {
       const name = k.slice(12);
-      const deviceID = kvStore.get(k) || assert.fail('getKeys ensures get');
+      const deviceID = kvStore.get(k) || assert.fail('getNextKey ensures get');
       result.push([name, deviceID]);
     }
     return result;

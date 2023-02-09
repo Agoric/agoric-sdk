@@ -1,4 +1,4 @@
-import { makeHeapFarInstance, fit, keyEQ, M } from '@agoric/store';
+import { makeExo, mustMatch, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
 import { QuestionI, QuestionSpecShape } from './typeGuards.js';
@@ -67,13 +67,13 @@ const coerceQuestionSpec = ({
     tieOutcome,
   });
 
-  fit(question, QuestionSpecShape);
+  mustMatch(question, QuestionSpecShape);
 
   // XXX It would be nice to enforce this using parameterized types, but that
   // seems to only enforce type constraints, (i.e. the tieOutcome will be the
   // same type as any of the positions) unless you can provide the concrete
   // value at pattern creation time.
-  fit(question.tieOutcome, M.or(...question.positions));
+  mustMatch(question.tieOutcome, M.or(...question.positions));
 
   return question;
 };
@@ -83,7 +83,7 @@ const buildQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
   /** @type {Question} */
-  return makeHeapFarInstance('question details', QuestionI, {
+  return makeExo('question details', QuestionI, {
     getVoteCounter() {
       return counterInstance;
     },

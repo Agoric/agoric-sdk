@@ -6,14 +6,11 @@ export {
   calcSecondaryRequired,
 } from './bondingCurves.js';
 
+export * from './durability.js';
+
 export * from './priceAuthority.js';
 
-export {
-  getAmountIn,
-  getAmountOut,
-  getTimestamp,
-  getPriceDescription,
-} from './priceQuote.js';
+export * from './priceQuote.js';
 
 export { natSafeMath } from './safeMath.js';
 

@@ -1,4 +1,5 @@
 // @ts-check
+/* global Buffer */
 import fs from 'fs';
 import path from 'path';
 import { performance } from 'perf_hooks';
@@ -9,7 +10,7 @@ import sqlite3 from 'better-sqlite3';
 import { assert } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
-import { makeSQLStreamStore } from './sqlStreamStore.js';
+import { makeStreamStore } from './streamStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { createSHA256 } from './hasher.js';
 
@@ -19,11 +20,8 @@ export function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
-    fsync: fs.fsync,
     measureSeconds: makeMeasureSeconds(performance.now),
     open: fs.promises.open,
-    rename: fs.promises.rename,
-    resolve: path.resolve,
     stat: fs.promises.stat,
     tmpFile,
     tmpName,
@@ -34,25 +32,18 @@ export function makeSnapStoreIO() {
 /**
  * @typedef {{
  *   has: (key: string) => boolean,
- *   getKeys: (start: string, end: string) => IterableIterator<string>,
  *   get: (key: string) => string | undefined,
+ *   getNextKey: (previousKey: string) => string | undefined,
  *   set: (key: string, value: string, bypassHash?: boolean ) => void,
  *   delete: (key: string) => void,
  * }} KVStore
  *
  * @typedef { import('./snapStore').SnapStore } SnapStore
+ * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
  *
- * @typedef { import('./snapStore').SnapshotInfo } SnapshotInfo
- *
- * @typedef {{ itemCount: number }} StreamPosition
- *
- * @typedef {{
- *   writeStreamItem: (streamName: string, item: string, position: StreamPosition) => StreamPosition,
- *   readStream: (streamName: string, startPosition: StreamPosition, endPosition: StreamPosition) => IterableIterator<string>,
- *   closeStream: (streamName: string) => void,
- *   dumpStreams: () => any,
- *   STREAM_START: StreamPosition,
- * }} StreamStore
+ * @typedef { import('./streamStore').StreamPosition } StreamPosition
+ * @typedef { import('./streamStore').StreamStore } StreamStore
+ * @typedef { import('./streamStore').StreamStoreDebug } StreamStoreDebug
  *
  * @typedef {{
  *   kvStore: KVStore, // a key-value StorageAPI object to load and store data on behalf of the kernel
@@ -74,8 +65,20 @@ export function makeSnapStoreIO() {
  * }} SwingStoreHostStorage
  *
  * @typedef {{
+ *   kvEntries: {},
+ *   streams: {},
+ *   snapshots: {},
+ * }} SwingStoreDebugDump
+ *
+ * @typedef {{
+ *   dump: () => SwingStoreDebugDump,
+ *   serialize: () => Buffer,
+ * }} SwingStoreDebugTools
+ *
+ * @typedef {{
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
+ *  debug: SwingStoreDebugTools,
  * }} SwingStore
  */
 
@@ -135,7 +138,12 @@ export function makeSnapStoreIO() {
  *
  * @returns {SwingStore}
  */
-function makeSwingStore(dirPath, forceReset, options) {
+function makeSwingStore(dirPath, forceReset, options = {}) {
+  const { serialized } = options;
+  if (serialized) {
+    assert(Buffer.isBuffer(serialized), `options.serialized must be Buffer`);
+    assert.equal(dirPath, null, `options.serialized makes :memory: DB`);
+  }
   let crankhasher;
   function resetCrankhash() {
     crankhasher = createSHA256();
@@ -188,9 +196,10 @@ function makeSwingStore(dirPath, forceReset, options) {
 
   /** @type {*} */
   let db = sqlite3(
-    filePath,
+    serialized || filePath,
     // { verbose: console.log },
   );
+
   db.exec(`PRAGMA journal_mode=WAL`);
   db.exec(`PRAGMA synchronous=FULL`);
   db.exec(`
@@ -275,45 +284,44 @@ function makeSwingStore(dirPath, forceReset, options) {
     return sqlKVGet.get(key);
   }
 
-  const sqlKVGetKeys = db.prepare(`
+  const sqlKVGetNextKey = db.prepare(`
     SELECT key
     FROM kvStore
-    WHERE ? <= key AND key < ?
+    WHERE key > ?
+    LIMIT 1
   `);
-  sqlKVGetKeys.pluck(true);
-
-  const sqlKVGetKeysNoEnd = db.prepare(`
-    SELECT key
-    FROM kvStore
-    WHERE ? <= key
-  `);
-  sqlKVGetKeysNoEnd.pluck(true);
+  sqlKVGetNextKey.pluck(true);
 
   /**
-   * Generator function that returns an iterator over all the keys within a
-   * given range.
+   * getNextKey enables callers to iterate over all keys within a
+   * given range. To build an iterator of all keys from start
+   * (inclusive) to end (exclusive), do:
    *
-   * @param {string} start  Start of the key range of interest (inclusive).  An empty
-   *    string indicates a range from the beginning of the key set.
-   * @param {string} end  End of the key range of interest (exclusive).  An empty string
-   *    indicates a range through the end of the key set.
+   * function* iterate(start, end) {
+   *   if (kvStore.has(start)) {
+   *     yield start;
+   *   }
+   *   let prev = start;
+   *   while (true) {
+   *     let next = kvStore.getNextKey(prev);
+   *     if (!next || next >= end) {
+   *       break;
+   *     }
+   *     yield next;
+   *     prev = next;
+   *   }
+   * }
    *
-   * @yields {string} an iterator for the keys from start <= key < end
+   * @param {string} previousKey  The key returned will always be later than this one.
    *
-   * @throws if either parameter is not a string.
+   * @returns {string | undefined} a key string, or undefined if we reach the end of the store
+   *
+   * @throws if previousKey is not a string
    */
-  function* getKeys(start, end) {
-    assert.typeof(start, 'string');
-    assert.typeof(end, 'string');
 
-    let keys;
-    if (end) {
-      keys = sqlKVGetKeys.all(start, end);
-    } else {
-      keys = sqlKVGetKeysNoEnd.all(start);
-    }
-
-    yield* keys.values();
+  function getNextKey(previousKey) {
+    assert.typeof(previousKey, 'string');
+    return sqlKVGetNextKey.get(previousKey);
   }
 
   /**
@@ -356,7 +364,7 @@ function makeSwingStore(dirPath, forceReset, options) {
   }
 
   const sqlKVDel = db.prepare(`
-    DELETE from kvStore
+    DELETE FROM kvStore
     WHERE key = ?
   `);
 
@@ -377,8 +385,8 @@ function makeSwingStore(dirPath, forceReset, options) {
 
   const kvStore = {
     has,
-    getKeys,
     get,
+    getNextKey,
     set,
     delete: del,
   };
@@ -427,16 +435,14 @@ function makeSwingStore(dirPath, forceReset, options) {
     },
   };
 
-  const streamStore = makeSQLStreamStore(db, ensureTxn);
-  let snapStore;
-
-  if (dirPath) {
-    const snapshotDir = path.resolve(dirPath, 'xs-snapshots');
-    fs.mkdirSync(snapshotDir, { recursive: true });
-    snapStore = makeSnapStore(snapshotDir, makeSnapStoreIO(), {
+  const { dumpStreams, ...streamStore } = makeStreamStore(db, ensureTxn);
+  const { dumpActiveSnapshots, ...snapStore } = makeSnapStore(
+    db,
+    makeSnapStoreIO(),
+    {
       keepSnapshots,
-    });
-  }
+    },
+  );
 
   const savepoints = [];
   const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');
@@ -520,13 +526,6 @@ function makeSwingStore(dirPath, forceReset, options) {
       sqlCommit.run();
       sqlCheckpoint.run();
     }
-
-    // NOTE: The kvstore (which used to contain vatA -> snapshot1, and
-    //   is being replaced with vatA -> snapshot2)
-    //   MUST be committed BEFORE we delete snapshot1.
-    //   Otherwise, on restart, we'll consult the kvstore and see snapshot1,
-    //   but we'll fail to load it because it's been deleted already.
-    await (snapStore ? snapStore.commitDeletes() : false);
   }
 
   /**
@@ -539,6 +538,37 @@ function makeSwingStore(dirPath, forceReset, options) {
     db.close();
     db = null;
     stopTrace();
+  }
+
+  /**
+   * Return a Buffer with the entire DB state, useful for cloning a
+   * small swingstore in unit tests.
+   *
+   * @returns {Buffer}
+   */
+  function serialize() {
+    // An on-disk DB with WAL mode enabled seems to produce a
+    // serialized Buffer that can be unserialized, but the resulting
+    // 'db' object fails all operations with SQLITE_CANTOPEN. So
+    // pre-emptively throw.
+    if (filePath !== ':memory:') {
+      throw Error('on-disk DBs with WAL mode enabled do not serialize well');
+    }
+    return db.serialize();
+  }
+
+  function dumpKVEntries() {
+    const s = db.prepare('SELECT key,value FROM kvStore ORDER BY key').raw();
+    return Object.fromEntries(s.all());
+  }
+
+  function dump() {
+    // return comparable JS object graph with entire DB state
+    return harden({
+      kvEntries: dumpKVEntries(),
+      streams: dumpStreams(),
+      snapshots: dumpActiveSnapshots(),
+    });
   }
 
   const kernelStorage = {
@@ -558,10 +588,15 @@ function makeSwingStore(dirPath, forceReset, options) {
     close,
     diskUsage,
   };
+  const debug = {
+    serialize,
+    dump,
+  };
 
   return harden({
     kernelStorage,
     hostStorage,
+    debug,
   });
 }
 
@@ -624,59 +659,4 @@ export function isSwingStore(dirPath) {
     }
   }
   return false;
-}
-
-/**
- * Produce a representation of all the state found in a swing store.
- *
- * WARNING: This is a helper function intended for use in testing and debugging.
- * It extracts *everything*, and does so in the simplest and stupidest possible
- * way, hence it is likely to be a performance and memory hog if you attempt to
- * use it on anything real.
- *
- * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be extracted.
- *
- * @returns {{
- *   kvStuff: Record<string, string>,
- *   streamStuff: Map<string, Array<string>>,
- * }}  A crude representation of all of the state of `kernelStorage`
- */
-export function getAllState(kernelStorage) {
-  const { kvStore, streamStore } = kernelStorage;
-  /** @type { Record<string, string> } */
-  const kvStuff = {};
-  for (const key of Array.from(kvStore.getKeys('', ''))) {
-    // @ts-expect-error get(key) of key from getKeys() is not undefined
-    kvStuff[key] = kvStore.get(key);
-  }
-  const streamStuff = streamStore.dumpStreams();
-  return { kvStuff, streamStuff };
-}
-
-/**
- * Stuff a bunch of state into a swing store.
- *
- * WARNING: This is intended to support testing and should not be used as a
- * general store initialization mechanism.  In particular, note that it does not
- * bother to remove any pre-existing state from the store that it is given.
- *
- * @param {SwingStoreKernelStorage} kernelStorage  The swing store whose state is to be set.
- * @param {{
- *   kvStuff: Record<string, string>,
- *   streamStuff: Map<string, Array<[number, *]>>,
- * }} stuff  The state to stuff into `kernelStorage`
- */
-export function setAllState(kernelStorage, stuff) {
-  const { kvStore, streamStore } = kernelStorage;
-  const { kvStuff, streamStuff } = stuff;
-  for (const k of Object.getOwnPropertyNames(kvStuff)) {
-    kvStore.set(k, kvStuff[k], true);
-  }
-  for (const [streamName, stream] of streamStuff.entries()) {
-    for (const [pos, item] of stream) {
-      const position = { itemCount: pos };
-      streamStore.writeStreamItem(streamName, item, position);
-    }
-    streamStore.closeStream(streamName);
-  }
 }

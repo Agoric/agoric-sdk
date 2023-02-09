@@ -4,11 +4,8 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { makeStorageNodeChild } from '../lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '../tokens.js';
-
-// Ambient types (globals)
-import '@agoric/swingset-vat/src/vats/timer/types.js';
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -31,7 +28,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  * }} zoeArgs
  * @param {{
  *   governedParams: Record<string, unknown>,
- *   timer: ERef<TimerService>,
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   contractGovernor: ERef<Installation>,
  *   economicCommitteeCreatorFacet: import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers['consume']['economicCommitteeCreatorFacet']
  * }} govArgs
@@ -184,10 +181,14 @@ export const startWalletFactory = async (
     feeIssuerP,
   ]);
 
+  const poolBank = E(bankManager).getBankForAddress(poolAddr);
   const terms = await deeplyFulfilled(
     harden({
       agoricNames,
       board,
+      assetPublisher: Far('AssetPublisher', {
+        getAssetSubscription: () => E(poolBank).getAssetSubscription(),
+      }),
     }),
   );
   /** @type {WalletFactoryStartResult} */
@@ -202,7 +203,6 @@ export const startWalletFactory = async (
   );
   walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
-  const poolBank = E(bankManager).getBankForAddress(poolAddr);
 
   const ppFacets = await startGovernedInstance(
     {

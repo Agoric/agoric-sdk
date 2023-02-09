@@ -1,4 +1,4 @@
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeCapTP } from '@endo/captp';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
@@ -68,9 +68,9 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
    */
 
   /**
-   * @type {Store<number, AbortDispatch>}
+   * @type {MapStore<number, AbortDispatch>}
    */
-  const modConnection = makeStore('moduleIndex');
+  const modConnection = makeScalarMapStore('moduleIndex');
 
   // Dispatch object to the right index.
   D(pluginDevice).registerReceiver(

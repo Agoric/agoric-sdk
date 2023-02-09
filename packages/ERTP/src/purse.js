@@ -1,10 +1,11 @@
-import { vivifyFarClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
+import { M } from '@agoric/store';
+import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 
 const { Fail } = assert;
 
-export const vivifyPurseKind = (
+export const preparePurseKind = (
   issuerBaggage,
   name,
   assetKind,
@@ -12,6 +13,8 @@ export const vivifyPurseKind = (
   PurseIKit,
   purseMethods,
 ) => {
+  const amountShape = brand.getAmountShape();
+
   // Note: Virtual for high cardinality, but *not* durable, and so
   // broken across an upgrade.
   const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
@@ -28,7 +31,7 @@ export const vivifyPurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const makePurseKit = vivifyFarClassKit(
+  const makePurseKit = prepareExoClassKit(
     issuerBaggage,
     `${name} Purse`,
     PurseIKit,
@@ -109,7 +112,13 @@ export const vivifyPurseKind = (
         },
       },
     },
+    {
+      stateShape: {
+        currentBalance: amountShape,
+        recoverySet: M.remotable('recoverySet'),
+      },
+    },
   );
   return () => makePurseKit().purse;
 };
-harden(vivifyPurseKind);
+harden(preparePurseKind);

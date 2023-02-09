@@ -2,7 +2,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { makeMockTestSpace } from './supports.js';
@@ -64,6 +64,7 @@ test('customTermsShape', async t => {
       {
         agoricNames,
         board,
+        assetPublisher: /** @type {any} */ ({}),
         //   @ts-expect-error extra term
         extra: board,
       },
@@ -71,7 +72,7 @@ test('customTermsShape', async t => {
     ),
     {
       message:
-        '{"agoricNames":"[Promise]","board":"[Promise]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
+        '{"agoricNames":"[Promise]","assetPublisher":{},"board":"[Promise]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
     },
   );
 
@@ -88,7 +89,7 @@ test('customTermsShape', async t => {
     ),
     {
       message:
-        '{"agoricNames":"[Promise]"} - Must have missing properties ["board"]',
+        '{"agoricNames":"[Promise]"} - Must have missing properties ["board","assetPublisher"]',
     },
   );
 });
@@ -99,6 +100,7 @@ test('privateArgsShape', async t => {
   const terms = {
     agoricNames,
     board,
+    assetPublisher: /** @type {any} */ ({}),
   };
 
   // missing an arg

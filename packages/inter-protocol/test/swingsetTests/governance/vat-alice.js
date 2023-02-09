@@ -2,7 +2,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 import { daysForVoting } from './bootstrap';
 import { ONE_DAY } from '../setup';

@@ -1,5 +1,5 @@
 /**
- * @typedef {Notifier<Timestamp>} PeriodNotifier
+ * @typedef {Notifier<import('@agoric/time/src/types').Timestamp>} PeriodNotifier
  *
  *  The Notifier that provides notifications that periods have passed.
  *  Since notifiers can't be relied on to produce an output every time
@@ -35,7 +35,7 @@
  *   The rate in basis points that will be multiplied with the debt on
  *   every period to compound interest.
  *
- * @property {RelativeTime} interestPeriod
+ * @property {import('@agoric/time/src/types').RelativeTime} interestPeriod
  *
  * @property {Brand} loanBrand
  * @property {Brand} collateralBrand
@@ -62,7 +62,7 @@
  *   The ZCFSeat holding the collateral in escrow after the borrower
  *   escrows it
  *
- * @property {() => Amount} getDebt
+ * @property {() => Amount<'nat'>} getDebt
  *
  *   A function to get the current debt
  *
@@ -148,9 +148,9 @@
 
 /**
  * @callback CalcInterestFn
- * @param {Amount} oldDebt
+ * @param {Amount<'nat'>} oldDebt
  * @param {Ratio} interestRate
- * @returns {Amount} interest
+ * @returns {Amount<'nat'>} interest
  */
 
 /**
@@ -160,7 +160,7 @@
  *   A function to calculate the interest, given the debt value and an
  *   interest rate in basis points.
  *
- * @property {Amount} originalDebt
+ * @property {Amount<'nat'>} originalDebt
  *
  *   The debt at the start of the loan, in Loan brand
  *
@@ -169,14 +169,14 @@
  *   The AsyncIterable to notify when a period has occurred
  *
  * @property {Ratio} interestRate
- * @property {RelativeTime} interestPeriod
+ * @property {import('@agoric/time/src/types').RelativeTime} interestPeriod
  *
  *  the period at which the outstanding debt increases by the interestRate
  *
  * @property {ZCF} zcf
  *
  * @property {LoanConfigWithBorrowerMinusDebt} configMinusGetDebt
- * @property {Timestamp} basetime The starting point from which to calculate
+ * @property {import('@agoric/time/src/types').Timestamp} basetime The starting point from which to calculate
  * interest.
  */
 
@@ -189,7 +189,7 @@
  * @property {PriceAuthority} priceAuthority
  * @property {PeriodNotifier} periodNotifier
  * @property {bigint} interestRate
- * @property {RelativeTime} interestPeriod
+ * @property {import('@agoric/time/src/types').RelativeTime} interestPeriod
  * @property {ZCFSeat} lenderSeat
  */
 
@@ -212,7 +212,7 @@
  * triggered the liquidation. This may be lower than expected if the
  * price is moving quickly.
  *
- * @property {() => Timestamp} getLastCalculationTimestamp
+ * @property {() => import('@agoric/time/src/types').Timestamp} getLastCalculationTimestamp
  *
  * Get the timestamp at which the debt was most recently recalculated.
  *

@@ -11,7 +11,7 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 
 import {
@@ -47,7 +47,7 @@ harden(setUpZoeForTest);
  */
 
 /**
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsmBootstrap = async (
@@ -83,7 +83,7 @@ export const setupPsmBootstrap = async (
 /**
  * @param {*} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
- * @param {ManualTimer | undefined=} timer
+ * @param {ManualTimer} [timer]
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsm = async (

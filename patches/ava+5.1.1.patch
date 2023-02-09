@@ -1,0 +1,55 @@
+diff --git a/node_modules/ava/index.js b/node_modules/ava/index.js
+new file mode 100644
+index 0000000..bee62d8
+--- /dev/null
++++ b/node_modules/ava/index.js
+@@ -0,0 +1,2 @@
++// XXX work around https://github.com/import-js/eslint-plugin-import/issues/1810
++export {default} from './lib/worker/main.cjs';
+diff --git a/node_modules/ava/lib/cli.js b/node_modules/ava/lib/cli.js
+index afe5528..67f523f 100644
+--- a/node_modules/ava/lib/cli.js
++++ b/node_modules/ava/lib/cli.js
+@@ -436,6 +436,10 @@ export default async function loadCli() { // eslint-disable-line complexity
+ 		workerArgv: argv['--'],
+ 	});
+ 
++	if (process.env.AGORIC_AVA_USE_TAP){
++		combined.tap = true;
++	}
++
+ 	const reporter = combined.tap && !combined.watch && debug === null ? new TapReporter({
+ 		extensions: globs.extensions,
+ 		projectDir,
+diff --git a/node_modules/ava/lib/reporters/tap.js b/node_modules/ava/lib/reporters/tap.js
+index b1989a4..fa1617f 100644
+--- a/node_modules/ava/lib/reporters/tap.js
++++ b/node_modules/ava/lib/reporters/tap.js
+@@ -45,6 +45,10 @@ function dumpError(error) {
+ 	return object;
+ }
+ 
++function durationOut(dur) {
++	return dur ? ` %ava-dur=${dur}ms` : '';
++}
++
+ export default class TapReporter {
+ 	constructor(options) {
+ 		this.i = 0;
+@@ -96,6 +100,7 @@ export default class TapReporter {
+ 	}
+ 
+ 	writeTest(evt, flags) {
++ 		evt.title += durationOut(evt.duration);
+ 		this.reportStream.write(supertap.test(this.prefixTitle(evt.testFile, evt.title), {
+ 			comment: evt.logs,
+ 			error: evt.err ? dumpError(evt.err) : null,
+@@ -108,7 +113,7 @@ export default class TapReporter {
+ 
+ 	writeCrash(evt, title) {
+ 		this.crashCount++;
+-		this.reportStream.write(supertap.test(title || evt.err.summary || evt.type, {
++		this.reportStream.write(supertap.test((title || evt.err.summary || evt.type) + durationOut(evt.duration), {
+ 			comment: evt.logs,
+ 			error: evt.err ? dumpError(evt.err) : null,
+ 			index: ++this.i,

@@ -13,7 +13,7 @@ export const encode = (encoder => encoder.encode.bind(encoder))(
 
 /**
  * @param {string} url
- * @param {typeof import('fs').promises.readFile=} readFile
+ * @param {typeof import('fs').promises.readFile} [readFile]
  */
 export function loader(url, readFile = undefined) {
   /** @param {string} ref */

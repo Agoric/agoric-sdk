@@ -4,7 +4,7 @@ import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
-import { canBeDurable, vivifyFarClassKit } from '@agoric/vat-data';
+import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
 import './types-ambient.js';
 
@@ -381,11 +381,11 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
  * @param {import('../../vat-data/src/types.js').Baggage} baggage
  * @param {string} kindName
  */
-export const vivifyDurablePublishKit = (baggage, kindName) => {
+export const prepareDurablePublishKit = (baggage, kindName) => {
   /**
    * @returns {() => PublishKit<*>}
    */
-  return vivifyFarClassKit(
+  return prepareExoClassKit(
     baggage,
     kindName,
     publishKitIKit,
@@ -430,6 +430,6 @@ export const vivifyDurablePublishKit = (baggage, kindName) => {
     },
   );
 };
-harden(vivifyDurablePublishKit);
+harden(prepareDurablePublishKit);
 
 export const SubscriberShape = M.remotable('Subscriber');

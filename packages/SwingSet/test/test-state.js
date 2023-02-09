@@ -3,20 +3,21 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { createHash } from 'crypto';
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
 import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import { kser, kslot } from '../src/lib/kmarshal.js';
 import {
+  enumeratePrefixedKeys,
   getPrefixedValues,
   deletePrefixedKeys,
 } from '../src/kernel/state/storageHelper.js';
 
 const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];
 
-function checkState(t, getState, expected) {
-  const state = getState();
+function checkState(t, dump, expected) {
+  const state = dump().kvEntries;
   const got = [];
   for (const key of Object.getOwnPropertyNames(state)) {
     if (!ignoredStateKeys.includes(key)) {
@@ -36,7 +37,7 @@ function checkState(t, getState, expected) {
   t.deepEqual(got.sort(compareStrings), expected.sort(compareStrings));
 }
 
-async function testStorage(t, s, getState, commit) {
+async function testStorage(t, s, dump, commit) {
   t.falsy(s.has('missing'));
   t.is(s.get('missing'), undefined);
 
@@ -47,22 +48,23 @@ async function testStorage(t, s, getState, commit) {
   s.set('foo2', 'f2');
   s.set('foo1', 'f1');
   s.set('foo3', 'f3');
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo3')), ['foo1', 'foo2']);
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo2', 'foo3']);
-  t.deepEqual(Array.from(s.getKeys('', '')), ['foo', 'foo1', 'foo2', 'foo3']);
-  t.deepEqual(Array.from(s.getKeys('foo1', '')), ['foo1', 'foo2', 'foo3']);
-  t.deepEqual(Array.from(s.getKeys('', 'foo2')), ['foo', 'foo1']);
+  t.deepEqual(s.getNextKey('d-early'), 'foo');
+  t.deepEqual(s.getNextKey('foo'), 'foo1');
+  t.deepEqual(s.getNextKey('foo1'), 'foo2');
+  t.deepEqual(s.getNextKey('foo2'), 'foo3');
+  t.deepEqual(s.getNextKey('foo3'), undefined);
+  t.deepEqual(s.getNextKey('late'), undefined);
 
   s.delete('foo2');
   t.falsy(s.has('foo2'));
   t.is(s.get('foo2'), undefined);
-  t.deepEqual(Array.from(s.getKeys('foo1', 'foo4')), ['foo1', 'foo3']);
+  t.deepEqual(s.getNextKey('foo1'), 'foo3');
 
   if (commit) {
-    checkState(t, getState, []);
+    checkState(t, dump, []);
     await commit();
   }
-  checkState(t, getState, [
+  checkState(t, dump, [
     ['foo', 'f'],
     ['foo1', 'f1'],
     ['foo3', 'f3'],
@@ -70,17 +72,12 @@ async function testStorage(t, s, getState, commit) {
 }
 
 test('storageInMemory', async t => {
-  const kernelStorage = initSwingStore(null).kernelStorage;
-  await testStorage(
-    t,
-    kernelStorage.kvStore,
-    () => getAllState(kernelStorage).kvStuff,
-    null,
-  );
+  const { kernelStorage, debug } = initSwingStore(null);
+  await testStorage(t, kernelStorage.kvStore, debug.dump, null);
 });
 
 test('storage helpers', t => {
-  const kernelStorage = initSwingStore(null).kernelStorage;
+  const { kernelStorage, debug } = initSwingStore(null);
   const kv = kernelStorage.kvStore;
 
   kv.set('foo.0', 'f0');
@@ -89,7 +86,7 @@ test('storage helpers', t => {
   kv.set('foo.3', 'f3');
   // omit foo.4
   kv.set('foo.5', 'f5');
-  checkState(t, () => getAllState(kernelStorage).kvStuff, [
+  checkState(t, debug.dump, [
     ['foo.0', 'f0'],
     ['foo.1', 'f1'],
     ['foo.2', 'f2'],
@@ -114,20 +111,33 @@ test('storage helpers', t => {
   // zero, so if there is a gap in the key sequence (e.g., 'foo.4' in the
   // above), they stop counting when they hit it
   t.truthy(kv.has('foo.5'));
-  checkState(t, () => getAllState(kernelStorage).kvStuff, [['foo.5', 'f5']]);
+  checkState(t, debug.dump, [['foo.5', 'f5']]);
+
+  // now check lexicographic ordering with enumeratePrefixedKeys
+  kv.set('bar', 'b');
+  kv.set('bar.1', 'b1');
+  kv.set('bar.3', 'b3');
+  kv.set('bar.5', 'b5');
+  kv.set('cab.2', 'c');
+
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar')), [
+    'bar.1',
+    'bar.3',
+    'bar.5',
+  ]);
 });
 
 function buildKeeperStorageInMemory() {
-  const kernelStorage = initSwingStore(null).kernelStorage;
+  const { kernelStorage, debug } = initSwingStore(null);
   return {
-    getState: () => getAllState(kernelStorage).kvStuff,
+    ...debug, // serialize, dump
     ...kernelStorage,
   };
 }
 
-function duplicateKeeper(getState) {
-  const kernelStorage = initSwingStore(null).kernelStorage;
-  setAllState(kernelStorage, { kvStuff: getState(), streamStuff: new Map() });
+function duplicateKeeper(serialize) {
+  const serialized = serialize();
+  const { kernelStorage } = initSwingStore(null, { serialized });
   const kernelKeeper = makeKernelKeeper(kernelStorage, null);
   kernelKeeper.loadStats();
   return kernelKeeper;
@@ -139,22 +149,20 @@ test('kernelStorage param guards', async t => {
   t.throws(() => kvStore.set('foo', true), exp);
   t.throws(() => kvStore.set(true, 'foo'), exp);
   t.throws(() => kvStore.has(true), exp);
-  t.throws(() => Array.from(kvStore.getKeys('foo', true)), exp);
-  t.throws(() => Array.from(kvStore.getKeys(true, 'foo')), exp);
+  t.throws(() => kvStore.getNextKey(true), exp);
   t.throws(() => kvStore.get(true), exp);
   t.throws(() => kvStore.delete(true), exp);
 });
 
 test('kernel state', async t => {
   const store = buildKeeperStorageInMemory();
-  const { getState } = store;
   const k = makeKernelKeeper(store, null);
   t.truthy(!k.getInitialized());
   k.createStartingKernelState({ defaultManagerType: 'local' });
   k.setInitialized();
 
   k.emitCrankHashes();
-  checkState(t, getState, [
+  checkState(t, store.dump, [
     ['crankNumber', '0'],
     ['initialized', 'true'],
     ['gcActions', '[]'],
@@ -180,7 +188,6 @@ test('kernel state', async t => {
 
 test('kernelKeeper vat names', async t => {
   const store = buildKeeperStorageInMemory();
-  const { getState } = store;
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
@@ -190,7 +197,7 @@ test('kernelKeeper vat names', async t => {
   t.is(v2, 'v2');
 
   k.emitCrankHashes();
-  checkState(t, getState, [
+  checkState(t, store.dump, [
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -220,7 +227,7 @@ test('kernelKeeper vat names', async t => {
   t.is(k.getVatIDForName('Frank'), v2);
   t.is(k.allocateVatIDForNameIfNeeded('Frank'), v2);
 
-  const k2 = duplicateKeeper(getState);
+  const k2 = duplicateKeeper(store.serialize);
   t.deepEqual(k.getStaticVats(), [
     ['Frank', 'v2'],
     ['vatname5', 'v1'],
@@ -231,7 +238,6 @@ test('kernelKeeper vat names', async t => {
 
 test('kernelKeeper device names', async t => {
   const store = buildKeeperStorageInMemory();
-  const { getState } = store;
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
@@ -241,7 +247,7 @@ test('kernelKeeper device names', async t => {
   t.is(d8, 'd8');
 
   k.emitCrankHashes();
-  checkState(t, getState, [
+  checkState(t, store.dump, [
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -271,7 +277,7 @@ test('kernelKeeper device names', async t => {
   t.is(k.getDeviceIDForName('Frank'), d8);
   t.is(k.allocateDeviceIDForNameIfNeeded('Frank'), d8);
 
-  const k2 = duplicateKeeper(getState);
+  const k2 = duplicateKeeper(store.serialize);
   t.deepEqual(k.getDevices(), [
     ['Frank', 'd8'],
     ['devicename5', 'd7'],
@@ -282,7 +288,6 @@ test('kernelKeeper device names', async t => {
 
 test('kernelKeeper runQueue', async t => {
   const store = buildKeeperStorageInMemory();
-  const { getState } = store;
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
@@ -298,7 +303,7 @@ test('kernelKeeper runQueue', async t => {
   t.is(k.getRunQueueLength(), 2);
 
   k.emitCrankHashes();
-  const k2 = duplicateKeeper(getState);
+  const k2 = duplicateKeeper(store.serialize);
 
   t.deepEqual(k.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
   t.falsy(k.isRunQueueEmpty());
@@ -325,7 +330,6 @@ test('kernelKeeper runQueue', async t => {
 
 test('kernelKeeper promises', async t => {
   const store = buildKeeperStorageInMemory();
-  const { getState } = store;
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
@@ -342,7 +346,7 @@ test('kernelKeeper promises', async t => {
   t.falsy(k.hasKernelPromise('kp99'));
 
   k.emitCrankHashes();
-  let k2 = duplicateKeeper(getState);
+  let k2 = duplicateKeeper(store.serialize);
 
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
@@ -365,7 +369,7 @@ test('kernelKeeper promises', async t => {
   });
 
   k.emitCrankHashes();
-  k2 = duplicateKeeper(getState);
+  k2 = duplicateKeeper(store.serialize);
   t.deepEqual(k2.getKernelPromise(p1), {
     state: 'unresolved',
     policy: 'ignore',
@@ -405,7 +409,7 @@ test('kernelKeeper promises', async t => {
   expectedAcceptanceQueue.push({ type: 'send', target: 'kp40', msg: m2 });
 
   k.emitCrankHashes();
-  k2 = duplicateKeeper(getState);
+  k2 = duplicateKeeper(store.serialize);
   t.deepEqual(k2.getKernelPromise(p1).queue, [m1, m2]);
 
   const ko = k.addKernelObject('v1');
@@ -423,7 +427,7 @@ test('kernelKeeper promises', async t => {
   // all the subscriber/queue stuff should be gone
   k.emitCrankHashes();
 
-  checkState(t, getState, [
+  checkState(t, store.dump, [
     ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
@@ -491,7 +495,6 @@ test('kernelKeeper promise reject', async t => {
 
 test('vatKeeper', async t => {
   const store = buildKeeperStorageInMemory();
-  const { getState } = store;
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
@@ -509,7 +512,7 @@ test('vatKeeper', async t => {
   t.is(vk.nextDeliveryNum(), 1n);
 
   k.emitCrankHashes();
-  let vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
+  let vk2 = duplicateKeeper(store.serialize).provideVatKeeper(v1);
   t.is(vk2.mapVatSlotToKernelSlot(vatExport1), kernelExport1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelExport1), vatExport1);
   t.is(vk2.nextDeliveryNum(), 2n);
@@ -522,7 +525,7 @@ test('vatKeeper', async t => {
   t.is(vk.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 
   k.emitCrankHashes();
-  vk2 = duplicateKeeper(getState).provideVatKeeper(v1);
+  vk2 = duplicateKeeper(store.serialize).provideVatKeeper(v1);
   t.is(vk2.mapKernelSlotToVatSlot(kernelImport2), vatImport2);
   t.is(vk2.mapVatSlotToKernelSlot(vatImport2), kernelImport2);
 });
@@ -697,11 +700,7 @@ test('crankhash - skip keys', t => {
   // certain local keys are excluded from consensus, and should not affect
   // the hash
   k.kvStore.set('one', '1');
-  k.kvStore.set('local.snapshot.XYZ', '["vat1234"]');
-  k.kvStore.set(
-    'local.v1234.lastSnapshot',
-    '{"snapshotID":"XYZ","startPos":4}',
-  );
+  k.kvStore.set('local.doNotHashMe', 'random nonsense');
   t.throws(() => k.kvStore.set('host.foo', 'bar'));
   t.is(k.emitCrankHashes().crankhash, expCrankhash);
 });

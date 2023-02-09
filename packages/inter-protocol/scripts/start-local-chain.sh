@@ -16,8 +16,9 @@ fi
 SDK=$(readlink -f "$(dirname -- "$(readlink -f -- "$0")")/../../..")
 
 WALLET=$1
+WALLET_BECH32=$(agd keys --keyring-backend=test show "$WALLET" --output json | jq -r .address)
 
-if [ -z "$WALLET" ]; then
+if [ -z "$WALLET_BECH32" ]; then
     echo "USAGE: $0 wallet-key"
     # The key must be from the 'test' keyring, for non-interactive use.
     # To migrate one of your 'os' keys:
@@ -26,7 +27,15 @@ if [ -z "$WALLET" ]; then
     exit 1
 fi
 
-WALLET_BECH32=$(agd keys --keyring-backend=test show "$WALLET" --output json | jq -r .address)
+# this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
+# to use it run `agd keys --keyring-backend=test add oracle2 --interactive` and enter this mnenomic:
+# dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
+WALLET2=oracle2
+WALLET2_BECH32=$(agd keys --keyring-backend=test show "$WALLET2" --output json | jq -r .address)
+if [ -z "$WALLET2_BECH32" ]; then
+    echo "missing oracle2 key in test keyring"
+    exit 1
+fi
 
 echo CHAIN_LOG "$CHAIN_LOG"
 echo SDK "$SDK"
@@ -58,7 +67,8 @@ make fund-provision-pool
 echo "Funding your wallet account..."
 # After `fund-provision-pool` there is 900 IST remaining for other account funding.
 # A wallet can be tested with 20 BLD for provisioning wallet and 20 USDC for psm trading
-make ACCT_ADDR="$WALLET_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234 fund-acct
+# Also include 1M IbcATOM
+make ACCT_ADDR="$WALLET_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234,1000000000000ibc/atom1234 fund-acct
 agd query bank balances "$WALLET_BECH32" | grep ubld || exit 1
 
 echo "Provisioning your smart wallet..."
@@ -70,10 +80,5 @@ agoric wallet --keyring-backend=test list
 agoric wallet --keyring-backend=test show --from "$WALLET"
 
 echo "Repeating for oracle2 account..."
-# this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
-# to use it run `agd keys --keyring-backend=test add oracle2 --interactive` and enter this mnenomic:
-# dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
-WALLET2=oracle2
-WALLET2_BECH32=$(agd keys --keyring-backend=test show "$WALLET2" --output json | jq -r .address)
 make ACCT_ADDR="$WALLET2_BECH32" FUNDS=20000000ubld,20000000ibc/usdc1234 fund-acct
 agoric wallet --keyring-backend=test provision --spend --account "$WALLET2"

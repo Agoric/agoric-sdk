@@ -8,9 +8,9 @@
  * @typedef AttestationTool
  * @property {(amountToLien: Amount<'nat'>) => Promise<Payment>} makeAttestation
  * @property {() => Promise<AccountState>} getAccountState
+ * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning an attestation.
  * @property {(lienedAmount: Amount<'nat'>) => Amount<'copyBag'>} wrapLienedAmount
  * @property {(attAmount: Amount<'copyBag'>) => Amount<'nat'>} unwrapLienedAmount
- * @property {() => Promise<Invitation>} makeReturnAttInvitation Make an invitation for returning an attestation.
  */
 
 /**
@@ -18,6 +18,7 @@
  */
 
 /**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
  * @typedef {{getTime: () => Timestamp, updateTime: (currentTime:
  * Timestamp) => void}} StoredTime
  */

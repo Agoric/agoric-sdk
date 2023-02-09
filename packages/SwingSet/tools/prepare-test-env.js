@@ -9,7 +9,7 @@
 import '@endo/init/pre-bundle-source.js';
 
 import './install-ses-debug.js';
-import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
+import { makeFakeVirtualStuff } from '@agoric/swingset-liveslots/tools/fakeVirtualSupport.js';
 
 const { vom, cm, wpm } = makeFakeVirtualStuff({ cacheSize: 3 });
 

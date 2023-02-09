@@ -5,7 +5,7 @@ import { deeplyFulfilled, Far } from '@endo/marshal';
  * @typedef {object} QuestionRecord
  * @property {ERef<VoteCounterCreatorFacet>} voteCap
  * @property {VoteCounterPublicFacet} publicFacet
- * @property {Timestamp} deadline
+ * @property {import('@agoric/time/src/types').Timestamp} deadline
  */
 
 /**
@@ -14,7 +14,7 @@ import { deeplyFulfilled, Far } from '@endo/marshal';
  * @param {QuestionSpec} questionSpec
  * @param {unknown} quorumThreshold
  * @param {ERef<Installation>} voteCounter
- * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
  * @param {Publisher<unknown>} questionPublisher
  * @param {Publisher<OutcomeRecord>} outcomePublisher
  * @returns {AddQuestionReturn}
@@ -57,7 +57,7 @@ const startCounter = async (
   return { creatorFacet, publicFacet, instance, deadline, questionHandle };
 };
 
-/** @param {Store<Handle<'Question'>, QuestionRecord>} questionStore */
+/** @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore */
 const getOpenQuestions = async questionStore => {
   const isOpenPQuestions = [...questionStore.entries()].map(
     ([key, { publicFacet }]) => {
@@ -73,7 +73,7 @@ const getOpenQuestions = async questionStore => {
 
 /**
  * @param {ERef<Handle<'Question'>>} questionHandleP
- * @param {Store<Handle<'Question'>, QuestionRecord>} questionStore
+ * @param {MapStore<Handle<'Question'>, QuestionRecord>} questionStore
  */
 const getQuestion = (questionHandleP, questionStore) =>
   E.when(questionHandleP, questionHandle =>

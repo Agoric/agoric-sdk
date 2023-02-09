@@ -3,6 +3,10 @@ import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
 import { makeTranscriptManager } from './transcript.js';
 
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ */
+
 // We use vat-centric terminology here, so "inbound" means "into a vat",
 // always from the kernel. Conversely "outbound" means "out of a vat", into
 // the local kernel.
@@ -47,7 +51,7 @@ import { makeTranscriptManager } from './transcript.js';
 /**
  *
  * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>) => VatManager,
+ *                           makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>) => VatManager,
  *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
  *              setDeliverToWorker: (dtw: unknown) => void,
  *            } } ManagerKit
@@ -191,7 +195,7 @@ function makeManagerKit(
   }
 
   /**
-   * @param {StreamPosition | undefined} startPos
+   * @param {number | undefined} startPos
    * @returns {Promise<number?>} number of deliveries, or null if !useTranscript
    */
   async function replayTranscript(startPos) {
@@ -204,11 +208,7 @@ function makeManagerKit(
       // transcript starting point right. getTranscript() should probably
       // return [deliveryNum, t] pairs. Think about how to provide an
       // accurate crankNum, because I'm not sure I want that in transcript.
-      // I'm guarding against `.itemCount` being missing because that's
-      // supposed to be a private field of StreamPosition, but now that we've
-      // switched streamStore to sqlite it might be reasonable to make it
-      // public (or just define StreamPosition to be an integer).
-      let deliveryNum = (startPos && startPos.itemCount) || 0;
+      let deliveryNum = startPos || 0;
       for (const t of vatKeeper.getTranscript(startPos)) {
         // if (deliveryNum % 100 === 0) {
         //   console.debug(`replay vatID:${vatID} deliveryNum:${deliveryNum} / ${total}`);
@@ -263,7 +263,7 @@ function makeManagerKit(
   /**
    *
    * @param { () => Promise<void>} shutdown
-   * @param {(ss: SnapStore) => Promise<SnapshotInfo>} makeSnapshot
+   * @param {(endPos: number, ss: SnapStore) => Promise<SnapshotResult>} makeSnapshot
    * @returns {VatManager}
    */
   function getManager(shutdown, makeSnapshot) {

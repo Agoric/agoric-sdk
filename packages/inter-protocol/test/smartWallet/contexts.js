@@ -1,6 +1,6 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeStorageNodeChild } from '@agoric/vats/src/lib-chainStorage.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
@@ -35,6 +35,9 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'wallet',
   );
 
+  const assetPublisher = await E(consume.bankManager).getBankForAddress(
+    'anyAddress',
+  );
   const bridgeManager = await consume.bridgeManager;
   const walletBridgeManager = await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET));
@@ -44,10 +47,12 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     {
       agoricNames,
       board: consume.board,
+      assetPublisher,
     },
     { storageNode, walletBridgeManager },
   );
 
+  /** @param {string} address */
   const simpleProvideWallet = async address => {
     // copied from makeClientBanks()
     const bank = E(consume.bankManager).getBankForAddress(address);
@@ -75,10 +80,10 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       'installation',
     );
     const paBundle = await bundleCache.load(
-      '../inter-protocol/src/price/priceAggregatorChainlink.js',
+      '../inter-protocol/src/price/fluxAggregator.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>>} */
+    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>>} */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 

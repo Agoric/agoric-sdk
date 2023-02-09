@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { INVITATION_MAKERS_DESC } from '../../src/price/priceAggregatorChainlink.js';
+import { INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregator.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import { makeDefaultTestContext } from './contexts.js';
@@ -41,7 +41,7 @@ const makeTestSpace = async log => {
     },
     psmParams,
   );
-  psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
+  void psmVatRoot.bootstrap(...mockPsmBootstrapArgs(log));
 
   // TODO mimic the proposals and manifest of price-feed-proposal and price-feed-core
   // calling ensureOracleBrands and createPriceFeed
@@ -88,7 +88,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
 
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>} */
+  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>} */
   const priceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
@@ -147,7 +147,7 @@ const pushPrice = async (wallet, adminOfferId, priceRound) => {
 // The tests are serial because they mutate shared state
 
 test.serial('invitations', async t => {
-  const operatorAddress = 'invitation test';
+  const operatorAddress = 'agoric1invitationTest';
   const wallet = await t.context.simpleProvideWallet(operatorAddress);
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
@@ -237,7 +237,7 @@ test.serial('admin price', async t => {
     t.context.consume.chainTimerService
   );
   // trigger an aggregation (POLL_INTERVAL=1n in context)
-  E(manualTimer).tickN(1);
+  await E(manualTimer).tickN(1);
 
   const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
 

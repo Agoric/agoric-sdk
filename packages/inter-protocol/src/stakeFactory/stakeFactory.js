@@ -32,7 +32,7 @@ const { values } = Object;
  * charge interest according to `chargingPeriod` and `recordingPeriod`.
  *
  * @typedef { GovernanceTerms<StakeFactoryParams> & {
- *   timerService: TimerService,
+ *   timerService: import('@agoric/time/src/types').TimerService,
  *   chargingPeriod: bigint,
  *   recordingPeriod: bigint,
  *   lienAttestationName?: string,
@@ -193,8 +193,6 @@ export const start = async (
 
     return harden({
       publicSubscribers: {
-        // XXX should come from manager directly https://github.com/Agoric/agoric-sdk/issues/5814
-        asset: manager.getAssetSubscriber(),
         vault: pot.getSubscriber(),
       },
       invitationMakers: Far('invitation makers', {

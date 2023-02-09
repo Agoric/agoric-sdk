@@ -17,7 +17,7 @@ const ld = loader(import.meta.url, fs.promises.readFile);
 /**
  * @param {string} name
  * @param {string} script to execute
- * @param {boolean=} savePrinted
+ * @param {boolean} [savePrinted]
  */
 async function bootWorker(name, script, savePrinted = false) {
   const opts = options(io);
@@ -46,7 +46,7 @@ async function bootWorker(name, script, savePrinted = false) {
 
 /**
  * @param {string} name
- * @param {boolean=} savePrinted
+ * @param {boolean} [savePrinted]
  */
 async function bootSESWorker(name, savePrinted = false) {
   const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');

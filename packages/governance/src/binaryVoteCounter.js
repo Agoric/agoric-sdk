@@ -1,5 +1,5 @@
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeHeapFarInstance, keyEQ, makeStore } from '@agoric/store';
+import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 
 import {
@@ -64,8 +64,8 @@ const makeBinaryVoteCounter = (
    * @property {Position} chosen
    * @property {bigint} shares
    */
-  /** @type {Store<Handle<'Voter'>,RecordedBallot> } */
-  const allBallots = makeStore('voterHandle');
+  /** @type {MapStore<Handle<'Voter'>,RecordedBallot> } */
+  const allBallots = makeScalarMapStore('voterHandle');
 
   const countVotes = () => {
     !isOpen || Fail`can't count votes while the election is open`;
@@ -133,7 +133,7 @@ const makeBinaryVoteCounter = (
     });
   };
 
-  const closeFacet = makeHeapFarInstance(
+  const closeFacet = makeExo(
     'BinaryVoteCounter close',
     BinaryVoteCounterCloseI,
     {
@@ -144,7 +144,7 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  const creatorFacet = makeHeapFarInstance(
+  const creatorFacet = makeExo(
     'BinaryVoteCounter creator',
     BinaryVoteCounterAdminI,
     {
@@ -165,7 +165,7 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  const publicFacet = makeHeapFarInstance(
+  const publicFacet = makeExo(
     'BinaryVoteCounter public',
     BinaryVoteCounterPublicI,
     {

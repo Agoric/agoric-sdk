@@ -4,9 +4,6 @@ import '@endo/init/pre-bundle-source.js';
 
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
-import fs from 'fs';
-import tmp from 'tmp';
-import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../../src/index.js';
 import { makeLRU } from '../../src/kernel/vat-warehouse.js';
 
@@ -105,48 +102,6 @@ test('4 vats in warehouse with 2 online', async t => {
   t.teardown(c.shutdown);
 
   await runSteps(c, t);
-});
-
-function unusedSnapshotsOnDisk(kvStore, snapstorePath) {
-  const inUse = [];
-  for (const k of kvStore.getKeys(`local.snapshot.`, `local.snapshot/`)) {
-    const consumers = JSON.parse(kvStore.get(k));
-    if (consumers.length > 0) {
-      const id = k.slice(`local.snapshot.`.length);
-      inUse.push(id);
-    }
-  }
-  const onDisk = fs.readdirSync(snapstorePath);
-  const extra = [];
-  for (const snapshotPath of onDisk) {
-    const id = snapshotPath.slice(0, -'.gz'.length);
-    if (!inUse.includes(id)) {
-      extra.push(id);
-    }
-  }
-  return { inUse, onDisk, extra };
-}
-
-test('snapshot after deliveries', async t => {
-  const swingStorePath = tmp.dirSync({ unsafeCleanup: true }).name;
-
-  const { kernelStorage, hostStorage } = initSwingStore(swingStorePath);
-  const c = await makeController(
-    'xs-worker',
-    { kernelStorage, warehousePolicy: { maxVatsOnline } },
-    1,
-  );
-  t.teardown(c.shutdown);
-
-  await runSteps(c, t);
-  await hostStorage.commit();
-
-  const { inUse, onDisk, extra } = unusedSnapshotsOnDisk(
-    kernelStorage.kvStore,
-    `${swingStorePath}/xs-snapshots`,
-  );
-  t.log({ inUse, onDisk, extra });
-  t.deepEqual(extra, [], `inUse: ${inUse}, onDisk: ${onDisk}`);
 });
 
 test('LRU eviction', t => {

@@ -2,14 +2,11 @@
 /* eslint-disable @jessie.js/no-nested-await */
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, process */
+/* global fetch */
 import { Command } from 'commander';
 import { inspect } from 'util';
-import {
-  boardSlottingMarshaller,
-  makeRpcUtils,
-  storageHelper,
-} from '../lib/rpc.js';
+import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { outputAction } from '../lib/wallet.js';
 
 const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
 
@@ -50,13 +47,6 @@ export const makeOracleCommand = async logger => {
     }
     return instance;
   };
-  const marshaller = boardSlottingMarshaller();
-
-  /** @param {import('../lib/psm.js').BridgeAction} bridgeAction */
-  const outputAction = bridgeAction => {
-    const capData = marshaller.serialize(bridgeAction);
-    process.stdout.write(JSON.stringify(capData));
-  };
 
   oracle
     .command('accept')
@@ -68,10 +58,7 @@ export const makeOracleCommand = async logger => {
       ['ATOM', 'USD'],
     )
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
       /** @type {import('../lib/psm.js').OfferSpec} */
@@ -104,10 +91,7 @@ export const makeOracleCommand = async logger => {
       Number,
     )
     .requiredOption('--price [number]', 'price (format TODO)', String)
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       /** @type {import('../lib/psm.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -130,7 +114,7 @@ export const makeOracleCommand = async logger => {
 
   oracle
     .command('pushPriceRound')
-    .description('add a price for a round to a priceAggregatorChainlink')
+    .description('add a price for a round to a fluxAggregator')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .requiredOption(
       '--oracleAdminAcceptOfferId [number]',
@@ -139,10 +123,7 @@ export const makeOracleCommand = async logger => {
     )
     .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
     .requiredOption('--roundId [number]', 'round', Number)
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const opts = this.opts();
-
+    .action(async function (opts) {
       /** @type {import('../lib/psm.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -173,9 +154,8 @@ export const makeOracleCommand = async logger => {
       s => s.split('.'),
       ['ATOM', 'USD'],
     )
-    .action(async function () {
-      // @ts-expect-error this implicit any
-      const { pair } = this.opts();
+    .action(async function (opts) {
+      const { pair } = opts;
 
       const capDataStr = await vstorage.readLatest(
         `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,

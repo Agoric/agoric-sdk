@@ -15,7 +15,7 @@ import {
 import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import * as ERTPmod from '@agoric/ertp';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { fit, M } from '@agoric/store';
+import { mustMatch, M } from '@agoric/store';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -131,7 +131,7 @@ export const ParametersShape = M.splitRecord(
 export const buildRootObject = (vatPowers, vatParameters) => {
   const log = vatPowers.logger || console.info;
 
-  fit(harden(vatParameters), ParametersShape, 'boot-psm params');
+  mustMatch(harden(vatParameters), ParametersShape, 'boot-psm params');
   const { anchorAssets, economicCommitteeAddresses } = vatParameters;
 
   const { produce, consume } = makePromiseSpace(log);

@@ -3,24 +3,30 @@
 import { E } from '@endo/eventual-send';
 import { Far, passStyleOf } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert } from '@agoric/assert';
 import {
   provideKindHandle,
   provideDurableMapStore,
   provideDurableWeakMapStore,
   defineDurableKindMulti,
-  vivifyKind,
-  vivifySingleton,
+  prepareKind,
+  prepareSingleton,
 } from '@agoric/vat-data';
 import { makeScalarWeakMapStore } from '@agoric/store';
-import { TimeMath } from './timeMath.js';
+import { TimeMath } from '@agoric/time';
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
 // delay(), and Notifiers/Iterators (for each actively-waiting
 // client). Everything else should remain in the DB.
 
 /**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').TimestampValue} TimestampValue
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time/src/types').RelativeTimeValue} RelativeTimeValue
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ *
  * @typedef {object} Handler
  * Handler is a user-provided Far object with .wake(time) used for callbacks
  * @property {(scheduled: Timestamp) => unknown} wake
@@ -241,7 +247,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
 
   // These Kinds are the ongoing obligations of the vat: all future
   // versions must define behaviors for these. Search for calls to
-  // 'vivifyKind', 'vivifySingleton', or 'defineDurableKindMulti'.
+  // 'prepareKind', 'prepareSingleton', or 'defineDurableKindMulti'.
   // * oneShotEvent
   // * promiseEvent
   // * repeaterEvent
@@ -397,7 +403,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   };
 
-  const makeOneShotEvent = vivifyKind(
+  const makeOneShotEvent = prepareKind(
     baggage,
     'oneShotEvent',
     initOneShotEvent,
@@ -443,7 +449,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   /**
    * @returns { PromiseEvent }
    */
-  const makePromiseEvent = vivifyKind(
+  const makePromiseEvent = prepareKind(
     baggage,
     'promiseEvent',
     initPromiseEvent,
@@ -546,7 +552,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   };
 
-  const makeRepeaterEvent = vivifyKind(
+  const makeRepeaterEvent = prepareKind(
     baggage,
     'repeaterEvent',
     initRepeaterEvent,
@@ -740,7 +746,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
         });
     },
   };
-  const createIterator = vivifyKind(
+  const createIterator = prepareKind(
     baggage,
     'timerIterator',
     initIterator,
@@ -882,11 +888,11 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
 
   // -- now we finally build the TimerService
 
-  const wakeupHandler = vivifySingleton(baggage, 'wakeupHandler', {
+  const wakeupHandler = prepareSingleton(baggage, 'wakeupHandler', {
     wake: processAndReschedule,
   });
 
-  const timerService = vivifySingleton(baggage, 'timerService', {
+  const timerService = prepareSingleton(baggage, 'timerService', {
     getCurrentTimestamp,
     setWakeup /* one-shot with handler (absolute) */,
     wakeAt /* one-shot with Promise (absolute) */,
@@ -900,13 +906,13 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
   });
 
   // attenuated read-only facet
-  const timerClock = vivifySingleton(baggage, 'timerClock', {
+  const timerClock = prepareSingleton(baggage, 'timerClock', {
     getCurrentTimestamp,
     getTimerBrand: () => timerBrand,
   });
 
   // powerless identifier
-  const timerBrand = vivifySingleton(baggage, 'timerBrand', {
+  const timerBrand = prepareSingleton(baggage, 'timerBrand', {
     isMyTimerService: alleged => alleged === timerService,
     isMyClock: alleged => alleged === timerClock,
   });

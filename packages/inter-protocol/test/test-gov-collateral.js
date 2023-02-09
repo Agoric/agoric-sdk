@@ -22,9 +22,15 @@ import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { TimeMath } from '@agoric/time';
 
-import { setupBootstrap, setUpZoeForTest, mintRunPayment } from './supports.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import {
+  setupBootstrap,
+  setUpZoeForTest,
+  mintRunPayment,
+  DENOM_UNIT as UNIT,
+} from './supports.js';
 import { INVITATION_MAKERS_DESC } from '../src/econCommitteeCharter.js';
 
 /** @template T @typedef {import('@endo/promise-kit').PromiseKit<T>} PromiseKit */
@@ -119,8 +125,12 @@ test.before(async t => {
 const makeScenario = async (t, { env = process.env } = {}) => {
   const space = await setupBootstrap(t);
 
-  const loadVat = name =>
-    import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
+  const loadVat = name => {
+    const baggage = makeScalarBigMapStore('baggage');
+    return import(`@agoric/vats/src/vat-${name}.js`).then(ns =>
+      ns.buildRootObject({}, {}, baggage),
+    );
+  };
   space.produce.loadVat.resolve(loadVat);
   space.produce.loadCriticalVat.resolve(loadVat);
 
@@ -322,7 +332,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       // i.e. from a board ID as well?
       makePool: async (atomQty = 500n, istQty = 1000n) => {
         const istBrand = await E(agoricNames).lookup('brand', 'RUN');
-        const istAmt = qty => AmountMath.make(istBrand, qty * 1_000_000n);
+        const istAmt = qty => AmountMath.make(istBrand, qty * UNIT);
         const interchainPoolAPI = E(zoe).getPublicFacet(
           E(agoricNames).lookup('instance', 'interchainPool'),
         );
@@ -341,7 +351,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         ).getOfferResult();
         atomIssuerPK.resolve(E(board).getId(ibcIssuer));
         const ibcBrand = await E(ibcIssuer).getBrand();
-        const atomAmt = qty => AmountMath.make(ibcBrand, qty * 1_000_000n);
+        const atomAmt = qty => AmountMath.make(ibcBrand, qty * UNIT);
 
         const proposal2 = harden({ give: { Secondary: atomAmt(atomQty) } });
         const pmt2 = await E(purses.atom).withdraw(proposal2.give.Secondary);
@@ -361,7 +371,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         );
 
         const proposal = harden({
-          give: { Collateral: AmountMath.make(ibcAtomBrand, qty * 1_000_000n) },
+          give: { Collateral: AmountMath.make(ibcAtomBrand, qty * UNIT) },
         });
         const atom10k = await E(purses.atom).withdraw(proposal.give.Collateral);
         const seat = E(zoe).offer(
@@ -402,8 +412,8 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     return purseP;
   };
   const purses = {
-    ist: makeRunPurse(10_000n * 1_000_000n),
-    atom: makeAtomPurse(10_000n * 1_000_000n),
+    ist: makeRunPurse(10_000n * UNIT),
+    atom: makeAtomPurse(10_000n * UNIT),
   };
 
   return {
@@ -496,7 +506,8 @@ test('assets are in AMM, Vaults', async t => {
   });
   t.deepEqual(params.DebtLimit, {
     type: 'amount',
-    value: { brand: runBrand, value: 0n },
+    // 1000 IST is the default debtLimitValue in add-collateral-core
+    value: { brand: runBrand, value: 1_000n * UNIT },
   });
 });
 

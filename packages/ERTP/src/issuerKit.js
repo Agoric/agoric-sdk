@@ -6,7 +6,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { AssetKind, assertAssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
-import { vivifyPaymentLedger } from './paymentLedger.js';
+import { preparePaymentLedger } from './paymentLedger.js';
 
 import './types-ambient.js';
 
@@ -15,7 +15,7 @@ import './types-ambient.js';
 /**
  * @template {AssetKind} K
  * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
@@ -24,7 +24,7 @@ import './types-ambient.js';
  * See https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit<K>}
  */
-export const vivifyIssuerKit = (
+export const prepareIssuerKit = (
   issuerBaggage,
   optShutdownWithFailure = undefined,
 ) => {
@@ -49,7 +49,7 @@ export const vivifyIssuerKit = (
   // Attenuate the powerful authority to mint and change balances
   /** @type {PaymentLedger<K>} */
   // @ts-expect-error could be instantiated with different subtype of AssetKind
-  const { issuer, mint, brand } = vivifyPaymentLedger(
+  const { issuer, mint, brand } = preparePaymentLedger(
     issuerBaggage,
     name,
     assetKind,
@@ -65,7 +65,19 @@ export const vivifyIssuerKit = (
     displayInfo: cleanDisplayInfo,
   });
 };
-harden(vivifyIssuerKit);
+harden(prepareIssuerKit);
+
+/**
+ * Does baggage already have an issuer from prepareIssuerKit()?
+ * That is: does it have the relevant keys defined?
+ *
+ * @param {Baggage} baggage
+ */
+export const hasIssuer = baggage =>
+  baggage.has('name') &&
+  baggage.has('assetKind') &&
+  baggage.has('displayInfo') &&
+  baggage.has('elementShape');
 
 /**
  * @template {AssetKind} K
@@ -86,7 +98,7 @@ harden(vivifyIssuerKit);
  * @param {string} name
  * @param {K} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
@@ -109,7 +121,7 @@ export const makeDurableIssuerKit = (
   issuerBaggage.init('assetKind', assetKind);
   issuerBaggage.init('displayInfo', displayInfo);
   issuerBaggage.init('elementShape', elementShape);
-  return vivifyIssuerKit(issuerBaggage, optShutdownWithFailure);
+  return prepareIssuerKit(issuerBaggage, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 
@@ -131,7 +143,7 @@ harden(makeDurableIssuerKit);
  * @param {string} name
  * @param {K} [assetKind='nat']
  * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some

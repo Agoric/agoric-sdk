@@ -139,9 +139,10 @@ test('print - start compartment only', async t => {
     }
   `);
   await vat.close();
-  t.deepEqual(
-    ['err:ReferenceError: ?: get print: undefined variable'],
-    opts.messages,
+  t.is(opts.messages.length, 1);
+  t.regex(
+    opts.messages[0],
+    /^err:ReferenceError: [^:]+: get print: undefined variable$/,
   );
 });
 
@@ -159,9 +160,10 @@ test('gc - start compartment only', async t => {
     }
   `);
   await vat.close();
-  t.deepEqual(
-    ['err:ReferenceError: ?: get gc: undefined variable'],
-    opts.messages,
+  t.is(opts.messages.length, 1);
+  t.regex(
+    opts.messages[0],
+    /^err:ReferenceError: [^:]+: get gc: undefined variable$/,
   );
 });
 

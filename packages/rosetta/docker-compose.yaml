@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+  agoric:
+    image: rosetta-ci:latest
+    entrypoint: '/bin/bash'
+    command: ['-c', '/usr/bin/make scenario2-run-chain']
+    ports:
+      - 9090:9090
+      - 26657:26657
+    logging:
+      driver: 'json-file'
+
+  rosetta:
+    image: rosetta-ci:latest
+    depends_on:
+      - 'agoric'
+    entrypoint: '/bin/bash'
+    command:
+      [
+        '-c',
+        'agd rosetta --blockchain app --network agoriclocal --retries 30 --tendermint agoric:26657 --grpc agoric:9090 --addr :8080 ',
+      ]
+    ports:
+      - 8080:8080
+    logging:
+      driver: 'json-file'
+
+  faucet:
+    image: rosetta-ci:latest
+    entrypoint: '/bin/bash'
+    command: ['-c', 'python3 ./configuration/faucet.py']
+    expose:
+      - 8080
+    logging:
+      driver: 'json-file'
+
+  test:
+    image: rosetta-ci:latest
+    depends_on:
+      - 'agoric'
+      - 'rosetta'
+      - 'faucet'
+    volumes:
+      - ./configuration:/rosetta/configuration:z
+    entrypoint: '/bin/bash'
+    command: ['-c', './configuration/run_tests.sh']
+    working_dir: /rosetta
+    logging:
+      driver: 'json-file'

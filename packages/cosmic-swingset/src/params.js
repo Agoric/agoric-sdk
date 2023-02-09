@@ -1,6 +1,6 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 
 export const stringToNat = s => {
   typeof s === 'string' || Fail`${s} must be a string`;
@@ -21,8 +21,11 @@ export const parseQueueSizes = queueSizeEntries =>
   );
 
 /** @param {Record<string, number>} queueSizes */
-export const serializeQueueSizes = queueSizes =>
-  Object.entries(queueSizes).map(([key, size]) => ({ key, size }));
+export const encodeQueueSizes = queueSizes =>
+  Object.entries(queueSizes).map(([key, size]) => {
+    isNat(size) || Fail`Size ${size} is not a positive integer`;
+    return { key, size };
+  });
 
 // Map the SwingSet parameters to a deterministic data structure.
 export const parseParams = params => {

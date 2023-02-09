@@ -4,12 +4,11 @@ import { makeIssuerKit } from '@agoric/ertp';
 import {
   makeStorageNodeChild,
   assertPathSegment,
-} from '@agoric/vats/src/lib-chainStorage.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
+} from '@agoric/internal/src/lib-chainStorage.js';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
-import { makeTracer } from '../makeTracer.js';
 
 const trace = makeTracer('RunPriceFeed');
 
@@ -87,7 +86,7 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregator.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
  */
 export const createPriceFeed = async (
   {
@@ -122,14 +121,14 @@ export const createPriceFeed = async (
 
   // Default to an empty Map and home.priceAuthority.
   produceAggregators.resolve(new Map());
-  E(client).assignBundle([_addr => ({ priceAuthority })]);
+  void E(client).assignBundle([_addr => ({ priceAuthority })]);
 
   const timer = await chainTimerService;
 
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>]]}
    */
   const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
     reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
@@ -168,7 +167,7 @@ export const createPriceFeed = async (
       marshaller,
     },
   );
-  E(aggregators).set(terms, { aggregator });
+  await E(aggregators).set(terms, { aggregator });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
     AGORIC_INSTANCE_NAME,
@@ -177,7 +176,7 @@ export const createPriceFeed = async (
 
   // Publish price feed in home.priceAuthority.
   const forceReplace = true;
-  E(priceAuthorityAdmin)
+  void E(priceAuthorityAdmin)
     .registerPriceAuthority(
       E(aggregator.publicFacet).getPriceAuthority(),
       brandIn,

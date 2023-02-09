@@ -117,7 +117,7 @@
  * @property {Brand} brand
  * @property {string} brandBoardId
  * The board ID for this purse's brand
- * @property {string=} depositBoardId
+ * @property {string} [depositBoardId]
  * The board ID for the deposit-only facet of this purse
  * @property {Petname} brandPetname
  * The petname for this purse's brand

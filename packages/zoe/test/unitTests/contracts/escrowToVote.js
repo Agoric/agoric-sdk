@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import { Far } from '@endo/marshal';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
@@ -34,7 +34,7 @@ const start = zcf => {
   assert.typeof(question, 'string');
   assertNatAssetKind(zcf, assetsBrand);
 
-  const seatToResponse = makeStore('seat');
+  const seatToResponse = makeScalarMapStore('seat');
 
   // We assume the only valid responses are 'YES' and 'NO'
   const assertResponse = response => {

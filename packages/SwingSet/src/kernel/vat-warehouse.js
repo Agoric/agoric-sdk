@@ -1,8 +1,12 @@
 /* eslint-disable no-await-in-loop,@jessie.js/no-nested-await */
 import { assert, Fail, quote as q } from '@agoric/assert';
-import { isNat } from '@agoric/nat';
+import { isNat } from '@endo/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
+
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ */
 
 /** @param {number} max */
 export const makeLRU = max => {
@@ -49,7 +53,7 @@ export const makeLRU = max => {
  * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
  * @param {{
  *   maxVatsOnline?: number,
- * }=} policyOptions
+ * }} [policyOptions]
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
@@ -125,9 +129,9 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;
 
-    const lastSnapshot = vatKeeper.getLastSnapshot();
+    const snapshotInfo = vatKeeper.getSnapshotInfo();
     await manager.replayTranscript(
-      lastSnapshot ? lastSnapshot.startPos : undefined,
+      snapshotInfo ? snapshotInfo.endPos : undefined,
     );
 
     const result = {

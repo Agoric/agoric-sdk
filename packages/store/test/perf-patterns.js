@@ -210,7 +210,7 @@ const measure = async (title, specimen, yesPattern, factor = 1) => {
   await gcAndFinalize();
   const startAt = Date.now();
   for (let j = 0; j < times; j += 1) {
-    // fit(specimen, yesPattern);
+    // mustMatch(specimen, yesPattern);
     assert(matches(specimen, yesPattern), title);
   }
   const totalTime = Date.now() - startAt;

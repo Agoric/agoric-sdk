@@ -13,11 +13,12 @@ import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe/src/zoeService/zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { topicPath } from './supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
 const test = unknownTest;
@@ -25,7 +26,7 @@ const test = unknownTest;
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const aggregatorPath = `${dirname}/../src/price/priceAggregatorChainlink.js`;
+const aggregatorPath = `${dirname}/../src/price/fluxAggregator.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -34,16 +35,6 @@ const defaultConfig = {
   timeout: 10,
   minSubmissionValue: 100,
   maxSubmissionValue: 10000,
-};
-
-/**
- *
- * @param {Promise<StoredSubscriber<unknown>>} subscriber
- */
-export const subscriberSubkey = subscriber => {
-  return E(subscriber)
-    .getStoreKey()
-    .then(storeKey => storeKey.storeSubkey);
 };
 
 const makeContext = async () => {
@@ -61,7 +52,7 @@ const makeContext = async () => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../src/price/priceAggregatorChainlink.js').start>} */
+  /** @type {Installation<import('../src/price/fluxAggregator.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
@@ -778,7 +769,7 @@ test('storage keys', async t => {
   );
 
   t.is(
-    await subscriberSubkey(E(publicFacet).getSubscriber()),
-    'fake:mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
+    await topicPath(publicFacet, 'quotes'),
+    'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
   );
 });

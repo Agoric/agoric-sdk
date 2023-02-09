@@ -1,6 +1,7 @@
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
+import { makeTracer } from '@agoric/internal';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
@@ -12,14 +13,13 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import * as Collect from '../../../src/collect.js';
-import { makeTracer } from '../../../src/makeTracer.js';
 import {
   setupAmm,
   setupReserve,
 } from '../../../src/proposals/econ-behaviors.js';
 import { startEconomicCommittee } from '../../../src/proposals/startEconCommittee.js';
 import {
-  installGovernance,
+  installPuppetGovernance,
   makeMockChainStorageRoot,
   provideBundle,
 } from '../../supports.js';
@@ -50,7 +50,7 @@ harden(setUpZoeForTest);
 
 /**
  *
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {ERef<FarZoeKit>} [farZoeKit]
  */
 export const setupAMMBootstrap = async (
@@ -76,7 +76,7 @@ export const setupAMMBootstrap = async (
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
-  installGovernance(zoe, spaces.installation.produce);
+  installPuppetGovernance(zoe, spaces.installation.produce);
   produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeBoard());
 
@@ -89,7 +89,7 @@ export const setupAMMBootstrap = async (
  * @param {*} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  * @param {{ brand: Brand, issuer: Issuer }} centralR
- * @param {ManualTimer | undefined=} timer
+ * @param {ManualTimer} [timer]
  * @param {ERef<FarZoeKit>} [farZoeKit]
  */
 export const setupAmmServices = async (
@@ -137,6 +137,8 @@ export const setupAmmServices = async (
     counter: installation.consume.binaryVoteCounter,
   });
 
+  /** @type {Promise<import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<import('../../../src/vpool-xyk-amm/multipoolMarketMaker.js').start>['creatorFacet']>} */
+  // @ts-expect-error cast for testing env
   const governorCreatorFacet = E.get(consume.ammKit).governorCreatorFacet;
   const governorInstance = await instance.consume.ammGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
@@ -147,7 +149,6 @@ export const setupAmmServices = async (
   };
   const governedInstance = E(governorPublicFacet).getGovernedContract();
 
-  /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
   const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const amm = {
     ammCreatorFacet: await E.get(consume.ammKit).creatorFacet,
@@ -163,7 +164,7 @@ export const setupAmmServices = async (
     E(zoe).getInvitationIssuer(),
   ).getAmountOf(poserInvitationP);
 
-  /** @type {import('@agoric/vats/tools/storage-test-utils.js').MockChainStorageRoot} */
+  /** @type {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} */
   // @ts-expect-error cast
   const mockChainStorage = await space.consume.chainStorage;
 

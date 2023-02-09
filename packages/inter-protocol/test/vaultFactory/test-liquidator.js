@@ -4,7 +4,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/eventual-send';
-import { makeTracer } from '../../src/makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 import '../../src/vaultFactory/types.js';
 import {
   AT_NEXT,

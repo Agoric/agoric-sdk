@@ -1,14 +1,11 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
 import { assertCopyArray } from '@endo/marshal';
-import { fit, M } from '@agoric/store';
-import {
-  provideDurableWeakMapStore,
-  vivifyFarInstance,
-} from '@agoric/vat-data';
+import { mustMatch, M } from '@agoric/store';
+import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
-import { vivifyPaymentKind } from './payment.js';
-import { vivifyPurseKind } from './purse.js';
+import { preparePaymentKind } from './payment.js';
+import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
@@ -72,10 +69,10 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
- * @param {ShutdownWithFailure=} optShutdownWithFailure
+ * @param {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
-export const vivifyPaymentLedger = (
+export const preparePaymentLedger = (
   issuerBaggage,
   name,
   assetKind,
@@ -84,7 +81,7 @@ export const vivifyPaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  const brand = vivifyFarInstance(issuerBaggage, `${name} brand`, BrandI, {
+  const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
       return allegedIssuer === issuer;
@@ -114,7 +111,7 @@ export const vivifyPaymentLedger = (
     amountShape,
   );
 
-  const makePayment = vivifyPaymentKind(issuerBaggage, name, brand, PaymentI);
+  const makePayment = preparePaymentKind(issuerBaggage, name, brand, PaymentI);
 
   /** @type {ShutdownWithFailure} */
   const shutdownLedgerWithFailure = reason => {
@@ -135,6 +132,7 @@ export const vivifyPaymentLedger = (
   const paymentLedger = provideDurableWeakMapStore(
     issuerBaggage,
     'paymentLedger',
+    { valueShape: amountShape },
   );
 
   /**
@@ -213,12 +211,12 @@ export const vivifyPaymentLedger = (
    * Note: `optAmountShape` is user-supplied with no previous validation.
    *
    * @param {Amount} paymentBalance
-   * @param {Pattern=} optAmountShape
+   * @param {Pattern} [optAmountShape]
    * @returns {void}
    */
   const assertAmountConsistent = (paymentBalance, optAmountShape) => {
     if (optAmountShape !== undefined) {
-      fit(paymentBalance, optAmountShape, 'amount');
+      mustMatch(paymentBalance, optAmountShape, 'amount');
     }
   };
 
@@ -300,7 +298,7 @@ export const vivifyPaymentLedger = (
    * @param {(newPurseBalance: Amount) => void} updatePurseBalance -
    * commit the purse balance
    * @param {Payment} srcPayment
-   * @param {Pattern=} optAmountShape
+   * @param {Pattern} [optAmountShape]
    * @returns {Amount}
    */
   const depositInternal = (
@@ -366,7 +364,7 @@ export const vivifyPaymentLedger = (
     return payment;
   };
 
-  const makeEmptyPurse = vivifyPurseKind(
+  const makeEmptyPurse = preparePurseKind(
     issuerBaggage,
     name,
     assetKind,
@@ -379,7 +377,7 @@ export const vivifyPaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
-  const issuer = vivifyFarInstance(issuerBaggage, `${name} issuer`, IssuerI, {
+  const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
     },
@@ -477,13 +475,13 @@ export const vivifyPaymentLedger = (
   });
 
   /** @type {Mint<K>} */
-  const mint = vivifyFarInstance(issuerBaggage, `${name} mint`, MintI, {
+  const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },
     mintPayment(newAmount) {
       newAmount = coerce(newAmount);
-      fit(newAmount, amountShape, 'minted amount');
+      mustMatch(newAmount, amountShape, 'minted amount');
       const payment = makePayment();
       initPayment(payment, newAmount, undefined);
       return payment;
@@ -493,4 +491,4 @@ export const vivifyPaymentLedger = (
   const issuerKit = harden({ issuer, mint, brand });
   return issuerKit;
 };
-harden(vivifyPaymentLedger);
+harden(preparePaymentLedger);

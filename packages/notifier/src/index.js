@@ -2,7 +2,7 @@ export {
   makePublishKit,
   subscribeEach,
   subscribeLatest,
-  vivifyDurablePublishKit,
+  prepareDurablePublishKit,
   SubscriberShape,
 } from './publish-kit.js';
 export {
@@ -23,3 +23,5 @@ export {
   makeAsyncIterableFromNotifier,
 } from './asyncIterableAdaptor.js';
 export * from './storesub.js';
+export * from './stored-notifier.js';
+export * from './stored-topic.js';

@@ -134,7 +134,7 @@
  *
  * @typedef {{
  *   issuer: |
- *     TokenKeyword | 'Attestation' | 'AUSD',
+ *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
  *     'walletFactory' | 'provisionPool' |
@@ -173,7 +173,7 @@
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
  *       interchainPool: Promise<Installation<import('@agoric/inter-protocol/src/interchainPool.js').start>>,
- *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').start>>,
+ *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
  *     },
  *   },
@@ -198,7 +198,7 @@
  *   board: import('@agoric/vats').Board,
  *   bridgeManager: import('../types.js').BridgeManager | undefined,
  *   chainStorage: StorageNode | null,
- *   chainTimerService: TimerService,
+ *   chainTimerService: import('@agoric/time/src/types').TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: unknown,

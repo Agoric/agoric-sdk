@@ -1,15 +1,15 @@
 /* eslint-disable no-await-in-loop */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeImportContext } from '@agoric/wallet-backend/src/marshal-contexts.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/far';
+import { makeImportContext } from '../src/marshal-contexts.js';
 import { makeDefaultTestContext } from './contexts.js';
 import {
   ActionType,
   headValue,
   makeMockTestSpace,
-  subscriptionKey,
+  topicPath,
 } from './supports.js';
 
 import '@agoric/vats/src/core/types.js';
@@ -105,7 +105,7 @@ test('bridge with offerId string', async t => {
     proposal: {},
   };
   assert(t.context.sendToBridge);
-  const res = await t.context.sendToBridge({
+  const validMsg = {
     type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress2,
     // consider a helper for each action type
@@ -116,8 +116,20 @@ test('bridge with offerId string', async t => {
     ),
     blockTime: 0,
     blockHeight: 0,
-  });
+  };
+  const res = await t.context.sendToBridge(validMsg);
   t.is(res, undefined);
+
+  // Verify it would have failed with a different 'type'.
+  // This arguably belongs in a new test but putting it here makes clear
+  // that everything is valid except for 'type'.
+  await t.throwsAsync(
+    t.context.sendToBridge({
+      ...validMsg,
+      type: 'BOGUS',
+    }),
+    { message: /^In "fromBridge" method/ },
+  );
 });
 
 test.todo('spend action over bridge');
@@ -126,18 +138,13 @@ test('notifiers', async t => {
   async function checkAddress(address) {
     const smartWallet = await t.context.simpleProvideWallet(address);
 
-    // xxx no type of getUpdatesSubscriber()
-    const updates = await E(smartWallet).getUpdatesSubscriber();
-
     t.is(
-      await subscriptionKey(updates),
+      await topicPath(smartWallet, 'updates'),
       `mockChainStorageRoot.wallet.${address}`,
     );
 
-    const current = await E(smartWallet).getCurrentSubscriber();
-
     t.is(
-      await subscriptionKey(current),
+      await topicPath(smartWallet, 'current'),
       `mockChainStorageRoot.wallet.${address}.current`,
     );
   }

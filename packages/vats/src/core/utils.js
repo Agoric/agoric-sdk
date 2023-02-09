@@ -23,6 +23,7 @@ export const agoricNamesReserved = harden({
     [Stake.symbol]: Stake.proposedName,
     [Stable.symbol]: Stable.proposedName,
     Attestation: 'Agoric lien attestation',
+    Invitation: 'Zoe invitation',
     AUSD: 'Agoric bridged USDC',
   },
   brand: {
@@ -30,6 +31,7 @@ export const agoricNamesReserved = harden({
     [Stable.symbol]: Stable.proposedName,
     Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
+    Invitation: 'Zoe invitation',
   },
   vbankAsset: {
     [Stake.denom]: Stake.proposedName,

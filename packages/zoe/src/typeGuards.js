@@ -8,7 +8,7 @@ import {
   IssuerKitShape,
 } from '@agoric/ertp';
 import { M } from '@agoric/store';
-import { TimestampValueShape } from '@agoric/swingset-vat/src/vats/timer/typeGuards.js';
+import { TimestampValueShape } from '@agoric/time';
 import { SubscriberShape } from '@agoric/notifier';
 
 // keywords have an initial cap
@@ -347,16 +347,21 @@ export const AdminFacetI = M.interface('ZcfAdminFacet', {
   upgradeContract: M.call(M.string()).optional(M.any()).returns(M.promise()),
 });
 
-export const SeatDataShape = harden({
-  proposal: ProposalShape,
-  initialAllocation: AmountKeywordRecordShape,
-  seatHandle: SeatShape,
-});
+export const SeatDataShape = M.splitRecord(
+  {
+    proposal: ProposalShape,
+    initialAllocation: AmountKeywordRecordShape,
+    seatHandle: SeatShape,
+  },
+  {
+    offerArgs: M.any(),
+  },
+);
 
 export const HandleOfferI = M.interface('HandleOffer', {
   handleOffer: M.call(InvitationHandleShape, SeatDataShape).returns({
     offerResultPromise: M.promise(),
-    exitObj: ExitObjectI,
+    exitObj: ExitObjectShape,
   }),
 });
 

@@ -23,6 +23,7 @@ test('vat-timer upgrade', async t => {
   const config = {
     bootstrap: 'bootstrap',
     vats: {
+      // TODO refactor to use bootstrap-relay.js
       bootstrap: { sourceSpec: bfile('bootstrap-vat-timer-upgrade.js') },
     },
     devices: { timer: { sourceSpec: timer.srcPath } },

@@ -1,3 +1,4 @@
+/* eslint-disable @jessie.js/no-nested-await -- demo file */
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import {
@@ -101,6 +102,7 @@ const defaultConfig = /** @type {const} */ ({
  *     liquidationPenalty: Rational,
  *     interestRate: Rational,
  *     loanFee: Rational,
+ *     liquidationPadding?: Rational,
  *   },
  *   trades: Array<{ central: number, collateral: bigint}>
  * }>}
@@ -447,6 +449,10 @@ export const poolRates = (issuerName, record, kits, central) => {
     liquidationPenalty: toRatio(config.liquidationPenalty, central.brand),
     interestRate: toRatio(config.interestRate, central.brand),
     loanFee: toRatio(config.loanFee, central.brand),
+    // XXX not relevant to AMM pools but poolRates is also used for addVaultType
+    liquidationPadding:
+      config.liquidationPadding &&
+      toRatio(config.liquidationPadding, central.brand),
   };
   return { rates, initialValue: inCollateral(config.collateralValue) };
 };
@@ -510,7 +516,7 @@ export const fundAMM = async ({
     kits[Stable.symbol]
   );
 
-  /** @type {[ XYKAMMPublicFacet, TimerService]} */
+  /** @type {[ XYKAMMPublicFacet, import('@agoric/time/src/types').TimerService]} */
   const [ammPublicFacet, timer] = await Promise.all([
     E(zoe).getPublicFacet(ammInstance),
     chainTimerService,

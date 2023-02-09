@@ -33,6 +33,7 @@ module.exports = {
     'no-void': ['error', { allowAsStatement: true }],
     // Not severe but the default 'warning' clutters output and it's easy to fix
     'jsdoc/check-param-names': 'error',
+    'jsdoc/check-syntax': 'error',
     'jsdoc/no-multi-asterisks': 'off',
     'jsdoc/multiline-blocks': 'off',
     // Use these rules to warn about JSDoc type problems, such as after

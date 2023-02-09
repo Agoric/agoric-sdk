@@ -1,7 +1,7 @@
 // @ts-check
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
@@ -62,8 +62,8 @@ const bootMsgEx = {
  *   produce: {vatStore: Producer<VatStore> }
  * }} powers
  *
- * @typedef {{adminNode: any, root: unknown}} VatInfo as from createVatByName
- * @typedef {MapStore<string, Promise<VatInfo>>} VatStore
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
@@ -81,7 +81,7 @@ export const makeVatsFromBundles = async ({
     return bundleName => {
       const vatInfoP = provideLazy(store, bundleName, _k => {
         console.info(`createVatByName(${bundleName})`);
-        /** @type { Promise<VatInfo> } */
+        /** @type { Promise<CreateVatResults> } */
         const vatInfo = E(svc).createVatByName(bundleName, {
           ...defaultVatCreationOptions,
           name: bundleName,
@@ -109,6 +109,12 @@ harden(makeVatsFromBundles);
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
   produce: { zoe, feeMintAccess },
+  brand: {
+    produce: { Invitation: invitationBrand },
+  },
+  issuer: {
+    produce: { Invitation: invitationIssuer },
+  },
 }) => {
   const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
   const { zoeService, feeMintAccess: fma } = await E(
@@ -116,6 +122,10 @@ export const buildZoe = async ({
   ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
+  const issuer = E(zoeService).getInvitationIssuer();
+  const brand = E(issuer).getBrand();
+  invitationIssuer.resolve(issuer);
+  invitationBrand.resolve(brand);
 
   feeMintAccess.resolve(fma);
   return Promise.all([
@@ -284,11 +294,9 @@ export const makeClientBanks = async ({
 };
 harden(makeClientBanks);
 
-/** @param {BootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+/** @param {BootstrapSpace} powers */
 export const installBootContracts = async ({
-  vatPowers: { D },
-  devices: { vatAdmin },
-  consume: { zoe },
+  consume: { vatAdminSvc, zoe },
   installation: {
     produce: { centralSupply, mintHolder },
   },
@@ -297,14 +305,11 @@ export const installBootContracts = async ({
     centralSupply,
     mintHolder,
   })) {
-    // This really wants to be E(vatAdminSvc).getBundleIDByName, but it's
-    // good enough to do D(vatAdmin).getBundleIDByName
-    const bundleCap = D(vatAdmin).getNamedBundleCap(name);
-
-    const bundle = D(bundleCap).getBundle();
-    // TODO (#4374) this should be E(zoe).installBundleID(bundleID);
-    const installation = E(zoe).install(bundle);
-    producer.resolve(installation);
+    const idP = E(vatAdminSvc).getBundleIDByName(name);
+    const installationP = idP.then(bundleID =>
+      E(zoe).installBundleID(bundleID),
+    );
+    producer.resolve(installationP);
   }
 };
 

@@ -1,4 +1,7 @@
-import { runVOTest, test } from '@agoric/swingset-vat/tools/vo-test-harness.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+// eslint-disable-next-line import/order
+import { runVOTest } from '@agoric/swingset-liveslots/tools/vo-test-harness.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManager } from '@agoric/governance';
@@ -12,7 +15,7 @@ import { objectMap } from '@agoric/internal';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
-import { makeFakeStorageKit } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeAmmParams } from '../src/vpool-xyk-amm/params.js';
 import { definePoolKind } from '../src/vpool-xyk-amm/pool.js';
 
@@ -47,7 +50,7 @@ const makeAmmParamManager = async (
 };
 
 const voPoolTest = async (t, mutation, postTest) => {
-  /** @type {MakePoolMulti=} */
+  /** @type {MakePoolMulti | undefined} */
   let makePool;
   const { zoe, zcf } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'fake invitation');
@@ -146,7 +149,7 @@ test.serial('unchanged', async t => {
 });
 
 test.serial('one update', async t => {
-  /** @type {Notifier<unknown>=} */
+  /** @type {Notifier<unknown> | undefined} */
   let notifier;
   let initialNotifierCount;
   await voPoolTest(

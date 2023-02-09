@@ -1,63 +1,6 @@
-/**
- * @callback InstallSaveAndPublish
- * @param {string} resolvedPath
- * @param {Petname} contractPetname
- * @returns {{ installation: Installation, id: string}}
- */
+export {};
 
-/**
- * @typedef {object} StartInstanceResultWithDetailsNoInvitation
- * @property {any} creatorFacet
- * @property {any} publicFacet
- * @property {Instance} instance
- * @property {InvitationDetails} creatorInvitationDetails
- * @property {AdminFacet} adminFacet
- */
-
-/**
- * @typedef {object} OfferHelperConfig
- * @property {ERef<Invitation>=} invitation
- * @property {Partial<InvitationDetails>=} partialInvitationDetails
- * @property {Proposal} proposal
- * @property {Record<Keyword, Petname>} paymentsWithPursePetnames
- * @property {Record<Keyword, Petname>} payoutPursePetnames
- */
-
-/**
- * @callback OfferHelper
- * @param {OfferHelperConfig} config
- * @returns {{seat: Promise<UserSeat>, deposited:
- * Promise<Array<Promise<Amount>>>, invitationDetails:
- * InvitationDetails}}
- */
-
-/**
- * @callback FindInvitationAmount
- * @param {Record<string, any>} invitationDetailsCriteria
- * @returns {Amount} invitationAmount
- */
-
-/**
- * @callback DepositInvitation
- * @param {ERef<Invitation>} invitationP
- * @returns {InvitationDetails}
- */
-
-/**
- * @callback SaveIssuerHelper
- * @param {ERef<Issuer>} issuer
- * @param {Petname} brandPetname
- * @param {Petname} pursePetname
- * @returns {Promise<Petname>}
- */
-
-/**
- * @callback AssertOfferResult
- * @param {ERef<UserSeat>} seat
- * @param {string} expectedOfferResult
- * @returns {Promise<void>}
- */
-
+// TODO move this type somewhere better
 /**
  * @typedef {string | string[]} Petname A petname can either be a plain string
  * or a path for which the first element is a petname for the origin, and the

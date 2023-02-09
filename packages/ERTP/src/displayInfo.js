@@ -1,5 +1,5 @@
 import { Fail } from '@agoric/assert';
-import { fit } from '@agoric/store';
+import { mustMatch } from '@agoric/store';
 
 import { DisplayInfoShape } from './typeGuards.js';
 
@@ -9,7 +9,7 @@ import { DisplayInfoShape } from './typeGuards.js';
  * @returns {DisplayInfo}
  */
 export const coerceDisplayInfo = (allegedDisplayInfo, assetKind) => {
-  fit(allegedDisplayInfo, DisplayInfoShape, 'displayInfo');
+  mustMatch(allegedDisplayInfo, DisplayInfoShape, 'displayInfo');
 
   if (allegedDisplayInfo.assetKind !== undefined) {
     allegedDisplayInfo.assetKind === assetKind ||

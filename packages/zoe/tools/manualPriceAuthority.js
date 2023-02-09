@@ -14,7 +14,7 @@ import {
  * @param {Brand<'nat'>} options.actualBrandIn
  * @param {Brand<'nat'>} options.actualBrandOut
  * @param {Ratio} options.initialPrice
- * @param {TimerService} options.timer
+ * @param {import('@agoric/time/src/types').TimerService} options.timer
  * @param {IssuerKit<'set'>} [options.quoteIssuerKit]
  * @returns {PriceAuthority & { setPrice: (Ratio) => void }}
  */

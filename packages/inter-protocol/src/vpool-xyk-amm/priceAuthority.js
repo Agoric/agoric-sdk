@@ -15,7 +15,7 @@ import { makeOnewayPriceAuthorityKit } from '@agoric/zoe/src/contractSupport/ind
  * @param {*} getInputForWantedOutput
  * @param {Brand<'nat'>} actualBrandIn
  * @param {Brand<'nat'>} actualBrandOut
- * @param {TimerService} timer
+ * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {Subscriber<import('./pool').NotificationState>} subscriber
  * @param {IssuerKit<'set'>} quoteIssuerKit
  * @returns {PriceAuthority}
@@ -46,7 +46,7 @@ export const makePriceAuthority = (
 
   /**
    * @param {PriceQuery} priceQuery
-   * @returns {ERef<PriceQuote>=}
+   * @returns {ERef<PriceQuote> | undefined}
    */
   function createQuote(priceQuery) {
     const quote = priceQuery(calcAmountOut, calcAmountIn);

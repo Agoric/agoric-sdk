@@ -6,7 +6,6 @@ import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { makeZoeKit } from '@agoric/zoe';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { observeIteration } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 import {
@@ -15,8 +14,7 @@ import {
   installBootContracts,
 } from '../src/core/basic-behaviors.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
-
-import { devices } from './devices.js';
+import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 test('communication', async t => {
   t.plan(29);
@@ -204,17 +202,12 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
-  const { zoeService, feeMintAccess: fma } = makeZoeKit(
-    makeFakeVatAdmin(() => {}).admin,
-  );
+  const { vatAdminService } = makePopulatedFakeVatAdmin();
+  const { zoeService, feeMintAccess: fma } = makeZoeKit(vatAdminService);
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(fma);
-  const vatPowers = {
-    D: x => x,
-  };
+  produce.vatAdminSvc.resolve(vatAdminService);
   await installBootContracts({
-    vatPowers,
-    devices,
     consume,
     produce,
     ...spaces,

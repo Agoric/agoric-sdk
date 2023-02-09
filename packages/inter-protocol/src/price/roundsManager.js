@@ -1,9 +1,9 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { isNat, Nat } from '@agoric/nat';
-import { TimeMath } from '@agoric/swingset-vat/src/vats/timer/timeMath.js';
+import { isNat, Nat } from '@endo/nat';
+import { TimeMath } from '@agoric/time';
 import {
-  defineDurableFarClassKit,
+  defineDurableExoClassKit,
   M,
   makeKindHandle,
   makeScalarBigMapStore,
@@ -19,6 +19,10 @@ import { UnguardedHelperI } from '../typeGuards.js';
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
 /** @typedef {import('./priceOracleAdmin.js').OracleStatus} OracleStatus */
+/**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
 
 /** @type {string} */
 const V3_NO_DATA_ERROR = 'No data present';
@@ -72,7 +76,7 @@ const validRoundId = roundId => {
  */
 
 /**
- * @typedef {Readonly<import('./priceAggregatorChainlink.js').ChainlinkConfig & {
+ * @typedef {Readonly<import('./fluxAggregator.js').ChainlinkConfig & {
  * quoteKit: IssuerRecord<'set'> & { mint: ERef<Mint<'set'>> },
  * answerPublisher: Publisher<void>,
  * brandIn: Brand<'nat'>,
@@ -94,7 +98,7 @@ const validRoundId = roundId => {
  */
 /** @typedef {ImmutableState & MutableState} State */
 
-export const makeRoundsManagerKit = defineDurableFarClassKit(
+export const makeRoundsManagerKit = defineDurableExoClassKit(
   roundsManagerKind,
   {
     helper: UnguardedHelperI,
@@ -270,7 +274,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
        * @param {bigint} roundId
        * @param {OracleStatus} status
        * @param {Timestamp} blockTimestamp
-       * @returns {OracleStatus=} the new status
+       * @returns {OracleStatus | undefined} the new status
        */
       proposeNewRound(roundId, status, blockTimestamp) {
         const { helper } = this.facets;
@@ -366,6 +370,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
         }
 
         /** @type {bigint | undefined} */
+        // @ts-expect-error faulty inference
         const newAnswer = calculateMedian(
           details
             .get(roundId)
@@ -480,13 +485,13 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
             overrideValueOut === undefined
               ? lastValueOutForUnitIn // Use the latest value.
               : overrideValueOut; // Override the value.
-          if (valueOutForUnitIn === undefined) {
+          if (valueOutForUnitIn === null) {
             // We don't have a quote, so abort.
             return undefined;
           }
 
           /**
-           * @param {Amount} amountIn the given amountIn
+           * @param {Amount<'nat'>} amountIn the given amountIn
            */
           const calcAmountOut = amountIn => {
             const valueIn = AmountMath.getValue(brandIn, amountIn);
@@ -497,7 +502,7 @@ export const makeRoundsManagerKit = defineDurableFarClassKit(
           };
 
           /**
-           * @param {Amount} amountOut the wanted amountOut
+           * @param {Amount<'nat'>} amountOut the wanted amountOut
            */
           const calcAmountIn = amountOut => {
             const valueOut = AmountMath.getValue(brandOut, amountOut);

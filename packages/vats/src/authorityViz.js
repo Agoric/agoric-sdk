@@ -1,4 +1,3 @@
-/* eslint-disable no-continue */
 // @ts-check
 import '@endo/init';
 import process from 'process';
@@ -87,7 +86,7 @@ const manifest2graph = manifest => {
   /**
    * @param {string} src
    * @param {string} dest
-   * @param {string=} style
+   * @param {string} [style]
    */
   const addEdge = (src, dest, style = '') => {
     if (!neighbors.has(src)) {
@@ -100,7 +99,7 @@ const manifest2graph = manifest => {
    * @param {string} src
    * @param {string} ty
    * @param {Record<string, Status> | undefined} item
-   * @param {boolean=} reverse
+   * @param {boolean} [reverse=false]
    */
   const level1 = (src, ty, item, reverse = false) => {
     if (item) {

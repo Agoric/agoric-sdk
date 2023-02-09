@@ -2,7 +2,7 @@ import './types.js';
 import { assert, details as X, q, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
-import { isNat } from '@agoric/nat';
+import { isNat } from '@endo/nat';
 
 import { natSafeMath } from './safeMath.js';
 
@@ -57,8 +57,8 @@ export const assertIsRatio = ratio => {
 /**
  * @param {bigint} numerator
  * @param {Brand} numeratorBrand
- * @param {bigint=} denominator The default denominator is 100
- * @param {Brand=} denominatorBrand The default is to reuse the numeratorBrand
+ * @param {bigint} [denominator] The default denominator is 100
+ * @param {Brand} [denominatorBrand] The default is to reuse the numeratorBrand
  * @returns {Ratio}
  */
 export const makeRatio = (
@@ -96,7 +96,7 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 
 /**
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @param {*} divideOp
  */
@@ -136,7 +136,7 @@ export const multiplyBy = (amount, ratio) => {
 
 /**
  *
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @param {*} divideOp
  */

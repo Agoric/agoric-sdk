@@ -5,5 +5,5 @@
  */
 
 /**
- * @typedef {TimerService & ManualTimerAdmin} ManualTimer
+ * @typedef {import('@agoric/time/src/types').TimerService & ManualTimerAdmin} ManualTimer
  */

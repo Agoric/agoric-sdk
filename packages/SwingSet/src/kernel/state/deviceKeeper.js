@@ -2,11 +2,12 @@
  * Kernel's keeper of persistent state for a device.
  */
 
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistDeviceID } from '../../lib/id.js';
+import { enumeratePrefixedKeys } from './storageHelper.js';
 
 const FIRST_DEVICE_IMPORTED_OBJECT_ID = 10n;
 const FIRST_DEVICE_IMPORTED_DEVICE_ID = 20n;
@@ -188,16 +189,12 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
     /** @type {Array<[string, string, string]>} */
     const res = [];
     const prefix = `${deviceID}.c.`;
-    for (const k of kvStore.getKeys(prefix, `${deviceID}.c/`)) {
-      // The bounds passed to getKeys() here work because '/' is the next
-      // character in ASCII after '.'
-      if (k.startsWith(prefix)) {
-        const slot = k.slice(prefix.length);
-        if (!slot.startsWith('k')) {
-          const devSlot = slot;
-          const kernelSlot = kvStore.get(k);
-          res.push([kernelSlot, deviceID, devSlot]);
-        }
+    for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
+      const slot = k.slice(prefix.length);
+      if (!slot.startsWith('k')) {
+        const devSlot = slot;
+        const kernelSlot = kvStore.get(k);
+        res.push([kernelSlot, deviceID, devSlot]);
       }
     }
     return harden(res);

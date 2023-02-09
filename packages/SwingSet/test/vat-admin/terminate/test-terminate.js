@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
-import { initSwingStore, getAllState, setAllState } from '@agoric/swing-store';
+import { initSwingStore } from '@agoric/swing-store';
 
 import {
   buildVatController,
@@ -9,6 +9,7 @@ import {
   buildKernelBundles,
 } from '../../../src/index.js';
 import { kser, kunser } from '../../../src/lib/kmarshal.js';
+import { enumeratePrefixedKeys } from '../../../src/kernel/state/storageHelper.js';
 import { restartVatAdminVat } from '../../util.js';
 
 test.before(async t => {
@@ -389,10 +390,10 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
 
-  const kernelStorage1 = initSwingStore().kernelStorage;
+  const ss1 = initSwingStore();
   {
     const c1 = await buildVatController(config, [], {
-      kernelStorage: kernelStorage1,
+      kernelStorage: ss1.kernelStorage,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c1.shutdown);
@@ -407,13 +408,11 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
       'done: Error: arbitrary reason',
     ]);
   }
-  const state1 = getAllState(kernelStorage1);
-  const kernelStorage2 = initSwingStore().kernelStorage;
-  // XXX TODO also copy transcripts
-  setAllState(kernelStorage2, state1);
+  const serialized = ss1.debug.serialize();
+  const ss2 = initSwingStore(null, { serialized });
   {
     const c2 = await buildVatController(config, [], {
-      kernelStorage: kernelStorage2,
+      kernelStorage: ss2.kernelStorage,
       kernelBundles: t.context.data.kernelBundles,
     });
     t.teardown(c2.shutdown);
@@ -460,13 +459,13 @@ test.serial('dead vat state removed', async t => {
   const kvStore = kernelStorage.kvStore;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length > 30, true);
+  t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 30, true);
 
   controller.queueToVatRoot('bootstrap', 'phase2', []);
   await controller.run();
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);
-  t.is(Array.from(kvStore.getKeys('v6.', 'v6/')).length, 0);
+  t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length, 0);
 });
 
 test.serial('terminate with presence', async t => {

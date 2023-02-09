@@ -5,7 +5,7 @@
  * @property {ZCFSeat} seat
  * @property {AmountKeywordRecord} gains - what the seat will
  * gain as a result of this trade
- * @property {AmountKeywordRecord=} losses - what the seat will
+ * @property {AmountKeywordRecord} losses - what the seat [will]
  * give up as a result of this trade. Losses is optional, but can
  * only be omitted if the keywords for both seats are the same.
  * If losses is not defined, the gains of the other seat is
@@ -61,7 +61,7 @@
  * Given a mapping of keywords to keywords, invert the keys and
  * values. This is used to map the offers made to another contract
  * back to the keywords used in the first contract.
- * @param {KeywordKeywordRecord=} keywordRecord
+ * @param {KeywordKeywordRecord} [keywordRecord]
  * @returns {KeywordKeywordRecord }
  */
 
@@ -85,7 +85,7 @@
 
 /**
  * @callback ScaleAmount
- * @param {Amount} amount
+ * @param {Amount<'nat'>} amount
  * @param {Ratio} ratio
  * @returns {Amount<'nat'>}
  */

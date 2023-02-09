@@ -28,7 +28,7 @@ export function deliver(mbs) {
   for (const target of Object.getOwnPropertyNames(data)) {
     if (!knownTargets.has(target)) {
       log.error(`eek, no delivery method for target`, target);
-      // eslint-disable-next-line no-continue
+
       continue;
     }
     const t = knownTargets.get(target);

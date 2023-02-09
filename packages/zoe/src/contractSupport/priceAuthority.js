@@ -1,4 +1,4 @@
-/// <reference path="../../../SwingSet/src/vats/timer/types.d.ts" />
+/// <reference path="../../../time/src/types.d.ts" />
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -6,6 +6,9 @@ import { assert, q, Fail } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('PA', false);
 
 /**
  * @callback CompareAmount
@@ -36,7 +39,7 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
  * @param {object} opts
  * @param {Issuer<'set'>} opts.quoteIssuer
  * @param {ERef<Notifier<unknown>>} opts.notifier
- * @param {ERef<TimerService>} opts.timer
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote
  * @param {Brand<'nat'>} opts.actualBrandIn
  * @param {Brand<'nat'>} opts.actualBrandOut
@@ -269,6 +272,7 @@ export function makeOnewayPriceAuthorityKit(opts) {
       return specificNotifier;
     },
     async quoteGiven(amountIn, brandOut) {
+      trace('quoteGiven', amountIn, brandOut);
       AmountMath.coerce(actualBrandIn, amountIn);
       assertBrands(amountIn.brand, brandOut);
 

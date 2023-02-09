@@ -1,5 +1,5 @@
 import { assert, Fail } from '@agoric/assert';
-import { isNat } from '@agoric/nat';
+import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
@@ -29,6 +29,10 @@ import { makeVatLoader } from './vat-loader/vat-loader.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
+
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ */
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -82,8 +86,6 @@ export default function buildKernel(
     vatEndowments,
     slogCallbacks = {},
     makeConsole,
-    makeNodeWorker,
-    startSubprocessWorkerNode,
     startXSnap,
     writeSlogObject,
     WeakRef,
@@ -1376,8 +1378,6 @@ export default function buildKernel(
     allVatPowers,
     kernelKeeper,
     vatEndowments,
-    makeNodeWorker,
-    startSubprocessWorkerNode,
     startXSnap,
     gcTools,
     defaultManagerType,

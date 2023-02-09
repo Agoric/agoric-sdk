@@ -19,8 +19,8 @@ import {
   getPassStyleCover,
   intersectRankCovers,
   unionRankCovers,
-} from './rankOrder.js';
-import { recordNames, recordValues } from './encodePassable.js';
+} from '@endo/marshal/src/rankOrder.js';
+import { recordNames, recordValues } from '@endo/marshal/src/encodePassable.js';
 import { keyEQ, keyGT, keyGTE, keyLT, keyLTE } from '../keys/compareKeys.js';
 import {
   assertKey,
@@ -147,7 +147,7 @@ const makePatternKit = () => {
    * Otherwise result undefined.
    *
    * @param {string} tag
-   * @returns {MatchHelper=}
+   * @returns {MatchHelper | undefined}
    */
   const maybeMatchHelper = tag =>
     // eslint-disable-next-line no-use-before-define
@@ -591,7 +591,7 @@ const makePatternKit = () => {
    * @param {Pattern} patt
    * @param {string|number} [label]
    */
-  const fit = (specimen, patt, label = undefined) => {
+  const mustMatch = (specimen, patt, label = undefined) => {
     if (checkMatches(specimen, patt, identChecker, label)) {
       return;
     }
@@ -1810,7 +1810,7 @@ const makePatternKit = () => {
   return harden({
     checkMatches,
     matches,
-    fit,
+    mustMatch,
     assertPattern,
     isPattern,
     assertKeyPattern,
@@ -1829,7 +1829,7 @@ const makePatternKit = () => {
 export const {
   checkMatches,
   matches,
-  fit,
+  mustMatch,
   assertPattern,
   isPattern,
   assertKeyPattern,

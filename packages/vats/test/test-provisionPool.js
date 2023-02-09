@@ -13,7 +13,7 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { makeScalarMap } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeSubscriptionKit } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
@@ -130,9 +130,9 @@ const tools = context => {
   // @ts-expect-error missing mint
   const minted = withAmountUtils(context.minted);
   const makeBank = () => {
-    const issuers = makeScalarMap();
+    const issuers = makeScalarMapStore();
     [minted, anchor].forEach(kit => issuers.init(kit.brand, kit.issuer));
-    const purses = makeScalarMap();
+    const purses = makeScalarMapStore();
     [minted, anchor].forEach(kit => {
       assert(kit.issuer);
       purses.init(kit.brand, E(kit.issuer).makeEmptyPurse());

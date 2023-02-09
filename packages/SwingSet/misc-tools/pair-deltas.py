@@ -33,3 +33,4 @@ print("p90    %10d us" % us(q[-1]))
 # not sure I'm holding this right
 #print("p100   %10d us" % us(q[-1]))
 print("max    %10d us" % us(max(deltas)))
+print("sum    %10d us" % us(sum(deltas)))

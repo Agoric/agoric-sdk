@@ -26,7 +26,7 @@ export {};
  *   enableSetup: true,
  * }} HasSetup
  *
- * @typedef { 'local' | 'nodeWorker' | 'node-subprocess' | 'xs-worker' } ManagerType
+ * @typedef { 'local' | 'xs-worker' } ManagerType
  * @typedef {{
  *   enablePipelining?: boolean,
  *   managerType: ManagerType,
@@ -86,28 +86,13 @@ export {};
  */
 
 /**
- * @typedef {{
- * methargs: SwingSetCapData, // of [method, args]
- * result: string | undefined | null,
- * }} Message
+ * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  * @typedef {{ name: string, upgradeMessage: string, incarnationNumber: number }} DisconnectObject
  *
- * @typedef { [tag: 'message', target: string, msg: Message]} VatDeliveryMessage
- * @typedef { [vpid: string, isReject: boolean, data: SwingSetCapData ] } VatOneResolution
- * @typedef { [tag: 'notify', resolutions: VatOneResolution[] ]} VatDeliveryNotify
- * @typedef { [tag: 'dropExports', vrefs: string[] ]} VatDeliveryDropExports
- * @typedef { [tag: 'retireExports', vrefs: string[] ]} VatDeliveryRetireExports
- * @typedef { [tag: 'retireImports', vrefs: string[] ]} VatDeliveryRetireImports
- * @typedef { [tag: 'changeVatOptions', options: Record<string, unknown> ]} VatDeliveryChangeVatOptions
- * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} VatDeliveryStartVat
- * @typedef { [tag: 'stopVat', disconnectObject: SwingSetCapData ]} VatDeliveryStopVat
- * @typedef { [tag: 'bringOutYourDead' ]} VatDeliveryBringOutYourDead
- * @typedef { VatDeliveryMessage | VatDeliveryNotify | VatDeliveryDropExports
- *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryChangeVatOptions
- *            | VatDeliveryStartVat | VatDeliveryStopVat | VatDeliveryBringOutYourDead
- *          } VatDeliveryObject
+ * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
+ * @typedef { import('@agoric/swingset-liveslots').VatOneResolution } VatOneResolution
  * @typedef { { compute: number } } MeterConsumption
  * @typedef { [tag: 'ok', message: null, usage: MeterConsumption | null] |
  *            [tag: 'error', message: string, usage: MeterConsumption | null] } VatDeliveryResult
@@ -118,7 +103,7 @@ export {};
  * @typedef { [tag: 'resolve', resolutions: VatOneResolution[] ]} VatSyscallResolve
  * @typedef { [tag: 'exit', isFailure: boolean, info: SwingSetCapData ]} VatSyscallExit
  * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetAfter', priorKey: string, lowerBound: string, upperBound: string | undefined ]} VatSyscallVatstoreGetAfter
+ * @typedef { [tag: 'vatstoreGetNextKey', priorKey: string ]} VatSyscallVatstoreGetNextKey
  * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
@@ -127,12 +112,12 @@ export {};
  * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
  *
  * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
- *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetAfter
+ *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetNextKey
  *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
  *    | VatSyscallRetireImports | VatSyscallRetireExports | VatSyscallAbandonExports
  * } VatSyscallObject
  *
- * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | undefined[] | null ]} VatSyscallResultOk
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | null ]} VatSyscallResultOk
  * @typedef { [tag: 'error', err: string ] } VatSyscallResultError
  * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
  * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
@@ -158,7 +143,7 @@ export {};
  * @typedef { [tag: 'resolve', vatID: string, resolutions: KernelOneResolution[] ]} KernelSyscallResolve
  * @typedef { [tag: 'exit', vatID: string, isFailure: boolean, info: SwingSetCapData ]} KernelSyscallExit
  * @typedef { [tag: 'vatstoreGet', vatID: string, key: string ]} KernelSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetAfter', vatID: string, priorKey: string, lowerBound: string, upperBound: string | undefined ]} KernelSyscallVatstoreGetAfter
+ * @typedef { [tag: 'vatstoreGetNextKey', vatID: string, priorKey: string ]} KernelSyscallVatstoreGetNextKey
  * @typedef { [tag: 'vatstoreSet', vatID: string, key: string, data: string ]} KernelSyscallVatstoreSet
  * @typedef { [tag: 'vatstoreDelete', vatID: string, key: string ]} KernelSyscallVatstoreDelete
  * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
@@ -168,7 +153,7 @@ export {};
  * @typedef { [tag: 'callKernelHook', hookName: string, args: SwingSetCapData]} KernelSyscallCallKernelHook
  *
  * @typedef { KernelSyscallSend | KernelSyscallInvoke | KernelSyscallSubscribe
- *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetAfter
+ *    | KernelSyscallResolve | KernelSyscallExit | KernelSyscallVatstoreGet | KernelSyscallVatstoreGetNextKey
  *    | KernelSyscallVatstoreSet | KernelSyscallVatstoreDelete | KernelSyscallDropImports
  *    | KernelSyscallRetireImports | KernelSyscallRetireExports | KernelSyscallAbandonExports
  *    | KernelSyscallCallKernelHook
@@ -216,12 +201,12 @@ export {};
  * @typedef { { createFromBundle: (vatID: string,
  *                                 bundle: Bundle,
  *                                 managerOptions: ManagerOptions,
- *                                 liveSlotsOptions: LiveSlotsOptions,
+ *                                 liveSlotsOptions: import('@agoric/swingset-liveslots').LiveSlotsOptions,
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
  *              replayTranscript: (startPos: StreamPosition | undefined) => Promise<number?>,
- *              makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>,
+ *              makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  *
@@ -291,7 +276,7 @@ export {};
 /**
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
- * @typedef { import('@agoric/swing-store').SnapshotInfo } SnapshotInfo
+ * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
  * @typedef { import('@agoric/swing-store').StreamStore } StreamStore
  * @typedef { import('@agoric/swing-store').StreamPosition } StreamPosition
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
@@ -315,30 +300,7 @@ export {};
  */
 
 /**
- * @typedef {{
- *   virtualObjectCacheSize?: number, // Maximum number of entries in the virtual object state cache
- *   enableDisavow?: boolean,
- *   relaxDurabilityRules?: boolean,
- * }} LiveSlotsOptions
- */
-
-/**
- * The MeterControl object gives liveslots a mechanism to disable metering for certain GC-sensitive
- * regions of code. Only the XS worker can actually do metering, but we track the enabled/disabled
- * status on all workers, so that the assertions can be exercised more thoroughly (via non-XS unit
- * tests). MeterControl.isMeteringDisabled()===false does not mean metering is happening, it just
- * means that MeterControl isn't disabling it.
- *
- * @typedef {object} MeterControl
- * @property {() => boolean} isMeteringDisabled Ask whether metering is currently disabled.
- * @property {*} assertIsMetered
- * @property {*} assertNotMetered
- * @property {*} runWithoutMetering Run a callback outside metering
- * @property {*} runWithoutMeteringAsync Run an async callback outside metering
- * @property {*} unmetered Wrap a callback with runWithoutMetering
- */
-
-/**
+ * Vat Creation and Management
  *
  * @typedef { string } BundleID
  * @typedef {*} BundleCap
@@ -366,4 +328,49 @@ export {};
  *
  * @typedef { { enableDisavow?: boolean } } HasEnableDisavow
  * @typedef { DynamicVatOptions & HasEnableDisavow } StaticVatOptions
+ *
+ * @typedef { { vatParameters?: object, upgradeMessage: string } } VatUpgradeOptions
+ * @typedef { { incarnationNumber: number } } VatUpgradeResults
+ *
+ * @callback ShutdownWithFailure
+ * Called to shut something down because something went wrong, where the reason
+ * is supposed to be an Error that describes what went wrong. Some valid
+ * implementations of `ShutdownWithFailure` will never return, either
+ * because they throw or because they immediately shutdown the enclosing unit
+ * of computation. However, they also might return, so the caller should
+ * follow this call by their own defensive `throw reason;` if appropriate.
+ *
+ * @param {Error} reason
+ * @returns {void}
+ *
+ * @typedef {object} VatAdminFacet
+ * A powerful object corresponding with a vat
+ * that can be used to upgrade it with new code or parameters,
+ * terminate it, or be notified when it terminates.
+ *
+ * @property {() => Promise<any>} done
+ * returns a promise that will be fulfilled or rejected when the vat is
+ * terminated. If the vat terminates with a failure, the promise will be
+ * rejected with the reason. If the vat terminates successfully, the
+ * promise will fulfill to the completion value.
+ * @property {ShutdownWithFailure} terminateWithFailure
+ * Terminate the vat with a failure reason.
+ * @property {(bundlecap: BundleCap, options?: VatUpgradeOptions) => Promise<VatUpgradeResults>} upgrade
+ * Restart the vat with the specified bundle and options. This is a "baggage-style" upgrade,
+ * in which the JS memory space is abandoned. The new image is launched with access to 'baggage'
+ * and any durable storage reachable from it, and must fulfill all the obligations of the previous
+ * incarnation.
+ *
+ *
+ * @typedef {object} CreateVatResults
+ * @property {object} root
+ * @property {VatAdminFacet} adminNode
+ *
+ * @typedef {object} VatAdminSvc
+ * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => ERef<BundleID>} getBundleIDByName
+ * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
+ *
  */

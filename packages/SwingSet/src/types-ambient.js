@@ -35,20 +35,9 @@
 
 /**
  * @typedef { import('./types-external.js').Message } Message
- * @typedef { import('./types-external.js').LiveSlotsOptions } LiveSlotsOptions
  *
  * @typedef { import('./types-external.js').ResolutionPolicy } ResolutionPolicy
  *
- * @typedef { import('./types-external.js').VatDeliveryMessage } VatDeliveryMessage
- * @typedef { import('./types-external.js').VatOneResolution } VatOneResolution
- * @typedef { import('./types-external.js').VatDeliveryNotify } VatDeliveryNotify
- * @typedef { import('./types-external.js').VatDeliveryDropExports } VatDeliveryDropExports
- * @typedef { import('./types-external.js').VatDeliveryRetireExports } VatDeliveryRetireExports
- * @typedef { import('./types-external.js').VatDeliveryRetireImports } VatDeliveryRetireImports
- * @typedef { import('./types-external.js').VatDeliveryStartVat } VatDeliveryStartVat
- * @typedef { import('./types-external.js').VatDeliveryChangeVatOptions } VatDeliveryChangeVatOptions
- * @typedef { import('./types-external.js').VatDeliveryBringOutYourDead } VatDeliveryBringOutYourDead
- * @typedef { import('./types-external.js').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('./types-external.js').VatDeliveryResult } VatDeliveryResult
  *
  * @typedef { import('./types-external.js').VatSyscallSend } VatSyscallSend
@@ -57,7 +46,7 @@
  * @typedef { import('./types-external.js').VatSyscallResolve } VatSyscallResolve
  * @typedef { import('./types-external.js').VatSyscallExit } VatSyscallExit
  * @typedef { import('./types-external.js').VatSyscallVatstoreGet } VatSyscallVatstoreGet
- * @typedef { import('./types-external.js').VatSyscallVatstoreGetAfter } VatSyscallVatstoreGetAfter
+ * @typedef { import('./types-external.js').VatSyscallVatstoreGetNextKey } VatSyscallVatstoreGetNextKey
  * @typedef { import('./types-external.js').VatSyscallVatstoreSet } VatSyscallVatstoreSet
  * @typedef { import('./types-external.js').VatSyscallVatstoreDelete } VatSyscallVatstoreDelete
  * @typedef { import('./types-external.js').VatSyscallDropImports } VatSyscallDropImports
@@ -88,7 +77,7 @@
  * @typedef { import('./types-external.js').KernelSyscallResolve } KernelSyscallResolve
  * @typedef { import('./types-external.js').KernelSyscallExit } KernelSyscallExit
  * @typedef { import('./types-external.js').KernelSyscallVatstoreGet } KernelSyscallVatstoreGet
- * @typedef { import('./types-external.js').KernelSyscallVatstoreGetAfter } KernelSyscallVatstoreGetAfter
+ * @typedef { import('./types-external.js').KernelSyscallVatstoreGetNextKey } KernelSyscallVatstoreGetNextKey
  * @typedef { import('./types-external.js').KernelSyscallVatstoreSet } KernelSyscallVatstoreSet
  * @typedef { import('./types-external.js').KernelSyscallVatstoreDelete } KernelSyscallVatstoreDelete
  * @typedef { import('./types-external.js').KernelSyscallDropImports } KernelSyscallDropImports
@@ -118,7 +107,7 @@
  * @typedef { import('./types-external.js').VatManagerFactory } VatManagerFactory
  * @typedef { import('./types-external.js').VatManager } VatManager
  * @typedef { import('./types-external.js').SnapStore } SnapStore
- * @typedef { import('./types-external.js').SnapshotInfo } SnapshotInfo
+ * @typedef { import('./types-external.js').SnapshotResult } SnapshotResult
  * @typedef { import('./types-external.js').WaitUntilQuiescent } WaitUntilQuiescent
  */
 
@@ -161,8 +150,4 @@
  * @typedef { import('./types-external.js').PolicyInput } PolicyInput
  * @typedef { import('./types-external.js').PolicyOutput } PolicyOutput
  * @typedef { import('./types-external.js').RunPolicy } RunPolicy
- */
-
-/**
- * @typedef { import('./types-external.js').MeterControl } MeterControl
  */

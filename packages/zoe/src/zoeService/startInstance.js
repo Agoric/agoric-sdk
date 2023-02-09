@@ -4,7 +4,7 @@ import {
   M,
   makeScalarBigMapStore,
   provideDurableWeakMapStore,
-  vivifyFarClass,
+  prepareExoClass,
 } from '@agoric/vat-data';
 import { initEmpty } from '@agoric/store';
 
@@ -32,7 +32,7 @@ export const makeStartInstance = (
 ) => {
   const makeInstanceHandle = defineDurableHandle(zoeBaggage, 'Instance');
 
-  /** @type {WeakStore<SeatHandle, ZoeSeatAdmin>} */
+  /** @type {WeakMapStore<SeatHandle, ZoeSeatAdmin>} */
   const seatHandleToZoeSeatAdmin = provideDurableWeakMapStore(
     zoeBaggage,
     'seatHandleToZoeSeatAdmin',
@@ -43,7 +43,7 @@ export const makeStartInstance = (
     seatHandleToZoeSeatAdmin,
   );
 
-  const makeZoeInstanceAdmin = vivifyFarClass(
+  const makeZoeInstanceAdmin = prepareExoClass(
     zoeBaggage,
     'zoeInstanceAdmin',
     InstanceAdminI,
@@ -142,18 +142,18 @@ export const makeStartInstance = (
     },
   );
 
-  const vivifyEmptyFacet = facetName =>
-    vivifyFarClass(
+  const prepareEmptyFacet = facetName =>
+    prepareExoClass(
       zoeBaggage,
       facetName,
       M.interface(facetName, {}),
       initEmpty,
       {},
     );
-  const makeEmptyCreatorFacet = vivifyEmptyFacet('emptyCreatorFacet');
-  const makeEmptyPublicFacet = vivifyEmptyFacet('emptyPublicFacet');
+  const makeEmptyCreatorFacet = prepareEmptyFacet('emptyCreatorFacet');
+  const makeEmptyPublicFacet = prepareEmptyFacet('emptyPublicFacet');
 
-  const makeAdminFacet = vivifyFarClass(
+  const makeAdminFacet = prepareExoClass(
     zoeBaggage,
     'adminFacet',
     AdminFacetI,

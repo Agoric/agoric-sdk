@@ -12,15 +12,15 @@
  * The `assert` function itself.
  *
  * @param {*} flag The truthy/falsy value
- * @param {Details=} optDetails The details to throw
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details to throw
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
  * @returns {asserts flag}
  */
 
 /**
  * @typedef {object} AssertMakeErrorOptions
- * @property {string=} errorName
+ * @property {string} [errorName]
  */
 
 /**
@@ -29,10 +29,10 @@
  * The `assert.error` method, recording details for the console.
  *
  * The optional `optDetails` can be a string.
- * @param {Details=} optDetails The details of what was asserted
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details of what was asserted
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
- * @param {AssertMakeErrorOptions=} options
+ * @param {AssertMakeErrorOptions} [options]
  * @returns {Error}
  */
 
@@ -47,8 +47,8 @@
  *
  * The optional `optDetails` can be a string for backwards compatibility
  * with the nodejs assertion library.
- * @param {Details=} optDetails The details of what was asserted
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details of what was asserted
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
  * @returns {never}
  */
@@ -60,8 +60,8 @@
  * Assert that two values must be `Object.is`.
  * @param {*} actual The value we received
  * @param {*} expected What we wanted
- * @param {Details=} optDetails The details to throw
- * @param {ErrorConstructor=} ErrorConstructor An optional alternate error
+ * @param {Details} [optDetails] The details to throw
+ * @param {ErrorConstructor} [ErrorConstructor] An optional alternate error
  * constructor to use.
  * @returns {void}
  */
@@ -73,7 +73,7 @@
  * @callback AssertTypeofBigint
  * @param {any} specimen
  * @param {'bigint'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is bigint}
  */
 
@@ -81,7 +81,7 @@
  * @callback AssertTypeofBoolean
  * @param {any} specimen
  * @param {'boolean'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is boolean}
  */
 
@@ -89,7 +89,7 @@
  * @callback AssertTypeofFunction
  * @param {any} specimen
  * @param {'function'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is Function}
  */
 
@@ -97,7 +97,7 @@
  * @callback AssertTypeofNumber
  * @param {any} specimen
  * @param {'number'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is number}
  */
 
@@ -105,7 +105,7 @@
  * @callback AssertTypeofObject
  * @param {any} specimen
  * @param {'object'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is Record<any, any> | null}
  */
 
@@ -113,7 +113,7 @@
  * @callback AssertTypeofString
  * @param {any} specimen
  * @param {'string'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is string}
  */
 
@@ -121,7 +121,7 @@
  * @callback AssertTypeofSymbol
  * @param {any} specimen
  * @param {'symbol'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is symbol}
  */
 
@@ -129,7 +129,7 @@
  * @callback AssertTypeofUndefined
  * @param {any} specimen
  * @param {'undefined'} typename
- * @param {Details=} optDetails
+ * @param {Details} [optDetails]
  * @returns {asserts specimen is undefined}
  */
 
@@ -148,7 +148,7 @@
  *
  * Assert an expected typeof result.
  * @param {any} specimen The value to get the typeof
- * @param {Details=} optDetails The details to throw
+ * @param {Details} [optDetails] The details to throw
  * @returns {asserts specimen is string}
  */
 
@@ -207,7 +207,7 @@
  *
  * @callback AssertQuote
  * @param {*} payload What to declassify
- * @param {(string|number)=} spaces
+ * @param {(string|number)} [spaces]
  * @returns {StringablePayload} The declassified payload
  */
 
@@ -240,8 +240,8 @@
  * `optRaise` returns normally, which would be unusual, the throw following
  * `optRaise(reason)` would still happen.
  *
- * @param {Raise=} optRaise
- * @param {boolean=} unredacted
+ * @param {Raise} [optRaise]
+ * @param {boolean} [unredacted]
  * @returns {Assert}
  */
 

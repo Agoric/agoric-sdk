@@ -1,5 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';
 
 // PriceAuthorities return quotes as a pair of an amount and a payment, both
@@ -23,7 +23,7 @@ export const getPriceDescription = quote => {
 export const getAmountIn = quote => getPriceDescription(quote).amountIn;
 /** @param {PriceQuote} quote */
 export const getAmountOut = quote => getPriceDescription(quote).amountOut;
-/** @type {(quote: PriceQuote) => Timestamp} */
+/** @type {(quote: PriceQuote) => import('@agoric/time/src/types').Timestamp} */
 export const getTimestamp = quote => getPriceDescription(quote).timestamp;
 
 /** @param {Brand<'nat'>} brand */

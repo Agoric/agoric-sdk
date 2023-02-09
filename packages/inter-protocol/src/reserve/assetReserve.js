@@ -5,10 +5,10 @@ import {
   offerTo,
   atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { provideDurableMapStore, vivifyKindMulti } from '@agoric/vat-data';
+import { provideDurableMapStore, prepareKindMulti } from '@agoric/vat-data';
 
+import { makeTracer } from '@agoric/internal';
 import { AMM_INSTANCE } from './params.js';
-import { makeTracer } from '../makeTracer.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { Fail, quote: q } = assert;
@@ -217,6 +217,7 @@ const start = async (zcf, privateArgs, baggage) => {
   /**
    * @param {MethodContext} context
    * @param {Brand<'nat'>} ammSecondaryBrand
+   * @returns {Promise<void>}
    */
   const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
     assert(
@@ -431,7 +432,7 @@ const start = async (zcf, privateArgs, baggage) => {
     }),
   );
 
-  const makeAssetReserve = vivifyKindMulti(baggage, 'assetReserve', init, {
+  const makeAssetReserve = prepareKindMulti(baggage, 'assetReserve', init, {
     publicFacet,
     creatorFacet: governorFacet,
     shortfallReportingFacet,
@@ -459,7 +460,7 @@ export { start };
  * @property {() => Allocation} getAllocations
  * @property {(issuer: Issuer) => void} addIssuer
  * @property {() => Invitation<ShortfallReporter>} makeShortfallReportingInvitation
- * @property {() => MetricsNotification} getMetrics
+ * @property {() => StoredSubscription<MetricsNotification>} getMetrics
  */
 
 /**

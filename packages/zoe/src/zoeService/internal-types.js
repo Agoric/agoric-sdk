@@ -87,8 +87,8 @@
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
  * @property {() => Issuer} getInvitationIssuer
- * @property {() => object} getRoot of a RootAndAdminNode
- * @property {() => AdminNode} getAdminNode of a RootAndAdminNode
+ * @property {() => object} getRoot of CreateVatResults
+ * @property {() => import('@agoric/swingset-vat').VatAdminFacet} getAdminNode of CreateVatResults
  */
 
 /**
@@ -146,7 +146,7 @@
  *
  * @callback CreateZCFVat
  * @param {BundleCap} contractBundleCap
- * @returns {Promise<RootAndAdminNode>}
+ * @returns {Promise<import('@agoric/swingset-vat').CreateVatResults>}
  */
 
 /**

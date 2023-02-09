@@ -1,0 +1,49 @@
+{
+  "name": "@agoric/time",
+  "version": "0.2.1",
+  "description": "Timestamps, time math, timer service API definition",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:xs": "exit 0",
+    "lint": "yarn lint:types && yarn lint:eslint",
+    "lint:types": "tsc -p jsconfig.json",
+    "lint:eslint": "eslint .",
+    "lint-fix": "yarn lint:eslint --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "keywords": [
+    "timestamp"
+  ],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/assert": "^0.5.1",
+    "@endo/nat": "^4.1.0",
+    "@agoric/store": "^0.8.3"
+  },
+  "devDependencies": {
+    "@endo/far": "^0.2.14",
+    "@endo/init": "^0.5.52",
+    "ava": "^5.1.0"
+  },
+  "files": [
+    "*.js",
+    "NEWS.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

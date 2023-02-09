@@ -35,9 +35,9 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {object} opts.powers
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
- * @param {(brand: Brand) => import('./types').RemotePurse} opts.powers.purseForBrand
+ * @param {(brand: Brand) => Promise<import('./types').RemotePurse>} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: OfferId, invitationAmount: Amount<'set'>, continuation: import('./types').RemoteInvitationMakers) => void} opts.onNewContinuingOffer
+ * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,
@@ -79,7 +79,7 @@ export const makeOfferExecutor = ({
       const handleError = err => {
         logger.error('OFFER ERROR:', err);
         updateStatus({ error: err.toString() });
-        paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
+        void paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
           if (result) {
             updateStatus({ result });
           }
@@ -113,7 +113,7 @@ export const makeOfferExecutor = ({
         logger.info(id, 'seated');
 
         // publish 'result'
-        E.when(
+        void E.when(
           E(seatRef).getOfferResult(),
           result => {
             const passStyle = passStyleOf(result);
@@ -133,11 +133,13 @@ export const makeOfferExecutor = ({
                 // @ts-expect-error result narrowed by passStyle
                 if ('invitationMakers' in result) {
                   // save for continuing invitation offer
-                  onNewContinuingOffer(
-                    id,
+                  void onNewContinuingOffer(
+                    String(id),
                     invitationAmount,
                     // @ts-expect-error result narrowed by passStyle
                     result.invitationMakers,
+                    // @ts-expect-error result narrowed by passStyle
+                    result.publicSubscribers,
                   );
                 }
                 // copyRecord is valid to publish but not safe as it may have private info
@@ -152,7 +154,7 @@ export const makeOfferExecutor = ({
         );
 
         // publish 'numWantsSatisfied'
-        E.when(
+        void E.when(
           E(seatRef).numWantsSatisfied(),
           numSatisfied => {
             logger.info(id, 'numSatisfied', numSatisfied);
@@ -169,7 +171,7 @@ export const makeOfferExecutor = ({
         // publish 'payouts'
         // This will block until all payouts succeed, but user will be updated
         // as each payout will trigger its corresponding purse notifier.
-        E.when(
+        void E.when(
           E(seatRef).getPayouts(),
           payouts =>
             paymentsManager.depositPayouts(payouts).then(amountsOrDeferred => {

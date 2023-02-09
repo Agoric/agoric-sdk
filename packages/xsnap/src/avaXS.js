@@ -173,7 +173,6 @@ async function runTestScript(
 
     for (const name of testNames) {
       if (titleMatch && !isMatch(name, titleMatch)) {
-        // eslint-disable-next-line no-continue
         continue;
       }
       assertionStatus = { ok: 0, 'not ok': 0, SKIP: 0 };
@@ -221,10 +220,10 @@ async function runTestScript(
  * @typedef {object} AvaXSConfig
  * @property {string[]} files - files from args or else ava.files
  * @property {string[]} require - specifiers of modules to run before each test script
- * @property {string[]=} exclude - files containing any of these should be skipped
+ * @property {string[]} [exclude] - files containing any of these should be skipped
  * @property {boolean} debug
  * @property {boolean} verbose
- * @property {string=} titleMatch
+ * @property {string} [titleMatch]
  */
 async function avaConfig(args, options, { glob, readFile }) {
   /**
@@ -357,7 +356,7 @@ export async function main(
   for (const filename of files) {
     if (exclude && exclude.filter(s => filename.match(s)).length > 0) {
       console.warn('# SKIP test excluded on XS', filename);
-      // eslint-disable-next-line no-continue
+
       continue;
     } else if (verbose) {
       console.log('# test script:', filename);

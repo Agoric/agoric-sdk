@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { makeMockChainStorageRoot } from '@agoric/vats/tools/storage-test-utils.js';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
 import {
@@ -22,8 +22,8 @@ const makeVoterVat = async (log, vats, zoe) => {
 /**
  *
  * @param {Pick<QuestionDetails, 'issue' | 'positions' | 'electionType'>} qDetails
- * @param {TimestampValue} closingTime
- * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: TimerService }} tools
+ * @param {import('@agoric/time/src/types').Timestamp} closingTime
+ * @param {{ electorateFacet: import('../../../src/committee.js').CommitteeElectorateCreatorFacet, installations: Record<string, Installation>, timer: import('@agoric/time/src/types').TimerService }} tools
  * @param {*} quorumRule
  */
 const createQuestion = async (qDetails, closingTime, tools, quorumRule) => {

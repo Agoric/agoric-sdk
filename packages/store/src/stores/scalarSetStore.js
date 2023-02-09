@@ -1,7 +1,11 @@
 import { Far, filterIterable } from '@endo/marshal';
-import { compareRank } from '../patterns/rankOrder.js';
+import { compareRank } from '@endo/marshal/src/rankOrder.js';
 import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
-import { matches, fit, assertPattern } from '../patterns/patternMatchers.js';
+import {
+  matches,
+  mustMatch,
+  assertPattern,
+} from '../patterns/patternMatchers.js';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
@@ -11,8 +15,8 @@ const { quote: q } = assert;
  * @template K
  * @param {Set<K>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
- * @param {((k: K) => void)=} assertKeyOkToDelete
- * @param {string=} keyName
+ * @param {(k: K) => void} [assertKeyOkToDelete]
+ * @param {string} [keyName]
  * @returns {SetStore<K>}
  */
 export const makeSetStoreMethods = (
@@ -32,7 +36,7 @@ export const makeSetStoreMethods = (
     );
 
   /**
-   * @param {Pattern=} keyPatt
+   * @param {Pattern} [keyPatt]
    * @returns {Iterable<K>}
    */
   const keys = (keyPatt = undefined) =>
@@ -81,7 +85,7 @@ export const makeSetStoreMethods = (
  *
  * @template K
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} [options]
  * @returns {SetStore<K>}
  */
 export const makeScalarSetStore = (
@@ -100,7 +104,7 @@ export const makeScalarSetStore = (
 
     assertScalarKey(key);
     if (keyShape !== undefined) {
-      fit(key, keyShape, 'setStore key');
+      mustMatch(key, keyShape, 'setStore key');
     }
   };
 

@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * @typedef {object} QueueStorage
  * @property {() => void} commit
@@ -23,59 +25,68 @@
  * Parallel access is not supported, only a single outstanding operation at a
  * time.
  *
+ * @template {unknown} [T=unknown]
  * @param {QueueStorage} storage a scoped queue storage
  */
 export const makeQueue = storage => {
+  const getHead = () =>
+    /** @type {number | undefined} */ (storage.get('head')) || 0;
+  const getTail = () =>
+    /** @type {number | undefined} */ (storage.get('tail')) || 0;
+
   const queue = {
     size: () => {
-      const tail = storage.get('tail') || 0;
-      const head = storage.get('head') || 0;
-      return tail - head;
+      return getTail() - getHead();
     },
+    /** @param {T} obj */
     push: obj => {
-      const tail = storage.get('tail') || 0;
+      const tail = getTail();
       storage.set('tail', tail + 1);
       storage.set(`${tail}`, obj);
       storage.commit();
     },
-    /** @type {Iterable<unknown>} */
+    /** @returns {Iterable<T>} */
     consumeAll: () => ({
       [Symbol.iterator]: () => {
         let done = false;
-        let head = storage.get('head') || 0;
-        const tail = storage.get('tail') || 0;
+        let head = getHead();
+        const tail = getTail();
         return {
           next: () => {
-            if (done) return { done };
-            if (head < tail) {
-              // Still within the queue.
-              const headKey = `${head}`;
-              const value = storage.get(headKey);
-              storage.delete(headKey);
-              head += 1;
-              return { value, done };
+            if (!done) {
+              if (head < tail) {
+                // Still within the queue.
+                const headKey = `${head}`;
+                const value = /** @type {T} */ (storage.get(headKey));
+                storage.delete(headKey);
+                head += 1;
+                return { value, done };
+              }
+              // Reached the end, so clean up our indices.
+              storage.delete('head');
+              storage.delete('tail');
+              storage.commit();
+              done = true;
             }
-            // Reached the end, so clean up our indices.
-            storage.delete('head');
-            storage.delete('tail');
-            storage.commit();
-            done = true;
-            return { done };
+            return { value: undefined, done };
           },
           return: () => {
-            if (done) return { done };
-            // We're done consuming, so save our state.
-            storage.set('head', head);
-            storage.commit();
-            done = true;
-            return { done };
+            if (!done) {
+              // We're done consuming, so save our state.
+              storage.set('head', head);
+              storage.commit();
+              done = true;
+            }
+            return { value: undefined, done };
           },
           throw: err => {
-            if (done) return { done };
-            // Don't change our state.
-            storage.abort();
-            done = true;
-            throw err;
+            if (!done) {
+              // Don't change our state.
+              storage.abort();
+              done = true;
+              throw err;
+            }
+            return { value: undefined, done };
           },
         };
       },

@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
@@ -29,10 +29,12 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   let exitMessage;
   let hasExited = false;
   let exitWithFailure;
-  /** @type {Store<BundleID, BundleCap>} */
-  const idToBundleCap = makeStore('idToBundleCap');
-  /** @type {Store<BundleCap, EndoZipBase64Bundle>} */
-  const bundleCapToBundle = makeStore('bundleCapToBundle');
+  /** @type {MapStore<BundleID, BundleCap>} */
+  const idToBundleCap = makeScalarMapStore('idToBundleCap');
+  /** @type {MapStore<BundleCap, EndoZipBase64Bundle>} */
+  const bundleCapToBundle = makeScalarMapStore('bundleCapToBundle');
+  /** @type {MapStore<string, BundleID>} */
+  const nameToBundleID = makeScalarMapStore('nameToBundleID');
   const fakeVatPowers = {
     exitVatWithFailure: reason => {
       exitMessage = reason;
@@ -62,8 +64,14 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return Promise.resolve(idToBundleCap.get(bundleID));
     },
     getNamedBundleCap: name => {
-      assert.equal(name, 'zcf', 'fakeVatAdmin only knows ZCF');
-      return Promise.resolve(zcfBundleCap);
+      if (name === 'zcf') {
+        return Promise.resolve(zcfBundleCap);
+      }
+      const id = nameToBundleID.get(name);
+      return Promise.resolve(idToBundleCap.get(id));
+    },
+    getBundleIDByName: name => {
+      return Promise.resolve().then(() => nameToBundleID.get(name));
     },
     createVat: (bundleCap, { vatParameters = {} } = {}) => {
       assert.equal(bundleCap, zcfBundleCap, 'fakeVatAdmin only knows ZCF');
@@ -112,6 +120,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       );
     },
   });
+  const criticalVatKey = harden({});
   const vatAdminState = {
     getExitMessage: () => exitMessage,
     getHasExited: () => hasExited,
@@ -122,12 +131,18 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
           bundle.endoZipBase64,
           bundleCapToBundle.get(idToBundleCap.get(id)).endoZipBase64,
         );
-        return;
+        return idToBundleCap.get(id);
       }
       const bundleCap = fakeBundleCap();
       idToBundleCap.init(id, bundleCap);
       bundleCapToBundle.init(bundleCap, bundle);
+      return bundleCap;
     },
+    installNamedBundle: (name, id, bundle) => {
+      nameToBundleID.init(name, id);
+      return vatAdminState.installBundle(id, bundle);
+    },
+    getCriticalVatKey: () => criticalVatKey,
   };
   return { admin, vatAdminState };
 }

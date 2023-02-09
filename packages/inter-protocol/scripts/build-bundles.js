@@ -3,7 +3,7 @@ import '@endo/init';
 import {
   createBundles,
   extractProposalBundles,
-} from '@agoric/deploy-script-support';
+} from '@agoric/internal/src/createBundles.js';
 import url from 'url';
 import process from 'process';
 
@@ -29,10 +29,7 @@ await createBundles(
       '../src/econCommitteeCharter.js',
       '../bundles/bundle-econCommitteeCharter.js',
     ],
-    [
-      '../src/price/priceAggregatorChainlink.js',
-      '../bundles/bundle-priceAggregatorChainlink.js',
-    ],
+    ['../src/price/fluxAggregator.js', '../bundles/bundle-fluxAggregator.js'],
   ],
   dirname,
 );

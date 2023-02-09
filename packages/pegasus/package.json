@@ -31,7 +31,7 @@
   "dependencies": {
     "@agoric/assert": "^0.5.1",
     "@agoric/ertp": "^0.15.3",
-    "@agoric/nat": "^4.1.0",
+    "@endo/nat": "^4.1.0",
     "@agoric/notifier": "^0.5.1",
     "@agoric/store": "^0.8.3",
     "@agoric/swingset-vat": "^0.30.2",
@@ -47,7 +47,7 @@
     "@agoric/deploy-script-support": "^0.9.4",
     "ava": "^5.1.0",
     "c8": "^7.12.0",
-    "import-meta-resolve": "^1.1.1"
+    "import-meta-resolve": "^2.2.1"
   },
   "files": [
     "scripts/",

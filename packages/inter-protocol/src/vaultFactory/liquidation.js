@@ -7,7 +7,7 @@ import {
   makeRatio,
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeTracer } from '../makeTracer.js';
+import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('LIQ', false);
 
@@ -44,7 +44,7 @@ const makeQuote = (priceAuthority, highestDebtRatio, liquidationMargin) => {
  * @param {Ratio} liquidationMargin
  */
 const updateQuote = (quote, highestDebtRatio, liquidationMargin) => {
-  E(quote).updateLevel(
+  void E(quote).updateLevel(
     highestDebtRatio.denominator, // collateral
     liquidationThreshold(highestDebtRatio, liquidationMargin),
   );

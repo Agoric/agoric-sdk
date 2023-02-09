@@ -6,6 +6,7 @@ import {
 import '../types-ambient.js';
 
 /**
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
  * @typedef { (delivery: VatDeliveryObject) => (VatDeliveryResult | Promise<VatDeliveryResult>) } VatDispatcherSyncAsync
  * @typedef { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } VatDispatcher
  */
@@ -117,23 +118,16 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
       const result = doSyscall(['vatstoreGet', key]);
       return result === null ? undefined : result;
     },
+    vatstoreGetNextKey: priorKey => doSyscall(['vatstoreGetNextKey', priorKey]),
     vatstoreSet: (key, value) => doSyscall(['vatstoreSet', key, value]),
-    vatstoreGetAfter: (priorKey, lowerBound, upperBound) => {
-      const syscall = ['vatstoreGetAfter', priorKey, lowerBound];
-      if (upperBound) {
-        syscall.push(upperBound);
-      }
-      const result = doSyscall(syscall);
-      return result === null ? [undefined, undefined] : result;
-    },
     vatstoreDelete: key => doSyscall(['vatstoreDelete', key]),
   };
 
   const blocking = [
     'callNow',
     'vatstoreGet',
+    'vatstoreGetNextKey',
     'vatstoreSet',
-    'vatstoreGetAfter',
     'vatstoreDelete',
   ];
 

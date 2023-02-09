@@ -1,6 +1,6 @@
 import { E as defaultE } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeStore } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/store';
 import { assert, details as X } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
@@ -21,9 +21,9 @@ import './types.js';
  */
 export default function makeRouter() {
   /**
-   * @type {Store<string, any>}
+   * @type {MapStore<string, any>}
    */
-  const prefixToRoute = makeStore('prefix');
+  const prefixToRoute = makeScalarMapStore('prefix');
   return Far('Router', {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
@@ -76,8 +76,8 @@ export default function makeRouter() {
  */
 export function makeRouterProtocol(E = defaultE) {
   const router = makeRouter();
-  const protocols = makeStore('prefix');
-  const protocolHandlers = makeStore('prefix');
+  const protocols = makeScalarMapStore('prefix');
+  const protocolHandlers = makeScalarMapStore('prefix');
 
   function registerProtocolHandler(paths, protocolHandler) {
     const protocol = makeNetworkProtocol(protocolHandler);

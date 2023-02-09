@@ -4,7 +4,7 @@ import {
   isRankSorted,
   makeFullOrderComparatorKit,
   sortByRank,
-} from '../patterns/rankOrder.js';
+} from '@endo/marshal/src/rankOrder.js';
 
 /// <reference types="ses"/>
 
@@ -46,7 +46,7 @@ const checkNoDuplicates = (elements, fullCompare, check) => {
 /**
  * @template T
  * @param {T[]} elements
- * @param {FullCompare=} fullCompare
+ * @param {FullCompare} [fullCompare]
  * @returns {void}
  */
 export const assertNoDuplicates = (elements, fullCompare = undefined) => {

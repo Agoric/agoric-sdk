@@ -30,7 +30,7 @@ import {
   buildTimer,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
-import { makeWithQueue } from '@agoric/vats/src/queue.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
 import {
   DEFAULT_METER_PROVIDER,

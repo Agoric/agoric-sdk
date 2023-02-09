@@ -7,9 +7,9 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { E } from '@endo/far';
 
-import '../../exported.js';
-
 import { makeStartInstance } from '../../src/startInstance.js';
+
+/** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */
 
 test('startInstance', async t => {
   const MOOLA_BRAND_PETNAME = 'moola';
@@ -48,7 +48,7 @@ test('startInstance', async t => {
     },
   };
 
-  /** @type {Petname=} */
+  /** @type {Petname | undefined} */
   let addedPetname;
 
   /** @type {import('../../src/startInstance.js').InstanceManager} */

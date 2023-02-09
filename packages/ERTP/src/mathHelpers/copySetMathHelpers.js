@@ -1,7 +1,7 @@
 import {
   keyEQ,
   makeCopySet,
-  fit,
+  mustMatch,
   M,
   getCopySetKeys,
   setIsSuperset,
@@ -18,7 +18,7 @@ const empty = makeCopySet([]);
  */
 export const copySetMathHelpers = harden({
   doCoerce: set => {
-    fit(set, M.set(), 'set of amount');
+    mustMatch(set, M.set(), 'set of amount');
     return set;
   },
   doMakeEmpty: () => empty,

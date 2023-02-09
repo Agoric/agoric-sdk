@@ -1,6 +1,6 @@
 import { Far, assertPassable, passStyleOf } from '@endo/marshal';
 import { getCopyMapEntries, isCopyMap } from '../keys/checkKey.js';
-import { fit, assertPattern } from '../patterns/patternMatchers.js';
+import { mustMatch, assertPattern } from '../patterns/patternMatchers.js';
 
 const { quote: q, Fail } = assert;
 
@@ -9,8 +9,8 @@ const { quote: q, Fail } = assert;
  * @param {WeakMap<K & object, V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
- * @param {((k: K) => void)=} assertKeyOkToDelete
- * @param {string=} keyName
+ * @param {(k: K) => void} [assertKeyOkToDelete]
+ * @param {string} [keyName]
  * @returns {WeakMapStore<K,V>}
  */
 export const makeWeakMapStoreMethods = (
@@ -85,7 +85,7 @@ export const makeWeakMapStoreMethods = (
  *
  * @template K,V
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} [options]
  * @returns {WeakMapStore<K,V>}
  */
 export const makeScalarWeakMapStore = (
@@ -107,7 +107,7 @@ export const makeScalarWeakMapStore = (
 
     assertPassable(value);
     if (valueShape !== undefined) {
-      fit(value, valueShape, 'weakMapStore value');
+      mustMatch(value, valueShape, 'weakMapStore value');
     }
   };
 
@@ -118,7 +118,7 @@ export const makeScalarWeakMapStore = (
     passStyleOf(key) === 'remotable' ||
       Fail`Only remotables can be keys of scalar WeakMapStores: ${key}`;
     if (keyShape !== undefined) {
-      fit(key, keyShape, 'weakMapStore key');
+      mustMatch(key, keyShape, 'weakMapStore key');
     }
     assertKVOkToSet(key, value);
   };

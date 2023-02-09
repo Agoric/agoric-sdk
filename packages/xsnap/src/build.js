@@ -49,7 +49,7 @@ function makeCLI(command, { spawn }) {
   return freeze({
     /**
      * @param {string[]} args
-     * @param {{ cwd?: string }=} opts
+     * @param {{ cwd?: string }} [opts]
      */
     run: (args, opts) => {
       const { cwd = '.' } = opts || {};
@@ -61,7 +61,7 @@ function makeCLI(command, { spawn }) {
     },
     /**
      * @param {string[]} args
-     * @param {{ cwd?: string }=} opts
+     * @param {{ cwd?: string }} [opts]
      */
     pipe: (args, opts) => {
       const { cwd = '.' } = opts || {};

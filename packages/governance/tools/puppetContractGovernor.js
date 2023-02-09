@@ -12,9 +12,9 @@ import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 // It adds the ability for tests to update parameters directly.
 
 /**
- * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
+ * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: unknown} } SF Start function of governed contract
  * @param {ZCF<{
- *   timer: TimerService,
+ *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
@@ -41,12 +41,14 @@ export const start = async (zcf, privateArgs) => {
   const {
     creatorFacet: governedCF,
     instance: governedInstance,
+    /** @type {ReturnType<SF>['publicFacet']} */
     publicFacet: governedPF,
     adminFacet,
   } = await E(zoe).startInstance(
     governedContractInstallation,
     governedIssuerKeywordRecord,
-    // @ts-expect-error XXX governance types
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore XXX governance types
     augmentedTerms,
     privateArgs.governed,
   );
@@ -76,9 +78,11 @@ export const start = async (zcf, privateArgs) => {
     changeParams,
     invokeAPI,
     setFilters,
+    /** @returns {Awaited<ReturnType<SF>>['creatorFcet']} */
     getCreatorFacet: () => limitedCreatorFacet,
     getAdminFacet: () => adminFacet,
     getInstance: () => governedInstance,
+    /** @returns {Awaited<ReturnType<SF>>['publicFacet']} */
     getPublicFacet: () => governedPF,
   });
 
@@ -89,3 +93,7 @@ export const start = async (zcf, privateArgs) => {
   return { creatorFacet, publicFacet };
 };
 harden(start);
+/**
+ * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: unknown} } SF Start function of governed contract
+ * @typedef {Awaited<ReturnType<typeof start<SF>>>} PuppetContractGovernorKit<SF>
+ */

@@ -1,8 +1,8 @@
 import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-import { Nat } from '@agoric/nat';
-import { keyEQ, makeStore } from '@agoric/store';
+import { Nat } from '@endo/nat';
+import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { assertAllDefined } from '@agoric/internal';
 import { ParamTypes } from '../constants.js';
@@ -53,8 +53,8 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @param {ERef<ZoeService>} [zoe]
  */
 const makeParamManagerBuilder = (publisherKit, zoe) => {
-  /** @type {Store<Keyword, any>} */
-  const namesToParams = makeStore('Parameter Name');
+  /** @type {MapStore<Keyword, any>} */
+  const namesToParams = makeScalarMapStore('Parameter Name');
   const { publisher, subscriber } = publisherKit;
   assertAllDefined({ publisher, subscriber });
 
@@ -196,7 +196,8 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
     const { instance, installation } = await E(zoe).getInvitationDetails(i);
-    // @ts-expect-error typescript thinks they're guaranteed True. I'm not sure.
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
+    // @ts-ignore typedefs say they're guaranteed truthy but just to be safe
     assert(instance && installation, 'must be an invitation');
   };
 

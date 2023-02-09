@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"math"
+	"strconv"
 
 	"github.com/tendermint/tendermint/libs/log"
 
@@ -20,7 +20,7 @@ import (
 )
 
 // Top-level paths for chain storage should remain synchronized with
-// packages/vats/src/chain-storage-paths.js
+// packages/internal/src/chain-storage-paths.js
 const (
 	StoragePathActionQueue  = "actionQueue"
 	StoragePathActivityhash = "activityhash"
@@ -327,7 +327,7 @@ func (k Keeper) SetEgress(ctx sdk.Context, egress *types.Egress) error {
 		return err
 	}
 
-	// FIXME: We need to publish this value.
+	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, path, string(bz))
 
 	// Now make sure the corresponding account has been initialised.
@@ -360,6 +360,7 @@ func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
 // SetMailbox sets the entire mailbox struct for a peer
 func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
+	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, path, mailbox)
 }
 

@@ -117,8 +117,8 @@
  *   intended to eventually be durable has not yet been made durable.  A store
  *   marked as fakeDurable will appear to operate normally but any attempt to
  *   upgrade its containing vat will fail with an error.
- * @property {Pattern=} keyShape
- * @property {Pattern=} valueShape
+ * @property {Pattern} [keyShape]
+ * @property {Pattern} [valueShape]
  */
 
 /**
@@ -130,7 +130,7 @@
  *
  * WeakStores have the lookup and update methods but not the query
  * or query-update methods.
- * Non-weak Stores are like their corresponding WeakStore, but with the
+ * Non-weak Stores are like their corresponding WeakStores, but with the
  * additional query and query-update methods.
  */
 
@@ -222,20 +222,8 @@
 
 /**
  * @template K,V
- * @typedef {WeakMapStore<K,V>} WeakStore
- * Deprecated type name `WeakStore`. Use `WeakMapStore` instead.
- */
-
-/**
- * @template K,V
- * @typedef {MapStore<K,V>} Store
- * Deprecated type name `Store`. Use `MapStore` instead.
- */
-
-/**
- * @template K,V
  * @typedef {object} LegacyWeakMap
- * LegacyWeakMap is deprecated. Use WeakMapStore instead.
+ * LegacyWeakMap is deprecated. Use WeakMapStore instead if possible.
  * @property {(key: K) => boolean} has
  * Check if a key exists
  * @property {(key: K) => V} get
@@ -252,7 +240,7 @@
 /**
  * @template K,V
  * @typedef {object} LegacyMap
- * LegacyWeakMap is deprecated. Use WeakMapStore instead.
+ * LegacyMap is deprecated. Use MapStore instead if possible.
  * @property {(key: K) => boolean} has
  * Check if a key exists
  * @property {(key: K) => V} get
@@ -453,7 +441,7 @@
  * return that string. Else return `undefined`. For example, a scalar-only
  * encodePassable would return `undefined` for all non-scalar keys.
  * @param {Passable} key
- * @returns {string=}
+ * @returns {string | undefined}
  */
 
 /**
@@ -745,7 +733,7 @@
  *             label?: string|number
  * ) => boolean} checkMatches
  * @property {(specimen: Passable, patt: Pattern) => boolean} matches
- * @property {(specimen: Passable, patt: Pattern, label?: string|number) => void} fit
+ * @property {(specimen: Passable, patt: Pattern, label?: string|number) => void} mustMatch
  * @property {(patt: Pattern) => void} assertPattern
  * @property {(patt: Passable) => boolean} isPattern
  * @property {(patt: Pattern) => void} assertKeyPattern

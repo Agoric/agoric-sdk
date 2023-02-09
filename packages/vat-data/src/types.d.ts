@@ -8,13 +8,16 @@
 import type {
   InterfaceGuard,
   MapStore,
+  Pattern,
   SetStore,
   StoreOptions,
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
 
-type Baggage = MapStore<string, unknown>;
+export type { Pattern };
+
+export type Baggage = MapStore<string, unknown>;
 
 type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
   ? Rest
@@ -26,17 +29,19 @@ type MinusContext<
   R = ReturnType<F>, // R: the return type of F
 > = (...args: Tail<P>) => R;
 
-type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
+export type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
 
-type KindFacets<B> = {
+export type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
 };
 
-type KindContext<S, F> = { state: S; self: KindFacet<F> };
-type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
+export type KindContext<S, F> = { state: S; self: KindFacet<F> };
+export type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
-type FunctionsPlusContext<C, O> = { [K in keyof O]: PlusContext<C, O[K]> };
+export type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
+export type FunctionsPlusContext<C, O> = {
+  [K in keyof O]: PlusContext<C, O[K]>;
+};
 
 declare class DurableKindHandleClass {
   private descriptionTag: string;
@@ -48,7 +53,7 @@ export type DurableKindHandle = DurableKindHandleClass;
  * siblings. Not all options are meaningful in all contexts. See the
  * doc-comments on each option.
  */
-type DefineKindOptions<C> = {
+export type DefineKindOptions<C> = {
   /**
    * If provided, the `finish` function will be called after the instance is
    * made and internally registered, but before it is returned. The finish
@@ -70,12 +75,18 @@ type DefineKindOptions<C> = {
   durable?: boolean;
 
   /**
+   * If provided, it describes the shape of all state records of instances
+   * of this kind.
+   */
+  stateShape?: { [name: string]: Pattern };
+
+  /**
    * Intended for internal use only.
    * Should the raw methods receive their `context` argument as their first
    * argument or as their `this` binding? For `defineDurableKind` and its
-   * siblings (including `vivifySingleton`), this defaults to off, meaning that
+   * siblings (including `prepareSingleton`), this defaults to off, meaning that
    * their behavior methods receive `context` as their first argument.
-   * `vivifyFarClass` and its siblings (including `vivifyFarInstance`) use
+   * `prepareExoClass` and its siblings (including `prepareExo`) use
    * this flag internally to indicate that their methods receive `context`
    * as their `this` binding.
    */
@@ -88,7 +99,7 @@ type DefineKindOptions<C> = {
    * pattern is satisfied before calling the raw method.
    *
    * In `defineDurableKind` and its siblings, this defaults to off.
-   * `vivifyFarClass` use this internally to protect their raw class methods
+   * `prepareExoClass` use this internally to protect their raw class methods
    * using the provided interface.
    */
   interfaceGuard?: InterfaceGuard<unknown>;
@@ -96,7 +107,7 @@ type DefineKindOptions<C> = {
 
 export type VatData = {
   // virtual kinds
-  /** @deprecated Use defineVirtualFarClass instead */
+  /** @deprecated Use defineVirtualExoClass instead */
   defineKind: <P, S, F>(
     tag: string,
     init: (...args: P) => S,
@@ -104,7 +115,7 @@ export type VatData = {
     options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
 
-  /** @deprecated Use defineVirtualFarClassKit instead */
+  /** @deprecated Use defineVirtualExoClassKit instead */
   defineKindMulti: <P, S, B>(
     tag: string,
     init: (...args: P) => S,
@@ -115,7 +126,7 @@ export type VatData = {
   // durable kinds
   makeKindHandle: (descriptionTag: string) => DurableKindHandle;
 
-  /** @deprecated Use defineDurableFarClass instead */
+  /** @deprecated Use defineDurableExoClass instead */
   defineDurableKind: <P, S, F>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
@@ -123,7 +134,7 @@ export type VatData = {
     options?: DefineKindOptions<KindContext<S, F>>,
   ) => (...args: P) => KindFacet<F>;
 
-  /** @deprecated Use defineDurableFarClassKit instead */
+  /** @deprecated Use defineDurableExoClassKit instead */
   defineDurableKindMulti: <P, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
@@ -156,7 +167,7 @@ export type VatData = {
 
 // The JSDoc is repeated here and at the function definition so it appears
 // in IDEs where it's used, regardless of type resolution.
-interface PickFacet {
+export interface PickFacet {
   /**
    * When making a multi-facet kind, it's common to pick one facet to
    * expose. E.g.,
@@ -173,8 +184,8 @@ interface PickFacet {
   ): (...args: Parameters<M>) => ReturnType<M>[F];
 }
 
-/** @deprecated Use vivifyFarClass instead */
-type VivifyKind = <P, S, F>(
+/** @deprecated Use prepareExoClass instead */
+export type PrepareKind = <P, S, F>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,
@@ -182,8 +193,8 @@ type VivifyKind = <P, S, F>(
   options?: DefineKindOptions<KindContext<S, F>>,
 ) => (...args: P) => KindFacet<F>;
 
-/** @deprecated Use vivifyFarClassKit instead */
-type VivifyKindMulti = <P, S, B>(
+/** @deprecated Use prepareExoClassKit instead */
+export type PrepareKindMulti = <P, S, B>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,

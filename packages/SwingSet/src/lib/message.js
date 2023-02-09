@@ -163,13 +163,9 @@ export function insistVatSyscallObject(vso) {
       assert.typeof(data, 'string');
       break;
     }
-    case 'vatstoreGetAfter': {
-      const [priorKey, lowerBound, upperBound] = rest;
+    case 'vatstoreGetNextKey': {
+      const [priorKey] = rest;
       assert.typeof(priorKey, 'string');
-      assert.typeof(lowerBound, 'string');
-      if (upperBound !== undefined && upperBound !== null) {
-        assert.typeof(upperBound, 'string');
-      }
       break;
     }
     case 'vatstoreDelete': {

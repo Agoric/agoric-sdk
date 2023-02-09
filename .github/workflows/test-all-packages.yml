@@ -4,9 +4,25 @@ name: Test all Packages
 
 on:
   pull_request:
+  push:
+    branches: [master]
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+env:
+  AGORIC_AVA_USE_TAP: true
+  DD_ENV: ci
+  DATADOG_SITE: us3.datadoghq.com
+  DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+  TEST_COLLECT: 'tee -a _testoutput.txt'
+
+# this is required, since explicitly setting bash as shell enables pipefail, which is not
+# on by default.  This is required to fail correctly when teeing output to a file to collect
+# test instrumentation
+defaults:
+  run:
+    shell: bash
 
 # set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
@@ -16,7 +32,7 @@ jobs:
       matrix:
         node-version: ['14.x', '16.x', '18.x']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
@@ -32,7 +48,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -48,7 +64,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -71,7 +87,9 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -86,45 +104,51 @@ jobs:
       #- name: yarn test (everything)
       #  run: yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (access-token)
-        run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (agoric-cli)
-        run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (assert)
-        run: cd packages/assert && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/assert && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet/api)
-        run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
-        run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (ERTP)
-        run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/ERTP && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (governance)
-        run: cd packages/governance && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (import-manager)
-        run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/import-manager && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (notifier)
-        run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/notifier && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (same-structure)
-        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sharing-service)
-        run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (smart-wallet)
-        run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
-        run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (spawner)
-        run: cd packages/spawner && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/spawner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (stat-logger)
-        run: cd packages/stat-logger && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/stat-logger && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (store)
-        run: cd packages/store && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swing-store)
-        run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (web-components)
-        run: cd packages/web-components && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/web-components && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet-connection)
-        run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/wallet-connection && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
-        run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -139,43 +163,55 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (cosmos)
-        run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }}
+        run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cache)
-        run: cd packages/cache && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/cache && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (casting)
-        run: cd packages/casting && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
-        run: cd packages/internal && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (inter-protocol)
-        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (pegasus)
-        run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vats)
-        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-runner)
-        run: cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (telemetry)
-        run: cd packages/telemetry && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/telemetry && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deploy-script-support)
-        run: cd packages/deploy-script-support && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/deploy-script-support && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (ui-components)
-        run: cd packages/ui-components && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/ui-components && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet)
-        run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (eslint-config)
-        run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vat-data)
-        run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (time)
+        run: cd packages/time && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (swingset-liveslots)
+        run: cd packages/swingset-liveslots && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
         # The meta-test!
       - name: Check for untested packages
         run: node ./scripts/check-untested-packages.mjs
+
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   ##############
   # Long-running tests are executed individually.
@@ -192,14 +228,22 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
         timeout-minutes: 20
-        run: cd packages/solo && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -214,7 +258,9 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
@@ -223,7 +269,13 @@ jobs:
         with:
           go-version: 1.17
       - name: yarn test (cosmic-swingset)
-        run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
@@ -239,13 +291,21 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[A-Da-d]*.js' | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -260,19 +320,27 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[E-Ie-i]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[E-Ie-i]*.js' | $TEST_COLLECT
       - name: yarn test (xsnap)
-        run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       # explicitly test the XS worker, for visibility
       - name: yarn test (SwingSet XS Worker)
         if: matrix.engine != 'xs'
-        run: cd packages/SwingSet && yarn test:xs-worker
+        run: cd packages/SwingSet && yarn test:xs-worker | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -287,13 +355,20 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[J-Rj-r]*.js' | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -308,14 +383,21 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
-      - uses: actions/checkout@v2
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
 
       - name: yarn test (SwingSet)
-        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js'
+        run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[S-Zs-z0-9]*.js' | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -331,15 +413,22 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         timeout-minutes: 30
-        run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -355,12 +444,19 @@ jobs:
         run: |
           echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
           echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (zoe)
         timeout-minutes: 30
-        run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }}
+        run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi

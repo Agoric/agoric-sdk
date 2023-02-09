@@ -1,7 +1,7 @@
-import { fit, M } from '@agoric/store';
-import { vivifyKind, vivifySingleton } from '@agoric/vat-data';
+import { mustMatch, M } from '@agoric/store';
+import { prepareExo, prepareExoClass } from '@agoric/vat-data';
 import { swapExact } from '../contractSupport/index.js';
-import { isAfterDeadlineExitRule } from '../typeGuards.js';
+import { isAfterDeadlineExitRule, OfferHandlerI } from '../typeGuards.js';
 
 const { Fail } = assert;
 
@@ -32,12 +32,16 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
   // XXX the exerciseOption offer handler that this makes is an object rather
   // than a function for now only because we do not yet support durable
   // functions.
-  const makeExerciser = vivifyKind(
+  const makeExerciser = prepareExoClass(
     instanceBaggage,
     'makeExerciserKindHandle',
+    OfferHandlerI,
     sellSeat => ({ sellSeat }),
     {
-      handle: ({ state: { sellSeat } }, buySeat) => {
+      handle(buySeat) {
+        const {
+          state: { sellSeat },
+        } = this;
         assert(!sellSeat.hasExited(), sellSeatExpiredMsg);
         try {
           swapExact(zcf, sellSeat, buySeat);
@@ -56,7 +60,7 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    fit(
+    mustMatch(
       sellSeat.getProposal(),
       M.splitRecord({ exit: { afterDeadline: M.any() } }),
       'exit afterDeadline',
@@ -78,9 +82,20 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
   };
 
-  const creatorFacet = vivifySingleton(instanceBaggage, 'creatorFacet', {
-    makeInvitation: () => zcf.makeInvitation(makeOption, 'makeCallOption'),
+  const CoveredCallCratorFacetI = M.interface('CoveredCallCratorFacet', {
+    makeInvitation: M.call().returns(M.promise()),
   });
+
+  const creatorFacet = prepareExo(
+    instanceBaggage,
+    'creatorFacet',
+    CoveredCallCratorFacetI,
+    {
+      makeInvitation() {
+        return zcf.makeInvitation(makeOption, 'makeCallOption');
+      },
+    },
+  );
   return harden({ creatorFacet });
 };
 

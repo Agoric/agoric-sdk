@@ -1,19 +1,24 @@
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
-import { fit, getCopyBagEntries, M } from '@agoric/store';
+import { mustMatch, getCopyBagEntries, M } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { makeTracer } from '../makeTracer.js';
 import { ManagerKW as KW } from './constants.js';
 
 const { details: X } = assert;
 
 const trace = makeTracer('RSM', false);
+/**
+ * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
+ * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
+ * @typedef {import('@agoric/time/src/types').TimerService} TimerService
+ */
 
 /**
  * @typedef {{
@@ -203,7 +208,7 @@ const manager = {
       brands.Attestation,
       X`Invalid Attestation ${attestationGiven}. Expected brand ${brands.Attestation}`,
     );
-    fit(attestationGiven.value, M.bagOf(M.string()), 'attestationGiven');
+    mustMatch(attestationGiven.value, M.bagOf(M.string()), 'attestationGiven');
     const [[_addr, valueLiened]] = getCopyBagEntries(attestationGiven.value);
     const amountLiened = AmountMath.make(brands.Stake, valueLiened);
     const maxDebt = floorMultiplyBy(amountLiened, mintingRatio);

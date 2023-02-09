@@ -1,8 +1,8 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
 import { E, Far } from '@endo/far';
+import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeBridgeManager } from './bridge.js';
-import { makeChainStorageRoot } from './lib-chainStorage.js';
 
 export function buildRootObject(vatPowers) {
   const { D } = vatPowers;
@@ -41,12 +41,7 @@ export function buildRootObject(vatPowers) {
 
     const toStorage = message => E(storageBridgeManager).toBridge(message);
 
-    const rootNode = makeChainStorageRoot(
-      toStorage,
-      'swingset',
-      rootPath,
-      options,
-    );
+    const rootNode = makeChainStorageRoot(toStorage, rootPath, options);
     return rootNode;
   };
 

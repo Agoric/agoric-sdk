@@ -14,13 +14,17 @@
 import { assert, q, Fail } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { objectMap } from '@agoric/internal';
-import { makeLegacyMap, makeScalarMap, makeScalarWeakMap } from '@agoric/store';
+import {
+  makeLegacyMap,
+  makeScalarMapStore,
+  makeScalarWeakMapStore,
+} from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import {
   makeNotifierFromSubscriber,
   makeNotifierKit,
@@ -29,12 +33,12 @@ import {
 } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 
+import { makeExportContext } from '@agoric/smart-wallet/src/marshal-contexts.js';
 import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';
 import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
-import { makeExportContext } from './marshal-contexts.js';
 
 import '@agoric/store/exported.js';
 import '@agoric/zoe/exported.js';
@@ -136,8 +140,8 @@ export function makeWalletRoot({
   const installationMapping = makeMapping('installation');
 
   const brandTable = makeIssuerTable();
-  /** @type {WeakStore<Issuer, string>} */
-  const issuerToBoardId = makeScalarWeakMap('issuer');
+  /** @type {WeakMapStore<Issuer, string>} */
+  const issuerToBoardId = makeScalarWeakMapStore('issuer');
 
   // Idempotently initialize the issuer's synchronous boardId mapping.
   const initIssuerToBoardId = async (issuer, brand) => {
@@ -166,21 +170,22 @@ export function makeWalletRoot({
     return issuerBoardId;
   };
 
-  /** @type {WeakStore<Purse, Brand>} */
-  const purseToBrand = makeScalarWeakMap('purse');
-  /** @type {Store<Brand, string>} */
-  const brandToDepositFacetId = makeScalarMap('brand');
-  /** @type {Store<Brand, Purse>} */
-  const brandToAutoDepositPurse = makeScalarMap('brand');
+  /** @type {WeakMapStore<Purse, Brand>} */
+  const purseToBrand = makeScalarWeakMapStore('purse');
+  /** @type {MapStore<Brand, string>} */
+  const brandToDepositFacetId = makeScalarMapStore('brand');
+  /** @type {MapStore<Brand, Purse>} */
+  const brandToAutoDepositPurse = makeScalarMapStore('brand');
 
   // Offers that the wallet knows about (the inbox).
-  const idToOffer = makeScalarMap('offerId');
+  const idToOffer = makeScalarMapStore('offerId');
   /** @type {LegacyMap<string, PromiseRecord<any>>} */
   // Legacy because promise kits are not passables
   const idToOfferResultPromiseKit = makeLegacyMap('id');
 
-  /** @type {WeakStore<Handle<'invitation'>, any>} */
-  const invitationHandleToOfferResult = makeScalarWeakMap('invitationHandle');
+  /** @type {WeakMapStore<Handle<'invitation'>, any>} */
+  const invitationHandleToOfferResult =
+    makeScalarWeakMapStore('invitationHandle');
 
   // Compiled offers (all ready to execute).
   const idToCompiledOfferP = new Map();
@@ -1072,8 +1077,8 @@ export function makeWalletRoot({
     return compiled;
   };
 
-  /** @type {Store<string, DappRecord>} */
-  const dappOrigins = makeScalarMap('dappOrigin');
+  /** @type {MapStore<string, DappRecord>} */
+  const dappOrigins = makeScalarMapStore('dappOrigin');
   const { notifier: dappsNotifier, updater: dappsUpdater } =
     /** @type {NotifierRecord<DappRecord[]>} */ (makeNotifierKit([]));
 
@@ -1367,8 +1372,8 @@ export function makeWalletRoot({
     return ret;
   }
 
-  /** @type {Store<number, PaymentRecord>} */
-  const idToPaymentRecord = makeScalarMap('paymentId');
+  /** @type {MapStore<number, PaymentRecord>} */
+  const idToPaymentRecord = makeScalarMapStore('paymentId');
   const { updater: paymentsUpdater, notifier: paymentsNotifier } =
     /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
   /**
@@ -1409,7 +1414,7 @@ export function makeWalletRoot({
 
   /**
    * @param {ERef<Payment>} paymentP
-   * @param {Purse | Petname=} depositTo
+   * @param {Purse | Petname} [depositTo]
    */
   const addPayment = async (paymentP, depositTo = undefined) => {
     // We don't even create the record until we resolve the payment.
@@ -1461,7 +1466,7 @@ export function makeWalletRoot({
     await updateAllPurseState();
   }
 
-  const pendingEnableAutoDeposits = makeScalarMap('brand');
+  const pendingEnableAutoDeposits = makeScalarMapStore('brand');
   async function doEnableAutoDeposit(pursePetname, updateState) {
     const purse = purseMapping.petnameToVal.get(pursePetname);
     const brand = purseToBrand.get(purse);
@@ -1516,7 +1521,6 @@ export function makeWalletRoot({
     return E(board)
       .getValue(boardId)
       .then(value => {
-        // @ts-expect-error type is too specific
         context.ensureBoardId(boardId, value);
         return acceptFn(petname, value);
       });

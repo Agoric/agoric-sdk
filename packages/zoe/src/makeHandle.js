@@ -1,6 +1,6 @@
 import { assert } from '@agoric/assert';
-import { initEmpty, makeHeapFarInstance } from '@agoric/store';
-import { vivifyFarClass } from '@agoric/vat-data';
+import { initEmpty, makeExo } from '@agoric/store';
+import { prepareExoClass } from '@agoric/vat-data';
 
 import { HandleI } from './typeGuards.js';
 
@@ -16,7 +16,7 @@ const { Fail } = assert;
  */
 export const defineDurableHandle = (baggage, handleType) => {
   typeof handleType === 'string' || Fail`handleType must be a string`;
-  const makeHandle = vivifyFarClass(
+  const makeHandle = prepareExoClass(
     baggage,
     `${handleType}Handle`,
     HandleI,
@@ -39,8 +39,6 @@ export const makeHandle = handleType => {
   typeof handleType === 'string' || Fail`handleType must be a string`;
   // Return the intersection type (really just an empty object).
   // @ts-expect-error Bit by our own opaque types.
-  return /** @type {Handle<H>} */ (
-    makeHeapFarInstance(`${handleType}Handle`, HandleI, {})
-  );
+  return /** @type {Handle<H>} */ (makeExo(`${handleType}Handle`, HandleI, {}));
 };
 harden(makeHandle);
