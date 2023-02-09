@@ -3,7 +3,7 @@
  * @property {ProposalRecord} proposal
  * @property {Allocation} initialAllocation
  * @property {SeatHandle} seatHandle
- * @property {object=} offerArgs
+ * @property {object} [offerArgs]
  */
 
 /**
@@ -45,7 +45,7 @@
 
 /**
  * @callback ZoeSeatAdminExit
- * @param {Completion=} completion
+ * @param {Completion} [completion]
  * @returns {void}
  */
 
@@ -111,7 +111,7 @@
  * @callback ZoeInstanceAdminMakeInvitation
  * @param {InvitationHandle} invitationHandle
  * @param {string} description
- * @param {Record<string, any>=} customProperties
+ * @param {Record<string, any>} [customProperties]
  * @param {Pattern} [proposalShape]
  * @returns {Invitation}
  */
@@ -154,8 +154,8 @@
 /**
  * @callback MakeZoeMint
  * @param {Keyword} keyword
- * @param {AssetKind=} assetKind
- * @param {AdditionalDisplayInfo=} displayInfo
+ * @param {AssetKind} [assetKind]
+ * @param {AdditionalDisplayInfo} [displayInfo]
  * @param {Partial<{elementShape: Pattern}>} [options]
  * @returns {ZoeMint}
  */
@@ -210,13 +210,13 @@
  * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
  * @param {InstanceRecord} instanceRecordFromZoe
  * @param {IssuerRecords} issuerStorageFromZoe
- * @param {object=} privateArgs
+ * @param {object} [privateArgs]
  * @returns {Promise<ExecuteContractResult>}
  */
 
 /**
  * @callback RestartContract
- * @param {object=} privateArgs
+ * @param {object} [privateArgs]
  * @returns {Promise<ExecuteUpgradeableContractResult>}
  */
 

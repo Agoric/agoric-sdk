@@ -74,7 +74,7 @@ const setupReserveBootstrap = async (
  *
  * @param {import("ava").ExecutionContext<unknown>} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
- * @param {ManualTimer | undefined=} timer
+ * @param {ManualTimer} [timer]
  */
 export const setupReserveServices = async (
   t,

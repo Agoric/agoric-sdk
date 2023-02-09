@@ -104,8 +104,8 @@ harden(partialAssign);
  *   intended to eventually be durable has not yet been made durable.  A store
  *   marked as fakeDurable will appear to operate normally but any attempt to
  *   upgrade its containing vat will fail with an error.
- * @property {Pattern=} keyShape
- * @property {Pattern=} valueShape
+ * @property {import('./types').Pattern} [keyShape]
+ * @property {import('./types').Pattern} [valueShape]
  */
 /**
  * Unlike `provideLazy`, `provide` should be called at most once

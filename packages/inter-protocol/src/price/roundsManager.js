@@ -272,7 +272,7 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
        * @param {bigint} roundId
        * @param {OracleStatus} status
        * @param {Timestamp} blockTimestamp
-       * @returns {OracleStatus=} the new status
+       * @returns {OracleStatus | undefined} the new status
        */
       proposeNewRound(roundId, status, blockTimestamp) {
         const { helper } = this.facets;

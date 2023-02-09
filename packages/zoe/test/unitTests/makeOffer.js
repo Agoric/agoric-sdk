@@ -4,8 +4,8 @@ import { assert } from '@agoric/assert';
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {ZCF} zcf
- * @param {Proposal=} proposal
- * @param {PaymentPKeywordRecord=} payments
+ * @param {Proposal} [proposal]
+ * @param {PaymentPKeywordRecord} [payments]
  * @param {Pattern} [proposalShape]
  * @param {string} [description]
  * @returns {Promise<{zcfSeat: ZCFSeat, userSeat: UserSeat}>}

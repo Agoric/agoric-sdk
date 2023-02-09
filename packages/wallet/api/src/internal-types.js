@@ -29,12 +29,12 @@
 
 /**
  * @typedef {object} Contact
- * @property {string=} depositBoardId
+ * @property {string} [depositBoardId]
  */
 
 /**
  * @typedef {object} DappRecord
- * @property {Promise<void>=} approvalP
+ * @property {Promise<void>} [approvalP]
  * @property {Petname} suggestedPetname
  * @property {Petname} petname
  * @property {boolean} enable

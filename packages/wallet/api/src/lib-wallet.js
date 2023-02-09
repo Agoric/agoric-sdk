@@ -1414,7 +1414,7 @@ export function makeWalletRoot({
 
   /**
    * @param {ERef<Payment>} paymentP
-   * @param {Purse | Petname=} depositTo
+   * @param {Purse | Petname} [depositTo]
    */
   const addPayment = async (paymentP, depositTo = undefined) => {
     // We don't even create the record until we resolve the payment.

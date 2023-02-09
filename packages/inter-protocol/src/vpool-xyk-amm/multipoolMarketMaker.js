@@ -236,7 +236,7 @@ const start = async (zcf, privateArgs, baggage) => {
     () => zcf.makeEmptySeatKit().zcfSeat,
   );
 
-  /** @type {AssetReservePublicFacet=} */
+  /** @type {AssetReservePublicFacet | undefined} */
   let reserveFacet = baggage.has('reserveFacet')
     ? baggage.get('reserveFacet')
     : undefined;

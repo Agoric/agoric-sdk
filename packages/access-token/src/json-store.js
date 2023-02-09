@@ -229,7 +229,7 @@ function makeJSONStore(dirPath, forceReset = false) {
  * serialized to a text file.  If there is an existing store at the given
  * `dirPath`, it will be reinitialized to an empty state.
  *
- * @param {string=} dirPath  Path to a directory in which database files may be kept.
+ * @param {string} [dirPath]  Path to a directory in which database files may be kept.
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   JSON store instance.  If this is nullish, the JSON store created will

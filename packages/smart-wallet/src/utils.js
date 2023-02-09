@@ -13,7 +13,7 @@ export const makeWalletStateCoalescer = () => {
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
 
-  /** @type {Brand=} */
+  /** @type {Brand | undefined} */
   let allegedInvitationBrand = undefined;
 
   /**

@@ -183,7 +183,7 @@ const coerceLR = (h, leftAmount, rightAmount) => {
  * @template {AssetKind} [K=AssetKind]
  * @param {Amount<K>} leftAmount
  * @param {Amount<K>} rightAmount
- * @param {Brand<K>=} brand
+ * @param {Brand<K>} [brand]
  * @returns {boolean}
  */
 const isGTE = (leftAmount, rightAmount, brand = undefined) => {
@@ -278,7 +278,7 @@ const AmountMath = {
    * Return true if the Amount is empty. Otherwise false.
    *
    * @param {Amount} amount
-   * @param {Brand=} brand
+   * @param {Brand} [brand]
    * @returns {boolean}
    */
   isEmpty: (amount, brand = undefined) => {
@@ -297,7 +297,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {boolean}
    */
   isEqual: (leftAmount, rightAmount, brand = undefined) => {
@@ -314,7 +314,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
   add: (leftAmount, rightAmount, brand = undefined) => {
@@ -333,7 +333,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} leftAmount
    * @param {Amount<K>} rightAmount
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
   subtract: (leftAmount, rightAmount, brand = undefined) => {
@@ -347,7 +347,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} x
    * @param {Amount<K>} y
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
   min: (x, y, brand = undefined) =>
@@ -363,7 +363,7 @@ const AmountMath = {
    * @template {AssetKind} [K=AssetKind]
    * @param {Amount<K>} x
    * @param {Amount<K>} y
-   * @param {Brand<K>=} brand
+   * @param {Brand<K>} [brand]
    * @returns {Amount<K>}
    */
   max: (x, y, brand = undefined) =>

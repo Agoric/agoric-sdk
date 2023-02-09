@@ -15,7 +15,7 @@ import './types-ambient.js';
 /**
  * @template {AssetKind} K
  * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
@@ -98,7 +98,7 @@ export const hasIssuer = baggage =>
  * @param {string} name
  * @param {K} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
@@ -143,7 +143,7 @@ harden(makeDurableIssuerKit);
  * @param {string} name
  * @param {K} [assetKind='nat']
  * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
