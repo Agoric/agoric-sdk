@@ -29,17 +29,19 @@ type MinusContext<
   R = ReturnType<F>, // R: the return type of F
 > = (...args: Tail<P>) => R;
 
-type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
+export type KindFacet<O> = { [K in keyof O]: MinusContext<O[K]> };
 
-type KindFacets<B> = {
+export type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
 };
 
-type KindContext<S, F> = { state: S; self: KindFacet<F> };
-type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
+export type KindContext<S, F> = { state: S; self: KindFacet<F> };
+export type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
-type FunctionsPlusContext<C, O> = { [K in keyof O]: PlusContext<C, O[K]> };
+export type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
+export type FunctionsPlusContext<C, O> = {
+  [K in keyof O]: PlusContext<C, O[K]>;
+};
 
 declare class DurableKindHandleClass {
   private descriptionTag: string;
@@ -51,7 +53,7 @@ export type DurableKindHandle = DurableKindHandleClass;
  * siblings. Not all options are meaningful in all contexts. See the
  * doc-comments on each option.
  */
-type DefineKindOptions<C> = {
+export type DefineKindOptions<C> = {
   /**
    * If provided, the `finish` function will be called after the instance is
    * made and internally registered, but before it is returned. The finish
@@ -183,7 +185,7 @@ export interface PickFacet {
 }
 
 /** @deprecated Use prepareExoClass instead */
-type PrepareKind = <P, S, F>(
+export type PrepareKind = <P, S, F>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,
@@ -192,7 +194,7 @@ type PrepareKind = <P, S, F>(
 ) => (...args: P) => KindFacet<F>;
 
 /** @deprecated Use prepareExoClassKit instead */
-type PrepareKindMulti = <P, S, B>(
+export type PrepareKindMulti = <P, S, B>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,
