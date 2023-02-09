@@ -558,12 +558,16 @@ async function replay(transcriptFile) {
     const stepsCompleted = Promise.all(
       workers.map(({ stepCompleted }) => stepCompleted),
     );
-    const newWorkersSynced = stepsCompleted.then(() => {
-      if (workersSynced === newWorkersSynced) {
-        updateWorkersSynced();
-        analyzeSyscallResults();
-      }
-    });
+    const newWorkersSynced = stepsCompleted.then(
+      workers.length > 0
+        ? () => {
+            if (workersSynced === newWorkersSynced) {
+              updateWorkersSynced();
+              analyzeSyscallResults();
+            }
+          }
+        : () => {},
+    );
     workersSynced = newWorkersSynced;
   };
 
