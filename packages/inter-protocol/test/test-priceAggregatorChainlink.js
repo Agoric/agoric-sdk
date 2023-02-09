@@ -26,7 +26,7 @@ const test = unknownTest;
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
-const aggregatorPath = `${dirname}/../src/price/fluxAggregator.js`;
+const aggregatorPath = `${dirname}/../src/price/fluxAggregatorContract.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -52,7 +52,7 @@ const makeContext = async () => {
   // else, and they can use it to create a new contract instance
   // using the same code.
   vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../src/price/fluxAggregator.js').start>} */
+  /** @type {Installation<import('../src/price/fluxAggregatorContract.js').start>} */
   const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
 
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
@@ -122,7 +122,7 @@ test('basic', async t => {
     'agorice1priceOracleC',
   );
 
-  // ----- round 1: basic consensus
+  t.log('----- round 1: basic consensus');
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 100n });
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
@@ -133,7 +133,7 @@ test('basic', async t => {
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
-  // ----- round 2: check restartDelay implementation
+  t.log('----- round 2: check restartDelay implementation');
   // since oracle A initialized the last round, it CANNOT start another round before
   // the restartDelay, which means its submission will be IGNORED. this means the median
   // should ONLY be between the OracleB and C values, which is why it is 25000
@@ -151,7 +151,7 @@ test('basic', async t => {
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
   t.is(round2Attempt1.answer, 2500n);
 
-  // ----- round 3: check oracle submission order
+  t.log('----- round 3: check oracle submission order');
   // unlike the previous test, if C initializes, all submissions should be recorded,
   // which means the median will be the expected 5000 here
   await oracleTimer.tick();

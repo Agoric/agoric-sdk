@@ -2,8 +2,8 @@
  * Adaptation of Chainlink algorithm to the Agoric platform.
  * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
  */
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
+import { AmountMath } from '@agoric/ertp';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
   makeNotifierFromSubscriber,
   observeNotifier,
@@ -19,6 +19,8 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeOracleAdmin } from './priceOracleAdmin.js';
 import { makeRoundsManagerKit } from './roundsManager.js';
+
+const trace = makeTracer('FlxAgg', false);
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -63,20 +65,26 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * the *Node Operator Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
+ * @param {Baggage} baggage
  * @param {ZCF<ChainlinkConfig & {
  * timer: TimerService,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
- * @param {{
- * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
- * storageNode: ERef<StorageNode>,
- * }} privateArgs
- * @param {Baggage} baggage
+ * @param {TimerService} timerPresence
+ * @param {IssuerRecord<'set'> & { mint: Mint<'set'> }} quoteKit
+ * @param {StorageNode} storageNode
+ * @param {Marshaller} marshaller
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const provideFluxAggregator = (
+  baggage,
+  zcf,
+  timerPresence,
+  quoteKit,
+  storageNode,
+  marshaller,
+) => {
   // brands come from named terms instead of `brands` key because the latter is
   // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
   // Oracle brands are inert (without issuers or mints).
@@ -89,7 +97,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     minSubmissionValue,
     restartDelay,
     timeout,
-    timer,
 
     unitAmountIn = AmountMath.make(brandIn, 1n),
   } = zcf.getTerms();
@@ -103,26 +110,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     minSubmissionValue,
     restartDelay,
     timeout,
-    timer,
     unitAmountIn,
   });
-
-  // Get the timer's identity.
-  const timerPresence = await timer;
-
-  const quoteMint =
-    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
-  const quoteIssuerRecord = await zcf.saveIssuer(
-    E(quoteMint).getIssuer(),
-    'Quote',
-  );
-  const quoteKit = {
-    ...quoteIssuerRecord,
-    mint: quoteMint,
-  };
-
-  const { marshaller, storageNode } = privateArgs;
-  assertAllDefined({ marshaller, storageNode });
 
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
@@ -180,7 +169,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     createQuote: roundsManagerKit.contract.makeCreateQuote(),
     notifier: makeNotifierFromSubscriber(answerSubscriber),
     quoteIssuer: quoteKit.issuer,
-    timer,
+    timer: timerPresence,
     actualBrandIn: brandIn,
     actualBrandOut: brandOut,
   });
@@ -212,6 +201,7 @@ export const start = async (zcf, privateArgs, baggage) => {
      * @param {string} oracleId unique per contract instance
      */
     makeOracleInvitation: async oracleId => {
+      trace('makeOracleInvitation', oracleId);
       /**
        * If custom arguments are supplied to the `zoe.offer` call, they can
        * indicate an OraclePriceSubmission notifier and a corresponding
@@ -258,6 +248,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
     /** @param {string} oracleId */
     async initOracle(oracleId) {
+      trace('initOracle', oracleId);
       assert.typeof(oracleId, 'string');
 
       const oracleAdmin = makeOracleAdmin(
@@ -266,7 +257,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           maxSubmissionValue,
           oracleId, // must be unique per vat
           roundPowers: roundsManagerKit.oracle,
-          timer,
+          timer: timerPresence,
         }),
       );
       oracles.init(oracleId, oracleAdmin);
@@ -283,7 +274,7 @@ export const start = async (zcf, privateArgs, baggage) => {
      * @returns {Promise<RoundState>}
      */
     async oracleRoundState(oracleId, queriedRoundId) {
-      const blockTimestamp = await E(timer).getCurrentTimestamp();
+      const blockTimestamp = await E(timerPresence).getCurrentTimestamp();
       const status = await E(oracles.get(oracleId)).getStatus();
 
       const oracleCount = oracles.getSize();
@@ -342,4 +333,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return harden({ creatorFacet, publicFacet });
 };
-harden(start);
+harden(provideFluxAggregator);
+/** @typedef {ReturnType<typeof provideFluxAggregator>} FluxAggregator */

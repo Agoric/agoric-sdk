@@ -76,8 +76,12 @@ const validRoundId = roundId => {
  */
 
 /**
+ * @typedef {IssuerRecord<'set'> & { mint: Mint<'set'> }} QuoteKit
+ */
+
+/**
  * @typedef {Readonly<import('./fluxAggregator.js').ChainlinkConfig & {
- * quoteKit: IssuerRecord<'set'> & { mint: ERef<Mint<'set'>> },
+ * quoteKit: QuoteKit,
  * answerPublisher: Publisher<void>,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
