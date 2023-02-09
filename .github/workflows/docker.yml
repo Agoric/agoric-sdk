@@ -60,14 +60,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and Push deployment
+      - name: Build and Push ssh-node
         uses: docker/build-push-action@v3
         with:
-          file: packages/deployment/Dockerfile.deployment
+          file: packages/deployment/Dockerfile.ssh-node
           context: packages/deployment/docker
           platforms: ${{ matrix.platform }}
           push: true
-          tags: 'agoric/deployment:${{ env.BUILD_TAG }}'
+          tags: 'agoric/ssh-node:${{ env.BUILD_TAG }}'
       - name: Build and Push sdk
         uses: docker/build-push-action@v3
         with:
@@ -147,7 +147,7 @@ jobs:
       - name: Push SDK multiarch
         run: |
           set -ex
-          for IMAGE in agoric/agoric-sdk agoric/deployment agoric/cosmic-swingset-setup; do
+          for IMAGE in agoric/agoric-sdk agoric/ssh-node agoric/cosmic-swingset-setup; do
             for TAG in ${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}; do
               sources=
               for ARCH in linux/amd64 linux/arm64/v8; do
