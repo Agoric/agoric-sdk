@@ -15,6 +15,7 @@ const { Fail } = assert;
  * @property {string} storeName
  * @property {string} storeSubkey
  * @property {string} dataPrefixBytes
+ * @property {string} [noDataValue]
  */
 
 /**
