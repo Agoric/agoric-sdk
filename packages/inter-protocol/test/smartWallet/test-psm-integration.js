@@ -383,6 +383,65 @@ test.failing('deposit > 1 payment to unknown brand #6961', async t => {
   }
 });
 
+test.failing('recover when we exceed the mint limit', async t => {
+  const { fromEntries } = Object;
+  const { make } = AmountMath;
+  const { anchor } = t.context;
+  const { agoricNames, bankManager } = t.context.consume;
+  const getBalance = (addr, brand) => {
+    const bank = E(bankManager).getBankForAddress(addr);
+    const purse = E(bank).getPurse(brand);
+    return E(purse).getCurrentAmount();
+  };
+  const namedBrands = kws =>
+    Promise.all(
+      kws.map(kw =>
+        E(agoricNames)
+          .lookup('brand', kw)
+          .then(b => [kw, b]),
+      ),
+    ).then(fromEntries);
+
+  t.log('Edward has 10,000,000 AUSD');
+  const unit = 10_000_000n;
+  const eAddr = 'addrForEdward';
+  const smartWallet = await t.context.simpleProvideWallet(eAddr);
+  await E(E(smartWallet).getDepositFacet()).receive(
+    // @ts-expect-error FarRef grumble
+    E(anchor.mint).mintPayment(make(anchor.brand, 10_000_000n * unit)),
+  );
+  t.deepEqual(
+    await getBalance(eAddr, anchor.brand),
+    make(anchor.brand, 10_000_000n * unit),
+    'initial balance',
+  );
+
+  t.log('He offers way more than the mint limit');
+  const instance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
+  const brand = await namedBrands(['IST']);
+  const proposal = harden({
+    give: { In: make(anchor.brand, 1_000_000n * unit) },
+    want: { Out: make(brand.IST, 900_000n * unit) },
+  });
+  await E(smartWallet.getOffersFacet()).executeOffer({
+    id: '1',
+    invitationSpec: {
+      source: 'contract',
+      instance,
+      publicInvitationMaker: 'makeWantMintedInvitation',
+      invitationArgs: [],
+    },
+    proposal,
+  });
+
+  t.log('He still has 10,000,000 AUSD');
+  t.deepEqual(
+    await getBalance(eAddr, anchor.brand),
+    make(anchor.brand, 10_000_000n * unit),
+    'original balance recovered',
+  );
+});
+
 // XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
 test('recover when some withdrawals succeed and others fail', async t => {
   const { fromEntries } = Object;
