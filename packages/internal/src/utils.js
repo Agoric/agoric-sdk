@@ -250,7 +250,7 @@ harden(bindAllMethods);
 
 /**
  * @template {{}} T
- * @typedef {{ [K in keyof T]: DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
+ * @typedef {{ [K in keyof T]: T[K] extends Function ? T[K] : DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
  */
 
 /**
@@ -266,7 +266,7 @@ harden(bindAllMethods);
  * A more constrained version of {deeplyFulfilled} for type safety until https://github.com/endojs/endo/issues/1257
  * Useful in starting contracts that need all terms to be fulfilled in order to be durable.
  *
- * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/far').ERef<DeeplyAwaited<T>>}
+ * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/far').ERef<import('type-fest').Simplify<DeeplyAwaited<T>>>}
  */
 export const deeplyFulfilledObject = obj => {
   assert(isObject(obj), 'param must be an object');
