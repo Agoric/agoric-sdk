@@ -25,7 +25,8 @@
   },
   "devDependencies": {
     "ava": "^5.1.0",
-    "c8": "^7.12.0"
+    "c8": "^7.12.0",
+    "zx": "^7.1.1"
   },
   "dependencies": {
     "@agoric/access-token": "^0.4.20",
