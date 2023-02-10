@@ -383,7 +383,7 @@ test.failing('deposit > 1 payment to unknown brand #6961', async t => {
   }
 });
 
-test.failing('recover when we exceed the mint limit', async t => {
+test('recover when we exceed the mint limit', async t => {
   const { fromEntries } = Object;
   const { make } = AmountMath;
   const { anchor } = t.context;
@@ -435,8 +435,10 @@ test.failing('recover when we exceed the mint limit', async t => {
   });
 
   t.log('He still has 10,000,000 AUSD');
+  await eventLoopIteration();
+  const balance = await getBalance(eAddr, anchor.brand);
   t.deepEqual(
-    await getBalance(eAddr, anchor.brand),
+    balance,
     make(anchor.brand, 10_000_000n * unit),
     'original balance recovered',
   );
