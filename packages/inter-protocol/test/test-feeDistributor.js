@@ -68,7 +68,7 @@ const assertPaymentArray = async (
   }
 };
 
-test('fee distribution', async t => {
+const makeScenario = async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
@@ -84,6 +84,32 @@ test('fee distribution', async t => {
       Rewards: 3n,
     },
   });
+
+  return {
+    timerService,
+    runMint,
+    issuer,
+    brand,
+    amm,
+    vaultFactory,
+    getPayments,
+    creatorFacet,
+    feeDepositFacet,
+  };
+};
+
+test('fee distribution', async t => {
+  const {
+    timerService,
+    runMint,
+    issuer,
+    brand,
+    amm,
+    vaultFactory,
+    getPayments,
+    creatorFacet,
+    feeDepositFacet,
+  } = await makeScenario(t);
 
   const feeCollectors = {
     vaultFactory,
@@ -107,6 +133,56 @@ test('fee distribution', async t => {
   await timerService.tick();
 
   await assertPaymentArray(t, getPayments(), 2, [500n, 270n], issuer, brand);
+});
+
+test('setKeywordShares', async t => {
+  const {
+    timerService,
+    runMint,
+    issuer,
+    brand,
+    amm,
+    vaultFactory,
+    getPayments,
+    creatorFacet,
+    feeDepositFacet,
+  } = await makeScenario(t);
+
+  const feeCollectors = {
+    vaultFactory,
+    amm,
+  };
+  await Promise.all(
+    Object.entries(feeCollectors).map(async ([debugName, collector]) => {
+      await creatorFacet.startPeriodicCollection(debugName, collector);
+    }),
+  );
+
+  const { feeDepositFacet: deposit2, getPayments: getPayments2 } =
+    makeFakeFeeDepositFacetKit(issuer);
+  const rewardsDestination =
+    creatorFacet.makeDepositFacetDestination(feeDepositFacet);
+  const reserveDestination = creatorFacet.makeDepositFacetDestination(deposit2);
+  await creatorFacet.setKeywordShares(
+    harden({
+      Reserve: 4n,
+      Rewards: 1n,
+    }),
+  );
+  await creatorFacet.setDestinations({
+    Rewards: rewardsDestination,
+    Reserve: reserveDestination,
+  });
+
+  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
+  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
+
+  t.deepEqual(await getPayments(), []);
+
+  await timerService.tick();
+
+  await assertPaymentArray(t, getPayments(), 2, [100n, 54n], issuer, brand);
+  await assertPaymentArray(t, getPayments2(), 2, [400n, 216n], issuer, brand);
 });
 
 test('fee distribution, leftovers', async t => {

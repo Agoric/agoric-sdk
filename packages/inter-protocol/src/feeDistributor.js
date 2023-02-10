@@ -1,7 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
 import { observeNotifier } from '@agoric/notifier';
-import { makeScalarSetStore } from '@agoric/store';
+import { mustMatch, makeScalarSetStore, M } from '@agoric/store';
 
 const { details: X } = assert;
 
@@ -171,7 +171,8 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 
   /** @type {Record<string, ERef<FeeDestination>>} */
   let destinations = {};
-  let shareConfig = makeShareConfig(destinations, terms.keywordShares);
+  let { keywordShares } = terms;
+  let shareConfig = makeShareConfig(destinations, keywordShares);
 
   /** @type {SetStore<FeeCollector>} */
   const collectors = makeScalarSetStore();
@@ -289,9 +290,15 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
      */
     setDestinations: async newDestinations => {
       destinations = newDestinations;
-      shareConfig = makeShareConfig(destinations, terms.keywordShares);
+      shareConfig = makeShareConfig(destinations, keywordShares);
       // Run once immediately for these destinations.
       await schedulePayments();
+    },
+
+    /** @param {Record<Keyword, bigint>} newShares */
+    setKeywordShares: newShares => {
+      mustMatch(newShares, M.recordOf(M.string(), M.nat()));
+      keywordShares = newShares;
     },
   });
 
