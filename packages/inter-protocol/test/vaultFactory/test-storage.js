@@ -33,7 +33,7 @@ test('storage keys', async t => {
     ['collaterals', 'rewardPoolAllocation'],
   );
   t.is(
-    await subscriptionKey(E(vdp).getElectorateSubscription()),
+    await subscriptionKey(E(vdp).getSubscription()),
     'mockChainStorageRoot.vaultFactory.governance',
   );
 
@@ -71,7 +71,7 @@ test('storage keys', async t => {
   );
   t.is(
     await subscriptionKey(
-      E(vdp).getSubscription({
+      E(vdp).getCollateralManagerGovernanceSubscription({
         collateralBrand: aeth.brand,
       }),
     ),
@@ -94,7 +94,7 @@ test('storage keys', async t => {
   );
   t.is(
     await subscriptionKey(
-      E(vdp).getSubscription({
+      E(vdp).getCollateralManagerGovernanceSubscription({
         collateralBrand: chit.brand,
       }),
     ),

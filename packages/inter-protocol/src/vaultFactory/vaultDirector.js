@@ -102,6 +102,7 @@ export const prepareVaultDirector = (
 
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
+  /** @type {MapStore<Brand, ReturnType<typeof makeVaultParamManager>>} */
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
   /** @type {PublishKit<MetricsNotification>} */
@@ -520,7 +521,7 @@ export const prepareVaultDirector = (
          *
          * @param {{ collateralBrand: Brand }} selector
          */
-        getSubscription({ collateralBrand }) {
+        getCollateralManagerGovernanceSubscription({ collateralBrand }) {
           return vaultParamManagers.get(collateralBrand).getSubscription();
         },
         getPublicTopics() {
@@ -529,7 +530,7 @@ export const prepareVaultDirector = (
         /**
          * subscription for the paramManager for the vaultFactory's electorate
          */
-        getElectorateSubscription() {
+        getSubscription() {
           return directorParamManager.getSubscription();
         },
         /**

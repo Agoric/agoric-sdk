@@ -2861,7 +2861,7 @@ test('governance publisher', async t => {
   );
   const { lender } = services.vaultFactory;
   const directorGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getElectorateSubscription(),
+    E(lender).getSubscription(),
   );
   let {
     value: { current },
@@ -2875,7 +2875,7 @@ test('governance publisher', async t => {
   t.is(current.EndorsedUI.type, 'string');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getSubscription({
+    E(lender).getCollateralManagerGovernanceSubscription({
       collateralBrand: aeth.brand,
     }),
   );
