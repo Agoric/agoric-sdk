@@ -100,21 +100,23 @@ func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 
 	// JS uses IEEE 754 floats so avoid overflowing integers
 	if tail == MaxUint53 {
-		return errors.New("actionQueue overflow")
+		return errors.New(StoragePathActionQueue + " overflow")
 	}
 
 	// Set the vstorage corresponding to the queue entry for the current tail.
-	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(fmt.Sprintf("actionQueue.%d", tail), string(bz)))
+	path := StoragePathActionQueue + "." + strconv.FormatUint(tail, 10)
+	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, string(bz)))
 
 	// Update the tail to point to the next available entry.
-	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry("actionQueue.tail", fmt.Sprintf("%d", tail+1)))
+	path = StoragePathActionQueue + ".tail"
+	k.vstorageKeeper.SetStorage(ctx, vstoragetypes.NewStorageEntry(path, strconv.FormatUint(tail+1, 10)))
 	return nil
 }
 
 func (k Keeper) actionQueueIndex(ctx sdk.Context, name string) (uint64, error) {
 	index := uint64(0)
 	var err error
-	indexEntry := k.vstorageKeeper.GetEntry(ctx, "actionQueue."+name)
+	indexEntry := k.vstorageKeeper.GetEntry(ctx, StoragePathActionQueue+"."+name)
 	if indexEntry.HasData() {
 		index, err = strconv.ParseUint(indexEntry.StringValue(), 10, 64)
 	}
