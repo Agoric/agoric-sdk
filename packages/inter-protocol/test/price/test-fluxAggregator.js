@@ -18,7 +18,8 @@ import { subscribeEach } from '@agoric/notifier';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe/src/zoeService/zoe.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { topicPath } from './supports.js';
+import { provideFluxAggregator } from '../../src/price/fluxAggregator.js';
+import { topicPath } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
 const test = unknownTest;
