@@ -263,3 +263,44 @@ func TestStorageNotify(t *testing.T) {
 		t.Errorf("got after second flush events %#v, want %#v", got, expectedAfterFlushEvents)
 	}
 }
+
+func TestStorageMigrate(t *testing.T) {
+	testKit := makeTestKit()
+	ctx, keeper := testKit.ctx, testKit.vstorageKeeper
+
+	// Simulate a pre-migration storage with empty string as placeholders
+	keeper.SetStorage(ctx, types.NewStorageEntry("key1", "value1"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1.grandchild1", "value1grandchild"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key1.child1", ""))
+
+	// Do a deep set.
+	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2", "value2grandchild"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2.grandchild2a", "value2grandchilda"))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key2.child2", ""))
+	keeper.SetStorage(ctx, types.NewStorageEntry("key2", ""))
+
+	keeper.MigrateNoDataPlaceholders(ctx)
+
+	if keeper.HasStorage(ctx, "key1.child1") {
+		t.Errorf("has key1.child1, want no value")
+	}
+	if keeper.HasStorage(ctx, "key2.child2") {
+		t.Errorf("has key2.child2, want no value")
+	}
+	if keeper.HasStorage(ctx, "key2") {
+		t.Errorf("has key2, want no value")
+	}
+
+	// Check the export.
+	expectedExport := []*types.DataEntry{
+		{Path: "key1", Value: "value1"},
+		{Path: "key1.child1.grandchild1", Value: "value1grandchild"},
+		{Path: "key2.child2.grandchild2", Value: "value2grandchild"},
+		{Path: "key2.child2.grandchild2a", Value: "value2grandchilda"},
+	}
+	got := keeper.ExportStorage(ctx)
+	if !reflect.DeepEqual(got, expectedExport) {
+		t.Errorf("got export %q, want %q", got, expectedExport)
+	}
+	keeper.ImportStorage(ctx, got)
+}
