@@ -324,7 +324,11 @@ const start = async (zcf, privateArgs) => {
     voteOnOfferFilter: voteOnFilter,
     getCreatorFacet: () => limitedCreatorFacet,
     getAdminFacet: () => adminFacet,
+    // TODO use distinct names. "governed" could apply to governance aspects or the contract subject to governance
+    // "governee" could be used to name the contract that the governor instantiated
+    // TODO rename to getGoverneeInstance for clarity
     getInstance: () => governedInstance,
+    // TODO rename to getGoverneePublicFacet for clarity
     getPublicFacet: () => governedPF,
   });
 

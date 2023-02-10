@@ -130,7 +130,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/governance/src/contractGovernor.js').start>, Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>]]}
    */
   const [[brandIn, brandOut], [contractGovernor, priceAggregator]] =
     await Promise.all([
@@ -190,9 +190,9 @@ export const createPriceFeed = async (
 
   trace('awaiting startInstance');
   // Create the price feed.
-  const aggregator = await E(zoe).startInstance(
-    /** @type {Installation<import('@agoric/governance/src/contractGovernor.js').start>} */
-    (contractGovernor),
+  /** @type {{ creatorFacet: import('@agoric/governance/src/contractGovernor.js').GovernedContractFnFacetAccess<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
+  const aggregatorGovernor = await E(zoe).startInstance(
+    contractGovernor,
     undefined,
     governorTerms,
     {
@@ -205,24 +205,34 @@ export const createPriceFeed = async (
       },
     },
   );
-  trace('got aggregator');
-  await E(aggregators).set(terms, { aggregator });
+  const faCreatorFacet = await E(
+    aggregatorGovernor.creatorFacet,
+  ).getCreatorFacet();
+  trace('got aggregator', faCreatorFacet);
+  // FIXME come back to this, might be wrong in master
+  // await E(aggregators).set(terms, { aggregator });
+
+  const faPublic = await E(aggregatorGovernor.creatorFacet).getPublicFacet();
+  const faInstance = await E(aggregatorGovernor.creatorFacet).getInstance();
+  trace('got', { faInstance, faPublic });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
     AGORIC_INSTANCE_NAME,
-    aggregator.instance,
+    faInstance,
   );
+
+  trace('registered', AGORIC_INSTANCE_NAME, faInstance);
 
   // Publish price feed in home.priceAuthority.
   const forceReplace = true;
-  void E(priceAuthorityAdmin)
-    .registerPriceAuthority(
-      E(aggregator.publicFacet).getPriceAuthority(),
-      brandIn,
-      brandOut,
-      forceReplace,
-    )
-    .then(deleter => E(aggregators).set(terms, { aggregator, deleter }));
+  void E(priceAuthorityAdmin).registerPriceAuthority(
+    E(faPublic).getPriceAuthority(),
+    brandIn,
+    brandOut,
+    forceReplace,
+  );
+  // FIXME come back to this, might be wrong in master
+  // .then(deleter => E(aggregators).set(terms, { aggregator, deleter }));
 
   /**
    * Initialize a new oracle and send an invitation to administer it.
@@ -230,9 +240,7 @@ export const createPriceFeed = async (
    * @param {string} addr
    */
   const addOracle = async addr => {
-    // FIXME different facet that peeks under governance
-    const aggregatorFacet = E(aggregator.creatorFacet).getCreatorFacet();
-    const invitation = await E(aggregatorFacet).makeOracleInvitation(addr);
+    const invitation = await E(faCreatorFacet).makeOracleInvitation(addr);
     await reserveThenDeposit(
       `${AGORIC_INSTANCE_NAME} member ${addr}`,
       namesByAddressAdmin,
