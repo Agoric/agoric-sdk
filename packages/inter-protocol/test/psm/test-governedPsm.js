@@ -178,7 +178,7 @@ test('replace electorate of Economic Committee', async t => {
     harden({}),
     electorateTerms,
     {
-      // mocks
+      // @ts-expect-error mock
       marshaller: {},
       storageNode: makeFakeStorageKit('governedPsmTest').rootNode,
     },

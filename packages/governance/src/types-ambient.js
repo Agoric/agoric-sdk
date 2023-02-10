@@ -569,11 +569,11 @@
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {VoteOnOfferFilter} voteOnOfferFilter
- * @property {() => Promise<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
+ * @property {() => ERef<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
- * @property {() => Promise<AdminFacet>} getAdminFacet
+ * @property {() => ERef<AdminFacet>} getAdminFacet
  * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract

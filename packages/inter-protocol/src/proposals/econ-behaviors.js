@@ -597,6 +597,7 @@ export const startRewardDistributor = async ({
       E(instanceKit.creatorFacet).makeDepositFacetDestination(
         rewardDistributorDepositFacet,
       ),
+    // @ts-expect-error FIXME looks like legit uncovered bug
     Reserve: E(instanceKit.creatorFacet).makeOfferDestination(
       'Collateral',
       E.get(reserveKit).publicFacet,
