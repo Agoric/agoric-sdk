@@ -1,9 +1,0 @@
-FROM debian:buster
-LABEL maintainer="mfig@agoric.com"
-
-RUN apt-get update --allow-releaseinfo-change \
-    && apt-get install -y init openssh-server sudo curl \
-      python python3-venv python3-dev vim jq less \
-    && apt-get clean
-
-CMD ["/sbin/init"]

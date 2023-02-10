@@ -938,7 +938,7 @@ ${node}:${roleParams}
   ansible_host: ${ip}
   ansible_ssh_user: root
   ansible_ssh_private_key_file: '${keyFile}'
-  ansible_python_interpreter: /usr/bin/python`;
+  ansible_python_interpreter: /usr/bin/python3`;
           addProvider(host);
 
           addAll(host);

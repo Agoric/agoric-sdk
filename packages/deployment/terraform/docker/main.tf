@@ -30,12 +30,7 @@ variable "OFFSET" {
 
 variable "VOLUMES" {
   description = "Volumes to mount"
-  default = [
-    {
-      host_path = "/sys/fs/cgroup"
-      container_path = "/sys/fs/cgroup"
-    }
-  ]
+  default = []
 }
 
 provider "docker" {
