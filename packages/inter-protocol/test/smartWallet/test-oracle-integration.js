@@ -94,8 +94,6 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
     'ATOM-USD price feed',
   );
 
-  console.log('DEBUG governedPriceAggregator', governedPriceAggregator);
-
   return { oracleWallets, governedPriceAggregator };
 };
 
