@@ -8,6 +8,7 @@ import {
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
 
 const trace = makeTracer('RunPriceFeed');
@@ -97,6 +98,7 @@ export const createPriceFeed = async (
       chainStorage,
       chainTimerService,
       client,
+      economicCommitteeCreatorFacet,
       namesByAddressAdmin,
       priceAuthority,
       priceAuthorityAdmin,
@@ -130,43 +132,80 @@ export const createPriceFeed = async (
    *
    * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>]]}
    */
-  const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
-      IN_BRAND_NAME,
-      OUT_BRAND_NAME,
-    ]),
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
-      'priceAggregator',
-    ]),
-  ]);
+  const [[brandIn, brandOut], [contractGovernor, priceAggregator]] =
+    await Promise.all([
+      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
+        IN_BRAND_NAME,
+        OUT_BRAND_NAME,
+      ]),
+      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
+        'contractGovernor',
+        'priceAggregator',
+      ]),
+    ]);
+
+  trace('getPoserInvitation');
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+  trace('got initialPoserInvitation');
 
   const unitAmountIn = await unitAmount(brandIn);
-  const terms = await deeplyFulfilledObject(
+  const terms = harden({
+    ...contractTerms,
+    description: AGORIC_INSTANCE_NAME,
+    brandIn,
+    brandOut,
+    timer,
+    unitAmountIn,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: electorateInvitationAmount,
+      },
+    },
+  });
+  trace('got terms');
+
+  const governorTerms = await deeplyFulfilledObject(
     harden({
-      ...contractTerms,
-      description: AGORIC_INSTANCE_NAME,
-      brandIn,
-      brandOut,
-      timer,
-      unitAmountIn,
+      timer: chainTimerService,
+      governedContractInstallation: priceAggregator,
+      governed: {
+        terms,
+      },
     }),
   );
+  trace('got governorTerms', governorTerms);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
+  trace('got contractGovernor', contractGovernor);
+
+  trace('awaiting startInstance');
   // Create the price feed.
   const aggregator = await E(zoe).startInstance(
-    priceAggregator,
+    /** @type {Installation<import('@agoric/governance/src/contractGovernor.js').start>} */
+    (contractGovernor),
     undefined,
-    terms,
+    governorTerms,
     {
-      storageNode: E(storageNode).makeChildNode(
-        sanitizePathSegment(AGORIC_INSTANCE_NAME),
-      ),
-      marshaller,
+      governed: {
+        initialPoserInvitation,
+        marshaller,
+        storageNode: E(storageNode).makeChildNode(
+          sanitizePathSegment(AGORIC_INSTANCE_NAME),
+        ),
+      },
     },
   );
+  trace('got aggregator');
   await E(aggregators).set(terms, { aggregator });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
@@ -191,9 +230,9 @@ export const createPriceFeed = async (
    * @param {string} addr
    */
   const addOracle = async addr => {
-    const invitation = await E(aggregator.creatorFacet).makeOracleInvitation(
-      addr,
-    );
+    // FIXME different facet that peeks under governance
+    const aggregatorFacet = E(aggregator.creatorFacet).getCreatorFacet();
+    const invitation = await E(aggregatorFacet).makeOracleInvitation(addr);
     await reserveThenDeposit(
       `${AGORIC_INSTANCE_NAME} member ${addr}`,
       namesByAddressAdmin,
@@ -228,6 +267,8 @@ export const getManifestForPriceFeed = async (
         chainStorage: t,
         chainTimerService: t,
         client: t,
+        contractGovernor: t,
+        economicCommitteeCreatorFacet: t,
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,

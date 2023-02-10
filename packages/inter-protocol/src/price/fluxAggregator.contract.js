@@ -1,8 +1,10 @@
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
+import { handleParamGovernance } from '@agoric/governance';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { E } from '@endo/eventual-send';
 import { provideFluxAggregator } from './fluxAggregator.js';
 
+const trace = makeTracer('FluxAgg');
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
@@ -20,6 +22,7 @@ import { provideFluxAggregator } from './fluxAggregator.js';
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
  * @param {{
+ * initialPoserInvitation: Invitation,
  * marshaller: Marshaller,
  * quoteMint?: ERef<Mint<'set'>>,
  * storageNode: ERef<StorageNode>,
@@ -27,6 +30,7 @@ import { provideFluxAggregator } from './fluxAggregator.js';
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
+  trace('start');
   const { timer: timerP } = zcf.getTerms();
 
   const quoteMintP =
@@ -40,11 +44,17 @@ export const start = async (zcf, privateArgs, baggage) => {
     mint: quoteMint,
   };
 
-  const { marshaller, storageNode: storageNodeP } = privateArgs;
-  assertAllDefined({ marshaller, storageNodeP });
+  const {
+    initialPoserInvitation,
+    marshaller,
+    storageNode: storageNodeP,
+  } = privateArgs;
+  assertAllDefined({ initialPoserInvitation, marshaller, storageNodeP });
 
   const timer = await timerP;
   const storageNode = await storageNodeP;
+
+  trace('awaited args');
 
   const fa = provideFluxAggregator(
     baggage,
@@ -54,9 +64,28 @@ export const start = async (zcf, privateArgs, baggage) => {
     storageNode,
     marshaller,
   );
+  trace('got fa', fa);
 
+  const { makeGovernorFacet } = await handleParamGovernance(
+    // @ts-expect-error FIXME include Governance params
+    zcf,
+    initialPoserInvitation,
+    {
+      // No governed parameters. Governance just for API methods.
+    },
+    storageNode,
+    marshaller,
+  );
+
+  trace('got param governance');
+
+  const governedApis = {
+    initOracle: fa.creatorFacet.initOracle,
+  };
+
+  const governorFacet = makeGovernorFacet(fa.creatorFacet, governedApis);
   return harden({
-    creatorFacet: fa.creatorFacet,
+    creatorFacet: governorFacet,
     publicFacet: fa.publicFacet,
   });
 };

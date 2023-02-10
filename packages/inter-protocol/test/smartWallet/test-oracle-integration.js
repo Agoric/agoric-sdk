@@ -89,12 +89,12 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
   /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>} */
-  const priceAggregator = await E(agoricNames).lookup(
+  const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',
   );
 
-  return { oracleWallets, priceAggregator };
+  return { oracleWallets, governedPriceAggregator };
 };
 
 let acceptInvitationCounter = 0;
@@ -153,7 +153,9 @@ test.serial('invitations', async t => {
 
   // this returns wallets, but we need the updates subscriber to start before the price feed starts
   // so we provision the wallet earlier above
-  const { priceAggregator } = await setupFeedWithWallets(t, [operatorAddress]);
+  const { governedPriceAggregator } = await setupFeedWithWallets(t, [
+    operatorAddress,
+  ]);
 
   /**
    * get invitation details the way a user would
@@ -182,7 +184,7 @@ test.serial('invitations', async t => {
   t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_DESC);
   t.is(
     proposeInvitationDetails[0].instance,
-    priceAggregator,
+    governedPriceAggregator,
     'priceAggregator',
   );
 
@@ -191,7 +193,7 @@ test.serial('invitations', async t => {
   /** @type {import('@agoric/smart-wallet/src/invitations.js').PurseInvitationSpec} */
   const getInvMakersSpec = {
     source: 'purse',
-    instance: priceAggregator,
+    instance: governedPriceAggregator,
     description: INVITATION_MAKERS_DESC,
   };
 
@@ -218,11 +220,12 @@ test.serial('admin price', async t => {
   const operatorAddress = 'adminPriceAddress';
   const { zoe } = t.context.consume;
 
-  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
-    operatorAddress,
-  ]);
+  const { oracleWallets, governedPriceAggregator } = await setupFeedWithWallets(
+    t,
+    [operatorAddress],
+  );
   const wallet = oracleWallets[operatorAddress];
-  const adminOfferId = await acceptInvitation(wallet, priceAggregator);
+  const adminOfferId = await acceptInvitation(wallet, governedPriceAggregator);
 
   // Push a new price result /////////////////////////
 
@@ -239,7 +242,9 @@ test.serial('admin price', async t => {
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   await E(manualTimer).tickN(1);
 
-  const paPublicFacet = await E(zoe).getPublicFacet(priceAggregator);
+  const paPublicFacet = await E(
+    E(zoe).getPublicFacet(governedPriceAggregator),
+  ).getGovernedContract();
 
   const latestRoundSubscriber = await E(paPublicFacet).getRoundStartNotifier();
 
@@ -252,9 +257,8 @@ test.serial('admin price', async t => {
 test.serial('errors', async t => {
   const operatorAddress = 'badInputsAddress';
 
-  const { oracleWallets, priceAggregator } = await setupFeedWithWallets(t, [
-    operatorAddress,
-  ]);
+  const { oracleWallets, governedPriceAggregator: priceAggregator } =
+    await setupFeedWithWallets(t, [operatorAddress]);
   const wallet = oracleWallets[operatorAddress];
   const adminOfferId = await acceptInvitation(wallet, priceAggregator);
 
