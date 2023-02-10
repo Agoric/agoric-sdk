@@ -233,10 +233,9 @@ export const prepareVaultDirector = (
         getMetrics: M.call().returns(SubscriberShape),
         makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
-        getSubscription: M.call({ collateralBrand: BrandShape }).returns(
-          SubscriberShape,
-        ),
-        getElectorateSubscription: M.call().returns(SubscriberShape),
+        getSubscription: M.call()
+          .optional({ collateralBrand: BrandShape })
+          .returns(SubscriberShape),
         getGovernedParams: M.call({ collateralBrand: BrandShape }).returns(
           M.record(),
         ),
@@ -514,23 +513,20 @@ export const prepareVaultDirector = (
         getRunIssuer() {
           return debtMint.getIssuerRecord().issuer;
         },
-        /**
-         * @deprecated get from the CollateralManager directly
-         *
-         * subscription for the paramManager for a particular vaultManager
-         *
-         * @param {{ collateralBrand: Brand }} selector
-         */
-        getCollateralManagerGovernanceSubscription({ collateralBrand }) {
-          return vaultParamManagers.get(collateralBrand).getSubscription();
-        },
         getPublicTopics() {
           return topics;
         },
         /**
-         * subscription for the paramManager for the vaultFactory's electorate
+         * subscription for the paramManager for the vaultFactory's electorate or a particular collateral manager
+         *
+         * @param {object} [path]
+         * @param {Brand} [path.collateralBrand]
          */
-        getSubscription() {
+        getSubscription(path) {
+          if (path && path.collateralBrand) {
+            const { collateralBrand } = path;
+            return vaultParamManagers.get(collateralBrand).getSubscription();
+          }
           return directorParamManager.getSubscription();
         },
         /**

@@ -581,9 +581,9 @@
 
 /**
  * @typedef GovernedPublicFacetMethods
- * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
+ * @property {(path?: any) => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  * @property {() => Instance} getContractGovernor
- * @property {() => ParamStateRecord} getGovernedParams - get descriptions of
+ * @property {(path?: any) => ParamStateRecord} getGovernedParams - get descriptions of
  *   all the governed parameters
 // FIXME these accessors are onerous for the contract. A facade for them can be made from getGovernedParams()
 //  property {(name: string) => Amount} getAmount

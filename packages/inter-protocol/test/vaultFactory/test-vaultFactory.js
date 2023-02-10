@@ -2875,7 +2875,7 @@ test('governance publisher', async t => {
   t.is(current.EndorsedUI.type, 'string');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getCollateralManagerGovernanceSubscription({
+    E(lender).getSubscription({
       collateralBrand: aeth.brand,
     }),
   );

@@ -71,7 +71,7 @@ test('storage keys', async t => {
   );
   t.is(
     await subscriptionKey(
-      E(vdp).getCollateralManagerGovernanceSubscription({
+      E(vdp).getSubscription({
         collateralBrand: aeth.brand,
       }),
     ),
@@ -94,7 +94,7 @@ test('storage keys', async t => {
   );
   t.is(
     await subscriptionKey(
-      E(vdp).getCollateralManagerGovernanceSubscription({
+      E(vdp).getSubscription({
         collateralBrand: chit.brand,
       }),
     ),
