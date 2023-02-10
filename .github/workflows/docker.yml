@@ -28,7 +28,7 @@ jobs:
           TIMESTAMP=`date +%Y%m%d%H%M%S --date="@${COMMIT_TIME}"`
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-6)
           SNAPSHOT_TAG="${TIMESTAMP}-${SHORT_SHA}"
-          echo "::set-output name=tag::$SNAPSHOT_TAG"
+          echo "tag=$SNAPSHOT_TAG" >> $GITHUB_OUTPUT
 
   docker-parallel-build:
     needs: snapshot
@@ -142,7 +142,7 @@ jobs:
               DOCKER_TAGS="latest $SDK_TAG"
               ;;
           esac
-          echo "::set-output name=tags::$DOCKER_TAGS"
+          echo "tags=$DOCKER_TAGS" >> $GITHUB_OUTPUT
 
       - name: Push SDK multiarch
         run: |
@@ -177,7 +177,7 @@ jobs:
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
           done
-          echo "::set-output name=tags::$PREFIXED"
+          echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -221,7 +221,7 @@ jobs:
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
           done
-          echo "::set-output name=tags::$PREFIXED"
+          echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
