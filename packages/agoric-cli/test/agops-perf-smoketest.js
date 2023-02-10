@@ -45,7 +45,7 @@ if (!WALLET) {
 // perf test wantMinted
 let OFFER = await $`mktemp -t agops.XXX`;
 await $`bin/agops psm swap --wantMinted 0.01 --feePct 0.01 --pair IST.USDC_axl >|${OFFER}`;
-await $`time bin/agops perf satisfaction --executeOffer "$OFFER" --from ${WALLET} --keyring-backend="test"`;
+await $`time bin/agops perf satisfaction --executeOffer ${OFFER} --from ${WALLET} --keyring-backend="test"`;
 
 // perf test giveMinted
 OFFER = await $`mktemp -t agops.XXX`;
