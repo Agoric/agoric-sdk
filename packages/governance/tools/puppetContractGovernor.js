@@ -83,9 +83,7 @@ export const start = async (zcf, privateArgs) => {
 
     return E(E(governedCF).getGovernedApis())
       [apiMethodName](...methodArgs)
-      .then(() => {
-        return positive;
-      });
+      .then(() => positive);
   };
 
   const creatorFacet = Far('governor creatorFacet', {
