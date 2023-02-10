@@ -57,7 +57,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 
 /**
  * @typedef {StandardTerms} ContractGovernorTerms
- * @property {import('@agoric/time/src/types').TimerService} timer
+ * @property {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @property {Installation} governedContractInstallation
  */
 
@@ -127,7 +127,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 /**
  * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
- *   timer: import('@agoric/time/src/types').TimerService,
+ *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,

@@ -51,7 +51,14 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
     Fail`Question path (${issue.spec.paramPath}) doesn't match request (${paramPath})`;
 };
 
-/** @type {SetupGovernance} */
+/**
+ * @param {ERef<ZoeService>} zoe
+ * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
+ * @param {Instance} contractInstance
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
+ * @returns {Promise<ParamGovernor>}
+ */
 const setupParamGovernance = async (
   zoe,
   paramManagerRetriever,

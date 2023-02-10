@@ -219,7 +219,8 @@ export const setupAmm = async (
     {},
     ammGovernorTerms,
     {
-      electorateCreatorFacet: committeeCreator,
+      // FIXME unused?
+      // electorateCreatorFacet: committeeCreator,
       governed: {
         initialPoserInvitation: poserInvitation,
         storageNode,
@@ -314,7 +315,8 @@ export const setupReserve = async ({
     {},
     reserveGovernorTerms,
     {
-      electorateCreatorFacet: committeeCreator,
+      // FIXME unused?
+      // electorateCreatorFacet: committeeCreator,
       governed: {
         feeMintAccess,
         initialPoserInvitation: poserInvitation,
@@ -462,7 +464,8 @@ export const startVaultFactory = async (
     undefined,
     governorTerms,
     harden({
-      electorateCreatorFacet,
+      // FIXME unused?
+      // electorateCreatorFacet,
       governed: {
         feeMintAccess,
         initialPoserInvitation,

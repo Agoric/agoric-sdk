@@ -27,7 +27,8 @@
   },
   "devDependencies": {
     "@endo/init": "^0.5.52",
-    "ava": "^5.1.0"
+    "ava": "^5.1.0",
+    "type-fest": "^3.5.7"
   },
   "author": "Agoric",
   "license": "Apache-2.0",

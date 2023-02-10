@@ -682,16 +682,6 @@
  */
 
 /**
- * @callback SetupGovernance
- * @param {ERef<ZoeService>} zoe
- * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
- * @param {Instance} contractInstance
- * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @returns {ParamGovernor}
- */
-
-/**
  * @callback CreatedQuestion
  *   Was this question created by this ContractGovernor?
  * @param {Instance} questionInstance

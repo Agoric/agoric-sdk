@@ -172,8 +172,10 @@
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
+ *       contractGovernor: Promise<Installation<import('@agoric/governance/src/contractGovernor.js').start>>,
  *       interchainPool: Promise<Installation<import('@agoric/inter-protocol/src/interchainPool.js').start>>,
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
+ *       psm: Promise<Installation<import('@agoric/inter-protocol/src/psm/psm.js').start>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
  *     },
  *   },
