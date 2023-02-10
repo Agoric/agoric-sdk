@@ -19,6 +19,7 @@ import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUnti
 import { assert, Fail } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
@@ -226,13 +227,28 @@ export async function launch({
   metricsProvider = makeDefaultMeterProvider(),
   slogSender,
   swingStoreTraceFile,
+  swingStoreExportCallback,
   keepSnapshots,
   afterCommitCallback = async () => ({}),
 }) {
   console.info('Launching SwingSet kernel');
 
+  // The swingStore's exportCallback is synchronous, however we allow the
+  // callback provided to launch-chain to be asynchronous. The callbacks are
+  // invoked sequentially like if they were awaited, and the block manager
+  // synchronizes before finishing END_BLOCK
+  let pendingSwingStoreExport = Promise.resolve();
+  const swingStoreExportCallbackWithQueue =
+    swingStoreExportCallback && makeWithQueue()(swingStoreExportCallback);
+  const swingStoreExportSyncCallback =
+    swingStoreExportCallback &&
+    (updates => {
+      pendingSwingStoreExport = swingStoreExportCallbackWithQueue(updates);
+    });
+
   const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
     traceFile: swingStoreTraceFile,
+    exportCallback: swingStoreExportSyncCallback,
     keepSnapshots,
   });
   const { kvStore, commit } = hostStorage;
@@ -647,6 +663,7 @@ export async function launch({
           blockHeight,
           runNum,
         });
+        await pendingSwingStoreExport;
         controller.writeSlogObject({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
@@ -758,7 +775,7 @@ export async function launch({
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
-          await saveChainState();
+          await Promise.all([saveChainState(), pendingSwingStoreExport]);
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
