@@ -57,8 +57,19 @@ harden(assertPathSegment);
 /**
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
- * @typedef {'get' | 'getStoreKey' | 'set' | 'append' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
- * @typedef {{key: string, method: StorageMessageMethod, value: string}} StorageMessage
+ * @typedef { 'get' | 'getStoreKey' | 'has' | 'entries' | 'values' |'size' } StorageGetByPathMessageMethod
+ * @typedef { 'set' | 'append' } StorageUpdateEntriesMessageMethod
+ * @typedef {StorageGetByPathMessageMethod | StorageUpdateEntriesMessageMethod } StorageMessageMethod
+ * @typedef { [path: string] } StorageGetByPathMessageArgs
+ * @typedef { [path: string, value?: string | null] } StorageEntry
+ * @typedef { StorageEntry[] } StorageUpdateEntriesMessageArgs
+ * @typedef {{
+ *   method: StorageGetByPathMessageMethod;
+ *   args: StorageGetByPathMessageArgs;
+ *  } | {
+ *   method: StorageUpdateEntriesMessageMethod;
+ *   args: StorageUpdateEntriesMessageArgs;
+ * }} StorageMessage
  */
 
 /**
@@ -94,9 +105,8 @@ export function makeChainStorageRoot(
        */
       async getStoreKey() {
         return handleStorageMessage({
-          key: path,
           method: 'getStoreKey',
-          value: '',
+          args: [path],
         });
       },
       /** @type {(name: string, childNodeOptions?: {sequence?: boolean}) => StorageNode} */
@@ -109,10 +119,16 @@ export function makeChainStorageRoot(
       /** @type {(value: string) => Promise<void>} */
       async setValue(value) {
         assert.typeof(value, 'string');
+        /** @type {StorageEntry} */
+        let entry;
+        if (!sequence && !value) {
+          entry = [path];
+        } else {
+          entry = [path, value];
+        }
         await handleStorageMessage({
-          key: path,
           method: sequence ? 'append' : 'set',
-          value,
+          args: [entry],
         });
       },
       // Possible extensions:

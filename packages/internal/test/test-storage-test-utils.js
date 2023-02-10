@@ -46,13 +46,13 @@ test('makeFakeStorageKit', async t => {
   await rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: rootPath, method: 'set', value: 'foo' }],
+    [{ method: 'set', args: [[rootPath, 'foo']] }],
     'root node setValue message',
   );
   await rootNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: rootPath, method: 'set', value: 'bar' }],
+    [{ method: 'set', args: [[rootPath, 'bar']] }],
     'second setValue message',
   );
 
@@ -91,7 +91,7 @@ test('makeFakeStorageKit', async t => {
     await child.setValue('foo');
     t.deepEqual(
       messages.slice(-1),
-      [{ key: childPath, method: 'set', value: 'foo' }],
+      [{ method: 'set', args: [[childPath, 'foo']] }],
       'non-root setValue message',
     );
   }
@@ -141,26 +141,26 @@ test('makeFakeStorageKit', async t => {
   await deepNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'set', value: 'foo' }],
+    [{ method: 'set', args: [[deepPath, 'foo']] }],
     'level-skipping setValue message',
   );
 
   await childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childPath, method: 'set', value: '' }],
+    [{ method: 'set', args: [[childPath]] }],
     'child setValue message',
   );
   await deepNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'set', value: '' }],
+    [{ method: 'set', args: [[deepPath]] }],
     'granchild setValue message',
   );
   await childNode.setValue('');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childPath, method: 'set', value: '' }],
+    [{ method: 'set', args: [[childPath]] }],
     'child setValue message',
   );
 });
@@ -181,13 +181,13 @@ test('makeFakeStorageKit sequence data', async t => {
   await rootNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: rootPath, method: 'append', value: 'foo' }],
+    [{ method: 'append', args: [[rootPath, 'foo']] }],
     'root setValue message',
   );
   await rootNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: rootPath, method: 'append', value: 'bar' }],
+    [{ method: 'append', args: [[rootPath, 'bar']] }],
     'second setValue message',
   );
 
@@ -199,41 +199,41 @@ test('makeFakeStorageKit sequence data', async t => {
   await childNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childPath, method: 'append', value: 'foo' }],
+    [{ method: 'append', args: [[childPath, 'foo']] }],
     'auto-sequence child setValue message',
   );
   await deepNode.setValue('foo');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'append', value: 'foo' }],
+    [{ method: 'append', args: [[deepPath, 'foo']] }],
     'auto-sequence grandchild setValue message',
   );
   deepNode = childNode.makeChildNode('grandchild', { sequence: false });
   await deepNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'set', value: 'bar' }],
+    [{ method: 'set', args: [[deepPath, 'bar']] }],
     'manual-single grandchild setValue message',
   );
   childNode = rootNode.makeChildNode('child', { sequence: false });
   await childNode.setValue('bar');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: childPath, method: 'set', value: 'bar' }],
+    [{ method: 'set', args: [[childPath, 'bar']] }],
     'manual-single child setValue message',
   );
   deepNode = childNode.makeChildNode('grandchild');
   await deepNode.setValue('baz');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'set', value: 'baz' }],
+    [{ method: 'set', args: [[deepPath, 'baz']] }],
     'auto-single grandchild setValue message',
   );
   deepNode = childNode.makeChildNode('grandchild', { sequence: true });
   await deepNode.setValue('qux');
   t.deepEqual(
     messages.slice(-1),
-    [{ key: deepPath, method: 'append', value: 'qux' }],
+    [{ method: 'append', args: [[deepPath, 'qux']] }],
     'manual-sequence grandchild setValue message',
   );
 });

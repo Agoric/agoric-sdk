@@ -52,22 +52,24 @@ const makePrefixedBridgeStorage = (
 
   return harden({
     get: key => {
-      const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
+      const retStr = call(
+        stringify({ method: 'get', args: [`${prefix}${key}`] }),
+      );
       const ret = JSON.parse(retStr);
-      if (!ret) {
+      if (ret == null) {
         return undefined;
       }
       const bridgeValue = JSON.parse(ret);
       return fromBridgeValue(bridgeValue);
     },
     set: (key, value) => {
-      const valueStr =
-        value === undefined ? '' : stringify(toBridgeValue(value));
+      const path = `${prefix}${key}`;
+      const entry =
+        value == null ? [path] : [path, stringify(toBridgeValue(value))];
       call(
         stringify({
           method: setterMethod,
-          key: `${prefix}${key}`,
-          value: valueStr,
+          args: [entry],
         }),
       );
     },
@@ -257,10 +259,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ),
     );
     function setActivityhash(activityhash) {
+      const entry = [STORAGE_PATH.ACTIVITYHASH, activityhash];
       const msg = stringify({
         method: 'set',
-        key: STORAGE_PATH.ACTIVITYHASH,
-        value: activityhash,
+        args: [entry],
       });
       chainSend(portNums.storage, msg);
     }
