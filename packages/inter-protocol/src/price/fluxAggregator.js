@@ -330,3 +330,4 @@ export const provideFluxAggregator = (
   return harden({ creatorFacet, publicFacet });
 };
 harden(provideFluxAggregator);
+/** @typedef {ReturnType<typeof provideFluxAggregator>} FluxAggregator */

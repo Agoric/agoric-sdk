@@ -30,7 +30,7 @@ const dirname = path.dirname(filename);
 // Pack the contracts.
 /** @type {EndoZipBase64Bundle} */
 const aggregatorBundle = await bundleSource(
-  `${dirname}/../src/price/fluxAggregator.contract.js`,
+  `${dirname}/../../src/price/fluxAggregator.contract.js`,
 );
 
 const defaultConfig = {
@@ -104,8 +104,13 @@ const makeContext = async () => {
 
     return {
       governor: governorFacets.creatorFacet,
-      public: governorFacets.publicFacet,
-      instance: governorFacets.instance,
+      /** @type {import('../../src/price/fluxAggregator.js').FluxAggregator['creatorFacet']} */
+      // @ts-expect-error XXX types
+      creatorFacet: await E(governorFacets.creatorFacet).getCreatorFacet(),
+      /** @type {import('../../src/price/fluxAggregator.js').FluxAggregator['publicFacet']} */
+      // @ts-expect-error XXX types
+      publicFacet: await E(governorFacets.creatorFacet).getPublicFacet(),
+      instance: E(governorFacets.creatorFacet).getInstance(),
       mockStorageRoot,
     };
   }
@@ -125,23 +130,17 @@ test('basic', async t => {
   // @ts-expect-error cast
   const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
 
-  /** @type {import('../../src/price/priceOracleAdmin.js').OracleAdmin} */
-  // @ts-expect-error cast
-  const pricePushAdminA = await E(
-    aggregator.governor.invokeAPI('initOracle', ['agorice1priceOracleA']),
+  const pricePushAdminA = await aggregator.creatorFacet.initOracle(
+    'agoric1priceOracleA',
   );
-  /** @type {import('../../src/price/priceOracleAdmin.js').OracleAdmin} */
-  // @ts-expect-error cast
-  const pricePushAdminB = await E(
-    aggregator.governor.invokeAPI('initOracle', ['agorice1priceOracleB']),
+  const pricePushAdminB = await aggregator.creatorFacet.initOracle(
+    'agoric1priceOracleB',
   );
-  /** @type {import('../../src/price/priceOracleAdmin.js').OracleAdmin} */
-  // @ts-expect-error cast
-  const pricePushAdminC = await E(
-    aggregator.governor.invokeAPI('initOracle', ['agorice1priceOracleC']),
+  const pricePushAdminC = await aggregator.creatorFacet.initOracle(
+    'agoric1priceOracleC',
   );
 
-  // ----- round 1: basic consensus
+  t.log('----- round 1: basic consensus');
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 100n });
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
@@ -152,7 +151,7 @@ test('basic', async t => {
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
-  // ----- round 2: check restartDelay implementation
+  t.log('----- round 2: check restartDelay implementation');
   // since oracle A initialized the last round, it CANNOT start another round before
   // the restartDelay, which means its submission will be IGNORED. this means the median
   // should ONLY be between the OracleB and C values, which is why it is 25000
@@ -170,7 +169,7 @@ test('basic', async t => {
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
   t.is(round2Attempt1.answer, 2500n);
 
-  // ----- round 3: check oracle submission order
+  t.log('----- round 3: check oracle submission order');
   // unlike the previous test, if C initializes, all submissions should be recorded,
   // which means the median will be the expected 5000 here
   await oracleTimer.tick();
