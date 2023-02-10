@@ -312,6 +312,7 @@ export const setupReserve = async ({
     }),
   );
   /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
+  // @ts-expect-error XXX governance types for governed contract
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -486,6 +487,7 @@ export const startVaultFactory = async (
     ]);
 
   vaultFactoryKit.resolve(
+    // @ts-expect-error XXX governance types for governed contract
     harden({
       creatorFacet: vaultFactoryCreator,
       governorCreatorFacet,
@@ -630,6 +632,7 @@ export const startRewardDistributor = async ({
     Object.entries(collectorKit).map(async ([debugName, collectorFacet]) => {
       const collector = E(instanceKit.creatorFacet).makeContractFeeCollector(
         zoe,
+        // @ts-expect-error FIXME seems like a bug
         collectorFacet,
       );
       const periodicCollector = await E(
@@ -773,6 +776,7 @@ export const startStakeFactory = async (
   );
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>, adminFacet: AdminFacet}} */
+  // @ts-expect-error XXX governance types for governed contract
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},

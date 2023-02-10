@@ -28,11 +28,11 @@ export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
 export const ENDORSED_UI_KEY = 'EndorsedUI';
 
 /**
- * @param {Amount} electorateInvitationAmount
+ * @param {Amount<'set'>} electorateInvitationAmount
  * @param {Installation} liquidationInstall
  * @param {import('./liquidation.js').LiquidationTerms} liquidationTerms
- * @param {Amount} minInitialDebt
- * @param {Amount} shortfallInvitationAmount
+ * @param {Amount<'nat'>} minInitialDebt
+ * @param {Amount<'set'>} shortfallInvitationAmount
  * @param {string} endorsedUi
  */
 const makeVaultDirectorParams = (
@@ -152,8 +152,8 @@ harden(makeVaultDirectorParamManager);
 /**
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
  * @param {{
- *   electorateInvitationAmount: Amount,
- *   minInitialDebt: Amount,
+ *   electorateInvitationAmount: Amount<'set'>,
+ *   minInitialDebt: Amount<'nat'>,
  *   bootstrapPaymentValue: bigint,
  *   priceAuthority: ERef<PriceAuthority>,
  *   timer: ERef<import('@agoric/time/src/types').TimerService>,
@@ -162,7 +162,7 @@ harden(makeVaultDirectorParamManager);
  *   loanTiming: LoanTiming,
  *   liquidationTerms: import('./liquidation.js').LiquidationTerms,
  *   ammPublicFacet: XYKAMMPublicFacet,
- *   shortfallInvitationAmount: Amount,
+ *   shortfallInvitationAmount: Amount<'set'>,
  *   endorsedUi?: string,
  * }} opts
  */

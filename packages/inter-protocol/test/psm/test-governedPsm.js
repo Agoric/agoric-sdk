@@ -192,6 +192,8 @@ test('replace electorate of Economic Committee', async t => {
 
   const { governorCreatorFacet } = governor;
   await E(governorCreatorFacet).replaceElectorate(newPoserInvitation);
+  /** @type {GovernedPublicFacet<unknown>} */
+  // TODO this should come from the call
   const pf = await E(governorCreatorFacet).getPublicFacet();
   const { Electorate: newElectorate } = await E(pf).getGovernedParams();
   t.is(newElectorate.type, 'invitation');
