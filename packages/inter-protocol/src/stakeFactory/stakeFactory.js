@@ -76,8 +76,8 @@ const { values } = Object;
  *   makeCollectFeesInvitation: () => Promise<Invitation>,
  * }} StakeFactoryCreator
  *
- * @type {ContractStartFn<StakeFactoryPublic, ERef<GovernedCreatorFacet<StakeFactoryCreator>>,
- *                        StakeFactoryTerms, StakeFactoryPrivateArgs>}
+ * @param {ZCF<StakeFactoryTerms>} zcf
+ * @param {StakeFactoryPrivateArgs} privateArgs
  */
 export const start = async (
   zcf,

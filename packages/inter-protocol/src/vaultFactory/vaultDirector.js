@@ -246,7 +246,7 @@ export const prepareVaultDirector = (
     },
     initState,
     {
-      creator: {
+      creator: /** @type {GovernorFacet<{}>} */ ({
         getParamMgrRetriever: () =>
           Far('paramManagerRetriever', {
             /** @param {VaultFactoryParamPath} paramPath */
@@ -273,9 +273,12 @@ export const prepareVaultDirector = (
           return harden({});
         },
         getGovernedApiNames() {
-          return harden({});
+          return harden([]);
         },
-      },
+        setOfferFilter(_strings) {
+          Fail`FIXME not yet implemented`;
+        },
+      }),
       machine: {
         // TODO move this under governance #3924
         /**

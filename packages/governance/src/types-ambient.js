@@ -585,15 +585,16 @@
  * @property {() => Instance} getContractGovernor
  * @property {() => ParamStateRecord} getGovernedParams - get descriptions of
  *   all the governed parameters
- * @property {(name: string) => Amount} getAmount
- * @property {(name: string) => Brand} getBrand
- * @property {(name: string) => Instance} getInstance
- * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount} getInvitationAmount
- * @property {(name: string) => bigint} getNat
- * @property {(name: string) => Ratio} getRatio
- * @property {(name: string) => string} getString
- * @property {(name: string) => any} getUnknown
+// FIXME these accessors are onerous for the contract. A facade for them can be made from getGovernedParams()
+//  property {(name: string) => Amount} getAmount
+//  property {(name: string) => Brand} getBrand
+//  property {(name: string) => Instance} getInstance
+//  property {(name: string) => Installation} getInstallation
+//  property {(name: string) => Amount} getInvitationAmount
+//  property {(name: string) => bigint} getNat
+//  property {(name: string) => Ratio} getRatio
+//  property {(name: string) => string} getString
+//  property {(name: string) => any} getUnknown
  */
 
 /**
@@ -633,7 +634,7 @@
 
 /**
  * @typedef {object} ParamManagerRetriever
- * @property {(paramKey?: ParamKey) => AnyParamManager} get
+ * @property {(paramKey: unknown) => AnyParamManager} get
  */
 
 /**

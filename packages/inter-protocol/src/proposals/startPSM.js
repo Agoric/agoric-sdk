@@ -117,10 +117,11 @@ export const startPSM = async (
         },
         MintLimit: { type: ParamTypes.AMOUNT, value: mintLimit },
       },
-      [CONTRACT_ELECTORATE]: {
-        type: ParamTypes.INVITATION,
-        value: electorateInvitationAmount,
-      },
+      // FIXME dupe and wrong place (or the other is)
+      // [CONTRACT_ELECTORATE]: {
+      //   type: ParamTypes.INVITATION,
+      //   value: electorateInvitationAmount,
+      // },
     }),
   );
 
@@ -162,9 +163,10 @@ export const startPSM = async (
     E(governorFacets.creatorFacet).getAdminFacet(),
   ]);
 
-  /** @typedef {import('./econ-behaviors.js').PSMKit} psmKit */
-  /** @type {psmKit} */
+  /** @typedef {import('./econ-behaviors.js').PSMKit} PSMKit */
+  /** @type {PSMKit} */
   const newpsmKit = {
+    // @ts-expect-error XXX with Promisable
     psm,
     psmGovernor: governorFacets.instance,
     psmCreatorFacet,
@@ -175,7 +177,7 @@ export const startPSM = async (
   // Provide pattern with a promise.
   producepsmKit.resolve(makeScalarMapStore());
 
-  /** @type {MapStore<Brand,psmKit>} */
+  /** @type {MapStore<Brand, PSMKit>} */
   const psmKitMap = await psmKit;
 
   psmKitMap.init(anchorBrand, newpsmKit);

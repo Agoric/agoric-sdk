@@ -126,6 +126,11 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 /**
  * @typedef {(zcf?: any, privateArgs?: any, baggage?: any) => import('type-fest').Promisable<{creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
  */
+/**
+ * @template {GovernableStartFn} SF Start function of governed contract
+ * @typedef {GovernedContractFacetAccess<Awaited<ReturnType<SF>>['publicFacet'], Awaited<ReturnType<SF>>['creatorFacet']>} GovernedContractFnFacetAccess
+ * Like GovernedContractFacetAccess but templated by the start function
+ */
 
 /**
  * Start an instance of a governor, governing a "governed" contract specified in terms.
@@ -165,6 +170,12 @@ const start = async (zcf, privateArgs) => {
   });
 
   trace('starting governedContractInstallation');
+  /** @type {{
+   * creatorFacet: GovernorFacet<Awaited<ReturnType<SF>>['creatorFacet']>,
+   * instance: import('@agoric/zoe/src/zoeService/utils').Instance<SF>,
+   * publicFacet: Awaited<ReturnType<SF>>['publicFacet'],
+   * adminFacet: AdminFacet,
+   * }} */
   const {
     creatorFacet: governedCF,
     instance: governedInstance,
@@ -181,6 +192,7 @@ const start = async (zcf, privateArgs) => {
 
   /** @type {() => Promise<Instance>} */
   const getElectorateInstance = async () => {
+    // @ts-expect-error FIXME use getGovernedParams() and possibly a helper
     const invitationAmount = await E(governedPF).getInvitationAmount(
       CONTRACT_ELECTORATE,
     );
@@ -317,8 +329,6 @@ const start = async (zcf, privateArgs) => {
   });
 
   const publicFacet = Far('contract governor public', {
-    // BEFOREMERGE is this okay? why not?
-    ...governedPF,
     getElectorate: getElectorateInstance,
     getGovernedContract: () => governedInstance,
     validateVoteCounter,

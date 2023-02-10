@@ -35,10 +35,10 @@ const MILLI = 1_000_000n;
 
 /**
  * @typedef {object} PSMKit
- * @property {Instance} psm
- * @property {Instance} psmGovernor
+ * @property {import('@agoric/zoe/src/zoeService/utils').Instance<import('../psm/psm.js').start>} psm
+ * @property {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/contractGovernor.js').start>} psmGovernor
  * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
- * @property {GovernedContractFacetAccess<{},{}>} psmGovernorCreatorFacet
+ * @property {import('@agoric/governance/src/contractGovernor.js').GovernedContractFnFacetAccess<import('../psm/psm.js').start>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 
@@ -214,9 +214,11 @@ export const setupAmm = async (
   );
 
   /** @type {{ creatorFacet: GovernedContractFacetAccess<XYKAMMPublicFacet,XYKAMMCreatorFacet>, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
+  // @ts-expect-error XXX governance or AMM types
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
+    // @ts-expect-error XXX governance or AMM types
     ammGovernorTerms,
     {
       // FIXME unused?
@@ -592,6 +594,7 @@ export const startRewardDistributor = async ({
     feeDistributorTerms,
   );
   await E(instanceKit.creatorFacet).setDestinations({
+    // @ts-expect-error FIXME looks like legit uncovered bug
     RewardDistributor:
       rewardDistributorDepositFacet &&
       E(instanceKit.creatorFacet).makeDepositFacetDestination(

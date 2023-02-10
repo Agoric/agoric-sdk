@@ -66,7 +66,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
   trace('got fa', fa);
 
-  const { makeGovernorFacet } = await handleParamGovernance(
+  const { augmentPublicFacet, makeGovernorFacet } = await handleParamGovernance(
     // @ts-expect-error FIXME include Governance params
     zcf,
     initialPoserInvitation,
@@ -86,7 +86,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   const governorFacet = makeGovernorFacet(fa.creatorFacet, governedApis);
   return harden({
     creatorFacet: governorFacet,
-    publicFacet: fa.publicFacet,
+    // XXX this is a lot of API to put on every public facet
+    publicFacet: augmentPublicFacet(fa.publicFacet),
   });
 };
 harden(start);

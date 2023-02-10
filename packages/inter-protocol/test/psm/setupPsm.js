@@ -161,9 +161,8 @@ export const setupPsm = async (
     governorPublicFacet,
     governorCreatorFacet,
   };
-  const governedInstance = E(governorPublicFacet).getGovernedContract();
+  const governedInstance = await E(governorPublicFacet).getGovernedContract();
 
-  /** @type { GovernedPublicFacet<import('../../src/psm/psm.js').PsmPublicFacet> } */
   const psmPublicFacet = await E(governorCreatorFacet).getPublicFacet();
   const psm = {
     psmCreatorFacet: psmKit.psmCreatorFacet,

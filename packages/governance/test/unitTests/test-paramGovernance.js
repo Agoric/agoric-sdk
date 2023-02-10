@@ -76,6 +76,14 @@ const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
     installBundle(zoe, voteCounterBundle),
     installBundle(zoe, governedBundle),
   ]);
+  /**
+   * @type {{
+   * governor: Installation<import('../../src/contractGovernor.js').start>,
+   * electorate: Installation<import('../../src/noActionElectorate.js').start>,
+   * counter: Installation<import('../../src/binaryVoteCounter.js').start>,
+   * governed: Installation<import('../swingsetTests/contractGovernor/governedContract.js').start>,
+   * }}
+   */
   const installs = { governor, electorate, counter, governed };
 
   const { creatorFacet: committeeCreator } = await E(zoe).startInstance(

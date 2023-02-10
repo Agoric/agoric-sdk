@@ -26,15 +26,15 @@ const autoRefundBundleP = makeBundle(
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Installation<T>>} governedP
  * @param {import('@agoric/swingset-vat/src/vats/timer/vat-timer.js').TimerService} timer
- * @param {{ governedParams?: Record<string, unknown>, governedApis?: string[] }} governedTerms
- * @param {{}} governedPrivateArgs
+ * @param {{ [k: string]: any, governedParams?: Record<string, unknown>, governedApis?: string[] }} termsOfGoverned
+ * @param {{}} privateArgsOfGoverned
  */
 export const setUpGovernedContract = async (
   zoe,
   governedP,
   timer,
-  governedTerms = {},
-  governedPrivateArgs = {},
+  termsOfGoverned = {},
+  privateArgsOfGoverned = {},
 ) => {
   const [contractGovernorBundle, autoRefundBundle] = await Promise.all([
     contractGovernorBundleP,
@@ -72,15 +72,15 @@ export const setUpGovernedContract = async (
     await getFakeInvitation();
 
   const governedTermsWithElectorate = {
-    ...governedTerms,
+    ...termsOfGoverned,
     governedParams: {
-      ...governedTerms.governedParams,
+      ...termsOfGoverned.governedParams,
       [CONTRACT_ELECTORATE]: {
         type: ParamTypes.INVITATION,
         value: fakeInvitationAmount,
       },
     },
-    governedApis: governedTerms.governedApis,
+    governedApis: termsOfGoverned.governedApis,
   };
   const governorTerms = {
     timer,
@@ -97,7 +97,7 @@ export const setUpGovernedContract = async (
     governorTerms,
     {
       governed: {
-        ...governedPrivateArgs,
+        ...privateArgsOfGoverned,
         initialPoserInvitation: fakeInvitationPayment,
       },
     },

@@ -51,6 +51,7 @@ export const start = (zcf, { bankManager }) => {
     assert.typeof(denom, 'string');
     assert.typeof(decimalPlaces, 'number');
 
+    // @ts-expect-error FIXME use getGovernedParams() and possibly a helper
     const minimumCentral = await E(ammPub).getAmount(
       MIN_INITIAL_POOL_LIQUIDITY_KEY,
     );
