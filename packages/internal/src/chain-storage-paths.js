@@ -11,3 +11,4 @@ export const EGRESS = 'egress';
 export const MAILBOX = 'mailbox';
 export const BUNDLES = 'bundles';
 export const CUSTOM = 'published';
+export const SWING_STORE = 'swingStore';

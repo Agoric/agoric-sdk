@@ -32,6 +32,7 @@ const (
 	StoragePathMailbox      = "mailbox"
 	StoragePathCustom       = "published"
 	StoragePathBundles      = "bundles"
+	StoragePathSwingStore   = "swingStore"
 )
 
 // 2 ** 256 - 1
