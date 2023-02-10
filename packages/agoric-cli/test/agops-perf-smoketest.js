@@ -18,9 +18,7 @@ if (!env.AGORIC_NET) {
   echo();
   echo('e.g. AGORIC_NET=ollinet (or export to save typing it each time)');
   echo();
-
-  echo('To test locally, AGORIC_NET=local and have the following running:');
-  echo(`
+  echo(`To test locally, AGORIC_NET=local and have the following running:
 # freshen sdk
 yarn install && yarn build
 
