@@ -75,9 +75,8 @@ export const makeInvitationsHelper = (
       console.log('DEBUG searching invitations', invitations, 'for', instance);
 
       const matches = invitations.filter(
-        details => description === details.description,
-        // FIXME DONOTMERGE instance isn't matching
-        //  && instance === details.instance,
+        details =>
+          description === details.description && instance === details.instance,
       );
       if (matches.length === 0) {
         // look up diagnostic info
