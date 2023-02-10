@@ -242,9 +242,7 @@ test.serial('admin price', async t => {
   // trigger an aggregation (POLL_INTERVAL=1n in context)
   await E(manualTimer).tickN(1);
 
-  const paPublicFacet = await E(
-    E(zoe).getPublicFacet(governedPriceAggregator),
-  ).getGovernedContract();
+  const paPublicFacet = E(zoe).getPublicFacet(governedPriceAggregator);
 
   const latestRoundSubscriber = await E(paPublicFacet).getRoundStartNotifier();
 

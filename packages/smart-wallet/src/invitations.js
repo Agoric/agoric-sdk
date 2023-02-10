@@ -72,9 +72,12 @@ export const makeInvitationsHelper = (
       const purseAmount = await E(invitationsPurse).getCurrentAmount();
       const invitations = AmountMath.getValue(invitationBrand, purseAmount);
 
+      console.log('DEBUG searching invitations', invitations, 'for', instance);
+
       const matches = invitations.filter(
-        details =>
-          description === details.description && instance === details.instance,
+        details => description === details.description,
+        // FIXME DONOTMERGE instance isn't matching
+        //  && instance === details.instance,
       );
       if (matches.length === 0) {
         // look up diagnostic info

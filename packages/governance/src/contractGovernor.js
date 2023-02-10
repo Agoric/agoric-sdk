@@ -317,6 +317,8 @@ const start = async (zcf, privateArgs) => {
   });
 
   const publicFacet = Far('contract governor public', {
+    // BEFOREMERGE is this okay? why not?
+    ...governedPF,
     getElectorate: getElectorateInstance,
     getGovernedContract: () => governedInstance,
     validateVoteCounter,
