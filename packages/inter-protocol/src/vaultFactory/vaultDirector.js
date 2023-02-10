@@ -536,14 +536,8 @@ export const prepareVaultDirector = (
           // TODO use named getters of TypedParamManager
           return vaultParamManagers.get(collateralBrand).getParams();
         },
-        /**
-         * @returns {Promise<GovernorPublic>}
-         */
         getContractGovernor() {
-          // PERF consider caching
-          return E(zcf.getZoeService()).getPublicFacet(
-            zcf.getTerms().electionManager,
-          );
+          return zcf.getTerms().electionManager;
         },
         /**
          * @param {string} name
