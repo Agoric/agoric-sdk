@@ -215,6 +215,7 @@ export const prepareVaultDirector = (
         getLimitedCreatorFacet: M.call().returns(M.remotable()),
         getGovernedApis: M.call().returns(M.record()),
         getGovernedApiNames: M.call().returns(M.record()),
+        setOfferFilter: M.call(M.arrayOf(M.string())).returns(),
       }),
       machine: M.interface('machine', {
         addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
