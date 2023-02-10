@@ -79,12 +79,12 @@ func queryMailbox(ctx sdk.Context, path []string, req abci.RequestQuery, keeper 
 
 // nolint: unparam
 func legacyQueryStorage(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	value := keeper.vstorageKeeper.GetData(ctx, path)
-	if value == "" {
+	entry := keeper.vstorageKeeper.GetEntry(ctx, path)
+	if !entry.HasData() {
 		return []byte{}, sdkerrors.Wrapf(sdkerrors.ErrUnknownRequest, "could not get swingset %+v", path)
 	}
 
-	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Data{Value: value})
+	bz, err2 := codec.MarshalJSONIndent(legacyQuerierCdc, vstoragetypes.Data{Value: entry.StringValue()})
 	if err2 != nil {
 		return nil, sdkerrors.Wrap(sdkerrors.ErrJSONMarshal, err2.Error())
 	}

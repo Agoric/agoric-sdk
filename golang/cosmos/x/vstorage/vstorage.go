@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 type vstorageHandler struct {
@@ -24,6 +25,14 @@ type vstorageStoreKey struct {
 	StoreName       string `json:"storeName"`
 	StoreSubkey     string `json:"storeSubkey"`
 	DataPrefixBytes string `json:"dataPrefixBytes"`
+}
+
+func MakeSetEntryFromMessage(msg *vstorageMessage) types.StorageEntry {
+	if msg.Value == "" {
+		return types.NewStorageEntryWithNoData(msg.Path)
+	} else {
+		return types.NewStorageEntry(msg.Path, msg.Value)
+	}
 }
 
 func NewStorageHandler(keeper Keeper) vstorageHandler {
@@ -57,7 +66,7 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 	// Handle generic paths.
 	switch msg.Method {
 	case "set":
-		keeper.SetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
+		keeper.SetStorageAndNotify(cctx.Context, MakeSetEntryFromMessage(msg))
 		return "true", nil
 
 		// We sometimes need to use LegacySetStorageAndNotify, because the solo's
@@ -65,11 +74,11 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		// FIXME: Use just "set" and remove this case.
 	case "legacySet":
 		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
-		keeper.LegacySetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
+		keeper.LegacySetStorageAndNotify(cctx.Context, MakeSetEntryFromMessage(msg))
 		return "true", nil
 
 	case "setWithoutNotify":
-		keeper.SetStorage(cctx.Context, msg.Path, msg.Value)
+		keeper.SetStorage(cctx.Context, MakeSetEntryFromMessage(msg))
 		return "true", nil
 
 	case "append":
@@ -81,12 +90,11 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 
 	case "get":
 		// Note that "get" does not (currently) unwrap a StreamCell.
-		value := keeper.GetData(cctx.Context, msg.Path)
-		if value == "" {
+		entry := keeper.GetEntry(cctx.Context, msg.Path)
+		if !entry.HasData() {
 			return "null", nil
 		}
-		//fmt.Printf("Keeper.GetStorage gave us %bz\n", value)
-		bz, err := json.Marshal(value)
+		bz, err := json.Marshal(entry.StringValue())
 		if err != nil {
 			return "", err
 		}
@@ -105,8 +113,8 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bz), nil
 
 	case "has":
-		value := keeper.GetData(cctx.Context, msg.Path)
-		if value == "" {
+		value := keeper.HasStorage(cctx.Context, msg.Path)
+		if !value {
 			return "false", nil
 		}
 		return "true", nil
@@ -129,7 +137,7 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		for i, child := range children.Children {
 			ents[i] = make([]string, 2)
 			ents[i][0] = child
-			ents[i][i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child))
+			ents[i][i] = keeper.GetEntry(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child)).StringValue()
 		}
 		bytes, err := json.Marshal(ents)
 		if err != nil {
@@ -141,7 +149,7 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		children := keeper.GetChildren(cctx.Context, msg.Path)
 		vals := make([]string, len(children.Children))
 		for i, child := range children.Children {
-			vals[i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child))
+			vals[i] = keeper.GetEntry(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child)).StringValue()
 		}
 		bytes, err := json.Marshal(vals)
 		if err != nil {
