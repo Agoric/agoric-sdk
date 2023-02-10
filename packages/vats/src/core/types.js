@@ -130,7 +130,27 @@
  */
 
 /**
- * @typedef {import('./wellKnown').WellKnownInstallations} WellKnownInstallations */
+ * @typedef {{
+ *   amm: import('@agoric/inter-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js').start,
+ *   binaryVoteCounter: import('@agoric/governance/src/binaryVoteCounter.js').start,
+ *   centralSupply: import('@agoric/vats/src/centralSupply.js').start,
+ *   committee: import('@agoric/governance/src/committee.js').start,
+ *   contractGovernor: import('@agoric/governance/src/contractGovernor.js').start,
+ *   econCommitteeCharter: import('@agoric/inter-protocol/src/econCommitteeCharter.js').start,
+ *   feeDistributor: import('@agoric/inter-protocol/src/feeDistributor.js').start,
+ *   interchainPool: import('@agoric/inter-protocol/src/interchainPool.js').start,
+ *   liquidate: import('@agoric/inter-protocol/src/vaultFactory/liquidateIncrementally.js').start,
+ *   mintHolder: import('@agoric/vats/src/mintHolder.js').prepare,
+ *   noActionElectorate: unknown,
+ *   Pegasus: unknown,
+ *   psm: import('@agoric/inter-protocol/src/psm/psm.js').start,
+ *   priceAggregator: import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start,
+ *   provisionPool: import('@agoric/vats/src/provisionPool.js').start,
+ *   reserve: import('@agoric/inter-protocol/src/reserve/assetReserve.js').start,
+ *   stakeFactory: import('@agoric/inter-protocol/src/stakeFactory/stakeFactory.js').start,
+ *   walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start,
+ *   VaultFactory:  import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start,
+ * }} WellKnownInstallations */
 
 /**
  * @typedef {import('../tokens.js').TokenKeyword} TokenKeyword
@@ -166,8 +186,8 @@
  *     consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>,
  *   },
  *   installation:{
- *     produce: { [K in keyof WellKnownInstallations]: Producer<WellKnownInstallations[K]> },
- *     consume: { [K in keyof WellKnownInstallations]: Promise<WellKnownInstallations[K]> },
+ *     produce: { [K in keyof WellKnownInstallations]: Producer<Installation<WellKnownInstallations[K]>> },
+ *     consume: { [K in keyof WellKnownInstallations]: Promise<Installation<WellKnownInstallations[K]>> },
  *   },
  *   instance:{
  *     produce: Record<WellKnownName['instance'], Producer<Instance>>,
