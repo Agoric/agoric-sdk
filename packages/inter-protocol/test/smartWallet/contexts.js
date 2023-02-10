@@ -53,15 +53,26 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
 
   /** @param {string} address */
-  const simpleProvideWallet = async address => {
+  const provideWalletAndBalances = async address => {
     // copied from makeClientBanks()
-    const bank = E(consume.bankManager).getBankForAddress(address);
+    const bank = await E(consume.bankManager).getBankForAddress(address);
 
     const [wallet, _isNew] = await E(
       walletFactory.creatorFacet,
     ).provideSmartWallet(address, bank, consume.namesByAddressAdmin);
-    return wallet;
+
+    /**
+     * Read-only facet of bank
+     *
+     * @param {Brand<'nat'>} brand
+     */
+    const getBalanceFor = brand =>
+      E(E(bank).getPurse(brand)).getCurrentAmount();
+    return { getBalanceFor, wallet };
   };
+
+  const simpleProvideWallet = address =>
+    provideWalletAndBalances(address).then(({ wallet }) => wallet);
 
   /**
    *
@@ -121,6 +132,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     sendToBridge:
       walletBridgeManager && (obj => E(walletBridgeManager).toBridge(obj)),
     consume,
+    provideWalletAndBalances,
     simpleProvideWallet,
     simpleCreatePriceFeed,
   };
