@@ -312,20 +312,3 @@ export const startPriceFeeds = async (
   trace('startPriceFeeds complete');
 };
 harden(startPriceFeeds);
-
-export const PRICE_FEEDS_MANIFEST = harden({
-  [startPriceFeeds.name]: {
-    consume: {
-      agoricNamesAdmin: true,
-      board: true,
-      chainStorage: true,
-      chainTimerService: true,
-      client: true,
-      namesByAddressAdmin: true,
-      priceAuthority: true,
-      priceAuthorityAdmin: true,
-      zoe: true,
-    },
-    installation: { consume: { priceAggregator: true } },
-  },
-});
