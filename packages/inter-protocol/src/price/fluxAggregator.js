@@ -3,7 +3,7 @@
  * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
  */
 import { AmountMath } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
   makeNotifierFromSubscriber,
   observeNotifier,
@@ -19,6 +19,8 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeOracleAdmin } from './priceOracleAdmin.js';
 import { makeRoundsManagerKit } from './roundsManager.js';
+
+const trace = makeTracer('FlxAgg');
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -199,6 +201,7 @@ export const provideFluxAggregator = (
      * @param {string} oracleId unique per contract instance
      */
     makeOracleInvitation: async oracleId => {
+      trace('makeOracleInvitation', oracleId);
       /**
        * If custom arguments are supplied to the `zoe.offer` call, they can
        * indicate an OraclePriceSubmission notifier and a corresponding
@@ -245,6 +248,7 @@ export const provideFluxAggregator = (
 
     /** @param {string} oracleId */
     async initOracle(oracleId) {
+      trace('initOracle', oracleId);
       assert.typeof(oracleId, 'string');
 
       const oracleAdmin = makeOracleAdmin(

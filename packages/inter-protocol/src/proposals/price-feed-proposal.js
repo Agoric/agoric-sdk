@@ -200,6 +200,7 @@ export const createPriceFeed = async (
       governed: {
         initialPoserInvitation,
         marshaller,
+        namesByAddressAdmin,
         storageNode: E(storageNode).makeChildNode(
           sanitizePathSegment(AGORIC_INSTANCE_NAME),
         ),

@@ -52,7 +52,7 @@ export const reserveThenGetNames = async (nameAdmin, names) =>
 
 /**
  * @param debugName
- * @param {ERef<import('@agoric/vats').MyAddressNameAdmin>} namesByAddressAdmin
+ * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
  * @param {string} addr
  * @param {Payment[]} payments
  */

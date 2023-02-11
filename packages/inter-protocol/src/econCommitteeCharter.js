@@ -115,7 +115,7 @@ export const start = async zcf => {
     VoteOnApiCall: M.call(
       InstanceHandleShape,
       M.string(),
-      M.arrayOf(M.string()),
+      M.arrayOf(M.any()),
       TimestampShape,
     ).returns(M.promise()),
   });

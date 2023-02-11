@@ -2,6 +2,7 @@ import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { E } from '@endo/eventual-send';
+import { reserveThenDeposit } from '../proposals/utils.js';
 import { provideFluxAggregator } from './fluxAggregator.js';
 
 const trace = makeTracer('FluxAgg');
@@ -24,6 +25,7 @@ const trace = makeTracer('FluxAgg');
  * @param {{
  * initialPoserInvitation: Invitation,
  * marshaller: Marshaller,
+ * namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
  * quoteMint?: ERef<Mint<'set'>>,
  * storageNode: ERef<StorageNode>,
  * }} privateArgs
@@ -47,6 +49,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     initialPoserInvitation,
     marshaller,
+    namesByAddressAdmin,
     storageNode: storageNodeP,
   } = privateArgs;
   assertAllDefined({ initialPoserInvitation, marshaller, storageNodeP });
@@ -77,17 +80,33 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
 
+  /**
+   * Initialize a new oracle and send an invitation to administer it.
+   *
+   * @param {string} addr
+   */
+  const addOracle = async addr => {
+    const invitation = await E(fa.creatorFacet).makeOracleInvitation(addr);
+    // XXX imported from 'proposals' path
+    await reserveThenDeposit(
+      `fluxAggregator oracle ${addr}`,
+      namesByAddressAdmin,
+      addr,
+      [invitation],
+    );
+    return `added ${addr}`;
+  };
+
   const governedApis = {
     /**
+     * Add the specified oracles. May partially fail, such that some oracles are added and others aren't.
      *
-     * @param {string} oracleId
+     * @param {string[]} oracleIds
+     * @returns {Promise<Array<PromiseSettledResult<string>>>}
      */
-    addOracle: oracleId => fa.creatorFacet.initOracle(oracleId),
-    /**
-     *
-     * @param {string} oracleId
-     */
-    removeOracle: oracleId => fa.creatorFacet.deleteOracle(oracleId),
+    addOracles: oracleIds => {
+      return Promise.allSettled(oracleIds.map(addOracle));
+    },
   };
 
   const governorFacet = makeGovernorFacet(fa.creatorFacet, governedApis);

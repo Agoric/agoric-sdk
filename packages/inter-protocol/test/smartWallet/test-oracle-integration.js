@@ -11,7 +11,6 @@ import {
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/far';
-import util from 'util';
 import { zip } from '../../src/collect.js';
 import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregator.js';
@@ -344,22 +343,18 @@ test.serial('govern addOracle', async t => {
    *
    * @param {string} desc
    * @param {number} len
-   * @param {any} balances XXX please improve this
+   * @param {{get: (b: Brand) => Amount | undefined}} balances
    * @returns {Promise<[{description: string, instance: Instance}]>}
    */
   const getInvitationFor = async (desc, len, balances) =>
-    // @ts-expect-error TS can't tell that it's going to satisfy the @returns.
     E(E(zoe).getInvitationIssuer())
       .getBrand()
       .then(brand => {
-        /** @type {Amount<'set'>} */
-        const invitationsAmount = NonNullish(balances.get(brand));
-        console.log('DEBUG invitationsAmount', invitationsAmount);
+        /** @type {any} */
+        const invitationsAmount = balances.get(brand);
         t.is(invitationsAmount?.value.length, len);
         return invitationsAmount.value.filter(i => i.description === desc);
       });
-
-  console.log('DEBUG computedState.balances', computedState.balances);
 
   const proposeInvitationDetails = await getInvitationFor(
     EC_INVITATION_MAKERS_DESC,
@@ -408,11 +403,6 @@ test.serial('govern addOracle', async t => {
     'charter member invitation',
   );
 
-  console.log('DEBUG purses', util.inspect(currentState.purses, false, 8));
-  console.log(
-    'DEBUG offerToUsedInvitation',
-    util.inspect(currentState.offerToUsedInvitation, false, 8),
-  );
   // Call for a vote ////////////////////////////////
 
   const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');
@@ -423,7 +413,7 @@ test.serial('govern addOracle', async t => {
     source: 'continuing',
     previousOffer: 44,
     invitationMakerName: 'VoteOnApiCall',
-    invitationArgs: harden([feed, 'addOracle', [newOracle], 2n]),
+    invitationArgs: harden([feed, 'addOracles', [[newOracle]], 2n]),
   };
 
   /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
@@ -446,9 +436,12 @@ test.serial('govern addOracle', async t => {
   ).getDetails();
   t.is(electionType, 'api_invocation');
   const yesPosition = harden([positions[0]]);
-  t.deepEqual(issue, { apiMethodName: 'addOracle', methodArgs: [newOracle] });
+  t.deepEqual(issue, {
+    apiMethodName: 'addOracles',
+    methodArgs: [[newOracle]],
+  });
   t.deepEqual(yesPosition, [
-    { apiMethodName: 'addOracle', methodArgs: [newOracle] },
+    { apiMethodName: 'addOracles', methodArgs: [[newOracle]] },
   ]);
 
   const voteInvitationDetails = await getInvitationFor(
@@ -503,9 +496,14 @@ test.serial('govern addOracle', async t => {
   };
 
   await offersFacet.executeOffer(voteOffer);
-  await eventLoopIteration();
 
-  // FIXME now go into the newOracle wallet and make sure it has the invitation
+  // pass time to exceed the voting deadline
+  /** @type {ERef<ManualTimer>} */
+  // @ts-expect-error cast mock
+  const timer = t.context.consume.chainTimerService;
+  await E(timer).tickN(10);
+
+  // confirm deposit /////////////////////////
 
   const oracleWallet = await t.context.simpleProvideWallet(newOracle);
   const oracleWalletComputedState = coalesceUpdates(
@@ -513,10 +511,13 @@ test.serial('govern addOracle', async t => {
   );
   await eventLoopIteration();
 
-  /** @type {ERef<ManualTimer>} */
-  // @ts-expect-error cast mock
-  const timer = t.context.consume.chainTimerService;
-  await E(timer).tickN(1000);
+  const oracleInvitationDetails = await getInvitationFor(
+    ORACLE_INVITATION_MAKERS_DESC,
+    1,
+    oracleWalletComputedState.balances,
+  );
+  t.log(oracleInvitationDetails);
 
-  console.log(util.inspect(oracleWalletComputedState, false, 9));
+  t.is(oracleInvitationDetails[0].description, ORACLE_INVITATION_MAKERS_DESC);
+  t.is(oracleInvitationDetails[0].instance, feed, 'matches feed instance');
 });
