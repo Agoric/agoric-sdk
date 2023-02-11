@@ -120,7 +120,26 @@ func NewKeeper(storeKey sdk.StoreKey) Keeper {
 
 // ExportStorage fetches all storage
 func (k Keeper) ExportStorage(ctx sdk.Context) []*types.DataEntry {
+	return k.ExportStorageFromPrefix(ctx, "")
+}
+
+// ExportStorageFromPrefix fetches storage only under the supplied pathPrefix.
+func (k Keeper) ExportStorageFromPrefix(ctx sdk.Context, pathPrefix string) []*types.DataEntry {
 	store := ctx.KVStore(k.storeKey)
+
+	if len(pathPrefix) > 0 {
+		if err := types.ValidatePath(pathPrefix); err != nil {
+			panic(err)
+		}
+		pathPrefix = pathPrefix + types.PathSeparator
+	}
+
+	// since vstorage encodes keys with a prefix indicating the number of path
+	// elements, exporting all entries under a given path cannot use a prefix
+	// iterator. Instead we iterate over the whole vstorage content and check
+	// whether each entry matches the path prefix. This choice assumes most
+	// entries will be exported. An alternative implementation would be to
+	// recursively list all children under the pathPrefix, and export them.
 
 	iterator := sdk.KVStorePrefixIterator(store, nil)
 
@@ -135,10 +154,14 @@ func (k Keeper) ExportStorage(ctx sdk.Context) []*types.DataEntry {
 			continue
 		}
 		path := types.EncodedKeyToPath(iterator.Key())
+		if !strings.HasPrefix(path, pathPrefix) {
+			continue
+		}
 		value, hasPrefix := cutPrefix(rawValue, types.EncodedDataPrefix)
 		if !hasPrefix {
 			panic(fmt.Errorf("value at path %q starts with unexpected prefix", path))
 		}
+		path = path[len(pathPrefix):]
 		entry := types.DataEntry{Path: path, Value: string(value)}
 		exported = append(exported, &entry)
 	}
