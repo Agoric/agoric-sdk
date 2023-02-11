@@ -192,7 +192,6 @@
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
- *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: import('@agoric/vats').Board,

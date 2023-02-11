@@ -92,7 +92,6 @@ export const createPriceFeed = async (
   {
     consume: {
       agoricNamesAdmin,
-      aggregators,
       board,
       chainStorage,
       chainTimerService,
@@ -102,7 +101,6 @@ export const createPriceFeed = async (
       priceAuthorityAdmin,
       zoe,
     },
-    produce: { aggregators: produceAggregators },
   },
   {
     options: {
@@ -119,8 +117,6 @@ export const createPriceFeed = async (
   trace('createPriceFeed');
   const STORAGE_PATH = 'priceFeed';
 
-  // Default to an empty Map and home.priceAuthority.
-  produceAggregators.resolve(new Map());
   void E(client).assignBundle([_addr => ({ priceAuthority })]);
 
   const timer = await chainTimerService;
@@ -167,7 +163,6 @@ export const createPriceFeed = async (
       marshaller,
     },
   );
-  await E(aggregators).set(terms, { aggregator });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
     AGORIC_INSTANCE_NAME,
@@ -176,14 +171,12 @@ export const createPriceFeed = async (
 
   // Publish price feed in home.priceAuthority.
   const forceReplace = true;
-  void E(priceAuthorityAdmin)
-    .registerPriceAuthority(
-      E(aggregator.publicFacet).getPriceAuthority(),
-      brandIn,
-      brandOut,
-      forceReplace,
-    )
-    .then(deleter => E(aggregators).set(terms, { aggregator, deleter }));
+  void E(priceAuthorityAdmin).registerPriceAuthority(
+    E(aggregator.publicFacet).getPriceAuthority(),
+    brandIn,
+    brandOut,
+    forceReplace,
+  );
 
   /**
    * Initialize a new oracle and send an invitation to administer it.
@@ -222,7 +215,6 @@ export const getManifestForPriceFeed = async (
   manifest: {
     [createPriceFeed.name]: {
       consume: {
-        aggregators: t,
         agoricNamesAdmin: t,
         board: t,
         chainStorage: t,
@@ -233,7 +225,6 @@ export const getManifestForPriceFeed = async (
         priceAuthorityAdmin: t,
         zoe: t,
       },
-      produce: { aggregators: t },
     },
     [ensureOracleBrands.name]: {
       consume: {
@@ -326,7 +317,6 @@ export const PRICE_FEEDS_MANIFEST = harden({
   [startPriceFeeds.name]: {
     consume: {
       agoricNamesAdmin: true,
-      aggregators: true,
       board: true,
       chainStorage: true,
       chainTimerService: true,
@@ -336,7 +326,6 @@ export const PRICE_FEEDS_MANIFEST = harden({
       priceAuthorityAdmin: true,
       zoe: true,
     },
-    produce: { aggregators: true },
     installation: { consume: { priceAggregator: true } },
   },
 });
