@@ -14,7 +14,11 @@ import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
-import { makeDefaultTestContext } from './contexts.js';
+import {
+  currentPurseBalance,
+  makeDefaultTestContext,
+  purseBalance,
+} from './contexts.js';
 import { headValue, withAmountUtils } from '../supports.js';
 
 /**
@@ -50,33 +54,6 @@ test.before(async t => {
   // @ts-expect-error cast
   t.context = await makeDefaultTestContext(t, makePsmTestSpace);
 });
-
-/**
- * @param {Awaited<ReturnType<typeof coalesceUpdates>>} state
- * @param {Brand<'nat'>} brand
- */
-const purseBalance = (state, brand) => {
-  const balances = Array.from(state.balances.values());
-  const match = balances.find(b => b.brand === brand);
-  if (!match) {
-    console.debug('balances', ...balances);
-    assert.fail(`${brand} not found in record`);
-  }
-  return match.value;
-};
-/**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
- * @param {Brand<'nat'>} brand
- */
-const currentPurseBalance = (record, brand) => {
-  const purses = Array.from(record.purses.values());
-  const match = purses.find(b => b.brand === brand);
-  if (!match) {
-    console.debug('purses', ...purses);
-    assert.fail(`${brand} not found in record`);
-  }
-  return match.balance.value;
-};
 
 test('null swap', async t => {
   const { anchor } = t.context;

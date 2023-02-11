@@ -1,6 +1,8 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+// eslint-disable-next-line no-unused-vars -- used by TS
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
@@ -124,4 +126,31 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     simpleProvideWallet,
     simpleCreatePriceFeed,
   };
+};
+
+/**
+ * @param {Awaited<ReturnType<typeof coalesceUpdates>>} state
+ * @param {Brand<'nat'>} brand
+ */
+export const purseBalance = (state, brand) => {
+  const balances = Array.from(state.balances.values());
+  const match = balances.find(b => b.brand === brand);
+  if (!match) {
+    console.debug('balances', ...balances);
+    assert.fail(`${brand} not found in record`);
+  }
+  return match.value;
+};
+/**
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
+ * @param {Brand<'nat'>} brand
+ */
+export const currentPurseBalance = (record, brand) => {
+  const purses = Array.from(record.purses.values());
+  const match = purses.find(b => b.brand === brand);
+  if (!match) {
+    console.debug('purses', ...purses);
+    assert.fail(`${brand} not found in record`);
+  }
+  return match.balance.value;
 };
