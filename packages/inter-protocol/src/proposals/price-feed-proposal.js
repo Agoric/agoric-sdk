@@ -98,6 +98,7 @@ export const createPriceFeed = async (
       chainStorage,
       chainTimerService,
       client,
+      econCharterKit,
       economicCommitteeCreatorFacet,
       namesByAddressAdmin,
       priceAuthority,
@@ -221,6 +222,11 @@ export const createPriceFeed = async (
     faInstance,
   );
 
+  E(E.get(econCharterKit).creatorFacet).addInstance(
+    faInstance,
+    aggregatorGovernor.creatorFacet,
+    AGORIC_INSTANCE_NAME,
+  );
   trace('registered', AGORIC_INSTANCE_NAME, faInstance);
 
   // Publish price feed in home.priceAuthority.
@@ -380,6 +386,7 @@ export const PRICE_FEEDS_MANIFEST = harden({
       chainStorage: true,
       chainTimerService: true,
       client: true,
+      econCharterKit: true,
       namesByAddressAdmin: true,
       priceAuthority: true,
       priceAuthorityAdmin: true,

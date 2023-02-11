@@ -1,6 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import '@agoric/vats/src/core/types.js';
 import {
@@ -8,15 +9,15 @@ import {
   mockPsmBootstrapArgs,
 } from '@agoric/vats/tools/boot-test-utils.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { E } from '@endo/far';
-
-import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregator.js';
+import { E } from '@endo/far';
+import util from 'util';
+import { zip } from '../../src/collect.js';
+import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
+import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregator.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
-import { makeDefaultTestContext } from './contexts.js';
-import { zip } from '../../src/collect.js';
+import { currentPurseBalance, makeDefaultTestContext } from './contexts.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -25,11 +26,13 @@ import { zip } from '../../src/collect.js';
  */
 const test = anyTest;
 
+const committeeAddress = 'econCommitteeMemberA';
+
 const makeTestSpace = async log => {
   const psmParams = {
     anchorAssets: [{ denom: 'ibc/usdc1234', keyword: 'AUSD' }],
     economicCommitteeAddresses: {
-      /* empty */
+      aMember: committeeAddress,
     },
     argv: { bootMsg: {} },
   };
@@ -77,6 +80,11 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makeTestSpace);
 });
 
+/**
+ *
+ * @param {import('ava').ExecutionContext<*>} t
+ * @param {string[]} oracleAddresses
+ */
 const setupFeedWithWallets = async (t, oracleAddresses) => {
   const { agoricNames } = t.context.consume;
 
@@ -105,7 +113,7 @@ const acceptInvitation = async (wallet, priceAggregator) => {
   const getInvMakersSpec = {
     source: 'purse',
     instance: priceAggregator,
-    description: INVITATION_MAKERS_DESC,
+    description: ORACLE_INVITATION_MAKERS_DESC,
   };
 
   /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
@@ -176,12 +184,12 @@ test.serial('invitations', async t => {
   };
 
   const proposeInvitationDetails = await getInvitationFor(
-    INVITATION_MAKERS_DESC,
+    ORACLE_INVITATION_MAKERS_DESC,
     1,
     computedState.balances,
   );
 
-  t.is(proposeInvitationDetails[0].description, INVITATION_MAKERS_DESC);
+  t.is(proposeInvitationDetails[0].description, ORACLE_INVITATION_MAKERS_DESC);
   t.is(
     proposeInvitationDetails[0].instance,
     governedPriceAggregator,
@@ -194,7 +202,7 @@ test.serial('invitations', async t => {
   const getInvMakersSpec = {
     source: 'purse',
     instance: governedPriceAggregator,
-    description: INVITATION_MAKERS_DESC,
+    description: ORACLE_INVITATION_MAKERS_DESC,
   };
 
   const id = '33';
@@ -212,7 +220,7 @@ test.serial('invitations', async t => {
   t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [id]);
   t.is(
     currentState.offerToUsedInvitation[id].value[0].description,
-    INVITATION_MAKERS_DESC,
+    ORACLE_INVITATION_MAKERS_DESC,
   );
 });
 
@@ -307,4 +315,208 @@ test.serial('errors', async t => {
       numWantsSatisfied: 1,
     },
   );
+});
+
+test.serial('govern addOracle', async t => {
+  const { invitationBrand } = t.context;
+
+  const newOracle = 'agoric1OracleB';
+
+  const { agoricNames, zoe } = await E.get(t.context.consume);
+  const wallet = await t.context.simpleProvideWallet(committeeAddress);
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const currentSub = E(wallet).getCurrentSubscriber();
+
+  const offersFacet = wallet.getOffersFacet();
+
+  const econCharter = await E(agoricNames).lookup(
+    'instance',
+    'econCommitteeCharter',
+  );
+  const economicCommittee = await E(agoricNames).lookup(
+    'instance',
+    'economicCommittee',
+  );
+  await eventLoopIteration();
+
+  /**
+   * get invitation details the way a user would
+   *
+   * @param {string} desc
+   * @param {number} len
+   * @param {any} balances XXX please improve this
+   * @returns {Promise<[{description: string, instance: Instance}]>}
+   */
+  const getInvitationFor = async (desc, len, balances) =>
+    // @ts-expect-error TS can't tell that it's going to satisfy the @returns.
+    E(E(zoe).getInvitationIssuer())
+      .getBrand()
+      .then(brand => {
+        /** @type {Amount<'set'>} */
+        const invitationsAmount = NonNullish(balances.get(brand));
+        console.log('DEBUG invitationsAmount', invitationsAmount);
+        t.is(invitationsAmount?.value.length, len);
+        return invitationsAmount.value.filter(i => i.description === desc);
+      });
+
+  console.log('DEBUG computedState.balances', computedState.balances);
+
+  const proposeInvitationDetails = await getInvitationFor(
+    EC_INVITATION_MAKERS_DESC,
+    2,
+    computedState.balances,
+  );
+
+  t.is(proposeInvitationDetails[0].description, EC_INVITATION_MAKERS_DESC);
+  t.is(proposeInvitationDetails[0].instance, econCharter, 'econCharter');
+  t.is(
+    // @ts-expect-error cast amount kind
+    currentPurseBalance(await headValue(currentSub), invitationBrand).length,
+    2,
+    'two invitations deposited',
+  );
+
+  // The purse has the invitation to get the makers ///////////
+
+  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+  const getInvMakersSpec = {
+    source: 'purse',
+    instance: econCharter,
+    description: EC_INVITATION_MAKERS_DESC,
+  };
+
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const invMakersOffer = {
+    id: 44,
+    invitationSpec: getInvMakersSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(invMakersOffer);
+
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
+  let currentState = await headValue(currentSub);
+  t.is(
+    // @ts-expect-error cast amount kind
+    currentPurseBalance(currentState, invitationBrand).length,
+    1,
+    'one invitation consumed, one left',
+  );
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
+  t.is(
+    currentState.offerToUsedInvitation[44].value[0].description,
+    'charter member invitation',
+  );
+
+  console.log('DEBUG purses', util.inspect(currentState.purses, false, 8));
+  console.log(
+    'DEBUG offerToUsedInvitation',
+    util.inspect(currentState.offerToUsedInvitation, false, 8),
+  );
+  // Call for a vote ////////////////////////////////
+
+  const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');
+  t.assert(feed);
+
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+  const proposeInvitationSpec = {
+    source: 'continuing',
+    previousOffer: 44,
+    invitationMakerName: 'VoteOnApiCall',
+    invitationArgs: harden([feed, 'addOracle', [newOracle], 2n]),
+  };
+
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const proposalOfferSpec = {
+    id: 45,
+    invitationSpec: proposeInvitationSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(proposalOfferSpec);
+  await eventLoopIteration();
+
+  // vote /////////////////////////
+
+  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
+  const questions = await E(committeePublic).getOpenQuestions();
+  const question = E(committeePublic).getQuestion(questions[0]);
+  const { positions, issue, electionType, questionHandle } = await E(
+    question,
+  ).getDetails();
+  t.is(electionType, 'api_invocation');
+  const yesPosition = harden([positions[0]]);
+  t.deepEqual(issue, { apiMethodName: 'addOracle', methodArgs: [newOracle] });
+  t.deepEqual(yesPosition, [
+    { apiMethodName: 'addOracle', methodArgs: [newOracle] },
+  ]);
+
+  const voteInvitationDetails = await getInvitationFor(
+    'Voter0',
+    1,
+    computedState.balances,
+  );
+  t.is(voteInvitationDetails.length, 1);
+  const voteInvitationDetail = voteInvitationDetails[0];
+  t.is(voteInvitationDetail.description, 'Voter0');
+  t.is(voteInvitationDetail.instance, economicCommittee);
+
+  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+  const getCommitteeInvMakersSpec = {
+    source: 'purse',
+    instance: economicCommittee,
+    description: 'Voter0',
+  };
+
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const committeeInvMakersOffer = {
+    id: 46,
+    invitationSpec: getCommitteeInvMakersSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(committeeInvMakersOffer);
+  currentState = await headValue(currentSub);
+  t.is(
+    // @ts-expect-error cast amount kind
+    currentPurseBalance(currentState, invitationBrand).length,
+    0,
+    'last invitation consumed, none left',
+  );
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44', '46']);
+  // 44 tested above
+  t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
+
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+  const getVoteSpec = {
+    source: 'continuing',
+    previousOffer: 46,
+    invitationMakerName: 'makeVoteInvitation',
+    invitationArgs: harden([yesPosition, questionHandle]),
+  };
+
+  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
+  const voteOffer = {
+    id: 47,
+    invitationSpec: getVoteSpec,
+    proposal: {},
+  };
+
+  await offersFacet.executeOffer(voteOffer);
+  await eventLoopIteration();
+
+  // FIXME now go into the newOracle wallet and make sure it has the invitation
+
+  const oracleWallet = await t.context.simpleProvideWallet(newOracle);
+  const oracleWalletComputedState = coalesceUpdates(
+    E(oracleWallet).getUpdatesSubscriber(),
+  );
+  await eventLoopIteration();
+
+  /** @type {ERef<ManualTimer>} */
+  // @ts-expect-error cast mock
+  const timer = t.context.consume.chainTimerService;
+  await E(timer).tickN(1000);
+
+  console.log(util.inspect(oracleWalletComputedState, false, 9));
 });

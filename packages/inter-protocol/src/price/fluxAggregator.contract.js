@@ -77,10 +77,17 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
 
-  trace('got param governance');
-
   const governedApis = {
-    initOracle: fa.creatorFacet.initOracle,
+    /**
+     *
+     * @param {string} oracleId
+     */
+    addOracle: oracleId => fa.creatorFacet.initOracle(oracleId),
+    /**
+     *
+     * @param {string} oracleId
+     */
+    removeOracle: oracleId => fa.creatorFacet.deleteOracle(oracleId),
   };
 
   const governorFacet = makeGovernorFacet(fa.creatorFacet, governedApis);
