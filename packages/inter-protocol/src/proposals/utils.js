@@ -1,8 +1,6 @@
+import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { E } from '@endo/far';
-
-// must match packages/wallet/api/src/lib-wallet.js
-export const DEPOSIT_FACET = 'depositFacet';
 
 const { Fail } = assert;
 
@@ -52,6 +50,12 @@ export const reserveThenGetNames = async (nameAdmin, names) =>
     names.map(name => [name]),
   );
 
+/**
+ * @param debugName
+ * @param {ERef<import('@agoric/vats').MyAddressNameAdmin>} namesByAddressAdmin
+ * @param {string} addr
+ * @param {Payment[]} payments
+ */
 export const reserveThenDeposit = async (
   debugName,
   namesByAddressAdmin,
@@ -60,7 +64,7 @@ export const reserveThenDeposit = async (
 ) => {
   console.info('awaiting depositFacet for', debugName);
   const [depositFacet] = await reserveThenGetNamePaths(namesByAddressAdmin, [
-    [addr, DEPOSIT_FACET],
+    [addr, WalletName.depositFacet],
   ]);
   console.info('depositing to', debugName);
   await Promise.allSettled(
