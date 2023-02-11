@@ -17,7 +17,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeOracleAdmin } from './priceOracleAdmin.js';
+import { makeOracleAdmin } from './priceOracleKit.js';
 import { makeRoundsManagerKit } from './roundsManager.js';
 
 const trace = makeTracer('FlxAgg', false);
