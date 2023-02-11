@@ -170,11 +170,21 @@ func TestStorage(t *testing.T) {
 		{Path: "key2.child2.grandchild2", Value: "value2grandchild"},
 		{Path: "key2.child2.grandchild2a", Value: "value2grandchilda"},
 	}
-	got := keeper.ExportStorage(ctx)
-	if !reflect.DeepEqual(got, expectedExport) {
-		t.Errorf("got export %q, want %q", got, expectedExport)
+	gotExport := keeper.ExportStorage(ctx)
+	if !reflect.DeepEqual(gotExport, expectedExport) {
+		t.Errorf("got export %q, want %q", gotExport, expectedExport)
 	}
-	keeper.ImportStorage(ctx, got)
+
+	// Check the export.
+	expectedKey2Export := []*types.DataEntry{
+		{Path: "child2.grandchild2", Value: "value2grandchild"},
+		{Path: "child2.grandchild2a", Value: "value2grandchilda"},
+	}
+	if got := keeper.ExportStorageFromPrefix(ctx, "key2"); !reflect.DeepEqual(got, expectedKey2Export) {
+		t.Errorf("got export %q, want %q", got, expectedKey2Export)
+	}
+
+	keeper.ImportStorage(ctx, gotExport)
 }
 
 func TestStorageNotify(t *testing.T) {
