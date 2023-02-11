@@ -16,7 +16,11 @@ import { INVITATION_MAKERS_DESC as EC_INVITATION_MAKERS_DESC } from '../../src/e
 import { INVITATION_MAKERS_DESC as ORACLE_INVITATION_MAKERS_DESC } from '../../src/price/fluxAggregator.js';
 import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
-import { currentPurseBalance, makeDefaultTestContext } from './contexts.js';
+import {
+  currentPurseBalance,
+  makeDefaultTestContext,
+  voteForOpenQuestion,
+} from './contexts.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -283,7 +287,7 @@ test.serial('errors', async t => {
     }),
     {
       error:
-        'Error: In "pushPrice" method of (OracleAdmin): arg 0: unitPrice: number 1 - Must be a bigint',
+        'Error: In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
       // trivially satisfied because the Want is empty
       numWantsSatisfied: 1,
     },
@@ -316,7 +320,8 @@ test.serial('errors', async t => {
   );
 });
 
-test.serial('govern addOracle', async t => {
+// test both addOracles and removeOracles in same test to reuse the lengthy EC setup
+test.serial('govern oracles list', async t => {
   const { invitationBrand } = t.context;
 
   const newOracle = 'agoric1OracleB';
@@ -332,6 +337,7 @@ test.serial('govern addOracle', async t => {
     'instance',
     'econCommitteeCharter',
   );
+  /** @type {import('@agoric/zoe/src/zoeService/utils').Instance<import('@agoric/governance/src/committee').start> } */
   const economicCommittee = await E(agoricNames).lookup(
     'instance',
     'economicCommittee',
@@ -371,153 +377,166 @@ test.serial('govern addOracle', async t => {
     'two invitations deposited',
   );
 
-  // The purse has the invitation to get the makers ///////////
+  // Accept the EC invitation makers ///////////
+  {
+    /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
+    const getInvMakersSpec = {
+      source: 'purse',
+      instance: econCharter,
+      description: EC_INVITATION_MAKERS_DESC,
+    };
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
-  const getInvMakersSpec = {
-    source: 'purse',
-    instance: econCharter,
-    description: EC_INVITATION_MAKERS_DESC,
-  };
+    await offersFacet.executeOffer({
+      id: 'acceptEcInvitationOID',
+      invitationSpec: getInvMakersSpec,
+      proposal: {},
+    });
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const invMakersOffer = {
-    id: 44,
-    invitationSpec: getInvMakersSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(invMakersOffer);
-
-  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
-  let currentState = await headValue(currentSub);
-  t.is(
-    // @ts-expect-error cast amount kind
-    currentPurseBalance(currentState, invitationBrand).length,
-    1,
-    'one invitation consumed, one left',
-  );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
-  t.is(
-    currentState.offerToUsedInvitation[44].value[0].description,
-    'charter member invitation',
-  );
-
-  // Call for a vote ////////////////////////////////
+    /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
+    let currentState = await headValue(currentSub);
+    t.is(
+      // @ts-expect-error cast amount kind
+      currentPurseBalance(currentState, invitationBrand).length,
+      1,
+      'one invitation consumed, one left',
+    );
+    t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
+      'acceptEcInvitationOID',
+    ]);
+    t.is(
+      currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
+        .description,
+      'charter member invitation',
+    );
+    await offersFacet.executeOffer({
+      id: 'acceptVoterOID',
+      invitationSpec: {
+        source: 'purse',
+        instance: economicCommittee,
+        description: 'Voter0',
+      },
+      proposal: {},
+    });
+    currentState = await headValue(currentSub);
+    t.is(
+      // @ts-expect-error cast amount kind
+      currentPurseBalance(currentState, invitationBrand).length,
+      0,
+      'last invitation consumed, none left',
+    );
+    t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
+      'acceptEcInvitationOID',
+      'acceptVoterOID',
+    ]);
+    // 'acceptEcInvitationOID' tested above
+    t.is(
+      currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
+      'Voter0',
+    );
+  }
 
   const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');
   t.assert(feed);
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
-    source: 'continuing',
-    previousOffer: 44,
-    invitationMakerName: 'VoteOnApiCall',
-    invitationArgs: harden([feed, 'addOracles', [[newOracle]], 2n]),
-  };
+  // Call for a vote to addOracles ////////////////////////////////
+  {
+    /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+    const proposeInvitationSpec = {
+      source: 'continuing',
+      previousOffer: 'acceptEcInvitationOID',
+      invitationMakerName: 'VoteOnApiCall',
+      invitationArgs: harden([feed, 'addOracles', [[newOracle]], 2n]),
+    };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
-    id: 45,
-    invitationSpec: proposeInvitationSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(proposalOfferSpec);
-  await eventLoopIteration();
-
-  // vote /////////////////////////
+    await offersFacet.executeOffer({
+      id: 'proposeAddOracles',
+      invitationSpec: proposeInvitationSpec,
+      proposal: {},
+    });
+    await eventLoopIteration();
+  }
 
   const committeePublic = E(zoe).getPublicFacet(economicCommittee);
-  const questions = await E(committeePublic).getOpenQuestions();
-  const question = E(committeePublic).getQuestion(questions[0]);
-  const { positions, issue, electionType, questionHandle } = await E(
-    question,
-  ).getDetails();
-  t.is(electionType, 'api_invocation');
-  const yesPosition = harden([positions[0]]);
-  t.deepEqual(issue, {
-    apiMethodName: 'addOracles',
-    methodArgs: [[newOracle]],
-  });
-  t.deepEqual(yesPosition, [
-    { apiMethodName: 'addOracles', methodArgs: [[newOracle]] },
-  ]);
-
-  const voteInvitationDetails = await getInvitationFor(
-    'Voter0',
-    1,
-    computedState.balances,
-  );
-  t.is(voteInvitationDetails.length, 1);
-  const voteInvitationDetail = voteInvitationDetails[0];
-  t.is(voteInvitationDetail.description, 'Voter0');
-  t.is(voteInvitationDetail.instance, economicCommittee);
-
-  /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
-  const getCommitteeInvMakersSpec = {
-    source: 'purse',
-    instance: economicCommittee,
-    description: 'Voter0',
-  };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const committeeInvMakersOffer = {
-    id: 46,
-    invitationSpec: getCommitteeInvMakersSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(committeeInvMakersOffer);
-  currentState = await headValue(currentSub);
-  t.is(
-    // @ts-expect-error cast amount kind
-    currentPurseBalance(currentState, invitationBrand).length,
-    0,
-    'last invitation consumed, none left',
-  );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44', '46']);
-  // 44 tested above
-  t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
-
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
-  const getVoteSpec = {
-    source: 'continuing',
-    previousOffer: 46,
-    invitationMakerName: 'makeVoteInvitation',
-    invitationArgs: harden([yesPosition, questionHandle]),
-  };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const voteOffer = {
-    id: 47,
-    invitationSpec: getVoteSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(voteOffer);
-
-  // pass time to exceed the voting deadline
   /** @type {ERef<ManualTimer>} */
   // @ts-expect-error cast mock
   const timer = t.context.consume.chainTimerService;
+
+  // vote to addOracles /////////////////////////
+  await offersFacet.executeOffer({
+    id: '',
+    invitationSpec: await voteForOpenQuestion(
+      committeePublic,
+      'acceptVoterOID',
+    ),
+    proposal: {},
+  });
+  // pass time to exceed the voting deadline
   await E(timer).tickN(10);
 
-  // confirm deposit /////////////////////////
+  // accept deposit /////////////////////////
 
   const oracleWallet = await t.context.simpleProvideWallet(newOracle);
   const oracleWalletComputedState = coalesceUpdates(
     E(oracleWallet).getUpdatesSubscriber(),
   );
   await eventLoopIteration();
+  {
+    const oracleInvitationDetails = await getInvitationFor(
+      ORACLE_INVITATION_MAKERS_DESC,
+      1,
+      oracleWalletComputedState.balances,
+    );
+    t.log(oracleInvitationDetails);
 
-  const oracleInvitationDetails = await getInvitationFor(
-    ORACLE_INVITATION_MAKERS_DESC,
-    1,
-    oracleWalletComputedState.balances,
-  );
-  t.log(oracleInvitationDetails);
+    t.is(oracleInvitationDetails[0].description, ORACLE_INVITATION_MAKERS_DESC);
+    t.is(oracleInvitationDetails[0].instance, feed, 'matches feed instance');
+  }
+  const oracleOfferId = await acceptInvitation(oracleWallet, feed);
+  t.is(oracleOfferId, 'acceptInvitation3');
 
-  t.is(oracleInvitationDetails[0].description, ORACLE_INVITATION_MAKERS_DESC);
-  t.is(oracleInvitationDetails[0].instance, feed, 'matches feed instance');
+  // Call for a vote to removeOracles ////////////////////////////////
+  {
+    /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+    const proposeInvitationSpec = {
+      source: 'continuing',
+      previousOffer: 'acceptEcInvitationOID',
+      invitationMakerName: 'VoteOnApiCall',
+      // XXX deadline 20n >> 2n before
+      invitationArgs: harden([feed, 'removeOracles', [[newOracle]], 20n]),
+    };
+
+    await offersFacet.executeOffer({
+      id: 'proposeRemoveOracles',
+      invitationSpec: proposeInvitationSpec,
+      proposal: {},
+    });
+    await eventLoopIteration();
+  }
+
+  // vote to removeOracles /////////////////////////
+  await offersFacet.executeOffer({
+    id: 'removeOraclesOID',
+    invitationSpec: await voteForOpenQuestion(
+      committeePublic,
+      'acceptVoterOID',
+    ),
+    proposal: {},
+  });
+  // wait for vote to resolve
+  await E(timer).tickN(20);
+
+  // verify removed oracle can no longer PushPrice /////////////////////////
+  {
+    const pushPriceOfferId = await pushPrice(oracleWallet, oracleOfferId, {
+      roundId: 1,
+      unitPrice: 123n,
+    });
+
+    const offerStatus =
+      oracleWalletComputedState.offerStatuses.get(pushPriceOfferId);
+    t.like(offerStatus, {
+      id: pushPriceOfferId,
+      error: 'Error: pushPrice for disabled oracle',
+    });
+  }
 });

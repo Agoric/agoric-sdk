@@ -1,4 +1,8 @@
-import { defineDurableExoClass, M, makeKindHandle } from '@agoric/vat-data';
+import { Fail } from '@agoric/assert';
+import { makeTracer } from '@agoric/internal';
+import { defineDurableExoClassKit, M, makeKindHandle } from '@agoric/vat-data';
+
+const trace = makeTracer('OrKit', false);
 
 export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
@@ -15,6 +19,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
 
 /**
  * @typedef {object} OracleStatus
+ * @property {boolean} [disabled]
  * @property {bigint} lastReportedRound
  * @property {bigint} lastStartedRound
  * @property {bigint} latestSubmission
@@ -29,7 +34,7 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  */
 /** @typedef {ImmutableState & MutableState} State */
 
-const oracleAdminKind = makeKindHandle('OracleAdmin');
+const oracleKitKind = makeKindHandle('OracleKit');
 
 /**
  * @param {HeldParams} heldParams
@@ -39,63 +44,81 @@ const initState = ({ oracleId, roundPowers }) => {
   return {
     oracleId,
     roundPowers,
+    disabled: false,
     lastReportedRound: 0n,
     lastStartedRound: 0n,
     latestSubmission: 0n,
   };
 };
 
-const OracleAdminI = M.interface('OracleAdmin', {
+const AdminI = M.interface('OracleKitAdmin', {
+  disable: M.call().returns(),
+});
+
+const OracleI = M.interface('Oracle', {
   pushPrice: M.call({ roundId: M.any(), unitPrice: M.bigint() }).returns(
     M.promise(),
   ),
   getStatus: M.call().returns(M.record()),
 });
 
-export const makeOracleAdmin = defineDurableExoClass(
-  oracleAdminKind,
-  OracleAdminI,
+export const makeOracleAdminKit = defineDurableExoClassKit(
+  oracleKitKind,
+  { admin: AdminI, oracle: OracleI },
   initState,
   {
-    /**
-     * push a unitPrice result from this oracle
-     *
-     * @param {PriceDatum} datum
-     */
-    async pushPrice({ roundId: roundIdRaw = undefined, unitPrice: valueRaw }) {
-      const { state } = this;
-      const { roundPowers } = state;
-      const result = await roundPowers.handlePush(
-        {
+    admin: {
+      disable() {
+        trace(`oracle ${this.state.oracleId} disabled`);
+        this.state.disabled = true;
+      },
+    },
+    oracle: {
+      /**
+       * push a unitPrice result from this oracle
+       *
+       * @param {PriceDatum} datum
+       */
+      async pushPrice({
+        roundId: roundIdRaw = undefined,
+        unitPrice: valueRaw,
+      }) {
+        const { state } = this;
+        !state.disabled || Fail`pushPrice for disabled oracle`;
+        const { roundPowers } = state;
+        const result = await roundPowers.handlePush(
+          {
+            oracleId: state.oracleId,
+            lastReportedRound: state.lastReportedRound,
+            lastStartedRound: state.lastStartedRound,
+            latestSubmission: state.latestSubmission,
+          },
+          {
+            roundId: roundIdRaw,
+            unitPrice: valueRaw,
+          },
+        );
+
+        state.lastReportedRound = result.lastReportedRound;
+        state.lastStartedRound = result.lastStartedRound;
+        state.latestSubmission = result.latestSubmission;
+      },
+      /**
+       *
+       * @returns {OracleStatus}
+       */
+      getStatus() {
+        const { state } = this;
+        return {
           oracleId: state.oracleId,
+          disabled: state.disabled,
           lastReportedRound: state.lastReportedRound,
           lastStartedRound: state.lastStartedRound,
           latestSubmission: state.latestSubmission,
-        },
-        {
-          roundId: roundIdRaw,
-          unitPrice: valueRaw,
-        },
-      );
-
-      state.lastReportedRound = result.lastReportedRound;
-      state.lastStartedRound = result.lastStartedRound;
-      state.latestSubmission = result.latestSubmission;
-    },
-    /**
-     *
-     * @returns {OracleStatus}
-     */
-    getStatus() {
-      const { state } = this;
-      return {
-        oracleId: state.oracleId,
-        lastReportedRound: state.lastReportedRound,
-        lastStartedRound: state.lastStartedRound,
-        latestSubmission: state.latestSubmission,
-      };
+        };
+      },
     },
   },
 );
 
-/** @typedef {ReturnType<typeof makeOracleAdmin>} OracleAdmin */
+/** @typedef {ReturnType<typeof makeOracleAdminKit>} OracleKit */
