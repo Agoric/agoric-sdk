@@ -51,12 +51,12 @@ runs:
         yarn install
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
-    - name: git diff --exit-code yarn.lock
-      run: git diff --exit-code yarn.lock
-      shell: bash
     - name: yarn build
       run: yarn build
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
       env:
         XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
+    - name: git diff --exit-code
+      run: git diff --exit-code
+      shell: bash
