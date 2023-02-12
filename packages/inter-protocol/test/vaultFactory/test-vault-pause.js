@@ -1,7 +1,6 @@
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeTracer } from '@agoric/internal';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {
@@ -16,17 +15,14 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-// the common MakeVault invitation is provided by the VaultDirector and resolves the VaultManager
-// based on the proposal. So the invitation maker can't know what VM it will be for.
-test.failing('pause manager', async t => {
+test('pause all manager invitations', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
   await md.setGovernedFilters(['manager0:']);
-  await eventLoopIteration();
 
   await t.throwsAsync(md.makeVaultDriver(aeth.make(100n), run.make(50n)), {
-    message: '',
+    message: 'not accepting offer with description "manager0: MakeVault"',
   });
 });
 

@@ -6,7 +6,6 @@ import { E } from '@endo/eventual-send';
 
 import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
-  assertProposalShape,
   getAmountIn,
   getAmountOut,
   provideChildBaggage,
@@ -98,6 +97,7 @@ export const prepareVaultDirector = (
   const mintSeat = provideEmptySeat(zcf, baggage, 'mintSeat');
   const rewardPoolSeat = provideEmptySeat(zcf, baggage, 'rewardPoolSeat');
 
+  /** @type {MapStore<Brand, VaultManager>} */
   const collateralTypes = provideDurableMapStore(baggage, 'collateralTypes');
 
   // Non-durable map because param managers aren't durable.
@@ -230,7 +230,6 @@ export const prepareVaultDirector = (
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
         getMetrics: M.call().returns(SubscriberShape),
-        makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
           SubscriberShape,
@@ -477,40 +476,6 @@ export const prepareVaultDirector = (
         /** @deprecated use getPublicTopics */
         getMetrics() {
           return metricsSubscriber;
-        },
-        /**
-         * @deprecated use getCollateralManager and then makeVaultInvitation instead
-         *
-         * Make a vault in the vaultManager based on the collateral type.
-         */
-        makeVaultInvitation() {
-          /** @param {ZCFSeat} seat */
-          const makeVaultHook = async seat => {
-            assertProposalShape(seat, {
-              give: { Collateral: null },
-              want: { Minted: null },
-            });
-            const {
-              give: { Collateral: collateralAmount },
-              want: { Minted: requestedAmount },
-            } = seat.getProposal();
-            const { brand: brandIn } = collateralAmount;
-            collateralTypes.has(brandIn) ||
-              Fail`Not a supported collateral type ${brandIn}`;
-
-            AmountMath.isGTE(
-              requestedAmount,
-              directorParamManager.getMinInitialDebt(),
-            ) ||
-              Fail`The request must be for at least ${
-                directorParamManager.getMinInitialDebt().value
-              }. ${requestedAmount.value} is too small`;
-
-            /** @type {VaultManager} */
-            const mgr = collateralTypes.get(brandIn);
-            return mgr.makeVaultKit(seat);
-          };
-          return zcf.makeInvitation(makeVaultHook, 'MakeVault');
         },
         getRunIssuer() {
           return debtMint.getIssuerRecord().issuer;
