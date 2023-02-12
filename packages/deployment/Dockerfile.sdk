@@ -1,6 +1,6 @@
 ###########################
 # The golang build container
-FROM golang:1.17-buster as cosmos-go
+FROM golang:1.18 as cosmos-go
 
 WORKDIR /usr/src/agoric-sdk/golang/cosmos
 COPY go.mod go.sum ../../

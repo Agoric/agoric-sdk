@@ -3,7 +3,7 @@ ARG REPO=agoric/agoric-sdk
 
 # FIXME: Journalbeat compilation is currently broken, but non-essential.
 # Removed from the build.
-# FROM golang:buster AS go-build
+# FROM golang:1.18 AS go-build
 
 # WORKDIR /usr/src/journalbeat
 # RUN apt-get update -y && apt-get install -y libsystemd-dev
