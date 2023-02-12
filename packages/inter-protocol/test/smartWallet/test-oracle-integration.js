@@ -1,3 +1,4 @@
+/* eslint-disable no-lone-blocks */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/assert';
@@ -369,7 +370,7 @@ test.serial('govern oracles list', async t => {
     'two invitations deposited',
   );
 
-  // Accept the EC invitation makers ///////////
+  t.log('accept the EC invitation makers');
   {
     /** @type {import('@agoric/smart-wallet/src/invitations').PurseInvitationSpec} */
     const getInvMakersSpec = {
@@ -430,7 +431,12 @@ test.serial('govern oracles list', async t => {
   const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');
   t.assert(feed);
 
-  // Call for a vote to addOracles ////////////////////////////////
+  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
+  /** @type {ERef<ManualTimer>} */
+  // @ts-expect-error cast mock
+  const timer = t.context.consume.chainTimerService;
+
+  t.log('EC addOracles');
   {
     /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
@@ -446,27 +452,19 @@ test.serial('govern oracles list', async t => {
       proposal: {},
     });
     await eventLoopIteration();
+    await offersFacet.executeOffer({
+      id: '',
+      invitationSpec: await voteForOpenQuestion(
+        committeePublic,
+        'acceptVoterOID',
+      ),
+      proposal: {},
+    });
+    // pass time to exceed the voting deadline
+    await E(timer).tickN(1);
   }
 
-  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
-  /** @type {ERef<ManualTimer>} */
-  // @ts-expect-error cast mock
-  const timer = t.context.consume.chainTimerService;
-
-  // vote to addOracles /////////////////////////
-  await offersFacet.executeOffer({
-    id: '',
-    invitationSpec: await voteForOpenQuestion(
-      committeePublic,
-      'acceptVoterOID',
-    ),
-    proposal: {},
-  });
-  // pass time to exceed the voting deadline
-  await E(timer).tickN(10);
-
-  // accept deposit /////////////////////////
-
+  t.log('accept oracle invitation');
   const oracleWallet = await t.context.simpleProvideWallet(newOracle);
   const oracleWalletComputedState = coalesceUpdates(
     E(oracleWallet).getUpdatesSubscriber(),
@@ -486,15 +484,82 @@ test.serial('govern oracles list', async t => {
   const oracleOfferId = await acceptInvitation(oracleWallet, feed);
   t.is(oracleOfferId, 'acceptInvitation3');
 
-  // Call for a vote to removeOracles ////////////////////////////////
+  t.log('EC pause');
+  {
+    await offersFacet.executeOffer({
+      id: 'proposePause',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'acceptEcInvitationOID',
+        invitationMakerName: 'VoteOnApiCall',
+        invitationArgs: harden([feed, 'pause', [], 3n]),
+      },
+      proposal: {},
+    });
+    await eventLoopIteration();
+
+    await offersFacet.executeOffer({
+      id: 'pauseOID',
+      invitationSpec: await voteForOpenQuestion(
+        committeePublic,
+        'acceptVoterOID',
+      ),
+      proposal: {},
+    });
+    // wait for vote to resolve
+    await E(timer).tickN(3);
+    await eventLoopIteration();
+  }
+
+  t.log('verify pause prevents PushPrice');
+  {
+    const pushPriceOfferId = await pushPrice(oracleWallet, oracleOfferId, {
+      roundId: 1,
+      unitPrice: 123n,
+    });
+
+    const offerStatus =
+      oracleWalletComputedState.offerStatuses.get(pushPriceOfferId);
+    t.like(offerStatus, {
+      id: pushPriceOfferId,
+      error: 'Error: cannot PushPrice until unpaused',
+    });
+  }
+
+  t.log('EC unpause');
+  {
+    await offersFacet.executeOffer({
+      id: 'proposePause',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'acceptEcInvitationOID',
+        invitationMakerName: 'VoteOnApiCall',
+        invitationArgs: harden([feed, 'unpause', [], 6n]),
+      },
+      proposal: {},
+    });
+    await eventLoopIteration();
+
+    await offersFacet.executeOffer({
+      id: 'unpauseOID',
+      invitationSpec: await voteForOpenQuestion(
+        committeePublic,
+        'acceptVoterOID',
+      ),
+      proposal: {},
+    });
+    // wait for vote to resolve
+    await E(timer).tickN(3);
+    await eventLoopIteration();
+  }
+  t.log('EC removeOracles');
   {
     /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
     const proposeInvitationSpec = {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',
       invitationMakerName: 'VoteOnApiCall',
-      // XXX deadline 20n >> 2n before
-      invitationArgs: harden([feed, 'removeOracles', [[newOracle]], 20n]),
+      invitationArgs: harden([feed, 'removeOracles', [[newOracle]], 10n]),
     };
 
     await offersFacet.executeOffer({
@@ -503,21 +568,20 @@ test.serial('govern oracles list', async t => {
       proposal: {},
     });
     await eventLoopIteration();
+
+    await offersFacet.executeOffer({
+      id: 'removeOraclesOID',
+      invitationSpec: await voteForOpenQuestion(
+        committeePublic,
+        'acceptVoterOID',
+      ),
+      proposal: {},
+    });
+    // wait for vote to resolve
+    await E(timer).tickN(4);
   }
 
-  // vote to removeOracles /////////////////////////
-  await offersFacet.executeOffer({
-    id: 'removeOraclesOID',
-    invitationSpec: await voteForOpenQuestion(
-      committeePublic,
-      'acceptVoterOID',
-    ),
-    proposal: {},
-  });
-  // wait for vote to resolve
-  await E(timer).tickN(20);
-
-  // verify removed oracle can no longer PushPrice /////////////////////////
+  t.log('verify removed oracle can no longer PushPrice');
   {
     const pushPriceOfferId = await pushPrice(oracleWallet, oracleOfferId, {
       roundId: 1,

@@ -2,6 +2,7 @@
  * Adaptation of Chainlink algorithm to the Agoric platform.
  * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
  */
+import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
@@ -118,6 +119,8 @@ export const provideFluxAggregator = (
     'Price Aggregator publish kit',
   );
 
+  let pushIsPaused = false;
+
   // For publishing priceAuthority values to off-chain storage
   /** @type {PublishKit<PriceDescription>} */
   const { publisher: pricePublisher, subscriber: quoteSubscriber } =
@@ -215,6 +218,9 @@ export const provideFluxAggregator = (
         const invitationMakers = Far('invitation makers', {
           /** @param {import('./roundsManager.js').PriceRound} result */
           PushPrice(result) {
+            if (pushIsPaused) {
+              Fail`cannot PushPrice until unpaused`;
+            }
             return zcf.makeInvitation(
               /** @param {ZCFSeat} cSeat */
               async cSeat => {
@@ -301,6 +307,15 @@ export const provideFluxAggregator = (
           oracleCount,
         };
       }
+    },
+
+    /**
+     * Pause (or unpause) whether PushPrice offers can proceed
+     *
+     * @param {boolean} paused
+     */
+    setPaused(paused) {
+      pushIsPaused = paused;
     },
   });
 

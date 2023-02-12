@@ -129,6 +129,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     removeOracles: oracleIds => {
       return Promise.allSettled(oracleIds.map(removeOracle));
     },
+
+    pause: () => {
+      return E(fa.creatorFacet).setPaused(true);
+    },
+    unpause: () => {
+      return E(fa.creatorFacet).setPaused(false);
+    },
   };
 
   const governorFacet = makeGovernorFacet(fa.creatorFacet, governedApis);
