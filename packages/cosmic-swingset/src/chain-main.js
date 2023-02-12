@@ -26,8 +26,8 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
-} from './bufferedStorage.js';
-import stringify from './json-stable-stringify.js';
+} from './helpers/bufferedStorage.js';
+import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 
@@ -52,7 +52,7 @@ const toNumber = specimen => {
  * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
  * @param {(value: string) => T} fromBridgeStringValue
  * @param {(value: T) => string} toBridgeStringValue
- * @returns {import("./bufferedStorage.js").KVStore<T>}
+ * @returns {import("./helpers/bufferedStorage.js").KVStore<T>}
  */
 const makePrefixedBridgeStorage = (
   call,
