@@ -1,6 +1,6 @@
 package gaia
 
 const (
-	upgradeName     = "agoric-upgrade-8"
-	upgradeNameTest = "agorictest-upgrade-8"
+	upgradeName     = "agoric-upgrade-9"
+	upgradeNameTest = "agorictest-upgrade-9"
 )

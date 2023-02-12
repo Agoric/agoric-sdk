@@ -35,7 +35,7 @@ jobs:
       - run: sudo packages/deployment/scripts/install-deps.sh
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: 1.17
+          go-version: 1.18
       - uses: ./.github/actions/restore-node
         with:
           node-version: 16.x
