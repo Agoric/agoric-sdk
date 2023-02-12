@@ -14,7 +14,7 @@ test('checkDebtLimit allows below', t => {
   t.notThrows(() => checkDebtLimit(limit, prior, debt.make(1n)));
 });
 
-test.failing('checkDebtLimit allows at limit', t => {
+test('checkDebtLimit allows at limit', t => {
   t.notThrows(() => checkDebtLimit(limit, prior, debt.make(2n)));
 });
 
