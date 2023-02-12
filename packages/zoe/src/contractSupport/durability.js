@@ -80,10 +80,11 @@ export const provideChildBaggage = (baggage, category) => {
   return Far('childBaggageManager', {
     // TODO(types) infer args
     /**
-     * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: any) => any} M Maker function
+     * @template {Array} R rest of args besides Baggage
+     * @template {(baggage: import('@agoric/ertp').Baggage, ...rest: R) => any} M Maker function
      * @param {string} childName diagnostic tag
      * @param {M} makeChild
-     * @param {...any} nonBaggageArgs
+     * @param {R} nonBaggageArgs
      * @returns {ReturnType<M>}
      */
     addChild: (childName, makeChild, ...nonBaggageArgs) => {
