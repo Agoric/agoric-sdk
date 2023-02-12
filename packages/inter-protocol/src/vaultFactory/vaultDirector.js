@@ -397,13 +397,15 @@ export const prepareVaultDirector = (
             brandName,
             prepareVaultManagerKit,
             zcf,
-            debtMint,
-            collateralBrand,
-            collateralUnit,
-            factoryPowers,
-            startTimeStamp,
-            managerStorageNode,
             marshaller,
+            {
+              debtMint,
+              collateralBrand,
+              collateralUnit,
+              factoryPowers,
+              startTimeStamp,
+              storageNode: managerStorageNode,
+            },
           );
 
           const { self: vm } = makeVaultManager();

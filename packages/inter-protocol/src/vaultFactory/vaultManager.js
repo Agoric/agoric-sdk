@@ -127,24 +127,28 @@ const trace = makeTracer('VM', false);
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand<'nat'>} collateralBrand
- * @param {Amount<'nat'>} collateralUnit
- * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
- * @param {Timestamp} startTimeStamp
- * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @param {Readonly<{
+ * debtMint: ZCFMint<'nat'>,
+ * collateralBrand: Brand<'nat'>,
+ * collateralUnit: Amount<'nat'>,
+ * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * startTimeStamp: Timestamp,
+ * storageNode: ERef<StorageNode>,
+ * }>} unique per singleton
  */
 export const prepareVaultManagerKit = (
   baggage,
   zcf,
-  debtMint,
-  collateralBrand,
-  collateralUnit,
-  factoryPowers,
-  startTimeStamp,
-  storageNode,
   marshaller,
+  {
+    debtMint,
+    collateralBrand,
+    collateralUnit,
+    factoryPowers,
+    startTimeStamp,
+    storageNode,
+  },
 ) => {
   assert(
     storageNode && marshaller,
