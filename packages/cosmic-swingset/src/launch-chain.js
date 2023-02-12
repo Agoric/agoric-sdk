@@ -15,6 +15,7 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
+import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import { assert, Fail } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -375,6 +376,8 @@ export async function launch({
   let savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   let runTime = 0;
   let chainTime;
+  let saveTime = 0;
+  let endBlockFinish = 0;
   let blockParams;
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
@@ -594,7 +597,7 @@ export async function launch({
   }
 
   async function afterCommit(blockHeight, blockTime) {
-    await Promise.resolve()
+    await waitUntilQuiescent()
       .then(afterCommitCallback)
       .then((afterCommitStats = {}) => {
         controller.writeSlogObject({
@@ -672,18 +675,30 @@ export async function launch({
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
         await saveOutsideState(savedHeight, blockTime);
-        const saveTime = Date.now() - start2;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
-          blockHeight,
-          blockTime,
-        });
+        saveTime = Date.now() - start2;
 
         blockParams = undefined;
 
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
+
+        return undefined;
+      }
+
+      case ActionType.AFTER_COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+
+        const fullSaveTime = Date.now() - endBlockFinish;
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-finish',
+          blockHeight,
+          blockTime,
+          saveTime: saveTime / 1000,
+          chainTime: chainTime / 1000,
+          fullSaveTime: fullSaveTime / 1000,
+        });
 
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
@@ -758,6 +773,8 @@ export async function launch({
           blockTime,
           actionQueueStats: inboundQueueMetrics.getStats(),
         });
+
+        endBlockFinish = Date.now();
 
         return undefined;
       }
