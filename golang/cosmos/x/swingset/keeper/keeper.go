@@ -443,6 +443,10 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, vstoragetypes.NewStorageEntry(path, mailbox))
 }
 
+func (k Keeper) ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry {
+	return k.vstorageKeeper.ExportStorageFromPrefix(ctx, StoragePathSwingStore)
+}
+
 func (k Keeper) PathToEncodedKey(path string) []byte {
 	return k.vstorageKeeper.PathToEncodedKey(path)
 }

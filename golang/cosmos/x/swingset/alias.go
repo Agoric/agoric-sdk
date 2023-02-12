@@ -22,6 +22,7 @@ var (
 
 type (
 	Keeper            = keeper.Keeper
+	Snapshotter       = keeper.SwingsetSnapshotter
 	Egress            = types.Egress
 	MsgDeliverInbound = types.MsgDeliverInbound
 	MsgProvision      = types.MsgProvision

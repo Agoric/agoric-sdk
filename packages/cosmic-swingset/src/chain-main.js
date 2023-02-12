@@ -24,6 +24,7 @@ import {
 import { makeMarshal } from '@endo/marshal';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
+import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
   makeBufferedStorage,
@@ -208,6 +209,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
   }
+
+  /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
+  let blockingSend;
+  /** @type {((obj: object) => void) | undefined} */
+  let writeSlogObject;
 
   // this storagePort changes for every single message. We define it out here
   // so the 'externalStorage' object can close over the single mutable
@@ -432,12 +438,15 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       afterCommitCallback,
     });
 
-    savedChainSends = s.savedChainSends;
+    ({ blockingSend, writeSlogObject, savedChainSends } = s);
 
-    return s.blockingSend;
+    return blockingSend;
   }
 
-  let blockingSend;
+  async function handleCosmosSnapshot(_blockHeight, _request, _requestArgs) {
+    throw Fail`Not implemented`;
+  }
+
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
     if (action.vibcPort) {
@@ -458,6 +467,42 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       portNums.lien = action.lienPort;
     }
 
+    // Snapshot actions are specific to cosmos chains and handled here
+    if (action.type === ActionType.COSMOS_SNAPSHOT) {
+      const { blockHeight, request, args: requestArgs } = action;
+      writeSlogObject?.({
+        type: 'cosmic-swingset-snapshot-start',
+        blockHeight,
+        request,
+        args: requestArgs,
+      });
+
+      const resultP = handleCosmosSnapshot(blockHeight, request, requestArgs);
+
+      resultP.then(
+        result => {
+          writeSlogObject?.({
+            type: 'cosmic-swingset-snapshot-finish',
+            blockHeight,
+            request,
+            args: requestArgs,
+            result,
+          });
+        },
+        error => {
+          writeSlogObject?.({
+            type: 'cosmic-swingset-snapshot-finish',
+            blockHeight,
+            request,
+            args: requestArgs,
+            error,
+          });
+        },
+      );
+
+      return resultP;
+    }
+
     // Ensure that initialization has completed.
     blockingSend = await (blockingSend || launchAndInitializeSwingSet(action));
 
@@ -466,6 +511,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       return true;
     }
 
+    // Block related actions are processed by `blockingSend`
     return blockingSend(action);
   }
 }
