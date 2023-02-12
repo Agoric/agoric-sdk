@@ -2,6 +2,7 @@
 import test from 'ava';
 import '@endo/init';
 
+import { Far } from '@endo/marshal';
 import {
   fromUniqueEntries,
   objectMap,
@@ -10,6 +11,7 @@ import {
   whileTrue,
   untilTrue,
   forever,
+  deeplyFulfilledObject,
 } from '../src/utils.js';
 
 test('fromUniqueEntries', t => {
@@ -55,6 +57,24 @@ test('objectMap', t => {
     objectMap({ a: 1 }, (val, key) => `${key}:${val}`),
     { a: 'a:1' },
   );
+});
+
+test('deeplyFulfilledObject', async t => {
+  const someFar = Far('somefar', { getAsync: () => Promise.resolve('async') });
+  const unfulfilled = harden({
+    obj1: {
+      obj2a: {
+        stringP: Promise.resolve('foo'),
+      },
+      obj2b: someFar,
+    },
+  });
+  const fulfilled = await deeplyFulfilledObject(unfulfilled);
+  // JS check that it's a now string
+  fulfilled.obj1.obj2a.stringP.length;
+  t.deepEqual(fulfilled, {
+    obj1: { obj2a: { stringP: 'foo' }, obj2b: someFar },
+  });
 });
 
 test('makeMeasureSeconds', async t => {
