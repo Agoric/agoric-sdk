@@ -3,6 +3,53 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.18.3](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.2...agoric@0.18.3) (2022-12-14)
+
+**Note:** Version bump only for package agoric
+
+
+
+
+
+### [0.18.2](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.1...agoric@0.18.2) (2022-10-18)
+
+**Note:** Version bump only for package agoric
+
+
+
+
+
+### [0.18.1](https://github.com/Agoric/agoric-sdk/compare/agoric@0.18.0...agoric@0.18.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* **cli:** wallet against localhost ([3214477](https://github.com/Agoric/agoric-sdk/commit/32144772ce336718eb487cdbc2b971f6042fac2f))
+* strike "Initial" from Economic Committee ([0f3ce16](https://github.com/Agoric/agoric-sdk/commit/0f3ce1695635551b800f04e0e232d25e16c8f562))
+
+
+
+## [0.18.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.17.0...agoric@0.18.0) (2022-10-05)
+
+
+### Features
+
+* **agoric-cli:** proposeChangeMintLimit ([#6278](https://github.com/Agoric/agoric-sdk/issues/6278)) ([7165dea](https://github.com/Agoric/agoric-sdk/commit/7165deabc5a6bfef04bb7da4baa3bfcee191ee02))
+* **agoric-cli:** support --home, --keyring-backend ([#6316](https://github.com/Agoric/agoric-sdk/issues/6316)) ([b4ed09b](https://github.com/Agoric/agoric-sdk/commit/b4ed09b92f03abdaeb8f4befd31b11e0d3586aa7))
+* **cli:** show status of invitations ([8506e6d](https://github.com/Agoric/agoric-sdk/commit/8506e6d87ef331e781c9d2e2251fdcf48e784e04))
+* **cli:** use new wallet.current node ([71effe7](https://github.com/Agoric/agoric-sdk/commit/71effe758c28181b8709ae4ccf025fcec7bb8a38))
+* more explicit previous offer args ([2faeb29](https://github.com/Agoric/agoric-sdk/commit/2faeb290c737e48fd26d3c1bb49b33c49c1931af))
+
+
+### Bug Fixes
+
+* avoid colliding with 'agoric' chain, e.g. in Keplr ([692084c](https://github.com/Agoric/agoric-sdk/commit/692084ce9328b11e23ab8b46025f83eb8d1b5b3d))
+* make it possible to set decimalPlaces when calling startPSM ([#6348](https://github.com/Agoric/agoric-sdk/issues/6348)) ([46aa80e](https://github.com/Agoric/agoric-sdk/commit/46aa80e1f8d8a73a8a7853ebcd937f5c2df64a42))
+* **agoric-cli:** don't crash on non-contract offers ([f5fe1ee](https://github.com/Agoric/agoric-sdk/commit/f5fe1ee60fb916db005ce19d5f0e56a2b7a485f0))
+* **cli:** wallet show latest ([415761f](https://github.com/Agoric/agoric-sdk/commit/415761f7156314b2413ee78624447302ab50cf51))
+
+
+
 ## [0.17.0](https://github.com/Agoric/agoric-sdk/compare/agoric@0.16.0...agoric@0.17.0) (2022-09-20)
 
 

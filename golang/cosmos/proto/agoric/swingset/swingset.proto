@@ -71,6 +71,26 @@ message Params {
     repeated PowerFlagFee power_flag_fees = 4 [
       (gogoproto.nullable) = false
     ];
+
+    // Maximum sizes for queues.
+    // These values are used by SwingSet to compute how many messages should be
+    // accepted in a block.
+    //
+    // There is no required order to this list of entries, but all the chain
+    // nodes must all serialize and deserialize the existing order without
+    // permuting it.
+    repeated QueueSize queue_max = 5 [
+      (gogoproto.nullable) = false
+    ];
+}
+
+// The current state of the module.
+message State {
+  // The allowed number of items to add to queues, as determined by SwingSet.
+  // Transactions which attempt to enqueue more should be rejected.
+  repeated QueueSize queue_allowed = 1 [
+    (gogoproto.nullable) = false
+  ];
 }
 
 // Map element of a string key to a Nat bean count.
@@ -96,6 +116,17 @@ message PowerFlagFee {
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins",
     (gogoproto.nullable) = false
   ];
+}
+
+// Map element of a string key to a size.
+message QueueSize {
+  option (gogoproto.equal) = true;
+
+  // What the size is for.
+  string key = 1;
+
+  // The actual size value.
+  int32 size = 2;
 }
 
 // Egress is the format for a swingset egress.

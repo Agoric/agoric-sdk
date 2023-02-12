@@ -134,6 +134,8 @@ replace github.com/zondax/hid => github.com/zondax/hid v0.9.1-0.20220302062450-5
 
 replace github.com/99designs/keyring => github.com/cosmos/keyring v1.1.7-0.20210622111912-ef00f8ac3d76
 
+replace github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
+
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.33.2

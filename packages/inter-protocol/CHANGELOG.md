@@ -3,6 +3,46 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.13.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.1...@agoric/inter-protocol@0.13.2) (2022-12-14)
+
+**Note:** Version bump only for package @agoric/inter-protocol
+
+
+
+
+
+### [0.13.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.13.0...@agoric/inter-protocol@0.13.1) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/inter-protocol
+
+
+
+
+
+## [0.13.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.12.1...@agoric/inter-protocol@0.13.0) (2022-10-08)
+
+
+### Features
+
+* script to replace econ-gov in Core Eval ([8bcebf9](https://github.com/Agoric/agoric-sdk/commit/8bcebf95d6f93fe094bdfeab41b4bedec1ac9662))
+* **governance:** replaceElectorate ([12de09e](https://github.com/Agoric/agoric-sdk/commit/12de09e03a6f52c77f2453a006164f151a2c13af))
+
+
+### Bug Fixes
+
+* strike "Initial" from Economic Committee ([0f3ce16](https://github.com/Agoric/agoric-sdk/commit/0f3ce1695635551b800f04e0e232d25e16c8f562))
+
+
+
+### [0.12.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.12.0...@agoric/inter-protocol@0.12.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* make it possible to set decimalPlaces when calling startPSM ([#6348](https://github.com/Agoric/agoric-sdk/issues/6348)) ([46aa80e](https://github.com/Agoric/agoric-sdk/commit/46aa80e1f8d8a73a8a7853ebcd937f5c2df64a42))
+
+
+
 ## 0.12.0 (2022-09-20)
 
 

@@ -3,6 +3,52 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.32.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.1...@agoric/cosmos@0.32.2) (2022-10-18)
+
+
+### Bug Fixes
+
+* actually run the upgrade handler for test ([142b769](https://github.com/Agoric/agoric-sdk/commit/142b7696061e724c5bf25c627b1356610dc5fa75))
+* allow test flag for update ([237c56e](https://github.com/Agoric/agoric-sdk/commit/237c56edbf9de28d6947d8f6e482aa554aae02f9))
+* init in the right order ([3050d11](https://github.com/Agoric/agoric-sdk/commit/3050d11a9bff53251d9fb7ccfea7cb713fd14ca8))
+* use fromVM instead of vm since vm is an import ([131f0db](https://github.com/Agoric/agoric-sdk/commit/131f0db9dfcd46aa04ce7e0b5115fc3735a175fd))
+
+
+
+### [0.32.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.0...@agoric/cosmos@0.32.1) (2022-10-08)
+
+
+### Bug Fixes
+
+* implement upgrade handler ([0f64bf1](https://github.com/Agoric/agoric-sdk/commit/0f64bf15e78e27e7e3127a62740025ab823a4a96))
+* review comments ([c67dc3c](https://github.com/Agoric/agoric-sdk/commit/c67dc3c17b1158c6a56ecd94856b55ec5f873983))
+
+
+
+## [0.32.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.31.0...@agoric/cosmos@0.32.0) (2022-10-05)
+
+
+### Features
+
+* compute separate mempool limit for allowed inbound ([ebfc852](https://github.com/Agoric/agoric-sdk/commit/ebfc85272ab9c589d6a0ecb6dac5b59f931f3001))
+* Cosmos-side ante handler, storage of allowed queue size ([20dc36b](https://github.com/Agoric/agoric-sdk/commit/20dc36b78efa43be608efaade25ce8e83d69c42d))
+* **cosmic-swingset:** inboundQueue limit ([1b2d08f](https://github.com/Agoric/agoric-sdk/commit/1b2d08fcb4dd3de42f92358646d2c88e3b3687f5))
+* **cosmic-swingset:** parse go->node send results as JSON ([2839223](https://github.com/Agoric/agoric-sdk/commit/2839223f4447deed7c32e73ca37ff142f7c563ef))
+* notify on all balance changes ([56a7b88](https://github.com/Agoric/agoric-sdk/commit/56a7b88a814e7c763bed6e5a518e4bfa6b4638f7))
+* run CI and mergify on release-pismo ([#6338](https://github.com/Agoric/agoric-sdk/issues/6338)) ([cf973d0](https://github.com/Agoric/agoric-sdk/commit/cf973d08c8a15678d2c3bdbddf96d330ce5246db))
+* upgrade handler for upgrade 8 ([54c8746](https://github.com/Agoric/agoric-sdk/commit/54c8746247aafc4888f55be759d20b86faee4956))
+
+
+### Bug Fixes
+
+* detect CheckTx correctly, reject inbound before fees ([ae8fc79](https://github.com/Agoric/agoric-sdk/commit/ae8fc790d7966dd011da7c359b1a783b4aaa672e))
+* **golang:** add actionQueue overflow check ([5a579d9](https://github.com/Agoric/agoric-sdk/commit/5a579d936f8de08b178ad12a72700c27d2c9dbc0))
+* **x/swingset:** amino encoding details ([9a2c435](https://github.com/Agoric/agoric-sdk/commit/9a2c435e03350683142d70bc4610653845fbe99f))
+* generate vbank notifications for zero balances ([9769886](https://github.com/Agoric/agoric-sdk/commit/976988605fb2de00ebceee3c98db8a4d7b8a0199))
+* remove unneeded store upgrade ([f1cc0da](https://github.com/Agoric/agoric-sdk/commit/f1cc0dacb37948777329f7bc8ade6218e3f03a34))
+
+
+
 ## [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.30.0...@agoric/cosmos@0.31.0) (2022-09-20)
 
 

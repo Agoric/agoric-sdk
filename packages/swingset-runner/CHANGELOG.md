@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.21.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.2...@agoric/swingset-runner@0.21.3) (2022-12-14)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.21.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.1...@agoric/swingset-runner@0.21.2) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+### [0.21.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.21.0...@agoric/swingset-runner@0.21.1) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/swingset-runner
+
+
+
+
+
+## [0.21.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.20.0...@agoric/swingset-runner@0.21.0) (2022-10-05)
+
+
+### Features
+
+* add otel telemetry feed option to swingset-runner ([b732457](https://github.com/Agoric/agoric-sdk/commit/b73245772e5e9a5eae6b9410355d1264d257c850)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+
+
+### Bug Fixes
+
+* add kernel stats as a slog entry at completion of each block ([8a38c52](https://github.com/Agoric/agoric-sdk/commit/8a38c52a0a4eb665e03fdba7c96e944221ab8bc9)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+
+
+
 ## [0.20.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-runner@0.19.2...@agoric/swingset-runner@0.20.0) (2022-09-20)
 
 

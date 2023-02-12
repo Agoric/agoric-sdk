@@ -19,6 +19,11 @@ const (
 	BeansPerMinFeeDebit       = "minFeeDebit"
 	BeansPerVatCreation       = "vatCreation"
 	BeansPerXsnapComputron    = "xsnapComputron"
+
+	// QueueSize keys.
+	// Keep up-to-date with updateQueueAllowed() in packanges/cosmic-swingset/src/launch-chain.js
+	QueueInbound        = "inbound"
+	QueueInboundMempool = "inbound_mempool"
 )
 
 var (
@@ -43,7 +48,22 @@ var (
 	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.0002
 	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // $0.2
 
-	DefaultBeansPerUnit = []StringBeans{
+	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
+
+	DefaultPowerFlagFees = []PowerFlagFee{
+		NewPowerFlagFee("SMART_WALLET", sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
+	}
+
+	DefaultInboundQueueMax = int32(1_000)
+
+	DefaultQueueMax = []QueueSize{
+		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
+	}
+)
+
+// move DefaultBeansPerUnit to a function to allow for boot overriding of the Default params
+func DefaultBeansPerUnit() []StringBeans {
+	return []StringBeans{
 		NewStringBeans(BeansPerBlockComputeLimit, DefaultBeansPerBlockComputeLimit),
 		NewStringBeans(BeansPerFeeUnit, DefaultBeansPerFeeUnit),
 		NewStringBeans(BeansPerInboundTx, DefaultBeansPerInboundTx),
@@ -53,10 +73,4 @@ var (
 		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
 	}
-
-	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
-
-	DefaultPowerFlagFees = []PowerFlagFee{
-		NewPowerFlagFee("SMART_WALLET", sdk.NewCoins(sdk.NewInt64Coin("ubld", 10_000_000))),
-	}
-)
+}

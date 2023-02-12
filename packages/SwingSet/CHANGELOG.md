@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.30.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.2...@agoric/swingset-vat@0.30.3) (2022-12-14)
+
+
+### Bug Fixes
+
+* **swingset:** workaround XS garbage collection bugs ([#6664](https://github.com/Agoric/agoric-sdk/issues/6664)) ([12e97f1](https://github.com/Agoric/agoric-sdk/commit/12e97f1e7d384c11c76b61de67ee0de30de00fe6))
+
+
+
+### [0.30.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.1...@agoric/swingset-vat@0.30.2) (2022-10-18)
+
+
+### Bug Fixes
+
+* **swingset:** only preload maxVatsOnline/2 vats ([ff696dc](https://github.com/Agoric/agoric-sdk/commit/ff696dcc98ac1bc8ca0bbb4acb4339751ba013dd)), closes [#6433](https://github.com/Agoric/agoric-sdk/issues/6433)
+
+
+
+### [0.30.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.0...@agoric/swingset-vat@0.30.1) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/swingset-vat
+
+
+
+
+
+## [0.30.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.29.0...@agoric/swingset-vat@0.30.0) (2022-10-05)
+
+
+### Features
+
+* **SwingSet:** upgrade to superior nestedEvaluate ([fd579c5](https://github.com/Agoric/agoric-sdk/commit/fd579c5644970a7fdf764c0b7befeafb3fb267c1))
+
+
+### Bug Fixes
+
+* add kernel stats as a slog entry at completion of each block ([8a38c52](https://github.com/Agoric/agoric-sdk/commit/8a38c52a0a4eb665e03fdba7c96e944221ab8bc9)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+* avoid __proto__ accessor ([#6349](https://github.com/Agoric/agoric-sdk/issues/6349)) ([eac70a5](https://github.com/Agoric/agoric-sdk/commit/eac70a53c0a9fdc138c7bcce5ba8f61f802dfdee))
+* cleanup, update, and refactor slog-to-otel converter ([225f1dd](https://github.com/Agoric/agoric-sdk/commit/225f1dda46ec99dbc47ba39b3a99e278a4c1adbb)), closes [#4585](https://github.com/Agoric/agoric-sdk/issues/4585)
+
+
+
 ## [0.29.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.28.0...@agoric/swingset-vat@0.29.0) (2022-09-20)
 
 

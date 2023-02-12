@@ -71,29 +71,44 @@ export function main() {
     });
   }
 
+  // prettier-ignore
   const handlers = {
-    clist: handleCList,
-    console: handleConsole,
-    'create-vat': handleCreateVat,
-    deliver: handleDeliver,
-    'deliver-result': handleDeliverResult,
-    syscall: handleSyscall,
-    'syscall-result': handleSyscallResult,
-    terminate: handleTerminate,
-    'import-kernel-start': handleImportKernelStart,
-    'import-kernel-finish': handleImportKernelFinish,
-    'vat-startup-start': handleVatStartupStart,
-    'vat-startup-finish': handleVatStartupFinish,
-    'replay-transcript-start': handleReplayTranscriptStart,
-    'replay-transcript-finish': handleReplayTranscriptFinish,
-    'start-replay-delivery': handleStartReplayDelivery,
-    'finish-replay-delivery': handleFinishReplayDelivery,
-    'start-replay': handleStartReplay,
-    'finish-replay': handleFinishReplay,
+    'bundle-kernel-finish': handleBundleKernelFinish,
+    'bundle-kernel-start': handleBundleKernelStart,
+    'kernel-init-finish': handleKernelInitFinish,
+    'kernel-init-start': handleKernelInitStart,
+    'clist': handleCList,
+    'console': handleConsole,
+    'cosmic-swingset-after-commit-block': handleCosmicSwingsetAfterCommitBlock,
     'cosmic-swingset-begin-block': handleCosmicSwingsetBeginBlock,
-    'cosmic-swingset-end-block-start': handleCosmicSwingsetEndBlockStart,
-    'cosmic-swingset-end-block-finish': handleCosmicSwingsetEndBlockFinish,
+    'cosmic-swingset-bootstrap-block-finish': handleCosmicSwingsetBootstrapBlockFinish,
+    'cosmic-swingset-bootstrap-block-start': handleCosmicSwingsetBootstrapBlockStart,
+    'cosmic-swingset-bridge-inbound': handleCosmicSwingsetBridgeInbound,
+    'cosmic-swingset-commit-block-finish': handleCosmicSwingsetCommitBlockFinish,
+    'cosmic-swingset-commit-block-start': handleCosmicSwingsetCommitBlockStart,
     'cosmic-swingset-deliver-inbound': handleCosmicSwingsetDeliverInbound,
+    'cosmic-swingset-end-block-finish': handleCosmicSwingsetEndBlockFinish,
+    'cosmic-swingset-end-block-start': handleCosmicSwingsetEndBlockStart,
+    'crank-finish': handleCrankFinish,
+    'crank-start': handleCrankStart,
+    'create-vat': handleCreateVat,
+    'deliver': handleDeliver,
+    'deliver-result': handleDeliverResult,
+    'finish-replay': handleFinishReplay,
+    'heap-snapshot-load': handleHeapSnapshotLoad,
+    'heap-snapshot-save': handleHeapSnapshotSave,
+    'import-kernel-finish': handleImportKernelFinish,
+    'import-kernel-start': handleImportKernelStart,
+    'kernel-stats': handleKernelStats,
+    'replay-transcript-finish': handleReplayTranscriptFinish,
+    'replay-transcript-start': handleReplayTranscriptStart,
+    'slogger-confused': handleSloggerConfused,
+    'start-replay': handleStartReplay,
+    'syscall': handleSyscall,
+    'syscall-result': handleSyscallResult,
+    'terminate': handleTerminate,
+    'vat-startup-finish': handleVatStartupFinish,
+    'vat-startup-start': handleVatStartupStart,
   };
 
   const slogFile = argv._[0];
@@ -109,20 +124,22 @@ export function main() {
   let currentVat;
   let currentSyscallName;
   let importKernelStartTime = 0;
+  let bundleKernelStartTime = 0;
+  let kernelInitStartTime = 0;
+  let crankStartTime = 0;
   let vatStartupStartTime = 0;
   let vatStartupVat;
   let replayTranscriptStartTime = 0;
   let replayTranscriptVat;
   let replayStartTime = 0;
   let replayVat;
-  let replayDeliveryStartTime = 0;
-  let replayDeliveryVat;
-  let replayDeliveryNum;
-  let replayDeliveryDelivery;
   let cosmicSwingsetBeginBlockTime = 0;
   let cosmicSwingsetEndBlockStartTime = 0;
+  let cosmicSwingsetCommitBlockStartTime = 0;
   let cosmicSwingsetBlockTime;
   let cosmicSwingsetBlockHeight;
+  let cosmicSwingsetBootstrapBlockStartTime = 0;
+  let cosmicSwingsetBootstrapBlockStartBlockTime = 0;
 
   const vatNames = new Map();
   const crankLabels = new Map();
@@ -237,6 +254,15 @@ export function main() {
     return vatNames.get(entry.vatID) || '<no name>';
   }
 
+  function handleSloggerConfused(_entry) {}
+
+  function handleKernelStats(entry) {
+    const stats = Object.entries(entry.stats)
+      .map(([key, value]) => `${key}:${value}`)
+      .join(', ');
+    p(`kernel-stats: ${stats}`);
+  }
+
   function handleCreateVat(entry) {
     if (entry.name) {
       vatNames.set(entry.vatID, entry.name);
@@ -283,6 +309,9 @@ export function main() {
           case 'slot':
             result = pref(slots[val.index]);
             break;
+          case 'symbol':
+            result = `[${val.name}]`;
+            break;
           case 'error':
             result = `new ${val.name}('${val.message}')`;
             break;
@@ -314,6 +343,11 @@ export function main() {
     }
   }
 
+  function pmethargs(methargs) {
+    const [method, ...args] = legibilizeMessageArgs(methargs);
+    return [method.replaceAll('"', ''), args.join(', ')];
+  }
+
   function pargs(args) {
     return legibilizeMessageArgs(args).join(', ');
   }
@@ -325,8 +359,9 @@ export function main() {
   function doDeliverMessage(delivery, prefix = '') {
     const target = delivery[1];
     const msg = delivery[2];
+    const [method, args] = pmethargs(msg.methargs);
     // prettier-ignore
-    p(`${prefix}deliver: ${pref(target)} <- ${msg.method}(${pargs(msg.args)}): ${pref(msg.result)}`);
+    p(`${prefix}deliver: ${pref(target)} <- ${method}(${args}): ${pref(msg.result)}`);
   }
 
   function doDeliverNotify(delivery, prefix = '') {
@@ -408,20 +443,18 @@ export function main() {
 
   function doSyscallSend(tag, entry) {
     const target = entry[1];
-    let method;
-    let args;
+    let methargs;
     let result;
     // annoying asymmetry that's too hard to fix on the originating end
     if (kernelSpace) {
-      method = entry[2].method;
-      args = entry[2].args;
+      methargs = entry[2].methargs;
       result = entry[2].result;
     } else {
-      method = entry[2];
-      args = entry[3];
-      result = entry[4];
+      methargs = entry[2];
+      result = entry[3];
     }
-    p(`${tag}: ${pref(target)} <- ${method}(${pargs(args)}): ${pref(result)}`);
+    const [method, args] = pmethargs(methargs);
+    p(`${tag}: ${pref(target)} <- ${method}(${args}): ${pref(result)}`);
   }
 
   function doSyscallResolve(tag, entry) {
@@ -446,6 +479,13 @@ export function main() {
   function doSyscallVatstoreDeleteOrGet(tag, entry) {
     const key = kernelSpace ? entry[2] : entry[1];
     p(`${tag}: '${key}' (${pref(key, false)})`);
+  }
+
+  function doSyscallVatstoreGetAfter(tag, entry) {
+    const priorKey = kernelSpace ? entry[2] : entry[1];
+    const lowerBound = kernelSpace ? entry[3] : entry[2];
+    const upperBound = kernelSpace ? entry[4] : entry[3];
+    p(`${tag}: '${priorKey}' '${lowerBound}' .. '${upperBound}'`);
   }
 
   function doSyscallVatstoreSet(tag, entry) {
@@ -502,6 +542,9 @@ export function main() {
       case 'vatstoreSet':
         doSyscallVatstoreSet(tag, syscall);
         break;
+      case 'vatstoreGetAfter':
+        doSyscallVatstoreGetAfter(tag, syscall);
+        break;
       case 'dropImports':
       case 'retireExports':
       case 'retireImports':
@@ -513,12 +556,46 @@ export function main() {
     }
   }
 
+  function handleHeapSnapshotLoad(entry) {
+    p(`heap-snapshot-load ${entry.vatID} ${entry.snapshotID}`);
+  }
+
+  function handleHeapSnapshotSave(entry) {
+    // prettier-ignore
+    p(`heap-snapshot-save ${entry.vatID} ${entry.snapshotID} at ${entry.endPosition.itemCount}`);
+  }
+
   function handleImportKernelStart(entry) {
     importKernelStartTime = entry.time;
   }
 
   function handleImportKernelFinish(entry) {
     p(`kernel-import: ${entry.time - importKernelStartTime}`);
+  }
+
+  function handleCrankStart(entry) {
+    p(`crank-start: ${entry.crankType} crank ${entry.crankNum}`);
+    crankStartTime = entry.time;
+  }
+
+  function handleCrankFinish(entry) {
+    p(`crank-finish: ${entry.time - crankStartTime} crank ${entry.crankNum}`);
+  }
+
+  function handleBundleKernelStart(entry) {
+    bundleKernelStartTime = entry.time;
+  }
+
+  function handleBundleKernelFinish(entry) {
+    p(`bundle-kernel: ${entry.time - bundleKernelStartTime}`);
+  }
+
+  function handleKernelInitStart(entry) {
+    kernelInitStartTime = entry.time;
+  }
+
+  function handleKernelInitFinish(entry) {
+    p(`kernel-init: ${entry.time - kernelInitStartTime}`);
   }
 
   function handleVatStartupStart(entry) {
@@ -565,22 +642,17 @@ export function main() {
     }
   }
 
-  function handleStartReplayDelivery(entry) {
-    replayDeliveryStartTime = entry.time;
-    replayDeliveryVat = entry.vatID;
-    replayDeliveryNum = entry.deliveryNum;
-    replayDeliveryDelivery = entry.delivery;
+  function handleCosmicSwingsetBootstrapBlockStart(entry) {
+    cosmicSwingsetBootstrapBlockStartTime = entry.time;
+    cosmicSwingsetBootstrapBlockStartBlockTime = entry.blockTime;
   }
 
-  function handleFinishReplayDelivery(entry) {
+  function handleCosmicSwingsetBootstrapBlockFinish(entry) {
     // prettier-ignore
-    if (entry.vatID !== replayDeliveryVat) {
-      p(`finish-replay-delivery vat ${entry.vatID} doesn't match start-replay-delivery vat ${replayDeliveryVat}`);
-    } else if (entry.deliveryNum !== replayDeliveryNum) {
-      p(`finish-replay-delivery number ${entry.deliveryNum} doesn't match start-replay-delivery number ${replayDeliveryNum}`);
+    if (entry.blockTime !== cosmicSwingsetBootstrapBlockStartBlockTime) {
+      p(`cosmic-swingset-bootstrap-block-finish time ${entry.blockTime} doesn't match cosmic-swingset-bootstrap-block-start time ${cosmicSwingsetBootstrapBlockStartBlockTime}`);
     } else {
-      const prefix = `replay ${entry.vatID} ${entry.deliveryNum} ${entry.time - replayDeliveryStartTime} `;
-      doDeliver(replayDeliveryDelivery, prefix);
+      p(`cosmic-swingset-bootstrap-block: ${entry.time - cosmicSwingsetBootstrapBlockStartTime}`);
     }
   }
 
@@ -604,7 +676,6 @@ export function main() {
   }
 
   function handleCosmicSwingsetEndBlockFinish(entry) {
-    cosmicSwingsetEndBlockStartTime = entry.time;
     // prettier-ignore
     if (entry.blockTime !== cosmicSwingsetBlockTime) {
       p(`cosmic-swingset-end-block-finish time ${entry.blockTime} doesn't match cosmic-swingset-begin-block time ${cosmicSwingsetBlockTime}`);
@@ -613,6 +684,37 @@ export function main() {
     } else {
       p(`cosmic-swingset-end-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetEndBlockStartTime - cosmicSwingsetBeginBlockTime}+${entry.time - cosmicSwingsetEndBlockStartTime}`);
     }
+  }
+
+  function handleCosmicSwingsetCommitBlockStart(entry) {
+    cosmicSwingsetCommitBlockStartTime = entry.time;
+    // prettier-ignore
+    if (entry.blockTime !== cosmicSwingsetBlockTime) {
+      p(`cosmic-swingset-commit-block-start time ${entry.blockTime} doesn't match cosmic-swingset-begin-block time ${cosmicSwingsetBlockTime}`);
+    } else if (entry.blockHeight !== cosmicSwingsetBlockHeight) {
+      p(`cosmic-swingset-commit-block-start height ${entry.blockHeight} doesn't match cosmic-swingset-begin-block height ${cosmicSwingsetBlockHeight}`);
+    } else {
+      p(`cosmic-swingset-commit-block-start`);
+    }
+  }
+
+  function handleCosmicSwingsetAfterCommitBlock(_entry) {
+    p(`cosmic-swingset-after-commit-block`);
+  }
+
+  function handleCosmicSwingsetCommitBlockFinish(entry) {
+    // prettier-ignore
+    if (entry.blockTime !== cosmicSwingsetBlockTime) {
+      p(`cosmic-swingset-commit-block-finish time ${entry.blockTime} doesn't match cosmic-swingset-begin-block time ${cosmicSwingsetBlockTime}`);
+    } else if (entry.blockHeight !== cosmicSwingsetBlockHeight) {
+      p(`cosmic-swingset-commit-block-finish height ${entry.blockHeight} doesn't match cosmic-swingset-begin-block height ${cosmicSwingsetBlockHeight}`);
+    } else {
+      p(`cosmic-swingset-commit-block:  ${entry.blockHeight} ${entry.blockTime} ${cosmicSwingsetCommitBlockStartTime - cosmicSwingsetBeginBlockTime}+${entry.time - cosmicSwingsetCommitBlockStartTime}`);
+    }
+  }
+
+  function handleCosmicSwingsetBridgeInbound(entry) {
+    p(`cosmic-swingset-bridge-inbound: ${entry.source}`);
   }
 
   function handleCosmicSwingsetDeliverInbound(entry) {
@@ -648,6 +750,9 @@ export function main() {
         break;
       case 'vatstoreGet':
         p(`${tag}: '${value}'`);
+        break;
+      case 'vatstoreGetAfter':
+        p(`${tag}: ${value[0]}, ${value[1]}`);
         break;
       default:
         p(`syscall-result missing start of syscall`);

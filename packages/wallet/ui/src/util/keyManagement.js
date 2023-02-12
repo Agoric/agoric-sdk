@@ -79,12 +79,13 @@ const CosmosMessages = /** @type {const} */ ({
 });
 
 /**
- * `/agoric.swingset.XXX` matches package agoric.swingset in swingset/msgs.go
+ * `/agoric.swingset.XXX` matches package agoric.swingset in swingset/msgs.proto
+ * aminoType taken from Type() in golang/cosmos/x/swingset/types/msgs.go
  */
 export const SwingsetMsgs = /** @type {const} */ ({
   MsgProvision: {
     typeUrl: '/agoric.swingset.MsgProvision',
-    aminoType: 'swingset/MsgProvision',
+    aminoType: 'swingset/Provision',
   },
   MsgWalletAction: {
     typeUrl: '/agoric.swingset.MsgWalletAction',
@@ -92,7 +93,7 @@ export const SwingsetMsgs = /** @type {const} */ ({
   },
   MsgWalletSpendAction: {
     typeUrl: '/agoric.swingset.MsgWalletSpendAction',
-    aminoType: 'swingset/WalletAction',
+    aminoType: 'swingset/WalletSpendAction',
   },
 });
 
@@ -138,18 +139,43 @@ export const zeroFee = () => {
   return fee;
 };
 
+const dbg = label => x => {
+  console.log(label, x);
+  return x;
+};
+
 /** @type {import('@cosmjs/stargate').AminoConverters} */
-const SwingsetConverters = {
+export const SwingsetConverters = {
   [SwingsetMsgs.MsgProvision.typeUrl]: {
     aminoType: SwingsetMsgs.MsgProvision.aminoType,
-    toAmino: ({ action, owner }) => ({
-      action,
-      owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
-    }),
-    fromAmino: ({ action, owner }) => ({
-      action,
-      owner: toBase64(toAccAddress(owner)),
-    }),
+    toAmino: protoVal => {
+      const { nickname, address, powerFlags, submitter } = dbg(
+        'provision toAmino protoVal',
+      )(protoVal);
+      return {
+        address: toBech32(
+          bech32Config.bech32PrefixAccAddr,
+          fromBase64(address),
+        ),
+        nickname,
+        powerFlags,
+        submitter: toBech32(
+          bech32Config.bech32PrefixAccAddr,
+          fromBase64(submitter),
+        ),
+      };
+    },
+    fromAmino: aminoVal => {
+      const { nickname, address, powerFlags, submitter } = dbg(
+        'provision fromAmino aminoVal',
+      )(aminoVal);
+      return {
+        address: toBase64(toAccAddress(address)),
+        nickname,
+        powerFlags,
+        submitter: toBase64(toAccAddress(submitter)),
+      };
+    },
   },
   [SwingsetMsgs.MsgWalletAction.typeUrl]: {
     aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
@@ -163,12 +189,12 @@ const SwingsetConverters = {
     }),
   },
   [SwingsetMsgs.MsgWalletSpendAction.typeUrl]: {
-    aminoType: SwingsetMsgs.MsgWalletAction.aminoType,
+    aminoType: SwingsetMsgs.MsgWalletSpendAction.aminoType,
     toAmino: ({ spendAction, owner }) => ({
-      spendAction,
+      spend_action: spendAction,
       owner: toBech32(bech32Config.bech32PrefixAccAddr, fromBase64(owner)),
     }),
-    fromAmino: ({ spendAction, owner }) => ({
+    fromAmino: ({ spend_action: spendAction, owner }) => ({
       spendAction,
       owner: toBase64(toAccAddress(owner)),
     }),
@@ -354,7 +380,9 @@ export const makeInteractiveSigner = async (
 
   const key = await keplr.getKey(chainId);
 
-  const offlineSigner = await keplr.getOfflineSignerAuto(chainId);
+  // Until we have SIGN_MODE_TEXTUAL,
+  // Use Amino because Direct results in ugly protobuf in the keplr UI.
+  const offlineSigner = await keplr.getOfflineSignerOnlyAmino(chainId);
   console.log('InteractiveSigner', { offlineSigner });
 
   // Currently, Keplr extension manages only one address/public key pair.

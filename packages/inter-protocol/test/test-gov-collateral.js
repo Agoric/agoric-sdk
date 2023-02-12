@@ -588,4 +588,5 @@ test('Committee can raise debt limit', async t => {
   });
 });
 
-test.todo('users can open vaults');
+// https://github.com/endojs/endo/issues/647
+// test.todo('users can open vaults');

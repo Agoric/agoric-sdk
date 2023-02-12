@@ -3,6 +3,71 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.17.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.17.0...@agoric/wallet@0.17.1) (2022-12-14)
+
+**Note:** Version bump only for package @agoric/wallet
+
+
+
+
+
+## [0.17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.16.0...@agoric/wallet@0.17.0) (2022-10-18)
+
+
+### Features
+
+* **web-components:** add 'makeAgoricKeplrConnection' util ([#6452](https://github.com/Agoric/agoric-sdk/issues/6452)) ([0b4b1aa](https://github.com/Agoric/agoric-sdk/commit/0b4b1aac42379c68aabe807904f5bfd6670009c5))
+
+
+
+## [0.16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.15.0...@agoric/wallet@0.16.0) (2022-10-08)
+
+
+### Features
+
+* **connection:** default to main ([06be161](https://github.com/Agoric/agoric-sdk/commit/06be1618c1bdf5ce5f3e791ca8bfaea287381a7e))
+* **settings dialog:** assume Keplr ([721c604](https://github.com/Agoric/agoric-sdk/commit/721c6049bac92148e70df990b38964438ecd0297))
+* **settings dialog:** pick known network configs ([ead4dbc](https://github.com/Agoric/agoric-sdk/commit/ead4dbcc7f5c4e80a20ae38d4f312bba88ae42ac))
+* **settings dialog:** pick network-config by host ([4fd9b55](https://github.com/Agoric/agoric-sdk/commit/4fd9b55bbe7193784ffa13bb53eafe79ece901c2))
+* **wallet-ui:** require 100IST in pool to provision smart wallet ([1c374ed](https://github.com/Agoric/agoric-sdk/commit/1c374ed1a990aad5e7e9a6d9800894352cf08c7a))
+* **wallet/ui:** show JSON in keplr signer even without Ledger ([035dfe0](https://github.com/Agoric/agoric-sdk/commit/035dfe08f31ea8eaffae8db81b627942749b7444)), closes [#6424](https://github.com/Agoric/agoric-sdk/issues/6424)
+
+
+### Bug Fixes
+
+* **wallet-ui:** call firstCallback after wallet loads ([c56f5d1](https://github.com/Agoric/agoric-sdk/commit/c56f5d10eed437c7487ebb2b0da5e976bbb6cc33))
+* **wallet-ui:** fix mainnet config option ([3cb5a95](https://github.com/Agoric/agoric-sdk/commit/3cb5a952b9653115b5fa9641aa03a58c5ce45a31))
+* **wallet-ui:** update offers correctly ([21adc3a](https://github.com/Agoric/agoric-sdk/commit/21adc3a71c5b06ab9e6885528ab677a23c40bbb1))
+* **wallet/ui:** signing offers (PSM trades) with Ledger ([6ed4ca7](https://github.com/Agoric/agoric-sdk/commit/6ed4ca7ad40239ccf0ad4c41b9cbd44b3be9b5f8))
+
+
+
+## [0.15.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.14.0...@agoric/wallet@0.15.0) (2022-10-05)
+
+
+### Features
+
+* **cli:** show status of invitations ([8506e6d](https://github.com/Agoric/agoric-sdk/commit/8506e6d87ef331e781c9d2e2251fdcf48e784e04))
+* **keyManagement:** submitProvision ([94eae93](https://github.com/Agoric/agoric-sdk/commit/94eae93f20b35408efa327a5427482f3e3b087a1))
+* **wallet-ui:** basic provisioning dialog ([3f01ea6](https://github.com/Agoric/agoric-sdk/commit/3f01ea656b1a88221002da033683b23634f10896))
+* **wallet-ui:** bridge storage without click when possible ([84834d9](https://github.com/Agoric/agoric-sdk/commit/84834d9dac49de6482cf2f652853522169f4227f))
+* **wallet-ui:** clean up ui states ([6a20c8d](https://github.com/Agoric/agoric-sdk/commit/6a20c8d3789e983b4b19f6f769610bb5de20c39d))
+* **wallet-ui:** make provision dialog harder to close ([b1b2d7b](https://github.com/Agoric/agoric-sdk/commit/b1b2d7b906309f196f4d594ee8c16a14569279b3))
+* **wallet-ui:** submit provision on dialog action ([8012e8f](https://github.com/Agoric/agoric-sdk/commit/8012e8f4d99c5cf8084d710a71058a38a6172889))
+* **wallet-ui:** use new wallet.current node ([703eecd](https://github.com/Agoric/agoric-sdk/commit/703eecd0af917cd432d1f6a12e645a12ab9d2c39))
+
+
+### Bug Fixes
+
+* **wallet/ui:** amino encoding details (for Ledger) ([223b45d](https://github.com/Agoric/agoric-sdk/commit/223b45d0486cdd91cf06f48e6a60f5c75e06f8c0))
+* avoid colliding with 'agoric' chain, e.g. in Keplr ([692084c](https://github.com/Agoric/agoric-sdk/commit/692084ce9328b11e23ab8b46025f83eb8d1b5b3d))
+* **wallet-ui:** detect unprovisioned wallet ([1747d57](https://github.com/Agoric/agoric-sdk/commit/1747d5781f4ee594eca1ded76af4944c405e7000))
+* **wallet-ui:** parse purse.brand in fetchCurrent ([3c8299c](https://github.com/Agoric/agoric-sdk/commit/3c8299c2f5cf70b531bf194e4f5509bf6cd6a7be))
+* **wallet-ui:** show rejected offers properly ([7b77ee0](https://github.com/Agoric/agoric-sdk/commit/7b77ee0301060921dc6542daa7c4bef8960a2454))
+* **wallet-ui:** wait until window loads to access keplr ([c9b4fc3](https://github.com/Agoric/agoric-sdk/commit/c9b4fc3e5a272fe4a2b6b12774b138fdfa58be95))
+
+
+
 ## [0.14.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.13.1...@agoric/wallet@0.14.0) (2022-09-20)
 
 

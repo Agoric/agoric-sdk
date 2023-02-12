@@ -1,6 +1,9 @@
 package swingset
 
 import (
+	// "fmt"
+	// "os"
+	"encoding/json"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -18,6 +21,10 @@ type beginBlockAction struct {
 	BlockTime   int64        `json:"blockTime"`
 	ChainID     string       `json:"chainID"`
 	Params      types.Params `json:"params"`
+}
+
+type beginBlockResult struct {
+	QueueAllowed []types.QueueSize `json:"queue_allowed"`
 }
 
 type endBlockAction struct {
@@ -43,9 +50,20 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		ChainID:     ctx.ChainID(),
 		Params:      keeper.GetParams(ctx),
 	}
-	_, err := keeper.BlockingSend(ctx, action)
+	out, err := keeper.BlockingSend(ctx, action)
+	// fmt.Fprintf(os.Stderr, "BEGIN_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	if out != "" {
+		var result beginBlockResult
+		err := json.Unmarshal([]byte(out), &result)
+		if err != nil {
+			panic(err)
+		}
+		state := keeper.GetState(ctx)
+		state.QueueAllowed = result.QueueAllowed
+		keeper.SetState(ctx, state)
+	}
+
 	return err
 }
 
@@ -62,7 +80,7 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 	}
 	_, err := keeper.BlockingSend(ctx, action)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "END_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed END_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
@@ -86,7 +104,7 @@ func CommitBlock(keeper Keeper) error {
 	}
 	_, err := keeper.BlockingSend(sdk.Context{}, action)
 
-	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
+	// fmt.Fprintf(os.Stderr, "COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
 	if err != nil {
 		// NOTE: A failed COMMIT_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.

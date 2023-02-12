@@ -1,0 +1,94 @@
+{
+  "bootstrap": "bootstrap",
+  "defaultReapInterval": 1000,
+  "snapshotInterval": 1000,
+  "vats": {
+    "bootstrap": {
+      "sourceSpec": "@agoric/vats/src/core/boot-psm.js",
+      "parameters": {
+        "anchorAssets": [
+          {
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin",
+            "decimalPlaces": 6,
+            "denom": "ibc/295548A78785A1007F232DE286149A6FF512F180AF5657780FC89C009E2C348F"
+          },
+          {
+            "keyword": "USDC_grv",
+            "proposedName": "USD Coin",
+            "decimalPlaces": 6,
+            "denom": "ibc/6831292903487E58BF9A195FDDC8A2E626B3DF39B88F4E7F41C935CADBAF54AC"
+          },
+          {
+            "keyword": "USDT_axl",
+            "proposedName": "Tether USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/F2331645B9683116188EF36FC04A809C28BD36B54555E8705A37146D0182F045"
+          },
+          {
+            "keyword": "USDT_grv",
+            "proposedName": "Tether USD",
+            "decimalPlaces": 6,
+            "denom": "ibc/386D09AE31DA7C0C93091BB45D08CB7A0730B1F697CD813F06A5446DCF02EEB2"
+          }
+        ],
+        "economicCommitteeAddresses": {
+          "Jason Potts": "agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx",
+          "Chloe White": "agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5",
+          "Thibault Schrepel": "agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a",
+          "Chris Berg": "agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq",
+          "Youssef Amrani": "agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5",
+          "Joe Clark": "agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc"
+        }
+      },
+      "creationOptions": {
+        "critical": true
+      }
+    }
+  },
+  "bundles": {
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
+    "committee": {
+      "sourceSpec": "@agoric/governance/src/committee.js"
+    },
+    "contractGovernor": {
+      "sourceSpec": "@agoric/governance/src/contractGovernor.js"
+    },
+    "binaryVoteCounter": {
+      "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
+    },
+    "psm": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
+    },
+    "psmCharter": {
+      "sourceSpec": "@agoric/inter-protocol/src/psm/psmCharter.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
+    },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "chainStorage": {
+      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "zoe": {
+      "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+    }
+  },
+  "defaultManagerType": "xs-worker"
+}

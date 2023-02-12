@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.8.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.8.3...@agoric/store@0.8.4) (2022-12-14)
+
+**Note:** Version bump only for package @agoric/store
+
+
+
+
+
+### [0.8.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.8.2...@agoric/store@0.8.3) (2022-10-18)
+
+**Note:** Version bump only for package @agoric/store
+
+
+
+
+
+### [0.8.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.8.1...@agoric/store@0.8.2) (2022-10-08)
+
+**Note:** Version bump only for package @agoric/store
+
+
+
+
+
+### [0.8.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.8.0...@agoric/store@0.8.1) (2022-10-05)
+
+
+### Bug Fixes
+
+* test-rankOrder works on ava 3 or 4 ([#6327](https://github.com/Agoric/agoric-sdk/issues/6327)) ([9f75b0e](https://github.com/Agoric/agoric-sdk/commit/9f75b0e840c151c36b46150451e3c74860a90710))
+
+
+
 ## [0.8.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/store@0.7.2...@agoric/store@0.8.0) (2022-09-20)
 
 

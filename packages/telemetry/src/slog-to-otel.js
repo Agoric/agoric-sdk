@@ -13,8 +13,10 @@ import {
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
 /** @typedef {import('@opentelemetry/api').Span} Span */
+/** @typedef {import('@opentelemetry/api').Link} SpanLink */
 /** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
 /** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
+/** @typedef {import('@opentelemetry/api').SpanAttributes} SpanAttributes */
 
 const replacer = (_key, value) => {
   if (typeof value === 'bigint') {
@@ -80,6 +82,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   /** @type {Record<string, any>} */
   let currentAttrs = {};
 
+  let isReplaying = false;
+
   const cleanAttrs = attrs => ({
     ...serializeInto(attrs, 'agoric'),
     ...overrideAttrs,
@@ -123,15 +127,17 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'send': {
+        name = 'message';
         // TODO: The arguments to a method call can be pretty big.
         delete attrs.msg;
         const { methargs, method = extractMethod(methargs) } = message.msg;
-        name = `E(${message.target}).${method}`;
         const slots =
           message.msg.methargs?.slots ?? message.msg.args.slots ?? [];
-        attrs['message.msg.args.slots'] = slots.join(',');
-        attrs['message.msg.method'] = name;
-        attrs['message.msg.result'] = message.msg.result;
+        attrs.details = `E(${message.target}).${method}`;
+        attrs['msg.target'] = message.target;
+        attrs['msg.method'] = method;
+        attrs['msg.slots'] = slots.join(',');
+        attrs['msg.result'] = message.msg.result;
         break;
       }
       case 'notify': {
@@ -167,20 +173,28 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   };
 
   const makeSpans = () => {
-    /** @type {LegacyMap<string, Span>} */
+    /**
+     * @typedef {object} SpanRecord
+     * @property {Span} span
+     * @property {string} name
+     * @property {string} kind
+     * @property {string} key
+     */
+
+    /** @type {LegacyMap<string, SpanRecord>} */
     // Legacy because spans are not passable
     const keyToSpan = makeLegacyMap('spanKey');
 
-    let lastNamedPopTime;
+    let lastAssertedKindPopTime;
 
-    /** @type {{ span: Span, name: string }[]} */
+    /** @type {SpanRecord[]} */
     const spanStack = [];
 
     const makeSpanKey = keyArray => JSON.stringify(keyArray, replacer);
 
     const sp = harden({
       endAll: endTime => {
-        for (const [_keyName, span] of keyToSpan.entries()) {
+        for (const { span } of keyToSpan.values()) {
           span.end(endTime);
         }
         keyToSpan.clear();
@@ -238,7 +252,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         const span = sp.create(name, parent, attrs, options);
         if (keyArray.length) {
           const spanKey = makeSpanKey(keyArray);
-          keyToSpan.init(spanKey, span);
+          const record = { span, name, kind: keyArray[0], key: spanKey };
+          keyToSpan.init(spanKey, record);
         }
         return span;
       },
@@ -269,7 +284,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       end: (key, attrs = {}, errorMessage = undefined) => {
         const keyArray = Array.isArray(key) ? key : [key];
         const spanKey = makeSpanKey(keyArray);
-        const span = keyToSpan.get(spanKey);
+        const { span } = keyToSpan.get(spanKey);
         if (errorMessage) {
           span.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage });
         }
@@ -287,26 +302,74 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       get: key => {
         const keyArray = Array.isArray(key) ? key : [key];
         const spanKey = makeSpanKey(keyArray);
-        return keyToSpan.get(spanKey);
+        return keyToSpan.get(spanKey).span;
       },
 
-      push: (name, attrs = currentAttrs) => {
-        const span = sp.startNamed(name, [], sp.top(), attrs);
-        spanStack.push({ span, name });
+      /**
+       * @param {string | [string, ...any]} key
+       * @param {object} [options]
+       * @param {string} [options.kind]
+       * @param {string} [options.name]
+       * @param {Record<string, any>} [options.attributes]
+       * @param {SpanLink[]} [options.links]
+       */
+      push: (
+        key,
+        {
+          kind = undefined,
+          name = undefined,
+          attributes = currentAttrs,
+          ...opts
+        } = {},
+      ) => {
+        const keyArray = Array.isArray(key) ? key : [key];
+        kind ??= keyArray[0];
+        name ??= kind;
+        const spanKey = makeSpanKey(keyArray);
+        const span = sp.create(name, sp.top(), attributes, opts);
+        const record = { span, name, kind, key: spanKey };
+        keyToSpan.init(spanKey, record);
+        spanStack.push(record);
+        return span;
       },
 
-      /** @param {string} [assertName] */
-      pop: (assertName = undefined) => {
-        const popped = spanStack.pop();
-        if (assertName !== undefined) {
-          assert.equal(popped?.name, assertName);
-          lastNamedPopTime = now;
+      /**
+       * @param {string | [string, ...any]} [assertKindOrKey]
+       * @param {object} [options]
+       * @param {Record<string, any>} [options.attributes]
+       * @param {string} [options.errorMessage]
+       */
+      pop: (
+        assertKindOrKey = undefined,
+        { attributes = {}, errorMessage = undefined } = {},
+      ) => {
+        const top = spanStack[spanStack.length - 1];
+        if (assertKindOrKey !== undefined) {
+          assert(
+            (typeof assertKindOrKey === 'string' &&
+              top?.kind === assertKindOrKey) ||
+              top?.key === makeSpanKey(assertKindOrKey),
+          );
+          lastAssertedKindPopTime = now;
         }
-        popped?.span.end(lastNamedPopTime);
+        if (top) {
+          if (errorMessage !== undefined) {
+            top.span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: errorMessage,
+            });
+          }
+          top.span.setAttributes(cleanAttrs(attributes));
+          top.span.end(lastAssertedKindPopTime);
+          spanStack.pop();
+          keyToSpan.delete(top.key);
+        }
       },
 
+      /** @returns {Span | undefined} */
       top: () => spanStack[spanStack.length - 1]?.span,
-      topName: () => spanStack[spanStack.length - 1]?.name,
+      /** @returns {string | undefined} */
+      topKind: () => spanStack[spanStack.length - 1]?.kind,
     });
     return sp;
   };
@@ -325,11 +388,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     }
   };
 
-  let initing = true;
-  let replayKey;
-
   const getCrankKey = create => {
-    let key = ['crank', currentAttrs.vatID];
+    let key = ['crank', currentAttrs.crankNum];
     if (!create && !spans.has(key)) {
       const genericKey = ['crank', undefined];
       if (spans.has(genericKey)) {
@@ -347,110 +407,167 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     now = floatSecondsToHiRes(nowFloat);
     currentAttrs = slogAttrs;
 
-    if (initing) {
-      // Initialize the top-level span with the first timestamped slog entry.
-      spans.push('init');
-      initing = false;
-    }
-
     if (finished) {
       return;
     }
 
     // console.log('slogging', obj);
     switch (slogType) {
+      case 'kernel-init-start': {
+        spans.push('init');
+        break;
+      }
+      case 'kernel-init-finish': {
+        spans.pop('init');
+        break;
+      }
+      case 'bundle-kernel-start': {
+        assert.equal(spans.topKind(), 'init');
+        spans.push('bundle-kernel');
+        break;
+      }
+      case 'bundle-kernel-finish': {
+        spans.pop('bundle-kernel');
+        break;
+      }
       case 'import-kernel-start': {
-        spans.start('import-kernel', spans.top());
+        assert.equal(spans.topKind(), 'init');
+        spans.push('import-kernel');
         break;
       }
       case 'import-kernel-finish': {
-        spans.end('import-kernel');
-        spans.pop('init');
+        spans.pop('import-kernel');
         break;
       }
       case 'create-vat': {
         const { vatSourceBundle: _2, name, ...attrs } = slogAttrs;
-        spans.start(['create-vat', slogAttrs.vatID], spans.top(), {
-          'vat.name': name,
-          ...attrs,
+        spans.push(['create-vat', slogAttrs.vatID], {
+          attributes: {
+            'vat.name': name,
+            ...attrs,
+          },
         });
-        spans.end(['create-vat', slogAttrs.vatID]);
         vatIdToAttrs.init(slogAttrs.vatID, { name, ...attrs });
         break;
       }
       case 'vat-startup-start': {
-        spans.start(['vat-startup', slogAttrs.vatID], spans.top());
+        spans.push(['vat-startup', slogAttrs.vatID]);
         break;
       }
       case 'vat-startup-finish': {
-        spans.end(['vat-startup', slogAttrs.vatID]);
+        spans.pop(['vat-startup', slogAttrs.vatID]);
+        spans.pop(['create-vat', slogAttrs.vatID]);
         break;
       }
       case 'start-replay': {
-        const ckey = getCrankKey(true);
-        // Replay may not happen in the context of a crank.
-        replayKey = spans.has(ckey) && ['start-replay', slogAttrs.vatID];
-        spans.startNamed(
-          `replay ${slogAttrs.vatID}`,
-          replayKey || ckey,
-          spans.top(),
-          slogAttrs,
-        );
+        assert(!isReplaying);
+        spans.push(['vat-replay', slogAttrs.vatID]);
+        isReplaying = true;
         break;
       }
       case 'finish-replay': {
-        spans.end(replayKey || getCrankKey());
-        replayKey = undefined;
+        spans.pop(['vat-replay', slogAttrs.vatID]);
+        assert(isReplaying);
+        isReplaying = false;
         break;
       }
       case 'deliver': {
         const {
           vd: [delivery],
           kd,
+          _replay,
           ...attrs
         } = slogAttrs;
+        if (isReplaying) {
+          spans
+            .top()
+            ?.addEvent(
+              `deliver-${delivery}`,
+              cleanAttrs({ delivery, ...attrs }),
+              now,
+            );
+          break;
+        }
         if (!kd) {
           break;
         }
-        const crankSpan = spans.get(getCrankKey());
-        crankSpan.setAttributes(cleanAttrs({ delivery, ...attrs }));
+
+        spans.get(getCrankKey()).setAttributes(
+          cleanAttrs({
+            delivery,
+            vatName: vatIdToAttrs.get(attrs.vatID).name,
+            ...attrs,
+          }),
+        );
         if (kd[0] === 'notify') {
+          const [_type, notifications] = kd;
+          const resolves = [];
+          const rejects = [];
+          for (const n of notifications) {
+            const [kpid, { state }] = n;
+            if (state === 'rejected') {
+              rejects.push(kpid);
+            } else {
+              resolves.push(kpid);
+            }
+          }
+          const detailses = [];
+          if (resolves.length) {
+            detailses.push(`resolve(${resolves.join(',')})`);
+          }
+          if (rejects.length) {
+            detailses.push(`reject(${rejects.join(',')})`);
+          }
+          const details = `d-${attrs.vatID}: ${detailses.join(', ')}`;
+          spans.get(getCrankKey()).setAttributes(cleanAttrs({ details }));
+
           // Track call graph.
-          const [_type, [notification]] = kd;
           // TODO: We only track the first notified kernel promise. Perhaps we should do more?
-          const [kpId, { state }] = notification;
-          const error = state === 'rejected' ? 'rejected' : undefined;
-          if (kernelPromiseToSendingCause.has(kpId)) {
+          const [tKpid, { tState }] = notifications[0];
+          const error = tState === 'rejected' ? 'rejected' : undefined;
+
+          // TODO: figure out if this is correct?
+          if (kernelPromiseToSendingCause.has(tKpid)) {
             // Track this notification as the cause for the current crank.
-            const cause = JSON.parse(kernelPromiseToSendingCause.get(kpId));
+            const cause = JSON.parse(kernelPromiseToSendingCause.get(tKpid));
+            // crankNum doesn't exist on replay
             crankNumToCause.init(slogAttrs.crankNum, {
               ...cause,
-              attrs: { ...cause.attrs, state },
+              attrs: { ...cause.attrs, state: tState },
               error,
             });
           }
         } else if (kd[0] === 'message') {
-          // This is where the message is delivered.
-          // Track call graph.
           const [
             _type,
             target,
             { methargs, method = extractMethod(methargs), result },
           ] = kd;
+          const details = `d-${attrs.vatID}: E(${target}).${method}`;
+          const msgAttrs = {
+            'msg.target': target,
+            'msg.method': extractMethod(methargs),
+            'msg.slots': methargs.slots.join(','),
+            'msg.result': result,
+            details,
+          };
+          spans
+            .get(getCrankKey())
+            .setAttributes(cleanAttrs({ ...attrs, ...msgAttrs }));
+          // This is where the message is delivered.
+          // Track call graph.
           let cause;
           if (kernelPromiseToSendingCause.has(result)) {
             cause = JSON.parse(kernelPromiseToSendingCause.get(result));
           } else {
             // Create a new root span.
-            const name = `E(${target}).${method}`;
+            const crankSpan = spans.get(getCrankKey());
             cause = {
-              name,
+              name: `deliver-${kd[0]}`,
               context: crankSpan.spanContext(),
               attrs: {
-                target,
-                method,
-                result,
                 ...attrs,
+                ...msgAttrs,
               },
             };
           }
@@ -459,9 +576,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'deliver-result': {
+        if (isReplaying) {
+          break;
+        }
         const {
           dr: [status, _1, rawMeterResult],
-          // ...attrs
         } = slogAttrs;
         // remove timestamps for now
         const { timestamps: _t, ...meterResult } = rawMeterResult ?? {};
@@ -474,6 +593,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'syscall': {
+        if (isReplaying) {
+          break;
+        }
         const { ksc, vsc: _1, ...attrs } = slogAttrs;
         if (!ksc) {
           break;
@@ -501,60 +623,155 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
             },
             options,
           );
+        const syscallType = ksc[0];
+        const name = `syscall-${syscallType}`;
         // TODO: get type from packages/SwingSet/src/kernel/kernelSyscall.js
-        switch (ksc[0]) {
+        const detailPrefix = `s-${attrs.vatID}`;
+        switch (syscallType) {
           case 'send': {
             const [
               _tag,
               target,
               { methargs, method = extractMethod(methargs), result },
             ] = ksc;
-            const name = `E(${target}).${method}`;
+            const details = `${detailPrefix}: E(${target}).${method}`;
+            const sattrs = {
+              'msg.target': target,
+              'msg.method': method,
+              'msg.slots': methargs.slots.join(','),
+              'msg.result': result,
+              details,
+            };
             const links = [];
             if (crankNumToCause.has(attrs.crankNum)) {
               const parentCause = crankNumToCause.get(attrs.crankNum);
               links.push({
-                attributes: { syscall: ksc[0] },
+                attributes: { syscall: syscallType },
                 context: parentCause.context,
               });
             }
-            const syscall = makeSyscallSpan(
-              name,
-              {
-                target,
-                method,
-                result,
-              },
-              { links },
-            );
+            const syscall = makeSyscallSpan(name, sattrs, { links });
             if (result) {
               // Track call graph.
-              const cause = { name, context: syscall.spanContext() };
+              const cause = { name: details, context: syscall.spanContext() };
               kernelPromiseToSendingCause.set(result, JSON.stringify(cause));
             }
             break;
           }
           case 'invoke': {
-            const [_, target, method] = ksc;
-            makeSyscallSpan(`D(${target}).${method}`, { target, method });
+            const [_, target, method, args] = ksc;
+            const sattrs = {
+              'call.target': target,
+              'call.method': method,
+              'call.slots': args.slots.join(','),
+              details: `${detailPrefix}: D(${target}).${method}`,
+            };
+            makeSyscallSpan(name, sattrs);
             break;
           }
-          case 'resolve':
-          case 'subscribe':
-          case 'vatstoreGet':
-          case 'vatstoreGetAfter':
-          case 'vatstoreSet':
-          case 'vatstoreDelete':
+          case 'resolve': {
+            const [_, vatID, resolutions] = ksc;
+            const resolves = [];
+            const rejects = [];
+            for (const r of resolutions) {
+              const [kpid, rejected] = r;
+              if (rejected) {
+                rejects.push(kpid);
+              } else {
+                resolves.push(kpid);
+              }
+            }
+            const detailses = [];
+            if (resolves.length) {
+              detailses.push(`resolve(${resolves.join(',')})`);
+            }
+            if (rejects.length) {
+              detailses.push(`reject(${rejects.join(',')})`);
+            }
+            const sattrs = {
+              vatID,
+              details: `${detailPrefix}: ${detailses.join(', ')}`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
+          case 'subscribe': {
+            const [_, vatID, kpid] = ksc;
+            const sattrs = {
+              vatID,
+              kpid,
+              details: `${detailPrefix}: subscribe(${kpid})`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
+          case 'vatstoreGet': {
+            const [_, vatID, key] = ksc;
+            const sattrs = {
+              vatID,
+              key,
+              details: `${detailPrefix}: vatstoreGet('${key}')`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
+          case 'vatstoreGetAfter': {
+            const [_, vatID, priorKey, lowerBound, upperBound = ''] = ksc;
+            const sattrs = {
+              vatID,
+              priorKey,
+              lowerBound,
+              upperBound,
+              details: `${detailPrefix}: vatstoreGetAfter('${priorKey}', '${lowerBound}', '${upperBound}')`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
+          case 'vatstoreSet': {
+            const [_, vatID, key, value] = ksc;
+            const sattrs = {
+              vatID,
+              key,
+              value,
+              details: `${detailPrefix}: vatstoreSet('${key}', '${value}')`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
+          case 'vatstoreDelete': {
+            const [_, vatID, key] = ksc;
+            const sattrs = {
+              vatID,
+              key,
+              details: `${detailPrefix}: vatstoreDelete('${key}')`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
           case 'dropImports':
           case 'retireImports':
-          case 'retireExports':
+          case 'retireExports': {
+            const [_, krefs] = ksc;
+            const krefList = krefs.join(',');
+            const sattrs = {
+              krefs: krefList,
+              details: `${detailPrefix}: ${syscallType}(${krefList})`,
+            };
+            makeSyscallSpan(name, sattrs);
+            break;
+          }
           case 'exit': {
-            // TODO: Maybe too noisy and mostly irrelevant?
-            // makeSyscallSpan(ksc[0]);
+            const [_, vatID, failure] = ksc;
+            const sattrs = {
+              vatID,
+              failure,
+              details: `${detailPrefix}: exit(${failure})`,
+            };
+            makeSyscallSpan(name, sattrs);
             break;
           }
           default: {
-            console.error(`Unknown syscall type:`, ksc[0]);
+            console.error(`Unknown syscall type:`, syscallType);
           }
         }
         break;
@@ -571,52 +788,44 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         }
         break;
       }
-      case 'bundle-kernel-start': {
-        spans.push(`bundle-kernel`);
-        break;
-      }
-      case 'bundle-kernel-finish': {
-        spans.pop('bundle-kernel');
+      case 'kernel-stats': {
+        spans.top()?.addEvent('kernel-stats', cleanAttrs(slogAttrs.stats), now);
         break;
       }
       case 'cosmic-swingset-bootstrap-block-start': {
         dbTransactionManager.begin();
-        spans.push(`bootstrap-block`);
+        assert(!spans.top());
+        spans.push(['block', 0]);
+        spans.push(['end-block', 0]);
         break;
       }
       case 'cosmic-swingset-bootstrap-block-finish': {
-        spans.pop(`bootstrap-block`);
-        while (spans.top()) {
-          // Pop off all our context.
-          spans.pop();
-        }
+        spans.pop(['end-block', 0]);
+        spans.pop(['block', 0]);
         dbTransactionManager.end();
         break;
       }
       case 'cosmic-swingset-begin-block': {
         dbTransactionManager.begin();
-        if (spans.topName() === `intra-block`) {
-          spans.pop(`intra-block`);
+        if (spans.topKind() === 'intra-block') {
+          spans.pop('intra-block');
+          spans.pop('block');
         }
-
-        while (spans.top()) {
-          // Reset the stack
-          spans.pop();
-        }
+        assert(!spans.top());
 
         // TODO: Move the encompassing `block` root span to cosmos
-        spans.push(`block ${slogAttrs.blockHeight}`);
-        spans.top().addEvent(`begin-block-action`, cleanAttrs(slogAttrs), now);
+        spans.push(['block', slogAttrs.blockHeight]);
+        spans.top()?.addEvent(`begin-block-action`, cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-commit-block-start': {
-        spans.start(['commit-block', slogAttrs.blockHeight], spans.top());
+        spans.push(['commit-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-commit-block-finish': {
-        spans.end(['commit-block', slogAttrs.blockHeight]);
+        spans.pop(['commit-block', slogAttrs.blockHeight]);
         // Push a span to capture the time between blocks from cosmic-swingset POV
-        spans.push(`intra-block`);
+        spans.push(['intra-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-after-commit-block': {
@@ -626,18 +835,18 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-deliver-inbound': {
-        spans.start('deliver-inbound', spans.top());
-        spans.end(`deliver-inbound`);
+        spans.push(['deliver-inbound', slogAttrs.sender]);
+        spans.pop('deliver-inbound');
         break;
       }
       case 'cosmic-swingset-bridge-inbound': {
-        spans.start('bridge-inbound', spans.top());
-        spans.end(`bridge-inbound`);
+        spans.push(['bridge-inbound', slogAttrs.source]);
+        spans.pop('bridge-inbound');
         break;
       }
       case 'cosmic-swingset-end-block-start': {
-        // Add `end-block` as an event onto the emcompassing `block` span
-        spans.top().addEvent('end-block-action', cleanAttrs(slogAttrs), now);
+        // Add `end-block` as an event onto the encompassing `block` span
+        spans.top()?.addEvent('end-block-action', cleanAttrs(slogAttrs), now);
         break;
       }
       case 'cosmic-swingset-end-block-finish': {
@@ -662,16 +871,17 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'crank-start': {
-        const { message, ...crankAttrs } = slogAttrs;
-        const [name, messageAttrs, links] = extractMessageAttrs(message);
+        const { message, crankType, ...crankAttrs } = slogAttrs;
+        if (crankType === 'routing') {
+          break;
+        }
+        const [name, _messageAttrs, links] = extractMessageAttrs(message);
         spans.startNamed(
-          name,
+          `deliver-${name}`,
           getCrankKey(true),
           spans.top(),
-          { ...crankAttrs, ...messageAttrs },
-          {
-            links,
-          },
+          { ...crankAttrs },
+          { links },
         );
         break;
       }
@@ -680,6 +890,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'crank-finish': {
+        if (!spans.has(getCrankKey())) {
+          // skip routing crank
+          break;
+        }
         let attrs;
         let error;
         if (crankNumToCause.has(slogAttrs.crankNum)) {
@@ -697,8 +911,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'terminate': {
-        spans.start('terminate', spans.top());
-        spans.end(`terminate`);
+        spans.top()?.addEvent('terminate', cleanAttrs(slogAttrs), now);
         break;
       }
       default: {

@@ -9,7 +9,7 @@ import { ApplicationContext, ConnectionStatus } from './Application';
 
 import {
   DEFAULT_CONNECTION_CONFIGS,
-  SmartConnectionMethod,
+  KnownNetworkConfigUrls,
 } from '../util/connections';
 import { maybeLoad, maybeSave } from '../util/storage';
 import { suggestChain } from '../util/SuggestChain';
@@ -147,7 +147,7 @@ const Provider = ({ children }) => {
   const restoredConnectionConfig = maybeLoad('connectionConfig') || null;
 
   const [connectionConfig, setConnectionConfig] = useState(
-    restoredConnectionConfig,
+    restoredConnectionConfig || { href: KnownNetworkConfigUrls.main },
   );
   const [allConnectionConfigs, setAllConnectionConfigs] = useState([
     ...RESTORED_CONNECTION_CONFIGS,
@@ -208,9 +208,7 @@ const Provider = ({ children }) => {
 
     for (const config of allConnectionConfigs) {
       const found = DEFAULT_CONNECTION_CONFIGS.find(
-        defaultConfig =>
-          defaultConfig.href === config.href &&
-          defaultConfig.type === config.type,
+        defaultConfig => defaultConfig.href === config.href,
       );
       if (!found) {
         updatedConnectionConfigs.push(config);
@@ -218,9 +216,7 @@ const Provider = ({ children }) => {
     }
     maybeSave('userConnectionConfigs', updatedConnectionConfigs);
 
-    if (
-      connectionConfig?.smartConnectionMethod === SmartConnectionMethod.KEPLR
-    ) {
+    if (connectionConfig) {
       tryKeplrConnect().catch(reason => {
         console.error('tryKeplrConnect failed', reason);
         setConnectionStatus(ConnectionStatus.Error);

@@ -83,9 +83,9 @@ jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$KEY" --offer "$PROPOSAL_OFFER"
 
 # to verify that the question was proposed, you can use
-# agoric follow published.committees.Initial_Economic_Committee.latestQuestion
+# agoric follow published.committees.Economic_Committee.latestQuestion
 # for a local net or
-# agoric -B $networkConfig follow published.committees.Initial_Economic_Committee.latestQuestion
+# agoric -B $networkConfig follow published.committees.Economic_Committee.latestQuestion
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)

@@ -218,6 +218,23 @@ const start = async (zcf, privateArgs) => {
     governedCF,
   );
 
+  /**
+   * @param {Invitation} poserInvitation
+   * @returns {Promise<void>}
+   */
+  const replaceElectorate = poserInvitation => {
+    /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
+    // @ts-expect-error cast
+    const paramMgr = E(E(governedCF).getParamMgrRetriever()).get({
+      key: 'governedParams',
+    });
+
+    // TODO use updateElectorate
+    return E(paramMgr).updateParams({
+      Electorate: poserInvitation,
+    });
+  };
+
   // this conditional was extracted so both sides are equally asynchronous
   /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
@@ -278,6 +295,7 @@ const start = async (zcf, privateArgs) => {
   };
 
   const creatorFacet = Far('governor creatorFacet', {
+    replaceElectorate,
     voteOnParamChanges,
     voteOnApiInvocation,
     voteOnOfferFilter: voteOnFilter,

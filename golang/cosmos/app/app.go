@@ -1,6 +1,7 @@
 package gaia
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	stdlog "log"
@@ -643,7 +644,8 @@ func NewAgoricApp(
 	// NOTE: Capability module must occur first so that it can initialize any capabilities
 	// so that other modules that want to create or claim capabilities afterwards in InitChain
 	// can do so safely.
-	app.mm.SetOrderInitGenesis(
+
+	moduleOrderForGenesisAndUpgrade := []string{
 		capabilitytypes.ModuleName,
 		authtypes.ModuleName,
 		banktypes.ModuleName,
@@ -668,7 +670,10 @@ func NewAgoricApp(
 		vibc.ModuleName,
 		swingset.ModuleName,
 		lien.ModuleName,
-	)
+	}
+
+	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
+	app.mm.SetOrderMigrations(moduleOrderForGenesisAndUpgrade...)
 
 	app.mm.RegisterInvariants(&app.CrisisKeeper)
 	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
@@ -716,6 +721,7 @@ func NewAgoricApp(
 			IBCKeeper:        app.IBCKeeper,
 			AdmissionData:    app.SwingSetKeeper,
 			FeeCollectorName: vbanktypes.ReservePoolName,
+			SwingsetKeeper:   app.SwingSetKeeper,
 		},
 	)
 	if err != nil {
@@ -775,7 +781,6 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		return
 	}
 	app.controllerInited = true
-
 	// Begin initializing the controller here.
 	action := &cosmosInitAction{
 		Type:        "AG_COSMOS_INIT",
@@ -787,9 +792,22 @@ func (app *GaiaApp) MustInitController(ctx sdk.Context) {
 		VbankPort:   app.vbankPort,
 		LienPort:    app.lienPort,
 	}
-	_, err := app.SwingSetKeeper.BlockingSend(ctx, action)
+	out, err := app.SwingSetKeeper.BlockingSend(ctx, action)
+
+	// fmt.Fprintf(os.Stderr, "AG_COSMOS_INIT Returned from SwingSet: %s, %v\n", out, err)
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Cannot initialize Controller", err)
+		os.Exit(1)
+	}
+	var res bool
+	err = json.Unmarshal([]byte(out), &res)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Cannot unmarshal Controller init response", out, err)
+		os.Exit(1)
+	}
+	if !res {
+		fmt.Fprintln(os.Stderr, "Controller negative init response")
 		os.Exit(1)
 	}
 }

@@ -49,8 +49,8 @@ export const startPSM = async (
   },
   {
     options: { anchorOptions = {} } = {},
-    WantMintedFeeBP = 1n,
-    GiveMintedFeeBP = 3n,
+    WantMintedFeeBP = 0n,
+    GiveMintedFeeBP = 0n,
     MINT_LIMIT = 1_000n * 1_000_000n,
   } = {},
 ) => {

@@ -74,9 +74,9 @@ export const AppBarWithoutContext = ({
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const [dialogOpened, setDialogOpened] = useState(connectionConfig === null);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const handleClosed = () => {
-    setDialogOpened(false);
+    setDialogOpen(false);
   };
 
   const connectionTitle =
@@ -124,15 +124,12 @@ export const AppBarWithoutContext = ({
               color="primary"
               size="medium"
               target="_blank"
-              onClick={() => setDialogOpened(true)}
+              onClick={() => setDialogOpen(true)}
             >
               <SettingsIcon fontSize="inherit">Help</SettingsIcon>
             </IconButton>
           </Tooltip>
-          <ConnectionSettingsDialog
-            open={dialogOpened}
-            onClose={handleClosed}
-          />
+          <ConnectionSettingsDialog open={dialogOpen} onClose={handleClosed} />
         </div>
         <div className={classes.connector}>
           <Tooltip title="Help">

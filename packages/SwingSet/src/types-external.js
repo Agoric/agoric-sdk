@@ -40,7 +40,7 @@ export {};
  *   vatParameters: Record<string, unknown>,
  *   virtualObjectCacheSize: number,
  *   name: string,
- *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
+ *   compareSyscalls?: import('./kernel/vat-loader/transcript.js').CompareSyscalls,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
  *   meterID?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
@@ -222,8 +222,9 @@ export {};
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
+ *              replayOneDelivery: (delivery: VatDeliveryObject, expectedSyscalls: VatSyscallObject[], deliveryNum: number) => Promise<VatDeliveryResult>,
  *              replayTranscript: (startPos: StreamPosition | undefined) => Promise<number?>,
- *              makeSnapshot?: (ss: SnapStore) => Promise<SnapshotInfo>,
+ *              makeSnapshot?: undefined | ((ss: SnapStore) => Promise<SnapshotInfo>),
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  *
