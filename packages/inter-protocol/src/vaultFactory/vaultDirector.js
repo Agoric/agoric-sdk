@@ -215,6 +215,7 @@ export const prepareVaultDirector = (
         getLimitedCreatorFacet: M.call().returns(M.remotable()),
         getGovernedApis: M.call().returns(M.record()),
         getGovernedApiNames: M.call().returns(M.record()),
+        setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
       }),
       machine: M.interface('machine', {
         addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
@@ -274,6 +275,7 @@ export const prepareVaultDirector = (
         getGovernedApiNames() {
           return harden({});
         },
+        setOfferFilter: strings => zcf.setOfferFilter(strings),
       },
       machine: {
         // TODO move this under governance #3924
@@ -301,10 +303,10 @@ export const prepareVaultDirector = (
           !collateralTypes.has(collateralBrand) ||
             Fail`Collateral brand ${q(collateralBrand)} has already been added`;
 
+          // counter to be incremented at end of addVaultType
+          const managerId = `manager${state.managerCounter}`;
           const managerStorageNode =
-            storageNode &&
-            E(storageNode).makeChildNode(`manager${state.managerCounter}`);
-          state.managerCounter += 1;
+            storageNode && E(storageNode).makeChildNode(managerId);
 
           /** a powerful object; can modify parameters */
           const vaultParamManager = makeVaultParamManager(
@@ -402,6 +404,7 @@ export const prepareVaultDirector = (
               debtMint,
               collateralBrand,
               collateralUnit,
+              descriptionScope: managerId,
               factoryPowers,
               startTimeStamp,
               storageNode: managerStorageNode,
@@ -414,6 +417,7 @@ export const prepareVaultDirector = (
           await vm.setupLiquidator(install, terms);
           watchGovernance(vm, install, terms);
           facets.machine.updateMetrics();
+          state.managerCounter += 1;
           return vm;
         },
         makeCollectFeesInvitation() {

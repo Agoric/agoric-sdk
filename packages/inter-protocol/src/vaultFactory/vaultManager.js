@@ -133,6 +133,7 @@ const trace = makeTracer('VM', false);
  * collateralBrand: Brand<'nat'>,
  * collateralUnit: Amount<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * descriptionScope: string,
  * startTimeStamp: Timestamp,
  * storageNode: ERef<StorageNode>,
  * }>} unique per singleton
@@ -145,6 +146,7 @@ export const prepareVaultManagerKit = (
     debtMint,
     collateralBrand,
     collateralUnit,
+    descriptionScope,
     factoryPowers,
     startTimeStamp,
     storageNode,
@@ -280,6 +282,7 @@ export const prepareVaultManagerKit = (
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
         getCompoundedInterest: M.call().returns(RatioShape),
+        scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
           AmountShape,
@@ -303,9 +306,10 @@ export const prepareVaultManagerKit = (
     {
       collateral: {
         makeVaultInvitation() {
+          const { facets } = this;
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
-            'MakeVault',
+            facets.manager.scopeDescription('MakeVault'),
           );
         },
         /** @deprecated use getPublicTopics */
@@ -691,6 +695,14 @@ export const prepareVaultManagerKit = (
         },
         getDebtBrand() {
           return debtBrand;
+        },
+        /**
+         * Prepend with an identifier of this vault manager
+         *
+         * @param {string} base
+         */
+        scopeDescription(base) {
+          return `${descriptionScope}: ${base}`;
         },
         /**
          * coefficient on existing debt to calculate new debt

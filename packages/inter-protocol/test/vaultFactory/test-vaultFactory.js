@@ -1517,7 +1517,7 @@ test('transfer vault', async t => {
       debt: debtAmount,
       interest: aliceFinish.value.debtSnapshot.interest,
     },
-    description: 'TransferVault',
+    description: 'manager0: TransferVault',
     locked: collateralAmount,
     vaultState: 'active',
   });
