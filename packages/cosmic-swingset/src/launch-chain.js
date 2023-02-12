@@ -611,6 +611,9 @@ export async function launch({
       });
   }
 
+  // Handle block related actions
+  // Some actions that are integration specific may be handled by the caller
+  // For example COSMOS_SNAPSHOT and AG_COSMOS_INIT are handled in chain-main.js
   async function blockingSend(action) {
     if (decohered) {
       throw decohered;
@@ -787,13 +790,18 @@ export async function launch({
     }
   }
 
-  function shutdown() {
+  async function shutdown() {
     return controller.shutdown();
+  }
+
+  function writeSlogObject(obj) {
+    controller.writeSlogObject(obj);
   }
 
   return {
     blockingSend,
     shutdown,
+    writeSlogObject,
     savedHeight,
     savedChainSends: JSON.parse(kvStore.get(getHostKey('chainSends')) || '[]'),
   };

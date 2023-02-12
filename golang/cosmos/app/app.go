@@ -109,6 +109,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/lien"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetclient "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/client"
+	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
@@ -227,11 +228,12 @@ type GaiaApp struct { // nolint: golint
 	FeeGrantKeeper feegrantkeeper.Keeper
 	AuthzKeeper    authzkeeper.Keeper
 
-	SwingSetKeeper swingset.Keeper
-	VstorageKeeper vstorage.Keeper
-	VibcKeeper     vibc.Keeper
-	VbankKeeper    vbank.Keeper
-	LienKeeper     lien.Keeper
+	SwingSetKeeper      swingset.Keeper
+	SwingSetSnapshotter swingset.Snapshotter
+	VstorageKeeper      vstorage.Keeper
+	VibcKeeper          vibc.Keeper
+	VbankKeeper         vbank.Keeper
+	LienKeeper          lien.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      capabilitykeeper.ScopedKeeper
@@ -445,6 +447,12 @@ func NewAgoricApp(
 		app.AccountKeeper, app.BankKeeper,
 		app.VstorageKeeper, vbanktypes.ReservePoolName,
 		callToController,
+	)
+
+	app.SwingSetSnapshotter = swingsetkeeper.NewSwingsetSnapshotter(
+		bApp,
+		app.SwingSetKeeper,
+		sendToController,
 	)
 
 	app.VibcKeeper = vibc.NewKeeper(
@@ -753,6 +761,12 @@ func NewAgoricApp(
 	app.ScopedVibcKeeper = scopedVibcKeeper
 	app.ScopedTransferKeeper = scopedTransferKeeper
 	app.ScopedICAHostKeeper = scopedICAHostKeeper
+	snapshotManager := app.SnapshotManager()
+	if snapshotManager != nil {
+		if err = snapshotManager.RegisterExtensions(&app.SwingSetSnapshotter); err != nil {
+			panic(fmt.Errorf("failed to register snapshot extension: %s", err))
+		}
+	}
 
 	return app
 }
@@ -847,17 +861,31 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 
 // Commit tells the controller that the block is commited
 func (app *GaiaApp) Commit() abci.ResponseCommit {
+	err := app.SwingSetSnapshotter.WaitUntilSnapshotStarted()
+
+	if err != nil {
+		app.Logger().Error("swingset snapshot failed to start", "err", err)
+	}
+
 	// Frontrun the BaseApp's Commit method
-	err := swingset.CommitBlock(app.SwingSetKeeper)
+	err = swingset.CommitBlock(app.SwingSetKeeper)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	res := app.BaseApp.Commit()
+	res, snapshotHeight := app.BaseApp.CommitWithoutSnapshot()
 
 	err = swingset.AfterCommitBlock(app.SwingSetKeeper)
 	if err != nil {
 		panic(err.Error())
+	}
+
+	if snapshotHeight > 0 {
+		err = app.SwingSetSnapshotter.InitiateSnapshot(snapshotHeight)
+
+		if err != nil {
+			app.Logger().Error("failed to initiate swingset snapshot", "err", err)
+		}
 	}
 
 	return res
