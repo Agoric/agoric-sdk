@@ -1,32 +1,24 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-
-import bundleSource from '@endo/bundle-source';
-
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
 
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { subscribeEach } from '@agoric/notifier';
 import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { subscribeEach } from '@agoric/notifier';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import { makeZoeKit } from '@agoric/zoe/src/zoeService/zoe.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { topicPath } from './supports.js';
+import { provideFluxAggregator } from '../../src/price/fluxAggregator.js';
+import { topicPath } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
 const test = unknownTest;
-
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
-
-const aggregatorPath = `${dirname}/../src/price/fluxAggregator.js`;
 
 const defaultConfig = {
   maxSubmissionCount: 1000,
@@ -38,66 +30,36 @@ const defaultConfig = {
 };
 
 const makeContext = async () => {
-  // Outside of tests, we should use the long-lived Zoe on the
-  // testnet. In this test, we must create a new Zoe.
-  const { admin, vatAdminState } = makeFakeVatAdmin();
-  const { zoeService: zoe } = makeZoeKit(admin);
-
-  // Pack the contracts.
-  const aggregatorBundle = await bundleSource(aggregatorPath);
-
-  // Install the contract on Zoe, getting an installation. We can
-  // use this installation to look up the code we installed. Outside
-  // of tests, we can also send the installation to someone
-  // else, and they can use it to create a new contract instance
-  // using the same code.
-  vatAdminState.installBundle('b1-aggregator', aggregatorBundle);
-  /** @type {Installation<import('../src/price/fluxAggregator.js').start>} */
-  const aggregatorInstallation = await E(zoe).installBundleID('b1-aggregator');
-
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
   const usd = makeIssuerKit('$USD', AssetKind.NAT);
 
   async function makeChainlinkAggregator(config) {
-    const {
-      maxSubmissionCount,
-      maxSubmissionValue,
-      minSubmissionCount,
-      minSubmissionValue,
-      restartDelay,
-      timeout,
-    } = config;
+    const terms = { ...config, brandIn: link.brand, brandOut: usd.brand };
+    const zcfTestKit = await setupZCFTest(undefined, terms);
 
     // ??? why do we need the Far here and not in VaultFactory tests?
     const marshaller = Far('fake marshaller', { ...makeFakeMarshaller() });
     const mockStorageRoot = makeMockChainStorageRoot();
     const storageNode = E(mockStorageRoot).makeChildNode('priceAggregator');
 
-    const timer = buildManualTimer(() => {});
+    const manualTimer = buildManualTimer(() => {});
 
-    const aggregator = await E(zoe).startInstance(
-      aggregatorInstallation,
-      undefined,
-      {
-        timer,
-        brandIn: link.brand,
-        brandOut: usd.brand,
-        maxSubmissionCount,
-        minSubmissionCount,
-        restartDelay,
-        timeout,
-        minSubmissionValue,
-        maxSubmissionValue,
-      },
-      {
-        marshaller,
-        storageNode: E(storageNode).makeChildNode('LINK-USD_price_feed'),
-      },
+    const baggage = makeScalarBigMapStore('test baggage');
+    const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
+
+    const aggregator = provideFluxAggregator(
+      baggage,
+      zcfTestKit.zcf,
+      manualTimer,
+      { ...quoteIssuerKit, assetKind: 'set', displayInfo: undefined },
+      await E(storageNode).makeChildNode('LINK-USD_price_feed'),
+      marshaller,
     );
-    return { ...aggregator, mockStorageRoot };
+
+    return { ...aggregator, manualTimer, mockStorageRoot };
   }
 
-  return { makeChainlinkAggregator, zoe };
+  return { makeChainlinkAggregator };
 };
 
 test.before('setup aggregator and oracles', async t => {
@@ -105,12 +67,8 @@ test.before('setup aggregator and oracles', async t => {
 });
 
 test('basic', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator(defaultConfig);
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -122,7 +80,7 @@ test('basic', async t => {
     'agorice1priceOracleC',
   );
 
-  // ----- round 1: basic consensus
+  t.log('----- round 1: basic consensus');
   await oracleTimer.tick();
   await E(pricePushAdminA).pushPrice({ roundId: 1, unitPrice: 100n });
   await E(pricePushAdminB).pushPrice({ roundId: 1, unitPrice: 200n });
@@ -133,7 +91,7 @@ test('basic', async t => {
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
-  // ----- round 2: check restartDelay implementation
+  t.log('----- round 2: check restartDelay implementation');
   // since oracle A initialized the last round, it CANNOT start another round before
   // the restartDelay, which means its submission will be IGNORED. this means the median
   // should ONLY be between the OracleB and C values, which is why it is 25000
@@ -151,7 +109,7 @@ test('basic', async t => {
   const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
   t.is(round2Attempt1.answer, 2500n);
 
-  // ----- round 3: check oracle submission order
+  t.log('----- round 3: check oracle submission order');
   // unlike the previous test, if C initializes, all submissions should be recorded,
   // which means the median will be the expected 5000 here
   await oracleTimer.tick();
@@ -167,16 +125,12 @@ test('basic', async t => {
 });
 
 test('timeout', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     restartDelay: 2,
     timeout: 5,
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -223,15 +177,11 @@ test('timeout', async t => {
 });
 
 test('issue check', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     restartDelay: 2,
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -274,15 +224,11 @@ test('issue check', async t => {
 });
 
 test('supersede', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     restartDelay: 1,
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -333,8 +279,6 @@ test('supersede', async t => {
 });
 
 test('interleaved', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     maxSubmissionCount: 3,
@@ -342,9 +286,7 @@ test('interleaved', async t => {
     restartDelay: 1,
     timeout: 5,
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -476,17 +418,13 @@ test('interleaved', async t => {
 });
 
 test('larger', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     minSubmissionCount: 3,
     restartDelay: 1,
     timeout: 5,
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -557,17 +495,13 @@ test('larger', async t => {
 });
 
 test('suggest', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     minSubmissionCount: 3,
     restartDelay: 1,
     timeout: 5,
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',
@@ -659,16 +593,12 @@ test('suggest', async t => {
 });
 
 test('notifications', async t => {
-  const { zoe } = t.context;
-
   const aggregator = await t.context.makeChainlinkAggregator({
     ...defaultConfig,
     maxSubmissionCount: 1000,
     restartDelay: 1, // have to alternate to start rounds
   });
-  /** @type {{ timer: ManualTimer }} */
-  // @ts-expect-error cast
-  const { timer: oracleTimer } = await E(zoe).getTerms(aggregator.instance);
+  const oracleTimer = aggregator.manualTimer;
 
   const pricePushAdminA = await E(aggregator.creatorFacet).initOracle(
     'agorice1priceOracleA',

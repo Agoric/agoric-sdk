@@ -1,6 +1,8 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+// eslint-disable-next-line no-unused-vars -- used by TS
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
@@ -91,10 +93,10 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       'installation',
     );
     const paBundle = await bundleCache.load(
-      '../inter-protocol/src/price/fluxAggregator.js',
+      '../inter-protocol/src/price/fluxAggregatorContract.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregator.js').start>>} */
+    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start>>} */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 
@@ -136,4 +138,18 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     simpleProvideWallet,
     simpleCreatePriceFeed,
   };
+};
+
+/**
+ * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
+ * @param {Brand<'nat'>} brand
+ */
+export const currentPurseBalance = (record, brand) => {
+  const purses = Array.from(record.purses.values());
+  const match = purses.find(b => b.brand === brand);
+  if (!match) {
+    console.debug('purses', ...purses);
+    assert.fail(`${brand} not found in record`);
+  }
+  return match.balance.value;
 };
