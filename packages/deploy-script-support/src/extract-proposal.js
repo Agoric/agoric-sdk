@@ -5,7 +5,7 @@ import path from 'path';
 import { deeplyFulfilled, defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
-  makeEnactCoreProposalsFromBundleName,
+  makeEnactCoreProposalsFromBundleRef,
 } from './coreProposalBehavior.js';
 
 const { details: X, Fail } = assert;
@@ -43,13 +43,13 @@ const pathResolve = (...paths) => {
  * @param {(ModuleSpecifier | FilePath)[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
- * @param {typeof makeEnactCoreProposalsFromBundleName} [makeEnactCoreProposals]
+ * @param {typeof makeEnactCoreProposalsFromBundleRef} [makeEnactCoreProposals]
  * @param {(i: number) => number} [getSequenceForProposal]
  */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
-  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleName,
+  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleRef,
   getSequenceForProposal,
 ) => {
   if (!getSequenceForProposal) {

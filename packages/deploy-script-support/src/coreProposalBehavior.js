@@ -66,10 +66,13 @@ export const makeCoreProposalBehavior = ({
     } = allPowers;
     const [exportedGetManifest, ...manifestArgs] = getManifestCall;
 
-    const defaultRestoreRef = async args => {
-      const p = args.bundleName
-        ? E(vatAdminSvc).getNamedBundleID(args.bundleName)
-        : args.bundleID;
+    const defaultRestoreRef = async ref => {
+      // extract-proposal.js creates these records, and bundleName is
+      // the name under which the bundle was installed into
+      // config.bundles
+      const p = ref.bundleName
+        ? E(vatAdminSvc).getNamedBundleID(ref.bundleName)
+        : ref.bundleID;
       const bundleID = await p;
       return E(zoe).installBundleID(bundleID);
     };
@@ -134,7 +137,7 @@ export const makeCoreProposalBehavior = ({
   return behavior;
 };
 
-export const makeEnactCoreProposalsFromBundleName =
+export const makeEnactCoreProposalsFromBundleRef =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
     const {
