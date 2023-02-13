@@ -49,8 +49,9 @@ harden(provideBundle);
 export const setUpZoeForTest = async (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
 
+  const { admin, vatAdminState } = makeFakeVatAdmin(setJig);
   const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
+    makeZoeKit(admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
@@ -59,6 +60,8 @@ export const setUpZoeForTest = async (setJig = () => {}) => {
   return {
     zoe: zoeService,
     feeMintAccessP: feeMintAccess,
+    vatAdminSvc: admin,
+    vatAdminState,
   };
 };
 harden(setUpZoeForTest);

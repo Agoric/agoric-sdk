@@ -21,6 +21,7 @@ VOTE_OPTION = yes
 GOSRC = ../../golang/cosmos
 # For deep (cross-vat) stacks, try...
 # DEBUG ?= SwingSet:ls,SwingSet:vat,track-turns
+# or to get kernel messages: SwingSet:ls,SwingSet:vat,SwingSet
 DEBUG ?= SwingSet:ls,SwingSet:vat
 AG_SOLO = DEBUG=$(DEBUG) $(shell cd ../solo/bin && pwd)/ag-solo
 AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
