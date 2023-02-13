@@ -153,3 +153,31 @@ export const currentPurseBalance = (record, brand) => {
   }
   return match.balance.value;
 };
+
+/**
+ * Voting yes (first position) on the one open question using the continuing offer.
+ *
+ * @param {ERef<CommitteeElectoratePublic>} committeePublic
+ * @param {string} voterAcceptanceOID
+ * @returns {Promise<import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec>}
+ */
+export const voteForOpenQuestion = async (
+  committeePublic,
+  voterAcceptanceOID,
+) => {
+  const questions = await E(committeePublic).getOpenQuestions();
+  assert.equal(questions.length, 1);
+  const question = E(committeePublic).getQuestion(questions[0]);
+  const { positions, questionHandle } = await E(question).getDetails();
+  const yesPosition = harden([positions[0]]);
+
+  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
+  const getVoteSpec = {
+    source: 'continuing',
+    previousOffer: voterAcceptanceOID,
+    invitationMakerName: 'makeVoteInvitation',
+    invitationArgs: harden([yesPosition, questionHandle]),
+  };
+
+  return getVoteSpec;
+};

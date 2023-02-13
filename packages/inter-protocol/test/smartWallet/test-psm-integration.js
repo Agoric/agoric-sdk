@@ -14,7 +14,11 @@ import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
-import { currentPurseBalance, makeDefaultTestContext } from './contexts.js';
+import {
+  currentPurseBalance,
+  makeDefaultTestContext,
+  voteForOpenQuestion,
+} from './contexts.js';
 import { headValue, withAmountUtils } from '../supports.js';
 
 /**
@@ -241,40 +245,6 @@ test('govern offerFilter', async t => {
     currentState.offerToUsedInvitation[44].value[0].description,
     'charter member invitation',
   );
-
-  // Call for a vote ////////////////////////////////
-
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
-    source: 'continuing',
-    previousOffer: 44,
-    invitationMakerName: 'VoteOnPauseOffers',
-    invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
-  };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
-    id: 45,
-    invitationSpec: proposeInvitationSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(proposalOfferSpec);
-  await eventLoopIteration();
-
-  // vote /////////////////////////
-
-  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
-  const questions = await E(committeePublic).getOpenQuestions();
-  const question = E(committeePublic).getQuestion(questions[0]);
-  const { positions, issue, electionType, questionHandle } = await E(
-    question,
-  ).getDetails();
-  t.is(electionType, 'offer_filter');
-  const yesPosition = harden([positions[0]]);
-  t.deepEqual(issue.strings, ['wantStable']);
-  t.deepEqual(yesPosition, [{ strings: ['wantStable'] }]);
-
   const voteInvitationDetails = await getInvitationFor(
     'Voter0',
     1,
@@ -311,22 +281,35 @@ test('govern offerFilter', async t => {
   // 44 tested above
   t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
 
+  // Call for a vote ////////////////////////////////
+
   /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
-  const getVoteSpec = {
+  const proposeInvitationSpec = {
     source: 'continuing',
-    previousOffer: 46,
-    invitationMakerName: 'makeVoteInvitation',
-    invitationArgs: harden([yesPosition, questionHandle]),
+    previousOffer: 44,
+    invitationMakerName: 'VoteOnPauseOffers',
+    invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
   };
 
   /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const voteOffer = {
-    id: 47,
-    invitationSpec: getVoteSpec,
+  const proposalOfferSpec = {
+    id: 45,
+    invitationSpec: proposeInvitationSpec,
     proposal: {},
   };
 
-  await offersFacet.executeOffer(voteOffer);
+  await offersFacet.executeOffer(proposalOfferSpec);
+  await eventLoopIteration();
+
+  // vote /////////////////////////
+
+  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
+
+  await offersFacet.executeOffer({
+    id: 47,
+    invitationSpec: await voteForOpenQuestion(committeePublic, '46'),
+    proposal: {},
+  });
   await eventLoopIteration();
 
   // can't advance the clock, so the vote won't close. Call it enuf that the
