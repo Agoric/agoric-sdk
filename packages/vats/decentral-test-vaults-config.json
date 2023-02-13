@@ -27,7 +27,7 @@
       "args": [
         {
           "interchainAssetOptions": {
-            "denom": "ibc/atom1234",
+            "denom": "ibc/toyatom",
             "decimalPlaces": 4,
             "keyword": "IbcATOM",
             "oracleBrand": "ATOM",
@@ -42,7 +42,7 @@
       "args": [
         {
           "anchorOptions": {
-            "denom": "ibc/usdc1234",
+            "denom": "ibc/toyusdc",
             "decimalPlaces": 6,
             "keyword": "USDC_axl",
             "proposedName": "USD Coin"
@@ -84,7 +84,7 @@
       "args": [
         {
           "anchorOptions": {
-            "denom": "ibc/usdt5678",
+            "denom": "ibc/toyollie",
             "decimalPlaces": 6,
             "keyword": "USDT_grv",
             "proposedName": "Tether USD"

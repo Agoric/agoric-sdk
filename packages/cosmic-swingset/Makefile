@@ -102,7 +102,7 @@ scenario1-run-chain:
 scenario1-run-client:
 	AG_SOLO_BASEDIR=$$PWD/t9/$(BASE_PORT) $(AG_SOLO) setup --network-config=http://localhost:8001/network-config --webport=$(BASE_PORT)
 
-BOOT_COINS=1000000000000000ubld,500000000000000uist,100provisionpass,100sendpacketpass,1000000000000ibc/usdc1234,1000000000000ibc/atom1234
+BOOT_COINS=1000000000000000ubld,500000000000000uist,100provisionpass,100sendpacketpass,1000000000000ibc/toyusdc,1000000000000ibc/toyatom
 
 scenario2-setup: all scenario2-setup-nobuild
 scenario2-setup-nobuild:
@@ -184,7 +184,7 @@ scenario2-run-client: t1-provision-one-with-powers t1-start-ag-solo
 
 # Provision the ag-solo from an provisionpass-holding address (idempotent).
 AGORIC_POWERS = agoric.ALL_THE_POWERS
-SOLO_COINS = 13000000ubld,12345000000uist,1122000000ibc/usdc1234,3344000000ibc/atom1234
+SOLO_COINS = 13000000ubld,12345000000uist,1122000000ibc/toyusdc,3344000000ibc/toyatom
 COSMOS_RPC_HOST = localhost
 COSMOS_RPC_PORT = 26657
 wait-for-cosmos:
@@ -218,7 +218,7 @@ fund-provision-pool:
 # The agoric1megzy… address is the account of the provisioning pool.
 # The mint limit is 1000 IST and each wallet gets 0.25 IST when
 # provisioned, so make room for 400 accounts with 100 USDC which mints 100 IST.
-	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 FUNDS=1000000000ibc/usdc1234 fund-acct
+	$(MAKE) ACCT_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346 FUNDS=1000000000ibc/toyusdc fund-acct
 
 fund-acct:
 	$(AGCH) \

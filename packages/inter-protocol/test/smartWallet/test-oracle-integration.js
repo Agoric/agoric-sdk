@@ -33,7 +33,7 @@ const committeeAddress = 'econCommitteeMemberA';
 
 const makeTestSpace = async log => {
   const psmParams = {
-    anchorAssets: [{ denom: 'ibc/usdc1234', keyword: 'AUSD' }],
+    anchorAssets: [{ denom: 'ibc/toyusdc', keyword: 'AUSD' }],
     economicCommitteeAddresses: {
       aMember: committeeAddress,
     },
