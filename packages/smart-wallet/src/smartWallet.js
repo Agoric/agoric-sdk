@@ -424,6 +424,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             powers: {
               invitationFromSpec: makeInvitationsHelper(
                 zoe,
+                shared.agoricNames,
                 invitationBrand,
                 invitationPurse,
                 offerToInvitationMakers.get,
