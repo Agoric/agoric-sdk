@@ -187,7 +187,6 @@ export const createPriceFeed = async (
 
   trace('awaiting startInstance');
   // Create the price feed.
-  /** @type {{ creatorFacet: import('@agoric/governance/src/contractGovernor.js').GovernedContractFnFacetAccess<import('@agoric/inter-protocol/src/price/fluxAggregator.contract.js').start>, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
   const aggregatorGovernor = await E(zoe).startInstance(
     contractGovernor,
     undefined,
