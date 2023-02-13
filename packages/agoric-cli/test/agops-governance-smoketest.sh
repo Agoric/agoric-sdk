@@ -97,3 +97,15 @@ agoric wallet send --offer "$VOTE_OFFER" --from "$WALLET" --keyring-backend="tes
 
 # to see the new MintLimit
 bin/agops psm info
+
+# Propose to burn fees
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops reserve proposeBurn --value 1000 --charterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+jq ".body | fromjson" <"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from "$WALLET" --keyring-backend="test"
+
+# Vote for the API call
+VOTE_OFFER=$(mktemp -t agops.XXX)
+bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+jq ".body | fromjson" <"$VOTE_OFFER"
+agoric wallet send --offer "$VOTE_OFFER" --from "$WALLET" --keyring-backend="test"
