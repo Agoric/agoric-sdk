@@ -118,14 +118,11 @@ const acceptInvitation = async (wallet, priceAggregator) => {
     instance: priceAggregator,
     description: ORACLE_INVITATION_MAKERS_DESC,
   };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const invMakersOffer = {
+  await wallet.getOffersFacet().executeOffer({
     id,
     invitationSpec: getInvMakersSpec,
     proposal: {},
-  };
-  await wallet.getOffersFacet().executeOffer(invMakersOffer);
+  });
   // wait for it to settle
   await eventLoopIteration();
   return id;
@@ -143,14 +140,11 @@ const pushPrice = async (wallet, adminOfferId, priceRound) => {
 
   pushPriceCounter += 1;
   const id = `pushPrice${pushPriceCounter}`;
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
+  await wallet.getOffersFacet().executeOffer({
     id,
     invitationSpec: proposeInvitationSpec,
     proposal: {},
-  };
-
-  await wallet.getOffersFacet().executeOffer(proposalOfferSpec);
+  });
   await eventLoopIteration();
   return id;
 };
@@ -209,13 +203,11 @@ test.serial('invitations', async t => {
   };
 
   const id = '33';
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const invMakersOffer = {
+  await wallet.getOffersFacet().executeOffer({
     id,
     invitationSpec: getInvMakersSpec,
     proposal: {},
-  };
-  await wallet.getOffersFacet().executeOffer(invMakersOffer);
+  });
 
   const currentSub = E(wallet).getCurrentSubscriber();
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */

@@ -73,21 +73,16 @@ test('null swap', async t => {
     instance: psmInstance,
     publicInvitationMaker: 'makeGiveMintedInvitation',
   };
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const offerSpec = {
-    id: 1,
+
+  await offersFacet.executeOffer({
+    id: 'nullSwap',
     invitationSpec,
     proposal: {
       // empty amounts
       give: { In: AmountMath.makeEmpty(mintedBrand) },
       want: { Out: anchor.makeEmpty() },
     },
-  };
-
-  // let promises settle to notify brands and create purses
-  await eventLoopIteration();
-
-  await offersFacet.executeOffer(offerSpec);
+  });
   await eventLoopIteration();
 
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
@@ -114,8 +109,6 @@ test('want stable', async t => {
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
-  // let promises settle to notify brands and create purses
-  await eventLoopIteration();
 
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
 
@@ -127,24 +120,21 @@ test('want stable', async t => {
 
   t.log('Prepare the swap');
 
+  t.log('Execute the swap');
   /** @type {import('@agoric/smart-wallet/src/invitations').ContractInvitationSpec} */
   const invitationSpec = {
     source: 'contract',
     instance: psmInstance,
     publicInvitationMaker: 'makeWantMintedInvitation',
   };
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const offerSpec = {
+  await offersFacet.executeOffer({
     id: 1,
     invitationSpec,
     proposal: {
       give: { In: anchor.make(swapSize) },
       want: {},
     },
-  };
-
-  t.log('Execute the swap');
-  await offersFacet.executeOffer(offerSpec);
+  });
   await eventLoopIteration();
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(stableBrand)).value, swapSize); // assume 0% fee
@@ -223,14 +213,11 @@ test('govern offerFilter', async t => {
     description: INVITATION_MAKERS_DESC,
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const invMakersOffer = {
-    id: 44,
+  await offersFacet.executeOffer({
+    id: 'acceptEcInvitationOID',
     invitationSpec: getInvMakersSpec,
     proposal: {},
-  };
-
-  await offersFacet.executeOffer(invMakersOffer);
+  });
 
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   let currentState = await headValue(currentSub);
@@ -240,9 +227,12 @@ test('govern offerFilter', async t => {
     1,
     'one invitation consumed, one left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
+    'acceptEcInvitationOID',
+  ]);
   t.is(
-    currentState.offerToUsedInvitation[44].value[0].description,
+    currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
+      .description,
     'charter member invitation',
   );
   const voteInvitationDetails = await getInvitationFor(
@@ -262,14 +252,11 @@ test('govern offerFilter', async t => {
     description: 'Voter0',
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const committeeInvMakersOffer = {
-    id: 46,
+  await offersFacet.executeOffer({
+    id: 'acceptVoterOID',
     invitationSpec: getCommitteeInvMakersSpec,
     proposal: {},
-  };
-
-  await offersFacet.executeOffer(committeeInvMakersOffer);
+  });
   currentState = await headValue(currentSub);
   t.is(
     // @ts-expect-error cast amount kind
@@ -277,28 +264,31 @@ test('govern offerFilter', async t => {
     0,
     'last invitation consumed, none left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44', '46']);
-  // 44 tested above
-  t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
+    'acceptEcInvitationOID',
+    'acceptVoterOID',
+  ]);
+  // acceptEcInvitationOID tested above
+  t.is(
+    currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
+    'Voter0',
+  );
 
   // Call for a vote ////////////////////////////////
 
   /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
     source: 'continuing',
-    previousOffer: 44,
+    previousOffer: 'acceptEcInvitationOID',
     invitationMakerName: 'VoteOnPauseOffers',
     invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
-    id: 45,
+  await offersFacet.executeOffer({
+    id: 'proposeVoteOnPauseOffers',
     invitationSpec: proposeInvitationSpec,
     proposal: {},
-  };
-
-  await offersFacet.executeOffer(proposalOfferSpec);
+  });
   await eventLoopIteration();
 
   // vote /////////////////////////
@@ -306,8 +296,11 @@ test('govern offerFilter', async t => {
   const committeePublic = E(zoe).getPublicFacet(economicCommittee);
 
   await offersFacet.executeOffer({
-    id: 47,
-    invitationSpec: await voteForOpenQuestion(committeePublic, '46'),
+    id: 'voteForPauseOffers',
+    invitationSpec: await voteForOpenQuestion(
+      committeePublic,
+      'acceptVoterOID',
+    ),
     proposal: {},
   });
   await eventLoopIteration();
@@ -380,7 +373,7 @@ test('recover when some withdrawals succeed and others fail', async t => {
     want: { Proceeds: make(brand.IST, 1n) },
   });
   await E(smartWallet.getOffersFacet()).executeOffer({
-    id: '1',
+    id: 'recover',
     invitationSpec: {
       source: 'contract',
       instance,
