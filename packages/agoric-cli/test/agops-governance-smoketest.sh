@@ -31,33 +31,33 @@ set -x
 
 # Accept invitation to economic committee
 COMMITTEE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm committee >|"$COMMITTEE_OFFER"
+bin/agops ec committee >|"$COMMITTEE_OFFER"
 jq ".body | fromjson" <"$COMMITTEE_OFFER"
 agoric wallet send --from "$WALLET" --offer "$COMMITTEE_OFFER"
 # verify the offerId is readable from chain history
 agoric wallet show --from "$WALLET"
-COMMITTEE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$COMMITTEE_OFFER")
+COMMITTEE_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$COMMITTEE_OFFER")
 
 # Accept invitation to be a charter member
 CHARTER_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm charter >|"$CHARTER_OFFER"
+bin/agops ec charter >|"$CHARTER_OFFER"
 jq ".body | fromjson" <"$CHARTER_OFFER"
 agoric wallet send --from "$WALLET" --offer "$CHARTER_OFFER"
 # verify the offerId is readable from chain history
 agoric wallet show --from "$WALLET"
-CHARTER_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$CHARTER_OFFER")
+CHARTER_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$CHARTER_OFFER")
 
 ### Now we have the continuing invitationMakers saved in the wallet
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposePauseOffers --substring wantMinted --psmCharterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposePauseOffers --substring wantMinted --charterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
 jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$WALLET" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m in commands/psm.js)
@@ -90,7 +90,7 @@ agoric wallet send --from "$WALLET" --offer "$PROPOSAL_OFFER"
 
 # vote on the question that was made
 VOTE_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
+bin/agops ec vote --forPosition 0 --econCommAcceptOfferId "$COMMITTEE_OFFER_ID" >|"$VOTE_OFFER"
 jq ".body | fromjson" <"$VOTE_OFFER"
 agoric wallet send --from "$WALLET" --offer "$VOTE_OFFER"
 ## wait for the election to be resolved (1m default in commands/psm.js)
