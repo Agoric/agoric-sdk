@@ -81,11 +81,12 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
 
   /**
-   * Initialize a new oracle and send an invitation to administer it.
+   * Initialize a new oracle and send an invitation to control it.
    *
    * @param {string} addr
    */
   const addOracle = async addr => {
+    trace('addOracle', addr);
     const invitation = await E(fa.creatorFacet).makeOracleInvitation(addr);
     // XXX imported from 'proposals' path
     await reserveThenDeposit(
@@ -97,6 +98,17 @@ export const start = async (zcf, privateArgs, baggage) => {
     return `added ${addr}`;
   };
 
+  /**
+   * Remove an oracle from aggregation and disable its facet.
+   *
+   * @param {string} oracleId
+   */
+  const removeOracle = async oracleId => {
+    trace('removeOracle', oracleId);
+    await E(fa.creatorFacet).removeOracle(oracleId);
+    return `removed ${oracleId}`;
+  };
+
   const governedApis = {
     /**
      * Add the specified oracles. May partially fail, such that some oracles are added and others aren't.
@@ -106,6 +118,16 @@ export const start = async (zcf, privateArgs, baggage) => {
      */
     addOracles: oracleIds => {
       return Promise.allSettled(oracleIds.map(addOracle));
+    },
+    /**
+     * Remove the specified oracles. May partially fail, such that some oracles are removed and others aren't.
+     * If the oracle was never part of the set that's a PromiseRejectedResult
+     *
+     * @param {string[]} oracleIds
+     * @returns {Promise<Array<PromiseSettledResult<string>>>}
+     */
+    removeOracles: oracleIds => {
+      return Promise.allSettled(oracleIds.map(removeOracle));
     },
   };
 

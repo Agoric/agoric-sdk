@@ -17,7 +17,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeOracleAdmin } from './priceOracleAdmin.js';
+import { makeOracleAdminKit } from './priceOracleKit.js';
 import { makeRoundsManagerKit } from './roundsManager.js';
 
 const trace = makeTracer('FlxAgg', false);
@@ -132,7 +132,7 @@ export const provideFluxAggregator = (
 
   const memoizedPath = makeStorageNodePathProvider(baggage);
 
-  /** @type {MapStore<string, *>} */
+  /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
   const oracles = makeScalarBigMapStore('oracles', {
     durable: true,
   });
@@ -211,7 +211,7 @@ export const provideFluxAggregator = (
        * @param {ZCFSeat} seat
        */
       const offerHandler = async seat => {
-        const admin = await creatorFacet.initOracle(oracleId);
+        const { oracle } = await creatorFacet.initOracle(oracleId);
         const invitationMakers = Far('invitation makers', {
           /** @param {import('./roundsManager.js').PriceRound} result */
           PushPrice(result) {
@@ -219,7 +219,7 @@ export const provideFluxAggregator = (
               /** @param {ZCFSeat} cSeat */
               async cSeat => {
                 cSeat.exit();
-                await admin.pushPrice(result);
+                await oracle.pushPrice(result);
               },
               'PushPrice',
             );
@@ -228,17 +228,18 @@ export const provideFluxAggregator = (
         seat.exit();
 
         return harden({
-          admin,
-
           invitationMakers,
+          oracle,
         });
       };
 
       return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
     },
     /** @param {string} oracleId */
-    deleteOracle: async oracleId => {
-      // FIXME how to GC and remove its powers?
+    removeOracle: async oracleId => {
+      trace('deleteOracle', oracleId);
+      const kit = oracles.get(oracleId);
+      kit.admin.disable();
       oracles.delete(oracleId);
     },
 
@@ -251,7 +252,7 @@ export const provideFluxAggregator = (
       trace('initOracle', oracleId);
       assert.typeof(oracleId, 'string');
 
-      const oracleAdmin = makeOracleAdmin(
+      const oracleKit = makeOracleAdminKit(
         harden({
           minSubmissionValue,
           maxSubmissionValue,
@@ -260,9 +261,9 @@ export const provideFluxAggregator = (
           timer: timerPresence,
         }),
       );
-      oracles.init(oracleId, oracleAdmin);
+      oracles.init(oracleId, oracleKit);
 
-      return oracleAdmin;
+      return oracleKit;
     },
 
     /**
@@ -275,7 +276,7 @@ export const provideFluxAggregator = (
      */
     async oracleRoundState(oracleId, queriedRoundId) {
       const blockTimestamp = await E(timerPresence).getCurrentTimestamp();
-      const status = await E(oracles.get(oracleId)).getStatus();
+      const status = await E(oracles.get(oracleId).oracle).getStatus();
 
       const oracleCount = oracles.getSize();
 
