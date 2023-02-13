@@ -71,7 +71,7 @@ export const makeCoreProposalBehavior = ({
       // the name under which the bundle was installed into
       // config.bundles
       const p = ref.bundleName
-        ? E(vatAdminSvc).getNamedBundleID(ref.bundleName)
+        ? E(vatAdminSvc).getBundleIDByName(ref.bundleName)
         : ref.bundleID;
       const bundleID = await p;
       return E(zoe).installBundleID(bundleID);
@@ -140,19 +140,6 @@ export const makeCoreProposalBehavior = ({
 export const makeEnactCoreProposalsFromBundleRef =
   ({ makeCoreProposalArgs, E }) =>
   async allPowers => {
-    const {
-      consume: { vatAdminSvc, zoe },
-    } = allPowers;
-    const restoreRef = async ref => {
-      // extract-proposal.js creates these records, and bundleName is
-      // the name under which the bundle was installed into
-      // config.bundles
-      const { bundleName } = ref;
-      const bundleID = await E(vatAdminSvc).getBundleIDByName(bundleName);
-      const install = await E(zoe).installBundleID(bundleID);
-      return install;
-    };
-
     await Promise.all(
       makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
         const subBehavior = makeCoreProposalBehavior({
@@ -160,7 +147,6 @@ export const makeEnactCoreProposalsFromBundleRef =
           getManifestCall: call,
           overrideManifest,
           E,
-          restoreRef,
         });
         return subBehavior(allPowers);
       }),
