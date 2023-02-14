@@ -12,6 +12,11 @@ export const shape = {
   },
 
   // invitations
+  AgoricContractInvitationSpec: {
+    source: 'agoricContract',
+    instancePath: M.arrayOf(M.string()),
+    callPipe: M.arrayOf(M.splitArray([M.string()], [M.arrayOf(M.any())])),
+  },
   ContractInvitationSpec: M.splitRecord(
     {
       source: 'contract',
