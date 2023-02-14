@@ -160,6 +160,7 @@ export const defaultProposalBuilder = async (
       anchorDecimalPlaces = '6',
       anchorKeyword = 'AUSD',
       anchorProposedName = anchorKeyword,
+      initialPricePct = undefined,
     } = {},
     econCommitteeOptions: {
       committeeSize: econCommitteeSize = env.ECON_COMMITTEE_SIZE || '3',
@@ -173,6 +174,7 @@ export const defaultProposalBuilder = async (
   const anchorOptions = anchorDenom && {
     denom: anchorDenom,
     decimalPlaces: parseInt(anchorDecimalPlaces, 10),
+    initialPricePct: optBigInt(initialPricePct),
     keyword: anchorKeyword,
     proposedName: anchorProposedName,
   };

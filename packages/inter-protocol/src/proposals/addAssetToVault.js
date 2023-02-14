@@ -15,6 +15,7 @@ export * from './startPSM.js';
  * @property {string} [proposedName]
  * @property {string} keyword
  * @property {string} oracleBrand
+ * @property {number} [initialPricePct]
  */
 
 /**
@@ -160,7 +161,7 @@ export const registerScaledPriceAuthority = async (
   { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
   { options: { interchainAssetOptions } },
 ) => {
-  const { keyword, oracleBrand } = interchainAssetOptions;
+  const { keyword, oracleBrand, initialPricePct } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
   assert.typeof(oracleBrand, 'string');
 
@@ -215,12 +216,16 @@ export const registerScaledPriceAuthority = async (
     10n ** BigInt(decimalPlacesRun),
     runBrand,
   );
+  const initialPrice = initialPricePct
+    ? makeRatio(BigInt(initialPricePct), interchainBrand, 100n, runBrand)
+    : undefined;
 
   const terms = await deeplyFulfilledObject(
     harden({
       sourcePriceAuthority,
       scaleIn,
       scaleOut,
+      initialPrice,
     }),
   );
   const { publicFacet } = E.get(
