@@ -18,7 +18,7 @@ import { UnguardedHelperI } from '../typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
-/** @typedef {import('./priceOracleAdmin.js').OracleStatus} OracleStatus */
+/** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
  * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
@@ -76,8 +76,12 @@ const validRoundId = roundId => {
  */
 
 /**
+ * @typedef {IssuerRecord<'set'> & { mint: Mint<'set'> }} QuoteKit
+ */
+
+/**
  * @typedef {Readonly<import('./fluxAggregator.js').ChainlinkConfig & {
- * quoteKit: IssuerRecord<'set'> & { mint: ERef<Mint<'set'>> },
+ * quoteKit: QuoteKit,
  * answerPublisher: Publisher<void>,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,

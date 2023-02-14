@@ -51,12 +51,11 @@ const makeProposal = (brands, opts) => {
 };
 
 /**
- * @param {Instance} instance
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, wantMinted: number, giveCollateral: number }} opts
  * @returns {BridgeAction}
  */
-export const makeOpenSpendAction = (instance, brands, opts) => {
+export const makeOpenSpendAction = (brands, opts) => {
   const proposal = makeProposal(brands, opts);
 
   console.warn('vaults open give', proposal.give);
@@ -66,13 +65,19 @@ export const makeOpenSpendAction = (instance, brands, opts) => {
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
   // mustMatch(harden(proposal), ProposalShape);
 
+  // XXX only one supported yet
+  const collateralBrand = brands.IbcATOM;
+
   /** @type {OfferSpec} */
   const offer = {
     id: opts.offerId,
     invitationSpec: {
-      source: 'contract',
-      instance,
-      publicInvitationMaker: 'makeVaultInvitation',
+      source: 'agoricContract',
+      instancePath: ['VaultFactory'],
+      callPipe: [
+        ['getCollateralManager', [collateralBrand]],
+        ['makeVaultInvitation'],
+      ],
     },
     proposal,
   };

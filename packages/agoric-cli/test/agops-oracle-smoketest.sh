@@ -37,7 +37,7 @@ ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
 jq ".body | fromjson" <"$ORACLE_OFFER"
 agoric wallet send --offer "$ORACLE_OFFER" --from "$WALLET" --keyring-backend="test"
-ORACLE_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
+ORACLE_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 # verify the offerId is readable from chain history
 agoric wallet show --from "$WALLET" --keyring-backend="test"
@@ -47,7 +47,7 @@ ORACLE_OFFER=$(mktemp -t agops.XXX)
 bin/agops oracle accept >|"$ORACLE_OFFER"
 jq ".body | fromjson" <"$ORACLE_OFFER"
 agoric wallet send --offer "$ORACLE_OFFER" --from "$WALLET2" --keyring-backend="test"
-ORACLE2_OFFER_ID=$(jq ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
+ORACLE2_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 ### Now we have the continuing invitationMakers saved in the wallets
 
