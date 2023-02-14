@@ -80,7 +80,8 @@ test.before(
   },
 );
 
-test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
+/** @param {ExecutionContext} t */
+const makeScenario = async t => {
   const timer = buildManualTimer(t.log);
   const makeSourcePrice = (valueIn, valueOut) =>
     makeRatio(valueOut, t.context.usdBrand, valueIn, t.context.atomBrand);
@@ -112,6 +113,13 @@ test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
   );
 
   const pa = await E(scaledPrice.publicFacet).getPriceAuthority();
+
+  return { timer, sourcePriceAuthority, makeSourcePrice, pa };
+};
+
+test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
+  const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
+    await makeScenario(t);
 
   const notifier = E(pa).makeQuoteNotifier(
     AmountMath.make(t.context.ibcAtom.brand, 10n ** 6n),
@@ -176,37 +184,8 @@ test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
 });
 
 test('mutableQuoteWhenLT: brands in/out match', /** @param {ExecutionContext} t */ async t => {
-  const timer = buildManualTimer(t.log);
-  const makeSourcePrice = (valueIn, valueOut) =>
-    makeRatio(valueOut, t.context.usdBrand, valueIn, t.context.atomBrand);
-  const sourcePriceAuthority = makeManualPriceAuthority({
-    actualBrandIn: t.context.atomBrand,
-    actualBrandOut: t.context.usdBrand,
-    initialPrice: makeSourcePrice(10n ** 5n, 35_6100n),
-    timer,
-  });
-
-  const scaledPrice = await E(t.context.zoe).startInstance(
-    t.context.scaledPriceInstallation,
-    undefined,
-    {
-      sourcePriceAuthority,
-      scaleIn: makeRatio(
-        10n ** 5n,
-        t.context.atomBrand,
-        10n ** 6n,
-        t.context.ibcAtom.brand,
-      ),
-      scaleOut: makeRatio(
-        10n ** 4n,
-        t.context.usdBrand,
-        10n ** 6n,
-        t.context.run.brand,
-      ),
-    },
-  );
-
-  const pa = await E(scaledPrice.publicFacet).getPriceAuthority();
+  const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
+    await makeScenario(t);
 
   const mutableQuote = E(pa).mutableQuoteWhenLT(
     AmountMath.make(t.context.ibcAtom.brand, 10n ** 6n),
