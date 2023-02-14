@@ -5,7 +5,7 @@
 /* global fetch, process */
 import { Command } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { makeRpcUtils } from '../lib/rpc.js';
+import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import {
   lookupOfferIdForVault,
   makeAdjustSpendAction,
@@ -13,12 +13,30 @@ import {
   makeOpenSpendAction,
 } from '../lib/vaults.js';
 import { getCurrent, outputAction } from '../lib/wallet.js';
+import { asPercent, makeAmountFormatter } from '../lib/format.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
 
 const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
+
+/**
+ * @param {number} manager
+ */
+const getGovernanceState = async manager => {
+  const last = xs => xs[xs.length - 1];
+
+  const govContent = await vstorage.readLatest(
+    `published.vaultFactory.manager${manager}.governance`,
+  );
+  assert(govContent, 'no gov content');
+  const { current: governance } = last(
+    storageHelper.unserializeTxt(govContent, fromBoard),
+  );
+
+  return { governance };
+};
 
 /**
  *
@@ -56,6 +74,35 @@ export const makeVaultsCommand = async logger => {
       for (const path of vaultStoragePaths) {
         process.stdout.write(path);
         process.stdout.write('\n');
+      }
+    });
+
+  vaults
+    .command('info')
+    .description('show governance parameters of a vault type')
+    .requiredOption('--manager [N]', 'manager number', s => Number(s), 0)
+    .action(async ({ manager }) => {
+      const { entries, values } = Object;
+      /** @type {import('../lib/format.js').AssetDescriptor[]} */
+      // @ts-expect-error Brand vs. RpcRemote
+      const assets = values(agoricNames.vbankAsset).map(d => ({
+        ...d,
+        petname: d.issuerName,
+      }));
+      const fmtAmt = makeAmountFormatter(assets);
+      console.log(`manager${manager} governance parameters:`);
+      const { governance } = await getGovernanceState(manager);
+      for (const [name, { type, value }] of entries(governance)) {
+        switch (type) {
+          case 'amount':
+            console.log(name, fmtAmt(value));
+            break;
+          case 'ratio':
+            console.log(name, asPercent(value), '%');
+            break;
+          default:
+            console.log(name, type, value);
+        }
       }
     });
 
