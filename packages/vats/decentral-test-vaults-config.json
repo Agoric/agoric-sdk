@@ -29,7 +29,8 @@
         {
           "interchainAssetOptions": {
             "denom": "ibc/toyatom",
-            "decimalPlaces": 4,
+            "decimalPlaces": 6,
+            "initialPricePct": 1234,
             "keyword": "IbcATOM",
             "oracleBrand": "ATOM",
             "proposedName": "ATOM"
