@@ -3,7 +3,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import {
@@ -104,6 +104,87 @@ export const makeVaultsCommand = async logger => {
             console.log(name, type, value);
         }
       }
+    });
+
+  vaults
+    .command('proposeParamChange')
+    .description('propose to change a parameter')
+    .option(
+      '--offerId [string]',
+      'id of this offer (optional)',
+      String,
+      `proposeParamChange-${Date.now()}`,
+    )
+    .requiredOption('--manager [N]', 'manager number', s => Number(s), 0)
+    .requiredOption(
+      '--previousOfferId [string]',
+      'offer using psm charter invitation',
+    )
+    .addOption(
+      new Option('--param <param>', 'parameter').makeOptionMandatory().choices([
+        // TODO: amounts: 'DebtLimit'
+        'InterestRate',
+        'LiquidationMargin',
+        'LiquidationPadding',
+        'LiquidationPenalty',
+        'LoanFee',
+      ]),
+    )
+    .requiredOption(
+      '--percent <percent>',
+      'ratio as pecent (up to 2 decimals)',
+      Number,
+    )
+    .option(
+      '--deadline [minutes]',
+      'minutes from now to close the vote',
+      Number,
+      1,
+    )
+    .action(async function (opts) {
+      const last = xs => xs[xs.length - 1];
+
+      const metrics = await vstorage
+        .readLatest(`published.vaultFactory.manager${opts.manager}.metrics`)
+        .then(content =>
+          last(storageHelper.unserializeTxt(content, fromBoard)),
+        );
+      // console.debug('collateral brand is in metrics', metrics);
+      const {
+        totalCollateral: { brand: collateralBrand },
+      } = metrics;
+
+      const istBrand = agoricNames.brand.IST;
+      const pctValue = harden({
+        numerator: { brand: istBrand, value: BigInt(opts.percent * 100) },
+        denominator: { brand: istBrand, value: 100_00n },
+      });
+
+      /** @type {import('../lib/psm.js').OfferSpec} */
+      const offer = {
+        id: opts.offerId,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: opts.previousOfferId,
+          invitationMakerName: 'VoteOnParamChange',
+        },
+        proposal: {},
+        offerArgs: {
+          params: {
+            [opts.param]: pctValue,
+          },
+          instance: agoricNames.instance.VaultFactory,
+          deadline: BigInt(opts.deadline * 60 + Math.round(Date.now() / 1000)),
+          path: { paramPath: { key: { collateralBrand } } },
+        },
+      };
+
+      outputAction({
+        method: 'executeOffer',
+        offer,
+      });
+
+      console.warn('Now execute the prepared offer');
     });
 
   vaults
