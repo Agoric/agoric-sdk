@@ -376,7 +376,7 @@ const setupServices = async (
   const [
     governorInstance,
     vaultFactory, // creator
-    lender,
+    vfPublic,
     aethVaultManager,
     priceAuthority,
     aethCollateralManager,
@@ -391,7 +391,7 @@ const setupServices = async (
   trace(t, 'pa', {
     governorInstance,
     vaultFactory,
-    lender,
+    vfPublic,
     priceAuthority,
   });
 
@@ -402,8 +402,10 @@ const setupServices = async (
       governorCreatorFacet,
     },
     v: {
+      // name for backwards compatiiblity
+      lender: E(vfPublic).getCollateralManager(aeth.brand),
       vaultFactory,
-      lender,
+      vfPublic,
       aethVaultManager,
       aethCollateralManager,
     },
@@ -854,8 +856,8 @@ test('vaultFactory display collateral', async t => {
     500n,
   );
 
-  const { lender } = services.vaultFactory;
-  const collaterals = await E(lender).getCollaterals();
+  const { vfPublic } = services.vaultFactory;
+  const collaterals = await E(vfPublic).getCollaterals();
   t.deepEqual(collaterals[0], {
     brand: aeth.brand,
     liquidationMargin: makeRatio(105n, run.brand),
@@ -1517,7 +1519,7 @@ test('transfer vault', async t => {
       debt: debtAmount,
       interest: aliceFinish.value.debtSnapshot.interest,
     },
-    description: 'TransferVault',
+    description: 'manager0: TransferVault',
     locked: collateralAmount,
     vaultState: 'active',
   });
@@ -2195,8 +2197,7 @@ test('loan too small - MinInitialDebt', async t => {
     }),
   );
   await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
-    message:
-      /The request must be for at least ".50000n.". ".5000n." is too small/,
+    message: /Proposed debt.*exceeds max.*1428n/,
   });
 });
 
@@ -2491,9 +2492,9 @@ test('director notifiers', async t => {
     500n,
   );
 
-  const { lender, vaultFactory } = services.vaultFactory;
+  const { vfPublic, vaultFactory } = services.vaultFactory;
 
-  const m = await metricsTracker(t, lender);
+  const m = await metricsTracker(t, vfPublic);
 
   await m.assertInitial({
     collaterals: [aeth.brand],
@@ -2859,9 +2860,9 @@ test('governance publisher', async t => {
     undefined,
     500n,
   );
-  const { lender } = services.vaultFactory;
+  const { vfPublic } = services.vaultFactory;
   const directorGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getElectorateSubscription(),
+    E(vfPublic).getElectorateSubscription(),
   );
   let {
     value: { current },
@@ -2875,7 +2876,7 @@ test('governance publisher', async t => {
   t.is(current.EndorsedUI.type, 'string');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getSubscription({
+    E(vfPublic).getSubscription({
       collateralBrand: aeth.brand,
     }),
   );
