@@ -1,5 +1,7 @@
 import otel, { SpanStatusCode } from '@opentelemetry/api';
 
+import { makeMarshal, Remotable } from '@endo/marshal';
+
 import { makeLegacyMap } from '@agoric/store';
 import {
   makeKVStringStore,
@@ -18,6 +20,8 @@ import {
 /** @typedef {import('@opentelemetry/api').SpanAttributes} SpanAttributes */
 
 const { assign } = Object;
+
+const sink = harden(() => {});
 
 const replacer = (_key, value) => {
   if (typeof value === 'bigint') {
@@ -106,6 +110,48 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   const dbTransactionManager = makeKVDatabaseTransactionManager(db);
   const kernelPromiseToSendingCause = makeKVStringStore('kernelPromise', db);
 
+  /** @type {Map<string, Promise | object>} */
+  const valCache = new Map();
+
+  const slotToVal = (kref, iface) => {
+    let val = valCache.get(kref);
+    if (val) {
+      return val;
+    }
+
+    if (iface) {
+      if (!iface.startsWith('Alleged: ') && iface !== 'Remotable') {
+        iface = `Alleged: ${iface}`;
+      }
+    }
+
+    kref[0] === 'k' || assert.fail(`Unexpected non-kernel ref ${kref}`);
+    val = harden(
+      kref.startsWith('kp')
+        ? new Promise(sink)
+        : Remotable(iface || 'Remotable'),
+    );
+    valCache.set(kref, val);
+
+    return val;
+  };
+
+  const { unserialize: rawUnserialize } = makeMarshal(undefined, slotToVal, {
+    errorTagging: 'off',
+    serializeBodyFormat: 'smallcaps',
+  });
+
+  /** @param {import('@agoric/swingset-vat').SwingSetCapData} data */
+  const unserialize = data => {
+    try {
+      const body = rawUnserialize(data);
+      const slots = [...valCache.keys()];
+      return { body, slots };
+    } finally {
+      valCache.clear();
+    }
+  };
+
   /**
    * @typedef {{
    *   method: string;
@@ -123,12 +169,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     /** @type {string[]} */
     let slots;
     if ('methargs' in msg) {
-      [method, args] = JSON.parse(msg.methargs.body);
-      slots = msg.methargs.slots;
+      ({
+        body: [method, args],
+        slots,
+      } = unserialize(msg.methargs));
     } else {
       method = msg.method;
-      args = JSON.parse(msg.args.body);
-      slots = msg.args.slots;
+      ({ body: args, slots } = unserialize(msg.args));
     }
     slots ||= [];
     const { result } = msg;
