@@ -144,6 +144,8 @@ function makeSupervisorSyscall(syscallToManager, workerCanBlock) {
 harden(makeSupervisorSyscall);
 export { makeSupervisorSyscall };
 
+const levelToNum = harden({ debug: 1, log: 2, info: 3, warn: 4, error: 5 });
+
 /**
  * Create a vat console from a log stream maker.
  *
@@ -151,14 +153,18 @@ export { makeSupervisorSyscall };
  * See https://github.com/Agoric/agoric-sdk/issues/2146
  *
  * @param {(level: string) => (...args: any[]) => void} makeLog
+ * @param {'debug' | 'log' | 'info' | 'warn' | 'error' } [minLevel]
  */
-function makeVatConsole(makeLog) {
+function makeVatConsole(makeLog, minLevel) {
+  const lo = minLevel ? levelToNum[minLevel] : 0;
+  const noop = () => {};
+
   return harden({
-    debug: makeLog('debug'),
-    log: makeLog('log'),
-    info: makeLog('info'),
-    warn: makeLog('warn'),
-    error: makeLog('error'),
+    debug: lo <= levelToNum.debug ? makeLog('debug') : noop,
+    log: lo <= levelToNum.log ? makeLog('log') : noop,
+    info: lo <= levelToNum.info ? makeLog('info') : noop,
+    warn: lo <= levelToNum.warn ? makeLog('warn') : noop,
+    error: lo <= levelToNum.error ? makeLog('error') : noop,
   });
 }
 
