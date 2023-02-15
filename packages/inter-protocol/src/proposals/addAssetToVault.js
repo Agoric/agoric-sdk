@@ -280,7 +280,10 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, debtLimitValue),
-    // the rest of these are arbitrary but plausible, TBD by gov cttee
+    // The rest of these we use safe defaults.
+    // In production they will be governed by the Econ Committee.
+    // Product deployments are also expected to have a low debtLimitValue at the outset,
+    // limiting the impact of these defaults.
     liquidationPadding: makeRatio(25n, stable),
     liquidationMargin: makeRatio(150n, stable),
     loanFee: makeRatio(50n, stable, 10_000n),
