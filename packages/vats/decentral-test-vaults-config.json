@@ -30,7 +30,7 @@
           "interchainAssetOptions": {
             "denom": "ibc/toyatom",
             "decimalPlaces": 6,
-            "initialPricePct": 1234,
+            "initialPrice": 12.34,
             "keyword": "IbcATOM",
             "oracleBrand": "ATOM",
             "proposedName": "ATOM"
@@ -142,7 +142,7 @@
             "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
             "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
             "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
-          } 
+          }
         }
       ]
     }
