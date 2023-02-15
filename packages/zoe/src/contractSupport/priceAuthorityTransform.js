@@ -61,17 +61,13 @@ export const makePriceAuthorityTransform = async ({
   };
 
   /**
-   * @param {Amount<"nat">} amountIn
-   * @param {Amount<"nat">} amountOut
-   * @param {object} [opts]
-   * @param {*} [opts.timer]
-   * @param {unknown} [opts.timestamp]
+   * @param {Amount<'nat'>} amountIn
+   * @param {Amount<'nat'>} amountOut
+   * @param {import('@agoric/time/src/types.js').TimerService} timer
+   * @param {import('@agoric/time').Timestamp} timestamp
+   * @returns {Promise<PriceQuote>}
    */
-  const oneQuote = async (amountIn, amountOut, { timer, timestamp } = {}) => {
-    timer = await (timer ||
-      E(sourcePriceAuthority).getTimerService(sourceBrandIn, sourceBrandOut));
-    timestamp = await (timestamp || E(timer).getCurrentTimestamp());
-
+  const makeQuote = async (amountIn, amountOut, timer, timestamp) => {
     const quoteAmount = {
       brand: quoteBrand,
       value: [{ amountIn, amountOut, timer, timestamp }],
@@ -115,10 +111,7 @@ export const makePriceAuthorityTransform = async ({
     const amountIn = transformSourceAmountIn(sourceAmountIn);
     const amountOut = transformSourceAmountOut(sourceAmountOut);
 
-    return oneQuote(amountIn, amountOut, {
-      timer,
-      timestamp,
-    });
+    return makeQuote(amountIn, amountOut, timer, timestamp);
   };
 
   /**
@@ -211,15 +204,31 @@ export const makePriceAuthorityTransform = async ({
 
       const initialQuote =
         initialPrice &&
-        oneQuote(initialPrice.numerator, initialPrice.denominator).then(value =>
-          harden({ value, updateCount: 0n }),
-        );
+        E(sourcePriceAuthority)
+          .getTimerService(sourceBrandIn, sourceBrandOut)
+          .then(timer =>
+            E(timer)
+              .getCurrentTimestamp()
+              .then(timestamp => /** @type {const} */ ([timer, timestamp])),
+          )
+          .then(([timer, timestamp]) =>
+            makeQuote(
+              initialPrice.numerator,
+              initialPrice.denominator,
+              timer,
+              timestamp,
+            ),
+          )
+          .then(value => harden({ value, updateCount: 0n }));
 
       // Wrap our underlying notifier with scaled quotes.
       const scaledBaseNotifier = harden({
         async getUpdateSince(updateCount = -1n) {
-          if (updateCount === -1n && initialQuote) {
-            return initialQuote;
+          if (initialQuote && updateCount === -1n) {
+            return initialQuote.then(q => {
+              console.log('DEBUG q', q);
+              return q;
+            });
           }
 
           // We use the same updateCount as our underlying notifier.
