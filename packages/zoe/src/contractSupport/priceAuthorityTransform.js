@@ -209,22 +209,18 @@ export const makePriceAuthorityTransform = async ({
         sourceBrandOut,
       );
 
-      let initialQuote;
-      let pastInitialQuote = false;
+      const initialQuote =
+        initialPrice &&
+        oneQuote(initialPrice.numerator, initialPrice.denominator).then(value =>
+          harden({ value, updateCount: 0n }),
+        );
 
       // Wrap our underlying notifier with scaled quotes.
       const scaledBaseNotifier = harden({
         async getUpdateSince(updateCount = -1n) {
-          if (initialPrice && updateCount === -1n && !pastInitialQuote) {
-            if (!initialQuote) {
-              initialQuote = oneQuote(
-                initialPrice.numerator,
-                initialPrice.denominator,
-              ).then(value => harden({ value, updateCount: 0n }));
-            }
+          if (updateCount === -1n && initialQuote) {
             return initialQuote;
           }
-          pastInitialQuote = true;
 
           // We use the same updateCount as our underlying notifier.
           const record = await E(notifier).getUpdateSince(updateCount);
