@@ -882,7 +882,10 @@ export default function buildKernel(
 
     // stopVat succeeded. finish cleanup on behalf of the worker.
 
-    // TODO: walk c-list for all decided promises, reject them all #6694
+    // walk c-list for all decided promises, reject them all
+    for (const kpid of vatKeeper.getDecidedPromises()) {
+      doResolve(vatID, [[kpid, true, disconnectObjectCD]]);
+    }
 
     // TODO: getNonDurableObjectExports, synthesize abandonVSO,
     // execute it as if it were a syscall. (maybe distinguish between

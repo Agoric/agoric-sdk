@@ -33,25 +33,6 @@ import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 const rootSlot = makeVatSlot('object', true, 0n);
 
-function rejectAllPromises({ deciderVPIDs, syscall, disconnectObjectCapData }) {
-  // Pretend that userspace rejected all non-durable promises. We
-  // basically do the same thing that `thenReject(p, vpid)(rejection)`
-  // would have done, but we skip ahead to the syscall.resolve
-  // part. The real `thenReject` also does pRec.reject(), which would
-  // give control to userspace (who might have re-imported the promise
-  // and attached a .then to it), and stopVat() must not allow
-  // userspace to gain agency.
-
-  const rejections = deciderVPIDs.map(vpid => [
-    vpid,
-    true,
-    disconnectObjectCapData,
-  ]);
-  if (rejections.length) {
-    syscall.resolve(rejections);
-  }
-}
-
 function identifyExportedRemotables(
   vrefSet,
   { exportedRemotables, valToSlot },
@@ -298,11 +279,6 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
 // END: the preceding functions aren't ready for use yet
 
 export async function releaseOldState(tools) {
-  // First, pretend that userspace has rejected all non-durable
-  // promises, so we'll resolve them into the kernel (and retire their
-  // IDs).
-
-  rejectAllPromises(tools);
 
   // The next step is to pretend that the kernel has dropped all
   // non-durable exports: both the in-RAM Remotables and the on-disk
