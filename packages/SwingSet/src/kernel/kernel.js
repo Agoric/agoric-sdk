@@ -823,6 +823,11 @@ export default function buildKernel(
     const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
     const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
 
+    // TODO: send BOYD to the vat, to give it one last chance to clean
+    // up, drop imports, and delete durable data. If we ever have a
+    // vat that is so broken it can't do BOYD, we can make that
+    // optional. #7001
+
     // make arguments for vat-vat-admin.js vatUpgradeCallback()
     /**
      * @param {SwingSetCapData} _errorCD
@@ -873,8 +878,17 @@ export default function buildKernel(
       return results;
     }
 
-    // stopVat succeeded, so now we stop the worker, delete the
-    // transcript and any snapshot
+    // stopVat succeeded. finish cleanup on behalf of the worker.
+
+    // TODO: walk c-list for all decided promises, reject them all #6694
+
+    // TODO: getNonDurableObjectExports, synthesize abandonVSO,
+    // execute it as if it were a syscall. (maybe distinguish between
+    // reachable/recognizable exports, abandon the reachable, retire
+    // the recognizable) #6696
+
+    // cleanup done, now we stop the worker, delete the transcript and
+    // any snapshot
 
     await vatWarehouse.resetWorker(vatID);
     const source = { bundleID };
