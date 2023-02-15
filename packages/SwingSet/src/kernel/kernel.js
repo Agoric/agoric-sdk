@@ -257,7 +257,8 @@ export default function buildKernel(
     // check will report 'false'. That's fine, there's no state to
     // clean up.
     if (kernelKeeper.vatIsAlive(vatID)) {
-      const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
+      const promisesToReject = kernelKeeper.getDecidedPromises(vatID);
+      kernelKeeper.cleanupAfterTerminatedVat(vatID);
       for (const kpid of promisesToReject) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
       }
@@ -818,8 +819,9 @@ export default function buildKernel(
       upgradeMessage,
       incarnationNumber: vatKeeper.getIncarnationNumber(),
     };
+    const disconnectObjectCD = kser(disconnectObject);
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
-    const kd1 = harden(['stopVat', kser(disconnectObject)]);
+    const kd1 = harden(['stopVat', disconnectObjectCD]);
     const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
     const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
 
