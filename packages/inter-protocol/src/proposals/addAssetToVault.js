@@ -15,6 +15,7 @@ export * from './startPSM.js';
  * @property {string} [proposedName]
  * @property {string} keyword
  * @property {string} oracleBrand
+ * @property {number} [initialPricePct]
  */
 
 /**
@@ -160,7 +161,7 @@ export const registerScaledPriceAuthority = async (
   { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
   { options: { interchainAssetOptions } },
 ) => {
-  const { keyword, oracleBrand } = interchainAssetOptions;
+  const { keyword, oracleBrand, initialPricePct } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
   assert.typeof(oracleBrand, 'string');
 
@@ -215,12 +216,16 @@ export const registerScaledPriceAuthority = async (
     10n ** BigInt(decimalPlacesRun),
     runBrand,
   );
+  const initialPrice = initialPricePct
+    ? makeRatio(BigInt(initialPricePct), interchainBrand, 100n, runBrand)
+    : undefined;
 
   const terms = await deeplyFulfilledObject(
     harden({
       sourcePriceAuthority,
       scaleIn,
       scaleOut,
+      initialPrice,
     }),
   );
   const { publicFacet } = E.get(
@@ -270,11 +275,12 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, debtLimitValue),
-    // the rest of these are arbitrary, TBD by gov cttee
-    interestRate: makeRatio(1n, stable),
-    liquidationMargin: makeRatio(1n, stable),
+    // the rest of these are arbitrary but plausible, TBD by gov cttee
+    liquidationPadding: makeRatio(25n, stable),
+    liquidationMargin: makeRatio(150n, stable),
+    loanFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
-    loanFee: makeRatio(1n, stable),
+    interestRate: makeRatio(1n, stable),
   });
 };
 

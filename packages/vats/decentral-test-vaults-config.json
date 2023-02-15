@@ -1,24 +1,42 @@
 {
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
-  "snapshotInterval": 1000,
   "coreProposals": [
     "@agoric/vats/scripts/init-core.js",
     {
       "module": "@agoric/inter-protocol/scripts/init-core.js",
-      "entrypoint": "committeeProposalBuilder",
+      "entrypoint": "defaultProposalBuilder",
       "args": [
         {
           "econCommitteeOptions": {
             "committeeSize": 3
-          }
+          },
+          "endorsedUi": "bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e",
+          "minInitialPoolLiquidity": "0"
         }
       ]
-    },  
+    },
+    "@agoric/pegasus/scripts/init-core.js",
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
       "entrypoint": "psmGovernanceBuilder",
       "args": []
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "interchainAssetOptions": {
+            "denom": "ibc/toyatom",
+            "decimalPlaces": 6,
+            "initialPricePct": 1234,
+            "keyword": "IbcATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
+          }
+        }
+      ]
     },
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
@@ -91,6 +109,31 @@
       ]
     },
     {
+      "module": "@agoric/inter-protocol/scripts/price-feed-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": [
+            "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
       "module": "@agoric/inter-protocol/scripts/invite-committee-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
@@ -99,11 +142,11 @@
             "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
             "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
             "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
-          }
+          } 
         }
       ]
     }
-  ],  
+  ],
   "vats": {
     "bootstrap": {
       "sourceSpec": "@agoric/vats/src/core/boot.js",
@@ -113,23 +156,29 @@
     }
   },
   "bundles": {
-    "bank": {
-      "sourceSpec": "@agoric/vats/src/vat-bank.js"
-    },
     "centralSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
-    "mints": {
-      "sourceSpec": "@agoric/vats/src/vat-mints.js"
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    },
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
+    "chainStorage": {
+      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    },
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
+    },
+    "mints": {
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
     },
     "network": {
       "sourceSpec": "@agoric/vats/src/vat-network.js"
@@ -137,14 +186,17 @@
     "priceAuthority": {
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
     },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
-    "chainStorage": {
-      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    "sharing": {
+      "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
-    "zcf": {
-      "sourceSpec": "@agoric/zoe/contractFacet.js"
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
     },
     "zoe": {
       "sourceSpec": "@agoric/vats/src/vat-zoe.js"

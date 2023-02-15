@@ -357,6 +357,8 @@ export const setupReserve = async ({
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {LoanTiming} [config.loanParams]
+ * @param {object} [config.options]
+ * @param {string} [config.options.endorsedUi]
  * @param {bigint} minInitialDebt
  */
 export const startVaultFactory = async (
@@ -392,6 +394,7 @@ export const startVaultFactory = async (
       chargingPeriod: SECONDS_PER_HOUR,
       recordingPeriod: SECONDS_PER_DAY,
     },
+    options: { endorsedUi } = {},
   } = {},
   minInitialDebt = 5_000_000n,
 ) => {
@@ -439,6 +442,7 @@ export const startVaultFactory = async (
       minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
       bootstrapPaymentValue: 0n,
       shortfallInvitationAmount,
+      endorsedUi,
     },
   );
 

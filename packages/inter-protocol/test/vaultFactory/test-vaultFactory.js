@@ -136,6 +136,7 @@ test.before(async t => {
       recordingPeriod: 6n,
     },
     minInitialDebt: 50n,
+    endorsedUi: undefined,
     rates: defaultParamValues(run.brand),
     aethInitialLiquidity: aeth.make(300n),
   };
@@ -303,6 +304,7 @@ const setupServices = async (
     aeth,
     loanTiming,
     minInitialDebt,
+    endorsedUi,
     rates,
     aethInitialLiquidity,
   } = t.context;
@@ -355,7 +357,11 @@ const setupServices = async (
   } = space;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
-  await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
+  await startVaultFactory(
+    space,
+    { loanParams: loanTiming, options: { endorsedUi } },
+    minInitialDebt,
+  );
 
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
@@ -2851,6 +2857,7 @@ test('governance publisher', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
+  t.context.endorsedUi = 'abracadabra';
 
   const services = await setupServices(
     t,
@@ -2874,6 +2881,7 @@ test('governance publisher', async t => {
   t.is(current.MinInitialDebt.type, 'amount');
   t.is(current.ShortfallInvitation.type, 'invitation');
   t.is(current.EndorsedUI.type, 'string');
+  t.is(current.EndorsedUI.value, 'abracadabra');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
     E(vfPublic).getSubscription({

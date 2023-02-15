@@ -14,6 +14,7 @@ import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTr
  * @property {ERef<PriceAuthority>} sourcePriceAuthority
  * @property {Ratio} scaleIn - sourceAmountIn:targetAmountIn
  * @property {Ratio} scaleOut - sourceAmountOut:targetAmountOut
+ * @property {Ratio} [initialPrice] - targetAmountIn:targetAmountOut
  */
 
 /**
@@ -28,7 +29,8 @@ export const start = async (
   zcf,
   { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
 ) => {
-  const { sourcePriceAuthority, scaleIn, scaleOut } = zcf.getTerms();
+  const { sourcePriceAuthority, scaleIn, scaleOut, initialPrice } =
+    zcf.getTerms();
 
   const {
     numerator: { brand: sourceBrandIn },
@@ -46,6 +48,7 @@ export const start = async (
     sourceBrandOut,
     actualBrandIn,
     actualBrandOut,
+    initialPrice,
     // It's hard to make a good guess as to the best rounding strategy for this
     // transformation, but we make sure that the amount in is generous and the
     // amount out is conservative.

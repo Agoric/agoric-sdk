@@ -74,7 +74,7 @@ test.skip('integration test: smart wallet provision', async t => {
     t.log('Fund pool with USDC');
     await walletTool.fundAccount(
       provisionPoolModuleAccount,
-      `${234e6}ibc/usdc1234`,
+      `${234e6}ibc/toyusdc`,
     );
     t.log('Fund user account with some BLD');
     await walletTool.fundAccount(soloAddr, `${123e6}ubld`);

@@ -25,6 +25,7 @@ import {
   LIQUIDATION_INSTALL_KEY,
   LIQUIDATION_TERMS_KEY,
   MIN_INITIAL_DEBT_KEY,
+  ENDORSED_UI_KEY,
 } from './params.js';
 import { prepareVaultDirector } from './vaultDirector.js';
 
@@ -76,6 +77,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     [LIQUIDATION_INSTALL_KEY]: { value: liqInstall },
     [LIQUIDATION_TERMS_KEY]: { value: liqTerms },
     [MIN_INITIAL_DEBT_KEY]: { value: minInitialDebt },
+    [ENDORSED_UI_KEY]: { value: endorsedUi },
   } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
@@ -86,6 +88,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     liqTerms,
     minInitialDebt,
     initialShortfallInvitation,
+    endorsedUi,
   );
 
   assertElectorateMatches(

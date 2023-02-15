@@ -72,7 +72,7 @@ agoric wallet send --offer "$SWAP_OFFER" --from "$WALLET" --keyring-backend="tes
 # chain logs should read like:
 # vat: v15: walletFactory: { wallet: Object [Alleged: SmartWallet self] {}, actionCapData: { body: '{"method":"executeOffer","offer":{"id":1663182246304,"invitationSpec":{"source":"contract","instance":{"@qclass":"slot","index":0},"publicInvitationMaker":"makeWantMintedInvitation"},"proposal":{"give":{"In":{"brand":{"@qclass":"slot","index":1},"value":{"@qclass":"bigint","digits":"10002"}}},"want":{"Out":{"brand":{"@qclass":"slot","index":2},"value":{"@qclass":"bigint","digits":"10000"}}}}}}', slots: [ 'board04312', 'board0223', 'board0639' ] } }
 # vat: v15: wallet agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf starting executeOffer 1663182246304
-# vat: v14: bank balance update { address: 'agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf', amount: '1121979996', denom: 'ibc/usdc1234' }
+# vat: v14: bank balance update { address: 'agoric109q3uc0xt8aavne94rgd6rfeucavrx924e0ztf', amount: '1121979996', denom: 'ibc/toyusdc' }
 #  ls: v6: Logging sent error stack (Error#1)
 #  ls: v6: Error#1: not accepting offer with description wantMinted
 #  ls: v6: Error: not accepting offer with description "wantMinted"

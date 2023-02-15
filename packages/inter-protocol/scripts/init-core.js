@@ -154,11 +154,13 @@ export const defaultProposalBuilder = async (
     ROLE = env.ROLE || 'chain',
     vaultFactoryControllerAddress = env.VAULT_FACTORY_CONTROLLER_ADDR,
     minInitialPoolLiquidity = env.MIN_INITIAL_POOL_LIQUIDITY,
+    endorsedUi,
     anchorOptions: {
       anchorDenom = env.ANCHOR_DENOM,
       anchorDecimalPlaces = '6',
       anchorKeyword = 'AUSD',
       anchorProposedName = anchorKeyword,
+      initialPricePct = undefined,
     } = {},
     econCommitteeOptions: {
       committeeSize: econCommitteeSize = env.ECON_COMMITTEE_SIZE || '3',
@@ -172,6 +174,7 @@ export const defaultProposalBuilder = async (
   const anchorOptions = anchorDenom && {
     denom: anchorDenom,
     decimalPlaces: parseInt(anchorDecimalPlaces, 10),
+    initialPricePct: optBigInt(initialPricePct),
     keyword: anchorKeyword,
     proposedName: anchorProposedName,
   };
@@ -188,6 +191,7 @@ export const defaultProposalBuilder = async (
         ROLE,
         vaultFactoryControllerAddress,
         minInitialPoolLiquidity: optBigInt(minInitialPoolLiquidity),
+        endorsedUi,
         anchorOptions,
         econCommitteeOptions,
         installKeys: {

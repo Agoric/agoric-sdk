@@ -31,10 +31,10 @@ const PROVISION_COINS = [
   `5000000000000000${CENTRAL_DENOM}`,
   `100provisionpass`,
   `100sendpacketpass`,
-  `1000000000000ibc/atom1234`, // IbcATOM
+  `1000000000000ibc/toyatom`, // IbcATOM
   `1000000000000ibc/toyellie`, // AUSD
-  `1000000000000ibc/usdc1234`,
-  `1000000000000ibc/usdt5678`,
+  `1000000000000ibc/toyusdc`, // USDC
+  `1000000000000ibc/toyollie`, // USDT
 ].join(',');
 const DELEGATE0_COINS = `50000000${STAKING_DENOM}`;
 const SOLO_COINS = `13000000${STAKING_DENOM},500000000${CENTRAL_DENOM}`;

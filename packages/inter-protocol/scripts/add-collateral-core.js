@@ -21,6 +21,7 @@ export const defaultProposalBuilder = async (
     decimalPlaces = 6,
     keyword = 'IbcATOM',
     proposedName = oracleBrand,
+    initialPricePct = undefined,
   } = interchainAssetOptions;
 
   if (!denom) {
@@ -38,6 +39,7 @@ export const defaultProposalBuilder = async (
           denom,
           issuerBoardId,
           decimalPlaces,
+          initialPricePct,
           keyword,
           proposedName,
           oracleBrand,
