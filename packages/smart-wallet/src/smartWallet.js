@@ -282,14 +282,13 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * @param {RemotePurse} purse
          * @param {Amount<any>} balance
-         * @param {'init'} [init]
          */
-        updateBalance(purse, balance, init) {
+        updateBalance(purse, balance) {
           const { purseBalances, updatePublishKit } = this.state;
-          if (init) {
-            purseBalances.init(purse, balance);
-          } else {
+          if (purseBalances.has(purse)) {
             purseBalances.set(purse, balance);
+          } else {
+            purseBalances.init(purse, balance);
           }
           updatePublishKit.publisher.publish({
             updated: 'balance',
@@ -330,7 +329,7 @@ export const prepareSmartWallet = (baggage, shared) => {
           // publish purse's balance and changes
           void E.when(
             E(purse).getCurrentAmount(),
-            balance => helper.updateBalance(purse, balance, 'init'),
+            balance => helper.updateBalance(purse, balance),
             err =>
               console.error(
                 address,
