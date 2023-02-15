@@ -60,12 +60,14 @@ export const makePriceAuthorityTransform = async ({
     );
   };
 
-  const oneQuote = async ({
-    amountIn,
-    amountOut,
-    timer = undefined,
-    timestamp = undefined,
-  }) => {
+  /**
+   * @param {Amount<"nat">} amountIn
+   * @param {Amount<"nat">} amountOut
+   * @param {object} [opts]
+   * @param {*} [opts.timer]
+   * @param {unknown} [opts.timestamp]
+   */
+  const oneQuote = async (amountIn, amountOut, { timer, timestamp } = {}) => {
     timer = await (timer ||
       E(sourcePriceAuthority).getTimerService(sourceBrandIn, sourceBrandOut));
     timestamp = await (timestamp || E(timer).getCurrentTimestamp());
@@ -113,9 +115,7 @@ export const makePriceAuthorityTransform = async ({
     const amountIn = transformSourceAmountIn(sourceAmountIn);
     const amountOut = transformSourceAmountOut(sourceAmountOut);
 
-    return oneQuote({
-      amountIn,
-      amountOut,
+    return oneQuote(amountIn, amountOut, {
       timer,
       timestamp,
     });
@@ -217,10 +217,10 @@ export const makePriceAuthorityTransform = async ({
         async getUpdateSince(updateCount = -1n) {
           if (initialPrice && updateCount === -1n && !pastInitialQuote) {
             if (!initialQuote) {
-              initialQuote = oneQuote({
-                amountIn: initialPrice.numerator,
-                amountOut: initialPrice.denominator,
-              }).then(value => harden({ value, updateCount: 0n }));
+              initialQuote = oneQuote(
+                initialPrice.numerator,
+                initialPrice.denominator,
+              ).then(value => harden({ value, updateCount: 0n }));
             }
             return initialQuote;
           }
