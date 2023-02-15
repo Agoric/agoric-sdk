@@ -892,7 +892,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.push(['intra-block', slogAttrs.blockHeight]);
         break;
       }
-      case 'cosmic-swingset-after-commit-block': {
+      case 'cosmic-swingset-after-commit-stats': {
         // Add the event to whatever the current top span is (most likely intra-block)
         // TODO: add as a span of the block
         spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);

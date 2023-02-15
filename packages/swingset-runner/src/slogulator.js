@@ -79,7 +79,7 @@ export function main() {
     'kernel-init-start': handleKernelInitStart,
     'clist': handleCList,
     'console': handleConsole,
-    'cosmic-swingset-after-commit-block': handleCosmicSwingsetAfterCommitBlock,
+    'cosmic-swingset-after-commit-stats': handleCosmicSwingsetAfterCommitStats,
     'cosmic-swingset-begin-block': handleCosmicSwingsetBeginBlock,
     'cosmic-swingset-bootstrap-block-finish': handleCosmicSwingsetBootstrapBlockFinish,
     'cosmic-swingset-bootstrap-block-start': handleCosmicSwingsetBootstrapBlockStart,
@@ -698,8 +698,8 @@ export function main() {
     }
   }
 
-  function handleCosmicSwingsetAfterCommitBlock(_entry) {
-    p(`cosmic-swingset-after-commit-block`);
+  function handleCosmicSwingsetAfterCommitStats(_entry) {
+    p(`cosmic-swingset-after-commit-stats`);
   }
 
   function handleCosmicSwingsetCommitBlockFinish(entry) {
