@@ -49,10 +49,16 @@
     "ava": "^5.1.0",
     "c8": "^7.12.0"
   },
+  "exports": {
+    ".": "./src/index.js",
+    "./exported.js": "./exported.js",
+    "./subscribe.js": "./subscribe.js",
+    "./tools/testSupports.js": "./tools/testSupports.js"
+  },
   "files": [
     "src/",
-    "tools",
-    "exported.js",
+    "tools/",
+    "*.js",
     "NEWS.md"
   ],
   "eslintIgnore": [
