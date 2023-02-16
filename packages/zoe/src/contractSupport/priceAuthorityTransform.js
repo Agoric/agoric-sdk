@@ -94,7 +94,7 @@ export const makePriceAuthorityTransform = async ({
     return harden({ quoteAmount, quotePayment });
   };
   const initialQuoteP =
-    initialPrice && oneQuote(initialPrice.numerator, initialPrice.denominator);
+    initialPrice && oneQuote(initialPrice.denominator, initialPrice.numerator);
 
   /**
    * @param {PriceQuote} sourceQuote
