@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## Unreleased
+
+## Pismo-C (agoric-upgrade-9)
+
+* SwingSet: improve transcript replay tools
+* XS/xsnap: improve the snapshot reload determinism that was previously mitigated in agoric-upgrade-8-1
+* cosmic-swingset: support for single-block "agd rollback", optimize smart-wallet message processing
+* golang/cosmos:
+    * ibc-go: upgrade to v3.4.0
+        * incorporates fix for predictable interchain account addresses
+    * cosmos-sdk: upgrade to v0.45.11
+    * tendermint: upgrade to v0.34.23
+    * Pick up [gossip fix](https://github.com/informalsystems/tendermint#245) from informalsystems fork of tendermint
+
+## Pismo-B (agoric-upgrade-8-1)
+
+* To be documented
+
+## Pismo-A (agoric-upgrade-8)
+
+* To be documented
+
+## Earlier ag0 releases (agoric-upgrade-7 and earlier)
+
+* See the [ag0 change log](https://github.com/Agoric/ag0/blob/bbece46f2b2ab120d67df762996fe393afa21ea7/CHANGELOG-Agoric.md).
+
 ## [13.0.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/sdk@12.0.0...@agoric/sdk@13.0.0) (2022-02-21)
 
 
