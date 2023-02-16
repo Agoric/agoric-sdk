@@ -1,3 +1,5 @@
+// @ts-check
+
 import { resolve as pathResolve } from 'path';
 
 export const makeProcessValue = ({ env, args }) => {
@@ -18,8 +20,12 @@ export const makeProcessValue = ({ env, args }) => {
     for (let i = 0; i < args.length; i += 1) {
       const arg = args[i];
       if (arg === flag) {
-        i += 1;
-        flagValue = args[i];
+        if (args.length > i + 1 && !args[i + 1].startsWith('--')) {
+          i += 1;
+          flagValue = args[i];
+        } else {
+          flagValue = '';
+        }
       } else if (arg.startsWith(flagEquals)) {
         flagValue = arg.substr(flagEquals.length);
       }
@@ -31,15 +37,15 @@ export const makeProcessValue = ({ env, args }) => {
    * @param {object} options
    * @param {string} [options.envName]
    * @param {string} [options.flagName]
-   * @param {string} options.trueValue
-   * @returns {string | undefined}
+   * @param {boolean} [options.emptyFlagIsTrue]
+   * @returns {boolean | undefined}
    */
-  const getPath = ({ envName, flagName, trueValue }) => {
+  const getBoolean = ({ envName, flagName, emptyFlagIsTrue = true }) => {
     let option;
-    if (envName) {
-      option = env[envName];
-    } else if (flagName) {
+    if (flagName) {
       option = getFlag(flagName);
+    } else if (envName) {
+      option = env[envName];
     } else {
       return undefined;
     }
@@ -48,21 +54,80 @@ export const makeProcessValue = ({ env, args }) => {
       case '0':
       case 'false':
       case false:
-        return undefined;
+        return false;
       case '1':
       case 'true':
       case true:
-        return trueValue;
+        return true;
       default:
-        if (option) {
-          return pathResolve(option);
-        } else if (envName && flagName) {
-          return getPath({ flagName, trueValue });
-        } else {
-          return undefined;
+        if (option === '' && flagName && emptyFlagIsTrue) {
+          return true;
         }
+        if (option === undefined && envName && flagName) {
+          return getBoolean({ envName, emptyFlagIsTrue });
+        }
+        return undefined;
     }
   };
 
-  return harden({ getFlag, getPath });
+  /**
+   * @param {object} options
+   * @param {string} [options.envName]
+   * @param {string} [options.flagName]
+   * @returns {number | undefined}
+   */
+  const getInteger = ({ envName, flagName }) => {
+    let option;
+    if (flagName) {
+      option = getFlag(flagName);
+    } else if (envName) {
+      option = env[envName];
+    } else {
+      return undefined;
+    }
+
+    if (option) {
+      const value = Number.parseInt(option, 10);
+      return String(value) === option ? value : undefined;
+    } else if (option === undefined && flagName && envName) {
+      return getInteger({ envName });
+    }
+
+    return undefined;
+  };
+
+  /**
+   * @param {object} options
+   * @param {string} [options.envName]
+   * @param {string} [options.flagName]
+   * @param {string} [options.trueValue]
+   * @returns {string | undefined}
+   */
+  const getPath = ({ envName, flagName, trueValue }) => {
+    if (trueValue !== undefined) {
+      const boolValue = getBoolean({ envName, flagName });
+      if (boolValue !== undefined) {
+        return boolValue ? trueValue : undefined;
+      }
+    }
+
+    let option;
+    if (flagName) {
+      option = getFlag(flagName);
+    } else if (envName) {
+      option = env[envName];
+    } else {
+      return undefined;
+    }
+
+    if (option) {
+      return pathResolve(option);
+    } else if (trueValue && envName && flagName) {
+      return getPath({ envName, trueValue });
+    } else {
+      return undefined;
+    }
+  };
+
+  return harden({ getFlag, getBoolean, getInteger, getPath });
 };
