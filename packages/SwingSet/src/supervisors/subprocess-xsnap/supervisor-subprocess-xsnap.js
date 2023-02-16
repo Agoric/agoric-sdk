@@ -190,8 +190,9 @@ function makeWorker(port) {
    * @param {unknown} bundle
    * @param {LiveSlotsOptions} liveSlotsOptions
    * @returns {Promise<Tagged>}
+   * @param {unknown} minLogLevel
    */
-  async function setBundle(vatID, bundle, liveSlotsOptions) {
+  async function setBundle(vatID, bundle, liveSlotsOptions, minLogLevel) {
     /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
@@ -253,7 +254,7 @@ function makeWorker(port) {
     };
 
     const workerEndowments = {
-      console: makeVatConsole(makeLogMaker('vat')),
+      console: makeVatConsole(makeLogMaker('vat'), `${minLogLevel}`),
       assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
@@ -297,7 +298,7 @@ function makeWorker(port) {
       case 'setBundle': {
         assert(!dispatch, 'cannot setBundle again');
         const liveSlotsOptions = /** @type LiveSlotsOptions */ (args[2]);
-        return setBundle(args[0], args[1], liveSlotsOptions);
+        return setBundle(args[0], args[1], liveSlotsOptions, args[3]);
       }
       case 'deliver': {
         assert(dispatch, 'cannot deliver before setBundle');

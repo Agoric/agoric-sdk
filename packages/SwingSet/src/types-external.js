@@ -40,6 +40,7 @@ export {};
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
+ *   minVatLogLevel?: string,
  *   meterID?: string,
  * } & (HasBundle | HasSetup)} ManagerOptions
  */

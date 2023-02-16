@@ -159,6 +159,7 @@ export function makeXsSubprocessFactory({
         vatID,
         bundle,
         liveSlotsOptions,
+        minVatLogLevel,
       ]);
       if (bundleReply[0] === 'dispatchReady') {
         parentLog(vatID, `bundle loaded. dispatch ready.`);
