@@ -1,5 +1,5 @@
 /* globals globalThis, process */
-import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
@@ -57,6 +57,7 @@ export const getResourceAttributes = ({
  * @typedef {object} Powers
  * @property {{ warn: Console['warn'] }} console
  * @property {NodeJS.ProcessEnv} env
+ * @property {import('@opentelemetry/sdk-metrics').View[]} views
  * @property {string} [serviceName]
  */
 
@@ -66,6 +67,7 @@ export const getResourceAttributes = ({
 const getPrometheusMeterProvider = ({
   console = globalThis.console,
   env = process.env,
+  views,
   ...rest
 } = {}) => {
   const { OTEL_EXPORTER_PROMETHEUS_PORT } = env;
@@ -91,11 +93,9 @@ const getPrometheusMeterProvider = ({
     },
   );
 
-  return new MeterProvider({
-    exporter,
-    resource,
-    interval: 1000,
-  });
+  const provider = new MeterProvider({ resource, views });
+  provider.addMetricReader(exporter);
+  return provider;
 };
 
 /**
