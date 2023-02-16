@@ -90,7 +90,7 @@ test('null swap', async t => {
   t.false('error' in NonNullish(status), 'should not have an error');
 });
 
-// we test this direciton of swap because wanting anchor would require the PSM to have anchor in it first
+// we test this direction of swap because wanting anchor would require the PSM to have anchor in it first
 test('want stable', async t => {
   const { anchor } = t.context;
   const { agoricNames } = await E.get(t.context.consume);
@@ -115,8 +115,6 @@ test('want stable', async t => {
   // @ts-expect-error deposit does take a FarRef<Payment>
   await wallet.getDepositFacet().receive(payment);
 
-  t.log('Prepare the swap');
-
   t.log('Execute the swap');
   /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
   const invitationSpec = {
@@ -136,6 +134,61 @@ test('want stable', async t => {
   await eventLoopIteration();
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(stableBrand)).value, swapSize); // assume 0% fee
+});
+
+test('want stable (insufficient funds)', async t => {
+  const { anchor } = t.context;
+  const { agoricNames } = await E.get(t.context.consume);
+
+  const anchorFunding = 10_000n;
+
+  t.log('Start the PSM to ensure brands are registered');
+  const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
+
+  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
+    'agoric1wantstableInsufficient',
+  );
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
+  const offersFacet = wallet.getOffersFacet();
+  t.assert(offersFacet, 'undefined offersFacet');
+
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+
+  t.log('Fund the wallet insufficiently');
+  assert(anchor.mint);
+  const payment = anchor.mint.mintPayment(anchor.make(anchorFunding));
+  // @ts-expect-error deposit does take a FarRef<Payment>
+  await wallet.getDepositFacet().receive(payment);
+
+  t.log('Execute the swap');
+  /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
+  const invitationSpec = {
+    source: 'agoricContract',
+    instancePath: ['psm-IST-AUSD'],
+    callPipe: [['makeWantMintedInvitation']],
+  };
+
+  await offersFacet.executeOffer({
+    id: 'insufficientFunds',
+    invitationSpec,
+    proposal: {
+      give: { In: anchor.make(anchorFunding * 2n) }, // twice the available funds
+      want: {},
+    },
+  });
+  await eventLoopIteration();
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, anchorFunding); // remains after failure
+  t.is(await E.get(getBalanceFor(stableBrand)).value, 0n);
+  const msg =
+    'Withdrawal of {"brand":"[Alleged: AUSD brand]","value":"[20000n]"} failed because the purse only contained {"brand":"[Alleged: AUSD brand]","value":"[10000n]"}';
+  const status = computedState.offerStatuses.get('insufficientFunds');
+  t.is(status?.error, `Error: ${msg}`);
+  /** @type {[PromiseRejectedResult]} */
+  // @ts-expect-error cast
+  const result = status.result;
+  t.is(result[0].status, 'rejected');
+  t.is(result[0].reason.message, msg);
 });
 
 test('govern offerFilter', async t => {

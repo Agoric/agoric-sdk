@@ -54,7 +54,11 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     { storageNode, walletBridgeManager },
   );
 
-  /** @param {string} address */
+  /**
+   * Each test should have its own wallet to prevent leaking state between them
+   *
+   * @param {string} address
+   */
   const provideWalletAndBalances = async address => {
     // copied from makeClientBanks()
     const bank = await E(consume.bankManager).getBankForAddress(address);
