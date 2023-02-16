@@ -115,9 +115,9 @@ const makeScenario = async (t, initialPriceInCents) => {
       initialPrice: initialPriceInCents
         ? makeRatio(
             initialPriceInCents,
-            t.context.ibcAtom.brand,
-            100n,
             t.context.run.brand,
+            100n,
+            t.context.ibcAtom.brand,
           )
         : undefined,
     },
@@ -255,10 +255,11 @@ const unitAmount = async brand => {
 };
 
 test('initialPrice', /** @param {ExecutionContext} t */ async t => {
+  const { make } = AmountMath;
+  const { ibcAtom: collateral, run: debt } = t.context;
   const { timer, pa } = await makeScenario(t, 12_34n);
 
   t.log('vault manager makes unit quote notifier');
-  const { ibcAtom: collateral, run: debt } = t.context;
   const collateralUnit = await unitAmount(collateral.brand);
   const quotes = E(pa).makeQuoteNotifier(collateralUnit, debt.brand);
 
@@ -269,12 +270,16 @@ test('initialPrice', /** @param {ExecutionContext} t */ async t => {
   } = await E(quotes).getUpdateSince();
   t.deepEqual(qa1.value, [
     {
-      amountIn: { brand: collateral.brand, value: 12_34n },
-      amountOut: { brand: debt.brand, value: 100n },
+      amountIn: { brand: debt.brand, value: 12_34n },
+      amountOut: { brand: collateral.brand, value: 100n },
       timer,
       timestamp: 0n,
     },
   ]);
+
+  t.log('vault manager gets quote for 500 ATOM');
+  const q500 = await E(pa).quoteGiven(make(collateral.brand, 500n), debt.brand);
+  t.deepEqual(q500.quoteAmount.value[0].amountOut, make(debt.brand, 6170n));
 
   t.log('clients get remaining prices as usual');
   const {
@@ -288,4 +293,8 @@ test('initialPrice', /** @param {ExecutionContext} t */ async t => {
       timestamp: 0n,
     },
   ]);
+
+  t.log('vault manager gets quote for 400 ATOM at usual price');
+  const q400 = await E(pa).quoteGiven(make(collateral.brand, 400n), debt.brand);
+  t.deepEqual(q400.quoteAmount.value[0].amountOut, make(debt.brand, 14200n));
 });

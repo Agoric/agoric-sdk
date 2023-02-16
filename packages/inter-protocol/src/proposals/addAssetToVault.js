@@ -217,7 +217,7 @@ export const registerScaledPriceAuthority = async (
     runBrand,
   );
   const initialPrice = initialPricePct
-    ? makeRatio(BigInt(initialPricePct), interchainBrand, 100n, runBrand)
+    ? makeRatio(BigInt(initialPricePct), runBrand, 100n, interchainBrand)
     : undefined;
 
   const terms = await deeplyFulfilledObject(
