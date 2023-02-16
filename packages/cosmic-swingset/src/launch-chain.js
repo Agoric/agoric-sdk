@@ -35,6 +35,7 @@ import {
 import * as ActionType from './action-types.js';
 import { parseParams, serializeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
+import { validateWalletAction } from './validate-inbound.js';
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -456,12 +457,16 @@ export async function launch({
       }
 
       case ActionType.WALLET_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        p = validateWalletAction(action).then(async () =>
+          doBridgeInbound(BRIDGE_ID.WALLET, action),
+        );
         break;
       }
 
       case ActionType.WALLET_SPEND_ACTION: {
-        p = doBridgeInbound(BRIDGE_ID.WALLET, action);
+        p = validateWalletAction(action).then(async () =>
+          doBridgeInbound(BRIDGE_ID.WALLET, action),
+        );
         break;
       }
 
@@ -469,7 +474,11 @@ export async function launch({
         assert.fail(X`${action.type} not recognized`);
       }
     }
-    return p;
+    return Promise.resolve(p).catch(err => {
+      // TODO: report action errors back to the cosmos side to be published
+      // somewhere clients can observe the failure.
+      console.error(`performAction error:`, action, err);
+    });
   }
 
   async function runKernel(blockHeight, blockTime, params, newActions) {
