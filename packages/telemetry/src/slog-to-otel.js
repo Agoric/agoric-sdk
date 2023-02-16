@@ -1,6 +1,7 @@
 import otel, { SpanStatusCode } from '@opentelemetry/api';
 
 import { makeMarshal, Remotable } from '@endo/marshal';
+import { Fail, q } from '@agoric/assert';
 
 import { makeLegacyMap } from '@agoric/store';
 import {
@@ -125,7 +126,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
     }
 
-    kref[0] === 'k' || assert.fail(`Unexpected non-kernel ref ${kref}`);
+    kref[0] === 'k' || Fail`Unexpected non-kernel ref ${q(kref)}`;
     val = harden(
       kref.startsWith('kp')
         ? new Promise(sink)
@@ -265,7 +266,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       default: {
-        console.error(`Unknown crank-start message.type`, messageType);
+        Fail`Unknown crank-start message.type ${q(messageType)}`;
       }
     }
     return [name, attrs, links];
@@ -873,7 +874,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
           default: {
             /** @type {never} */
             const unexpectedSyscall = syscallType;
-            console.error(`Unknown syscall type:`, unexpectedSyscall);
+            Fail`Unknown syscall type ${q(unexpectedSyscall)}`;
           }
         }
         break;
@@ -917,7 +918,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         }
         dbTransactionManager.begin();
         while (spans.top()) {
-          console.error(
+          console.warn(
             `previous block was not unwound properly, unstacking ${spans.topKind()}`,
           );
           spans.pop();
@@ -967,7 +968,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       case 'cosmic-swingset-end-block-finish': {
         // Don't record finish but make sure our span stack is clean
         while (spans.top() && spans.topKind() !== 'block') {
-          console.error(
+          console.warn(
             `End block has unexpected span stack, removing ${spans.topKind()}`,
           );
           spans.pop();
@@ -1036,7 +1037,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       default: {
-        console.error(`Unknown slog type: ${slogType}`);
+        Fail`Unknown slog type: ${q(slogType)}`;
       }
     }
   };
