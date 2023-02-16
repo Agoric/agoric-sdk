@@ -815,9 +815,6 @@ export const prepareVaultManagerKit = (
             want: { Minted: null },
           });
 
-          // NB: This increments even when a vault fails to init and is removed
-          // from the manager, creating a sparse series of published vaults.
-          state.vaultCounter += 1;
           const vaultId = String(state.vaultCounter);
 
           // must be a presence to be stored in vault state
@@ -835,6 +832,11 @@ export const prepareVaultManagerKit = (
             // initVaultKit calls back to handleBalanceChange() which will add the
             // vault to prioritizedVaults
             seat.exit();
+
+            // initVaultKit doesn't write to the storage node until it's returning
+            // so if it returned then we know the node key was consumed
+            state.vaultCounter += 1;
+
             return vaultKit;
           } catch (err) {
             // ??? do we still need this cleanup? it won't get into the store unless it has collateral,
