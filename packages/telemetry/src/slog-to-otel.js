@@ -936,14 +936,22 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'cosmic-swingset-commit-block-finish': {
         spans.pop(['commit-block', slogAttrs.blockHeight]);
+        break;
+      }
+      case 'cosmic-swingset-after-commit-block-start': {
+        spans.push(['after-commit', slogAttrs.blockHeight]);
+        break;
+      }
+      case 'cosmic-swingset-after-commit-block-finish': {
+        spans.pop(['after-commit', slogAttrs.blockHeight]);
         // Push a span to capture the time between blocks from cosmic-swingset POV
         spans.push(['inter-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-after-commit-stats': {
-        // Add the event to whatever the current top span is (most likely inter-block)
+        // Add the event to whatever the current top span is (most likely after-commit)
         // TODO: add as a span of the block
-        spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);
+        spans.top()?.addEvent('after-commit-stats', cleanAttrs(slogAttrs), now);
         if (currentBlockHeight === slogAttrs.blockHeight) {
           dbTransactionManager.end();
           currentBlockHeight = -1;
