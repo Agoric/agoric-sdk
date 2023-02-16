@@ -293,7 +293,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         STORAGE_PATH.BUNDLES,
         { sequence: true },
       );
-      const marshaller = makeMarshal();
+      const marshaller = makeMarshal({
+        serializeBodyFormat: 'smallcaps',
+      });
       const { publisher, subscriber } = makePublishKit();
       pipeTopicToStorage(subscriber, installationStorageNode, marshaller);
       return publisher;
