@@ -826,7 +826,6 @@ export const prepareVaultManagerKit = (
             const vaultKit = await vault.initVaultKit(seat, vaultStorageNode);
             // initVaultKit calls back to handleBalanceChange() which will add the
             // vault to prioritizedVaults
-            seat.exit();
 
             // initVaultKit doesn't write to the storage node until it's returning
             // so if it returned then we know the node key was consumed
@@ -849,19 +848,23 @@ export const prepareVaultManagerKit = (
                 collateralPre,
                 vaultId,
               );
-              console.error(
+              console.warn(
                 'removed vault',
                 vaultId,
                 'after initVaultKit failure',
               );
             } catch {
-              console.error(
+              console.info(
                 'vault',
                 vaultId,
                 'never stored during initVaultKit failure',
               );
             }
             throw err;
+          } finally {
+            if (!seat.hasExited()) {
+              seat.exit();
+            }
           }
         },
 
