@@ -20,6 +20,29 @@ export * from './make-slog-sender.js';
  * @property {string} [serviceName]
  */
 
+/**
+ * @param {SlogSender} [slogSender]
+ * @param {object} [options]
+ * @param {Record<string, string | undefined>} [options.env]
+ * @param {(...args: any[]) => void} [options.log]
+ */
+export const tryFlushSlogSender = async (
+  slogSender,
+  { env = {}, log } = {},
+) => {
+  await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
+    log?.('Failed to flush slog sender', err);
+    if (err.errors) {
+      err.errors.forEach(error => {
+        log?.('nested error:', error);
+      });
+    }
+    if (env.SLOGSENDER_FAIL_ON_ERROR) {
+      throw err;
+    }
+  });
+};
+
 export const getResourceAttributes = ({
   env = process.env,
   serviceName = '',
