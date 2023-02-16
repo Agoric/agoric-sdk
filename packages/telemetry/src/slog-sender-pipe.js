@@ -24,7 +24,12 @@ const withMutex = operation => {
   return async (...args) => {
     await mutex.get();
     const result = operation(...args);
-    mutex.put(result.then(() => {}));
+    mutex.put(
+      result.then(
+        () => {},
+        () => {},
+      ),
+    );
     return result;
   };
 };
