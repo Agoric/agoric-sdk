@@ -7,7 +7,9 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
-import { makeFeeDistributor } from '../src/feeDistributor.js';
+import { M } from '@agoric/vat-data';
+import { mustMatch } from '@agoric/store';
+import { makeFeeDistributor, customTermsShape } from '../src/feeDistributor.js';
 
 /**
  * @param {Issuer} feeIssuer
@@ -238,5 +240,21 @@ test('fee distribution, leftovers', async t => {
     [13n, 7n],
     issuer,
     brand,
+  );
+});
+
+test('feeDistributor custom terms shape catches non-Nat bigint', t => {
+  const timerService = Far('MockTimer', {});
+  t.throws(
+    () =>
+      mustMatch(
+        harden({
+          keywordShares: { Reserve: -1n },
+          timerService,
+          collectionInterval: 2n,
+        }),
+        customTermsShape,
+      ),
+    { message: 'keywordShares: Reserve: [1]: "[-1n]" - Must be non-negative' },
   );
 });
