@@ -26,9 +26,6 @@ fi
 
 set -x
 
-# Now run steps in agops-oracle-smoketest.sh so the priceAuthority has data to quote from,
-# which is required for the maxDebtFor check that VM makes before opening a vault.
-
 # open a vault
 OFFER=$(mktemp -t agops.XXX)
 bin/agops vaults open --wantMinted 5.00 --giveCollateral 9.0 >|"$OFFER"
