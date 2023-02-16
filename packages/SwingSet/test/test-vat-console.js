@@ -50,4 +50,16 @@ test('makeVatConsole can suppress by log level', t => {
       level: 'error',
     },
   ]);
+
+  logged.splice(0);
+  // goofy minLevel works like default level: log
+  const goofy = { console: makeVatConsole(makeLog, 'typo') };
+  goofy.console.debug('details, details...');
+  goofy.console.log('Stardate 1734');
+  t.deepEqual(logged, [
+    {
+      args: ['Stardate 1734'],
+      level: 'log',
+    },
+  ]);
 });

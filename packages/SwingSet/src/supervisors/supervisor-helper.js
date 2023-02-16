@@ -145,6 +145,7 @@ harden(makeSupervisorSyscall);
 export { makeSupervisorSyscall };
 
 const levelToNum = harden({ debug: 1, log: 2, info: 3, warn: 4, error: 5 });
+const noop = harden(() => {});
 
 /**
  * Create a vat console from a log stream maker.
@@ -153,11 +154,10 @@ const levelToNum = harden({ debug: 1, log: 2, info: 3, warn: 4, error: 5 });
  * See https://github.com/Agoric/agoric-sdk/issues/2146
  *
  * @param {(level: string) => (...args: any[]) => void} makeLog
- * @param {'debug' | 'log' | 'info' | 'warn' | 'error' } [minLevel]
+ * @param {string} [minLevel]
  */
 function makeVatConsole(makeLog, minLevel) {
-  const lo = minLevel ? levelToNum[minLevel] : 0;
-  const noop = () => {};
+  const lo = levelToNum[minLevel || 'log'] || levelToNum.log;
 
   return harden({
     debug: lo <= levelToNum.debug ? makeLog('debug') : noop,
