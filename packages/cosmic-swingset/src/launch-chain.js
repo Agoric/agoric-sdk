@@ -629,19 +629,14 @@ export async function launch({
   async function afterCommit(blockHeight, blockTime) {
     await Promise.resolve()
       .then(afterCommitCallback)
-      .then(
-        (afterCommitStats = {}) => {
-          controller.writeSlogObject({
-            type: 'cosmic-swingset-after-commit-stats',
-            blockHeight,
-            blockTime,
-            ...afterCommitStats,
-          });
-        },
-        error => {
-          console.warn('Error during afterCommitCallback', error);
-        },
-      );
+      .then((afterCommitStats = {}) => {
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-after-commit-stats',
+          blockHeight,
+          blockTime,
+          ...afterCommitStats,
+        });
+      });
   }
 
   async function blockingSend(action) {
