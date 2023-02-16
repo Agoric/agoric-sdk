@@ -20,7 +20,7 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
 import {
-  DEFAULT_METER_PROVIDER,
+  makeDefaultMeterProvider,
   makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
@@ -212,7 +212,7 @@ export async function launch({
   env = process.env,
   debugName = undefined,
   verboseBlocks = false,
-  metricsProvider = DEFAULT_METER_PROVIDER,
+  metricsProvider = makeDefaultMeterProvider(),
   slogSender,
   mapSize = DEFAULT_LMDB_MAP_SIZE,
   swingStoreTraceFile,

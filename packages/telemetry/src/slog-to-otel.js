@@ -83,6 +83,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   let currentAttrs = {};
 
   let isReplaying = false;
+  let currentBlockHeight = -1;
 
   const cleanAttrs = attrs => ({
     ...serializeInto(attrs, 'agoric'),
@@ -379,13 +380,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
   let finished = false;
   const finish = () => {
     finished = true;
-    spans.endAll(now);
     let top = spans.top();
     while (top) {
       top.end(now);
       spans.pop();
       top = spans.top();
     }
+    spans.endAll(now);
   };
 
   const getCrankKey = create => {
@@ -414,11 +415,14 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     // console.log('slogging', obj);
     switch (slogType) {
       case 'kernel-init-start': {
+        assert(!spans.top());
+        dbTransactionManager.begin();
         spans.push('init');
         break;
       }
       case 'kernel-init-finish': {
         spans.pop('init');
+        dbTransactionManager.end();
         break;
       }
       case 'bundle-kernel-start': {
@@ -441,13 +445,18 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'create-vat': {
         const { vatSourceBundle: _2, name, ...attrs } = slogAttrs;
-        spans.push(['create-vat', slogAttrs.vatID], {
-          attributes: {
-            'vat.name': name,
-            ...attrs,
-          },
-        });
         vatIdToAttrs.init(slogAttrs.vatID, { name, ...attrs });
+        const vattrs = {
+          'vat.name': name,
+          ...attrs,
+        };
+        if (spans.topKind() === 'init') {
+          spans.push(['create-vat', slogAttrs.vatID], {
+            attributes: vattrs,
+          });
+        } else {
+          spans.top()?.addEvent(`create-vat`, cleanAttrs(vattrs), now);
+        }
         break;
       }
       case 'vat-startup-start': {
@@ -456,7 +465,9 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'vat-startup-finish': {
         spans.pop(['vat-startup', slogAttrs.vatID]);
-        spans.pop(['create-vat', slogAttrs.vatID]);
+        if (spans.topKind() === 'create-vat') {
+          spans.pop(['create-vat', slogAttrs.vatID]);
+        }
         break;
       }
       case 'start-replay': {
@@ -806,12 +817,21 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-begin-block': {
-        dbTransactionManager.begin();
         if (spans.topKind() === 'intra-block') {
           spans.pop('intra-block');
           spans.pop('block');
         }
-        assert(!spans.top());
+        if (currentBlockHeight > 0) {
+          dbTransactionManager.end();
+        }
+        dbTransactionManager.begin();
+        while (spans.top()) {
+          console.error(
+            `previous block was not unwound properly, unstacking ${spans.topKind()}`,
+          );
+          spans.pop();
+        }
+        currentBlockHeight = slogAttrs.blockHeight;
 
         // TODO: Move the encompassing `block` root span to cosmos
         spans.push(['block', slogAttrs.blockHeight]);
@@ -830,8 +850,12 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'cosmic-swingset-after-commit-block': {
         // Add the event to whatever the current top span is (most likely intra-block)
+        // TODO: add as a span of the block
         spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);
-        dbTransactionManager.end();
+        if (currentBlockHeight === slogAttrs.blockHeight) {
+          dbTransactionManager.end();
+          currentBlockHeight = -1;
+        }
         break;
       }
       case 'cosmic-swingset-deliver-inbound': {
@@ -850,7 +874,13 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-end-block-finish': {
-        // Don't record finish
+        // Don't record finish but make sure our span stack is clean
+        while (spans.top() && spans.topKind() !== 'block') {
+          console.error(
+            `End block has unexpected span stack, removing ${spans.topKind()}`,
+          );
+          spans.pop();
+        }
         break;
       }
       case 'cosmic-swingset-run-start': {
