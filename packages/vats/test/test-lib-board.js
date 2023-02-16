@@ -70,13 +70,13 @@ const testBoardMarshaller = async (t, board, marshaller, publishing) => {
       unpublished2: unpublished,
     }),
   );
-  const pub1ser = `{"@qclass":"slot","iface":"Alleged: published","index":0}`;
-  const pub2ser = `{"@qclass":"slot","index":0}`;
-  const unpub1ser = `{"@qclass":"slot","iface":"Alleged: unpublished","index":1}`;
-  const unpub2ser = `{"@qclass":"slot","index":1}`;
+  const pub1ser = '"$0.Alleged: published"';
+  const pub2ser = '"$0"';
+  const unpub1ser = '"$1.Alleged: unpublished"';
+  const unpub2ser = `"$1"`;
   t.is(
     ser.body,
-    `{"published1":${pub1ser},"published2":${pub2ser},"unpublished1":${unpub1ser},"unpublished2":${unpub2ser}}`,
+    `#{"published1":${pub1ser},"published2":${pub2ser},"unpublished1":${unpub1ser},"unpublished2":${unpub2ser}}`,
   );
   t.is(ser.slots.length, 2);
   t.is(ser.slots[0], published1id);

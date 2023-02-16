@@ -199,6 +199,11 @@ const makeSlotToVal = state => {
   return slotToVal;
 };
 
+/** @type {import('@endo/marshal').MakeMarshalOptions} */
+const useSmallCaps = harden({
+  serializeBodyFormat: 'smallcaps',
+});
+
 // TODO make Marshaller type generic on slot
 /**
  * @param {BoardState} state
@@ -216,7 +221,7 @@ const makeReadonlyMarshaller = state => {
     // Published value.
     return valToId.get(val);
   };
-  return makeMarshal(valToSlot, slotToVal);
+  return makeMarshal(valToSlot, slotToVal, useSmallCaps);
 };
 
 /**
@@ -227,7 +232,7 @@ const makePublishingMarshaller = state => {
   const slotToVal = makeSlotToVal(state);
   // Always put the value in the board.
   const valToSlot = val => getId(val, state);
-  return makeMarshal(valToSlot, slotToVal);
+  return makeMarshal(valToSlot, slotToVal, useSmallCaps);
 };
 // #endregion
 
