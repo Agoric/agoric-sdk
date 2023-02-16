@@ -79,7 +79,7 @@ const makeScenario = async t => {
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
   const amm = makeFakeFeeProducer(makeEmptyPayment);
   const timerService = buildManualTimer(t.log);
-  const { creatorFacet } = await makeFeeDistributor(issuer, {
+  const { publicFacet, creatorFacet } = await makeFeeDistributor(issuer, {
     timerService,
     collectionInterval: 1n,
     keywordShares: {
@@ -95,6 +95,7 @@ const makeScenario = async t => {
     amm,
     vaultFactory,
     getPayments,
+    publicFacet,
     creatorFacet,
     feeDepositFacet,
   };
@@ -146,6 +147,7 @@ test('setKeywordShares', async t => {
     amm,
     vaultFactory,
     getPayments,
+    publicFacet,
     creatorFacet,
     feeDepositFacet,
   } = await makeScenario(t);
@@ -165,12 +167,16 @@ test('setKeywordShares', async t => {
   const rewardsDestination =
     creatorFacet.makeDepositFacetDestination(feeDepositFacet);
   const reserveDestination = creatorFacet.makeDepositFacetDestination(deposit2);
+
+  t.deepEqual(publicFacet.getKeywordShares(), { Rewards: 3n });
   await creatorFacet.setKeywordShares(
     harden({
       Reserve: 4n,
       Rewards: 1n,
     }),
   );
+  t.deepEqual(publicFacet.getKeywordShares(), { Reserve: 4n, Rewards: 1n });
+
   await creatorFacet.setDestinations({
     Rewards: rewardsDestination,
     Reserve: reserveDestination,

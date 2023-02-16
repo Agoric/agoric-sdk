@@ -205,6 +205,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 
   const publicFacet = Far('feeDistributor publicFacet', {
     distributeFees,
+    getKeywordShares: () => keywordShares,
   });
 
   const creatorFacet = Far('feeDistributor creatorFacet', {
