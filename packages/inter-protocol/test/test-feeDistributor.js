@@ -7,7 +7,6 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
-import { M } from '@agoric/vat-data';
 import { mustMatch } from '@agoric/store';
 import { makeFeeDistributor, customTermsShape } from '../src/feeDistributor.js';
 
