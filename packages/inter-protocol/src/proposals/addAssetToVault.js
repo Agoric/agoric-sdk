@@ -3,6 +3,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
+import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
@@ -15,6 +16,7 @@ export * from './startPSM.js';
  * @property {string} [proposedName]
  * @property {string} keyword
  * @property {string} oracleBrand
+ * @property {number} [initialPrice]
  */
 
 /**
@@ -160,7 +162,11 @@ export const registerScaledPriceAuthority = async (
   { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
   { options: { interchainAssetOptions } },
 ) => {
-  const { keyword, oracleBrand } = interchainAssetOptions;
+  const {
+    keyword,
+    oracleBrand,
+    initialPrice: initialPriceRaw,
+  } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
   assert.typeof(oracleBrand, 'string');
 
@@ -215,12 +221,16 @@ export const registerScaledPriceAuthority = async (
     10n ** BigInt(decimalPlacesRun),
     runBrand,
   );
+  const initialPrice = initialPriceRaw
+    ? parseRatio(initialPriceRaw, runBrand, interchainBrand)
+    : undefined;
 
   const terms = await deeplyFulfilledObject(
     harden({
       sourcePriceAuthority,
       scaleIn,
       scaleOut,
+      initialPrice,
     }),
   );
   const { publicFacet } = E.get(
@@ -270,11 +280,15 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, debtLimitValue),
-    // the rest of these are arbitrary, TBD by gov cttee
-    interestRate: makeRatio(1n, stable),
-    liquidationMargin: makeRatio(1n, stable),
+    // The rest of these we use safe defaults.
+    // In production they will be governed by the Econ Committee.
+    // Product deployments are also expected to have a low debtLimitValue at the outset,
+    // limiting the impact of these defaults.
+    liquidationPadding: makeRatio(25n, stable),
+    liquidationMargin: makeRatio(150n, stable),
+    loanFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
-    loanFee: makeRatio(1n, stable),
+    interestRate: makeRatio(1n, stable),
   });
 };
 

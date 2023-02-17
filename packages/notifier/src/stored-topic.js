@@ -1,5 +1,5 @@
 import { assertAllDefined } from '@agoric/internal';
-import { makeMarshallToStorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { M } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { SubscriberShape } from './publish-kit.js';
@@ -42,7 +42,7 @@ export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
 export const pipeTopicToStorage = (topic, storageNode, marshaller) => {
   assertAllDefined({ topic, storageNode, marshaller });
 
-  const marshallToStorage = makeMarshallToStorage(storageNode, marshaller);
+  const marshallToStorage = makeSerializeToStorage(storageNode, marshaller);
 
   // Start publishing the source.
   forEachPublicationRecord(topic, marshallToStorage).catch(err => {

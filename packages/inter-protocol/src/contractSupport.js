@@ -79,7 +79,7 @@ export const stageDelta = (fromSeat, toSeat, fromLoses, fromGains, key) => {
  */
 export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
   const debtPost = AmountMath.add(totalDebt, toMint);
-  !AmountMath.isGTE(debtPost, debtLimit) ||
+  AmountMath.isGTE(debtLimit, debtPost) ||
     Fail`Minting ${q(toMint)} past ${q(
       totalDebt,
     )} would hit total debt limit ${q(debtLimit)}`;

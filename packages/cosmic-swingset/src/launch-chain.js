@@ -22,7 +22,7 @@ import * as ActionType from '@agoric/internal/src/action-types.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
 import {
-  DEFAULT_METER_PROVIDER,
+  makeDefaultMeterProvider,
   makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
@@ -213,7 +213,7 @@ export async function launch({
   env = process.env,
   debugName = undefined,
   verboseBlocks = false,
-  metricsProvider = DEFAULT_METER_PROVIDER,
+  metricsProvider = makeDefaultMeterProvider(),
   slogSender,
   swingStoreTraceFile,
   keepSnapshots,
@@ -629,19 +629,14 @@ export async function launch({
   async function afterCommit(blockHeight, blockTime) {
     await Promise.resolve()
       .then(afterCommitCallback)
-      .then(
-        (afterCommitStats = {}) => {
-          controller.writeSlogObject({
-            type: 'cosmic-swingset-after-commit-stats',
-            blockHeight,
-            blockTime,
-            ...afterCommitStats,
-          });
-        },
-        error => {
-          console.warn('Error during afterCommitCallback', error);
-        },
-      );
+      .then((afterCommitStats = {}) => {
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-after-commit-stats',
+          blockHeight,
+          blockTime,
+          ...afterCommitStats,
+        });
+      });
   }
 
   async function blockingSend(action) {

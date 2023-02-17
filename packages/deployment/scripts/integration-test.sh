@@ -4,8 +4,11 @@ set -ueo pipefail
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 
+export GOBIN="$thisdir/../../../golang/cosmos/build"
 export NETWORK_NAME=${NETWORK_NAME-localtest}
 
+SOLO_ADDR=
+VAT_CONFIG=
 RESULTSDIR=${RESULTSDIR-"$NETWORK_NAME/results"}
 mkdir -p "$RESULTSDIR"
 pushd "$RESULTSDIR"
@@ -35,8 +38,6 @@ DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
 "$thisdir/setup.sh" init --noninteractive
 
 # Go ahead and bootstrap with detailed debug logging.
-SLOGSENDER=@agoric/telemetry/src/flight-recorder.js,@agoric/telemetry/src/otel-trace.js \
-SLOGSENDER_AGENT=process \
 AG_COSMOS_START_ARGS="--log_level=info --trace-store=.ag-chain-cosmos/data/kvstore-trace" \
 VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
@@ -53,6 +54,8 @@ then
   cd /usr/src/testnet-load-generator
   SOLO_COINS=40000000000uist \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
+  SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER= \
+  SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
   SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --stage.save-storage --trace kvstore swingstore xsnap \
     --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \

@@ -152,14 +152,16 @@ export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
     return JSON.parse(body, reviver);
   },
   serialize: whole => {
+    /** @type {Map<string, number>} */
     const seen = new Map();
-    const slotIndex = v => {
-      if (seen.has(v)) {
-        return seen.get(v);
+    /** @type {(boardId: string) => number} */
+    const slotIndex = boardId => {
+      let index = seen.get(boardId);
+      if (index === undefined) {
+        index = seen.size;
+        seen.set(boardId, index);
       }
-      const index = seen.size;
-      seen.set(v, index);
-      return { index, iface: v.iface };
+      return index;
     };
     const recur = part => {
       if (part === null) return null;
@@ -171,7 +173,7 @@ export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
       }
       if (typeof part === 'object') {
         if ('boardId' in part) {
-          return { '@qclass': 'slot', ...slotIndex(part.boardId) };
+          return { '@qclass': 'slot', index: slotIndex(part.boardId) };
         }
         return Object.fromEntries(
           Object.entries(part).map(([k, v]) => [k, recur(v)]),
@@ -239,12 +241,25 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<{ brand: Record<string, RpcRemote>, instance: Record<string, RpcRemote>, reverse: Record<string, string> }>}
+ * @returns {Promise<{
+ *   brand: Record<string, RpcRemote>,
+ *   instance: Record<string, RpcRemote>,
+ *   vbankAsset: Record<string, VBankAssetDetail>,
+ *   reverse: Record<string, string>,
+ * }>}
+ * @typedef {{
+ *   brand: RpcRemote,
+ *   denom: string,
+ *   displayInfo: DisplayInfo,
+ *   issuer: RpcRemote,
+ *   issuerName: string,
+ *   proposedName: string,
+ * }} VBankAssetDetail
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   const reverse = {};
   const entries = await Promise.all(
-    ['brand', 'instance'].map(async kind => {
+    ['brand', 'instance', 'vbankAsset'].map(async kind => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );

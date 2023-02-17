@@ -223,7 +223,12 @@ export const getManifestForEconCommittee = (
 
 export const getManifestForMain = (
   { restoreRef },
-  { installKeys, vaultFactoryControllerAddress, minInitialPoolLiquidity },
+  {
+    installKeys,
+    vaultFactoryControllerAddress,
+    minInitialPoolLiquidity,
+    endorsedUi,
+  },
 ) => {
   return {
     manifest: SHARED_MAIN_MANIFEST,
@@ -238,6 +243,7 @@ export const getManifestForMain = (
     options: {
       vaultFactoryControllerAddress,
       minInitialPoolLiquidity,
+      endorsedUi,
     },
   };
 };
@@ -259,6 +265,7 @@ export const getManifestForInterProtocol = (
     installKeys,
     vaultFactoryControllerAddress,
     minInitialPoolLiquidity,
+    endorsedUi,
   },
 ) => {
   const econCommitteeManifest = getManifestForEconCommittee(
@@ -271,6 +278,7 @@ export const getManifestForInterProtocol = (
       installKeys,
       vaultFactoryControllerAddress,
       minInitialPoolLiquidity,
+      endorsedUi,
     },
   );
   return {

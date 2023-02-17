@@ -89,6 +89,7 @@ const validTransitions = {
  * @property {() => Subscriber<import('./vaultManager').AssetState>} getAssetSubscriber
  * @property {(collateralAmount: Amount) => ERef<Amount<'nat'>>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
+ * @property {(base: string) => string} scopeDescription
  * @property {() => Brand<'nat'>} getDebtBrand
  * @property {MintAndReallocate} mintAndReallocate
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
@@ -796,22 +797,22 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         },
 
         makeAdjustBalancesInvitation() {
-          const { facets } = this;
+          const { state, facets } = this;
           const { helper } = facets;
           helper.assertActive();
           return zcf.makeInvitation(
             seat => helper.adjustBalancesHook(seat),
-            'AdjustBalances',
+            state.manager.scopeDescription('AdjustBalances'),
           );
         },
 
         makeCloseInvitation() {
-          const { facets } = this;
+          const { state, facets } = this;
           const { helper } = facets;
           helper.assertCloseable();
           return zcf.makeInvitation(
             seat => helper.closeHook(seat),
-            'CloseVault',
+            state.manager.scopeDescription('CloseVault'),
           );
         },
 
@@ -840,7 +841,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           };
           return zcf.makeInvitation(
             seat => helper.makeTransferInvitationHook(seat),
-            'TransferVault',
+            state.manager.scopeDescription('TransferVault'),
             transferState,
           );
         },

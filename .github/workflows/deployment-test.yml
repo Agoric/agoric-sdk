@@ -27,7 +27,7 @@ jobs:
   deployment-test:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: ubuntu-18.04 # trusty
+    runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
       - uses: actions/checkout@v3
         with:
@@ -35,13 +35,12 @@ jobs:
       - run: sudo packages/deployment/scripts/install-deps.sh
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: 1.17
+          go-version: 1.18
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 16.x
+          node-version: 18.x
           # Forces xsnap to initialize all memory to random data, which increases
           # the chances the content of snapshots may deviate between validators
-          # TODO: key the node built cache on this env
           xsnap-random-init: '1'
 
       # Select a branch on loadgen to test against by adding text to the body of the

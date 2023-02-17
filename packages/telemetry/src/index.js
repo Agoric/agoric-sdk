@@ -1,5 +1,5 @@
 /* globals globalThis, process */
-import { MeterProvider } from '@opentelemetry/sdk-metrics-base';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
@@ -19,6 +19,29 @@ export * from './make-slog-sender.js';
  * @property {string} [stateDir]
  * @property {string} [serviceName]
  */
+
+/**
+ * @param {SlogSender} [slogSender]
+ * @param {object} [options]
+ * @param {Record<string, string | undefined>} [options.env]
+ * @param {(...args: any[]) => void} [options.log]
+ */
+export const tryFlushSlogSender = async (
+  slogSender,
+  { env = {}, log } = {},
+) => {
+  await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
+    log?.('Failed to flush slog sender', err);
+    if (err.errors) {
+      err.errors.forEach(error => {
+        log?.('nested error:', error);
+      });
+    }
+    if (env.SLOGSENDER_FAIL_ON_ERROR) {
+      throw err;
+    }
+  });
+};
 
 export const getResourceAttributes = ({
   env = process.env,
@@ -57,6 +80,7 @@ export const getResourceAttributes = ({
  * @typedef {object} Powers
  * @property {{ warn: Console['warn'] }} console
  * @property {NodeJS.ProcessEnv} env
+ * @property {import('@opentelemetry/sdk-metrics').View[]} views
  * @property {string} [serviceName]
  */
 
@@ -66,6 +90,7 @@ export const getResourceAttributes = ({
 const getPrometheusMeterProvider = ({
   console = globalThis.console,
   env = process.env,
+  views,
   ...rest
 } = {}) => {
   const { OTEL_EXPORTER_PROMETHEUS_PORT } = env;
@@ -91,11 +116,9 @@ const getPrometheusMeterProvider = ({
     },
   );
 
-  return new MeterProvider({
-    exporter,
-    resource,
-    interval: 1000,
-  });
+  const provider = new MeterProvider({ resource, views });
+  provider.addMetricReader(exporter);
+  return provider;
 };
 
 /**

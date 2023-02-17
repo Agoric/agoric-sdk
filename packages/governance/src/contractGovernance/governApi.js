@@ -22,7 +22,7 @@ const { Fail, quote: q } = assert;
 const makeApiInvocationPositions = (apiMethodName, methodArgs) => {
   const positive = harden({ apiMethodName, methodArgs });
   const negative = harden({ dontInvoke: apiMethodName });
-  return { positive, negative };
+  return harden({ positive, negative });
 };
 
 /**
@@ -113,11 +113,11 @@ const setupApiGovernance = async (
         },
       );
 
-    return {
+    return harden({
       outcomeOfUpdate,
       instance: voteCounter,
       details: E(counterPublicFacet).getDetails(),
-    };
+    });
   };
 
   return Far('paramGovernor', {

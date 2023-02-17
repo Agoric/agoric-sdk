@@ -85,8 +85,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -161,8 +161,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
@@ -226,8 +226,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -256,8 +256,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -267,7 +267,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: 1.17
+          go-version: 1.18
       - name: yarn test (cosmic-swingset)
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: Report tests
@@ -289,8 +289,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -318,8 +318,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
@@ -353,8 +353,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
@@ -381,8 +381,8 @@ jobs:
       - name: set vars
         id: vars
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v3
       - uses: ./.github/actions/restore-node
@@ -411,8 +411,8 @@ jobs:
         id: vars
         # END-TEST-BOILERPLATE
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v3
@@ -442,8 +442,8 @@ jobs:
         id: vars
         # END-TEST-BOILERPLATE
         run: |
-          echo ::set-output name=node-version::${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}
-          echo ::set-output name=test::${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}
+          echo "node-version=${{ matrix.engine == 'xs' && '14.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
           echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v3

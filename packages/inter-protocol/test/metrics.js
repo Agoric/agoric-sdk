@@ -45,7 +45,7 @@ export const subscriptionTracker = async (t, subscription) => {
  * For public facets that have a `getMetrics` method.
  *
  * @param {import('ava').ExecutionContext} t
- * @param {{getMetrics?: () => Subscriber<unknown>}} publicFacet
+ * @param {ERef<{getMetrics?: () => Subscriber<unknown>}>} publicFacet
  * @template {object} N
  */
 export const metricsTracker = async (t, publicFacet) => {

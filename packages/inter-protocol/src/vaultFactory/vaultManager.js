@@ -127,24 +127,30 @@ const trace = makeTracer('VM', false);
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand<'nat'>} collateralBrand
- * @param {Amount<'nat'>} collateralUnit
- * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
- * @param {Timestamp} startTimeStamp
- * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @param {Readonly<{
+ * debtMint: ZCFMint<'nat'>,
+ * collateralBrand: Brand<'nat'>,
+ * collateralUnit: Amount<'nat'>,
+ * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * descriptionScope: string,
+ * startTimeStamp: Timestamp,
+ * storageNode: ERef<StorageNode>,
+ * }>} unique per singleton
  */
 export const prepareVaultManagerKit = (
   baggage,
   zcf,
-  debtMint,
-  collateralBrand,
-  collateralUnit,
-  factoryPowers,
-  startTimeStamp,
-  storageNode,
   marshaller,
+  {
+    debtMint,
+    collateralBrand,
+    collateralUnit,
+    descriptionScope,
+    factoryPowers,
+    startTimeStamp,
+    storageNode,
+  },
 ) => {
   assert(
     storageNode && marshaller,
@@ -276,6 +282,7 @@ export const prepareVaultManagerKit = (
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
         getCompoundedInterest: M.call().returns(RatioShape),
+        scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
           AmountShape,
@@ -299,9 +306,10 @@ export const prepareVaultManagerKit = (
     {
       collateral: {
         makeVaultInvitation() {
+          const { facets } = this;
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
-            'MakeVault',
+            facets.manager.scopeDescription('MakeVault'),
           );
         },
         /** @deprecated use getPublicTopics */
@@ -687,6 +695,14 @@ export const prepareVaultManagerKit = (
         },
         getDebtBrand() {
           return debtBrand;
+        },
+        /**
+         * Prepend with an identifier of this vault manager
+         *
+         * @param {string} base
+         */
+        scopeDescription(base) {
+          return `${descriptionScope}: ${base}`;
         },
         /**
          * coefficient on existing debt to calculate new debt

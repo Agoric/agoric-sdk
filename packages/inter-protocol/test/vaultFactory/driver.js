@@ -30,7 +30,7 @@ import {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('VFDriver');
+const trace = makeTracer('VFDriver', false);
 
 export const AT_NEXT = Symbol('AT_NEXT');
 
@@ -318,14 +318,14 @@ const setupServices = async (
   );
 
   /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
-  const [governorInstance, vaultFactory, lender, aethVaultManager] =
+  const [governorInstance, vaultFactory, vfPublic, aethVaultManager] =
     await Promise.all([
       E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
       vaultFactoryCreatorFacet,
       E(governorCreatorFacet).getPublicFacet(),
       aethVaultManagerP,
     ]);
-  trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
+  trace(t, 'pa', { governorInstance, vaultFactory, vfPublic, priceAuthority });
 
   return {
     zoe,
@@ -336,8 +336,10 @@ const setupServices = async (
       governorCreatorFacet,
     },
     vaultFactory: {
+      // name for backwards compatiiblity
+      lender: E(vfPublic).getCollateralManager(aeth.brand),
       vaultFactory,
-      lender,
+      vfPublic,
       aethVaultManager,
     },
     ammKit,
@@ -360,11 +362,11 @@ export const makeManagerDriver = async (
 
   const { zoe, aeth, run } = t.context;
   const {
-    vaultFactory: { lender, vaultFactory },
+    vaultFactory: { lender, vaultFactory, vfPublic },
     priceAuthority,
   } = services;
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(E(lender).getCollateralManager(aeth.brand)).getSubscriber(),
+    E(lender).getSubscriber(),
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
@@ -457,6 +459,15 @@ export const makeManagerDriver = async (
         );
         t.truthy(await E(vaultSeat).hasExited());
       },
+      transfer: async () => {
+        currentSeat = await E(zoe).offer(E(vault).makeTransferInvitation());
+        currentOfferResult = await E(currentSeat).getOfferResult();
+        console.log('DEBUG', { currentOfferResult });
+        t.like(currentOfferResult, {
+          publicSubscribers: { vault: { description: 'Vault holder status' } },
+        });
+        t.truthy(await E(vaultSeat).hasExited());
+      },
       /**
        *
        * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
@@ -491,7 +502,7 @@ export const makeManagerDriver = async (
   };
 
   const driver = {
-    getVaultDirectorPublic: () => lender,
+    getVaultDirectorPublic: () => vfPublic,
     managerNotification: () => managerNotification,
     // XXX should return another ManagerDriver and maybe there should be a Director driver above them
     addVaultType: async keyword => {
@@ -547,7 +558,6 @@ export const makeManagerDriver = async (
     /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
     /**
-     *
      * @param {string} name
      * @param {*} newValue
      * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
@@ -565,6 +575,14 @@ export const makeManagerDriver = async (
           changes: { [name]: newValue },
         }),
       );
+    },
+    /**
+     * @param {string[]} filters
+     */
+    setGovernedFilters: filters => {
+      trace(t, 'setGovernedFilters', filters);
+      const vfGov = t.context.puppetGovernors.vaultFactory;
+      return E(vfGov).setFilters(harden(filters));
     },
     /**
      *

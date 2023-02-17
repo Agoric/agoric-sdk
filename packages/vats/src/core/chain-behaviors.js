@@ -39,6 +39,7 @@ export const bridgeCoreEval = async allPowers => {
   // We need all of the powers to be available to the evaluator, but we only
   // need the bridgeManager to install our handler.
   const {
+    vatPowers: { D },
     consume: { bridgeManager: bridgeManagerP },
     produce: { coreEvalBridgeHandler },
   } = allPowers;
@@ -50,13 +51,14 @@ export const bridgeCoreEval = async allPowers => {
     Base64: globalThis.Base64, // Present only on XSnap
     URL: globalThis.URL, // Absent only on XSnap
   };
-  /** @param {Installation} installation */
-  const evaluateInstallation = async installation => {
-    const bundle = await E(installation).getBundle();
+
+  /** @param {BundleCap} bundleCap */
+  const evaluateBundleCap = async bundleCap => {
+    const bundle = await D(bundleCap).getBundle();
     const imported = await importBundle(bundle, { endowments });
     return imported;
   };
-  harden(evaluateInstallation);
+  harden(evaluateBundleCap);
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
@@ -76,7 +78,7 @@ export const bridgeCoreEval = async allPowers => {
                 .then(() => {
                   const permit = JSON.parse(jsonPermit);
                   const powers = extractPowers(permit, {
-                    evaluateInstallation,
+                    evaluateBundleCap,
                     ...allPowers,
                   });
 

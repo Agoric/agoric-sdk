@@ -80,7 +80,11 @@ test.before(
   },
 );
 
-test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
+/**
+ * @param {ExecutionContext} t
+ * @param {bigint} [initialPriceInCents]
+ */
+const makeScenario = async (t, initialPriceInCents) => {
   const timer = buildManualTimer(t.log);
   const makeSourcePrice = (valueIn, valueOut) =>
     makeRatio(valueOut, t.context.usdBrand, valueIn, t.context.atomBrand);
@@ -108,10 +112,25 @@ test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
         10n ** 6n,
         t.context.run.brand,
       ),
+      initialPrice: initialPriceInCents
+        ? makeRatio(
+            initialPriceInCents,
+            t.context.run.brand,
+            100n,
+            t.context.ibcAtom.brand,
+          )
+        : undefined,
     },
   );
 
   const pa = await E(scaledPrice.publicFacet).getPriceAuthority();
+
+  return { timer, sourcePriceAuthority, makeSourcePrice, pa };
+};
+
+test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
+  const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
+    await makeScenario(t);
 
   const notifier = E(pa).makeQuoteNotifier(
     AmountMath.make(t.context.ibcAtom.brand, 10n ** 6n),
@@ -176,37 +195,8 @@ test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
 });
 
 test('mutableQuoteWhenLT: brands in/out match', /** @param {ExecutionContext} t */ async t => {
-  const timer = buildManualTimer(t.log);
-  const makeSourcePrice = (valueIn, valueOut) =>
-    makeRatio(valueOut, t.context.usdBrand, valueIn, t.context.atomBrand);
-  const sourcePriceAuthority = makeManualPriceAuthority({
-    actualBrandIn: t.context.atomBrand,
-    actualBrandOut: t.context.usdBrand,
-    initialPrice: makeSourcePrice(10n ** 5n, 35_6100n),
-    timer,
-  });
-
-  const scaledPrice = await E(t.context.zoe).startInstance(
-    t.context.scaledPriceInstallation,
-    undefined,
-    {
-      sourcePriceAuthority,
-      scaleIn: makeRatio(
-        10n ** 5n,
-        t.context.atomBrand,
-        10n ** 6n,
-        t.context.ibcAtom.brand,
-      ),
-      scaleOut: makeRatio(
-        10n ** 4n,
-        t.context.usdBrand,
-        10n ** 6n,
-        t.context.run.brand,
-      ),
-    },
-  );
-
-  const pa = await E(scaledPrice.publicFacet).getPriceAuthority();
+  const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
+    await makeScenario(t);
 
   const mutableQuote = E(pa).mutableQuoteWhenLT(
     AmountMath.make(t.context.ibcAtom.brand, 10n ** 6n),
@@ -254,4 +244,61 @@ test('mutableQuoteWhenLT: brands in/out match', /** @param {ExecutionContext} t 
       timestamp: 1n,
     },
   ]);
+});
+
+/** @param {Brand<'nat'>} brand */
+const unitAmount = async brand => {
+  // Brand methods are remote
+  const displayInfo = await E(brand).getDisplayInfo();
+  const decimalPlaces = displayInfo.decimalPlaces ?? 0;
+  return AmountMath.make(brand, 10n ** BigInt(decimalPlaces));
+};
+
+test('initialPrice', /** @param {ExecutionContext} t */ async t => {
+  const { make } = AmountMath;
+  const { ibcAtom: collateral, run: debt } = t.context;
+  const { timer, pa } = await makeScenario(t, 12_34n);
+
+  t.log('vault manager makes unit quote notifier');
+  const collateralUnit = await unitAmount(collateral.brand);
+  const quotes = E(pa).makeQuoteNotifier(collateralUnit, debt.brand);
+
+  t.log('clients can see initial price before source price is available');
+  const {
+    value: { quoteAmount: qa1 },
+    updateCount: uc1,
+  } = await E(quotes).getUpdateSince();
+  t.deepEqual(
+    qa1.value,
+    [
+      {
+        amountIn: { brand: collateral.brand, value: 100n },
+        amountOut: { brand: debt.brand, value: 12_34n },
+        timer,
+        timestamp: 0n,
+      },
+    ],
+    'check, for example, manager0.quotes',
+  );
+
+  t.log('vault manager gets quote for 500 ATOM');
+  const q500 = await E(pa).quoteGiven(make(collateral.brand, 500n), debt.brand);
+  t.deepEqual(q500.quoteAmount.value[0].amountOut, make(debt.brand, 6170n));
+
+  t.log('clients get remaining prices as usual');
+  const {
+    value: { quoteAmount: qa2 },
+  } = await E(quotes).getUpdateSince(uc1);
+  t.deepEqual(qa2.value, [
+    {
+      amountIn: { brand: collateral.brand, value: 1_000_000n },
+      amountOut: { brand: debt.brand, value: 35_610_000n },
+      timer,
+      timestamp: 0n,
+    },
+  ]);
+
+  t.log('vault manager gets quote for 400 ATOM at usual price');
+  const q400 = await E(pa).quoteGiven(make(collateral.brand, 400n), debt.brand);
+  t.deepEqual(q400.quoteAmount.value[0].amountOut, make(debt.brand, 14200n));
 });
