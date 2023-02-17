@@ -8,6 +8,7 @@ import {
   floorMultiplyBy,
 } from '../contractSupport/index.js';
 import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
+import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.js';
 
 /**
  * @typedef {object} ScaledPriceAuthorityOpts
@@ -48,7 +49,6 @@ export const start = async (
     sourceBrandOut,
     actualBrandIn,
     actualBrandOut,
-    initialPrice,
     // It's hard to make a good guess as to the best rounding strategy for this
     // transformation, but we make sure that the amount in is generous and the
     // amount out is conservative.
@@ -58,8 +58,20 @@ export const start = async (
     transformSourceAmountOut: amountOut => floorDivideBy(amountOut, scaleOut),
   });
 
+  const withInitial = initialPrice
+    ? priceAuthority.then(pa =>
+        makeInitialTransform(
+          initialPrice,
+          pa,
+          quoteMint,
+          actualBrandIn,
+          actualBrandOut,
+        ),
+      )
+    : priceAuthority;
+
   const publicFacet = Far('publicFacet', {
-    getPriceAuthority: () => priceAuthority,
+    getPriceAuthority: () => withInitial,
   });
   return harden({ publicFacet });
 };
