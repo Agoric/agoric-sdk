@@ -149,19 +149,23 @@ export const makeSlogSender = async (opts = {}) => {
     const getJsonObj = hasSenderUsingJsonObj
       ? serializeSlogObj
       : () => undefined;
+    const sendErrors = [];
     /** @type {SlogSender} */
     const slogSender = (slogObj, jsonObj = getJsonObj(slogObj)) => {
       for (const sender of senders) {
         try {
           sender(slogObj, jsonObj);
         } catch (err) {
-          console.error('WARNING: slog sender error', err);
+          sendErrors.push(err);
         }
       }
     };
     return Object.assign(slogSender, {
       forceFlush: async () =>
-        PromiseAllOrErrors(senders.map(sender => sender.forceFlush?.())),
+        PromiseAllOrErrors([
+          ...senders.map(sender => sender.forceFlush?.()),
+          ...sendErrors.splice(0).map(err => Promise.reject(err)),
+        ]).then(() => {}),
       usesJsonObject: hasSenderUsingJsonObj,
     });
   }

@@ -142,6 +142,7 @@ t1/decentral-economy-config.json: $(ECONOMY_PROPOSALS)
 		'$(ECONOMY_PROPOSALS)' > t1/decentral-economy-config.json
 
 scenario2-run-chain-economy: t1/decentral-economy-config.json
+	echo "DEPRECATED use: CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vats/decentral-test-vaults-config.json scenario2-run-chain"
 	CHAIN_BOOTSTRAP_VAT_CONFIG="$$PWD/t1/decentral-economy-config.json" \
 		$(MAKE) scenario2-run-chain
 

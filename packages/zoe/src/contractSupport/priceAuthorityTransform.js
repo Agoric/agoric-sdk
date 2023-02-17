@@ -7,6 +7,35 @@ import { makeNotifier } from '@agoric/notifier';
 /** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
 
 /**
+ *
+ * @param {Brand<'set'>} quoteBrand
+ * @param {Amount<'nat'>} amountIn
+ * @param {Amount<'nat'>} amountOut
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {import('@agoric/time').Timestamp} timestamp
+ * @param {ERef<Mint<'set'>>} quoteMint
+ * @returns {Promise<PriceQuote>}
+ */
+export const mintQuote = async (
+  quoteBrand,
+  amountIn,
+  amountOut,
+  timer,
+  timestamp,
+  quoteMint,
+) => {
+  const quoteAmount = {
+    brand: quoteBrand,
+    value: [{ amountIn, amountOut, timer, timestamp }],
+  };
+  const quotePayment = await E(quoteMint).mintPayment({
+    brand: quoteBrand,
+    value: [quoteAmount],
+  });
+  return harden({ quoteAmount, quotePayment });
+};
+
+/**
  * @param {object} opts
  * @param {ERef<Mint<'set'>>} [opts.quoteMint]
  * @param {ERef<PriceAuthority>} opts.sourcePriceAuthority
@@ -14,7 +43,6 @@ import { makeNotifier } from '@agoric/notifier';
  * @param {Brand<'nat'>} opts.sourceBrandOut
  * @param {Brand<'nat'>} [opts.actualBrandIn]
  * @param {Brand<'nat'>} [opts.actualBrandOut]
- * @param {Ratio} [opts.initialPrice]
  * @param {(amountIn: Amount<'nat'>) => Amount<'nat'>} [opts.makeSourceAmountIn]
  * @param {(amountOut: Amount<'nat'>) => Amount<'nat'>} [opts.makeSourceAmountOut]
  * @param {(sourceAmountIn: Amount<'nat'>) => Amount<'nat'>} [opts.transformSourceAmountIn]
@@ -27,17 +55,11 @@ export const makePriceAuthorityTransform = async ({
   sourceBrandOut,
   actualBrandIn = sourceBrandIn,
   actualBrandOut = sourceBrandOut,
-  initialPrice,
   makeSourceAmountIn = x => x,
   makeSourceAmountOut = x => x,
   transformSourceAmountIn = x => x,
   transformSourceAmountOut = x => x,
 }) => {
-  if (initialPrice) {
-    assert.equal(initialPrice.numerator.brand, actualBrandIn);
-    assert.equal(initialPrice.denominator.brand, actualBrandOut);
-  }
-
   const quoteIssuer = E(quoteMint).getIssuer();
   const quoteBrand = await E(quoteIssuer).getBrand();
 
@@ -58,29 +80,6 @@ export const makePriceAuthorityTransform = async ({
       actualBrandOut,
       X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
     );
-  };
-
-  /**
-   * @param {Amount<"nat">} amountIn
-   * @param {Amount<"nat">} amountOut
-   * @param {object} [opts]
-   * @param {*} [opts.timer]
-   * @param {unknown} [opts.timestamp]
-   */
-  const oneQuote = async (amountIn, amountOut, { timer, timestamp } = {}) => {
-    timer = await (timer ||
-      E(sourcePriceAuthority).getTimerService(sourceBrandIn, sourceBrandOut));
-    timestamp = await (timestamp || E(timer).getCurrentTimestamp());
-
-    const quoteAmount = {
-      brand: quoteBrand,
-      value: [{ amountIn, amountOut, timer, timestamp }],
-    };
-    const quotePayment = await E(quoteMint).mintPayment({
-      brand: quoteBrand,
-      value: [quoteAmount],
-    });
-    return harden({ quoteAmount, quotePayment });
   };
 
   /**
@@ -111,14 +110,17 @@ export const makePriceAuthorityTransform = async ({
       timer,
       timestamp,
     } = sourceQuoteValue[0];
-
     const amountIn = transformSourceAmountIn(sourceAmountIn);
     const amountOut = transformSourceAmountOut(sourceAmountOut);
 
-    return oneQuote(amountIn, amountOut, {
+    return mintQuote(
+      quoteBrand,
+      amountIn,
+      amountOut,
       timer,
       timestamp,
-    });
+      quoteMint,
+    );
   };
 
   /**
@@ -187,7 +189,7 @@ export const makePriceAuthorityTransform = async ({
     return mutableQuoteWhenOut;
   };
 
-  /** @type {EOnly<PriceAuthority>} */
+  /** @type {PriceAuthority} */
   const priceAuthority = Far('PriceAuthority', {
     getQuoteIssuer(brandIn, brandOut) {
       assertBrands(brandIn, brandOut);
@@ -209,23 +211,9 @@ export const makePriceAuthorityTransform = async ({
         sourceBrandOut,
       );
 
-      let initialQuote;
-      let pastInitialQuote = false;
-
       // Wrap our underlying notifier with scaled quotes.
       const scaledBaseNotifier = harden({
-        async getUpdateSince(updateCount = -1n) {
-          if (initialPrice && updateCount === -1n && !pastInitialQuote) {
-            if (!initialQuote) {
-              initialQuote = oneQuote(
-                initialPrice.numerator,
-                initialPrice.denominator,
-              ).then(value => harden({ value, updateCount: 0n }));
-            }
-            return initialQuote;
-          }
-          pastInitialQuote = true;
-
+        async getUpdateSince(updateCount = undefined) {
           // We use the same updateCount as our underlying notifier.
           const record = await E(notifier).getUpdateSince(updateCount);
 

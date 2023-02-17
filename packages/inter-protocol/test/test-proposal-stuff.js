@@ -70,13 +70,13 @@ test('inter-protocol vaults proposal handles endorsedUi option', async t => {
   });
 });
 
-test('inter-protocol ATOM proposal handles initialPricePct option', async t => {
+test('inter-protocol ATOM proposal handles initialPrice option', async t => {
   const proposalModule =
     '@agoric/inter-protocol/scripts/add-collateral-core.js';
   const interchainAssetOptions = {
     decimalPlaces: 6,
     denom: 'ibc/toyatom',
-    initialPricePct: 1234,
+    initialPrice: 12.34,
     keyword: 'IbcATOM',
     oracleBrand: 'ATOM',
     proposedName: 'ATOM',

@@ -15,7 +15,7 @@ fi
 # ugly way to get SDK path regardless of cwd
 SDK=$(readlink -f "$(dirname -- "$(readlink -f -- "$0")")/../../..")
 
-WALLET=$1
+WALLET=gov1
 WALLET_BECH32=$(agd keys --keyring-backend=test show "$WALLET" --output json | jq -r .address)
 
 if [ -z "$WALLET_BECH32" ]; then
@@ -30,7 +30,7 @@ fi
 # this is in economy-template.json in the oracleAddresses list (agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y)
 # to use it run `agd keys --keyring-backend=test add oracle2 --interactive` and enter this mnenomic:
 # dizzy scale gentle good play scene certain acquire approve alarm retreat recycle inch journey fitness grass minimum learn funny way unlock what buzz upon
-WALLET2=oracle2
+WALLET2=gov2
 WALLET2_BECH32=$(agd keys --keyring-backend=test show "$WALLET2" --output json | jq -r .address)
 if [ -z "$WALLET2_BECH32" ]; then
     echo "missing oracle2 key in test keyring"
@@ -55,7 +55,7 @@ make scenario2-setup-nobuild >>"$CHAIN_LOG" 2>&1
 echo "Starting the chain..."
 # use -economy target to get the kitchen sink
 # disable pruning to keep all history https://docs.desmos.network/fullnode/overview/
-make AGC_START_ARGS="--pruning=nothing" scenario2-run-chain-economy >>"$CHAIN_LOG" 2>&1 &
+make AGC_START_ARGS="--pruning=nothing" CHAIN_BOOTSTRAP_VAT_CONFIG=@agoric/vats/decentral-test-vaults-config.json scenario2-run-chain >>"$CHAIN_LOG" 2>&1 &
 make wait-for-cosmos
 
 # xxx sleep to let it settle
@@ -79,6 +79,6 @@ sleep 15
 agoric wallet --keyring-backend=test list
 agoric wallet --keyring-backend=test show --from "$WALLET"
 
-echo "Repeating for oracle2 account..."
+echo "Repeating for gov2 account..."
 make ACCT_ADDR="$WALLET2_BECH32" FUNDS=20000000ubld,20000000ibc/toyusdc fund-acct
 agoric wallet --keyring-backend=test provision --spend --account "$WALLET2"

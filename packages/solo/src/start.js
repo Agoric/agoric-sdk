@@ -17,7 +17,7 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, Fail } from '@agoric/assert';
-import { makeSlogSender } from '@agoric/telemetry';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -248,10 +248,12 @@ const buildSwingset = async (
 
   async function processKernel() {
     await crankScheduler(policy);
-    if (swingSetRunning) {
-      await saveState();
-      deliverOutbound();
+    if (!swingSetRunning) {
+      return;
     }
+    await saveState();
+    deliverOutbound();
+    await tryFlushSlogSender(slogSender, { env, log: console.warn });
   }
 
   // Use the input queue to make sure it doesn't overlap with

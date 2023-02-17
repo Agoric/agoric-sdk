@@ -1,6 +1,7 @@
 /* global process */
 import '@endo/init';
 
+import { makeAggregateError } from '@agoric/internal';
 import anylogger from 'anylogger';
 import { makeShutdown } from './shutdown.js';
 
@@ -32,6 +33,8 @@ const main = async () => {
   /** @type {import('./index.js').SlogSender | undefined} */
   let slogSender;
 
+  const sendErrors = [];
+
   const { registerShutdown } = makeShutdown(false);
 
   registerShutdown(async () => {
@@ -61,6 +64,19 @@ const main = async () => {
     await slogSender.forceFlush?.();
   };
 
+  /** @param {Error} [actualFlushError] */
+  const generateFlushError = actualFlushError => {
+    if (!sendErrors.length) {
+      return actualFlushError;
+    }
+
+    if (actualFlushError) {
+      sendErrors.unshift(actualFlushError);
+    }
+
+    return makeAggregateError(sendErrors.splice(0));
+  };
+
   process.on(
     'message',
     /** @param {SlogSenderPipeMessages} msg */ msg => {
@@ -84,10 +100,10 @@ const main = async () => {
         case 'flush': {
           void flush().then(
             () => {
-              send({ type: 'flushReply' });
+              send({ type: 'flushReply', error: generateFlushError() });
             },
             error => {
-              send({ type: 'flushReply', error });
+              send({ type: 'flushReply', error: generateFlushError(error) });
             },
           );
           break;
@@ -96,7 +112,11 @@ const main = async () => {
           if (!slogSender) {
             logger.warn('received send with no sender available');
           } else {
-            slogSender(msg.obj);
+            try {
+              slogSender(msg.obj);
+            } catch (e) {
+              sendErrors.push(e);
+            }
           }
           break;
         }
