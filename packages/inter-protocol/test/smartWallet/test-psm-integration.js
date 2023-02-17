@@ -12,7 +12,10 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import { NonNullish } from '@agoric/assert';
 
-import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import {
+  coalesceUpdates,
+  sequenceUpdates,
+} from '@agoric/smart-wallet/src/utils.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
 import {
   currentPurseBalance,
@@ -63,7 +66,7 @@ test('null swap', async t => {
   const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
     'agoric1nullswap',
   );
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const updates = sequenceUpdates(E(wallet).getUpdatesSubscriber());
 
   /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
   const invitationSpec = {
@@ -81,13 +84,28 @@ test('null swap', async t => {
       want: { Out: anchor.makeEmpty() },
     },
   });
+
   await eventLoopIteration();
+
+  t.like(updates[0], {
+    updated: 'balance',
+  });
+
+  const statusUpdateHasKeys = (updateIndex, result, numWants, payouts) => {
+    const { status } = updates[updateIndex];
+    t.is('result' in status, result, 'result');
+    t.is('numWantsSatisfied' in status, numWants, 'numWantsSatisfied');
+    t.is('payouts' in status, payouts, 'payouts');
+    t.false('error' in status);
+  };
+
+  statusUpdateHasKeys(1, false, false, false);
+  statusUpdateHasKeys(2, true, false, false);
+  statusUpdateHasKeys(3, true, true, false);
+  statusUpdateHasKeys(4, true, true, true);
 
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
-  const status = computedState.offerStatuses.get('nullSwap');
-  t.is(status?.id, 'nullSwap');
-  t.false('error' in NonNullish(status), 'should not have an error');
 });
 
 // we test this direction of swap because wanting anchor would require the PSM to have anchor in it first

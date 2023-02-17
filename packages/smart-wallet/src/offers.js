@@ -97,6 +97,7 @@ export const makeOfferExecutor = ({
           offerArgs,
         );
         logger.info(id, 'seated');
+        updateStatus({});
 
         const publishResult = E.when(E(seatRef).getOfferResult(), result => {
           const passStyle = passStyleOf(result);

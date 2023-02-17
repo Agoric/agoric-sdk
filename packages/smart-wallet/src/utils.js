@@ -98,19 +98,24 @@ export const coalesceUpdates = (updates, invitationBrand) => {
 };
 
 /**
+ * Sequence updates from a wallet UpdateRecord publication feed. Note that local
+ * state may not reflect the wallet's state if the initial updates are missed.
  *
- * @param {import('@agoric/casting').Follower<any>} follower
- * @throws if there is no first height
+ * If this proves to be a problem we can add an option to this or a related
+ * utility to reset state from RPC.
+ *
+ * @param {ERef<Subscriber<import('./smartWallet').UpdateRecord>>} updates
  */
-export const assertHasData = async follower => {
-  const eachIterable = E(follower).getReverseIterable();
-  const iterator = await E(eachIterable)[Symbol.asyncIterator]();
-  const el = await iterator.next();
+export const sequenceUpdates = updates => {
+  const sequence = [];
 
-  // done before we started
-  if (el.done && !el.value) {
-    assert.fail(NO_SMART_WALLET_ERROR);
-  }
+  void observeIteration(subscribeEach(updates), {
+    updateState: updateRecord => {
+      sequence.push(updateRecord);
+    },
+  });
+
+  return sequence;
 };
 
 /**
