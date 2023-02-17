@@ -7,7 +7,8 @@ import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { E, Far } from '@endo/far';
-import { makeFeeDistributor } from '../src/feeDistributor.js';
+import { mustMatch } from '@agoric/store';
+import { makeFeeDistributor, customTermsShape } from '../src/feeDistributor.js';
 
 /**
  * @param {Issuer} feeIssuer
@@ -68,7 +69,7 @@ const assertPaymentArray = async (
   }
 };
 
-test('fee distribution', async t => {
+const makeScenario = async t => {
   const { brands, moolaIssuer: issuer, moolaMint: runMint } = setup();
   const brand = brands.get('moola');
   const { feeDepositFacet, getPayments } = makeFakeFeeDepositFacetKit(issuer);
@@ -77,13 +78,40 @@ test('fee distribution', async t => {
   const vaultFactory = makeFakeFeeProducer(makeEmptyPayment);
   const amm = makeFakeFeeProducer(makeEmptyPayment);
   const timerService = buildManualTimer(t.log);
-  const { creatorFacet } = await makeFeeDistributor(issuer, {
+  const { publicFacet, creatorFacet } = await makeFeeDistributor(issuer, {
     timerService,
     collectionInterval: 1n,
     keywordShares: {
       Rewards: 3n,
     },
   });
+
+  return {
+    timerService,
+    runMint,
+    issuer,
+    brand,
+    amm,
+    vaultFactory,
+    getPayments,
+    publicFacet,
+    creatorFacet,
+    feeDepositFacet,
+  };
+};
+
+test('fee distribution', async t => {
+  const {
+    timerService,
+    runMint,
+    issuer,
+    brand,
+    amm,
+    vaultFactory,
+    getPayments,
+    creatorFacet,
+    feeDepositFacet,
+  } = await makeScenario(t);
 
   const feeCollectors = {
     vaultFactory,
@@ -107,6 +135,61 @@ test('fee distribution', async t => {
   await timerService.tick();
 
   await assertPaymentArray(t, getPayments(), 2, [500n, 270n], issuer, brand);
+});
+
+test('setKeywordShares', async t => {
+  const {
+    timerService,
+    runMint,
+    issuer,
+    brand,
+    amm,
+    vaultFactory,
+    getPayments,
+    publicFacet,
+    creatorFacet,
+    feeDepositFacet,
+  } = await makeScenario(t);
+
+  const feeCollectors = {
+    vaultFactory,
+    amm,
+  };
+  await Promise.all(
+    Object.entries(feeCollectors).map(async ([debugName, collector]) => {
+      await creatorFacet.startPeriodicCollection(debugName, collector);
+    }),
+  );
+
+  const { feeDepositFacet: deposit2, getPayments: getPayments2 } =
+    makeFakeFeeDepositFacetKit(issuer);
+  const rewardsDestination =
+    creatorFacet.makeDepositFacetDestination(feeDepositFacet);
+  const reserveDestination = creatorFacet.makeDepositFacetDestination(deposit2);
+
+  t.deepEqual(publicFacet.getKeywordShares(), { Rewards: 3n });
+  await creatorFacet.setKeywordShares(
+    harden({
+      Reserve: 4n,
+      Rewards: 1n,
+    }),
+  );
+  t.deepEqual(publicFacet.getKeywordShares(), { Reserve: 4n, Rewards: 1n });
+
+  await creatorFacet.setDestinations({
+    Rewards: rewardsDestination,
+    Reserve: reserveDestination,
+  });
+
+  vaultFactory.pushFees(runMint.mintPayment(AmountMath.make(brand, 500n)));
+  amm.pushFees(runMint.mintPayment(AmountMath.make(brand, 270n)));
+
+  t.deepEqual(await getPayments(), []);
+
+  await timerService.tick();
+
+  await assertPaymentArray(t, getPayments(), 2, [100n, 54n], issuer, brand);
+  await assertPaymentArray(t, getPayments2(), 2, [400n, 216n], issuer, brand);
 });
 
 test('fee distribution, leftovers', async t => {
@@ -162,5 +245,21 @@ test('fee distribution, leftovers', async t => {
     [13n, 7n],
     issuer,
     brand,
+  );
+});
+
+test('feeDistributor custom terms shape catches non-Nat bigint', t => {
+  const timerService = Far('MockTimer', {});
+  t.throws(
+    () =>
+      mustMatch(
+        harden({
+          keywordShares: { Reserve: -1n },
+          timerService,
+          collectionInterval: 2n,
+        }),
+        customTermsShape,
+      ),
+    { message: 'keywordShares: Reserve: [1]: "[-1n]" - Must be non-negative' },
   );
 });
