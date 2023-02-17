@@ -49,6 +49,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
+import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
@@ -274,9 +275,12 @@ export const prepareVaultManagerKit = (
       manager: M.interface('manager', {
         getGovernedParams: M.call().returns(M.remotable()),
         maxDebtFor: M.call(AmountShape).returns(M.promise()),
-        mintAndReallocate: M.call(AmountShape, AmountShape, SeatShape)
-          .rest()
-          .returns(),
+        mintAndTransfer: M.call(
+          SeatShape,
+          AmountShape,
+          AmountShape,
+          M.arrayOf(TransferPartShape),
+        ).returns(),
         burnAndRecord: M.call(AmountShape, SeatShape).returns(),
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
@@ -351,7 +355,7 @@ export const prepareVaultManagerKit = (
           const changes = chargeInterest(
             {
               mint: debtMint,
-              mintAndReallocateWithFee: factoryPowers.mintAndReallocate,
+              mintAndTransferWithFee: factoryPowers.mintAndTransfer,
               poolIncrementSeat,
               seatAllocationKeyword: 'Minted',
             },
@@ -651,17 +655,8 @@ export const prepareVaultManagerKit = (
             factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
         },
-        /**
-         * TODO utility method to turn a callback into non-actual one
-         * was type {MintAndReallocate}
-         *
-         * @param {Amount<'nat'>} toMint
-         * @param {Amount<'nat'>} fee
-         * @param {ZCFSeat} seat
-         * @param {...ZCFSeat} otherSeats
-         * @returns {void}
-         */
-        mintAndReallocate(toMint, fee, seat, ...otherSeats) {
+        /** @type {MintAndTransfer} */
+        mintAndTransfer(mintReceiver, toMint, fee, transfers) {
           const { state } = this;
           const { totalDebt } = state;
 
@@ -670,7 +665,7 @@ export const prepareVaultManagerKit = (
             totalDebt,
             toMint,
           );
-          factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
+          factoryPowers.mintAndTransfer(mintReceiver, toMint, fee, transfers);
           state.totalDebt = AmountMath.add(state.totalDebt, toMint);
         },
         /**

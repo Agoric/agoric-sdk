@@ -1,36 +1,32 @@
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
-
-import '@agoric/governance/exported.js';
-import { E } from '@endo/eventual-send';
-
-import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
-import {
-  getAmountIn,
-  getAmountOut,
-  provideChildBaggage,
-  provideEmptySeat,
-  unitAmount,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
-
+import { Fail, q } from '@agoric/assert';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
-  makeStoredPublisherKit,
   makePublicTopic,
+  makeStoredPublisherKit,
   observeIteration,
   pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
+import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   defineDurableExoClassKit,
   makeKindHandle,
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
+import {
+  atomicRearrange,
+  getAmountIn,
+  getAmountOut,
+  makeRatioFromAmounts,
+  provideChildBaggage,
+  provideEmptySeat,
+  unitAmount,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   CHARGING_PERIOD_KEY,
@@ -41,7 +37,9 @@ import {
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
 
-const { details: X, quote: q, Fail } = assert;
+import '@agoric/governance/exported.js';
+import '@agoric/zoe/exported.js';
+import '@agoric/zoe/src/contracts/exported.js';
 
 /**
  * @typedef {{
@@ -61,7 +59,7 @@ const { details: X, quote: q, Fail } = assert;
  * @typedef {{
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
- *  mintAndReallocate: MintAndReallocate,
+ *  mintAndTransfer: MintAndTransfer,
  *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
  * }} FactoryPowersFacet
  *
@@ -93,8 +91,9 @@ export const prepareVaultDirector = (
     baggage,
     'Vault Director publish kit',
   );
-  /** For temporary staging of newly minted tokens */
-  const mintSeat = provideEmptySeat(zcf, baggage, 'mintSeat');
+  /** For holding newly minted tokens until transferred */
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
+
   const rewardPoolSeat = provideEmptySeat(zcf, baggage, 'rewardPoolSeat');
 
   /** @type {MapStore<Brand, VaultManager>} */
@@ -322,40 +321,34 @@ export const prepareVaultDirector = (
           const startTimeStamp = await E(timerService).getCurrentTimestamp();
 
           /**
-           * We provide an easy way for the vaultManager to add rewards to
-           * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
+           * Let the manager add rewards to the rewardPoolSeat without
+           * exposing the rewardPoolSeat to them.
            *
-           * @type {MintAndReallocate}
+           * @type {MintAndTransfer}
            */
-          const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+          const mintAndTransfer = (
+            mintReceiver,
+            toMint,
+            fee,
+            nonMintTransfers,
+          ) => {
             const kept = AmountMath.subtract(toMint, fee);
             debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
+            /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+            const transfers = [
+              ...nonMintTransfers,
+              [mintSeat, rewardPoolSeat, { Minted: fee }],
+              [mintSeat, mintReceiver, { Minted: kept }],
+            ];
             try {
-              rewardPoolSeat.incrementBy(
-                mintSeat.decrementBy(harden({ Minted: fee })),
-              );
-              seat.incrementBy(mintSeat.decrementBy(harden({ Minted: kept })));
-              zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
+              atomicRearrange(zcf, harden(transfers));
             } catch (e) {
-              console.error('mintAndReallocate caught', e);
-              mintSeat.clear();
-              rewardPoolSeat.clear();
-              // Make best efforts to burn the newly minted tokens, for hygiene.
-              // That only relies on the internal mint, so it cannot fail without
-              // there being much larger problems. There's no risk of tokens being
-              // stolen here because the staging for them was already cleared.
+              console.error('mintAndTransfer failed to rearrange', e);
+              // If the rearrange fails, burn the newly minted tokens.
+              // Assume this won't fail because it relies on the internal mint.
+              // (Failure would imply much larger problems.)
               debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
               throw e;
-            } finally {
-              // Note that if this assertion may fail because of an error in the
-              // try{} block, but that error won't be thrown because this executes
-              // before the catch that rethrows it.
-              assert(
-                Object.values(mintSeat.getCurrentAllocation()).every(a =>
-                  AmountMath.isEmpty(a),
-                ),
-                X`Stage should be empty of Minted`,
-              );
             }
             facets.machine.updateMetrics();
           };
@@ -382,7 +375,7 @@ export const prepareVaultDirector = (
                 getRecordingPeriod: () =>
                   loanTimingParams[RECORDING_PERIOD_KEY].value,
               }),
-            mintAndReallocate,
+            mintAndTransfer,
             getShortfallReporter: async () => {
               await updateShortfallReporter();
               return shortfallReporter;

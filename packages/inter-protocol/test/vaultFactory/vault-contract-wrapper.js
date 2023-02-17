@@ -1,5 +1,4 @@
-import '@agoric/zoe/src/types.js';
-
+/** @file DEPRECATED use the vault test driver instead */
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
@@ -17,7 +16,7 @@ import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
-import { getAmountOut } from '@agoric/zoe/src/contractSupport';
+import { atomicRearrange, getAmountOut } from '@agoric/zoe/src/contractSupport';
 import { E } from '@endo/eventual-send';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 import { prepareVault } from '../../src/vaultFactory/vault.js';
@@ -56,7 +55,7 @@ export async function start(zcf, privateArgs, baggage) {
   let currentInterest = makeRatio(5n, runBrand); // 5%
   let compoundedInterest = makeRatio(100n, runBrand); // starts at 1.0, no interest
 
-  const { zcfSeat: stage } = zcf.makeEmptySeatKit();
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
   const { subscriber: assetSubscriber } = makePublishKit();
 
@@ -79,29 +78,23 @@ export async function start(zcf, privateArgs, baggage) {
     return floorDivideBy(getAmountOut(quoteAmount), LIQUIDATION_MARGIN);
   };
 
-  const reallocateWithFee = (fee, wanted, seat, ...otherSeats) => {
-    const toMint = AmountMath.add(wanted, fee);
-    runMint.mintGains(harden({ Minted: toMint }), stage);
+  /** @type {MintAndTransfer} */
+  const mintAndTransfer = (mintReceiver, toMint, fee, nonMintTransfers) => {
+    const kept = AmountMath.subtract(toMint, fee);
+    runMint.mintGains(harden({ Minted: toMint }), mintSeat);
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+    const transfers = [
+      ...nonMintTransfers,
+      [mintSeat, vaultFactorySeat, { Minted: fee }],
+      [mintSeat, mintReceiver, { Minted: kept }],
+    ];
     try {
-      vaultFactorySeat.incrementBy(stage.decrementBy(harden({ Minted: fee })));
-      seat.incrementBy(stage.decrementBy(harden({ Minted: wanted })));
-      zcf.reallocate(vaultFactorySeat, stage, seat, ...otherSeats);
+      atomicRearrange(zcf, harden(transfers));
     } catch (e) {
-      stage.clear();
-      vaultFactorySeat.clear();
-      runMint.burnLosses(harden({ Minted: toMint }), stage);
+      console.error('mintAndTransfer caught', e);
+      runMint.burnLosses(harden({ Minted: toMint }), mintSeat);
       throw e;
-    } finally {
-      assert(
-        AmountMath.isEmpty(stage.getAmountAllocated('Minted', runBrand)),
-        `Stage should be empty of Minted`,
-      );
     }
-  };
-
-  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
-    const wanted = AmountMath.subtract(toMint, fee);
-    reallocateWithFee(fee, wanted, seat, ...otherSeats);
   };
 
   const burnAndRecord = (toBurn, seat) => {
@@ -146,7 +139,7 @@ export async function start(zcf, privateArgs, baggage) {
 
     getAssetSubscriber: () => assetSubscriber,
     maxDebtFor,
-    mintAndReallocate,
+    mintAndTransfer,
     burnAndRecord,
     getCollateralQuote() {
       return Promise.reject(Error('Not implemented'));
