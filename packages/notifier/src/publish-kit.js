@@ -317,7 +317,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
  *
  * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
  * @param {any} value
- * @param {DurablePublishKitState["status"]} [targetStatus]
+ * @param {DurablePublishKitState['status']} [targetStatus]
  */
 const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const { state, facets } = context;
@@ -326,10 +326,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
     throw new Error('Cannot update state after termination.');
   }
   const done = targetStatus !== 'live';
-  if (targetStatus === 'failed') {
-    canBeDurable(value) ||
-      Fail`Cannot accept non-durable fail reason: ${value}`;
-  } else if (done || valueDurability === 'mandatory') {
+  if (done || valueDurability === 'mandatory') {
     canBeDurable(value) || Fail`Cannot accept non-durable value: ${value}`;
   }
   const { tailP: currentP, tailR: resolveCurrent } =
