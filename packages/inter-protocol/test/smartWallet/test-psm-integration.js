@@ -307,26 +307,15 @@ test('govern offerFilter', async t => {
   // vote didn't raise an error.
 });
 
-test('deposit unknown brand', async t => {
-  const rial = withAmountUtils(makeIssuerKit('rial'));
-  assert(rial.mint);
-
-  const wallet = await t.context.simpleProvideWallet('agoric1queue');
-
-  const payment = rial.mint.mintPayment(rial.make(1_000n));
-  // @ts-expect-error deposit does take a FarRef<Payment>
-  const result = await wallet.getDepositFacet().receive(harden(payment));
-  // successful request but not deposited
-  t.deepEqual(result, { brand: rial.brand, value: 0n });
-});
-
-test.failing('deposit > 1 payment to unknown brand #6961', async t => {
+// XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
+test('deposit multiple payments to unknown brand', async t => {
   const rial = withAmountUtils(makeIssuerKit('rial'));
 
   const wallet = await t.context.simpleProvideWallet('agoric1queue');
 
-  for await (const _ of [1, 2]) {
-    const payment = rial.mint.mintPayment(rial.make(1_000n));
+  // assume that if the call succeeds then it's in durable storage.
+  for await (const amt of [1n, 2n]) {
+    const payment = rial.mint.mintPayment(rial.make(amt));
     // @ts-expect-error deposit does take a FarRef<Payment>
     const result = await wallet.getDepositFacet().receive(harden(payment));
     // successful request but not deposited
