@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.9.2...@agoric/governance@0.9.3) (2023-02-17)
+
+**Note:** Version bump only for package @agoric/governance
+
+
+
+
+
 ### [0.9.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.9.1...@agoric/governance@0.9.2) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/governance
