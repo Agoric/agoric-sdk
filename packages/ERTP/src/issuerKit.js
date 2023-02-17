@@ -150,6 +150,7 @@ export const makeDurableIssuerKit = (
 harden(makeDurableIssuerKit);
 
 /**
+ * @template {string} N
  * @template {AssetKind} [K='nat']
  * The name becomes part of the brand in asset descriptions.
  * The name is useful for debugging and double-checking
@@ -164,7 +165,7 @@ harden(makeDurableIssuerKit);
  *
  *  `displayInfo` gives information to the UI on how to display the amount.
  *
- * @param {string} name
+ * @param {N} name
  * @param {K} [assetKind='nat']
  * @param {AdditionalDisplayInfo} [displayInfo={}]
  * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
@@ -175,7 +176,7 @@ harden(makeDurableIssuerKit);
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {Partial<{elementShape: Pattern}>} [options]
- * @returns {IssuerKit<K>}
+ * @returns {IssuerKit<K, N>}
  */
 export const makeIssuerKit = (
   name,
