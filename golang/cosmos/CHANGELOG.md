@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.33.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.2...@agoric/cosmos@0.33.0) (2023-02-17)
+
+
+### Features
+
+* null upgrade handler for upgrade-9 ([bfbc86f](https://github.com/Agoric/agoric-sdk/commit/bfbc86f32959c8e900bda3ed2bae7283e9975f66))
+
+
+### Bug Fixes
+
+* remove unneeded upgrade store loader ([e7a0ea0](https://github.com/Agoric/agoric-sdk/commit/e7a0ea0d8029ac131ca07ba90a4da210d4be6294))
+
+
+
 ### [0.32.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.32.1...@agoric/cosmos@0.32.2) (2022-10-18)
 
 

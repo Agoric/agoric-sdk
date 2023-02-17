@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.6.4...@agoric/spawner@0.6.5) (2023-02-17)
+
+**Note:** Version bump only for package @agoric/spawner
+
+
+
+
+
 ### [0.6.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/spawner@0.6.3...@agoric/spawner@0.6.4) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/spawner

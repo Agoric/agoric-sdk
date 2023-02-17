@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.40.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.39.3...@agoric/cosmic-swingset@0.40.0) (2023-02-17)
+
+
+### Features
+
+* **cosmic-swingset:** validate smart wallet actions ([#7018](https://github.com/Agoric/agoric-sdk/issues/7018)) ([9578144](https://github.com/Agoric/agoric-sdk/commit/95781446b48b49ae339f15438b4ffb7033df46b6))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** no actionQueue.consumeAll in hangover recovery ([#6912](https://github.com/Agoric/agoric-sdk/issues/6912)) ([d5792f7](https://github.com/Agoric/agoric-sdk/commit/d5792f7b9b5884aa2f70d1f848781229edf03051))
+* **telemetry:** upgrade otel deps ([2c9b017](https://github.com/Agoric/agoric-sdk/commit/2c9b017d301048e5782b3b8cf684392e00419221))
+
+
+
 ### [0.39.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.39.2...@agoric/cosmic-swingset@0.39.3) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset

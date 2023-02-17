@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.9.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.4...@agoric/solo@0.9.5) (2023-02-17)
+
+
+### Bug Fixes
+
+* **telemetry:** upgrade otel deps ([2c9b017](https://github.com/Agoric/agoric-sdk/commit/2c9b017d301048e5782b3b8cf684392e00419221))
+
+
+
 ### [0.9.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.9.3...@agoric/solo@0.9.4) (2022-12-14)
 
 **Note:** Version bump only for package @agoric/solo

@@ -3,6 +3,39 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.31.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.3...@agoric/swingset-vat@0.31.0) (2023-02-17)
+
+
+### Features
+
+* **swingset-tools:** [replay] add some worker stats ([ca821f7](https://github.com/Agoric/agoric-sdk/commit/ca821f70d01d4ef7634c0256236d0fbaa2adfa3a))
+* **swingset-tools:** [replay] add syscall divergence analysis ([95c1db6](https://github.com/Agoric/agoric-sdk/commit/95c1db6b39b300d802e1d296b478a8be9b2384e5))
+* **swingset-tools:** [replay] better snapshot messages ([c1774cc](https://github.com/Agoric/agoric-sdk/commit/c1774ccd9ebdedcdce44b499c5f7a8ce59cb73ae))
+* **swingset-tools:** [replay] convert options to command line parsed ([703b421](https://github.com/Agoric/agoric-sdk/commit/703b42140ac3390f1321c757576e1d1938706b69))
+* **swingset-tools:** [replay] force load snapshots ([9a93cb4](https://github.com/Agoric/agoric-sdk/commit/9a93cb460e9b2fd2c0b0bdc7ed83df8d0672d630))
+* **swingset-tools:** [replay] force snapshot making on interval ([dcf677a](https://github.com/Agoric/agoric-sdk/commit/dcf677a58582a823b9ecda3d35bfbd3581f9c070))
+* **swingset-tools:** [replay] handle various transcript logic versions ([1345156](https://github.com/Agoric/agoric-sdk/commit/1345156eed9d3ade941ea8a345bb63d0c958949b))
+* **swingset-tools:** [replay] implement custom compareSyscalls ([176b8aa](https://github.com/Agoric/agoric-sdk/commit/176b8aa74194a3abf4b31dafce6199d14623d795))
+* **swingset-tools:** [replay] improve multi worker logic ([3f7ac94](https://github.com/Agoric/agoric-sdk/commit/3f7ac947ebe0c0c84280c7099b1bfa3e04ae7594))
+* **swingset-tools:** [replay] keep divergent and explicitly loaded workers ([c7ffd09](https://github.com/Agoric/agoric-sdk/commit/c7ffd09c019f23b143708308ad19925db70b6b22))
+* **swingset-tools:** [replay] Option to load snapshots through config ([9a9ea0b](https://github.com/Agoric/agoric-sdk/commit/9a9ea0b794fe1ea6ac34e94563a313acc2a42772))
+* **swingset-tools:** [replay] spawn multiple workers ([2b68418](https://github.com/Agoric/agoric-sdk/commit/2b684184d1e291f2e1707eab411244d8154b4f86))
+* **swingset-tools:** [replay] use transcriptNum ([2570d0a](https://github.com/Agoric/agoric-sdk/commit/2570d0a19e710c819dad0c45d76c98e7249bedd6))
+* **swingset-tools:** [replay] write activity log ([22842cd](https://github.com/Agoric/agoric-sdk/commit/22842cdf7477d03acf55323542472536a9b7b46f))
+* **swingset-tools:** extract vat bundles ([1321fed](https://github.com/Agoric/agoric-sdk/commit/1321fed03a17d9c26748372f29b7d2d7c2ec12b8))
+
+
+### Bug Fixes
+
+* **swingset-tools:** [replay] add xsnap debug option ([552ce27](https://github.com/Agoric/agoric-sdk/commit/552ce27ad12f9555e4bd5b06760f02c1f635d25c))
+* **swingset-tools:** [replay] cannot load snapshot without xs-worker ([f7917b9](https://github.com/Agoric/agoric-sdk/commit/f7917b94bc29c3960a2f0b62683d1d1504fccdeb))
+* **swingset-tools:** [replay] clean up on replay error ([2af1bfe](https://github.com/Agoric/agoric-sdk/commit/2af1bfe00b0b03af5aab9fcc9412d0a5d270fd7c))
+* **swingset-tools:** [replay] fix load parallelism ([6dc6abd](https://github.com/Agoric/agoric-sdk/commit/6dc6abd0d800bc6b0633a5911388b0faf2551d93))
+* **swingset-tools:** [replay] sync-up snapStore interface ([bd82be2](https://github.com/Agoric/agoric-sdk/commit/bd82be2ee5c587fe4279aacfe747358b3599bcac))
+* **swingset-tools:** correct transcriptNum when extracting from slog ([3deb589](https://github.com/Agoric/agoric-sdk/commit/3deb589037192491d00ac34a503f490ff80c1975))
+
+
+
 ### [0.30.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.30.2...@agoric/swingset-vat@0.30.3) (2022-12-14)
 
 
