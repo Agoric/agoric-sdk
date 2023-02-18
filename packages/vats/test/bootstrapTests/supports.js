@@ -101,7 +101,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   /**
    * @type {( (presence: unknown) => Record<string, (...args: any) => Promise<any>> ) & {
-   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => any>,
+   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>,
    *   get: (presence: unknown) => Record<string, Promise<any>>,
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
    *   rawBoot: Record<string, (...args: any) => Promise<any>>,

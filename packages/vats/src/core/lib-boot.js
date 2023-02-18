@@ -175,7 +175,7 @@ export const makeBootstrap = (
     messageVatObjectSendOnly: ({ presence, methodName, args = [] }) => {
       const object = decodePassable(presence);
       const decodedArgs = args.map(decodePassable);
-      E(object)[methodName](...decodedArgs);
+      void E(object)[methodName](...decodedArgs);
     },
     awaitVatObject: async ({ presence, path = [] }) => {
       let value = await decodePassable(presence);
