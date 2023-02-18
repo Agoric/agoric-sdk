@@ -126,15 +126,6 @@ export const createSeatManager = (
     }
   };
 
-  /** @param {ZCFSeat} zcfSeat */
-  const assertNoStagedAllocation = zcfSeat => {
-    if (hasStagedAllocation(zcfSeat)) {
-      Fail`The seat could not be exited with a staged but uncommitted allocation: ${getStagedAllocation(
-        zcfSeat,
-      )}. Please reallocate over this seat or clear the staged allocation.`;
-    }
-  };
-
   const ZCFSeatI = M.interface('ZCFSeat', {}, { sloppy: true });
 
   const makeZCFSeatInternal = prepareExoClass(
@@ -156,7 +147,6 @@ export const createSeatManager = (
       exit(completion) {
         const { self } = this;
         assertActive(self);
-        assertNoStagedAllocation(self);
         doExitSeat(self);
         E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
       },
