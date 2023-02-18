@@ -48,14 +48,11 @@ const { StorageNodeShape } = makeTypeGuards(M);
  * }} TryExitOfferAction
  */
 
-// Two methods yet but structured to support more. For example,
+// Discriminated union. Possible future messages types:
 // maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
 // setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
 /**
- * @typedef {{
- *   method: 'executeOffer'
- *   offer: import('./offers.js').OfferSpec,
- * }} BridgeAction
+ * @typedef { ExecuteOfferAction | TryExitOfferAction } BridgeAction
  */
 
 /**
@@ -281,6 +278,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
+      tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
@@ -480,11 +478,6 @@ export const prepareSmartWallet = (baggage, shared) => {
                   facets.helper.publishCurrentState();
                 }
               }
-
-              updatePublishKit.publisher.publish({
-                updated: 'offerStatus',
-                status: offerStatus,
-              });
             },
             /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
@@ -542,6 +535,10 @@ export const prepareSmartWallet = (baggage, shared) => {
                 case 'executeOffer': {
                   canSpend || Fail`executeOffer requires spend authority`;
                   return offers.executeOffer(action.offer);
+                }
+                case 'tryExitOffer': {
+                  assert(canSpend, 'tryExitOffer requires spend authority');
+                  return offers.tryExitOffer(action.offerId);
                 }
                 default: {
                   throw Fail`invalid handle bridge action ${q(action)}`;
