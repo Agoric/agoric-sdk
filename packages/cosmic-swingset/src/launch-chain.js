@@ -310,7 +310,7 @@ export async function launch({
   }
 
   async function saveOutsideState(blockHeight) {
-    const chainSends = clearChainSends();
+    const chainSends = await clearChainSends();
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
 
