@@ -80,7 +80,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   function replayChainSends() {
     Fail`Replay not implemented`;
   }
-  function clearChainSends() {
+  async function clearChainSends() {
     return [];
   }
 

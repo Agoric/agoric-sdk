@@ -4,8 +4,11 @@ import { resolve as pathResolve } from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import tmpfs from 'tmp';
+
 import { E } from '@endo/far';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
@@ -35,6 +38,7 @@ import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { makeProcessValue } from './helpers/process-value.js';
+import { initiateSwingStoreExport } from './export-kernel-db.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -174,6 +178,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   whenHellFreezesOver = new Promise(() => {});
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
 
+  /**
+   * @type {undefined | {
+   *   blockHeight: number,
+   *   exporter?: import('./export-kernel-db.js').StateSyncExporter,
+   *   exportDir?: string,
+   *   cleanup?: () => Promise<void>,
+   * }}
+   */
+  let stateSyncExport;
+
+  async function discardStateSyncExport() {
+    const exportData = stateSyncExport;
+    stateSyncExport = undefined;
+    await exportData?.exporter?.stop();
+    await exportData?.cleanup?.();
+  }
+
   let savedChainSends = [];
 
   // Send a chain downcall, recording what we sent and received.
@@ -183,7 +204,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return ret;
   }
 
-  const clearChainSends = () => {
+  const clearChainSends = async () => {
+    // Cosmos should have blocked before calling commit, but wait just in case
+    await stateSyncExport?.exporter?.onStarted().catch(() => {});
+
     const chainSends = savedChainSends;
     savedChainSends = [];
     return chainSends;
@@ -445,13 +469,108 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     let shutdown;
     ({ blockingSend, shutdown, writeSlogObject, savedChainSends } = s);
 
-    registerShutdown(shutdown);
+    registerShutdown(async () =>
+      Promise.all([shutdown(), discardStateSyncExport()]).then(() => {}),
+    );
 
     return blockingSend;
   }
 
-  async function handleCosmosSnapshot(_blockHeight, _request, _requestArgs) {
-    throw Fail`Not implemented`;
+  async function handleCosmosSnapshot(blockHeight, request, _requestArgs) {
+    switch (request) {
+      case 'initiate': {
+        !stateSyncExport ||
+          Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
+
+        const exportData =
+          /** @type {Required<NonNullable<typeof stateSyncExport>>} */ ({
+            blockHeight,
+          });
+        stateSyncExport = exportData;
+
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        await new Promise((resolve, reject) => {
+          tmpfs.dir(
+            {
+              prefix: `agd-state-sync-${blockHeight}-`,
+              unsafeCleanup: true,
+            },
+            (err, exportDir, cleanup) => {
+              if (err) {
+                reject(err);
+                return;
+              }
+              exportData.exportDir = exportDir;
+              /** @type {Promise<void> | undefined} */
+              let cleanupResult;
+              exportData.cleanup = async () => {
+                cleanupResult ||= new Promise(cleanupDone => {
+                  // If the exporter is still the same, then the retriever
+                  // is in charge of cleanups
+                  if (stateSyncExport !== exportData) {
+                    // @ts-expect-error wrong type definitions
+                    cleanup(cleanupDone);
+                  } else {
+                    console.warn('unexpected call of state-sync cleanup');
+                    cleanupDone();
+                  }
+                });
+                await cleanupResult;
+              };
+              resolve(null);
+            },
+          );
+        });
+
+        exportData.exporter = initiateSwingStoreExport(
+          {
+            stateDir: stateDBDir,
+            exportDir: exportData.exportDir,
+            blockHeight,
+          },
+          {
+            fs: fsPromises,
+            pathResolve,
+          },
+        );
+
+        exportData.exporter.onDone().catch(() => {
+          if (exportData === stateSyncExport) {
+            stateSyncExport = undefined;
+          }
+          exportData.cleanup();
+        });
+
+        return exportData.exporter.onStarted().catch(err => {
+          console.warn(
+            `State-sync export failed for block ${blockHeight}`,
+            err,
+          );
+          throw err;
+        });
+      }
+      case 'discard': {
+        return discardStateSyncExport();
+      }
+      case 'retrieve': {
+        const exportData = stateSyncExport;
+        if (!exportData || !exportData.exporter) {
+          throw Fail`No snapshot in progress`;
+        }
+
+        return exportData.exporter.onDone().then(() => {
+          if (exportData === stateSyncExport) {
+            // Don't cleanup, cosmos is now in charge
+            stateSyncExport = undefined;
+            return exportData.exportDir;
+          } else {
+            throw Fail`Snapshot was discarded`;
+          }
+        });
+      }
+      default:
+        throw Fail`Unknown cosmos snapshot request ${request}`;
+    }
   }
 
   async function toSwingSet(action, _replier) {
