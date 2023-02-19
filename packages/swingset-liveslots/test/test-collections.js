@@ -352,24 +352,6 @@ test('constrain set key shape', t => {
   t.deepEqual(Array.from(lt47.values(M.gt(20))), [29, 46]);
 });
 
-test('bogus key shape', t => {
-  t.throws(
-    () => makeScalarBigMapStore('bogus1', { keyShape: M.promise() }),
-    m('"promise" keys are not supported'),
-  );
-  t.throws(
-    () => makeScalarBigMapStore('bogus2', { keyShape: M.error() }),
-    m('"error" keys are not supported'),
-  );
-  t.throws(
-    () =>
-      makeScalarBigMapStore('bogus3', {
-        keyShape: M.or(M.string(), M.promise()),
-      }),
-    m('"promise" keys are not supported'),
-  );
-});
-
 test('map clear', t => {
   const testStore = makeScalarBigMapStore('cmap', { keyShape: M.any() });
   testStore.init('a', 'ax');

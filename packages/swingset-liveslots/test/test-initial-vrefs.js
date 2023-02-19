@@ -91,7 +91,8 @@ test('initial vatstore contents', async t => {
   t.deepEqual(kunser(JSON.parse(get(`vc.2.|schemata`))), scalarSchema);
   t.deepEqual(kunser(JSON.parse(get(`vc.3.|schemata`))), scalarSchema);
   // watchedPromises uses vref (string) keys
-  t.deepEqual(kunser(JSON.parse(get(`vc.4.|schemata`))), stringSchema);
+  const scalarStringSchema = [M.and(M.scalar(), M.string())];
+  t.deepEqual(kunser(JSON.parse(get(`vc.4.|schemata`))), scalarStringSchema);
 });
 
 test('vrefs', async t => {

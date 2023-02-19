@@ -428,13 +428,6 @@
  */
 
 /**
- * @callback CheckKeyPattern
- * @param {Passable} allegedPattern
- * @param {Checker} check
- * @returns {boolean}
- */
-
-/**
  * @callback KeyToDBKey
  * If this key can be encoded as a DBKey string which sorts correctly,
  * return that string. Else return `undefined`. For example, a scalar-only
@@ -735,8 +728,6 @@
  * @property {(specimen: Passable, patt: Pattern, label?: string|number) => void} mustMatch
  * @property {(patt: Pattern) => void} assertPattern
  * @property {(patt: Passable) => boolean} isPattern
- * @property {(patt: Pattern) => void} assertKeyPattern
- * @property {(patt: Passable) => boolean} isKeyPattern
  * @property {GetRankCover} getRankCover
  * @property {MatcherNamespace} M
  */
@@ -779,10 +770,4 @@
  * The left element must be before or the same rank as any possible
  * matching specimen. The right element must be after or the same
  * rank as any possible matching specimen.
- *
- * @property {(allegedPattern: Passable,
- *             check: Checker
- * ) => boolean} checkKeyPattern
- * Assumes this is the payload of a CopyTagged with the corresponding
- * matchTag. Is this a valid pattern for use as a query key or key shape?
  */
