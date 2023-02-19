@@ -28,7 +28,7 @@ import {
 
 const { Fail } = assert;
 
-const DEFAULT_DECIMALS = 9n;
+const DEFAULT_DECIMALS = 9;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -95,16 +95,16 @@ export const makeAuctionBook = async (
 
   let lockedPriceForRound = zeroRatio;
   let updatingOracleQuote = zeroRatio;
-  E.when(
+  void E.when(
     E(collateralBrand).getDisplayInfo(),
     ({ decimalPlaces = DEFAULT_DECIMALS }) => {
       // TODO(#6946) use this to keep a current price that can be published in state.
       const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-        AmountMath.make(collateralBrand, 10n ** decimalPlaces),
+        AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
         currencyBrand,
       );
 
-      observeNotifier(quoteNotifier, {
+      void observeNotifier(quoteNotifier, {
         updateState: quote => {
           trace(
             `BOOK notifier ${priceFrom(quote).numerator.value}/${

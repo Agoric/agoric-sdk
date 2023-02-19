@@ -152,7 +152,7 @@ const start = zcf => {
     return Far('offerResult', { makeBidInvitation, getSessionDetails });
   };
 
-  const publicFacet = Far('AuctionPublicFacet', {
+  const publicFacet = Far('auctioneerPublicFacet', {
     getCurrentBids,
     getSessionDetails,
   });

@@ -112,6 +112,9 @@ test('simple addOffer', async t => {
   );
 
   t.true(book.hasOrders());
+  book.exitAllSeats();
+
+  t.false(book.hasOrders());
 });
 
 test('getOffers to a price limit', async t => {
@@ -166,6 +169,9 @@ test('getOffers to a price limit', async t => {
   );
 
   t.true(book.hasOrders());
+  book.exitAllSeats();
+
+  t.false(book.hasOrders());
 });
 
 test('Bad keyword', async t => {

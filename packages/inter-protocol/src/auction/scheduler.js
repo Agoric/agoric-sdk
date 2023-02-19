@@ -135,11 +135,13 @@ export const makeScheduler = async (
   /** @type {typeof AuctionState[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
 
-  const clockTick = (timeValue, schedule) => {
-    const time = TimeMath.toAbs(timeValue, timerBrand);
-
-    trace('clockTick', schedule.startTime, time);
-    if (TimeMath.compareAbs(time, schedule.startTime) >= 0) {
+  /**
+   * @param {import("@agoric/time/src/types").Timestamp} time
+   * @param {Schedule | undefined} schedule
+   */
+  const clockTick = (time, schedule) => {
+    trace('clockTick', schedule?.startTime, time);
+    if (schedule && TimeMath.compareAbs(time, schedule.startTime) >= 0) {
       if (auctionState !== AuctionState.ACTIVE) {
         auctionState = AuctionState.ACTIVE;
         auctionDriver.startRound();
@@ -148,7 +150,7 @@ export const makeScheduler = async (
       }
     }
 
-    if (TimeMath.compareAbs(time, schedule.endTime) >= 0) {
+    if (schedule && TimeMath.compareAbs(time, schedule.endTime) >= 0) {
       trace('LastStep', time);
       auctionState = AuctionState.WAITING;
 
@@ -157,7 +159,7 @@ export const makeScheduler = async (
       // only recalculate the next schedule at this point if the lock time has
       // not been reached.
       const nextLock = nextSchedule.lockTime;
-      if (TimeMath.compareAbs(time, nextLock) < 0) {
+      if (nextLock && TimeMath.compareAbs(time, nextLock) < 0) {
         const afterNow = TimeMath.addAbsRel(
           time,
           TimeMath.toRel(1n, timerBrand),
@@ -166,12 +168,14 @@ export const makeScheduler = async (
       }
       liveSchedule = undefined;
 
-      E(timer).cancel(stepCancelToken);
+      void E(timer).cancel(stepCancelToken);
     }
   };
 
   const scheduleRound = time => {
     trace('nextRound', time);
+    if (!liveSchedule) throw Fail`liveSchedule not defined`;
+    assert(liveSchedule);
 
     const { startTime } = liveSchedule;
     trace('START ', startTime);
@@ -181,7 +185,7 @@ export const makeScheduler = async (
         ? TimeMath.subtractAbsAbs(startTime, time)
         : TimeMath.subtractAbsAbs(startTime, startTime);
 
-    E(timer).repeatAfter(
+    void E(timer).repeatAfter(
       startDelay,
       liveSchedule.clockStep,
       Far('SchedulerWaker', {
@@ -195,12 +199,12 @@ export const makeScheduler = async (
 
   const scheduleNextRound = start => {
     trace(`SCHED   nextRound`, start);
-    E(timer).setWakeup(
+    void E(timer).setWakeup(
       start,
       Far('SchedulerWaker', {
         wake(time) {
           // eslint-disable-next-line no-use-before-define
-          startAuction(time);
+          void startAuction(time);
         },
       }),
     );
@@ -211,6 +215,7 @@ export const makeScheduler = async (
 
     liveSchedule = nextSchedule;
     const after = TimeMath.addAbsRel(
+      // @ts-expect-error guarded three lines up.
       liveSchedule.startTime,
       TimeMath.toRel(1n, timerBrand),
     );
@@ -247,6 +252,6 @@ export const makeScheduler = async (
 
 /**
  * @typedef {object} FullSchedule
- * @property {Schedule} nextAuctionSchedule
- * @property {Schedule} liveAuctionSchedule
+ * @property {Schedule | undefined} nextAuctionSchedule
+ * @property {Schedule | undefined} liveAuctionSchedule
  */

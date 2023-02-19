@@ -57,8 +57,11 @@ test('storage keys', async t => {
     'metrics',
     'mockChainStorageRoot.vaultFactory.manager0.metrics',
     [
+      'liquidatingCollateral',
+      'liquidatingDebt',
       'numActiveVaults',
       'numLiquidatingVaults',
+      'numLiquidationsAborted',
       'numLiquidationsCompleted',
       'retainedCollateral',
       'totalCollateral',

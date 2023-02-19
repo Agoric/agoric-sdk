@@ -3,8 +3,8 @@ import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { provideDurableMapStore, prepareKindMulti } from '@agoric/vat-data';
-
 import { makeTracer } from '@agoric/internal';
+
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { Fail, quote: q } = assert;
@@ -49,6 +49,9 @@ const trace = makeTracer('Reserve', false);
 /**
  * Asset Reserve holds onto assets for the Inter Protocol, and can
  * dispense it for various purposes under governance control.
+ *
+ * This contract has the ability to mint Fee tokens, granted through its private
+ * arguments.
  *
  * @param {ZCF<GovernanceTerms<{}> &
  * {
@@ -315,7 +318,6 @@ export { start };
 /**
  * @typedef {object} OriginalAssetReservePublicFacet
  * @property {() => Invitation} makeAddCollateralInvitation
- * @property {(issuer: Issuer) => void} addLiquidityIssuer
  */
 
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */

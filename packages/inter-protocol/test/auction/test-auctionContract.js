@@ -176,7 +176,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       harden(collateralAmount),
     );
     const seat = E(zoe).offer(
-      E(creatorFacet).getDepositInvitation(),
+      E(publicFacet).getDepositInvitation(),
       harden({
         give: { Collateral: collateralAmount },
       }),

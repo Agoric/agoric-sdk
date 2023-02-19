@@ -79,7 +79,7 @@ export const setupReserveServices = async (
 
   // @ts-expect-error a non-promise can be used where a promise is expected.
   const spaces = await setupReserveBootstrap(t, timer, farZoeKit);
-  startEconomicCommittee(spaces, {
+  void startEconomicCommittee(spaces, {
     options: { econCommitteeOptions: electorateTerms },
   });
 

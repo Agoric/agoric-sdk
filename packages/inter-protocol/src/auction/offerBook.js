@@ -73,9 +73,10 @@ export const makeScaledBidBook = (
       );
     },
     exitAllSeats() {
-      for (const { seat } of store.entries()) {
+      for (const [key, { seat }] of store.entries()) {
         if (!seat.hasExited()) {
           seat.exit();
+          store.delete(key);
         }
       }
     },
@@ -120,9 +121,10 @@ export const makePriceBook = (baggage, ratioPattern, collateralBrand) => {
       );
     },
     exitAllSeats() {
-      for (const { seat } of store.values()) {
+      for (const [key, { seat }] of store.entries()) {
         if (!seat.hasExited()) {
           seat.exit();
+          store.delete(key);
         }
       }
     },

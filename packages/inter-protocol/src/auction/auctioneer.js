@@ -324,8 +324,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         books.init(brand, newBook);
         brandToKeyword.init(brand, kwd);
       },
-      // XXX if it's in public, doesn't also need to be in creatorFacet.
-      getDepositInvitation,
       /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
       getSchedule() {
         return E(scheduler).getSchedule();

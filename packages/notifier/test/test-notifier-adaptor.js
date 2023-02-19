@@ -60,6 +60,7 @@ test('observeIteration - synchronous throw from observer stops hard', async t =>
           t.fail(`unexpected finish with state ${state}`);
         },
         fail: reason => {
+          // @ts-expect-error cast
           t.is(reason.message, 'sync propagates');
         },
       }),
