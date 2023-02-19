@@ -132,6 +132,7 @@ harden(makeVaultDirectorParamManager);
 /**
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
  * @param {{
+ *   auctionPublicFacet: ERef<AuctioneerPublicFacet>,
  *   electorateInvitationAmount: Amount,
  *   minInitialDebt: Amount,
  *   bootstrapPaymentValue: bigint,
@@ -146,6 +147,7 @@ harden(makeVaultDirectorParamManager);
 export const makeGovernedTerms = (
   { storageNode, marshaller },
   {
+    auctionPublicFacet,
     bootstrapPaymentValue,
     electorateInvitationAmount,
     loanTiming,
@@ -172,6 +174,7 @@ export const makeGovernedTerms = (
   ).getParams();
 
   return harden({
+    auctionPublicFacet,
     priceAuthority,
     loanTimingParams,
     reservePublicFacet,

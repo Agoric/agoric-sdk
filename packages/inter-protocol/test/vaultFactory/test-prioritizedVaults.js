@@ -13,13 +13,14 @@ import {
   makeCompoundedInterestProvider,
   makeFakeVault,
 } from './interestSupport.js';
+import { toCollateralizationRatioKey } from '../../src/vaultFactory/storeUtils.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').Vault} Vault */
 
 const { brand } = makeIssuerKit('ducats');
 const percent = n => makeRatio(BigInt(n), brand);
 
-function makeCollector() {
+const makeCollector = () => {
   /** @type {Ratio[]} */
   const ratios = [];
 
@@ -35,88 +36,100 @@ function makeCollector() {
     lookForRatio,
     getPercentages: () => ratios.map(r => Number(r.numerator.value)),
   };
-}
-
-function makeRescheduler() {
-  let called = false;
-
-  async function fakeReschedule(ratio) {
-    assert(ratio);
-    called = true;
-    return called;
-  }
-
-  return {
-    called: () => called,
-    resetCalled: () => (called = false),
-    fakeReschedule,
-  };
-}
+};
 
 test('add to vault', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
-  vaults.addVault(
+  const fakeSeat = {};
+  const vaults = makePrioritizedVaults(store);
+  const fakeVault = makeFakeVault(
     'id-fakeVaultKit',
-    makeFakeVault('id-fakeVaultKit', AmountMath.make(brand, 130n)),
+    AmountMath.make(brand, 130n),
   );
+  vaults.addVault('id-fakeVaultKit', fakeVault);
   const collector = makeCollector();
-  // ??? why doesn't this work?
-  // mapIterable(
-  //   vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n)),
-  //   collector.lookForRatio,
-  // );
-  Array.from(vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n))).map(
-    collector.lookForRatio,
+  const crKey = toCollateralizationRatioKey(
+    // @ts-expect-error cast
+    AmountMath.make(brand, 1n),
+    AmountMath.make(brand, 10n),
   );
 
+  const results = vaults.prepVaultRemoval(crKey, fakeSeat);
+  Array.from(results.vaultsToLiquidate).map(collector.lookForRatio);
+
   t.deepEqual(collector.getPercentages(), [130], 'expected vault');
-  t.truthy(rescheduler.called(), 'should call reschedule()');
+  t.deepEqual(results.totalCollateral, AmountMath.make(brand, 100n));
+  t.deepEqual(results.totalDebt, AmountMath.make(brand, 130n));
+  t.deepEqual(results.transfers, [
+    [
+      fakeVault.getVaultSeat(),
+      fakeSeat,
+      { Collateral: AmountMath.make(brand, 100n) },
+    ],
+  ]);
 });
 
 test('updates', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
-
-  vaults.addVault(
-    'id-fakeVault1',
-    makeFakeVault('id-fakeVault1', AmountMath.make(brand, 20n)),
+  const fakeSeat = {};
+  const vaults = makePrioritizedVaults(store);
+  const fakeVault1 = makeFakeVault(
+    'id1-fakeVaultKit',
+    AmountMath.make(brand, 20n),
+  );
+  const fakeVault2 = makeFakeVault(
+    'id2-fakeVaultKit',
+    AmountMath.make(brand, 80n),
   );
 
-  vaults.addVault(
-    'id-fakeVault2',
-    makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
-  );
+  vaults.addVault('id-fakeVault1', fakeVault1);
+  vaults.addVault('id-fakeVault2', fakeVault2);
 
+  const crKey = toCollateralizationRatioKey(
+    // @ts-expect-error cast
+    AmountMath.make(brand, 1n),
+    AmountMath.make(brand, 10n),
+  );
+  const results = vaults.prepVaultRemoval(crKey, fakeSeat);
   const collector = makeCollector();
-  rescheduler.resetCalled();
-  Array.from(vaults.entriesPrioritizedGTE(makeRatio(1n, brand, 10n))).map(
-    collector.lookForRatio,
-  );
-  t.deepEqual(collector.getPercentages(), [80, 20]);
-  t.falsy(rescheduler.called(), 'second vault did not call reschedule()');
+  Array.from(results.vaultsToLiquidate).map(collector.lookForRatio);
+
+  t.deepEqual(collector.getPercentages(), [80, 20], 'expected vault');
+  t.deepEqual(results.totalCollateral, AmountMath.make(brand, 200n));
+  t.deepEqual(results.totalDebt, AmountMath.make(brand, 100n));
+  t.deepEqual(results.transfers, [
+    [
+      fakeVault1.getVaultSeat(),
+      fakeSeat,
+      { Collateral: AmountMath.make(brand, 100n) },
+    ],
+    [
+      fakeVault2.getVaultSeat(),
+      fakeSeat,
+      { Collateral: AmountMath.make(brand, 100n) },
+    ],
+  ]);
 });
 
 test('update changes ratio', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
+  const fakeSeat = {};
+  const vaults = makePrioritizedVaults(store);
 
   // default collateral of makeFakeVaultKit
   const defaultCollateral = AmountMath.make(brand, 100n);
 
   const fakeVault1InitialDebt = AmountMath.make(brand, 20n);
 
-  const fakeVault1 = makeFakeVault('id-fakeVault1', fakeVault1InitialDebt);
-  vaults.addVault('id-fakeVault1', fakeVault1);
+  const fakeVaultID1 = 'id-fakeVault1';
+  const fakeVault1 = makeFakeVault(fakeVaultID1, fakeVault1InitialDebt);
+  vaults.addVault(fakeVaultID1, fakeVault1);
   t.true(
     vaults.hasVaultByAttributes(
       // @ts-expect-error cast
       fakeVault1InitialDebt,
       defaultCollateral,
-      'id-fakeVault1',
+      fakeVaultID1,
     ),
   );
   t.true(
@@ -124,18 +137,17 @@ test('update changes ratio', async t => {
       // @ts-expect-error cast
       fakeVault1InitialDebt,
       defaultCollateral,
-      'id-fakeVault1',
+      fakeVaultID1,
     ),
   );
 
-  vaults.addVault(
-    'id-fakeVault2',
-    makeFakeVault('id-fakeVault2', AmountMath.make(brand, 80n)),
-  );
+  const fakeVaultID2 = 'id-fakeVault2';
+  const fakeVault2 = makeFakeVault(fakeVaultID2, AmountMath.make(brand, 80n));
+  vaults.addVault(fakeVaultID2, fakeVault2);
 
   t.deepEqual(Array.from(Array.from(vaults.entries()).map(([k, _v]) => k)), [
-    'fbff4000000000000:id-fakeVault2',
-    'fc014000000000000:id-fakeVault1',
+    `fbff4000000000000:${fakeVaultID2}`,
+    `fc014000000000000:${fakeVaultID1}`,
   ]);
 
   t.deepEqual(vaults.highestRatio(), percent(80));
@@ -146,36 +158,36 @@ test('update changes ratio', async t => {
     // @ts-expect-error cast
     fakeVault1InitialDebt,
     defaultCollateral,
-    'id-fakeVault1',
+    fakeVaultID1,
   );
   t.is(removedVault, fakeVault1);
-  vaults.addVault('id-fakeVault1', removedVault);
+  vaults.addVault(fakeVaultID1, removedVault);
   // 95n from setDebt / 100n defaultCollateral
   t.deepEqual(vaults.highestRatio(), percent(95));
 
-  const newCollector = makeCollector();
-  rescheduler.resetCalled();
-  Array.from(vaults.entriesPrioritizedGTE(percent(90))).map(
-    newCollector.lookForRatio,
+  const crKey = toCollateralizationRatioKey(
+    // @ts-expect-error cast
+    AmountMath.make(brand, 90n),
+    AmountMath.make(brand, 100n),
   );
-  t.deepEqual(
-    newCollector.getPercentages(),
-    [95],
-    'only one is higher than 90%',
-  );
-  t.deepEqual(vaults.highestRatio(), percent(95));
-  t.falsy(rescheduler.called(), 'foreach does not trigger rescheduler'); // change from previous implementation
+
+  const results = vaults.prepVaultRemoval(crKey, fakeSeat);
+
+  const collector = makeCollector();
+  Array.from(results.vaultsToLiquidate).map(collector.lookForRatio);
+  t.deepEqual(collector.getPercentages(), [95], 'only one is higher than 90%');
+  t.deepEqual(vaults.highestRatio(), percent(80n));
 });
 
 test('removals', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
+  const vaults = makePrioritizedVaults(store);
 
+  const fakeVaultID1 = 'id-fakeVault1';
   // Add fakes 1,2,3
   vaults.addVault(
-    'id-fakeVault1',
-    makeFakeVault('id-fakeVault1', AmountMath.make(brand, 150n)),
+    fakeVaultID1,
+    makeFakeVault(fakeVaultID1, AmountMath.make(brand, 150n)),
   );
   vaults.addVault(
     'id-fakeVault2',
@@ -187,25 +199,21 @@ test('removals', async t => {
   );
 
   // remove fake 3
-  rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
     // @ts-expect-error cast
     AmountMath.make(brand, 140n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
     'id-fakeVault3',
   );
-  t.falsy(rescheduler.called());
   t.deepEqual(vaults.highestRatio(), percent(150), 'should be 150');
 
   // remove fake 1
-  rescheduler.resetCalled();
   vaults.removeVaultByAttributes(
     // @ts-expect-error cast
     AmountMath.make(brand, 150n),
     AmountMath.make(brand, 100n), // default collateral of makeFakeVaultKit
-    'id-fakeVault1',
+    fakeVaultID1,
   );
-  t.falsy(rescheduler.called(), 'should not call reschedule on removal');
   t.deepEqual(vaults.highestRatio(), percent(130), 'should be 130');
 
   t.throws(() =>
@@ -213,66 +221,16 @@ test('removals', async t => {
       // @ts-expect-error cast
       AmountMath.make(brand, 150n),
       AmountMath.make(brand, 100n),
-      'id-fakeVault1',
+      fakeVaultID1,
     ),
   );
 });
 
-test('highestRatio', async t => {
-  const store = makeScalarBigMapStore('orderedVaultStore');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(store);
-  vaults.onHigherHighest(rescheduler.fakeReschedule);
-
-  vaults.addVault(
-    'id-fakeVault1',
-    makeFakeVault('id-fakeVault1', AmountMath.make(brand, 30n)),
-  );
-  const cr1 = percent(30);
-  t.deepEqual(vaults.highestRatio(), cr1);
-
-  const fakeVault6 = makeFakeVault(
-    'id-fakeVault6',
-    AmountMath.make(brand, 50n),
-  );
-  vaults.addVault('id-fakeVault6', fakeVault6);
-  const cr6 = percent(50);
-  t.deepEqual(vaults.highestRatio(), cr6);
-
-  vaults.addVault(
-    'id-fakeVault3',
-    makeFakeVault('id-fakeVault3', AmountMath.make(brand, 40n)),
-  );
-
-  // sanity check ordering
-  t.deepEqual(
-    Array.from(vaults.entries()).map(([k, _v]) => k),
-    [
-      'fc000000000000000:id-fakeVault6',
-      'fc004000000000000:id-fakeVault3',
-      'fc00aaaaaaaaaaaab:id-fakeVault1',
-    ],
-  );
-
-  const debtsOverThreshold = [];
-  Array.from(vaults.entriesPrioritizedGTE(percent(45))).map(([_key, vault]) =>
-    debtsOverThreshold.push([
-      vault.getCurrentDebt(),
-      vault.getCollateralAmount(),
-    ]),
-  );
-
-  t.deepEqual(debtsOverThreshold, [
-    [fakeVault6.getCurrentDebt(), fakeVault6.getCollateralAmount()],
-  ]);
-  t.deepEqual(vaults.highestRatio(), percent(50), 'expected 50% to be highest');
-});
-
 test('stable ordering as interest accrues', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const rescheduler = makeRescheduler();
-  const vaults = makePrioritizedVaults(store, rescheduler.fakeReschedule);
+  const vaults = makePrioritizedVaults(store);
 
+  const fakeVaultID1 = 'id-fakeVault1';
   const m = makeCompoundedInterestProvider(brand);
 
   // ACTUAL DEBTS AFTER 100% DAILY INTEREST
@@ -280,7 +238,7 @@ test('stable ordering as interest accrues', async t => {
   // v1: 10 / 100
   // v2: 20 / 100 HIGHEST
   const v1 = makeFakeVault(
-    'id-fakeVault1',
+    fakeVaultID1,
     AmountMath.make(brand, 10n),
     undefined,
     m,
@@ -291,7 +249,7 @@ test('stable ordering as interest accrues', async t => {
     undefined,
     m,
   );
-  vaults.addVault('id-fakeVault1', v1);
+  vaults.addVault(fakeVaultID1, v1);
   vaults.addVault('id-fakeVault2', v2);
   // ordering
   t.deepEqual(

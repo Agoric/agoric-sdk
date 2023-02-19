@@ -135,9 +135,7 @@ export const makeScheduler = async (
   /** @type {typeof AuctionState[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
 
-  const clockTick = (timeValue, schedule) => {
-    const time = TimeMath.toAbs(timeValue, timerBrand);
-
+  const clockTick = (time, schedule) => {
     trace('clockTick', schedule.startTime, time);
     if (TimeMath.compareAbs(time, schedule.startTime) >= 0) {
       if (auctionState !== AuctionState.ACTIVE) {

@@ -1,4 +1,3 @@
-import { Fail, q } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
 import { M, initEmpty } from '@agoric/store';
@@ -8,6 +7,8 @@ import {
   isAfterDeadlineExitRule,
   isWaivedExitRule,
 } from '../typeGuards.js';
+
+const { Fail, quote: q } = assert;
 
 const ExitObjectI = M.interface('ExitObject', { exit: M.call().returns() });
 const WakerI = M.interface('Waker', {
@@ -60,7 +61,9 @@ export const makeMakeExiter = baggage => {
         const { state, self } = this;
 
         activeWakers.delete(self);
-        state.zcfSeat.exit();
+        if (!state.zcfSeat.hasExited()) {
+          state.zcfSeat.exit();
+        }
       },
       schedule() {
         const { state, self } = this;

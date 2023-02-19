@@ -1,4 +1,8 @@
-import { Fail, q } from '@agoric/assert';
+import '@agoric/zoe/exported.js';
+import '@agoric/zoe/src/contracts/exported.js';
+
+import '@agoric/governance/exported.js';
+
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   makePublicTopic,
@@ -36,10 +40,9 @@ import {
   vaultParamPattern,
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
+import { scheduleLiquidationWakeups } from './liquidation.js';
 
-import '@agoric/governance/exported.js';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+const { Fail, quote: q } = assert;
 
 const trace = makeTracer('VD');
 
@@ -80,6 +83,8 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
  */
@@ -88,6 +93,8 @@ export const prepareVaultDirector = (
   zcf,
   directorParamManager,
   debtMint,
+  timer,
+  auctioneer,
   storageNode,
   marshaller,
 ) => {
@@ -123,6 +130,18 @@ export const prepareVaultDirector = (
       metricsNode,
     ),
   });
+
+  const allVaultsDo = fn => {
+    for (const vm of collateralTypes.values()) {
+      fn(vm);
+    }
+  };
+
+  const makeWaker = (name, func) => {
+    return Far(name, {
+      wake: timestamp => func(timestamp),
+    });
+  };
 
   const managerBaggages = provideChildBaggage(baggage, 'Vault Manager baggage');
 
@@ -173,10 +192,6 @@ export const prepareVaultDirector = (
     }
   };
 
-  const finish = async () => {
-    await updateShortfallReporter();
-  };
-
   /**
    * "Director" of the vault factory, overseeing "vault managers".
    *
@@ -203,6 +218,9 @@ export const prepareVaultDirector = (
         getContractGovernor: M.call().returns(M.remotable()),
         updateMetrics: M.call().returns(),
         getRewardAllocation: M.call().returns({ Minted: AmountShape }),
+        makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
+        makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
+        makeReschedulerWaker: M.call().returns(M.remotable('TimerWaker')),
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
@@ -219,6 +237,9 @@ export const prepareVaultDirector = (
         getContractGovernor: M.call().returns(M.remotable()),
         getInvitationAmount: M.call(M.string()).returns(AmountShape),
         getPublicTopics: M.call().returns(TopicsRecordShape),
+      }),
+      helper: M.interface('helper', {
+        rescheduleLiquidationWakeups: M.call().returns(),
       }),
     },
     initState,
@@ -297,8 +318,7 @@ export const prepareVaultDirector = (
           );
           vaultParamManagers.init(collateralBrand, vaultParamManager);
 
-          const { timerService } = zcf.getTerms();
-          const startTimeStamp = await E(timerService).getCurrentTimestamp();
+          const startTimeStamp = await E(timer).getCurrentTimestamp();
 
           /**
            * Let the manager add rewards to the rewardPoolSeat without
@@ -407,6 +427,23 @@ export const prepareVaultDirector = (
         getRewardAllocation() {
           return rewardPoolSeat.getCurrentAllocation();
         },
+
+        makeLiquidationWaker() {
+          return makeWaker('liquidationWaker', _timestamp => {
+            allVaultsDo(vm => vm.liquidateVaults(auctioneer));
+          });
+        },
+        makeReschedulerWaker() {
+          const { facets } = this;
+          return makeWaker('reschedulerWaker', () => {
+            facets.helper.rescheduleLiquidationWakeups();
+          });
+        },
+        makePriceLockWaker() {
+          return makeWaker('priceLockWaker', () => {
+            allVaultsDo(vm => vm.lockOraclePrices());
+          });
+        },
       },
       public: {
         /**
@@ -492,8 +529,29 @@ export const prepareVaultDirector = (
           return directorParamManager.getInvitationAmount(name);
         },
       },
+      helper: {
+        rescheduleLiquidationWakeups() {
+          const { facets } = this;
+
+          const priceLockWaker = facets.machine.makePriceLockWaker();
+          const liquidationWaker = facets.machine.makeLiquidationWaker();
+          const rescheduleWaker = facets.machine.makeReschedulerWaker();
+          scheduleLiquidationWakeups(
+            auctioneer,
+            timer,
+            priceLockWaker,
+            liquidationWaker,
+            rescheduleWaker,
+          );
+        },
+      },
     },
-    { finish },
+    {
+      finish: async ({ facets }) => {
+        facets.helper.rescheduleLiquidationWakeups();
+        await updateShortfallReporter();
+      },
+    },
   );
   return makeVaultDirector;
 };

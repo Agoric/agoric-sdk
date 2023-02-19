@@ -1,15 +1,14 @@
 // @jessie-check
 
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  atomicRearrange,
+  makeRatioFromAmounts,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { ratioGTE } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
-import { keyEQ, keyLT } from '@agoric/store';
-import { makeTracer } from '@agoric/internal';
+import { M } from '@agoric/vat-data';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
-import { fromVaultKey, toVaultKey } from './storeUtils.js';
-
-const trace = makeTracer('PV', false);
+import { toVaultKey } from './storeUtils.js';
 
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
@@ -46,38 +45,10 @@ export const currentDebtToCollateral = vault =>
  * can be quickly found and liquidated.
  *
  * @param {MapStore<string, Vault>} store
- * @param {(highestRatio: Ratio) => void} [higherHighestCb] called when a new
  * vault has a higher debt ratio than the previous highest
  */
-export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
+export const makePrioritizedVaults = store => {
   const vaults = makeOrderedVaultStore(store);
-
-  /**
-   * Called back when there's a new highestRatio and it's higher than the previous.
-   *
-   * In other words, when a new highestRatio results from adding a vault. Removing the
-   * first vault also changes the highest, but necessarily to a lower highest,
-   * for which there are no use cases requiring notification.
-   *
-   * @param {(highestRatio: Ratio) => void} callback
-   */
-  const onHigherHighest = callback => {
-    higherHighestCb = callback;
-  };
-
-  // To deal with fluctuating prices and varying collateralization, we schedule a
-  // new request to the priceAuthority when some vault's debtToCollateral ratio
-  // surpasses the current high-water mark. When the request that is at the
-  // current high-water mark fires, we reschedule at the new (presumably
-  // lower) rate.
-  // Without this we'd be calling reschedulePriceCheck() unnecessarily
-  /** @type {string | undefined} */
-  let firstKey;
-
-  // Check if this ratio of debt to collateral would be the highest known. If
-  // so, reset our highest and invoke the callback. This can be called on new
-  // vaults and when we get a state update for a vault changing balances.
-  /** @param {Ratio} collateralToDebt */
 
   /**
    * Ratio of the least-collateralized vault, if there is one.
@@ -98,7 +69,6 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
   };
 
   /**
-   *
    * @param {NormalizedDebt} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
@@ -114,16 +84,10 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
    */
   const removeVault = key => {
     const vault = vaults.removeByKey(key);
-    trace('removeVault', key, fromVaultKey(key), 'when first:', firstKey);
-    if (keyEQ(key, firstKey)) {
-      const [secondKey] = vaults.keys();
-      firstKey = secondKey;
-    }
     return vault;
   };
 
   /**
-   *
    * @param {NormalizedDebt} oldDebt
    * @param {Amount<'nat'>} oldCollateral
    * @param {string} vaultId
@@ -134,7 +98,6 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
   };
 
   /**
-   *
    * @param {VaultId} vaultId
    * @param {Vault} vault
    */
@@ -144,50 +107,72 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
       !AmountMath.isEmpty(vault.getCollateralAmount()),
       'Tracked vaults must have collateral (be liquidatable)',
     );
-    trace('addVault', key, 'when first:', firstKey);
-    if (!firstKey || keyLT(key, firstKey)) {
-      firstKey = key;
-      higherHighestCb(currentDebtToCollateral(vault));
-    }
     return key;
   };
 
-  /**
-   * Invoke a function for vaults with debt to collateral at or above the ratio.
-   *
-   * Results are returned in order of priority, with highest debt to collateral first.
-   *
-   * Redundant tags until https://github.com/Microsoft/TypeScript/issues/23857
-   *
-   * @param {Ratio} ratio
-   * @yields {[string, Vault]>}
-   * @returns {IterableIterator<[string, Vault]>}
-   */
-  // Allow generator function
-  // eslint-disable-next-line func-names
-  // eslint-disable-next-line no-restricted-syntax
-  function* entriesPrioritizedGTE(ratio) {
-    // TODO use a Pattern to limit the query https://github.com/Agoric/agoric-sdk/issues/4550
-    for (const [key, vault] of vaults.entries()) {
-      const debtToCollateral = currentDebtToCollateral(vault);
-      if (ratioGTE(debtToCollateral, ratio)) {
-        yield [key, vault];
-      } else {
-        // stop once we are below the target ratio
-        break;
-      }
+  const prepVaultRemoval = (crKey, liqSeat) => {
+    // crKey represents a collateralizationRatio based on the locked price.
+    // We'll liquidate all vaults above that ratio, and return them with stats.
+    const vaultsToLiquidate = [];
+    let totalDebt;
+    let totalCollateral;
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+    const transfers = [];
+
+    for (const vaultEntry of vaults.entries(M.lte(crKey))) {
+      vaultsToLiquidate.push(vaultEntry);
+      const vault = vaultEntry[1];
+      const collateralAmount = vault.getCollateralAmount();
+      totalCollateral = totalCollateral
+        ? AmountMath.add(totalCollateral, collateralAmount)
+        : collateralAmount;
+      const debtAmount = vault.getCurrentDebt();
+      transfers.push([
+        vault.getVaultSeat(),
+        liqSeat,
+        { Collateral: collateralAmount },
+      ]);
+      totalDebt = totalDebt
+        ? AmountMath.add(totalDebt, debtAmount)
+        : debtAmount;
     }
-  }
+
+    for (const entry of vaultsToLiquidate) {
+      const [k] = entry;
+      vaults.removeByKey(k);
+    }
+
+    return { vaultsToLiquidate, totalDebt, totalCollateral, transfers };
+  };
+
+  const removeVaultsBelow = (crKey, zcf) => {
+    const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();
+    const { vaultsToLiquidate, totalDebt, totalCollateral, transfers } =
+      prepVaultRemoval(crKey, liqSeat);
+
+    if (transfers.length > 0) {
+      atomicRearrange(zcf, harden(transfers));
+    }
+    return {
+      totalDebt,
+      totalCollateral,
+      vaultsToLiquidate,
+      liqSeat,
+    };
+  };
 
   return Far('PrioritizedVaults', {
     addVault,
     entries: vaults.entries,
-    entriesPrioritizedGTE,
     getCount: vaults.getSize,
     hasVaultByAttributes,
     highestRatio,
     removeVault,
     removeVaultByAttributes,
-    onHigherHighest,
+    removeVaultsBelow,
+
+    // visible for testing
+    prepVaultRemoval,
+    countVaultsBelow: crKey => vaults.getSize(M.lte(crKey)),
   });
 };

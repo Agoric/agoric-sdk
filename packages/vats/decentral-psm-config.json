@@ -51,6 +51,9 @@
     "psm": {
       "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
     },
+    "vaults": {
+      "sourceSpec": "@agoric/inter-protocol/src/vaultFactory/vaultFactory.js"
+    },
     "econCommitteeCharter": {
       "sourceSpec": "@agoric/inter-protocol/src/econCommitteeCharter.js"
     },

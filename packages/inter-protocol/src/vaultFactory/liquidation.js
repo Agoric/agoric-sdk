@@ -2,143 +2,89 @@
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-import {
-  ceilMultiplyBy,
-  makeRatio,
-  offerTo,
-} from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '@agoric/internal';
+import { TimeMath } from '@agoric/time';
+import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
 
 const trace = makeTracer('LIQ', false);
 
-/**
- * Threshold to alert when the price level falls enough that the vault
- * with the highest debt to collateral ratio will no longer be valued at the
- * liquidationMargin above its debt.
- *
- * @param {Ratio} highestDebtRatio
- * @param {Ratio} liquidationMargin
- */
-const liquidationThreshold = (highestDebtRatio, liquidationMargin) =>
-  ceilMultiplyBy(
-    highestDebtRatio.numerator, // debt
-    liquidationMargin,
-  );
+/** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
+/** @typedef {import('@agoric/time/src/types').TimerWaker} TimerWaker */
+/** @typedef {import('@agoric/time/src/types').CancelToken} CancelToken */
+/** @typedef {import('@agoric/time/src/types').RelativeTimeRecord} RelativeTimeRecord */
 
 /**
- * @param {ERef<PriceAuthority>} priceAuthority
- * @param {Ratio} highestDebtRatio
- * @param {Ratio} liquidationMargin
+ * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctionPublicFacet
+ * @param {ERef<TimerService>} timer
+ * @param {TimerWaker} priceLockWaker
+ * @param {TimerWaker} liquidationWaker
+ * @param {TimerWaker} reschedulerWaker
  */
-const makeQuote = (priceAuthority, highestDebtRatio, liquidationMargin) => {
-  return E(priceAuthority).mutableQuoteWhenLT(
-    highestDebtRatio.denominator, // collateral
-    liquidationThreshold(highestDebtRatio, liquidationMargin),
-  );
-};
-
-/**
- *
- * @param {PromiseLike<MutableQuote>} quote
- * @param {Ratio} highestDebtRatio
- * @param {Ratio} liquidationMargin
- */
-const updateQuote = (quote, highestDebtRatio, liquidationMargin) => {
-  void E(quote).updateLevel(
-    highestDebtRatio.denominator, // collateral
-    liquidationThreshold(highestDebtRatio, liquidationMargin),
-  );
-};
-
-/**
- * Liquidates a Vault, using the strategy to parameterize the particular
- * contract being used. The strategy provides a KeywordMapping and proposal
- * suitable for `offerTo()`, and an invitation.
- *
- * Once collateral has been sold using the contract, we burn the amount
- * necessary to cover the debt and return the remainder.
- *
- * @param {ZCF} zcf
- * @param {Vault} vault
- * @param {Liquidator}  liquidator
- * @param {Brand<'nat'>} collateralBrand
- * @param {Ratio} penaltyRate
- */
-const liquidate = async (
-  zcf,
-  vault,
-  liquidator,
-  collateralBrand,
-  penaltyRate,
+const scheduleLiquidationWakeups = async (
+  auctionPublicFacet,
+  timer,
+  priceLockWaker,
+  liquidationWaker,
+  reschedulerWaker,
 ) => {
-  trace('liquidate start', vault);
-  vault.liquidating();
-
-  const debt = vault.getCurrentDebt();
-
-  const vaultZcfSeat = vault.getVaultSeat();
-
-  const collateralToSell = vaultZcfSeat.getAmountAllocated(
-    'Collateral',
-    collateralBrand,
-  );
-  trace(`liq prep`, { collateralToSell, debt, liquidator });
-
-  const { deposited, userSeatPromise: liqSeat } = await offerTo(
-    zcf,
-    E(liquidator).makeLiquidateInvitation(),
-    harden({ Collateral: 'In', Minted: 'Out' }),
-    harden({
-      give: { In: collateralToSell },
-      want: { Out: AmountMath.makeEmpty(debt.brand) },
-    }),
-    vaultZcfSeat,
-    vaultZcfSeat,
-    harden({ debt, penaltyRate }),
-  );
-  trace(` offeredTo`, { collateralToSell, debt });
-
-  // await deposited and offer result, but ignore the latter
-  const [proceeds] = await Promise.all([
-    deposited,
-    E(liqSeat).getOfferResult(),
+  const [schedules, params] = await Promise.all([
+    E(auctionPublicFacet).getSchedules(),
+    E(auctionPublicFacet).getGovernedParams(),
   ]);
-  // NB: all the proceeds from AMM sale are on the vault seat instead of a staging seat
+  const { startTime } = schedules.nextAuctionSchedule;
+
+  trace('SCHEDULE', schedules.nextAuctionSchedule);
+
+  /** @type {RelativeTimeRecord} */
+  // @ts-expect-error Casting
+  // eslint-disable-next-line no-restricted-syntax
+  const priceLockPeriod = params[PRICE_LOCK_PERIOD].value;
+  /** @type {RelativeTimeRecord} */
+  // @ts-expect-error Casting
+  // eslint-disable-next-line no-restricted-syntax
+  const auctionStartDelay = params[AUCTION_START_DELAY].value;
+
+  const nominalStart = TimeMath.subtractAbsRel(startTime, auctionStartDelay);
+  const priceLockWakeTime = TimeMath.subtractAbsRel(
+    nominalStart,
+    priceLockPeriod,
+  );
+  const afterStart = TimeMath.addAbsRel(startTime, TimeMath.toRel(1n));
+  const a = t => TimeMath.absValue(t);
+  trace('scheduling ', a(priceLockWakeTime), a(nominalStart), a(startTime));
+  E(timer).setWakeup(priceLockWakeTime, priceLockWaker);
+  E(timer).setWakeup(nominalStart, liquidationWaker);
+  E(timer).setWakeup(afterStart, reschedulerWaker);
+};
+
+const liquidationResults = (debt, minted) => {
+  if (AmountMath.isEmpty(minted)) {
+    return {
+      proceeds: minted,
+      overage: minted,
+      toBurn: minted,
+      shortfall: debt,
+    };
+  }
 
   /** @type { [Amount<'nat'>, Amount<'nat'>] } */
-  const [overage, shortfall] = AmountMath.isGTE(debt, proceeds.Minted)
-    ? [
-        AmountMath.makeEmptyFromAmount(debt),
-        AmountMath.subtract(debt, proceeds.Minted),
-      ]
-    : [
-        AmountMath.subtract(proceeds.Minted, debt),
-        AmountMath.makeEmptyFromAmount(debt),
-      ];
+  const [overage, shortfall] = AmountMath.isGTE(debt, minted)
+    ? [AmountMath.makeEmptyFromAmount(debt), AmountMath.subtract(debt, minted)]
+    : [AmountMath.subtract(minted, debt), AmountMath.makeEmptyFromAmount(debt)];
 
-  const toBurn = AmountMath.min(proceeds.Minted, debt);
+  const toBurn = AmountMath.min(minted, debt);
   // debt is fully accounted for, with toBurn and shortfall
   assert(AmountMath.isEqual(debt, AmountMath.add(toBurn, shortfall)));
 
-  // Manager accounting changes determined. Update the vault state.
-  vault.liquidated();
-  // remaining funds are left on the vault for the user to close and claim
-
-  // for manager's accounting
-  return { proceeds: proceeds.Minted, overage, toBurn, shortfall };
+  return {
+    proceeds: minted,
+    overage,
+    toBurn,
+    shortfall,
+  };
 };
 
-const liquidationDetailTerms = debtBrand =>
-  harden({
-    MaxImpactBP: 50n,
-    OracleTolerance: makeRatio(30n, debtBrand),
-    AMMMaxSlippage: makeRatio(30n, debtBrand),
-  });
-/** @typedef {ReturnType<typeof liquidationDetailTerms>} LiquidationTerms */
+harden(scheduleLiquidationWakeups);
+harden(liquidationResults);
 
-harden(liquidate);
-harden(liquidationDetailTerms);
-harden(makeQuote);
-harden(updateQuote);
-
-export { liquidate, liquidationDetailTerms, makeQuote, updateQuote };
+export { scheduleLiquidationWakeups, liquidationResults };
