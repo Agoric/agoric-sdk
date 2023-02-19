@@ -352,7 +352,15 @@ test('constrain set key shape', t => {
   t.deepEqual(Array.from(lt47.values(M.gt(20))), [29, 46]);
 });
 
-test('bogus key shape', t => {
+// Prior to https://github.com/Agoric/agoric-sdk/pull/7035, virtual
+// stores did a sanity check on `keyShape` that it made sense for
+// scalar keys. However, that check was both broken and not otherwise
+// needed, so #7035 removed it. Instead, for scalar collections, the
+// key will *also* be checked for being a scalar. In cases like
+// `M.promise()`, without the error check, no possible key will pass
+// both conditions, and so such stores will always be empty. But
+// we don't need to treat this as an error.
+test.failing('bogus key shape', t => {
   t.throws(
     () => makeScalarBigMapStore('bogus1', { keyShape: M.promise() }),
     m('"promise" keys are not supported'),
