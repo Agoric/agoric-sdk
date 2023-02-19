@@ -86,7 +86,7 @@ export const makeAuctionBook = async (
   let lockedPrice = makeZeroRatio();
   let updatingOracleQuote = makeZeroRatio();
   E.when(E(collateralBrand).getDisplayInfo(), ({ decimalPlaces = 9n }) => {
-    // TODO(CTH) use this to keep a current price that can be published in state.
+    // TODO(#6946) use this to keep a current price that can be published in state.
     const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
       AmountMath.make(collateralBrand, 10n ** decimalPlaces),
       currencyBrand,
@@ -94,7 +94,11 @@ export const makeAuctionBook = async (
 
     observeNotifier(quoteNotifier, {
       updateState: quote => {
-        trace(`BOOK notifier ${priceFrom(quote).numerator.value}`);
+        trace(
+          `BOOK notifier ${priceFrom(quote).numerator.value}/${
+            priceFrom(quote).denominator.value
+          }`,
+        );
         return (updatingOracleQuote = priceFrom(quote));
       },
       fail: reason => {
@@ -122,6 +126,15 @@ export const makeAuctionBook = async (
     return makePriceBook(priceStore, currencyBrand, collateralBrand);
   });
 
+  const removeFromOneBook = (isPriceBook, key) => {
+    if (isPriceBook) {
+      priceBook.delete(key);
+    } else {
+      discountBook.delete(key);
+    }
+  };
+
+  // Settle with seat. The caller is responsible for updating the book, if any.
   const settle = (seat, collateralWanted) => {
     const { Currency: currencyAvailable } = seat.getCurrentAllocation();
     const { Collateral: collateralAvailable } =
@@ -178,6 +191,7 @@ export const makeAuctionBook = async (
 
   const isActive = auctionState => auctionState === AuctionState.ACTIVE;
 
+  // accept new offer.
   const acceptOffer = (seat, price, want, timestamp, auctionState) => {
     trace('acceptPrice');
     // Offer has ZcfSeat, offerArgs (w/price) and timeStamp
@@ -194,12 +208,14 @@ export const makeAuctionBook = async (
 
     const stillWant = AmountMath.subtract(want, collateralSold);
     if (!AmountMath.isEmpty(stillWant)) {
+      trace('added Offer ', price, stillWant.value);
       priceBook.add(seat, price, stillWant, timestamp);
     } else {
       seat.exit();
     }
   };
 
+  // accept new discount offer.
   const acceptDiscountOffer = (
     seat,
     discount,
@@ -252,20 +268,23 @@ export const makeAuctionBook = async (
 
       trace(`settling`, pricedOffers.length, discOffers.length);
       prioritizedOffers.forEach(([key, { seat, price: p, wanted }]) => {
-        const collateralSold = settle(seat, wanted);
+        if (seat.hasExited()) {
+          removeFromOneBook(p, key);
+        } else {
+          const collateralSold = settle(seat, wanted);
 
-        if (AmountMath.isEmpty(seat.getCurrentAllocation().Currency)) {
-          seat.exit();
-          if (p) {
-            priceBook.delete(key);
-          } else {
-            discountBook.delete(key);
-          }
-        } else if (!AmountMath.isEmpty(collateralSold)) {
-          if (p) {
-            priceBook.updateReceived(key, collateralSold);
-          } else {
-            discountBook.updateReceived(key, collateralSold);
+          if (
+            AmountMath.isEmpty(seat.getCurrentAllocation().Currency) ||
+            AmountMath.isGTE(seat.getCurrentAllocation().Collateral, wanted)
+          ) {
+            seat.exit();
+            removeFromOneBook(p, key);
+          } else if (!AmountMath.isGTE(collateralSold, wanted)) {
+            if (p) {
+              priceBook.updateReceived(key, collateralSold);
+            } else {
+              discountBook.updateReceived(key, collateralSold);
+            }
           }
         }
       });

@@ -165,7 +165,7 @@ export const makeScheduler = async (
   };
 
   const scheduleNextRound = start => {
-    console.log(`SCHED   nextRound`);
+    trace(`SCHED   nextRound`, start);
     E(timer).setWakeup(
       start,
       Far('SchedulerWaker', {

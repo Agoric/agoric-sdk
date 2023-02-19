@@ -136,18 +136,25 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
    * @param {Amount<'nat'>} giveCurrency
    * @param {Amount<'nat'>} wantCollateral
    * @param {Ratio} [discount]
+   * @param {ExitRule} [exitRule]
    */
   const bidForCollateralSeat = async (
     giveCurrency,
     wantCollateral,
     discount = undefined,
+    exitRule = undefined,
   ) => {
     const bidInvitation = E(publicFacet).getBidInvitation(wantCollateral.brand);
-    const proposal = harden({
+    const rawProposal = {
       give: { Currency: giveCurrency },
-      // IF we had multiples, the buyer could express a want.
+      // IF we had multiples, the buyer could express an offer-safe want.
       // want: { Collateral: wantCollateral },
-    });
+    };
+    if (exitRule) {
+      rawProposal.exit = exitRule;
+    }
+    const proposal = harden(rawProposal);
+
     const payment = harden({
       Currency: currency.mint.mintPayment(giveCurrency),
     });
@@ -215,20 +222,26 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       const seat = bidForCollateralSeat(giveCurrency, wantCollateral, discount);
       return E(seat).getPayouts();
     },
-    async bidForCollateralSeat(giveCurrency, wantCollateral, discount) {
-      return bidForCollateralSeat(giveCurrency, wantCollateral, discount);
+    async bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit) {
+      return bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit);
     },
     setupCollateralAuction,
-    advanceTo(time) {
-      timerService.advanceTo(time);
+    async advanceTo(time) {
+      await timerService.advanceTo(time);
     },
     async updatePriceAuthority(newPrice) {
       priceAuthorities.get(newPrice.denominator.brand).setPrice(newPrice);
       await eventLoopIteration();
     },
     depositCollateral,
+    async getLockPeriod() {
+      return E(publicFacet).getPriceLockPeriod();
+    },
     getSchedule() {
       return E(creatorFacet).getSchedule();
+    },
+    getTimerService() {
+      return timerService;
     },
   };
 };
@@ -363,16 +376,22 @@ test.serial('priced bid insufficient collateral added', async t => {
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule.startTime.absValue, 170n);
   t.is(schedules.nextAuctionSchedule.endTime.absValue, 185n);
-  await driver.advanceTo(170n);
+  await driver.advanceTo(167n);
 
   const seat = await driver.bidForCollateralSeat(
     currency.make(240n),
     collateral.make(200n),
+    undefined,
+    { afterDeadline: { timer: driver.getTimerService(), deadline: 185n } },
   );
+  await driver.advanceTo(170n);
   t.is(await E(seat).getOfferResult(), 'Your offer has been received');
   t.false(await E(seat).hasExited());
 
+  await driver.advanceTo(175n);
+  await driver.advanceTo(180n);
   await driver.advanceTo(185n);
+
   t.true(await E(seat).hasExited());
 
   //  240n - 20n * (115n / 100n)
@@ -450,25 +469,228 @@ test.serial('complete auction liquidator gets proceeds', async t => {
   const result = await E(liqSeat).getOfferResult();
   t.is(result, 'deposited');
 
-  await driver.advanceTo(170n);
+  await driver.advanceTo(167n);
   const seat = await driver.bidForCollateralSeat(
     // 1.1 * 1.05 * 200
     currency.make(231n),
     collateral.make(200n),
   );
-
   t.is(await E(seat).getOfferResult(), 'Your offer has been received');
-  await assertPayouts(t, seat, currency, collateral, 0n, 200n);
+  t.false(await E(seat).hasExited());
+
+  await driver.advanceTo(170n);
+  await eventLoopIteration();
+
+  await driver.advanceTo(175n);
+  await eventLoopIteration();
+
+  await driver.advanceTo(180n);
+  await eventLoopIteration();
 
   await driver.advanceTo(185n);
+  await eventLoopIteration();
 
-  await assertPayouts(t, liqSeat, currency, collateral, 0n, 800n);
+  t.true(await E(seat).hasExited());
+
+  await assertPayouts(t, seat, currency, collateral, 0n, 200n);
+
+  await assertPayouts(t, liqSeat, currency, collateral, 231n, 800n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('multiple Depositors, not all assets are sold', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const liqSeatA = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(1000n),
+  );
+  const liqSeatB = await driver.depositCollateral(
+    collateral.make(500n),
+    collateral,
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeatA).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const seat = await driver.bidForCollateralSeat(
+    currency.make(1200n),
+    collateral.make(1000n),
+  );
+
+  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.false(await E(seat).hasExited());
+
+  await driver.advanceTo(170n);
+  await eventLoopIteration();
+  await driver.advanceTo(175n);
+  await eventLoopIteration();
+  await driver.advanceTo(180n);
+  await eventLoopIteration();
+  await driver.advanceTo(185n);
+  await eventLoopIteration();
+
+  t.true(await E(seat).hasExited());
+
+  // 1500 Collateral was put up for auction by  two bidders (1000 and 500). One
+  // bidder offered 1200 currency for 1000 collateral. So one seller gets 66% of
+  // the proceeds, and the other 33%. The price authority quote was 110, and the
+  // goods were sold in the first auction round at 105%. So the proceeds were
+  // 1155. The bidder gets 45 currency back. The two sellers split 1155 and the
+  // 500 returned collateral. The auctioneer sets the remainder aside.
+  await assertPayouts(t, seat, currency, collateral, 45n, 1000n);
+  await assertPayouts(t, liqSeatA, currency, collateral, 770n, 333n);
+  await assertPayouts(t, liqSeatB, currency, collateral, 385n, 166n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('multiple Depositors, all assets are sold', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const liqSeatA = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(1000n),
+  );
+  const liqSeatB = await driver.depositCollateral(
+    collateral.make(500n),
+    collateral,
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeatA).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const seat = await driver.bidForCollateralSeat(
+    currency.make(1800n),
+    collateral.make(1500n),
+  );
+
+  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.false(await E(seat).hasExited());
+
+  await driver.advanceTo(170n);
+  await eventLoopIteration();
+  await driver.advanceTo(175n);
+  await eventLoopIteration();
+  await driver.advanceTo(180n);
+  await eventLoopIteration();
+  await driver.advanceTo(185n);
+  await eventLoopIteration();
+
+  t.true(await E(seat).hasExited());
+
+  // 1500 Collateral was put up for auction by  two bidders (1000 and 500). One
+  // bidder offered 1800 currency for all the collateral. The sellers get 66%
+  // and 33% of the proceeds. The price authority quote was 110, and the goods
+  // were sold in the first auction round at 105%. So the proceeds were
+  // 1733 The bidder gets 67 currency back. The two sellers split 1733. The
+  // auctioneer sets the remainder aside.
+  await assertPayouts(t, seat, currency, collateral, 67n, 1500n);
+  await assertPayouts(t, liqSeatA, currency, collateral, 1155n, 0n);
+  await assertPayouts(t, liqSeatB, currency, collateral, 577n, 0n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('onDemand exit', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const liqSeat = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(100n),
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeat).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const exitingSeat = await driver.bidForCollateralSeat(
+    currency.make(250n),
+    collateral.make(200n),
+    undefined,
+    { onDemand: null },
+  );
+
+  t.is(await E(exitingSeat).getOfferResult(), 'Your offer has been received');
+  t.false(await E(exitingSeat).hasExited());
+
+  await driver.advanceTo(170n);
+  await eventLoopIteration();
+  await driver.advanceTo(175n);
+  await eventLoopIteration();
+  await driver.advanceTo(180n);
+  await eventLoopIteration();
+  await driver.advanceTo(185n);
+  await eventLoopIteration();
+
+  t.false(await E(exitingSeat).hasExited());
+
+  await E(exitingSeat).tryExit();
+  t.true(await E(exitingSeat).hasExited());
+
+  await assertPayouts(t, exitingSeat, currency, collateral, 134n, 100n);
+  await assertPayouts(t, liqSeat, currency, collateral, 116n, 0n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('onDeadline exit', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const liqSeat = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(100n),
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeat).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const exitingSeat = await driver.bidForCollateralSeat(
+    currency.make(250n),
+    collateral.make(200n),
+    undefined,
+    { afterDeadline: { timer: driver.getTimerService(), deadline: 185n } },
+  );
+
+  t.is(await E(exitingSeat).getOfferResult(), 'Your offer has been received');
+  t.false(await E(exitingSeat).hasExited());
+
+  await driver.advanceTo(170n);
+  await eventLoopIteration();
+  await driver.advanceTo(175n);
+  await eventLoopIteration();
+  await driver.advanceTo(180n);
+  await eventLoopIteration();
+  await driver.advanceTo(185n);
+  await eventLoopIteration();
+
+  t.true(await E(exitingSeat).hasExited());
+
+  await assertPayouts(t, exitingSeat, currency, collateral, 134n, 100n);
+  await assertPayouts(t, liqSeat, currency, collateral, 116n, 0n);
 });
 
 test('add assets to open auction', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
+  // One seller deposits 1000 collateral
   const liqSeat = await driver.setupCollateralAuction(
     collateral,
     collateral.make(1000n),
@@ -480,32 +702,41 @@ test('add assets to open auction', async t => {
   const result = await E(liqSeat).getOfferResult();
   t.is(result, 'deposited');
 
+  // bids for half of 1000 + 2000 collateral.
   const bidderSeat1 = await driver.bidForCollateralSeat(
-    // 1.1 * 1.05 * 200
-    currency.make(231n),
-    collateral.make(200n),
+    // 1.1 * 1.05 * 1500
+    currency.make(1733n),
+    collateral.make(1500n),
   );
   t.is(await E(bidderSeat1).getOfferResult(), 'Your offer has been received');
 
-  await driver.advanceTo(170n);
+  // price lock period before auction start
+  await driver.advanceTo(167n);
 
-  const liqSeat2 = driver.depositCollateral(collateral.make(2000n), collateral);
+  // another seller deposits 2000
+  const liqSeat2 = await driver.depositCollateral(
+    collateral.make(2000n),
+    collateral,
+  );
   const resultL2 = await E(liqSeat2).getOfferResult();
   t.is(resultL2, 'deposited');
 
-  const bidderSeat2 = await driver.bidForCollateralSeat(
-    // 1.1 * 1.05 * 200
-    currency.make(300n),
-    collateral.make(500n),
-  );
-  t.is(await E(bidderSeat2).getOfferResult(), 'Your offer has been received');
-
   await driver.advanceTo(180n);
-  await assertPayouts(t, bidderSeat1, currency, collateral, 0n, 200n);
+
+  // bidder gets collateral
+  await assertPayouts(t, bidderSeat1, currency, collateral, 0n, 1500n);
 
   await driver.advanceTo(190n);
-  await assertPayouts(t, liqSeat, currency, collateral, 231n / 3n, 0n);
-  await assertPayouts(t, liqSeat2, currency, collateral, (2n * 231n) / 3n, 0n);
+  // sellers split proceeds and refund 2:1
+  await assertPayouts(t, liqSeat, currency, collateral, 1733n / 3n, 500n);
+  await assertPayouts(
+    t,
+    liqSeat2,
+    currency,
+    collateral,
+    (2n * 1733n) / 3n,
+    1000n,
+  );
 });
 
 // collateral quote is 1.1.  asset quote is .25.  1000 C, and 500 A available.
@@ -600,6 +831,3 @@ test.serial('multiple collaterals', async t => {
   t.true(await E(bidderSeat2A).hasExited());
   await assertPayouts(t, bidderSeat2A, currency, asset, 0n, 300n);
 });
-
-test.todo('bids that are satisfied over more than one phase');
-test.todo('auction runs out of collateral with remaining bids');

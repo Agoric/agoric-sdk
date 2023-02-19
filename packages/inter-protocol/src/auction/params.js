@@ -198,7 +198,7 @@ export const makeGovernedTerms = (
     timerBrand,
   },
 ) => {
-  // TODO(CTH)  use storageNode and Marshaller
+  // XXX  use storageNode and Marshaller
   return harden({
     priceAuthority,
     timerService: timer,

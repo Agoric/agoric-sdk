@@ -12,6 +12,7 @@ import {
   makeRatio,
   natSafeMath,
   floorMultiplyBy,
+  provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { handleParamGovernance } from '@agoric/governance';
@@ -26,7 +27,7 @@ import { auctioneerParamTypes } from './params.js';
 
 const { Fail, quote: q } = assert;
 
-const trace = makeTracer('Auction', true);
+const trace = makeTracer('Auction', false);
 
 const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
   makeRatioFromAmounts(
@@ -60,23 +61,26 @@ export const start = async (zcf, privateArgs, baggage) => {
       durable: true,
     }),
   );
+  const brandToKeyword = provide(baggage, 'brandToKeyword', () =>
+    makeScalarBigMapStore('deposits', {
+      durable: true,
+    }),
+  );
+
+  const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
+
   const addDeposit = (seat, amount) => {
-    if (deposits.has(amount.brand)) {
-      const depositListForBrand = deposits.get(amount.brand);
-      deposits.set(
-        amount.brand,
-        harden([...depositListForBrand, { seat, amount }]),
-      );
-    } else {
-      deposits.init(amount.brand, harden([{ seat, amount }]));
-    }
+    const depositListForBrand = deposits.get(amount.brand);
+    deposits.set(
+      amount.brand,
+      harden([...depositListForBrand, { seat, amount }]),
+    );
   };
 
   // could be above or below 100%.  in basis points
   let currentDiscountRate;
 
   const distributeProceeds = () => {
-    // assert collaterals in map match known collaterals
     for (const brand of deposits.keys()) {
       const book = books.get(brand);
       const { collateralSeat, currencySeat } = book.getSeats();
@@ -85,42 +89,62 @@ export const start = async (zcf, privateArgs, baggage) => {
       if (depositsForBrand.length === 1) {
         // send it all to the one
         const liqSeat = depositsForBrand[0].seat;
+
         atomicRearrange(
           zcf,
           harden([
             [collateralSeat, liqSeat, collateralSeat.getCurrentAllocation()],
+            [currencySeat, liqSeat, currencySeat.getCurrentAllocation()],
           ]),
         );
         liqSeat.exit();
-      } else {
-        const totalDeposits = depositsForBrand.reduce((prev, { amount }) => {
+        deposits.set(brand, []);
+      } else if (depositsForBrand.length > 1) {
+        const totCollDeposited = depositsForBrand.reduce((prev, { amount }) => {
           return AmountMath.add(prev, amount);
         }, AmountMath.makeEmpty(brand));
-        const curCollateral =
-          depositsForBrand[0].seat.getCurrentAllocation().Collateral;
-        if (AmountMath.isEmpty(curCollateral)) {
-          const currencyRaised = currencySeat.getCurrentAllocation().Currency;
-          for (const { seat, amount } of deposits.get(brand).values()) {
-            const payment = floorMultiplyBy(
-              amount,
-              makeRatioFromAmounts(currencyRaised, totalDeposits),
-            );
-            atomicRearrange(
-              zcf,
-              harden([[currencySeat, seat, { Currency: payment }]]),
-            );
-            seat.exit();
-          }
-          // TODO(cth) sweep away dust
-        } else {
-          Fail`Split up incomplete sale`;
+
+        const collatRaise = collateralSeat.getCurrentAllocation().Collateral;
+        const currencyRaise = currencySeat.getCurrentAllocation().Currency;
+
+        const collShare = makeRatioFromAmounts(collatRaise, totCollDeposited);
+        const currShare = makeRatioFromAmounts(currencyRaise, totCollDeposited);
+        /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+        const transfers = [];
+        let currencyLeft = currencyRaise;
+        let collateralLeft = collatRaise;
+
+        // each depositor gets as share that equals their amount deposited
+        // divided by the total deposited multplied by the currency and
+        // collateral being distributed.
+        for (const { seat, amount } of deposits.get(brand).values()) {
+          const currPortion = floorMultiplyBy(amount, currShare);
+          currencyLeft = AmountMath.subtract(currencyLeft, currPortion);
+          const collPortion = floorMultiplyBy(amount, collShare);
+          collateralLeft = AmountMath.subtract(collateralLeft, collPortion);
+          transfers.push([currencySeat, seat, { Currency: currPortion }]);
+          transfers.push([collateralSeat, seat, { Collateral: collPortion }]);
+        }
+
+        // TODO The leftovers should go to the reserve, and should be visible.
+        const keyword = brandToKeyword.get(brand);
+        transfers.push([
+          currencySeat,
+          reserveFunds,
+          { Currency: currencyLeft },
+        ]);
+        transfers.push([
+          collateralSeat,
+          reserveFunds,
+          { Collateral: collateralLeft },
+          { [keyword]: collateralLeft },
+        ]);
+        atomicRearrange(zcf, harden(transfers));
+
+        for (const { seat } of depositsForBrand) {
+          seat.exit();
         }
       }
-    }
-  };
-  const releaseSeats = () => {
-    for (const brand of deposits.keys()) {
-      books.get(brand).exitAllSeats();
     }
   };
 
@@ -159,15 +183,10 @@ export const start = async (zcf, privateArgs, baggage) => {
       );
 
       tradeEveryBook();
-
-      if (!natSafeMath.isGTE(currentDiscountRate, params.getDiscountStep())) {
-        // end trading
-      }
     },
     finalize: () => {
       trace('finalize');
       distributeProceeds();
-      releaseSeats();
     },
     startRound() {
       trace('startRound');
@@ -231,9 +250,12 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const limitedCreatorFacet = Far('creatorFacet', {
     async addBrand(issuer, collateralBrand, kwd) {
-      if (!baggage.has(kwd)) {
-        baggage.init(kwd, makeScalarBigMapStore(kwd, { durable: true }));
-      }
+      zcf.assertUniqueKeyword(kwd);
+      !baggage.has(kwd) ||
+        Fail`cannot add brand with keyword ${kwd}. it's in use`;
+
+      zcf.saveIssuer(issuer, kwd);
+      baggage.init(kwd, makeScalarBigMapStore(kwd, { durable: true }));
       const newBook = await makeAuctionBook(
         baggage.get(kwd),
         zcf,
@@ -241,10 +263,11 @@ export const start = async (zcf, privateArgs, baggage) => {
         collateralBrand,
         priceAuthority,
       );
-      zcf.saveIssuer(issuer, kwd);
+      deposits.init(collateralBrand, harden([]));
       books.init(collateralBrand, newBook);
+      brandToKeyword.init(collateralBrand, kwd);
     },
-    // TODO (cth) if it's in public, doesn't also need to be in creatorFacet.
+    // XXX if it's in public, doesn't also need to be in creatorFacet.
     getDepositInvitation,
     getSchedule() {
       return E(scheduler).getSchedule();
@@ -260,3 +283,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 /** @typedef {ContractOf<typeof start>} AuctioneerContract */
 /** @typedef {AuctioneerContract['publicFacet']} AuctioneerPublicFacet */
 /** @typedef {AuctioneerContract['creatorFacet']} AuctioneerCreatorFacet */
+
+export const AuctionPFShape = M.remotable('Auction Public Facet');

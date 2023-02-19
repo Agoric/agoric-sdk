@@ -34,7 +34,7 @@ const nextTimestamp = makeNextTimestamp();
 export const makeDiscountBook = (store, currencyBrand, collateralBrand) => {
   return Far('discountBook ', {
     add(seat, discount, wanted, proposedTimestamp) {
-      // TODO(cth) mustMatch(discount, DISCOUNT_PATTERN);
+      // XXX mustMatch(discount, DISCOUNT_PATTERN);
 
       const time = nextTimestamp(proposedTimestamp);
       const key = toDiscountedRateOfferKey(discount, time);
