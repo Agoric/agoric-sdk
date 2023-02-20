@@ -18,14 +18,15 @@ EVAL_DEPOSIT = 1000000ubld
 VOTE_PROPOSAL = 1
 VOTE_OPTION = yes
 
-GOSRC = ../../golang/cosmos
+SDK_ROOT = $(shell cd ../.. >/dev/null && pwd)
+
 # For deep (cross-vat) stacks, try...
 # DEBUG ?= SwingSet:ls,SwingSet:vat,track-turns
 # or to get kernel messages: SwingSet:ls,SwingSet:vat,SwingSet
 DEBUG ?= SwingSet:ls,SwingSet:vat
 AG_SOLO = DEBUG=$(DEBUG) $(shell cd ../solo/bin && pwd)/ag-solo
-AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" $(GOSRC)/build/agd
-AGCH = $(GOSRC)/build/agd
+AGC = DEBUG=$(DEBUG) PATH="$$PWD/bin:$$PATH" "$(SDK_ROOT)/bin/agd"
+AGCH = "$(SDK_ROOT)/bin/agd"
 
 SHELL = bash
 
@@ -104,8 +105,10 @@ scenario1-run-client:
 
 BOOT_COINS=1000000000000000ubld,500000000000000uist,100provisionpass,100sendpacketpass,1000000000000ibc/toyusdc,1000000000000ibc/toyatom
 
-scenario2-setup: all scenario2-setup-nobuild
-scenario2-setup-nobuild:
+# Deprecated.
+scenario2-setup-nobuild: scenario2-setup
+
+scenario2-setup:
 	rm -rf t1
 	mkdir -p t1/bootstrap
 	# Init the chain node.
@@ -336,20 +339,23 @@ docker-install: docker-pull
 	install -m 755 docker/* /usr/local/bin/
 
 build-chain:
-	$(MAKE) -C $(GOSRC) compile-chain
+	$(AGC) build
 
 build-helper:
-	$(MAKE) -C $(GOSRC) compile-helper
+	$(AGCH) build
 
 install-agd:
-	install -c $(GOSRC)/build/agd "$(BIN)/agd"
+	mkdir -p "$(BIN)"
+	ln -sf "$(SDK_ROOT)/bin/agd" "$(BIN)/agd"
 
 install-helper:
-	install -c $(GOSRC)/build/ag-cosmos-helper "$(BIN)/ag-cosmos-helper"
+	mkdir -p "$(BIN)"
+	ln -sf "$(SDK_ROOT)/bin/agd" "$(BIN)/ag-cosmos-helper"
 
 install-local:
 	mkdir -p "$(BIN)"
-	ln -sf "$$PWD/bin/ag-chain-cosmos" "$$PWD/bin/ag-nchainz" "$(BIN)/"
+	ln -sf "$(SDK_ROOT)/bin/agd" "$(BIN)/ag-chain-cosmos"
+	ln -sf "$$PWD/bin/ag-nchainz" "$(BIN)/"
 
 start-ag-solo:
 	rm -rf t1
