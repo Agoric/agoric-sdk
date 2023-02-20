@@ -1,0 +1,62 @@
+#! /bin/bash
+# bin/agd - A build wrapper to bootstrap the Agoric daemon
+#
+# Usage: agd build
+#        to rebuild the SDK if necessary
+#    or: agd build --force
+#        to rebuild the SDK even if up-to-date
+#    or: agd ARGS...
+#        to rebuild the SDK if necessary, then invoke the daemon with ARGS
+#
+# This uses SKIP_DOWNLOAD=false or the Cosmovisor $DAEMON_HOME and
+# $DAEMON_ALLOW_DOWNLOAD_BINARIES variables to enable the automatic downloading
+# of Golang and NodeJS versions needed to build and run the current version of
+# the SDK.
+set -ueo pipefail
+
+real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
+thisdir=$(cd "$(dirname -- "$real0")" >/dev/null && pwd -P)
+
+STAMPS="$thisdir/../node_modules/.cache/agoric"
+
+if test "${1-''}" = build; then
+  BUILD_ONLY=true
+  case "${2-''}" in
+  --force | -f)
+    rm -rf "$STAMPS"
+    ;;
+  esac
+else
+  BUILD_ONLY=false
+fi
+
+(
+  cd "$thisdir/.."
+
+  mkdir -p "$STAMPS"
+
+  test -f "$STAMPS/yarn-installed" || {
+    rm -f "$STAMPS/yarn-built"
+    yarn install --force
+    date > "$STAMPS/yarn-installed"
+  }
+
+  test -f "$STAMPS/yarn-built" || {
+    yarn build
+    date > "$STAMPS/yarn-built"
+  }
+
+  test -f "$STAMPS/agd-built" || {
+    (cd golang/cosmos && make)
+    date > "$STAMPS/agd-built"
+  }
+)
+
+if $BUILD_ONLY; then
+  echo "Build complete." 1>&2
+  exit 0
+fi
+
+# Run the built Cosmos daemon.
+export PATH="$thisdir/../packages/cosmic-swingset/bin:$PATH"
+exec "$thisdir/../golang/cosmos/build/agd" ${1+"$@"}
