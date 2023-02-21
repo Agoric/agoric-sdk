@@ -2,15 +2,18 @@
 import fs from 'fs';
 import path from 'path';
 
-import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, Fail } from '@agoric/assert';
+import { makeTracer } from '@agoric/internal';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import bundleSource from '@endo/bundle-source';
-
-import '../types-ambient.js';
+import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
+import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
-import { kdebugEnable } from '../lib/kdebug.js';
+
+import '../types-ambient.js';
+
+const trace = makeTracer('IniSwi', false);
 
 /**
  * @param {X[]} xs
@@ -79,6 +82,7 @@ export async function buildVatAndDeviceBundles() {
 // runtimeOptions.kernelBundles, which will pass it through to both.
 
 export async function buildKernelBundles() {
+  trace('buildKernelBundles');
   const bp = buildVatAndDeviceBundles();
   const kp = buildKernelBundle();
   const [vdBundles, kernelBundle] = await Promise.all([bp, kp]);
@@ -435,7 +439,7 @@ export async function initializeSwingset(
 
   // fires with BundleWithID: { ...bundle, id }
   async function addBundleID(bundle) {
-    if (bundle.id) {
+    if ('id' in bundle) {
       // during config, we believe bundle.id, but not at runtime!
       return bundle;
     }

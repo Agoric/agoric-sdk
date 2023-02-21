@@ -7,6 +7,10 @@ import { assert } from '@agoric/assert';
 // used to enable syntactic manipulation of serialized values while remaining
 // agnostic about the internal details of the serialization encoding.
 
+/**
+ * @typedef {{getKref: () => string, iface: () => string}} KCap
+ */
+
 const refMap = new WeakMap();
 
 export const kslot = (kref, iface) => {
@@ -47,6 +51,11 @@ export const kslot = (kref, iface) => {
   }
 };
 
+/**
+ *
+ * @param {any} obj
+ * @returns {string}
+ */
 export const krefOf = obj => {
   const fromMap = refMap.get(obj);
   if (fromMap) {
@@ -71,6 +80,10 @@ const kmarshal = makeMarshal(krefOf, kslot, {
 
 export const kser = value => kmarshal.serialize(harden(value));
 
+/**
+ * @param {import('@endo/marshal').CapData<string>} serializedValue
+ * @returns {any}
+ */
 export const kunser = serializedValue => kmarshal.unserialize(serializedValue);
 
 export function makeError(message) {

@@ -370,6 +370,12 @@ export async function makeSwingsetController(
 
     validateAndInstallBundle,
 
+    /**
+     * Run the kernel until the policy says to stop, or the queue is empty.
+     *
+     * @param {RunPolicy} [policy] - a RunPolicy to limit the work being done
+     * @returns {Promise<number>} The number of cranks that were executed.
+     */
     async run(policy) {
       return kernel.run(policy);
     },
@@ -431,6 +437,8 @@ export async function makeSwingsetController(
     },
 
     /**
+     * Queue a method call into the named vat
+     *
      * @param {string} vatName
      * @param {string} method
      * @param {unknown[]} args
