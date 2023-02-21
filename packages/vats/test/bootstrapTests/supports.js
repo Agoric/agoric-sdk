@@ -11,7 +11,7 @@ import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
-/** @typedef {ReturnType<import('@agoric/vats/src/core/boot').buildRootObject>} BootstrapRootObject */
+/** @typedef {ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>} BootstrapRootObject */
 
 /** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
 export const bootstrapMethods = {
