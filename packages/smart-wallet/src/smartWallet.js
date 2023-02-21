@@ -354,7 +354,7 @@ export const prepareSmartWallet = (baggage, shared) => {
         /**
          * Put the assets from the payment into the appropriate purse.
          *
-         * If the purse doesn't exist, we hold the payment until it does.
+         * If the purse doesn't exist, we hold the payment in durable storage.
          *
          * @param {import('@endo/far').FarRef<Payment>} payment
          * @returns {Promise<Amount>} amounts for deferred deposits will be empty
@@ -374,11 +374,13 @@ export const prepareSmartWallet = (baggage, shared) => {
             return E(invitationPurse).deposit(payment);
           }
 
-          // When there is no purse, queue the payment
+          // When there is no purse, save the payment into a queue.
+          // It's not yet ever read but a future version of the contract can
           if (queues.has(brand)) {
-            queues.get(brand).push(payment);
+            const extant = queues.get(brand);
+            queues.set(brand, harden([...extant, payment]));
           } else {
-            queues.init(brand, harden([payment])); // TODO: #6961 fix this.
+            queues.init(brand, harden([payment]));
           }
           return AmountMath.makeEmpty(brand);
         },

@@ -268,14 +268,18 @@ test('initialPrice', /** @param {ExecutionContext} t */ async t => {
     value: { quoteAmount: qa1 },
     updateCount: uc1,
   } = await E(quotes).getUpdateSince();
-  t.deepEqual(qa1.value, [
-    {
-      amountIn: { brand: debt.brand, value: 12_34n },
-      amountOut: { brand: collateral.brand, value: 100n },
-      timer,
-      timestamp: 0n,
-    },
-  ]);
+  t.deepEqual(
+    qa1.value,
+    [
+      {
+        amountIn: { brand: collateral.brand, value: 100n },
+        amountOut: { brand: debt.brand, value: 12_34n },
+        timer,
+        timestamp: 0n,
+      },
+    ],
+    'check, for example, manager0.quotes',
+  );
 
   t.log('vault manager gets quote for 500 ATOM');
   const q500 = await E(pa).quoteGiven(make(collateral.brand, 500n), debt.brand);

@@ -1,9 +1,21 @@
 import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 import { observeNotifier } from '@agoric/notifier';
-import { makeScalarSetStore } from '@agoric/store';
+import { mustMatch, makeScalarSetStore, M } from '@agoric/store';
+import { RelativeTimeShape } from '@agoric/time';
+import { KeywordShape } from '@agoric/zoe/src/typeGuards.js';
 
-const { details: X } = assert;
+const KeywordSharesShape = M.recordOf(KeywordShape, M.nat());
+
+/**
+ * A pattern for Zoe to check custom terms before `start()`ing the contract.
+ */
+export const customTermsShape = harden({
+  keywordShares: KeywordSharesShape,
+  timerService: M.eref(M.remotable('TimerService')),
+  collectionInterval: RelativeTimeShape,
+});
 
 /**
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
@@ -89,15 +101,14 @@ export const startDistributing = (
  * @typedef {{ pushPayment: (payment: Payment, issuer: ERef<Issuer>) => Promise<Amount>}} FeeDestination
  *
  * @param {Record<Keyword, ERef<FeeDestination>>} [destinations]
- * @param {Record<Keyword, bigint>} [keywordShares]
+ * @param {Record<Keyword, NatValue>} [keywordShares]
  */
 export const makeShareConfig = (destinations = {}, keywordShares = {}) => {
   let totalShares = 0n;
   const shares = Object.entries(destinations)
     .filter(([_, dst]) => dst)
     .map(([kw, destination]) => {
-      const share = keywordShares[kw];
-      assert.typeof(share, 'bigint', X`${kw} must be a bigint; got ${share}`);
+      const share = Nat(keywordShares[kw]);
       totalShares += share;
       return {
         share,
@@ -164,14 +175,15 @@ export const sharePayment = async (
 
 /**
  * @param {ERef<Issuer<'nat'>>} feeIssuer
- * @param {{ keywordShares: Record<Keyword, bigint>, timerService: ERef<TimerService>, collectionInterval: RelativeTime}} terms
+ * @param {{ keywordShares: Record<Keyword, NatValue>, timerService: ERef<TimerService>, collectionInterval: RelativeTime}} terms
  */
 export const makeFeeDistributor = (feeIssuer, terms) => {
   const { timerService, collectionInterval } = terms;
 
   /** @type {Record<string, ERef<FeeDestination>>} */
   let destinations = {};
-  let shareConfig = makeShareConfig(destinations, terms.keywordShares);
+  let { keywordShares } = terms;
+  let shareConfig = makeShareConfig(destinations, keywordShares);
 
   /** @type {SetStore<FeeCollector>} */
   const collectors = makeScalarSetStore();
@@ -193,6 +205,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
 
   const publicFacet = Far('feeDistributor publicFacet', {
     distributeFees,
+    getKeywordShares: () => keywordShares,
   });
 
   const creatorFacet = Far('feeDistributor creatorFacet', {
@@ -289,9 +302,15 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
      */
     setDestinations: async newDestinations => {
       destinations = newDestinations;
-      shareConfig = makeShareConfig(destinations, terms.keywordShares);
+      shareConfig = makeShareConfig(destinations, keywordShares);
       // Run once immediately for these destinations.
       await schedulePayments();
+    },
+
+    /** @param {Record<Keyword, bigint>} newShares */
+    setKeywordShares: newShares => {
+      mustMatch(newShares, KeywordSharesShape);
+      keywordShares = newShares;
     },
   });
 
