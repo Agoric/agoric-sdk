@@ -1,7 +1,9 @@
 import { E, Far } from '@endo/far';
 import { addRemote } from '@agoric/vats/src/core/utils.js';
 
-export { connectFaucet } from './demoIssuers.js';
+import { connectFaucet } from './demoIssuers.js';
+
+export { connectFaucet };
 
 /** @param {BootstrapPowers} powers */
 export const installSimEgress = async ({
@@ -11,7 +13,7 @@ export const installSimEgress = async ({
 }) => {
   const PROVISIONER_INDEX = 1;
 
-  return Promise.all(
+  await Promise.all(
     argv.hardcodedClientAddresses.map(async (addr, i) => {
       const clientFacet = await E(clientCreator).createClientFacet(
         `solo${i}`,
@@ -37,3 +39,36 @@ export const grantRunBehaviors = async ({
   return E(client).assignBundle([_addr => bundle]);
 };
 harden(grantRunBehaviors);
+
+/** @type {import('@agoric/vats').BootstrapManifest} */
+export const SIM_CHAIN_BOOTSTRAP_PERMITS = harden({
+  /** @type {import('@agoric/vats').BootstrapManifestPermit} */
+  [installSimEgress.name]: {
+    vatParameters: { argv: { hardcodedClientAddresses: true } },
+    vats: {
+      vattp: true,
+      comms: true,
+    },
+    consume: { clientCreator: true },
+  },
+  [connectFaucet.name]: {
+    consume: {
+      bankManager: true,
+      bldIssuerKit: true,
+      client: true,
+      feeMintAccess: true,
+      loadVat: true,
+      zoe: true,
+    },
+    installation: {
+      consume: { centralSupply: 'zoe' },
+    },
+    produce: { mints: true },
+    home: { produce: { faucet: true } },
+  },
+  [grantRunBehaviors.name]: {
+    runBehaviors: true,
+    consume: { client: true },
+    home: { produce: { runBehaviors: true, governanceActions: true } },
+  },
+});
