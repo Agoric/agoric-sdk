@@ -4,8 +4,9 @@ import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 
 const { Fail, quote: q } = assert;
 
-export const TransferPartShape = M.arrayOf(
-  M.or(SeatShape, AmountKeywordRecordShape),
+export const TransferPartShape = M.splitArray(
+  harden([M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)]),
+  harden([M.opt(AmountKeywordRecordShape)]),
 );
 
 /**
