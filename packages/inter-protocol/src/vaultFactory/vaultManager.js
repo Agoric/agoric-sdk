@@ -49,6 +49,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
+import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
@@ -274,9 +275,12 @@ export const prepareVaultManagerKit = (
       manager: M.interface('manager', {
         getGovernedParams: M.call().returns(M.remotable()),
         maxDebtFor: M.call(AmountShape).returns(M.promise()),
-        mintAndReallocate: M.call(AmountShape, AmountShape, SeatShape)
-          .rest()
-          .returns(),
+        mintAndTransfer: M.call(
+          SeatShape,
+          AmountShape,
+          AmountShape,
+          M.arrayOf(TransferPartShape),
+        ).returns(),
         burnAndRecord: M.call(AmountShape, SeatShape).returns(),
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
@@ -351,7 +355,7 @@ export const prepareVaultManagerKit = (
           const changes = chargeInterest(
             {
               mint: debtMint,
-              mintAndReallocateWithFee: factoryPowers.mintAndReallocate,
+              mintAndTransferWithFee: factoryPowers.mintAndTransfer,
               poolIncrementSeat,
               seatAllocationKeyword: 'Minted',
             },
@@ -651,17 +655,8 @@ export const prepareVaultManagerKit = (
             factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
         },
-        /**
-         * TODO utility method to turn a callback into non-actual one
-         * was type {MintAndReallocate}
-         *
-         * @param {Amount<'nat'>} toMint
-         * @param {Amount<'nat'>} fee
-         * @param {ZCFSeat} seat
-         * @param {...ZCFSeat} otherSeats
-         * @returns {void}
-         */
-        mintAndReallocate(toMint, fee, seat, ...otherSeats) {
+        /** @type {MintAndTransfer} */
+        mintAndTransfer(mintReceiver, toMint, fee, transfers) {
           const { state } = this;
           const { totalDebt } = state;
 
@@ -670,7 +665,7 @@ export const prepareVaultManagerKit = (
             totalDebt,
             toMint,
           );
-          factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
+          factoryPowers.mintAndTransfer(mintReceiver, toMint, fee, transfers);
           state.totalDebt = AmountMath.add(state.totalDebt, toMint);
         },
         /**
@@ -815,9 +810,6 @@ export const prepareVaultManagerKit = (
             want: { Minted: null },
           });
 
-          // NB: This increments even when a vault fails to init and is removed
-          // from the manager, creating a sparse series of published vaults.
-          state.vaultCounter += 1;
           const vaultId = String(state.vaultCounter);
 
           // must be a presence to be stored in vault state
@@ -834,7 +826,11 @@ export const prepareVaultManagerKit = (
             const vaultKit = await vault.initVaultKit(seat, vaultStorageNode);
             // initVaultKit calls back to handleBalanceChange() which will add the
             // vault to prioritizedVaults
-            seat.exit();
+
+            // initVaultKit doesn't write to the storage node until it's returning
+            // so if it returned then we know the node key was consumed
+            state.vaultCounter += 1;
+
             return vaultKit;
           } catch (err) {
             // ??? do we still need this cleanup? it won't get into the store unless it has collateral,
@@ -852,19 +848,23 @@ export const prepareVaultManagerKit = (
                 collateralPre,
                 vaultId,
               );
-              console.error(
+              console.warn(
                 'removed vault',
                 vaultId,
                 'after initVaultKit failure',
               );
             } catch {
-              console.error(
+              console.info(
                 'vault',
                 vaultId,
                 'never stored during initVaultKit failure',
               );
             }
             throw err;
+          } finally {
+            if (!seat.hasExited()) {
+              seat.exit();
+            }
           }
         },
 

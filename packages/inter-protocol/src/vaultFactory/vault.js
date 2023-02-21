@@ -9,12 +9,7 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import {
-  addSubtract,
-  allEmpty,
-  assertOnlyKeys,
-  stageDelta,
-} from '../contractSupport.js';
+import { addSubtract, allEmpty, assertOnlyKeys } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
@@ -91,7 +86,7 @@ const validTransitions = {
  * @property {() => Brand} getCollateralBrand
  * @property {(base: string) => string} scopeDescription
  * @property {() => Brand<'nat'>} getDebtBrand
- * @property {MintAndReallocate} mintAndReallocate
+ * @property {MintAndTransfer} mintAndTransfer
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
  * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
@@ -631,37 +626,15 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
           const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
 
-          // TODO use atomicRearrange https://github.com/Agoric/agoric-sdk/issues/5605
-          stageDelta(
-            clientSeat,
-            vaultSeat,
-            fp.give.Collateral,
-            fp.want.Collateral,
-            'Collateral',
-          );
-          // `wantMinted` is allocated in the reallocate and mint operation, and so not here
-          stageDelta(
-            clientSeat,
-            vaultSeat,
-            giveMintedTaken,
-            helper.emptyDebt(),
-            'Minted',
-          );
+          /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+          const transfers = harden([
+            [clientSeat, vaultSeat, { Collateral: fp.give.Collateral }],
+            [vaultSeat, clientSeat, { Collateral: fp.want.Collateral }],
+            [clientSeat, vaultSeat, { Minted: giveMintedTaken }],
+            // Minted into vaultSeat requires minting and so is done by mintAndTransfer
+          ]);
 
-          /** @type {Array<ZCFSeat>} */
-          const vaultSeatOpt = allEmpty([
-            fp.give.Collateral,
-            giveMintedTaken,
-            fp.want.Collateral,
-          ])
-            ? []
-            : [vaultSeat];
-          state.manager.mintAndReallocate(
-            toMint,
-            fee,
-            clientSeat,
-            ...vaultSeatOpt,
-          );
+          state.manager.mintAndTransfer(clientSeat, toMint, fee, transfers);
 
           // parent needs to know about the change in debt
           helper.updateDebtAccounting(
@@ -749,10 +722,14 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           await helper.assertSufficientCollateral(giveCollateral, newDebtPre);
 
           const { vaultSeat } = state;
-          vaultSeat.incrementBy(
-            seat.decrementBy(harden({ Collateral: giveCollateral })),
+          state.manager.mintAndTransfer(
+            seat,
+            toMint,
+            fee,
+            harden([[seat, vaultSeat, { Collateral: giveCollateral }]]),
           );
-          state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
+          seat.exit();
+
           helper.updateDebtAccounting(
             normalizedDebtPre,
             collateralPre,

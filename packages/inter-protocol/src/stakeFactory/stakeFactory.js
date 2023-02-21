@@ -1,15 +1,13 @@
 // @jessie-check
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
+import { atomicRearrange } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { E, Far } from '@endo/far';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { makeAttestationFacets } from './attestation.js';
 import { ManagerKW as KW } from './constants.js';
 import { makeStakeFactoryKit } from './stakeFactoryKit.js';
 import { makeStakeFactoryManager } from './stakeFactoryManager.js';
-
-const { details: X } = assert;
-const { values } = Object;
 
 /**
  * Provide loans on the basis of staked assets that earn rewards.
@@ -120,46 +118,36 @@ export const start = async (
       marshaller,
     );
 
-  /** For temporary staging of newly minted tokens */
+  /** For holding newly minted tokens until transferred */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
+
   const { zcfSeat: rewardPoolSeat } = zcf.makeEmptySeatKit();
 
   /**
    * Let the manager add rewards to the rewardPoolSeat
    * without directly exposing the rewardPoolSeat to them.
    *
-   * @type {MintAndReallocate}
+   * @type {MintAndTransfer}
    */
-  const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+  const mintAndTransfer = (mintReceiver, toMint, fee, nonMintTransfers) => {
     const kept = AmountMath.subtract(toMint, fee);
     debtMint.mintGains(harden({ [KW.Debt]: toMint }), mintSeat);
+    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+    const transfers = [
+      ...nonMintTransfers,
+      [mintSeat, rewardPoolSeat, { [KW.Debt]: fee }],
+      [mintSeat, mintReceiver, { [KW.Debt]: kept }],
+    ];
+
     try {
-      rewardPoolSeat.incrementBy(
-        mintSeat.decrementBy(harden({ [KW.Debt]: fee })),
-      );
-      seat.incrementBy(mintSeat.decrementBy(harden({ [KW.Debt]: kept })));
-      zcf.reallocate(
-        rewardPoolSeat,
-        mintSeat,
-        seat,
-        ...otherSeats.filter(s => s.hasStagedAllocation()),
-      );
+      atomicRearrange(zcf, harden(transfers));
     } catch (e) {
-      mintSeat.clear();
-      rewardPoolSeat.clear();
-      // Make best efforts to burn the newly minted tokens, for hygiene.
-      // That only relies on the internal mint, so it cannot fail without
-      // there being much larger problems. There's no risk of tokens being
-      // stolen here because the staging for them was already cleared.
+      console.error('mintAndTransfer failed to rearrange', e);
+      // If the rearrange fails, burn the newly minted tokens.
+      // Assume this won't fail because it relies on the internal mint.
+      // (Failure would imply much larger problems.)
       debtMint.burnLosses(harden({ [KW.Debt]: toMint }), mintSeat);
       throw e;
-    } finally {
-      assert(
-        values(mintSeat.getCurrentAllocation()).every(a =>
-          AmountMath.isEmpty(a),
-        ),
-        X`Stage should be empty of Debt`,
-      );
     }
     // TODO add aggregate debt tracking at the vaultFactory level #4482
     // totalDebt = AmountMath.add(totalDebt, toMint);
@@ -172,7 +160,7 @@ export const start = async (
   const mintPowers = Far('mintPowers', {
     burnDebt,
     getGovernedParams: () => params, // XXX until governance support is durable
-    mintAndReallocate,
+    mintAndTransfer,
   });
 
   const startTimeStamp = await E(timerService).getCurrentTimestamp();
