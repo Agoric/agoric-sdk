@@ -47,7 +47,16 @@ const blockManagerConsole = anylogger('block-manager');
  */
 const getHostKey = path => `host.${path}`;
 
-async function buildSwingset(
+/**
+ * @param {Map<*, *>} mailboxStorage
+ * @param {*} [bridgeOutbound]
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @param {string} vatconfig absolute path
+ * @param {unknown[]} argv
+ * @param {{ ROLE: string }} env
+ * @param {*} options
+ */
+export async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
   kernelStorage,
