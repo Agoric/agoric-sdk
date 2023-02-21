@@ -17,7 +17,7 @@ import {
   makeCopyMap,
 } from '@agoric/store';
 import { Far, passStyleOf } from '@endo/marshal';
-import { parseVatSlot } from './parseVatSlots.js';
+import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,
   enumerateKeysWithPrefix,
@@ -663,7 +663,7 @@ export function makeCollectionManager(
     }
   }
 
-  function makeCollection(label, kindName, keyShape, valueShape) {
+  function makeCollection(label, kindName, isDurable, keyShape, valueShape) {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
     assertKeyPattern(keyShape);
@@ -674,7 +674,7 @@ export function makeCollectionManager(
     }
     const collectionID = allocateCollectionID();
     const kindID = obtainStoreKindID(kindName);
-    const vobjID = `o+${kindID}/${collectionID}`;
+    const vobjID = makeBaseRef(kindID, collectionID, isDurable);
 
     syscall.vatstoreSet(prefixc(collectionID, '|nextOrdinal'), '1');
     const { hasWeakKeys } = storeKindInfo[kindName];
@@ -769,7 +769,7 @@ export function makeCollectionManager(
    *
    * @template K,V
    * @param {string} [label='map'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} [options]
    * @returns {MapStore<K,V>}
    */
   function makeScalarBigMapStore(label = 'map', options = {}) {
@@ -782,6 +782,7 @@ export function makeCollectionManager(
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
+      durable,
       keyShape,
       valueShape,
     );
@@ -813,7 +814,7 @@ export function makeCollectionManager(
    *
    * @template K,V
    * @param {string} [label='weakMap'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} [options]
    * @returns {WeakMapStore<K,V>}
    */
   function makeScalarBigWeakMapStore(label = 'weakMap', options = {}) {
@@ -828,6 +829,7 @@ export function makeCollectionManager(
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
+      durable,
       keyShape,
       valueShape,
     );
@@ -842,7 +844,7 @@ export function makeCollectionManager(
    *
    * @template K
    * @param {string} [label='set'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} [options]
    * @returns {SetStore<K>}
    */
   function makeScalarBigSetStore(label = 'set', options = {}) {
@@ -855,6 +857,7 @@ export function makeCollectionManager(
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
+      durable,
       keyShape,
       valueShape,
     );
@@ -869,7 +872,7 @@ export function makeCollectionManager(
    *
    * @template K
    * @param {string} [label='weakSet'] - diagnostic label for the store
-   * @param {StoreOptions=} options
+   * @param {StoreOptions} [options]
    * @returns {WeakSetStore<K>}
    */
   function makeScalarBigWeakSetStore(label = 'weakSet', options = {}) {
@@ -884,6 +887,7 @@ export function makeCollectionManager(
     const [vobjID, collection] = makeCollection(
       label,
       kindName,
+      durable,
       keyShape,
       valueShape,
     );

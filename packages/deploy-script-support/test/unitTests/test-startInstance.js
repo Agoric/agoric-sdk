@@ -48,7 +48,7 @@ test('startInstance', async t => {
     },
   };
 
-  /** @type {Petname=} */
+  /** @type {Petname | undefined} */
   let addedPetname;
 
   /** @type {import('../../src/startInstance.js').InstanceManager} */

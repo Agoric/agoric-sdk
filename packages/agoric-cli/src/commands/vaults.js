@@ -68,14 +68,12 @@ export const makeVaultsCommand = async logger => {
     .action(async function (opts) {
       logger.warn('running with options', opts);
 
-      const { VaultFactory } = agoricNames.instance;
-
       const spendAction = makeOpenSpendAction(
         // @ts-expect-error xxx RpcRemote
-        VaultFactory,
         agoricNames.brand,
         opts,
       );
+
       outputAction(spendAction);
     });
 

@@ -1,7 +1,7 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 import { assert, q, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
@@ -71,7 +71,7 @@ export function initializeVatState(kvStore, streamStore, vatID) {
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
- * @param {SnapStore=} snapStore
+ * @param {SnapStore} [snapStore]
  * returns an object to hold and access the kernel's state for the given vat
  */
 export function makeVatKeeper(
@@ -475,7 +475,7 @@ export function makeVatKeeper(
   /**
    * Generator function to return the vat's transcript, one entry at a time.
    *
-   * @param {StreamPosition=} startPos  Optional position to begin reading from
+   * @param {StreamPosition} [startPos]  Optional position to begin reading from
    *
    * @yields { TranscriptEntry } a stream of transcript entries
    */

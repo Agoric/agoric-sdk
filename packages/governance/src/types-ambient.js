@@ -271,7 +271,7 @@
  * @callback SubmitVote
  * @param {Handle<'Voter'>} voterHandle
  * @param {Position[]} chosenPositions
- * @param {bigint=} weight
+ * @param {bigint} [weight]
  * @returns {CompletedBallet}
  */
 
@@ -438,6 +438,7 @@
 /**
  * @callback UpdateParams
  * @param {Record<string,ParamValue>} paramChanges
+ * @returns {Promise<void>}
  */
 
 /**

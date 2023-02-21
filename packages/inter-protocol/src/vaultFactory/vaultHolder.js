@@ -3,13 +3,13 @@
  */
 import { AmountShape } from '@agoric/ertp';
 import {
-  SubscriberShape,
-  prepareDurablePublishKit,
   pipeTopicToStorage,
+  prepareDurablePublishKit,
+  SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { makePublicTopicProvider } from '@agoric/zoe/src/contractSupport/durability.js';
+import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
@@ -39,7 +39,7 @@ const HolderI = M.interface('holder', {
  * @param {ERef<Marshaller>} marshaller
  */
 export const prepareVaultHolder = (baggage, marshaller) => {
-  const providePublicTopic = makePublicTopicProvider();
+  const memoizedPath = makeStorageNodePathProvider(baggage);
 
   const makeVaultHolderPublishKit = prepareDurablePublishKit(
     baggage,
@@ -91,11 +91,11 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         getPublicTopics() {
           const { subscriber, storageNode } = this.state;
           return harden({
-            vault: providePublicTopic(
-              'Vault holder status',
+            vault: {
+              description: 'Vault holder status',
               subscriber,
-              storageNode,
-            ),
+              storagePath: memoizedPath(storageNode),
+            },
           });
         },
         makeAdjustBalancesInvitation() {

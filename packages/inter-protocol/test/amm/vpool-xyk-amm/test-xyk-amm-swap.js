@@ -640,6 +640,7 @@ test('amm jig - swapOut uneven', async t => {
   simoleanPurse.deposit(simoleanKit.mint.mintPayment(simoleans(20000000n)));
 
   /** @type {XYKAMMPublicFacet} */
+  // @ts-expect-error xxx 'amount' param can't type the brand
   const publicFacet = amm.ammPublicFacet;
   const creatorFacet = amm.ammCreatorFacet;
 

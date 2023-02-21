@@ -316,20 +316,18 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
  * Extends the sequence of results.
  *
  * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
- * @param {boolean} done
  * @param {any} value
- * @param {any} [rejection]
+ * @param {DurablePublishKitState['status']} [targetStatus]
  */
-const advanceDurablePublishKit = (context, done, value, rejection) => {
+const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const { state, facets } = context;
   const { valueDurability, status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
   }
+  const done = targetStatus !== 'live';
   if (done || valueDurability === 'mandatory') {
     canBeDurable(value) || Fail`Cannot accept non-durable value: ${value}`;
-    canBeDurable(rejection) ||
-      Fail`Cannot accept non-durable rejection: ${rejection}`;
   }
   const { tailP: currentP, tailR: resolveCurrent } =
     provideDurablePublishKitEphemeralData(state, facets);
@@ -340,7 +338,7 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
   let tailR;
 
   if (done) {
-    state.status = rejection ? 'failed' : 'finished';
+    state.status = targetStatus;
     tailP = makeQuietRejection(new Error('Cannot read past end of iteration.'));
     tailR = undefined;
   } else {
@@ -352,9 +350,10 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
     harden({ currentP, tailP, tailR }),
   );
 
-  if (rejection) {
+  if (targetStatus === 'failed') {
     state.hasValue = true;
-    state.value = rejection;
+    state.value = value;
+    const rejection = makeQuietRejection(value);
     resolveCurrent(rejection);
   } else {
     // Persist a terminal value, or a non-terminal value
@@ -395,14 +394,13 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
       // accepts new values.
       publisher: {
         publish(value) {
-          advanceDurablePublishKit(this, false, value);
+          advanceDurablePublishKit(this, value);
         },
         finish(finalValue) {
-          advanceDurablePublishKit(this, true, finalValue);
+          advanceDurablePublishKit(this, finalValue, 'finished');
         },
         fail(reason) {
-          const rejection = makeQuietRejection(reason);
-          advanceDurablePublishKit(this, true, undefined, rejection);
+          advanceDurablePublishKit(this, reason, 'failed');
         },
       },
 

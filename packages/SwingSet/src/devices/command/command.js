@@ -1,5 +1,5 @@
 import { makePromiseKit } from '@endo/promise-kit';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 
 import { Fail } from '@agoric/assert';
 

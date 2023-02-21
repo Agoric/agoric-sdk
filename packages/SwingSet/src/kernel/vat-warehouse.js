@@ -1,6 +1,6 @@
 /* eslint-disable no-await-in-loop,@jessie.js/no-nested-await */
 import { assert, Fail, quote as q } from '@agoric/assert';
-import { isNat } from '@agoric/nat';
+import { isNat } from '@endo/nat';
 import { makeVatTranslators } from './vatTranslator.js';
 import { insistVatDeliveryResult } from '../lib/message.js';
 
@@ -53,7 +53,7 @@ export const makeLRU = max => {
  * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
  * @param {{
  *   maxVatsOnline?: number,
- * }=} policyOptions
+ * }} [policyOptions]
  *
  * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata

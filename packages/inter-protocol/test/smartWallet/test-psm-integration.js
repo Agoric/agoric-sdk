@@ -14,7 +14,11 @@ import { NonNullish } from '@agoric/assert';
 
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
-import { makeDefaultTestContext } from './contexts.js';
+import {
+  currentPurseBalance,
+  makeDefaultTestContext,
+  voteForOpenQuestion,
+} from './contexts.js';
 import { headValue, withAmountUtils } from '../supports.js';
 
 /**
@@ -28,7 +32,7 @@ const committeeAddress = 'psmTestAddress';
 
 const makePsmTestSpace = async log => {
   const psmParams = {
-    anchorAssets: [{ denom: 'ibc/usdc1234', keyword: 'AUSD' }],
+    anchorAssets: [{ denom: 'ibc/toyusdc', keyword: 'AUSD' }],
     economicCommitteeAddresses: { aMember: committeeAddress },
     argv: { bootMsg: {} },
   };
@@ -51,72 +55,39 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t, makePsmTestSpace);
 });
 
-/**
- * @param {Awaited<ReturnType<typeof coalesceUpdates>>} state
- * @param {Brand<'nat'>} brand
- */
-const purseBalance = (state, brand) => {
-  const balances = Array.from(state.balances.values());
-  const match = balances.find(b => b.brand === brand);
-  if (!match) {
-    console.debug('balances', ...balances);
-    assert.fail(`${brand} not found in record`);
-  }
-  return match.value;
-};
-/**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} record
- * @param {Brand<'nat'>} brand
- */
-const currentPurseBalance = (record, brand) => {
-  const purses = Array.from(record.purses.values());
-  const match = purses.find(b => b.brand === brand);
-  if (!match) {
-    console.debug('purses', ...purses);
-    assert.fail(`${brand} not found in record`);
-  }
-  return match.balance.value;
-};
-
 test('null swap', async t => {
   const { anchor } = t.context;
   const { agoricNames } = await E.get(t.context.consume);
   const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
 
-  const wallet = await t.context.simpleProvideWallet('agoric1nullswap');
+  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
+    'agoric1nullswap',
+  );
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
-  const offersFacet = wallet.getOffersFacet();
 
-  const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
-
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContractInvitationSpec} */
+  /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
   const invitationSpec = {
-    source: 'contract',
-    instance: psmInstance,
-    publicInvitationMaker: 'makeGiveMintedInvitation',
+    source: 'agoricContract',
+    instancePath: ['psm-IST-AUSD'],
+    callPipe: [['makeGiveMintedInvitation']],
   };
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const offerSpec = {
-    id: 1,
+
+  await wallet.getOffersFacet().executeOffer({
+    id: 'nullSwap',
     invitationSpec,
     proposal: {
       // empty amounts
       give: { In: AmountMath.makeEmpty(mintedBrand) },
       want: { Out: anchor.makeEmpty() },
     },
-  };
-
-  // let promises settle to notify brands and create purses
+  });
   await eventLoopIteration();
 
-  await offersFacet.executeOffer(offerSpec);
-  await eventLoopIteration();
-
-  t.is(purseBalance(computedState, anchor.brand), 0n);
-  t.is(purseBalance(computedState, mintedBrand), 0n);
-
-  // success if nothing threw
-  t.pass();
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+  const status = computedState.offerStatuses.get('nullSwap');
+  t.is(status?.id, 'nullSwap');
+  t.false('error' in NonNullish(status), 'should not have an error');
 });
 
 // we test this direciton of swap because wanting anchor would require the PSM to have anchor in it first
@@ -127,24 +98,16 @@ test('want stable', async t => {
   const swapSize = 10_000n;
 
   t.log('Start the PSM to ensure brands are registered');
-  const psmInstance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
   const stableBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
-  const wallet = await t.context.simpleProvideWallet('agoric1wantstable');
-  const current = await E(E(wallet).getCurrentSubscriber())
-    .subscribeAfter()
-    .then(pub => pub.head.value);
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
+    'agoric1wantstable',
+  );
 
   const offersFacet = wallet.getOffersFacet();
   t.assert(offersFacet, 'undefined offersFacet');
-  // let promises settle to notify brands and create purses
-  await eventLoopIteration();
 
-  t.deepEqual(current.purses.find(b => b.brand === anchor.brand).balance, {
-    brand: anchor.brand,
-    value: 0n,
-  });
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
 
   t.log('Fund the wallet');
   assert(anchor.mint);
@@ -154,27 +117,25 @@ test('want stable', async t => {
 
   t.log('Prepare the swap');
 
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContractInvitationSpec} */
+  t.log('Execute the swap');
+  /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
   const invitationSpec = {
-    source: 'contract',
-    instance: psmInstance,
-    publicInvitationMaker: 'makeWantMintedInvitation',
+    source: 'agoricContract',
+    instancePath: ['psm-IST-AUSD'],
+    callPipe: [['makeWantMintedInvitation']],
   };
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const offerSpec = {
+
+  await offersFacet.executeOffer({
     id: 1,
     invitationSpec,
     proposal: {
       give: { In: anchor.make(swapSize) },
       want: {},
     },
-  };
-
-  t.log('Execute the swap');
-  await offersFacet.executeOffer(offerSpec);
+  });
   await eventLoopIteration();
-  t.is(purseBalance(computedState, anchor.brand), 0n);
-  t.is(purseBalance(computedState, stableBrand), swapSize); // assume 0% fee
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(stableBrand)).value, swapSize); // assume 0% fee
 });
 
 test('govern offerFilter', async t => {
@@ -184,7 +145,10 @@ test('govern offerFilter', async t => {
   const { psm: psmInstance } = await E(psmKit).get(anchor.brand);
 
   const wallet = await t.context.simpleProvideWallet(committeeAddress);
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const computedState = coalesceUpdates(
+    E(wallet).getUpdatesSubscriber(),
+    invitationBrand,
+  );
   const currentSub = E(wallet).getCurrentSubscriber();
 
   const offersFacet = wallet.getOffersFacet();
@@ -212,9 +176,14 @@ test('govern offerFilter', async t => {
     E(E(zoe).getInvitationIssuer())
       .getBrand()
       .then(brand => {
+        t.is(
+          brand,
+          invitationBrand,
+          'invitation brand from context matches zoe',
+        );
         /** @type {Amount<'set'>} */
         const invitationsAmount = NonNullish(balances.get(brand));
-        t.is(invitationsAmount?.value.length, len);
+        t.is(invitationsAmount?.value.length, len, 'invitation count');
         return invitationsAmount.value.filter(i => i.description === desc);
       });
 
@@ -242,14 +211,11 @@ test('govern offerFilter', async t => {
     description: INVITATION_MAKERS_DESC,
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const invMakersOffer = {
-    id: 44,
+  await offersFacet.executeOffer({
+    id: 'acceptEcInvitationOID',
     invitationSpec: getInvMakersSpec,
     proposal: {},
-  };
-
-  await offersFacet.executeOffer(invMakersOffer);
+  });
 
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   let currentState = await headValue(currentSub);
@@ -259,45 +225,14 @@ test('govern offerFilter', async t => {
     1,
     'one invitation consumed, one left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44']);
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
+    'acceptEcInvitationOID',
+  ]);
   t.is(
-    currentState.offerToUsedInvitation[44].value[0].description,
+    currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
+      .description,
     'charter member invitation',
   );
-
-  // Call for a vote ////////////////////////////////
-
-  /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
-  const proposeInvitationSpec = {
-    source: 'continuing',
-    previousOffer: 44,
-    invitationMakerName: 'VoteOnPauseOffers',
-    invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
-  };
-
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const proposalOfferSpec = {
-    id: 45,
-    invitationSpec: proposeInvitationSpec,
-    proposal: {},
-  };
-
-  await offersFacet.executeOffer(proposalOfferSpec);
-  await eventLoopIteration();
-
-  // vote /////////////////////////
-
-  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
-  const questions = await E(committeePublic).getOpenQuestions();
-  const question = E(committeePublic).getQuestion(questions[0]);
-  const { positions, issue, electionType, questionHandle } = await E(
-    question,
-  ).getDetails();
-  t.is(electionType, 'offer_filter');
-  const yesPosition = harden([positions[0]]);
-  t.deepEqual(issue.strings, ['wantStable']);
-  t.deepEqual(yesPosition, [{ strings: ['wantStable'] }]);
-
   const voteInvitationDetails = await getInvitationFor(
     'Voter0',
     1,
@@ -315,14 +250,11 @@ test('govern offerFilter', async t => {
     description: 'Voter0',
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const committeeInvMakersOffer = {
-    id: 46,
+  await offersFacet.executeOffer({
+    id: 'acceptVoterOID',
     invitationSpec: getCommitteeInvMakersSpec,
     proposal: {},
-  };
-
-  await offersFacet.executeOffer(committeeInvMakersOffer);
+  });
   currentState = await headValue(currentSub);
   t.is(
     // @ts-expect-error cast amount kind
@@ -330,43 +262,195 @@ test('govern offerFilter', async t => {
     0,
     'last invitation consumed, none left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), ['44', '46']);
-  // 44 tested above
-  t.is(currentState.offerToUsedInvitation[46].value[0].description, 'Voter0');
+  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
+    'acceptEcInvitationOID',
+    'acceptVoterOID',
+  ]);
+  // acceptEcInvitationOID tested above
+  t.is(
+    currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
+    'Voter0',
+  );
+
+  // Call for a vote ////////////////////////////////
 
   /** @type {import('@agoric/smart-wallet/src/invitations').ContinuingInvitationSpec} */
-  const getVoteSpec = {
+  const proposeInvitationSpec = {
     source: 'continuing',
-    previousOffer: 46,
-    invitationMakerName: 'makeVoteInvitation',
-    invitationArgs: harden([yesPosition, questionHandle]),
+    previousOffer: 'acceptEcInvitationOID',
+    invitationMakerName: 'VoteOnPauseOffers',
+    invitationArgs: harden([psmInstance, ['wantStable'], 2n]),
   };
 
-  /** @type {import('@agoric/smart-wallet/src/offers').OfferSpec} */
-  const voteOffer = {
-    id: 47,
-    invitationSpec: getVoteSpec,
+  await offersFacet.executeOffer({
+    id: 'proposeVoteOnPauseOffers',
+    invitationSpec: proposeInvitationSpec,
     proposal: {},
-  };
+  });
+  await eventLoopIteration();
 
-  await offersFacet.executeOffer(voteOffer);
+  // vote /////////////////////////
+
+  const committeePublic = E(zoe).getPublicFacet(economicCommittee);
+
+  await offersFacet.executeOffer({
+    id: 'voteForPauseOffers',
+    invitationSpec: await voteForOpenQuestion(
+      committeePublic,
+      'acceptVoterOID',
+    ),
+    proposal: {},
+  });
   await eventLoopIteration();
 
   // can't advance the clock, so the vote won't close. Call it enuf that the
   // vote didn't raise an error.
 });
 
-test('deposit unknown brand', async t => {
+// XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
+test('deposit multiple payments to unknown brand', async t => {
   const rial = withAmountUtils(makeIssuerKit('rial'));
-  assert(rial.mint);
 
   const wallet = await t.context.simpleProvideWallet('agoric1queue');
 
-  const payment = rial.mint.mintPayment(rial.make(1_000n));
-  // @ts-expect-error deposit does take a FarRef<Payment>
-  const result = await wallet.getDepositFacet().receive(harden(payment));
-  // successful request but not deposited
-  t.deepEqual(result, { brand: rial.brand, value: 0n });
+  // assume that if the call succeeds then it's in durable storage.
+  for await (const amt of [1n, 2n]) {
+    const payment = rial.mint.mintPayment(rial.make(amt));
+    // @ts-expect-error deposit does take a FarRef<Payment>
+    const result = await wallet.getDepositFacet().receive(harden(payment));
+    // successful request but not deposited
+    t.deepEqual(result, { brand: rial.brand, value: 0n });
+  }
+});
+
+// XXX belongs in smart-wallet package, but needs lots of set-up that's handy here.
+test('recover when some withdrawals succeed and others fail', async t => {
+  const { fromEntries } = Object;
+  const { make } = AmountMath;
+  const { anchor } = t.context;
+  const { agoricNames, bankManager } = t.context.consume;
+  const getBalance = (addr, brand) => {
+    const bank = E(bankManager).getBankForAddress(addr);
+    const purse = E(bank).getPurse(brand);
+    return E(purse).getCurrentAmount();
+  };
+  const namedBrands = kws =>
+    Promise.all(
+      kws.map(kw =>
+        E(agoricNames)
+          .lookup('brand', kw)
+          .then(b => [kw, b]),
+      ),
+    ).then(fromEntries);
+
+  t.log('Johnny has 10 AUSD');
+  const jAddr = 'addrForJohnny';
+  const smartWallet = await t.context.simpleProvideWallet(jAddr);
+  await E(E(smartWallet).getDepositFacet()).receive(
+    // @ts-expect-error FarRef grumble
+    E(anchor.mint).mintPayment(make(anchor.brand, 10n)),
+  );
+  t.deepEqual(await getBalance(jAddr, anchor.brand), make(anchor.brand, 10n));
+
+  t.log('He accidentally offers 10 BLD as well in a trade for IST');
+  const instance = await E(agoricNames).lookup('instance', 'psm-IST-AUSD');
+  const brand = await namedBrands(['BLD', 'IST']);
+  const proposal = harden({
+    give: { Anchor: make(anchor.brand, 10n), Oops: make(brand.BLD, 10n) },
+    want: { Proceeds: make(brand.IST, 1n) },
+  });
+  await E(smartWallet.getOffersFacet()).executeOffer({
+    id: 'recover',
+    invitationSpec: {
+      source: 'contract',
+      instance,
+      publicInvitationMaker: 'makeWantMintedInvitation',
+      invitationArgs: [],
+    },
+    proposal,
+  });
+
+  t.log('He still has 10 AUSD');
+  t.deepEqual(await getBalance(jAddr, anchor.brand), make(anchor.brand, 10n));
+});
+
+// TODO move to smart-wallet package when it has sufficient test supports
+test('agoricName invitation source errors', async t => {
+  const { anchor } = t.context;
+  const { agoricNames } = await E.get(t.context.consume);
+  const mintedBrand = await E(agoricNames).lookup('brand', 'IST');
+
+  const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
+    'agoric1nullswap',
+  );
+  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+
+  await wallet.getOffersFacet().executeOffer({
+    id: 'missing property',
+    // @ts-expect-error intentional violation
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['psm-IST-AUSD'],
+      // callPipe: [['makeGiveMintedInvitation']],
+    },
+    proposal: {},
+  });
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+  t.like(computedState.offerStatuses.get('missing property'), {
+    error:
+      'Error: {"source":"agoricContract","instancePath":["psm-IST-AUSD"]} - Must have missing properties ["callPipe"]',
+  });
+
+  await wallet.getOffersFacet().executeOffer({
+    id: 'bad namepath',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['not-present'],
+      callPipe: [['makeGiveMintedInvitation']],
+    },
+    proposal: {},
+  });
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+  t.like(computedState.offerStatuses.get('bad namepath'), {
+    error: 'Error: "nameKey" not found: "not-present"',
+  });
+
+  await wallet.getOffersFacet().executeOffer({
+    id: 'method typo',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['psm-IST-AUSD'],
+      callPipe: [['makeGiveMintedInvitation ']],
+    },
+    proposal: {},
+  });
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+  t.like(computedState.offerStatuses.get('method typo'), {
+    error:
+      'TypeError: target has no method "makeGiveMintedInvitation ", has []',
+  });
+
+  await wallet.getOffersFacet().executeOffer({
+    id: 'long pipe',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['psm-IST-AUSD'],
+      callPipe: [
+        ['zoe.getPublicFacet'],
+        ['makeGiveMintedInvitation'],
+        ['excessiveCall'],
+      ],
+    },
+    proposal: {},
+  });
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+  t.like(computedState.offerStatuses.get('long pipe'), {
+    error: 'Error: callPipe longer than MAX_PIPE_LENGTH=2',
+  });
 });
 
 test.todo('bad offer schema');

@@ -15,6 +15,7 @@ test('ertp service upgrade', async t => {
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,
     vats: {
+      // TODO refactor to use bootstrap-relay.js
       bootstrap: { sourceSpec: bfile('bootstrap-ertp-service-upgrade.js') },
     },
     bundles: {

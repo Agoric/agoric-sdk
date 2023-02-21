@@ -2,12 +2,14 @@ import {
   makeDurableIssuerKit,
   AssetKind,
   prepareIssuerKit,
+  IssuerShape,
+  BrandShape,
 } from '@agoric/ertp';
-import { initEmpty } from '@agoric/store';
+import { initEmpty, M } from '@agoric/store';
 import {
-  prepareKindMulti,
   provideDurableMapStore,
   provide,
+  prepareExoClassKit,
 } from '@agoric/vat-data';
 
 const FEE_MINT_KIT = 'FeeMintKit';
@@ -41,24 +43,42 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
     prepareIssuerKit(mintBaggage, shutdownZoeVat);
   }
 
-  const getFeeIssuerKit = ({ facets }, allegedFeeMintAccess) => {
-    assert(
-      facets.feeMintAccess === allegedFeeMintAccess,
-      'The object representing access to the fee brand mint was not provided',
-    );
-    return mintBaggage.get(FEE_MINT_KIT);
-  };
-
-  const makeFeeMintKit = prepareKindMulti(mintBaggage, 'FeeMint', initEmpty, {
-    feeMint: {
-      getFeeIssuerKit,
-      getFeeIssuer: () => mintBaggage.get(FEE_MINT_KIT).issuer,
-      getFeeBrand: () => mintBaggage.get(FEE_MINT_KIT).brand,
-    },
-    // feeMintAccess is an opaque durable object representing the right to get
-    // the fee mint.
-    feeMintAccess: {},
+  const FeeMintIKit = harden({
+    feeMint: M.interface('FeeMint', {
+      getFeeIssuerKit: M.call(M.remotable('FeeMintAccess')).returns(M.record()),
+      getFeeIssuer: M.call().returns(IssuerShape),
+      getFeeBrand: M.call().returns(BrandShape),
+    }),
+    feeMintAccess: M.interface('FeeMintAccess', {}),
   });
+
+  const makeFeeMintKit = prepareExoClassKit(
+    mintBaggage,
+    'FeeMint',
+    FeeMintIKit,
+    initEmpty,
+    {
+      feeMint: {
+        getFeeIssuerKit(allegedFeeMintAccess) {
+          const { facets } = this;
+          assert(
+            facets.feeMintAccess === allegedFeeMintAccess,
+            'The object representing access to the fee brand mint was not provided',
+          );
+          return mintBaggage.get(FEE_MINT_KIT);
+        },
+        getFeeIssuer() {
+          return mintBaggage.get(FEE_MINT_KIT).issuer;
+        },
+        getFeeBrand() {
+          return mintBaggage.get(FEE_MINT_KIT).brand;
+        },
+      },
+      // feeMintAccess is an opaque durable object representing the right to get
+      // the fee mint.
+      feeMintAccess: {},
+    },
+  );
 
   return provide(zoeBaggage, 'theFeeMint', () => makeFeeMintKit());
 };

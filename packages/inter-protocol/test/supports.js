@@ -2,6 +2,7 @@ import { AmountMath } from '@agoric/ertp';
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
+import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import {
   makeAgoricNamesAccess,
@@ -48,8 +49,9 @@ harden(provideBundle);
 export const setUpZoeForTest = async (setJig = () => {}) => {
   const { makeFar } = makeLoopback('zoeTest');
 
+  const { admin, vatAdminState } = makeFakeVatAdmin(setJig);
   const { zoeService, feeMintAccess } = await makeFar(
-    makeZoeKit(makeFakeVatAdmin(setJig).admin, undefined, {
+    makeZoeKit(admin, undefined, {
       name: Stable.symbol,
       assetKind: Stable.assetKind,
       displayInfo: Stable.displayInfo,
@@ -58,6 +60,8 @@ export const setUpZoeForTest = async (setJig = () => {}) => {
   return {
     zoe: zoeService,
     feeMintAccessP: feeMintAccess,
+    vatAdminSvc: admin,
+    vatAdminState,
   };
 };
 harden(setUpZoeForTest);
@@ -102,6 +106,23 @@ export const installGovernance = (zoe, produce) => {
 };
 
 /**
+ * Install governance contracts, with a "puppet" governor for use in tests.
+ *
+ * @param {ERef<ZoeService>} zoe
+ * @param {Space['installation']['produce']} produce
+ */
+export const installPuppetGovernance = (zoe, produce) => {
+  produce.committee.resolve(E(zoe).install(committeeBundle));
+  produce.contractGovernor.resolve(
+    E(zoe).install(puppetContractGovernorBundle),
+  );
+  // ignored by puppetContractGovernor but expected by something
+  produce.binaryVoteCounter.resolve(E(zoe).install(binaryVoteCounterBundle));
+};
+
+/**
+ * @deprecated use the puppet governor
+ *
  * Economic Committee of one.
  *
  * @param {ERef<ZoeService>} zoe
@@ -215,8 +236,8 @@ export const subscriptionKey = subscription => {
 export const topicPath = (hasTopics, subscriberName) => {
   return E(hasTopics)
     .getPublicTopics()
-    .then(subscribers => subscribers[subscriberName])
-    .then(tr => tr.storagePath);
+    .then(topics => topics[subscriberName])
+    .then(t => t.storagePath);
 };
 
 /** @type {<T>(subscriber: ERef<Subscriber<T>>) => Promise<T>} */
@@ -224,4 +245,31 @@ export const headValue = async subscriber => {
   await eventLoopIteration();
   const record = await E(subscriber).subscribeAfter();
   return record.head.value;
+};
+
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {string} topicName
+ * @param {string} path
+ * @param {string[]} [dataKeys]
+ */
+export const assertTopicPathData = async (
+  t,
+  hasTopics,
+  topicName,
+  path,
+  dataKeys,
+) => {
+  const topic = await E(hasTopics)
+    .getPublicTopics()
+    .then(topics => topics[topicName]);
+  t.is(await topic.storagePath, path, 'topic storagePath must match');
+  const latest = /** @type {Record<string, unknown>} */ (
+    await headValue(topic.subscriber)
+  );
+  if (dataKeys !== undefined) {
+    // TODO consider making this a shape instead
+    t.deepEqual(Object.keys(latest), dataKeys, 'keys in topic feed must match');
+  }
 };

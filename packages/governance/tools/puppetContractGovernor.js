@@ -4,7 +4,10 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 // eslint-disable-next-line no-unused-vars
+import { Fail } from '@agoric/assert';
+// eslint-disable-next-line no-unused-vars -- used by typedef
 import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
+import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';
 
 // @file a version of the contractGovernor.js contract simplified for testing.
 // It removes the electorate and doesn't try to support legibility.
@@ -12,13 +15,13 @@ import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
 // It adds the ability for tests to update parameters directly.
 
 /**
- * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
+ * @template {import('../src/contractGovernor.js').GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('../src/contractGovernance/typedParamManager.js').InvitationParam }},
  *   }
  * }>} zcf
  * @param {{
@@ -41,6 +44,7 @@ export const start = async (zcf, privateArgs) => {
   const {
     creatorFacet: governedCF,
     instance: governedInstance,
+    /** @type {ReturnType<SF>['publicFacet']} */
     publicFacet: governedPF,
     adminFacet,
   } = await E(zoe).startInstance(
@@ -70,16 +74,27 @@ export const start = async (zcf, privateArgs) => {
    * @param {string} apiMethodName
    * @param {unknown[]} methodArgs
    */
-  const invokeAPI = (apiMethodName, methodArgs) =>
-    E(E(governedCF).getGovernedApis())[apiMethodName](...methodArgs);
+  const invokeAPI = async (apiMethodName, methodArgs) => {
+    const governedNames = await E(governedCF).getGovernedApiNames();
+    governedNames.includes(apiMethodName) ||
+      Fail`${apiMethodName} is not a governed API.`;
+
+    const { positive } = makeApiInvocationPositions(apiMethodName, methodArgs);
+
+    return E(E(governedCF).getGovernedApis())
+      [apiMethodName](...methodArgs)
+      .then(() => positive);
+  };
 
   const creatorFacet = Far('governor creatorFacet', {
     changeParams,
     invokeAPI,
     setFilters,
+    /** @returns {Awaited<ReturnType<SF>>['creatorFcet']} */
     getCreatorFacet: () => limitedCreatorFacet,
     getAdminFacet: () => adminFacet,
     getInstance: () => governedInstance,
+    /** @returns {Awaited<ReturnType<SF>>['publicFacet']} */
     getPublicFacet: () => governedPF,
   });
 
@@ -90,3 +105,7 @@ export const start = async (zcf, privateArgs) => {
   return { creatorFacet, publicFacet };
 };
 harden(start);
+/**
+ * @template {import('../src/contractGovernor.js').GovernableStartFn} SF Start function of governed contract
+ * @typedef {Awaited<ReturnType<typeof start<SF>>>} PuppetContractGovernorKit<SF>
+ */

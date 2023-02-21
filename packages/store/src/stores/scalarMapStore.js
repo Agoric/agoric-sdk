@@ -21,8 +21,8 @@ const { quote: q } = assert;
  * @param {Map<K,V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
- * @param {((k: K) => void)=} assertKeyOkToDelete
- * @param {string=} tag
+ * @param {((k: K) => void)} [assertKeyOkToDelete]
+ * @param {string} [tag]
  * @returns {MapStore<K,V>}
  */
 export const makeMapStoreMethods = (
@@ -43,8 +43,8 @@ export const makeMapStoreMethods = (
     );
 
   /**
-   * @param {Pattern=} keyPatt
-   * @param {Pattern=} valuePatt
+   * @param {Pattern} [keyPatt]
+   * @param {Pattern} [valuePatt]
    * @returns {Iterable<K>}
    */
   const keys = (keyPatt = undefined, valuePatt = undefined) => {
@@ -65,16 +65,16 @@ export const makeMapStoreMethods = (
   };
 
   /**
-   * @param {Pattern=} keyPatt
-   * @param {Pattern=} valuePatt
+   * @param {Pattern} [keyPatt]
+   * @param {Pattern} [valuePatt]
    * @returns {Iterable<V>}
    */
   const values = (keyPatt = undefined, valuePatt = undefined) =>
     mapIterable(keys(keyPatt, valuePatt), k => /** @type {V} */ (jsmap.get(k)));
 
   /**
-   * @param {Pattern=} keyPatt
-   * @param {Pattern=} valuePatt
+   * @param {Pattern} [keyPatt]
+   * @param {Pattern} [valuePatt]
    * @returns {Iterable<[K,V]>}
    */
   const entries = (keyPatt = undefined, valuePatt = undefined) =>
@@ -127,7 +127,7 @@ export const makeMapStoreMethods = (
  *
  * @template K,V
  * @param {string} [tag='key'] - the column name for the key
- * @param {StoreOptions=} options
+ * @param {StoreOptions} [options]
  * @returns {MapStore<K,V>}
  */
 export const makeScalarMapStore = (

@@ -50,7 +50,7 @@ const makeAmmParamManager = async (
 };
 
 const voPoolTest = async (t, mutation, postTest) => {
-  /** @type {MakePoolMulti=} */
+  /** @type {MakePoolMulti | undefined} */
   let makePool;
   const { zoe, zcf } = await setupZCFTest();
   const invitation = await zcf.makeInvitation(() => {}, 'fake invitation');
@@ -149,7 +149,7 @@ test.serial('unchanged', async t => {
 });
 
 test.serial('one update', async t => {
-  /** @type {Notifier<unknown>=} */
+  /** @type {Notifier<unknown> | undefined} */
   let notifier;
   let initialNotifierCount;
   await voPoolTest(

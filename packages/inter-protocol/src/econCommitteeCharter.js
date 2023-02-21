@@ -24,17 +24,15 @@ export const INVITATION_MAKERS_DESC = 'charter member invitation';
  * @property {Record<string, unknown>} params
  * @property {{paramPath: { key: string }}} [path]
  */
-const ParamChangesOfferArgsShape = harden(
-  M.split(
-    {
-      deadline: TimestampShape,
-      instance: InstanceHandleShape,
-      params: M.recordOf(M.string(), M.any()),
-    },
-    M.partial({
-      path: { paramPath: { key: M.any() } },
-    }),
-  ),
+const ParamChangesOfferArgsShape = M.splitRecord(
+  {
+    deadline: TimestampShape,
+    instance: InstanceHandleShape,
+    params: M.recordOf(M.string(), M.any()),
+  },
+  {
+    path: { paramPath: { key: M.any() } },
+  },
 );
 
 /**
@@ -81,6 +79,32 @@ export const start = async zcf => {
     return zcf.makeInvitation(voteOnOfferFilterHandler, 'vote on offer filter');
   };
 
+  /**
+   * @param {Instance} instance
+   * @param {string} methodName
+   * @param {string[]} methodArgs
+   * @param {import('@agoric/time').TimestampValue} deadline
+   */
+  const makeApiInvocationInvitation = (
+    instance,
+    methodName,
+    methodArgs,
+    deadline,
+  ) => {
+    const handler = seat => {
+      seat.exit();
+
+      const governor = instanceToGovernor.get(instance);
+      return E(governor).voteOnApiInvocation(
+        methodName,
+        methodArgs,
+        counter,
+        deadline,
+      );
+    };
+    return zcf.makeInvitation(handler, 'vote on API invocation');
+  };
+
   const MakerI = M.interface('Charter InvitationMakers', {
     VoteOnParamChange: M.call().returns(M.promise()),
     VoteOnPauseOffers: M.call(
@@ -88,10 +112,17 @@ export const start = async zcf => {
       M.arrayOf(M.string()),
       TimestampShape,
     ).returns(M.promise()),
+    VoteOnApiCall: M.call(
+      InstanceHandleShape,
+      M.string(),
+      M.arrayOf(M.any()),
+      TimestampShape,
+    ).returns(M.promise()),
   });
   const invitationMakers = makeExo('Charter Invitation Makers', MakerI, {
     VoteOnParamChange: makeParamInvitation,
     VoteOnPauseOffers: makeOfferFilterInvitation,
+    VoteOnApiCall: makeApiInvocationInvitation,
   });
 
   const charterMemberHandler = seat => {

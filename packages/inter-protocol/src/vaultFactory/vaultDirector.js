@@ -6,7 +6,6 @@ import { E } from '@endo/eventual-send';
 
 import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
-  assertProposalShape,
   getAmountIn,
   getAmountOut,
   provideChildBaggage,
@@ -98,6 +97,7 @@ export const prepareVaultDirector = (
   const mintSeat = provideEmptySeat(zcf, baggage, 'mintSeat');
   const rewardPoolSeat = provideEmptySeat(zcf, baggage, 'rewardPoolSeat');
 
+  /** @type {MapStore<Brand, VaultManager>} */
   const collateralTypes = provideDurableMapStore(baggage, 'collateralTypes');
 
   // Non-durable map because param managers aren't durable.
@@ -215,6 +215,7 @@ export const prepareVaultDirector = (
         getLimitedCreatorFacet: M.call().returns(M.remotable()),
         getGovernedApis: M.call().returns(M.record()),
         getGovernedApiNames: M.call().returns(M.record()),
+        setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
       }),
       machine: M.interface('machine', {
         addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
@@ -229,7 +230,6 @@ export const prepareVaultDirector = (
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
         getMetrics: M.call().returns(SubscriberShape),
-        makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
           SubscriberShape,
@@ -274,6 +274,7 @@ export const prepareVaultDirector = (
         getGovernedApiNames() {
           return harden({});
         },
+        setOfferFilter: strings => zcf.setOfferFilter(strings),
       },
       machine: {
         // TODO move this under governance #3924
@@ -301,10 +302,10 @@ export const prepareVaultDirector = (
           !collateralTypes.has(collateralBrand) ||
             Fail`Collateral brand ${q(collateralBrand)} has already been added`;
 
+          // counter to be incremented at end of addVaultType
+          const managerId = `manager${state.managerCounter}`;
           const managerStorageNode =
-            storageNode &&
-            E(storageNode).makeChildNode(`manager${state.managerCounter}`);
-          state.managerCounter += 1;
+            storageNode && E(storageNode).makeChildNode(managerId);
 
           /** a powerful object; can modify parameters */
           const vaultParamManager = makeVaultParamManager(
@@ -397,13 +398,16 @@ export const prepareVaultDirector = (
             brandName,
             prepareVaultManagerKit,
             zcf,
-            debtMint,
-            collateralBrand,
-            collateralUnit,
-            factoryPowers,
-            startTimeStamp,
-            managerStorageNode,
             marshaller,
+            {
+              debtMint,
+              collateralBrand,
+              collateralUnit,
+              descriptionScope: managerId,
+              factoryPowers,
+              startTimeStamp,
+              storageNode: managerStorageNode,
+            },
           );
 
           const { self: vm } = makeVaultManager();
@@ -412,6 +416,7 @@ export const prepareVaultDirector = (
           await vm.setupLiquidator(install, terms);
           watchGovernance(vm, install, terms);
           facets.machine.updateMetrics();
+          state.managerCounter += 1;
           return vm;
         },
         makeCollectFeesInvitation() {
@@ -471,40 +476,6 @@ export const prepareVaultDirector = (
         /** @deprecated use getPublicTopics */
         getMetrics() {
           return metricsSubscriber;
-        },
-        /**
-         * @deprecated use getCollateralManager and then makeVaultInvitation instead
-         *
-         * Make a vault in the vaultManager based on the collateral type.
-         */
-        makeVaultInvitation() {
-          /** @param {ZCFSeat} seat */
-          const makeVaultHook = async seat => {
-            assertProposalShape(seat, {
-              give: { Collateral: null },
-              want: { Minted: null },
-            });
-            const {
-              give: { Collateral: collateralAmount },
-              want: { Minted: requestedAmount },
-            } = seat.getProposal();
-            const { brand: brandIn } = collateralAmount;
-            collateralTypes.has(brandIn) ||
-              Fail`Not a supported collateral type ${brandIn}`;
-
-            AmountMath.isGTE(
-              requestedAmount,
-              directorParamManager.getMinInitialDebt(),
-            ) ||
-              Fail`The request must be for at least ${
-                directorParamManager.getMinInitialDebt().value
-              }. ${requestedAmount.value} is too small`;
-
-            /** @type {VaultManager} */
-            const mgr = collateralTypes.get(brandIn);
-            return mgr.makeVaultKit(seat);
-          };
-          return zcf.makeInvitation(makeVaultHook, 'MakeVault');
         },
         getRunIssuer() {
           return debtMint.getIssuerRecord().issuer;

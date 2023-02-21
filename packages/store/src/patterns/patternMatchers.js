@@ -147,7 +147,7 @@ const makePatternKit = () => {
    * Otherwise result undefined.
    *
    * @param {string} tag
-   * @returns {MatchHelper=}
+   * @returns {MatchHelper | undefined}
    */
   const maybeMatchHelper = tag =>
     // eslint-disable-next-line no-use-before-define

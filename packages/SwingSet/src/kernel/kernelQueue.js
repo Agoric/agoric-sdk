@@ -88,7 +88,7 @@ export function makeKernelQueueHandler(tools) {
    * @param {string} kref  Target of the message
    * @param {string} method  The method name
    * @param {any[]} args  The arguments array
-   * @param {ResolutionPolicy=} policy How the kernel should handle an eventual
+   * @param {ResolutionPolicy} [policy] How the kernel should handle an eventual
    *    resolution or rejection of the message's result promise. Should be
    *    one of 'none' (don't even create a result promise), 'ignore' (do
    *    nothing), 'logAlways' (log the resolution or rejection), 'logFailure'

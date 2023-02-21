@@ -5,7 +5,7 @@ import { objectMap } from '@agoric/internal';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@agoric/store/tools.js';
 import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
-import { parseVatSlot } from './parseVatSlots.js';
+import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
@@ -815,7 +815,7 @@ export function makeVirtualObjectManager(
 
     function makeNewInstance(...args) {
       const id = getNextInstanceID(kindID, isDurable);
-      const baseRef = `o+${kindID}/${id}`;
+      const baseRef = makeBaseRef(kindID, id, isDurable);
       // kdebug(`vo make ${baseRef}`);
 
       const initialData = init ? init(...args) : {};
@@ -949,7 +949,7 @@ export function makeVirtualObjectManager(
   const makeKindHandle = tag => {
     assert(kindIDID, `initializeKindHandleKind not called yet`);
     const kindID = `${allocateExportID()}`;
-    const kindIDvref = `o+${kindIDID}/${kindID}`;
+    const kindIDvref = makeBaseRef(kindIDID, kindID, true);
     const durableKindDescriptor = { kindID, tag, nextInstanceID: 1 };
     /** @type {import('@agoric/vat-data').DurableKindHandle} */
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620

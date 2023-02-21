@@ -39,6 +39,7 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
 /**
  * @typedef {{
  *   state: {
+ *     totalFeeBurned: Amount<'nat'>,
  *     totalFeeMinted: Amount<'nat'>,
  *   },
  *   facets: {
@@ -103,6 +104,7 @@ const start = async (zcf, privateArgs, baggage) => {
     'liquidityBrandForBrand',
   );
 
+  /** @type {() => Promise<ZCFMint<'nat'>>} */
   const takeFeeMint = async () => {
     if (baggage.has('feeMint')) {
       return baggage.get('feeMint');
@@ -217,6 +219,7 @@ const start = async (zcf, privateArgs, baggage) => {
   /**
    * @param {MethodContext} context
    * @param {Brand<'nat'>} ammSecondaryBrand
+   * @returns {Promise<void>}
    */
   const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
     assert(
@@ -380,7 +383,14 @@ const start = async (zcf, privateArgs, baggage) => {
     updateMetrics({ state });
   };
 
+  /**
+   *
+   * @param {MethodContext} context
+   * @param {Amount<'nat'>} reduction
+   * @returns {void}
+   */
   const burnFeesToReduceShortfall = ({ state }, reduction) => {
+    trace('burnFeesToReduceShortfall', reduction);
     reduction = AmountMath.coerce(feeKit.brand, reduction);
     const feeKeyword = keywordForBrand.get(feeKit.brand);
     const feeBalance = collateralSeat.getAmountAllocated(feeKeyword);

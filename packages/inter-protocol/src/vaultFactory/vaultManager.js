@@ -41,7 +41,6 @@ import {
   assertProposalShape,
   atomicTransfer,
   ceilDivideBy,
-  floorDivideBy,
   getAmountIn,
   getAmountOut,
   makeRatio,
@@ -53,6 +52,7 @@ import { E } from '@endo/eventual-send';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { liquidate, makeQuote, updateQuote } from './liquidation.js';
+import { maxDebtForVault } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 
@@ -94,6 +94,7 @@ const trace = makeTracer('VM', false);
  *  getRecordingPeriod: () => RelativeTime,
  *  getDebtLimit: () => Amount<'nat'>,
  *  getInterestRate: () => Ratio,
+ *  getLiquidationPadding: () => Ratio,
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
@@ -126,24 +127,30 @@ const trace = makeTracer('VM', false);
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand<'nat'>} collateralBrand
- * @param {Amount<'nat'>} collateralUnit
- * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
- * @param {Timestamp} startTimeStamp
- * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @param {Readonly<{
+ * debtMint: ZCFMint<'nat'>,
+ * collateralBrand: Brand<'nat'>,
+ * collateralUnit: Amount<'nat'>,
+ * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * descriptionScope: string,
+ * startTimeStamp: Timestamp,
+ * storageNode: ERef<StorageNode>,
+ * }>} unique per singleton
  */
 export const prepareVaultManagerKit = (
   baggage,
   zcf,
-  debtMint,
-  collateralBrand,
-  collateralUnit,
-  factoryPowers,
-  startTimeStamp,
-  storageNode,
   marshaller,
+  {
+    debtMint,
+    collateralBrand,
+    collateralUnit,
+    descriptionScope,
+    factoryPowers,
+    startTimeStamp,
+    storageNode,
+  },
 ) => {
   assert(
     storageNode && marshaller,
@@ -162,13 +169,10 @@ export const prepareVaultManagerKit = (
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
-  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
-    makeVaultManagerPublishKit();
-
   /** @type {PublishKit<AssetState>} */
   const { publisher: assetPublisher, subscriber: assetSubscriber } =
     makeVaultManagerPublishKit();
-  pipeTopicToStorage(metricsSubscriber, storageNode, marshaller);
+  pipeTopicToStorage(assetSubscriber, storageNode, marshaller);
 
   /** @type {MapStore<string, Vault>} */
   const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
@@ -178,6 +182,8 @@ export const prepareVaultManagerKit = (
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
+  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
+    makeVaultManagerPublishKit();
   pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
   const storedQuotesNotifier = makeStoredNotifier(
@@ -276,6 +282,7 @@ export const prepareVaultManagerKit = (
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
         getCompoundedInterest: M.call().returns(RatioShape),
+        scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
           AmountShape,
@@ -299,9 +306,10 @@ export const prepareVaultManagerKit = (
     {
       collateral: {
         makeVaultInvitation() {
+          const { facets } = this;
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
-            'MakeVault',
+            facets.manager.scopeDescription('MakeVault'),
           );
         },
         /** @deprecated use getPublicTopics */
@@ -436,6 +444,7 @@ export const prepareVaultManagerKit = (
           const { facets } = this;
           trace('reschedulePriceCheck', collateralBrand, {
             liquidationQueueing,
+            outstandingQuote: !!outstandingQuote,
           });
           // INTERLOCK: the first time through, start the activity to wait for
           // and process liquidations over time.
@@ -623,20 +632,23 @@ export const prepareVaultManagerKit = (
         },
 
         /**
+         * Consults a price authority to determine the max debt this manager
+         * config will allow for the collateral.
+         *
          * @param {Amount<'nat'>} collateralAmount
          */
         async maxDebtFor(collateralAmount) {
           trace('maxDebtFor', collateralAmount);
           assert(factoryPowers && priceAuthority);
-          const quoteAmount = await E(priceAuthority).quoteGiven(
+          const quote = await E(priceAuthority).quoteGiven(
             collateralAmount,
             debtBrand,
           );
-          trace('maxDebtFor got quote', quoteAmount);
-          // floorDivide because we want the debt ceiling lower
-          return floorDivideBy(
-            getAmountOut(quoteAmount),
+          trace('maxDebtFor got quote', quote.quoteAmount.value[0]);
+          return maxDebtForVault(
+            quote,
             factoryPowers.getGovernedParams().getLiquidationMargin(),
+            factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
         },
         /**
@@ -683,6 +695,14 @@ export const prepareVaultManagerKit = (
         },
         getDebtBrand() {
           return debtBrand;
+        },
+        /**
+         * Prepend with an identifier of this vault manager
+         *
+         * @param {string} base
+         */
+        scopeDescription(base) {
+          return `${descriptionScope}: ${base}`;
         },
         /**
          * coefficient on existing debt to calculate new debt

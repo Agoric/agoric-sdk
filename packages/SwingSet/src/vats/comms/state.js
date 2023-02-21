@@ -1,4 +1,4 @@
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 import { insistCapData } from '../../lib/capdata.js';
 import {

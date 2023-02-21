@@ -2,7 +2,7 @@
  * Kernel's keeper of persistent state for a device.
  */
 
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { assert, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';

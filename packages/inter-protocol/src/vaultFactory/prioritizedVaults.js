@@ -71,7 +71,7 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
   // current high-water mark fires, we reschedule at the new (presumably
   // lower) rate.
   // Without this we'd be calling reschedulePriceCheck() unnecessarily
-  /** @type {string=} */
+  /** @type {string | undefined} */
   let firstKey;
 
   // Check if this ratio of debt to collateral would be the highest known. If
@@ -82,7 +82,7 @@ export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
   /**
    * Ratio of the least-collateralized vault, if there is one.
    *
-   * @returns {Ratio=} actual debt over collateral
+   * @returns {Ratio | undefined} actual debt over collateral
    */
   const highestRatio = () => {
     if (vaults.getSize() === 0) {

@@ -140,7 +140,7 @@ export function deduceCollectionID(fakestore, ctype, offset) {
   const kindID = kindIDs[ctype];
   assert(kindID);
   const collectionID = nextCollectionID - offset;
-  const vref = `o+${kindID}/${collectionID}`;
+  const vref = `o+v${kindID}/${collectionID}`;
   return [collectionID, vref];
 }
 
@@ -153,7 +153,7 @@ export function refValString(vref, type) {
 }
 
 export function mapRef(idx) {
-  return `o+2/${idx}`; // see 'assert known scalarMapStore ID' below
+  return `o+v2/${idx}`; // see 'assert known scalarMapStore ID' below
 }
 
 // return an iterator of all existing keys that start with 'prefix'

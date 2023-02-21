@@ -13,7 +13,7 @@
 
 import { assert, q, Fail } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
-import { objectMap } from '@agoric/internal';
+import { objectMap, WalletName } from '@agoric/internal';
 import {
   makeLegacyMap,
   makeScalarMapStore,
@@ -24,7 +24,7 @@ import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 
 import { makeMarshal, passStyleOf, Far, mapIterable } from '@endo/marshal';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import {
   makeNotifierFromSubscriber,
   makeNotifierKit,
@@ -863,7 +863,7 @@ export function makeWalletRoot({
     if (already) {
       depositFacet = actions;
     } else {
-      depositFacet = Far('depositFacet', {
+      depositFacet = Far(WalletName.depositFacet, {
         receive(paymentP) {
           return E(actions).receive(paymentP);
         },
@@ -1414,7 +1414,7 @@ export function makeWalletRoot({
 
   /**
    * @param {ERef<Payment>} paymentP
-   * @param {Purse | Petname=} depositTo
+   * @param {Purse | Petname} [depositTo]
    */
   const addPayment = async (paymentP, depositTo = undefined) => {
     // We don't even create the record until we resolve the payment.
@@ -1521,7 +1521,6 @@ export function makeWalletRoot({
     return E(board)
       .getValue(boardId)
       .then(value => {
-        // @ts-expect-error type is too specific
         context.ensureBoardId(boardId, value);
         return acceptFn(petname, value);
       });
@@ -1988,7 +1987,10 @@ export function makeWalletRoot({
       .then(addInviteDepositFacet);
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
 
-    await E(myAddressNameAdmin).update('depositFacet', selfDepositFacet);
+    await E(myAddressNameAdmin).update(
+      WalletName.depositFacet,
+      selfDepositFacet,
+    );
   };
 
   // Importing assets as virtual purses from the bank is a highly-trusted path.

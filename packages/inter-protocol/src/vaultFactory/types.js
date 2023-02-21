@@ -35,6 +35,7 @@
  * @property {Ratio} loanFee - The fee (in BasisPoints) charged when opening
  * or increasing a loan.
  * @property {Amount<'nat'>} debtLimit
+ * @property {Ratio} [liquidationPadding] - vault must maintain this in order to remove collateral or add debt
  */
 
 /**

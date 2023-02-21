@@ -105,7 +105,7 @@ test('bridge with offerId string', async t => {
     proposal: {},
   };
   assert(t.context.sendToBridge);
-  const res = await t.context.sendToBridge({
+  const validMsg = {
     type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress2,
     // consider a helper for each action type
@@ -116,8 +116,20 @@ test('bridge with offerId string', async t => {
     ),
     blockTime: 0,
     blockHeight: 0,
-  });
+  };
+  const res = await t.context.sendToBridge(validMsg);
   t.is(res, undefined);
+
+  // Verify it would have failed with a different 'type'.
+  // This arguably belongs in a new test but putting it here makes clear
+  // that everything is valid except for 'type'.
+  await t.throwsAsync(
+    t.context.sendToBridge({
+      ...validMsg,
+      type: 'BOGUS',
+    }),
+    { message: /^In "fromBridge" method/ },
+  );
 });
 
 test.todo('spend action over bridge');

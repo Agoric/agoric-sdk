@@ -92,7 +92,7 @@ export function recordXSnap(options, folderPath, { writeFileSync }) {
 
   /**
    * @param {string} kind
-   * @param {string=} ext
+   * @param {string} [ext]
    */
   const nextFile = (kind, ext = 'dat') => {
     const fn = `${pad5(ix)}-${kind}.${ext}`;

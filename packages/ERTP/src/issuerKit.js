@@ -14,8 +14,18 @@ import './types-ambient.js';
 
 /**
  * @template {AssetKind} K
+ * @typedef {object} IssuerRecord
+ * @property {string} name
+ * @property {K} assetKind
+ * @property {AdditionalDisplayInfo} displayInfo
+ * @property {Pattern} elementShape
+ */
+
+/**
+ * @template {AssetKind} K
+ * @param {IssuerRecord<K>} issuerRecord
  * @param {Baggage} issuerBaggage
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
@@ -24,15 +34,11 @@ import './types-ambient.js';
  * See https://github.com/Agoric/agoric-sdk/issues/3434
  * @returns {IssuerKit<K>}
  */
-export const prepareIssuerKit = (
+const setupIssuerKit = (
+  { name, assetKind, displayInfo, elementShape },
   issuerBaggage,
   optShutdownWithFailure = undefined,
 ) => {
-  const name = issuerBaggage.get('name');
-  /** @type {K} */
-  const assetKind = issuerBaggage.get('assetKind');
-  const displayInfo = issuerBaggage.get('displayInfo');
-  const elementShape = issuerBaggage.get('elementShape');
   assert.typeof(name, 'string');
   assertAssetKind(assetKind);
 
@@ -65,6 +71,30 @@ export const prepareIssuerKit = (
     displayInfo: cleanDisplayInfo,
   });
 };
+harden(setupIssuerKit);
+
+/** The key at which the issuer record is stored. */
+const INSTANCE_KEY = 'issuer';
+
+/**
+ * @template {AssetKind} K
+ * @param {Baggage} issuerBaggage
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
+ * in the middle of an atomic action (which btw should never happen), it
+ * potentially leaves its ledger in a corrupted state. If this function was
+ * provided, then the failed atomic action will call it, so that some
+ * larger unit of computation, like the enclosing vat, can be shutdown
+ * before anything else is corrupted by that corrupted state.
+ * See https://github.com/Agoric/agoric-sdk/issues/3434
+ * @returns {IssuerKit<K>}
+ */
+export const prepareIssuerKit = (
+  issuerBaggage,
+  optShutdownWithFailure = undefined,
+) => {
+  const issuerRecord = issuerBaggage.get(INSTANCE_KEY);
+  return setupIssuerKit(issuerRecord, issuerBaggage, optShutdownWithFailure);
+};
 harden(prepareIssuerKit);
 
 /**
@@ -73,11 +103,7 @@ harden(prepareIssuerKit);
  *
  * @param {Baggage} baggage
  */
-export const hasIssuer = baggage =>
-  baggage.has('name') &&
-  baggage.has('assetKind') &&
-  baggage.has('displayInfo') &&
-  baggage.has('elementShape');
+export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
 /**
  * @template {AssetKind} K
@@ -98,7 +124,7 @@ export const hasIssuer = baggage =>
  * @param {string} name
  * @param {K} [assetKind=AssetKind.NAT]
  * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some
@@ -117,11 +143,9 @@ export const makeDurableIssuerKit = (
   optShutdownWithFailure = undefined,
   { elementShape = undefined } = {},
 ) => {
-  issuerBaggage.init('name', name);
-  issuerBaggage.init('assetKind', assetKind);
-  issuerBaggage.init('displayInfo', displayInfo);
-  issuerBaggage.init('elementShape', elementShape);
-  return prepareIssuerKit(issuerBaggage, optShutdownWithFailure);
+  const issuerData = harden({ name, assetKind, displayInfo, elementShape });
+  issuerBaggage.init(INSTANCE_KEY, issuerData);
+  return setupIssuerKit(issuerData, issuerBaggage, optShutdownWithFailure);
 };
 harden(makeDurableIssuerKit);
 
@@ -143,7 +167,7 @@ harden(makeDurableIssuerKit);
  * @param {string} name
  * @param {K} [assetKind='nat']
  * @param {AdditionalDisplayInfo} [displayInfo={}]
- * @param {ShutdownWithFailure=} optShutdownWithFailure If this issuer fails
+ * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails
  * in the middle of an atomic action (which btw should never happen), it
  * potentially leaves its ledger in a corrupted state. If this function was
  * provided, then the failed atomic action will call it, so that some

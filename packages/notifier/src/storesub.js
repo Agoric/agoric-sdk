@@ -1,7 +1,7 @@
 import { E } from '@endo/eventual-send';
 import { Far, makeMarshal } from '@endo/marshal';
 import { assertAllDefined } from '@agoric/internal';
-import { makeMarshallToStorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { observeIteration } from './asyncIterableAdaptor.js';
 import { makePublishKit, subscribeEach } from './publish-kit.js';
 import { makeSubscriptionKit } from './subscriber.js';
@@ -45,7 +45,7 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
 export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {
   assertAllDefined({ subscriber, storageNode, marshaller });
 
-  const marshallToStorage = makeMarshallToStorage(storageNode, marshaller);
+  const marshallToStorage = makeSerializeToStorage(storageNode, marshaller);
 
   // Start publishing the source.
   forEachPublicationRecord(subscriber, marshallToStorage).catch(err => {

@@ -4,6 +4,7 @@ import url from 'url';
 import path from 'path';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import bundleSource from '@endo/bundle-source';
 import {
   addBankAssets,
   makeAddressNameHubs,
@@ -24,6 +25,7 @@ import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { TimeMath } from '@agoric/time';
 
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   setupBootstrap,
   setUpZoeForTest,
@@ -62,7 +64,8 @@ let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP, vatAdminSvc, vatAdminState } =
+    await setUpZoeForTest();
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -79,11 +82,11 @@ const makeTestContext = async () => {
     ),
   };
 
-  const bundleIDToAbsolutePaths = new Map();
+  const bundleNameToAbsolutePaths = new Map();
   const bundlePathToInstallP = new Map();
-  const restoreBundleID = bundleID => {
-    const absolutePaths = bundleIDToAbsolutePaths.get(bundleID);
-    absolutePaths || Fail`bundleID ${bundleID} not found`;
+  const restoreBundleName = bundleName => {
+    const absolutePaths = bundleNameToAbsolutePaths.get(bundleName);
+    absolutePaths || Fail`bundleName ${bundleName} not found`;
     const { source, bundle } = absolutePaths;
     const bundlePath = bundle || source.replace(/(\\|\/|:)/g, '_');
     if (!bundlePathToInstallP.has(bundlePath)) {
@@ -94,20 +97,40 @@ const makeTestContext = async () => {
     return bundlePathToInstallP.get(bundlePath);
   };
 
-  const registerBundleHandles = bundleHandleMap => {
-    for (const [{ bundleID }, paths] of bundleHandleMap.entries()) {
-      !bundleIDToAbsolutePaths.has(bundleID) ||
-        Fail`bundleID ${bundleID} already registered`;
-      bundleIDToAbsolutePaths.set(bundleID, paths);
+  const registerOne = async (bundleName, paths) => {
+    !bundleNameToAbsolutePaths.has(bundleName) ||
+      Fail`bundleName ${bundleName} already registered`;
+    bundleNameToAbsolutePaths.set(bundleName, paths);
+    // use vatAdminState to install this bundle
+    let bundleP;
+    if (paths.bundle) {
+      bundleP = import(paths.bundle).then(ns => ns.default);
+    } else {
+      assert(paths.source);
+      bundleP = bundleSource(paths.source);
     }
+    const bundle = await bundleP;
+    const bundleID = bundle.endoZipBase64Sha512;
+    assert(bundleID);
+    vatAdminState.installNamedBundle(bundleName, bundleID, bundle);
+  };
+
+  const registerBundleHandles = async bundleHandleMap => {
+    const allP = [];
+    for (const [{ bundleName }, paths] of bundleHandleMap.entries()) {
+      allP.push(registerOne(bundleName, paths));
+    }
+    await Promise.all(allP);
   };
 
   return {
     registerBundleHandles,
-    restoreBundleID,
+    restoreBundleName,
     cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccessP,
+    vatAdminSvc,
+    vatAdminState,
     run: { issuer: runIssuer, brand: runBrand },
     installation,
   };
@@ -122,10 +145,17 @@ test.before(async t => {
  * @param {{ env?: Record<string, string|undefined> }} [io]
  */
 const makeScenario = async (t, { env = process.env } = {}) => {
-  const space = await setupBootstrap(t);
+  const rawSpace = await setupBootstrap(t);
+  const vatPowers = t.context.vatAdminState.getVatPowers();
+  const space = { vatPowers, ...rawSpace };
+  space.produce.vatAdminSvc.resolve(t.context.vatAdminSvc);
 
-  const loadVat = name =>
-    import(`@agoric/vats/src/vat-${name}.js`).then(ns => ns.buildRootObject());
+  const loadVat = name => {
+    const baggage = makeScalarBigMapStore('baggage');
+    return import(`@agoric/vats/src/vat-${name}.js`).then(ns =>
+      ns.buildRootObject({}, {}, baggage),
+    );
+  };
   space.produce.loadVat.resolve(loadVat);
   space.produce.loadCriticalVat.resolve(loadVat);
 
@@ -216,22 +246,22 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   };
 
   /** @type {any} */
-  const { restoreBundleID: produceRestoreBundleID } = space.produce;
-  produceRestoreBundleID.resolve(t.context.restoreBundleID);
+  const { restoreBundleName: produceRestoreBundleName } = space.produce;
+  produceRestoreBundleName.resolve(t.context.restoreBundleName);
   const makeEnactCoreProposalsFromBundleHandle =
     ({ makeCoreProposalArgs, E: cpE }) =>
     async allPowers => {
       const {
-        consume: { restoreBundleID },
+        consume: { restoreBundleName },
       } = allPowers;
-      const restoreRef = async ({ bundleID }) => {
-        return cpE(restoreBundleID)(bundleID);
+      const restoreRef = async ({ bundleName }) => {
+        return cpE(restoreBundleName)(bundleName);
       };
 
       await Promise.all(
         makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
           const subBehavior = makeCoreProposalBehavior({
-            manifestInstallRef: ref,
+            manifestBundleRef: ref,
             getManifestCall: call,
             overrideManifest,
             E: cpE,
@@ -253,7 +283,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         makeEnactCoreProposalsFromBundleHandle,
         () => (lastProposalSequence += 1),
       );
-    t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
+    await t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
 
     const coreEvalMessage = {
       type: 'CORE_EVAL',

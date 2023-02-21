@@ -114,7 +114,7 @@ export const makeOracleCommand = async logger => {
 
   oracle
     .command('pushPriceRound')
-    .description('add a price for a round to a priceAggregatorChainlink')
+    .description('add a price for a round to a fluxAggregator')
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .requiredOption(
       '--oracleAdminAcceptOfferId [number]',

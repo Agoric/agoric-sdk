@@ -153,18 +153,17 @@ export async function makeStorageNodeChild(storageNodeRef, childName) {
 }
 harden(makeStorageNodeChild);
 
+// TODO find a better module for this
 /**
  *
  * @param {import('@endo/far').ERef<StorageNode>} storageNode
  * @param {import('@endo/far').ERef<Marshaller>} marshaller
  * @returns {(value: unknown) => Promise<void>}
  */
-export const makeMarshallToStorage = (storageNode, marshaller) => {
-  return value =>
-    E(marshaller)
-      .serialize(value)
-      .then(serialized => {
-        const encoded = JSON.stringify(serialized);
-        return E(storageNode).setValue(encoded);
-      });
+export const makeSerializeToStorage = (storageNode, marshaller) => {
+  return async value => {
+    const marshalled = await E(marshaller).serialize(value);
+    const serialized = JSON.stringify(marshalled);
+    return E(storageNode).setValue(serialized);
+  };
 };

@@ -32,18 +32,14 @@ test.serial('store refcount management 1', async t => {
   );
   const { fakestore } = v;
 
-  // TODO: once makeDispatch() delivers startVat properly, switch to this
-  // const [ mainID, mainVref ] = deduceCollectionID(fakestore, 'scalarMapStore', 1)
-  // t.is(fakestore.get(`vc.${mainID}.|entryCount`), '1');
-  // t.is(fakestore.get(`vc.${mainID}.sfoo`), vstr(null));
+  // `mainHolder` is created during startup
+  const [ mainID ] = deduceCollectionID(fakestore, 'scalarMapStore', 1)
+  t.is(fakestore.get(`vc.${mainID}.|entryCount`), '1');
+  t.is(fakestore.get(`vc.${mainID}.sfoo`), vstr(null));
 
   await dispatchMessageSuccessfully('makeAndHold'); // creates Map6, holds in RAM[heldStore]
   // `heldStore` is the most recent one created
   const [ heldID, heldVref ] = deduceCollectionID(fakestore, 'scalarMapStore', 1);
-  // and `mainHolder` was created before that
-  const [ mainID, _mainVref ] = deduceCollectionID(fakestore, 'scalarMapStore', 2)
-  t.is(fakestore.get(`vc.${mainID}.|entryCount`), '1');
-  t.is(fakestore.get(`vc.${mainID}.sfoo`), vstr(null));
 
   t.is(fakestore.get(`vc.${heldID}.|entryCount`), '0'); // heldStore is empty
   t.is(fakestore.get(`vom.rc.${heldVref}`), undefined); // no vdata references

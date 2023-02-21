@@ -103,7 +103,7 @@ harden(listDifference);
 /**
  * @param {Error} innerErr
  * @param {string|number} label
- * @param {ErrorConstructor=} ErrorConstructor
+ * @param {ErrorConstructor} [ErrorConstructor]
  * @returns {never}
  */
 export const throwLabeled = (innerErr, label, ErrorConstructor = undefined) => {
@@ -249,17 +249,24 @@ export const bindAllMethods = obj =>
 harden(bindAllMethods);
 
 /**
- * @template {{}} T
- * @typedef {{ [K in keyof T]: DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
+ * @template T
+ * @typedef {{[KeyType in keyof T]: T[KeyType]} & {}} Simplify
+ * flatten the type output to improve type hints shown in editors
+ * https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
  */
 
 /**
- * Caveats:
- * - doesn't recur within Promise results
- * - resulting type has wrapper in its name
- *
+ * @typedef {(...args: any[]) => any} Callable
+ */
+
+/**
+ * @template {{}} T
+ * @typedef {{ [K in keyof T]: T[K] extends Callable ? T[K] : DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
+ */
+
+/**
  * @template T
- * @typedef {T extends PromiseLike<any> ? Awaited<T> : T extends {} ? DeeplyAwaitedObject<T> : Awaited<T>} DeeplyAwaited
+ * @typedef {T extends PromiseLike<any> ? Awaited<T> : T extends {} ? Simplify<DeeplyAwaitedObject<T>> : Awaited<T>} DeeplyAwaited
  */
 
 /**

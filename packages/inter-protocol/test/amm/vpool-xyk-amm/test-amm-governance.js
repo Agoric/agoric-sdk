@@ -44,8 +44,12 @@ test('amm change param via Governance', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
-    await setupAmmServices(t, electorateTerms, centralR, timer);
+  const { amm, governor, invitationAmount } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
 
   t.deepEqual(
     await E(amm.ammPublicFacet).getGovernedParams(),
@@ -70,30 +74,13 @@ test('amm change param via Governance', async t => {
     'initial values',
   );
 
-  const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
   const paramChangeSpec = harden({
     paramPath: { key: 'governedParams' },
     changes: { [PROTOCOL_FEE_KEY]: 20n },
   });
 
-  const { details } = await E(governorCreatorFacet).voteOnParamChanges(
-    installs.counter,
-    2n,
-    paramChangeSpec,
-  );
-  const { positions, questionHandle } = await details;
-
-  const exerciseAndVote = invitation => {
-    const seat = E(zoe).offer(invitation);
-    const { voter } = E.get(E(seat).getOfferResult());
-    return E(voter).castBallotFor(questionHandle, [positions[0]]);
-  };
-  await Promise.all(invitations.map(exerciseAndVote));
-
-  await timer.tick();
-  await timer.tick();
-  await timer.tick();
+  await E(governorCreatorFacet).changeParams(paramChangeSpec);
 
   const protocolFee = await E(amm.ammPublicFacet).getProtocolFee();
   t.deepEqual(protocolFee, 20n, 'updated value');
@@ -108,8 +95,12 @@ test('price check after Governance param change', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 3 };
   const timer = buildManualTimer(t.log, 0n, { eventLoopIteration });
 
-  const { zoe, amm, committeeCreator, governor, installs, invitationAmount } =
-    await setupAmmServices(t, electorateTerms, centralR, timer);
+  const { zoe, amm, governor, invitationAmount } = await setupAmmServices(
+    t,
+    electorateTerms,
+    centralR,
+    timer,
+  );
 
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(100000n));
@@ -175,7 +166,6 @@ test('price check after Governance param change', async t => {
     'initial values',
   );
 
-  const invitations = await E(committeeCreator).getVoterInvitations();
   const { governorCreatorFacet } = governor;
   const paramChangeSpec = harden({
     paramPath: { key: 'governedParams' },
@@ -183,23 +173,7 @@ test('price check after Governance param change', async t => {
       [PROTOCOL_FEE_KEY]: 20n,
     },
   });
-  const { details } = await E(governorCreatorFacet).voteOnParamChanges(
-    installs.counter,
-    2n,
-    paramChangeSpec,
-  );
-  const { positions, questionHandle } = await details;
-
-  const exerciseAndVote = invitation => {
-    const seat = E(zoe).offer(invitation);
-    const { voter } = E.get(E(seat).getOfferResult());
-    return E(voter).castBallotFor(questionHandle, [positions[0]]);
-  };
-  await Promise.all(invitations.map(exerciseAndVote));
-
-  await timer.tick();
-  await timer.tick();
-  await timer.tick();
+  await E(governorCreatorFacet).changeParams(paramChangeSpec);
 
   const paramValue = await E(amm.ammPublicFacet).getNat(PROTOCOL_FEE_KEY);
   t.deepEqual(paramValue, 20n, 'updated value');

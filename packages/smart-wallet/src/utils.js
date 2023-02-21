@@ -5,16 +5,12 @@ import { E } from '@endo/far';
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
-export const makeWalletStateCoalescer = () => {
-  /** @type {Map<Brand, import('./smartWallet').BrandDescriptor>} */
-  const brands = new Map();
+/** @param {Brand<'set'>} [invitationBrand] */
+export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /** @type {Map<import('./offers').OfferId, import('./offers').OfferStatus>} */
   const offerStatuses = new Map();
   /** @type {Map<Brand, Amount>} */
   const balances = new Map();
-
-  /** @type {Brand=} */
-  let allegedInvitationBrand = undefined;
 
   /**
    * keyed by description; xxx assumes unique
@@ -31,12 +27,12 @@ export const makeWalletStateCoalescer = () => {
         const { currentAmount } = updateRecord;
         // last record wins
         balances.set(currentAmount.brand, currentAmount);
-        if (allegedInvitationBrand) {
+        if (!invitationBrand) {
           console.warn(
-            'balance update before invitationBrand known may be an invitation',
+            'balance update without invitationBrand known may be an invitation',
           );
         }
-        if (currentAmount.brand === allegedInvitationBrand) {
+        if (currentAmount.brand === invitationBrand) {
           // @ts-expect-error narrow to SetValue
           for (const invitation of currentAmount.value) {
             invitationsReceived.set(invitation.description, invitation);
@@ -68,23 +64,13 @@ export const makeWalletStateCoalescer = () => {
         }
         break;
       }
-      case 'brand': {
-        const { descriptor } = updateRecord;
-        // never mutate
-        assert(!brands.has(descriptor.brand));
-        brands.set(descriptor.brand, descriptor);
-        if (descriptor.petname === 'invitations') {
-          allegedInvitationBrand = descriptor.brand;
-        }
-        break;
-      }
       default:
         throw new Error(`unknown record updated ${updated}`);
     }
   };
 
   return {
-    state: { brands, invitationsReceived, offerStatuses, balances },
+    state: { invitationsReceived, offerStatuses, balances },
     update,
   };
 };
@@ -98,9 +84,10 @@ export const makeWalletStateCoalescer = () => {
  * utility to reset state from RPC.
  *
  * @param {ERef<Subscriber<import('./smartWallet').UpdateRecord>>} updates
+ * @param {Brand<'set'>} [invitationBrand]
  */
-export const coalesceUpdates = updates => {
-  const coalescer = makeWalletStateCoalescer();
+export const coalesceUpdates = (updates, invitationBrand) => {
+  const coalescer = makeWalletStateCoalescer(invitationBrand);
 
   void observeIteration(subscribeEach(updates), {
     updateState: updateRecord => {

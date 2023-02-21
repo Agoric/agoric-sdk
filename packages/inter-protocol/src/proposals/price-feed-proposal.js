@@ -8,9 +8,10 @@ import {
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { reserveThenDeposit, reserveThenGetNames } from './utils.js';
 
-const trace = makeTracer('RunPriceFeed');
+const trace = makeTracer('RunPriceFeed', false);
 
 /** @type {(name: string) => string} */
 const sanitizePathSegment = name => {
@@ -86,23 +87,23 @@ export const ensureOracleBrands = async (
 
 /**
  * @param {ChainBootstrapSpace} powers
- * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
+ * @param {{options: {priceFeedOptions: {AGORIC_INSTANCE_NAME: string, oracleAddresses: string[], contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregator.js').ChainlinkConfig, IN_BRAND_NAME: string, OUT_BRAND_NAME: string}}}} config
  */
 export const createPriceFeed = async (
   {
     consume: {
       agoricNamesAdmin,
-      aggregators,
       board,
       chainStorage,
       chainTimerService,
       client,
+      econCharterKit,
+      economicCommitteeCreatorFacet,
       namesByAddressAdmin,
       priceAuthority,
       priceAuthorityAdmin,
       zoe,
     },
-    produce: { aggregators: produceAggregators },
   },
   {
     options: {
@@ -119,8 +120,6 @@ export const createPriceFeed = async (
   trace('createPriceFeed');
   const STORAGE_PATH = 'priceFeed';
 
-  // Default to an empty Map and home.priceAuthority.
-  produceAggregators.resolve(new Map());
   void E(client).assignBundle([_addr => ({ priceAuthority })]);
 
   const timer = await chainTimerService;
@@ -128,62 +127,110 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/inter-protocol/src/price/priceAggregatorChainlink.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/governance/src/contractGovernor.js').start>, Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start>]]}
    */
-  const [[brandIn, brandOut], [priceAggregator]] = await Promise.all([
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
-      IN_BRAND_NAME,
-      OUT_BRAND_NAME,
-    ]),
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
-      'priceAggregator',
-    ]),
-  ]);
+  const [[brandIn, brandOut], [contractGovernor, priceAggregator]] =
+    await Promise.all([
+      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
+        IN_BRAND_NAME,
+        OUT_BRAND_NAME,
+      ]),
+      reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
+        'contractGovernor',
+        'priceAggregator',
+      ]),
+    ]);
+
+  trace('getPoserInvitation');
+  const poserInvitationP = E(
+    economicCommitteeCreatorFacet,
+  ).getPoserInvitation();
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
+  trace('got initialPoserInvitation');
 
   const unitAmountIn = await unitAmount(brandIn);
-  const terms = await deeplyFulfilledObject(
+  const terms = harden({
+    ...contractTerms,
+    description: AGORIC_INSTANCE_NAME,
+    brandIn,
+    brandOut,
+    timer,
+    unitAmountIn,
+    governedParams: {
+      [CONTRACT_ELECTORATE]: {
+        type: ParamTypes.INVITATION,
+        value: electorateInvitationAmount,
+      },
+    },
+  });
+  trace('got terms');
+
+  const governorTerms = await deeplyFulfilledObject(
     harden({
-      ...contractTerms,
-      description: AGORIC_INSTANCE_NAME,
-      brandIn,
-      brandOut,
-      timer,
-      unitAmountIn,
+      timer: chainTimerService,
+      governedContractInstallation: priceAggregator,
+      governed: {
+        terms,
+      },
     }),
   );
+  trace('got governorTerms', governorTerms);
 
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = E(board).getReadonlyMarshaller();
 
+  trace('got contractGovernor', contractGovernor);
+
+  trace('awaiting startInstance');
   // Create the price feed.
-  const aggregator = await E(zoe).startInstance(
-    priceAggregator,
+  const aggregatorGovernor = await E(zoe).startInstance(
+    contractGovernor,
     undefined,
-    terms,
+    governorTerms,
     {
-      storageNode: E(storageNode).makeChildNode(
-        sanitizePathSegment(AGORIC_INSTANCE_NAME),
-      ),
-      marshaller,
+      governed: {
+        initialPoserInvitation,
+        marshaller,
+        namesByAddressAdmin,
+        storageNode: E(storageNode).makeChildNode(
+          sanitizePathSegment(AGORIC_INSTANCE_NAME),
+        ),
+      },
     },
   );
-  await E(aggregators).set(terms, { aggregator });
+  const faCreatorFacet = await E(
+    aggregatorGovernor.creatorFacet,
+  ).getCreatorFacet();
+  trace('got aggregator', faCreatorFacet);
+
+  const faPublic = await E(aggregatorGovernor.creatorFacet).getPublicFacet();
+  const faInstance = await E(aggregatorGovernor.creatorFacet).getInstance();
+  trace('got', { faInstance, faPublic });
 
   E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
     AGORIC_INSTANCE_NAME,
-    aggregator.instance,
+    faInstance,
   );
+
+  E(E.get(econCharterKit).creatorFacet).addInstance(
+    faInstance,
+    aggregatorGovernor.creatorFacet,
+    AGORIC_INSTANCE_NAME,
+  );
+  trace('registered', AGORIC_INSTANCE_NAME, faInstance);
 
   // Publish price feed in home.priceAuthority.
   const forceReplace = true;
-  void E(priceAuthorityAdmin)
-    .registerPriceAuthority(
-      E(aggregator.publicFacet).getPriceAuthority(),
-      brandIn,
-      brandOut,
-      forceReplace,
-    )
-    .then(deleter => E(aggregators).set(terms, { aggregator, deleter }));
+  void E(priceAuthorityAdmin).registerPriceAuthority(
+    E(faPublic).getPriceAuthority(),
+    brandIn,
+    brandOut,
+    forceReplace,
+  );
 
   /**
    * Initialize a new oracle and send an invitation to administer it.
@@ -191,9 +238,7 @@ export const createPriceFeed = async (
    * @param {string} addr
    */
   const addOracle = async addr => {
-    const invitation = await E(aggregator.creatorFacet).makeOracleInvitation(
-      addr,
-    );
+    const invitation = await E(faCreatorFacet).makeOracleInvitation(addr);
     await reserveThenDeposit(
       `${AGORIC_INSTANCE_NAME} member ${addr}`,
       namesByAddressAdmin,
@@ -222,18 +267,19 @@ export const getManifestForPriceFeed = async (
   manifest: {
     [createPriceFeed.name]: {
       consume: {
-        aggregators: t,
         agoricNamesAdmin: t,
         board: t,
         chainStorage: t,
         chainTimerService: t,
         client: t,
+        contractGovernor: t,
+        econCharterKit: t,
+        economicCommitteeCreatorFacet: t,
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
         zoe: t,
       },
-      produce: { aggregators: t },
     },
     [ensureOracleBrands.name]: {
       consume: {
@@ -321,22 +367,3 @@ export const startPriceFeeds = async (
   trace('startPriceFeeds complete');
 };
 harden(startPriceFeeds);
-
-export const PRICE_FEEDS_MANIFEST = harden({
-  [startPriceFeeds.name]: {
-    consume: {
-      agoricNamesAdmin: true,
-      aggregators: true,
-      board: true,
-      chainStorage: true,
-      chainTimerService: true,
-      client: true,
-      namesByAddressAdmin: true,
-      priceAuthority: true,
-      priceAuthorityAdmin: true,
-      zoe: true,
-    },
-    produce: { aggregators: true },
-    installation: { consume: { priceAggregator: true } },
-  },
-});

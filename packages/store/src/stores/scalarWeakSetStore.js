@@ -8,8 +8,8 @@ const { quote: q, Fail } = assert;
  * @template K
  * @param {WeakSet<K & object>} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
- * @param {((k: K) => void)=} assertKeyOkToDelete
- * @param {string=} keyName
+ * @param {(k: K) => void} [assertKeyOkToDelete]
+ * @param {string} [keyName]
  * @returns {WeakSetStore<K>}
  */
 export const makeWeakSetStoreMethods = (
@@ -67,7 +67,7 @@ export const makeWeakSetStoreMethods = (
  *
  * @template K
  * @param {string} [tag='key'] - tag for debugging
- * @param {StoreOptions=} options
+ * @param {StoreOptions} [options]
  * @returns {WeakSetStore<K>}
  */
 export const makeScalarWeakSetStore = (

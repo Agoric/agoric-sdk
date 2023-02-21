@@ -8,7 +8,7 @@
 
 /**
  * @callback ZCFMakeEmptySeatKit
- * @param {ExitRule=} exit
+ * @param {ExitRule} [exit]
  * @returns {ZcfSeatKit}
  */
 
@@ -44,7 +44,7 @@
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => Promise<void>} stopAcceptingOffers
- * @property {(strings: Array<string>) => void} setOfferFilter
+ * @property {(strings: Array<string>) => Promise<void>} setOfferFilter
  * @property {() => Promise<Array<string>>} getOfferFilter
  * @property {() => Instance} getInstance
  */
@@ -134,7 +134,7 @@
 /**
  * @callback ZCFMintMintGains
  * @param {AmountKeywordRecord} gains
- * @param {ZCFSeat=} zcfSeat
+ * @param {ZCFSeat} [zcfSeat]
  * @returns {ZCFSeat}
  */
 
@@ -180,7 +180,7 @@
  * The brand is used for filling in an empty amount if the `keyword`
  * is not present in the allocation
  * @param {Keyword} keyword
- * @param {Brand=} brand
+ * @param {Brand} [brand]
  * @returns {Amount<any>}
  */
 
@@ -243,7 +243,7 @@
  * @typedef {object} ContractStartFnResult
  * @property {PF} publicFacet
  * @property {CF} creatorFacet
- * @property {Promise<Invitation>=} [creatorInvitation]
+ * @property {Promise<Invitation>} [creatorInvitation]
  */
 
 /**

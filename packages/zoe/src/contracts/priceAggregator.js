@@ -43,11 +43,11 @@ import '@agoric/ertp/src/types-ambient.js';
 const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
 
 /**
- * @deprecated use priceAggregatorChainlink
+ * @deprecated use fluxAggregator
  *
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median. This naive method is game-able and so this module
- * is a stub until we complete what is now in `priceAggregatorChainlink.js`.
+ * is a stub until we complete what is now in `fluxAggregator.js`.
  *
  * @param {ZCF<{
  * timer: import('@agoric/time/src/types').TimerService,
@@ -120,7 +120,7 @@ const start = async (zcf, privateArgs) => {
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: import('@agoric/time/src/types').Timestamp) => Promise<void>=} querier
+   * @property {(timestamp: import('@agoric/time/src/types').Timestamp) => Promise<void>} [querier]
    * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
    */
@@ -164,7 +164,7 @@ const start = async (zcf, privateArgs) => {
   const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
      * @param {PriceQuery} priceQuery
-     * @returns {ERef<PriceQuote>=}
+     * @returns {ERef<PriceQuote> | undefined}
      */
     function createQuote(priceQuery) {
       // Use the current price.
@@ -382,7 +382,7 @@ const start = async (zcf, privateArgs) => {
       E(oracleNotifier).getUpdateSince(updateCount).then(recurse);
 
       // See if we have associated parameters or just a raw value.
-      /** @type {Ratio=} */
+      /** @type {Ratio | undefined} */
       let result;
       switch (typeof value) {
         case 'number':
@@ -529,7 +529,7 @@ const start = async (zcf, privateArgs) => {
       const pushResult = result => {
         // Sample of NaN, 0, or negative numbers get culled in the median
         // calculation.
-        /** @type {Ratio=} */
+        /** @type {Ratio | undefined} */
         let ratio;
         if (typeof result === 'object') {
           ratio = makeRatioFromAmounts(result.numerator, result.denominator);

@@ -42,7 +42,7 @@ import {
   vaultManagerMetricsTracker,
 } from '../metrics.js';
 import {
-  installGovernance,
+  installPuppetGovernance,
   produceInstallations,
   setupBootstrap,
   setUpZoeForTest,
@@ -102,6 +102,7 @@ const defaultParamValues = debtBrand =>
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
     loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
+    // NB: liquidationPadding defaults to zero in contract
   });
 
 test.before(async t => {
@@ -135,6 +136,7 @@ test.before(async t => {
       recordingPeriod: 6n,
     },
     minInitialDebt: 50n,
+    endorsedUi: undefined,
     rates: defaultParamValues(run.brand),
     aethInitialLiquidity: aeth.make(300n),
   };
@@ -167,7 +169,7 @@ const setupAmmAndElectorateAndReserve = async (
 
   const space = setupBootstrap(t, timer);
   const { consume, instance } = space;
-  installGovernance(zoe, space.installation.produce);
+  installPuppetGovernance(zoe, space.installation.produce);
   produceInstallations(space, t.context.installation);
 
   await startEconomicCommittee(space, electorateTerms);
@@ -302,6 +304,7 @@ const setupServices = async (
     aeth,
     loanTiming,
     minInitialDebt,
+    endorsedUi,
     rates,
     aethInitialLiquidity,
   } = t.context;
@@ -354,7 +357,11 @@ const setupServices = async (
   } = space;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
-  await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
+  await startVaultFactory(
+    space,
+    { loanParams: loanTiming, options: { endorsedUi } },
+    minInitialDebt,
+  );
 
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
@@ -375,7 +382,7 @@ const setupServices = async (
   const [
     governorInstance,
     vaultFactory, // creator
-    lender,
+    vfPublic,
     aethVaultManager,
     priceAuthority,
     aethCollateralManager,
@@ -390,7 +397,7 @@ const setupServices = async (
   trace(t, 'pa', {
     governorInstance,
     vaultFactory,
-    lender,
+    vfPublic,
     priceAuthority,
   });
 
@@ -401,8 +408,10 @@ const setupServices = async (
       governorCreatorFacet,
     },
     v: {
+      // name for backwards compatiiblity
+      lender: E(vfPublic).getCollateralManager(aeth.brand),
       vaultFactory,
-      lender,
+      vfPublic,
       aethVaultManager,
       aethCollateralManager,
     },
@@ -853,8 +862,8 @@ test('vaultFactory display collateral', async t => {
     500n,
   );
 
-  const { lender } = services.vaultFactory;
-  const collaterals = await E(lender).getCollaterals();
+  const { vfPublic } = services.vaultFactory;
+  const collaterals = await E(vfPublic).getCollaterals();
   t.deepEqual(collaterals[0], {
     brand: aeth.brand,
     liquidationMargin: makeRatio(105n, run.brand),
@@ -1516,7 +1525,7 @@ test('transfer vault', async t => {
       debt: debtAmount,
       interest: aliceFinish.value.debtSnapshot.interest,
     },
-    description: 'TransferVault',
+    description: 'manager0: TransferVault',
     locked: collateralAmount,
     vaultState: 'active',
   });
@@ -1547,6 +1556,8 @@ test('transfer vault', async t => {
     adjustInvitation,
     harden({
       give: { Minted: payoffRun2 },
+      // it's only multi-turn if there is a want
+      want: { Collateral: aeth.make(1n) },
     }),
     harden({ Minted: paybackPayment }),
   );
@@ -2163,39 +2174,7 @@ test('close loan', async t => {
   t.deepEqual(await E(aliceVault).getCollateralAmount(), aeth.makeEmpty());
 });
 
-test('excessive loan', async t => {
-  const { zoe, aeth, run } = t.context;
-
-  const services = await setupServices(
-    t,
-    [15n],
-    aeth.make(1n),
-    buildManualTimer(t.log),
-    undefined,
-    500n,
-  );
-  const { lender } = services.vaultFactory;
-
-  // Try to Create a loan for Alice for 5000 Minted with 100 aeth collateral
-  const collateralAmount = aeth.make(100n);
-  const aliceLoanAmount = run.make(5000n);
-  /** @type {UserSeat<VaultKit>} */
-  const aliceLoanSeat = await E(zoe).offer(
-    E(lender).makeVaultInvitation(),
-    harden({
-      give: { Collateral: collateralAmount },
-      want: { Minted: aliceLoanAmount },
-    }),
-    harden({
-      Collateral: aeth.mint.mintPayment(collateralAmount),
-    }),
-  );
-  await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
-    message: /exceeds max/,
-  });
-});
-
-test('loan too small', async t => {
+test('loan too small - MinInitialDebt', async t => {
   const { zoe, aeth, run } = t.context;
   t.context.minInitialDebt = 50_000n;
 
@@ -2224,8 +2203,7 @@ test('loan too small', async t => {
     }),
   );
   await t.throwsAsync(() => E(aliceLoanSeat).getOfferResult(), {
-    message:
-      /The request must be for at least ".50000n.". ".5000n." is too small/,
+    message: /Proposed debt.*exceeds max.*1428n/,
   });
 });
 
@@ -2236,7 +2214,7 @@ test('loan too small', async t => {
  * Attempts to adjust balances on vaults beyond the debt limit fail.
  * In other words, minting for anything other than charging interest fails.
  */
-test('excessive debt on collateral type', async t => {
+test('excessive debt on collateral type - debtLimit', async t => {
   const { zoe, aeth, run } = t.context;
 
   const services = await setupServices(
@@ -2520,9 +2498,9 @@ test('director notifiers', async t => {
     500n,
   );
 
-  const { lender, vaultFactory } = services.vaultFactory;
+  const { vfPublic, vaultFactory } = services.vaultFactory;
 
-  const m = await metricsTracker(t, lender);
+  const m = await metricsTracker(t, vfPublic);
 
   await m.assertInitial({
     collaterals: [aeth.brand],
@@ -2879,6 +2857,7 @@ test('governance publisher', async t => {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
+  t.context.endorsedUi = 'abracadabra';
 
   const services = await setupServices(
     t,
@@ -2888,9 +2867,9 @@ test('governance publisher', async t => {
     undefined,
     500n,
   );
-  const { lender } = services.vaultFactory;
+  const { vfPublic } = services.vaultFactory;
   const directorGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getElectorateSubscription(),
+    E(vfPublic).getElectorateSubscription(),
   );
   let {
     value: { current },
@@ -2902,9 +2881,10 @@ test('governance publisher', async t => {
   t.is(current.MinInitialDebt.type, 'amount');
   t.is(current.ShortfallInvitation.type, 'invitation');
   t.is(current.EndorsedUI.type, 'string');
+  t.is(current.EndorsedUI.value, 'abracadabra');
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
-    E(lender).getSubscription({
+    E(vfPublic).getSubscription({
       collateralBrand: aeth.brand,
     }),
   );

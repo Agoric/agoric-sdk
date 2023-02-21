@@ -1,6 +1,6 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
-import { Nat, isNat } from '@agoric/nat';
+import { Nat, isNat } from '@endo/nat';
 
 export const stringToNat = s => {
   typeof s === 'string' || Fail`${s} must be a string`;

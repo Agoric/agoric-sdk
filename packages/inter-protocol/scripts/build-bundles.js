@@ -30,8 +30,8 @@ await createBundles(
       '../bundles/bundle-econCommitteeCharter.js',
     ],
     [
-      '../src/price/priceAggregatorChainlink.js',
-      '../bundles/bundle-priceAggregatorChainlink.js',
+      '../src/price/fluxAggregatorContract.js',
+      '../bundles/bundle-fluxAggregator.js',
     ],
   ],
   dirname,

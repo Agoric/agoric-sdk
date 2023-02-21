@@ -158,7 +158,7 @@ function createHarness(send) {
  * @param {*} exc
  * @param {Expectation} expectation
  * @returns {null | { expected: unknown, actual: unknown }}
- * @typedef {{ instanceOf: Function } | { message: string | RegExp }=} Expectation
+ * @typedef {{ instanceOf: Function } | { message: string | RegExp } | undefined} Expectation
  */
 function checkExpectation(exc, expectation) {
   if (!expectation) return null;
@@ -207,7 +207,7 @@ function makeTester(htest, out) {
 
   /**
    * @param {unknown} value
-   * @param {string=} msg
+   * @param {string} msg
    */
   function truthy(value, msg = 'should be truthy') {
     assert(!!value, msg);
@@ -233,21 +233,21 @@ function makeTester(htest, out) {
     truthy,
     /**
      * @param {unknown} value
-     * @param {string=} message
+     * @param {string} message
      */
     falsy(value, message = 'should be falsy') {
       assert(!value, message);
     },
     /**
      * @param {unknown} value
-     * @param {string=} message
+     * @param {string} message
      */
     true(value, message = 'should be true') {
       assert(value === true, message);
     },
     /**
      * @param {unknown} value
-     * @param {string=} message
+     * @param {string} message
      */
     false(value, message = 'should be false') {
       assert(value === false, message);

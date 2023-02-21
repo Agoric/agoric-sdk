@@ -8,12 +8,14 @@ import {
   floorMultiplyBy,
 } from '../contractSupport/index.js';
 import { makePriceAuthorityTransform } from '../contractSupport/priceAuthorityTransform.js';
+import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.js';
 
 /**
  * @typedef {object} ScaledPriceAuthorityOpts
  * @property {ERef<PriceAuthority>} sourcePriceAuthority
  * @property {Ratio} scaleIn - sourceAmountIn:targetAmountIn
  * @property {Ratio} scaleOut - sourceAmountOut:targetAmountOut
+ * @property {Ratio} [initialPrice] - targetAmountIn:targetAmountOut
  */
 
 /**
@@ -28,7 +30,8 @@ export const start = async (
   zcf,
   { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
 ) => {
-  const { sourcePriceAuthority, scaleIn, scaleOut } = zcf.getTerms();
+  const { sourcePriceAuthority, scaleIn, scaleOut, initialPrice } =
+    zcf.getTerms();
 
   const {
     numerator: { brand: sourceBrandIn },
@@ -55,8 +58,20 @@ export const start = async (
     transformSourceAmountOut: amountOut => floorDivideBy(amountOut, scaleOut),
   });
 
+  const withInitial = initialPrice
+    ? priceAuthority.then(pa =>
+        makeInitialTransform(
+          initialPrice,
+          pa,
+          quoteMint,
+          actualBrandIn,
+          actualBrandOut,
+        ),
+      )
+    : priceAuthority;
+
   const publicFacet = Far('publicFacet', {
-    getPriceAuthority: () => priceAuthority,
+    getPriceAuthority: () => withInitial,
   });
   return harden({ publicFacet });
 };

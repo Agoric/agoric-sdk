@@ -15,6 +15,11 @@ The rest of the vat's keyspace is used by liveslots:
 
 This file describes the layout of the vatstore keyspace.
 
+# vref virtual/durable annotations
+
+When vats export object references into the kernel, they create "vrefs" as reference identifiers. For non-virtual objects (ephemeral "Remotables", held in RAM rather than the DB), these take the form of `o+NN` (e.g. `o+0`, `o+12`, `o+937`). Virtual and durable exported objects get an additional `v` or `d` annotation, so their vrefs start with e.g. `o+v99` or `o+v132` for virtual objects, and `o+d3` or `o+d77` for durable objects. The kernel can use these annotations to assist in the cleanup process when a vat is upgraded, and non-durable objects are abandoned.
+
+Kind handles are necessarily durable, as is the "baggage" object. Promises are necessarily ephemeral, so vat-allocated promise vrefs (aka "vpids") always use the `p+NN` form, and never have a `v` or `d` annotation.
 
 # Counters
 
@@ -27,9 +32,10 @@ Liveslots maintains three durable counters to create the distinct vrefs that it 
 The current version of liveslots consumes the first ten exportIDs (covering `o+0` through `o+9`) during vat startup, leaving `10` as the first Kind ID available for userspace.
 
 * `o+0`: root object
-* `o+1`: identifies the KindHandle Kind ID, each `o+1/${kindHandleID}` instance of which is a KindHandle
-* `o+2` through `o+9`: KindHandles for the built-in [virtual/durable collections](#virtualdurable-collections-aka-stores)
-* `o+10`: first available for userspace Remotables or Kinds
+* `o+d1`: identifies the KindHandle Kind ID, each `o+d1/${kindHandleID}` instance of which is a KindHandle
+* `o+v2` through `o+v5`: KindHandles for the built-in [virtual collections](#virtualdurable-collections-aka-stores)
+* `o+d6` through `o+d9`: KindHandles for the built-in [durable collections](#virtualdurable-collections-aka-stores)
+* `o+10` / `o+v10` / `o+d10`: first available for userspace Remotables or Kinds
 
 
 # Virtual Object Kinds
@@ -44,10 +50,10 @@ Each time the kind constructor is called, a new "baseref" is allocated for the c
 Those vrefs are used when interacting with the kernel (in `syscall.send` etc.), and in virtualized data (inside the capdata `slots` that point to other objects), but the vatstore keys that track GC refcounts and export status use the "baseref" instead.
 
 The baseref is built out of two pieces separated by a literal `/`:
-1. Prefixed Kind ID, e.g. `o+11`. These are allocated from the same "Export ID" numberspace as exported Remotables (JavaScript objects marked with `Far`).
+1. Prefixed Kind ID, e.g. `o+v11` or `o+d11`. These are allocated from the same "Export ID" numberspace as exported Remotables (JavaScript objects marked with `Far`).
 2. Instance ID, an integer. `1` for the first instance of each Kind and incremented for each subsequent instance.
 
-The vref for a Representative of a single-facet Kind is just the `o+${kindID}/${instanceID}` baseref. The vref for a Representative of a facet of a multi-facet Kind extends that to `o+${kindID}/${instanceID}:${facetID}`, where the additional component is:
+The vref for a Representative of a single-facet virtual Kind is just the `o+v${kindID}/${instanceID}` baseref. The vref for a Representative of a facet of a multi-facet virtual Kind extends that to `o+v${kindID}/${instanceID}:${facetID}`, where the additional component is:
 3. Facet ID, an integer. `0` for the first facet and incremented for each subsequent facet.
 
 In a c-list or virtualized data, you may see vrefs like these:
@@ -55,23 +61,23 @@ In a c-list or virtualized data, you may see vrefs like these:
 * `o-3`: an imported Presence, pointing to some object in a different vat
 * `o+0`: the root object, a plain Remotable
 * `o+10`: another plain Remotable, exported from this vat or stored in virtualized data
-* `o+11/1`: a Representative for the first instance of single-facet Kind "o+11"
-* `o+11/2`: a Representative for the second instance of single-facet Kind "o+11"
-* `o+12/1:0`: the first facet of the first instance of a multi-facet Kind "o+12"
-* `o+12/1:1`: the second facet of that same instance
-* `o+12/2:0`: the first facet of a different instance
-* `o+12/3:0`: the first facet of another different instance
+* `o+d11/1`: a Representative for the first instance of single-facet virtual Kind "o+v11"
+* `o+d11/2`: a Representative for the second instance of single-facet virtual Kind "o+v11"
+* `o+d12/1:0`: the first facet of the first instance of a multi-facet durable Kind "o+d12"
+* `o+d12/1:1`: the second facet of that same instance
+* `o+d12/2:0`: the first facet of a different instance
+* `o+d12/3:0`: the first facet of another different instance
 
-Each instance of a virtual object stores state in a vatstore key indexed by the baseref. If `o+12/1:0` and `o+12/1:1` are the facet vrefs for a cohort whose baseref is `o+12/1`, the cohort's shared state will be stored in `vom.o+12/1` as a JSON-serialized record. The keys of this record are property names: if the Kind uses `state.prop1`, the record will have a key named `prop1`. For each property, the value is a `{ body: string, slots: any[] }` capdata record with string-valued slot items (and unlike the treatment of capdata in many other parts of the system, it is not independently serialized).
+Each instance of a virtual object stores state in a vatstore key indexed by the baseref. If `o+d12/1:0` and `o+d12/1:1` are the facet vrefs for a cohort whose baseref is `o+d12/1`, the cohort's shared state will be stored in `vom.o+d12/1` as a JSON-serialized record. The keys of this record are property names: if the Kind uses `state.prop1`, the record will have a key named `prop1`. For each property, the value is a `{ body: string, slots: any[] }` capdata record with string-valued slot items (and unlike the treatment of capdata in many other parts of the system, it is not independently serialized).
 
-* `v6.vs.vom.o+12/1` : `{"booleanProp":{"body":"true","slots":[]},"arrayProp":{"body":"[]","slots":[]}}`
+* `v6.vs.vom.o+d12/1` : `{"booleanProp":{"body":"true","slots":[]},"arrayProp":{"body":"[]","slots":[]}}`
 
 In the refcounting portion of the vatstore (`vom.rc.${baseref}`), you will see baserefs:
 
 * `v6.vs.vom.rc.o+10`: the count of virtualized references to plain Remotable `o+10` (held in RAM)
-* `v6.vs.vom.rc.o+12/1`: the count of references to any member of the cohort for the first instance of Kind `o+12`
+* `v6.vs.vom.rc.o+d12/1`: the count of references to any member of the cohort for the first instance of Kind `o+d12`
   * This Kind might be single-facet or multi-facet.
-  * References to distinct facets of the same cohort are counted independently. For example, if one object references both the first and second facets (`o+12/1:0` and `o+12/1:1`), it accounts for two increments to this value.
+  * References to distinct facets of the same cohort are counted independently. For example, if one object references both the first and second facets (`o+d12/1:0` and `o+d12/1:1`), it accounts for two increments to this value.
 
 In the export-status portion of the vatstore (`vom.es.${baseref}`), you will see baserefs, and any facets are tracked in the value, not the key:
 
@@ -79,9 +85,9 @@ In the export-status portion of the vatstore (`vom.es.${baseref}`), you will see
   * value `r`: the plain Remotable has been exported and is "reachable" by the kernel
   * value `s`: the Remotable was exported, the kernel dropped it, and is still "recognizable" by the kernel ("s" for "see")
   * If the kernel can neither reach nor recognize the export, the vatstore key will be missing entirely.
-* `v6.vs.vom.es.o+12/1` records the export status for all facets of virtual object `o+12/1`
+* `v6.vs.vom.es.o+d12/1` records the export status for all facets of virtual object `o+d12/1`
   * If the Kind is single-facet, the value will be the same as for a plain Remotable: a single `r` or `s` character
-  * If the Kind is multi-facet, the value will be a string with one letter for each facet, in the same order as their Facet ID. `n` is used to indicate neither reachable nor recognizable. For example, a value of `rsnr` means there are four facets, the first (`o+12/1:0`) and last (`o+12/1:3`) are reachable, the second (`o+12/1:1`) is recognizable, and the third (`o+12/1:2`) is neither.
+  * If the Kind is multi-facet, the value will be a string with one letter for each facet, in the same order as their Facet ID. `n` is used to indicate neither reachable nor recognizable. For example, a value of `rsnr` means there are four facets, the first (`o+d12/1:0`) and last (`o+d12/1:3`) are reachable, the second (`o+d12/1:1`) is recognizable, and the third (`o+d12/1:2`) is neither.
 
 
 # Durable Kinds
@@ -90,7 +96,7 @@ Virtual objects are held on disk, which makes them suitable for high-cardinality
 
 Durable Kinds are defined just like virtual Kinds, but they use a different constructor (`defineDurableKind` instead of `defineKind`), which requires a "handle" created by `makeKindHandle`. Durable virtual objects can only hold durable data in their `state`.
 
-The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets Kind ID 1 and the handles get vrefs like `o+1/${kindHandleID}`.
+The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets Kind ID 1 and the handles get vrefs like `o+d1/${kindHandleID}`.
 
 
 # Kind Metadata
@@ -123,19 +129,19 @@ These index values are stored in `storeKindIDTable`, as a mapping from the colle
 
 * `v6.vs.storeKindIDTable` : `{"scalarMapStore":2,"scalarWeakMapStore":3,"scalarSetStore":4,"scalarWeakSetStore":5,"scalarDurableMapStore":6,"scalarDurableWeakMapStore":7,"scalarDurableSetStore":8,"scalarDurableWeakSetStore":9}`
 
-which means `2` is the Kind ID for non-durable merely-virtual "scalarMapStore", instances of which will have vrefs like `o+2/${collectionID}`.
+which means `2` is the Kind ID for non-durable merely-virtual "scalarMapStore", instances of which will have vrefs like `o+v2/${collectionID}`.
 
-Each new store, regardless of type, is allocated the next available Collection ID. This is an incrementing integer that starts at 1, and is independent of the "Export ID" numberspace used by exported Remotables and Kind IDs. The same Collection ID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+${kindID}/${instanceID}` is scoped to `o+${kindID}`), for collections the collectionID in `o+${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
+Each new store, regardless of type, is allocated the next available Collection ID. This is an incrementing integer that starts at 1, and is independent of the "Export ID" numberspace used by exported Remotables and Kind IDs. The same Collection ID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+v${kindID}/${instanceID}` is scoped to `o+v${kindID}`), for collections the collectionID in `o+v${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
 
-The interpretation of a vref therefore varies based on whether the initial "type" portion before a slash (`o+${exportID}`) identifies a collection type or a virtual object kind:
+The interpretation of a vref therefore varies based on whether the initial "type" portion before a slash (`o+v${exportID}` or `o+d${exportID}`) identifies a collection type or a virtual object kind:
 
-* `o+6/1`: `6` is a collection type in the storeKindIDTable ("scalarDurableMapStore"), so `o+6/1` refers to the first collection (of any type) in the vat
-* `o+7/1`: `7` is also a collection type in the storeKindIDTable ("scalarDurableWeakMapStore"), so `o+7/1` is guaranteed not to coexist with `o+6/1`
-* `o+7/2`: refers to the second collection (of any type) in the vat, which has type `7` ("scalarDurableWeakMapStore")
-* `o+5/3`: refers to the third collection (of any type) in the vat, which has type `5` ("scalarWeakSetStore")
-* `o+5/4`: refers to the fourth collection (of any type) in the vat, also a scalarWeakSetStore
-* `o+11/1`: `11` is not a collection type in the storeKindIDTable, so is instead a kind and `o+11/1` refers to the first instance of that kind
-* `o+11/2`: refers to the second instance of that kind
+* `o+d6/1`: `6` is a collection type in the storeKindIDTable ("scalarDurableMapStore"), so `o+d6/1` refers to the first collection (of any type) in the vat
+* `o+d7/1`: `7` is also a collection type in the storeKindIDTable ("scalarDurableWeakMapStore"), so `o+d7/1` is guaranteed not to coexist with `o+d6/1`
+* `o+d7/2`: refers to the second collection (of any type) in the vat, which has type `7` ("scalarDurableWeakMapStore")
+* `o+v5/3`: refers to the third collection (of any type) in the vat, which has type `5` ("scalarWeakSetStore")
+* `o+v5/4`: refers to the fourth collection (of any type) in the vat, also a scalarWeakSetStore
+* `o+v11/1`: `11` is not a collection type in the storeKindIDTable, so is instead a kind and `o+v11/1` refers to the first instance of that kind
+* `o+v11/2`: refers to the second instance of that kind
 
 
 # Baggage
@@ -144,9 +150,9 @@ Most collections are created by userspace code, but to support vat upgrade, live
 
 This object needs to be pre-generated because the second (and subsequent) versions of the vat will use it to reach all other durable objects from their predecessors, so v2 can remember things that were stored by v1. The most significant values of "baggage" are the KindHandles for durable Kinds made by v1. V2 will need these to call `defineDurableKind` and re-attach behavior for each one. Each version must re-attach behavior for *all* durable Kinds created by its predecessors.
 
-`o+6/1` is allocated for the "baggage" collection, indicating that it is a scalarDurableMapStore (`o+6` is used for that collection type), and also that it is the first collection (of any type) allocated in the vat.
+`o+d6/1` is allocated for the "baggage" collection, indicating that it is a scalarDurableMapStore (`o+d6` is used for that collection type), and also that it is the first collection (of any type) allocated in the vat.
 
-If userspace version 1 starts `buildRootObject` by calling `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s, they are likely to be assigned `o+5/2`, `o+4/3`, `o+4/4`, and `o+4/5` respectively. Such collections IDs start with `2` because `1` is claimed by baggage.
+If userspace version 1 starts `buildRootObject` by calling `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s, they are likely to be assigned `o+v5/2`, `o+v4/3`, `o+v4/4`, and `o+v4/5` respectively. Such collections IDs start with `2` because `1` is claimed by baggage.
 
 
 # Collection Data Records
@@ -179,10 +185,10 @@ The `schemata` is a capdata serialization of the Matcher constraints recorded fo
 
 Each entry in the collection gets put into a single vatstore entry:
 
-* `v6.vs.vc.2.skey1`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+9/1"]}`
-* `v6.vs.vc.2.skey2`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+9/1"]}`
-* `v6.vs.vc.2.skey3`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+9/1"]}`
-* `v6.vs.vc.2.skey4`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+9/2"]}`
+* `v6.vs.vc.2.skey1`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/1"]}`
+* `v6.vs.vc.2.skey2`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/1"]}`
+* `v6.vs.vc.2.skey3`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/1"]}`
+* `v6.vs.vc.2.skey4`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/2"]}`
 
 The key string for each entry (e.g. `skey1`) is formed by serializing the key object. Strings get a simple `s` prefix. Other objects use more complex encodings, designed to allow numbers (floats and BigInts, separately) to sort numerically despite the kvStore keys sorting lexicographically. See `packages/store/src/patterns/encodePassable.js` for details. Object references involve an additional kvStore entry, to manage the mapping from Object to ordinal and back.
 

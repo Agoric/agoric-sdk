@@ -21,6 +21,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 export { ActionType };
 
@@ -88,17 +89,10 @@ const makeFakeBridgeManager = () =>
         },
         toBridge(obj) {
           assert(handler, `No handler for ${bridgeId}`);
-          switch (obj.type) {
-            case ActionType.WALLET_ACTION:
-            case ActionType.WALLET_SPEND_ACTION: {
-              // @ts-expect-error handler possibly undefined
-              return E(handler).fromBridge(obj);
-            }
-
-            default: {
-              assert.fail(`Unsupported bridge object type ${obj.type}`);
-            }
-          }
+          // Rely on interface guard for validation.
+          // This should also be validated upstream but don't rely on it.
+          // @ts-expect-error handler possibly undefined
+          return E(handler).fromBridge(obj);
         },
         setHandler(newHandler) {
           handler = newHandler;
@@ -128,8 +122,10 @@ export const makeMockTestSpace = async log => {
     switch (name) {
       case 'mints':
         return mintsRoot();
-      case 'board':
-        return boardRoot();
+      case 'board': {
+        const baggage = makeScalarBigMapStore('baggage');
+        return boardRoot({}, {}, baggage);
+      }
       default:
         throw Error('unknown loadVat name');
     }

@@ -46,7 +46,7 @@ export const makePriceAuthority = (
 
   /**
    * @param {PriceQuery} priceQuery
-   * @returns {ERef<PriceQuote>=}
+   * @returns {ERef<PriceQuote> | undefined}
    */
   function createQuote(priceQuery) {
     const quote = priceQuery(calcAmountOut, calcAmountIn);

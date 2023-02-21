@@ -11,7 +11,7 @@
             "keyword": "USDC_axl",
             "proposedName": "USD Coin",
             "decimalPlaces": 6,
-            "denom": "ibc/usdc1234"
+            "denom": "ibc/toyusdc"
           },
           {
             "keyword": "AUSD",

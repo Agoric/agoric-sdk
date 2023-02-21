@@ -12,6 +12,11 @@ export const shape = {
   },
 
   // invitations
+  AgoricContractInvitationSpec: {
+    source: 'agoricContract',
+    instancePath: M.arrayOf(M.string()),
+    callPipe: M.arrayOf(M.splitArray([M.string()], [M.arrayOf(M.any())])),
+  },
   ContractInvitationSpec: M.splitRecord(
     {
       source: 'contract',
@@ -50,15 +55,33 @@ export const shape = {
   ),
 
   // walletFactory
-  WalletBridgeMsg: M.splitRecord(
-    {
-      owner: M.string(),
-      type: M.string(),
-      blockHeight: M.number(),
-      blockTime: M.number(),
-    },
-    {},
-    M.or({ action: M.string() }, { spendAction: M.string() }),
-  ),
+  /**
+   * Defined by walletAction struct in msg_server.go
+   *
+   * @see walletAction in msg_server.go
+   */
+  WalletActionMsg: M.splitRecord({
+    type: 'WALLET_ACTION',
+    action: M.string(),
+
+    blockHeight: M.number(),
+    blockTime: M.number(),
+    owner: M.string(),
+  }),
+
+  /**
+   * Defined by walletAction struct in msg_server.go
+   *
+   * @see walletSpendAction in msg_server.go
+   */
+  WalletSpendActionMsg: M.splitRecord({
+    type: 'WALLET_SPEND_ACTION',
+    spendAction: M.string(),
+
+    blockHeight: M.number(),
+    blockTime: M.number(),
+    owner: M.string(),
+  }),
 };
+shape.WalletBridgeMsg = M.or(shape.WalletActionMsg, shape.WalletSpendActionMsg);
 harden(shape);

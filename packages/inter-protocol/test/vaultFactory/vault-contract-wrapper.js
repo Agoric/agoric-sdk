@@ -130,6 +130,10 @@ export async function start(zcf, privateArgs, baggage) {
         getChargingPeriod() {
           return DAY;
         },
+        getLiquidationPadding() {
+          // XXX re-use
+          return LIQUIDATION_MARGIN;
+        },
         getRecordingPeriod() {
           return DAY;
         },
@@ -148,6 +152,7 @@ export async function start(zcf, privateArgs, baggage) {
       return Promise.reject(Error('Not implemented'));
     },
     getCompoundedInterest: () => compoundedInterest,
+    scopeDescription: base => `VCW: ${base}`,
     handleBalanceChange: () => {
       console.warn('mock handleBalanceChange does nothing');
     },

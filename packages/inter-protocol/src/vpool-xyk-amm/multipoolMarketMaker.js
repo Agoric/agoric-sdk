@@ -204,7 +204,7 @@ const start = async (zcf, privateArgs, baggage) => {
   const isSecondary = secondaryBrandToPool.has;
 
   // The liquidityBrand has to exist to allow the addPool Offer to specify want
-  /** @type {WeakMapStore<Brand,ZCFMint<'nat'>>} */
+  /** @type {WeakMapStore<Brand<'nat'>, ZCFMint<'nat'>>} */
   const secondaryBrandToLiquidityMint = provideDurableWeakMapStore(
     baggage,
     'secondaryBrandToLiquidityMint',
@@ -236,7 +236,7 @@ const start = async (zcf, privateArgs, baggage) => {
     () => zcf.makeEmptySeatKit().zcfSeat,
   );
 
-  /** @type {AssetReservePublicFacet=} */
+  /** @type {AssetReservePublicFacet | undefined} */
   let reserveFacet = baggage.has('reserveFacet')
     ? baggage.get('reserveFacet')
     : undefined;
@@ -292,7 +292,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {MethodContext} _context
-   * @param {Brand} brand
+   * @param {Brand<'nat'>} brand
    */
   const getLiquidityIssuer = (_context, brand) =>
     secondaryBrandToLiquidityMint.get(brand).getIssuerRecord().issuer;
@@ -305,7 +305,7 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * @param {MethodContext} _context
-   * @param {Brand} brand
+   * @param {Brand<'nat'>} brand
    */
   const getSecondaryIssuer = (_context, brand) => {
     assert(
@@ -359,6 +359,10 @@ const start = async (zcf, privateArgs, baggage) => {
   const getPoolAllocation = (_context, brand) =>
     getPool(brand).getPoolSeat().getCurrentAllocation();
 
+  /**
+   * @param {*} _context xxx
+   * @param {Brand} brand
+   */
   const getPriceAuthorities = (_context, brand) => {
     const pool = getPool(brand);
     return {
@@ -398,11 +402,21 @@ const start = async (zcf, privateArgs, baggage) => {
     return pool.getVPool();
   };
 
+  /**
+   * @param {*} _context xxx
+   * @param {Amount<'nat'>} amountIn
+   * @param {Amount<'nat'>} amountOut
+   */
   const getInputPrice = (_context, amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     return publicPrices(pool.getPriceForInput(amountIn, amountOut));
   };
 
+  /**
+   * @param {*} _context xxx
+   * @param {Amount<'nat'>} amountIn
+   * @param {Amount<'nat'>} amountOut
+   */
   const getOutputPrice = (_context, amountIn, amountOut) => {
     const pool = provideVPool(amountIn.brand, amountOut.brand);
     return publicPrices(pool.getPriceForOutput(amountIn, amountOut));

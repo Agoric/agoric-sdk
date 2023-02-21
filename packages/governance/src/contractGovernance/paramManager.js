@@ -1,7 +1,7 @@
 import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { assertAllDefined } from '@agoric/internal';

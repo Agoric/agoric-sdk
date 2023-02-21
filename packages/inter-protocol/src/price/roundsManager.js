@@ -1,6 +1,6 @@
 import { Fail, q } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
-import { isNat, Nat } from '@agoric/nat';
+import { isNat, Nat } from '@endo/nat';
 import { TimeMath } from '@agoric/time';
 import {
   defineDurableExoClassKit,
@@ -18,7 +18,7 @@ import { UnguardedHelperI } from '../typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
-/** @typedef {import('./priceOracleAdmin.js').OracleStatus} OracleStatus */
+/** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
  * @typedef {import('@agoric/time/src/types').Timestamp} Timestamp
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
@@ -76,8 +76,12 @@ const validRoundId = roundId => {
  */
 
 /**
- * @typedef {Readonly<import('./priceAggregatorChainlink.js').ChainlinkConfig & {
- * quoteKit: IssuerRecord<'set'> & { mint: ERef<Mint<'set'>> },
+ * @typedef {IssuerRecord<'set'> & { mint: Mint<'set'> }} QuoteKit
+ */
+
+/**
+ * @typedef {Readonly<import('./fluxAggregator.js').ChainlinkConfig & {
+ * quoteKit: QuoteKit,
  * answerPublisher: Publisher<void>,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
@@ -272,7 +276,7 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
        * @param {bigint} roundId
        * @param {OracleStatus} status
        * @param {Timestamp} blockTimestamp
-       * @returns {OracleStatus=} the new status
+       * @returns {OracleStatus | undefined} the new status
        */
       proposeNewRound(roundId, status, blockTimestamp) {
         const { helper } = this.facets;

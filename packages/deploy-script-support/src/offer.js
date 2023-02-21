@@ -6,8 +6,8 @@ import { AmountMath } from '@agoric/ertp';
 
 /**
  * @typedef {object} OfferHelperConfig
- * @property {ERef<Invitation>=} invitation
- * @property {Partial<InvitationDetails>=} partialInvitationDetails
+ * @property {ERef<Invitation>} [invitation]
+ * @property {Partial<InvitationDetails>} [partialInvitationDetails]
  * @property {Proposal} proposal
  * @property {Record<Keyword, Petname>} paymentsWithPursePetnames
  * @property {Record<Keyword, Petname>} payoutPursePetnames

@@ -10,7 +10,7 @@ test('makeIssuerKit bad allegedName', async t => {
   t.throws(() => makeIssuerKit(harden({})), { message: `{} must be a string` });
   // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit({}), {
-    message: `Cannot pass non-frozen objects like {}. Use harden()`,
+    message: `{} must be a string`,
   });
 });
 

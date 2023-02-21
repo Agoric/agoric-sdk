@@ -1,6 +1,6 @@
 // @ts-check
 import { assert, details } from '@agoric/assert';
-import { Nat } from '@agoric/nat';
+import { Nat } from '@endo/nat';
 import '@agoric/ertp/exported.js';
 
 import { captureNum } from './helpers/captureNum.js';

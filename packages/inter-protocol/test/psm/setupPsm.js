@@ -83,7 +83,7 @@ export const setupPsmBootstrap = async (
 /**
  * @param {*} t
  * @param {{ committeeName: string, committeeSize: number}} electorateTerms
- * @param {ManualTimer | undefined=} timer
+ * @param {ManualTimer} [timer]
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsm = async (

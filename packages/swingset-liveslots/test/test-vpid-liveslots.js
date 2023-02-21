@@ -170,7 +170,7 @@ async function doVatResolveCase1(t, mode) {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -322,7 +322,7 @@ async function doVatResolveCase23(t, which, mode, stalls) {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -342,14 +342,12 @@ async function doVatResolveCase23(t, which, mode, stalls) {
 
   if (which === 2) {
     await dispatch(makeMessage(rootA, 'result', [], p1));
-    matchIDCounterSet(t, log);
     // the vat knows it is the decider, does not subscribe
     await dispatch(makeMessage(rootA, 'promise', [kslot(p1)]));
   } else if (which === 3) {
     await dispatch(makeMessage(rootA, 'promise', [kslot(p1)]));
     // the vat subscribes to p1, it cannot know the future
     t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
-    matchIDCounterSet(t, log);
     await dispatch(makeMessage(rootA, 'result', [], p1));
     // vat cannot unsubscribe, but is now the decider
   } else {
@@ -574,7 +572,7 @@ async function doVatResolveCase4(t, mode) {
       four() {},
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -590,7 +588,6 @@ async function doVatResolveCase4(t, mode) {
 
   await dispatch(makeMessage(rootA, 'get', [kslot(p1)]));
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
-  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   await dispatch(makeMessage(rootA, 'first', [kslot(target1)]));
@@ -711,7 +708,7 @@ async function doVatResolveCase7(t, mode) {
       },
     });
   }
-  const dispatch = await makeDispatch(syscall, build);
+  const { dispatch } = await makeDispatch(syscall, build);
   log.length = 0; // assume pre-build vatstore operations are correct
 
   let nextVPID = 5;
@@ -726,7 +723,6 @@ async function doVatResolveCase7(t, mode) {
   await dispatch(makeMessage(rootA, 'acceptPromise', [kslot(p1)]));
   // the vat subscribes to p1, it cannot know the future
   t.deepEqual(log.shift(), { type: 'subscribe', target: p1 });
-  matchIDCounterSet(t, log);
 
   const target1 = 'o-1';
   const target2 = 'o-2';
@@ -870,8 +866,8 @@ test('inter-vat circular promise references', async t => {
       },
     });
   }
-  const dispatchA = await makeDispatch(syscall, build, 'vatA');
-  // const dispatchB = await makeDispatch(syscall, build, 'vatB');
+  const { dispatch: dispatchA } = await makeDispatch(syscall, build, 'vatA');
+  // const { dispatch: dispatchB } = await makeDispatch(syscall, build, 'vatB');
   log.length = 0; // assume pre-build vatstore operations are correct
 
   const rootA = 'o+0';
@@ -882,7 +878,6 @@ test('inter-vat circular promise references', async t => {
   // const paB = 'p-19';
 
   await dispatchA(makeMessage(rootA, 'genPromise', [], paA));
-  matchIDCounterSet(t, log);
   t.deepEqual(log, []);
 
   // await dispatchB(makeMessage(rootB, 'genPromise', [], pbB));

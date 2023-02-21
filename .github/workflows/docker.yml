@@ -28,7 +28,7 @@ jobs:
           TIMESTAMP=`date +%Y%m%d%H%M%S --date="@${COMMIT_TIME}"`
           SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-6)
           SNAPSHOT_TAG="${TIMESTAMP}-${SHORT_SHA}"
-          echo "::set-output name=tag::$SNAPSHOT_TAG"
+          echo "tag=$SNAPSHOT_TAG" >> $GITHUB_OUTPUT
 
   docker-parallel-build:
     needs: snapshot
@@ -60,14 +60,14 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Build and Push deployment
+      - name: Build and Push ssh-node
         uses: docker/build-push-action@v3
         with:
-          file: packages/deployment/Dockerfile.deployment
+          file: packages/deployment/Dockerfile.ssh-node
           context: packages/deployment/docker
           platforms: ${{ matrix.platform }}
           push: true
-          tags: 'agoric/deployment:${{ env.BUILD_TAG }}'
+          tags: 'agoric/ssh-node:${{ env.BUILD_TAG }}'
       - name: Build and Push sdk
         uses: docker/build-push-action@v3
         with:
@@ -142,12 +142,12 @@ jobs:
               DOCKER_TAGS="latest $SDK_TAG"
               ;;
           esac
-          echo "::set-output name=tags::$DOCKER_TAGS"
+          echo "tags=$DOCKER_TAGS" >> $GITHUB_OUTPUT
 
       - name: Push SDK multiarch
         run: |
           set -ex
-          for IMAGE in agoric/agoric-sdk agoric/deployment agoric/cosmic-swingset-setup; do
+          for IMAGE in agoric/agoric-sdk agoric/ssh-node agoric/cosmic-swingset-setup; do
             for TAG in ${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}; do
               sources=
               for ARCH in linux/amd64 linux/arm64/v8; do
@@ -177,7 +177,7 @@ jobs:
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
           done
-          echo "::set-output name=tags::$PREFIXED"
+          echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -221,7 +221,7 @@ jobs:
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
           done
-          echo "::set-output name=tags::$PREFIXED"
+          echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx

@@ -13,7 +13,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
 import { Fail } from '@agoric/assert';
-import { makeSlogSender } from '@agoric/telemetry';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
@@ -343,50 +343,56 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
 
     const afterCommitCallback = async () => {
-      // delay until all current promise reactions are drained so we can be sure
-      // that the commit-block reply has been sent to agcc through replier.resolve
-      await waitUntilQuiescent();
-
-      let heapSnapshot;
-      let heapSnapshotTime;
-
-      const t0 = performance.now();
-      engineGC();
-      const t1 = performance.now();
-      const memoryUsage = process.memoryUsage();
-      const t2 = performance.now();
-      const heapStats = v8.getHeapStatistics();
-      const t3 = performance.now();
-
-      commitCallsSinceLastSnapshot += 1;
-      if (
-        (nodeHeapSnapshots >= 0 && t0 - lastCommitTime > 30 * 1000) ||
-        (nodeHeapSnapshots > 0 &&
-          !(nodeHeapSnapshots > commitCallsSinceLastSnapshot))
-      ) {
-        commitCallsSinceLastSnapshot = 0;
-        heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
-        const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
-        v8.writeHeapSnapshot(snapshotPath);
-        heapSnapshotTime = performance.now() - t3;
-      }
-      lastCommitTime = t0;
-
-      await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
-        console.warn('Failed to flush slog sender', err);
+      const slogSenderFlushed = tryFlushSlogSender(slogSender, {
+        env,
+        log: console.warn,
       });
 
-      return {
-        memoryUsage,
-        heapStats,
-        heapSnapshot,
-        statsTime: {
-          forcedGc: t1 - t0,
-          memoryUsage: t2 - t1,
-          heapStats: t3 - t2,
-          heapSnapshot: heapSnapshotTime,
-        },
-      };
+      // delay until all current promise reactions are drained so we can be sure
+      // that the commit-block reply has been sent to agcc through replier.resolve
+      await Promise.all([slogSenderFlushed, waitUntilQuiescent()]);
+
+      try {
+        let heapSnapshot;
+        let heapSnapshotTime;
+
+        const t0 = performance.now();
+        engineGC();
+        const t1 = performance.now();
+        const memoryUsage = process.memoryUsage();
+        const t2 = performance.now();
+        const heapStats = v8.getHeapStatistics();
+        const t3 = performance.now();
+
+        commitCallsSinceLastSnapshot += 1;
+        if (
+          (nodeHeapSnapshots >= 0 && t0 - lastCommitTime > 30 * 1000) ||
+          (nodeHeapSnapshots > 0 &&
+            !(nodeHeapSnapshots > commitCallsSinceLastSnapshot))
+        ) {
+          commitCallsSinceLastSnapshot = 0;
+          heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+          const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
+          v8.writeHeapSnapshot(snapshotPath);
+          heapSnapshotTime = performance.now() - t3;
+        }
+        lastCommitTime = t0;
+
+        return {
+          memoryUsage,
+          heapStats,
+          heapSnapshot,
+          statsTime: {
+            forcedGc: t1 - t0,
+            memoryUsage: t2 - t1,
+            heapStats: t3 - t2,
+            heapSnapshot: heapSnapshotTime,
+          },
+        };
+      } catch (err) {
+        console.warn('Failed to gather memory stats', err);
+        return {};
+      }
     };
 
     const s = await launch({
