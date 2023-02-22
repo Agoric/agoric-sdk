@@ -150,6 +150,8 @@ export const getNodeTestVaultsConfig = async () => {
 
   // speed up (e.g. 80s vs 133s with xs-worker in production config)
   config.defaultManagerType = 'local';
+  // speed up build (60s down to 10s in testing)
+  config.bundleCachePath = 'bundles';
 
   // remove Pegasus because it relies on IBC to Golang that isn't running
   config.coreProposals = config.coreProposals?.filter(

@@ -248,7 +248,8 @@ export {};
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
- * @property { ManagerType } [defaultManagerType]
+ * @property {ManagerType} [defaultManagerType]
+ * @property {string} [bundleCachePath] if present, SwingSet will use a bundle cache at this path
  * @property {number} [snapshotInitial]
  * @property {boolean} [pinBootstrapRoot]
  * @property {number} [snapshotInterval]

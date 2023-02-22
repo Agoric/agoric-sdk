@@ -63,7 +63,7 @@ const voterAddresses = {
 let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
-  const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
+  const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
   const { zoe, feeMintAccessP, vatAdminSvc, vatAdminState } =
     await setUpZoeForTest();
 
