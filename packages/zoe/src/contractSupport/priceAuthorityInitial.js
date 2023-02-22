@@ -78,8 +78,9 @@ export const makeInitialTransform = (
           return initialUpdateP;
         }
 
-        initialMode = false;
-        return E(notifier).getUpdateSince(updateCount);
+        const quote = E(notifier).getUpdateSince(updateCount);
+        void quote.then(() => (initialMode = false));
+        return quote;
       },
     });
 
