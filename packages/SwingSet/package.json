@@ -38,6 +38,7 @@
     "@agoric/time": "^0.2.1",
     "@agoric/vat-data": "^0.4.3",
     "@agoric/xsnap": "^0.13.2",
+    "@agoric/xsnap-lockdown": "^0.13.2",
     "@endo/base64": "^0.2.28",
     "@endo/bundle-source": "^2.4.2",
     "@endo/captp": "^2.0.18",
