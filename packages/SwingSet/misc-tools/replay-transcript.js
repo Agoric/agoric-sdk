@@ -16,7 +16,8 @@ import { file as tmpFile, tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
-import { entryPaths } from '@agoric/xsnap-lockdown/src/paths.js';
+import { entryPaths as lockdownEntryPaths } from '@agoric/xsnap-lockdown/src/paths.js';
+import { entryPaths as supervisorEntryPaths } from '@agoric/swingset-xsnap-supervisor/src/paths.js';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/controller.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
@@ -81,12 +82,10 @@ async function makeBundles() {
   // we explicitly re-bundle these entry points, rather than using
   // getLockdownBundle(), because if you're calling this, you're
   // probably editing the sources anyways
-  const lockdown = await bundleSource(entryPaths.lockdown, 'nestedEvaluate');
-  const srcGE = rel =>
-    bundleSource(new URL(rel, controllerUrl).pathname, 'getExport');
-  const supervisor = await srcGE(
-    '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
-  );
+  const lockdownPath = lockdownEntryPaths.lockdown;
+  const lockdown = await bundleSource(lockdownPath, 'nestedEvaluate');
+  const supervisorPath = supervisorEntryPaths.supervisor;
+  const supervisor = await bundleSource(supervisorPath, 'nestedEvaluate');
   fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
   fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
   console.log(`xs bundles written`);

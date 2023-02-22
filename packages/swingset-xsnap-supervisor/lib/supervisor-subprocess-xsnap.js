@@ -2,21 +2,21 @@
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
-import { makeLiveSlots } from '@agoric/swingset-liveslots';
-import '../../types-ambient.js';
-// grumble... waitUntilQuiescent is exported and closes over ambient authority
-import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
 import {
+  makeLiveSlots,
   insistVatDeliveryObject,
   insistVatSyscallResult,
-} from '../../lib/message.js';
+} from '@agoric/swingset-liveslots';
+// import '../../types-ambient.js';
+// grumble... waitUntilQuiescent is exported and closes over ambient authority
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
 
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from '../supervisor-helper.js';
+} from './supervisor-helper.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
