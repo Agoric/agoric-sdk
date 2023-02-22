@@ -12,9 +12,9 @@
   },
   "scripts": {
     "repl": "node src/xsrepl.js",
-    "build:bin": "node src/build.js",
-    "build:env": "node src/build.js --show-env > build-env",
-    "build:from-env": "{ cat build-env; echo node src/build.js; } | xargs env",
+    "build:bin": "if git status >/dev/null 2>&1; then node src/build.js; else yarn build:from-env; fi",
+    "build:env": "if git status >/dev/null 2>&1; then node src/build.js --show-env > build.env; fi",
+    "build:from-env": "{ cat build.env; echo node src/build.js; } | xargs env",
     "build": "yarn build:bin && yarn build:env",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "run-s --continue-on-error lint:*",
