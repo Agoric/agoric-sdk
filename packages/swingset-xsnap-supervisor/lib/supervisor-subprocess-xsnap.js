@@ -1,22 +1,26 @@
+// This file is only used to generate the published bundle, so
+// @endo/init is in devDependencies (and this package should have no
+// direct dependencies), but eslint doesn't know that, so disable the
+// complaint.
+
+/* eslint-disable import/no-extraneous-dependencies */
+
 /* global globalThis WeakRef FinalizationRegistry */
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import { makeLiveSlots } from '@agoric/swingset-liveslots';
-import '../../types-ambient.js';
+// import '../../types-ambient.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
-import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
-import {
-  insistVatDeliveryObject,
-  insistVatSyscallResult,
-} from '../../lib/message.js';
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { insistVatDeliveryObject, insistVatSyscallResult } from './message.js';
 
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from '../supervisor-helper.js';
+} from './supervisor-helper.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
