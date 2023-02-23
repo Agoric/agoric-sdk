@@ -47,7 +47,7 @@ export const makeFakeAuctioneer = () => {
   const startRounds = [];
 
   return Far('FakeAuctioneer', {
-    descendingStep: () => {
+    reducePriceAndTrade: () => {
       state.step += 1;
     },
     finalize: () => (state.final = true),

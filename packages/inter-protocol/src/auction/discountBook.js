@@ -2,44 +2,37 @@
 // from the current oracle price.
 
 import { Far } from '@endo/marshal';
-import { mustMatch, M } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 
 import {
-  toDiscountedRateOfferKey,
-  toPriceOfferKey,
-  toPriceComparator,
   toDiscountComparator,
+  toDiscountedRateOfferKey,
+  toPartialOfferKey,
+  toPriceOfferKey,
 } from './sortedOffers.js';
-import { makeRatioPattern } from './util.js';
+import { makeBrandedRatioPattern } from './util.js';
 
-// multiple offers might be provided with the same timestamp (since the time
-// granularity is limited to blocks), so we increment with each offer for
-// uniqueness.
-let mostRecentTimestamp = 0n;
-const makeNextTimestamp = () => {
-  return timestamp => {
-    if (timestamp > mostRecentTimestamp) {
-      mostRecentTimestamp = timestamp;
-      return timestamp;
-    }
-    mostRecentTimestamp += 1n;
-    return mostRecentTimestamp;
-  };
+// multiple offers might be provided at the same time (since the time
+// granularity is limited to blocks), so we increment a sequenceNumber with each
+// offer for uniqueness.
+let latestSequenceNumber = 0n;
+const nextSequenceNumber = () => {
+  latestSequenceNumber += 1n;
+  return latestSequenceNumber;
 };
-const nextTimestamp = makeNextTimestamp();
 
 // prices in this book are expressed as percentage of full price. .4 is 60% off.
 // 1.1 is 10% above par.
 export const makeDiscountBook = (store, currencyBrand, collateralBrand) => {
   return Far('discountBook ', {
-    add(seat, discount, wanted, proposedTimestamp) {
+    add(seat, discount, wanted) {
       // XXX mustMatch(discount, DISCOUNT_PATTERN);
 
-      const time = nextTimestamp(proposedTimestamp);
-      const key = toDiscountedRateOfferKey(discount, time);
+      const seqNum = nextSequenceNumber();
+      const key = toDiscountedRateOfferKey(discount, seqNum);
       const empty = AmountMath.makeEmpty(collateralBrand);
-      const bidderRecord = { seat, discount, wanted, time, received: empty };
+      const bidderRecord = { seat, discount, wanted, seqNum, received: empty };
       store.init(key, harden(bidderRecord));
       return key;
     },
@@ -70,23 +63,20 @@ export const makeDiscountBook = (store, currencyBrand, collateralBrand) => {
 };
 
 export const makePriceBook = (store, currencyBrand, collateralBrand) => {
-  const RATIO_PATTERN = makeRatioPattern(currencyBrand, collateralBrand);
+  const RATIO_PATTERN = makeBrandedRatioPattern(currencyBrand, collateralBrand);
   return Far('discountBook ', {
-    add(seat, price, wanted, proposedTimestamp) {
+    add(seat, price, wanted) {
       mustMatch(price, RATIO_PATTERN);
 
-      const time = nextTimestamp(proposedTimestamp);
-      const key = toPriceOfferKey(price, time);
+      const seqNum = nextSequenceNumber();
+      const key = toPriceOfferKey(price, seqNum);
       const empty = AmountMath.makeEmpty(collateralBrand);
-      const bidderRecord = { seat, price, wanted, time, received: empty };
+      const bidderRecord = { seat, price, wanted, seqNum, received: empty };
       store.init(key, harden(bidderRecord));
       return key;
     },
     offersAbove(price) {
-      return [...store.entries(M.gte(toPriceComparator(price)))];
-    },
-    firstOffer() {
-      return [...store.keys()][0];
+      return [...store.entries(M.gte(toPartialOfferKey(price)))];
     },
     hasOrders() {
       return store.getSize() > 0;
@@ -102,7 +92,7 @@ export const makePriceBook = (store, currencyBrand, collateralBrand) => {
       );
     },
     exitAllSeats() {
-      for (const [_, { seat }] of store.entries()) {
+      for (const { seat } of store.values()) {
         if (!seat.hasExited()) {
           seat.exit();
         }

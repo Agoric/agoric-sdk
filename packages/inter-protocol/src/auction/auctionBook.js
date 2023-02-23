@@ -16,7 +16,6 @@ import {
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { TimeMath } from '@agoric/time';
 import { E } from '@endo/captp';
 import { makeTracer } from '@agoric/internal';
 
@@ -24,9 +23,9 @@ import { makeDiscountBook, makePriceBook } from './discountBook.js';
 import {
   AuctionState,
   isDiscountedPriceHigher,
-  makeRatioPattern,
+  makeBrandedRatioPattern,
+  priceFrom,
 } from './util.js';
-import { keyToTime } from './sortedOffers.js';
 
 const { Fail } = assert;
 
@@ -35,9 +34,11 @@ const { Fail } = assert;
  * auction. It holds the book, the lockedPrice, and the collateralSeat that has
  * the allocation of assets for sale.
  *
- * The book contains orders for a particular collateral. It holds two kinds of
- * orders: one has a price in terms of a Currency amount, the other is priced as
- * a discount (or markup) from the most recent oracle price.
+ * The book contains orders for the collateral. It holds two kinds of
+ * orders:
+ *   - Prices express the bid in terms of a Currency amount
+ *   - Discount  express the bid in terms of a discount (or markup) from the
+ *     most recent oracle price.
  *
  * Offers can be added in three ways. When the auction is not active, prices are
  * automatically added to the appropriate collection. If a new offer is at or
@@ -47,12 +48,6 @@ const { Fail } = assert;
  */
 
 const trace = makeTracer('AucBook', false);
-
-const priceFrom = quote =>
-  makeRatioFromAmounts(
-    quote.quoteAmount.value[0].amountOut,
-    quote.quoteAmount.value[0].amountIn,
-  );
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -71,11 +66,11 @@ export const makeAuctionBook = async (
   const BidSpecShape = M.or(
     {
       want: AmountShape,
-      offerPrice: makeRatioPattern(currencyBrand, collateralBrand),
+      offerPrice: makeBrandedRatioPattern(currencyBrand, collateralBrand),
     },
     {
       want: AmountShape,
-      offerDiscount: makeRatioPattern(currencyBrand, currencyBrand),
+      offerDiscount: makeBrandedRatioPattern(currencyBrand, currencyBrand),
     },
   );
 
@@ -83,7 +78,7 @@ export const makeAuctionBook = async (
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: currencySeat } = zcf.makeEmptySeatKit();
 
-  let lockedPrice = makeZeroRatio();
+  let lockedPriceForRound = makeZeroRatio();
   let updatingOracleQuote = makeZeroRatio();
   E.when(E(collateralBrand).getDisplayInfo(), ({ decimalPlaces = 9n }) => {
     // TODO(#6946) use this to keep a current price that can be published in state.
@@ -191,8 +186,16 @@ export const makeAuctionBook = async (
 
   const isActive = auctionState => auctionState === AuctionState.ACTIVE;
 
-  // accept new offer.
-  const acceptOffer = (seat, price, want, timestamp, auctionState) => {
+  /**
+   *  Accept an offer expressed as a price. If the auction is active, attempt to
+   *  buy collateral. If any of the offer remains add it to the book.
+   *
+   *  @param {ZCFSeat} seat
+   *  @param {Ratio} price
+   *  @param {Amount} want
+   *  @param {AuctionState} auctionState
+   */
+  const acceptPriceOffer = (seat, price, want, auctionState) => {
     trace('acceptPrice');
     // Offer has ZcfSeat, offerArgs (w/price) and timeStamp
 
@@ -209,26 +212,29 @@ export const makeAuctionBook = async (
     const stillWant = AmountMath.subtract(want, collateralSold);
     if (!AmountMath.isEmpty(stillWant)) {
       trace('added Offer ', price, stillWant.value);
-      priceBook.add(seat, price, stillWant, timestamp);
+      priceBook.add(seat, price, stillWant);
     } else {
       seat.exit();
     }
   };
 
-  // accept new discount offer.
-  const acceptDiscountOffer = (
-    seat,
-    discount,
-    want,
-    timestamp,
-    auctionState,
-  ) => {
+  /**
+   *  Accept an offer expressed as a discount (or markup). If the auction is
+   *  active, attempt to buy collateral. If any of the offer remains add it to
+   *  the book.
+   *
+   *  @param {ZCFSeat} seat
+   *  @param {Ratio} discount
+   *  @param {Amount} want
+   *  @param {AuctionState} auctionState
+   */
+  const acceptDiscountOffer = (seat, discount, want, auctionState) => {
     trace('accept discount');
     let collateralSold = AmountMath.makeEmptyFromAmount(want);
 
     if (
       isActive(auctionState) &&
-      isDiscountedPriceHigher(discount, curAuctionPrice, lockedPrice)
+      isDiscountedPriceHigher(discount, curAuctionPrice, lockedPriceForRound)
     ) {
       collateralSold = settle(seat, want);
       if (AmountMath.isEmpty(seat.getCurrentAllocation().Currency)) {
@@ -239,7 +245,7 @@ export const makeAuctionBook = async (
 
     const stillWant = AmountMath.subtract(want, collateralSold);
     if (!AmountMath.isEmpty(stillWant)) {
-      discountBook.add(seat, discount, stillWant, timestamp);
+      discountBook.add(seat, discount, stillWant);
     } else {
       seat.exit();
     }
@@ -255,16 +261,14 @@ export const makeAuctionBook = async (
       );
     },
     settleAtNewRate(reduction) {
-      curAuctionPrice = multiplyRatios(reduction, lockedPrice);
+      curAuctionPrice = multiplyRatios(reduction, lockedPriceForRound);
 
       const pricedOffers = priceBook.offersAbove(curAuctionPrice);
       const discOffers = discountBook.offersAbove(reduction);
 
       // requested price or discount gives no priority beyond specifying which
       // round the order will be service in.
-      const prioritizedOffers = [...pricedOffers, ...discOffers].sort(
-        ([a], [b]) => TimeMath.compareAbs(keyToTime(a), keyToTime(b)),
-      );
+      const prioritizedOffers = [...pricedOffers, ...discOffers].sort();
 
       trace(`settling`, pricedOffers.length, discOffers.length);
       prioritizedOffers.forEach(([key, { seat, price: p, wanted }]) => {
@@ -297,22 +301,21 @@ export const makeAuctionBook = async (
     },
     lockOraclePriceForRound() {
       trace(`locking `, updatingOracleQuote);
-      lockedPrice = updatingOracleQuote;
+      lockedPriceForRound = updatingOracleQuote;
     },
 
     setStartingRate(rate) {
-      trace('set startPrice', lockedPrice);
-      curAuctionPrice = multiplyRatios(lockedPrice, rate);
+      trace('set startPrice', lockedPriceForRound);
+      curAuctionPrice = multiplyRatios(lockedPriceForRound, rate);
     },
     addOffer(bidSpec, seat, auctionState) {
       mustMatch(bidSpec, BidSpecShape);
 
       if (bidSpec.offerPrice) {
-        return acceptOffer(
+        return acceptPriceOffer(
           seat,
           bidSpec.offerPrice,
           bidSpec.want,
-          0n,
           auctionState,
         );
       } else if (bidSpec.offerDiscount) {
@@ -320,7 +323,6 @@ export const makeAuctionBook = async (
           seat,
           bidSpec.offerDiscount,
           bidSpec.want,
-          2n,
           auctionState,
         );
       } else {

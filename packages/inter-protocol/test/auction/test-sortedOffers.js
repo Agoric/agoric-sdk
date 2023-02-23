@@ -14,6 +14,7 @@ import {
   fromDiscountedRateOfferKey,
 } from '../../src/auction/sortedOffers.js';
 
+// these used to be timestamps, but now they're bigInts
 const DEC25 = 1671993996n;
 const DEC26 = 1672080396n;
 

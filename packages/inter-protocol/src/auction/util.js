@@ -1,11 +1,9 @@
 import { M } from '@agoric/store';
 import {
+  makeRatioFromAmounts,
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-
-export const DiscountOfferShape = M.any();
-export const PriceOfferShape = M.any();
 
 export const BASIS_POINTS = 10000n;
 
@@ -19,12 +17,26 @@ export const AuctionState = {
   WAITING: 'waiting',
 };
 
-export const makeRatioPattern = (nBrand, dBrand) => {
+export const makeBrandedRatioPattern = (nBrand, dBrand) => {
   return harden({
     numerator: { brand: nBrand, value: M.nat() },
     denominator: { brand: dBrand, value: M.nat() },
   });
 };
 
-export const isDiscountedPriceHigher = (discount, currentPrice, oracleQuote) =>
-  ratioGTE(multiplyRatios(oracleQuote, discount), currentPrice);
+/**
+ * TRUE if the discount(/markup) applied to the price is higher than the quote.
+ *
+ * @param {Ratio} discount
+ * @param {Ratio} currentPrice
+ * @param {Ratio} oraclePrice
+ */
+export const isDiscountedPriceHigher = (discount, currentPrice, oraclePrice) =>
+  ratioGTE(multiplyRatios(oraclePrice, discount), currentPrice);
+
+/** @type {(PriceQuote) => Ratio} */
+export const priceFrom = quote =>
+  makeRatioFromAmounts(
+    quote.quoteAmount.value[0].amountOut,
+    quote.quoteAmount.value[0].amountIn,
+  );

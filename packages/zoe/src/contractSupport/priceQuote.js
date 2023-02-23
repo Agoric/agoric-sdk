@@ -29,7 +29,6 @@ export const getTimestamp = quote => getPriceDescription(quote).timestamp;
 /** @param {Brand<'nat'>} brand */
 export const unitAmount = async brand => {
   // Brand methods are remote
-  // FIXME: round trip to brand whenever unitAmount is needed? Cache displayInfo
   const displayInfo = await E(brand).getDisplayInfo();
   const decimalPlaces = displayInfo.decimalPlaces ?? 0;
   return AmountMath.make(brand, 10n ** Nat(decimalPlaces));

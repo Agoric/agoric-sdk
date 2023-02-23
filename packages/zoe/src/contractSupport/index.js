@@ -56,4 +56,5 @@ export {
   quantize,
   ratioGTE,
   subtractRatios,
+  coerceToNumber,
 } from './ratio.js';

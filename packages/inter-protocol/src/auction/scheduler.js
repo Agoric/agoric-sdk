@@ -29,7 +29,7 @@ const makeCancelToken = () => {
 
 /**
  * @typedef {object} AuctionDriver
- * @property {() => void} descendingStep
+ * @property {() => void} reducePriceAndTrade
  * @property {() => void} finalize
  * @property {() => void} startRound
  */
@@ -59,26 +59,19 @@ export const makeScheduler = async (
   const computeRoundTiming = baseTime => {
     // currently a TimeValue; hopefully a TimeRecord soon
     /** @type {RelativeTime} */
-    // @ts-expect-error cast
     const freq = params.getStartFrequency();
     /** @type {RelativeTime} */
-    // @ts-expect-error cast
     const clockStep = params.getClockStep();
     /** @type {NatValue} */
-    // @ts-expect-error cast
     const startingRate = params.getStartingRate();
     /** @type {NatValue} */
-    // @ts-expect-error cast
     const discountStep = params.getDiscountStep();
     /** @type {RelativeTime} */
-    // @ts-expect-error cast
     const lockPeriod = params.getPriceLockPeriod();
     /** @type {NatValue} */
-    // @ts-expect-error cast
     const lowestRate = params.getLowestRate();
 
     /** @type {RelativeTime} */
-    // @ts-expect-error cast
     const startDelay = params.getAuctionStartDelay();
     TimeMath.compareRel(freq, startDelay) > 0 ||
       Fail`startFrequency must exceed startDelay, ${freq}, ${startDelay}`;
@@ -124,7 +117,7 @@ export const makeScheduler = async (
         auctionState = AuctionState.ACTIVE;
         auctionDriver.startRound();
       } else {
-        auctionDriver.descendingStep();
+        auctionDriver.reducePriceAndTrade();
       }
     }
 

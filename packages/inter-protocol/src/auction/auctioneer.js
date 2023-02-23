@@ -4,7 +4,12 @@ import '@agoric/governance/exported.js';
 
 import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
-import { M, makeScalarBigMapStore, provide } from '@agoric/vat-data';
+import {
+  M,
+  makeScalarBigMapStore,
+  provide,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import {
   atomicRearrange,
@@ -14,9 +19,9 @@ import {
   floorMultiplyBy,
   provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 
 import { makeAuctionBook } from './auctionBook.js';
 import { BASIS_POINTS } from './util.js';
@@ -51,16 +56,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   timer || Fail`Timer must be in Auctioneer terms`;
   const timerBrand = await E(timer).getTimerBrand();
 
-  const books = provide(baggage, 'auctionBooks', () =>
-    makeScalarBigMapStore('orderedVaultStore', {
-      durable: true,
-    }),
-  );
-  const deposits = provide(baggage, 'deposits', () =>
-    makeScalarBigMapStore('deposits', {
-      durable: true,
-    }),
-  );
+  const books = provideDurableMapStore(baggage, 'auctionBooks');
+  const deposits = provideDurableMapStore(baggage, 'deposits');
   const brandToKeyword = provide(baggage, 'brandToKeyword', () =>
     makeScalarBigMapStore('deposits', {
       durable: true,
@@ -77,8 +74,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
   };
 
-  // could be above or below 100%.  in basis points
-  let currentDiscountRate;
+  // Called "discount" rate even though it can be above or below 100%.
+  /** @type {NatValue} */
+  let currentDiscountRateBP;
 
   const distributeProceeds = () => {
     for (const brand of deposits.keys()) {
@@ -160,7 +158,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const tradeEveryBook = () => {
     const discountRatio = makeRatio(
-      currentDiscountRate,
+      currentDiscountRateBP,
       brands.Currency,
       BASIS_POINTS,
     );
@@ -171,14 +169,14 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
 
   const driver = Far('Auctioneer', {
-    descendingStep: () => {
-      trace('descent');
+    reducePriceAndTrade: () => {
+      trace('reducePriceAndTrade');
 
-      natSafeMath.isGTE(currentDiscountRate, params.getDiscountStep()) ||
-        Fail`rates must fall ${currentDiscountRate}`;
+      natSafeMath.isGTE(currentDiscountRateBP, params.getDiscountStep()) ||
+        Fail`rates must fall ${currentDiscountRateBP}`;
 
-      currentDiscountRate = natSafeMath.subtract(
-        currentDiscountRate,
+      currentDiscountRateBP = natSafeMath.subtract(
+        currentDiscountRateBP,
         params.getDiscountStep(),
       );
 
@@ -191,10 +189,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     startRound() {
       trace('startRound');
 
-      currentDiscountRate = params.getStartingRate();
+      currentDiscountRateBP = params.getStartingRate();
       [...books.entries()].forEach(([_collateralBrand, book]) => {
         book.lockOraclePriceForRound();
-        book.setStartingRate(makeBPRatio(currentDiscountRate, brands.Currency));
+        book.setStartingRate(
+          makeBPRatio(currentDiscountRateBP, brands.Currency),
+        );
       });
 
       tradeEveryBook();
@@ -232,12 +232,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         newBidHandler,
         'new bid',
         {},
-        harden({
-          give: AmountKeywordRecordShape,
-          want: AmountKeywordRecordShape,
-          // XXX is there a standard Exit Pattern?
-          exit: M.any(),
-        }),
+        FullProposalShape,
       );
     },
     getSchedules() {

@@ -31,7 +31,8 @@
 
 /**
  * @typedef { Amount | Brand | Installation | Instance | bigint |
- *   Ratio | string | unknown } ParamValue
+ *   Ratio | string | import('@agoric/time/src/types').TimestampRecord |
+ *   import('@agoric/time/src/types').RelativeTimeRecord | unknown } ParamValue
  */
 
 // XXX better to use the manifest constant ParamTypes
@@ -47,6 +48,8 @@
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :
+ * T extends 'timestamp' ? import('@agoric/time/src/types').TimestampRecord :
+ * T extends 'relativeTime' ? import('@agoric/time/src/types').RelativeTimeRecord :
  * T extends 'unknown' ? unknown :
  * never
  * } ParamValueForType
@@ -427,9 +430,8 @@
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
- * @property {(name: string) => import('@agoric/time/src/types').TimerService} getTimerService
- * @property {(name: string) => import('@agoric/time/src/types').Timestamp} getTimestamp
- * @property {(name: string) => import('@agoric/time/src/types').RelativeTime} getRelativeTime
+ * @property {(name: string) => import('@agoric/time/src/types').TimestampRecord} getTimestamp
+ * @property {(name: string) => import('@agoric/time/src/types').RelativeTimeRecord} getRelativeTime
  * @property {(name: string) => any} getUnknown
  * @property {(name: string, proposedValue: ParamValue) => ParamValue} getVisibleValue - for
  *   most types, the visible value is the same as proposedValue. For Invitations

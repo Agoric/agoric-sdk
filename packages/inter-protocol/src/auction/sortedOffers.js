@@ -1,7 +1,13 @@
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { TimeMath } from '@agoric/time';
+import {
+  makeRatio,
+  coerceToNumber,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { M, mustMatch } from '@agoric/store';
+import { RatioShape } from '@agoric/ertp';
 
 import { decodeNumber, encodeNumber } from '../vaultFactory/storeUtils.js';
+
+const { Fail } = assert;
 
 // We want earlier times to sort the same direction as higher prices, so we
 // subtract the timestamp from millisecond time in the year 2286. This works for
@@ -11,77 +17,58 @@ import { decodeNumber, encodeNumber } from '../vaultFactory/storeUtils.js';
 // timestamps are used for sorting during an auction and don't need to be stored
 // long-term. We could safely subtract from a timestamp that's now + 1 month.
 const FarFuture = 10000000000000n;
-const encodeTimestamp = t => FarFuture - t;
+
+/** @type {(s: bigint) => bigint} */
+const encodeSequenceNumber = s => FarFuture - s;
 
 /**
- * Prices might be more or less than one.
+ * Return a sort key that will compare based only on price. Price is the prefix
+ * of the complete sort key, which is sufficient to find offers below a cutoff.
  *
- * @param {Ratio} price price quote in IST/Collateral
- * @returns {number}
+ * @param {Ratio} offerPrice
  */
-const priceAsFloat = price => {
-  const n = Number(price.numerator.value);
-  const d = Number(price.denominator.value);
-  return n / d;
-};
-
-/**
- * Prices might be more or less than one.
- *
- * @param {Ratio} discount price quote in IST/IST
- * @returns {number}
- */
-const rateAsFloat = discount => {
-  const n = Number(discount.numerator.value);
-  const d = Number(discount.denominator.value);
-  return n / d;
-};
-
-export const toPriceComparator = offerPrice => {
+export const toPartialOfferKey = offerPrice => {
   assert(offerPrice);
-  const mostSignificantPart = encodeNumber(priceAsFloat(offerPrice));
+  const mostSignificantPart = encodeNumber(coerceToNumber(offerPrice));
   return `${mostSignificantPart}:`;
 };
 
 /**
- * Sorts by ratio in descending price.
+ * Return a sort key that distinguishes by Price and sequence number
  *
  * @param {Ratio} offerPrice IST/collateral
- * @param {Timestamp} offerTime
+ * @param {bigint} sequenceNumber
  * @returns {string} lexically sortable string in which highest price is first,
- *    ties will be broken by time of offer
+ *    ties will be broken by sequenceNumber of offer
  */
-export const toPriceOfferKey = (offerPrice, offerTime) => {
-  assert(offerPrice);
-  assert(offerTime);
+export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
+  mustMatch(offerPrice, RatioShape);
+  offerPrice.numerator.brand !== offerPrice.denominator.brand ||
+    Fail`offer prices must have different numerator and denominator`;
+  mustMatch(sequenceNumber, M.nat());
+
   // until DB supports composite keys, copy its method for turning numbers to DB
   // entry keys
-  const mostSignificantPart = encodeNumber(priceAsFloat(offerPrice));
-  return `${mostSignificantPart}:${encodeTimestamp(offerTime)}`;
+  const mostSignificantPart = encodeNumber(coerceToNumber(offerPrice));
+  return `${mostSignificantPart}:${encodeSequenceNumber(sequenceNumber)}`;
 };
 
 const priceRatioFromFloat = (floatPrice, numBrand, denomBrand, useDecimals) => {
   const denominatorValue = 10 ** useDecimals;
   return makeRatio(
-    BigInt(Math.trunc(decodeNumber(floatPrice) * denominatorValue)),
+    BigInt(Math.round(decodeNumber(floatPrice) * denominatorValue)),
     numBrand,
     BigInt(denominatorValue),
     denomBrand,
   );
 };
 
-const discountRatioFromFloat = (
-  floatDiscount,
-  numBrand,
-  denomBrand,
-  useDecimals,
-) => {
+const discountRatioFromFloat = (floatDiscount, numBrand, useDecimals) => {
   const denominatorValue = 10 ** useDecimals;
   return makeRatio(
-    BigInt(Math.trunc(decodeNumber(floatDiscount) * denominatorValue)),
+    BigInt(Math.round(decodeNumber(floatDiscount) * denominatorValue)),
     numBrand,
     BigInt(denominatorValue),
-    denomBrand,
   );
 };
 
@@ -92,37 +79,40 @@ const discountRatioFromFloat = (
  * @param {Brand} numBrand
  * @param {Brand} denomBrand
  * @param {number} useDecimals
- * @returns {[normalizedPrice: Ratio, offerTime: Timestamp]}
+ * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
-  const [pricePart, timePart] = key.split(':');
+  const [pricePart, sequenceNumberPart] = key.split(':');
   return [
     priceRatioFromFloat(pricePart, numBrand, denomBrand, useDecimals),
-    BigInt(encodeTimestamp(BigInt(timePart))),
+    encodeSequenceNumber(BigInt(sequenceNumberPart)),
   ];
 };
 
 export const toDiscountComparator = rate => {
   assert(rate);
-  const mostSignificantPart = encodeNumber(rateAsFloat(rate));
+  const mostSignificantPart = encodeNumber(coerceToNumber(rate));
   return `${mostSignificantPart}:`;
 };
 
 /**
  * Sorts offers expressed as percentage of the current oracle price.
  *
- * @param {Ratio} rate
- * @param {Timestamp} offerTime
+ * @param {Ratio} rate discount/markup rate expressed as a ratio IST/IST
+ * @param {bigint} sequenceNumber
  * @returns {string} lexically sortable string in which highest price is first,
- *    ties will be broken by time of offer
+ *    ties will be broken by sequenceNumber of offer
  */
-export const toDiscountedRateOfferKey = (rate, offerTime) => {
-  assert(rate);
-  assert(offerTime);
+export const toDiscountedRateOfferKey = (rate, sequenceNumber) => {
+  mustMatch(rate, RatioShape);
+  rate.numerator.brand === rate.denominator.brand ||
+    Fail`discount rate must have the same numerator and denominator`;
+  mustMatch(sequenceNumber, M.nat());
+
   // until DB supports composite keys, copy its method for turning numbers to DB
   // entry keys
-  const mostSignificantPart = encodeNumber(rateAsFloat(rate));
-  return `${mostSignificantPart}:${encodeTimestamp(offerTime)}`;
+  const mostSignificantPart = encodeNumber(coerceToNumber(rate));
+  return `${mostSignificantPart}:${encodeSequenceNumber(sequenceNumber)}`;
 };
 
 /**
@@ -131,14 +121,12 @@ export const toDiscountedRateOfferKey = (rate, offerTime) => {
  * @param {string} key
  * @param {Brand} brand
  * @param {number} useDecimals
- * @returns {[normalizedPrice: Ratio, offerTime: Timestamp]}
+ * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromDiscountedRateOfferKey = (key, brand, useDecimals) => {
-  const [discountPart, timePart] = key.split(':');
+  const [discountPart, sequenceNumberPart] = key.split(':');
   return [
-    discountRatioFromFloat(discountPart, brand, brand, useDecimals),
-    BigInt(encodeTimestamp(BigInt(timePart))),
+    discountRatioFromFloat(discountPart, brand, useDecimals),
+    encodeSequenceNumber(BigInt(sequenceNumberPart)),
   ];
 };
-
-export const keyToTime = key => TimeMath.toAbs(Number(key.split(':')[1]));
