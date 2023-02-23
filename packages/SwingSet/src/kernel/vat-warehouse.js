@@ -55,7 +55,7 @@ export const makeLRU = max => {
  *   maxVatsOnline?: number,
  * }} [policyOptions]
  *
- * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
+ * @typedef {(syscall: import('@agoric/swingset-liveslots').VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
@@ -273,7 +273,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type { string | undefined } */
   let lastVatID;
 
-  /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<VatDeliveryResult> } */
+  /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<import('@agoric/swingset-liveslots').VatDeliveryResult> } */
   async function deliverToVat(vatID, kd, vd, vs) {
     await applyAvailabilityPolicy(vatID);
     lastVatID = vatID;

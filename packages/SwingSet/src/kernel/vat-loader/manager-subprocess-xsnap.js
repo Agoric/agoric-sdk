@@ -11,6 +11,9 @@ import './types.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
  */
 
@@ -136,7 +139,7 @@ export function makeXsSubprocessFactory({
       !!snapshotInfo,
     );
 
-    /** @type { (item: Tagged) => Promise<CrankResults> } */
+    /** @type { (item: Tagged) => Promise<WorkerResults> } */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
@@ -174,6 +177,7 @@ export function makeXsSubprocessFactory({
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
+      /** @type { WorkerResults } */
       let result;
       try {
         // eslint-disable-next-line @jessie.js/no-nested-await
@@ -200,6 +204,8 @@ export function makeXsSubprocessFactory({
 
       parentLog(vatID, `deliverDone`, result.reply[0], result.reply.length);
       // Attach the meterUsage to the deliver result.
+      /** @type { VatDeliveryResult } */
+      // @ts-expect-error I don't know how to appease tsc
       const deliverResult = harden([
         result.reply[0], // 'ok' or 'error'
         result.reply[1] || null, // problem or null

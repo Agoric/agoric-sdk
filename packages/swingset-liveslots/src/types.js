@@ -27,7 +27,7 @@
  *
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
  *
- * * @typedef {{
+ * @typedef {{
  *                methargs: SwingSetCapData, // of [method, args]
  *                result: string | undefined | null,
  *             }} Message
@@ -45,6 +45,38 @@
  *            | VatDeliveryRetireExports | VatDeliveryRetireImports | VatDeliveryChangeVatOptions
  *            | VatDeliveryStartVat | VatDeliveryStopVat | VatDeliveryBringOutYourDead
  *          } VatDeliveryObject
+ *
+ * @typedef { { compute: number } } MeterConsumption
+ * @typedef { [tag: 'ok', message: null, usage: MeterConsumption | null] |
+ *            [tag: 'error', message: string, usage: MeterConsumption | null] } VatDeliveryResult
+ *
+ *
+ * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
+ * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
+ * @typedef { [tag: 'subscribe', vpid: string ]} VatSyscallSubscribe
+ * @typedef { [tag: 'resolve', resolutions: VatOneResolution[] ]} VatSyscallResolve
+ * @typedef { [tag: 'exit', isFailure: boolean, info: SwingSetCapData ]} VatSyscallExit
+ * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
+ * @typedef { [tag: 'vatstoreGetNextKey', priorKey: string ]} VatSyscallVatstoreGetNextKey
+ * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
+ * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
+ * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
+ * @typedef { [tag: 'retireImports', slots: string[] ]} VatSyscallRetireImports
+ * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
+ * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
+ *
+ * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
+ *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetNextKey
+ *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
+ *    | VatSyscallRetireImports | VatSyscallRetireExports | VatSyscallAbandonExports
+ * } VatSyscallObject
+ *
+ * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | null ]} VatSyscallResultOk
+ * @typedef { [tag: 'error', err: string ] } VatSyscallResultError
+ * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
+ *
+ * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
+ *
  */
 
 // Ensure this is a module.

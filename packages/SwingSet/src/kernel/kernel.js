@@ -32,6 +32,9 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  */
 
 function abbreviateReplacer(_, arg) {
@@ -345,7 +348,7 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { import('../types-external.js').MeterConsumption } MeterConsumption
+   * @typedef { import('@agoric/swingset-liveslots').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed

@@ -259,6 +259,11 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   return kernelDeliveryToVatDelivery;
 }
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResultOk} VatSyscallResultOk
+ */
 
 /**
  * return a function that converts VatSyscall objects into KernelSyscall
