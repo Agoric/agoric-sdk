@@ -156,7 +156,7 @@
  * @param {Keyword} keyword
  * @param {AssetKind} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {Partial<{elementShape: Pattern}>} [options]
+ * @param {IssuerOptionsRecord} [options]
  * @returns {ZoeMint}
  */
 

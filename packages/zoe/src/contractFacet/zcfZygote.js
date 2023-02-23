@@ -29,6 +29,8 @@ import './internal-types.js';
 import '@agoric/swingset-vat/src/types-ambient.js';
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 
+/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+
 const { Fail } = assert;
 
 /**
@@ -121,13 +123,15 @@ export const makeZCFZygote = async (
    * @param {Keyword} keyword
    * @param {K} [assetKind]
    * @param {AdditionalDisplayInfo} [displayInfo]
+   * @param {IssuerOptionsRecord} [options]
    * @returns {Promise<ZCFMint<K>>}
    */
   const makeZCFMint = async (
     keyword,
     // @ts-expect-error possible different subtype
     assetKind = AssetKind.NAT,
-    displayInfo,
+    displayInfo = undefined,
+    options = undefined,
   ) => {
     getInstanceRecHolder().assertUniqueKeyword(keyword);
 
@@ -135,6 +139,7 @@ export const makeZCFZygote = async (
       keyword,
       assetKind,
       displayInfo,
+      options,
     );
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
