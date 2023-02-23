@@ -197,6 +197,8 @@ async function resolveSpecFromConfig(referrer, specPath) {
 async function normalizeConfigDescriptor(desc, referrer, expectParameters) {
   const normalizeSpec = async (entry, key) => {
     return resolveSpecFromConfig(referrer, entry[key]).then(spec => {
+      fs.existsSync(spec) ||
+        Fail`spec for ${entry[key]} does not exist: ${spec}`;
       entry[key] = spec;
     });
   };
