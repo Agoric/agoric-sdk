@@ -329,6 +329,8 @@ jobs:
       # END-TEST-BOILERPLATE
       - name: yarn test (SwingSet)
         run: cd packages/SwingSet && yarn ${{ steps.vars.outputs.test }} 'test/**/test-[E-Ie-i]*.js' | $TEST_COLLECT
+      - name: yarn test (xsnap-lockdown)
+        run: cd packages/xsnap-lockdown && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (xsnap)
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       # explicitly test the XS worker, for visibility

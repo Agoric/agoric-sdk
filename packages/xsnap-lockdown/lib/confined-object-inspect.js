@@ -18,7 +18,7 @@ const src = objectInspectSources.replace(
   '$1/* $2 */$3',
 );
 const objectInspect = c.evaluate(
-  `${src}\n//# sourceURL=xsnap/src/object-inspect.js\n`,
+  `${src}\n//# sourceURL=xsnap-lockdown/lib/object-inspect.js\n`,
 );
 
 export default objectInspect;

@@ -4,6 +4,7 @@ import path from 'path';
 
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, Fail } from '@agoric/assert';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import bundleSource from '@endo/bundle-source';
 
 import '../types-ambient.js';
@@ -51,6 +52,7 @@ export async function buildKernelBundle() {
  * xsnap vat worker.
  */
 export async function buildVatAndDeviceBundles() {
+  const lockdownP = getLockdownBundle(); // throws if bundle is not built
   const bundles = await allValues({
     adminDevice: bundleRelative('../devices/vat-admin/device-vat-admin.js'),
     adminVat: bundleRelative('../vats/vat-admin/vat-vat-admin.js'),
@@ -58,9 +60,7 @@ export async function buildVatAndDeviceBundles() {
     vattp: bundleRelative('../vats/vattp/vat-vattp.js'),
     timer: bundleRelative('../vats/timer/vat-timer.js'),
 
-    lockdown: bundleRelativeCallable(
-      '../supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
-    ),
+    lockdown: lockdownP,
     supervisor: bundleRelativeCallable(
       '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
     ),
@@ -341,6 +341,8 @@ export async function initializeSwingset(
     addTimer = true,
   } = initializationOptions;
 
+  assert.typeof(kernelBundles.lockdown, 'object');
+  assert.typeof(kernelBundles.supervisor, 'object');
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
   kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 

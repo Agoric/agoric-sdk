@@ -41,6 +41,7 @@ export default [
   "@agoric/wallet-connection",
   "@agoric/web-components",
   "@agoric/xsnap",
+  "@agoric/xsnap-lockdown",
   "@agoric/zoe",
   "agoric"
 ];
