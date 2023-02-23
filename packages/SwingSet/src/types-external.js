@@ -245,6 +245,7 @@ export {};
  * bundles.
  * @property { ManagerType } [defaultManagerType]
  * @property {number} [snapshotInitial]
+ * @property {boolean} [pinBootstrapRoot]
  * @property {number} [snapshotInterval]
  * @property {boolean} [relaxDurabilityRules]
  * @property {SwingSetConfigDescriptor} [vats]

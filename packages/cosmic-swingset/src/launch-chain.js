@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 /* eslint-disable @jessie.js/no-nested-await */
 import anylogger from 'anylogger';
@@ -49,10 +50,10 @@ const getHostKey = path => `host.${path}`;
 
 /**
  * @param {Map<*, *>} mailboxStorage
- * @param {*} [bridgeOutbound]
+ * @param {*} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string} vatconfig absolute path
- * @param {unknown[]} argv
+ * @param {Record<string, any>} argv XXX argv should be an array but it's being called with object
  * @param {{ ROLE: string }} env
  * @param {*} options
  */
@@ -70,6 +71,7 @@ export async function buildSwingset(
   env.ROLE = argv.ROLE;
 
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
+  /** @type {import('@agoric/swingset-vat').SwingSetConfig | null} */
   let config = await loadSwingsetConfigFile(vatconfig);
   if (config === null) {
     config = loadBasedir(vatconfig);
@@ -105,7 +107,7 @@ export async function buildSwingset(
     if (swingsetIsInitialized(kernelStorage)) {
       return;
     }
-
+    if (!config) throw Fail`config not yet set`;
     // Find the entrypoints for all the core proposals.
     if (config.coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
@@ -120,6 +122,7 @@ export async function buildSwingset(
     }
     config.pinBootstrapRoot = true;
 
+    // @ts-expect-error XXX argv object
     await initializeSwingset(config, argv, kernelStorage, { debugPrefix });
   }
   await ensureSwingsetInitialized();
@@ -142,7 +145,7 @@ export async function buildSwingset(
 /**
  * @typedef {import('@agoric/swingset-vat').RunPolicy & {
  *   shouldRun(): boolean;
- *   remainingBeans(): number;
+ *   remainingBeans(): bigint;
  * }} ChainRunPolicy
  */
 
@@ -272,6 +275,7 @@ export async function launch({
     kernelStorage,
     vatconfig,
     argv,
+    // @ts-expect-error process.env default
     env,
     {
       debugName,
@@ -292,6 +296,7 @@ export async function launch({
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
+    // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
     log: console,
     inboundQueueMetrics,
   });
@@ -368,6 +373,7 @@ export async function launch({
       inboundNum,
       source,
     });
+    if (!bridgeInbound) throw Fail`bridgeInbound undefined`;
     // console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
@@ -407,6 +413,7 @@ export async function launch({
       installationPublisher === undefined &&
       makeInstallationPublisher !== undefined
     ) {
+      // @ts-expect-error not really undefined. TODO give provideInstallationPublisher a signature.
       installationPublisher = makeInstallationPublisher();
     }
   }
