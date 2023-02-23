@@ -27,12 +27,6 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
 
-// Set the absolute path of the SDK to use for bundling
-// This can help if there are symlinks in the path that should be respected
-// to match the path of the SDK that produced the initial transcript
-// For e.g. set to '/src' if replaying a docker based loadgen transcript
-const ABSOLUTE_SDK_PATH = null;
-
 // Rebuild the bundles when starting the replay.
 // Disable if bundles were previously extracted form a Kernel DB, or
 // to save a few seconds and rely upon previously built versions instead
@@ -72,13 +66,6 @@ function makeSnapStoreIO() {
 }
 
 async function makeBundles() {
-  const controllerUrl = new URL(
-    `${
-      ABSOLUTE_SDK_PATH ? `${ABSOLUTE_SDK_PATH}/packages/SwingSet` : '..'
-    }/src/controller/initializeSwingset.js`,
-    import.meta.url,
-  );
-
   // we explicitly re-bundle these entry points, rather than using
   // getLockdownBundle(), because if you're calling this, you're
   // probably editing the sources anyways
