@@ -16,7 +16,7 @@
       "sourceSpec": "./src/vat-uploads.js"
     },
     "bootstrap": {
-      "sourceSpec": "@agoric/vats/src/core/boot.js"
+      "sourceSpec": "@agoric/vats/src/core/boot-solo.js"
     }
   }
 }
