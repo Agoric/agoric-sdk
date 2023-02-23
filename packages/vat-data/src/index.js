@@ -21,6 +21,7 @@ export {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   provideDurableSetStore,
+  provideDurableWeakSetStore,
   // deprecated
   defineKind,
   defineKindMulti,
