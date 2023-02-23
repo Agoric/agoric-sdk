@@ -63,6 +63,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   return { rootNode, data, messages };
 };
 harden(makeFakeStorageKit);
+/** @typedef {ReturnType< typeof makeFakeStorageKit>} FakeStorageKit */
 
 export const makeMockChainStorageRoot = () => {
   const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');

@@ -37,6 +37,7 @@
     "@agoric/internal": "^0.2.1",
     "@agoric/smart-wallet": "^0.4.2",
     "@agoric/swingset-vat": "^0.30.2",
+    "@agoric/vats": "^0.13.0",
     "@agoric/zoe": "^0.25.3",
     "@confio/relayer": "^0.7.0",
     "@cosmjs/crypto": "^0.29.5",

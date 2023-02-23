@@ -4,7 +4,7 @@ import '@endo/init';
 
 import { makeFakeStorageKit } from '../src/storage-test-utils.js';
 
-test('makeChainStorageRoot', async t => {
+test('makeFakeStorageKit', async t => {
   const rootPath = 'root';
   const { rootNode, messages } = makeFakeStorageKit(rootPath);
   t.is(rootNode.getPath(), rootPath);
@@ -165,7 +165,7 @@ test('makeChainStorageRoot', async t => {
   );
 });
 
-test('makeChainStorageRoot sequence data', async t => {
+test('makeFakeStorageKit sequence data', async t => {
   const rootPath = 'root';
   const { rootNode, messages } = makeFakeStorageKit(rootPath, {
     sequence: true,
