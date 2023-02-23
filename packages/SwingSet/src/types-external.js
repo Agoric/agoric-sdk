@@ -93,34 +93,10 @@ export {};
  *
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatOneResolution } VatOneResolution
- * @typedef { { compute: number } } MeterConsumption
- * @typedef { [tag: 'ok', message: null, usage: MeterConsumption | null] |
- *            [tag: 'error', message: string, usage: MeterConsumption | null] } VatDeliveryResult
- *
- * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
- * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
- * @typedef { [tag: 'subscribe', vpid: string ]} VatSyscallSubscribe
- * @typedef { [tag: 'resolve', resolutions: VatOneResolution[] ]} VatSyscallResolve
- * @typedef { [tag: 'exit', isFailure: boolean, info: SwingSetCapData ]} VatSyscallExit
- * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
- * @typedef { [tag: 'vatstoreGetNextKey', priorKey: string ]} VatSyscallVatstoreGetNextKey
- * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
- * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
- * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
- * @typedef { [tag: 'retireImports', slots: string[] ]} VatSyscallRetireImports
- * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
- * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
- *
- * @typedef { VatSyscallSend | VatSyscallCallNow | VatSyscallSubscribe
- *    | VatSyscallResolve | VatSyscallExit | VatSyscallVatstoreGet | VatSyscallVatstoreGetNextKey
- *    | VatSyscallVatstoreSet | VatSyscallVatstoreDelete | VatSyscallDropImports
- *    | VatSyscallRetireImports | VatSyscallRetireExports | VatSyscallAbandonExports
- * } VatSyscallObject
- *
- * @typedef { [tag: 'ok', data: SwingSetCapData | string | string[] | null ]} VatSyscallResultOk
- * @typedef { [tag: 'error', err: string ] } VatSyscallResultError
- * @typedef { VatSyscallResultOk | VatSyscallResultError } VatSyscallResult
- * @typedef { (vso: VatSyscallObject) => VatSyscallResult } VatSyscaller
+ * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscaller } VatSyscaller
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
  * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify

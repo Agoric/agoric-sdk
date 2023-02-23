@@ -20,6 +20,10 @@ import {
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscaller} VatSyscaller
  * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
  * @typedef {import('@agoric/swingset-liveslots').MeterControl} MeterControl
  */
@@ -192,7 +196,7 @@ function makeWorker(port) {
    * @returns {Promise<Tagged>}
    */
   async function setBundle(vatID, bundle, liveSlotsOptions) {
-    /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
+    /** @type { VatSyscaller } */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
       const result = port.call(['syscall', vatSyscallObject]);

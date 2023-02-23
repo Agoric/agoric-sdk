@@ -38,28 +38,6 @@
  *
  * @typedef { import('./types-external.js').ResolutionPolicy } ResolutionPolicy
  *
- * @typedef { import('./types-external.js').VatDeliveryResult } VatDeliveryResult
- *
- * @typedef { import('./types-external.js').VatSyscallSend } VatSyscallSend
- * @typedef { import('./types-external.js').VatSyscallCallNow } VatSyscallCallNow
- * @typedef { import('./types-external.js').VatSyscallSubscribe } VatSyscallSubscribe
- * @typedef { import('./types-external.js').VatSyscallResolve } VatSyscallResolve
- * @typedef { import('./types-external.js').VatSyscallExit } VatSyscallExit
- * @typedef { import('./types-external.js').VatSyscallVatstoreGet } VatSyscallVatstoreGet
- * @typedef { import('./types-external.js').VatSyscallVatstoreGetNextKey } VatSyscallVatstoreGetNextKey
- * @typedef { import('./types-external.js').VatSyscallVatstoreSet } VatSyscallVatstoreSet
- * @typedef { import('./types-external.js').VatSyscallVatstoreDelete } VatSyscallVatstoreDelete
- * @typedef { import('./types-external.js').VatSyscallDropImports } VatSyscallDropImports
- * @typedef { import('./types-external.js').VatSyscallRetireImports } VatSyscallRetireImports
- * @typedef { import('./types-external.js').VatSyscallRetireExports } VatSyscallRetireExports
- *
- * @typedef { import('./types-external.js').VatSyscallObject } VatSyscallObject
- *
- * @typedef { import('./types-external.js').VatSyscallResultOk } VatSyscallResultOk
- * @typedef { import('./types-external.js').VatSyscallResultError } VatSyscallResultError
- * @typedef { import('./types-external.js').VatSyscallResult } VatSyscallResult
- * @typedef { import('./types-external.js').VatSyscaller } VatSyscaller
- *
  * @typedef { import('./types-external.js').KernelDeliveryMessage } KernelDeliveryMessage
  * @typedef { import('./types-external.js').KernelDeliveryOneNotify } KernelDeliveryOneNotify
  * @typedef { import('./types-external.js').KernelDeliveryNotify } KernelDeliveryNotify
