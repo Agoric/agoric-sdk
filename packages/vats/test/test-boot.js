@@ -2,7 +2,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import bundleSource from '@endo/bundle-source';
+import bundleSourceAmbient from '@endo/bundle-source';
 import { E, passStyleOf } from '@endo/far';
 
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
@@ -56,15 +56,17 @@ testRole('chain', true);
 testRole('sim-chain', false);
 testRole('sim-chain', true);
 
-test('evaluateBundleCap is available to core eval', async t => {
+test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t) => {
+  const { loadBundle } = t.context;
+  /** @type {undefined | import('../src/types.js').BridgeHandler} */
   let handler;
-  const modulePath = new URL('../src/core/utils.js', import.meta.url).pathname;
   const { produce, consume } = makePromiseSpace(t.log);
   const { admin, vatAdminState } = makeFakeVatAdmin();
   const vatPowers = vatAdminState.getVatPowers();
 
   const prepare = async () => {
-    const bundle = await bundleSource(modulePath);
+    const bundle = await loadBundle('../src/core/utils.js');
+    if (bundle.moduleFormat !== 'endoZipBase64') throw t.fail();
     const bundleID = bundle.endoZipBase64Sha512;
     vatAdminState.installBundle(bundleID, bundle);
     const bridgeManager = {
@@ -81,7 +83,7 @@ test('evaluateBundleCap is available to core eval', async t => {
 
   // @ts-expect-error
   await bridgeCoreEval({ vatPowers, produce, consume });
-  t.truthy(handler);
+  if (!handler) throw t.fail();
 
   const produceThing = async ({
     consume: { vatAdminSvc },
@@ -105,7 +107,6 @@ test('evaluateBundleCap is available to core eval', async t => {
   };
   t.log({ bridgeMessage });
 
-  // @ts-expect-error
   await E(handler).fromBridge(bridgeMessage);
   const actual = await consume.thing;
 
