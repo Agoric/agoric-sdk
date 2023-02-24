@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -18,7 +19,11 @@ import (
 
 var _ snapshots.ExtensionSnapshotter = &SwingsetSnapshotter{}
 
+// SnapshotFormat 1 is a proto message containing an artifact name, and the binary artifact data
 const SnapshotFormat = 1
+
+// The manifest filename must be synchronized with the JS export/import tooling
+const ExportManifestFilename = "export-manifest.json"
 
 type activeSnapshot struct {
 	// The block height of the snapshot in progress
@@ -29,6 +34,14 @@ type activeSnapshot struct {
 	startedResult chan error
 	// Internal flag indicating whether the cosmos driven snapshot process completed
 	retrieved bool
+}
+
+type exportManifest struct {
+	BlockHeight uint64 `json:"blockHeight,omitempty"`
+	// The filename of the export data
+	Data string `json:"data,omitempty"`
+	// The list of artifact names and their corresponding filenames
+	Artifacts [][2]string `json:"artifacts"`
 }
 
 type SwingStoreExporter interface {
@@ -245,11 +258,57 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 	}
 
 	defer os.RemoveAll(exportDir)
+
+	rawManifest, err := os.ReadFile(filepath.Join(exportDir, ExportManifestFilename))
+	if err != nil {
+		return err
+	}
+
+	var manifest exportManifest
+	err = json.Unmarshal(rawManifest, &manifest)
+	if err != nil {
+		return err
+	}
+
+	if manifest.BlockHeight != height {
+		return fmt.Errorf("snapshot manifest blockHeight (%d) doesn't match (%d)", manifest.BlockHeight, height)
+	}
+
+	writeFileToPayload := func(fileName string, artifactName string) error {
+		payload := types.ExtensionSnapshotterArtifactPayload{Name: artifactName}
+
+		payload.Data, err = os.ReadFile(filepath.Join(exportDir, fileName))
+		if err != nil {
+			return err
+		}
+
+		payloadBytes, err := payload.Marshal()
+		if err != nil {
+			return err
+		}
+
+		err = payloadWriter(payloadBytes)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	for _, artifactInfo := range manifest.Artifacts {
+		artifactName := artifactInfo[0]
+		fileName := artifactInfo[1]
+		err = writeFileToPayload(fileName, artifactName)
+		if err != nil {
+			return err
+		}
+	}
+
 	snapshotter.activeSnapshot.retrieved = true
 
-	// FIXME: actually do something with the snapshot
+	snapshotter.activeSnapshot.logger.Info("fully retrieved snapshot from", "exportDir", exportDir)
 
-	return errors.New("not implemented")
+	return nil
 }
 
 // RestoreExtension restores an extension state snapshot,
