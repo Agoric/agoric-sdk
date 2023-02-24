@@ -18,7 +18,7 @@ const contractRoots = {
 };
 
 const makeTestContext = async () => {
-  const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
+  const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
   const farZoeKit = await setUpZoeForTest();
   const { zoe } = farZoeKit;
 

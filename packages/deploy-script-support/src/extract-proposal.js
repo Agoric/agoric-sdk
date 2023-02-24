@@ -1,3 +1,4 @@
+// @ts-check
 import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
@@ -40,7 +41,7 @@ const pathResolve = (...paths) => {
  * but for sim-chain and such, they can be declared statically in
  * the chain configuration, in which case they are run at bootstrap.
  *
- * @param {(ModuleSpecifier | FilePath)[]} coreProposals - governance
+ * @param {import('@agoric/swingset-vat').ConfigProposal[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
  * @param {typeof makeEnactCoreProposalsFromBundleRef} [makeEnactCoreProposals]

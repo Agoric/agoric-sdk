@@ -25,8 +25,9 @@ export const makePassableEncoding = () => {
   // from manually created symbols.
   const replacementPrefix = 'replaced:';
   const provideReplacement = value => {
-    if (replacements.has(value)) {
-      return replacements.get(value);
+    const extant = replacements.get(value);
+    if (extant) {
+      return extant;
     }
 
     const replacement = Symbol.for(`${replacementPrefix}${replaced.size}`);

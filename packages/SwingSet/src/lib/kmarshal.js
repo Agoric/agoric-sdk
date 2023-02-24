@@ -13,7 +13,13 @@ import { assert } from '@agoric/assert';
 
 const refMap = new WeakMap();
 
-export const kslot = (kref, iface) => {
+/**
+ *
+ * @param {string} kref
+ * @param {string} [iface]
+ * @returns {import('@endo/eventual-send').ERef<KCap>}
+ */
+export const kslot = (kref, iface = 'undefined') => {
   assert.typeof(kref, 'string');
   if (iface && iface.startsWith('Alleged: ')) {
     // Encoder prepends "Alleged: " to iface string, but the decoder doesn't strip it
