@@ -540,6 +540,63 @@ export const Egress = {
     return message;
   },
 };
+function createBaseExtensionSnapshotterArtifactPayload() {
+  return { name: '', data: new Uint8Array() };
+}
+export const ExtensionSnapshotterArtifactPayload = {
+  encode(message, writer = _m0.Writer.create()) {
+    if (message.name !== '') {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.data.length !== 0) {
+      writer.uint32(18).bytes(message.data);
+    }
+    return writer;
+  },
+  decode(input, length) {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExtensionSnapshotterArtifactPayload();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.name = reader.string();
+          break;
+        case 2:
+          message.data = reader.bytes();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object) {
+    return {
+      name: isSet(object.name) ? String(object.name) : '',
+      data: isSet(object.data)
+        ? bytesFromBase64(object.data)
+        : new Uint8Array(),
+    };
+  },
+  toJSON(message) {
+    const obj = {};
+    message.name !== undefined && (obj.name = message.name);
+    message.data !== undefined &&
+      (obj.data = base64FromBytes(
+        message.data !== undefined ? message.data : new Uint8Array(),
+      ));
+    return obj;
+  },
+  fromPartial(object) {
+    const message = createBaseExtensionSnapshotterArtifactPayload();
+    message.name = object.name ?? '';
+    message.data = object.data ?? new Uint8Array();
+    return message;
+  },
+};
 var globalThis = (() => {
   if (typeof globalThis !== 'undefined') {
     return globalThis;

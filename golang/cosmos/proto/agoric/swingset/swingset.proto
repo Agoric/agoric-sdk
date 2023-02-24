@@ -149,3 +149,17 @@ message Egress {
         (gogoproto.moretags)   = "yaml:\"powerFlags\""
     ];
 }
+
+// The payload messages used by swingset state-sync 
+message ExtensionSnapshotterArtifactPayload {
+    option (gogoproto.equal) = false;
+    string name = 1 [
+        (gogoproto.jsontag)    = "name",
+        (gogoproto.moretags)   = "yaml:\"name\""
+    ];
+
+    bytes data = 2 [
+        (gogoproto.jsontag)    = "data",
+        (gogoproto.moretags)   = "yaml:\"data\""
+    ];
+}
