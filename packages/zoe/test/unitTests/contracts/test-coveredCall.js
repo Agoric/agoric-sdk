@@ -134,18 +134,18 @@ test('zoe - coveredCall', async t => {
         t.is(invitationValue.description, 'exerciseOption');
 
         t.deepEqual(
-          invitationValue.underlyingAssets,
+          invitationValue.customDetails?.underlyingAssets,
           { Moola: moola(3n) },
           `underlying assets are 3 moola`,
         );
         t.deepEqual(
-          invitationValue.strikePrice,
+          invitationValue.customDetails?.strikePrice,
           { Simoleans: simoleans(7n), Bucks: bucks(2n) },
           `strike price is 7 simoleans and 2 bucks, so bob must give that`,
         );
 
-        t.is(invitationValue.expirationDate, 1n);
-        t.deepEqual(invitationValue.timeAuthority, timer);
+        t.is(invitationValue.customDetails?.expirationDate, 1n);
+        t.deepEqual(invitationValue.customDetails?.timeAuthority, timer);
 
         const proposal = harden({
           give: { StrikePrice1: simoleans(7n), StrikePrice2: bucks(2n) },
@@ -288,18 +288,21 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const { customDetails } = optionValue;
+  assert(typeof customDetails === 'object');
+
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionValue.expirationDate, 1n);
-  t.deepEqual(optionValue.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 1n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobSimoleanPayment };
 
   const bobProposal = harden({
-    want: optionValue.underlyingAssets,
-    give: optionValue.strikePrice,
+    want: customDetails.underlyingAssets,
+    give: customDetails.strikePrice,
   });
 
   // Bob escrows
@@ -443,12 +446,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
+  const { customDetails } = optionDesc;
+  assert(typeof customDetails === 'object');
+
   t.is(optionDesc.installation, coveredCallInstallation);
   t.is(optionDesc.description, 'exerciseOption');
-  t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionDesc.expirationDate, 100n);
-  t.deepEqual(optionDesc.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
@@ -703,12 +709,15 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const { customDetails } = optionValue;
+  assert(typeof customDetails === 'object');
+
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
-  t.deepEqual(optionValue.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionValue.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionValue.expirationDate, 100n);
-  t.deepEqual(optionValue.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create another coveredCall, but
   // this time to trade this invitation for bucks.
@@ -754,35 +763,40 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // checks that this invitation matches what he wants
   const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
+  const { customDetails: daveCustomDetails } = daveOptionValue;
+  assert(typeof daveCustomDetails === 'object');
+
   t.is(daveOptionValue.installation, coveredCallInstallation);
   t.is(daveOptionValue.description, 'exerciseOption');
-  assertAmountsEqual(t, daveOptionValue.strikePrice.StrikePrice, bucks(1n));
-  t.is(daveOptionValue.expirationDate, 100n);
-  t.deepEqual(daveOptionValue.timeAuthority, timer);
+  assertAmountsEqual(t, daveCustomDetails.strikePrice.StrikePrice, bucks(1n));
+  t.is(daveCustomDetails.expirationDate, 100n);
+  t.deepEqual(daveCustomDetails.timeAuthority, timer);
 
   // What about the underlying asset (the other option)?
   t.is(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].description,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].description,
     'exerciseOption',
   );
   t.is(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].expirationDate,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
+      .expirationDate,
     100n,
   );
   assertAmountsEqual(
     t,
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].strikePrice
-      .StrikePrice,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
+      .strikePrice.StrikePrice,
     simoleans(7n),
   );
   t.deepEqual(
-    daveOptionValue.underlyingAssets.UnderlyingAsset.value[0].timeAuthority,
+    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
+      .timeAuthority,
     timer,
   );
 
   // Dave's planned proposal
   const daveProposalCoveredCall = harden({
-    want: daveOptionValue.underlyingAssets,
+    want: daveCustomDetails.underlyingAssets,
     give: { StrikePrice: bucks(1n) },
   });
 
@@ -968,26 +982,29 @@ test('zoe - coveredCall non-fungible', async t => {
   /** @type {Payment<any>} */
   const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
+  const { customDetails } = optionValue;
+  assert(typeof customDetails === 'object');
+
   t.is(optionValue.installation, coveredCallInstallation);
   t.is(optionValue.description, 'exerciseOption');
   assertAmountsEqual(
     t,
-    optionValue.underlyingAssets.UnderlyingAsset,
+    customDetails.underlyingAssets.UnderlyingAsset,
     growlTigerAmount,
   );
   assertAmountsEqual(
     t,
-    optionValue.strikePrice.StrikePrice,
+    customDetails.strikePrice.StrikePrice,
     aGloriousShieldAmount,
   );
-  t.is(optionValue.expirationDate, 1n);
-  t.deepEqual(optionValue.timeAuthority, timer);
+  t.is(customDetails.expirationDate, 1n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   const bobPayments = { StrikePrice: bobRpgPayment };
 
   const bobProposal = harden({
-    want: optionValue.underlyingAssets,
-    give: optionValue.strikePrice,
+    want: customDetails.underlyingAssets,
+    give: customDetails.strikePrice,
     exit: { onDemand: null },
   });
 

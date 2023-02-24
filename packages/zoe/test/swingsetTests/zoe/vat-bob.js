@@ -75,23 +75,26 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: optionValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
+      const { customDetails } = optionValue[0];
+      assert(typeof customDetails === 'object');
+
       assert(installation === installations.coveredCall, X`wrong installation`);
       optionValue[0].description === 'exerciseOption' ||
         assert.fail(X`wrong invitation`);
       assert(
         AmountMath.isEqual(
-          optionValue[0].underlyingAssets.UnderlyingAsset,
+          customDetails.underlyingAssets.UnderlyingAsset,
           moola(3n),
         ),
       );
       assert(
         AmountMath.isEqual(
-          optionValue[0].strikePrice.StrikePrice,
+          customDetails.strikePrice.StrikePrice,
           simoleans(7n),
         ),
       );
-      assert(optionValue[0].expirationDate === 1n, X`wrong expirationDate`);
-      assert(optionValue[0].timeAuthority === timer, 'wrong timer');
+      assert(customDetails.expirationDate === 1n, X`wrong expirationDate`);
+      assert(customDetails.timeAuthority === timer, 'wrong timer');
       const { UnderlyingAsset, StrikePrice } = issuerKeywordRecord;
       UnderlyingAsset === moolaIssuer ||
         assert.fail(X`The underlying asset issuer should be the moola issuer`);
@@ -133,26 +136,28 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         exclInvitation,
       );
       const optionValue = optionAmounts.value;
+      const { customDetails } = optionValue[0];
+      assert(typeof customDetails === 'object');
 
       assert(installation === installations.coveredCall, X`wrong installation`);
       optionValue[0].description === 'exerciseOption' ||
         assert.fail(X`wrong invitation`);
       assert(
         AmountMath.isEqual(
-          optionValue[0].underlyingAssets.UnderlyingAsset,
+          customDetails.underlyingAssets.UnderlyingAsset,
           moola(3n),
         ),
         X`wrong underlying asset`,
       );
       assert(
         AmountMath.isEqual(
-          optionValue[0].strikePrice.StrikePrice,
+          customDetails.strikePrice.StrikePrice,
           simoleans(7n),
         ),
         X`wrong strike price`,
       );
-      assert(optionValue[0].expirationDate === 100n, X`wrong expiration date`);
-      assert(optionValue[0].timeAuthority === timer, X`wrong timer`);
+      assert(customDetails.expirationDate === 100n, X`wrong expiration date`);
+      assert(customDetails.timeAuthority === timer, X`wrong timer`);
       UnderlyingAsset === moolaIssuer ||
         assert.fail(X`The underlyingAsset issuer should be the moola issuer`);
       StrikePrice === simoleanIssuer ||
@@ -215,8 +220,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`issuerKeywordRecord was not as expected`,
       );
-      assert(keyEQ(invitationValue[0].minimumBid, simoleans(3n)));
-      assert(keyEQ(invitationValue[0].auctionedAssets, moola(1n)));
+      assert(
+        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
+      );
+      assert(
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
+      );
 
       const proposal = harden({
         want: { Asset: moola(1n) },
@@ -258,9 +267,9 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`issuers were not as expected`,
       );
-      keyEQ(invitationValue[0].asset, moola(3n)) ||
+      keyEQ(invitationValue[0].customDetails?.asset, moola(3n)) ||
         assert.fail(X`Alice made a different offer than expected`);
-      keyEQ(invitationValue[0].price, simoleans(7n)) ||
+      keyEQ(invitationValue[0].customDetails?.price, simoleans(7n)) ||
         assert.fail(X`Alice made a different offer than expected`);
 
       const proposal = harden({

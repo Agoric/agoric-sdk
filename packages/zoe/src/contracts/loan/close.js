@@ -60,7 +60,7 @@ export const makeCloseLoanInvitation = (zcf, config) => {
     return closeMsg;
   };
 
-  // Note: we can't put the debt to be repaid in the customProperties
+  // Note: we can't put the debt to be repaid in the customDetails
   // because it will change
   return zcf.makeInvitation(repayAndClose, 'repayAndClose');
 };

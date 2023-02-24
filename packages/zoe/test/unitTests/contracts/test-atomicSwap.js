@@ -100,12 +100,12 @@ test('zoe - atomicSwap', async t => {
           'installation is atomicSwap',
         );
         t.deepEqual(
-          invitationValue.asset,
+          invitationValue.customDetails?.asset,
           moola(3n),
           `asset to be traded is 3 moola`,
         );
         t.deepEqual(
-          invitationValue.price,
+          invitationValue.customDetails?.price,
           simoleans(7n),
           `price is 7 simoleans, so bob must give that`,
         );
@@ -265,12 +265,12 @@ test('zoe - non-fungible atomicSwap', async t => {
           'installation is atomicSwap',
         );
         t.deepEqual(
-          invitationValue.asset,
+          invitationValue.customDetails?.asset,
           calico37Amount,
           `asset to be traded is a particular crypto cat`,
         );
         t.deepEqual(
-          invitationValue.price,
+          invitationValue.customDetails?.price,
           vorpalAmount,
           `price is vorpalAmount, so bob must give that`,
         );
@@ -400,8 +400,8 @@ test('zoe - atomicSwap like-for-like', async t => {
 
   t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEqual(bobIssuers, { Asset: moolaIssuer, Price: moolaIssuer });
-  t.deepEqual(bobInvitationValue.asset, moola(3n));
-  t.deepEqual(bobInvitationValue.price, moola(7n));
+  t.deepEqual(bobInvitationValue.customDetails?.asset, moola(3n));
+  t.deepEqual(bobInvitationValue.customDetails?.price, moola(7n));
 
   const bobProposal = harden({
     give: { Price: moola(7n) },

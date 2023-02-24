@@ -54,12 +54,12 @@ export const makeStartInstance = (
       adminNode,
     }),
     {
-      makeInvitation(handle, desc, customProps, proposalShape) {
+      makeInvitation(handle, desc, customDetails, proposalShape) {
         const { state } = this;
         return state.instanceStorage.makeInvitation(
           handle,
           desc,
-          customProps,
+          customDetails,
           proposalShape,
         );
       },

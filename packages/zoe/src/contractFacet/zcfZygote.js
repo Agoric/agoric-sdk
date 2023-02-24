@@ -255,7 +255,7 @@ export const makeZCFZygote = async (
     makeInvitation: (
       offerHandler,
       description,
-      customProperties = harden({}),
+      customDetails = harden({}),
       proposalShape = undefined,
     ) => {
       typeof description === 'string' ||
@@ -271,7 +271,7 @@ export const makeZCFZygote = async (
       const invitationP = E(zoeInstanceAdmin).makeInvitation(
         invitationHandle,
         description,
-        customProperties,
+        customDetails,
         proposalShape,
       );
       return invitationP;

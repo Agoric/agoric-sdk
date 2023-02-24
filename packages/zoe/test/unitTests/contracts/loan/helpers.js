@@ -60,7 +60,7 @@ export const checkDescription = async (t, zoe, invitation, expected) => {
 export const checkDetails = async (t, zoe, invitation, expectedNullHandle) => {
   const details = await E(zoe).getInvitationDetails(invitation);
   const detailsNullHandle = { ...details, handle: null };
-  t.deepEqual(detailsNullHandle, expectedNullHandle);
+  t.like(detailsNullHandle, expectedNullHandle);
 };
 
 /**
