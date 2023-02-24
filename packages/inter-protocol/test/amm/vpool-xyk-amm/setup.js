@@ -1,7 +1,7 @@
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
-import { makeTracer } from '@agoric/internal';
+import { allValues, makeTracer } from '@agoric/internal';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
@@ -12,7 +12,6 @@ import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 
-import * as Collect from '../../../src/collect.js';
 import {
   setupAmm,
   setupReserve,
@@ -130,7 +129,7 @@ export const setupAmmServices = async (
   ]);
   await setupReserve(space);
 
-  const installs = await Collect.allValues({
+  const installs = await allValues({
     amm: installation.consume.amm,
     governor: installation.consume.contractGovernor,
     electorate: installation.consume.committee,

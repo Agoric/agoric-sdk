@@ -3,7 +3,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeParamManagerBuilder } from '@agoric/governance';
-import { makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
@@ -22,7 +22,6 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
-import * as Collect from '../../src/collect.js';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import {
@@ -115,7 +114,7 @@ test.before(async t => {
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
   // note that the liquidation might be a different bundle name
-  const bundles = await Collect.allValues({
+  const bundles = await allValues({
     faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
     liquidate: bundleCache.load(contractRoots.liquidate, 'liquidateMinimum'),
     VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),

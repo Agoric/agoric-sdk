@@ -1,7 +1,7 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
@@ -13,7 +13,6 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import * as Collect from '../../src/collect.js';
 import {
   setupAmm,
   setupReserve,
@@ -105,7 +104,7 @@ export const makeDriverContext = async () => {
 
   // note that the liquidation might be a different bundle name
   // objectMap(contractRoots, (root, k) => loader.load(root, k)),
-  const bundles = await Collect.allValues({
+  const bundles = await allValues({
     faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
     liquidate: bundleCache.load(
       contractRoots.liquidate,

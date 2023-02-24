@@ -5,10 +5,12 @@ import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
 import { asyncGenerate, makeSet } from 'jessie.js';
 
-const { entries, fromEntries } = Object;
+const { entries, fromEntries, keys, values } = Object;
 const { ownKeys } = Reflect;
 
 const { details: X, quote: q, Fail } = assert;
+
+/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
 
 /**
  * Throws if multiple entries use the same property name. Otherwise acts
@@ -214,11 +216,11 @@ export const makeAggregateError = (errors, message) => {
 
 /**
  * @template T
- * @param {readonly (T | PromiseLike<T>)[]} values
+ * @param {readonly (T | PromiseLike<T>)[]} items
  * @returns {Promise<T[]>}
  */
-export const PromiseAllOrErrors = async values => {
-  return Promise.allSettled(values).then(results => {
+export const PromiseAllOrErrors = async items => {
+  return Promise.allSettled(items).then(results => {
     const errors = /** @type {PromiseRejectedResult[]} */ (
       results.filter(({ status }) => status === 'rejected')
     ).map(result => result.reason);
@@ -328,3 +330,13 @@ export const untilTrue = produce =>
       value,
     });
   });
+
+/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+export const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
+
+/** @type { <T extends Record<string, ERef<any>>>(obj: T) => Promise<{ [K in keyof T]: Awaited<T[K]>}> } */
+export const allValues = async obj => {
+  const resolved = await Promise.all(values(obj));
+  // @ts-expect-error cast
+  return harden(fromEntries(zip(keys(obj), resolved)));
+};

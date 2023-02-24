@@ -15,8 +15,7 @@ import {
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { importBundle } from '@endo/import-bundle';
-import * as Collect from '@agoric/inter-protocol/src/collect.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
@@ -277,7 +276,7 @@ export const setupClientManager = async (
       /** @type {ClientFacet} */
       const clientFacet = Far('chainProvisioner', {
         getChainBundle: () =>
-          bundleReady.promise.then(_ => Collect.allValues(clientHome)),
+          bundleReady.promise.then(_ => allValues(clientHome)),
         getConfiguration: () => notifier,
       });
 
