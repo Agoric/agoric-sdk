@@ -419,6 +419,13 @@ export async function initializeSwingset(
   // kconfig.idToBundle.BUNDLEID=bundle
 
   async function getBundle(desc, mode, nameToBundle) {
+    trace(
+      'getBundle',
+      mode,
+      Object.keys(desc),
+      desc.moduleFormat,
+      desc.endoZipBase64Sha512 || desc.sourceSpec,
+    );
     if (mode === 'bundle') {
       return desc.bundle;
     } else if (mode === 'bundleSpec') {
