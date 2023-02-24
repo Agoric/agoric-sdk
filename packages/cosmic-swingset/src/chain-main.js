@@ -22,6 +22,7 @@ import {
   makeSerializeToStorage,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
@@ -333,6 +334,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     );
     const vatconfig = new URL(vatHref).pathname;
 
+    // Delay makeShutdown to override the golang interrupts
+    const { registerShutdown } = makeShutdown();
+
     const { metricsProvider } = getTelemetryProviders({
       console,
       env,
@@ -438,7 +442,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       afterCommitCallback,
     });
 
-    ({ blockingSend, writeSlogObject, savedChainSends } = s);
+    let shutdown;
+    ({ blockingSend, shutdown, writeSlogObject, savedChainSends } = s);
+
+    registerShutdown(shutdown);
 
     return blockingSend;
   }
