@@ -32,6 +32,7 @@ const { Fail, quote: q } = assert;
 /**
  * @typedef {(powers: *, config?: *) => Promise<void>} BootBehavior
  * @typedef {Record<string, unknown>} ModuleNamespace
+ * @typedef {{ utils: typeof import('./utils.js') } & Record<string, Record<string, any>>} BootModules
  */
 
 /** @type {<X>(a: X[], b: X[]) => X[]} */
@@ -45,7 +46,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {Record<string, unknown>} vatParameters
  * @param {BootstrapManifest} bootManifest
  * @param {Record<string, BootBehavior>} behaviors
- * @param {Record<string, ModuleNamespace>} modules
+ * @param {BootModules} modules
  */
 export const makeBootstrap = (
   vatPowers,
