@@ -6,10 +6,10 @@ import {
 
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { Resource } from '@opentelemetry/resources';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import { getResourceAttributes } from './index.js';
 import { makeSlogToOtelKit } from './slog-to-otel.js';
-import { makeShutdown } from './shutdown.js';
 
 // These numbers are chosen to attempt to export all spans.
 export const SPAN_MAX_QUEUE_SIZE = 100_000;
