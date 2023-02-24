@@ -41,7 +41,7 @@ export const customTermsShape = harden({
  */
 
 /**
- * wrapper to take the vaultFactory or AMM's creatorFacet, and make a call that
+ * wrapper to take the vaultFactory's creatorFacet, and make a call that
  * will request an invitation and return a promise for a payment.
  *
  * @param {ERef<ZoeService>} zoe

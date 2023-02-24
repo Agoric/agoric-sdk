@@ -36,10 +36,6 @@ const installKeyGroups = {
     ],
   },
   main: {
-    amm: [
-      '../src/vpool-xyk-amm/multipoolMarketMaker.js',
-      '../bundles/bundle-amm.js',
-    ],
     interchainPool: [
       '../src/interchainPool.js',
       '../bundles/bundle-interchainPool.js',
@@ -51,14 +47,6 @@ const installKeyGroups = {
     feeDistributor: [
       '../src/feeDistributor.js',
       '../bundles/bundle-feeDistributor.js',
-    ],
-    liquidateMinimum: [
-      '../src/vaultFactory/liquidateMinimum.js',
-      '../bundles/bundle-liquidateMinimum.js',
-    ],
-    liquidate: [
-      '../src/vaultFactory/liquidateIncrementally.js',
-      '../bundles/bundle-liquidateIncrementally.js',
     ],
     reserve: ['../src/reserve/assetReserve.js', '../bundles/bundle-reserve.js'],
   },

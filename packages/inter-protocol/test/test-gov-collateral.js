@@ -457,7 +457,7 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  // await s.benefactor.makePool(2000n, 1000n);
+
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -472,7 +472,7 @@ test('voters get invitations', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  // await s.benefactor.makePool();
+
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -499,7 +499,7 @@ test('voters get invitations', async t => {
   );
 });
 
-test('assets are in AMM, Vaults', async t => {
+test('assets are in Vaults', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   await s.provisionMembers();
@@ -517,11 +517,6 @@ test('assets are in AMM, Vaults', async t => {
   } = s.space;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
   const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
-
-  /** @type { ERef<XYKAMMPublicFacet> } */
-  const ammAPI = instanceP.amm.then(i => E(zoe).getPublicFacet(i));
-  const ammStuff = await E(ammAPI).getAllPoolBrands();
-  t.deepEqual(ammStuff, [brand]);
 
   /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
   const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));

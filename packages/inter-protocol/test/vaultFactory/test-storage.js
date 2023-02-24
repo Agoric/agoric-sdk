@@ -60,7 +60,6 @@ test('storage keys', async t => {
       'numActiveVaults',
       'numLiquidatingVaults',
       'numLiquidationsCompleted',
-      'retainedCollateral',
       'totalCollateral',
       'totalCollateralSold',
       'totalDebt',

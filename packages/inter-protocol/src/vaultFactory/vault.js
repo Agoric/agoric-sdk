@@ -137,9 +137,7 @@ const allocationsChangedSinceQuote = (
   if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
     // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
     // We can pro-rate maxDebt because the quote is either linear (price is
-    // unchanging) or super-linear (also called "convex"). Super-linear is from
-    // AMMs: selling less collateral would mean an even smaller price impact, so
-    // this is a conservative choice.
+    // unchanging) or super-linear (also called "convex").
     const debtPerCollateral = makeRatioFromAmounts(
       maxDebtPre,
       newCollateralPre,

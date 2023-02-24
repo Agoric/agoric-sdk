@@ -1,7 +1,6 @@
 import { Stable } from '@agoric/vats/src/tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
-import * as simBehaviors from './sim-behaviors.js';
 
 export * from './econ-behaviors.js';
 export * from './sim-behaviors.js';
@@ -13,40 +12,6 @@ export * from './startEconCommittee.js'; // eslint-disable-line import/export
 /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
   /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifestPermit} */
-  [econBehaviors.setupAmm.name]: {
-    consume: {
-      board: 'board',
-      chainStorage: true,
-      chainTimerService: 'timer',
-      zoe: 'zoe',
-      economicCommitteeCreatorFacet: 'economicCommittee',
-    },
-    produce: { ammKit: 'amm' },
-    issuer: { consume: { [Stable.symbol]: 'zoe' } },
-    brand: { consume: { [Stable.symbol]: 'zoe' } },
-    installation: {
-      consume: { contractGovernor: 'zoe', amm: 'zoe' },
-    },
-    instance: {
-      produce: { ammGovernor: 'ammGovernor' },
-    },
-  },
-  [econBehaviors.startInterchainPool.name]: {
-    consume: { bankManager: 'bank', zoe: 'zoe', agoricNamesAdmin: true },
-    installation: {
-      consume: { interchainPool: 'zoe' },
-    },
-    brand: {
-      consume: { [Stable.symbol]: 'zoe' },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: 'zoe' },
-    },
-    instance: {
-      consume: { amm: 'amm' },
-      produce: { interchainPool: 'interchainPool' },
-    },
-  },
   [econBehaviors.startVaultFactory.name]: {
     consume: {
       board: 'board',
@@ -65,12 +30,10 @@ const SHARED_MAIN_MANIFEST = harden({
       consume: {
         contractGovernor: 'zoe',
         VaultFactory: 'zoe',
-        liquidate: 'zoe',
       },
     },
     instance: {
       consume: {
-        amm: 'amm',
         reserve: 'reserve',
       },
       produce: {
@@ -90,7 +53,6 @@ const SHARED_MAIN_MANIFEST = harden({
 
   [econBehaviors.setupReserve.name]: {
     consume: {
-      ammKit: 'amm',
       board: 'board',
       chainStorage: true,
       feeMintAccess: 'zoe',
@@ -105,9 +67,7 @@ const SHARED_MAIN_MANIFEST = harden({
       consume: { contractGovernor: 'zoe', reserve: 'zoe' },
     },
     instance: {
-      consume: { amm: 'amm' },
       produce: {
-        amm: 'amm',
         reserve: 'reserve',
         reserveGovernor: 'ReserveGovernor',
       },
@@ -122,7 +82,6 @@ const REWARD_MANIFEST = harden({
       bankManager: true,
       vaultFactoryKit: true,
       periodicFeeCollectors: true,
-      ammKit: true,
       stakeFactoryKit: true,
       reserveKit: true,
       zoe: true,
@@ -174,35 +133,7 @@ const STAKE_FACTORY_MANIFEST = harden({
   },
 });
 
-export const SIM_CHAIN_MANIFEST = harden({
-  [simBehaviors.fundAMM.name]: {
-    consume: {
-      centralSupplyBundle: true,
-      mintHolderBundle: true,
-      chainTimerService: 'timer',
-      bldIssuerKit: true,
-      feeMintAccess: true,
-      loadVat: true,
-      mints: 'mints',
-      priceAuthorityVat: 'priceAuthority',
-      priceAuthorityAdmin: 'priceAuthority',
-      vaultFactoryKit: 'VaultFactory',
-      zoe: true,
-    },
-    installation: {
-      consume: { centralSupply: 'zoe' },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: 'zoe' },
-    },
-    brand: {
-      consume: { [Stable.symbol]: 'zoe' },
-    },
-    instance: {
-      consume: { amm: 'amm' },
-    },
-  },
-});
+export const SIM_CHAIN_MANIFEST = harden({});
 
 export const getManifestForEconCommittee = (
   { restoreRef },
@@ -233,10 +164,8 @@ export const getManifestForMain = (
   return {
     manifest: SHARED_MAIN_MANIFEST,
     installations: {
-      amm: restoreRef(installKeys.amm),
       VaultFactory: restoreRef(installKeys.vaultFactory),
       feeDistributor: restoreRef(installKeys.feeDistributor),
-      liquidate: restoreRef(installKeys.liquidate),
       reserve: restoreRef(installKeys.reserve),
       interchainPool: restoreRef(installKeys.interchainPool),
     },

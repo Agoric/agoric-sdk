@@ -25,7 +25,6 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import {
-  setupAmm,
   setupReserve,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
@@ -62,9 +61,7 @@ const test = unknownTest;
 
 const contractRoots = {
   faucet: './test/vaultFactory/faucet.js',
-  liquidate: './src/vaultFactory/liquidateMinimum.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
-  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
   reserve: './src/reserve/assetReserve.js',
 };
 
@@ -116,9 +113,7 @@ test.before(async t => {
   // note that the liquidation might be a different bundle name
   const bundles = await allValues({
     faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
-    liquidate: bundleCache.load(contractRoots.liquidate, 'liquidateMinimum'),
     VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: bundleCache.load(contractRoots.amm, 'amm'),
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
@@ -149,77 +144,23 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-/**
- * @param {import('ava').ExecutionContext<Context>} t
- * @param {*} aethLiquidity
- * @param {*} runLiquidity
- */
-const setupAmmAndElectorateAndReserve = async (
-  t,
-  aethLiquidity,
-  runLiquidity,
-) => {
+/** @param {import('ava').ExecutionContext<Context>} t */
+const setupElectorateAndReserve = async t => {
   const {
     zoe,
-    aeth,
     electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
     timer,
   } = t.context;
 
   const space = setupBootstrap(t, timer);
-  const { consume, instance } = space;
   installPuppetGovernance(zoe, space.installation.produce);
   produceInstallations(space, t.context.installation);
 
   await startEconomicCommittee(space, electorateTerms);
-  await setupAmm(space, {
-    options: { minInitialPoolLiquidity: 300n },
-  });
 
-  // AMM needs the reserve in order to function
   await setupReserve(space);
 
-  const governorCreatorFacet = E.get(consume.ammKit).governorCreatorFacet;
-  const governorInstance = await instance.consume.ammGovernor;
-  const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
-  const governedInstance = E(governorPublicFacet).getGovernedContract();
-
-  /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
-  const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
-
-  const liquidityIssuer = await E(ammPublicFacet).addIssuer(
-    aeth.issuer,
-    'Aeth',
-  );
-  const liquidityBrand = await E(liquidityIssuer).getBrand();
-
-  const liqProposal = harden({
-    give: {
-      Secondary: aethLiquidity.proposal,
-      Central: runLiquidity.proposal,
-    },
-    want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
-  });
-  const liqInvitation = await E(ammPublicFacet).addPoolInvitation();
-
-  const ammLiquiditySeat = await E(zoe).offer(
-    liqInvitation,
-    liqProposal,
-    harden({
-      Secondary: aethLiquidity.payment,
-      Central: runLiquidity.payment,
-    }),
-  );
-
-  // TODO get the creator directly
-  const newAmm = {
-    ammCreatorFacet: await E.get(consume.ammKit).creatorFacet,
-    ammPublicFacet,
-    instance: governedInstance,
-    ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
-  };
-
-  return { amm: newAmm, space };
+  return { space };
 };
 
 /**
@@ -280,7 +221,7 @@ const legacyOfferResult = vaultSeat => {
 };
 
 /**
- * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {import('ava').ExecutionContext<Context>} t
  * @param {Array<NatValue> | Ratio} priceOrList
@@ -297,38 +238,16 @@ const setupServices = async (
   quoteInterval = 1n,
   runInitialLiquidity,
 ) => {
-  const {
-    zoe,
-    run,
-    aeth,
-    loanTiming,
-    minInitialDebt,
-    endorsedUi,
-    rates,
-    aethInitialLiquidity,
-  } = t.context;
+  const { zoe, run, aeth, loanTiming, minInitialDebt, endorsedUi, rates } =
+    t.context;
   t.context.timer = timer;
 
   const runPayment = await getRunFromFaucet(t, runInitialLiquidity);
   trace(t, 'faucet', { runInitialLiquidity, runPayment });
 
-  const runLiquidity = {
-    proposal: harden(run.make(runInitialLiquidity)),
-    payment: runPayment,
-  };
-
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aeth.mint.mintPayment(aethInitialLiquidity),
-  };
-  const { amm: ammKit, space } = await setupAmmAndElectorateAndReserve(
-    t,
-    aethLiquidity,
-    runLiquidity,
-  );
+  const { space } = await setupElectorateAndReserve(t);
 
   const { consume, produce } = space;
-  trace(t, 'amm', { ammKit });
 
   const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
   // Cheesy hack for easy use of manual price authority
@@ -420,15 +339,9 @@ const setupServices = async (
     zoe,
     governor: g,
     vaultFactory: v,
-    ammKit,
     runKit: { issuer: run.issuer, brand: run.brand },
     priceAuthority,
     reserveKit,
-    /** @param {Brand<'nat'>} baseBrand */
-    getLiquidityBrand: baseBrand =>
-      E(ammKit.ammPublicFacet)
-        .getLiquidityIssuer(baseBrand)
-        .then(liqIssuer => E(liqIssuer).getBrand()),
   };
 };
 
@@ -447,7 +360,7 @@ test('first', async t => {
     undefined,
     500n,
   );
-  const { vaultFactory, lender, aethVaultManager } = services.vaultFactory;
+  const { vaultFactory, lender } = services.vaultFactory;
   trace(t, 'services', { services, vaultFactory, lender });
 
   // Create a loan for 470 Minted with 1100 aeth collateral
@@ -465,10 +378,7 @@ test('first', async t => {
     }),
   );
 
-  const {
-    vault,
-    publicNotifiers: { vault: vaultNotifier },
-  } = await legacyOfferResult(vaultSeat);
+  const { vault } = await legacyOfferResult(vaultSeat);
   const debtAmount = await E(vault).getCurrentDebt();
   const fee = ceilMultiplyBy(run.make(470n), rates.loanFee);
   t.deepEqual(
@@ -533,22 +443,13 @@ test('first', async t => {
     'received no run',
   );
 
-  await E(aethVaultManager).liquidateAll();
-  const { value: afterLiquidation } = await E(vaultNotifier).getUpdateSince();
-  t.is(afterLiquidation.vaultState, Phase.LIQUIDATED);
-  t.is((await E(vault).getCurrentDebt()).value, 0n, 'debt is paid off');
-  t.deepEqual(
-    await E(vault).getCollateralAmount(),
-    aeth.make(440n),
-    'unused collateral remains after liquidation',
-  );
-
   t.deepEqual(await E(vaultFactory).getRewardAllocation(), {
     Minted: run.make(24n),
   });
 });
 
-test('price drop', async t => {
+// TODO (7047) reinstate when vaults can use auction
+test.skip('price drop', async t => {
   const { zoe, aeth, run, rates } = t.context;
 
   const manualTimer = buildManualTimer(t.log);
@@ -696,7 +597,8 @@ test('price drop', async t => {
   t.deepEqual(await E(vault).getCollateralAmount(), aeth.makeEmpty());
 });
 
-test('price falls precipitously', async t => {
+// TODO (7047) reinstate when vaults can use auction
+test.skip('price falls precipitously', async t => {
   const { zoe, aeth, run, rates } = t.context;
   t.context.loanTiming = {
     chargingPeriod: 2n,
@@ -760,20 +662,6 @@ test('price falls precipitously', async t => {
     await E(vault).getCollateralAmount(),
     aeth.make(400n),
     'vault holds 400 Collateral',
-  );
-
-  // Sell some Eth to drive the value down
-  const swapInvitation = E(services.ammKit.ammPublicFacet).makeSwapInvitation();
-  const proposal = harden({
-    give: { In: aeth.make(200n) },
-    want: { Out: run.makeEmpty() },
-  });
-  await E(zoe).offer(
-    await swapInvitation,
-    proposal,
-    harden({
-      In: aeth.mint.mintPayment(aeth.make(200n)),
-    }),
   );
 
   const assertDebtIs = async value => {
@@ -1729,7 +1617,9 @@ test('overdeposit', async t => {
 // Both loans will initially be over collateralized 100%. Alice will withdraw
 // enough of the overage that she'll get caught when prices drop. Bob will be
 // charged interest (twice), which will trigger liquidation.
-test('mutable liquidity triggers and interest', async t => {
+
+// TODO (7047) reinstate when vaults can use auction
+test.skip('mutable liquidity triggers and interest', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
   t.context.aethInitialLiquidity = aeth.make(90_000_000n);
 
@@ -1975,7 +1865,8 @@ test('bad chargingPeriod', async t => {
   );
 });
 
-test('collect fees from loan and AMM', async t => {
+// TODO (7047) reinstate when vaults can use auction
+test.skip('collect fees from loan and AMM', async t => {
   const { zoe, aeth, run, rates } = t.context;
 
   t.context.aethInitialLiquidity = aeth.make(900n);
@@ -2035,34 +1926,10 @@ test('collect fees from loan and AMM', async t => {
     Minted: run.make(24n),
   });
 
-  const amm = services.ammKit.ammPublicFacet;
-  const swapAmount = aeth.make(60000n);
-  const swapSeat = await E(zoe).offer(
-    E(amm).makeSwapInInvitation(),
-    harden({
-      give: { In: swapAmount },
-      want: { Out: run.makeEmpty() },
-    }),
-    harden({
-      In: aeth.mint.mintPayment(swapAmount),
-    }),
-  );
-
-  const payouts = await E(swapSeat).getPayouts();
-  const inAmount = await E(aeth.issuer).getAmountOf(await payouts.In);
-  t.truthy(AmountMath.isGTE(aeth.make(60000n), inAmount));
-  const outAmount = await E(run.issuer).getAmountOf(await payouts.Out);
-  t.truthy(AmountMath.isGTE(outAmount, run.makeEmpty()));
-
-  const feePoolBalance = await E(amm).getProtocolPoolBalance();
   const collectFeesSeat = await E(zoe).offer(
     E(vaultFactory).makeCollectFeesInvitation(),
   );
   await E(collectFeesSeat).getOfferResult();
-  const feePayoutAmount = await E.get(E(collectFeesSeat).getFinalAllocation())
-    .Fee;
-  trace(t, 'Fee', feePoolBalance, feePayoutAmount);
-  t.truthy(AmountMath.isGTE(feePayoutAmount, feePoolBalance.Fee));
 });
 
 test('close loan', async t => {
@@ -2253,7 +2120,9 @@ test('excessive debt on collateral type - debtLimit', async t => {
 // prices drop. Bob will be charged interest (twice), which will trigger
 // liquidation. Alice's withdrawal is precisely gauged so the difference between
 // a floorDivideBy and a ceilingDivideBy will leave her unliquidated.
-test('mutable liquidity sensitivity of triggers and interest', async t => {
+
+// TODO (7047) reinstate when vaults can use auction
+test.skip('mutable liquidity sensitivity of triggers and interest', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
 
   t.context.loanTiming = {
@@ -2524,7 +2393,8 @@ test('director notifiers', async t => {
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
 });
 
-test('manager notifiers', async t => {
+// TODO (7047) reinstate when vaults can use auction
+test.skip('manager notifiers', async t => {
   const LOAN1 = 450n;
   const DEBT1 = 473n; // with penalty
   const LOAN2 = 50n;
@@ -2568,7 +2438,6 @@ test('manager notifiers', async t => {
     numLiquidatingVaults: 0,
     totalCollateral: aeth.make(0n),
     totalDebt: run.make(0n),
-    retainedCollateral: aeth.make(0n),
 
     // running
     numLiquidationsCompleted: 0,
@@ -2614,7 +2483,6 @@ test('manager notifiers', async t => {
   });
 
   trace('3. Liquidate all (1 loan)');
-  await E(aethVaultManager).liquidateAll();
   let totalProceedsReceived = 474n;
   let totalOverageReceived = totalProceedsReceived - DEBT1;
   await m.assertChange({
@@ -2668,7 +2536,6 @@ test('manager notifiers', async t => {
   m.addDebt(DEBT2);
 
   trace('6. Liquidate all (2 loans)');
-  await E(aethVaultManager).liquidateAll();
   totalProceedsReceived += 54n;
   totalOverageReceived += 54n - DEBT2;
   await m.assertChange({
@@ -2710,7 +2577,6 @@ test('manager notifiers', async t => {
   m.addDebt(DEBT2);
 
   trace('8. Liquidate all');
-  await E(aethVaultManager).liquidateAll();
   totalProceedsReceived += 53n;
   await m.assertChange({
     numLiquidationsCompleted: 4,
@@ -2765,7 +2631,6 @@ test('manager notifiers', async t => {
   trace('10. Liquidate all including interest');
 
   // liquidateAll executes in parallel, allowing the two burns to complete before the proceed calculations begin
-  await E(aethVaultManager).liquidateAll();
   let nextProceeds = 53n;
   totalProceedsReceived += nextProceeds;
   await m.assertChange({
@@ -2878,8 +2743,6 @@ test('governance publisher', async t => {
   } = await directorGovNotifier.getUpdateSince();
   // can't deepEqual because of non-literal objects
   t.is(current.Electorate.type, 'invitation');
-  t.is(current.LiquidationInstall.type, 'installation');
-  t.is(current.LiquidationTerms.type, 'unknown');
   t.is(current.MinInitialDebt.type, 'amount');
   t.is(current.ShortfallInvitation.type, 'invitation');
   t.is(current.EndorsedUI.type, 'string');

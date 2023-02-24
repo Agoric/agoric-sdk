@@ -9,8 +9,6 @@ import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
 
-import liquidateMinimumBundle from '../../../bundles/bundle-liquidateMinimum.js';
-import ammBundle from '../../../bundles/bundle-amm.js';
 import vaultFactoryBundle from '../../../bundles/bundle-vaultFactory.js';
 
 /** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
@@ -54,8 +52,6 @@ test.before(async t => {
   const kernelBundles = await buildKernelBundles();
 
   const contractBundles = {
-    liquidateMinimum: liquidateMinimumBundle,
-    amm: ammBundle,
     vaultFactory: vaultFactoryBundle,
     committee: committeeBundle,
     contractGovernor: contractGovernorBundle,

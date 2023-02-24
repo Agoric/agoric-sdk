@@ -101,12 +101,6 @@
  */
 
 /**
- * @typedef {object} AMMFees
- * @property {bigint} poolFee
- * @property {bigint} protocolFee
- */
-
-/**
  * @typedef {object} LiquidationStrategy
  * @property {() => KeywordKeywordRecord} keywordMapping
  * @property {(collateral: Amount, run: Amount) => Proposal} makeProposal

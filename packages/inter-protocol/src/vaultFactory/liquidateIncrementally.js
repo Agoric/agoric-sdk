@@ -48,7 +48,7 @@ const trace = makeTracer('LiqI', false);
 
 /**
  * @typedef {{
- *   amm: XYKAMMPublicFacet,
+ *   amm: any,
  *   priceAuthority: PriceAuthority,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: import('@agoric/time/src/types').TimerService,

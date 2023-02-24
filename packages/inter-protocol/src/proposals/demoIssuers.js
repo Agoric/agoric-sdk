@@ -461,19 +461,16 @@ export const poolRates = (issuerName, record, kits, central) => {
  *   consume: { mints }
  * }} powers
  */
+// XXX Is this dead? I can't find references to it. It seems to do more than
+// fund the AMM, and I don't know if it's needed somewhere.
 export const fundAMM = async ({
   consume: {
     bldIssuerKit,
     chainTimerService,
-    feeMintAccess,
     mints,
     priceAuthorityVat,
     priceAuthorityAdmin,
     vaultFactoryKit,
-    zoe,
-  },
-  installation: {
-    consume: { centralSupply: centralSupplyInstall },
   },
   issuer: {
     consume: { IST: centralIssuer },
@@ -481,13 +478,7 @@ export const fundAMM = async ({
   brand: {
     consume: { IST: centralBrand },
   },
-  instance: {
-    consume: { amm: ammInstance },
-  },
 }) => {
-  const { ammTotal: ammDepositValue, balances } =
-    ammPoolRunDeposits(AMMDemoState);
-
   const vats = { mints, priceAuthority: priceAuthorityVat };
 
   const kits = await allValues(
@@ -515,25 +506,10 @@ export const fundAMM = async ({
     kits[Stable.symbol]
   );
 
-  /** @type {[ XYKAMMPublicFacet, import('@agoric/time/src/types').TimerService]} */
-  const [ammPublicFacet, timer] = await Promise.all([
-    E(zoe).getPublicFacet(ammInstance),
-    chainTimerService,
-  ]);
-
-  const ammBootstrapPayment = await mintRunPayment(ammDepositValue, {
-    centralSupplyInstall,
-    feeMintAccess,
-    zoe,
-  });
+  /** @type {import('@agoric/time/src/types').TimerService} */
+  const timer = await chainTimerService;
 
   async function addAllCollateral() {
-    const issuerMap = await splitAllCentralPayments(
-      ammBootstrapPayment,
-      balances,
-      central,
-    );
-
     return Promise.all(
       entries(AMMDemoState).map(async ([issuerName, record]) => {
         if (!record.config) {
@@ -556,29 +532,6 @@ export const fundAMM = async ({
         );
         secondaryPayment || Fail`no payment for ${q(issuerName)}`;
         kit.issuer || Fail`No issuer for ${q(issuerName)}`;
-        const liquidityIssuer = /** @type {Promise<Issuer<'nat'>>} */ (
-          E(ammPublicFacet).addIssuer(kit.issuer, issuerName)
-        );
-        const [secondaryAmount, liquidityBrand] = await Promise.all([
-          // Error: (an undefined) was not a live payment for brand
-          //  at (.../vats/src/demoIssuers.js:591)
-          E(kit.issuer).getAmountOf(secondaryPayment),
-          E(liquidityIssuer).getBrand(),
-        ]);
-        const centralAmount = issuerMap[issuerName].amount;
-        const proposal = harden({
-          want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
-          give: { Secondary: secondaryAmount, Central: centralAmount },
-        });
-
-        await E(zoe).offer(
-          E(ammPublicFacet).addPoolInvitation(),
-          proposal,
-          harden({
-            Secondary: secondaryPayment,
-            Central: issuerMap[issuerName].payment,
-          }),
-        );
 
         const issuerPresence = await kit.issuer;
         return E(E.get(vaultFactoryKit).creatorFacet).addVaultType(
@@ -606,13 +559,11 @@ export const fundAMM = async ({
 
   await addAllCollateral();
 
-  const brandsWithPriceAuthorities = await E(ammPublicFacet).getAllPoolBrands();
-
   await Promise.all(
     // TODO: exactly what is the list of things to iterate here?
     entries(AMMDemoState).map(async ([issuerName, record]) => {
       // Create priceAuthority pairs for centralIssuer based on the
-      // AMM or FakePriceAuthority.
+      // FakePriceAuthority.
       console.debug(`Creating ${issuerName}-${Stable.symbol}`);
       const issuer = kits[issuerName].issuer;
       const { trades } = record;
@@ -629,15 +580,6 @@ export const fundAMM = async ({
       const brand = await E(issuer).getBrand();
       let toCentral;
       let fromCentral;
-
-      if (brandsWithPriceAuthorities.includes(brand)) {
-        ({ toCentral, fromCentral } = await E(ammPublicFacet)
-          .getPriceAuthorities(brand)
-          .catch(_e => {
-            // console.warn('could not get AMM priceAuthorities', _e);
-            return { toCentral: undefined, fromCentral: undefined };
-          }));
-      }
 
       if (!fromCentral && tradesGivenCentral) {
         // We have no amm from-central price authority, make one from trades.

@@ -140,11 +140,11 @@
  *     'walletFactory' | 'provisionPool' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
+ *     'VaultFactory' | 'liquidate' | 'stakeFactory' |
  *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'interchainPool' | 'priceAggregator',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' |
- *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
+ *     'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
  *     'econCommitteeCharter' | 'interchainPool' |
  *     'walletFactory' | 'provisionPool' |

@@ -170,13 +170,13 @@ export const mintRunPayment = async (
 ) => {
   const feeMintAccess = await feeMintAccessP;
 
-  const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
+  const { creatorFacet: bootstrapSupplier } = await E(zoe).startInstance(
     centralSupply,
     {},
     { bootstrapPaymentValue: value },
     { feeMintAccess },
   );
-  return E(ammSupplier).getBootstrapPayment();
+  return E(bootstrapSupplier).getBootstrapPayment();
 };
 
 /**

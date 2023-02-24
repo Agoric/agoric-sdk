@@ -3,8 +3,6 @@
 // eslint-disable-next-line import/order
 import '../../tools/prepare-test-env.js';
 
-// eslint-disable-next-line import/order
-import bundleSource from '@endo/bundle-source';
 import { xsnap } from '@agoric/xsnap';
 import * as proc from 'child_process';
 import * as os from 'os';
@@ -50,11 +48,6 @@ async function run() {
   const bootFn = new URL('measurement-bootstrap.js', import.meta.url).pathname;
   const targetFn = new URL('measurement-target.js', import.meta.url).pathname;
   const zoeFn = new URL('measurement-zoe.js', import.meta.url).pathname;
-  const autoswapFn = new URL(
-    '../../../inter-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js',
-    import.meta.url,
-  ).pathname;
-  const autoswapBundle = await bundleSource(autoswapFn);
   const config = {
     defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
@@ -139,8 +132,9 @@ async function run() {
   const zoeInstallVaultFactory = await doCounted('zoeInstallVaultFactory');
   console.log(`zoe install (vaultFactory): ${zoeInstallVaultFactory}`);
 
-  const zoeInstallAMM = await doCounted('zoeInstallBundle', [autoswapBundle]);
-  console.log(`zoe install (AMM): ${zoeInstallAMM}`);
+  // XXX  Does this need to be replace by something else in order to be useful?
+  // const zoeInstallAMM = await doCounted('zoeInstallBundle', [autoswapBundle]);
+  // console.log(`zoe install (AMM): ${zoeInstallAMM}`);
   const zoeInstantiate = await doCounted('zoeInstantiate');
   console.log(`zoe instantiate (AMM): ${zoeInstantiate}`);
 

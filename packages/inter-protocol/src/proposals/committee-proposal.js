@@ -75,9 +75,9 @@ harden(startEconCharter);
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, ammKit, vaultFactoryKit, econCharterKit },
+  consume: { reserveKit, vaultFactoryKit, econCharterKit },
   instance: {
-    consume: { amm, reserve, VaultFactory },
+    consume: { reserve, VaultFactory },
   },
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
@@ -85,7 +85,6 @@ export const addGovernorsToEconCharter = async ({
   // Introduce charter to governed creator facets.
   await Promise.all(
     [
-      { instanceP: amm, facetP: E.get(ammKit).governorCreatorFacet },
       { instanceP: reserve, facetP: E.get(reserveKit).governorCreatorFacet },
       {
         instanceP: VaultFactory,
@@ -148,7 +147,6 @@ export const getManifestForInviteCommittee = async (
       [addGovernorsToEconCharter.name]: {
         consume: {
           reserveGovernorCreatorFacet: t,
-          ammGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
           econCharterKit: t,
           zoe: t,
@@ -156,14 +154,13 @@ export const getManifestForInviteCommittee = async (
           namesByAddressAdmin: t,
           economicCommitteeCreatorFacet: t,
           reserveKit: t,
-          ammKit: t,
           vaultFactoryKit: t,
         },
         installation: {
           consume: { binaryVoteCounter: t },
         },
         instance: {
-          consume: { amm: t, reserve: t, VaultFactory: t },
+          consume: { reserve: t, VaultFactory: t },
         },
       },
       [inviteToEconCharter.name]: {

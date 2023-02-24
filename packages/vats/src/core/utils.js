@@ -46,7 +46,6 @@ export const agoricNamesReserved = harden({
     committee: 'committee electorate',
     noActionElectorate: 'no action electorate',
     binaryVoteCounter: 'binary vote counter',
-    amm: 'Automated Market Maker',
     VaultFactory: 'vault factory',
     feeDistributor: 'fee distributor',
     liquidate: 'liquidate',
@@ -60,8 +59,6 @@ export const agoricNamesReserved = harden({
   },
   instance: {
     economicCommittee: 'Economic Committee',
-    amm: 'Automated Market Maker',
-    ammGovernor: 'AMM Governor',
     VaultFactory: 'vault factory',
     feeDistributor: 'fee distributor',
     Treasury: 'Treasury', // for compatibility
@@ -69,7 +66,7 @@ export const agoricNamesReserved = harden({
     stakeFactory: 'stakeFactory',
     stakeFactoryGovernor: 'stakeFactory governor',
     Pegasus: 'remote peg',
-    reserve: 'collateal reserve',
+    reserve: 'collateral reserve',
     reserveGovernor: 'ReserveGovernor',
     econCommitteeCharter: 'Charter for Econ Governance questions',
     interchainPool: 'interchainPool',

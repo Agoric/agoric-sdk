@@ -23,13 +23,6 @@ test('uist -> IST formatting test utility', t => {
   t.is(showIST(3286010000000000n), '3_286_010_000 IST', 'regression 1');
 });
 
-test('ammPoolRunDeposits: check total, WETH', t => {
-  const actual = ammPoolRunDeposits(AMMDemoState);
-  // t.log(actual);
-  t.deepEqual(showIST(actual.ammTotal), '3_380_790_000 IST');
-  t.deepEqual(showIST(actual.balances.WETH), '3_286_010_000 IST');
-});
-
 test('splitAllCentralPayments: count entries, spot check', async t => {
   const central = makeIssuerKit(
     Stable.symbol,

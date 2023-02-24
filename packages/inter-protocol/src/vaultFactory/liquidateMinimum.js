@@ -19,7 +19,7 @@ const trace = makeTracer('LiqMin', false);
  * uses the AMM's swapIn instead.
  *
  * @param {ZCF<{
- *   amm: XYKAMMPublicFacet,
+ *   amm: any,
  * }>} zcf
  */
 const start = async zcf => {

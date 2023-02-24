@@ -26,17 +26,14 @@ const setupBasicMints = () => {
 };
 
 const installContracts = async (zoe, cb) => {
-  const [liquidateMinimum, vaultFactory, electorate, counter, governor] =
-    await Promise.all([
-      E(zoe).install(cb.liquidateMinimum),
-      E(zoe).install(cb.vaultFactory),
-      E(zoe).install(cb.committee),
-      E(zoe).install(cb.binaryVoteCounter),
-      E(zoe).install(cb.contractGovernor),
-    ]);
+  const [vaultFactory, electorate, counter, governor] = await Promise.all([
+    E(zoe).install(cb.vaultFactory),
+    E(zoe).install(cb.committee),
+    E(zoe).install(cb.binaryVoteCounter),
+    E(zoe).install(cb.contractGovernor),
+  ]);
 
   const installations = {
-    liquidateMinimum,
     vaultFactory,
     electorate,
     counter,
@@ -213,7 +210,6 @@ const buildOwner = async (
     {
       priceAuthority: priceAuthorityKit.priceAuthority,
       loanTiming,
-      liquidationInstall: installations.liquidateMinimum,
       timer,
       electorateInvitationAmount: poserInvitationAmount,
       ammPublicFacet: ammMock,
