@@ -9,6 +9,13 @@ publication of the SDK and its individual packages.
 
 ### Prerequisites
 
+#### Build Environment
+
+Follow the instructions at the [getting started
+guide](https://docs.agoric.com/guides/getting-started/) to install
+the correct versions of `node`, `yarn`, and `git`. Also install the
+latest version of the [Go development tools](https://go.dev/doc/install).
+
 #### NPM Account
 
 Sign up for an [NPM account](https://www.npmjs.com/signup) with
@@ -41,7 +48,7 @@ release.
 release from the perspective of a validator to understand why the
 release should be installed and important operational changes.
 
-### Staging the Release
+### Generating the Release
 
 Until we reach the next section "Publish the release", the release
 process can be aborted.
@@ -87,6 +94,20 @@ yarn install --force
 
 Use `--conventional-prerelease` instead of `--conventional-graduate` if you just want to generate a dev release.
 
+These instructions will:
+
+- modify the `package.json` (to bump the version) of every package
+which saw changes since the previous release, or whose dependencies
+change because of other packages being bumped (in practice this
+means pretty much every package in the monorepo);
+- update all dependencies in the monorepo to match the bumped
+versions;
+- create `CHANGELOG.md` files for each package with a summary of
+the git commit history;
+- make a Git commit with those changes;
+- create a `$package@$version` git tag for every package that
+changed.
+
 ```sh
 # Create the final release CHANGELOGs.
 yarn lerna version --no-push --conventional-graduate
@@ -107,6 +128,9 @@ name should follow the convention of previous releases, which is
 currently `chore(release): publish _release_label_`.  Paste
 `have-news.md` as the description of the PR.  Follow the example
 of previous releases for any other details of the PR.
+
+(Note that the `have-news.md` file might be too large for a Git commit
+message if you've gone too long without making a release.)
 
 Creating this PR will also kick off the CI tests.
 
@@ -148,6 +172,13 @@ it on the release branch for the following steps.
 ./scripts/get-released-tags git push origin
 ```
 
+This will push a `${package}@${version}` tag, one per package, plus
+the repo-wide `agoric-sdk@${version}` tag, plus the golang-specific
+`v${version}` tag (whose version matches the one used for
+`@agoric/cosmic-swingset`).  (In fact, it will push all tags that
+match these patterns, but all the old version's tags will already
+be present on GitHub.)
+
 - [ ] (Optional) Publish an NPM dist-tag
 
 If you want to update an NPM dist-tag for the current checked-out Agoric SDK's
@@ -181,6 +212,9 @@ validator-oriented release description.
 - [ ] Review recent changes in the base branch for anything that
 should be merged into its ancestors, all the way up to master. This
 should include the changes to CHANGELOG.md.
+
+- [ ] Remove the repository clone you created for this release,
+so you don't accidentally reuse it.
 
 ## More subtlety
 
