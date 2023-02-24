@@ -4,6 +4,7 @@ import * as simBehaviorsPlus from '@agoric/inter-protocol/src/proposals/sim-beha
 import * as basicBehaviorsPlus from './basic-behaviors.js';
 import { SHARED_CHAIN_BOOTSTRAP_MANIFEST } from './chain-behaviors.js';
 import * as chainBehaviorsPlus from './chain-behaviors.js';
+import * as utils from './utils.js';
 
 import { makeBootstrap } from './lib-boot.js';
 
@@ -40,7 +41,8 @@ const behaviors = { ...basicBehaviors, ...chainBehaviors, ...simBehaviors };
 export const buildRootObject = (vatPowers, vatParameters) => {
   console.debug(`sim bootstrap starting`);
 
-  return makeBootstrap(vatPowers, vatParameters, MANIFEST, behaviors, {});
+  const modules = harden({ utils: { ...utils } });
+  return makeBootstrap(vatPowers, vatParameters, MANIFEST, behaviors, modules);
 };
 
 harden({ buildRootObject });
