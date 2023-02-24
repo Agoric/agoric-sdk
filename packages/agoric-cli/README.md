@@ -9,7 +9,7 @@ ts-relayer](https://github.com/confio/ts-relayer#quick-start) via the
 `agoric ibc-setup` and `agoric ibc-relayer` commands.
 
 Run `agoric start --reset -v local-chain` in a project directory.  In the
-meantime, you can configure the relayer:
+meantime, you can configure the relayer (note that `--registry-from .` means to use `./registry.yaml`):
 
 ```console
 $ agoric ibc-setup init --registry-from . --src local --dest ollinet
