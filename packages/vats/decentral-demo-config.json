@@ -1,48 +1,135 @@
 {
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
+  "snapshotInterval": 1000,
   "coreProposals": [
-    "@agoric/inter-protocol/scripts/init-core.js",
-    "@agoric/pegasus/scripts/init-core.js"
+    "@agoric/vats/scripts/init-core.js",
+    {
+      "module": "@agoric/inter-protocol/scripts/init-core.js",
+      "entrypoint": "committeeProposalBuilder",
+      "args": [
+        {
+          "econCommitteeOptions": {
+            "committeeSize": 3
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmGovernanceBuilder",
+      "args": []
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyusdc",
+            "decimalPlaces": 6,
+            "keyword": "USDC_axl",
+            "proposedName": "USD Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdc5678",
+            "decimalPlaces": 6,
+            "keyword": "USDC_grv",
+            "proposedName": "USC Coin"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/usdt1234",
+            "decimalPlaces": 6,
+            "keyword": "USDT_axl",
+            "proposedName": "Tether USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyollie",
+            "decimalPlaces": 6,
+            "keyword": "USDT_grv",
+            "proposedName": "Tether USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "psmProposalBuilder",
+      "args": [
+        {
+          "anchorOptions": {
+            "denom": "ibc/toyellie",
+            "decimalPlaces": 6,
+            "keyword": "AUSD",
+            "proposedName": "Anchor USD"
+          }
+        }
+      ]
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/invite-committee-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "voterAddresses": {
+            "gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
+            "gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
+            "gov3": "agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"
+          }
+        }
+      ]
+    }
   ],
   "vats": {
     "bootstrap": {
-      "sourceSpec": "@agoric/vats/src/core/boot.js",
-      "parameters": {
-        "governanceActions": true,
-        "economicCommitteeAddresses": {
-          "voter": "agoric1Ersatz"
-        }
-      },
+      "sourceSpec": "@agoric/vats/src/core/boot-sim.js",
       "creationOptions": {
         "critical": true
       }
     }
   },
   "bundles": {
+    "bank": {
+      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    },
     "centralSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
-    },
-    "chainStorage": {
-      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
     },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
-    "zcf": {
-      "sourceSpec": "@agoric/zoe/contractFacet.js"
-    },
-    "bank": {
-      "sourceSpec": "@agoric/vats/src/vat-bank.js"
+    "mints": {
+      "sourceSpec": "@agoric/vats/src/vat-mints.js"
     },
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
-    },
-    "mints": {
-      "sourceSpec": "@agoric/vats/src/vat-mints.js"
     },
     "network": {
       "sourceSpec": "@agoric/vats/src/vat-network.js"
@@ -53,14 +140,11 @@
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
-    "provisionPool": {
-      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    "chainStorage": {
+      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
     },
-    "sharing": {
-      "sourceSpec": "@agoric/vats/src/vat-sharing.js"
-    },
-    "walletFactory": {
-      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
     },
     "zoe": {
       "sourceSpec": "@agoric/vats/src/vat-zoe.js"
