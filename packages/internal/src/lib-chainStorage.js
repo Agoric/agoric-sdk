@@ -1,6 +1,8 @@
 // @ts-check
 
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
+import { M, heapZone } from '@agoric/zone';
+import * as cb from './callback.js';
 
 const { Fail } = assert;
 
@@ -32,6 +34,15 @@ const { Fail } = assert;
  * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
  * @property {(subPath: string, options?: {sequence?: boolean}) => StorageNode} makeChildNode
  */
+
+const ChainStorageNodeI = M.interface('StorageNode', {
+  setValue: M.callWhen(M.string()).returns(),
+  getPath: M.call().returns(M.string()),
+  getStoreKey: M.callWhen().returns(M.record()),
+  makeChildNode: M.call(M.string())
+    .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
+    .returns(M.remotable('StorageNode')),
+});
 
 /**
  * @typedef {object} StoredFacet
@@ -72,51 +83,66 @@ harden(assertPathSegment);
  */
 
 /**
- * Create a root storage node for a given backing function and root path.
- *
- * @param {(message: StorageMessage) => any} handleStorageMessage a function for sending a storageMessage object to the storage implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
- * @param {string} rootPath
- * @param {object} [rootOptions]
- * @param {boolean} [rootOptions.sequence] employ a wrapping structure that preserves each value set within a single block, and default child nodes to do the same
+ * @param {import('@agoric/zone').Zone} zone
  */
-export function makeChainStorageRoot(
-  handleStorageMessage,
-  rootPath,
-  rootOptions = {},
-) {
-  assert.typeof(rootPath, 'string');
-
+export const prepareChainStorageNode = zone => {
   /**
+   * Create a storage node for a given backing storage interface and path.
+   *
+   * @param {import('./callback').Callback<(message: StorageMessage) => any>} messenger a callback
+   * for sending a storageMessage object to the storage implementation
+   * (cf. golang/cosmos/x/vstorage/vstorage.go)
    * @param {string} path
    * @param {object} [options]
-   * @param {boolean} [options.sequence]
+   * @param {boolean} [options.sequence] set values with `append` messages rather than `set` messages
+   * so the backing implementation employs a wrapping structure that
+   * preserves each value set within a single block.
+   * Child nodes default to inheriting this option from their parent.
    * @returns {StorageNode}
    */
-  function makeChainStorageNode(path, options = {}) {
-    const { sequence = false } = options;
-    const node = {
+  const makeChainStorageNode = zone.exoClass(
+    'ChainStorageNode',
+    ChainStorageNodeI,
+    /**
+     * @param {import('./callback').Callback<(message: StorageMessage) => any>} messenger
+     * @param {string} path
+     * @param {object} [options]
+     * @param {boolean} [options.sequence]
+     */
+    (messenger, path, { sequence = false } = {}) => {
+      assert.typeof(path, 'string');
+      assert.typeof(sequence, 'boolean');
+      return harden({ path, messenger, sequence });
+    },
+    {
       getPath() {
-        return path;
+        return this.state.path;
       },
       /**
        * @deprecated use getPath
        * @type {() => Promise<VStorageKey>}
        */
       async getStoreKey() {
-        return handleStorageMessage({
+        const { path, messenger } = this.state;
+        return cb.callE(messenger, {
           method: 'getStoreKey',
           args: [path],
         });
       },
       /** @type {(name: string, childNodeOptions?: {sequence?: boolean}) => StorageNode} */
       makeChildNode(name, childNodeOptions = {}) {
-        assert.typeof(name, 'string');
+        const { sequence, path, messenger } = this.state;
         assertPathSegment(name);
         const mergedOptions = { sequence, ...childNodeOptions };
-        return makeChainStorageNode(`${path}.${name}`, mergedOptions);
+        return makeChainStorageNode(
+          messenger,
+          `${path}.${name}`,
+          mergedOptions,
+        );
       },
       /** @type {(value: string) => Promise<void>} */
       async setValue(value) {
+        const { sequence, path, messenger } = this.state;
         assert.typeof(value, 'string');
         /** @type {StorageEntry} */
         let entry;
@@ -125,7 +151,7 @@ export function makeChainStorageRoot(
         } else {
           entry = [path, value];
         }
-        await handleStorageMessage({
+        await cb.callE(messenger, {
           method: sequence ? 'append' : 'set',
           args: [entry],
         });
@@ -137,11 +163,34 @@ export function makeChainStorageRoot(
       // * recursive delete
       // * batch operations
       // * local buffering (with end-of-block commit)
-    };
-    return Far('chainStorageNode', node);
-  }
+    },
+  );
+  return makeChainStorageNode;
+};
 
-  const rootNode = makeChainStorageNode(rootPath, rootOptions);
+const makeHeapChainStorageNode = prepareChainStorageNode(heapZone);
+
+/**
+ * Create a heap-based root storage node for a given backing function and root path.
+ *
+ * @param {(message: StorageMessage) => any} handleStorageMessage a function for
+ * sending a storageMessage object to the storage implementation
+ * (cf. golang/cosmos/x/vstorage/vstorage.go)
+ * @param {string} rootPath
+ * @param {object} [rootOptions]
+ * @param {boolean} [rootOptions.sequence] employ a wrapping structure that
+ * preserves each value set within a single block, and default child nodes
+ * to do the same
+ */
+export function makeChainStorageRoot(
+  handleStorageMessage,
+  rootPath,
+  rootOptions = {},
+) {
+  const messenger = cb.makeFunctionCallback(handleStorageMessage);
+
+  // Use the heapZone directly.
+  const rootNode = makeHeapChainStorageNode(messenger, rootPath, rootOptions);
   return rootNode;
 }
 
