@@ -200,6 +200,15 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     // { verbose: console.log },
   );
 
+  // We use WAL (write-ahead log) mode to allow a background export process to
+  // keep reading from an earlier DB state, while allowing execution to proceed
+  // forward (writing new data that the exporter does not see). Once we're using
+  // WAL mode, we need synchronous=FULL to obtain durability in the face of
+  // power loss. We let SQLite perform a "checkpoint" (merging the WAL contents
+  // back into the main DB file) automatically, using it's best-effort "PASSIVE"
+  // mode that defers merge work for a later attempt rather than block any
+  // potential readers or writers. See https://sqlite.org/wal.html for details.
+
   db.exec(`PRAGMA journal_mode=WAL`);
   db.exec(`PRAGMA synchronous=FULL`);
   db.exec(`
@@ -221,8 +230,8 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   // kernel is supposed to be the sole writer of the DB, and if some other
   // process is holding a write lock, we want to find out earlier rather than
   // later. We do not use EXCLUSIVE because we should allow external *readers*,
-  // and we might decide to use WAL mode some day. Read all of
-  // https://sqlite.org/lang_transaction.html, especially section 2.2
+  // and we use WAL mode. Read all of https://sqlite.org/lang_transaction.html,
+  // especially section 2.2
   //
   // It is critical to call ensureTxn as the first step of any API call that
   // might modify the database (any INSERT or DELETE, etc), to prevent SQLite
@@ -515,7 +524,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   const sqlCommit = db.prepare('COMMIT');
-  const sqlCheckpoint = db.prepare('PRAGMA wal_checkpoint(FULL)');
 
   /**
    * Commit unsaved changes.
@@ -524,7 +532,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     assert(db);
     if (db.inTransaction) {
       sqlCommit.run();
-      sqlCheckpoint.run();
     }
   }
 
