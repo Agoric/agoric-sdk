@@ -25,18 +25,6 @@ From Inter Protocol Whitepaper, v0.8:
 
 Note that the "stability fee" described in the Whitepaper comprises both InterestRate and LoanFee.
 
-### Automated Market Maker (AMM)
-
-In `packages/inter-protocol/src/vpool-xyk-amm/multipoolMarketMaker.js`:
-
-| Governance Key     | Type              | WP? |
-| ------------------ | :---------------- | --- |
-| PoolFee            | ParamTypes.NAT    | N/A |
-| ProtocolFee        | ParamTypes.NAT    | N/A |
-
-The Inter Protocol Whitepaper v0.8 does not describe the governance parameters
-for this contract.  
-
 ### Collateral Reserve
 
 In `packages/inter-protocol/src/reserve/collateralReserve.js`:
