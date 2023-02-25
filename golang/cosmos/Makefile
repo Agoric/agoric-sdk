@@ -16,7 +16,7 @@ BIN := $(shell echo $${GOBIN-$${GOPATH-$$HOME/go}/bin})
 include Makefile.ledger
 
 whitespace :=
-whitespace += $(whitespace)
+whitespace := $(whitespace) $(whitespace)
 comma := ,
 build_tags_comma_sep := $(subst $(whitespace),$(comma),$(build_tags))
 
