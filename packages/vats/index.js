@@ -6,3 +6,4 @@ import './src/core/types.js';
 export * from './src/types.js';
 export * from './src/nameHub.js';
 export * from './src/bridge.js';
+export { makePromiseSpace } from './src/core/promise-space.js';

@@ -8,10 +8,7 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import '@agoric/vats/src/core/types.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';

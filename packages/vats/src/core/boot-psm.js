@@ -20,7 +20,8 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
+import { makeAgoricNamesAccess } from './utils.js';
+import { makePromiseSpace } from './promise-space.js';
 import { Stable, Stake } from '../tokens.js';
 import {
   addBankAssets,

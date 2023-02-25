@@ -1,11 +1,8 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-  runModuleBehaviors,
-} from './utils.js';
+import { makeAgoricNamesAccess, runModuleBehaviors } from './utils.js';
+import { makePromiseSpace } from './promise-space.js';
 
 const { Fail, quote: q } = assert;
 
