@@ -1,9 +1,6 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 

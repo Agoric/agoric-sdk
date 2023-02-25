@@ -4,10 +4,7 @@ import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
