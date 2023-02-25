@@ -1,5 +1,6 @@
 // @ts-check
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
 
 const { Fail, quote: q } = assert;
