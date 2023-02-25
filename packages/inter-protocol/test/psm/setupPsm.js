@@ -11,6 +11,7 @@ import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 
@@ -21,7 +22,6 @@ import {
 } from '../supports.js';
 import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
-import { allValues } from '../../src/collect.js';
 
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative

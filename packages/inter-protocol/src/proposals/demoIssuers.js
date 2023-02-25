@@ -1,6 +1,6 @@
 /* eslint-disable @jessie.js/no-nested-await -- demo file */
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { objectMap } from '@agoric/internal';
+import { allValues, objectMap } from '@agoric/internal';
 import {
   makeRatio,
   natSafeMath,
@@ -8,7 +8,6 @@ import {
 import { E, Far } from '@endo/far';
 import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import { Nat } from '@endo/nat';
-import * as Collect from '../collect.js';
 
 const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
@@ -491,7 +490,7 @@ export const fundAMM = async ({
 
   const vats = { mints, priceAuthority: priceAuthorityVat };
 
-  const kits = await Collect.allValues(
+  const kits = await allValues(
     objectMap(
       fromEntries([Stable.symbol, ...keys(AMMDemoState)].map(n => [n, n])),
       async issuerName => {
