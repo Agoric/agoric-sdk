@@ -517,7 +517,7 @@ function arrObjKeys(obj, inspect) {
 }
 
 // This must be the only import/export statement, and occur last in the file, so
-// that ../lib/confined-object-inspect.js can comment out the `export default`
+// that confined-object-inspect.js can comment out the `export default`
 // and evaluate this entire file's source code to obtain the inspector as the
 // completion value.
 export default harden(inspect0);

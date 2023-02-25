@@ -33,7 +33,6 @@
     "@agoric/ertp": "^0.15.3",
     "@agoric/governance": "^0.9.1",
     "@agoric/internal": "^0.2.1",
-    "@endo/nat": "^4.1.0",
     "@agoric/notifier": "^0.5.1",
     "@agoric/store": "^0.8.3",
     "@agoric/swingset-liveslots": "^0.9.0",

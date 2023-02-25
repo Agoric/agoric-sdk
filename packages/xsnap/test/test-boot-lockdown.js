@@ -7,12 +7,17 @@ import * as proc from 'child_process';
 import * as os from 'os';
 import * as fs from 'fs';
 
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
+
 import { xsnap } from '../src/xsnap.js';
 
 import { options, loader } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
 const ld = loader(import.meta.url, fs.promises.readFile);
+
+const getBootScript = () =>
+  getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
 
 /**
  * @param {string} name
@@ -49,12 +54,12 @@ async function bootWorker(name, script, savePrinted = false) {
  * @param {boolean} [savePrinted]
  */
 async function bootSESWorker(name, savePrinted = false) {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const bootScript = await getBootScript();
   return bootWorker(name, bootScript, savePrinted);
 }
 
 test('bootstrap to SES lockdown', async t => {
-  const bootScript = await ld.asset('../dist/bundle-ses-boot.umd.js');
+  const bootScript = await getBootScript();
   const opts = options(io);
   const name = 'SES lockdown worker';
   const vat = xsnap({ ...opts, name });

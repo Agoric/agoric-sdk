@@ -72,8 +72,9 @@ bundle, the invitation Issuer, `zoeInstanceAdminForZcf`, the instance
 record, issuer records, and any private arguments.
 
 The code in the ZCF Vat evaluates the contract bundle, makes a ZCF
-object for the contract's use, and calls the contract's `start`
-method. The contract can return any or all of the following: a
+object for the contract's use, and calls the contract's start
+function (which must be exported as either `start` or `prepare`).
+The contract can return any or all of the following: a
 `publicFacet` (accessible to anyone with the contract instance), a
 `creatorFacet` (an ocap only given to the owner of a contract), and a
 `creatorInvitation` (an invitation only given to the owner of a
@@ -97,7 +98,6 @@ records what it needs to know about the offer, then returns two things
 to Zoe: a promise for the offerResult (the return value from the
 `offerHandler`) and an `exitObj` that Zoe saves for later use.
 
-```suggestion
 In order to ensure that the `zcf` object in the contract vat has
 synchronous access to the most up-to-date information about
 seats that have exited, if a user calls `userSeat.tryExit()`, the
@@ -174,8 +174,3 @@ A misbehaving issuer should only affect Zoe in the following ways:
  - Misbehaving issuers should not be able to affect the deposit/withdrawal process for other issuers in the Zoe Service.
 
 We want to ensure there are no potential race conditions in updating allocations. An offer creates an initial allocation from the Zoe side into ZCF, but all subsequent updates come from ZCF to Zoe. We must ensure that an update from Zoe into ZCF can never cross paths with an update from ZCF into Zoe. 
-
-
-
-
-
