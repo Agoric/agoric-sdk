@@ -13,7 +13,8 @@ import {
 } from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
+import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import {

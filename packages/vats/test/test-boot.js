@@ -11,7 +11,7 @@ import { buildRootObject } from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
 import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
-import { makePromiseSpace } from '../src/core/utils.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 
 import {
   makeMock,
