@@ -40,9 +40,9 @@ export const grantRunBehaviors = async ({
 };
 harden(grantRunBehaviors);
 
-/** @type {import('@agoric/vats').BootstrapManifest} */
+/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 export const SIM_CHAIN_BOOTSTRAP_PERMITS = harden({
-  /** @type {import('@agoric/vats').BootstrapManifestPermit} */
+  /** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifestPermit} */
   [installSimEgress.name]: {
     vatParameters: { argv: { hardcodedClientAddresses: true } },
     vats: {
