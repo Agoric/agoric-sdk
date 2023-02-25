@@ -46,6 +46,8 @@ const trace = makeTracer('LiqI', false);
  * TODO integrate the reserve, including the above Reserve strategies.
  */
 
+// TODO: (#7047) this file goes away shortly, and is here to keep vaults happy
+// until we have a replacement
 /**
  * @typedef {{
  *   amm: any,

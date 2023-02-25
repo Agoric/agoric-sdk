@@ -11,6 +11,9 @@ import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('LiqMin', false);
 
+// TODO: (#7047) this file goes away shortly, and is here to keep vaults happy
+// until we have a replacement. The reference to AMM is to ease the transition.
+
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
  * to satisfy the debt. It uses the AMM's swapOut, which sells no more than

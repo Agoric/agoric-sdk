@@ -217,6 +217,9 @@ export const prepareVaultManagerKit = (
   // ephemeral state
   /** @type {boolean} */
   let liquidationQueueing = false;
+
+  // TODO: (#7047) this variable is vestigial and will go away when we replace
+  //  liquidation with use of an Auction
   /** @type {Promise<MutableQuote>?} */
   const outstandingQuote = null;
 

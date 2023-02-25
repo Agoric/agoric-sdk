@@ -461,8 +461,9 @@ export const poolRates = (issuerName, record, kits, central) => {
  *   consume: { mints }
  * }} powers
  */
-// XXX Is this dead? I can't find references to it. It seems to do more than
-// fund the AMM, and I don't know if it's needed somewhere.
+
+// TODO(cth) DONOTMERGE Is this dead? I can't find references to it. It seems to
+//  do more than fund the AMM, and I don't know if it's needed somewhere.
 export const fundAMM = async ({
   consume: {
     bldIssuerKit,
