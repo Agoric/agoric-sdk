@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 # bin/agd - A build wrapper to bootstrap the Agoric daemon
 #
 # Usage: agd build
@@ -12,45 +12,164 @@
 # $DAEMON_ALLOW_DOWNLOAD_BINARIES variables to enable the automatic downloading
 # of Golang and NodeJS versions needed to build and run the current version of
 # the SDK.
+set -x
 set -ueo pipefail
+
+GVM_URL=${GVM_URL-https://github.com/devnw/gvm/releases/download/latest/gvm}
+NVM_GIT_REPO=${NVM_GIT_REPO-https://github.com/nvm-sh/nvm.git}
+
+STAMPS=node_modules/.cache/agoric
 
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
 thisdir=$(cd "$(dirname -- "$real0")" >/dev/null && pwd -P)
 
-STAMPS="$thisdir/../node_modules/.cache/agoric"
+# shellcheck disable=SC1091
+source "$thisdir/../repoconfig.sh"
 
 if test "${1-''}" = build; then
   BUILD_ONLY=true
   case "${2-''}" in
   --force | -f)
-    rm -rf "$STAMPS"
+    rm -rf "$thisdir/../$STAMPS"
     ;;
   esac
 else
   BUILD_ONLY=false
 fi
 
+NEED_NODEJS=$BUILD_ONLY
+case $@ in
+*" start" | *" start "*)
+  # We're starting the daemon, so we need Node.js.
+  NEED_NODEJS=true
+  ;;
+esac
+
+# Only allow auto-downloading if explicitly set.
+if test "${SKIP_DOWNLOAD-}" = false; then :
+elif test -n "${DAEMON_HOME-}" && test "${DAEMON_ALLOW_DOWNLOAD_BINARIES-}" = true; then
+  # Cosmovisor download mode detected.
+  SKIP_DOWNLOAD=false
+else
+  # Skip the download by default.
+  SKIP_DOWNLOAD=true
+fi
+
+if $NEED_NODEJS; then
+  # We need to get node at the script top level because it's used by the daemon
+  # as well.
+  case $(node --version 2>/dev/null) in
+  "$NODEJS_VERSION" | "$NODEJS_VERSION".*) ;;
+  *)
+    # Auto-download the NodeJS version we need, if allowed.
+    $SKIP_DOWNLOAD || {
+      if test -z "${NVM_DIR-}"; then
+        export "NVM_DIR=${DAEMON_HOME-$HOME}/.nvm"
+      fi
+      if test ! -s "$NVM_DIR/nvm.sh"; then
+        git clone "$NVM_GIT_REPO" "$NVM_DIR"
+        (
+          cd "$NVM_DIR"
+          git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)")"
+        )
+      fi
+      # shellcheck disable=SC1091
+      source "$NVM_DIR/nvm.sh" --no-use
+      nvm ls "$NODEJS_VERSION" >/dev/null 2>&1 || {
+        nvm install "$NODEJS_VERSION"
+      }
+      nvm use "$NODEJS_VERSION"
+    } 1>&2
+    ;;
+  esac
+fi
+
 (
   cd "$thisdir/.."
-
   mkdir -p "$STAMPS"
 
-  test -f "$STAMPS/yarn-installed" || {
-    rm -f "$STAMPS/yarn-built"
-    yarn install --force
-    date > "$STAMPS/yarn-installed"
-  }
+  if $NEED_NODEJS; then
+    lazy_yarn() {
+      yarn --version 2>/dev/null 1>&2 || {
+        # Auto-download the Yarn version we need, if allowed.
+        $SKIP_DOWNLOAD || {
+          npm install -g yarn
+        }
+      }
+      yarn "$@"
+    }
 
-  test -f "$STAMPS/yarn-built" || {
-    yarn build
-    date > "$STAMPS/yarn-built"
-  }
+    # Check if any package.json is newer than the installation stamp.
+    stamp=$STAMPS/yarn-installed
+    if test -e "$stamp"; then
+      print=( -newer "$stamp" )
+    elif test -e node_modules; then
+      print=( -newer node_modules )
+    else
+      print=()
+    fi
+    files=( package.json )
+    if test ${#print[@]} -gt 0; then
+      # Find the current list of package.jsons.
+      while IFS= read -r line; do
+        files+=( "$line" )
+      done < <(lazy_yarn -s workspaces info |
+        sed -ne '/"location":/{ s/.*": "//; s!",.*!/package.json!; p; }')
+    fi
+    print+=( -print )
+    src=$(find "${files[@]}" "${print[@]}" | head -1 || true)
+    test -z "$src" || {
+      echo "At least $src is newer than $stamp"
+      rm -f "$STAMPS/yarn-built"
+      lazy_yarn install --force
+      date > "$stamp"
+    }
 
-  test -f "$STAMPS/agd-built" || {
-    (cd golang/cosmos && make)
-    date > "$STAMPS/agd-built"
+    stamp=$STAMPS/yarn-built
+    test -e "$stamp" || {
+      echo "Yarn packages need to be built"
+      lazy_yarn build
+      date > "$stamp"
+    }
+  fi
+
+  stamp=$GOLANG_DAEMON
+  if test -e "$stamp"; then
+    print=( -newer "$stamp" )
+  else
+    print=()
+  fi
+  print+=( -print )
+  src=$(find go.* "$GOLANG_DIR" \( -name '*.go' -o -name 'go.*' \) "${print[@]}" | head -1 || true)
+  test -z "$src" || {
+    echo "At least $src is newer than $stamp"
+
+    (
+      # Run this build in another subshell in case we had to modify the path.
+      case $(go version 2>/dev/null) in
+      "go version go$GOLANG_VERSION "* | "go version go$GOLANG_VERSION."*) ;;
+      *)
+        # Auto-download the Golang version we need, if allowed.
+        $SKIP_DOWNLOAD || {
+          export HOME=${DAEMON_HOME-$HOME}
+          mkdir -p "$HOME/bin"
+
+          # shellcheck disable=SC2030
+          PATH="$HOME/.gvm/go/bin:$HOME/bin:$PATH"
+          test -x "$HOME/bin/gvm" || {
+            curl -L "$GVM_URL" > "$HOME/bin/gvm"
+            chmod +x "$HOME/bin/gvm"
+          }
+          gvm "$GOLANG_VERSION" -s
+        }
+        ;;
+      esac
+      # Build the daemon.
+      cd "$GOLANG_DIR"
+      make
+    )
   }
-)
+) 1>&2 # Send the build output to stderr.
 
 if $BUILD_ONLY; then
   echo "Build complete." 1>&2
@@ -58,5 +177,6 @@ if $BUILD_ONLY; then
 fi
 
 # Run the built Cosmos daemon.
+# shellcheck disable=SC2031
 export PATH="$thisdir/../packages/cosmic-swingset/bin:$PATH"
-exec "$thisdir/../golang/cosmos/build/agd" ${1+"$@"}
+exec "$thisdir/../$GOLANG_DAEMON" ${1+"$@"}
