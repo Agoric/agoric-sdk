@@ -50,7 +50,7 @@ const trace = makeTracer('LiqI', false);
 // until we have a replacement
 /**
  * @typedef {{
- *   amm: any,
+ *   amm: unknown,
  *   priceAuthority: PriceAuthority,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: import('@agoric/time/src/types').TimerService,
