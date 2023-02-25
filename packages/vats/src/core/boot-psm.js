@@ -29,7 +29,6 @@ import {
   installBootContracts,
   makeAddressNameHubs,
   makeBoard,
-  makeVatsFromBundles,
   mintInitialSupply,
 } from './basic-behaviors.js';
 import * as utils from './utils.js';

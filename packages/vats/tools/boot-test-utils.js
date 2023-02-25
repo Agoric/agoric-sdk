@@ -16,6 +16,9 @@ import { buildRootObject as networkRoot } from '../src/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
+// TODO: import { buildRootObject as chainStorageRoot } from '../src/vat-chainStorage.js';
+
+const { Fail } = assert;
 
 export const vatRoots = {
   bank: bankRoot,
@@ -26,6 +29,7 @@ export const vatRoots = {
   priceAuthority: priceAuthorityRoot,
   provisioning: provisioningRoot,
   zoe: zoeRoot,
+  // TODO: chainStorage: chainStorageRoot,
 };
 
 export const noop = () => {};
@@ -104,6 +108,9 @@ export const makePopulatedFakeVatAdmin = () => {
   }
 
   const createVat = (bundleCap, options) => {
+    if (!bundleCap) {
+      throw Error('falsy bundleCap!');
+    }
     if (bundleCap === zcfBundleCap) {
       return fakeVatAdmin.createVat(zcfBundleCap, options);
     }
@@ -126,7 +133,10 @@ export const makePopulatedFakeVatAdmin = () => {
     return { root: buildRoot({}, vatParameters, baggage), adminNode };
   };
   const createVatByName = name => {
-    return createVat(fakeNameToCap.get(name));
+    return createVat(
+      fakeNameToCap.get(name) ||
+        Fail`bad bundle name: ${name}, ${[...fakeNameToCap.keys()]}`,
+    );
   };
 
   const vatAdminService = Far('vatAdminSvc', {

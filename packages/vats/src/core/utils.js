@@ -1,5 +1,7 @@
 // @ts-check
 import { E, Far } from '@endo/far';
+import { provideLazy } from '@agoric/store';
+import { makeScalarMapStore } from '@agoric/vat-data';
 import { assertPassable } from '@endo/marshal';
 import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
@@ -275,4 +277,53 @@ export const makeMyAddressNameAdminKit = address => {
   myAddressNameAdmin.reserve(WalletName.depositFacet);
 
   return { nameHub, myAddressNameAdmin };
+};
+
+/**
+ * @param {ERef<ReturnType<Awaited<VatAdminVat>['createVatAdminService']>>} svc
+ * @param {unknown} criticalVatKey
+ * @param {(...args: any) => void} [log]
+ * @param {string} [label]
+ *
+ * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults as from createVatByName
+ * @typedef {MapStore<string, Promise<CreateVatResults>>} VatStore
+ */
+export const makeVatSpace = (
+  svc,
+  criticalVatKey,
+  log = () => {},
+  label = 'namedVat',
+) => {
+  const subSpaceLog = (...args) => log(label, ...args);
+
+  /** @type {VatStore} */
+  const store = makeScalarMapStore();
+
+  const makeLazyVatLoader = (defaultVatCreationOptions = {}) => {
+    return bundleName => {
+      const vatInfoP = provideLazy(store, bundleName, _k => {
+        subSpaceLog(`createVatByName(${bundleName})`);
+        /** @type { Promise<CreateVatResults> } */
+        const vatInfo = E(svc).createVatByName(bundleName, {
+          ...defaultVatCreationOptions,
+          name: bundleName,
+        });
+        return vatInfo;
+      });
+      return E.when(vatInfoP, vatInfo => vatInfo.root);
+    };
+  };
+
+  const loader = makeLazyVatLoader({ critical: criticalVatKey });
+
+  const consume = new Proxy(
+    {},
+    {
+      get: (_target, name, _rx) => {
+        assert.typeof(name, 'string');
+        return loader(name);
+      },
+    },
+  );
+  return { consume };
 };

@@ -4,7 +4,6 @@ import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.
 import { observeNotifier } from '@agoric/notifier';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { registerNetworkProtocols } from './chain-behaviors.js';
-import { makeVatsFromBundles } from './basic-behaviors.js';
 
 const { Fail } = assert;
 
@@ -166,20 +165,6 @@ harden(startClient);
 /** @type {import('./lib-boot.js').BootstrapManifest} */
 export const CLIENT_BOOTSTRAP_MANIFEST = harden({
   /** @type {import('./lib-boot.js').BootstrapManifestPermit} */
-  [makeVatsFromBundles.name]: {
-    vats: {
-      vatAdmin: 'vatAdmin',
-    },
-    devices: {
-      vatAdmin: true,
-    },
-    produce: {
-      vatAdminSvc: 'vatAdmin',
-      loadVat: true,
-      loadCriticalVat: true,
-      vatStore: true,
-    },
-  },
   [startClient.name]: {
     vatParameters: {
       argv: { FIXME_GCI: true },
