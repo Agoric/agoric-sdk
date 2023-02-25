@@ -195,10 +195,7 @@ test('communication', async t => {
 test('addBankAssets bootstrap action', async t => {
   // Supply bootstrap prerequisites.
   const space = /** @type { any } */ (makePromiseSpace(t.log));
-  const { produce, consume } =
-    /** @type { BootstrapPowers & { consume: { loadCriticalVat: VatLoader<any> }}} */ (
-      space
-    );
+  const { produce, consume } = /** @type { BootstrapPowers } */ (space);
   const { agoricNames, spaces } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 

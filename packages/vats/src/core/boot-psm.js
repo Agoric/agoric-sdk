@@ -29,7 +29,6 @@ import {
   installBootContracts,
   makeAddressNameHubs,
   makeBoard,
-  makeVatsFromBundles,
 } from './basic-behaviors.js';
 import * as utils from './utils.js';
 import {

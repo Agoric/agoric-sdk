@@ -121,17 +121,17 @@ harden(bridgeCoreEval);
 
 /**
  * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ProvisioningVat>> }
+ *   namedVat: PromiseSpaceOf<{ provisioning: Awaited<ProvisioningVat>}>
  * }} powers
  */
 export const makeProvisioner = async ({
-  consume: { clientCreator, loadCriticalVat },
+  consume: { clientCreator },
   vats: { comms, vattp },
-  produce: { provisioning },
+  namedVat: {
+    consume: { provisioning: provisionerVat },
+  },
 }) => {
-  const provisionerVat = await E(loadCriticalVat)('provisioning');
   await E(provisionerVat).register(clientCreator, comms, vattp);
-  provisioning.resolve(provisionerVat);
 };
 harden(makeProvisioner);
 
@@ -313,11 +313,10 @@ harden(startTimerService);
 
 /**
  * @param {BootDevices<ChainDevices> & BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ *   namedVat: PromiseSpaceOf<{ chainStorage: Awaited<ChainStorageVat>}>
  * }} powers
  */
 export const makeBridgeManager = async ({
-  consume: { loadCriticalVat },
   devices: { bridge },
   produce: {
     bridgeManager: bridgeManagerP,
@@ -325,6 +324,7 @@ export const makeBridgeManager = async ({
     provisionWalletBridgeManager,
     walletBridgeManager,
   },
+  namedVat,
 }) => {
   if (!bridge) {
     console.warn(
@@ -336,7 +336,7 @@ export const makeBridgeManager = async ({
     walletBridgeManager.resolve(undefined);
     return;
   }
-  const vat = E(loadCriticalVat)('chainStorage');
+  const vat = namedVat.consume.chainStorage;
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
@@ -351,12 +351,13 @@ harden(makeBridgeManager);
 
 /**
  * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ChainStorageVat>> }
+ *   namedVat: PromiseSpaceOf<{ chainStorage: Awaited<ChainStorageVat>}>
  * }} powers
  */
 export const makeChainStorage = async ({
-  consume: { loadCriticalVat, bridgeManager: bridgeManagerP },
+  consume: { bridgeManager: bridgeManagerP },
   produce: { chainStorage: chainStorageP },
+  namedVat,
 }) => {
   const bridgeManager = await bridgeManagerP;
   if (!bridgeManager) {
@@ -369,7 +370,7 @@ export const makeChainStorage = async ({
 
   const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
 
-  const vat = E(loadCriticalVat)('chainStorage');
+  const vat = namedVat.consume.chainStorage;
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     storageBridgeManager,
     ROOT_PATH,
@@ -485,32 +486,19 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
 };
 
 /**
- * @param { BootstrapPowers & {
- *   consume: { loadCriticalVat: VatLoader<any> }
- *   produce: { networkVat: Producer<any> }
- * }} powers
+ * @param { BootstrapPowers &
+ *  { namedVat: PromiseSpaceOf<NetVats> } &
+ *  { produce: { networkVat: Producer<any> } }
+ * } powers
  *
- * // TODO: why doesn't overloading VatLoader work???
- * @typedef { ((name: 'network') => NetworkVat) &
- *            ((name: 'ibc') => IBCVat) } VatLoader2
- *
- * @typedef {{ network: ERef<NetworkVat>, ibc: ERef<IBCVat>, provisioning: ERef<ProvisioningVat | undefined>}} NetVats
+ * @typedef {{ network: Awaited<NetworkVat>, ibc: Awaited<IBCVat>, provisioning: Awaited<ProvisioningVat | undefined>}} NetVats
  */
 export const setupNetworkProtocols = async ({
-  consume: {
-    client,
-    loadCriticalVat,
-    bridgeManager: bridgeManagerP,
-    provisioning,
-  },
+  consume: { client, bridgeManager: bridgeManagerP },
+  namedVat,
   produce: { networkVat },
 }) => {
-  /** @type { NetVats } */
-  const vats = {
-    network: E(loadCriticalVat)('network'),
-    ibc: E(loadCriticalVat)('ibc'),
-    provisioning,
-  };
+  const vats = namedVat.consume;
   // don't proceed if loadCriticalVat fails
   await Promise.all(Object.values(vats));
 
@@ -552,7 +540,6 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
 
   [bridgeCoreEval.name]: true, // Needs all the powers.
   [makeBridgeManager.name]: {
-    consume: { loadCriticalVat: true },
     devices: { bridge: 'kernel' },
     produce: {
       bridgeManager: 'chainStorage',
@@ -560,6 +547,7 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
       provisionWalletBridgeManager: 'chainStorage',
       walletBridgeManager: 'chainStorage',
     },
+    namedVat: { consume: { chainStorage: 'chainStorage' } },
   },
   [startTimerService.name]: {
     devices: {
@@ -575,8 +563,11 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     home: { produce: { chainTimerService: 'timer' } },
   },
   [makeChainStorage.name]: {
-    consume: { loadCriticalVat: true, bridgeManager: true },
+    consume: { bridgeManager: true },
     produce: {
+      chainStorage: 'chainStorage',
+    },
+    namedVat: {
       chainStorage: 'chainStorage',
     },
   },
@@ -589,15 +580,14 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   },
   [makeProvisioner.name]: {
     consume: {
-      loadCriticalVat: true,
       clientCreator: true,
-    },
-    produce: {
-      provisioning: 'provisioning',
     },
     vats: {
       comms: 'comms',
       vattp: 'vattp',
+    },
+    namedVat: {
+      consume: { provisioning: 'provisioning' },
     },
   },
   [bridgeProvisioner.name]: {
@@ -617,13 +607,19 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   [setupNetworkProtocols.name]: {
     consume: {
       client: true,
-      loadCriticalVat: true,
       bridgeManager: 'chainStorage',
       zoe: 'zoe',
       provisioning: 'provisioning',
     },
     produce: {
       networkVat: 'network',
+    },
+    namedVat: {
+      consume: {
+        network: 'network',
+        ibc: 'ibc',
+        provisioning: 'provisioning',
+      },
     },
   },
 };

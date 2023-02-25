@@ -210,7 +210,6 @@
  *   priceAuthorityVat: Awaited<PriceAuthorityVat>,
  *   priceAuthority: PriceAuthority,
  *   priceAuthorityAdmin: PriceAuthorityRegistryAdmin,
- *   provisioning: Awaited<ProvisioningVat> | undefined,
  *   provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager | undefined,
  *   testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>,
@@ -240,10 +239,7 @@
  * }} BootstrapPowers
  * @typedef { WellKnownSpaces & PromiseSpaceOf<ChainBootstrapSpaceT & {
  *     vatAdminSvc: VatAdminSvc,
- *   }, {}, {
- *     loadVat: VatLoader<unknown>,
- *     loadCriticalVat: VatLoader<unknown>,
- *   }>
+ *   }, {}, {}>
  * } BootstrapSpace
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
