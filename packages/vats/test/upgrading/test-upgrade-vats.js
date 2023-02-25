@@ -55,6 +55,7 @@ test('upgrade vat-board', async t => {
   const bundles = {
     board: bundleSpecs.board,
   };
+
   const { EV } = await makeScenario(t, bundles);
 
   t.log('create initial version');
