@@ -2,7 +2,7 @@
 import { isObject } from '@endo/marshal';
 
 /**
- * @file method-tools use dynamic property lookup, which goes beyond Jessie
+ * @file method-tools use dynamic property lookup, which is not Jessie-compatible
  */
 
 const { getPrototypeOf, create, fromEntries, getOwnPropertyDescriptors } =
