@@ -119,6 +119,9 @@
     "centralSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
@@ -139,9 +142,6 @@
     },
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
-    },
-    "chainStorage": {
-      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
     },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"

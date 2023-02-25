@@ -336,7 +336,7 @@ export const makeBridgeManager = async ({
     walletBridgeManager.resolve(undefined);
     return;
   }
-  const vat = E(loadCriticalVat)('chainStorage');
+  const vat = E(loadCriticalVat)('bridge');
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
@@ -369,7 +369,7 @@ export const makeChainStorage = async ({
 
   const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
 
-  const vat = E(loadCriticalVat)('chainStorage');
+  const vat = E(loadCriticalVat)('bridge');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     storageBridgeManager,
     ROOT_PATH,
@@ -555,10 +555,10 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     consume: { loadCriticalVat: true },
     devices: { bridge: 'kernel' },
     produce: {
-      bridgeManager: 'chainStorage',
-      provisionBridgeManager: 'chainStorage',
-      provisionWalletBridgeManager: 'chainStorage',
-      walletBridgeManager: 'chainStorage',
+      bridgeManager: 'bridge',
+      provisionBridgeManager: 'bridge',
+      provisionWalletBridgeManager: 'bridge',
+      walletBridgeManager: 'bridge',
     },
   },
   [startTimerService.name]: {
@@ -577,14 +577,14 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   [makeChainStorage.name]: {
     consume: { loadCriticalVat: true, bridgeManager: true },
     produce: {
-      chainStorage: 'chainStorage',
+      chainStorage: 'bridge',
     },
   },
   [publishAgoricNames.name]: {
     consume: {
       agoricNamesAdmin: true,
       board: 'board',
-      chainStorage: 'chainStorage',
+      chainStorage: 'bridge',
     },
   },
   [makeProvisioner.name]: {
@@ -603,9 +603,9 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   [bridgeProvisioner.name]: {
     consume: {
       provisioning: true,
-      bridgeManager: 'chainStorage',
-      provisionBridgeManager: 'chainStorage',
-      provisionWalletBridgeManager: 'chainStorage',
+      bridgeManager: 'bridge',
+      provisionBridgeManager: 'bridge',
+      provisionWalletBridgeManager: 'bridge',
     },
   },
   [setupClientManager.name]: {
@@ -618,7 +618,7 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     consume: {
       client: true,
       loadCriticalVat: true,
-      bridgeManager: 'chainStorage',
+      bridgeManager: 'bridge',
       zoe: 'zoe',
       provisioning: 'provisioning',
     },
