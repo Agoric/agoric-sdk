@@ -40,8 +40,8 @@ import {
   noProvisioner,
   publishAgoricNames,
   startTimerService,
+  CHAIN_BOOTSTRAP_MANIFEST,
 } from './chain-behaviors.js';
-import { CHAIN_BOOTSTRAP_MANIFEST } from './manifest.js';
 import {
   startWalletFactory,
   WALLET_FACTORY_MANIFEST,

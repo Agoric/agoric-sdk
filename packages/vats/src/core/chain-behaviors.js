@@ -19,7 +19,7 @@ import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
-import { PowerFlags } from './basic-behaviors.js';
+import { PowerFlags, BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 
 const { Fail } = assert;
 const { keys } = Object;
@@ -544,3 +544,97 @@ export const setupNetworkProtocols = async ({
   await registerNetworkProtocols(vats, dibcBridgeManager);
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
+
+/** @type {import('./lib-boot').BootstrapManifest} */
+export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
+  ...BASIC_BOOTSTRAP_PERMITS,
+
+  [bridgeCoreEval.name]: true, // Needs all the powers.
+  [makeBridgeManager.name]: {
+    consume: { loadCriticalVat: true },
+    devices: { bridge: 'kernel' },
+    produce: {
+      bridgeManager: true,
+      provisionBridgeManager: true,
+      provisionWalletBridgeManager: true,
+      walletBridgeManager: true,
+    },
+  },
+  [startTimerService.name]: {
+    devices: {
+      timer: true,
+    },
+    vats: {
+      timer: 'timer',
+    },
+    consume: { client: true },
+    produce: {
+      chainTimerService: 'timer',
+    },
+    home: { produce: { chainTimerService: 'timer' } },
+  },
+  [makeChainStorage.name]: {
+    consume: { loadCriticalVat: true, bridgeManager: true },
+    produce: {
+      chainStorage: 'chainStorage',
+    },
+  },
+  [publishAgoricNames.name]: {
+    consume: {
+      agoricNamesAdmin: true,
+      board: 'board',
+      chainStorage: 'chainStorage',
+    },
+  },
+  [makeProvisioner.name]: {
+    consume: {
+      loadCriticalVat: true,
+      clientCreator: true,
+    },
+    produce: {
+      provisioning: 'provisioning',
+    },
+    vats: {
+      comms: true,
+      vattp: true,
+    },
+  },
+  [bridgeProvisioner.name]: {
+    consume: {
+      provisioning: true,
+      bridgeManager: true,
+      provisionBridgeManager: true,
+      provisionWalletBridgeManager: true,
+    },
+  },
+  [setupClientManager.name]: {
+    produce: {
+      client: true,
+      clientCreator: true,
+    },
+  },
+  [setupNetworkProtocols.name]: {
+    consume: {
+      client: true,
+      loadCriticalVat: true,
+      bridgeManager: true,
+      zoe: true,
+      provisioning: true,
+    },
+    produce: {
+      networkVat: true,
+    },
+  },
+};
+harden(SHARED_CHAIN_BOOTSTRAP_MANIFEST);
+
+/** @type {import('./lib-boot.js').BootstrapManifest} */
+export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+  ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
+  [connectChainFaucet.name]: {
+    consume: {
+      client: true,
+    },
+    home: { produce: { faucet: true } },
+  },
+});
