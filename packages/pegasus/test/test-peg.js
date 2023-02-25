@@ -226,6 +226,7 @@ async function testRemotePeg(t) {
   const transferInvitation = await E(pegasus).makeInvitationToTransfer(
     pegP,
     'markaccount',
+    'I am a memo!',
   );
   const seat = await E(zoe).offer(
     transferInvitation,

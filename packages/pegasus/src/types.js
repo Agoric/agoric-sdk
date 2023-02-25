@@ -12,6 +12,7 @@
  * @property {AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
+ * @property {string} memo
  */
 
 /**
