@@ -1,10 +1,10 @@
 // @ts-check
 
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Nat } from '@endo/nat';
+import { E, Far } from '@endo/far';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
-import { E, Far } from '@endo/far';
 import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
@@ -124,9 +124,7 @@ export const buildZoe = async ({
   invitationBrand.resolve(brand);
 
   feeMintAccess.resolve(fma);
-  return Promise.all([
-    E(client).assignBundle([_addr => ({ zoe: zoeService })]),
-  ]);
+  await Promise.all([E(client).assignBundle([_addr => ({ zoe: zoeService })])]);
 };
 harden(buildZoe);
 
@@ -422,7 +420,7 @@ export const addBankAssets = async ({
   produceIssuer.IST.resolve(runKit.issuer);
   produceBrand.BLD.resolve(bldKit.brand);
   produceBrand.IST.resolve(runKit.brand);
-  return Promise.all([
+  await Promise.all([
     E(bankMgr).addAsset(
       Stake.denom,
       Stake.symbol,
@@ -438,3 +436,126 @@ export const addBankAssets = async ({
   ]);
 };
 harden(addBankAssets);
+
+/** @type {import('./lib-boot').BootstrapManifest} */
+export const BASIC_BOOTSTRAP_PERMITS = harden({
+  /** @type {import('./lib-boot').BootstrapManifestPermit} */
+  bridgeCoreEval: true, // Needs all the powers.
+  [makeOracleBrands.name]: {
+    oracleBrand: {
+      produce: {
+        USD: true,
+      },
+    },
+  },
+  [startPriceAuthority.name]: {
+    consume: { loadCriticalVat: true, client: true },
+    produce: {
+      priceAuthorityVat: 'priceAuthority',
+      priceAuthority: 'priceAuthority',
+      priceAuthorityAdmin: 'priceAuthority',
+    },
+  },
+  [makeVatsFromBundles.name]: {
+    vats: {
+      vatAdmin: 'vatAdmin',
+    },
+    devices: {
+      vatAdmin: true,
+    },
+    produce: {
+      vatAdminSvc: 'vatAdmin',
+      loadVat: true,
+      loadCriticalVat: true,
+      vatStore: true,
+    },
+  },
+  [buildZoe.name]: {
+    consume: {
+      vatAdminSvc: true,
+      loadCriticalVat: true,
+      client: true,
+    },
+    produce: {
+      zoe: 'zoe',
+      feeMintAccess: 'zoe',
+    },
+    issuer: { produce: { Invitation: 'zoe' } },
+    brand: { produce: { Invitation: 'zoe' } },
+  },
+  [makeBoard.name]: {
+    consume: {
+      loadCriticalVat: true,
+      client: true,
+    },
+    produce: {
+      board: 'board',
+    },
+  },
+
+  [makeAddressNameHubs.name]: {
+    consume: {
+      agoricNames: true,
+      client: true,
+    },
+    produce: {
+      namesByAddress: true,
+      namesByAddressAdmin: true,
+    },
+    home: {
+      produce: { myAddressNameAdmin: true },
+    },
+  },
+  [makeClientBanks.name]: {
+    consume: {
+      namesByAddressAdmin: true,
+      bankManager: 'bank',
+      client: true,
+      walletFactoryStartResult: 'walletFactory',
+    },
+    home: { produce: { bank: 'bank' } },
+  },
+  [installBootContracts.name]: {
+    consume: { zoe: 'zoe', vatAdminSvc: true },
+    installation: {
+      produce: {
+        centralSupply: 'zoe',
+        mintHolder: 'zoe',
+      },
+    },
+  },
+  [mintInitialSupply.name]: {
+    vatParameters: {
+      argv: { bootMsg: true },
+    },
+    consume: {
+      feeMintAccess: true,
+      zoe: true,
+    },
+    produce: {
+      initialSupply: true,
+    },
+    installation: {
+      consume: { centralSupply: 'zoe' },
+    },
+  },
+  [addBankAssets.name]: {
+    consume: {
+      agoricNamesAdmin: true,
+      initialSupply: true,
+      bridgeManager: true,
+      // TODO: re-org loadCriticalVat to be subject to permits
+      loadCriticalVat: true,
+      zoe: true,
+    },
+    produce: {
+      bankManager: 'bank',
+      bldIssuerKit: true,
+    },
+    installation: {
+      consume: { centralSupply: 'zoe', mintHolder: 'zoe' },
+    },
+    issuer: { produce: { BLD: 'BLD', IST: 'zoe' } },
+    brand: { produce: { BLD: 'BLD', IST: 'zoe' } },
+  },
+});

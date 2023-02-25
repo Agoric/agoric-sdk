@@ -149,7 +149,7 @@
   ],
   "vats": {
     "bootstrap": {
-      "sourceSpec": "@agoric/vats/src/core/boot.js",
+      "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
       "creationOptions": {
         "critical": true
       }

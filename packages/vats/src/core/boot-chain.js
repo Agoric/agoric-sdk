@@ -1,29 +1,30 @@
 // @ts-check
-import * as simBehaviors from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
-import {
-  CLIENT_BOOTSTRAP_MANIFEST,
-  CHAIN_BOOTSTRAP_MANIFEST,
-  SIM_CHAIN_BOOTSTRAP_MANIFEST,
-} from './manifest.js';
-
-import * as behaviors from './behaviors.js';
-import * as clientBehaviors from './client-behaviors.js';
-import * as utils from './utils.js';
 import { makeBootstrap } from './lib-boot.js';
 
-const { Fail } = assert;
+import * as basicBehaviorsPlus from './basic-behaviors.js';
+import { CHAIN_BOOTSTRAP_MANIFEST } from './chain-behaviors.js';
+import * as chainBehaviorsPlus from './chain-behaviors.js';
+import * as utils from './utils.js';
 
-// Choose a manifest based on runtime configured argv.ROLE.
-const roleToManifest = harden({
-  chain: CHAIN_BOOTSTRAP_MANIFEST,
-  'sim-chain': SIM_CHAIN_BOOTSTRAP_MANIFEST,
-  client: CLIENT_BOOTSTRAP_MANIFEST,
-});
-const roleToBehaviors = harden({
-  'sim-chain': { ...behaviors, ...simBehaviors },
-  // copy to avoid trying to harden a module namespace
-  client: { ...clientBehaviors },
-});
+export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
+
+const {
+  BASIC_BOOTSTRAP_PERMITS: _b,
+  PowerFlags: _p,
+  makeMyAddressNameAdminKit: _m,
+  ...basicBehaviors
+} = basicBehaviorsPlus;
+const {
+  CHAIN_BOOTSTRAP_MANIFEST: _c,
+  SHARED_CHAIN_BOOTSTRAP_MANIFEST: _s,
+  ...chainBehaviors
+} = chainBehaviorsPlus;
+const behaviors = { ...basicBehaviors, ...chainBehaviors };
+
+const modules = {
+  behaviors: { ...behaviors },
+  utils: { ...utils },
+};
 
 /**
  * Build root object of the bootstrap vat.
@@ -33,39 +34,13 @@ const roleToBehaviors = harden({
  *   logger: (msg) => void,
  * }} vatPowers
  * @param {{
- *   argv: { ROLE: string },
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
  *   coreProposalCode?: string,
  * }} vatParameters
  */
 export const buildRootObject = (vatPowers, vatParameters) => {
-  const {
-    // XXX not for production ?!
-    argv: { ROLE = 'chain' },
-    bootstrapManifest,
-  } = vatParameters;
-  // ROLE || Fail`boot requires ROLE in argv`;
-  console.debug(`${ROLE} bootstrap starting`);
+  console.debug(`chain bootstrap starting`);
 
-  const bootManifest = bootstrapManifest || roleToManifest[ROLE];
-  const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
-  bootManifest || Fail`no configured bootstrapManifest for role ${ROLE}`;
-  bootBehaviors || Fail`no configured bootstrapBehaviors for role ${ROLE}`;
-
-  const modules = {
-    clientBehaviors: { ...clientBehaviors },
-    simBehaviors: { ...simBehaviors },
-    behaviors: { ...behaviors },
-    utils: { ...utils },
-  };
-
-  return makeBootstrap(
-    vatPowers,
-    vatParameters,
-    bootManifest,
-    behaviors,
-    modules,
-  );
+  return makeBootstrap(vatPowers, vatParameters, MANIFEST, behaviors, modules);
 };
 
 harden({ buildRootObject });

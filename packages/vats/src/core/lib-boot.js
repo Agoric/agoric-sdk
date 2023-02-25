@@ -1,3 +1,4 @@
+// @ts-check
 import { E, Far } from '@endo/far';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
 import {
@@ -8,6 +9,44 @@ import {
 
 const { Fail, quote: q } = assert;
 
+/**
+ * @typedef {true | string | { [key: string]: BootstrapManifestPermit }} BootstrapManifestPermit
+ */
+
+/**
+ * A manifest is an object in which each key is the name of a function to run
+ * at bootstrap and the corresponding value is a "permit" describing an
+ * attenuation of allPowers that should be provided as its first argument
+ * (cf. packages/vats/src/core/boot.js).
+ *
+ * A permit is either
+ * - `true` or a string (both meaning no attenuation, with a string serving
+ *   as a grouping label for convenience and diagram generation), or
+ * - an object whose keys identify properties to preserve and whose values
+ *   are themselves (recursive) permits.
+ *
+ * @typedef {Record<string, BootstrapManifestPermit>} BootstrapManifest
+ *
+ */
+
+/**
+ * @typedef {(powers: *, config?: *) => Promise<void>} BootBehavior
+ * @typedef {Record<string, unknown>} ModuleNamespace
+ */
+
+/** @type {<X>(a: X[], b: X[]) => X[]} */
+const setDiff = (a, b) => a.filter(x => !b.includes(x));
+
+/**
+ * @param {{
+ *   D: DProxy,
+ *   logger: (msg) => void,
+ * }} vatPowers
+ * @param {Record<string, unknown>} vatParameters
+ * @param {BootstrapManifest} bootManifest
+ * @param {Record<string, BootBehavior>} behaviors
+ * @param {Record<string, ModuleNamespace>} modules
+ */
 export const makeBootstrap = (
   vatPowers,
   vatParameters,
@@ -15,6 +54,10 @@ export const makeBootstrap = (
   behaviors,
   modules,
 ) => {
+  const { keys } = Object;
+  const extra = setDiff(keys(bootManifest), keys(behaviors));
+  extra.length === 0 || Fail`missing behavior for manifest keys: ${extra}`;
+
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
