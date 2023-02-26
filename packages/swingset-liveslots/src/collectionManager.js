@@ -928,18 +928,20 @@ export function makeCollectionManager(
   const testHooks = { obtainStoreKindID, storeSizeInternal, makeCollection };
 
   /**
-   * @param {Pattern} conjunct
+   * @param {Pattern} baseKeyShape
    * @param {StoreOptions} options
    * @returns {StoreOptions}
    */
-  const narrowKeyShapeOption = (conjunct, options) => {
-    const { keyShape: baseKeyShape } = options;
+  const narrowKeyShapeOption = (baseKeyShape, options) => {
+    const { keyShape: keyShapeRestriction } = options;
     // To prepare for pattern-based compression
     // https://github.com/Agoric/agoric-sdk/pull/6432
     // put the substantive pattern, if any, last in the `M.and` since
     // an `M.and` pattern compresses only according to its last conjunct.
     const keyShape =
-      baseKeyShape === undefined ? conjunct : M.and(conjunct, baseKeyShape);
+      keyShapeRestriction === undefined
+        ? baseKeyShape
+        : M.and(baseKeyShape, keyShapeRestriction);
     return harden({ ...options, keyShape });
   };
 
