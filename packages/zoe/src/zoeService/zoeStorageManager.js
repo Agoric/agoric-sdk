@@ -267,20 +267,8 @@ export const makeZoeStorageManager = (
           const extraProperties =
             typeof customDetails === 'object' &&
             ownKeys(customDetails).length >= 1
-              ? harden({
-                  // TODO: https://github.com/Agoric/agoric-sdk/pull/7067
-                  // will remove the deprecated spread form.
-                  // @ts-expect-error of course it is an object here.
-                  ...customDetails, // At least deprecated. Use stratified
-                  customDetails,
-                })
+              ? harden({ customDetails })
               : harden({});
-          // If the contract-provided `customDetails` include the properties
-          // 'description', 'handle', 'instance', 'installation', their
-          // corresponding values will be overwritten with the actual values.
-          // For example, the value for `instance` will always be the actual
-          // instance for the contract, even if `customDetails` includes a
-          // property called `instance`.
           const invitationAmount = AmountMath.make(
             invitationKit.brand,
             harden([
