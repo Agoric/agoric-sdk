@@ -339,9 +339,14 @@ export function exportKernelStats({
     // These are not kernelStatsMetrics, they're outside the kernel.
     for (const name of ['length', 'add', 'remove']) {
       const key = `cosmic_swingset_inbound_queue_${name}`;
-      const counter = metricMeter.createObservableCounter(key, {
+      const options = {
         description: `inbound queue ${name}`,
-      });
+      };
+      const counter =
+        name === 'length'
+          ? metricMeter.createObservableUpDownCounter(key, options)
+          : metricMeter.createObservableCounter(key, options);
+
       counter.addCallback(observableResult => {
         observableResult.observe(
           inboundQueueMetrics.getStats()[key],
