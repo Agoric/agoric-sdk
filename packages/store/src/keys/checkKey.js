@@ -76,13 +76,6 @@ export const checkScalarKey = (val, check) => {
 
 /**
  * @param {Passable} val
- * @returns {boolean}
- */
-export const isScalarKey = val => checkScalarKey(val, identChecker);
-harden(isScalarKey);
-
-/**
- * @param {Passable} val
  * @returns {void}
  */
 export const assertScalarKey = val => {
@@ -309,7 +302,7 @@ harden(makeCopyBag);
 /**
  * @template K
  * @param {Iterable<K>} elementIter
- * @returns {CopySet<K>}
+ * @returns {CopyBag<K>}
  */
 export const makeCopyBagFromElements = elementIter => {
   // This fullOrder contains history dependent state. It is specific
