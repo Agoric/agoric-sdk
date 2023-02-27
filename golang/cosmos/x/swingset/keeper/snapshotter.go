@@ -27,6 +27,8 @@ const SnapshotFormat = 1
 // The manifest filename must be synchronized with the JS export/import tooling
 const ExportManifestFilename = "export-manifest.json"
 const ExportDataFilename = "export-data.jsonl"
+const UntrustedExportDataArtifactName = "UNTRUSTED-EXPORT-DATA"
+const UntrustedExportDataFilename = "untrusted-export-data.jsonl"
 const ExportedFilesMode = 0644
 
 var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
@@ -308,9 +310,19 @@ func (snapshotter *SwingsetSnapshotter) SnapshotExtension(height uint64, payload
 		return nil
 	}
 
+	if manifest.Data != "" {
+		err = writeFileToPayload(manifest.Data, UntrustedExportDataArtifactName)
+		if err != nil {
+			return err
+		}
+	}
+
 	for _, artifactInfo := range manifest.Artifacts {
 		artifactName := artifactInfo[0]
 		fileName := artifactInfo[1]
+		if artifactName == UntrustedExportDataArtifactName {
+			return fmt.Errorf("unexpected artifact name %s", artifactName)
+		}
 		err = writeFileToPayload(fileName, artifactName)
 		if err != nil {
 			return err
@@ -386,15 +398,30 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 			return err
 		}
 
-		// Since we cannot trust the state-sync payload at this point, we generate
-		// a safe and unique filename from the artifact name we received, by
-		// substituting any non letters-digits-hyphen-underscore-dot by a hyphen,
-		// and prefixing with an incremented id.
-		// The filename is not used for any purpose in the snapshotting logic.
-		filename := sanitizeArtifactName(payload.Name)
-		filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
-		manifest.Artifacts = append(manifest.Artifacts, [2]string{payload.Name, filename})
-		err = writeExportFile(filename, payload.Data)
+		switch {
+		case payload.Name != UntrustedExportDataArtifactName:
+			// Artifact verifiable on import from the export data
+			// Since we cannot trust the state-sync payload at this point, we generate
+			// a safe and unique filename from the artifact name we received, by
+			// substituting any non letters-digits-hyphen-underscore-dot by a hyphen,
+			// and prefixing with an incremented id.
+			// The filename is not used for any purpose in the snapshotting logic.
+			filename := sanitizeArtifactName(payload.Name)
+			filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
+			manifest.Artifacts = append(manifest.Artifacts, [2]string{payload.Name, filename})
+			err = writeExportFile(filename, payload.Data)
+
+		case len(swingStoreEntries) > 0:
+			// Pseudo artifact containing untrusted export data which may have been
+			// saved separately for debugging purposes (not referenced from the manifest)
+			err = writeExportFile(UntrustedExportDataFilename, payload.Data)
+
+		default:
+			// There is no trusted export data
+			err = errors.New("cannot restore from untrusted export data")
+			// snapshotter.logger.Info("using untrusted export data for swingstore restore")
+			// _, err = exportDataFile.Write(payload.Data)
+		}
 
 		if err != nil {
 			return err
