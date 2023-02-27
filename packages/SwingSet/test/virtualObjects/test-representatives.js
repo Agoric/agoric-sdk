@@ -387,7 +387,7 @@ test('virtual object gc', async t => {
     [`${v}.vs.vc.4.|entryCount`]: '0',
     [`${v}.vs.vc.4.|label`]: 'watchedPromises',
     [`${v}.vs.vc.4.|nextOrdinal`]: '1',
-    [`${v}.vs.vc.4.|schemata`]: vstr([M.string()]),
+    [`${v}.vs.vc.4.|schemata`]: vstr([M.and(M.scalar(), M.string())]),
     [`${v}.vs.vom.es.o+v10/3`]: 'r',
     [`${v}.vs.vom.o+v10/2`]: `{"label":${vstr('thing #2')}}`,
     [`${v}.vs.vom.o+v10/3`]: `{"label":${vstr('thing #3')}}`,

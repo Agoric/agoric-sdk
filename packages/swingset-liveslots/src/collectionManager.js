@@ -8,7 +8,6 @@ import {
 import { compareRank } from '@endo/marshal/src/rankOrder.js';
 import {
   getRankCover,
-  assertKeyPattern,
   assertPattern,
   matches,
   mustMatch,
@@ -74,56 +73,56 @@ export function makeCollectionManager(
       hasWeakKeys: false,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarMapStore,
+      reanimator: reanimateMapStore,
       durable: false,
     },
     scalarWeakMapStore: {
       hasWeakKeys: true,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarWeakMapStore,
+      reanimator: reanimateWeakMapStore,
       durable: false,
     },
     scalarSetStore: {
       hasWeakKeys: false,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarSetStore,
+      reanimator: reanimateSetStore,
       durable: false,
     },
     scalarWeakSetStore: {
       hasWeakKeys: true,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarWeakSetStore,
+      reanimator: reanimateWeakSetStore,
       durable: false,
     },
     scalarDurableMapStore: {
       hasWeakKeys: false,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarMapStore,
+      reanimator: reanimateMapStore,
       durable: true,
     },
     scalarDurableWeakMapStore: {
       hasWeakKeys: true,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarWeakMapStore,
+      reanimator: reanimateWeakMapStore,
       durable: true,
     },
     scalarDurableSetStore: {
       hasWeakKeys: false,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarSetStore,
+      reanimator: reanimateSetStore,
       durable: true,
     },
     scalarDurableWeakSetStore: {
       hasWeakKeys: true,
       kindID: 0,
       // eslint-disable-next-line no-use-before-define
-      reanimator: reanimateScalarWeakSetStore,
+      reanimator: reanimateWeakSetStore,
       durable: true,
     },
   };
@@ -397,7 +396,7 @@ export function makeCollectionManager(
       valuePatt = M.any(),
     ) {
       assert(yieldKeys || yieldValues, 'useless entries()');
-      assertKeyPattern(keyPatt);
+      assertPattern(keyPatt);
       assertPattern(valuePatt);
 
       const [coverStart, coverEnd] = getRankCover(keyPatt, encodeKey);
@@ -666,7 +665,7 @@ export function makeCollectionManager(
   function makeCollection(label, kindName, isDurable, keyShape, valueShape) {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
-    assertKeyPattern(keyShape);
+    assertPattern(keyShape);
     const schemata = [keyShape];
     if (valueShape) {
       assertPattern(valueShape);
@@ -764,17 +763,16 @@ export function makeCollectionManager(
   }
 
   /**
-   * Produce a *scalar* big map: keys can only be atomic values, primitives, or
-   * remotables.
+   * Produce a big map.
    *
    * @template K,V
    * @param {string} [label='map'] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {MapStore<K,V>}
    */
-  function makeScalarBigMapStore(label = 'map', options = {}) {
+  function makeBigMapStore(label = 'map', options = {}) {
     const {
-      keyShape = M.scalar(),
+      keyShape = M.any(),
       valueShape = undefined,
       durable = false,
     } = options;
@@ -796,7 +794,7 @@ export function makeCollectionManager(
     if (baggageID) {
       return convertSlotToVal(baggageID);
     } else {
-      const baggage = makeScalarBigMapStore('baggage', {
+      const baggage = makeBigMapStore('baggage', {
         keyShape: M.string(),
         durable: true,
       });
@@ -809,17 +807,16 @@ export function makeCollectionManager(
   }
 
   /**
-   * Produce a *scalar* weak big map: keys can only be atomic values,
-   * primitives, or remotables.
+   * Produce a weak big map.
    *
    * @template K,V
    * @param {string} [label='weakMap'] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakMapStore<K,V>}
    */
-  function makeScalarBigWeakMapStore(label = 'weakMap', options = {}) {
+  function makeBigWeakMapStore(label = 'weakMap', options = {}) {
     const {
-      keyShape = M.scalar(),
+      keyShape = M.any(),
       valueShape = undefined,
       durable = false,
     } = options;
@@ -839,15 +836,14 @@ export function makeCollectionManager(
   }
 
   /**
-   * Produce a *scalar* big set: keys can only be atomic values, primitives, or
-   * remotables.
+   * Produce a big set.
    *
    * @template K
    * @param {string} [label='set'] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {SetStore<K>}
    */
-  function makeScalarBigSetStore(label = 'set', options = {}) {
+  function makeBigSetStore(label = 'set', options = {}) {
     const {
       keyShape = M.scalar(),
       valueShape = undefined,
@@ -867,15 +863,14 @@ export function makeCollectionManager(
   }
 
   /**
-   * Produce a *scalar* weak big set: keys can only be atomic values,
-   * primitives, or remotables.
+   * Produce a weak big set.
    *
    * @template K
    * @param {string} [label='weakSet'] - diagnostic label for the store
    * @param {StoreOptions} [options]
    * @returns {WeakSetStore<K>}
    */
-  function makeScalarBigWeakSetStore(label = 'weakSet', options = {}) {
+  function makeBigWeakSetStore(label = 'weakSet', options = {}) {
     const {
       keyShape = M.scalar(),
       valueShape = undefined,
@@ -914,23 +909,89 @@ export function makeCollectionManager(
     );
   }
 
-  function reanimateScalarMapStore(vobjID) {
+  function reanimateMapStore(vobjID) {
     return collectionToMapStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarWeakMapStore(vobjID) {
+  function reanimateWeakMapStore(vobjID) {
     return collectionToWeakMapStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarSetStore(vobjID) {
+  function reanimateSetStore(vobjID) {
     return collectionToSetStore(reanimateCollection(vobjID));
   }
 
-  function reanimateScalarWeakSetStore(vobjID) {
+  function reanimateWeakSetStore(vobjID) {
     return collectionToWeakSetStore(reanimateCollection(vobjID));
   }
 
   const testHooks = { obtainStoreKindID, storeSizeInternal, makeCollection };
+
+  /**
+   * @param {Pattern} baseKeyShape
+   * @param {StoreOptions} options
+   * @returns {StoreOptions}
+   */
+  const narrowKeyShapeOption = (baseKeyShape, options) => {
+    const { keyShape: keyShapeRestriction } = options;
+    // To prepare for pattern-based compression
+    // https://github.com/Agoric/agoric-sdk/pull/6432
+    // put the substantive pattern, if any, last in the `M.and` since
+    // an `M.and` pattern compresses only according to its last conjunct.
+    const keyShape =
+      keyShapeRestriction === undefined
+        ? baseKeyShape
+        : M.and(baseKeyShape, keyShapeRestriction);
+    return harden({ ...options, keyShape });
+  };
+
+  /**
+   * Produce a *scalar* big map: keys can only be atomic values, primitives, or
+   * remotables.
+   *
+   * @template K,V
+   * @param {string} [label='map'] - diagnostic label for the store
+   * @param {StoreOptions} [options]
+   * @returns {MapStore<K,V>}
+   */
+  const makeScalarBigMapStore = (label = 'map', options = {}) =>
+    makeBigMapStore(label, narrowKeyShapeOption(M.scalar(), options));
+
+  /**
+   * Produce a *scalar* weak big map: keys can only be atomic values,
+   * primitives, or remotables.
+   *
+   * @template K,V
+   * @param {string} [label='weakMap'] - diagnostic label for the store
+   * @param {StoreOptions} [options]
+   * @returns {WeakMapStore<K,V>}
+   */
+  const makeScalarBigWeakMapStore = (label = 'weakMap', options = {}) =>
+    makeBigWeakMapStore(label, narrowKeyShapeOption(M.scalar(), options));
+
+  /**
+   * Produce a *scalar* big set: keys can only be atomic values, primitives, or
+   * remotables.
+   *
+   * @template K
+   * @param {string} [label='set'] - diagnostic label for the store
+   * @param {StoreOptions} [options]
+   * @returns {SetStore<K>}
+   */
+  const makeScalarBigSetStore = (label = 'set', options = {}) =>
+    makeBigSetStore(label, narrowKeyShapeOption(M.scalar(), options));
+
+  /**
+   * Produce a *scalar* weak big set: keys can only be atomic values,
+   * primitives, or remotables.
+   *
+   * @template K
+   * @param {string} [label='weakSet'] - diagnostic label for the store
+   * @param {StoreOptions} [options]
+   * @returns {WeakSetStore<K>}
+   */
+  const makeScalarBigWeakSetStore = (label = 'weakSet', options = {}) =>
+    makeBigWeakSetStore(label, narrowKeyShapeOption(M.scalar(), options));
 
   return harden({
     initializeStoreKindInfo,

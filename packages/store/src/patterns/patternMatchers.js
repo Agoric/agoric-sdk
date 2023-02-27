@@ -27,7 +27,6 @@ import {
   checkKey,
   isKey,
   checkScalarKey,
-  isScalarKey,
   checkCopySet,
   checkCopyMap,
   copyMapKeySet,
@@ -358,80 +357,6 @@ const makePatternKit = () => {
     checkPattern(patt, assertChecker);
   };
 
-  // /////////////////////// isKeyPattern //////////////////////////////////////
-
-  /** @type {CheckKeyPattern} */
-  const checkKeyPattern = (patt, check) => {
-    if (isKey(patt)) {
-      // In principle, all keys are patterns, but only scalars are currently
-      // supported as keys.
-      return check(isScalarKey(patt), X`non-scalar keys are not yet supported`);
-    }
-    // eslint-disable-next-line no-use-before-define
-    return checkKeyPatternInternal(patt, check);
-  };
-
-  /**
-   * @param {Passable} patt
-   * @param {Checker} check
-   * @returns {boolean}
-   */
-  const checkKeyPatternInternal = (patt, check) => {
-    // Purposely parallels checkKey. TODO reuse more logic between them.
-    // Most of the text of the switch below not dealing with matchers is
-    // essentially identical.
-    const passStyle = passStyleOf(patt);
-    switch (passStyle) {
-      case 'copyRecord':
-      case 'copyArray': {
-        return check(false, X`non-scalar keys are not yet supported`);
-      }
-      case 'tagged': {
-        const tag = getTag(patt);
-        const matchHelper = maybeMatchHelper(tag);
-        if (matchHelper !== undefined) {
-          // This check guarantees the payload invariants assumed by the other
-          // matchHelper methods.
-          return matchHelper.checkKeyPattern(patt.payload, check);
-        }
-        switch (tag) {
-          case 'copySet':
-          case 'copyMap': {
-            return check(false, X`non-scalar keys are not yet supported`);
-          }
-          default: {
-            return check(
-              false,
-              X`A passable tagged ${q(tag)} is not a key: ${patt}`,
-            );
-          }
-        }
-      }
-      case 'error':
-      case 'promise': {
-        return check(false, X`A ${q(passStyle)} cannot be a pattern`);
-      }
-      default: {
-        // Unexpected tags are just non-patterns, but an unexpected passStyle
-        // is always an error.
-        throw Fail`unexpected passStyle ${q(passStyle)}: ${patt}`;
-      }
-    }
-  };
-
-  /**
-   * @param {Passable} patt
-   * @returns {boolean}
-   */
-  const isKeyPattern = patt => checkKeyPattern(patt, identChecker);
-
-  /**
-   * @param {Pattern} patt
-   */
-  const assertKeyPattern = patt => {
-    checkKeyPattern(patt, assertChecker);
-  };
-
   // /////////////////////// matches ///////////////////////////////////////////
 
   /**
@@ -733,8 +658,6 @@ const makePatternKit = () => {
       check(false, X`match:any payload: ${matcherPayload} - Must be undefined`),
 
     getRankCover: (_matchPayload, _encodePassable) => ['', '{'],
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -757,10 +680,6 @@ const makePatternKit = () => {
         compareRank,
         patts.map(p => getRankCover(p, encodePassable)),
       ),
-
-    checkKeyPattern: (patts, check) => {
-      return patts.every(patt => checkKeyPattern(patt, check));
-    },
   });
 
   /** @type {MatchHelper} */
@@ -796,10 +715,6 @@ const makePatternKit = () => {
         compareRank,
         patts.map(p => getRankCover(p, encodePassable)),
       ),
-
-    checkKeyPattern: (patts, check) => {
-      return patts.every(patt => checkKeyPattern(patt, check));
-    },
   });
 
   /** @type {MatchHelper} */
@@ -818,8 +733,6 @@ const makePatternKit = () => {
     checkIsWellFormed: checkPattern,
 
     getRankCover: (_patt, _encodePassable) => ['', '{'],
-
-    checkKeyPattern,
   });
 
   /** @type {MatchHelper} */
@@ -830,8 +743,6 @@ const makePatternKit = () => {
     checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -842,8 +753,6 @@ const makePatternKit = () => {
     checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -854,8 +763,6 @@ const makePatternKit = () => {
     checkIsWellFormed: matchAnyHelper.checkIsWellFormed,
 
     getRankCover: (_matchPayload, _encodePassable) => ['a', 'z~'],
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -884,23 +791,6 @@ const makePatternKit = () => {
       }
       return getPassStyleCover(style);
     },
-
-    checkKeyPattern: (kind, check) => {
-      switch (kind) {
-        case 'boolean':
-        case 'number':
-        case 'bigint':
-        case 'string':
-        case 'symbol':
-        case 'remotable':
-        case 'undefined': {
-          return true;
-        }
-        default: {
-          return check(false, X`${kind} keys are not supported`);
-        }
-      }
-    },
   });
 
   /** @type {MatchHelper} */
@@ -923,8 +813,6 @@ const makePatternKit = () => {
 
     getRankCover: (_matchPayload, _encodePassable) =>
       getPassStyleCover('bigint'),
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -949,8 +837,6 @@ const makePatternKit = () => {
     getRankCover: (_matchPayload, _encodePassable) =>
       // TODO Could be more precise
       getPassStyleCover('bigint'),
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -977,8 +863,6 @@ const makePatternKit = () => {
 
     getRankCover: (_matchPayload, _encodePassable) =>
       getPassStyleCover('string'),
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -1011,8 +895,6 @@ const makePatternKit = () => {
 
     getRankCover: (_matchPayload, _encodePassable) =>
       getPassStyleCover('symbol'),
-
-    checkKeyPattern: (_matcherPayload, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -1049,8 +931,6 @@ const makePatternKit = () => {
 
     getRankCover: (_remotableDesc, _encodePassable) =>
       getPassStyleCover('remotable'),
-
-    checkKeyPattern: (_remotableDesc, _check) => true,
   });
 
   /** @type {MatchHelper} */
@@ -1073,9 +953,6 @@ const makePatternKit = () => {
       }
       return [leftBound, rightBound];
     },
-
-    checkKeyPattern: (rightOperand, check) =>
-      checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
@@ -1087,9 +964,6 @@ const makePatternKit = () => {
     checkIsWellFormed: checkKey,
 
     getRankCover: matchLTEHelper.getRankCover,
-
-    checkKeyPattern: (rightOperand, check) =>
-      checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
@@ -1112,9 +986,6 @@ const makePatternKit = () => {
       }
       return [leftBound, rightBound];
     },
-
-    checkKeyPattern: (rightOperand, check) =>
-      checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
@@ -1126,9 +997,6 @@ const makePatternKit = () => {
     checkIsWellFormed: checkKey,
 
     getRankCover: matchGTEHelper.getRankCover,
-
-    checkKeyPattern: (rightOperand, check) =>
-      checkKeyPattern(rightOperand, check),
   });
 
   /** @type {MatchHelper} */
@@ -1178,9 +1046,6 @@ const makePatternKit = () => {
       ),
 
     getRankCover: _entryPatt => getPassStyleCover('copyRecord'),
-
-    checkKeyPattern: (_entryPatt, check) =>
-      check(false, X`Records not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
@@ -1207,9 +1072,6 @@ const makePatternKit = () => {
       ),
 
     getRankCover: () => getPassStyleCover('copyArray'),
-
-    checkKeyPattern: (_, check) =>
-      check(false, X`Arrays not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
@@ -1237,9 +1099,6 @@ const makePatternKit = () => {
       ),
 
     getRankCover: () => getPassStyleCover('tagged'),
-
-    checkKeyPattern: (_, check) =>
-      check(false, X`CopySets not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
@@ -1280,9 +1139,6 @@ const makePatternKit = () => {
       ),
 
     getRankCover: () => getPassStyleCover('tagged'),
-
-    checkKeyPattern: (_, check) =>
-      check(false, X`CopyBags not yet supported as keys`),
   });
 
   /** @type {MatchHelper} */
@@ -1325,9 +1181,6 @@ const makePatternKit = () => {
       ),
 
     getRankCover: _entryPatt => getPassStyleCover('tagged'),
-
-    checkKeyPattern: (_entryPatt, check) =>
-      check(false, X`CopyMap not yet supported as keys`),
   });
 
   /**
@@ -1432,11 +1285,6 @@ const makePatternKit = () => {
       _optionalPatt = undefined,
       _restPatt = undefined,
     ]) => getPassStyleCover('copyArray'),
-
-    checkKeyPattern: (
-      [_requiredPatt, _optionalPatt = undefined, _restPatt = undefined],
-      check,
-    ) => check(false, X`copyRecord not yet supported as keys`),
   });
 
   /**
@@ -1545,11 +1393,6 @@ const makePatternKit = () => {
       _optionalPatt = undefined,
       _restPatt = undefined,
     ]) => getPassStyleCover(passStyleOf(requiredPatt)),
-
-    checkKeyPattern: (
-      [_requiredPatt, _optionalPatt = undefined, _restPatt = undefined],
-      check,
-    ) => check(false, X`copyRecord not yet supported as keys`),
   });
 
   /** @type {Record<string, MatchHelper>} */
@@ -1813,8 +1656,6 @@ const makePatternKit = () => {
     mustMatch,
     assertPattern,
     isPattern,
-    assertKeyPattern,
-    isKeyPattern,
     getRankCover,
     M,
   });
@@ -1832,8 +1673,6 @@ export const {
   mustMatch,
   assertPattern,
   isPattern,
-  assertKeyPattern,
-  isKeyPattern,
   getRankCover,
   M,
 } = makePatternKit();
