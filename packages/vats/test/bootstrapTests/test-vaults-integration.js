@@ -20,10 +20,10 @@ const makeDefaultTestContext = async t => {
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
-  const { messageVat } = runUtils;
+  const { EV } = runUtils;
 
   // Wait for IbcATOM to make it into agoricNames
-  await messageVat('bootstrap', 'consumeItem', ['vaultFactoryKit']);
+  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   const walletDriver = await makeWalletFactoryDriver(runUtils, storage);
@@ -50,16 +50,13 @@ test.after(async t => {
 });
 
 test('metrics path', async t => {
-  const { messageVat, messageVatObject, awaitVatObject } = t.context.runUtils;
+  const { EV } = t.context.runUtils;
   // example of awaitVatObject
-  const vaultFactoryKit = await messageVat('bootstrap', 'consumeItem', [
+  const vaultFactoryKit = await EV.vat('bootstrap').consumeItem(
     'vaultFactoryKit',
-  ]);
-  const vfTopics = await messageVatObject(
-    vaultFactoryKit.publicFacet,
-    'getPublicTopics',
   );
-  const vfMetricsPath = await awaitVatObject(vfTopics.metrics, ['storagePath']);
+  const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
+  const vfMetricsPath = await EV.get(vfTopics.metrics).storagePath;
   t.is(vfMetricsPath, 'published.vaultFactory.metrics');
 });
 

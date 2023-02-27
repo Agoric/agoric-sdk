@@ -65,14 +65,43 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     mutex.put(result);
     return result;
   };
-  const messageVat = (name, methodName, args) =>
-    runMethod('messageVat', [{ name, methodName, args }]);
-  const messageVatObject = (presence, methodName, args) =>
-    runMethod('messageVatObject', [{ presence, methodName, args }]);
-  const awaitVatObject = (presence, path) =>
-    runMethod('awaitVatObject', [{ presence, path }]);
 
-  return { runMethod, messageVat, messageVatObject, awaitVatObject };
+  /**
+   * @type {( (presence: unknown) => Record<string, (...args: any) => Promise<any>> ) & {
+   *   get: (presence: unknown) => Record<string, Promise<any>>,
+   *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
+   * }}
+   */
+  const EV = presence =>
+    new Proxy(
+      {},
+      {
+        get:
+          (_t, methodName, _rx) =>
+          (...args) =>
+            runMethod('messageVatObject', [{ presence, methodName, args }]),
+      },
+    );
+  EV.vat = name =>
+    new Proxy(
+      {},
+      {
+        get:
+          (_t, methodName, _rx) =>
+          (...args) =>
+            runMethod('messageVat', [{ name, methodName, args }]),
+      },
+    );
+  EV.get = presence =>
+    new Proxy(
+      {},
+      {
+        get: (_t, pathElement, _rx) =>
+          runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+      },
+    );
+
+  return { runMethod, EV };
 };
 
 /**
@@ -81,22 +110,22 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
  */
 export const makeWalletFactoryDriver = async (runUtils, storage) => {
-  const { messageVat, messageVatObject } = runUtils;
+  const { EV } = runUtils;
 
-  const walletFactoryStartResult = await messageVat(
-    'bootstrap',
-    'consumeItem',
-    ['walletFactoryStartResult'],
+  const walletFactoryStartResult = await EV.vat('bootstrap').consumeItem(
+    'walletFactoryStartResult',
   );
-  const bankManager = await messageVat('bootstrap', 'consumeItem', [
-    'bankManager',
-  ]);
-  const namesByAddressAdmin = await messageVat('bootstrap', 'consumeItem', [
+  const bankManager = await EV.vat('bootstrap').consumeItem('bankManager');
+  const namesByAddressAdmin = await EV.vat('bootstrap').consumeItem(
     'namesByAddressAdmin',
-  ]);
+  );
 
   const marshaller = boardSlottingMarshaller();
 
+  /**
+   * @param {string} walletAddress
+   * @param {unknown} walletPresence
+   */
   const makeWalletDriver = (walletAddress, walletPresence) => ({
     /**
      * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
@@ -108,10 +137,7 @@ export const makeWalletFactoryDriver = async (runUtils, storage) => {
         offer,
       });
 
-      return messageVatObject(walletPresence, 'handleBridgeAction', [
-        offerCapData,
-        true,
-      ]);
+      return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
@@ -124,18 +150,16 @@ export const makeWalletFactoryDriver = async (runUtils, storage) => {
   });
 
   return {
-    /** @param {string} walletAddress */
+    /**
+     * @param {string} walletAddress
+     */
     async provideSmartWallet(walletAddress) {
-      const bank = await messageVatObject(bankManager, 'getBankForAddress', [
-        walletAddress,
-      ]);
-      return messageVatObject(
-        walletFactoryStartResult.creatorFacet,
-        'provideSmartWallet',
-        [walletAddress, bank, namesByAddressAdmin],
-      ).then(([walletPresence, _isNew]) =>
-        makeWalletDriver(walletAddress, walletPresence),
-      );
+      const bank = await EV(bankManager).getBankForAddress(walletAddress);
+      return EV(walletFactoryStartResult.creatorFacet)
+        .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
+        .then(([walletPresence, _isNew]) =>
+          makeWalletDriver(walletAddress, walletPresence),
+        );
     },
   };
 };
