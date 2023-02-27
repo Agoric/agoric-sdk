@@ -185,6 +185,11 @@ harden(merge);
 
 // We should be able to use this for iterIsSuperset as well.
 // The generalization is free.
+/**
+ * @template T
+ * @param {Iterable<[T,bigint,bigint]>} xyi
+ * @returns {boolean}
+ */
 const bagIterIsSuperbag = xyi => {
   for (const [_m, xc, yc] of xyi) {
     if (xc < yc) {
@@ -197,6 +202,11 @@ const bagIterIsSuperbag = xyi => {
 
 // We should be able to use this for iterIsDisjoint as well.
 // The code is identical.
+/**
+ * @template T
+ * @param {Iterable<[T,bigint,bigint]>} xyi
+ * @returns {boolean}
+ */
 const bagIterIsDisjoint = xyi => {
   for (const [_m, xc, yc] of xyi) {
     if (xc >= 1n && yc >= 1n) {
@@ -209,6 +219,11 @@ const bagIterIsDisjoint = xyi => {
 
 // We should be able to use this for iterCompare as well.
 // The generalization is free.
+/**
+ * @template T
+ * @param {Iterable<[T,bigint,bigint]>} xyi
+ * @returns {KeyComparison}
+ */
 const bagIterCompare = xyi => {
   let loneY = false;
   let loneX = false;
@@ -236,7 +251,13 @@ const bagIterCompare = xyi => {
   }
 };
 
+/**
+ * @template T
+ * @param {[T,bigint,bigint][]} xyi
+ * @returns {[T,bigint][]}
+ */
 const bagIterUnion = xyi => {
+  /** @type {[T,bigint][]} */
   const result = [];
   for (const [m, xc, yc] of xyi) {
     result.push([m, xc + yc]);
@@ -244,7 +265,13 @@ const bagIterUnion = xyi => {
   return result;
 };
 
+/**
+ * @template T
+ * @param {Iterable<[T,bigint,bigint]>} xyi
+ * @returns {[T,bigint][]}
+ */
 const bagIterIntersection = xyi => {
+  /** @type {[T,bigint][]} */
   const result = [];
   for (const [m, xc, yc] of xyi) {
     const mc = xc <= yc ? xc : yc;
@@ -253,7 +280,13 @@ const bagIterIntersection = xyi => {
   return result;
 };
 
+/**
+ * @template T
+ * @param {Iterable<[T,bigint,bigint]>} xyi
+ * @returns {[T,bigint][]}
+ */
 const bagIterDisjointSubtract = xyi => {
+  /** @type {[T,bigint][]} */
   const result = [];
   for (const [m, xc, yc] of xyi) {
     const mc = xc - yc;
