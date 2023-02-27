@@ -64,7 +64,12 @@ export async function buildSwingset(
   vatconfig,
   argv,
   env,
-  { debugName = undefined, slogCallbacks, slogSender, recordChainActionWrap },
+  {
+    debugName = undefined,
+    slogCallbacks,
+    slogSender,
+    wrapWithChainActionRecorder,
+  },
 ) {
   // FIXME: Find a better way to propagate the role.
   process.env.ROLE = argv.ROLE;
@@ -79,9 +84,12 @@ export async function buildSwingset(
 
   const rawMailboxStateMap = buildMailboxStateMap(mailboxStorage);
   const mailboxStateMap = {
-    add: recordChainActionWrap(rawMailboxStateMap.add, 'mailbox-add'),
-    remove: recordChainActionWrap(rawMailboxStateMap.remove, 'mailbox-remove'),
-    setAcknum: recordChainActionWrap(
+    add: wrapWithChainActionRecorder(rawMailboxStateMap.add, 'mailbox-add'),
+    remove: wrapWithChainActionRecorder(
+      rawMailboxStateMap.remove,
+      'mailbox-remove',
+    ),
+    setAcknum: wrapWithChainActionRecorder(
       rawMailboxStateMap.setAcknum,
       'mailbox-set-acknum',
     ),
@@ -104,7 +112,7 @@ export async function buildSwingset(
   let bridgeInbound;
   if (bridgeOutbound) {
     const bd = buildBridge(
-      recordChainActionWrap(bridgeOutbound, 'bridge-outbound'),
+      wrapWithChainActionRecorder(bridgeOutbound, 'bridge-outbound'),
     );
     config.devices.bridge = {
       sourceSpec: bd.srcPath,
@@ -289,7 +297,7 @@ export async function launch({
   //
   // The first 3 are sinks only. bridgeOutbound returns a result (for now)
   // The actionQueue is used as a synchronous iterator drained at once
-  const recordChainActionWrap =
+  const wrapWithChainActionRecorder =
     (fn, type) =>
     (...args) => {
       const result = fn(...args);
@@ -298,7 +306,7 @@ export async function launch({
     };
 
   if (setActivityhash) {
-    setActivityhash = recordChainActionWrap(
+    setActivityhash = wrapWithChainActionRecorder(
       setActivityhash,
       'set-activity-hash',
     );
@@ -320,7 +328,7 @@ export async function launch({
       debugName,
       slogCallbacks,
       slogSender,
-      recordChainActionWrap,
+      wrapWithChainActionRecorder,
     },
   );
 
@@ -456,15 +464,15 @@ export async function launch({
       /** @type {Publisher<unknown>} */
       const publisher = makeInstallationPublisher();
       installationPublisher = {
-        publish: recordChainActionWrap(
+        publish: wrapWithChainActionRecorder(
           publisher.publish,
           'installation-publisher-publish',
         ),
-        finish: recordChainActionWrap(
+        finish: wrapWithChainActionRecorder(
           publisher.finish,
           'installation-publisher-finish',
         ),
-        fail: recordChainActionWrap(
+        fail: wrapWithChainActionRecorder(
           publisher.fail,
           'installation-publisher-fail',
         ),
