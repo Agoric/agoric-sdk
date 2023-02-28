@@ -130,7 +130,7 @@ const trace = makeTracer('VM', false);
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {ERef<Marshaller>} marshaller
  * @param {Readonly<{
- * debtMint: ZCFMint<'nat'>,
+ * debtMint: ZCFMint<'nat', 'debt'>,
  * collateralBrand: Brand<'nat'>,
  * collateralUnit: Amount<'nat'>,
  * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,

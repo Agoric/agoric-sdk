@@ -2,6 +2,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any] alleged name of brand
  * @typedef {object} Amount
  * Amounts are descriptions of digital assets, answering the questions
  * "how much" and "of what kind". Amounts are values labeled with a brand.
@@ -12,7 +13,7 @@
  * relies heavily on polymorphic MathHelpers, which manipulate the unbranded
  * portion.
  *
- * @property {Brand<K>} brand
+ * @property {Brand<K, N>} brand
  * @property {AssetValueForKind<K>} value
  */
 
@@ -85,6 +86,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any] alleged name
  * @typedef {object} Brand
  * The brand identifies the kind of issuer, and has a function to get the
  * alleged name for the kind of asset described. The alleged name (such
@@ -98,7 +100,7 @@
  *
  * @property {(allegedIssuer: ERef<Issuer>) => Promise<boolean>} isMyIssuer
  * Should be used with `issuer.getBrand` to ensure an issuer and brand match.
- * @property {() => string} getAllegedName
+ * @property {() => N} getAllegedName
  * @property {() => DisplayInfo<K>} getDisplayInfo
  * Give information to UI on how to display the amount.
  * @property {() => Pattern} getAmountShape
@@ -212,6 +214,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any]
  * @typedef {object} Issuer
  *
  * The issuer cannot mint a new amount, but it can create empty purses
@@ -255,10 +258,11 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any]
  * @typedef {object} IssuerKit
- * @property {Mint<K>} mint
- * @property {Issuer<K>} issuer
- * @property {Brand<K>} brand
+ * @property {Mint<K, N>} mint
+ * @property {Issuer<K, N>} issuer
+ * @property {Brand<K, N>} brand
  * @property {DisplayInfo} displayInfo
  */
 
@@ -284,12 +288,13 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any]
  * @typedef {object} Mint
  * Holding a Mint carries the right to issue new digital assets. These
  * assets all have the same kind, which is called a Brand.
  *
  * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
- * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment
+ * @property {(newAmount: Amount<K>) => Payment<K, N>} mintPayment
  * Creates a new Payment containing newly minted amount.
  */
 
@@ -368,6 +373,7 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any]
  * @typedef {object} Payment
  * Payments hold amount of digital assets of the same brand in transit. Payments
  * can be deposited in purses, split into multiple payments, combined, and
@@ -384,7 +390,7 @@
  * calling `issuer.makeEmptyPurse()` to create a purse, then
  * `purse.deposit(payment)`.
  *
- * @property {() => Brand<K>} getAllegedBrand
+ * @property {() => Brand<K, N>} getAllegedBrand
  * Get the allegedBrand, indicating the type of digital asset this
  * payment purports to be, and which issuer to use. Because payments
  * are not trusted, any method calls on payments should be treated

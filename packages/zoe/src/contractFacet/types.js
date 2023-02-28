@@ -140,8 +140,9 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any] name of brand
  * @typedef {object} ZCFMint
- * @property {() => IssuerRecord<K>} getIssuerRecord
+ * @property {() => IssuerRecord<K, N>} getIssuerRecord
  * @property {ZCFMintMintGains} mintGains
  * All the amounts in gains must be of this ZCFMint's brand.
  * The gains' keywords are in the namespace of that seat.

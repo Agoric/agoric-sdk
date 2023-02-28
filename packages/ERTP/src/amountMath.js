@@ -205,9 +205,10 @@ const AmountMath = {
    * Make an amount from a value by adding the brand.
    *
    * @template {AssetKind} [K=AssetKind]
-   * @param {Brand<K>} brand
+   * @template {string} [N=any]
+   * @param {Brand<K, N>} brand
    * @param {AssetValueForKind<K>} allegedValue
-   * @returns {Amount<K>}
+   * @returns {Amount<K, N>}
    */
   // allegedValue has a conditional expression for type widening, to prevent V being bound to a a literal like 1n
   make: (brand, allegedValue) => {
@@ -249,6 +250,7 @@ const AmountMath = {
    *
    * @type {{
    *   (brand: Brand): Amount<'nat'>;
+   *   <K, N, B extends Brand<infer K, infer N>>(brand: B, assetKind: K): Amount<K, N>;
    *   <K extends AssetKind>(brand: Brand, assetKind: K): Amount<K>;
    * }}
    */

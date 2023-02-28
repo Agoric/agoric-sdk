@@ -78,11 +78,12 @@
  */
 
 /**
+ * @template {string} [NN=any] numerator alleged name
+ * @template {string} [DN=any] denominator alleged name
  * @typedef {object} Ratio
- * @property {Amount<'nat'>} numerator
- * @property {Amount<'nat'>} denominator
+ * @property {Amount<'nat', NN>} numerator
+ * @property {Amount<'nat', DN>} denominator
  */
-
 /**
  * @callback ScaleAmount
  * @param {Amount<'nat'>} amount

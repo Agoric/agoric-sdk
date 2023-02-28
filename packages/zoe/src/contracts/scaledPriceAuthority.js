@@ -13,9 +13,9 @@ import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.j
 /**
  * @typedef {object} ScaledPriceAuthorityOpts
  * @property {ERef<PriceAuthority>} sourcePriceAuthority
- * @property {Ratio} scaleIn - sourceAmountIn:targetAmountIn
- * @property {Ratio} scaleOut - sourceAmountOut:targetAmountOut
- * @property {Ratio} [initialPrice] - targetAmountIn:targetAmountOut
+ * @property {Ratio<'In', 'Out'>} scaleIn - sourceAmountIn:targetAmountIn
+ * @property {Ratio<'Out', 'In'>} scaleOut - sourceAmountOut:targetAmountOut
+ * @property {Ratio<'Out', 'In'>} [initialPrice] - targetAmountIn:targetAmountOut
  */
 
 /**

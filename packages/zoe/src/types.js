@@ -33,9 +33,10 @@
 
 /**
  * @template {AssetKind} [K=AssetKind]
+ * @template {string} [N=any] name of brand
  * @typedef {object} IssuerRecord
- * @property {Brand<K>} brand
- * @property {Issuer<K>} issuer
+ * @property {Brand<K, N>} brand
+ * @property {Issuer<K, N>} issuer
  * @property {K} assetKind
  * @property {DisplayInfo<K>} [displayInfo]
  *

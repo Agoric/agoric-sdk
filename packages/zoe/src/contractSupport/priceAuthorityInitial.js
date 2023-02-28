@@ -16,11 +16,13 @@ import { mintQuote } from './priceAuthorityTransform.js';
  *
  * Mainly for testing vaults without waiting for oracle operators to PushPrice.
  *
- * @param {Ratio} priceOutPerIn
+ * @template {string} In brandIn alleged name
+ * @template {string} Out brandOut alleged name
+ * @param {Ratio<Out, In>} priceOutPerIn
  * @param {PriceAuthority} priceAuthority
  * @param {ERef<Mint<'set'>>} quoteMint
- * @param {Brand<'nat'>} brandIn
- * @param {Brand<'nat'>} brandOut
+ * @param {Brand<'nat', In>} brandIn
+ * @param {Brand<'nat', Out>} brandOut
  * @returns {PriceAuthority}
  */
 export const makeInitialTransform = (

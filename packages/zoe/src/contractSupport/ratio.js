@@ -55,22 +55,24 @@ export const assertIsRatio = ratio => {
 };
 
 /**
+ * @template {string} [NN=any] numerator alleged name
+ * @template {string} [DN=any] denominator alleged name
  * @param {bigint} numerator
- * @param {Brand} numeratorBrand
+ * @param {Brand<'nat', NN>} numeratorBrand
  * @param {bigint} [denominator] The default denominator is 100
- * @param {Brand} [denominatorBrand] The default is to reuse the numeratorBrand
- * @returns {Ratio}
+ * @param {Brand<'nat', DN>} [denominatorBrand] The default is to reuse the numeratorBrand
+ * @returns {Ratio<NN, DN>}
  */
 export const makeRatio = (
   numerator,
   numeratorBrand,
   denominator = PERCENT,
+  // @ts-expect-error XXX can have different subtype
   denominatorBrand = numeratorBrand,
 ) => {
   denominator > 0n ||
     Fail`No infinite ratios! Denominator was 0 ${q(denominatorBrand)}`;
 
-  // @ts-expect-error cast to return type because make() ensures
   return harden({
     numerator: AmountMath.make(numeratorBrand, numerator),
     denominator: AmountMath.make(denominatorBrand, denominator),
@@ -381,8 +383,8 @@ const NUMERIC_RE = /^(\d\d*)(?:\.(\d*))?$/;
  * Create a ratio from a given numeric value.
  *
  * @param {ParsableNumber} numeric
- * @param {Brand} numeratorBrand
- * @param {Brand} [denominatorBrand]
+ * @param {Brand<'nat'>} numeratorBrand
+ * @param {Brand<'nat'>} [denominatorBrand]
  * @returns {Ratio}
  */
 export const parseRatio = (
