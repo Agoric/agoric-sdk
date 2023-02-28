@@ -6,6 +6,11 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { E } from '@endo/captp';
+import {
+  makeAdjustOffer,
+  makeCloseOffer,
+  makeOpenOffer,
+} from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -13,6 +18,9 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
  */
 const test = anyTest;
+
+// presently all these tests use one collateral manager
+const collateralBrandKey = 'IbcATOM';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
@@ -70,30 +78,15 @@ test('open vault', async t => {
   const wd = await factoryDriver.provideSmartWallet('agoric1open');
 
   const { agoricNamesRemotes } = t.context;
-  await wd.executeOffer({
-    id: 'open-vault',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['VaultFactory'],
-      callPipe: [
-        ['getCollateralManager', [agoricNamesRemotes.brand.IbcATOM]],
-        ['makeVaultInvitation'],
-      ],
-    },
-    proposal: {
-      give: {
-        Collateral: {
-          // @ts-expect-error XXX remote in OfferSpec
-          brand: agoricNamesRemotes.brand.IbcATOM,
-          value: 9000000n,
-        },
-      },
-      want: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 5000000n },
-      },
-    },
-  });
+
+  await wd.executeOffer(
+    makeOpenOffer(agoricNamesRemotes.brand, {
+      offerId: 'open-vault',
+      collateralBrandKey,
+      wantMinted: 5.0,
+      giveCollateral: 9.0,
+    }),
+  );
   console.timeLog('open vault', 'executed offer');
 
   t.like(wd.getLatestUpdateRecord(), {
@@ -111,30 +104,15 @@ test('adjust balances', async t => {
   const wd = await factoryDriver.provideSmartWallet('agoric1adjust');
 
   const { agoricNamesRemotes } = t.context;
-  await wd.executeOffer({
-    id: 'adjust-open',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['VaultFactory'],
-      callPipe: [
-        ['getCollateralManager', [agoricNamesRemotes.brand.IbcATOM]],
-        ['makeVaultInvitation'],
-      ],
-    },
-    proposal: {
-      give: {
-        Collateral: {
-          // @ts-expect-error XXX remote in OfferSpec
-          brand: agoricNamesRemotes.brand.IbcATOM,
-          value: 9000000n,
-        },
-      },
-      want: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 5000000n },
-      },
-    },
-  });
+
+  await wd.executeOffer(
+    makeOpenOffer(agoricNamesRemotes.brand, {
+      offerId: 'adjust-open',
+      collateralBrandKey,
+      wantMinted: 5.0,
+      giveCollateral: 9.0,
+    }),
+  );
   console.log('adjust-open status', wd.getLatestUpdateRecord());
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
@@ -142,20 +120,17 @@ test('adjust balances', async t => {
   });
 
   t.log('adjust');
-  await wd.executeOffer({
-    id: 'adjust',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'adjust-open',
-      invitationMakerName: 'AdjustBalances',
-    },
-    proposal: {
-      give: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 500n },
+  await wd.executeOffer(
+    makeAdjustOffer(
+      agoricNamesRemotes.brand,
+      {
+        offerId: 'adjust',
+        collateralBrandKey,
+        giveMinted: 0.0005,
       },
-    },
-  });
+      'adjust-open',
+    ),
+  );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
@@ -173,50 +148,31 @@ test('close vault', async t => {
   const wd = await factoryDriver.provideSmartWallet('agoric1toclose');
 
   const { agoricNamesRemotes } = t.context;
-  await wd.executeOffer({
-    id: 'open-vault',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['VaultFactory'],
-      callPipe: [
-        ['getCollateralManager', [agoricNamesRemotes.brand.IbcATOM]],
-        ['makeVaultInvitation'],
-      ],
-    },
-    proposal: {
-      give: {
-        Collateral: {
-          // @ts-expect-error XXX remote in OfferSpec
-          brand: agoricNamesRemotes.brand.IbcATOM,
-          value: 9000000n,
-        },
-      },
-      want: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 5000000n },
-      },
-    },
-  });
+  await wd.executeOffer(
+    makeOpenOffer(agoricNamesRemotes.brand, {
+      offerId: 'open-vault',
+      collateralBrandKey,
+      wantMinted: 5.0,
+      giveCollateral: 9.0,
+    }),
+  );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: { id: 'open-vault', numWantsSatisfied: 1 },
   });
 
   t.log('try giving more than is available in the purse/vbank');
-  await wd.executeOffer({
-    id: 'close-extreme',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'open-vault',
-      invitationMakerName: 'CloseVault',
-    },
-    proposal: {
-      give: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 99999999999999n },
+  await wd.executeOffer(
+    makeCloseOffer(
+      agoricNamesRemotes.brand,
+      {
+        offerId: 'close-extreme',
+        collateralBrandKey,
+        giveMinted: 99999999.999999,
       },
-    },
-  });
+      'open-vault',
+    ),
+  );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
@@ -227,20 +183,17 @@ test('close vault', async t => {
     },
   });
 
-  await wd.executeOffer({
-    id: 'close-insufficient',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'open-vault',
-      invitationMakerName: 'CloseVault',
-    },
-    proposal: {
-      give: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 1n },
+  await wd.executeOffer(
+    makeCloseOffer(
+      agoricNamesRemotes.brand,
+      {
+        offerId: 'close-insufficient',
+        collateralBrandKey,
+        giveMinted: 0.000001,
       },
-    },
-  });
+      'open-vault',
+    ),
+  );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
@@ -253,24 +206,21 @@ test('close vault', async t => {
   });
 
   t.log('close correctly');
-  await wd.executeOffer({
-    id: 'close-vault',
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: 'open-vault',
-      invitationMakerName: 'CloseVault',
-    },
-    proposal: {
-      give: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: 5000000n },
+  await wd.executeOffer(
+    makeCloseOffer(
+      agoricNamesRemotes.brand,
+      {
+        offerId: 'close-well',
+        collateralBrandKey,
+        giveMinted: 5.0,
       },
-    },
-  });
+      'open-vault',
+    ),
+  );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
-      id: 'close-vault',
+      id: 'close-well',
       numWantsSatisfied: 1,
     },
   });
@@ -284,31 +234,15 @@ test('open vault with insufficient funds gives helpful error', async t => {
   const wd = await factoryDriver.provideSmartWallet('agoric1insufficient');
 
   const { agoricNamesRemotes } = t.context;
-  const collat = 9000000n;
-  await wd.executeOffer({
-    id: 'open-vault',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['VaultFactory'],
-      callPipe: [
-        ['getCollateralManager', [agoricNamesRemotes.brand.IbcATOM]],
-        ['makeVaultInvitation'],
-      ],
-    },
-    proposal: {
-      give: {
-        Collateral: {
-          // @ts-expect-error XXX remote in OfferSpec
-          brand: agoricNamesRemotes.brand.IbcATOM,
-          value: collat,
-        },
-      },
-      want: {
-        // @ts-expect-error XXX remote in OfferSpec
-        Minted: { brand: agoricNamesRemotes.brand.IST, value: collat * 100n },
-      },
-    },
-  });
+  const giveCollateral = 9.0;
+  await wd.executeOffer(
+    makeOpenOffer(agoricNamesRemotes.brand, {
+      offerId: 'open-vault',
+      collateralBrandKey,
+      giveCollateral,
+      wantMinted: giveCollateral * 100,
+    }),
+  );
 
   // TODO verify funds are returned
   t.like(wd.getLatestUpdateRecord(), {
