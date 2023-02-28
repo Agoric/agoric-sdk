@@ -4,19 +4,13 @@
 /* eslint-disable func-names */
 /* global fetch, process */
 import { Command } from 'commander';
-import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { makeRpcUtils } from '../lib/rpc.js';
 import {
   lookupOfferIdForVault,
-  makeOpenOffer,
-  makeAdjustOffer,
-  makeCloseOffer,
-} from '../lib/vaults.js';
+  Offers,
+} from '@agoric/inter-protocol/src/clientSupport.js';
+import { normalizeAddressWithOptions } from '../lib/chain.js';
+import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
-
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
 
 const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
 
@@ -69,11 +63,7 @@ export const makeVaultsCommand = async logger => {
     .action(async function (opts) {
       logger.warn('running with options', opts);
 
-      const offer = makeOpenOffer(
-        // @ts-expect-error xxx RpcRemote
-        agoricNames.brand,
-        opts,
-      );
+      const offer = Offers.vaults.OpenVault(agoricNames.brand, opts);
 
       outputExecuteOfferAction(offer);
     });
@@ -101,8 +91,7 @@ export const makeVaultsCommand = async logger => {
         getCurrent(opts.from, fromBoard, { vstorage }),
       );
 
-      const offer = makeAdjustOffer(
-        // @ts-expect-error xxx RpcRemote
+      const offer = Offers.vaults.AdjustBalances(
         agoricNames.brand,
         opts,
         previousOfferId,
@@ -129,8 +118,7 @@ export const makeVaultsCommand = async logger => {
         getCurrent(opts.from, fromBoard, { vstorage }),
       );
 
-      const offer = makeCloseOffer(
-        // @ts-expect-error xxx RpcRemote
+      const offer = Offers.vaults.CloseVault(
         agoricNames.brand,
         opts,
         previousOfferId,

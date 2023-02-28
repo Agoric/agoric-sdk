@@ -4,7 +4,7 @@
 /* eslint-disable func-names */
 /* global fetch, process */
 import { Command } from 'commander';
-import { makePsmSwapOffer } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { asPercent } from '../lib/format.js';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
@@ -151,7 +151,7 @@ export const makePsmCommand = async logger => {
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
       // @ts-expect-error xxx RpcRemote
-      const offer = makePsmSwapOffer(instance, agoricNames.brand, opts);
+      const offer = Offers.psm.swap(instance, agoricNames.brand, opts);
       outputExecuteOfferAction(offer);
     });
 
