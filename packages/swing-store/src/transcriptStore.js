@@ -59,13 +59,27 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     )
   `);
 
+  // Transcripts are broken up into "spans", delimited by heap snapshots.  If we
+  // take heap snapshots after deliveries 100 and 200, and have not yet
+  // performed delivery 201, we'll have two non-current (i.e., isCurrent=0)
+  // spans (one with startPos=0, endPos=100, the second with startPos=100,
+  // endPos=200), and a single empty isCurrent==1 span with startPos=200 and
+  // endPos=200.  After we perform delivery 201, the single isCurrent=1 span
+  // will will still have startPos=200 but will now have endPos=201.  For every
+  // vatID, there will be exactly one isCurrent=1 span, and zero or more
+  // non-current (historical) spans.
+  //
+  // The transcriptItems associated with historical spans may or may not exist,
+  // depending on pruning.  However, the items associated with the current span
+  // must always be present
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptSpans (
       vatID TEXT,
-      startPos INTEGER,
-      endPos INTEGER,
-      hash TEXT,
-      current INTEGER,
+      startPos INTEGER, -- inclusive
+      endPos INTEGER, -- exclusive
+      hash TEXT, -- cumulative hash of this item and previous cumulative hash
+      isCurrent INTEGER,
       PRIMARY KEY (vatID, startPos)
     )
   `);
@@ -78,7 +92,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   `);
 
   const sqlDumpSpansQuery = db.prepare(`
-    SELECT vatID, startPos, endPos, current
+    SELECT vatID, startPos, endPos, isCurrent
     FROM transcriptSpans
     ORDER BY vatID, startPos
   `);
@@ -87,7 +101,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     // debug function to return: dump[vatID][position] = item
     const transcripts = {};
     for (const spanRow of sqlDumpSpansQuery.iterate()) {
-      if (includeHistorical || spanRow.current) {
+      if (includeHistorical || spanRow.isCurrent) {
         for (const row of sqlDumpItemsQuery.iterate(
           spanRow.vatID,
           spanRow.startPos,
@@ -105,8 +119,9 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   }
 
   /**
-   * Compute the hash for a transcript item.  This is computed by hashing
-   * together the hash from the previous item in its span together with its own text.
+   * Compute a cumulative hash that includes a new transcript item.  This is
+   * computed by hashing together the hash from the previous item in its span
+   * together with the new item's own text.
    *
    * @param {string} priorHash  The previous item's hash
    * @param {string} item  The item itself
@@ -114,10 +129,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
    * @returns {string}  The hash of the combined parameters.
    */
   function computeItemHash(priorHash, item) {
-    const hasher = createSHA256();
-    hasher.add(priorHash);
-    hasher.add(item);
-    return hasher.finish();
+    const itemHash = createSHA256(item).finish();
+    return createSHA256(priorHash).add(itemHash).finish();
   }
 
   /**
@@ -128,7 +141,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
 
   const sqlWriteSpan = db.prepare(`
     INSERT INTO transcriptSpans
-      (vatID, startPos, endPos, hash, current)
+      (vatID, startPos, endPos, hash, isCurrent)
     VALUES (?, ?, ?, ?, ?)
   `);
 
@@ -145,7 +158,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   const sqlGetCurrentSpanBounds = db.prepare(`
     SELECT startPos, endPos, hash
     FROM transcriptSpans
-    WHERE vatID = ? AND current = 1
+    WHERE vatID = ? AND isCurrent = 1
   `);
 
   /**
@@ -166,7 +179,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   }
 
   function historicSpanMetadataKey(rec) {
-    if (rec.current) {
+    if (rec.isCurrent) {
       return `transcript.${rec.vatID}.current`;
     } else {
       return `transcript.${rec.vatID}.${rec.startPos}`;
@@ -183,8 +196,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
 
   const sqlEndCurrentSpan = db.prepare(`
     UPDATE transcriptSpans
-    SET current = 0
-    WHERE current = 1 AND vatID = ?
+    SET isCurrent = 0
+    WHERE isCurrent = 1 AND vatID = ?
   `);
 
   /**
@@ -203,15 +216,15 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
-    SELECT vatID, startPos, endPos, hash, current
+    SELECT vatID, startPos, endPos, hash, isCurrent
     FROM transcriptSpans
     ORDER BY vatID, startPos
   `);
 
   const sqlGetCurrentSpanMetadata = db.prepare(`
-    SELECT vatID, startPos, endPos, hash, current
+    SELECT vatID, startPos, endPos, hash, isCurrent
     FROM transcriptSpans
-    WHERE current = 1
+    WHERE isCurrent = 1
     ORDER BY vatID, startPos
   `);
 
@@ -335,7 +348,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   const sqlUpdateSpan = db.prepare(`
     UPDATE transcriptSpans
     SET endPos = ?, hash = ?
-    WHERE vatID = ? AND current = 1
+    WHERE vatID = ? AND isCurrent = 1
   `);
 
   /**
@@ -405,7 +418,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       info.startPos,
       info.endPos,
       info.hash,
-      info.current,
+      info.isCurrent,
     );
   }
 
