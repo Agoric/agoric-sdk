@@ -1,6 +1,5 @@
 /* eslint-disable @jessie.js/no-nested-await -- demo file */
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { allValues, objectMap } from '@agoric/internal';
 import {
   makeRatio,
   natSafeMath,
@@ -12,8 +11,6 @@ import { Nat } from '@endo/nat';
 const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
-
-const QUOTE_INTERVAL = 5n * 60n;
 
 /** @type {Record<string, number>} */
 export const DecimalPlaces = {

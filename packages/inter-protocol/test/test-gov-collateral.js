@@ -316,9 +316,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     ]);
   };
 
-  /** @type {PromiseKit<string>} */
-  const atomIssuerPK = makePromiseKit();
-
   const enactVaultAssetProposal = async () => {
     env.INTERCHAIN_DENOM = 'ibc/abc123';
     await evalProposals([coreProposals.addCollateral]);

@@ -67,6 +67,8 @@ const trace = makeTracer('VM', false);
  * @property {number}         numLiquidatingVaults  present count of liquidating vaults
  * @property {Amount<'nat'>}  totalCollateral    present sum of collateral across all vaults
  * @property {Amount<'nat'>}  totalDebt          present sum of debt across all vaults
+ * @property {Amount<'nat'>}  retainedCollateral collateral held as a result of not returning excess refunds
+ *                                                from AMM to owners of vaults liquidated with shortfalls
  *
  * @property {Amount<'nat'>}  totalCollateralSold       running sum of collateral sold in liquidation
  * @property {Amount<'nat'>}  totalOverageReceived      running sum of overages, central received greater than debt
@@ -200,6 +202,13 @@ export const prepareVaultManagerKit = (
   );
 
   const poolIncrementSeat = provideEmptySeat(zcf, baggage, 'pool increment');
+
+  // TODO(#7074) not used while liquidation is disabled. Reinstate with #7074
+  const retainedCollateralSeat = provideEmptySeat(
+    zcf,
+    baggage,
+    'retained collateral',
+  );
 
   const topics = harden({
     asset: makePublicTopic(
@@ -396,12 +405,16 @@ export const prepareVaultManagerKit = (
         updateMetrics() {
           const { state } = this;
 
+          const retainedCollateral =
+            retainedCollateralSeat.getCurrentAllocation()?.Collateral ??
+            AmountMath.makeEmpty(collateralBrand, 'nat');
           /** @type {MetricsNotification} */
           const payload = harden({
             numActiveVaults: prioritizedVaults.getCount(),
             numLiquidatingVaults: liquidatingVaults.getSize(),
             totalCollateral: state.totalCollateral,
             totalDebt: state.totalDebt,
+            retainedCollateral,
 
             numLiquidationsCompleted: state.numLiquidationsCompleted,
             totalCollateralSold: state.totalCollateralSold,

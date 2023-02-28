@@ -2438,6 +2438,7 @@ test.skip('manager notifiers', async t => {
     numLiquidatingVaults: 0,
     totalCollateral: aeth.make(0n),
     totalDebt: run.make(0n),
+    retainedCollateral: aeth.make(0n),
 
     // running
     numLiquidationsCompleted: 0,
