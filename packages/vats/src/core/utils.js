@@ -54,7 +54,6 @@ export const agoricNamesReserved = harden({
     reserve: 'collateral reserve',
     psm: 'Parity Stability Module',
     econCommitteeCharter: 'Charter for Econ Governance questions',
-    interchainPool: 'interchainPool',
     priceAggregator: 'simple price aggregator',
   },
   instance: {
@@ -69,7 +68,6 @@ export const agoricNamesReserved = harden({
     reserve: 'collateral reserve',
     reserveGovernor: 'ReserveGovernor',
     econCommitteeCharter: 'Charter for Econ Governance questions',
-    interchainPool: 'interchainPool',
     provisionPool: 'Account Provision Pool',
     walletFactory: 'Smart Wallet Factory',
   },

@@ -345,49 +345,11 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const makeBenefactor = home => {
     const {
       agoricNames,
-      board,
       zoe,
       wallet: { purses },
     } = home;
 
     return Far('benefactor', {
-      // This isn't used now that we make the pool from a denom
-      // in publishInterchainAssetFromBank in addAssetToVault.js
-      // But it should still work. TODO: Perhaps we should test both ways?
-      // i.e. from a board ID as well?
-      makePool: async (atomQty = 500n, istQty = 1000n) => {
-        const istBrand = await E(agoricNames).lookup('brand', 'RUN');
-        const istAmt = qty => AmountMath.make(istBrand, qty * UNIT);
-        const interchainPoolAPI = E(zoe).getPublicFacet(
-          E(agoricNames).lookup('instance', 'interchainPool'),
-        );
-
-        const proposal1 = harden({ give: { Central: istAmt(istQty) } });
-        const centralPmt = await E(purses.ist).withdraw(proposal1.give.Central);
-        const inv1 = await E(interchainPoolAPI).makeInterchainPoolInvitation();
-        const seat1 = await E(zoe).offer(
-          inv1,
-          proposal1,
-          harden({ Central: centralPmt }),
-          harden({ denom: 'ibc/abc123' }),
-        );
-        const { invitation: inv2, issuer: ibcIssuer } = await E(
-          seat1,
-        ).getOfferResult();
-        atomIssuerPK.resolve(E(board).getId(ibcIssuer));
-        const ibcBrand = await E(ibcIssuer).getBrand();
-        const atomAmt = qty => AmountMath.make(ibcBrand, qty * UNIT);
-
-        const proposal2 = harden({ give: { Secondary: atomAmt(atomQty) } });
-        const pmt2 = await E(purses.atom).withdraw(proposal2.give.Secondary);
-        const seat2 = await E(zoe).offer(
-          inv2,
-          proposal2,
-          harden({ Secondary: pmt2 }),
-        );
-        t.deepEqual(await E(seat2).getOfferResult(), 'Added liquidity.');
-      },
-
       depositInReserve: async (qty = 10_000n) => {
         const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
         /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */

@@ -167,7 +167,6 @@ export const getManifestForMain = (
       VaultFactory: restoreRef(installKeys.vaultFactory),
       feeDistributor: restoreRef(installKeys.feeDistributor),
       reserve: restoreRef(installKeys.reserve),
-      interchainPool: restoreRef(installKeys.interchainPool),
     },
     options: {
       vaultFactoryControllerAddress,

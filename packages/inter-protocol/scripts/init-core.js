@@ -36,10 +36,6 @@ const installKeyGroups = {
     ],
   },
   main: {
-    interchainPool: [
-      '../src/interchainPool.js',
-      '../bundles/bundle-interchainPool.js',
-    ],
     vaultFactory: [
       '../src/vaultFactory/vaultFactory.js',
       '../bundles/bundle-vaultFactory.js',

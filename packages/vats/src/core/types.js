@@ -141,12 +141,12 @@
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'VaultFactory' | 'liquidate' | 'stakeFactory' |
- *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'interchainPool' | 'priceAggregator',
+ *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'priceAggregator',
  *   instance: |
  *     'economicCommittee' | 'feeDistributor' |
  *     'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
- *     'econCommitteeCharter' | 'interchainPool' |
+ *     'econCommitteeCharter' |
  *     'walletFactory' | 'provisionPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
@@ -172,7 +172,6 @@
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
- *       interchainPool: Promise<Installation<import('@agoric/inter-protocol/src/interchainPool.js').start>>,
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
  *     },

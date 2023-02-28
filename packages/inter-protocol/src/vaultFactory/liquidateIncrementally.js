@@ -1,13 +1,12 @@
 /* eslint-disable no-await-in-loop */
 import { E } from '@endo/eventual-send';
 import {
-  getAmountOut,
   assertProposalShape,
-  offerTo,
-  natSafeMath as NatMath,
-  ceilMultiplyBy,
-  oneMinus,
   atomicTransfer,
+  ceilMultiplyBy,
+  getAmountOut,
+  offerTo,
+  oneMinus,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
@@ -63,23 +62,12 @@ const trace = makeTracer('LiqI', false);
  */
 const start = async zcf => {
   const {
-    amm,
     priceAuthority,
     reservePublicFacet,
     timerService,
     debtBrand,
-    MaxImpactBP,
     OracleTolerance,
-    AMMMaxSlippage,
   } = zcf.getTerms();
-
-  const SCALE = 1_000_000n;
-  const BASIS_POINTS = 10_000n * SCALE;
-  const BP2 = BASIS_POINTS * BASIS_POINTS;
-  const ONE = BASIS_POINTS;
-
-  const asFloat = (numerator, denominator) =>
-    Number(numerator) / Number(denominator);
 
   // #region penalty distribution
   const { zcfSeat: penaltyPoolSeat } = zcf.makeEmptySeatKit();
@@ -102,79 +90,8 @@ const start = async zcf => {
   };
   // #endregion
 
-  /**
-   * Compute the tranche size whose sale on the AMM would have
-   * a price impact of MAX_IMPACT_BP.
-   * This doesn't use ratios so that it is usable for any brand
-   *
-   * @param {Amount<'nat'>} poolSize
-   * @param {bigint} maxImpactBP
-   * @param {bigint} feeBP
-   * @returns {Amount<'nat'>}
-   */
-  const maxTrancheWithFees = (poolSize, maxImpactBP, feeBP) => {
-    trace('maxTrancheWithFees', poolSize, maxImpactBP, feeBP);
-    const maxImpactScaled = maxImpactBP * SCALE;
-    const ammFeeScaled = feeBP * SCALE;
-    // sqrt(impact + 1) - 1
-    // Since we take SQRT but want to be BP, multiply in BP
-    const impactFactor =
-      BigInt(
-        Math.ceil(Math.sqrt(Number((maxImpactScaled + ONE) * BASIS_POINTS))),
-      ) - ONE;
-    const impactWithFee = impactFactor * (ONE - ammFeeScaled);
-    return AmountMath.make(
-      poolSize.brand,
-      NatMath.ceilDivide(NatMath.multiply(poolSize.value, impactWithFee), BP2),
-    );
-  };
-
   const computeOracleLimit = (oracleQuote, oracleTolerance) => {
     return ceilMultiplyBy(getAmountOut(oracleQuote), oneMinus(oracleTolerance));
-  };
-
-  const getAMMFeeBP = async () => {
-    const zoe = zcf.getZoeService();
-    const instance = await E(zoe).getInstance(E(amm).makeSwapInvitation());
-    const terms = await E(zoe).getTerms(instance);
-    // trace('amm terms', terms);
-    const { poolFeeBP, protocolFeeBP } = terms;
-    return poolFeeBP + protocolFeeBP;
-  };
-
-  const AMMFeeBP = await getAMMFeeBP();
-
-  /**
-   *
-   * @param {Amount<'nat'>} poolCentral
-   * @param {Amount<'nat'>} poolCollateral
-   * @param {Amount<'nat'>} tranche
-   * @param {Amount<'nat'>} debt
-   * @param {Ratio} maxSlip
-   */
-  const estimateAMMProceeds = (
-    poolCentral,
-    poolCollateral,
-    tranche,
-    debt,
-    maxSlip,
-  ) => {
-    const k = NatMath.multiply(poolCentral.value, poolCollateral.value);
-    const postSaleCollateral = AmountMath.add(tranche, poolCollateral);
-    const estimateCentral = NatMath.subtract(
-      poolCentral.value,
-      NatMath.floorDivide(k, postSaleCollateral.value),
-    );
-    /** @type {Amount<'nat'>} */
-    const estimateAmount = AmountMath.make(debt.brand, estimateCentral);
-    const minAmmProceeds = ceilMultiplyBy(estimateAmount, oneMinus(maxSlip));
-    trace('AMM estimate', {
-      tranche,
-      minAmmProceeds,
-      poolCentral,
-      poolCollateral,
-    });
-    return minAmmProceeds;
   };
 
   /**
@@ -209,28 +126,10 @@ const start = async zcf => {
       }
       await oncePerBlock();
 
-      // Determine the max allowed tranche size
-      const { Secondary: poolCollateral, Central: poolCentral } = await E(
-        amm,
-      ).getPoolAllocation(toSell.brand);
-      const maxAllowedTranche = maxTrancheWithFees(
-        poolCollateral,
-        MaxImpactBP,
-        AMMFeeBP,
-      );
-      trace('Pool', { poolCentral, poolCollateral });
-      trace('Max tranche', asFloat(maxAllowedTranche.value, 100000n));
-      const tranche = AmountMath.min(maxAllowedTranche, toSell);
+      const tranche = toSell;
 
       // compute the expected proceeds from the AMM for tranche
       const debt = AmountMath.subtract(originalDebt, proceedsSoFar);
-      const minAmmProceeds = estimateAMMProceeds(
-        poolCentral,
-        poolCollateral,
-        tranche,
-        debt,
-        AMMMaxSlippage,
-      );
 
       // this could use a unit rather than the tranche size to run concurrently
       /** @type PriceQuote */
@@ -240,41 +139,13 @@ const start = async zcf => {
       );
       const oracleLimit = computeOracleLimit(oracleQuote, OracleTolerance);
 
-      trace('Tranche', { debt, tranche, minAmmProceeds, oracleLimit });
-      if (AmountMath.isGTE(minAmmProceeds, oracleLimit)) {
-        // our prices are within the same range; go ahead and try to sell
-        yield {
-          collateral: tranche,
-          ammProceeds: minAmmProceeds,
-          debt,
-          oracleLimit,
-        };
-      } else {
-        // prices are too far apart; don't sell this block
-        trace('SKIP');
-      }
+      trace('Tranche', { debt, tranche, oracleLimit });
+      yield {
+        collateral: tranche,
+        debt,
+        oracleLimit,
+      };
     }
-  }
-
-  async function sellTranche(debtorSeat, collateral, debt, oracleLimit) {
-    const swapInvitation = E(amm).makeSwapInvitation();
-    const want = AmountMath.min(debt, oracleLimit);
-    // TODO if the debt shouldn't require all the collatearal to cover it,
-    // this may not provide relevant offer safety
-    const proposal = {
-      give: { In: collateral },
-      want: { Out: want },
-    };
-    const { deposited, userSeatPromise: liqSeat } = await offerTo(
-      zcf,
-      swapInvitation,
-      undefined, // The keywords were mapped already
-      proposal,
-      debtorSeat,
-      debtorSeat,
-      { stopAfter: debt },
-    );
-    await Promise.all([E(liqSeat).getOfferResult(), deposited]);
   }
 
   /**
@@ -307,7 +178,9 @@ const start = async zcf => {
       const collateralBefore = debtorSeat.getAmountAllocated('In');
       const proceedsBefore = debtorSeat.getAmountAllocated('Out');
 
-      await sellTranche(debtorSeat, collateral, debt, oracleLimit);
+      // AMM is gone. This liquidation contract will depart with #7047
+
+      // await sellTranche(debtorSeat, collateral, debt, oracleLimit);
 
       const proceedsAfter = debtorSeat.getAmountAllocated('Out');
       if (AmountMath.isEqual(proceedsBefore, proceedsAfter)) {

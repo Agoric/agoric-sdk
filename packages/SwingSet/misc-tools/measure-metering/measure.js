@@ -132,9 +132,6 @@ async function run() {
   const zoeInstallVaultFactory = await doCounted('zoeInstallVaultFactory');
   console.log(`zoe install (vaultFactory): ${zoeInstallVaultFactory}`);
 
-  // XXX  Does this need to be replace by something else in order to be useful?
-  // const zoeInstallAMM = await doCounted('zoeInstallBundle', [autoswapBundle]);
-  // console.log(`zoe install (AMM): ${zoeInstallAMM}`);
   const zoeInstantiate = await doCounted('zoeInstantiate');
   console.log(`zoe instantiate (AMM): ${zoeInstantiate}`);
 

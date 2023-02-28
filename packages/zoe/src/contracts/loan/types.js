@@ -10,8 +10,8 @@
 
 /**
  * @typedef {Instance} AutoswapInstance
- *   The running contract instance for an Autoswap or constant product
- *   AMM installation.  The publicFacet from the Autoswap
+ *   The running contract instance for an Autoswap installation.  The
+ *   publicFacet from the Autoswap
  *   instance is used for producing an invitation to sell the
  *   collateral on liquidation.
  */
