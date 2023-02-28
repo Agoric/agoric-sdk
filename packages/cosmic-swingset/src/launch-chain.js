@@ -68,7 +68,9 @@ export async function buildSwingset(
     debugName = undefined,
     slogCallbacks,
     slogSender,
-    wrapWithChainActionRecorder,
+    wrapWithChainActionRecorder = fn =>
+      (...args) =>
+        fn(...args),
   },
 ) {
   // FIXME: Find a better way to propagate the role.
