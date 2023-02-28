@@ -154,8 +154,8 @@ export function makeSnapStore(
     return `export.snapshot.${rec.vatID}.current`;
   }
 
-  function snapshotRec(vatID, endPos, hash, size) {
-    return { vatID, endPos, hash, size };
+  function snapshotRec(vatID, endPos, hash) {
+    return { vatID, endPos, hash };
   }
 
   const sqlStopUsingLastSnapshot = db.prepare(`
@@ -227,7 +227,7 @@ export function makeSnapStore(
               compressedSize,
               compressedSnapshot,
             );
-            const rec = snapshotRec(vatID, endPos, h, uncompressedSize);
+            const rec = snapshotRec(vatID, endPos, h);
             const exportKey = snapshotMetadataKey(rec);
             noteExport(exportKey, JSON.stringify(rec));
             noteExport(
@@ -421,24 +421,14 @@ export function makeSnapStore(
    */
   function* getExportRecords(includeHistorical) {
     for (const rec of sqlGetSnapshotMetadata.iterate(1)) {
-      const exportRec = snapshotRec(
-        rec.vatID,
-        rec.endPos,
-        rec.hash,
-        rec.uncompressedSize,
-      );
+      const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash);
       const exportKey = snapshotMetadataKey(rec);
       yield [exportKey, JSON.stringify(exportRec)];
       yield [currentSnapshotMetadataKey(rec), snapshotArtifactName(rec)];
     }
     if (includeHistorical) {
       for (const rec of sqlGetSnapshotMetadata.iterate(0)) {
-        const exportRec = snapshotRec(
-          rec.vatID,
-          rec.endPos,
-          rec.hash,
-          rec.uncompressedSize,
-        );
+        const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash);
         yield [snapshotMetadataKey(rec), JSON.stringify(exportRec)];
       }
     }
@@ -488,10 +478,6 @@ export function makeSnapStore(
     inStream.pipe(gzip);
     const compressedArtifact = await buffer(gzip);
     await finished(inStream);
-    assert(
-      info.size === size,
-      `snapshot ${name} size is ${size}, metadata says ${info.size}`,
-    );
     const hash = hashStream.digest('hex');
     assert(
       info.hash === hash,
@@ -501,7 +487,7 @@ export function makeSnapStore(
       vatID,
       endPos,
       info.hash,
-      info.size,
+      size,
       compressedArtifact.length,
       compressedArtifact,
     );

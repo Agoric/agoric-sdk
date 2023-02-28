@@ -122,10 +122,10 @@ function getKeyType(key) {
  * the root of trust for the application.
  *
  * Content of validation data (with supporting entries for indexing):
- * - export.snapshot.${vatID}.${endPos} = ${{ vatID, endPos, hash, size });
+ * - export.snapshot.${vatID}.${endPos} = ${{ vatID, endPos, hash });
  * - export.snapshot.${vatID}.current = `snapshot.${vatID}.${endPos}`
- * - export.transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash, size }}
- * - export.transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash, size }}
+ * - export.transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
+ * - export.transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
  * @property {(includeHistorical: boolean) => AsyncIterable<string>} getArtifactNames
  *

@@ -143,37 +143,37 @@ test('export and import data for state sync', async t => {
     ['vatB.vval', 'stuff in 15'],
     [
       'export.snapshot.vatA.6',
-      '{"vatID":"vatA","endPos":6,"hash":"36afc9e2717c395759e308c4a877d491f967e9768d73520bde758ff4fac5d8b9","size":28}',
+      '{"vatID":"vatA","endPos":6,"hash":"36afc9e2717c395759e308c4a877d491f967e9768d73520bde758ff4fac5d8b9"}',
     ],
     ['export.snapshot.vatA.current', 'snapshot.vatA.6'],
     [
       'export.snapshot.vatB.4',
-      '{"vatID":"vatB","endPos":4,"hash":"afd477014db678fbc1aa58beab50f444deb653b8cc8e8583214a363fd12ed57a","size":28}',
+      '{"vatID":"vatB","endPos":4,"hash":"afd477014db678fbc1aa58beab50f444deb653b8cc8e8583214a363fd12ed57a"}',
     ],
     ['export.snapshot.vatB.current', 'snapshot.vatB.4'],
     [
       'export.snapshot.vatA.2',
-      '{"vatID":"vatA","endPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6","size":28}',
+      '{"vatID":"vatA","endPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6"}',
     ],
     [
       'export.transcript.vatA.0',
-      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"404df94aaedd44be0dd6cb5f3c360253926058d482e1160c67e826b4001bdfbe","current":0,"size":52}',
+      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"404df94aaedd44be0dd6cb5f3c360253926058d482e1160c67e826b4001bdfbe","current":0}',
     ],
     [
       'export.transcript.vatA.2',
-      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"fea97db13d8feaa33322aaaec6b9edae7d9d45d2dd5b90dfa24c9edc4e8f3dfa","current":0,"size":106}',
+      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"fea97db13d8feaa33322aaaec6b9edae7d9d45d2dd5b90dfa24c9edc4e8f3dfa","current":0}',
     ],
     [
       'export.transcript.vatA.current',
-      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"84c2705fa00da1f9f7c02d7d6ca2b263099b8ee681840f7df781da644ee4cbdd","current":1,"size":54}',
+      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"84c2705fa00da1f9f7c02d7d6ca2b263099b8ee681840f7df781da644ee4cbdd","current":1}',
     ],
     [
       'export.transcript.vatB.0',
-      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"9925c1f23e5176e115b524621ca9bd77a1122de654be1332bfd04f17c33c9827","current":0,"size":104}',
+      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"9925c1f23e5176e115b524621ca9bd77a1122de654be1332bfd04f17c33c9827","current":0}',
     ],
     [
       'export.transcript.vatB.current',
-      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"f3afdb75964f1d4cff4828458c31f722463d8918d6b59c36d0e6263b48c5e6d4","current":1,"size":107}',
+      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"f3afdb75964f1d4cff4828458c31f722463d8918d6b59c36d0e6263b48c5e6d4","current":1}',
     ],
   ]);
 
