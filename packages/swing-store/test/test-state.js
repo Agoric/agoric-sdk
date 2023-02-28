@@ -94,12 +94,12 @@ function testKVStore(t, storage, exportLog) {
   checkKVState(t, storage);
   t.deepEqual(exportLog.getLog(), [
     [
-      ['foo', 'f'],
-      ['foo1', 'f1'],
-      ['foo2', 'f2'],
-      ['foo3', 'f3'],
+      ['kv.foo', 'f'],
+      ['kv.foo1', 'f1'],
+      ['kv.foo2', 'f2'],
+      ['kv.foo3', 'f3'],
     ],
-    [['foo2', null]],
+    [['kv.foo2', null]],
   ]);
 }
 
@@ -192,15 +192,15 @@ async function testTranscriptStore(t, dbDir) {
   t.deepEqual(exportLog.getLog(), [
     [
       [
-        'export.transcript.st1.0',
+        'transcript.st1.0',
         '{"vatID":"st1","startPos":0,"endPos":2,"hash":"157f906d6a601b2ca1834ae5e407dd89cf30b82359e7453fdcc6a2b9b49a1461"}',
       ],
       [
-        'export.transcript.st1.current',
+        'transcript.st1.current',
         '{"vatID":"st1","startPos":2,"endPos":4,"hash":"c35e9841ec2d5e7cdef17f3b77a14f5562298790ec806e5dbf24bc673d7e9f09"}',
       ],
       [
-        'export.transcript.st2.current',
+        'transcript.st2.current',
         '{"vatID":"st2","startPos":0,"endPos":4,"hash":"7f1d4eaf9c77b3ec282061e0814ba3f5142709eeab2ede4c375648a51a74644c"}',
       ],
     ],

@@ -147,11 +147,11 @@ export function makeSnapStore(
   }
 
   function snapshotMetadataKey(rec) {
-    return `export.snapshot.${rec.vatID}.${rec.endPos}`;
+    return `snapshot.${rec.vatID}.${rec.endPos}`;
   }
 
   function currentSnapshotMetadataKey(rec) {
-    return `export.snapshot.${rec.vatID}.current`;
+    return `snapshot.${rec.vatID}.current`;
   }
 
   function snapshotRec(vatID, endPos, hash) {

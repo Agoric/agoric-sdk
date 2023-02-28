@@ -90,8 +90,8 @@ test('build temp file; compress to cache file', async t => {
   t.is(contents.toString(), 'abc', 'gunzip(contents) matches original');
   const logInfo = { vatID: 'fakeVatID', ...exportInfo };
   t.deepEqual(exportLog.getLog(), [
-    ['export.snapshot.fakeVatID.47', JSON.stringify(logInfo)],
-    ['export.snapshot.fakeVatID.current', `snapshot.fakeVatID.47`],
+    ['snapshot.fakeVatID.47', JSON.stringify(logInfo)],
+    ['snapshot.fakeVatID.current', `snapshot.fakeVatID.47`],
   ]);
 });
 
