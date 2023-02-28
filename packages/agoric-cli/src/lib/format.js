@@ -6,10 +6,6 @@ import { makeAgoricNames } from './rpc.js';
 // ambient types
 import '@agoric/ertp/src/types-ambient.js';
 
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
-
-export const COSMOS_UNIT = 1_000_000n;
-
 /**
  * Like @endo/nat but coerces
  *

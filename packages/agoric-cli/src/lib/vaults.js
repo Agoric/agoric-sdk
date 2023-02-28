@@ -7,40 +7,41 @@ import { COSMOS_UNIT } from './format.js';
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
 
-// TODO handle other collateral types
 // NB: not really a Proposal because the brands are not remotes
 // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
 // mustMatch(harden(proposal), ProposalShape);
 /**
- * Give/want, assuming IbcATOM collateral
+ * Give/want
  *
  * @param {Record<string, Brand>} brands
- * @param {({ giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number })} opts
+ * @param {{ giveMinted?: number, wantMinted?: number } | { collateralBrandKey: string, giveCollateral?: number, wantCollateral?: number }} opts
  * @returns {Proposal}
  */
 const makeProposal = (brands, opts) => {
   const proposal = { give: {}, want: {} };
 
-  if (opts.giveCollateral) {
+  if ('giveCollateral' in opts && opts.giveCollateral) {
+    const { collateralBrandKey } = opts;
     proposal.give.Collateral = {
-      brand: brands.IbcATOM,
+      brand: brands[collateralBrandKey],
       value: BigInt(opts.giveCollateral * Number(COSMOS_UNIT)),
     };
   }
-  if (opts.giveMinted) {
+  if ('giveMinted' in opts && opts.giveMinted) {
     proposal.give.Minted = {
       brand: brands.IST,
       value: BigInt(opts.giveMinted * Number(COSMOS_UNIT)),
     };
   }
 
-  if (opts.wantCollateral) {
+  if ('wantCollateral' in opts && opts.wantCollateral) {
+    const { collateralBrandKey } = opts;
     proposal.want.Collateral = {
-      brand: brands.IbcATOM,
+      brand: brands[collateralBrandKey],
       value: BigInt(opts.wantCollateral * Number(COSMOS_UNIT)),
     };
   }
-  if (opts.wantMinted) {
+  if ('wantMinted' in opts && opts.wantMinted) {
     proposal.want.Minted = {
       brand: brands.IST,
       value: BigInt(opts.wantMinted * Number(COSMOS_UNIT)),
@@ -56,7 +57,7 @@ const makeProposal = (brands, opts) => {
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: string, wantMinted: number, giveCollateral: number }} opts
+ * @param {{ offerId: string, wantMinted: number, giveCollateral: number, collateralBrandKey: string }} opts
  * @returns {OfferSpec}
  */
 export const makeOpenOffer = (brands, opts) => {
@@ -69,8 +70,7 @@ export const makeOpenOffer = (brands, opts) => {
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
   // mustMatch(harden(proposal), ProposalShape);
 
-  // XXX only one supported yet
-  const collateralBrand = brands.IbcATOM;
+  const collateralBrand = brands[opts.collateralBrandKey];
 
   return {
     id: opts.offerId,
@@ -88,7 +88,7 @@ export const makeOpenOffer = (brands, opts) => {
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: string, giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number }} opts
+ * @param {{ offerId: string, collateralBrandKey?: string, giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number }} opts
  * @param {string} previousOffer
  * @returns {OfferSpec}
  */
@@ -111,7 +111,7 @@ export const makeAdjustOffer = (brands, opts, previousOffer) => {
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: string, giveMinted: number }} opts
+ * @param {{ offerId: string, collateralBrandKey?: string, giveMinted: number }} opts
  * @param {string} previousOffer
  * @returns {OfferSpec}
  */

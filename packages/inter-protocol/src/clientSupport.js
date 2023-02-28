@@ -1,6 +1,7 @@
 // @ts-check
 
-import { COSMOS_UNIT } from '../../agoric-cli/src/lib/format.js';
+// XXX support other decimal places
+export const COSMOS_UNIT = 1_000_000n;
 
 /**
  * @param {Record<string, Brand>} brands

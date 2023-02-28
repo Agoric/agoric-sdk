@@ -65,6 +65,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--giveCollateral [number]', 'Collateral to give', Number)
     .requiredOption('--wantMinted [number]', 'Minted wants', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
 
@@ -90,7 +91,7 @@ export const makeVaultsCommand = async logger => {
     .option('--giveMinted [number]', 'Minted to give back', Number)
     .option('--wantMinted [number]', 'More minted to borrow', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    // TODO method to disambiguate between managers
+    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
@@ -119,7 +120,6 @@ export const makeVaultsCommand = async logger => {
     )
     .requiredOption('--giveMinted [number]', 'Minted to give back', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    // TODO method to disambiguate between managers
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
