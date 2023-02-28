@@ -301,7 +301,7 @@ test(`zcf.makeInvitation - non-string description`, async t => {
   });
 });
 
-test(`zcf.makeInvitation - no customProperties`, async t => {
+test(`zcf.makeInvitation - no customDetails`, async t => {
   const { zcf, zoe, instance, installation } = await setupZCFTest();
   const invitationP = zcf.makeInvitation(() => {}, 'myInvitation');
   const details = await E(zoe).getInvitationDetails(invitationP);
@@ -313,7 +313,7 @@ test(`zcf.makeInvitation - no customProperties`, async t => {
   });
 });
 
-test(`zcf.makeInvitation - customProperties`, async t => {
+test(`zcf.makeInvitation - customDetails`, async t => {
   const { zcf, zoe, instance, installation } = await setupZCFTest();
   const timer = buildManualTimer(t.log);
   const invitationP = zcf.makeInvitation(() => {}, 'myInvitation', {
@@ -321,17 +321,19 @@ test(`zcf.makeInvitation - customProperties`, async t => {
     timer,
   });
   const details = await E(zoe).getInvitationDetails(invitationP);
-  t.deepEqual(details, {
+  t.like(details, {
     description: 'myInvitation',
     handle: details.handle,
     installation,
     instance,
-    timer,
-    whatever: 'whatever',
+    customDetails: {
+      timer,
+      whatever: 'whatever',
+    },
   });
 });
 
-test(`zcf.makeInvitation - customProperties overwritten`, async t => {
+test(`zcf.makeInvitation - customDetails stratification`, async t => {
   const { zcf, zoe, instance, installation } = await setupZCFTest();
   const invitationP = zcf.makeInvitation(() => {}, 'myInvitation', {
     description: 'whatever',
@@ -344,6 +346,11 @@ test(`zcf.makeInvitation - customProperties overwritten`, async t => {
     handle: details.handle,
     installation,
     instance,
+    customDetails: {
+      description: 'whatever',
+      installation: 'whatever',
+      instance: 'whatever',
+    },
   });
   t.falsy(typeof details.handle === 'string');
 });

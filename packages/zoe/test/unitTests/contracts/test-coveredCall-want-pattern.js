@@ -117,12 +117,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const bobExclOption = await E(invitationIssuer).claim(optionP);
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
+  const { customDetails } = optionDesc;
+  assert(typeof customDetails === 'object');
+
   t.is(optionDesc.installation, coveredCallInstallation);
   t.is(optionDesc.description, 'exerciseOption');
-  t.deepEqual(optionDesc.underlyingAssets, { UnderlyingAsset: moola(3n) });
-  t.deepEqual(optionDesc.strikePrice, { StrikePrice: simoleans(7n) });
-  t.is(optionDesc.expirationDate, 100n);
-  t.deepEqual(optionDesc.timeAuthority, timer);
+  t.deepEqual(customDetails.underlyingAssets, { UnderlyingAsset: moola(3n) });
+  t.deepEqual(customDetails.strikePrice, { StrikePrice: simoleans(7n) });
+  t.is(customDetails.expirationDate, 100n);
+  t.deepEqual(customDetails.timeAuthority, timer);
 
   // Let's imagine that Bob wants to create a swap to trade this
   // invitation for bucks.
@@ -184,16 +187,18 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const optionAmountPattern1 = harden({
     brand: M.any(),
     value: [
-      {
+      M.splitRecord({
         handle: M.any(),
         instance: M.any(),
         installation: coveredCallInstallation,
         description: 'exerciseOption',
-        underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
-        strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
-        timeAuthority: timer,
-        expirationDate: M.and(M.gte(50n), M.lte(300n)),
-      },
+        customDetails: {
+          underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
+          strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
+          timeAuthority: timer,
+          expirationDate: M.and(M.gte(50n), M.lte(300n)),
+        },
+      }),
     ],
   });
 
@@ -202,13 +207,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
   const optionAmountPattern2 = harden({
     brand: BrandShape,
     value: [
-      M.split({
+      M.splitRecord({
         installation: coveredCallInstallation,
         description: 'exerciseOption',
-        underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
-        strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
-        timeAuthority: timer,
-        expirationDate: M.and(M.gte(50n), M.lte(300n)),
+        customDetails: {
+          underlyingAssets: { UnderlyingAsset: M.gte(moola(2n)) },
+          strikePrice: { StrikePrice: M.lte(simoleans(8n)) },
+          timeAuthority: timer,
+          expirationDate: M.and(M.gte(50n), M.lte(300n)),
+        },
       }),
     ],
   });

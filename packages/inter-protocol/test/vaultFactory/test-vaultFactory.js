@@ -1500,6 +1500,7 @@ test('transfer vault', async t => {
   /** @type {Promise<Invitation<VaultKit>>} */
   const transferInvite = E(aliceVault).makeTransferInvitation();
   const inviteProps = await getInvitationProperties(transferInvite);
+
   trace(t, 'TRANSFER INVITE', transferInvite, inviteProps);
   const transferSeat = await E(zoe).offer(transferInvite);
   const {
@@ -1520,13 +1521,15 @@ test('transfer vault', async t => {
   );
 
   t.like(inviteProps, {
-    debtSnapshot: {
-      debt: debtAmount,
-      interest: aliceFinish.value.debtSnapshot.interest,
-    },
     description: 'manager0: TransferVault',
-    locked: collateralAmount,
-    vaultState: 'active',
+    customDetails: {
+      debtSnapshot: {
+        debt: debtAmount,
+        interest: aliceFinish.value.debtSnapshot.interest,
+      },
+      locked: collateralAmount,
+      vaultState: 'active',
+    },
   });
 
   const transferStatus = await E(transferNotifier).getUpdateSince();

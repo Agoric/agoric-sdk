@@ -96,7 +96,7 @@
  * @typedef {<Result>(
  *   offerHandler: OfferHandler<Result>,
  *   description: string,
- *   customProperties?: object,
+ *   customDetails?: object,
  *   proposalShape?: Pattern,
  * ) => Promise<Invitation<Awaited<Result>>>
  * } MakeInvitation
@@ -107,7 +107,7 @@
  * of the invitation. The contract must provide a `description` for
  * the invitation and should include whatever information is necessary
  * for a potential buyer of the invitation to know what they are
- * getting in the `customProperties`. `customProperties` will be
+ * getting in the `customDetails`. `customDetails` will be
  * placed in the details of the invitation.
  */
 

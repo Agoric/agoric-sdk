@@ -96,9 +96,12 @@ test('fundedCallSpread below Strike1', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -197,9 +200,12 @@ test('fundedCallSpread above Strike2', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -297,9 +303,12 @@ test('fundedCallSpread, mid-strike', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -397,13 +406,14 @@ test('fundedCallSpread, late exercise', async t => {
     terms,
   );
 
-  const invitationDetails = await E(zoe).getInvitationDetails(
+  const { customDetails } = await E(zoe).getInvitationDetails(
     creatorInvitation,
   );
+  assert(typeof customDetails === 'object');
   const aliceProposal = harden({
     want: {
-      LongOption: invitationDetails.longAmount,
-      ShortOption: invitationDetails.shortAmount,
+      LongOption: customDetails.longAmount,
+      ShortOption: customDetails.shortAmount,
     },
     give: { Collateral: bucks(300n) },
   });
@@ -501,9 +511,12 @@ test('fundedCallSpread, sell options', async t => {
     terms,
   );
 
-  const invitationDetail = await E(zoe).getInvitationDetails(creatorInvitation);
-  const longOptionAmount = invitationDetail.longAmount;
-  const shortOptionAmount = invitationDetail.shortAmount;
+  const { customDetails } = await E(zoe).getInvitationDetails(
+    creatorInvitation,
+  );
+  assert(typeof customDetails === 'object');
+  const longOptionAmount = customDetails.longAmount;
+  const shortOptionAmount = customDetails.shortAmount;
 
   const aliceProposal = harden({
     want: { LongOption: longOptionAmount, ShortOption: shortOptionAmount },
@@ -691,13 +704,13 @@ test('pricedCallSpread, mid-strike', async t => {
   const shortAmount = await E(invitationIssuer).getAmountOf(shortInvitation);
 
   const longOptionValue = longAmount.value[0];
-  t.is('long', longOptionValue.position);
-  const longOption = longOptionValue.option;
+  t.is('long', longOptionValue.customDetails?.position);
+  const longOption = longOptionValue.customDetails?.option;
 
   // Bob makes an offer for the long option
   const bobProposal = harden({
     want: { Option: longOption },
-    give: { Collateral: bucks(longOptionValue.collateral) },
+    give: { Collateral: bucks(longOptionValue.customDetails?.collateral) },
   });
   const bobFundingSeat = await E(zoe).offer(await longInvitation, bobProposal, {
     Collateral: bobBucksPayment,
@@ -715,13 +728,13 @@ test('pricedCallSpread, mid-strike', async t => {
   );
 
   const shortOptionValue = shortAmount.value[0];
-  t.is('short', shortOptionValue.position);
-  const shortOption = shortOptionValue.option;
+  t.is('short', shortOptionValue.customDetails?.position);
+  const shortOption = shortOptionValue.customDetails?.option;
 
   // carol makes an offer for the short option
   const carolProposal = harden({
     want: { Option: shortOption },
-    give: { Collateral: bucks(shortOptionValue.collateral) },
+    give: { Collateral: bucks(shortOptionValue.customDetails?.collateral) },
   });
   const carolFundingSeat = await E(zoe).offer(
     await shortInvitation,

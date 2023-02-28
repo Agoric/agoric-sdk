@@ -103,7 +103,9 @@ test('loan - lend - exit before borrow', async t => {
     handle: null,
     installation,
     instance,
-    maxLoan,
+    customDetails: {
+      maxLoan,
+    },
   });
 
   await E(lenderSeat).tryExit();

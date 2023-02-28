@@ -300,15 +300,12 @@
  */
 
 /**
- * @typedef {object} StandardInvitationDetails
+ * @typedef {object} InvitationDetails
  * @property {Installation} installation
  * @property {import('./utils').Instance<any>} instance
  * @property {InvitationHandle} handle
  * @property {string} description
- */
-
-/**
- * @typedef {StandardInvitationDetails & Record<string, any>} InvitationDetails
+ * @property {Record<string, any>} [customDetails]
  */
 
 /**

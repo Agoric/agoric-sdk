@@ -30,8 +30,10 @@ const build = async (log, zoe, issuers, payments, installations) => {
         harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
         issuerKeywordRecord,
       ) || Fail`issuerKeywordRecord were not as expected`;
-      assert(keyEQ(invitationValue[0].minimumBid, simoleans(3)));
-      assert(keyEQ(invitationValue[0].auctionedAssets, moola(1)));
+      assert(keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3)));
+      assert(
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1)),
+      );
 
       const proposal = harden({
         want: { Asset: moola(1) },
