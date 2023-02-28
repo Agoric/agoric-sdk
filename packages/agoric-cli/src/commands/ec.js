@@ -27,7 +27,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
       const { economicCommittee } = agoricNames.instance;
       assert(economicCommittee, 'missing economicCommittee');
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -51,7 +51,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
       const { econCommitteeCharter } = agoricNames.instance;
       assert(econCommitteeCharter, 'missing econCommitteeCharter');
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -100,7 +100,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
       const chosenPositions = [questionDesc.positions[opts.forPosition]];
       assert(chosenPositions, `undefined position index ${opts.forPosition}`);
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

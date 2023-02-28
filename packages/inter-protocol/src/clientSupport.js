@@ -1,10 +1,6 @@
 // @ts-check
 
-import { COSMOS_UNIT } from './format.js';
-
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
+import { COSMOS_UNIT } from '../../agoric-cli/src/lib/format.js';
 
 /**
  * @param {Record<string, Brand>} brands
@@ -13,7 +9,7 @@ import { COSMOS_UNIT } from './format.js';
  * @param {string} [anchor]
  * @returns {Proposal}
  */
-export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
+const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   const giving = opts.giveMinted ? 'minted' : 'anchor';
   const brand =
     giving === 'anchor'
@@ -41,7 +37,7 @@ export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: number, feePct?: number } &
  *         ({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
- * @returns {OfferSpec}
+ * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 export const makePsmSwapOffer = (instance, brands, opts) => {
   const method = opts.wantMinted

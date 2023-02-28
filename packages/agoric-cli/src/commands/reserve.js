@@ -41,7 +41,7 @@ export const makeReserveCommand = async _logger => {
 
       const feesToBurn = { brand: agoricNames.brand.IST, value: opts.value };
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

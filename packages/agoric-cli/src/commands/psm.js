@@ -4,8 +4,8 @@
 /* eslint-disable func-names */
 /* global fetch, process */
 import { Command } from 'commander';
+import { makePsmSwapOffer } from '@agoric/inter-protocol/src/clientSupport.js';
 import { asPercent } from '../lib/format.js';
-import { makePsmSwapOffer } from '../lib/psm.js';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 
@@ -189,7 +189,7 @@ export const makePsmCommand = async logger => {
     .action(async function (opts) {
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -245,7 +245,7 @@ export const makePsmCommand = async logger => {
         brand: istBrand,
         value: BigInt(opts.limit * 1_000_000),
       });
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {

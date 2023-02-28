@@ -24,7 +24,7 @@ export const getCurrent = async (addr, ctx, { vstorage }) => {
   return capDatas[0];
 };
 
-/** @param {import('../lib/psm.js').BridgeAction} bridgeAction */
+/** @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction */
 export const outputAction = bridgeAction => {
   const capData = marshaller.serialize(bridgeAction);
   process.stdout.write(JSON.stringify(capData));
