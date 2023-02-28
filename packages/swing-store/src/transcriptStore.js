@@ -164,14 +164,14 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
 
   function historicSpanMetadataKey(rec) {
     if (rec.current) {
-      return `export.transcript.${rec.vatID}.current`;
+      return `transcript.${rec.vatID}.current`;
     } else {
-      return `export.transcript.${rec.vatID}.${rec.startPos}`;
+      return `transcript.${rec.vatID}.${rec.startPos}`;
     }
   }
 
   function currentSpanMetadataKey(rec) {
-    return `export.transcript.${rec.vatID}.current`;
+    return `transcript.${rec.vatID}.current`;
   }
 
   function spanRec(vatID, startPos, endPos, hash) {

@@ -122,10 +122,11 @@ function getKeyType(key) {
  * the root of trust for the application.
  *
  * Content of validation data (with supporting entries for indexing):
- * - export.snapshot.${vatID}.${endPos} = ${{ vatID, endPos, hash });
- * - export.snapshot.${vatID}.current = `snapshot.${vatID}.${endPos}`
- * - export.transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
- * - export.transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
+ * - kv.${key} = ${value}  // ordinary kvStore data entry
+ * - snapshot.${vatID}.${endPos} = ${{ vatID, endPos, hash });
+ * - snapshot.${vatID}.current = `snapshot.${vatID}.${endPos}`
+ * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
+ * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
  * @property {(includeHistorical: boolean) => AsyncIterable<string>} getArtifactNames
  *
@@ -184,7 +185,7 @@ export function makeSwingStoreExporter(dirPath) {
     const kvPairs = sqlGetAllKVData.iterate();
     for (const kv of kvPairs) {
       if (getKeyType(kv.key) === 'consensus') {
-        yield [kv.key, kv.value];
+        yield [`kv.${kv.key}`, kv.value];
       }
     }
     for (const exportRecord of snapStore.getExportRecords(true)) {
@@ -601,7 +602,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       assert(keyType !== 'host');
       set(key, value);
       if (keyType === 'consensus') {
-        noteExport(key, value);
+        noteExport(`kv.${key}`, value);
         crankhasher.add('add');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -616,7 +617,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       assert(keyType !== 'host');
       del(key);
       if (keyType === 'consensus') {
-        noteExport(key, undefined);
+        noteExport(`kv.${key}`, undefined);
         crankhasher.add('delete');
         crankhasher.add('\n');
         crankhasher.add(key);
@@ -857,14 +858,10 @@ export function initSwingStore(dirPath = null, options = {}) {
 
 function parseExportKey(key) {
   const parts = key.split('.');
-  const [tag, type, vatID, rawPos] = parts;
+  const [vatID, rawPos] = parts;
   assert(
-    parts.length === 4 && tag === 'export',
-    `expected artifact name of the form 'export.{type}.{vatID}.{pos}', saw ${key}`,
-  );
-  assert(
-    type === 'snapshot' || type === 'transcript',
-    `invalid artifact type ${type}`,
+    parts.length === 2,
+    `expected artifact name of the form '{type}.{vatID}.{pos}', saw ${key}`,
   );
   const isCurrent = rawPos === 'current';
   let pos;
@@ -874,7 +871,7 @@ function parseExportKey(key) {
     pos = Number(rawPos);
   }
 
-  return { type, vatID, isCurrent, pos };
+  return { vatID, isCurrent, pos };
 }
 
 function artifactKey(type, vatID, pos) {
@@ -908,33 +905,36 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   const vatArtifacts = new Map();
 
   for await (const [key, value] of exporter.getKVData()) {
-    if (key.startsWith('export.')) {
-      // Keys starting with 'export.' contain artifact description info,
-      // intended for us here in the import stage rather than items destined for
-      // the KV store.
+    const [tag] = key.split('.', 1);
+    const subKey = key.substring(tag.length + 1);
+    if (tag === 'kv') {
+      // 'kv' keys contain individual kvStore entries
+      if (value == null) {
+        // Note '==' rather than '===': any nullish value implies deletion
+        kernelStorage.kvStore.delete(subKey);
+      } else {
+        kernelStorage.kvStore.set(subKey, value);
+      }
+    } else if (tag === 'transcript' || tag === 'snapshot') {
+      // 'transcript' and 'snapshot' keys contain artifact description info.
       assert(value); // make TypeScript shut up
-      const { type, vatID, isCurrent, pos } = parseExportKey(key);
+      const { vatID, isCurrent, pos } = parseExportKey(subKey);
       if (isCurrent) {
         const vatInfo = vatArtifacts.get(vatID) || {};
-        if (type === 'snapshot') {
+        if (tag === 'snapshot') {
           // `export.snapshot.{vatID}.current` directly identifies the current snapshot artifact
           vatInfo.snapshotKey = value;
-        } else if (type === 'transcript') {
+        } else if (tag === 'transcript') {
           // `export.transcript.${vatID}.current` contains a metadata record for the current
           // state of the current transcript span as of the time of export
           const metadata = JSON.parse(value);
-          vatInfo.transcriptKey = artifactKey(type, vatID, metadata.startPos);
+          vatInfo.transcriptKey = artifactKey(tag, vatID, metadata.startPos);
           artifactMetadata.set(vatInfo.transcriptKey, metadata);
         }
         vatArtifacts.set(vatID, vatInfo);
       } else {
-        artifactMetadata.set(artifactKey(type, vatID, pos), JSON.parse(value));
+        artifactMetadata.set(artifactKey(tag, vatID, pos), JSON.parse(value));
       }
-    } else if (value == null) {
-      // Note '==' rather than '===': any nullish value implies deletion
-      kernelStorage.kvStore.delete(key);
-    } else {
-      kernelStorage.kvStore.set(key, value);
     }
   }
 
