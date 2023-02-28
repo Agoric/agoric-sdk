@@ -3,6 +3,9 @@
 /* global Buffer, fetch, process */
 
 import { NonNullish } from '@agoric/assert';
+import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
+
+export { boardSlottingMarshaller };
 
 /**
  * @typedef {{boardId: string, iface: string}} RpcRemote
@@ -122,70 +125,6 @@ export const makeVStorage = powers => {
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
-/**
- * Like makeMarshal but,
- * - slotToVal takes an iface arg
- * - if a part being serialized has a boardId property, it passes through as a slot value whereas the normal marshaller would treat it as a copyRecord
- *
- * @param {(slot: string, iface: string) => any} slotToVal
- * @returns {import('@endo/marshal').Marshal<string>}
- */
-export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
-  /** @param {{body: string, slots: string[]}} capData */
-  unserialize: ({ body, slots }) => {
-    const reviver = (_key, obj) => {
-      const qclass = obj !== null && typeof obj === 'object' && obj['@qclass'];
-      // NOTE: hilbert hotel not impl
-      switch (qclass) {
-        case 'slot': {
-          const { index, iface } = obj;
-          return slotToVal(slots[index], iface);
-        }
-        case 'bigint':
-          return BigInt(obj.digits);
-        case 'undefined':
-          return undefined;
-        default:
-          return obj;
-      }
-    };
-    return JSON.parse(body, reviver);
-  },
-  serialize: whole => {
-    /** @type {Map<string, number>} */
-    const seen = new Map();
-    /** @type {(boardId: string) => number} */
-    const slotIndex = boardId => {
-      let index = seen.get(boardId);
-      if (index === undefined) {
-        index = seen.size;
-        seen.set(boardId, index);
-      }
-      return index;
-    };
-    const recur = part => {
-      if (part === null) return null;
-      if (typeof part === 'bigint') {
-        return { '@qclass': 'bigint', digits: `${part}` };
-      }
-      if (Array.isArray(part)) {
-        return part.map(recur);
-      }
-      if (typeof part === 'object') {
-        if ('boardId' in part) {
-          return { '@qclass': 'slot', index: slotIndex(part.boardId) };
-        }
-        return Object.fromEntries(
-          Object.entries(part).map(([k, v]) => [k, recur(v)]),
-        );
-      }
-      return part;
-    };
-    const after = recur(whole);
-    return { body: JSON.stringify(after), slots: [...seen.keys()] };
-  },
-});
-
 export const makeFromBoard = (slotKey = 'boardId') => {
   const cache = new Map();
   const convertSlotToVal = (slot, iface) => {
@@ -241,20 +180,7 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<{
- *   brand: Record<string, RpcRemote>,
- *   instance: Record<string, RpcRemote>,
- *   vbankAsset: Record<string, VBankAssetDetail>,
- *   reverse: Record<string, string>,
- * }>}
- * @typedef {{
- *   brand: RpcRemote,
- *   denom: string,
- *   displayInfo: DisplayInfo,
- *   issuer: RpcRemote,
- *   issuerName: string,
- *   proposedName: string,
- * }} VBankAssetDetail
+ * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   const reverse = {};

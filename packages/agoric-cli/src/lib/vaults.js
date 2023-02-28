@@ -50,6 +50,10 @@ const makeProposal = (brands, opts) => {
   return harden(proposal);
 };
 
+// TODO factor out BridgeAction so that these functions just return OfferSpec
+// That they are composed into a BridgeAction is the concern of the caller.
+// Then these can be used in tests as arguments to `executeOffer()` without a bridge.
+
 /**
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, wantMinted: number, giveCollateral: number }} opts

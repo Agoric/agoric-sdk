@@ -238,16 +238,23 @@ export {};
  */
 
 /**
+ * @typedef {{ module: string, entrypoint: string, args?: Array<unknown>} | string} ConfigProposal
+ */
+
+/**
  * @typedef {object} SwingSetConfig a swingset config object
  * @property {string} [bootstrap]
+ * @property {ConfigProposal[]} [coreProposals]
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
- * @property { ManagerType } [defaultManagerType]
+ * @property {ManagerType} [defaultManagerType]
+ * @property {string} [bundleCachePath] if present, SwingSet will use a bundle cache at this path
  * @property {number} [snapshotInitial]
+ * @property {boolean} [pinBootstrapRoot]
  * @property {number} [snapshotInterval]
  * @property {boolean} [relaxDurabilityRules]
- * @property {SwingSetConfigDescriptor} [vats]
+ * @property {SwingSetConfigDescriptor} vats
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.

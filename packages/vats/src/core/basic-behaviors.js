@@ -5,16 +5,12 @@ import { Nat } from '@endo/nat';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { E, Far } from '@endo/far';
-import { BridgeId, WalletName } from '@agoric/internal';
+import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { feeIssuerConfig } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
 
 const { details: X } = assert;
-
-// These two are inextricably linked with ../../golang/cosmos.
-const RESERVE_MODULE_ACCOUNT = 'vbank/reserve';
-const RESERVE_ADDRESS = 'agoric1ae0lmtzlgrcnla9xjkpaarq5d5dfez63h3nucl';
 
 // XXX domain of @agoric/cosmic-proto
 /**
@@ -411,14 +407,14 @@ export const addBankAssets = async ({
 
   // Sanity check: the bank manager should have a reserve module account.
   const reserveAddress = await E(bankMgr).getModuleAccountAddress(
-    RESERVE_MODULE_ACCOUNT,
+    VBankAccount.reserve.module,
   );
   if (reserveAddress !== null) {
     // bridgeManager is available, so we should have a legit reserve address.
     assert.equal(
       reserveAddress,
-      RESERVE_ADDRESS,
-      X`vbank address for reserve module ${RESERVE_MODULE_ACCOUNT} is ${reserveAddress}; expected ${RESERVE_ADDRESS}`,
+      VBankAccount.reserve.address,
+      X`vbank address for reserve module ${VBankAccount.reserve.module} is ${reserveAddress}; expected ${VBankAccount.reserve.address}`,
     );
   }
 

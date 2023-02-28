@@ -27,6 +27,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   CHARGING_PERIOD_KEY,
@@ -40,6 +41,8 @@ import { prepareVaultManagerKit } from './vaultManager.js';
 import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
+
+const trace = makeTracer('VD');
 
 /**
  * @typedef {{
@@ -287,6 +290,7 @@ export const prepareVaultDirector = (
           collateralKeyword,
           initialParamValues,
         ) {
+          trace('addVaultType', collateralKeyword, initialParamValues);
           const { state, facets } = this;
           mustMatch(collateralIssuer, M.remotable(), 'collateralIssuer');
           assertKeywordName(collateralKeyword);

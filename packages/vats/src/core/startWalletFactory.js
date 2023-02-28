@@ -1,11 +1,17 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import {
+  deeplyFulfilledObject,
+  makeTracer,
+  VBankAccount,
+} from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '../tokens.js';
+
+const trace = makeTracer('StartWF');
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -152,7 +158,7 @@ export const startWalletFactory = async (
     await Promise.all([
       walletBridgeManagerP,
       provisionWalletBridgeManagerP,
-      E(bankManager).getModuleAccountAddress('vbank/provision'),
+      E(bankManager).getModuleAccountAddress(VBankAccount.provision.module),
     ]);
   if (!walletBridgeManager || !provisionWalletBridgeManager) {
     console.warn(
@@ -160,10 +166,10 @@ export const startWalletFactory = async (
     );
     return;
   }
-  console.log('provision pool', { poolAddr });
+  trace('provision pool', { poolAddr });
   if (!poolAddr) {
-    console.warn(
-      'startWalletFactory needs vbank/provision module addres (not sim chain)',
+    trace(
+      'ERROR: startWalletFactory needs vbank/provision module address (not sim chain)',
     );
     return;
   }

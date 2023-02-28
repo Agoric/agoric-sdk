@@ -1,4 +1,5 @@
 /* global setTimeout */
+import '@endo/init/debug.js';
 import test from 'ava';
 
 // Use ambient authority only in test.before()
@@ -6,6 +7,7 @@ import { spawn as ambientSpawn } from 'child_process';
 import * as ambientPath from 'path';
 import * as ambientFs from 'fs';
 
+import { VBankAccount } from '@agoric/internal';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
 // module account address for 'vbank/provision'; aka "megz"
@@ -27,8 +29,7 @@ import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 // at issue:
 // ModuleAccount addresses don't follow ADR-028
 // https://github.com/cosmos/cosmos-sdk/issues/13782 Nov 2022
-const provisionPoolModuleAccount =
-  'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
+const provisionPoolModuleAccount = VBankAccount.provision.address;
 
 test.before(async t => {
   const filename = new URL(import.meta.url).pathname;

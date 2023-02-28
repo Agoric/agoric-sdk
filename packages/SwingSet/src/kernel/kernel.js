@@ -1735,7 +1735,7 @@ export default function buildKernel(
   /**
    * Run the kernel until the policy says to stop, or the queue is empty.
    *
-   * @param {RunPolicy?} policy - a RunPolicy to limit the work being done
+   * @param {RunPolicy} [policy] - a RunPolicy to limit the work being done
    * @returns {Promise<number>} The number of cranks that were executed.
    */
   async function run(policy = foreverPolicy()) {

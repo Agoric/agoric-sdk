@@ -7,9 +7,19 @@ import { assert } from '@agoric/assert';
 // used to enable syntactic manipulation of serialized values while remaining
 // agnostic about the internal details of the serialization encoding.
 
+/**
+ * @typedef {{getKref: () => string, iface: () => string}} KCap
+ */
+
 const refMap = new WeakMap();
 
-export const kslot = (kref, iface) => {
+/**
+ *
+ * @param {string} kref
+ * @param {string} [iface]
+ * @returns {import('@endo/eventual-send').ERef<KCap>}
+ */
+export const kslot = (kref, iface = 'undefined') => {
   assert.typeof(kref, 'string');
   if (iface && iface.startsWith('Alleged: ')) {
     // Encoder prepends "Alleged: " to iface string, but the decoder doesn't strip it
@@ -47,6 +57,11 @@ export const kslot = (kref, iface) => {
   }
 };
 
+/**
+ *
+ * @param {any} obj
+ * @returns {string}
+ */
 export const krefOf = obj => {
   const fromMap = refMap.get(obj);
   if (fromMap) {
@@ -71,6 +86,10 @@ const kmarshal = makeMarshal(krefOf, kslot, {
 
 export const kser = value => kmarshal.serialize(harden(value));
 
+/**
+ * @param {import('@endo/marshal').CapData<string>} serializedValue
+ * @returns {any}
+ */
 export const kunser = serializedValue => kmarshal.unserialize(serializedValue);
 
 export function makeError(message) {

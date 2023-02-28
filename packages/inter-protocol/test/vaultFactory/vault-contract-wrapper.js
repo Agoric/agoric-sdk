@@ -16,7 +16,10 @@ import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
-import { atomicRearrange, getAmountOut } from '@agoric/zoe/src/contractSupport';
+import {
+  atomicRearrange,
+  getAmountOut,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 import { prepareVault } from '../../src/vaultFactory/vault.js';

@@ -2,15 +2,19 @@
 import fs from 'fs';
 import path from 'path';
 
-import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { assert, Fail } from '@agoric/assert';
+import { makeTracer } from '@agoric/internal';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import bundleSource from '@endo/bundle-source';
-
-import '../types-ambient.js';
+import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
+import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
-import { kdebugEnable } from '../lib/kdebug.js';
+
+import '../types-ambient.js';
+import { makeNodeBundleCache } from '../../tools/bundleTool.js';
+
+const trace = makeTracer('IniSwi', false);
 
 /**
  * @param {X[]} xs
@@ -79,6 +83,7 @@ export async function buildVatAndDeviceBundles() {
 // runtimeOptions.kernelBundles, which will pass it through to both.
 
 export async function buildKernelBundles() {
+  trace('buildKernelBundles');
   const bp = buildVatAndDeviceBundles();
   const kp = buildKernelBundle();
   const [vdBundles, kernelBundle] = await Promise.all([bp, kp]);
@@ -401,42 +406,72 @@ export async function initializeSwingset(
     };
   }
 
-  // The host application gives us
-  // config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
-  // The 'bundleName' option points into
-  // config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
-  // also include arbitrary named bundles that will be made available to
-  // E(vatAdminService).getNamedBundleCap(bundleName) ,and temporarily as
-  // E(vatAdminService).createVatByName(bundleName)
+  const bundleCache = await (config.bundleCachePath
+    ? makeNodeBundleCache(
+        config.bundleCachePath,
+        { dev: config.includeDevDependencies, format: config.bundleFormat },
+        s => import(s),
+      )
+    : null);
 
-  // The 'kconfig' we pass through to initializeKernel has
-  // kconfig.[vats|devices].NAME.bundleID and
-  // kconfig.namedBundleIDs.BUNDLENAME=bundleID , which both point into
-  // kconfig.idToBundle.BUNDLEID=bundle
+  /**
+   * The host application gives us
+   * config.[vats|devices].NAME.[bundle|bundleSpec|sourceSpec|bundleName] .
+   * The 'bundleName' option points into
+   * config.bundles.BUNDLENAME.[bundle|bundleSpec|sourceSpec] , which can
+   * also include arbitrary named bundles that will be made available to
+   * E(vatAdminService).getNamedBundleCap(bundleName) ,and temporarily as
+   * E(vatAdminService).createVatByName(bundleName)
+   *
+   * The 'kconfig' we pass through to initializeKernel has
+   * kconfig.[vats|devices].NAME.bundleID and
+   * kconfig.namedBundleIDs.BUNDLENAME=bundleID , which both point into
+   * kconfig.idToBundle.BUNDLEID=bundle
+   *
+   * @param {SwingSetConfigProperties | { bundleName: string }} desc
+   * @param {Record<string, *>} [nameToBundle]
+   */
+  async function getBundle(desc, nameToBundle) {
+    trace(
+      'getBundle',
+      Object.keys(desc),
+      // @ts-expect-error optional
+      desc.moduleFormat,
+      // @ts-expect-error optional
+      desc.endoZipBase64Sha512 || desc.sourceSpec,
+    );
 
-  async function getBundle(desc, mode, nameToBundle) {
-    if (mode === 'bundle') {
+    // shape validated by caller
+    if ('bundle' in desc) {
       return desc.bundle;
-    } else if (mode === 'bundleSpec') {
+    } else if ('bundleSpec' in desc) {
       return JSON.parse(fs.readFileSync(desc.bundleSpec).toString());
-    } else if (mode === 'sourceSpec') {
+    } else if ('sourceSpec' in desc) {
+      if (bundleCache) {
+        return bundleCache.load(desc.sourceSpec);
+      }
       return bundleSource(desc.sourceSpec, {
         dev: config.includeDevDependencies,
         format: config.bundleFormat,
       });
-    } else if (mode === 'bundleName') {
+    } else if ('bundleName' in desc) {
       assert(nameToBundle, `cannot use .bundleName in config.bundles`);
       const bundle = nameToBundle[desc.bundleName];
       assert(bundle, `unknown bundleName ${desc.bundleName}`);
       return bundle;
     }
-    throw Error(`unknown mode ${mode}`);
+    throw Error(`unknown mode in desc`, desc);
   }
 
   // fires with BundleWithID: { ...bundle, id }
+  /**
+   * @param {EndoZipBase64Bundle & {id?: string}} bundle
+   * @returns {Promise<EndoZipBase64Bundle & {id: string}>} bundle
+   */
   async function addBundleID(bundle) {
-    if (bundle.id) {
+    if ('id' in bundle) {
       // during config, we believe bundle.id, but not at runtime!
+      // @ts-expect-error cast
       return bundle;
     }
     const { endoZipBase64Sha512 } = bundle;
@@ -448,15 +483,26 @@ export async function initializeSwingset(
   }
 
   // fires with BundleWithID: { ...bundle, id }
+
+  /**
+   *
+   * @param {(SwingSetConfigProperties | { bundleName: string }) & {bundleID?: string }} desc
+   * @param {Record<string, EndoZipBase64Bundle>} [nameToBundle]
+   */
   async function processDesc(desc, nameToBundle) {
-    const allModes = ['bundle', 'bundleSpec', 'sourceSpec', 'bundleName'];
+    const allModes = /** @type {const} */ ([
+      'bundle',
+      'bundleSpec',
+      'sourceSpec',
+      'bundleName',
+    ]);
     const modes = allModes.filter(mode => mode in desc);
     assert(
       modes.length === 1,
       `need =1 of bundle/bundleSpec/sourceSpec/bundleName, got ${modes}`,
     );
     const mode = modes[0];
-    return getBundle(desc, mode, nameToBundle)
+    return getBundle(desc, nameToBundle)
       .then(addBundleID)
       .then(bundleWithID => {
         // replace original .sourceSpec/etc with a uniform .bundleID
@@ -466,6 +512,10 @@ export async function initializeSwingset(
       });
   }
 
+  /**
+   * @param {string} groupName
+   * @param {Record<string, EndoZipBase64Bundle>} [nameToBundle]
+   */
   async function processGroup(groupName, nameToBundle) {
     const group = config[groupName] || {};
     const names = Object.keys(group).sort();
@@ -475,7 +525,9 @@ export async function initializeSwingset(
       }),
     );
     const bundlesWithID = await Promise.all(processP);
+    /** @type {Record<string, EndoZipBase64Bundle & { id: string }>} */
     const newNameToBundle = {};
+    /** @type {Record<string, EndoZipBase64Bundle & { id: string }>} */
     const idToBundle = {};
     for (let i = 0; i < names.length; i += 1) {
       const name = names[i];

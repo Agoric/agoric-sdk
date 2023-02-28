@@ -7,7 +7,7 @@ import { file as tmpFile, tmpName } from 'tmp';
 
 import sqlite3 from 'better-sqlite3';
 
-import { assert } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
 import { makeStreamStore } from './streamStore.js';
@@ -457,13 +457,13 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');
 
   function startCrank() {
-    assert(!inCrank);
+    !inCrank || Fail`already in crank`;
     inCrank = true;
     resetCrankhash();
   }
 
   function establishCrankSavepoint(savepoint) {
-    assert(inCrank);
+    inCrank || Fail`not in crank`;
     const savepointOrdinal = savepoints.length;
     savepoints.push(savepoint);
     const sql = db.prepare(`SAVEPOINT t${savepointOrdinal}`);
@@ -471,7 +471,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   function rollbackCrank(savepoint) {
-    assert(inCrank);
+    inCrank || Fail`not in crank`;
     for (const savepointOrdinal of savepoints.keys()) {
       if (savepoints[savepointOrdinal] === savepoint) {
         const sql = db.prepare(`ROLLBACK TO SAVEPOINT t${savepointOrdinal}`);
@@ -515,7 +515,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   function endCrank() {
-    assert(inCrank);
+    inCrank || Fail`not in crank`;
     if (savepoints.length > 0) {
       sqlReleaseSavepoints.run();
       savepoints.length = 0;
