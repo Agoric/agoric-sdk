@@ -27,7 +27,7 @@ import {
  * @param {PureData} key
  * @returns {string}
  */
-const encodeData = makeEncodePassable();
+export const encodeData = makeEncodePassable();
 
 // `makeDecodePassable` has three named options:
 // `decodeRemotable`, `decodeError`, and `decodePromise`.
@@ -38,13 +38,13 @@ const encodeData = makeEncodePassable();
  * @param {string} encoded
  * @returns {PureData}
  */
-const decodeData = makeDecodePassable();
+export const decodeData = makeDecodePassable();
 
 /**
  * @param {number} n
  * @returns {string}
  */
-export const encodeNumber = n => {
+const encodeNumber = n => {
   assert.typeof(n, 'number');
   return encodeData(n);
 };
@@ -53,7 +53,7 @@ export const encodeNumber = n => {
  * @param {string} encoded
  * @returns {number}
  */
-export const decodeNumber = encoded => {
+const decodeNumber = encoded => {
   const result = decodeData(encoded);
   assert.typeof(result, 'number');
   return result;

@@ -34,12 +34,12 @@ test('toKey price', t => {
   const keyC26 = toPriceOfferKey(priceC, DEC26);
   const keyD26 = toPriceOfferKey(priceD, DEC26);
   t.true(keyA25 > keyB25);
-  t.true(keyA25 > keyA26);
+  t.true(keyA26 > keyA25);
   t.true(keyB25 > keyC25);
-  t.true(keyB25 > keyB26);
+  t.true(keyB26 > keyB25);
   t.true(keyC25 > keyD25);
-  t.true(keyC25 > keyC26);
-  t.true(keyD25 > keyD26);
+  t.true(keyC26 > keyC25);
+  t.true(keyD26 > keyD25);
 });
 
 test('toKey discount', t => {
@@ -58,12 +58,12 @@ test('toKey discount', t => {
   const keyC26 = toDiscountedRateOfferKey(discountC, DEC26);
   const keyD26 = toDiscountedRateOfferKey(discountD, DEC26);
   t.true(keyB25 > keyA25);
-  t.true(keyA25 > keyA26);
+  t.true(keyA26 > keyA25);
   t.true(keyC25 > keyB25);
-  t.true(keyB25 > keyB26);
+  t.true(keyB26 > keyB25);
   t.true(keyD25 > keyC25);
-  t.true(keyC25 > keyC26);
-  t.true(keyD25 > keyD26);
+  t.true(keyC26 > keyC25);
+  t.true(keyD26 > keyD25);
 });
 
 test('fromKey Price', t => {

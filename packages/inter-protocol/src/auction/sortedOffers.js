@@ -5,21 +5,19 @@ import {
 import { M, mustMatch } from '@agoric/store';
 import { RatioShape } from '@agoric/ertp';
 
-import { decodeNumber, encodeNumber } from '../vaultFactory/storeUtils.js';
+import { decodeData, encodeData } from '../vaultFactory/storeUtils.js';
 
 const { Fail } = assert;
 
-// We want earlier times to sort the same direction as higher prices, so we
-// subtract the timestamp from millisecond time in the year 2286. This works for
-// timestamps in seconds or millis. The alternative considered was inverting,
-// but floats don't have enough resolution to convert back to the same timestamp
-// This will work just fine for at least 250 years. And notice that these
-// timestamps are used for sorting during an auction and don't need to be stored
-// long-term. We could safely subtract from a timestamp that's now + 1 month.
-const FarFuture = 10000000000000n;
-
-/** @type {(s: bigint) => bigint} */
-const encodeSequenceNumber = s => FarFuture - s;
+/**
+ * @file we use a floating point representation of the price or rate as the
+ * first part of the key in the store. The second part is the sequence number of
+ * the bid, but it doesn't matter for sorting. When we retrieve multiple bids,
+ * it's only by bid value, so we don't care how the sequence numbers sort.
+ *
+ * We take advantage of the fact that encodeData takes a passable and turns it
+ * into a sort key. Arrays of passable data sort like composite keys.
+ */
 
 /**
  * Return a sort key that will compare based only on price. Price is the prefix
@@ -29,8 +27,8 @@ const encodeSequenceNumber = s => FarFuture - s;
  */
 export const toPartialOfferKey = offerPrice => {
   assert(offerPrice);
-  const mostSignificantPart = encodeNumber(coerceToNumber(offerPrice));
-  return `${mostSignificantPart}:`;
+  const mostSignificantPart = coerceToNumber(offerPrice);
+  return encodeData(harden([mostSignificantPart, 0n]));
 };
 
 /**
@@ -47,26 +45,24 @@ export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
     Fail`offer prices must have different numerator and denominator`;
   mustMatch(sequenceNumber, M.nat());
 
-  // until DB supports composite keys, copy its method for turning numbers to DB
-  // entry keys
-  const mostSignificantPart = encodeNumber(coerceToNumber(offerPrice));
-  return `${mostSignificantPart}:${encodeSequenceNumber(sequenceNumber)}`;
+  const mostSignificantPart = coerceToNumber(offerPrice);
+  return encodeData(harden([mostSignificantPart, sequenceNumber]));
 };
 
 const priceRatioFromFloat = (floatPrice, numBrand, denomBrand, useDecimals) => {
   const denominatorValue = 10 ** useDecimals;
   return makeRatio(
-    BigInt(Math.round(decodeNumber(floatPrice) * denominatorValue)),
+    BigInt(Math.round(floatPrice * denominatorValue)),
     numBrand,
     BigInt(denominatorValue),
     denomBrand,
   );
 };
 
-const discountRatioFromFloat = (floatDiscount, numBrand, useDecimals) => {
+const discountRatioFromKey = (floatDiscount, numBrand, useDecimals) => {
   const denominatorValue = 10 ** useDecimals;
   return makeRatio(
-    BigInt(Math.round(decodeNumber(floatDiscount) * denominatorValue)),
+    BigInt(Math.round(floatDiscount * denominatorValue)),
     numBrand,
     BigInt(denominatorValue),
   );
@@ -82,17 +78,17 @@ const discountRatioFromFloat = (floatDiscount, numBrand, useDecimals) => {
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
-  const [pricePart, sequenceNumberPart] = key.split(':');
+  const [pricePart, sequenceNumberPart] = decodeData(key);
   return [
     priceRatioFromFloat(pricePart, numBrand, denomBrand, useDecimals),
-    encodeSequenceNumber(BigInt(sequenceNumberPart)),
+    sequenceNumberPart,
   ];
 };
 
 export const toDiscountComparator = rate => {
   assert(rate);
-  const mostSignificantPart = encodeNumber(coerceToNumber(rate));
-  return `${mostSignificantPart}:`;
+  const mostSignificantPart = coerceToNumber(rate);
+  return encodeData(harden([mostSignificantPart, 0n]));
 };
 
 /**
@@ -109,10 +105,8 @@ export const toDiscountedRateOfferKey = (rate, sequenceNumber) => {
     Fail`discount rate must have the same numerator and denominator`;
   mustMatch(sequenceNumber, M.nat());
 
-  // until DB supports composite keys, copy its method for turning numbers to DB
-  // entry keys
-  const mostSignificantPart = encodeNumber(coerceToNumber(rate));
-  return `${mostSignificantPart}:${encodeSequenceNumber(sequenceNumber)}`;
+  const mostSignificantPart = coerceToNumber(rate);
+  return encodeData(harden([mostSignificantPart, sequenceNumber]));
 };
 
 /**
@@ -124,9 +118,9 @@ export const toDiscountedRateOfferKey = (rate, sequenceNumber) => {
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromDiscountedRateOfferKey = (key, brand, useDecimals) => {
-  const [discountPart, sequenceNumberPart] = key.split(':');
+  const [discountPart, sequenceNumberPart] = decodeData(key);
   return [
-    discountRatioFromFloat(discountPart, brand, useDecimals),
-    encodeSequenceNumber(BigInt(sequenceNumberPart)),
+    discountRatioFromKey(discountPart, brand, useDecimals),
+    sequenceNumberPart,
   ];
 };
