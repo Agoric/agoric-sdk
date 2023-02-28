@@ -11,7 +11,7 @@ import { createSHA256 } from './hasher.js';
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
  *   rolloverSpan: (vatID: string) => void,
- *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string, size: number },
+ *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string },
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => Iterable<string>,
  *   exportSpan: (vatID: string, startPos: number) => AsyncIterable<Uint8Array>
@@ -63,7 +63,6 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       endPos INTEGER,
       hash TEXT,
       current INTEGER,
-      size INTEGER,
       PRIMARY KEY (vatID, startPos)
     )
   `);
@@ -126,8 +125,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
 
   const sqlWriteSpan = db.prepare(`
     INSERT INTO transcriptSpans
-      (vatID, startPos, endPos, hash, current, size)
-    VALUES (?, ?, ?, ?, ?, ?)
+      (vatID, startPos, endPos, hash, current)
+    VALUES (?, ?, ?, ?, ?)
   `);
 
   /**
@@ -137,11 +136,11 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
    */
   function initTranscript(vatID) {
     ensureTxn();
-    sqlWriteSpan.run(vatID, 0, 0, initialHash, 1, 0);
+    sqlWriteSpan.run(vatID, 0, 0, initialHash, 1);
   }
 
   const sqlGetCurrentSpanBounds = db.prepare(`
-    SELECT startPos, endPos, size, hash
+    SELECT startPos, endPos, hash
     FROM transcriptSpans
     WHERE vatID = ? AND current = 1
   `);
@@ -151,7 +150,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
    *
    * @param {string} vatID  The vat in question
    *
-   * @returns {{startPos: number, endPos: number, size: number, hash: string}}
+   * @returns {{startPos: number, endPos: number, hash: string}}
    */
   function getCurrentSpanBounds(vatID) {
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
@@ -175,8 +174,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     return `export.transcript.${rec.vatID}.current`;
   }
 
-  function spanRec(vatID, startPos, endPos, hash, size) {
-    return { vatID, startPos, endPos, hash, size };
+  function spanRec(vatID, startPos, endPos, hash) {
+    return { vatID, startPos, endPos, hash };
   }
 
   const sqlEndCurrentSpan = db.prepare(`
@@ -193,21 +192,21 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
    */
   function rolloverSpan(vatID) {
     ensureTxn();
-    const { hash, startPos, endPos, size } = getCurrentSpanBounds(vatID);
-    const rec = spanRec(vatID, startPos, endPos, hash, size);
+    const { hash, startPos, endPos } = getCurrentSpanBounds(vatID);
+    const rec = spanRec(vatID, startPos, endPos, hash);
     noteExport(historicSpanMetadataKey(rec), JSON.stringify(rec));
     sqlEndCurrentSpan.run(vatID);
-    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, 0);
+    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1);
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
-    SELECT vatID, startPos, endPos, hash, current, size
+    SELECT vatID, startPos, endPos, hash, current
     FROM transcriptSpans
     ORDER BY vatID, startPos
   `);
 
   const sqlGetCurrentSpanMetadata = db.prepare(`
-    SELECT vatID, startPos, endPos, hash, current, size
+    SELECT vatID, startPos, endPos, hash, current
     FROM transcriptSpans
     WHERE current = 1
     ORDER BY vatID, startPos
@@ -332,7 +331,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
 
   const sqlUpdateSpan = db.prepare(`
     UPDATE transcriptSpans
-    SET endPos = ?, hash = ?, size = ?
+    SET endPos = ?, hash = ?
     WHERE vatID = ? AND current = 1
   `);
 
@@ -344,13 +343,12 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
    */
   const addItem = (vatID, item) => {
     ensureTxn();
-    const { startPos, endPos, size, hash } = getCurrentSpanBounds(vatID);
+    const { startPos, endPos, hash } = getCurrentSpanBounds(vatID);
     sqlAddItem.run(vatID, item, endPos);
     const newEndPos = endPos + 1;
     const newHash = computeItemHash(hash, item);
-    const newSize = size + item.length;
-    sqlUpdateSpan.run(newEndPos, newHash, newSize, vatID);
-    const rec = spanRec(vatID, startPos, newEndPos, newHash, newSize);
+    sqlUpdateSpan.run(newEndPos, newHash, vatID);
+    const rec = spanRec(vatID, startPos, newEndPos, newHash);
     noteExport(currentSpanMetadataKey(rec), JSON.stringify(rec));
   };
 
@@ -390,17 +388,11 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     const lineStream = inStream.pipe(lineTransform);
     let hash = initialHash;
     let pos = startPos;
-    let totalSize = 0;
     for await (const item of lineStream) {
       sqlAddItem.run(vatID, item, pos);
       hash = computeItemHash(hash, item);
       pos += 1;
-      totalSize += item.length;
     }
-    assert(
-      info.size === totalSize,
-      `artifact ${name} size is ${totalSize}, metadata says ${info.size}`,
-    );
     assert(
       info.hash === hash,
       `artifact ${name} hash is ${hash}, metadata says ${info.hash}`,
@@ -411,7 +403,6 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       info.endPos,
       info.hash,
       info.current,
-      info.size,
     );
   }
 

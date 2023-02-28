@@ -193,15 +193,15 @@ async function testTranscriptStore(t, dbDir) {
     [
       [
         'export.transcript.st1.0',
-        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"157f906d6a601b2ca1834ae5e407dd89cf30b82359e7453fdcc6a2b9b49a1461","size":11}',
+        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"157f906d6a601b2ca1834ae5e407dd89cf30b82359e7453fdcc6a2b9b49a1461"}',
       ],
       [
         'export.transcript.st1.current',
-        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"c35e9841ec2d5e7cdef17f3b77a14f5562298790ec806e5dbf24bc673d7e9f09","size":11}',
+        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"c35e9841ec2d5e7cdef17f3b77a14f5562298790ec806e5dbf24bc673d7e9f09"}',
       ],
       [
         'export.transcript.st2.current',
-        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"7f1d4eaf9c77b3ec282061e0814ba3f5142709eeab2ede4c375648a51a74644c","size":23}',
+        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"7f1d4eaf9c77b3ec282061e0814ba3f5142709eeab2ede4c375648a51a74644c"}',
       ],
     ],
   ]);

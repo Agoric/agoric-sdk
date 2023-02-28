@@ -66,7 +66,6 @@ test('build temp file; compress to cache file', async t => {
   const exportInfo = {
     endPos: 47,
     hash: expectedHash,
-    size: 3,
   };
   t.deepEqual(snapshotInfo, dbInfo);
   t.is(store.hasHash('fakeVatID', hash), true);
