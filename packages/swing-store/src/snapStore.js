@@ -29,21 +29,24 @@ import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
  * @typedef { import('./swingStore').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
- *   hasHash: (vatID: string, hash: string) => boolean,
  *   loadSnapshot: <T>(vatID: string, loadRaw: (filePath: string) => Promise<T>) => Promise<T>,
  *   saveSnapshot: (vatID: string, endPos: number, saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
  *   deleteVatSnapshots: (vatID: string) => void,
- *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
- *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
- *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
- *   getSnapshot: (vatID: string, endPos: number) => AsyncIterable<Uint8Array>,
- *   importSnapshot: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => void,
  * }} SnapStore
  *
  * @typedef {{
+ *   exportSnapshot: (vatID: string, endPos: number) => AsyncIterable<Uint8Array>,
+ *   importSnapshot: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => void,
+ *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
+ *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
+ * }} SnapStoreInternal
+ *
+ * @typedef {{
+ *   hasHash: (vatID: string, hash: string) => boolean,
  *   dumpSnapshots: (includeHistorical?: boolean) => {},
+ *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  * }} SnapStoreDebug
  *
  */
@@ -84,7 +87,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
  * @param {(key: string, value: string) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
- * @returns {SnapStore & SnapStoreDebug}
+ * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
   db,
@@ -266,7 +269,7 @@ export function makeSnapStore(
    * @returns {AsyncIterable<Uint8Array>}
    * @yields {Uint8Array}
    */
-  async function* getSnapshot(vatID, endPos) {
+  async function* exportSnapshot(vatID, endPos) {
     const compressedSnapshot = sqlGetSnapshot.get(vatID, endPos);
     const gzReader = Readable.from(compressedSnapshot);
     const unzipper = createGunzip();
@@ -531,12 +534,11 @@ export function makeSnapStore(
     getSnapshotInfo,
     getExportRecords,
     getArtifactNames,
-    getSnapshot,
+    exportSnapshot,
     importSnapshot,
 
     hasHash,
-    deleteSnapshotByHash,
-
     dumpSnapshots,
+    deleteSnapshotByHash,
   });
 }
