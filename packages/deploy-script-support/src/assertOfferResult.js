@@ -1,3 +1,4 @@
+// @ts-check
 import { Fail } from '@agoric/assert';
 import { E } from '@endo/far';
 
