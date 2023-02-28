@@ -117,7 +117,7 @@ test('export and import data for state sync', async t => {
   const exporter = makeSwingStoreExporter(dbDir);
 
   const kvData = [];
-  for await (const elem of exporter.getKVData()) {
+  for await (const elem of exporter.getExportData()) {
     kvData.push(elem);
   }
   t.deepEqual(kvData, [
@@ -157,23 +157,23 @@ test('export and import data for state sync', async t => {
     ],
     [
       'transcript.vatA.0',
-      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"404df94aaedd44be0dd6cb5f3c360253926058d482e1160c67e826b4001bdfbe","current":0}',
+      '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"ea8ac1a751712ad66e4a9182adc65afe9bb0f4cd0ee0b828c895c63fbd2e3157","isCurrent":0}',
     ],
     [
       'transcript.vatA.2',
-      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"fea97db13d8feaa33322aaaec6b9edae7d9d45d2dd5b90dfa24c9edc4e8f3dfa","current":0}',
+      '{"vatID":"vatA","startPos":2,"endPos":6,"hash":"88f299ca67b8acdf6023a83bb8e899af5adcf3271c7a1a2a495dcd6f1fbaac9f","isCurrent":0}',
     ],
     [
       'transcript.vatA.current',
-      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"84c2705fa00da1f9f7c02d7d6ca2b263099b8ee681840f7df781da644ee4cbdd","current":1}',
+      '{"vatID":"vatA","startPos":6,"endPos":8,"hash":"fe5d692b24a32d53bf617ba9ed3391b60c36a402c70a07a6aa984fc316e4efcc","isCurrent":1}',
     ],
     [
       'transcript.vatB.0',
-      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"9925c1f23e5176e115b524621ca9bd77a1122de654be1332bfd04f17c33c9827","current":0}',
+      '{"vatID":"vatB","startPos":0,"endPos":4,"hash":"41dbf60cdec066106c7030517cb9f9f34a50fe2259705cf5fdbdd0b39ae12e46","isCurrent":0}',
     ],
     [
       'transcript.vatB.current',
-      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"f3afdb75964f1d4cff4828458c31f722463d8918d6b59c36d0e6263b48c5e6d4","current":1}',
+      '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"34fa09207bfb7af5fc3e65acb07f13b60834d0fbd2c6b9708f794c4397bd865d","isCurrent":1}',
     ],
   ]);
 

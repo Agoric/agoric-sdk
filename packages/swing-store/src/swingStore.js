@@ -122,12 +122,13 @@ function getKeyType(key) {
  * the concurrent activity of other swingStore instances, the data representing
  * the commit point will stay consistent and available.
  *
- * @property {() => AsyncIterable<KVPair>} getKVData
+ * @property {() => AsyncIterable<KVPair>} getExportData
  *
- * Get a full dump of KV data from the swingStore. This represents both the
- * KVStore (excluding host and local prefixes), as well as any data needed to
- * validate all artifacts, both current and historical. As such it represents
- * the root of trust for the application.
+ * Get a full copy of the first-stage export data (key-value pairs) from the
+ * swingStore. This represents both the contents of the KVStore (excluding host
+ * and local prefixes), as well as any data needed to validate all artifacts,
+ * both current and historical. As such it represents the root of trust for the
+ * application.
  *
  * Content of validation data (with supporting entries for indexing):
  * - kv.${key} = ${value}  // ordinary kvStore data entry
@@ -189,19 +190,15 @@ export function makeSwingStoreExporter(dirPath) {
    * @returns {AsyncIterable<KVPair>}
    * @yields {KVPair}
    */
-  async function* getKVData() {
+  async function* getExportData() {
     const kvPairs = sqlGetAllKVData.iterate();
     for (const kv of kvPairs) {
       if (getKeyType(kv.key) === 'consensus') {
         yield [`kv.${kv.key}`, kv.value];
       }
     }
-    for (const exportRecord of snapStore.getExportRecords(true)) {
-      yield exportRecord;
-    }
-    for (const exportRecord of transcriptStore.getExportRecords(true)) {
-      yield exportRecord;
-    }
+    yield* snapStore.getExportRecords(true);
+    yield* transcriptStore.getExportRecords(true);
   }
 
   /**
@@ -253,7 +250,7 @@ export function makeSwingStoreExporter(dirPath) {
   }
 
   return harden({
-    getKVData,
+    getExportData,
     getArtifactNames,
     getArtifact,
     close,
@@ -933,7 +930,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   // vatID -> { snapshotKey: metadataKey, transcriptKey: metatdataKey }
   const vatArtifacts = new Map();
 
-  for await (const [key, value] of exporter.getKVData()) {
+  for await (const [key, value] of exporter.getExportData()) {
     const [tag] = key.split('.', 1);
     const subKey = key.substring(tag.length + 1);
     if (tag === 'kv') {

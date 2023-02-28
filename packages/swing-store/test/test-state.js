@@ -193,15 +193,15 @@ async function testTranscriptStore(t, dbDir) {
     [
       [
         'transcript.st1.0',
-        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"157f906d6a601b2ca1834ae5e407dd89cf30b82359e7453fdcc6a2b9b49a1461"}',
+        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e"}',
       ],
       [
         'transcript.st1.current',
-        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"c35e9841ec2d5e7cdef17f3b77a14f5562298790ec806e5dbf24bc673d7e9f09"}',
+        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"789342fab468506c624c713c46953992f53a7eaae390d634790d791636b96cab"}',
       ],
       [
         'transcript.st2.current',
-        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"7f1d4eaf9c77b3ec282061e0814ba3f5142709eeab2ede4c375648a51a74644c"}',
+        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"45de7ae9d2be34148f9cf3000052e5d1374932d663442fe9f39a342d221cebf1"}',
       ],
     ],
   ]);
