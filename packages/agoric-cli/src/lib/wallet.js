@@ -32,6 +32,18 @@ export const outputAction = bridgeAction => {
 };
 
 /**
+ * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+ */
+export const outputExecuteOfferAction = offer => {
+  /** @type {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} */
+  const spendAction = {
+    method: 'executeOffer',
+    offer,
+  };
+  outputAction(spendAction);
+};
+
+/**
  * @deprecated use `.current` node for current state
  * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>>} follower
  */

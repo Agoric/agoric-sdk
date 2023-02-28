@@ -8,11 +8,11 @@ import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils } from '../lib/rpc.js';
 import {
   lookupOfferIdForVault,
-  makeAdjustSpendAction,
-  makeCloseSpendAction,
-  makeOpenSpendAction,
+  makeOpenOffer,
+  makeAdjustOffer,
+  makeCloseOffer,
 } from '../lib/vaults.js';
-import { getCurrent, outputAction } from '../lib/wallet.js';
+import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
 /** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
@@ -68,13 +68,13 @@ export const makeVaultsCommand = async logger => {
     .action(async function (opts) {
       logger.warn('running with options', opts);
 
-      const spendAction = makeOpenSpendAction(
+      const offer = makeOpenOffer(
         // @ts-expect-error xxx RpcRemote
         agoricNames.brand,
         opts,
       );
 
-      outputAction(spendAction);
+      outputExecuteOfferAction(offer);
     });
 
   vaults
@@ -100,13 +100,13 @@ export const makeVaultsCommand = async logger => {
         getCurrent(opts.from, fromBoard, { vstorage }),
       );
 
-      const spendAction = makeAdjustSpendAction(
+      const offer = makeAdjustOffer(
         // @ts-expect-error xxx RpcRemote
         agoricNames.brand,
         opts,
         previousOfferId,
       );
-      outputAction(spendAction);
+      outputExecuteOfferAction(offer);
     });
 
   vaults
@@ -129,13 +129,13 @@ export const makeVaultsCommand = async logger => {
         getCurrent(opts.from, fromBoard, { vstorage }),
       );
 
-      const spendAction = makeCloseSpendAction(
+      const offer = makeCloseOffer(
         // @ts-expect-error xxx RpcRemote
         agoricNames.brand,
         opts,
         previousOfferId,
       );
-      outputAction(spendAction);
+      outputExecuteOfferAction(offer);
     });
 
   return vaults;

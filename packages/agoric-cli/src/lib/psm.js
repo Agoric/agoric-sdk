@@ -41,9 +41,9 @@ export const makePSMProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: number, feePct?: number } &
  *         ({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
- * @returns {BridgeAction}
+ * @returns {OfferSpec}
  */
-export const makePSMSpendAction = (instance, brands, opts) => {
+export const makePsmSwapOffer = (instance, brands, opts) => {
   const method = opts.wantMinted
     ? 'makeWantMintedInvitation'
     : 'makeGiveMintedInvitation'; // ref psm.js
@@ -62,8 +62,7 @@ export const makePSMSpendAction = (instance, brands, opts) => {
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
   // mustMatch(harden(proposal), ProposalShape);
 
-  /** @type {OfferSpec} */
-  const offer = {
+  return {
     id: opts.offerId,
     invitationSpec: {
       source: 'contract',
@@ -72,11 +71,4 @@ export const makePSMSpendAction = (instance, brands, opts) => {
     },
     proposal,
   };
-
-  /** @type {BridgeAction} */
-  const spendAction = {
-    method: 'executeOffer',
-    offer,
-  };
-  return harden(spendAction);
 };

@@ -57,9 +57,9 @@ const makeProposal = (brands, opts) => {
 /**
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, wantMinted: number, giveCollateral: number }} opts
- * @returns {BridgeAction}
+ * @returns {OfferSpec}
  */
-export const makeOpenSpendAction = (brands, opts) => {
+export const makeOpenOffer = (brands, opts) => {
   const proposal = makeProposal(brands, opts);
 
   console.warn('vaults open give', proposal.give);
@@ -72,8 +72,7 @@ export const makeOpenSpendAction = (brands, opts) => {
   // XXX only one supported yet
   const collateralBrand = brands.IbcATOM;
 
-  /** @type {OfferSpec} */
-  const offer = {
+  return {
     id: opts.offerId,
     invitationSpec: {
       source: 'agoricContract',
@@ -85,29 +84,21 @@ export const makeOpenSpendAction = (brands, opts) => {
     },
     proposal,
   };
-
-  /** @type {BridgeAction} */
-  const spendAction = {
-    method: 'executeOffer',
-    offer,
-  };
-  return harden(spendAction);
 };
 
 /**
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number }} opts
  * @param {string} previousOffer
- * @returns {BridgeAction}
+ * @returns {OfferSpec}
  */
-export const makeAdjustSpendAction = (brands, opts, previousOffer) => {
+export const makeAdjustOffer = (brands, opts, previousOffer) => {
   // NB: not really a Proposal because the brands are not remotes
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
   // mustMatch(harden(proposal), ProposalShape);
   const proposal = makeProposal(brands, opts);
 
-  /** @type {OfferSpec} */
-  const offer = {
+  return {
     id: opts.offerId,
     invitationSpec: {
       source: 'continuing',
@@ -116,27 +107,19 @@ export const makeAdjustSpendAction = (brands, opts, previousOffer) => {
     },
     proposal,
   };
-
-  /** @type {BridgeAction} */
-  const spendAction = {
-    method: 'executeOffer',
-    offer,
-  };
-  return harden(spendAction);
 };
 
 /**
  * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, giveMinted: number }} opts
  * @param {string} previousOffer
- * @returns {BridgeAction}
+ * @returns {OfferSpec}
  */
-export const makeCloseSpendAction = (brands, opts, previousOffer) => {
+export const makeCloseOffer = (brands, opts, previousOffer) => {
   const proposal = makeProposal(brands, opts);
   console.warn('vaults close give', proposal.give);
 
-  /** @type {OfferSpec} */
-  const offer = {
+  return {
     id: opts.offerId,
     invitationSpec: {
       source: 'continuing',
@@ -145,13 +128,6 @@ export const makeCloseSpendAction = (brands, opts, previousOffer) => {
     },
     proposal,
   };
-
-  /** @type {BridgeAction} */
-  const spendAction = {
-    method: 'executeOffer',
-    offer,
-  };
-  return harden(spendAction);
 };
 
 /**

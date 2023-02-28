@@ -5,9 +5,9 @@
 /* global fetch, process */
 import { Command } from 'commander';
 import { asPercent } from '../lib/format.js';
-import { makePSMSpendAction } from '../lib/psm.js';
+import { makePsmSwapOffer } from '../lib/psm.js';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
-import { outputAction } from '../lib/wallet.js';
+import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 
@@ -151,8 +151,8 @@ export const makePsmCommand = async logger => {
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
       // @ts-expect-error xxx RpcRemote
-      const spendAction = makePSMSpendAction(instance, agoricNames.brand, opts);
-      outputAction(spendAction);
+      const offer = makePsmSwapOffer(instance, agoricNames.brand, opts);
+      outputExecuteOfferAction(offer);
     });
 
   psm
@@ -206,10 +206,7 @@ export const makePsmCommand = async logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
@@ -264,10 +261,7 @@ export const makePsmCommand = async logger => {
         },
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });

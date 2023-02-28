@@ -4,7 +4,7 @@
 /* global fetch */
 import { Command } from 'commander';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
-import { outputAction } from '../lib/wallet.js';
+import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
 
@@ -39,10 +39,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
@@ -66,10 +63,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
@@ -122,10 +116,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
