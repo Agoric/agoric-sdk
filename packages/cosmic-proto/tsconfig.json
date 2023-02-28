@@ -5,7 +5,6 @@
     "target": "esnext",
     "module": "esnext",
     "allowSyntheticDefaultImports": true,
-    "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
     "moduleResolution": "node",

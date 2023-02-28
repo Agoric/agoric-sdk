@@ -1,3 +1,4 @@
+// @ts-check
 import fs from 'fs';
 import { E } from '@endo/far';
 

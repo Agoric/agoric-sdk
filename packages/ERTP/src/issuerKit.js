@@ -106,6 +106,10 @@ harden(prepareIssuerKit);
 export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
 /**
+ * @typedef {Partial<{elementShape: Pattern}>} IssuerOptionsRecord
+ */
+
+/**
  * @template {AssetKind} K
  * The name becomes part of the brand in asset descriptions.
  * The name is useful for debugging and double-checking
@@ -131,7 +135,7 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {Partial<{elementShape: Pattern}>} [options]
+ * @param {IssuerOptionsRecord} [options]
  * @returns {IssuerKit<K>}
  */
 export const makeDurableIssuerKit = (
@@ -174,7 +178,7 @@ harden(makeDurableIssuerKit);
  * larger unit of computation, like the enclosing vat, can be shutdown
  * before anything else is corrupted by that corrupted state.
  * See https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {Partial<{elementShape: Pattern}>} [options]
+ * @param {IssuerOptionsRecord} [options]
  * @returns {IssuerKit<K>}
  */
 export const makeIssuerKit = (

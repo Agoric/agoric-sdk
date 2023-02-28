@@ -1,5 +1,7 @@
 /// <reference types="ses"/>
 
+/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+
 // XXX can be tighter than 'any'
 /**
  * @typedef {any} Completion
@@ -39,7 +41,12 @@
  * @property {<K extends AssetKind>(issuer: Issuer<K>) => Brand<K>} getBrandForIssuer
  * @property {<K extends AssetKind>(brand: Brand<K>) => Issuer<K>} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
- * @property {<K extends AssetKind = 'nat'>(keyword: Keyword, assetKind?: K, displayInfo?: AdditionalDisplayInfo) => Promise<ZCFMint<K>>} makeZCFMint
+ * @property {<K extends AssetKind = 'nat'>(
+ *   keyword: Keyword,
+ *   assetKind?: K,
+ *   displayInfo?: AdditionalDisplayInfo,
+ *   options?: IssuerOptionsRecord
+ * ) => Promise<ZCFMint<K>>} makeZCFMint
  * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig

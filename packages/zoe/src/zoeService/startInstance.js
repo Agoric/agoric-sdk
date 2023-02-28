@@ -94,13 +94,13 @@ export const makeStartInstance = (
         const { state } = this;
         state.seatHandleToSeatAdmin.get(seatHandle).fail(reason);
       },
-      makeZoeMint(keyword, assetKind, displayInfo, pattern) {
+      makeZoeMint(keyword, assetKind, displayInfo, options) {
         const { state } = this;
         return state.instanceStorage.makeZoeMint(
           keyword,
           assetKind,
           displayInfo,
-          pattern,
+          options,
         );
       },
       registerFeeMint(keyword, feeMintAccess) {
