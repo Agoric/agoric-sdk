@@ -63,7 +63,7 @@ func (ia inboundAnte) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next
 						return ctx, err
 					}
 					if actions < allowed {
-						inboundsAllowed = allowed - actions
+						inboundsAllowed = 1
 					} else {
 						inboundsAllowed = 0
 					}
