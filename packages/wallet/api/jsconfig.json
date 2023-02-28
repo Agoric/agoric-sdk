@@ -4,7 +4,6 @@
     "target": "esnext",
     "module": "esnext",
     "noEmit": true,
-    "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
     "moduleResolution": "node",
