@@ -1,5 +1,7 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
+import { makeActiveGuard } from '@agoric/cosmic-swingset/src/active-guard.js';
+import { makeSlogCallbacks } from '@agoric/cosmic-swingset/src/kernel-stats.js';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -255,6 +257,8 @@ export const makeSwingsetTestKit = async t => {
     }
   };
 
+  const { whenActiveWrap, updateActive } = makeActiveGuard();
+
   const { controller } = await buildSwingset(
     new Map(),
     bridgeOutbound,
@@ -262,7 +266,7 @@ export const makeSwingsetTestKit = async t => {
     configPath,
     [],
     { ROLE: 'chain' },
-    { debugName: 'TESTBOOT' },
+    { debugName: 'TESTBOOT', whenActiveWrap },
   );
   console.timeLog('makeSwingsetTestKit', 'buildSwingset');
 
