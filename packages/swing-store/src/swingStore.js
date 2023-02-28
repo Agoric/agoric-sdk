@@ -51,9 +51,11 @@ function getKeyType(key) {
  * }} KVStore
  *
  * @typedef { import('./snapStore').SnapStore } SnapStore
+ * @typedef { import('./snapStore').SnapStoreInternal } SnapStoreInternal
  * @typedef { import('./snapStore').SnapshotResult } SnapshotResult
  *
  * @typedef { import('./transcriptStore').TranscriptStore } TranscriptStore
+ * @typedef { import('./transcriptStore').TranscriptStoreInternal } TranscriptStoreInternal
  * @typedef { import('./transcriptStore').TranscriptStoreDebug } TranscriptStoreDebug
  *
  * @typedef {{
@@ -93,9 +95,15 @@ function getKeyType(key) {
  * }} SwingStoreDebugTools
  *
  * @typedef {{
+ *    transcriptStore: TranscriptStoreInternal,
+ *    snapStore: SnapStoreInternal,
+ * }} SwingStoreInternal
+ *
+ * @typedef {{
  *  kernelStorage: SwingStoreKernelStorage,
  *  hostStorage: SwingStoreHostStorage,
  *  debug: SwingStoreDebugTools,
+ *  internal: SwingStoreInternal,
  * }} SwingStore
  */
 
@@ -221,7 +229,7 @@ export function makeSwingStoreExporter(dirPath) {
         parts.length === 3,
         `expected artifact name of the form 'snapshot.{vatID}.{endPos}', saw ${name}`,
       );
-      return snapStore.getSnapshot(vatID, Number(pos));
+      return snapStore.exportSnapshot(vatID, Number(pos));
     } else if (type === 'transcript') {
       // `transcript.${vatID}.${startPos}.${endPos}`;
       assert(
@@ -803,10 +811,26 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     });
   }
 
+  const transcriptStorePublic = {
+    initTranscript: transcriptStore.initTranscript,
+    rolloverSpan: transcriptStore.rolloverSpan,
+    getCurrentSpanBounds: transcriptStore.getCurrentSpanBounds,
+    addItem: transcriptStore.addItem,
+    readSpan: transcriptStore.readSpan,
+  };
+
+  const snapStorePublic = {
+    loadSnapshot: snapStore.loadSnapshot,
+    saveSnapshot: snapStore.saveSnapshot,
+    deleteAllUnusedSnapshots: snapStore.deleteAllUnusedSnapshots,
+    deleteVatSnapshots: snapStore.deleteVatSnapshots,
+    getSnapshotInfo: snapStore.getSnapshotInfo,
+  };
+
   const kernelStorage = {
     kvStore: kernelKVStore,
-    transcriptStore,
-    snapStore,
+    transcriptStore: transcriptStorePublic,
+    snapStore: snapStorePublic,
     startCrank,
     establishCrankSavepoint,
     rollbackCrank,
@@ -825,11 +849,16 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     serialize,
     dump,
   };
+  const internal = {
+    snapStore,
+    transcriptStore,
+  };
 
   return harden({
     kernelStorage,
     hostStorage,
     debug,
+    internal,
   });
 }
 
@@ -890,7 +919,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   }
   const { includeHistorical = false } = options;
   const store = makeSwingStore(dirPath, true, options);
-  const { kernelStorage } = store;
+  const { kernelStorage, internal } = store;
 
   // Artifact metadata, keyed as `${type}.${vatID}.${pos}`
   //
@@ -982,13 +1011,13 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
       fetchedArtifacts.add(vatInfo.snapshotKey);
     }
     await (!snapshotInfo ||
-      kernelStorage.snapStore.importSnapshot(
+      internal.snapStore.importSnapshot(
         vatInfo.snapshotKey,
         exporter,
         snapshotInfo,
       ));
     const transcriptArtifactName = `${vatInfo.transcriptKey}.${transcriptInfo.endPos}`;
-    await kernelStorage.transcriptStore.importSpan(
+    await internal.transcriptStore.importSpan(
       transcriptArtifactName,
       exporter,
       transcriptInfo,
@@ -1008,7 +1037,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
     }
     let fetchedP;
     if (artifactName.startsWith('snapshot.')) {
-      fetchedP = kernelStorage.snapStore.importSnapshot(
+      fetchedP = internal.snapStore.importSnapshot(
         artifactName,
         exporter,
         artifactMetadata.get(artifactName),
@@ -1016,7 +1045,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
     } else if (artifactName.startsWith('transcript.')) {
       // strip endPos off artifact name
       const metadataKey = artifactName.split('.').slice(0, 3).join('.');
-      fetchedP = kernelStorage.transcriptStore.importSpan(
+      fetchedP = internal.transcriptStore.importSpan(
         artifactName,
         exporter,
         artifactMetadata.get(metadataKey),

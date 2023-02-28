@@ -14,11 +14,14 @@ import { createSHA256 } from './hasher.js';
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string },
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => Iterable<string>,
+ * }} TranscriptStore
+ *
+ * @typedef {{
  *   exportSpan: (vatID: string, startPos: number) => AsyncIterable<Uint8Array>
  *   importSpan: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => Promise<void>,
  *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
- * }} TranscriptStore
+ * }} TranscriptStoreInternal
  *
  * @typedef {{
  *   dumpTranscripts: (includeHistorical?: boolean) => any,
@@ -44,7 +47,7 @@ function insistTranscriptPosition(position) {
  * @param {*} db
  * @param {() => void} ensureTxn
  * @param {(key: string, value: string) => void} noteExport
- * @returns { TranscriptStore & TranscriptStoreDebug }
+ * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
 export function makeTranscriptStore(db, ensureTxn, noteExport) {
   db.exec(`
