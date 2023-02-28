@@ -213,7 +213,7 @@ export const startVaultFactory = async (
     },
     instance: {
       produce: instanceProduce,
-      consume: { auction: auctionInstance, reserve: reserveInstance },
+      consume: { reserve: reserveInstance },
     },
     installation: {
       consume: {
@@ -256,7 +256,6 @@ export const startVaultFactory = async (
   const centralBrand = await centralBrandP;
 
   const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
-  const auctionPublicFacet = await E(zoe).getPublicFacet(auctionInstance);
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
@@ -272,7 +271,6 @@ export const startVaultFactory = async (
       bootstrapPaymentValue: 0n,
       shortfallInvitationAmount,
       endorsedUi,
-      auctionPublicFacet,
     },
   );
 
