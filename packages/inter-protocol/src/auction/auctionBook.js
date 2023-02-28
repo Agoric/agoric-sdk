@@ -19,10 +19,10 @@ import {
 import { E } from '@endo/captp';
 import { makeTracer } from '@agoric/internal';
 
-import { makeDiscountBook, makePriceBook } from './discountBook.js';
+import { makeScaledBidBook, makePriceBook } from './offerBook.js';
 import {
   AuctionState,
-  isDiscountedPriceHigher,
+  isScaledBidPriceHigher,
   makeBrandedRatioPattern,
   priceFrom,
 } from './util.js';
@@ -37,7 +37,7 @@ const { Fail } = assert;
  * The book contains orders for the collateral. It holds two kinds of
  * orders:
  *   - Prices express the bid in terms of a Currency amount
- *   - Discount  express the bid in terms of a discount (or markup) from the
+ *   - Scaled bid  express the bid in terms of a discount (or markup) from the
  *     most recent oracle price.
  *
  * Offers can be added in three ways. When the auction is not active, prices are
@@ -58,11 +58,10 @@ export const makeAuctionBook = async (
   collateralBrand,
   priceAuthority,
 ) => {
-  const makeZeroRatio = () =>
-    makeRatioFromAmounts(
-      AmountMath.makeEmpty(currencyBrand),
-      AmountMath.make(collateralBrand, 1n),
-    );
+  const zeroRatio = makeRatioFromAmounts(
+    AmountMath.makeEmpty(currencyBrand),
+    AmountMath.make(collateralBrand, 1n),
+  );
   const BidSpecShape = M.or(
     {
       want: AmountShape,
@@ -70,7 +69,7 @@ export const makeAuctionBook = async (
     },
     {
       want: AmountShape,
-      offerDiscount: makeBrandedRatioPattern(currencyBrand, currencyBrand),
+      offerBidScaling: makeBrandedRatioPattern(currencyBrand, currencyBrand),
     },
   );
 
@@ -78,8 +77,8 @@ export const makeAuctionBook = async (
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: currencySeat } = zcf.makeEmptySeatKit();
 
-  let lockedPriceForRound = makeZeroRatio();
-  let updatingOracleQuote = makeZeroRatio();
+  let lockedPriceForRound = zeroRatio;
+  let updatingOracleQuote = zeroRatio;
   E.when(E(collateralBrand).getDisplayInfo(), ({ decimalPlaces = 9n }) => {
     // TODO(#6946) use this to keep a current price that can be published in state.
     const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
@@ -105,17 +104,17 @@ export const makeAuctionBook = async (
     });
   });
 
-  let curAuctionPrice = makeZeroRatio();
+  let curAuctionPrice = zeroRatio;
 
-  const discountBook = provide(baggage, 'discountBook', () => {
-    const discountStore = makeScalarBigMapStore('orderedVaultStore', {
+  const scaledBidBook = provide(baggage, 'scaledBidBook', () => {
+    const scaledBidStore = makeScalarBigMapStore('scaledBidBookStore', {
       durable: true,
     });
-    return makeDiscountBook(discountStore, currencyBrand, collateralBrand);
+    return makeScaledBidBook(scaledBidStore, currencyBrand, collateralBrand);
   });
 
   const priceBook = provide(baggage, 'sortedOffers', () => {
-    const priceStore = makeScalarBigMapStore('orderedVaultStore', {
+    const priceStore = makeScalarBigMapStore('sortedOffersStore', {
       durable: true,
     });
     return makePriceBook(priceStore, currencyBrand, collateralBrand);
@@ -125,7 +124,7 @@ export const makeAuctionBook = async (
     if (isPriceBook) {
       priceBook.delete(key);
     } else {
-      discountBook.delete(key);
+      scaledBidBook.delete(key);
     }
   };
 
@@ -224,17 +223,17 @@ export const makeAuctionBook = async (
    *  the book.
    *
    *  @param {ZCFSeat} seat
-   *  @param {Ratio} discount
+   *  @param {Ratio} bidScaling
    *  @param {Amount} want
    *  @param {AuctionState} auctionState
    */
-  const acceptDiscountOffer = (seat, discount, want, auctionState) => {
-    trace('accept discount');
+  const acceptScaledBidOffer = (seat, bidScaling, want, auctionState) => {
+    trace('accept scaled bid offer');
     let collateralSold = AmountMath.makeEmptyFromAmount(want);
 
     if (
       isActive(auctionState) &&
-      isDiscountedPriceHigher(discount, curAuctionPrice, lockedPriceForRound)
+      isScaledBidPriceHigher(bidScaling, curAuctionPrice, lockedPriceForRound)
     ) {
       collateralSold = settle(seat, want);
       if (AmountMath.isEmpty(seat.getCurrentAllocation().Currency)) {
@@ -245,7 +244,7 @@ export const makeAuctionBook = async (
 
     const stillWant = AmountMath.subtract(want, collateralSold);
     if (!AmountMath.isEmpty(stillWant)) {
-      discountBook.add(seat, discount, stillWant);
+      scaledBidBook.add(seat, bidScaling, stillWant);
     } else {
       seat.exit();
     }
@@ -264,14 +263,14 @@ export const makeAuctionBook = async (
       curAuctionPrice = multiplyRatios(reduction, lockedPriceForRound);
 
       const pricedOffers = priceBook.offersAbove(curAuctionPrice);
-      const discOffers = discountBook.offersAbove(reduction);
+      const discOffers = scaledBidBook.offersAbove(reduction);
 
-      // requested price or discount gives no priority beyond specifying which
+      // requested price or bid scaling gives no priority beyond specifying which
       // round the order will be service in.
       const prioritizedOffers = [...pricedOffers, ...discOffers].sort();
 
       trace(`settling`, pricedOffers.length, discOffers.length);
-      prioritizedOffers.forEach(([key, { seat, price: p, wanted }]) => {
+      for (const [key, { seat, price: p, wanted }] of prioritizedOffers) {
         if (seat.hasExited()) {
           removeFromOneBook(p, key);
         } else {
@@ -287,17 +286,17 @@ export const makeAuctionBook = async (
             if (p) {
               priceBook.updateReceived(key, collateralSold);
             } else {
-              discountBook.updateReceived(key, collateralSold);
+              scaledBidBook.updateReceived(key, collateralSold);
             }
           }
         }
-      });
+      }
     },
     getCurrentPrice() {
       return curAuctionPrice;
     },
     hasOrders() {
-      return discountBook.hasOrders() || priceBook.hasOrders();
+      return scaledBidBook.hasOrders() || priceBook.hasOrders();
     },
     lockOraclePriceForRound() {
       trace(`locking `, updatingOracleQuote);
@@ -318,15 +317,15 @@ export const makeAuctionBook = async (
           bidSpec.want,
           auctionState,
         );
-      } else if (bidSpec.offerDiscount) {
-        return acceptDiscountOffer(
+      } else if (bidSpec.offerBidScaling) {
+        return acceptScaledBidOffer(
           seat,
-          bidSpec.offerDiscount,
+          bidSpec.offerBidScaling,
           bidSpec.want,
           auctionState,
         );
       } else {
-        throw Fail`Offer was neither a price nor a discount`;
+        throw Fail`Offer was neither a price nor a scaled bid`;
       }
     },
     getSeats() {
@@ -334,7 +333,7 @@ export const makeAuctionBook = async (
     },
     exitAllSeats() {
       priceBook.exitAllSeats();
-      discountBook.exitAllSeats();
+      scaledBidBook.exitAllSeats();
     },
   });
 };

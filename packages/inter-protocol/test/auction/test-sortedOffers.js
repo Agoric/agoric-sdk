@@ -10,8 +10,8 @@ import { setup } from '../../../zoe/test/unitTests/setupBasicMints.js';
 import {
   fromPriceOfferKey,
   toPriceOfferKey,
-  toDiscountedRateOfferKey,
-  fromDiscountedRateOfferKey,
+  toScaledRateOfferKey,
+  fromScaledRateOfferKey,
 } from '../../src/auction/sortedOffers.js';
 
 // these used to be timestamps, but now they're bigInts
@@ -49,14 +49,14 @@ test('toKey discount', t => {
   const discountC = makeRatioFromAmounts(moola(6n), moola(100n));
   const discountD = makeRatioFromAmounts(moola(10n), moola(100n));
 
-  const keyA25 = toDiscountedRateOfferKey(discountA, DEC25);
-  const keyB25 = toDiscountedRateOfferKey(discountB, DEC25);
-  const keyC25 = toDiscountedRateOfferKey(discountC, DEC25);
-  const keyD25 = toDiscountedRateOfferKey(discountD, DEC25);
-  const keyA26 = toDiscountedRateOfferKey(discountA, DEC26);
-  const keyB26 = toDiscountedRateOfferKey(discountB, DEC26);
-  const keyC26 = toDiscountedRateOfferKey(discountC, DEC26);
-  const keyD26 = toDiscountedRateOfferKey(discountD, DEC26);
+  const keyA25 = toScaledRateOfferKey(discountA, DEC25);
+  const keyB25 = toScaledRateOfferKey(discountB, DEC25);
+  const keyC25 = toScaledRateOfferKey(discountC, DEC25);
+  const keyD25 = toScaledRateOfferKey(discountD, DEC25);
+  const keyA26 = toScaledRateOfferKey(discountA, DEC26);
+  const keyB26 = toScaledRateOfferKey(discountB, DEC26);
+  const keyC26 = toScaledRateOfferKey(discountC, DEC26);
+  const keyD26 = toScaledRateOfferKey(discountD, DEC26);
   t.true(keyB25 > keyA25);
   t.true(keyA26 > keyA25);
   t.true(keyC25 > keyB25);
@@ -100,19 +100,11 @@ test('fromKey discount', t => {
   const fivePointFivePercent = makeRatioFromAmounts(moola(55n), moola(1000n));
   const discountB = fivePointFivePercent;
 
-  const keyA25 = toDiscountedRateOfferKey(discountA, DEC25);
-  const keyB25 = toDiscountedRateOfferKey(discountB, DEC25);
+  const keyA25 = toScaledRateOfferKey(discountA, DEC25);
+  const keyB25 = toScaledRateOfferKey(discountB, DEC25);
 
-  const [discountAOut, timeA] = fromDiscountedRateOfferKey(
-    keyA25,
-    moolaBrand,
-    9,
-  );
-  const [discountBOut, timeB] = fromDiscountedRateOfferKey(
-    keyB25,
-    moolaBrand,
-    9,
-  );
+  const [discountAOut, timeA] = fromScaledRateOfferKey(keyA25, moolaBrand, 9);
+  const [discountBOut, timeB] = fromScaledRateOfferKey(keyB25, moolaBrand, 9);
   t.deepEqual(quantize(discountAOut, 10000n), quantize(fivePercent, 10000n));
   t.deepEqual(
     quantize(discountBOut, 10000n),

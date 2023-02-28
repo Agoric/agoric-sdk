@@ -52,6 +52,11 @@ export const currentDebtToCollateral = vault =>
 export const makePrioritizedVaults = (store, higherHighestCb = () => {}) => {
   const vaults = makeOrderedVaultStore(store);
 
+  // Check if this ratio of debt to collateral would be the highest known. If
+  // so, reset our highest and invoke the callback. This can be called on new
+  // vaults and when we get a state update for a vault changing balances.
+  /** @param {Ratio} collateralToDebt */
+
   /**
    * Called back when there's a new highestRatio and it's higher than the previous.
    *

@@ -398,7 +398,7 @@ export const assertParsableNumber = specimen => {
  * @param {Ratio} ratio
  * @returns {number}
  */
-export const coerceToNumber = ratio => {
+export const ratioToNumber = ratio => {
   const n = Number(ratio.numerator.value);
   const d = Number(ratio.denominator.value);
   return n / d;

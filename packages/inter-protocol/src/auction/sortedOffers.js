@@ -1,6 +1,6 @@
 import {
   makeRatio,
-  coerceToNumber,
+  ratioToNumber,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { M, mustMatch } from '@agoric/store';
 import { RatioShape } from '@agoric/ertp';
@@ -27,7 +27,7 @@ const { Fail } = assert;
  */
 export const toPartialOfferKey = offerPrice => {
   assert(offerPrice);
-  const mostSignificantPart = coerceToNumber(offerPrice);
+  const mostSignificantPart = ratioToNumber(offerPrice);
   return encodeData(harden([mostSignificantPart, 0n]));
 };
 
@@ -45,7 +45,7 @@ export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
     Fail`offer prices must have different numerator and denominator`;
   mustMatch(sequenceNumber, M.nat());
 
-  const mostSignificantPart = coerceToNumber(offerPrice);
+  const mostSignificantPart = ratioToNumber(offerPrice);
   return encodeData(harden([mostSignificantPart, sequenceNumber]));
 };
 
@@ -59,10 +59,10 @@ const priceRatioFromFloat = (floatPrice, numBrand, denomBrand, useDecimals) => {
   );
 };
 
-const discountRatioFromKey = (floatDiscount, numBrand, useDecimals) => {
+const bidScalingRatioFromKey = (bidScaleFloat, numBrand, useDecimals) => {
   const denominatorValue = 10 ** useDecimals;
   return makeRatio(
-    BigInt(Math.round(floatDiscount * denominatorValue)),
+    BigInt(Math.round(bidScaleFloat * denominatorValue)),
     numBrand,
     BigInt(denominatorValue),
   );
@@ -85,9 +85,9 @@ export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
   ];
 };
 
-export const toDiscountComparator = rate => {
+export const toBidScalingComparator = rate => {
   assert(rate);
-  const mostSignificantPart = coerceToNumber(rate);
+  const mostSignificantPart = ratioToNumber(rate);
   return encodeData(harden([mostSignificantPart, 0n]));
 };
 
@@ -99,28 +99,28 @@ export const toDiscountComparator = rate => {
  * @returns {string} lexically sortable string in which highest price is first,
  *    ties will be broken by sequenceNumber of offer
  */
-export const toDiscountedRateOfferKey = (rate, sequenceNumber) => {
+export const toScaledRateOfferKey = (rate, sequenceNumber) => {
   mustMatch(rate, RatioShape);
   rate.numerator.brand === rate.denominator.brand ||
-    Fail`discount rate must have the same numerator and denominator`;
+    Fail`bid scaling rate must have the same numerator and denominator`;
   mustMatch(sequenceNumber, M.nat());
 
-  const mostSignificantPart = coerceToNumber(rate);
+  const mostSignificantPart = ratioToNumber(rate);
   return encodeData(harden([mostSignificantPart, sequenceNumber]));
 };
 
 /**
- * fromDiscountedRateOfferKey is only used for diagnostics.
+ * fromScaledRateOfferKey is only used for diagnostics.
  *
  * @param {string} key
  * @param {Brand} brand
  * @param {number} useDecimals
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
-export const fromDiscountedRateOfferKey = (key, brand, useDecimals) => {
-  const [discountPart, sequenceNumberPart] = decodeData(key);
+export const fromScaledRateOfferKey = (key, brand, useDecimals) => {
+  const [bidScalingPart, sequenceNumberPart] = decodeData(key);
   return [
-    discountRatioFromKey(discountPart, brand, useDecimals),
+    bidScalingRatioFromKey(bidScalingPart, brand, useDecimals),
     sequenceNumberPart,
   ];
 };

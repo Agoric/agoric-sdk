@@ -3,11 +3,7 @@ import {
   makeParamManager,
   ParamTypes,
 } from '@agoric/governance';
-import {
-  TimerBrandShape,
-  TimeMath,
-  RelativeTimeValueShape,
-} from '@agoric/time';
+import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { M } from '@agoric/store';
 
 /** @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').AsyncSpecTuple} AsyncSpecTuple */
@@ -47,11 +43,6 @@ export const LIQUIDATION_PENALTY = 'LiquidationPenalty';
 // /////// used by VaultDirector /////////////////////
 // time before each auction that the prices are locked.
 export const PRICE_LOCK_PERIOD = 'PriceLockPeriod';
-
-export const RelativeTimeRecordShape = harden({
-  timerBrand: TimerBrandShape,
-  relValue: RelativeTimeValueShape,
-});
 
 export const auctioneerParamPattern = M.splitRecord({
   [CONTRACT_ELECTORATE]: InvitationShape,

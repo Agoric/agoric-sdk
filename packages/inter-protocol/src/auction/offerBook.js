@@ -1,13 +1,13 @@
-// book of offers to buy liquidating vaults with prices in terms of discount
-// from the current oracle price.
+// book of offers to buy liquidating vaults with prices in terms of
+// discount/markup from the current oracle price.
 
 import { Far } from '@endo/marshal';
 import { M, mustMatch } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 
 import {
-  toDiscountComparator,
-  toDiscountedRateOfferKey,
+  toBidScalingComparator,
+  toScaledRateOfferKey,
   toPartialOfferKey,
   toPriceOfferKey,
 } from './sortedOffers.js';
@@ -22,22 +22,28 @@ const nextSequenceNumber = () => {
   return latestSequenceNumber;
 };
 
-// prices in this book are expressed as percentage of full price. .4 is 60% off.
-// 1.1 is 10% above par.
-export const makeDiscountBook = (store, currencyBrand, collateralBrand) => {
-  return Far('discountBook ', {
-    add(seat, discount, wanted) {
-      // XXX mustMatch(discount, DISCOUNT_PATTERN);
+// prices in this book are expressed as percentage of the full oracle price
+// snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
+export const makeScaledBidBook = (store, currencyBrand, collateralBrand) => {
+  return Far('scaledBidBook ', {
+    add(seat, bidScaling, wanted) {
+      // XXX mustMatch(bidScaling, BID_SCALING_PATTERN);
 
       const seqNum = nextSequenceNumber();
-      const key = toDiscountedRateOfferKey(discount, seqNum);
+      const key = toScaledRateOfferKey(bidScaling, seqNum);
       const empty = AmountMath.makeEmpty(collateralBrand);
-      const bidderRecord = { seat, discount, wanted, seqNum, received: empty };
+      const bidderRecord = {
+        seat,
+        bidScaling,
+        wanted,
+        seqNum,
+        received: empty,
+      };
       store.init(key, harden(bidderRecord));
       return key;
     },
-    offersAbove(discount) {
-      return [...store.entries(M.gte(toDiscountComparator(discount)))];
+    offersAbove(bidScaling) {
+      return [...store.entries(M.gte(toBidScalingComparator(bidScaling)))];
     },
     hasOrders() {
       return store.getSize() > 0;
@@ -62,9 +68,11 @@ export const makeDiscountBook = (store, currencyBrand, collateralBrand) => {
   });
 };
 
+// prices in this book are actual prices expressed in terms of currency amount
+// and collateral amount.
 export const makePriceBook = (store, currencyBrand, collateralBrand) => {
   const RATIO_PATTERN = makeBrandedRatioPattern(currencyBrand, collateralBrand);
-  return Far('discountBook ', {
+  return Far('priceBook ', {
     add(seat, price, wanted) {
       mustMatch(price, RATIO_PATTERN);
 

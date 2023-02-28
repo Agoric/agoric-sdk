@@ -16,7 +16,7 @@ const trace = makeTracer('SCHED', false);
  * should always be a next schedule, but between rounds, liveSchedule is null.
  *
  * The lock period that the liquidators use might start before the previous
- * round has finished, so we need to scheduled the next round each time an
+ * round has finished, so we need to schedule the next round each time an
  * auction starts. This means if the scheduling parameters change, it'll be a
  * full cycle before we switch. Otherwise, the vaults wouldn't know when to
  * start their lock period.

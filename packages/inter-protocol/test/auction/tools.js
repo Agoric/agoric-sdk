@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 import { E } from '@endo/eventual-send';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { makeZoeKit } from '@agoric/zoe';
-import { objectMap } from '@agoric/internal';
+import { objectMap, allValues } from '@agoric/internal';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
@@ -12,7 +12,6 @@ import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGo
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import * as Collect from '../../src/collect.js';
 
 export const setUpInstallations = async zoe => {
   const autoRefund = '@agoric/zoe/src/contracts/automaticRefund.js';
@@ -20,7 +19,7 @@ export const setUpInstallations = async zoe => {
   const autoRefundPath = new URL(autoRefundUrl).pathname;
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
-  const bundles = await Collect.allValues({
+  const bundles = await allValues({
     // could be called fakeCommittee. It's used as a source of invitations only
     autoRefund: bundleCache.load(autoRefundPath, 'autoRefund'),
     auctioneer: bundleCache.load('./src/auction/auctioneer.js', 'auctioneer'),

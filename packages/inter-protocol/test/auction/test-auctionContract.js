@@ -160,7 +160,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     });
     const offerArgs =
       discount && discount.numerator.brand === discount.denominator.brand
-        ? { want: wantCollateral, offerDiscount: discount }
+        ? { want: wantCollateral, offerBidScaling: discount }
         : {
             want: wantCollateral,
             offerPrice:

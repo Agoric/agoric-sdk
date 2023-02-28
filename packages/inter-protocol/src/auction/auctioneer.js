@@ -7,7 +7,6 @@ import { E } from '@endo/eventual-send';
 import {
   M,
   makeScalarBigMapStore,
-  provide,
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
@@ -47,8 +46,15 @@ const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
  *   StartingRate: 'nat',
  *   lowestRate: 'nat',
  *   DiscountStep: 'nat',
- * }> & {timerService: import('@agoric/time/src/types').TimerService, priceAuthority: PriceAuthority}>} zcf
- * @param {{initialPoserInvitation: Invitation, storageNode: StorageNode, marshaller: Marshaller}} privateArgs
+ * }> & {
+ *   timerService: import('@agoric/time/src/types').TimerService,
+ *   priceAuthority: PriceAuthority
+ * }>} zcf
+ * @param {{
+ *   initialPoserInvitation: Invitation,
+ *   storageNode: StorageNode,
+ *   marshaller: Marshaller
+ * }} privateArgs
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
@@ -58,11 +64,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const books = provideDurableMapStore(baggage, 'auctionBooks');
   const deposits = provideDurableMapStore(baggage, 'deposits');
-  const brandToKeyword = provide(baggage, 'brandToKeyword', () =>
-    makeScalarBigMapStore('deposits', {
-      durable: true,
-    }),
-  );
+  const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
 
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
@@ -157,14 +159,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     );
 
   const tradeEveryBook = () => {
-    const discountRatio = makeRatio(
+    const bidScalingRatio = makeRatio(
       currentDiscountRateBP,
       brands.Currency,
       BASIS_POINTS,
     );
 
     [...books.entries()].forEach(([_collateralBrand, book]) => {
-      book.settleAtNewRate(discountRatio);
+      book.settleAtNewRate(bidScalingRatio);
     });
   };
 

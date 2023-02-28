@@ -159,7 +159,7 @@ test('getOffers to a price limit', async t => {
 
   book.addOffer(
     harden({
-      offerDiscount: makeRatioFromAmounts(moola(10n), moola(100n)),
+      offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
       want: simoleans(50n),
     }),
     zcfSeat,
@@ -214,7 +214,7 @@ test('getOffers w/discount', async t => {
 
   book.addOffer(
     harden({
-      offerDiscount: makeRatioFromAmounts(moola(10n), moola(100n)),
+      offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
       want: simoleans(50n),
     }),
     zcfSeat,
