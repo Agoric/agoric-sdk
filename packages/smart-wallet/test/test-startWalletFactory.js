@@ -72,7 +72,7 @@ test('customTermsShape', async t => {
     ),
     {
       message:
-        '{"agoricNames":"[Promise]","assetPublisher":{},"board":"[Promise]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
+        'customTerms: {"agoricNames":"[Promise]","assetPublisher":{},"board":"[Promise]","extra":"[Seen]"} - Must not have unexpected properties: ["extra"]',
     },
   );
 
@@ -89,7 +89,7 @@ test('customTermsShape', async t => {
     ),
     {
       message:
-        '{"agoricNames":"[Promise]"} - Must have missing properties ["board","assetPublisher"]',
+        'customTerms: {"agoricNames":"[Promise]"} - Must have missing properties ["board","assetPublisher"]',
     },
   );
 });
@@ -113,7 +113,7 @@ test('privateArgsShape', async t => {
       { bridgeManager },
     ),
     {
-      message: '{} - Must have missing properties ["storageNode"]',
+      message: 'privateArgs: {} - Must have missing properties ["storageNode"]',
     },
   );
 });
