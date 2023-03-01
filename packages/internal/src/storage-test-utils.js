@@ -22,19 +22,24 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'getStoreKey': {
         return {
           storeName: 'swingset',
-          storeSubkey: `fake:${message.key}`,
+          storeSubkey: `fake:${message.args[0]}`,
         };
       }
       case 'set':
-        if ('value' in message) {
-          data.set(message.key, message.value);
-        } else {
-          data.delete(message.key);
+        for (const [key, value] of message.args) {
+          if (value !== undefined) {
+            data.set(key, value);
+          } else {
+            data.delete(key);
+          }
         }
         break;
       case 'append':
-        if ('value' in message) {
-          let sequence = data.get(message.key);
+        for (const [key, value] of message.args) {
+          if (value === undefined) {
+            throw new Error(`attempt to append with no value`);
+          }
+          let sequence = data.get(key);
           if (!Array.isArray(sequence)) {
             if (sequence === undefined) {
               // Initialize an empty collection.
@@ -43,17 +48,15 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
               // Wrap a previous single value in a collection.
               sequence = [sequence];
             }
-            data.set(message.key, sequence);
+            data.set(key, sequence);
           }
-          sequence.push(message.value);
-        } else {
-          throw new Error(`attempt to append with no value`);
+          sequence.push(value);
         }
         break;
       case 'size':
         // Intentionally incorrect because it counts non-child descendants,
         // but nevertheless supports a "has children" test.
-        return [...data.keys()].filter(k => k.startsWith(`${message.key}.`))
+        return [...data.keys()].filter(k => k.startsWith(`${message.args[0]}.`))
           .length;
       default:
         throw new Error(`unsupported method: ${message.method}`);

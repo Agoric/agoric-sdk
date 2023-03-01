@@ -69,6 +69,7 @@ export {};
  * @property {string} [storeName]
  * @property {Uint8Array} [storeSubkey]
  * @property {Uint8Array} [dataPrefixBytes]
+ * @property {Uint8Array} [noDataValue]
  * @property {ERef<Subscription<any>>} [subscription]
  * @property {ERef<Notifier<any>>} [notifier]
  */
