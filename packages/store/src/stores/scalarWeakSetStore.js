@@ -45,7 +45,7 @@ export const makeWeakSetStoreMethods = (
       if (isCopySet(keys)) {
         keys = getCopySetKeys(keys);
       }
-      for (const key of keys) {
+      for (const key of /** @type {Iterable<K>} */ (keys)) {
         assertKeyOkToAdd(key);
         jsset.add(key);
       }

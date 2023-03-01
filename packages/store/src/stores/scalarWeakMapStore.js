@@ -61,7 +61,7 @@ export const makeWeakMapStoreMethods = (
       if (isCopyMap(entries)) {
         entries = getCopyMapEntries(entries);
       }
-      for (const [key, value] of entries) {
+      for (const [key, value] of /** @type {Iterable<[K, V]>} */ (entries)) {
         // Don't assert that the key either does or does not exist.
         assertKVOkToAdd(key, value);
         jsmap.set(key, value);
