@@ -4,7 +4,7 @@ import { createHash } from 'crypto';
 import { finished as finishedCallback, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
-import { assert, details as d } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
 import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
 
@@ -297,7 +297,7 @@ export function makeSnapStore(
     return aggregateTryFinally(
       async () => {
         const loadInfo = sqlLoadSnapshot.get(vatID);
-        assert(loadInfo, `no snapshot available for vat ${vatID}`);
+        loadInfo || Fail`no snapshot available for vat ${q(vatID)}`;
         const { hash, compressedSnapshot } = loadInfo;
         const gzReader = Readable.from(compressedSnapshot);
         cleanup.push(() => gzReader.destroy());
@@ -322,7 +322,7 @@ export function makeSnapStore(
 
         await Promise.all([finished(gzReader), finished(snapWriter)]);
         const h = hashStream.digest('hex');
-        h === hash || assert.fail(d`actual hash ${h} !== expected ${hash}`);
+        h === hash || Fail`actual hash ${q(h)} !== expected ${q(hash)}`;
         const snapWriterClose = cleanup.pop();
         snapWriterClose();
 
@@ -457,19 +457,16 @@ export function makeSnapStore(
   async function importSnapshot(name, exporter, info) {
     const parts = name.split('.');
     const [type, vatID, rawEndPos] = parts;
-    assert(
-      parts.length === 3 && type === 'snapshot',
-      `expected snapshot name of the form 'snapshot.{vatID}.{endPos}', saw '${name}'`,
-    );
-    assert(
-      info.vatID === vatID,
-      `snapshot name says vatID ${vatID}, metadata says ${info.vatID}`,
-    );
+    // prettier-ignore
+    parts.length === 3 && type === 'snapshot' ||
+      Fail`expected snapshot name of the form 'snapshot.{vatID}.{endPos}', saw '${q(name)}'`;
+    // prettier-ignore
+    info.vatID === vatID ||
+      Fail`snapshot name says vatID ${q(vatID)}, metadata says ${q(info.vatID)}`;
     const endPos = Number(rawEndPos);
-    assert(
-      info.endPos === endPos,
-      `snapshot name says endPos ${endPos}, metadata says ${info.endPos}`,
-    );
+    // prettier-ignore
+    info.endPos === endPos ||
+      Fail`snapshot name says endPos ${q(endPos)}, metadata says ${q(info.endPos)}`;
 
     const artifactChunks = exporter.getArtifact(name);
     const inStream = Readable.from(artifactChunks);
@@ -482,10 +479,9 @@ export function makeSnapStore(
     const compressedArtifact = await buffer(gzip);
     await finished(inStream);
     const hash = hashStream.digest('hex');
-    assert(
-      info.hash === hash,
-      `snapshot ${name} hash is ${hash}, metadata says ${info.hash}`,
-    );
+    // prettier-ignore
+    info.hash === hash ||
+      Fail`snapshot ${q(name)} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
     sqlSaveSnapshot.run(
       vatID,
       endPos,
