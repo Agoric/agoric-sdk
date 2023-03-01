@@ -21,7 +21,7 @@ function makeExportLog() {
     callback(updates) {
       exportLog.push(updates);
       for (const [key, value] of updates) {
-        if (value === null) {
+        if (value == null) {
           shadowStore.delete(key);
         } else {
           shadowStore.set(key, value);
@@ -116,10 +116,21 @@ test('export and import data for state sync', async t => {
 
   const exporter = makeSwingStoreExporter(dbDir);
 
+  const compareElems = (a, b) => a[0].localeCompare(b[0]);
+
   const kvData = [];
   for await (const elem of exporter.getExportData()) {
     kvData.push(elem);
   }
+  kvData.sort(compareElems);
+
+  const feedKVData = [];
+  for (const elem of exportLog.entries()) {
+    feedKVData.push(elem);
+  }
+  feedKVData.sort(compareElems);
+
+  t.deepEqual(kvData, feedKVData);
   t.deepEqual(kvData, [
     ['kv.brigadoon', 'here during 16'],
     ['kv.kval', 'set in 16'],
@@ -142,6 +153,10 @@ test('export and import data for state sync', async t => {
     ['kv.vatB.monotonic.9', 'more and more'],
     ['kv.vatB.vval', 'stuff in 15'],
     [
+      'snapshot.vatA.2',
+      '{"vatID":"vatA","endPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6"}',
+    ],
+    [
       'snapshot.vatA.6',
       '{"vatID":"vatA","endPos":6,"hash":"36afc9e2717c395759e308c4a877d491f967e9768d73520bde758ff4fac5d8b9"}',
     ],
@@ -151,10 +166,6 @@ test('export and import data for state sync', async t => {
       '{"vatID":"vatB","endPos":4,"hash":"afd477014db678fbc1aa58beab50f444deb653b8cc8e8583214a363fd12ed57a"}',
     ],
     ['snapshot.vatB.current', 'snapshot.vatB.4'],
-    [
-      'snapshot.vatA.2',
-      '{"vatID":"vatA","endPos":2,"hash":"6c7e452ee3eaec849c93234d933af4300012e4ff161c328d3c088ec3deef76a6"}',
-    ],
     [
       'transcript.vatA.0',
       '{"vatID":"vatA","startPos":0,"endPos":2,"hash":"ea8ac1a751712ad66e4a9182adc65afe9bb0f4cd0ee0b828c895c63fbd2e3157","isCurrent":0}',

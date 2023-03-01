@@ -7,7 +7,7 @@ import { file as tmpFile, tmpName } from 'tmp';
 
 import sqlite3 from 'better-sqlite3';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { makeMeasureSeconds } from '@agoric/internal';
 
 import { makeTranscriptStore } from './transcriptStore.js';
@@ -164,7 +164,7 @@ function getKeyType(key) {
  * @returns {SwingStoreExporter}
  */
 export function makeSwingStoreExporter(dirPath) {
-  assert.typeof(dirPath, 'string');
+  typeof dirPath === 'string' || Fail`dirPath must be a string`;
   const filePath = path.join(dirPath, 'swingstore.sqlite');
   const db = sqlite3(filePath);
 
@@ -216,26 +216,24 @@ export function makeSwingStoreExporter(dirPath) {
    * @returns {AsyncIterable<Uint8Array>}
    */
   function getArtifact(name) {
-    assert.typeof(name, 'string');
+    typeof name === 'string' || Fail`artifact name must be a string`;
     const parts = name.split('.');
     const [type, vatID, pos] = parts;
 
     if (type === 'snapshot') {
       // `snapshot.${vatID}.${endPos}`;
-      assert(
-        parts.length === 3,
-        `expected artifact name of the form 'snapshot.{vatID}.{endPos}', saw ${name}`,
-      );
+      // prettier-ignore
+      parts.length === 3 ||
+        Fail`expected artifact name of the form 'snapshot.{vatID}.{endPos}', saw ${q(name)}`;
       return snapStore.exportSnapshot(vatID, Number(pos));
     } else if (type === 'transcript') {
       // `transcript.${vatID}.${startPos}.${endPos}`;
-      assert(
-        parts.length === 4,
-        `expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${name}`,
-      );
+      // prettier-ignore
+      parts.length === 4 ||
+        Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${q(name)}`;
       return transcriptStore.exportSpan(vatID, Number(pos));
     } else {
-      assert.fail(`invalid artifact type ${type}`);
+      assert.fail(`invalid artifact type ${q(type)}`);
     }
   }
 
@@ -324,8 +322,8 @@ export function makeSwingStoreExporter(dirPath) {
 function makeSwingStore(dirPath, forceReset, options = {}) {
   const { serialized } = options;
   if (serialized) {
-    assert(Buffer.isBuffer(serialized), `options.serialized must be Buffer`);
-    assert.equal(dirPath, null, `options.serialized makes :memory: DB`);
+    Buffer.isBuffer(serialized) || Fail`options.serialized must be Buffer`;
+    dirPath === null || Fail`options.serialized makes :memory: DB`;
   }
   let crankhasher;
   function resetCrankhash() {
@@ -411,7 +409,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   `);
   let exportCallback;
   function setExportCallback(cb) {
-    assert.typeof(cb, 'function');
+    typeof cb === 'function' || Fail`callback must be a function`;
     exportCallback = cb;
   }
   if (options.exportCallback) {
@@ -440,10 +438,10 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   // happens, it would wake up with inconsistent state. The only commit point
   // must be the hostStorage.commit().
   function ensureTxn() {
-    assert(db);
+    db || Fail`db not initialized`;
     if (!db.inTransaction) {
       sqlBeginTransaction.run();
-      assert(db.inTransaction);
+      db.inTransaction || Fail`must be in a transaction`;
     }
     return db;
   }
@@ -476,7 +474,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * @throws if key is not a string.
    */
   function get(key) {
-    assert.typeof(key, 'string');
+    typeof key === 'string' || Fail`key must be a string`;
     return sqlKVGet.get(key);
   }
 
@@ -516,7 +514,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    */
 
   function getNextKey(previousKey) {
-    assert.typeof(previousKey, 'string');
+    typeof previousKey === 'string' || Fail`previousKey must be a string`;
     return sqlKVGetNextKey.get(previousKey);
   }
 
@@ -530,7 +528,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * @throws if key is not a string.
    */
   function has(key) {
-    assert.typeof(key, 'string');
+    typeof key === 'string' || Fail`key must be a string`;
     return get(key) !== undefined;
   }
 
@@ -550,8 +548,8 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * @throws if either parameter is not a string.
    */
   function set(key, value) {
-    assert.typeof(key, 'string');
-    assert.typeof(value, 'string');
+    typeof key === 'string' || Fail`key must be a string`;
+    typeof value === 'string' || Fail`value must be a string`;
     // synchronous read after write within a transaction is safe
     // The transaction's overall success will be awaited during commit
     ensureTxn();
@@ -573,7 +571,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * @throws if key is not a string.
    */
   function del(key) {
-    assert.typeof(key, 'string');
+    typeof key === 'string' || Fail`key must be a string`;
     ensureTxn();
     sqlKVDel.run(key);
     trace('del', key);
@@ -602,9 +600,9 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   const kernelKVStore = {
     ...kvStore,
     set(key, value) {
-      assert.typeof(key, 'string');
+      typeof key === 'string' || Fail`key must be a string`;
       const keyType = getKeyType(key);
-      assert(keyType !== 'host');
+      keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       set(key, value);
       if (keyType === 'consensus') {
         noteExport(`kv.${key}`, value);
@@ -617,9 +615,9 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       }
     },
     delete(key) {
-      assert.typeof(key, 'string');
+      typeof key === 'string' || Fail`key must be a string`;
       const keyType = getKeyType(key);
-      assert(keyType !== 'host');
+      keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       del(key);
       if (keyType === 'consensus') {
         noteExport(`kv.${key}`, undefined);
@@ -635,12 +633,12 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     ...kvStore,
     set(key, value) {
       const keyType = getKeyType(key);
-      assert(keyType === 'host');
+      keyType === 'host' || Fail`hostKVStore requires host keys`;
       set(key, value);
     },
     delete(key) {
       const keyType = getKeyType(key);
-      assert(keyType === 'host');
+      keyType === 'host' || Fail`hostKVStore requires host keys`;
       del(key);
     },
   };
@@ -663,13 +661,13 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');
 
   function startCrank() {
-    !inCrank || Fail`already in crank`;
+    !inCrank || Fail`startCrank while already in a crank`;
     inCrank = true;
     resetCrankhash();
   }
 
   function establishCrankSavepoint(savepoint) {
-    inCrank || Fail`not in crank`;
+    inCrank || Fail`establishCrankSavepoint outside of crank`;
     const savepointOrdinal = savepoints.length;
     savepoints.push(savepoint);
     const sql = db.prepare(`SAVEPOINT t${savepointOrdinal}`);
@@ -677,7 +675,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   function rollbackCrank(savepoint) {
-    inCrank || Fail`not in crank`;
+    inCrank || Fail`rollbackCrank outside of crank`;
     for (const savepointOrdinal of savepoints.keys()) {
       if (savepoints[savepointOrdinal] === savepoint) {
         const sql = db.prepare(`ROLLBACK TO SAVEPOINT t${savepointOrdinal}`);
@@ -686,7 +684,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
         return;
       }
     }
-    assert.fail(`no such savepoint as "${savepoint}"`);
+    Fail`no such savepoint as "${q(savepoint)}"`;
   }
 
   function emitCrankHashes() {
@@ -743,7 +741,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   function endCrank() {
-    inCrank || Fail`not in crank`;
+    inCrank || Fail`endCrank outside of crank`;
     if (savepoints.length > 0) {
       sqlReleaseSavepoints.run();
       savepoints.length = 0;
@@ -758,7 +756,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * Commit unsaved changes.
    */
   async function commit() {
-    assert(db);
+    db || Fail`db not initialized`;
     if (db.inTransaction) {
       flushPendingExports();
       sqlCommit.run();
@@ -770,7 +768,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    * you want to save them, call commit() first).
    */
   async function close() {
-    assert(db);
+    db || Fail`db not initialized`;
     commit();
     db.close();
     db = null;
@@ -877,7 +875,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
  */
 export function initSwingStore(dirPath = null, options = {}) {
   if (dirPath) {
-    assert.typeof(dirPath, 'string');
+    typeof dirPath === 'string' || Fail`dirPath must be a string`;
   }
   return makeSwingStore(dirPath, true, options);
 }
@@ -885,10 +883,9 @@ export function initSwingStore(dirPath = null, options = {}) {
 function parseExportKey(key) {
   const parts = key.split('.');
   const [vatID, rawPos] = parts;
-  assert(
-    parts.length === 2,
-    `expected artifact name of the form '{type}.{vatID}.{pos}', saw ${key}`,
-  );
+  // prettier-ignore
+  parts.length === 2 ||
+    Fail`expected artifact name of the form '{type}.{vatID}.{pos}', saw ${q(key)}`;
   const isCurrent = rawPos === 'current';
   let pos;
   if (isCurrent) {
@@ -912,7 +909,7 @@ function artifactKey(type, vatID, pos) {
  */
 export async function importSwingStore(exporter, dirPath = null, options = {}) {
   if (dirPath) {
-    assert.typeof(dirPath, 'string');
+    typeof dirPath === 'string' || Fail`dirPath must be a string`;
   }
   const { includeHistorical = false } = options;
   const store = makeSwingStore(dirPath, true, options);
@@ -984,27 +981,21 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
     // first transcript span in the history of that vat, then we also must have
     // a snapshot for the state of the vat immediately prior to when the
     // transcript span begins.
-    assert(
-      vatInfo.transcriptKey,
-      `missing current transcript key for vat ${vatID}`,
-    );
+    vatInfo.transcriptKey ||
+      Fail`missing current transcript key for vat ${q(vatID)}`;
     const transcriptInfo = artifactMetadata.get(vatInfo.transcriptKey);
-    assert(transcriptInfo, `missing transcript metadata for vat ${vatID}`);
+    transcriptInfo || Fail`missing transcript metadata for vat ${q(vatID)}`;
     let snapshotInfo;
     if (vatInfo.snapshotKey) {
       snapshotInfo = artifactMetadata.get(vatInfo.snapshotKey);
-      assert(snapshotInfo, `missing snapshot metadata for vat ${vatID}`);
+      snapshotInfo || Fail`missing snapshot metadata for vat ${q(vatID)}`;
     }
     if (!snapshotInfo) {
-      assert(
-        transcriptInfo.startPos === 0,
-        `missing current snapshot for vat ${vatID}`,
-      );
+      transcriptInfo.startPos === 0 ||
+        Fail`missing current snapshot for vat ${q(vatID)}`;
     } else {
-      assert(
-        snapshotInfo.endPos === transcriptInfo.startPos,
-        `current transcript for vat ${vatID} doesn't go with snapshot`,
-      );
+      snapshotInfo.endPos === transcriptInfo.startPos ||
+        Fail`current transcript for vat ${q(vatID)} doesn't go with snapshot`;
       fetchedArtifacts.add(vatInfo.snapshotKey);
     }
     await (!snapshotInfo ||
@@ -1068,7 +1059,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
  * @returns {SwingStore}
  */
 export function openSwingStore(dirPath, options = {}) {
-  assert.typeof(dirPath, 'string');
+  typeof dirPath === 'string' || Fail`dirPath must be a string`;
   return makeSwingStore(dirPath, false, options);
 }
 
@@ -1083,7 +1074,7 @@ export function openSwingStore(dirPath, options = {}) {
  *   or openSwingStore, returns true. Else returns false.
  */
 export function isSwingStore(dirPath) {
-  assert.typeof(dirPath, 'string');
+  typeof dirPath === 'string' || Fail`dirPath must be a string`;
   if (fs.existsSync(dirPath)) {
     const storeFile = path.resolve(dirPath, 'swingstore.sqlite');
     if (fs.existsSync(storeFile)) {
