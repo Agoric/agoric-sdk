@@ -19,7 +19,7 @@ import { makeSnapStore } from '@agoric/swing-store';
 import { entryPaths as lockdownEntryPaths } from '@agoric/xsnap-lockdown/src/paths.js';
 import { entryPaths as supervisorEntryPaths } from '@agoric/swingset-xsnap-supervisor/src/paths.js';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { makeStartXSnap } from '../src/controller/controller.js';
+import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
