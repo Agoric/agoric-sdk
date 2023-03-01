@@ -90,8 +90,7 @@ const SHARED_MAIN_MANIFEST = harden({
       produce: { auction: 'auction' },
     },
     installation: {
-      consume: { auctionInstallation: 'zoe' },
-      contractGovernor: 'zoe',
+      consume: { contractGovernor: 'zoe', auction: 'zoe' },
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },
