@@ -193,6 +193,7 @@ export const makeCosmjsFollower = (
       storeName,
       storeSubkey,
       dataPrefixBytes = defaultDataPrefixBytes,
+      noDataValue,
     } = await castingSpecP;
 
     if (typeof storeName !== 'string') {
@@ -220,12 +221,15 @@ export const makeCosmjsFollower = (
     }
     assert(result);
 
-    const value =
-      result.value.length === 0
-        ? // No data.
-          result.value
-        : stripPrefix(result.value, dataPrefixBytes);
-
+    /** @type {Uint8Array} */
+    let value;
+    if (result.value.length === 0) {
+      value = result.value;
+    } else if (noDataValue && arrayEqual(result.value, noDataValue)) {
+      value = new Uint8Array();
+    } else {
+      value = stripPrefix(result.value, dataPrefixBytes);
+    }
     return { value, height: result.height };
   };
 
