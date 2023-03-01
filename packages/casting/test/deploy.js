@@ -24,7 +24,6 @@ const getVaultManagerMetrics = async (homeP, { cache, lookup }) => {
 export default async (homeP, { cache, lookup, makeDefaultLeader }) => {
   // const storeKey = getStoreKeyFromCache(homeP, { cache, lookup });
   const storeKey = getVaultManagerMetrics(homeP, { cache, lookup });
-  // const storeKey = ':published.amm.metrics';
 
   console.log('storeKey', await storeKey);
 

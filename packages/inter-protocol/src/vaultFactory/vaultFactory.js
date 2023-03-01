@@ -6,10 +6,8 @@ import '@agoric/zoe/src/contracts/exported.js';
 //
 // addVaultType is a closely held method that adds a brand new collateral type.
 // It specifies the initial exchange rate for that type. It depends on a
-// separately specified AMM to provide the ability to liquidate loans that are
-// in arrears. We could check that the AMM has sufficient liquidity, but for the
-// moment leave that to those participating in the governance process for adding
-// new collateral type to ascertain.
+// separately specified mechanism to liquidate loans that are
+// in arrears.
 
 // This contract wants to be managed by a contractGovernor, but it isn't
 // compatible with contractGovernor, since it has a separate paramManager for
@@ -22,8 +20,6 @@ import { makeStoredPublisherKit } from '@agoric/notifier';
 import { assertAllDefined } from '@agoric/internal';
 import {
   makeVaultDirectorParamManager,
-  LIQUIDATION_INSTALL_KEY,
-  LIQUIDATION_TERMS_KEY,
   MIN_INITIAL_DEBT_KEY,
   ENDORSED_UI_KEY,
 } from './params.js';
@@ -31,8 +27,6 @@ import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
- *   ammPublicFacet: AutoswapPublicFacet,
- *   liquidationInstall: Installation<import('./liquidateMinimum.js').start>,
  *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
@@ -74,8 +68,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   }));
 
   const {
-    [LIQUIDATION_INSTALL_KEY]: { value: liqInstall },
-    [LIQUIDATION_TERMS_KEY]: { value: liqTerms },
     [MIN_INITIAL_DEBT_KEY]: { value: minInitialDebt },
     [ENDORSED_UI_KEY]: { value: endorsedUi },
   } = zcf.getTerms().governedParams;
@@ -84,8 +76,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeStoredPublisherKit(storageNode, marshaller, 'governance'),
     zcf.getZoeService(),
     initialPoserInvitation,
-    liqInstall,
-    liqTerms,
     minInitialDebt,
     initialShortfallInvitation,
     endorsedUi,

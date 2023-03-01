@@ -1,7 +1,7 @@
 import { E, Far } from '@endo/far';
 import { addRemote } from '@agoric/vats/src/core/utils.js';
 
-export { connectFaucet, fundAMM } from './demoIssuers.js';
+export { connectFaucet } from './demoIssuers.js';
 
 /** @param {BootstrapPowers} powers */
 export const installSimEgress = async ({

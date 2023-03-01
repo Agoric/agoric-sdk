@@ -44,44 +44,6 @@ export const publishInterchainAssetFromBoardId = async (
   ]);
 };
 
-const addPool = async (
-  zoe,
-  amm,
-  issuer,
-  keyword,
-  brand,
-  runBrand,
-  runIssuer,
-) => {
-  const ammPub = E(zoe).getPublicFacet(amm);
-  const [addPoolInvitation] = await Promise.all([
-    E(ammPub).addPoolInvitation(),
-    E(ammPub).addIssuer(issuer, keyword),
-  ]);
-  const proposal = harden({
-    give: {
-      Secondary: AmountMath.makeEmpty(brand),
-      Central: AmountMath.makeEmpty(runBrand),
-    },
-  });
-  const centralPurse = E(runIssuer).makeEmptyPurse();
-  const secondaryPurse = E(issuer).makeEmptyPurse();
-  const [emptyCentral, emptySecondary] = await Promise.all([
-    E(centralPurse).withdraw(proposal.give.Central),
-    E(secondaryPurse).withdraw(proposal.give.Secondary),
-  ]);
-  const payments = harden({
-    Central: emptyCentral,
-    Secondary: emptySecondary,
-  });
-  const addLiquiditySeat = await E(zoe).offer(
-    addPoolInvitation,
-    proposal,
-    payments,
-  );
-  await E(addLiquiditySeat).getOfferResult();
-};
-
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
@@ -90,19 +52,10 @@ const addPool = async (
  */
 export const publishInterchainAssetFromBank = async (
   {
-    consume: { zoe, bankManager, agoricNamesAdmin, bankMints },
+    consume: { zoe, bankManager, agoricNamesAdmin, bankMints, reserveKit },
     produce: { bankMints: produceBankMints },
     installation: {
       consume: { mintHolder },
-    },
-    instance: {
-      consume: { amm },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: runIssuer },
-    },
-    brand: {
-      consume: { [Stable.symbol]: stableBrandP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -129,14 +82,10 @@ export const publishInterchainAssetFromBank = async (
     E(zoe).startInstance(mintHolder, {}, terms),
   );
 
-  const [issuer, brand, runBrand] = await Promise.all([
-    issuerP,
-    E(issuerP).getBrand(),
-    stableBrandP,
-  ]);
+  const [issuer, brand] = await Promise.all([issuerP, E(issuerP).getBrand()]);
   const kit = { mint: mintP, issuer, brand };
 
-  await addPool(zoe, amm, issuer, keyword, brand, runBrand, runIssuer);
+  await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
   // Create the mint list if it doesn't exist and wasn't already rejected.
   produceBankMints.resolve([]);
@@ -318,14 +267,12 @@ export const getManifestForAddAssetToVault = (
             bankManager: true,
             agoricNamesAdmin: true,
             bankMints: true,
+            reserveKit: true,
           },
           produce: { bankMints: true },
           installation: {
             consume: { mintHolder: true },
           },
-          instance: { consume: { amm: 'amm' } },
-          issuer: { consume: { [Stable.symbol]: 'zoe' } },
-          brand: { consume: { [Stable.symbol]: 'zoe' } },
         },
       }),
       [registerScaledPriceAuthority.name]: {

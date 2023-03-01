@@ -1,23 +1,15 @@
 import { E, Far } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
-import { handleParamGovernance, ParamTypes } from '@agoric/governance';
-import {
-  offerTo,
-  atomicTransfer,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { handleParamGovernance } from '@agoric/governance';
+import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 import { provideDurableMapStore, prepareKindMulti } from '@agoric/vat-data';
 
 import { makeTracer } from '@agoric/internal';
-import { AMM_INSTANCE } from './params.js';
 import { makeMetricsPublisherKit } from '../contractSupport.js';
 
 const { Fail, quote: q } = assert;
 
 const trace = makeTracer('Reserve', false);
-
-const makeLiquidityKeyword = keyword => `${keyword}Liquidity`;
-
-const nonalphanumeric = /[^A-Za-z0-9]/g;
 
 /**
  * @typedef {object} MetricsNotification
@@ -56,18 +48,11 @@ const nonalphanumeric = /[^A-Za-z0-9]/g;
 
 /**
  * Asset Reserve holds onto assets for the Inter Protocol, and can
- * dispense it for various purposes under governance control. It currently
- * supports governance decisions to add liquidity to an AMM pool.
+ * dispense it for various purposes under governance control.
  *
- * This contract has the ability to mint Fee tokens, granted through its private
- * arguments. When adding liquidity to an AMM pool, it mints new Fee tokens and
- * merges them with the specified amount of collateral on hand. It then deposits
- * both into an AMM pool by using the AMM's method that allows the pool balance
- * to be determined based on the contributed funds.
- *
- * @param {ZCF<GovernanceTerms<{AmmInstance: 'instance'}> &
+ * @param {ZCF<GovernanceTerms<{}> &
  * {
- *   governedApis: ['addLiquidityToAmmPool'],
+ *   governedApis: ['burnFeesToReduceShortfall'],
  * }
  * >} zcf
  * @param {{
@@ -96,13 +81,6 @@ const start = async (zcf, privateArgs, baggage) => {
    * @type {MapStore<Keyword, Brand>}
    */
   const brandForKeyword = provideDurableMapStore(baggage, 'brandForKeyword');
-  /**
-   * @type {MapStore<Brand<'nat'>, Brand<'nat'>>}
-   */
-  const liquidityBrandForBrand = provideDurableMapStore(
-    baggage,
-    'liquidityBrandForBrand',
-  );
 
   /** @type {() => Promise<ZCFMint<'nat'>>} */
   const takeFeeMint = async () => {
@@ -133,21 +111,14 @@ const start = async (zcf, privateArgs, baggage) => {
   saveBrandKeyword(feeKit.brand, 'Fee');
   // no need to saveIssuer() b/c registerFeeMint did it
 
-  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet, params } =
+  const { augmentVirtualPublicFacet, makeVirtualGovernorFacet } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
-      {
-        [AMM_INSTANCE]: ParamTypes.INSTANCE,
-      },
+      {},
       privateArgs.storageNode,
       privateArgs.marshaller,
     );
-
-  /** @type {Promise<XYKAMMPublicFacet>} */
-  const ammPublicFacet = E(zcf.getZoeService()).getPublicFacet(
-    params.getAmmInstance(),
-  );
 
   /**
    * @param {MethodContext} _context
@@ -169,71 +140,6 @@ const start = async (zcf, privateArgs, baggage) => {
 
     saveBrandKeyword(brand, keyword);
     await zcf.saveIssuer(issuer, keyword);
-  };
-
-  /**
-   * @param {MethodContext} _context
-   * @param {Issuer<'nat'>} baseIssuer on which the liquidity issuer is based
-   */
-  const addLiquidityIssuer = async (_context, baseIssuer) => {
-    const getBrand = () => {
-      try {
-        return zcf.getBrandForIssuer(baseIssuer);
-      } catch {
-        assert.fail(
-          `baseIssuer ${baseIssuer} not known; try addIssuer() first`,
-        );
-      }
-    };
-    const baseBrand = getBrand();
-    const baseKeyword = keywordForBrand.get(baseBrand);
-    const liquidityIssuer = E(ammPublicFacet).getLiquidityIssuer(baseBrand);
-    const liquidityBrand = await E(liquidityIssuer).getBrand();
-    const liquidityKeyword = makeLiquidityKeyword(baseKeyword);
-
-    trace('addLiquidityIssuer', {
-      baseBrand,
-      baseKeyword,
-      liquidityBrand,
-      liquidityKeyword,
-    });
-    saveBrandKeyword(liquidityBrand, liquidityKeyword);
-    liquidityBrandForBrand.init(baseBrand, liquidityBrand);
-
-    await zcf.saveIssuer(liquidityIssuer, liquidityKeyword);
-  };
-
-  const conjureKeyword = async baseBrand => {
-    const allegedName = await E(baseBrand).getAllegedName();
-    const safeName = allegedName.replace(nonalphanumeric, '');
-    let keyword;
-    let keywordNum = 0;
-    do {
-      // 'R' to guarantee leading uppercase
-      keyword = `R${safeName}${keywordNum || ''}`;
-      keywordNum += 1;
-    } while (brandForKeyword.has(keyword));
-    return keyword;
-  };
-
-  /**
-   * @param {MethodContext} context
-   * @param {Brand<'nat'>} ammSecondaryBrand
-   * @returns {Promise<void>}
-   */
-  const addIssuerFromAmm = async (context, ammSecondaryBrand) => {
-    assert(
-      ammSecondaryBrand !== feeKit.brand,
-      'Fee is a special case handled by the reserve contract',
-    );
-
-    const keyword = await conjureKeyword(ammSecondaryBrand);
-    trace('addIssuerFromAmm', { ammSecondaryBrand, keyword });
-    // validate the AMM has this brand and match its issuer
-    const issuer = await E(ammPublicFacet).getSecondaryIssuer(
-      ammSecondaryBrand,
-    );
-    await addIssuer(context, issuer, keyword);
   };
 
   const getKeywordForBrand = brand => {
@@ -320,70 +226,6 @@ const start = async (zcf, privateArgs, baggage) => {
   };
 
   /**
-   * Takes collateral from the reserve, mints Fee tokens to accompany it, and uses both
-   * to add Liquidity to a pool in the AMM.
-   *
-   * @param {MethodContext} context
-   * @param {Amount<'nat'>} collateral
-   * @param {Amount<'nat'>} fee
-   */
-  const addLiquidityToAmmPool = async ({ state }, collateral, fee) => {
-    // verify we have the funds
-    const collateralKeyword = getKeywordForBrand(collateral.brand);
-    if (
-      !AmountMath.isGTE(
-        collateralSeat.getCurrentAllocation()[collateralKeyword],
-        collateral,
-      )
-    ) {
-      throw new Error('insufficient reserves for that transaction');
-    }
-
-    // create the Fee tokens
-    const offerToSeat = feeMint.mintGains(harden({ Fee: fee }));
-    state.totalFeeMinted = AmountMath.add(state.totalFeeMinted, fee);
-
-    atomicTransfer(zcf, collateralSeat, offerToSeat, {
-      [collateralKeyword]: collateral,
-    });
-
-    // Add Fee tokens and collateral to the AMM
-    const invitation = await E(
-      ammPublicFacet,
-    ).makeAddLiquidityAtRateInvitation();
-    const mapping = harden({
-      Fee: 'Central',
-      [collateralKeyword]: 'Secondary',
-    });
-
-    const liqBrand = liquidityBrandForBrand.get(collateral.brand);
-    const proposal = harden({
-      give: {
-        Central: fee,
-        Secondary: collateral,
-      },
-      want: { Liquidity: AmountMath.makeEmpty(liqBrand) },
-    });
-
-    // chain await the completion of both the offer and the `deposited` promise
-    await E.get(offerTo(zcf, invitation, mapping, proposal, offerToSeat))
-      .deposited;
-
-    // transfer from userSeat to LiquidityToken holdings
-    const liquidityAmount = offerToSeat.getCurrentAllocation();
-    const liquidityKeyword = makeLiquidityKeyword(collateralKeyword);
-
-    atomicTransfer(
-      zcf,
-      offerToSeat,
-      collateralSeat,
-      { Liquidity: liquidityAmount.Liquidity },
-      { [liquidityKeyword]: liquidityAmount.Liquidity },
-    );
-    updateMetrics({ state });
-  };
-
-  /**
    *
    * @param {MethodContext} context
    * @param {Amount<'nat'>} reduction
@@ -431,13 +273,11 @@ const start = async (zcf, privateArgs, baggage) => {
     getMetrics: () => metricsSubscription,
   });
 
-  const governedApis = { addLiquidityToAmmPool, burnFeesToReduceShortfall };
+  const governedApis = { burnFeesToReduceShortfall };
 
   const publicFacet = augmentVirtualPublicFacet(
     Far('Collateral Reserve public', {
       makeAddCollateralInvitation,
-      addIssuerFromAmm,
-      addLiquidityIssuer,
     }),
   );
 
@@ -467,7 +307,7 @@ export { start };
  * @typedef {object} OriginalAssetReserveCreatorFacet
  * @property {() => Invitation} makeAddCollateralInvitation
  * @property {() => Allocation} getAllocations
- * @property {(issuer: Issuer) => void} addIssuer
+ * @property {(issuer: Issuer, kwd: string) => void} addIssuer
  * @property {() => Invitation<ShortfallReporter>} makeShortfallReportingInvitation
  * @property {() => StoredSubscription<MetricsNotification>} getMetrics
  */
@@ -475,7 +315,6 @@ export { start };
 /**
  * @typedef {object} OriginalAssetReservePublicFacet
  * @property {() => Invitation} makeAddCollateralInvitation
- * @property {(brand: Brand) => void} addIssuerFromAmm
  * @property {(issuer: Issuer) => void} addLiquidityIssuer
  */
 

@@ -3,13 +3,12 @@ import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   makePublicTopic,
   makeStoredPublisherKit,
-  observeIteration,
   pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
-import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
+import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   defineDurableExoClassKit,
   makeKindHandle,
@@ -134,11 +133,6 @@ export const prepareVaultDirector = (
     };
   };
 
-  const getLiquidationConfig = () => ({
-    install: directorParamManager.getLiquidationInstall(),
-    terms: directorParamManager.getLiquidationTerms(),
-  });
-
   /**
    * @returns {MetricsNotification}
    */
@@ -146,29 +140,6 @@ export const prepareVaultDirector = (
     return harden({
       collaterals: Array.from(collateralTypes.keys()),
       rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
-    });
-  };
-
-  /**
-   *
-   * @param {VaultManager} vaultManager
-   * @param {Installation<unknown>} oldInstall
-   * @param {unknown} oldTerms
-   */
-  const watchGovernance = (vaultManager, oldInstall, oldTerms) => {
-    const subscription = directorParamManager.getSubscription();
-    void observeIteration(subscription, {
-      updateState(_paramUpdate) {
-        const { install, terms } = getLiquidationConfig();
-        if (install === oldInstall && keyEQ(terms, oldTerms)) {
-          return;
-        }
-        oldInstall = install;
-        oldTerms = terms;
-        vaultManager
-          .setupLiquidator(install, terms)
-          .catch(e => console.error('Failed to setup liquidator', e));
-      },
     });
   };
 
@@ -409,9 +380,6 @@ export const prepareVaultDirector = (
 
           const { self: vm } = makeVaultManager();
           collateralTypes.init(collateralBrand, vm);
-          const { install, terms } = getLiquidationConfig();
-          await vm.setupLiquidator(install, terms);
-          watchGovernance(vm, install, terms);
           facets.machine.updateMetrics();
           state.managerCounter += 1;
           return vm;
