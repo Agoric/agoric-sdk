@@ -1,12 +1,5 @@
-import fs from 'fs';
 import path from 'path';
-import { Fail } from '@agoric/assert';
-import { type as osType } from 'os';
-import { xsnap, recordXSnap } from '@agoric/xsnap';
-import { getLockdownBundle } from '@agoric/xsnap-lockdown';
-import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
-
-const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
+import { makeStartXSnapV1 } from '@agoric/swingset-worker-xsnap-v1';
 
 /**
  * @param {{
@@ -20,9 +13,8 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 export function makeStartXSnap(options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
-  const { snapStore, spawn, debug = false, traceFile } = options;
-  const { overrideBundles } = options;
 
+  const { traceFile, ...other } = options;
   let serial = 0;
   const makeTraceFile = traceFile
     ? () => {
@@ -31,6 +23,8 @@ export function makeStartXSnap(options) {
         return workerTrace;
       }
     : undefined;
+
+  const startXSnapV1 = makeStartXSnapV1({ makeTraceFile, ...other });
 
   /**
    * @param {string} workerVersion
@@ -48,69 +42,11 @@ export function makeStartXSnap(options) {
     metered,
     reload = false,
   ) {
-    await 0; // empty synchronous prelude
-
-    /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
-    const xsnapOpts = {
-      os: osType(),
-      spawn,
-      stdout: 'inherit',
-      stderr: 'inherit',
-      debug,
-      netstringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
-    };
-
-    let doXSnap = xsnap;
-    if (makeTraceFile) {
-      doXSnap = opts => {
-        const workerTrace = makeTraceFile();
-        console.log('SwingSet xs-worker tracing:', { workerTrace });
-        fs.mkdirSync(workerTrace, { recursive: true });
-        return recordXSnap(opts, workerTrace, {
-          writeFileSync: fs.writeFileSync,
-        });
-      };
-    }
-
-    const meterOpts = metered ? {} : { meteringLimit: 0 };
-    if (snapStore && reload) {
-      // console.log('startXSnap from', { snapshotHash });
-      return snapStore.loadSnapshot(vatID, async snapshot => {
-        const xs = doXSnap({
-          snapshot,
-          name,
-          handleCommand,
-          ...meterOpts,
-          ...xsnapOpts,
-        });
-        await xs.isReady();
-        return xs;
-      });
-    }
-    // console.log('fresh xsnap', { snapStore: snapStore });
-    const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
-
-    let bundles = [];
     if (workerVersion === 'xsnap-v1') {
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      bundles.push(await getLockdownBundle());
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      bundles.push(await getSupervisorBundle());
-    } else {
-      throw Error(`unsupported worker version ${workerVersion}`);
+      return startXSnapV1(vatID, name, handleCommand, metered, reload);
     }
-    if (overrideBundles) {
-      bundles = overrideBundles; // replace the usual bundles
-    }
-
-    for (const bundle of bundles) {
-      bundle.moduleFormat === 'getExport' ||
-        bundle.moduleFormat === 'nestedEvaluate' ||
-        Fail`unexpected: ${bundle.moduleFormat}`;
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
-      await worker.evaluate(`(${bundle.source}\n)()`.trim());
-    }
-    return worker;
+    throw Error(`unsupported worker version ${workerVersion}`);
   }
+
   return startXSnap;
 }

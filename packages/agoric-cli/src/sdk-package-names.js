@@ -31,6 +31,7 @@ export default [
   "@agoric/swingset-liveslots",
   "@agoric/swingset-runner",
   "@agoric/swingset-vat",
+  "@agoric/swingset-worker-xsnap-v1",
   "@agoric/swingset-xsnap-supervisor",
   "@agoric/telemetry",
   "@agoric/time",

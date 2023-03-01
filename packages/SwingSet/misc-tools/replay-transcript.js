@@ -1,5 +1,6 @@
 /* global WeakRef FinalizationRegistry */
 /* eslint-disable no-constant-condition */
+/* eslint-disable import/no-extraneous-dependencies */
 import fs from 'fs';
 // import '@endo/init';
 import '../tools/install-ses-debug.js';

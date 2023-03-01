@@ -203,6 +203,8 @@ jobs:
         run: cd packages/swingset-liveslots && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-xsnap-supervisor)
         run: cd packages/swingset-xsnap-supervisor && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (swingset-worker-xsnap-v1)
+        run: cd packages/swingset-worker-xsnap-v1 && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
         # The meta-test!
       - name: Check for untested packages
