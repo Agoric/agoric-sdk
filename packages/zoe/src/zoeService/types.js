@@ -33,7 +33,6 @@
  * @property {GetBrands} getBrands
  * @property {import('./utils').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
- * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
