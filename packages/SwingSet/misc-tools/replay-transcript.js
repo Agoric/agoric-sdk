@@ -152,10 +152,6 @@ async function replay(transcriptFile) {
       JSON.parse(fs.readFileSync('lockdown-bundle')),
       JSON.parse(fs.readFileSync('supervisor-bundle')),
     ];
-    const env = {};
-    if (RECORD_XSNAP_TRACE) {
-      env.XSNAP_TEST_RECORD = process.cwd();
-    }
 
     const capturePIDSpawn = (...args) => {
       const child = spawn(...args);
@@ -164,8 +160,8 @@ async function replay(transcriptFile) {
     };
     const startXSnap = makeStartXSnap(bundles, {
       snapStore,
-      env,
       spawn: capturePIDSpawn,
+      traceFile: RECORD_XSNAP_TRACE ? process.cwd() : undefined,
     });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,

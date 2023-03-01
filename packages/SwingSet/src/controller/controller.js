@@ -82,14 +82,14 @@ function unhandledRejectionHandler(e, pr) {
  * @param {{
  *   snapStore?: SnapStore,
  *   spawn: typeof import('child_process').spawn
- *   env: Record<string, string | undefined>,
- * }} opts
+ *   debug?: boolean,
+ *   traceFile?: string,
+ * }} options
  */
-export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
+export function makeStartXSnap(bundles, options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
-  const debug = !!env.XSNAP_DEBUG;
-  const traceFile = env.XSNAP_TEST_RECORD;
+  const { snapStore, spawn, debug = false, traceFile } = options;
 
   let serial = 0;
   const makeTraceFile = traceFile
@@ -282,8 +282,9 @@ export async function makeSwingsetController(
   ];
   const startXSnap = makeStartXSnap(bundles, {
     snapStore: kernelStorage.snapStore,
-    env,
     spawn,
+    debug: !!env.XSNAP_DEBUG,
+    traceFile: env.XSNAP_TEST_RECORD,
   });
 
   const kernelEndowments = {
