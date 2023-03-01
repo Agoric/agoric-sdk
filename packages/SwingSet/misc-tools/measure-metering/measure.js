@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 // run as `node tools/measure-metering/measure.js`
 
 // eslint-disable-next-line import/order

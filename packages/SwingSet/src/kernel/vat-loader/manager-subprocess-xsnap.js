@@ -1,5 +1,4 @@
 import { assert, Fail, q } from '@agoric/assert';
-import { ExitCode } from '@agoric/xsnap/api.js';
 import { makeManagerKit } from './manager-helper.js';
 
 import {
@@ -187,21 +186,8 @@ export function makeXsSubprocessFactory({
         result = await issueTagged(['deliver', delivery]);
       } catch (err) {
         parentLog('issueTagged error:', err.code, err.message);
-        let message;
-        switch (err.code) {
-          case ExitCode.E_TOO_MUCH_COMPUTATION:
-            message = 'Compute meter exceeded';
-            break;
-          case ExitCode.E_STACK_OVERFLOW:
-            message = 'Stack meter exceeded';
-            break;
-          case ExitCode.E_NOT_ENOUGH_MEMORY:
-            message = 'Allocate meter exceeded';
-            break;
-          default:
-            // non-metering failure. crash.
-            throw err;
-        }
+        // get an error message for metering failures, else throw
+        const message = worker.trapMeteringFailure(err);
         return harden(['error', message, null]);
       }
 

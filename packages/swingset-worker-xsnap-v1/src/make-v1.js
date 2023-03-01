@@ -2,6 +2,7 @@ import fs from 'fs';
 import { Fail } from '@agoric/assert';
 import { type as osType } from 'os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
+import { ExitCode } from '@agoric/xsnap/api.js';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
 
@@ -102,7 +103,22 @@ export function makeStartXSnapV1(options) {
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }
-    return worker;
+
+    const trapMeteringFailure = err => {
+      switch (err.code) {
+        case ExitCode.E_TOO_MUCH_COMPUTATION:
+          return 'Compute meter exceeded';
+        case ExitCode.E_STACK_OVERFLOW:
+          return 'Stack meter exceeded';
+        case ExitCode.E_NOT_ENOUGH_MEMORY:
+          return 'Allocate meter exceeded';
+        default:
+          // non-metering failure. crash.
+          throw err;
+      }
+    };
+
+    return harden({ ...worker, trapMeteringFailure });
   }
   return startXSnapV1;
 }
