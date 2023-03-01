@@ -190,8 +190,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     return `transcript.${rec.vatID}.current`;
   }
 
-  function spanRec(vatID, startPos, endPos, hash) {
-    return { vatID, startPos, endPos, hash };
+  function spanRec(vatID, startPos, endPos, hash, isCurrent) {
+    return { vatID, startPos, endPos, hash, isCurrent };
   }
 
   const sqlEndCurrentSpan = db.prepare(`
@@ -213,6 +213,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     noteExport(historicSpanMetadataKey(rec), JSON.stringify(rec));
     sqlEndCurrentSpan.run(vatID);
     sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1);
+    const newRec = spanRec(vatID, endPos, endPos, initialHash);
+    noteExport(currentSpanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
@@ -245,7 +247,9 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       ? sqlGetAllSpanMetadata
       : sqlGetCurrentSpanMetadata;
     for (const rec of sql.iterate()) {
-      yield [historicSpanMetadataKey(rec), JSON.stringify(rec)];
+      const { vatID, startPos, endPos, hash, isCurrent } = rec;
+      const exportRec = spanRec(vatID, startPos, endPos, hash, isCurrent);
+      yield [historicSpanMetadataKey(rec), JSON.stringify(exportRec)];
     }
   }
 
