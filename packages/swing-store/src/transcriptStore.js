@@ -209,11 +209,11 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   function rolloverSpan(vatID) {
     ensureTxn();
     const { hash, startPos, endPos } = getCurrentSpanBounds(vatID);
-    const rec = spanRec(vatID, startPos, endPos, hash);
+    const rec = spanRec(vatID, startPos, endPos, hash, 0);
     noteExport(historicSpanMetadataKey(rec), JSON.stringify(rec));
     sqlEndCurrentSpan.run(vatID);
     sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1);
-    const newRec = spanRec(vatID, endPos, endPos, initialHash);
+    const newRec = spanRec(vatID, endPos, endPos, initialHash, 1);
     noteExport(currentSpanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
@@ -368,7 +368,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     const newEndPos = endPos + 1;
     const newHash = computeItemHash(hash, item);
     sqlUpdateSpan.run(newEndPos, newHash, vatID);
-    const rec = spanRec(vatID, startPos, newEndPos, newHash);
+    const rec = spanRec(vatID, startPos, newEndPos, newHash, 1);
     noteExport(currentSpanMetadataKey(rec), JSON.stringify(rec));
   };
 
