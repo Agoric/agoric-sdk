@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 import { createHash } from 'crypto';
 
@@ -19,12 +19,12 @@ function createSHA256(initial = undefined) {
   // eslint-disable-next-line no-use-before-define
   const self = harden({ add, finish, sample });
   function add(more) {
-    assert(!done);
+    !done || Fail`hash already finished`;
     hash.update(more);
     return self;
   }
   function finish() {
-    assert(!done);
+    !done || Fail`hash already finished`;
     done = true;
     return hash.digest('hex');
   }

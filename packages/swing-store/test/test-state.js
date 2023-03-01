@@ -172,7 +172,7 @@ async function testTranscriptStore(t, dbDir) {
   t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 'threeth', 'fourst']);
 
   t.throws(() => transcriptStore.readSpan('st2', 3), {
-    message: 'no transcript span for st2 at 3',
+    message: 'no transcript span for "st2" at 3',
   });
 
   const reader1alt = transcriptStore.readSpan('st1');
@@ -185,7 +185,7 @@ async function testTranscriptStore(t, dbDir) {
   t.deepEqual(Array.from(readerEmpty), []);
 
   t.throws(() => transcriptStore.readSpan('nonexistent'), {
-    message: 'no current transcript for nonexistent',
+    message: 'no current transcript for "nonexistent"',
   });
 
   await commit();

@@ -2,7 +2,7 @@
 import ReadlineTransform from 'readline-transform';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
-import { assert, Fail, q } from '@agoric/assert';
+import { Fail, q } from '@agoric/assert';
 import { createSHA256 } from './hasher.js';
 
 /**
@@ -34,13 +34,13 @@ function* empty() {
 }
 
 /**
- * @param {unknown} position
+ * @param {number} position
  * @returns {asserts position is number}
  */
 
 function insistTranscriptPosition(position) {
-  assert.typeof(position, 'number');
-  assert(position >= 0);
+  typeof position === 'number' || Fail`position must be a number`;
+  position >= 0 || Fail`position must not be negative`;
 }
 
 /**
@@ -170,7 +170,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
    */
   function getCurrentSpanBounds(vatID) {
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
-    assert(bounds, `no current transcript for ${vatID}`);
+    bounds || Fail`no current transcript for ${q(vatID)}`;
     return bounds;
   }
 
@@ -300,13 +300,10 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     if (startPos === undefined) {
       ({ startPos, endPos } = getCurrentSpanBounds(vatID));
     } else {
-      assert.typeof(startPos, 'number');
+      insistTranscriptPosition(startPos);
       endPos = sqlGetSpanEndPos.get(vatID, startPos);
-      assert.typeof(
-        endPos,
-        'number',
-        `no transcript span for ${vatID} at ${startPos}`,
-      );
+      typeof endPos === 'number' ||
+        Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
     }
     insistTranscriptPosition(startPos);
     startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
@@ -384,24 +381,20 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   async function importSpan(name, exporter, info) {
     const parts = name.split('.');
     const [type, vatID, rawStartPos, rawEndPos] = parts;
-    assert(
-      parts.length === 4 && type === 'transcript',
-      `expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw '${name}'`,
-    );
-    assert(
-      info.vatID === vatID,
-      `artifact name says vatID ${vatID}, metadata says ${info.vatID}`,
-    );
+    // prettier-ignore
+    parts.length === 4 && type === 'transcript' ||
+      Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw '${q(name)}'`;
+    // prettier-ignore
+    info.vatID === vatID ||
+      Fail`artifact name says vatID ${q(vatID)}, metadata says ${q(info.vatID)}`;
     const startPos = Number(rawStartPos);
-    assert(
-      info.startPos === startPos,
-      `artifact name says startPos ${startPos}, metadata says ${info.startPos}`,
-    );
+    // prettier-ignore
+    info.startPos === startPos ||
+      Fail`artifact name says startPos ${q(startPos)}, metadata says ${q(info.startPos)}`;
     const endPos = Number(rawEndPos);
-    assert(
-      info.endPos === endPos,
-      `artifact name says endPos ${endPos}, metadata says ${info.endPos}`,
-    );
+    // prettier-ignore
+    info.endPos === endPos ||
+      Fail`artifact name says endPos ${q(endPos)}, metadata says ${q(info.endPos)}`;
     const artifactChunks = exporter.getArtifact(name);
     const inStream = Readable.from(artifactChunks);
     const lineTransform = new ReadlineTransform();
@@ -413,10 +406,8 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       hash = computeItemHash(hash, item);
       pos += 1;
     }
-    assert(
-      info.hash === hash,
-      `artifact ${name} hash is ${hash}, metadata says ${info.hash}`,
-    );
+    info.hash === hash ||
+      Fail`artifact ${name} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
     sqlWriteSpan.run(
       info.vatID,
       info.startPos,
