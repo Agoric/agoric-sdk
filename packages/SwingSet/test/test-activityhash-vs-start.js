@@ -19,6 +19,7 @@ const TimerSrc = new URL(
 
 test('restarting kernel does not change activityhash', async t => {
   const sourceSpec = new URL('vat-empty-setup.js', import.meta.url).pathname;
+  /** @type {SwingSetConfig} */
   const config = {
     defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',

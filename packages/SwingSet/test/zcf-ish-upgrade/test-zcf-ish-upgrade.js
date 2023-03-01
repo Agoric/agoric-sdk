@@ -9,9 +9,10 @@ import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test('zcf-ish upgrade', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'local', // 'xs-worker',
+    defaultManagerType: 'local',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,

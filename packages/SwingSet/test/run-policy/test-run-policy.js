@@ -11,6 +11,7 @@ import {
 import { kslot, kser } from '../../src/lib/kmarshal.js';
 
 async function testCranks(t, mode) {
+  /** @type {SwingSetConfig} */
   const config = {
     defaultReapInterval: 'never',
     vats: {
