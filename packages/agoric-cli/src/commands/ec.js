@@ -4,7 +4,7 @@
 /* global fetch */
 import { Command } from 'commander';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
-import { outputAction } from '../lib/wallet.js';
+import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
 
@@ -27,7 +27,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
       const { economicCommittee } = agoricNames.instance;
       assert(economicCommittee, 'missing economicCommittee');
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -39,10 +39,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
@@ -54,7 +51,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
       const { econCommitteeCharter } = agoricNames.instance;
       assert(econCommitteeCharter, 'missing econCommitteeCharter');
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -66,10 +63,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
@@ -106,7 +100,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
       const chosenPositions = [questionDesc.positions[opts.forPosition]];
       assert(chosenPositions, `undefined position index ${opts.forPosition}`);
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -122,10 +116,7 @@ export const makeEconomicCommiteeCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });

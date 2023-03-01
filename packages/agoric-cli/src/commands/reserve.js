@@ -4,7 +4,7 @@
 /* global fetch */
 import { Command } from 'commander';
 import { makeRpcUtils } from '../lib/rpc.js';
-import { outputAction } from '../lib/wallet.js';
+import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 const { agoricNames } = await makeRpcUtils({ fetch });
 
@@ -41,7 +41,7 @@ export const makeReserveCommand = async _logger => {
 
       const feesToBurn = { brand: agoricNames.brand.IST, value: opts.value };
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: opts.offerId,
         invitationSpec: {
@@ -58,10 +58,7 @@ export const makeReserveCommand = async _logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });

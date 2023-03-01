@@ -24,11 +24,23 @@ export const getCurrent = async (addr, ctx, { vstorage }) => {
   return capDatas[0];
 };
 
-/** @param {import('../lib/psm.js').BridgeAction} bridgeAction */
+/** @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction */
 export const outputAction = bridgeAction => {
   const capData = marshaller.serialize(bridgeAction);
   process.stdout.write(JSON.stringify(capData));
   process.stdout.write('\n');
+};
+
+/**
+ * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+ */
+export const outputExecuteOfferAction = offer => {
+  /** @type {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} */
+  const spendAction = {
+    method: 'executeOffer',
+    offer,
+  };
+  outputAction(spendAction);
 };
 
 /**

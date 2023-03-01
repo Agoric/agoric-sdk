@@ -108,8 +108,13 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
  *
  * @param {ReturnType<typeof makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
+ * @param {*} agoricNamesRemotes
  */
-export const makeWalletFactoryDriver = async (runUtils, storage) => {
+export const makeWalletFactoryDriver = async (
+  runUtils,
+  storage,
+  agoricNamesRemotes,
+) => {
   const { EV } = runUtils;
 
   const walletFactoryStartResult = await EV.vat('bootstrap').consumeItem(
@@ -138,6 +143,18 @@ export const makeWalletFactoryDriver = async (runUtils, storage) => {
       });
 
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
+    },
+    /**
+     * @template {(brands: Record<string, import('../../tools/board-utils.js').BoardRemote>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @param {M} makeOffer
+     * @param {Parameters<M>[1]} firstArg
+     * @param {Parameters<M>[2]} [secondArg]
+     * @returns {Promise<void>}
+     */
+    executeOfferMaker(makeOffer, firstArg, secondArg) {
+      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
+
+      return this.executeOffer(offer);
     },
     /**
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
