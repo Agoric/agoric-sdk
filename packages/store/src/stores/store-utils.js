@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 
 /**
  * @template K,V
@@ -54,11 +54,7 @@ export const makeCurrentKeysKit = (
       let i = 0;
       return Far('Iterator of keys', {
         next: () => {
-          assert.equal(
-            generation,
-            updateCount,
-            X`Store ${q(keyName)} cursor stale`,
-          );
+          generation === updateCount || Fail`Store ${q(keyName)} cursor stale`;
           // If they're equal, then the sortedKeyMemo is the same one
           // we started with.
           for (;;) {

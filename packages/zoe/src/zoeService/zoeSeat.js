@@ -14,6 +14,8 @@ import {
   PaymentPKeywordRecordShape,
 } from '../typeGuards.js';
 
+const { Fail } = assert;
+
 const ZoeSeatIKit = harden({
   zoeSeatAdmin: M.interface('ZoeSeatAdmin', {
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
@@ -263,7 +265,7 @@ export const makeZoeSeatAdminFactory = baggage => {
         },
         async tryExit() {
           const { state } = this;
-          assert(state.exitObj, 'exitObj must be initialized before use');
+          state.exitObj || Fail`exitObj must be initialized before use`;
           assertHasNotExited(this, 'Cannot exit; seat has already exited');
 
           return E(state.exitObj).exit();

@@ -12,6 +12,8 @@ import {
   prepareExoClassKit,
 } from '@agoric/vat-data';
 
+const { Fail } = assert;
+
 const FEE_MINT_KIT = 'FeeMintKit';
 
 export const defaultFeeIssuerConfig = harden(
@@ -61,10 +63,8 @@ const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
       feeMint: {
         getFeeIssuerKit(allegedFeeMintAccess) {
           const { facets } = this;
-          assert(
-            facets.feeMintAccess === allegedFeeMintAccess,
-            'The object representing access to the fee brand mint was not provided',
-          );
+          facets.feeMintAccess === allegedFeeMintAccess ||
+            Fail`The object representing access to the fee brand mint was not provided`;
           return mintBaggage.get(FEE_MINT_KIT);
         },
         getFeeIssuer() {

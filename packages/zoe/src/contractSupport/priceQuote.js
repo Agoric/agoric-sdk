@@ -2,6 +2,8 @@ import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';
 
+const { Fail } = assert;
+
 // PriceAuthorities return quotes as a pair of an amount and a payment, both
 // with the same value. The underlying amount wraps amountIn, amountOut, timer
 // and timestamp. The payment is issued by the quoteIssuer to support veracity
@@ -12,10 +14,8 @@ import { E } from '@endo/eventual-send';
  * @returns {PriceDescription}
  */
 export const getPriceDescription = quote => {
-  assert(
-    quote.quoteAmount.value.length === 1,
-    'quoteAmount set must have one member',
-  );
+  quote.quoteAmount.value.length === 1 ||
+    Fail`quoteAmount set must have one member`;
   return quote.quoteAmount.value[0];
 };
 

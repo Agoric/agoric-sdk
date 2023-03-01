@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { Fail, assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 
 /**
@@ -23,10 +23,8 @@ export const burnInvitation = (invitationIssuer, invitation) => {
   const handleFulfilled = invitationAmount => {
     const invitationValue = invitationAmount.value;
     assert(Array.isArray(invitationValue));
-    assert(
-      invitationValue.length === 1,
-      'Only one invitation can be redeemed at a time',
-    );
+    invitationValue.length === 1 ||
+      Fail`Only one invitation can be redeemed at a time`;
     const [{ instance: instanceHandle, handle: invitationHandle }] =
       invitationValue;
     return harden({

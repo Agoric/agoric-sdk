@@ -36,13 +36,11 @@ export async function buildRootObject(powers, vatParameters, baggage) {
     baggage.init('zoeService', zoeService);
     baggage.init('invitationIssuer', invitationIssuer);
   } else {
-    assert(!zoeService, 'On restart zoeService must not be in vatParameters');
+    !zoeService || Fail`On restart zoeService must not be in vatParameters`;
     zoeService = baggage.get('zoeService');
 
-    assert(
-      !invitationIssuer,
-      'On restart invitationIssuer must not be in vatParameters',
-    );
+    !invitationIssuer ||
+      Fail`On restart invitationIssuer must not be in vatParameters`;
     invitationIssuer = baggage.get('invitationIssuer');
   }
 

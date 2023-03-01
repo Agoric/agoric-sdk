@@ -2,6 +2,8 @@
 import { Far, makeMarshal } from '@endo/marshal';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
 
+const { Fail, quote: q } = assert;
+
 /**
  * For testing, creates a chainStorage root node over an in-memory map
  * and exposes both the map and the sequence of received messages.
@@ -87,11 +89,11 @@ export const makeMockChainStorageRoot = () => {
      * @returns {unknown}
      */
     getBody: (path, marshaller = defaultMarshaller) => {
-      assert(data.size, 'no data in storage');
+      data.size || Fail`no data in storage`;
       const dataStr = data.get(path);
       if (!dataStr) {
         console.debug('mockChainStorage data:', data);
-        assert.fail(`no data at ${path}`);
+        Fail`no data at ${q(path)}`;
       }
       assert.typeof(dataStr, 'string');
       const datum = JSON.parse(dataStr);
