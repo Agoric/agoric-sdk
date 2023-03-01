@@ -5,6 +5,14 @@ import { makePromiseKit } from '@endo/promise-kit';
 
 const { details: X, quote: q, Fail } = assert;
 
+/**
+ * @typedef {object} BundleMeta
+ * @property {string} bundleFileName
+ * @property {string} bundleTime as ISO string
+ * @property {{relative: string, absolute: string}} moduleSource
+ * @property {Array<{relativePath: string, mtime: string}>} contents
+ */
+
 export const makeFileReader = (fileName, { fs, path }) => {
   const make = there => makeFileReader(there, { fs, path });
   return harden({
@@ -80,6 +88,7 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
     await bundleWr.writeText(code);
     const { mtime: bundleTime } = await bundleWr.readOnly().stat();
 
+    /** @type {BundleMeta} */
     const meta = {
       bundleFileName,
       bundleTime: bundleTime.toISOString(),
@@ -143,6 +152,13 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
     return meta;
   };
 
+  /**
+   *
+   * @param {string} rootPath
+   * @param {string} targetName
+   * @param {*} log
+   * @returns {Promise<BundleMeta>}
+   */
   const validateOrAdd = async (rootPath, targetName, log = console.debug) => {
     let meta;
     if (wr.readOnly().neighbor(toBundleMeta(targetName)).exists()) {
@@ -158,7 +174,7 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
           bundleTime,
         );
       } catch (invalid) {
-        console.warn(invalid.message);
+        console.error('ERROR in bundleTool:', invalid.message);
       }
     }
     if (!meta) {
