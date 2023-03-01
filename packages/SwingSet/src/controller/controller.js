@@ -180,13 +180,7 @@ export async function makeSwingsetController(
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({});
 
-  const bundles = [
-    // @ts-ignore assume lockdownBundle is set
-    JSON.parse(kvStore.get('lockdownBundle')),
-    // @ts-ignore assume supervisorBundle is set
-    JSON.parse(kvStore.get('supervisorBundle')),
-  ];
-  const startXSnap = makeStartXSnap(bundles, {
+  const startXSnap = makeStartXSnap({
     snapStore: kernelStorage.snapStore,
     spawn,
     debug: !!env.XSNAP_DEBUG,

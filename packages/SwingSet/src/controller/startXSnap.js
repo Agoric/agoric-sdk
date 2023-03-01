@@ -3,22 +3,25 @@ import path from 'path';
 import { Fail } from '@agoric/assert';
 import { type as osType } from 'os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
+import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
 
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
 /**
- * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
  *   snapStore?: SnapStore,
  *   spawn: typeof import('child_process').spawn
  *   debug?: boolean,
  *   traceFile?: string,
+ *   overrideBundles?: { moduleFormat: string, source: string }[],
  * }} options
  */
-export function makeStartXSnap(bundles, options) {
+export function makeStartXSnap(options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
   const { snapStore, spawn, debug = false, traceFile } = options;
+  const { overrideBundles } = options;
 
   let serial = 0;
   const makeTraceFile = traceFile
@@ -30,6 +33,7 @@ export function makeStartXSnap(bundles, options) {
     : undefined;
 
   /**
+   * @param {string} workerVersion
    * @param {string} vatID
    * @param {string} name
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
@@ -37,12 +41,15 @@ export function makeStartXSnap(bundles, options) {
    * @param {boolean} [reload]
    */
   async function startXSnap(
+    workerVersion,
     vatID,
     name,
     handleCommand,
     metered,
     reload = false,
   ) {
+    await 0; // empty synchronous prelude
+
     /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
     const xsnapOpts = {
       os: osType(),
@@ -82,6 +89,19 @@ export function makeStartXSnap(bundles, options) {
     }
     // console.log('fresh xsnap', { snapStore: snapStore });
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
+
+    let bundles = [];
+    if (workerVersion === 'xsnap-v1') {
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      bundles.push(await getLockdownBundle());
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      bundles.push(await getSupervisorBundle());
+    } else {
+      throw Error(`unsupported worker version ${workerVersion}`);
+    }
+    if (overrideBundles) {
+      bundles = overrideBundles; // replace the usual bundles
+    }
 
     for (const bundle of bundles) {
       bundle.moduleFormat === 'getExport' ||

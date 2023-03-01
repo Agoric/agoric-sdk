@@ -158,10 +158,11 @@ async function replay(transcriptFile) {
       xsnapPID = child.pid;
       return child;
     };
-    const startXSnap = makeStartXSnap(bundles, {
+    const startXSnap = makeStartXSnap({
       snapStore,
       spawn: capturePIDSpawn,
       traceFile: RECORD_XSNAP_TRACE ? process.cwd() : undefined,
+      overrideBundles: bundles,
     });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,

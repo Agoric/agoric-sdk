@@ -16,12 +16,13 @@ function handleCommand() {}
 
 function make(snapStore) {
   const pk = makePromiseKit();
-  const startXSnap = makeStartXSnap([], {
+  const startXSnap = makeStartXSnap({
     snapStore,
     spawn: (command, args, opts) => {
       pk.resolve(args);
       return spawn(command, args, opts);
     },
+    overrideBundles: [],
   });
   return { p: pk.promise, startXSnap };
 }
@@ -47,7 +48,14 @@ async function doTest(t, metered) {
   const store = makeSnapStore(db, makeSnapStoreIO());
 
   const { p: p1, startXSnap: start1 } = make(store);
-  const worker1 = await start1('vat', 'name', handleCommand, metered, false);
+  const worker1 = await start1(
+    'xsnap-v1',
+    'vat',
+    'name',
+    handleCommand,
+    metered,
+    false,
+  );
   const spawnArgs1 = await p1;
   checkMetered(t, spawnArgs1, metered);
   await worker1.evaluate('1+2');
@@ -58,7 +66,14 @@ async function doTest(t, metered) {
 
   // and load it into a new worker
   const { p: p2, startXSnap: start2 } = make(store);
-  const worker2 = await start2('vat', 'name', handleCommand, metered, true);
+  const worker2 = await start2(
+    'xsnap-v1',
+    'vat',
+    'name',
+    handleCommand,
+    metered,
+    true,
+  );
   const spawnArgs2 = await p2;
   checkMetered(t, spawnArgs2, metered);
   await worker2.evaluate('1+2');
