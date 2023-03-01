@@ -20,8 +20,7 @@ test('child termination distinguished from meter exhaustion', async t => {
   let theProc;
 
   const startXSnap = makeStartXSnap(bundles, {
-    snapstorePath: undefined, // close enough for this test
-    env: {},
+    snapstore: undefined, // unused by this test
     // @ts-expect-error we only need one path thru spawn
     spawn: (command, args, opts) => {
       const noMetering = ['-l', '0'];

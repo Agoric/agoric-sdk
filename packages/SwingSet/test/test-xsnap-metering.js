@@ -18,7 +18,6 @@ function make(snapStore) {
   const pk = makePromiseKit();
   const startXSnap = makeStartXSnap([], {
     snapStore,
-    env: {},
     spawn: (command, args, opts) => {
       pk.resolve(args);
       return spawn(command, args, opts);
