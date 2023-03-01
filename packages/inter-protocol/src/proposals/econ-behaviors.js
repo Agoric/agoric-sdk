@@ -33,7 +33,7 @@ const BASIS_POINTS = 10_000n;
  * @property {Instance} psm
  * @property {Instance} psmGovernor
  * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
- * @property {GovernedContractFacetAccess<{},{}>} psmGovernorCreatorFacet
+ * @property {GovernedContractFacetAccess<import('../../src/psm/psm.js').PsmPublicFacet,{}>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 

@@ -283,6 +283,7 @@ const makeWalletFactoryKitFor1 = async address => {
 
   const done = new Set();
   /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
+  // @ts-expect-error cast mock
   const walletFactory = {
     provideSmartWallet: async (a, _b, nameAdmin) => {
       assert.equal(a, address);
