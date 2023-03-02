@@ -186,11 +186,12 @@ export const makeWalletFactoryDriver = async (
   };
 };
 
-export const getNodeTestVaultsConfig = async () => {
-  const fullPath = await importMetaResolve(
-    '@agoric/vats/decentral-test-vaults-config.json',
-    import.meta.url,
-  ).then(u => new URL(u).pathname);
+export const getNodeTestVaultsConfig = async (
+  specifier = '@agoric/vats/decentral-test-vaults-config.json',
+) => {
+  const fullPath = await importMetaResolve(specifier, import.meta.url).then(
+    u => new URL(u).pathname,
+  );
   const config = await loadSwingsetConfigFile(fullPath);
   assert(config);
 
@@ -217,10 +218,11 @@ export const getNodeTestVaultsConfig = async () => {
  * factory metrics using separate collateral managers. (Or use test.serial)
  *
  * @param {import('ava').ExecutionContext} t
+ * @param {string} [specifier] bootstrap config specifier
  */
-export const makeSwingsetTestKit = async t => {
+export const makeSwingsetTestKit = async (t, specifier) => {
   console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig();
+  const configPath = await getNodeTestVaultsConfig(specifier);
   const { kernelStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
