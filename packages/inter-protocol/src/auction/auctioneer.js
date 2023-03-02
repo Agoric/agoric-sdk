@@ -201,9 +201,9 @@ export const start = async (zcf, privateArgs, baggage) => {
       BASIS_POINTS,
     );
 
-    [...books.entries()].forEach(([_collateralBrand, book]) => {
+    for (const book of books.values()) {
       book.settleAtNewRate(bidScalingRatio);
-    });
+    }
   };
 
   const driver = Far('Auctioneer', {
@@ -228,12 +228,12 @@ export const start = async (zcf, privateArgs, baggage) => {
       trace('startRound');
 
       currentDiscountRateBP = params.getStartingRate();
-      [...books.entries()].forEach(([_collateralBrand, book]) => {
+      for (const book of books.values()) {
         book.lockOraclePriceForRound();
         book.setStartingRate(
           makeBPRatio(currentDiscountRateBP, brands.Currency),
         );
-      });
+      }
 
       tradeEveryBook();
     },

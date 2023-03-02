@@ -48,7 +48,7 @@ const DEFAULT_DECIMALS = 9n;
  * added in the appropriate place and settled when the price reaches that level.
  */
 
-const trace = makeTracer('AucBook', true);
+const trace = makeTracer('AucBook', false);
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -359,7 +359,6 @@ export const makeAuctionBook = async (
       );
 
       if (bidSpec.offerPrice) {
-        give.C;
         return acceptPriceOffer(
           seat,
           bidSpec.offerPrice,
@@ -387,4 +386,4 @@ export const makeAuctionBook = async (
   });
 };
 
-/** @typedef {Awaited<ReturnType<makeAuctionBook>>} AuctionBook */
+/** @typedef {Awaited<ReturnType<typeof makeAuctionBook>>} AuctionBook */
