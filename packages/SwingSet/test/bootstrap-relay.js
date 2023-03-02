@@ -11,6 +11,8 @@ export const buildRootObject = () => {
   const timer = buildManualTimer();
   let vatAdmin;
   const vatData = new Map();
+  const devicesByName = new Map();
+  const callLogsByRemotable = new Map();
 
   const { encodePassable, decodePassable } = makePassableEncoding();
 
@@ -22,7 +24,13 @@ export const buildRootObject = () => {
           vatData.set(name, { root });
         }
       }
+      for (const [name, device] of Object.entries(devices)) {
+        devicesByName.set(name, device);
+      }
     },
+
+    getDevice: async deviceName =>
+      encodePassable(devicesByName.get(deviceName)),
 
     getVatAdmin: async () => encodePassable(vatAdmin),
 
@@ -46,18 +54,46 @@ export const buildRootObject = () => {
     },
 
     /**
-     * Turns an object into a remotable by ensuring that each property is a function
+     * Derives a remotable from an object by mapping each object property into a method that returns the value.
+     * This function is intended to be called from testing code outside of the vat environment,
+     * but methods of the returned remotable are intended to be called from *inside* that environment
+     * and therefore do not perform argument/response translation.
      *
      * @param {string} label
-     * @param {Record<string, any>} methodReturnValues
+     * @param {Record<string, any>} encodedMethodReturnValues
      */
-    makeSimpleRemotable: (label, methodReturnValues) =>
-      // braces to unharden so it can be hardened
-      encodePassable(
-        Far(label, {
-          ...objectMap(methodReturnValues, v => () => decodePassable(v)),
-        }),
-      ),
+    makeRemotable: (label, encodedMethodReturnValues) => {
+      const callLogs = [];
+      const makeGetterFunction = (value, name) => {
+        const getValue = (...args) => {
+          callLogs.push([name, ...args]);
+          return value;
+        };
+        return getValue;
+      };
+      const methodReturnValues = decodePassable(encodedMethodReturnValues);
+      // `objectMap` hardens its result, but...
+      const methods = objectMap(methodReturnValues, makeGetterFunction);
+      // ... `Far` requires its methods argument not to be hardened.
+      const unhardenedMethods = { ...methods };
+      const remotable = Far(label, unhardenedMethods);
+      callLogsByRemotable.set(remotable, callLogs);
+      return encodePassable(remotable);
+    },
+
+    /**
+     * Returns a copy of a remotable's logs.
+     *
+     * @param {object} encodedRemotable
+     */
+    getLogForRemotable: encodedRemotable => {
+      const remotable = decodePassable(encodedRemotable);
+      const decodedLogs =
+        callLogsByRemotable.get(remotable) ||
+        Fail`logs not found for ${q(remotable)}`;
+      // Return a copy so that the original remains mutable.
+      return encodePassable(harden([...decodedLogs]));
+    },
 
     messageVat: async ({ name, methodName, args = [] }) => {
       const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
