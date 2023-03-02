@@ -9,7 +9,7 @@ import { Fail } from '@agoric/assert';
  * @param {any} capdata  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {asserts capdata is import('@endo/marshal').CapData<string>}
+ * @returns {asserts capdata is import('./types.js').SwingSetCapData}
  */
 export function insistCapData(capdata) {
   typeof capdata.body === 'string' ||

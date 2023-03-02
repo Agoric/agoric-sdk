@@ -47,6 +47,13 @@ export const makeStartInstance = (
     zoeBaggage,
     'zoeInstanceAdmin',
     InstanceAdminI,
+    /**
+     *
+     * @param {*} instanceStorage
+     * @param {*} instanceAdmin
+     * @param {*} seatHandleToSeatAdmin
+     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     */
     (instanceStorage, instanceAdmin, seatHandleToSeatAdmin, adminNode) => ({
       instanceStorage,
       instanceAdmin,
