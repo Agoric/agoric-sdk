@@ -11,7 +11,8 @@ import {
   toPartialOfferKey,
   toPriceOfferKey,
 } from './sortedOffers.js';
-import { makeBrandedRatioPattern } from './util.js';
+
+/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 // multiple offers might be provided at the same time (since the time
 // granularity is limited to blocks), so we increment a sequenceNumber with each
@@ -22,12 +23,22 @@ const nextSequenceNumber = () => {
   return latestSequenceNumber;
 };
 
-// prices in this book are expressed as percentage of the full oracle price
-// snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
-export const makeScaledBidBook = (store, currencyBrand, collateralBrand) => {
+/**
+ * Prices in this book are expressed as percentage of the full oracle price
+ * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
+ *
+ * @param {Baggage} store
+ * @param {Pattern} bidScalingPattern
+ * @param {Brand} collateralBrand
+ */
+export const makeScaledBidBook = (
+  store,
+  bidScalingPattern,
+  collateralBrand,
+) => {
   return Far('scaledBidBook ', {
     add(seat, bidScaling, wanted) {
-      // XXX mustMatch(bidScaling, BID_SCALING_PATTERN);
+      mustMatch(bidScaling, bidScalingPattern);
 
       const seqNum = nextSequenceNumber();
       const key = toScaledRateOfferKey(bidScaling, seqNum);
@@ -68,13 +79,18 @@ export const makeScaledBidBook = (store, currencyBrand, collateralBrand) => {
   });
 };
 
-// prices in this book are actual prices expressed in terms of currency amount
-// and collateral amount.
-export const makePriceBook = (store, currencyBrand, collateralBrand) => {
-  const RATIO_PATTERN = makeBrandedRatioPattern(currencyBrand, collateralBrand);
+/**
+ * Prices in this book are actual prices expressed in terms of currency amount
+ * and collateral amount.
+ *
+ * @param {Baggage} store
+ * @param {Pattern} ratioPattern
+ * @param {Brand} collateralBrand
+ */
+export const makePriceBook = (store, ratioPattern, collateralBrand) => {
   return Far('priceBook ', {
     add(seat, price, wanted) {
-      mustMatch(price, RATIO_PATTERN);
+      mustMatch(price, ratioPattern);
 
       const seqNum = nextSequenceNumber();
       const key = toPriceOfferKey(price, seqNum);

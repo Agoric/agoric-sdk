@@ -19,11 +19,11 @@ import {
   provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { handleParamGovernance } from '@agoric/governance';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, BASIS_POINTS } from '@agoric/internal';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 
 import { makeAuctionBook } from './auctionBook.js';
-import { BASIS_POINTS } from './util.js';
+import { AuctionState } from './util.js';
 import { makeScheduler } from './scheduler.js';
 import { auctioneerParamTypes } from './params.js';
 
@@ -36,8 +36,68 @@ const trace = makeTracer('Auction', false);
 const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
   makeRatioFromAmounts(
     AmountMath.make(currencyBrand, rate),
-    AmountMath.make(collateralBrand, 10000n),
+    AmountMath.make(collateralBrand, BASIS_POINTS),
   );
+
+/**
+ * Return a set of transfers for atomicRearrange() that distribute
+ * collateralRaised and currencyRaised proportionally to each seat's deposited
+ * amount. Any uneven split should be allocated to the reserve.
+ *
+ * @param {Amount} collateralRaised
+ * @param {Amount} currencyRaised
+ * @param {{seat: ZCFSeat, amount: Amount<"nat">}[]} deposits
+ * @param {ZCFSeat} collateralSeat
+ * @param {ZCFSeat} currencySeat
+ * @param {string} collateralKeyword
+ * @param {ZCFSeat} reserveSeat
+ * @param {Brand} brand
+ */
+export const distributeProportionalShares = (
+  collateralRaised,
+  currencyRaised,
+  deposits,
+  collateralSeat,
+  currencySeat,
+  collateralKeyword,
+  reserveSeat,
+  brand,
+) => {
+  const totalCollDeposited = deposits.reduce((prev, { amount }) => {
+    return AmountMath.add(prev, amount);
+  }, AmountMath.makeEmpty(brand));
+
+  const collShare = makeRatioFromAmounts(collateralRaised, totalCollDeposited);
+  const currShare = makeRatioFromAmounts(currencyRaised, totalCollDeposited);
+  /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+  const transfers = [];
+  let currencyLeft = currencyRaised;
+  let collateralLeft = collateralRaised;
+
+  // each depositor gets a share that equals their amount deposited
+  // divided by the total deposited multiplied by the currency and
+  // collateral being distributed.
+  for (const { seat, amount } of deposits.values()) {
+    const currPortion = floorMultiplyBy(amount, currShare);
+    currencyLeft = AmountMath.subtract(currencyLeft, currPortion);
+    const collPortion = floorMultiplyBy(amount, collShare);
+    collateralLeft = AmountMath.subtract(collateralLeft, collPortion);
+    transfers.push([currencySeat, seat, { Currency: currPortion }]);
+    transfers.push([collateralSeat, seat, { Collateral: collPortion }]);
+  }
+
+  // TODO The leftovers should go to the reserve, and should be visible.
+  transfers.push([currencySeat, reserveSeat, { Currency: currencyLeft }]);
+
+  // There will be multiple collaterals, so they can't all use the same keyword
+  transfers.push([
+    collateralSeat,
+    reserveSeat,
+    { Collateral: collateralLeft },
+    { [collateralKeyword]: collateralLeft },
+  ]);
+  return transfers;
+};
 
 /**
  * @param {ZCF<GovernanceTerms<{
@@ -62,8 +122,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   timer || Fail`Timer must be in Auctioneer terms`;
   const timerBrand = await E(timer).getTimerBrand();
 
+  /** @type {MapStore<Brand, import('./auctionBook.js').AuctionBook>} */
   const books = provideDurableMapStore(baggage, 'auctionBooks');
+  /** @type {MapStore<Brand, Array<{ seat: ZCFSeat, amount: Amount<'nat'>}>>} */
   const deposits = provideDurableMapStore(baggage, 'deposits');
+  /** @type {MapStore<Brand, Keyword>} */
   const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
 
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
@@ -100,45 +163,18 @@ export const start = async (zcf, privateArgs, baggage) => {
         liqSeat.exit();
         deposits.set(brand, []);
       } else if (depositsForBrand.length > 1) {
-        const totCollDeposited = depositsForBrand.reduce((prev, { amount }) => {
-          return AmountMath.add(prev, amount);
-        }, AmountMath.makeEmpty(brand));
-
         const collatRaise = collateralSeat.getCurrentAllocation().Collateral;
         const currencyRaise = currencySeat.getCurrentAllocation().Currency;
-
-        const collShare = makeRatioFromAmounts(collatRaise, totCollDeposited);
-        const currShare = makeRatioFromAmounts(currencyRaise, totCollDeposited);
-        /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
-        const transfers = [];
-        let currencyLeft = currencyRaise;
-        let collateralLeft = collatRaise;
-
-        // each depositor gets as share that equals their amount deposited
-        // divided by the total deposited multplied by the currency and
-        // collateral being distributed.
-        for (const { seat, amount } of deposits.get(brand).values()) {
-          const currPortion = floorMultiplyBy(amount, currShare);
-          currencyLeft = AmountMath.subtract(currencyLeft, currPortion);
-          const collPortion = floorMultiplyBy(amount, collShare);
-          collateralLeft = AmountMath.subtract(collateralLeft, collPortion);
-          transfers.push([currencySeat, seat, { Currency: currPortion }]);
-          transfers.push([collateralSeat, seat, { Collateral: collPortion }]);
-        }
-
-        // TODO The leftovers should go to the reserve, and should be visible.
-        const keyword = brandToKeyword.get(brand);
-        transfers.push([
-          currencySeat,
-          reserveFunds,
-          { Currency: currencyLeft },
-        ]);
-        transfers.push([
+        const transfers = distributeProportionalShares(
+          collatRaise,
+          currencyRaise,
+          depositsForBrand,
           collateralSeat,
+          currencySeat,
+          brandToKeyword.get(brand),
           reserveFunds,
-          { Collateral: collateralLeft },
-          { [keyword]: collateralLeft },
-        ]);
+          brand,
+        );
         atomicRearrange(zcf, harden(transfers));
 
         for (const { seat } of depositsForBrand) {
@@ -205,6 +241,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   // @ts-expect-error types are correct. How to convince TS?
   const scheduler = await makeScheduler(driver, timer, params, timerBrand);
+  const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
+
   const depositOfferHandler = zcfSeat => {
     const { Collateral: collateralAmount } = zcfSeat.getCurrentAllocation();
     const book = books.get(collateralAmount.brand);
@@ -222,7 +260,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       const newBidHandler = (zcfSeat, bidSpec) => {
         if (books.has(collateralBrand)) {
           const auctionBook = books.get(collateralBrand);
-          auctionBook.addOffer(bidSpec, zcfSeat, scheduler.getAuctionState());
+          auctionBook.addOffer(bidSpec, zcfSeat, isActive());
           return 'Your offer has been received';
         } else {
           zcfSeat.exit(`No book for brand ${collateralBrand}`);

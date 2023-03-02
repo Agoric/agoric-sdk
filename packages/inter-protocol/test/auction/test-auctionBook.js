@@ -14,7 +14,6 @@ import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 
 import { setup } from '../../../zoe/test/unitTests/setupBasicMints.js';
 import { makeAuctionBook } from '../../src/auction/auctionBook.js';
-import { AuctionState } from '../../src/auction/util.js';
 
 const buildManualPriceAuthority = initialPrice =>
   makeManualPriceAuthority({
@@ -62,21 +61,21 @@ const makeSeatWithAssets = async (zoe, zcf, giveAmount, giveKwd, issuerKit) => {
   return zcfSeat;
 };
 
-test('acceptOffer fakeSeat', async t => {
+test('simple addOffer', async t => {
   const { moolaKit, moola, simoleans, simoleanKit } = setup();
 
   const { zoe, zcf } = await setupZCFTest();
   await zcf.saveIssuer(moolaKit.issuer, 'Moola');
   await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
 
-  const payment = moolaKit.mint.mintPayment(moola(100n));
-
-  const { zcfSeat } = await makeOffer(
+  const zcfSeat = await makeSeatWithAssets(
     zoe,
     zcf,
-    { give: { Bid: moola(100n) }, want: { Ask: simoleans(0n) } },
-    { Bid: payment },
+    moola(100n),
+    'Currency',
+    moolaKit,
   );
+
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
   const donorSeat = await makeSeatWithAssets(
     zoe,
@@ -109,7 +108,7 @@ test('acceptOffer fakeSeat', async t => {
       want: simoleans(50n),
     }),
     zcfSeat,
-    AuctionState.ACTIVE,
+    true,
   );
 
   t.true(book.hasOrders());
@@ -150,7 +149,7 @@ test('getOffers to a price limit', async t => {
     zoe,
     zcf,
     moola(100n),
-    'Bid',
+    'Currency',
     moolaKit,
   );
 
@@ -163,10 +162,67 @@ test('getOffers to a price limit', async t => {
       want: simoleans(50n),
     }),
     zcfSeat,
-    AuctionState.ACTIVE,
+    true,
   );
 
   t.true(book.hasOrders());
+});
+
+test('Bad keyword', async t => {
+  const { moolaKit, moola, simoleanKit, simoleans } = setup();
+
+  const { zoe, zcf } = await setupZCFTest();
+  await zcf.saveIssuer(moolaKit.issuer, 'Moola');
+  await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
+
+  const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
+
+  const donorSeat = await makeSeatWithAssets(
+    zoe,
+    zcf,
+    simoleans(500n),
+    'Collateral',
+    simoleanKit,
+  );
+
+  const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
+  const pa = buildManualPriceAuthority(initialPrice);
+
+  const book = await makeAuctionBook(
+    baggage,
+    zcf,
+    moolaKit.brand,
+    simoleanKit.brand,
+    pa,
+  );
+
+  pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
+  await eventLoopIteration();
+  book.addAssets(AmountMath.make(simoleanKit.brand, 123n), donorSeat);
+
+  book.lockOraclePriceForRound();
+  book.setStartingRate(makeRatio(50n, moolaKit.brand, 100n));
+
+  const zcfSeat = await makeSeatWithAssets(
+    zoe,
+    zcf,
+    moola(100n),
+    'Bid',
+    moolaKit,
+  );
+
+  t.throws(
+    () =>
+      book.addOffer(
+        harden({
+          offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
+          want: simoleans(50n),
+        }),
+        zcfSeat,
+        true,
+      ),
+    { message: /give must include "Currency".*/ },
+  );
 });
 
 test('getOffers w/discount', async t => {
@@ -208,7 +264,7 @@ test('getOffers w/discount', async t => {
     zoe,
     zcf,
     moola(100n),
-    'Bid',
+    'Currency',
     moolaKit,
   );
 
@@ -218,7 +274,7 @@ test('getOffers w/discount', async t => {
       want: simoleans(50n),
     }),
     zcfSeat,
-    AuctionState.ACTIVE,
+    true,
   );
 
   t.true(book.hasOrders());

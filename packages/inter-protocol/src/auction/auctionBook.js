@@ -3,7 +3,7 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
 import { M, makeScalarBigMapStore, provide } from '@agoric/vat-data';
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
 import { observeNotifier } from '@agoric/notifier';
@@ -21,13 +21,14 @@ import { makeTracer } from '@agoric/internal';
 
 import { makeScaledBidBook, makePriceBook } from './offerBook.js';
 import {
-  AuctionState,
   isScaledBidPriceHigher,
   makeBrandedRatioPattern,
   priceFrom,
 } from './util.js';
 
 const { Fail } = assert;
+
+const DEFAULT_DECIMALS = 9n;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -37,17 +38,17 @@ const { Fail } = assert;
  * The book contains orders for the collateral. It holds two kinds of
  * orders:
  *   - Prices express the bid in terms of a Currency amount
- *   - Scaled bid  express the bid in terms of a discount (or markup) from the
+ *   - Scaled bids express the bid in terms of a discount (or markup) from the
  *     most recent oracle price.
  *
- * Offers can be added in three ways. When the auction is not active, prices are
- * automatically added to the appropriate collection. If a new offer is at or
- * above the current price of an active auction, it will be settled immediately.
- * If the offer is below the current price, it will be added, and settled when
- * the price reaches that level.
+ * Offers can be added in three ways. 1) When the auction is not active, prices
+ * are automatically added to the appropriate collection. When the auction is
+ * active, 2) if a new offer is at or above the current price, it will be
+ * settled immediately; 2) If the offer is below the current price, it will be
+ * added in the appropriate place and settled when the price reaches that level.
  */
 
-const trace = makeTracer('AucBook', false);
+const trace = makeTracer('AucBook', true);
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -62,69 +63,121 @@ export const makeAuctionBook = async (
     AmountMath.makeEmpty(currencyBrand),
     AmountMath.make(collateralBrand, 1n),
   );
+  const [currencyAmountShape, collateralAmountShape] = await Promise.all([
+    E(currencyBrand).getAmountShape(),
+    E(collateralBrand).getAmountShape(),
+  ]);
   const BidSpecShape = M.or(
     {
-      want: AmountShape,
-      offerPrice: makeBrandedRatioPattern(currencyBrand, collateralBrand),
+      want: collateralAmountShape,
+      offerPrice: makeBrandedRatioPattern(
+        currencyAmountShape,
+        collateralAmountShape,
+      ),
     },
     {
-      want: AmountShape,
-      offerBidScaling: makeBrandedRatioPattern(currencyBrand, currencyBrand),
+      want: collateralAmountShape,
+      offerBidScaling: makeBrandedRatioPattern(
+        currencyAmountShape,
+        currencyAmountShape,
+      ),
     },
   );
 
   let assetsForSale = AmountMath.makeEmpty(collateralBrand);
+
+  // these don't have to be durable, since we're currently assuming that upgrade
+  // from a quiescent state is sufficient. When the auction is quiescent, there
+  // may be offers in the book, but these seats will be empty, with all assets
+  // returned to the funders.
   const { zcfSeat: collateralSeat } = zcf.makeEmptySeatKit();
   const { zcfSeat: currencySeat } = zcf.makeEmptySeatKit();
 
   let lockedPriceForRound = zeroRatio;
   let updatingOracleQuote = zeroRatio;
-  E.when(E(collateralBrand).getDisplayInfo(), ({ decimalPlaces = 9n }) => {
-    // TODO(#6946) use this to keep a current price that can be published in state.
-    const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-      AmountMath.make(collateralBrand, 10n ** decimalPlaces),
-      currencyBrand,
-    );
+  E.when(
+    E(collateralBrand).getDisplayInfo(),
+    ({ decimalPlaces = DEFAULT_DECIMALS }) => {
+      // TODO(#6946) use this to keep a current price that can be published in state.
+      const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+        AmountMath.make(collateralBrand, 10n ** decimalPlaces),
+        currencyBrand,
+      );
 
-    observeNotifier(quoteNotifier, {
-      updateState: quote => {
-        trace(
-          `BOOK notifier ${priceFrom(quote).numerator.value}/${
-            priceFrom(quote).denominator.value
-          }`,
-        );
-        return (updatingOracleQuote = priceFrom(quote));
-      },
-      fail: reason => {
-        throw Error(`auction observer of ${collateralBrand} failed: ${reason}`);
-      },
-      finish: done => {
-        throw Error(`auction observer for ${collateralBrand} died: ${done}`);
-      },
-    });
-  });
+      observeNotifier(quoteNotifier, {
+        updateState: quote => {
+          trace(
+            `BOOK notifier ${priceFrom(quote).numerator.value}/${
+              priceFrom(quote).denominator.value
+            }`,
+          );
+          return (updatingOracleQuote = priceFrom(quote));
+        },
+        fail: reason => {
+          throw Error(
+            `auction observer of ${collateralBrand} failed: ${reason}`,
+          );
+        },
+        finish: done => {
+          throw Error(`auction observer for ${collateralBrand} died: ${done}`);
+        },
+      });
+    },
+  );
 
   let curAuctionPrice = zeroRatio;
 
   const scaledBidBook = provide(baggage, 'scaledBidBook', () => {
+    const ratioPattern = makeBrandedRatioPattern(
+      currencyAmountShape,
+      currencyAmountShape,
+    );
     const scaledBidStore = makeScalarBigMapStore('scaledBidBookStore', {
       durable: true,
     });
-    return makeScaledBidBook(scaledBidStore, currencyBrand, collateralBrand);
+    return makeScaledBidBook(scaledBidStore, ratioPattern, collateralBrand);
   });
 
   const priceBook = provide(baggage, 'sortedOffers', () => {
+    const ratioPattern = makeBrandedRatioPattern(
+      currencyAmountShape,
+      collateralAmountShape,
+    );
+
     const priceStore = makeScalarBigMapStore('sortedOffersStore', {
       durable: true,
     });
-    return makePriceBook(priceStore, currencyBrand, collateralBrand);
+    return makePriceBook(priceStore, ratioPattern, collateralBrand);
   });
 
-  const removeFromOneBook = (isPriceBook, key) => {
-    if (isPriceBook) {
+  /**
+   * remove the key from the appropriate book, indicated by whether the price
+   * is defined.
+   *
+   * @param {string} key
+   * @param {Ratio | undefined} price
+   */
+  const removeFromItsBook = (key, price) => {
+    if (price) {
       priceBook.delete(key);
     } else {
       scaledBidBook.delete(key);
+    }
+  };
+
+  /**
+   * Update the entry in the appropriate book, indicated by whether the price
+   * is defined.
+   *
+   * @param {string} key
+   * @param {Amount} collateralSold
+   * @param {Ratio | undefined} price
+   */
+  const updateItsBook = (key, collateralSold, price) => {
+    if (price) {
+      priceBook.updateReceived(key, collateralSold);
+    } else {
+      scaledBidBook.updateReceived(key, collateralSold);
     }
   };
 
@@ -149,41 +202,29 @@ export const makeAuctionBook = async (
       return AmountMath.makeEmptyFromAmount(collateralWanted);
     }
 
-    let collateralRecord;
-    let currencyRecord;
-    if (AmountMath.isGTE(currencyAvailable, currencyNeeded)) {
-      collateralRecord = {
-        Collateral: collateralTarget,
-      };
-      currencyRecord = {
-        Currency: currencyNeeded,
-      };
-    } else {
-      const affordableCollateral = floorDivideBy(
-        currencyAvailable,
-        curAuctionPrice,
-      );
-      collateralRecord = {
-        Collateral: affordableCollateral,
-      };
-      currencyRecord = {
-        Currency: currencyAvailable,
-      };
-    }
-
-    trace('settle', { currencyRecord, collateralRecord });
+    const affordableAmounts = () => {
+      if (AmountMath.isGTE(currencyAvailable, currencyNeeded)) {
+        return [collateralTarget, currencyNeeded];
+      } else {
+        const affordableCollateral = floorDivideBy(
+          currencyAvailable,
+          curAuctionPrice,
+        );
+        return [affordableCollateral, currencyAvailable];
+      }
+    };
+    const [collateralAmount, currencyAmount] = affordableAmounts();
+    trace('settle', { collateralAmount, currencyAmount });
 
     atomicRearrange(
       zcf,
       harden([
-        [collateralSeat, seat, collateralRecord],
-        [seat, currencySeat, currencyRecord],
+        [collateralSeat, seat, { Collateral: collateralAmount }],
+        [seat, currencySeat, { Currency: currencyAmount }],
       ]),
     );
-    return collateralRecord.Collateral;
+    return collateralAmount;
   };
-
-  const isActive = auctionState => auctionState === AuctionState.ACTIVE;
 
   /**
    *  Accept an offer expressed as a price. If the auction is active, attempt to
@@ -192,28 +233,26 @@ export const makeAuctionBook = async (
    *  @param {ZCFSeat} seat
    *  @param {Ratio} price
    *  @param {Amount} want
-   *  @param {AuctionState} auctionState
+   *  @param {boolean} trySettle
    */
-  const acceptPriceOffer = (seat, price, want, auctionState) => {
+  const acceptPriceOffer = (seat, price, want, trySettle) => {
     trace('acceptPrice');
     // Offer has ZcfSeat, offerArgs (w/price) and timeStamp
 
-    let collateralSold = AmountMath.makeEmptyFromAmount(want);
-    if (isActive(auctionState) && ratioGTE(price, curAuctionPrice)) {
-      collateralSold = settle(seat, want);
-
-      if (AmountMath.isEmpty(seat.getCurrentAllocation().Currency)) {
-        seat.exit();
-        return;
-      }
-    }
+    const collateralSold =
+      trySettle && ratioGTE(price, curAuctionPrice)
+        ? settle(seat, want)
+        : AmountMath.makeEmptyFromAmount(want);
 
     const stillWant = AmountMath.subtract(want, collateralSold);
-    if (!AmountMath.isEmpty(stillWant)) {
+    if (
+      AmountMath.isEmpty(stillWant) ||
+      AmountMath.isEmpty(seat.getCurrentAllocation().Currency)
+    ) {
+      seat.exit();
+    } else {
       trace('added Offer ', price, stillWant.value);
       priceBook.add(seat, price, stillWant);
-    } else {
-      seat.exit();
     }
   };
 
@@ -225,28 +264,24 @@ export const makeAuctionBook = async (
    *  @param {ZCFSeat} seat
    *  @param {Ratio} bidScaling
    *  @param {Amount} want
-   *  @param {AuctionState} auctionState
+   *  @param {boolean} trySettle
    */
-  const acceptScaledBidOffer = (seat, bidScaling, want, auctionState) => {
+  const acceptScaledBidOffer = (seat, bidScaling, want, trySettle) => {
     trace('accept scaled bid offer');
-    let collateralSold = AmountMath.makeEmptyFromAmount(want);
-
-    if (
-      isActive(auctionState) &&
+    const collateralSold =
+      trySettle &&
       isScaledBidPriceHigher(bidScaling, curAuctionPrice, lockedPriceForRound)
-    ) {
-      collateralSold = settle(seat, want);
-      if (AmountMath.isEmpty(seat.getCurrentAllocation().Currency)) {
-        seat.exit();
-        return;
-      }
-    }
+        ? settle(seat, want)
+        : AmountMath.makeEmptyFromAmount(want);
 
     const stillWant = AmountMath.subtract(want, collateralSold);
-    if (!AmountMath.isEmpty(stillWant)) {
-      scaledBidBook.add(seat, bidScaling, stillWant);
-    } else {
+    if (
+      AmountMath.isEmpty(stillWant) ||
+      AmountMath.isEmpty(seat.getCurrentAllocation().Currency)
+    ) {
       seat.exit();
+    } else {
+      scaledBidBook.add(seat, bidScaling, stillWant);
     }
   };
 
@@ -263,16 +298,16 @@ export const makeAuctionBook = async (
       curAuctionPrice = multiplyRatios(reduction, lockedPriceForRound);
 
       const pricedOffers = priceBook.offersAbove(curAuctionPrice);
-      const discOffers = scaledBidBook.offersAbove(reduction);
+      const scaledBidOffers = scaledBidBook.offersAbove(reduction);
 
+      trace(`settling`, pricedOffers.length, scaledBidOffers.length);
       // requested price or bid scaling gives no priority beyond specifying which
-      // round the order will be service in.
-      const prioritizedOffers = [...pricedOffers, ...discOffers].sort();
+      // round the order will be serviced in.
+      const prioritizedOffers = [...pricedOffers, ...scaledBidOffers].sort();
 
-      trace(`settling`, pricedOffers.length, discOffers.length);
       for (const [key, { seat, price: p, wanted }] of prioritizedOffers) {
         if (seat.hasExited()) {
-          removeFromOneBook(p, key);
+          removeFromItsBook(key, p);
         } else {
           const collateralSold = settle(seat, wanted);
 
@@ -281,13 +316,9 @@ export const makeAuctionBook = async (
             AmountMath.isGTE(seat.getCurrentAllocation().Collateral, wanted)
           ) {
             seat.exit();
-            removeFromOneBook(p, key);
+            removeFromItsBook(key, p);
           } else if (!AmountMath.isGTE(collateralSold, wanted)) {
-            if (p) {
-              priceBook.updateReceived(key, collateralSold);
-            } else {
-              scaledBidBook.updateReceived(key, collateralSold);
-            }
+            updateItsBook(key, collateralSold, p);
           }
         }
       }
@@ -307,22 +338,29 @@ export const makeAuctionBook = async (
       trace('set startPrice', lockedPriceForRound);
       curAuctionPrice = multiplyRatios(lockedPriceForRound, rate);
     },
-    addOffer(bidSpec, seat, auctionState) {
+    addOffer(bidSpec, seat, trySettle) {
       mustMatch(bidSpec, BidSpecShape);
+      const { give } = seat.getProposal();
+      mustMatch(
+        give.Currency,
+        currencyAmountShape,
+        'give must include "Currency"',
+      );
 
       if (bidSpec.offerPrice) {
+        give.C;
         return acceptPriceOffer(
           seat,
           bidSpec.offerPrice,
           bidSpec.want,
-          auctionState,
+          trySettle,
         );
       } else if (bidSpec.offerBidScaling) {
         return acceptScaledBidOffer(
           seat,
           bidSpec.offerBidScaling,
           bidSpec.want,
-          auctionState,
+          trySettle,
         );
       } else {
         throw Fail`Offer was neither a price nor a scaled bid`;
@@ -337,3 +375,5 @@ export const makeAuctionBook = async (
     },
   });
 };
+
+/** @typedef {Awaited<ReturnType<makeAuctionBook>>} AuctionBook */

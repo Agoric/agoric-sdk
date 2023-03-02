@@ -1,11 +1,8 @@
-import { M } from '@agoric/store';
 import {
   makeRatioFromAmounts,
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-
-export const BASIS_POINTS = 10000n;
 
 /**
  * Constants for Auction State.
@@ -17,10 +14,17 @@ export const AuctionState = {
   WAITING: 'waiting',
 };
 
-export const makeBrandedRatioPattern = (nBrand, dBrand) => {
+/**
+ * @param {Pattern} numeratorAmountShape
+ * @param {Pattern} denominatorAmountShape
+ */
+export const makeBrandedRatioPattern = (
+  numeratorAmountShape,
+  denominatorAmountShape,
+) => {
   return harden({
-    numerator: { brand: nBrand, value: M.nat() },
-    denominator: { brand: dBrand, value: M.nat() },
+    numerator: numeratorAmountShape,
+    denominator: denominatorAmountShape,
   });
 };
 
