@@ -1,12 +1,8 @@
 // This file can contain .js-specific Typescript compiler config.
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "noEmit": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "moduleResolution": "node",
+    "checkJs": false,
     "jsx": "react",
   },
   "include": [

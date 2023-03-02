@@ -1,17 +1,8 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "skipLibCheck": true,
-
-    "allowJs": true,
-    "checkJs": true,
     "strict": true,
     "noImplicitAny": false, // for compat with peer packages using ambient types
-    "noImplicitThis": true,
-
-    "noEmit": true,
   },
   "include": [
     "src/**/*.js",

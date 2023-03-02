@@ -1,13 +1,5 @@
 {
-  "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "checkJs": true,
-    "noEmit": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "moduleResolution": "node",
-  },
+  "extends": "../../tsconfig.json",
   "include": [
     "*.js",
     "scripts/**/*.js",

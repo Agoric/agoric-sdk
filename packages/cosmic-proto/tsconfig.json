@@ -1,13 +1,9 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
     "declaration": true,
-    "target": "esnext",
-    "module": "esnext",
     "allowSyntheticDefaultImports": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "moduleResolution": "node",
     "outDir": "dist"
   },
   "include": [
