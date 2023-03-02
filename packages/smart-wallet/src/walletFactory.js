@@ -8,7 +8,7 @@ import { WalletName } from '@agoric/internal';
 import { observeIteration } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
 import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
@@ -133,7 +133,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { storageNode, walletBridgeManager } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
-  const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
+  const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
   const handleWalletAction = makeExo(
@@ -204,7 +204,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
    */
   const makeSmartWallet = prepareSmartWallet(baggage, shared);
 
-  const creatorFacet = makeExo(
+  const creatorFacet = prepareExo(
+    baggage,
     'walletFactoryCreator',
     M.interface('walletFactoryCreatorI', {
       provideSmartWallet: M.callWhen(
@@ -245,6 +246,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
       },
     },
   );
+
+  // for use by upgraded versions.
+  if (!baggage.has('DidStart')) {
+    baggage.init('DidStart', true);
+  }
 
   return {
     creatorFacet,
