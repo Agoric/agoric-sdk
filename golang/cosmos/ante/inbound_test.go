@@ -31,24 +31,31 @@ func TestInboundAnteHandle(t *testing.T) {
 		},
 		{
 			name:   "reject-on-zero-allowed",
-			tx:     makeTestTx(&swingtypes.MsgInstallBundle{}),
+			tx:     makeTestTx(&swingtypes.MsgDeliverInbound{}),
 			errMsg: ErrInboundQueueFull.Error(),
 		},
 		{
-			name:         "has-room",
-			tx:           makeTestTx(&swingtypes.MsgWalletAction{}),
-			inboundLimit: 10,
+			name:              "has-room",
+			tx:                makeTestTx(&swingtypes.MsgInstallBundle{}),
+			inboundLimit:      10,
+			actionQueueLength: 8,
+		},
+		{
+			name:              "at-limit",
+			tx:                makeTestTx(&swingtypes.MsgInstallBundle{}),
+			inboundLimit:      10,
+			actionQueueLength: 9,
 		},
 		{
 			name:              "no-room",
-			tx:                makeTestTx(&swingtypes.MsgWalletAction{}, &swingtypes.MsgInstallBundle{}),
+			tx:                makeTestTx(&swingtypes.MsgProvision{}),
 			inboundLimit:      10,
-			actionQueueLength: 9,
+			actionQueueLength: 10,
 			errMsg:            ErrInboundQueueFull.Error(),
 		},
 		{
 			name:                 "state-lookup-error",
-			tx:                   makeTestTx(&swingtypes.MsgWalletAction{}, &swingtypes.MsgInstallBundle{}),
+			tx:                   makeTestTx(&swingtypes.MsgWalletAction{}, &swingtypes.MsgWalletSpendAction{}),
 			inboundLimit:         10,
 			actionQueueLengthErr: fmt.Errorf("sunspots"),
 			errMsg:               "sunspots",
@@ -67,7 +74,7 @@ func TestInboundAnteHandle(t *testing.T) {
 		{
 			name:              "checktx",
 			checkTx:           true,
-			tx:                makeTestTx(&swingtypes.MsgWalletAction{}),
+			tx:                makeTestTx(&swingtypes.MsgDeliverInbound{}),
 			inboundLimit:      10,
 			mempoolLimit:      5,
 			actionQueueLength: 7,
@@ -75,38 +82,15 @@ func TestInboundAnteHandle(t *testing.T) {
 		},
 		{
 			name:         "empty-queue-allowed",
-			tx:           makeTestTx(&swingtypes.MsgWalletAction{}),
+			tx:           makeTestTx(&swingtypes.MsgInstallBundle{}),
 			inboundLimit: -1,
 			errMsg:       ErrInboundQueueFull.Error(),
 		},
 		{
 			name:              "already-full",
-			tx:                makeTestTx(&swingtypes.MsgWalletAction{}),
+			tx:                makeTestTx(&swingtypes.MsgProvision{}),
 			inboundLimit:      10,
 			actionQueueLength: 10,
-			errMsg:            ErrInboundQueueFull.Error(),
-		},
-		{
-			name:              "deliver-inbound-empty",
-			tx:                makeTestTx(&swingtypes.MsgDeliverInbound{}),
-			inboundLimit:      10,
-			actionQueueLength: 20,
-		},
-		{
-			name: "deliver-inbound-one",
-			tx: makeTestTx(&swingtypes.MsgDeliverInbound{
-				Messages: []string{"foo"},
-			}),
-			inboundLimit:      2,
-			actionQueueLength: 1,
-		},
-		{
-			name: "deliver-inbound-one",
-			tx: makeTestTx(&swingtypes.MsgDeliverInbound{
-				Messages: []string{"foo", "bar"},
-			}),
-			inboundLimit:      2,
-			actionQueueLength: 1,
 			errMsg:            ErrInboundQueueFull.Error(),
 		},
 	} {

@@ -111,11 +111,9 @@ func (ia inboundAnte) allowedInbound(ctx sdk.Context) (int32, error) {
 
 // inboundMessages returns the nunber of inbound queue messages in msg.
 func inboundMessages(msg sdk.Msg) int32 {
-	switch m := msg.(type) {
-	case *swingtypes.MsgDeliverInbound:
-		return int32(len(m.Messages))
-
-	case *swingtypes.MsgInstallBundle,
+	switch msg.(type) {
+	case *swingtypes.MsgDeliverInbound,
+		*swingtypes.MsgInstallBundle,
 		*swingtypes.MsgProvision,
 		*swingtypes.MsgWalletAction,
 		*swingtypes.MsgWalletSpendAction:
