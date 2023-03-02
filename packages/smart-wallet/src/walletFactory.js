@@ -126,7 +126,7 @@ const makeAssetRegistry = assetPublisher => {
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
