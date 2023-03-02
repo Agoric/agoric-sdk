@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	stdlog "log"
 	"math"
 	"strconv"
 
 	"github.com/tendermint/tendermint/libs/log"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -35,6 +37,25 @@ const (
 const MaxUint53 = 9007199254740991 // Number.MAX_SAFE_INTEGER = 2**53 - 1
 
 const stateKey string = "state"
+
+// Contextual information about the message source of an action on the queue.
+// This context should be unique per actionQueueRecord.
+type actionContext struct {
+	// The block height in which the corresponding action was enqueued
+	BlockHeight int64 `json:"blockHeight"`
+	// The hash of the cosmos transaction that included the message
+	// If the action didn't result from a transaction message, a substitute value
+	// may be used. For example the VBANK_BALANCE_UPDATE actions use `x/vbank`.
+	TxHash string `json:"txHash"`
+	// The index of the message within the transaction. If the action didn't
+	// result from a cosmos transaction, a number should be chosen to make the
+	// actionContext unique. (for example a counter per block and source module).
+	MsgIdx int `json:"msgIdx"`
+}
+type actionQueueRecord struct {
+	Action  vm.Jsonable   `json:"action"`
+	Context actionContext `json:"context"`
+}
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
@@ -87,7 +108,16 @@ func NewKeeper(
 // The actionQueue's format is documented by `makeChainQueue` in
 // `packages/cosmic-swingset/src/make-queue.js`.
 func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
-	bz, err := json.Marshal(action)
+	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
+	if !txHashOk {
+		txHash = "unknown"
+	}
+	msgIdx, msgIdxOk := ctx.Context().Value(baseapp.TxMsgIdxContextKey).(int)
+	if !txHashOk || !msgIdxOk {
+		stdlog.Printf("error while extracting context for action %q\n", action)
+	}
+	record := actionQueueRecord{Action: action, Context: actionContext{BlockHeight: ctx.BlockHeight(), TxHash: txHash, MsgIdx: msgIdx}}
+	bz, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}

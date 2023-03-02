@@ -1,12 +1,14 @@
 package vbank
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	stdlog "log"
 	"sort"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -241,5 +243,11 @@ func (ch portHandler) Receive(ctx *vm.ControllerContext, str string) (ret string
 }
 
 func (am AppModule) PushAction(ctx sdk.Context, action vm.Jsonable) error {
+	// vbank actions are not triggered by a swingset message in a transaction, so we need to
+	// synthesize unique context information.
+	// We use a fixed placeholder value for the txHash context, and can simply use `0` for the
+	// message index as there is only one such action per block.
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxHashContextKey, "x/vbank"))
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxMsgIdxContextKey, 0))
 	return am.keeper.PushAction(ctx, action)
 }

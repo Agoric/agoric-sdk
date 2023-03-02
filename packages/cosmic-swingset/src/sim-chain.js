@@ -149,14 +149,17 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       // Gather up the new messages into the latest block.
       const thisBlock = intoChain.splice(0, queueAllowed[QueueInbound]);
 
-      for (const [newMessages, acknum] of thisBlock) {
+      for (const [i, [newMessages, acknum]] of thisBlock.entries()) {
         aqContents.push({
-          type: 'DELIVER_INBOUND',
-          peer: bootAddress,
-          messages: newMessages,
-          ack: acknum,
-          blockHeight,
-          blockTime,
+          action: {
+            type: 'DELIVER_INBOUND',
+            peer: bootAddress,
+            messages: newMessages,
+            ack: acknum,
+            blockHeight,
+            blockTime,
+          },
+          context: { blockHeight, txHash: 'simTx', msgIdx: i },
         });
       }
       const endAction = { type: 'END_BLOCK', blockHeight, blockTime };

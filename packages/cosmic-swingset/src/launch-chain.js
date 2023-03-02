@@ -257,7 +257,7 @@ export async function launch({
     commit: () => {}, // disable
     abort: () => {}, // disable
   });
-  /** @type {ReturnType<typeof makeQueue<{inboundNum: string; action: unknown}>>} */
+  /** @type {ReturnType<typeof makeQueue<{context: any, action: any}>>} */
   const inboundQueue = makeQueue(inboundQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
@@ -518,7 +518,8 @@ export async function launch({
     // first the old actions followed by the newActions, running the
     // kernel to completion after each.
     if (keepGoing) {
-      for (const { action, inboundNum } of inboundQueue.consumeAll()) {
+      for (const { action, context } of inboundQueue.consumeAll()) {
+        const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
         inboundQueueMetrics.decStat();
         // eslint-disable-next-line no-await-in-loop
         await performAction(action, inboundNum);
@@ -546,11 +547,8 @@ export async function launch({
     // First, push all newActions onto the end of the inboundQueue,
     // remembering that inboundQueue might still have work from the
     // previous block
-    let actionNum = 0;
-    for (const action of newActions) {
-      const inboundNum = `${blockHeight}-${actionNum}`;
-      inboundQueue.push({ action, inboundNum });
-      actionNum += 1;
+    for (const actionRecord of newActions) {
+      inboundQueue.push(actionRecord);
       inboundQueueMetrics.incStat();
     }
 
