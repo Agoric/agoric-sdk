@@ -52,6 +52,7 @@ const makeRun = swingsetController => {
 };
 
 const testNullUpgrade = async (t, defaultManagerType) => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType,
@@ -115,6 +116,7 @@ const testUpgrade = async (
   defaultManagerType,
   doVatAdminRestart = false,
 ) => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType,
@@ -346,6 +348,7 @@ test('vat upgrade - xsnap', async t => {
 });
 
 test('vat upgrade - omit vatParameters', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker',
@@ -375,6 +378,7 @@ test('vat upgrade - omit vatParameters', async t => {
 });
 
 test('failed upgrade - relaxed durable rules', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     relaxDurabilityRules: true,
     includeDevDependencies: true, // for vat-data
@@ -408,6 +412,7 @@ test('failed upgrade - relaxed durable rules', async t => {
 });
 
 test('failed upgrade - lost kind', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker',
@@ -467,6 +472,7 @@ test('failed upgrade - lost kind', async t => {
 // TODO: test stopVat failure
 
 test('failed upgrade - explode', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker',
@@ -511,6 +517,7 @@ test('failed upgrade - explode', async t => {
 });
 
 async function testMultiKindUpgradeChecks(t, mode, complaint) {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker',
@@ -594,6 +601,7 @@ test('facet kind redefinition - fail on multi- to single-facet redefinition', as
 });
 
 test('failed upgrade - unknown options', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     defaultManagerType: 'xs-worker',
@@ -627,6 +635,7 @@ test('failed upgrade - unknown options', async t => {
 });
 
 test('failed vatAdmin upgrade - bad replacement code', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',

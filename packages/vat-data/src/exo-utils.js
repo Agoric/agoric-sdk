@@ -185,14 +185,13 @@ harden(prepareExoClassKit);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
- * @template T
  * @template {Record<string | symbol, CallableFunction>} M methods
  * @param {Baggage} baggage
  * @param {string} kindName
  * @param {any} interfaceGuard
  * @param {M} methods
  * @param {DefineKindOptions<{ self: M }>} [options]
- * @returns {T & RemotableBrand<{}, T>}
+ * @returns {M & RemotableBrand<{}, M>}
  */
 export const prepareExo = (
   baggage,
@@ -217,13 +216,13 @@ export const prepareExo = (
 harden(prepareExo);
 
 /**
- * @template {Record<string | symbol, CallableFunction>} T methods
+ * @template {Record<string | symbol, CallableFunction>} M methods
  * @deprecated Use prepareExo instead.
  * @param {Baggage} baggage
  * @param {string} kindName
- * @param {T} methods
- * @param {DefineKindOptions<{ self: T }>} [options]
- * @returns {T & RemotableBrand<{}, T>}
+ * @param {M} methods
+ * @param {DefineKindOptions<{ self: M }>} [options]
+ * @returns {M & RemotableBrand<{}, M>}
  */
 export const prepareSingleton = (
   baggage,

@@ -120,6 +120,7 @@ test('test prepareExo', t => {
   t.throws(() => upCounter.incr(-3), {
     message: 'In "incr" method of (upCounter): arg 0?: -3 - Must be >= 0',
   });
+  // @ts-expect-error intentional
   t.throws(() => upCounter.incr('foo'), {
     message:
       'In "incr" method of (upCounter): arg 0?: string "foo" - Must be a number',

@@ -26,10 +26,7 @@ test('upgrade vat-board', async t => {
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType:
-      /** @type {import('@agoric/swingset-vat/src/types-external.js').ManagerType} */ (
-        'xs-worker'
-      ), // 'local',
+    defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {

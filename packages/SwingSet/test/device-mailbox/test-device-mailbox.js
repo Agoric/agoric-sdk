@@ -133,6 +133,7 @@ test('mailbox inbound', async t => {
 async function initializeMailboxKernel(t) {
   const s = buildMailboxStateMap();
   const mb = buildMailbox(s);
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     // Can't use 'local' because it's non-deterministic for 'mailbox

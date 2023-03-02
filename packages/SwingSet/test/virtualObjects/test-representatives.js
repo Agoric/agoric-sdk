@@ -334,6 +334,7 @@ test('virtual object gc', async t => {
     where they were originally stashed on creation
   */
 
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',

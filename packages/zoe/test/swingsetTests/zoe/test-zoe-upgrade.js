@@ -8,12 +8,10 @@ import { kunser } from '@agoric/swingset-vat/src/lib/kmarshal.js';
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test('zoe vat upgrade trauma', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType:
-      /** @type {import('@agoric/swingset-vat/src/types-external.js').ManagerType} */ (
-        'xs-worker'
-      ), // 'local',
+    defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {

@@ -8,10 +8,11 @@ import { buildVatController } from '@agoric/swingset-vat';
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test('coveredCall service upgrade', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     // includeDevDependencies: true, // for vat-data
     /** @type {ManagerType} */
-    defaultManagerType: 'xs-worker', // 'local',
+    defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,

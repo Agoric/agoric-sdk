@@ -297,7 +297,7 @@ export const makeZCFZygote = async (
       // If the contract provided customTermsShape, validate the customTerms.
       if (customTermsShape) {
         const { brands: _b, issuers: _i, ...customTerms } = terms;
-        mustMatch(harden(customTerms), customTermsShape);
+        mustMatch(harden(customTerms), customTermsShape, 'customTerms');
       }
 
       return terms;
@@ -368,7 +368,7 @@ export const makeZCFZygote = async (
 
       const startFn = start || prepare;
       if (privateArgsShape) {
-        mustMatch(privateArgs, privateArgsShape);
+        mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
       // start a contract for the first time
       return E.when(

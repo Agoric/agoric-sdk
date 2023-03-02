@@ -82,14 +82,14 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     return zcf.makeInvitation(exerciseOption, 'exerciseOption', customDetails);
   };
 
-  const CoveredCallCratorFacetI = M.interface('CoveredCallCratorFacet', {
+  const CoveredCallCreatorFacetI = M.interface('CoveredCallCreatorFacet', {
     makeInvitation: M.call().returns(M.promise()),
   });
 
   const creatorFacet = prepareExo(
     instanceBaggage,
     'creatorFacet',
-    CoveredCallCratorFacetI,
+    CoveredCallCreatorFacetI,
     {
       makeInvitation() {
         return zcf.makeInvitation(makeOption, 'makeCallOption');

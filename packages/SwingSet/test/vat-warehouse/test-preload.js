@@ -15,6 +15,7 @@ test('only preload maxVatsOnline vats', async t => {
   const tpath = new URL('vat-preload-extra.js', import.meta.url).pathname;
   // this combination of config and initOpts means we have only two
   // initial vats: v1-bootstrap and v2-vatAdmin
+  /** @type {SwingSetConfig} */
   const config = {
     defaultManagerType: 'xs-worker',
     defaultReapInterval: 'never',
