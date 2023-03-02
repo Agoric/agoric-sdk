@@ -11,6 +11,8 @@ import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
+const sink = () => {};
+
 /** @typedef {ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>} BootstrapRootObject */
 
 /** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
@@ -67,7 +69,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
       log(`kernel ran ${cranks} cranks`);
       return getResult();
     });
-    mutex.put(result);
+    mutex.put(result.then(sink, sink));
     return result;
   };
 
@@ -75,38 +77,37 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
    * @type {( (presence: unknown) => Record<string, (...args: any) => Promise<any>> ) & {
    *   get: (presence: unknown) => Record<string, Promise<any>>,
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
+   *   rawBoot: Record<string, (...args: any) => Promise<any>>,
    * }}
    */
   const EV = presence =>
-    new Proxy(
-      {},
-      {
-        get:
-          (_t, methodName, _rx) =>
-          (...args) =>
-            runMethod('messageVatObject', [{ presence, methodName, args }]),
-      },
-    );
+    new Proxy(harden({}), {
+      get: (_t, methodName, _rx) =>
+        harden((...args) =>
+          runMethod('messageVatObject', [{ presence, methodName, args }]),
+        ),
+    });
   EV.vat = name =>
-    new Proxy(
-      {},
-      {
-        get:
-          (_t, methodName, _rx) =>
-          (...args) =>
-            runMethod('messageVat', [{ name, methodName, args }]),
-      },
-    );
+    new Proxy(harden({}), {
+      get: (_t, methodName, _rx) =>
+        harden((...args) => {
+          if (name === 'meta') {
+            return runMethod(methodName, args);
+          }
+          return runMethod('messageVat', [{ name, methodName, args }]);
+        }),
+    });
+  EV.rawBoot = new Proxy(harden({}), {
+    get: (_t, methodName, _rx) =>
+      harden((...args) => runMethod(methodName, args)),
+  });
   EV.get = presence =>
-    new Proxy(
-      {},
-      {
-        get: (_t, pathElement, _rx) =>
-          runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
-      },
-    );
+    new Proxy(harden({}), {
+      get: (_t, pathElement, _rx) =>
+        runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+    });
 
-  return { runMethod, EV };
+  return harden({ EV });
 };
 
 /**

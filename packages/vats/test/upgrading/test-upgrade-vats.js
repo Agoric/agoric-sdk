@@ -4,22 +4,13 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '../bootstrapTests/supports.js';
 
-const resolveAssetModule = specifier =>
-  new URL(specifier, import.meta.url).pathname;
-const bundleSpecs = {
-  relay: {
-    // XXX cross-package asset module
-    sourceSpec: resolveAssetModule('../../../SwingSet/test/bootstrap-relay.js'),
-  },
-  board: { sourceSpec: resolveAssetModule('../../src/vat-board.js') },
-  chain: { sourceSpec: resolveAssetModule('../../src/core/boot-chain.js') },
-};
-
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
-const makeTestContext = async () => {
-  return {};
+const makeTestContext = async metaUrl => {
+  const bfile = name => new URL(name, metaUrl).pathname;
+
+  return { bfile };
 };
 
 /**
@@ -30,33 +21,56 @@ test.before(async t => {
   t.context = await makeTestContext(import.meta.url);
 });
 
-const makeScenario = async (t, bundles) => {
+/**
+ * @param {any} t
+ * @param {Partial<SwingSetConfig>} [kernelConfigOverrides]
+ * @param {Record<string, unknown>} [deviceEndowments]
+ * @returns {ReturnType<typeof makeRunUtils>}
+ */
+const makeScenario = async (
+  t,
+  kernelConfigOverrides = {},
+  deviceEndowments,
+) => {
+  const { bfile } = t.context;
+
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'xs-worker',
+    defaultManagerType: 'local',
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
-      bootstrap: bundleSpecs.relay,
+      bootstrap: {
+        sourceSpec: bfile('../../../SwingSet/test/bootstrap-relay.js'),
+      },
     },
-    bundles,
+    bundleCachePath: 'bundles',
+    ...kernelConfigOverrides,
   };
 
-  const c = await buildVatController(config);
+  const c = await buildVatController(
+    config,
+    undefined,
+    undefined,
+    deviceEndowments,
+  );
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
-  const runUtils = makeRunUtils(c, t.log);
 
+  const runUtils = makeRunUtils(c, t.log);
   return runUtils;
 };
 
 test('upgrade vat-board', async t => {
+  const { bfile } = t.context;
   const bundles = {
-    board: bundleSpecs.board,
+    board: {
+      sourceSpec: bfile('../../src/vat-board.js'),
+    },
   };
 
-  const { EV } = await makeScenario(t, bundles);
+  const { EV } = await makeScenario(t, { bundles });
 
   t.log('create initial version');
   const boardVatConfig = {
@@ -81,8 +95,9 @@ test('upgrade vat-board', async t => {
 });
 
 test.skip('upgrade bootstrap vat', async t => {
+  const { bfile } = t.context;
   const bundles = {
-    chain: bundleSpecs.chain,
+    chain: { sourceSpec: bfile('../src/core/boot-chain.js') },
   };
   const { EV } = await makeScenario(t, bundles);
 
