@@ -289,7 +289,7 @@ const assertPayouts = async (
   }
 };
 
-test('priced bid recorded', async t => {
+test.serial('priced bid recorded', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -302,7 +302,7 @@ test('priced bid recorded', async t => {
   t.is(await E(seat).getOfferResult(), 'Your offer has been received');
 });
 
-test('discount bid recorded', async t => {
+test.serial('discount bid recorded', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -316,7 +316,7 @@ test('discount bid recorded', async t => {
   t.is(await E(seat).getOfferResult(), 'Your offer has been received');
 });
 
-test('priced bid settled', async t => {
+test.serial('priced bid settled', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -338,7 +338,7 @@ test('priced bid settled', async t => {
   await assertPayouts(t, seat, currency, collateral, 19n, 200n);
 });
 
-test('discount bid settled', async t => {
+test.serial('discount bid settled', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -427,7 +427,7 @@ test.serial('priced bid recorded then settled with price drop', async t => {
   await assertPayouts(t, seat, currency, collateral, 0n, 100n);
 });
 
-test('priced bid settled auction price below bid', async t => {
+test.serial('priced bid settled auction price below bid', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -686,7 +686,7 @@ test.serial('onDeadline exit', async t => {
   await assertPayouts(t, liqSeat, currency, collateral, 116n, 0n);
 });
 
-test('add assets to open auction', async t => {
+test.serial('add assets to open auction', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -830,4 +830,72 @@ test.serial('multiple collaterals', async t => {
   await driver.advanceTo(190n);
   t.true(await E(bidderSeat2A).hasExited());
   await assertPayouts(t, bidderSeat2A, currency, asset, 0n, 300n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('multiple bidders at one auction step', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const { nextAuctionSchedule } = await driver.getSchedule();
+
+  const liqSeat = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(300n),
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeat).getOfferResult();
+  t.is(result, 'deposited');
+
+  let now = nextAuctionSchedule.startTime.absValue - 3n;
+  await driver.advanceTo(now);
+  const seat1 = await driver.bidForCollateralSeat(
+    // 1.1 * 1.05 * 200
+    currency.make(231n),
+    collateral.make(200n),
+  );
+  t.is(await E(seat1).getOfferResult(), 'Your offer has been received');
+  t.false(await E(seat1).hasExited());
+
+  // higher bid, later
+  const seat2 = await driver.bidForCollateralSeat(
+    // 1.1 * 1.05 * 200
+    currency.make(232n),
+    collateral.make(200n),
+  );
+
+  now = nextAuctionSchedule.startTime.absValue;
+  await driver.advanceTo(now);
+  await eventLoopIteration();
+
+  now += 5n;
+  await driver.advanceTo(now);
+  await eventLoopIteration();
+
+  now += 5n;
+  await driver.advanceTo(now);
+  await eventLoopIteration();
+
+  now += 5n;
+  await driver.advanceTo(now);
+  await eventLoopIteration();
+
+  now += 5n;
+  await driver.advanceTo(now);
+  await eventLoopIteration();
+
+  t.true(await E(seat1).hasExited());
+  t.false(await E(seat2).hasExited());
+  await E(seat2).tryExit();
+
+  t.true(await E(seat2).hasExited());
+
+  await assertPayouts(t, seat1, currency, collateral, 0n, 200n);
+  await assertPayouts(t, seat2, currency, collateral, 116n, 100n);
+
+  t.true(await E(liqSeat).hasExited());
+  await assertPayouts(t, liqSeat, currency, collateral, 347n, 0n);
 });

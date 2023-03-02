@@ -300,11 +300,22 @@ export const makeAuctionBook = async (
       const pricedOffers = priceBook.offersAbove(curAuctionPrice);
       const scaledBidOffers = scaledBidBook.offersAbove(reduction);
 
+      const compareValues = (v1, v2) => {
+        if (v1 < v2) {
+          return -1;
+        } else if (v1 === v2) {
+          return 0;
+        } else {
+          assert(v1 > v2);
+          return 1;
+        }
+      };
       trace(`settling`, pricedOffers.length, scaledBidOffers.length);
       // requested price or bid scaling gives no priority beyond specifying which
       // round the order will be serviced in.
-      const prioritizedOffers = [...pricedOffers, ...scaledBidOffers].sort();
-
+      const prioritizedOffers = [...pricedOffers, ...scaledBidOffers].sort(
+        (a, b) => compareValues(a[1].seqNum, b[1].seqNum),
+      );
       for (const [key, { seat, price: p, wanted }] of prioritizedOffers) {
         if (seat.hasExited()) {
           removeFromItsBook(key, p);
