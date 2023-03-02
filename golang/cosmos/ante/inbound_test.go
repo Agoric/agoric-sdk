@@ -93,6 +93,13 @@ func TestInboundAnteHandle(t *testing.T) {
 			actionQueueLength: 10,
 			errMsg:            ErrInboundQueueFull.Error(),
 		},
+		{
+			name:              "max-per-tx",
+			tx:                makeTestTx(&swingtypes.MsgWalletAction{}, &swingtypes.MsgWalletSpendAction{}),
+			inboundLimit:      10,
+			actionQueueLength: 5,
+			errMsg:            ErrInboundQueueFull.Error(),
+		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := sdk.Context{}.WithIsCheckTx(tt.checkTx)
