@@ -1,47 +1,44 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
-import { E, Far } from '@endo/far';
-import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeBridgeManager } from './bridge.js';
+import { Far } from '@endo/far';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import * as cb from '@agoric/internal/src/callback.js';
+import { prepareChainStorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { prepareBridgeManager } from './bridge.js';
 
-export function buildRootObject(vatPowers) {
+export function buildRootObject(vatPowers, _args, baggage) {
   const { D } = vatPowers;
   D || Fail`D missing in vatPowers ${Object.keys(vatPowers)}`;
 
-  /** @type {Map<BridgeDevice, import('./types.js').BridgeManager>} */
-  const bridgeToManager = new Map();
+  const zone = makeDurableZone(baggage);
+
+  const provideManagerForBridge = prepareBridgeManager(
+    zone.subZone('BridgeManager'),
+    D,
+  );
+  const makeChainStorageNode = prepareChainStorageNode(
+    zone.subZone('ChainStorageNode'),
+  );
 
   /**
-   * Obtain the single manager associated with a bridge device.
-   *
-   * @param {BridgeDevice} bridge
-   * @returns {import('./types.js').BridgeManager}
-   */
-  const provideManagerForBridge = bridge => {
-    let bridgeManager = bridgeToManager.get(bridge);
-    if (!bridgeManager) {
-      bridgeManager = makeBridgeManager(E, D, bridge);
-      bridgeToManager.set(bridge, bridgeManager);
-    }
-    return bridgeManager;
-  };
-
-  /**
-   * @param {ERef<import('./types.js').ScopedBridgeManager>} storageBridgeManager
+   * @param {ERef<import('./types.js').ScopedBridgeManager>} storageBridgeManagerP
    * @param {string} rootPath must be unique (caller responsibility to ensure)
    * @param {object} [options]
    */
-  const makeBridgedChainStorageRoot = (
-    storageBridgeManager,
+  const makeBridgedChainStorageRoot = async (
+    storageBridgeManagerP,
     rootPath,
     options,
   ) => {
     // Note that the uniqueness of rootPath is not validated here,
     // and is instead the responsibility of callers.
 
-    const toStorage = message => E(storageBridgeManager).toBridge(message);
-
-    const rootNode = makeChainStorageRoot(toStorage, rootPath, options);
+    const storageBridgeManager = await storageBridgeManagerP;
+    const rootNode = makeChainStorageNode(
+      cb.makeMethodCallback(storageBridgeManager, 'toBridge'),
+      rootPath,
+      options,
+    );
     return rootNode;
   };
 
