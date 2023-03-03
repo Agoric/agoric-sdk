@@ -2,6 +2,7 @@
 import bundleSource from '@endo/bundle-source';
 import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import styles from 'ansi-styles'; // less authority than 'chalk'
 
 const { details: X, quote: q, Fail } = assert;
 
@@ -166,15 +167,22 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
         meta = await validate(targetName, rootPath);
         const { bundleTime, contents } = meta;
         log(
+          styles.dim.open,
           `${wr}`,
           toBundleName(targetName),
           'valid:',
           contents.length,
           'files bundled at',
           bundleTime,
+          styles.dim.close,
         );
       } catch (invalid) {
-        console.error('ERROR in bundleTool:', invalid.message);
+        console.error(
+          styles.red.open,
+          'ERROR in bundleTool:',
+          invalid.message,
+          styles.red.close,
+        );
       }
     }
     if (!meta) {
