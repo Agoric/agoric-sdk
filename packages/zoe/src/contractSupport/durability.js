@@ -1,3 +1,4 @@
+import { allValues, objectMap } from '@agoric/internal';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
   makeScalarBigMapStore,
@@ -100,3 +101,51 @@ export const provideChildBaggage = (baggage, category) => {
 };
 harden(provideChildBaggage);
 /** @typedef {ReturnType<typeof provideChildBaggage>} ChildBaggageManager */
+
+/**
+ * For use in contract upgrades to provide values that come from other vats.
+ * All vats must be able to finish their upgrade without contacting other vats,
+ * so whatever values an instance needs from other vats must be saved in the first
+ * incarnation and read from baggage in each subsequent.
+ *
+ * This abstracts that condition so that the contract can convert a dictionary of promises
+ * into a dictionary of values during its first prepare (start) and each additional
+ * automatically reads from the baggage.
+ *
+ * For example,
+ *
+ *     const invitationIssuerP = E(zoe).getInvitationIssuer();
+ *     const {
+ *       invitationIssuer,
+ *       invitationBrand,
+ *     } = await provideAll(baggage, {
+ *       invitationIssuer: invitationIssuerP,
+ *       invitationBrand: E(invitationIssuerP).getBrand(),
+ *     });
+ *
+ * @template {Record<string, Promise>} T dict of promises
+ * @param {MapStore<string, any>} baggage
+ * @param {T} keyedPromises
+ * @returns {Promise<{ [K in keyof T]: Awaited<T[K]> }>}
+ */
+export const provideAll = (baggage, keyedPromises) => {
+  const keys = Object.keys(keyedPromises);
+  // assume if any keys are defined they all are
+  const inBaggage = baggage.has(keys[0]);
+  if (inBaggage) {
+    const obj = objectMap(
+      keyedPromises,
+      /** @type {(value: any, key: string) => any} */
+      (_, k) => baggage.get(k),
+    );
+    return Promise.resolve(harden(obj));
+  }
+
+  return allValues(keyedPromises).then(keyedVals => {
+    for (const [k, v] of Object.entries(keyedVals)) {
+      baggage.init(k, v);
+    }
+    return keyedVals;
+  });
+};
+harden(provideAll);
