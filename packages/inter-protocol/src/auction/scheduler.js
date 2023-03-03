@@ -27,6 +27,64 @@ const makeCancelToken = () => {
   return Far(`cancelToken${(tokenCount += 1)}`, {});
 };
 
+export const computeRoundTiming = (params, baseTime) => {
+  // currently a TimeValue; hopefully a TimeRecord soon
+  /** @type {RelativeTime} */
+  const freq = params.getStartFrequency();
+  /** @type {RelativeTime} */
+  const clockStep = params.getClockStep();
+  /** @type {NatValue} */
+  const startingRate = params.getStartingRate();
+  /** @type {NatValue} */
+  const discountStep = params.getDiscountStep();
+  /** @type {RelativeTime} */
+  const lockPeriod = params.getPriceLockPeriod();
+  /** @type {NatValue} */
+  const lowestRate = params.getLowestRate();
+
+  /** @type {RelativeTime} */
+  const startDelay = params.getAuctionStartDelay();
+  TimeMath.compareRel(freq, startDelay) > 0 ||
+    Fail`startFrequency must exceed startDelay, ${freq}, ${startDelay}`;
+  TimeMath.compareRel(freq, lockPeriod) > 0 ||
+    Fail`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`;
+
+  startingRate > lowestRate ||
+    Fail`startingRate ${startingRate} must be more than ${lowestRate}`;
+  const rateChange = subtract(startingRate, lowestRate);
+  const requestedSteps = floorDivide(rateChange, discountStep);
+  requestedSteps > 0n ||
+    Fail`discountStep ${discountStep} too large for requested rates`;
+  TimeMath.compareRel(freq, clockStep) >= 0 ||
+    Fail`clockStep ${clockStep} must be shorter than startFrequency ${freq} to allow >1 steps `;
+
+  const requestedDuration = TimeMath.multiplyRelNat(clockStep, requestedSteps);
+  const targetDuration =
+    TimeMath.compareRel(requestedDuration, freq) < 0 ? requestedDuration : freq;
+  const steps = TimeMath.divideRelRel(targetDuration, clockStep);
+  const duration = TimeMath.multiplyRelNat(clockStep, steps);
+
+  steps > 0n ||
+    Fail`clockStep ${clockStep} too long for auction duration ${duration}`;
+  const endRate = subtract(startingRate, multiply(steps, discountStep));
+
+  const actualDuration = TimeMath.multiplyRelNat(clockStep, steps);
+  // computed start is baseTime + freq - (now mod freq). if there are hourly
+  // starts, we add an hour to the current time, and subtract now mod freq.
+  // Then we add the delay
+  const startTime = TimeMath.addAbsRel(
+    TimeMath.addAbsRel(
+      baseTime,
+      TimeMath.subtractRelRel(freq, TimeMath.modAbsRel(baseTime, freq)),
+    ),
+    startDelay,
+  );
+  const endTime = TimeMath.addAbsRel(startTime, actualDuration);
+
+  const next = { startTime, endTime, steps, endRate, startDelay, clockStep };
+  return harden(next);
+};
+
 /**
  * @typedef {object} AuctionDriver
  * @property {() => void} reducePriceAndTrade
@@ -52,61 +110,8 @@ export const makeScheduler = async (
   let nextSchedule;
   const stepCancelToken = makeCancelToken();
 
-  // XXX why can't it be @type {AuctionState}?
-  /** @type {'active' | 'waiting'} */
+  /** @type {typeof AuctionState[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
-
-  const computeRoundTiming = baseTime => {
-    // currently a TimeValue; hopefully a TimeRecord soon
-    /** @type {RelativeTime} */
-    const freq = params.getStartFrequency();
-    /** @type {RelativeTime} */
-    const clockStep = params.getClockStep();
-    /** @type {NatValue} */
-    const startingRate = params.getStartingRate();
-    /** @type {NatValue} */
-    const discountStep = params.getDiscountStep();
-    /** @type {RelativeTime} */
-    const lockPeriod = params.getPriceLockPeriod();
-    /** @type {NatValue} */
-    const lowestRate = params.getLowestRate();
-
-    /** @type {RelativeTime} */
-    const startDelay = params.getAuctionStartDelay();
-    TimeMath.compareRel(freq, startDelay) > 0 ||
-      Fail`startFrequency must exceed startDelay, ${freq}, ${startDelay}`;
-    TimeMath.compareRel(freq, lockPeriod) > 0 ||
-      Fail`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`;
-
-    const rateChange = subtract(startingRate, lowestRate);
-    const requestedSteps = floorDivide(rateChange, discountStep);
-    requestedSteps > 0n ||
-      Fail`discountStep ${discountStep} too large for requested rates`;
-    const duration = TimeMath.multiplyRelNat(clockStep, requestedSteps);
-
-    TimeMath.compareRel(duration, freq) < 0 ||
-      Fail`Frequency ${freq} must exceed duration ${duration}`;
-    const steps = TimeMath.divideRelRel(duration, clockStep);
-    steps > 0n ||
-      Fail`clockStep ${clockStep} too long for auction duration ${duration}`;
-    const endRate = subtract(startingRate, multiply(steps, discountStep));
-
-    const actualDuration = TimeMath.multiplyRelNat(clockStep, steps);
-    // computed start is baseTime + freq - (now mod freq). if there are hourly
-    // starts, we add an hour to the current time, and subtract now mod freq.
-    // Then we add the delay
-    const startTime = TimeMath.addAbsRel(
-      TimeMath.addAbsRel(
-        baseTime,
-        TimeMath.subtractRelRel(freq, TimeMath.modAbsRel(baseTime, freq)),
-      ),
-      startDelay,
-    );
-    const endTime = TimeMath.addAbsRel(startTime, actualDuration);
-
-    const next = { startTime, endTime, steps, endRate, startDelay, clockStep };
-    return harden(next);
-  };
 
   const clockTick = (timeValue, schedule) => {
     const time = TimeMath.toAbs(timeValue, timerBrand);
@@ -127,17 +132,17 @@ export const makeScheduler = async (
 
       auctionDriver.finalize();
       const afterNow = TimeMath.addAbsRel(time, TimeMath.toRel(1n, timerBrand));
-      nextSchedule = computeRoundTiming(afterNow);
+      nextSchedule = computeRoundTiming(params, afterNow);
       liveSchedule = undefined;
 
       E(timer).cancel(stepCancelToken);
     }
   };
 
-  const scheduleRound = (schedule, time) => {
+  const scheduleRound = time => {
     trace('nextRound', time);
 
-    const { startTime } = schedule;
+    const { startTime } = liveSchedule;
     trace('START ', startTime);
 
     const startDelay =
@@ -147,10 +152,10 @@ export const makeScheduler = async (
 
     E(timer).repeatAfter(
       startDelay,
-      schedule.clockStep,
+      liveSchedule.clockStep,
       Far('SchedulerWaker', {
         wake(t) {
-          clockTick(t, schedule);
+          clockTick(t, liveSchedule);
         },
       }),
       stepCancelToken,
@@ -178,14 +183,14 @@ export const makeScheduler = async (
       liveSchedule.startTime,
       TimeMath.toRel(1n, timerBrand),
     );
-    nextSchedule = computeRoundTiming(after);
-    scheduleRound(liveSchedule, time);
+    nextSchedule = computeRoundTiming(params, after);
+    scheduleRound(time);
     scheduleNextRound(TimeMath.toAbs(nextSchedule.startTime));
   };
 
   const baseNow = await E(timer).getCurrentTimestamp();
   const now = TimeMath.toAbs(baseNow, timerBrand);
-  nextSchedule = computeRoundTiming(now);
+  nextSchedule = computeRoundTiming(params, now);
   scheduleNextRound(nextSchedule.startTime);
 
   return Far('scheduler', {
@@ -197,3 +202,19 @@ export const makeScheduler = async (
     getAuctionState: () => auctionState,
   });
 };
+
+/**
+ * @typedef {object} Schedule
+ * @property {Timestamp} startTime
+ * @property {Timestamp} endTime
+ * @property {bigint} steps
+ * @property {Ratio} endRate
+ * @property {RelativeTime} startDelay
+ * @property {RelativeTime} clockStep
+ */
+
+/**
+ * @typedef {object} FullSchedule
+ * @property {Schedule} nextAuctionSchedule
+ * @property {Schedule} liveAuctionSchedule
+ */
