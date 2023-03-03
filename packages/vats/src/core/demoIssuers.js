@@ -6,9 +6,9 @@ import {
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
-import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import { Nat } from '@endo/nat';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { Stake, Stable } from '../tokens.js';
 
 const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
@@ -460,7 +460,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 };
 
 /**
- * @param { import('./econ-behaviors.js').EconomyBootstrapPowers & {
+ * @param { import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers & {
  *   consume: { mints }
  * }} powers
  */
