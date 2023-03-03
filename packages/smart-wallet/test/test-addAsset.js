@@ -74,12 +74,13 @@ test('avoid O(wallets) storage writes for a new asset', async t => {
   const base = await simulate(2, 'ibc/dai1', 'DAI_axl');
   const exp = await simulate(6, 'ibc/dai2', 'DAI_grv');
 
-  t.log({
-    base: { wallets: base.qty, writes: base.addedWrites },
-    test: { wallets: exp.qty + base.qty, writes: exp.addedWrites },
-  });
   t.true(
     exp.addedWrites <= (base.addedWrites * exp.qty) / base.qty / 2,
     'actual writes should be less than half of linear growth',
   );
+
+  // a stronger requirement for Cosmos balances, though that's
+  // the only kind of balance we have yet.
+  t.is(base.addedWrites, 0);
+  t.is(exp.addedWrites, 0);
 });
