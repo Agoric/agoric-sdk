@@ -1,6 +1,19 @@
+// @ts-check
+
 import { assert, Fail } from '@agoric/assert';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
+
+/**
+ * @template {unknown} [T=unknown]
+ * @typedef {{
+ *   has: (key: string) => boolean,
+ *   get: (key: string) => T | undefined,
+ *   getNextKey: (previousKey: string) => string | undefined,
+ *   set: (key: string, value: T ) => void,
+ *   delete: (key: string) => void,
+ * }} KVStore
+ */
 
 /**
  * Assert function to ensure that an object implements the StorageAPI
@@ -24,16 +37,17 @@ export function insistStorageAPI(kvStore) {
  * Create a StorageAPI object that buffers writes to a wrapped StorageAPI object
  * until told to commit (or abort) them.
  *
- * @param {import('@agoric/swing-store').KVStore} kvStore  The StorageAPI object to wrap
+ * @template {unknown} [T=unknown]
+ * @param {KVStore<T>} kvStore  The StorageAPI object to wrap
  * @param {{
- *   onGet?: (key: string, value: string) => void, // a callback invoked after getting a value from kvStore
- *   onPendingSet?: (key: string, value: string) => void, // a callback invoked after a new uncommitted value is set
+ *   onGet?: (key: string, value: T) => void, // a callback invoked after getting a value from kvStore
+ *   onPendingSet?: (key: string, value: T) => void, // a callback invoked after a new uncommitted value is set
  *   onPendingDelete?: (key: string) => void, // a callback invoked after a new uncommitted delete
  *   onCommit?: () => void, // a callback invoked after pending operations have been committed
  *   onAbort?: () => void, // a callback invoked after pending operations have been aborted
  * }} listeners  Optional callbacks to be invoked when respective events occur
  *
- * @returns {{kvStore: import('@agoric/swing-store').KVStore, commit: () => void, abort: () => void}}
+ * @returns {{kvStore: KVStore<T>, commit: () => void, abort: () => void}}
  */
 export function makeBufferedStorage(kvStore, listeners = {}) {
   insistStorageAPI(kvStore);
@@ -57,8 +71,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
       if (additions.has(key)) return additions.get(key);
       if (deletions.has(key)) return undefined;
       const value = kvStore.get(key);
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
-      // @ts-ignore value may be undefined
+      // @ts-expect-error value may be undefined
       if (onGet !== undefined) onGet(key, value);
       return value;
     },
@@ -103,7 +116,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 }
 
 /**
- * @param {{ get(key: string) => unknown, set(key: string, value: unknown): void }} getterSetter
+ * @param {{ get(key: string): unknown, set(key: string, value: unknown): void }} getterSetter
  */
 export const makeReadCachingStorage = getterSetter => {
   // In addition to the wrapping write buffer, keep a simple cache of
