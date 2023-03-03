@@ -1,12 +1,12 @@
 // @ts-check
-import { SIM_CHAIN_BOOTSTRAP_PERMITS } from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
-import * as simBehaviorsPlus from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
+import { makeBootstrap } from './lib-boot.js';
+
 import * as basicBehaviorsPlus from './basic-behaviors.js';
 import { SHARED_CHAIN_BOOTSTRAP_MANIFEST } from './chain-behaviors.js';
+import { SIM_CHAIN_BOOTSTRAP_PERMITS } from './sim-behaviors.js';
 import * as chainBehaviorsPlus from './chain-behaviors.js';
+import * as simBehaviorsPlus from './sim-behaviors.js';
 import * as utils from './utils.js';
-
-import { makeBootstrap } from './lib-boot.js';
 
 export const MANIFEST = {
   ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
@@ -27,6 +27,8 @@ const {
 const { SIM_CHAIN_BOOTSTRAP_PERMITS: _sc, ...simBehaviors } = simBehaviorsPlus;
 const behaviors = { ...basicBehaviors, ...chainBehaviors, ...simBehaviors };
 
+const modules = harden({ behaviors: { ...behaviors }, utils: { ...utils } });
+
 /**
  * Build root object of the bootstrap vat for the simulated chain.
  *
@@ -41,7 +43,6 @@ const behaviors = { ...basicBehaviors, ...chainBehaviors, ...simBehaviors };
 export const buildRootObject = (vatPowers, vatParameters) => {
   console.debug(`sim bootstrap starting`);
 
-  const modules = harden({ utils: { ...utils } });
   return makeBootstrap(vatPowers, vatParameters, MANIFEST, behaviors, modules);
 };
 

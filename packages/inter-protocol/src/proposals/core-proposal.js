@@ -3,7 +3,6 @@ import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
 export * from './econ-behaviors.js';
-export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
 export * from './startPSM.js'; // eslint-disable-line import/export

@@ -1,7 +1,6 @@
 import { E, Far } from '@endo/far';
-import { addRemote } from '@agoric/vats/src/core/utils.js';
-
 import { connectFaucet } from './demoIssuers.js';
+import { addRemote } from './utils.js';
 
 export { connectFaucet };
 
