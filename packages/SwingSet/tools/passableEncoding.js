@@ -8,7 +8,7 @@ const noop = () => {};
 
 // TODO define these somewhere more accessible. https://github.com/endojs/endo/issues/1488
 /**
- * @typedef {Promise | import('@agoric/internal').Remotable} PassByRef
+ * @typedef {import('@endo/eventual-send').FarRef<unknown>} PassByRef
  * Gets transformed by a marshaller encoding.
  * As opposed to pass-by-copy
  */
