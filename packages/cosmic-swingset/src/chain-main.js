@@ -1,3 +1,5 @@
+// @ts-check
+
 import { resolve as pathResolve } from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
@@ -41,6 +43,15 @@ const toNumber = specimen => {
   return number;
 };
 
+/**
+ * @template {unknown} [T=unknown]
+ * @param {(req: string) => string} call
+ * @param {string} prefix
+ * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
+ * @param {(value: unknown) => T} fromBridgeValue
+ * @param {(value: T) => unknown} toBridgeValue
+ * @returns {import("./bufferedStorage.js").KVStore<T>}
+ */
 const makePrefixedBridgeStorage = (
   call,
   prefix,
@@ -51,6 +62,13 @@ const makePrefixedBridgeStorage = (
   prefix.endsWith('.') || Fail`prefix ${prefix} must end with a dot`;
 
   return harden({
+    has: key => {
+      const retStr = call(
+        stringify({ method: 'has', args: [`${prefix}${key}`] }),
+      );
+      const ret = JSON.parse(retStr);
+      return ret;
+    },
     get: key => {
       const retStr = call(
         stringify({ method: 'get', args: [`${prefix}${key}`] }),
@@ -64,14 +82,26 @@ const makePrefixedBridgeStorage = (
     },
     set: (key, value) => {
       const path = `${prefix}${key}`;
-      const entry =
-        value == null ? [path] : [path, stringify(toBridgeValue(value))];
+      const entry = [path, stringify(toBridgeValue(value))];
       call(
         stringify({
           method: setterMethod,
           args: [entry],
         }),
       );
+    },
+    delete: key => {
+      const path = `${prefix}${key}`;
+      const entry = [path];
+      call(
+        stringify({
+          method: setterMethod,
+          args: [entry],
+        }),
+      );
+    },
+    getNextKey(_previousKey) {
+      throw new Error('not implemented');
     },
   });
 };

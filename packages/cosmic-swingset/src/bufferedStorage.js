@@ -116,9 +116,10 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 }
 
 /**
- * @param {{ get(key: string): unknown, set(key: string, value: unknown): void }} getterSetter
+ * @template {unknown} [T=unknown]
+ * @param {KVStore<T>} kvStore
  */
-export const makeReadCachingStorage = getterSetter => {
+export const makeReadCachingStorage = kvStore => {
   // In addition to the wrapping write buffer, keep a simple cache of
   // read values for has and get.
   let cache;
@@ -127,28 +128,48 @@ export const makeReadCachingStorage = getterSetter => {
   }
   resetCache();
 
+  const deleted = Symbol('deleted');
+  const undef = Symbol('undefined');
+
+  /** @type {KVStore<T>} */
   const storage = harden({
     has(key) {
-      return storage.get(key) !== undefined;
+      const value = cache.get(key);
+      if (value !== undefined) {
+        return value !== deleted;
+      } else {
+        const ret = kvStore.has(key);
+        if (!ret) {
+          cache.set(key, deleted);
+        }
+        return ret;
+      }
     },
     get(key) {
-      if (cache.has(key)) return cache.get(key);
+      let value = cache.get(key);
+      if (value !== undefined) {
+        return value === deleted || value === undef ? undefined : value;
+      }
 
       // Fetch the value and cache it until the next commit or abort.
-      const value = getterSetter.get(key);
-      cache.set(key, value);
+      value = kvStore.get(key);
+      cache.set(key, value === undefined ? undef : value);
       return value;
     },
     set(key, value) {
       // Set the value and cache it until the next commit or abort (which is
       // expected immediately, since the buffered wrapper only calls set
       // *during* a commit).
-      cache.set(key, value);
-      getterSetter.set(key, value);
+      // `undefined` is a valid value technically different than deletion,
+      // depending on how the underlying store does its serialization
+      cache.set(key, value === undefined ? undef : value);
+      kvStore.set(key, value);
     },
     delete(key) {
-      // Deletion in chain storage manifests as set-to-undefined.
-      storage.set(key, undefined);
+      // Delete the value and cache the deletion until next commit or abort.
+      // Deletion results in `undefined` on `get`, but `false` on `has`
+      cache.set(key, deleted);
+      kvStore.delete(key);
     },
     getNextKey(_previousKey) {
       throw new Error('not implemented');
