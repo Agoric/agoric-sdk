@@ -8,6 +8,7 @@ import {
 import { E, Far } from '@endo/far';
 import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import { Nat } from '@endo/nat';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
@@ -190,6 +191,7 @@ const mintRunPayment = async (
   value,
   { centralSupplyInstall, feeMintAccess: feeMintAccessP, zoe },
 ) => {
+  notForProductionUse();
   const feeMintAccess = await feeMintAccessP;
 
   const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
@@ -297,6 +299,7 @@ export const connectFaucet = async ({
         const { issuer, brand, mint } = await provideIssuerKit(issuerName);
         const unit = 10n ** BigInt(DecimalPlaces[issuerName]);
         const amount = AmountMath.make(brand, Nat(record.balance) * unit);
+        notForProductionUse();
         const payment = await E(mint).mintPayment(amount);
 
         /** @type {UserPaymentRecord[]} */
