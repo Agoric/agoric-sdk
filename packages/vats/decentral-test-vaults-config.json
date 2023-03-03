@@ -177,9 +177,6 @@
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
     },
-    "mints": {
-      "sourceSpec": "@agoric/vats/src/vat-mints.js"
-    },
     "network": {
       "sourceSpec": "@agoric/vats/src/vat-network.js"
     },
