@@ -57,7 +57,7 @@
     "@endo/promise-kit": "^0.2.52",
     "@iarna/toml": "^2.2.3",
     "anylogger": "^0.21.0",
-    "chalk": "^2.4.2",
+    "chalk": "^5.2.0",
     "commander": "^10.0.0",
     "dd-trace": "^3.3.0",
     "deterministic-json": "^1.0.5",
