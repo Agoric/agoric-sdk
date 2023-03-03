@@ -3,6 +3,7 @@ import { Far } from '@endo/far';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { makeScalarMapStore } from '@agoric/store';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.
@@ -21,13 +22,16 @@ export function buildRootObject() {
     getIssuers: issuerNames => issuerNames.map(api.getIssuer),
 
     /**
-     * NOTE: a mint is ability to mint new digital assets,
+     * WARNING: a mint is ability to mint new digital assets,
      * a very powerful authority that is usually closely held.
      * But this mint is for demo / faucet purposes.
      *
      * @param {string} name
      */
-    getMint: name => mintsAndBrands.get(name).mint,
+    getMint: name => {
+      notForProductionUse();
+      return mintsAndBrands.get(name).mint;
+    },
     /** @param {string[]} issuerNames */
     getMints: issuerNames => issuerNames.map(api.getMint),
     /**
