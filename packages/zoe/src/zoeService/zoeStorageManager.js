@@ -355,6 +355,7 @@ export const makeZoeStorageManager = (
   );
   const makeInstanceRecord = makeInstanceRecordStorage(zoeBaggage);
 
+  /** @type {MakeZoeInstanceStorageManager} */
   const makeZoeInstanceStorageManager = async (
     instanceBaggage,
     installation,
@@ -462,6 +463,7 @@ export const makeZoeStorageManager = (
       },
       startInstanceAccess: {
         makeZoeInstanceStorageManager,
+        /** @type {UnwrapInstallation} */
         unwrapInstallation(installation) {
           return installationStorage.unwrapInstallation(installation);
         },

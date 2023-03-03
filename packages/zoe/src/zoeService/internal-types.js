@@ -58,13 +58,14 @@
  * installation
  *
  * @param {ERef<Installation>} installationP
- * @returns {Promise<{
+ * @returns {ERef<{
  *   bundle?: SourceBundle,
  *   bundleCap?: BundleCap,
  *   bundleID?: BundleID,
  *   installation:Installation
- * }>}
+ * }>} XXX not really an ERef; the implemention is sync and the API is a promise because of callWhen
  */
+// TODO remove or automate ERef https://github.com/Agoric/agoric-sdk/issues/7110
 
 /**
  * @callback GetIssuerRecords
@@ -74,7 +75,6 @@
 /**
  * @typedef {object} ZoeInstanceStorageManager
  * @property {InstanceStateGetTerms} getTerms
- * @property {GetInstallation} getInstallationForInstance
  * @property {InstanceRecordGetIssuers} getIssuers
  * @property {InstanceRecordGetBrands} getBrands
  * @property {SaveIssuer} saveIssuer
@@ -82,7 +82,6 @@
  * @property {RegisterFeeMint} registerFeeMint
  * @property {GetInstanceRecord} getInstanceRecord
  * @property {GetIssuerRecords} getIssuerRecords
- * @property {WithdrawPayments} withdrawPayments
  * @property {InitInstanceAdmin} initInstanceAdmin
  * @property {DeleteInstanceAdmin} deleteInstanceAdmin
  * @property {ZoeInstanceAdminMakeInvitation} makeInvitation
@@ -104,7 +103,7 @@
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
  * @param {BundleCap} contractBundleCap
- * @returns {ZoeInstanceStorageManager}
+ * @returns {Promise<ZoeInstanceStorageManager>}
  */
 
 /**

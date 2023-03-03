@@ -18,7 +18,7 @@ import { AdminFacetI, InstanceAdminI } from '../typeGuards.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @param {any} startInstanceAccess
+ * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} [zoeBaggage]
@@ -157,6 +157,12 @@ export const makeStartInstance = (
     zoeBaggage,
     'adminFacet',
     AdminFacetI,
+    /**
+     *
+     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     * @param {*} zcfBundleCap
+     * @param {*} contractBundleCap
+     */
     (adminNode, zcfBundleCap, contractBundleCap) => ({
       adminNode,
       zcfBundleCap,

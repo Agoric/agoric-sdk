@@ -239,6 +239,18 @@ export const BundleShape = M.and(
   M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
 );
 
+export const UnwrappedInstallationShape = M.splitRecord(
+  harden({
+    installation: InstallationShape,
+  }),
+  harden({
+    bundle: M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
+    bundleCap: BundleCapShape,
+    bundleID: M.string(),
+  }),
+  harden({}),
+);
+
 export const ZoeStorageManagerIKit = harden({
   zoeServiceDataAccess: M.interface('ZoeService dataAccess', {
     getTerms: M.call(InstanceHandleShape).returns(M.splitRecord(TermsShape)),
@@ -287,7 +299,9 @@ export const ZoeStorageManagerIKit = harden({
       M.or(InstanceHandleShape, BundleShape),
       M.or(BundleCapShape, BundleShape),
     ).returns(M.promise()),
-    unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(M.any()),
+    unwrapInstallation: M.callWhen(M.eref(InstallationShape)).returns(
+      UnwrappedInstallationShape,
+    ),
   }),
   invitationIssuerAccess: M.interface('ZoeStorage invitationIssuer', {
     getInvitationIssuer: M.call().returns(IssuerShape),
