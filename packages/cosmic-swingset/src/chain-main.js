@@ -23,7 +23,10 @@ import { makePublishKit, pipeTopicToStorage } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { makeReadCachingStorage } from './bufferedStorage.js';
+import {
+  makeBufferedStorage,
+  makeReadCachingStorage,
+} from './bufferedStorage.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
@@ -48,16 +51,16 @@ const toNumber = specimen => {
  * @param {(req: string) => string} call
  * @param {string} prefix
  * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
- * @param {(value: unknown) => T} fromBridgeValue
- * @param {(value: T) => unknown} toBridgeValue
+ * @param {(value: string) => T} fromBridgeStringValue
+ * @param {(value: T) => string} toBridgeStringValue
  * @returns {import("./bufferedStorage.js").KVStore<T>}
  */
 const makePrefixedBridgeStorage = (
   call,
   prefix,
   setterMethod,
-  fromBridgeValue = x => x,
-  toBridgeValue = x => x,
+  fromBridgeStringValue = x => JSON.parse(x),
+  toBridgeStringValue = x => stringify(x),
 ) => {
   prefix.endsWith('.') || Fail`prefix ${prefix} must end with a dot`;
 
@@ -77,12 +80,11 @@ const makePrefixedBridgeStorage = (
       if (ret == null) {
         return undefined;
       }
-      const bridgeValue = JSON.parse(ret);
-      return fromBridgeValue(bridgeValue);
+      return fromBridgeStringValue(ret);
     },
     set: (key, value) => {
       const path = `${prefix}${key}`;
-      const entry = [path, stringify(toBridgeValue(value))];
+      const entry = [path, toBridgeStringValue(value)];
       call(
         stringify({
           method: setterMethod,
@@ -275,18 +277,25 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         sendToChain,
         `${STORAGE_PATH.MAILBOX}.`,
         'legacySet',
-        fromBridgeMailbox,
-        exportMailbox,
+        val => fromBridgeMailbox(JSON.parse(val)),
+        val => stringify(exportMailbox(val)),
+      ),
+    );
+    const actionQueueStorage = makeBufferedStorage(
+      makePrefixedBridgeStorage(
+        sendToChain,
+        `${STORAGE_PATH.ACTION_QUEUE}.`,
+        'setWithoutNotify',
+        x => x,
+        x => x,
       ),
     );
     const actionQueue = makeQueue(
-      makeReadCachingStorage(
-        makePrefixedBridgeStorage(
-          sendToChain,
-          `${STORAGE_PATH.ACTION_QUEUE}.`,
-          'setWithoutNotify',
-        ),
-      ),
+      harden({
+        ...actionQueueStorage.kvStore,
+        commit: actionQueueStorage.commit,
+        abort: actionQueueStorage.abort,
+      }),
     );
     function setActivityhash(activityhash) {
       const entry = [STORAGE_PATH.ACTIVITYHASH, activityhash];

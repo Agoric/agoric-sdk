@@ -4,8 +4,8 @@
  * @typedef {object} QueueStorage
  * @property {() => void} commit
  * @property {() => void} abort
- * @property {(key: string) => unknown} get
- * @property {(key: string, value: unknown) => void} set
+ * @property {(key: string) => string | undefined} get
+ * @property {(key: string, value: string) => void} set
  * @property {(key: string) => void} delete
  */
 
@@ -29,10 +29,8 @@
  * @param {QueueStorage} storage a scoped queue storage
  */
 export const makeQueue = storage => {
-  const getHead = () =>
-    /** @type {number | undefined} */ (storage.get('head')) || 0;
-  const getTail = () =>
-    /** @type {number | undefined} */ (storage.get('tail')) || 0;
+  const getHead = () => Number.parseInt(storage.get('head') || '0', 10);
+  const getTail = () => Number.parseInt(storage.get('tail') || '0', 10);
 
   const queue = {
     size: () => {
@@ -41,8 +39,8 @@ export const makeQueue = storage => {
     /** @param {T} obj */
     push: obj => {
       const tail = getTail();
-      storage.set('tail', tail + 1);
-      storage.set(`${tail}`, obj);
+      storage.set('tail', String(tail + 1));
+      storage.set(`${tail}`, JSON.stringify(obj));
       storage.commit();
     },
     /** @returns {Iterable<T>} */
@@ -57,7 +55,9 @@ export const makeQueue = storage => {
               if (head < tail) {
                 // Still within the queue.
                 const headKey = `${head}`;
-                const value = /** @type {T} */ (storage.get(headKey));
+                const value = JSON.parse(
+                  /** @type {string} */ (storage.get(headKey)),
+                );
                 storage.delete(headKey);
                 head += 1;
                 return { value, done };
@@ -73,7 +73,7 @@ export const makeQueue = storage => {
           return: () => {
             if (!done) {
               // We're done consuming, so save our state.
-              storage.set('head', head);
+              storage.set('head', String(head));
               storage.commit();
               done = true;
             }

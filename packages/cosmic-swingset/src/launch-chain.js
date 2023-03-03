@@ -244,14 +244,14 @@ export async function launch({
   // and disables commit/abort.
 
   const inboundQueuePrefix = getHostKey('inboundQueue.');
+  /** @type {import("./make-queue.js").QueueStorage} */
   const inboundQueueStorage = harden({
     get: key => {
-      const val = kvStore.get(inboundQueuePrefix + key);
-      return val ? JSON.parse(val) : undefined;
+      return kvStore.get(inboundQueuePrefix + key);
     },
     set: (key, value) => {
-      value !== undefined || Fail`value in inboundQueue must be defined`;
-      kvStore.set(inboundQueuePrefix + key, JSON.stringify(value));
+      typeof value === 'string' || Fail`value in inboundQueue must be a string`;
+      kvStore.set(inboundQueuePrefix + key, value);
     },
     delete: key => kvStore.delete(inboundQueuePrefix + key),
     commit: () => {}, // disable
