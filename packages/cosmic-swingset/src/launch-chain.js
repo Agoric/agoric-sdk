@@ -217,7 +217,7 @@ export async function launch({
   replayChainSends,
   setActivityhash,
   bridgeOutbound,
-  makeInstallationPublisher = undefined,
+  makeInstallationPublisher,
   vatconfig,
   argv,
   env = process.env,
@@ -413,7 +413,6 @@ export async function launch({
       installationPublisher === undefined &&
       makeInstallationPublisher !== undefined
     ) {
-      // @ts-expect-error not really undefined. TODO give provideInstallationPublisher a signature.
       installationPublisher = makeInstallationPublisher();
     }
   }
