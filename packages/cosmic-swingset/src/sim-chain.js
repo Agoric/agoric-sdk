@@ -20,6 +20,7 @@ import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 import { parseQueueSizes } from './params.js';
+import { makeQueue, makeQueueStorageMock } from './make-queue.js';
 
 const console = anylogger('fake-chain');
 
@@ -96,18 +97,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     env,
   });
 
-  let aqContents = [];
-  const actionQueue = {
-    /** @returns {Iterable<unknown>} */
-    consumeAll: () => {
-      const iterable = aqContents;
-      aqContents = [];
-      return iterable;
-    },
-  };
+  const actionQueueStorage = makeQueueStorageMock().storage;
+  const actionQueue = makeQueue(actionQueueStorage);
 
   const s = await launch({
-    actionQueue,
+    actionQueueStorage,
     kernelStateDBDir: stateDBdir,
     mailboxStorage,
     clearChainSends,
@@ -150,7 +144,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       const thisBlock = intoChain.splice(0, queueAllowed[QueueInbound]);
 
       for (const [i, [newMessages, acknum]] of thisBlock.entries()) {
-        aqContents.push({
+        actionQueue.push({
           action: {
             type: 'DELIVER_INBOUND',
             peer: bootAddress,

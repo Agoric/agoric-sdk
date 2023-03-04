@@ -210,7 +210,7 @@ function neverStop() {
 }
 
 export async function launch({
-  actionQueue,
+  actionQueueStorage,
   kernelStateDBDir,
   mailboxStorage,
   clearChainSends,
@@ -257,7 +257,10 @@ export async function launch({
     commit: () => {}, // disable
     abort: () => {}, // disable
   });
-  /** @type {ReturnType<typeof makeQueue<{context: any, action: any}>>} */
+  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} ActionQueue */
+  /** @type {ActionQueue} */
+  const actionQueue = makeQueue(actionQueueStorage);
+  /** @type {ActionQueue} */
   const inboundQueue = makeQueue(inboundQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.

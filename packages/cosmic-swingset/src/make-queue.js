@@ -12,6 +12,32 @@ import { Fail } from '@agoric/assert';
  */
 
 /**
+ * @typedef {{[idx: number]: string | undefined, head?: string, tail?: string}} QueueStorageDump
+ * @param {QueueStorageDump} [init]
+ * @returns {{storage: QueueStorage; dump: () => QueueStorageDump}}
+ */
+export const makeQueueStorageMock = init => {
+  const storage = new Map(init && Object.entries(init));
+  return harden({
+    storage: {
+      get(key) {
+        return storage.get(key);
+      },
+      set(key, value) {
+        typeof value === 'string' || Fail`invalid value type ${value}`;
+        storage.set(key, value);
+      },
+      delete(key) {
+        storage.delete(key);
+      },
+      commit() {},
+      abort() {},
+    },
+    dump: () => harden(Object.fromEntries(storage.entries())),
+  });
+};
+
+/**
  * Create a queue backed by some sort of scoped storage.
  *
  * The queue writes the following bare keys, and expect any prefixing/scoping

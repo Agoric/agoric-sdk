@@ -30,7 +30,6 @@ import {
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
-import { makeQueue } from './make-queue.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -281,7 +280,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         val => stringify(exportMailbox(val)),
       ),
     );
-    const actionQueueStorage = makeBufferedStorage(
+    const actionQueueRawStorage = makeBufferedStorage(
       makePrefixedBridgeStorage(
         sendToChain,
         `${STORAGE_PATH.ACTION_QUEUE}.`,
@@ -290,13 +289,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         x => x,
       ),
     );
-    const actionQueue = makeQueue(
-      harden({
-        ...actionQueueStorage.kvStore,
-        commit: actionQueueStorage.commit,
-        abort: actionQueueStorage.abort,
-      }),
-    );
+    const actionQueueStorage = harden({
+      ...actionQueueRawStorage.kvStore,
+      commit: actionQueueRawStorage.commit,
+      abort: actionQueueRawStorage.abort,
+    });
     function setActivityhash(activityhash) {
       const entry = [STORAGE_PATH.ACTIVITYHASH, activityhash];
       const msg = stringify({
@@ -436,7 +433,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const s = await launch({
-      actionQueue,
+      actionQueueStorage,
       kernelStateDBDir: stateDBDir,
       makeInstallationPublisher,
       mailboxStorage,
