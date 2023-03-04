@@ -200,6 +200,7 @@ export const makeIssuerInterfaces = (
   const MintI = M.interface('Mint', {
     getIssuer: M.call().returns(IssuerShape),
     mintPayment: M.call(amountShape).returns(PaymentShape),
+    getRecoverySet: M.call().returns(M.setOf(PaymentShape)),
   });
 
   const PaymentI = M.interface('Payment', {

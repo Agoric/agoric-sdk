@@ -431,11 +431,8 @@ test('issuer.combine bad payments', async t => {
   payments.push(otherPayment);
   harden(payments);
 
-  await t.throwsAsync(
-    () => E(issuer).combine(payments),
-    {
-      message: /.* "\[Alleged: other fungible payment\]"/,
-    },
-    'payment from other mint is not found',
-  );
+  await t.throwsAsync(() => E(issuer).combine(payments), {
+    message:
+      /^"\[Alleged: other fungible payment\]" was not a live payment for brand "\[Alleged: fungible brand\]"./,
+  });
 });
