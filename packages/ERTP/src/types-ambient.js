@@ -239,10 +239,6 @@
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf<K>} getAmountOf
  * @property {IssuerBurn} burn
- * @property {IssuerClaim<K>} claim
- * @property {IssuerCombine<K>} combine
- * @property {IssuerSplit<K>} split
- * @property {IssuerSplitMany} splitMany
  */
 
 /**
