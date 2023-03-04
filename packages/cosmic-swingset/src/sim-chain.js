@@ -12,7 +12,7 @@ import anylogger from 'anylogger';
 import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { assert, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
@@ -135,13 +135,15 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         blockTime,
         params,
       };
-      const beginBlockResult = await blockingSend(beginAction);
-      assert(beginBlockResult);
-      const queueAllowed = parseQueueSizes(beginBlockResult.queue_allowed);
-      assert(QueueInbound in queueAllowed);
+      await blockingSend(beginAction);
+      const inboundQueueMax = parseQueueSizes(params.queue_max)[QueueInbound];
+      const inboundQueueAllowed = Math.max(
+        0,
+        inboundQueueMax - actionQueue.size(),
+      );
 
       // Gather up the new messages into the latest block.
-      const thisBlock = intoChain.splice(0, queueAllowed[QueueInbound]);
+      const thisBlock = intoChain.splice(0, inboundQueueAllowed);
 
       for (const [i, [newMessages, acknum]] of thisBlock.entries()) {
         actionQueue.push({

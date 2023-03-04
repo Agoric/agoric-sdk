@@ -182,6 +182,39 @@ func (k Keeper) ActionQueueLength(ctx sdk.Context) (int32, error) {
 	return int32(int64Size), nil
 }
 
+func (k Keeper) UpdateQueueAllowed(ctx sdk.Context) error {
+	params := k.GetParams(ctx)
+	inboundQueueMax, found := types.QueueSizeEntry(params.QueueMax, types.QueueInbound)
+	if !found {
+		return errors.New("could not find max inboundQueue size in params")
+	}
+	inboundMempoolQueueMax := inboundQueueMax / 2
+
+	inboundQueueSize, err := k.ActionQueueLength(ctx)
+	if err != nil {
+		return err
+	}
+
+	var inboundQueueAllowed int32
+	if inboundQueueMax > inboundQueueSize {
+		inboundQueueAllowed = inboundQueueMax - inboundQueueSize
+	}
+
+	var inboundMempoolQueueAllowed int32
+	if inboundMempoolQueueMax > inboundQueueSize {
+		inboundMempoolQueueAllowed = inboundMempoolQueueMax - inboundQueueSize
+	}
+
+	state := k.GetState(ctx)
+	state.QueueAllowed = []types.QueueSize{
+		{Key: types.QueueInbound, Size_: inboundQueueAllowed},
+		{Key: types.QueueInboundMempool, Size_: inboundMempoolQueueAllowed},
+	}
+	k.SetState(ctx, state)
+
+	return nil
+}
+
 // BlockingSend sends a message to the controller and blocks the Golang process
 // until the response.  It is orthogonal to PushAction, and should only be used
 // by SwingSet to perform block lifecycle events (BEGIN_BLOCK, END_BLOCK,

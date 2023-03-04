@@ -33,9 +33,8 @@ import {
   BeansPerBlockComputeLimit,
   BeansPerVatCreation,
   BeansPerXsnapComputron,
-  QueueInbound,
 } from './sim-params.js';
-import { parseParams, encodeQueueSizes } from './params.js';
+import { parseParams } from './params.js';
 import { makeQueue } from './make-queue.js';
 
 const console = anylogger('launch-chain');
@@ -237,31 +236,9 @@ export async function launch({
   });
   const { kvStore, commit } = hostStorage;
 
-  // makeQueue() thinks it should commit/abort, but the kvStore doesn't provide
-  // those ('commit' is reserved for flushing the block buffer). Furthermore
-  // the kvStore only deals with string values.
-  // We create a storage wrapper that adds a prefix to keys, serializes values,
-  // and disables commit/abort.
-
-  const inboundQueuePrefix = getHostKey('inboundQueue.');
-  /** @type {import("./make-queue.js").QueueStorage} */
-  const inboundQueueStorage = harden({
-    get: key => {
-      return kvStore.get(inboundQueuePrefix + key);
-    },
-    set: (key, value) => {
-      typeof value === 'string' || Fail`value in inboundQueue must be a string`;
-      kvStore.set(inboundQueuePrefix + key, value);
-    },
-    delete: key => kvStore.delete(inboundQueuePrefix + key),
-    commit: () => {}, // disable
-    abort: () => {}, // disable
-  });
   /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} ActionQueue */
   /** @type {ActionQueue} */
   const actionQueue = makeQueue(actionQueueStorage);
-  /** @type {ActionQueue} */
-  const inboundQueue = makeQueue(inboundQueueStorage);
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
@@ -292,7 +269,7 @@ export async function launch({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const inboundQueueMetrics = makeInboundQueueMetrics(inboundQueue.size());
+  const inboundQueueMetrics = makeInboundQueueMetrics(actionQueue.size());
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
@@ -314,33 +291,6 @@ export async function launch({
     }
   }
 
-  let savedQueueAllowed = JSON.parse(
-    kvStore.get(getHostKey('queueAllowed')) || '{}',
-  );
-
-  function updateQueueAllowed(_blockHeight, _blockTime, params) {
-    assert(params.queueMax);
-    assert(QueueInbound in params.queueMax);
-
-    const inboundQueueMax = params.queueMax[QueueInbound];
-    const inboundMempoolQueueMax = Math.floor(inboundQueueMax / 2);
-
-    const inboundQueueSize = inboundQueue.size();
-
-    const inboundQueueAllowed = Math.max(0, inboundQueueMax - inboundQueueSize);
-    const inboundMempoolQueueAllowed = Math.max(
-      0,
-      inboundMempoolQueueMax - inboundQueueSize,
-    );
-
-    savedQueueAllowed = {
-      // Keep up-to-date with queue size keys defined in
-      // golang/cosmos/x/swingset/types/default-params.go
-      inbound: inboundQueueAllowed,
-      inbound_mempool: inboundMempoolQueueAllowed,
-    };
-  }
-
   async function saveChainState() {
     // Save the mailbox state.
     await mailboxStorage.commit();
@@ -351,7 +301,6 @@ export async function launch({
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('blockTime'), `${blockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
-    kvStore.set(getHostKey('queueAllowed'), JSON.stringify(savedQueueAllowed));
 
     await commit();
   }
@@ -516,11 +465,11 @@ export async function launch({
 
     let keepGoing = await runSwingset();
 
-    // Then process as much as we can from the inboundQueue, which contains
+    // Then process as much as we can from the actionQueue, which contains
     // first the old actions followed by the newActions, running the
     // kernel to completion after each.
     if (keepGoing) {
-      for (const { action, context } of inboundQueue.consumeAll()) {
+      for (const { action, context } of actionQueue.consumeAll()) {
         const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
         inboundQueueMetrics.decStat();
         // eslint-disable-next-line no-await-in-loop
@@ -528,7 +477,7 @@ export async function launch({
         // eslint-disable-next-line no-await-in-loop
         keepGoing = await runSwingset();
         if (!keepGoing) {
-          // any leftover actions will remain on the inboundQueue for possible
+          // any leftover actions will remain on the actionQueue for possible
           // processing in the next block
           break;
         }
@@ -540,19 +489,14 @@ export async function launch({
     }
   }
 
-  async function endBlock(blockHeight, blockTime, params, newActions) {
+  async function endBlock(blockHeight, blockTime, params) {
     // This is called once per block, during the END_BLOCK event, and
     // only when we know that cosmos is in sync (else we'd skip kernel
-    // execution). 'newActions' are the bridge/mailbox/etc events that
-    // cosmos stored up for delivery to swingset in this block.
+    // execution).
 
-    // First, push all newActions onto the end of the inboundQueue,
-    // remembering that inboundQueue might still have work from the
-    // previous block
-    for (const actionRecord of newActions) {
-      inboundQueue.push(actionRecord);
-      inboundQueueMetrics.incStat();
-    }
+    // First, record new actions (bridge/mailbox/etc events that cosmos
+    // added up for delivery to swingset) into our inboundQueue metrics
+    inboundQueueMetrics.updateLength(actionQueue.size());
 
     // We update the timer device at the start of each block, which might push
     // work onto the end of the kernel run-queue (if any timers were ready to
@@ -746,19 +690,14 @@ export async function launch({
           blockManagerConsole.info('block', blockHeight, 'begin');
         runTime = 0;
 
-        if (blockNeedsExecution(blockHeight)) {
-          // We are not reevaluating, so compute a new queueAllowed
-          updateQueueAllowed(blockHeight, blockTime, blockParams);
-        }
-
         controller.writeSlogObject({
           type: 'cosmic-swingset-begin-block',
           blockHeight,
           blockTime,
-          queueAllowed: savedQueueAllowed,
+          actionQueueStats: inboundQueueMetrics.getStats(),
         });
 
-        return { queue_allowed: encodeQueueSizes(savedQueueAllowed) };
+        return undefined;
       }
 
       case ActionType.END_BLOCK: {
@@ -794,12 +733,7 @@ export async function launch({
           provideInstallationPublisher();
 
           await processAction(action.type, async () =>
-            endBlock(
-              blockHeight,
-              blockTime,
-              blockParams,
-              actionQueue.consumeAll(),
-            ),
+            endBlock(blockHeight, blockTime, blockParams),
           );
 
           // We write out our on-chain state as a number of chainSends.
@@ -815,6 +749,7 @@ export async function launch({
           type: 'cosmic-swingset-end-block-finish',
           blockHeight,
           blockTime,
+          actionQueueStats: inboundQueueMetrics.getStats(),
         });
 
         return undefined;
