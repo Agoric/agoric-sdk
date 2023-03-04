@@ -7,6 +7,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { M, mustMatch, keyEQ } from '@agoric/store';
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
@@ -114,7 +115,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
   const { customDetails } = optionDesc;

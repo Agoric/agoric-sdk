@@ -5,6 +5,7 @@ import path from 'path';
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -76,7 +77,10 @@ test('barter with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 4: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   t.is(bobInstallation, installation);
   t.is(bobInstance, instance);

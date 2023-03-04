@@ -1,4 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
+import { splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { observeNotifier } from '@agoric/notifier';
@@ -160,7 +161,8 @@ export const sharePayment = async (
     .filter(([_, amt]) => !AmountMath.isEmpty(amt));
 
   // Split the payment, which asserts conservation of the total.
-  const sharedPayment = await E(issuer).splitMany(
+  const sharedPayment = await splitMany(
+    E(issuer).makeEmptyPurse(),
     payment,
     destinedAmountEntries.map(([_dst, amt]) => amt),
   );

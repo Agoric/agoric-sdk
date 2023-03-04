@@ -176,13 +176,11 @@ export const preparePaymentLedger = (
    *
    * @param {Payment} payment
    * @param {Amount} amount
-   * @param {SetStore<Payment>} [optRecoverySet]
+   * @param {SetStore<Payment>} recoverySet
    */
-  const initPayment = (payment, amount, optRecoverySet = undefined) => {
-    if (optRecoverySet !== undefined) {
-      optRecoverySet.add(payment);
-      paymentRecoverySets.init(payment, optRecoverySet);
-    }
+  const initPayment = (payment, amount, recoverySet) => {
+    recoverySet.add(payment);
+    paymentRecoverySets.init(payment, recoverySet);
     paymentLedger.init(payment, amount);
   };
 

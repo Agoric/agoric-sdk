@@ -7,6 +7,7 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { keyEQ } from '@agoric/store';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -122,7 +123,10 @@ test('zoe - coveredCall', async t => {
 
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -286,7 +290,10 @@ test(`zoe - coveredCall - alice's deadline expires, cancelling alice and bob`, a
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   const { customDetails } = optionValue;
   assert(typeof customDetails === 'object');
@@ -443,7 +450,10 @@ test('zoe - coveredCall with swap for invitation', async t => {
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationBrand = await E(invitationIssuer).getBrand();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
   const optionDesc = optionAmount.value[0];
   const { customDetails } = optionDesc;
@@ -707,7 +717,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // expected covered call installation (code)? Does it use the issuers
   // that he expects (moola and simoleans)?
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   const { customDetails } = optionValue;
   assert(typeof customDetails === 'object');
@@ -761,7 +774,10 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   // Dave is looking to buy the option to trade his 7 simoleans for
   // 3 moola, and is willing to pay 1 buck for the option. He
   // checks that this invitation matches what he wants
-  const daveExclOption = await E(invitationIssuer).claim(invitationForDaveP);
+  const daveExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    invitationForDaveP,
+  );
   const daveOptionValue = await E(zoe).getInvitationDetails(daveExclOption);
   const { customDetails: daveCustomDetails } = daveOptionValue;
   assert(typeof daveCustomDetails === 'object');
@@ -980,7 +996,10 @@ test('zoe - coveredCall non-fungible', async t => {
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   /** @type {Payment<any>} */
-  const bobExclOption = await E(invitationIssuer).claim(optionP);
+  const bobExclOption = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    optionP,
+  );
   const optionValue = await E(zoe).getInvitationDetails(bobExclOption);
   const { customDetails } = optionValue;
   assert(typeof customDetails === 'object');

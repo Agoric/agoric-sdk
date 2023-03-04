@@ -6,7 +6,9 @@ import path from 'path';
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
 import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E } from '@endo/eventual-send';
+
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -282,7 +284,10 @@ test(`mint and sell opera tickets`, async t => {
   // Joker attempts to buy ticket 1 (and should fail)
   const jokerBuysTicket1 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -355,7 +360,10 @@ test(`mint and sell opera tickets`, async t => {
     moola100Payment,
   ) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);
@@ -422,7 +430,10 @@ test(`mint and sell opera tickets`, async t => {
 
   const bobBuysTicket2And3 = async (untrustedInvitation, moola100Payment) => {
     const invitationIssuer = E(zoe).getInvitationIssuer();
-    const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+    const invitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      untrustedInvitation,
+    );
     const {
       value: [{ instance: ticketSalesInstance }],
     } = await E(invitationIssuer).getAmountOf(invitation);

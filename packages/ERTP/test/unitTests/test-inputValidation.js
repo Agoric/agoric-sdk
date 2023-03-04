@@ -4,6 +4,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AssetKind, makeIssuerKit, AmountMath } from '../../src/index.js';
+import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
 test('makeIssuerKit bad allegedName', async t => {
   // @ts-expect-error Intentional wrong type for testing
@@ -158,7 +159,7 @@ test('assertLivePayment', async t => {
   const paymentB = E(mintB).mintPayment(AmountMath.make(brandB, 837n));
 
   // payment is of the wrong brand
-  await t.throwsAsync(() => E(issuer).claim(paymentB), {
+  await t.throwsAsync(() => claim(E(issuer).makeEmptyPurse(), paymentB), {
     message:
       '"[Alleged: fungibleB payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
@@ -166,9 +167,9 @@ test('assertLivePayment', async t => {
   // payment is used up
   const payment = E(mint).mintPayment(AmountMath.make(brand, 10n));
   // use up payment
-  await E(issuer).claim(payment);
+  await claim(E(issuer).makeEmptyPurse(), payment);
 
-  await t.throwsAsync(() => E(issuer).claim(payment), {
+  await t.throwsAsync(() => claim(E(issuer).makeEmptyPurse(), payment), {
     message:
       '"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
@@ -181,9 +182,9 @@ test('issuer.combine bad payments array', async t => {
     split: () => {},
   };
   // @ts-expect-error Intentional wrong type for testing
-  await t.throwsAsync(() => E(issuer).combine(notAnArray), {
-    message:
-      'In "combine" method of (fungible issuer): cannot serialize Remotables with non-methods like "length" in {"length":2,"split":"[Function split]"}',
+  // eslint-disable-next-line no-undef
+  await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), notAnArray), {
+    message: 'srcPaymentsPs is not iterable',
   });
 
   const notAnArray2 = Far('notAnArray2', {
@@ -191,9 +192,8 @@ test('issuer.combine bad payments array', async t => {
     split: () => {},
   });
   // @ts-expect-error Intentional wrong type for testing
-  await t.throwsAsync(() => E(issuer).combine(notAnArray2), {
-    message:
-      'In "combine" method of (fungible issuer): arg 0: remotable "[Alleged: notAnArray2]" - Must be a copyArray',
+  await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), notAnArray2), {
+    message: 'srcPaymentsPs is not iterable',
   });
 });
 

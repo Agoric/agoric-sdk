@@ -1,6 +1,11 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '../../../src/index.js';
+import {
+  claim,
+  combine,
+  splitMany,
+} from '../../../src/legacy-payment-helpers.js';
 
 function makeAliceMaker(log) {
   return Far('aliceMaker', {
@@ -31,9 +36,8 @@ function makeAliceMaker(log) {
 
           // splitMany
           const moola200 = AmountMath.make(brand, 200n);
-          const [paymentToBurn, paymentToClaim, ...payments] = await E(
-            issuer,
-          ).splitMany(
+          const [paymentToBurn, paymentToClaim, ...payments] = await splitMany(
+            E(issuer).makeEmptyPurse(),
             newPayment,
             harden([moola200, moola200, moola200, moola200, moola200]),
           );
@@ -43,14 +47,17 @@ function makeAliceMaker(log) {
           log('burned amount: ', burnedAmount);
 
           // claim
-          const claimedPayment = await E(issuer).claim(paymentToClaim);
+          const claimedPayment = await claim(
+            E(issuer).makeEmptyPurse(),
+            paymentToClaim,
+          );
           const claimedPaymentAmount = await E(issuer).getAmountOf(
             claimedPayment,
           );
           log('claimedPayment amount: ', claimedPaymentAmount);
 
           // combine
-          const combinedPayment = E(issuer).combine(payments);
+          const combinedPayment = combine(E(issuer).makeEmptyPurse(), payments);
           const combinedPaymentAmount = await E(issuer).getAmountOf(
             combinedPayment,
           );

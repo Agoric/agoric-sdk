@@ -2,6 +2,7 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { makeParamManagerBuilder } from '@agoric/governance';
 import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import {
@@ -404,7 +405,8 @@ test('first', async t => {
   // partially payback
   const collateralWanted = aeth.make(100n);
   const paybackAmount = run.make(200n);
-  const [paybackPayment, _remainingPayment] = await E(run.issuer).split(
+  const [paybackPayment, _remainingPayment] = await split(
+    E(run.issuer).makeEmptyPurse(),
     runLent,
     paybackAmount,
   );
@@ -1027,7 +1029,8 @@ test('adjust balances', async t => {
   runDebtLevel = AmountMath.subtract(runDebtLevel, depositRunAmount);
   collateralLevel = AmountMath.add(collateralLevel, collateralIncrement);
 
-  const [paybackPayment, _remainingPayment] = await E(run.issuer).split(
+  const [paybackPayment, _remainingPayment] = await split(
+    E(run.issuer).makeEmptyPurse(),
     runLent,
     depositRunAmount,
   );
@@ -1436,7 +1439,8 @@ test('transfer vault', async t => {
   t.deepEqual(lentAmount, aliceLoanAmount, 'received 5000 Minted');
   const borrowedRun = await aliceProceeds.Minted;
   const payoffRun2 = run.make(600n);
-  const [paybackPayment, _remainingPayment] = await E(run.issuer).split(
+  const [paybackPayment, _remainingPayment] = await split(
+    E(run.issuer).makeEmptyPurse(),
     borrowedRun,
     payoffRun2,
   );
@@ -1572,7 +1576,8 @@ test('overdeposit', async t => {
 
   // overpay debt ///////////////////////////////////// (give Minted)
 
-  const combinedRun = await E(run.issuer).combine(
+  const combinedRun = await combine(
+    E(run.issuer).makeEmptyPurse(),
     harden([borrowedRun, bobRun]),
   );
   const depositRun2 = run.make(6000n);
@@ -2014,7 +2019,10 @@ test('close loan', async t => {
 
   // close loan, using Bob's Minted /////////////////////////////////////
 
-  const runRepayment = await E(run.issuer).combine(harden([bobRun, runLent]));
+  const runRepayment = await combine(
+    E(run.issuer).makeEmptyPurse(),
+    harden([bobRun, runLent]),
+  );
 
   /** @type {UserSeat<string>} */
   const aliceCloseSeat = await E(zoe).offer(

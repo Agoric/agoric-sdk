@@ -6,6 +6,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { eventLoopIteration } from '../../../tools/eventLoopIteration.js';
@@ -97,7 +98,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -165,7 +169,10 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
     return Far('losing bidder', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const proposal = harden({
           give: { Bid: bidAmount },
@@ -598,7 +605,10 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Alice spreads the invitations far and wide and Bob decides he
   // wants to participate in the auction.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
   const bobInvitationValue = await E(zoe).getInvitationDetails(
     bobExclusiveInvitation,
   );
@@ -640,7 +650,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   // Carol decides to bid for the one cc
 
-  const carolExclusiveInvitation = await E(invitationIssuer).claim(
+  const carolExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     carolInvitation,
   );
   const carolInvitationValue = await E(zoe).getInvitationDetails(
@@ -687,7 +698,8 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
   );
 
   // Dave decides to bid for the one moola
-  const daveExclusiveInvitation = await E(invitationIssuer).claim(
+  const daveExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     daveInvitation,
   );
   const daveInvitationValue = await E(zoe).getInvitationDetails(
@@ -914,7 +926,10 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
@@ -982,7 +997,10 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
     return Far('losing bidder', {
       offer: async untrustedInvitation => {
         const invitationIssuer = await E(zoe).getInvitationIssuer();
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const proposal = harden({
           give: { Bid: bidAmount },

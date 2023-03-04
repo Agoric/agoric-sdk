@@ -1,5 +1,6 @@
 /* eslint-disable @jessie.js/no-nested-await -- demo file */
 import { AmountMath, AssetKind } from '@agoric/ertp';
+import { split, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import {
   makeRatio,
   natSafeMath,
@@ -261,7 +262,8 @@ export const connectFaucet = async ({
         // TODO: what happens if faucetRunSupply doesn't have enough
         // remaining?
         let fragment;
-        [fragment, faucetRunSupply] = await E(runIssuer).split(
+        [fragment, faucetRunSupply] = await split(
+          E(runIssuer).makeEmptyPurse(),
           faucetRunSupply,
           amount,
         );
@@ -393,7 +395,8 @@ export const splitAllCentralPayments = async (
     AmountMath.make(central.brand, b),
   );
 
-  const allPayments = await E(central.issuer).splitMany(
+  const allPayments = await splitMany(
+    E(central.issuer).makeEmptyPurse(),
     bootstrapPayment,
     ammPoolAmounts,
   );

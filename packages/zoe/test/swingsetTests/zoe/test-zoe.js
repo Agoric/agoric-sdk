@@ -159,8 +159,8 @@ test.serial('zoe - swapForOption - valid inputs', async t => {
 const expectedSecondPriceAuctionOkLog = [
   '=> alice, bob, carol and dave are set up',
   'Carol: The offer has been accepted. Once the contract has been completed, please check your payout',
-  '@@ schedule task for:1, currently: 0 @@',
   'Bob: The offer has been accepted. Once the contract has been completed, please check your payout',
+  '@@ schedule task for:1, currently: 0 @@',
   'Dave: The offer has been accepted. Once the contract has been completed, please check your payout',
   '@@ tick:1 @@',
   'carolMoolaPurse: balance {"brand":{},"value":0}',

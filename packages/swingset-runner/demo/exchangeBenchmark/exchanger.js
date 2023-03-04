@@ -2,6 +2,8 @@
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { showPurseBalance, setupPurses } from './helpers.js';
 import { makePrintLog } from './printLog.js';
 
@@ -78,7 +80,10 @@ async function build(name, zoe, issuers, payments, publicFacet) {
     await preReport(quiet);
 
     const invitation = await invitationP;
-    const exclInvitation = await E(invitationIssuer).claim(invitation);
+    const exclInvitation = await claim(
+      E(invitationIssuer).makeEmptyPurse(),
+      invitation,
+    );
 
     const myBuyOrderProposal = harden({
       want: { Asset: moola(1) },

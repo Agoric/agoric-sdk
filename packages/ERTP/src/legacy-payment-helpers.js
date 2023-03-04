@@ -15,9 +15,11 @@ const { Fail } = assert;
 // will be in the argument purse.
 
 /**
- * @param {ERef<Purse>} purse
- * @param {ERef<Payment>} srcPaymentP
+ * @template {AssetKind} K
+ * @param {ERef<Purse<K>>} purse
+ * @param {ERef<Payment<K>>} srcPaymentP
  * @param {Pattern} [optAmountShape]
+ * @returns {Promise<Payment<K>>}
  */
 export const claim = async (purse, srcPaymentP, optAmountShape = undefined) => {
   const srcPayment = await srcPaymentP;
@@ -30,23 +32,23 @@ harden(claim);
  * Note: Not failure atomic. If any of the deposits fail, or the total does not
  * match optTotalAmount, some payments may still have been deposited.
  *
- * @param {ERef<Purse>} purse
- * @param {ERef<Payment>[]} srcPaymentsPs
+ * @template {AssetKind} K
+ * @param {ERef<Purse<K>>} purse
+ * @param {ERef<Payment<K>>[]} srcPaymentsPs
  * @param {Pattern} [optTotalAmount]
+ * @returns {Promise<Payment<K>>}
  */
 export const combine = async (
   purse,
   srcPaymentsPs,
   optTotalAmount = undefined,
 ) => {
-  const [brand, ...srcPayments] = await Promise.all([
+  const [brand, displayInfo, ...srcPayments] = await Promise.all([
     E(purse).getAllegedBrand(),
+    E(E(purse).getAllegedBrand()).getDisplayInfo(),
     ...srcPaymentsPs,
   ]);
-  const emptyAmount = AmountMath.makeEmpty(
-    brand,
-    brand.getDisplayInfo().assetKind,
-  );
+  const emptyAmount = AmountMath.makeEmpty(brand, displayInfo.assetKind);
   const amountPs = srcPayments.map(srcPayment => E(purse).deposit(srcPayment));
   const amounts = await Promise.all(amountPs);
   const total = amounts.reduce(
@@ -61,9 +63,11 @@ export const combine = async (
 harden(combine);
 
 /**
- * @param {ERef<Purse>} purse
- * @param {ERef<Payment>} srcPaymentP
- * @param {Amount} paymentAmountA
+ * @template {AssetKind} K
+ * @param {ERef<Purse<K>>} purse
+ * @param {ERef<Payment<K>>} srcPaymentP
+ * @param {Amount<K>} paymentAmountA
+ * @returns {Promise<Payment<K>[]>}
  */
 export const split = async (purse, srcPaymentP, paymentAmountA) => {
   const srcPayment = await srcPaymentP;
@@ -77,18 +81,17 @@ export const split = async (purse, srcPaymentP, paymentAmountA) => {
 harden(split);
 
 /**
- * @param {ERef<Purse>} purse
- * @param {ERef<Payment>} srcPaymentP
- * @param {Amount[]} amounts
+ * @template {AssetKind} K
+ * @param {ERef<Purse<K>>} purse
+ * @param {ERef<Payment<K>>} srcPaymentP
+ * @param {Amount<K>[]} amounts
+ * @returns {Promise<Payment[]>}
  */
 export const splitMany = async (purse, srcPaymentP, amounts) => {
   const srcPayment = await srcPaymentP;
   const srcAmount = await E(purse).deposit(srcPayment);
   const brand = srcAmount.brand;
-  const emptyAmount = AmountMath.makeEmpty(
-    brand,
-    brand.getDisplayInfo().assetKind,
-  );
+  const emptyAmount = AmountMath.makeEmptyFromAmount(srcAmount);
   const total = amounts.reduce(
     (x, y) => AmountMath.add(x, y, brand),
     emptyAmount,
