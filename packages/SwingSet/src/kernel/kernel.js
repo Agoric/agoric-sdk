@@ -883,7 +883,7 @@ export default function buildKernel(
     // stopVat succeeded. finish cleanup on behalf of the worker.
 
     // walk c-list for all decided promises, reject them all
-    for (const kpid of vatKeeper.getDecidedPromises()) {
+    for (const kpid of kernelKeeper.getDecidedPromises(vatID)) {
       doResolve(vatID, [[kpid, true, disconnectObjectCD]]);
     }
 
