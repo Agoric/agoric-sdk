@@ -76,7 +76,7 @@ const SHARED_MAIN_MANIFEST = harden({
     },
   },
 
-  [econBehaviors.startAuction.name]: {
+  [econBehaviors.startAuctioneer.name]: {
     consume: {
       zoe: 'zoe',
       board: 'board',
@@ -85,7 +85,7 @@ const SHARED_MAIN_MANIFEST = harden({
       chainStorage: true,
       economicCommitteeCreatorFacet: 'economicCommittee',
     },
-    produce: { auctionKit: 'auction' },
+    produce: { auctioneerKit: 'auction' },
     instance: {
       produce: { auction: 'auction' },
     },

@@ -72,7 +72,7 @@ const BASIS_POINTS = 10_000n;
  *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
  *     adminFacet: AdminFacet,
  *   },
- *   auctionKit: {
+ *   auctioneerKit: {
  *     publicFacet: AuctioneerPublicFacet,
  *     creatorFacet: AuctioneerCreatorFacet,
  *     governorCreatorFacet: GovernedContractFacetAccess<{},{}>,
@@ -493,7 +493,7 @@ export const startLienBridge = async ({
  * @param {object} config
  * @param {any} [config.auctionParams]
  */
-export const startAuction = async (
+export const startAuctioneer = async (
   {
     consume: {
       zoe,
@@ -503,7 +503,7 @@ export const startAuction = async (
       chainStorage,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
     },
-    produce: { auctionKit },
+    produce: { auctioneerKit },
     instance: {
       produce: { auction: auctionInstance },
     },
@@ -529,7 +529,7 @@ export const startAuction = async (
     },
   } = {},
 ) => {
-  trace('startAuction');
+  trace('startAuctioneer');
   const STORAGE_PATH = 'auction';
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
@@ -598,7 +598,7 @@ export const startAuction = async (
       E(governorStartResult.creatorFacet).getPublicFacet(),
     ]);
 
-  auctionKit.resolve(
+  auctioneerKit.resolve(
     harden({
       creatorFacet: governedCreatorFacet,
       governorCreatorFacet: governorStartResult.creatorFacet,
