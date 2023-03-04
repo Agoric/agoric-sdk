@@ -27,6 +27,7 @@ const makeCancelToken = () => {
   return Far(`cancelToken${(tokenCount += 1)}`, {});
 };
 
+// exported for testability.
 export const computeRoundTiming = (params, baseTime) => {
   // currently a TimeValue; hopefully a TimeRecord soon
   /** @type {RelativeTime} */

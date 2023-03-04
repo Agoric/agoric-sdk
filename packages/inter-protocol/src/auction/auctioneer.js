@@ -44,6 +44,9 @@ const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
  * collateralRaised and currencyRaised proportionally to each seat's deposited
  * amount. Any uneven split should be allocated to the reserve.
  *
+ * This function is exported for testability, and is not expected to be used
+ * outside the contract below.
+ *
  * @param {Amount} collateralRaised
  * @param {Amount} currencyRaised
  * @param {{seat: ZCFSeat, amount: Amount<"nat">}[]} deposits
@@ -284,6 +287,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 
   const limitedCreatorFacet = Far('creatorFacet', {
+    /**
+     * @param {Issuer} issuer
+     * @param {Brand} collateralBrand
+     * @param {Keyword} kwd
+     */
     async addBrand(issuer, collateralBrand, kwd) {
       zcf.assertUniqueKeyword(kwd);
       !baggage.has(kwd) ||
@@ -304,6 +312,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     // XXX if it's in public, doesn't also need to be in creatorFacet.
     getDepositInvitation,
+    /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
     getSchedule() {
       return E(scheduler).getSchedule();
     },

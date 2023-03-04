@@ -13,21 +13,21 @@ import { M } from '@agoric/store';
 export const InvitationShape = M.remotable('Invitation');
 
 /**
- * The auction will start at AUCTION_START_DELAY seconds after a multiple of
- * START_FREQUENCY, with the price at STARTING_RATE. Every CLOCK_STEP, the price
- * will be reduced by DISCOUNT_STEP, as long as the rate is at or above
- * LOWEST_RATE, or until START_FREQUENCY has elapsed. in seconds, how often to
- * start an auction
+ * In seconds, how often to start an auction.  The auction will start at
+ * AUCTION_START_DELAY seconds after a multiple of START_FREQUENCY, with the
+ * price at STARTING_RATE_BP. Every CLOCK_STEP, the price will be reduced by
+ * DISCOUNT_STEP_BP, as long as the rate is at or above LOWEST_RATE_BP, or until
+ * START_FREQUENCY has elapsed.
  */
 export const START_FREQUENCY = 'StartFrequency';
 /** in seconds, how often to reduce the price */
 export const CLOCK_STEP = 'ClockStep';
 /** discount or markup for starting price in basis points. 9999 = 1bp discount */
-export const STARTING_RATE = 'StartingRate';
+export const STARTING_RATE_BP = 'StartingRate';
 /** A limit below which the price will not be discounted. */
-export const LOWEST_RATE = 'LowestRate';
+export const LOWEST_RATE_BP = 'LowestRate';
 /** amount to reduce prices each time step in bp, as % of the start price */
-export const DISCOUNT_STEP = 'DiscountStep';
+export const DISCOUNT_STEP_BP = 'DiscountStep';
 /**
  * VaultManagers liquidate vaults at a frequency configured by START_FREQUENCY.
  * Auctions start this long after the hour to give vaults time to finish.
@@ -35,7 +35,7 @@ export const DISCOUNT_STEP = 'DiscountStep';
 export const AUCTION_START_DELAY = 'AuctionStartDelay';
 /**
  * Basis Points to charge in penalty against vaults that are liquidated.  Notice
- * that if the penalty is less than the LOWEST_RATE discount, vault holders
+ * that if the penalty is less than the LOWEST_RATE_BP discount, vault holders
  * could buy their assets back at an advantageous price.
  */
 export const LIQUIDATION_PENALTY = 'LiquidationPenalty';
@@ -48,9 +48,9 @@ export const auctioneerParamPattern = M.splitRecord({
   [CONTRACT_ELECTORATE]: InvitationShape,
   [START_FREQUENCY]: RelativeTimeRecordShape,
   [CLOCK_STEP]: RelativeTimeRecordShape,
-  [STARTING_RATE]: M.nat(),
-  [LOWEST_RATE]: M.nat(),
-  [DISCOUNT_STEP]: M.nat(),
+  [STARTING_RATE_BP]: M.nat(),
+  [LOWEST_RATE_BP]: M.nat(),
+  [DISCOUNT_STEP_BP]: M.nat(),
   [AUCTION_START_DELAY]: RelativeTimeRecordShape,
   [PRICE_LOCK_PERIOD]: RelativeTimeRecordShape,
 });
@@ -59,9 +59,9 @@ export const auctioneerParamTypes = harden({
   [CONTRACT_ELECTORATE]: ParamTypes.INVITATION,
   [START_FREQUENCY]: ParamTypes.RELATIVE_TIME,
   [CLOCK_STEP]: ParamTypes.RELATIVE_TIME,
-  [STARTING_RATE]: ParamTypes.NAT,
-  [LOWEST_RATE]: ParamTypes.NAT,
-  [DISCOUNT_STEP]: ParamTypes.NAT,
+  [STARTING_RATE_BP]: ParamTypes.NAT,
+  [LOWEST_RATE_BP]: ParamTypes.NAT,
+  [DISCOUNT_STEP_BP]: ParamTypes.NAT,
   [AUCTION_START_DELAY]: ParamTypes.RELATIVE_TIME,
   [PRICE_LOCK_PERIOD]: ParamTypes.RELATIVE_TIME,
 });
@@ -110,9 +110,9 @@ export const makeAuctioneerParams = ({
       type: ParamTypes.RELATIVE_TIME,
       value: TimeMath.toRel(priceLockPeriod, timerBrand),
     },
-    [STARTING_RATE]: { type: ParamTypes.NAT, value: startingRate },
-    [LOWEST_RATE]: { type: ParamTypes.NAT, value: lowestRate },
-    [DISCOUNT_STEP]: { type: ParamTypes.NAT, value: discountStep },
+    [STARTING_RATE_BP]: { type: ParamTypes.NAT, value: startingRate },
+    [LOWEST_RATE_BP]: { type: ParamTypes.NAT, value: lowestRate },
+    [DISCOUNT_STEP_BP]: { type: ParamTypes.NAT, value: discountStep },
   });
 };
 harden(makeAuctioneerParams);
@@ -141,9 +141,9 @@ export const makeAuctioneerParamManager = (publisherKit, zoe, initial) => {
       ],
       [START_FREQUENCY]: [ParamTypes.RELATIVE_TIME, initial[START_FREQUENCY]],
       [CLOCK_STEP]: [ParamTypes.RELATIVE_TIME, initial[CLOCK_STEP]],
-      [STARTING_RATE]: [ParamTypes.NAT, initial[STARTING_RATE]],
-      [LOWEST_RATE]: [ParamTypes.NAT, initial[LOWEST_RATE]],
-      [DISCOUNT_STEP]: [ParamTypes.NAT, initial[DISCOUNT_STEP]],
+      [STARTING_RATE_BP]: [ParamTypes.NAT, initial[STARTING_RATE_BP]],
+      [LOWEST_RATE_BP]: [ParamTypes.NAT, initial[LOWEST_RATE_BP]],
+      [DISCOUNT_STEP_BP]: [ParamTypes.NAT, initial[DISCOUNT_STEP_BP]],
       [AUCTION_START_DELAY]: [
         ParamTypes.RELATIVE_TIME,
         initial[AUCTION_START_DELAY],

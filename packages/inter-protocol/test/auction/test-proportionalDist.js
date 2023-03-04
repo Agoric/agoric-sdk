@@ -5,7 +5,7 @@ import '@agoric/zoe/exported.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 
-import { setUpZoeForTest, withAmountUtils } from '../supports.js';
+import { withAmountUtils } from '../supports.js';
 import { distributeProportionalShares } from '../../src/auction/auctioneer.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -14,14 +14,11 @@ const test = anyTest;
 const trace = makeTracer('Test AuctContract', false);
 
 const makeTestContext = async () => {
-  const { zoe } = await setUpZoeForTest();
-
   const currency = withAmountUtils(makeIssuerKit('Currency'));
   const collateral = withAmountUtils(makeIssuerKit('Collateral'));
 
   trace('makeContext');
   return {
-    zoe: await zoe,
     currency,
     collateral,
   };

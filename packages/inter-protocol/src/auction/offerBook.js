@@ -4,6 +4,7 @@
 import { Far } from '@endo/marshal';
 import { M, mustMatch } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
+import { provideDurableMapStore } from '@agoric/vat-data';
 
 import {
   toBidScalingComparator,
@@ -27,15 +28,17 @@ const nextSequenceNumber = () => {
  * Prices in this book are expressed as percentage of the full oracle price
  * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
  *
- * @param {Baggage} store
+ * @param {Baggage} baggage
  * @param {Pattern} bidScalingPattern
  * @param {Brand} collateralBrand
  */
 export const makeScaledBidBook = (
-  store,
+  baggage,
   bidScalingPattern,
   collateralBrand,
 ) => {
+  const store = provideDurableMapStore(baggage, 'scaledBidStore');
+
   return Far('scaledBidBook ', {
     add(seat, bidScaling, wanted) {
       mustMatch(bidScaling, bidScalingPattern);
@@ -83,11 +86,12 @@ export const makeScaledBidBook = (
  * Prices in this book are actual prices expressed in terms of currency amount
  * and collateral amount.
  *
- * @param {Baggage} store
+ * @param {Baggage} baggage
  * @param {Pattern} ratioPattern
  * @param {Brand} collateralBrand
  */
-export const makePriceBook = (store, ratioPattern, collateralBrand) => {
+export const makePriceBook = (baggage, ratioPattern, collateralBrand) => {
+  const store = provideDurableMapStore(baggage, 'scaledBidStore');
   return Far('priceBook ', {
     add(seat, price, wanted) {
       mustMatch(price, ratioPattern);

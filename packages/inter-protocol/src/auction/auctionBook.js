@@ -132,10 +132,7 @@ export const makeAuctionBook = async (
       currencyAmountShape,
       currencyAmountShape,
     );
-    const scaledBidStore = makeScalarBigMapStore('scaledBidBookStore', {
-      durable: true,
-    });
-    return makeScaledBidBook(scaledBidStore, ratioPattern, collateralBrand);
+    return makeScaledBidBook(baggage, ratioPattern, collateralBrand);
   });
 
   const priceBook = provide(baggage, 'sortedOffers', () => {
@@ -144,10 +141,7 @@ export const makeAuctionBook = async (
       collateralAmountShape,
     );
 
-    const priceStore = makeScalarBigMapStore('sortedOffersStore', {
-      durable: true,
-    });
-    return makePriceBook(priceStore, ratioPattern, collateralBrand);
+    return makePriceBook(baggage, ratioPattern, collateralBrand);
   });
 
   /**
@@ -306,7 +300,6 @@ export const makeAuctionBook = async (
         } else if (v1 === v2) {
           return 0;
         } else {
-          assert(v1 > v2);
           return 1;
         }
       };

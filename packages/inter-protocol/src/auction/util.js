@@ -15,8 +15,8 @@ export const AuctionState = {
 };
 
 /**
- * @param {Pattern} numeratorAmountShape
- * @param {Pattern} denominatorAmountShape
+ * @param {{ brand: Brand, value: Pattern }} numeratorAmountShape
+ * @param {{ brand: Brand, value: Pattern }} denominatorAmountShape
  */
 export const makeBrandedRatioPattern = (
   numeratorAmountShape,
@@ -29,11 +29,11 @@ export const makeBrandedRatioPattern = (
 };
 
 /**
- * TRUE if the discount(/markup) applied to the price is higher than the quote.
- *
  * @param {Ratio} bidScaling
  * @param {Ratio} currentPrice
  * @param {Ratio} oraclePrice
+ * @returns {boolean} TRUE iff the discount(/markup) applied to the price is
+ *          higher than the quote.
  */
 export const isScaledBidPriceHigher = (bidScaling, currentPrice, oraclePrice) =>
   ratioGTE(multiplyRatios(oraclePrice, bidScaling), currentPrice);
