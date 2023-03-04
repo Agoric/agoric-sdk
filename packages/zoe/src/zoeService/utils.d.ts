@@ -12,8 +12,11 @@ type ContractFacet<T extends {} = {}> = {
 export type AdminFacet = {
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
-  upgradeContract: (contractBundleId: string, newPrivateArgs: any) => void;
-  restartContract: (newPrivateArgs: any) => void;
+  upgradeContract: (
+    contractBundleId: string,
+    newPrivateArgs?: any,
+  ) => Promise<{ incarnationNumber: number }>;
+  restartContract: (newPrivateArgs?: any) => void;
 };
 
 /**

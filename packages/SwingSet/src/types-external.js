@@ -325,7 +325,7 @@ export {};
  * @typedef { { enableDisavow?: boolean } } HasEnableDisavow
  * @typedef { DynamicVatOptions & HasEnableDisavow } StaticVatOptions
  *
- * @typedef { { vatParameters?: object, upgradeMessage: string } } VatUpgradeOptions
+ * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
  *
  * @callback ShutdownWithFailure

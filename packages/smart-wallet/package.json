@@ -22,6 +22,7 @@
     "ava": "^5.1.0"
   },
   "dependencies": {
+    "@agoric/assert": "^0.5.1",
     "@agoric/casting": "^0.3.2",
     "@agoric/ertp": "^0.15.3",
     "@agoric/internal": "^0.2.1",

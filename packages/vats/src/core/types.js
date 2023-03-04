@@ -173,7 +173,7 @@
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
- *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
+ *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
  *     },
  *   },
  *   instance:{

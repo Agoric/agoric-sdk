@@ -1,133 +1,29 @@
 /**
- * @file Wallet Factory
+ * @file fixture for an upgrade of the primary walletFactory contract,
+ * packages/smart-wallet/src/walletFactory.js
  *
- * Contract to make smart wallets.
+ * This variant has minor changes to the returned strings that make it
+ * identifiable, to demonstrate that upgrade has occurred.
  */
 
-import { WalletName } from '@agoric/internal';
-import { observeIteration } from '@agoric/notifier';
-import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
+import { M, makeExo, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
-import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
-import { prepareSmartWallet } from './smartWallet.js';
-import { shape } from './typeGuards.js';
-
-export const privateArgsShape = harden(
-  M.splitRecord(
-    { storageNode: M.eref(M.remotable('StorageNode')) },
-    { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
-  ),
-);
-
-export const customTermsShape = harden({
-  agoricNames: M.eref(M.remotable('agoricNames')),
-  board: M.eref(M.remotable('board')),
-  assetPublisher: M.eref(M.remotable('Bank')),
-});
+import { prepareSmartWallet } from '../../../src/smartWallet.js';
+import { shape } from '../../../src/typeGuards.js';
+import {
+  makeAssetRegistry,
+  publishDepositFacet,
+} from '../../../src/walletFactory.js';
 
 /**
- * Provide a NameHub for this address and insert depositFacet only if not
- * already done.
  *
- * @param {string} address
- * @param {import('./smartWallet.js').SmartWallet} wallet
- * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- */
-export const publishDepositFacet = async (
-  address,
-  wallet,
-  namesByAddressAdmin,
-) => {
-  const { nameHub, myAddressNameAdmin } = makeMyAddressNameAdminKit(address);
-  myAddressNameAdmin.reserve(WalletName.depositFacet);
-
-  // This may race against perAddress in makeAddressNameHubs, so we are careful
-  // not to clobber the first nameHub that is used to update
-  // namesByAddressAdmin.
-  await E(namesByAddressAdmin).default(address, nameHub, myAddressNameAdmin);
-
-  const actualAdmin = E(namesByAddressAdmin).lookupAdmin(address);
-  return E(actualAdmin).default(
-    WalletName.depositFacet,
-    wallet.getDepositFacet(),
-  );
-};
-
-/**
- * @param {AssetPublisher} assetPublisher
- */
-export const makeAssetRegistry = assetPublisher => {
-  /**
-   * @typedef {{
-   *   brand: Brand,
-   *   displayInfo: DisplayInfo,
-   *   issuer: Issuer,
-   *   petname: import('./types').Petname
-   * }} BrandDescriptor
-   * For use by clients to describe brands to users. Includes `displayInfo` to save a remote call.
-   */
-  /** @type {MapStore<Brand, BrandDescriptor>} */
-  const brandDescriptors = makeScalarMapStore();
-
-  // watch the bank for new issuers to make purses out of
-  void observeIteration(E(assetPublisher).getAssetSubscription(), {
-    async updateState(desc) {
-      const { brand, issuer: issuerP, issuerName: petname } = desc;
-      // await issuer identity for use in chainStorage
-      const [issuer, displayInfo] = await Promise.all([
-        issuerP,
-        E(brand).getDisplayInfo(),
-      ]);
-
-      brandDescriptors.init(desc.brand, {
-        brand,
-        issuer,
-        petname,
-        displayInfo,
-      });
-    },
-  });
-
-  const registry = {
-    /** @param {Brand} brand */
-    has: brand => brandDescriptors.has(brand),
-    /** @param {Brand} brand */
-    get: brand => brandDescriptors.get(brand),
-    values: () => brandDescriptors.values(),
-  };
-  return registry;
-};
-
-/**
- * @typedef {{
- *   agoricNames: ERef<NameHub>,
- *   board: ERef<import('@agoric/vats').Board>,
- *   assetPublisher: AssetPublisher,
- * }} SmartWalletContractTerms
- *
- * @typedef {import('@agoric/vats').NameHub} NameHub
- *
- * @typedef {{
- *   getAssetSubscription: () => ERef<Subscription<import('@agoric/vats/src/vat-bank').AssetDescriptor>>
- * }} AssetPublisher
- */
-
-// NB: even though all the wallets share this contract, they
-// 1. they should not rely on that; they may be partitioned later
-// 2. they should never be able to detect behaviors from another wallet
-/**
- *
- * @param {ZCF<SmartWalletContractTerms>} zcf
- * @param {{
- *   storageNode: ERef<StorageNode>,
- *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
- * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @type {typeof import('../../../src/walletFactory.js').prepare}
  */
 export const prepare = async (zcf, privateArgs, baggage) => {
+  // copy paste from original contract, with type imports fixed and sayHelloUpgrade method added to creatorFacet)
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
@@ -144,7 +40,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     {
       /**
        *
-       * @param {import('./types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
+       * @param {import('../../../src/types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
        */
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);
@@ -209,19 +105,21 @@ export const prepare = async (zcf, privateArgs, baggage) => {
         M.await(M.remotable('Bank')),
         M.await(M.remotable('namesByAddressAdmin')),
       ).returns([M.remotable('SmartWallet'), M.boolean()]),
+      // new for V2
+      sayHelloUpgrade: M.call().returns(M.string()),
     }),
     {
       /**
        * @param {string} address
        * @param {ERef<import('@agoric/vats/src/vat-bank').Bank>} bank
        * @param {ERef<import('@agoric/vats/').NameAdmin>} namesByAddressAdmin
-       * @returns {Promise<[import('./smartWallet').SmartWallet, boolean]>} wallet
+       * @returns {Promise<[import('../../../src/smartWallet').SmartWallet, boolean]>} wallet
        *   along with a flag to distinguish between looking up an existing wallet
        *   and creating a new one.
        */
       provideSmartWallet(address, bank, namesByAddressAdmin) {
         let makerCalled = false;
-        /** @type {() => Promise<import('./smartWallet').SmartWallet>} */
+        /** @type {() => Promise<import('../../../src/smartWallet').SmartWallet>} */
         const maker = async () => {
           const invitationPurse = await E(invitationIssuer).makeEmptyPurse();
           const walletStorageNode = E(storageNode).makeChildNode(address);
@@ -240,6 +138,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
           .provideAsync(address, maker)
           .then(w => [w, makerCalled]);
       },
+      // new for V2
+      sayHelloUpgrade: () => 'hello, upgrade',
     },
   );
 

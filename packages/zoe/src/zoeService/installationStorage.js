@@ -1,16 +1,16 @@
 import { assert } from '@agoric/assert';
+import { initEmpty } from '@agoric/store';
 import {
   M,
   makeScalarBigMapStore,
-  provideDurableWeakMapStore,
   prepareExo,
   prepareKind,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { initEmpty } from '@agoric/store';
 import {
   InstallationShape,
-  BundleCapShape,
   InstanceHandleShape,
+  UnwrappedInstallationShape,
 } from '../typeGuards.js';
 
 const { Fail } = assert;
@@ -73,18 +73,6 @@ export const makeInstallationStorage = (
     installationsBundle.init(installation, bundle);
     return installation;
   };
-
-  const UnwrappedInstallationShape = M.splitRecord(
-    harden({
-      installation: InstallationShape,
-    }),
-    harden({
-      bundle: M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
-      bundleCap: BundleCapShape,
-      bundleID: M.string(),
-    }),
-    harden({}),
-  );
 
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(
