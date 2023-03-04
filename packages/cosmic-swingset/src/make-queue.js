@@ -50,9 +50,9 @@ export const makeQueue = storage => {
     },
     /** @returns {IterableIterator<T>} */
     consumeAll: () => {
-      let done = false;
       let head = getHead();
       const tail = getTail();
+      let done = !(head < tail);
       const iterator = {
         [Symbol.iterator]: () => iterator,
         next: () => {
