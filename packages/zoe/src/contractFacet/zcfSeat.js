@@ -112,10 +112,8 @@ export const createSeatManager = (
   };
 
   const assertStagedAllocation = zcfSeat => {
-    assert(
-      hasStagedAllocation(zcfSeat),
-      'Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.',
-    );
+    hasStagedAllocation(zcfSeat) ||
+      Fail`Reallocate failed because a seat had no staged allocation. Please add or subtract from the seat and then reallocate.`;
   };
 
   const setStagedAllocation = (zcfSeat, newStagedAllocation) => {
@@ -194,10 +192,7 @@ export const createSeatManager = (
         if (currentAllocation[keyword] !== undefined) {
           return currentAllocation[keyword];
         }
-        assert(
-          brand,
-          'A brand must be supplied when the keyword is not defined',
-        );
+        brand || Fail`A brand must be supplied when the keyword is not defined`;
         const assetKind = getAssetKindByBrand(brand);
         return AmountMath.makeEmpty(brand, assetKind);
       },

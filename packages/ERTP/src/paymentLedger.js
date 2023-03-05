@@ -313,11 +313,11 @@ export const preparePaymentLedger = (
     srcPayment,
     optAmountShape = undefined,
   ) => {
-    assert(
-      !isPromise(srcPayment),
-      `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
-      TypeError,
-    );
+    !isPromise(srcPayment) ||
+      assert.fail(
+        `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
+        TypeError,
+      );
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
     assertAmountConsistent(srcPaymentBalance, optAmountShape);

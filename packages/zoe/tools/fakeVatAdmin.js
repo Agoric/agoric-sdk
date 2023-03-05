@@ -75,7 +75,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return Promise.resolve().then(() => nameToBundleID.get(name));
     },
     createVat: (bundleCap, { vatParameters = {} } = {}) => {
-      assert.equal(bundleCap, zcfBundleCap, 'fakeVatAdmin only knows ZCF');
+      bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
       const exitKit = makePromiseKit();
       handlePKitWarning(exitKit);
       const exitVat = completion => {
@@ -115,7 +115,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
               return exitKit.promise;
             },
             terminateWithFailure: () => {},
-            upgrade: (_bundleCap, _options) => assert.fail('upgrade not faked'),
+            upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
           }),
         }),
       );

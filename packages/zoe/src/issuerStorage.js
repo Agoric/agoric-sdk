@@ -5,6 +5,8 @@ import { arrayToObj } from './objArrayConversion.js';
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
 
+const { Fail } = assert;
+
 const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
 /**
@@ -25,8 +27,9 @@ export const provideIssuerStorage = zcfBaggage => {
   );
 
   let instantiated = zcfBaggage.has(STORAGE_INSTANTIATED_KEY);
-  const assertInstantiated = () =>
-    assert(instantiated, 'issuerStorage has not been instantiated');
+  const assertInstantiated = () => {
+    instantiated || Fail`issuerStorage has not been instantiated`;
+  };
 
   /**
    * If we already know the entire issuer record, such as for a
@@ -115,7 +118,7 @@ export const provideIssuerStorage = zcfBaggage => {
     // intend to prevent issuer misbehavior in general, so the user
     // *must* rely on the good behavior of the issuers used in the
     // smart contracts they use.
-    assert(brandIssuerMatch, `issuer was using a brand which was not its own`);
+    brandIssuerMatch || Fail`issuer was using a brand which was not its own`;
     const issuerRecord = makeIssuerRecord(brand, issuer, displayInfo);
     storeIssuerRecord(issuerRecord);
     return getByBrand(brand);

@@ -6,6 +6,8 @@ import { TimeMath } from '@agoric/time';
 import './types-ambient.js';
 import './internal-types.js';
 
+const { Fail } = assert;
+
 // we wrap SwingSet's buildManualTimer to accomodate the needs of
 // zoe's tests
 
@@ -77,7 +79,7 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
   };
 
   const tickN = async (nTimes, msg) => {
-    assert(nTimes >= 1, 'invariant nTimes >= 1');
+    nTimes >= 1 || Fail`invariant nTimes >= 1`;
     for (let i = 0; i < nTimes; i += 1) {
       // eslint-disable-next-line no-await-in-loop
       await tick(msg);

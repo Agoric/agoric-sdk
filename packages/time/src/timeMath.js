@@ -3,7 +3,7 @@ import { mustMatch } from '@agoric/store';
 
 import { RelativeTimeShape, TimestampShape } from './typeGuards.js';
 
-const { details: X, quote: q } = assert;
+const { Fail, quote: q } = assert;
 /**
  * @typedef {import('./types').TimerBrand} TimerBrand
  * @typedef {import('./types').Timestamp} Timestamp
@@ -31,11 +31,8 @@ const agreedTimerBrand = (leftBrand, rightBrand) => {
   } else if (rightBrand === undefined) {
     return leftBrand;
   } else {
-    assert.equal(
-      leftBrand,
-      rightBrand,
-      X`TimerBrands must match: ${q(leftBrand)} vs ${q(rightBrand)}`,
-    );
+    leftBrand === rightBrand ||
+      Fail`TimerBrands must match: ${q(leftBrand)} vs ${q(rightBrand)}`;
     return leftBrand;
   }
 };

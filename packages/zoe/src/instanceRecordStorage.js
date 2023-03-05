@@ -31,11 +31,10 @@ const { quote: q, Fail } = assert;
 export const makeInstanceRecordStorage = baggage => {
   provide(baggage, 'instanceRecord', () => undefined);
 
-  const assertInstantiated = instanceRecord =>
-    assert(
-      instanceRecord !== 'undefined',
-      'instanceRecord has not been instantiated',
-    );
+  const assertInstantiated = instanceRecord => {
+    instanceRecord !== 'undefined' ||
+      Fail`instanceRecord has not been instantiated`;
+  };
 
   const InstanceRecordI = M.interface('InstanceRecord', {
     addIssuer: M.call(KeywordShape, IssuerRecordShape).returns(),

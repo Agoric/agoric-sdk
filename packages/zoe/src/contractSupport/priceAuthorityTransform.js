@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail, assert } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 
@@ -70,16 +70,10 @@ export const makePriceAuthorityTransform = async ({
    * @param {Brand} brandOut
    */
   const assertBrands = (brandIn, brandOut) => {
-    assert.equal(
-      brandIn,
-      actualBrandIn,
-      X`Desired brandIn ${brandIn} must match ${actualBrandIn}`,
-    );
-    assert.equal(
-      brandOut,
-      actualBrandOut,
-      X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
-    );
+    brandIn === actualBrandIn ||
+      Fail`Desired brandIn ${brandIn} must match ${actualBrandIn}`;
+    brandOut === actualBrandOut ||
+      Fail`Desired brandOut ${brandOut} must match ${actualBrandOut}`;
   };
 
   /**
@@ -98,11 +92,8 @@ export const makePriceAuthorityTransform = async ({
       sourceQuotePayment,
     );
 
-    assert.equal(
-      sourceQuoteValue.length,
-      1,
-      X`sourceQuoteValue.length ${sourceQuoteValue.length} is not 1`,
-    );
+    sourceQuoteValue.length === 1 ||
+      Fail`sourceQuoteValue.length ${sourceQuoteValue.length} is not 1`;
 
     const {
       amountIn: sourceAmountIn,

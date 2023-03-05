@@ -174,7 +174,7 @@ harden(applyLabelingError);
  * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/far').ERef<DeeplyAwaited<T>>}
  */
 export const deeplyFulfilledObject = obj => {
-  assert(isObject(obj), 'param must be an object');
+  isObject(obj) || Fail`param must be an object`;
   return deeplyFulfilled(obj);
 };
 
