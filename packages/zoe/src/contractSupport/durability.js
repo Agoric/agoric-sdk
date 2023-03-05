@@ -9,8 +9,6 @@ import {
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-/// <reference types="@agoric/notifier/src/types-ambient.js"/>
-
 /**
  * SCALE: Only for low cardinality provisioning. Every value from init() will
  * remain in the map for the lifetime of the heap. If a key object is GCed, its

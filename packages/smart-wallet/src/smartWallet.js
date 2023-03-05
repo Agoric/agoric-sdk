@@ -14,7 +14,7 @@ import {
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
-import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { makeTypeGuards } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -25,6 +25,7 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 
 const { Fail, quote: q } = assert;
+const { StorageNodeShape } = makeTypeGuards(M);
 
 const ERROR_LAST_OFFER_ID = -1;
 

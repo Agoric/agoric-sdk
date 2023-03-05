@@ -120,7 +120,7 @@
  *   `E(userBundle.bank).deposit(payment)` has to cast userBundle.bank;
  *   ideally, the cast is to some useful type. But unknown can't be cast directly to some other type;
  *   it has to be cast to any first.
- * @property {() => ConsistentAsyncIterable<Configuration>} getConfiguration
+ * @property {() => AsyncIterable<Configuration, Configuration>} getConfiguration
  *
  * @typedef {{ clientAddress: string, clientHome: Record<string, any>}} Configuration
  *

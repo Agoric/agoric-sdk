@@ -721,7 +721,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
    *
    * It then delivers the mailbox to inbound.  There are no optimisations.
    *
-   * @param {UpdateCount} [lastMailboxUpdate]
+   * @param {bigint} [lastMailboxUpdate]
    */
   const recurseEachMailboxUpdate = async (lastMailboxUpdate = undefined) => {
     const { updateCount, value: mailbox } = await mbNotifier.getUpdateSince(
@@ -773,7 +773,7 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
   };
 
   // This function ensures we only have one outgoing send operation at a time.
-  /** @type {(lastSendUpdate?: UpdateCount) => Promise<void>} */
+  /** @type {(lastSendUpdate?: bigint) => Promise<void>} */
   const recurseEachSend = async (lastSendUpdate = undefined) => {
     // See when there is another requested send since our last time.
     const { updateCount } = await sendNotifier.getUpdateSince(lastSendUpdate);
