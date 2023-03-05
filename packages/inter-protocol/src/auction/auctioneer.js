@@ -89,7 +89,7 @@ export const distributeProportionalShares = (
     transfers.push([collateralSeat, seat, { Collateral: collPortion }]);
   }
 
-  // TODO The leftovers should go to the reserve, and should be visible.
+  // TODO(#7117) The leftovers should go to the reserve, and should be visible.
   transfers.push([currencySeat, reserveSeat, { Currency: currencyLeft }]);
 
   // There will be multiple collaterals, so they can't all use the same keyword
@@ -183,6 +183,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         for (const { seat } of depositsForBrand) {
           seat.exit();
         }
+        deposits.set(brand, []);
       }
     }
   };
@@ -306,6 +307,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         collateralBrand,
         priceAuthority,
       );
+
+      // These three store.init() calls succeed or fail atomically
       deposits.init(collateralBrand, harden([]));
       books.init(collateralBrand, newBook);
       brandToKeyword.init(collateralBrand, kwd);

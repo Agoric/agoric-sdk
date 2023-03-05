@@ -91,7 +91,7 @@ export const makeScaledBidBook = (
  * @param {Brand} collateralBrand
  */
 export const makePriceBook = (baggage, ratioPattern, collateralBrand) => {
-  const store = provideDurableMapStore(baggage, 'scaledBidStore');
+  const store = provideDurableMapStore(baggage, 'pricedBidStore');
   return Far('priceBook ', {
     add(seat, price, wanted) {
       mustMatch(price, ratioPattern);

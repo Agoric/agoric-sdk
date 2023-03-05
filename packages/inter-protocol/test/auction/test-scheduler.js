@@ -22,7 +22,7 @@ import {
 test('schedule start to finish', async t => {
   const { zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
-  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
@@ -44,8 +44,8 @@ test('schedule start to finish', async t => {
     params2[key] = value;
   }
 
-  let now = 127n;
-  await timer.advanceTo(now);
+  /** @type {bigint} */
+  let now = await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -76,13 +76,12 @@ test('schedule start to finish', async t => {
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().final);
 
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().final);
 
-  now = 131n;
-  await timer.advanceTo(now);
+  now = await timer.advanceTo(131n);
   await eventLoopIteration();
 
   const schedule2 = scheduler.getSchedule();
@@ -100,22 +99,22 @@ test('schedule start to finish', async t => {
   t.false(fakeAuctioneer.getState().final);
 
   // xxx I shouldn't have to tick twice.
-  await timer.advanceTo((now += 1n));
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 2);
   t.false(fakeAuctioneer.getState().final);
 
   // final step
-  await timer.advanceTo((now += 1n));
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
 
   // Auction finished, nothing else happens
-  await timer.advanceTo((now += 1n));
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
@@ -134,13 +133,12 @@ test('schedule start to finish', async t => {
   };
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
-  now = 140n;
-  await timer.advanceTo(now);
+  now = await timer.advanceTo(140n);
 
   t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
   await eventLoopIteration();
 
   const schedule3 = scheduler.getSchedule();
@@ -158,22 +156,22 @@ test('schedule start to finish', async t => {
   t.false(fakeAuctioneer.getState().final);
 
   // xxx I shouldn't have to tick twice.
-  await timer.advanceTo((now += 1n));
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 5);
   t.false(fakeAuctioneer.getState().final);
 
   // final step
-  await timer.advanceTo((now += 1n));
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
+  now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
 
   // Auction finished, nothing else happens
-  await timer.advanceTo((now += 1n));
-  await timer.advanceTo((now += 1n));
+  now = await timer.advanceTo(now + 1n);
+  await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
@@ -205,8 +203,7 @@ test('lowest >= starting', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -248,8 +245,7 @@ test('zero time for auction', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -288,8 +284,7 @@ test('discountStep 0', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -329,8 +324,7 @@ test('discountStep larger than starting rate', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -369,8 +363,7 @@ test('start Freq 0', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -410,8 +403,7 @@ test('delay > freq', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -452,8 +444,7 @@ test('lockPeriod > freq', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
@@ -501,8 +492,7 @@ test('duration = freq', async t => {
     params2[key] = value;
   }
 
-  const now = 127n;
-  await timer.advanceTo(now);
+  await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,

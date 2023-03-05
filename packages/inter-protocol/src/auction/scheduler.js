@@ -19,9 +19,15 @@ const trace = makeTracer('SCHED', false);
  * round has finished, so we need to schedule the next round each time an
  * auction starts. This means if the scheduling parameters change, it'll be a
  * full cycle before we switch. Otherwise, the vaults wouldn't know when to
- * start their lock period.
+ * start their lock period. If the lock period for the next auction hasn't
+ * started when each aucion ends, we recalculate it, in case the parameters have
+ * changed.
+ *
+ * If the clock skips forward (because of a chain halt, for instance), the
+ * scheduler will try to cleanly and quickly finish any round already in
+ * progress. It would take additional work on the manual timer to test this
+ * thoroughly.
  */
-
 const makeCancelToken = () => {
   let tokenCount = 1;
   return Far(`cancelToken${(tokenCount += 1)}`, {});
@@ -186,10 +192,11 @@ export const makeScheduler = async (
     );
     nextSchedule = computeRoundTiming(params, after);
     scheduleRound(time);
-    scheduleNextRound(TimeMath.toAbs(nextSchedule.startTime));
+    scheduleNextRound(nextSchedule.startTime);
   };
 
   const baseNow = await E(timer).getCurrentTimestamp();
+  // XXX manualTimer returns a bigint, not a timeRecord.
   const now = TimeMath.toAbs(baseNow, timerBrand);
   nextSchedule = computeRoundTiming(params, now);
   scheduleNextRound(nextSchedule.startTime);

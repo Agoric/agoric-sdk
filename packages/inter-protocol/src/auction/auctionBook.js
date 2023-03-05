@@ -2,7 +2,7 @@ import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
-import { M, makeScalarBigMapStore, provide } from '@agoric/vat-data';
+import { M, provide } from '@agoric/vat-data';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
