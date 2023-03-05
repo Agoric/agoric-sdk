@@ -1,11 +1,7 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "noEmit": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "moduleResolution": "node",
+    "checkJs": false,
   },
   "include": [
     "*.js",

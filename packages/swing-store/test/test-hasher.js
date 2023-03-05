@@ -32,6 +32,6 @@ test('createSHA256', t => {
 
   const h4 = createSHA256();
   h4.finish();
-  t.throws(h4.add);
-  t.throws(h4.finish);
+  t.throws(() => h4.add('a'));
+  t.throws(() => h4.finish());
 });
