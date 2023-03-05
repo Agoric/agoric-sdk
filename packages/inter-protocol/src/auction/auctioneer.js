@@ -9,7 +9,7 @@ import {
   makeScalarBigMapStore,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape } from '@agoric/ertp';
 import {
   atomicRearrange,
   makeRatioFromAmounts,
@@ -166,11 +166,11 @@ export const start = async (zcf, privateArgs, baggage) => {
         liqSeat.exit();
         deposits.set(brand, []);
       } else if (depositsForBrand.length > 1) {
-        const collatRaise = collateralSeat.getCurrentAllocation().Collateral;
-        const currencyRaise = currencySeat.getCurrentAllocation().Currency;
+        const collProceeds = collateralSeat.getCurrentAllocation().Collateral;
+        const currProceeds = currencySeat.getCurrentAllocation().Currency;
         const transfers = distributeProportionalShares(
-          collatRaise,
-          currencyRaise,
+          collProceeds,
+          currProceeds,
           depositsForBrand,
           collateralSeat,
           currencySeat,
@@ -188,7 +188,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     }
   };
 
-  const { publicMixin, creatorMixin, makeFarGovernorFacet, params } =
+  const { augmentPublicFacet, creatorMixin, makeFarGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -257,74 +257,88 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
 
   const getDepositInvitation = () =>
-    zcf.makeInvitation(depositOfferHandler, 'deposit Collateral');
+    zcf.makeInvitation(
+      depositOfferHandler,
+      'deposit Collateral',
+      undefined,
+      M.splitRecord({ give: { Collateral: AmountShape } }),
+    );
 
-  const publicFacet = Far('publicFacet', {
-    getBidInvitation(collateralBrand) {
-      const newBidHandler = (zcfSeat, bidSpec) => {
-        if (books.has(collateralBrand)) {
-          const auctionBook = books.get(collateralBrand);
-          auctionBook.addOffer(bidSpec, zcfSeat, isActive());
-          return 'Your offer has been received';
-        } else {
-          zcfSeat.exit(`No book for brand ${collateralBrand}`);
-          return 'Your offer was refused';
-        }
-      };
+  const publicFacet = augmentPublicFacet(
+    harden({
+      getBidInvitation(collateralBrand) {
+        const newBidHandler = (zcfSeat, bidSpec) => {
+          if (books.has(collateralBrand)) {
+            const auctionBook = books.get(collateralBrand);
+            auctionBook.addOffer(bidSpec, zcfSeat, isActive());
+            return 'Your offer has been received';
+          } else {
+            zcfSeat.exit(`No book for brand ${collateralBrand}`);
+            return 'Your offer was refused';
+          }
+        };
+        const bidProposalShape = M.splitRecord(
+          {
+            give: { Currency: { brand: brands.Currency, value: M.nat() } },
+          },
+          {
+            want: M.or({ Collateral: AmountShape }, {}),
+            exit: FullProposalShape.exit,
+          },
+        );
 
-      return zcf.makeInvitation(
-        newBidHandler,
-        'new bid',
-        {},
-        FullProposalShape,
-      );
-    },
-    getSchedules() {
-      return E(scheduler).getSchedule();
-    },
-    getDepositInvitation,
-    ...publicMixin,
-    ...params,
-  });
+        return zcf.makeInvitation(
+          newBidHandler,
+          'new bid',
+          {},
+          bidProposalShape,
+        );
+      },
+      getSchedules() {
+        return E(scheduler).getSchedule();
+      },
+      getDepositInvitation,
+      ...params,
+    }),
+  );
 
-  const limitedCreatorFacet = Far('creatorFacet', {
-    /**
-     * @param {Issuer} issuer
-     * @param {Brand} collateralBrand
-     * @param {Keyword} kwd
-     */
-    async addBrand(issuer, collateralBrand, kwd) {
-      zcf.assertUniqueKeyword(kwd);
-      !baggage.has(kwd) ||
-        Fail`cannot add brand with keyword ${kwd}. it's in use`;
+  const creatorFacet = makeFarGovernorFacet(
+    Far('Auctioneer creatorFacet', {
+      /**
+       * @param {Issuer} issuer
+       * @param {Keyword} kwd
+       */
+      async addBrand(issuer, kwd) {
+        zcf.assertUniqueKeyword(kwd);
+        !baggage.has(kwd) ||
+          Fail`cannot add brand with keyword ${kwd}. it's in use`;
+        const { brand } = await zcf.saveIssuer(issuer, kwd);
 
-      zcf.saveIssuer(issuer, kwd);
-      baggage.init(kwd, makeScalarBigMapStore(kwd, { durable: true }));
-      const newBook = await makeAuctionBook(
-        baggage.get(kwd),
-        zcf,
-        brands.Currency,
-        collateralBrand,
-        priceAuthority,
-      );
+        baggage.init(kwd, makeScalarBigMapStore(kwd, { durable: true }));
+        const newBook = await makeAuctionBook(
+          baggage.get(kwd),
+          zcf,
+          brands.Currency,
+          brand,
+          priceAuthority,
+        );
 
-      // These three store.init() calls succeed or fail atomically
-      deposits.init(collateralBrand, harden([]));
-      books.init(collateralBrand, newBook);
-      brandToKeyword.init(collateralBrand, kwd);
-    },
-    // XXX if it's in public, doesn't also need to be in creatorFacet.
-    getDepositInvitation,
-    /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
-    getSchedule() {
-      return E(scheduler).getSchedule();
-    },
-    ...creatorMixin,
-  });
+        // These three store.init() calls succeed or fail atomically
+        deposits.init(brand, harden([]));
+        books.init(brand, newBook);
+        brandToKeyword.init(brand, kwd);
+      },
+      // XXX if it's in public, doesn't also need to be in creatorFacet.
+      getDepositInvitation,
+      /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
+      getSchedule() {
+        return E(scheduler).getSchedule();
+      },
+      ...creatorMixin,
+    }),
+  );
 
-  const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);
-
-  return { publicFacet, creatorFacet: governorFacet };
+  return { publicFacet, creatorFacet };
 };
 
 /** @typedef {ContractOf<typeof start>} AuctioneerContract */

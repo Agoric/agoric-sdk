@@ -200,7 +200,6 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
 
     await E(creatorFacet).addBrand(
       issuerKit.issuer,
-      collateralBrand,
       collateralBrand.getAllegedName(),
     );
     return depositCollateral(collateralAmount, issuerKit);
@@ -898,4 +897,13 @@ test.serial('multiple bidders at one auction step', async t => {
 
   t.true(await E(liqSeat).hasExited());
   await assertPayouts(t, liqSeat, currency, collateral, 347n, 0n);
+});
+
+test('deposit unregistered collateral', async t => {
+  const asset = withAmountUtils(makeIssuerKit('Asset'));
+  const driver = await makeAuctionDriver(t);
+
+  await t.throwsAsync(() => driver.depositCollateral(asset.make(500n), asset), {
+    message: /no ordinal/,
+  });
 });
