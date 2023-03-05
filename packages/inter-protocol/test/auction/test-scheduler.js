@@ -69,6 +69,7 @@ test('schedule start to finish', async t => {
     endRate: 6500n,
     startDelay: TimeMath.toRel(1n, timerBrand),
     clockStep: TimeMath.toRel(2n, timerBrand),
+    lockTime: TimeMath.toAbs(126n, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
@@ -93,6 +94,7 @@ test('schedule start to finish', async t => {
     endRate: 6500n,
     startDelay: TimeMath.toRel(1n, timerBrand),
     clockStep: TimeMath.toRel(2n, timerBrand),
+    lockTime: TimeMath.toAbs(136, timerBrand),
   });
 
   t.is(fakeAuctioneer.getState().step, 1);
@@ -130,6 +132,7 @@ test('schedule start to finish', async t => {
     endRate: 6500n,
     startDelay: TimeMath.toRel(1n, timerBrand),
     clockStep: TimeMath.toRel(2n, timerBrand),
+    lockTime: TimeMath.toAbs(136n, timerBrand),
   };
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
@@ -150,6 +153,7 @@ test('schedule start to finish', async t => {
     endRate: 6500n,
     startDelay: TimeMath.toRel(1n, timerBrand),
     clockStep: TimeMath.toRel(2n, timerBrand),
+    lockTime: TimeMath.toAbs(146n, timerBrand),
   });
 
   t.is(fakeAuctioneer.getState().step, 4);
@@ -521,6 +525,7 @@ test('duration = freq', async t => {
     endRate: 50n,
     startDelay: TimeMath.toRel(5n, timerBrand),
     clockStep: TimeMath.toRel(60n, timerBrand),
+    lockTime: TimeMath.toAbs(345n, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
@@ -535,6 +540,7 @@ test('duration = freq', async t => {
     endRate: 50n,
     startDelay: TimeMath.toRel(5n, timerBrand),
     clockStep: TimeMath.toRel(60n, timerBrand),
+    lockTime: TimeMath.toAbs(705n, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, secondSchedule);
 });

@@ -47,6 +47,7 @@ const checkSchedule = (t, params, baseTime, rawExpect) => {
     endRate: rawExpect.endRate,
     startDelay: TimeMath.toRel(rawExpect.startDelay, brand),
     clockStep: TimeMath.toRel(rawExpect.clockStep, brand),
+    lockTime: TimeMath.toAbs(rawExpect.lockTime, brand),
   };
   t.deepEqual(schedule, expect);
 };
@@ -76,6 +77,7 @@ test('simple schedule', checkSchedule, makeDefaultParams(), 100, {
   endRate: 6_500n,
   startDelay: 300,
   clockStep: 600,
+  lockTime: 3000,
 });
 
 test(
@@ -90,6 +92,7 @@ test(
     endRate: 6_500n,
     startDelay: 300,
     clockStep: 600,
+    lockTime: 6600,
   },
 );
 
@@ -107,6 +110,7 @@ test(
     endRate: 6_500n,
     startDelay: 300,
     clockStep: 300,
+    lockTime: 3000,
   },
 );
 
@@ -155,6 +159,7 @@ test(
     endRate: 10_500n - 2_001n,
     startDelay: 300,
     clockStep: 600,
+    lockTime: 3000,
   },
 );
 
@@ -180,6 +185,7 @@ test(
     endRate: 10_500n - 5n * 10n,
     startDelay: 300,
     clockStep: 600,
+    lockTime: 3000,
   },
 );
 
@@ -197,5 +203,6 @@ test(
     endRate: 10_500n - 5n * 350n,
     startDelay: 300,
     clockStep: 600,
+    lockTime: 3000,
   },
 );

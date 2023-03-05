@@ -93,8 +93,17 @@ export const computeRoundTiming = (params, baseTime) => {
     startDelay,
   );
   const endTime = TimeMath.addAbsRel(startTime, actualDuration);
+  const lockTime = TimeMath.subtractAbsRel(startTime, lockPeriod);
 
-  const next = { startTime, endTime, steps, endRate, startDelay, clockStep };
+  const next = {
+    startTime,
+    endTime,
+    steps,
+    endRate,
+    startDelay,
+    clockStep,
+    lockTime,
+  };
   return harden(next);
 };
 
@@ -144,8 +153,17 @@ export const makeScheduler = async (
       auctionState = AuctionState.WAITING;
 
       auctionDriver.finalize();
-      const afterNow = TimeMath.addAbsRel(time, TimeMath.toRel(1n, timerBrand));
-      nextSchedule = computeRoundTiming(params, afterNow);
+
+      // only recalculate the next schedule at this point if the lock time has
+      // not been reached.
+      const nextLock = nextSchedule.lockTime;
+      if (TimeMath.compareAbs(time, nextLock) < 0) {
+        const afterNow = TimeMath.addAbsRel(
+          time,
+          TimeMath.toRel(1n, timerBrand),
+        );
+        nextSchedule = computeRoundTiming(params, afterNow);
+      }
       liveSchedule = undefined;
 
       E(timer).cancel(stepCancelToken);
