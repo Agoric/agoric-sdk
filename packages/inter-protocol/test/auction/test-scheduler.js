@@ -215,7 +215,7 @@ test('lowest >= starting', async t => {
   await t.throwsAsync(
     () =>
       makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
-    { message: '-5 is negative' },
+    { message: /startingRate "\[105n]" must be more than lowest: "\[110n]"/ },
   );
 });
 
@@ -257,7 +257,10 @@ test('zero time for auction', async t => {
   await t.throwsAsync(
     () =>
       makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
-    { message: /Frequency .* must exceed duration/ },
+    {
+      message:
+        /clockStep "\[3n]" must be shorter than startFrequency "\[2n]" to allow at least one step down/,
+    },
   );
 });
 
@@ -475,6 +478,8 @@ test('duration = freq', async t => {
   const publisherKit = makePublisherFromFakes();
 
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
+  // start hourly, request 6 steps down every 10 minutes, so duration would be
+  // 1 hour. Instead cut the auction short.
   defaultParams = {
     ...defaultParams,
     priceLockPeriod: 20n,
@@ -501,11 +506,35 @@ test('duration = freq', async t => {
     params2,
   );
 
-  await t.throwsAsync(
-    () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
-    {
-      message: /Frequency .* must exceed duration .*/,
-    },
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
   );
+  let schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  const firstSchedule = {
+    startTime: TimeMath.toAbs(365n, timerBrand),
+    endTime: TimeMath.toAbs(665n, timerBrand),
+    steps: 5n,
+    endRate: 50n,
+    startDelay: TimeMath.toRel(5n, timerBrand),
+    clockStep: TimeMath.toRel(60n, timerBrand),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
+
+  await timer.advanceTo(725n);
+  schedule = scheduler.getSchedule();
+
+  // start the second auction on time
+  const secondSchedule = {
+    startTime: TimeMath.toAbs(725n, timerBrand),
+    endTime: TimeMath.toAbs(1025n, timerBrand),
+    steps: 5n,
+    endRate: 50n,
+    startDelay: TimeMath.toRel(5n, timerBrand),
+    clockStep: TimeMath.toRel(60n, timerBrand),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, secondSchedule);
 });

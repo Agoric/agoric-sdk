@@ -57,17 +57,23 @@ export const computeRoundTiming = (params, baseTime) => {
     Fail`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`;
 
   startingRate > lowestRate ||
-    Fail`startingRate ${startingRate} must be more than ${lowestRate}`;
+    Fail`startingRate ${startingRate} must be more than lowest: ${lowestRate}`;
   const rateChange = subtract(startingRate, lowestRate);
   const requestedSteps = floorDivide(rateChange, discountStep);
   requestedSteps > 0n ||
     Fail`discountStep ${discountStep} too large for requested rates`;
   TimeMath.compareRel(freq, clockStep) >= 0 ||
-    Fail`clockStep ${clockStep} must be shorter than startFrequency ${freq} to allow >1 steps `;
+    Fail`clockStep ${TimeMath.relValue(
+      clockStep,
+    )} must be shorter than startFrequency ${TimeMath.relValue(
+      freq,
+    )} to allow at least one step down`;
 
   const requestedDuration = TimeMath.multiplyRelNat(clockStep, requestedSteps);
   const targetDuration =
-    TimeMath.compareRel(requestedDuration, freq) < 0 ? requestedDuration : freq;
+    TimeMath.compareRel(requestedDuration, freq) < 0
+      ? requestedDuration
+      : TimeMath.subtractRelRel(freq, TimeMath.toRel(1n));
   const steps = TimeMath.divideRelRel(targetDuration, clockStep);
   const duration = TimeMath.multiplyRelNat(clockStep, steps);
 
