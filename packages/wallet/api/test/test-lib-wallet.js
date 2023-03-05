@@ -428,7 +428,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
   assert(Array.isArray(invitationAmountValue2));
   const [{ handle: inviteHandle2 }] = invitationAmountValue2;
 
-  await waitForUpdate(E(zoeInvitePurse).getCurrentAmountNotifier(), () =>
+  await waitForUpdate(wallet.getPursesNotifier(), () =>
     wallet.deposit('Default Zoe invite purse', invite2),
   );
 
@@ -477,7 +477,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
           { kind: 'brand', petname: 'zoe invite' },
           { kind: 'unnamed', petname: 'unnamed-4' },
           { kind: 'unnamed', petname: 'unnamed-2' },
-          { kind: 'unnamed', petname: 'unnamed-3' },
+          { kind: 'unnamed', petname: 'unnamed-1' },
         ],
       },
       currentAmount: {
@@ -487,7 +487,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
             description: 'getRefund',
             handle: { kind: 'unnamed', petname: 'unnamed-4' },
             installation: { kind: 'unnamed', petname: 'unnamed-2' },
-            instance: { kind: 'unnamed', petname: 'unnamed-3' },
+            instance: { kind: 'unnamed', petname: 'unnamed-1' },
           },
         ],
       },
@@ -597,7 +597,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         description: 'getRefund',
         handle: {
           kind: 'unnamed',
-          petname: 'unnamed-1',
+          petname: 'unnamed-3',
         },
         installation: {
           kind: 'installation',
@@ -735,7 +735,7 @@ test('lib-wallet dapp suggests issuer, instance, installation petnames', async t
         description: 'getRefund',
         handle: {
           kind: 'unnamed',
-          petname: 'unnamed-1',
+          petname: 'unnamed-3',
         },
         installation: {
           kind: 'installation',
@@ -970,7 +970,7 @@ test('lib-wallet offer methods', async t => {
           },
           instance: {
             kind: 'unnamed',
-            petname: 'unnamed-3',
+            petname: 'unnamed-1',
           },
         },
         inviteHandleBoardId: 'board0257',
@@ -984,7 +984,7 @@ test('lib-wallet offer methods', async t => {
         },
         requestContext: { dappOrigin: 'unknown' },
         status: 'decline',
-        instancePetname: 'unnamed-3',
+        instancePetname: 'unnamed-1',
         installationPetname: 'unnamed-2',
         proposalForDisplay: {
           give: {

@@ -1,7 +1,6 @@
 import { assertAllDefined } from '@agoric/internal';
 import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { observeNotifier } from './asyncIterableAdaptor.js';
 
 /**

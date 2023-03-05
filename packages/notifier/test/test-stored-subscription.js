@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import {
   makePublishKit,

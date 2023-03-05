@@ -1,6 +1,5 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
-import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { makeTracer, makeTypeGuards } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -18,6 +17,8 @@ import '@agoric/zoe/exported.js';
 import { calculateLoanCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
+
+const { StorageNodeShape } = makeTypeGuards(M);
 
 const trace = makeTracer('IV', false);
 

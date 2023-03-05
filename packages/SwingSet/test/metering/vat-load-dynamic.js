@@ -5,6 +5,7 @@ export function buildRootObject(vatPowers) {
   const { testLog: log } = vatPowers;
   let service;
   let control;
+  const notifierToUpdateCount = new WeakMap();
 
   return Far('root', {
     async bootstrap(vats, devices) {
@@ -33,8 +34,11 @@ export function buildRootObject(vatPowers) {
 
     async whenMeterNotifiesNext(meter) {
       const notifier = await E(meter).getNotifier();
-      const initial = await E(notifier).getUpdateSince();
-      return E(notifier).getUpdateSince(initial);
+      const update = await E(notifier).getUpdateSince(
+        notifierToUpdateCount.get(notifier),
+      );
+      notifierToUpdateCount.set(notifier, update.updateCount);
+      return update;
     },
 
     async createVat(name, dynamicOptions) {

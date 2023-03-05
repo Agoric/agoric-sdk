@@ -1,7 +1,7 @@
 import { assertAllDefined } from '@agoric/internal';
 import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
 import { M } from '@agoric/store';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { SubscriberShape } from './publish-kit.js';
 import { forEachPublicationRecord } from './storesub.js';
 
