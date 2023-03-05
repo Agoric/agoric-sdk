@@ -1,17 +1,16 @@
 import { M } from '@agoric/store';
-import { prepareExoClassKit, makeScalarBigSetStore } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { makeTransientNotifierKit } from './transientNotifier.js';
 import { makeAmountStore } from './amountStore.js';
 
 // TODO `InterfaceGuard` type parameter
 /** @typedef {import('@endo/patterns').InterfaceGuard} InterfaceGuard */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @typedef {import('@agoric/zone').Zone} Zone */
 
 const { Fail } = assert;
 
 /**
- * @param {Baggage} issuerBaggage
+ * @param {Zone} issuerZone
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {Brand} brand
@@ -25,7 +24,7 @@ const { Fail } = assert;
  * }} purseMethods
  */
 export const preparePurseKind = (
-  issuerBaggage,
+  issuerZone,
   name,
   assetKind,
   brand,
@@ -36,6 +35,7 @@ export const preparePurseKind = (
 
   // Note: Virtual for high cardinality, but *not* durable, and so
   // broken across an upgrade.
+  // TODO propagate zonifying to notifiers, maybe?
   const { provideNotifier, update: updateBalance } = makeTransientNotifierKit();
 
   // - This kind is a pair of purse and depositFacet that have a 1:1
@@ -45,17 +45,14 @@ export const preparePurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
-  const makePurseKit = prepareExoClassKit(
-    issuerBaggage,
+  const makePurseKit = issuerZone.exoClassKit(
     `${name} Purse`,
     PurseIKit,
     () => {
       const currentBalance = AmountMath.makeEmpty(brand, assetKind);
 
       /** @type {SetStore<Payment>} */
-      const recoverySet = makeScalarBigSetStore('recovery set', {
-        durable: true,
-      });
+      const recoverySet = issuerZone.detached().setStore('recovery set');
 
       return {
         currentBalance,
