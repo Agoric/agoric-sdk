@@ -461,7 +461,7 @@ export const BASIC_BOOTSTRAP_PERMITS = harden({
       vatAdmin: 'vatAdmin',
     },
     devices: {
-      vatAdmin: true,
+      vatAdmin: 'kernel',
     },
     produce: {
       vatAdminSvc: 'vatAdmin',
@@ -543,7 +543,7 @@ export const BASIC_BOOTSTRAP_PERMITS = harden({
     consume: {
       agoricNamesAdmin: true,
       initialSupply: true,
-      bridgeManager: true,
+      bridgeManager: 'chainStorage',
       // TODO: re-org loadCriticalVat to be subject to permits
       loadCriticalVat: true,
       zoe: true,
