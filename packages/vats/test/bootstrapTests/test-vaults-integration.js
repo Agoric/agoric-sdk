@@ -140,26 +140,21 @@ test('close vault', async t => {
     updated: 'offerStatus',
     status: { id: 'open-vault', numWantsSatisfied: 1 },
   });
-
   t.log('try giving more than is available in the purse/vbank');
-  await wd.executeOfferMaker(
-    Offers.vaults.CloseVault,
+  await t.throwsAsync(
+    wd.executeOfferMaker(
+      Offers.vaults.CloseVault,
+      {
+        offerId: 'close-extreme',
+        collateralBrandKey,
+        giveMinted: 99_999_999.999_999,
+      },
+      'open-vault',
+    ),
     {
-      offerId: 'close-extreme',
-      collateralBrandKey,
-      giveMinted: 99_999_999.999_999,
+      message: /^Withdrawal .* failed because the purse only contained .*/,
     },
-    'open-vault',
   );
-  t.like(wd.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: {
-      id: 'close-extreme',
-      numWantsSatisfied: undefined,
-      error:
-        'Error: Withdrawal of {"brand":"[Alleged: IST brand]","value":"[99999999999999n]"} failed because the purse only contained {"brand":"[Alleged: IST brand]","value":"[14999500n]"}',
-    },
-  });
 
   await wd.executeOfferMaker(
     Offers.vaults.CloseVault,

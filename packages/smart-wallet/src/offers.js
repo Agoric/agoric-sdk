@@ -55,7 +55,7 @@ export const makeOfferExecutor = ({
      *
      * @param {OfferSpec} offerSpec
      * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
-     * @throws if any parts of the offer can be determined synchronously to be invalid
+     * @throws if any parts of the offer are determined to be invalid before calling Zoe's `offer()`
      */
     async executeOffer(offerSpec) {
       logger.info('starting executeOffer', offerSpec.id);
@@ -180,7 +180,11 @@ export const makeOfferExecutor = ({
           handleError,
         );
       };
-      await tryBody().catch(err => handleError(err));
+      await tryBody().catch(err => {
+        handleError(err);
+        // propagate to caller
+        throw err;
+      });
     },
   };
 };
