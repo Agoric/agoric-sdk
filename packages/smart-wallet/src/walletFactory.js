@@ -4,7 +4,7 @@
  * Contract to make smart wallets.
  */
 
-import { WalletName } from '@agoric/internal';
+import { makeTracer, WalletName } from '@agoric/internal';
 import { observeIteration } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
@@ -14,6 +14,8 @@ import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
+
+const trace = makeTracer('WltFct');
 
 export const privateArgsShape = harden(
   M.splitRecord(
@@ -57,9 +59,16 @@ export const publishDepositFacet = async (
 };
 
 /**
+ * Make a registry for use by the wallet instances.
+ *
+ * This doesn't need to persist durably because the `assetPublisher` has a
+ * "pinned" topic and call to getAssetSubscription gets a fresh stream of all the
+ * assets that it knows of.
+ *
  * @param {AssetPublisher} assetPublisher
  */
 export const makeAssetRegistry = assetPublisher => {
+  trace('makeAssetRegistry', assetPublisher);
   /**
    * @typedef {{
    *   brand: Brand,
@@ -72,9 +81,10 @@ export const makeAssetRegistry = assetPublisher => {
   /** @type {MapStore<Brand, BrandDescriptor>} */
   const brandDescriptors = makeScalarMapStore();
 
-  // watch the bank for new issuers to make purses out of
+  // Watch the bank for issuers to keep on hand for making purses.
   void observeIteration(E(assetPublisher).getAssetSubscription(), {
     async updateState(desc) {
+      trace('registering asset', desc.issuerName);
       const { brand, issuer: issuerP, issuerName: petname } = desc;
       // await issuer identity for use in chainStorage
       const [issuer, displayInfo] = await Promise.all([

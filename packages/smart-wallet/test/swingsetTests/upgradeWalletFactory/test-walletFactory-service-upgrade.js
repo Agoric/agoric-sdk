@@ -1,6 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { assert } from '@agoric/assert';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+
 import { buildVatController } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
@@ -26,6 +29,12 @@ test('walletFactory service upgrade', async t => {
     bundles: {
       zcf: {
         sourceSpec: bfile('../../../../zoe/src/contractFacet/vatRoot.js'),
+      },
+      automaticRefund: {
+        sourceSpec: await importMetaResolve(
+          '@agoric/zoe/src/contracts/automaticRefund.js',
+          import.meta.url,
+        ).then(href => new URL(href).pathname),
       },
       [wfV1BundleName]: {
         sourceSpec: bfile('../../../src/walletFactory.js'),
@@ -53,6 +62,10 @@ test('walletFactory service upgrade', async t => {
   const [v1status] = await run('buildV1', []);
   t.is(v1status, 'fulfilled');
 
+  t.log('use a wallet to make an offer');
+  const [v1ostatus] = await run('testOfferV1', []);
+  t.is(v1ostatus, 'fulfilled');
+
   t.log('perform null upgrade');
   const [null1status] = await run('nullUpgradeV1', []);
   t.is(null1status, 'fulfilled');
@@ -60,4 +73,8 @@ test('walletFactory service upgrade', async t => {
   t.log('now perform the V2 upgrade');
   const [v2status] = await run('upgradeV2', []);
   t.is(v2status, 'fulfilled');
+
+  t.log('make an offer after upgrade');
+  const [v2ostatus] = await run('testOfferV2', []);
+  t.is(v2ostatus, 'fulfilled');
 });
