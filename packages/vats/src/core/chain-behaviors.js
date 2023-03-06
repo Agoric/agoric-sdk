@@ -554,15 +554,15 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     consume: { loadCriticalVat: true },
     devices: { bridge: 'kernel' },
     produce: {
-      bridgeManager: true,
-      provisionBridgeManager: true,
-      provisionWalletBridgeManager: true,
-      walletBridgeManager: true,
+      bridgeManager: 'chainStorage',
+      provisionBridgeManager: 'chainStorage',
+      provisionWalletBridgeManager: 'chainStorage',
+      walletBridgeManager: 'chainStorage',
     },
   },
   [startTimerService.name]: {
     devices: {
-      timer: true,
+      timer: 'kernel',
     },
     vats: {
       timer: 'timer',
@@ -595,16 +595,16 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
       provisioning: 'provisioning',
     },
     vats: {
-      comms: true,
-      vattp: true,
+      comms: 'comms',
+      vattp: 'vattp',
     },
   },
   [bridgeProvisioner.name]: {
     consume: {
       provisioning: true,
-      bridgeManager: true,
-      provisionBridgeManager: true,
-      provisionWalletBridgeManager: true,
+      bridgeManager: 'chainStorage',
+      provisionBridgeManager: 'chainStorage',
+      provisionWalletBridgeManager: 'chainStorage',
     },
   },
   [setupClientManager.name]: {
@@ -617,12 +617,12 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     consume: {
       client: true,
       loadCriticalVat: true,
-      bridgeManager: true,
-      zoe: true,
-      provisioning: true,
+      bridgeManager: 'chainStorage',
+      zoe: 'zoe',
+      provisioning: 'provisioning',
     },
     produce: {
-      networkVat: true,
+      networkVat: 'network',
     },
   },
 };
