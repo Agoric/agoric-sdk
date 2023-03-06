@@ -301,7 +301,10 @@ export async function launch({
     inboundQueueMetrics,
   });
 
-  async function bootstrapBlock() {
+  async function bootstrapBlock(_blockHeight, blockTime) {
+    // We need to let bootstrap know of the chain time. The time of the first
+    // block may be the genesis time, or the block time of the upgrade block.
+    timer.poll(blockTime);
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
     const policy = neverStop();
@@ -687,7 +690,9 @@ export async function launch({
           blockHeight,
           runNum,
         });
-        await processAction(action.type, bootstrapBlock);
+        await processAction(action.type, async () =>
+          bootstrapBlock(blockHeight, blockTime),
+        );
         controller.writeSlogObject({
           type: 'cosmic-swingset-run-finish',
           blockHeight,
