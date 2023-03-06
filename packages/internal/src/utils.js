@@ -10,6 +10,8 @@ const { ownKeys } = Reflect;
 
 const { details: X, quote: q, Fail } = assert;
 
+export const BASIS_POINTS = 10_000n;
+
 /** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
 
 /**

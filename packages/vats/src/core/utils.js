@@ -47,6 +47,7 @@ export const agoricNamesReserved = harden({
     noActionElectorate: 'no action electorate',
     binaryVoteCounter: 'binary vote counter',
     VaultFactory: 'vault factory',
+    auction: 'auctioneer',
     feeDistributor: 'fee distributor',
     liquidate: 'liquidate',
     stakeFactory: 'stakeFactory',
@@ -61,6 +62,7 @@ export const agoricNamesReserved = harden({
     VaultFactory: 'vault factory',
     feeDistributor: 'fee distributor',
     Treasury: 'Treasury', // for compatibility
+    auction: 'auctioneer',
     VaultFactoryGovernor: 'vault factory governor',
     stakeFactory: 'stakeFactory',
     stakeFactoryGovernor: 'stakeFactory governor',

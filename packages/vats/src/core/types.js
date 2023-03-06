@@ -137,13 +137,13 @@
  *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
- *     'walletFactory' | 'provisionPool' |
+ *     'walletFactory' | 'provisionPool' | 'auction' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'VaultFactory' | 'liquidate' | 'stakeFactory' |
  *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'priceAggregator',
  *   instance: |
- *     'economicCommittee' | 'feeDistributor' |
+ *     'economicCommittee' | 'feeDistributor' | 'auction' |
  *     'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
  *     'econCommitteeCharter' |

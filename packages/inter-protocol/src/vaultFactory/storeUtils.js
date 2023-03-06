@@ -27,7 +27,7 @@ import {
  * @param {PureData} key
  * @returns {string}
  */
-const encodeData = makeEncodePassable();
+export const encodeData = makeEncodePassable();
 
 // `makeDecodePassable` has three named options:
 // `decodeRemotable`, `decodeError`, and `decodePromise`.
@@ -38,7 +38,7 @@ const encodeData = makeEncodePassable();
  * @param {string} encoded
  * @returns {PureData}
  */
-const decodeData = makeDecodePassable();
+export const decodeData = makeDecodePassable();
 
 /**
  * @param {number} n

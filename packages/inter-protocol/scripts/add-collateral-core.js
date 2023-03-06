@@ -72,6 +72,18 @@ export const psmGovernanceBuilder = async ({
           psm: publishRef(
             install('../src/psm/psm.js', '../bundles/bundle-psm.js'),
           ),
+          vaults: publishRef(
+            install(
+              '../src/vaultFactory/vaultFactory.js',
+              '../bundles/bundle-vaultFactory.js',
+            ),
+          ),
+          auction: publishRef(
+            install(
+              '../src/auction/auctioneer.js',
+              '../bundles/bundle-auctioneer.js',
+            ),
+          ),
           econCommitteeCharter: publishRef(
             install(
               '../src/econCommitteeCharter.js',

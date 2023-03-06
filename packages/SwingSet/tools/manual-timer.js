@@ -58,7 +58,7 @@ const setup = () => {
  * kernel. You can make time pass by calling `advanceTo(when)`.
  *
  * @param {{ startTime?: Timestamp }} [options]
- * @returns {TimerService & { advanceTo: (when: Timestamp) => void; }}
+ * @returns {TimerService & { advanceTo: (when: Timestamp) => bigint; }}
  */
 export const buildManualTimer = (options = {}) => {
   const { startTime = 0n, ...other } = options;
@@ -79,6 +79,7 @@ export const buildManualTimer = (options = {}) => {
     assert(when > state.now, `advanceTo(${when}) < current ${state.now}`);
     state.now = when;
     wake();
+    return when;
   };
 
   return Far('ManualTimer', { ...bindAllMethods(timerService), advanceTo });

@@ -66,6 +66,8 @@ const isAsync = {
  * | ST<'nat'>
  * | ST<'ratio'>
  * | ST<'string'>
+ * | ST<'timestamp'>
+ * | ST<'relativeTime'>
  * | ST<'unknown'>} SyncSpecTuple
  *
  * @typedef {['invitation', Invitation]} AsyncSpecTuple

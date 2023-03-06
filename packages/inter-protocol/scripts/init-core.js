@@ -36,6 +36,10 @@ const installKeyGroups = {
     ],
   },
   main: {
+    auction: [
+      '../src/auction/auctioneer.js',
+      '../bundles/bundle-auctioneer.js',
+    ],
     vaultFactory: [
       '../src/vaultFactory/vaultFactory.js',
       '../bundles/bundle-vaultFactory.js',

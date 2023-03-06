@@ -4,6 +4,7 @@ import { getMethodNames, objectMap } from '@agoric/internal';
 import { ignoreContext } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
+import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
@@ -23,6 +24,8 @@ const publicMixinAPI = harden({
   getNat: M.call().returns(M.bigint()),
   getRatio: M.call().returns(M.record()),
   getString: M.call().returns(M.string()),
+  getTimestamp: M.call().returns(TimestampRecordShape),
+  getRelativeTime: M.call().returns(RelativeTimeRecordShape),
   getUnknown: M.call().returns(M.any()),
 });
 
@@ -51,6 +54,8 @@ const facetHelpers = (zcf, paramManager) => {
     getNat: paramManager.getNat,
     getRatio: paramManager.getRatio,
     getString: paramManager.getString,
+    getTimestamp: paramManager.getTimestamp,
+    getRelativeTime: paramManager.getRelativeTime,
     getUnknown: paramManager.getUnknown,
   };
 

@@ -1,5 +1,7 @@
 import { isRemotable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { mustMatch } from '@agoric/store';
+import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 
 const { Fail } = assert;
 
@@ -41,9 +43,21 @@ const makeAssertBrandedRatio = (name, modelRatio) => {
 };
 harden(makeAssertBrandedRatio);
 
+const assertRelativeTime = value => {
+  mustMatch(value, RelativeTimeRecordShape);
+};
+harden(assertRelativeTime);
+
+const assertTimestamp = value => {
+  mustMatch(value, TimestampRecordShape, 'timestamp');
+};
+harden(assertTimestamp);
+
 export {
   makeLooksLikeBrand,
   makeAssertInstallation,
   makeAssertInstance,
   makeAssertBrandedRatio,
+  assertRelativeTime,
+  assertTimestamp,
 };

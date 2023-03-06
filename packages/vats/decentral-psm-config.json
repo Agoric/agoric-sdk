@@ -45,6 +45,9 @@
     "binaryVoteCounter": {
       "sourceSpec": "@agoric/governance/src/binaryVoteCounter.js"
     },
+    "auction": {
+      "sourceSpec": "@agoric/inter-protocol/src/auction/auctioneer.js"
+    },
     "psm": {
       "sourceSpec": "@agoric/inter-protocol/src/psm/psm.js"
     },
