@@ -56,7 +56,6 @@ agoric follow :published.priceFeed.ATOM-USD_price_feed
 
 A contract instance can be upgraded to use a new source code bundle in a process that is very similar to
 [upgrading a vat](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/vat-upgrade.md).
-Most state is discarded, however "durable" collections are retained for use by the replacement version.
 
 The upgrade process is triggered through the "adminFacet" of the instance, and requires specifying the new source code. (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
 
@@ -64,9 +63,18 @@ The upgrade process is triggered through the "adminFacet" of the instance, and r
 const results = E(instanceAdminFacet).upgradeContract(newBundleID);
 ```
 
-The new bundle itself must export a `prepare` function in place of `start`, and is obligated to redefine every durable Kind that was created by its predecessor.
+This will replace the behavior of the existing instnace with that defined in the bundle. The new behavior is an additional _incarnation_ of the instance. Most state is discarded, however "durable" collections are retained for use by the replacement version. 
 
-For example, suppose v1 code of a simple single-increment-counter contract anticipated extension of exported functionality  and decided to track it by means of "codeVersion" data in baggage. v2 code could add multi-increment behavior like so:
+There are a few requirements for the contract that differ from non-upgradable contracts:
+1. Export
+2. Durability
+3. Kinds
+4. Crank
+
+### Export
+The new bundle itself must export a `prepare` function in place of `start`. This is called by `startInstance` for the first incarnation and again by `restartContract` or `upgradeContract` for subsequent incarnations.
+
+For example, suppose v1 code of a simple single-increment-counter contract anticipated extension of exported functionality and decided to track it by means of "codeVersion" data in baggage. v2 code could add multi-increment behavior like so:
 
 ```js
 import { M } from '@agoric/store';
@@ -124,3 +132,25 @@ harden(prepare);
 ```
 
 For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .
+
+### Durability
+
+The contract must retain in durable storage anything that must persist between incarnations. All other state will be lost.
+
+### Kinds
+
+The contract defines the kinds that are held in durable storage. Thus the function calls that define the kinds must be run before the objects are deserialized from durable storage.
+
+# Crank
+
+After the first incarnation, `prepare` must return in one crank. Therefore any
+remote calls must only be during the initial incaranation. During subsequent
+upgrades, `prepare` should be using a value that it stashed away in the baggage.
+The `provideAll` function in contract support is designed to help.
+
+The reason is that all vats must be able to finish their upgrade without
+contacting other vats. There might be messages queued inbound to the vat being
+upgraded, and the kernel safely deliver those messages until the upgrade is
+complete. The kernel can't tell which external messages are needed for upgrade,
+vs which are new work that need to be delayed until upgrade is finished, so the
+rule is that buildRootObject() must be standalone.
