@@ -1,6 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { spawn as ambientSpawn } from 'child_process';
 import { promises as fsPromises } from 'fs';
 import path from 'path';
 
@@ -38,6 +39,29 @@ const NON_UPGRADEABLE_VATS = [
   'sharing',
 ];
 
+/**
+ * @param {string} bin
+ * @param {{ spawn: typeof import('child_process').spawn }} io
+ */
+export const pspawn =
+  (bin, { spawn }) =>
+  (args = [], opts = {}) => {
+    /** @type {ReturnType<typeof import('child_process').spawn> | undefined } */
+    let child;
+    const exit = new Promise((resolve, reject) => {
+      // console.debug('spawn', bin, args, { cwd: makefileDir, ...opts });
+      child = spawn(bin, args, opts);
+      child.addListener('exit', code => {
+        if (code !== 0) {
+          reject(Error(`exit ${code} from: ${bin} ${args}`));
+          return;
+        }
+        resolve(0);
+      });
+    });
+    return { child: child || assert.fail(), exit };
+  };
+
 // #region NOTE: confine ambient authority to test.before
 const makeTestContext = async () => {
   const pathname = new URL(import.meta.url).pathname;
@@ -48,7 +72,17 @@ const makeTestContext = async () => {
   const cacheDir = resolve('..', 'bundles');
   const bundleCache = await makeNodeBundleCache(cacheDir, {}, s => import(s));
 
-  return { asset, bundleCache, cacheDir, resolve, basename: path.basename };
+  const vizTool = resolve('..', 'tools', 'authorityViz.js');
+  const runViz = pspawn(vizTool, { spawn: ambientSpawn });
+
+  return {
+    asset,
+    bundleCache,
+    cacheDir,
+    resolve,
+    basename: path.basename,
+    runViz,
+  };
 };
 
 test.before(async t => {
@@ -115,4 +149,18 @@ test('no test-only code is in production configs', async t => {
       }
     }
   }
+});
+
+test('bootstrap permit visualization snapshot', async t => {
+  const { runViz } = t.context;
+
+  const cmd = runViz(['@agoric/vats/decentral-test-vaults-config.json']);
+  const output = async () => {
+    const parts = [];
+    cmd.child.stdout?.on('data', chunk => parts.push(chunk));
+    await cmd.exit;
+    return parts.join('');
+  };
+  const diagram = await output();
+  t.snapshot(diagram);
 });
