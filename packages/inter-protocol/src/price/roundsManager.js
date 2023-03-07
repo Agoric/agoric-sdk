@@ -241,7 +241,7 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
         latestRoundPublisher.publish({
           roundId,
           startedAt: blockTimestamp,
-          startedBy: oracleId
+          startedBy: oracleId,
         });
 
         details.init(
