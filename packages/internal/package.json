@@ -20,13 +20,13 @@
     "lint:types": "tsc -p jsconfig.json"
   },
   "dependencies": {
-    "@endo/eventual-send": "^0.16.8",
-    "@endo/marshal": "^0.8.1",
-    "@endo/promise-kit": "^0.2.52",
+    "@endo/eventual-send": "^0.17.0",
+    "@endo/marshal": "^0.8.3",
+    "@endo/promise-kit": "^0.2.54",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.52",
+    "@endo/init": "^0.5.54",
     "ava": "^5.1.0"
   },
   "author": "Agoric",

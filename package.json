@@ -10,7 +10,7 @@
   "type": "module",
   "packageManager": "yarn@1.22.19",
   "devDependencies": {
-    "@endo/eslint-config": "^0.5.1",
+    "@endo/eslint-config": "^0.5.3",
     "@jessie.js/eslint-plugin": "^0.3.0",
     "@types/node": "^16.7.10",
     "@typescript-eslint/parser": "^5.33.0",
