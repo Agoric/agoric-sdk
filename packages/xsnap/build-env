@@ -1,0 +1,4 @@
+MODDABLE_URL=https://github.com/agoric-labs/moddable.git
+MODDABLE_COMMIT_HASH=74aa31cbc464b79133afacbf36bfbb30d6acd2ef
+XSNAP_NATIVE_URL=https://github.com/agoric-labs/xsnap-pub
+XSNAP_NATIVE_COMMIT_HASH=2a42752ddcafe8f8b5c4f075c84ddd7dadea606b
