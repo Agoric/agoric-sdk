@@ -7,6 +7,7 @@ import os from 'os';
 import process from 'process';
 import fsPower from 'fs/promises';
 import pathPower from 'path';
+import { fileURLToPath } from 'url';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@agoric/assert';
@@ -208,17 +209,24 @@ export const initiateSwingStoreExport = (
 };
 
 /**
+ * @typedef {{type: 'started', blockHeight: number}} ExportMessageStarted
+ * @typedef {{type: 'done', error?: Error}} ExportMessageDone
+ * @typedef {ExportMessageStarted | ExportMessageDone} ExportMessage
+ */
+
+/**
  * @param {string[]} args
  * @param {object} powers
  * @param {Partial<Record<string, string>>} powers.env
  * @param {string} powers.homedir
+ * @param {((msg: ExportMessage) => void) | null} powers.send
  * @param {Console} powers.console
  * @param {import('fs/promises')} powers.fs
  * @param {import('path')['resolve']} powers.pathResolve
  */
 export const main = async (
   args,
-  { env, homedir, console, fs, pathResolve },
+  { env, homedir, send, console, fs, pathResolve },
 ) => {
   const processValue = makeProcessValue({ env, args });
 
@@ -268,13 +276,136 @@ export const main = async (
 
   registerShutdown(() => exporter.stop());
 
-  await exporter.onDone();
+  exporter.onStarted().then(
+    () =>
+      send?.({
+        type: 'started',
+        blockHeight: /** @type {number} */ (exporter.getBlockHeight()),
+      }),
+    () => {},
+  );
+
+  await exporter.onDone().then(
+    () => send?.({ type: 'done' }),
+    error => {
+      if (send) {
+        send({ type: 'done', error });
+      } else {
+        throw error;
+      }
+    },
+  );
+};
+
+/**
+ * @param {StateSyncExporterOptions} options
+ * @param {object} powers
+ * @param {typeof import('child_process')['fork']} powers.fork
+ * @returns {StateSyncExporter}
+ */
+export const spawnSwingStoreExport = (
+  { stateDir, exportDir, blockHeight, exportMode, includeExportData },
+  { fork },
+) => {
+  const args = ['--state-dir', stateDir, '--export-dir', exportDir];
+
+  if (blockHeight !== undefined) {
+    args.push('--check-block-height', String(blockHeight));
+  }
+
+  if (exportMode) {
+    args.push('--export-mode', exportMode);
+  }
+
+  if (includeExportData) {
+    args.push('--include-export-data');
+  }
+
+  const cp = fork(fileURLToPath(import.meta.url), args, {
+    serialization: 'advanced', // To get error objects serialized
+  });
+
+  const kits = harden({
+    /** @type {import('@endo/promise-kit').PromiseKit<void>} */
+    started: makePromiseKit(),
+    /** @type {import('@endo/promise-kit').PromiseKit<void>} */
+    done: makePromiseKit(),
+  });
+
+  let exited = false;
+
+  /**
+   * @param {number | null} code
+   * @param {NodeJS.Signals | null} signal
+   */
+  const onExit = (code, signal) => {
+    exited = true;
+    kits.done.reject(
+      new Error(`Process exited before done. code=${code}, signal=${signal}`),
+    );
+  };
+
+  /** @type {number | undefined} */
+  let exportBlockHeight;
+
+  /** @param {import('./export-kernel-db.js').ExportMessage} msg */
+  const onMessage = msg => {
+    switch (msg.type) {
+      case 'started': {
+        exportBlockHeight = msg.blockHeight;
+        kits.started.resolve();
+        break;
+      }
+      case 'done': {
+        if (msg.error) {
+          kits.done.reject(msg.error);
+        } else {
+          kits.done.resolve();
+        }
+        break;
+      }
+      default: {
+        // @ts-expect-error exhaustive check
+        Fail`Unexpected ${msg.type} message`;
+      }
+    }
+  };
+
+  cp.on('error', kits.done.reject).on('exit', onExit).on('message', onMessage);
+
+  kits.done.promise
+    .catch(err => {
+      kits.started.reject(err);
+    })
+    .then(() => {
+      cp.off('error', kits.done.reject)
+        .off('exit', onExit)
+        .off('message', onMessage);
+    });
+
+  if (cp.exitCode != null) {
+    onExit(cp.exitCode, null);
+  }
+  return harden({
+    getBlockHeight: () => blockHeight || exportBlockHeight,
+    onStarted: async () => kits.started.promise,
+    onDone: async () => kits.done.promise,
+    stop: async () => {
+      if (!exited) {
+        cp.kill();
+      }
+      return kits.done.promise;
+    },
+  });
 };
 
 if (isEntrypoint(import.meta.url)) {
   main(process.argv.splice(2), {
     homedir: os.homedir(),
     env: process.env,
+    send: process.send
+      ? Function.prototype.bind.call(process.send, process)
+      : undefined,
     console,
     fs: fsPower,
     pathResolve: pathPower.resolve,
