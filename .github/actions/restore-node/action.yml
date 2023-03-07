@@ -57,6 +57,11 @@ runs:
       if: steps.built.outputs.cache-hit != 'true'
       env:
         XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
-    - name: git diff --exit-code
-      run: git diff --exit-code
+    - name: git dirty check
+      run: |-
+        if [ -n "$(git status --porcelain)" ];
+        then
+          git status
+          exit 1
+        fi
       shell: bash
