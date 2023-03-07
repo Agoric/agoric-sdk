@@ -259,9 +259,9 @@ export default function buildKernel(
     if (kernelKeeper.vatIsAlive(vatID)) {
       // Reject all promises decided by the vat, making sure to capture the list
       // of kpids before that data is deleted.
-      const promisesToReject = [...kernelKeeper.getDecidedPromises(vatID)];
+      const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];
       kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      for (const kpid of promisesToReject) {
+      for (const kpid of deadPromises) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
       }
     }
@@ -885,7 +885,7 @@ export default function buildKernel(
     // stopVat succeeded. finish cleanup on behalf of the worker.
 
     // walk c-list for all decided promises, reject them all
-    for (const kpid of kernelKeeper.getDecidedPromises(vatID)) {
+    for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
       doResolve(vatID, [[kpid, true, disconnectObjectCD]]);
     }
 

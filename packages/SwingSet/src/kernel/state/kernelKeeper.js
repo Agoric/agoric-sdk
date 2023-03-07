@@ -820,8 +820,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       // that will also delete both db keys
     }
 
-    // the caller used getDecidedPromises() before calling us, so they
-    // already known the orphaned promises, so it can reject them
+    // the caller used enumeratePromisesByDecider() before calling us,
+    // so they already know the orphaned promises to reject
 
     // now loop back through everything and delete it all
     for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
@@ -906,7 +906,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.set(`${kpid}.decider`, '');
   }
 
-  function* getDecidedPromises(vatID) {
+  function* enumeratePromisesByDecider(vatID) {
+    insistVatID(vatID);
     const promisePrefix = `${vatID}.c.p`;
     for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
       // The vpid for a promise imported or exported by a vat (and thus
@@ -1569,7 +1570,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     addSubscriberToPromise,
     setDecider,
     clearDecider,
-    getDecidedPromises,
+    enumeratePromisesByDecider,
     incrementRefCount,
     decrementRefCount,
     getObjectRefCount,
