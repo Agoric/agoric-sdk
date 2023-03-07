@@ -275,7 +275,7 @@ test('median aggregator', async t => {
       increment: 8n,
     },
   );
-  // Publications can get more than one record per timestamp but tickAndQuote getUpdateSince ensures one
+  // Publications and tickAndQuote getUpdateSince ensures one record per update
   await publications.nextMatches({
     amountOut: 1169n,
     timestamp: 2n,
@@ -284,18 +284,10 @@ test('median aggregator', async t => {
   const quote2 = await tickAndQuote();
   t.deepEqual(quote2, { amountOut: 1178n, timestamp: 3n });
   await publications.nextMatches(quote2);
-  await publications.nextMatches({
-    amountOut: 1178n,
-    timestamp: 3n,
-  });
 
   const quote3 = await tickAndQuote();
   t.deepEqual(quote3, { amountOut: 1187n, timestamp: 4n });
   await publications.nextMatches(quote3);
-  await publications.nextMatches({
-    amountOut: 1187n,
-    timestamp: 4n,
-  });
 
   await E(aggregator.creatorFacet).initOracle(price800.instance, {
     increment: 17n,
@@ -518,6 +510,8 @@ test('oracle invitation', async t => {
   t.deepEqual(value4.quoteAmount.value, makeQuoteValue(9n, 1_234_000n));
 
   updater2.updateState('1234.567890');
+
+  await eventLoopIteration(); // pretend this is a new kernel delivery
   await E(oracleTimer).tick();
   const { value: value5, updateCount: uc5 } = await E(notifier).getUpdateSince(
     uc4,
@@ -525,6 +519,8 @@ test('oracle invitation', async t => {
   t.deepEqual(value5.quoteAmount.value, makeQuoteValue(10n, 1_234_567n));
 
   updater2.updateState(makeRatio(987_654n, brandOut, 500_000n, brandIn));
+
+  await eventLoopIteration(); // pretend this is a new kernel delivery
   await E(oracleTimer).tick();
   const { value: value6, updateCount: _uc6 } = await E(notifier).getUpdateSince(
     uc5,

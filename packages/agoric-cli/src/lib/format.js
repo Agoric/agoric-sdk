@@ -6,10 +6,6 @@ import { makeAgoricNames } from './rpc.js';
 // ambient types
 import '@agoric/ertp/src/types-ambient.js';
 
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
-
-export const COSMOS_UNIT = 1_000_000n;
-
 /**
  * Like @endo/nat but coerces
  *
@@ -100,11 +96,11 @@ export const fmtRecordOfLines = record => {
  * @param {Awaited<ReturnType<typeof makeAgoricNames>>} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
-  const { brands, offerStatuses } = state;
+  const { offerStatuses } = state;
   const fmt = makeAmountFormatter(
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
     // @ts-ignore xxx RpcRemote
-    [...brands.values()],
+    Object.values(agoricNames.vbankAsset),
   );
   const fmtRecord = r =>
     r
@@ -170,7 +166,7 @@ export const summarize = (current, coalesced, agoricNames) => {
       [...current.purses.values()],
       // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
       // @ts-ignore xxx RpcRemote
-      [...current.brands.values()],
+      Object.values(agoricNames.vbankAsset),
     ),
     usedInvitations: Object.entries(current.offerToUsedInvitation).map(
       ([offerId, invitationAmt]) => [

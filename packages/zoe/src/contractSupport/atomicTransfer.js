@@ -1,7 +1,13 @@
 import { mustMatch, M } from '@agoric/store';
 import { assertRightsConserved } from '../contractFacet/rightsConservation.js';
+import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 
 const { Fail, quote: q } = assert;
+
+export const TransferPartShape = M.splitArray(
+  harden([M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)]),
+  harden([M.opt(AmountKeywordRecordShape)]),
+);
 
 /**
  * @typedef {[

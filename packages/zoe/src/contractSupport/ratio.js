@@ -1,5 +1,5 @@
 import './types.js';
-import { assert, details as X, q, Fail } from '@agoric/assert';
+import { q, Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@endo/nat';
@@ -41,7 +41,7 @@ const ratioPropertyNames = ['numerator', 'denominator'];
 export const assertIsRatio = ratio => {
   assertRecord(ratio, 'ratio');
   const keys = Object.keys(ratio);
-  assert(keys.length === 2, X`Ratio ${ratio} must be a record with 2 fields.`);
+  keys.length === 2 || Fail`Ratio ${ratio} must be a record with 2 fields.`;
   for (const name of keys) {
     ratioPropertyNames.includes(name) ||
       Fail`Parameter must be a Ratio record, but ${ratio} has ${q(name)}`;
@@ -103,12 +103,10 @@ export const makeRatioFromAmounts = (numeratorAmount, denominatorAmount) => {
 const multiplyHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
-  assert(
-    amount.brand === ratio.denominator.brand,
-    X`amount's brand ${q(amount.brand)} must match ratio's denominator ${q(
+  amount.brand === ratio.denominator.brand ||
+    Fail`amount's brand ${q(amount.brand)} must match ratio's denominator ${q(
       ratio.denominator.brand,
-    )}`,
-  );
+    )}`;
 
   return AmountMath.make(
     ratio.numerator.brand,
@@ -143,12 +141,10 @@ export const multiplyBy = (amount, ratio) => {
 const divideHelper = (amount, ratio, divideOp) => {
   AmountMath.coerce(amount.brand, amount);
   assertIsRatio(ratio);
-  assert(
-    amount.brand === ratio.numerator.brand,
-    X`amount's brand ${q(amount.brand)} must match ratio's numerator ${q(
+  amount.brand === ratio.numerator.brand ||
+    Fail`amount's brand ${q(amount.brand)} must match ratio's numerator ${q(
       ratio.numerator.brand,
-    )}`,
-  );
+    )}`;
 
   return AmountMath.make(
     ratio.denominator.brand,
@@ -198,16 +194,10 @@ export const invertRatio = ratio => {
 export const addRatios = (left, right) => {
   assertIsRatio(right);
   assertIsRatio(left);
-  assert.equal(
-    left.numerator.brand,
-    right.numerator.brand,
-    X`numerator brands must match: ${q(left)} ${q(right)}`,
-  );
-  assert.equal(
-    left.denominator.brand,
-    right.denominator.brand,
-    X`denominator brands must match: ${q(left)} ${q(right)}`,
-  );
+  left.numerator.brand === right.numerator.brand ||
+    Fail`numerator brands must match: ${q(left)} ${q(right)}`;
+  left.denominator.brand === right.denominator.brand ||
+    Fail`denominator brands must match: ${q(left)} ${q(right)}`;
 
   // Simplifying the expression:
   //  (and + bnd) / y d**2
@@ -233,16 +223,10 @@ export const addRatios = (left, right) => {
 export const subtractRatios = (left, right) => {
   assertIsRatio(right);
   assertIsRatio(left);
-  assert.equal(
-    left.numerator.brand,
-    right.numerator.brand,
-    X`numerator brands must match: ${q(left)} ${q(right)}`,
-  );
-  assert.equal(
-    left.denominator.brand,
-    right.denominator.brand,
-    X`denominator brands must match: ${q(left)} ${q(right)}`,
-  );
+  left.numerator.brand === right.numerator.brand ||
+    Fail`numerator brands must match: ${q(left)} ${q(right)}`;
+  left.denominator.brand === right.denominator.brand ||
+    Fail`denominator brands must match: ${q(left)} ${q(right)}`;
 
   return makeRatio(
     subtract(
@@ -318,21 +302,15 @@ export const oneMinus = ratio => {
  */
 export const ratioGTE = (left, right) => {
   if (left.numerator.brand === right.numerator.brand) {
-    assert.equal(
-      left.denominator.brand,
-      right.denominator.brand,
-      X`numerator brands match, but denominator brands don't: ${q(left)} ${q(
+    left.denominator.brand === right.denominator.brand ||
+      Fail`numerator brands match, but denominator brands don't: ${q(left)} ${q(
         right,
-      )}`,
-    );
+      )}`;
   } else if (left.numerator.brand === left.denominator.brand) {
-    assert.equal(
-      right.numerator.brand,
-      right.denominator.brand,
-      X`lefthand brands match, but righthand brands don't: ${q(left)} ${q(
+    right.numerator.brand === right.denominator.brand ||
+      Fail`lefthand brands match, but righthand brands don't: ${q(left)} ${q(
         right,
-      )}`,
-    );
+      )}`;
   }
   return natSafeMath.isGTE(
     multiply(left.numerator.value, right.denominator.value),
@@ -391,7 +369,9 @@ export const parseRatio = (
   denominatorBrand = numeratorBrand,
 ) => {
   const match = `${numeric}`.match(NUMERIC_RE);
-  assert(match, X`Invalid numeric data: ${numeric}`);
+  if (!match) {
+    throw Fail`Invalid numeric data: ${numeric}`;
+  }
 
   const [whole, part = ''] = [match[1], match[2]];
   return makeRatio(
@@ -409,5 +389,17 @@ export const parseRatio = (
  */
 export const assertParsableNumber = specimen => {
   const match = `${specimen}`.match(NUMERIC_RE);
-  assert(match, X`Invalid numeric data: ${specimen}`);
+  match || Fail`Invalid numeric data: ${specimen}`;
+};
+
+/**
+ * Ratios might be greater or less than one.
+ *
+ * @param {Ratio} ratio
+ * @returns {number}
+ */
+export const ratioToNumber = ratio => {
+  const n = Number(ratio.numerator.value);
+  const d = Number(ratio.denominator.value);
+  return n / d;
 };

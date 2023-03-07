@@ -1,10 +1,18 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
-
 import bundleSource from '@endo/bundle-source';
+import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import styles from 'ansi-styles'; // less authority than 'chalk'
 
 const { details: X, quote: q, Fail } = assert;
+
+/**
+ * @typedef {object} BundleMeta
+ * @property {string} bundleFileName
+ * @property {string} bundleTime as ISO string
+ * @property {{relative: string, absolute: string}} moduleSource
+ * @property {Array<{relativePath: string, mtime: string}>} contents
+ */
 
 export const makeFileReader = (fileName, { fs, path }) => {
   const make = there => makeFileReader(there, { fs, path });
@@ -19,6 +27,10 @@ export const makeFileReader = (fileName, { fs, path }) => {
   });
 };
 
+/**
+ * @param {string} fileName
+ * @param {{ fs: import('fs'), path: import('path') }} io
+ */
 export const makeFileWriter = (fileName, { fs, path }) => {
   const make = there => makeFileWriter(there, { fs, path });
   return harden({
@@ -30,12 +42,19 @@ export const makeFileWriter = (fileName, { fs, path }) => {
   });
 };
 
-export const makeBundleCache = (wr, cwd, readPowers, opts) => {
-  const {
-    toBundleName = n => `bundle-${n}.js`,
-    toBundleMeta = n => `bundle-${n}-meta.json`,
-  } = opts || {};
+/** @type {(n: string) => string} */
+const toBundleName = n => `bundle-${n}.js`;
+/** @type {(n: string) => string} */
+const toBundleMeta = n => `bundle-${n}-meta.json`;
 
+/**
+ *
+ * @param {ReturnType<typeof makeFileWriter>} wr
+ * @param {*} bundleOptions
+ * @param {ReturnType<typeof makeFileReader>} cwd
+ * @param {*} readPowers
+ */
+export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
   const add = async (rootPath, targetName) => {
     const srcRd = cwd.neighbor(rootPath);
 
@@ -55,11 +74,10 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
       }
       return readPowers.read(loc);
     };
-    const bundle = await bundleSource(
-      rootPath,
-      {},
-      { ...readPowers, read: loggedRead },
-    );
+    const bundle = await bundleSource(rootPath, bundleOptions, {
+      ...readPowers,
+      read: loggedRead,
+    });
 
     const { moduleFormat } = bundle;
     assert.equal(moduleFormat, 'endoZipBase64');
@@ -71,6 +89,7 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     await bundleWr.writeText(code);
     const { mtime: bundleTime } = await bundleWr.readOnly().stat();
 
+    /** @type {BundleMeta} */
     const meta = {
       bundleFileName,
       bundleTime: bundleTime.toISOString(),
@@ -134,6 +153,13 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
     return meta;
   };
 
+  /**
+   *
+   * @param {string} rootPath
+   * @param {string} targetName
+   * @param {*} log
+   * @returns {Promise<BundleMeta>}
+   */
   const validateOrAdd = async (rootPath, targetName, log = console.debug) => {
     let meta;
     if (wr.readOnly().neighbor(toBundleMeta(targetName)).exists()) {
@@ -141,15 +167,22 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
         meta = await validate(targetName, rootPath);
         const { bundleTime, contents } = meta;
         log(
+          styles.dim.open,
           `${wr}`,
           toBundleName(targetName),
           'valid:',
           contents.length,
           'files bundled at',
           bundleTime,
+          styles.dim.close,
         );
       } catch (invalid) {
-        console.warn(invalid.message);
+        console.error(
+          styles.red.open,
+          'ERROR in bundleTool:',
+          invalid.message,
+          styles.red.close,
+        );
       }
     }
     if (!meta) {
@@ -172,10 +205,14 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
   const loaded = new Map();
   /**
    * @param {string} rootPath
-   * @param {string} targetName
+   * @param {string} [targetName]
    * @param {(message: *) => void} [log]
    */
-  const load = async (rootPath, targetName, log = console.debug) => {
+  const load = async (
+    rootPath,
+    targetName = readPowers.basename(rootPath, '.js'),
+    log = console.debug,
+  ) => {
     const found = loaded.get(targetName);
     // console.log('load', { targetName, found: !!found, rootPath });
     if (found && found.rootPath === rootPath) {
@@ -201,21 +238,13 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
   });
 };
 
-export const unsafeMakeBundleCache = async dest => {
-  const [fs, path, url, crypto] = await Promise.all([
-    await import('fs'),
-    await import('path'),
-    await import('url'),
-    await import('crypto'),
-  ]);
-
-  const readPowers = makeReadPowers({ fs, url, crypto });
-  const cwd = makeFileReader('', { fs, path });
-  const destWr = makeFileWriter(dest, { fs, path });
-  return makeBundleCache(destWr, cwd, readPowers);
-};
-
-export const makeNodeBundleCache = async (dest, loadModule) => {
+/**
+ *
+ * @param {string} dest
+ * @param {{ format?: string, dev?: boolean }} options
+ * @param {(id: string) => Promise<any>} loadModule
+ */
+export const makeNodeBundleCache = async (dest, options, loadModule) => {
   const [fs, path, url, crypto] = await Promise.all([
     await loadModule('fs'),
     await loadModule('path'),
@@ -223,8 +252,15 @@ export const makeNodeBundleCache = async (dest, loadModule) => {
     await loadModule('crypto'),
   ]);
 
-  const readPowers = makeReadPowers({ fs, url, crypto });
+  const readPowers = {
+    ...makeReadPowers({ fs, url, crypto }),
+    basename: path.basename,
+  };
+
   const cwd = makeFileReader('', { fs, path });
   const destWr = makeFileWriter(dest, { fs, path });
-  return makeBundleCache(destWr, cwd, readPowers);
+  return makeBundleCache(destWr, options, cwd, readPowers);
 };
+
+export const unsafeMakeBundleCache = dest =>
+  makeNodeBundleCache(dest, {}, s => import(s));

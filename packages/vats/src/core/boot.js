@@ -2,6 +2,7 @@
 import { E, Far } from '@endo/far';
 
 import * as simBehaviors from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
+import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
 import {
   makeAgoricNamesAccess,
   makePromiseSpace,
@@ -52,9 +53,11 @@ const buildRootObject = (vatPowers, vatParameters) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const {
-    argv: { ROLE },
+    // XXX not for production ?!
+    argv: { ROLE = 'chain' },
     bootstrapManifest,
   } = vatParameters;
+  // ROLE || Fail`boot requires ROLE in argv`;
   console.debug(`${ROLE} bootstrap starting`);
 
   const bootManifest = bootstrapManifest || roleToManifest[ROLE];
@@ -71,8 +74,13 @@ const buildRootObject = (vatPowers, vatParameters) => {
   const rawBootstrap = async (vats, devices) => {
     // Complete SwingSet wiring.
     const { D } = vatPowers;
-    D(devices.mailbox).registerInboundHandler(vats.vattp);
-    await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+    if (devices.mailbox) {
+      D(devices.mailbox).registerInboundHandler(vats.vattp);
+      // eslint-disable-next-line @jessie.js/no-nested-await -- XXX
+      await E(vats.vattp).registerMailboxDevice(devices.mailbox);
+    } else {
+      console.warn('No mailbox device. Not registering with vattp');
+    }
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
@@ -128,12 +136,22 @@ const buildRootObject = (vatPowers, vatParameters) => {
     await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
   };
 
+  // For testing supports
+  const vatData = new Map();
+  const { encodePassable, decodePassable } = makePassableEncoding();
+
   return Far('bootstrap', {
-    bootstrap: (vats, devices) =>
+    bootstrap: (vats, devices) => {
+      for (const [name, root] of Object.entries(vats)) {
+        if (name !== 'vatAdmin') {
+          vatData.set(name, { root });
+        }
+      }
       rawBootstrap(vats, devices).catch(e => {
         console.error('BOOTSTRAP FAILED:', e);
         throw e;
-      }),
+      });
+    },
     consumeItem: name => {
       assert.typeof(name, 'string');
       return consume[name];
@@ -146,6 +164,30 @@ const buildRootObject = (vatPowers, vatParameters) => {
       assert.typeof(name, 'string');
       produce[name].reset();
     },
+
+    // #region testing supports
+    messageVat: async ({ name, methodName, args = [] }) => {
+      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
+      const { root } = vat;
+      const decodedArgs = args.map(decodePassable);
+      const result = await E(root)[methodName](...decodedArgs);
+      return encodePassable(result);
+    },
+    messageVatObject: async ({ presence, methodName, args = [] }) => {
+      const object = decodePassable(presence);
+      const decodedArgs = args.map(decodePassable);
+      const result = await E(object)[methodName](...decodedArgs);
+      return encodePassable(result);
+    },
+    awaitVatObject: async ({ presence, path = [] }) => {
+      let value = await decodePassable(presence);
+      for (const key of path) {
+        // eslint-disable-next-line no-await-in-loop
+        value = await value[key];
+      }
+      return encodePassable(value);
+    },
+    // #endregion
   });
 };
 

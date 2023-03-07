@@ -112,7 +112,7 @@
   notify: restart fluentd
 
 - name: Ensure fluentd is running
-  service:
+  systemd:
     name: td-agent
     state: started
     enabled: yes

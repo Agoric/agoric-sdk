@@ -1,7 +1,6 @@
 import { assertAllDefined } from '@agoric/internal';
-import { makeMarshallToStorage } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { E, Far } from '@endo/far';
 import { observeNotifier } from './asyncIterableAdaptor.js';
 
 /**
@@ -27,7 +26,7 @@ import { observeNotifier } from './asyncIterableAdaptor.js';
 export const makeStoredNotifier = (notifier, storageNode, marshaller) => {
   assertAllDefined({ notifier, storageNode, marshaller });
 
-  const marshallToStorage = makeMarshallToStorage(storageNode, marshaller);
+  const marshallToStorage = makeSerializeToStorage(storageNode, marshaller);
 
   observeNotifier(notifier, {
     updateState(value) {

@@ -28,7 +28,7 @@ import { Position } from './position.js';
  * for the price oracle's quotes as to the value of the Underlying, as well as
  * the strike prices in the terms.
  *
- * The creatorInvitation has customProperties that include the amounts of the
+ * The creatorInvitation has customDetails that include the amounts of the
  * two options as longAmount and shortAmount. When the creatorInvitation is
  * exercised, the payout includes the two option positions, which are themselves
  * invitations which can be exercised for free, and provide the option payouts

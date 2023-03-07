@@ -21,6 +21,9 @@ test.before(async t => {
 });
 
 test.serial('make and exec', async t => {
+  // Note: the test harness discards the (voluminous) log messages
+  // emitted by the kernel and vats. You can run `make scenario2-setup
+  // scenario2-run-chain-to-halt` manually, to see them all.
   const { pspawnAgd, scenario2 } = t.context;
   t.log('exec agd');
   t.is(await pspawnAgd([]).exit, 0, 'exec agd exits successfully');

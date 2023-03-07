@@ -1,21 +1,18 @@
 // @ts-check
+// @jessie-check
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
-import { asyncGenerate } from 'jessie.js';
+import { asyncGenerate, makeSet } from 'jessie.js';
 
-/** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
-
-const {
-  getPrototypeOf,
-  create,
-  entries,
-  fromEntries,
-  getOwnPropertyDescriptors,
-} = Object;
-const { ownKeys, apply } = Reflect;
+const { entries, fromEntries, keys, values } = Object;
+const { ownKeys } = Reflect;
 
 const { details: X, quote: q, Fail } = assert;
+
+export const BASIS_POINTS = 10_000n;
+
+/** @template T @typedef {import('@endo/eventual-send').ERef<T>} ERef<T> */
 
 /**
  * Throws if multiple entries use the same property name. Otherwise acts
@@ -32,7 +29,7 @@ export const fromUniqueEntries = allEntries => {
   if (ownKeys(result).length === entriesArray.length) {
     return result;
   }
-  const names = new Set();
+  const names = makeSet();
   for (const [name, _] of entriesArray) {
     if (names.has(name)) {
       Fail`collision on property name ${q(name)}: ${entriesArray}`;
@@ -95,7 +92,7 @@ harden(objectMap);
  * @param {Array<string | symbol>} rightNames
  */
 export const listDifference = (leftNames, rightNames) => {
-  const rightSet = new Set(rightNames);
+  const rightSet = makeSet(rightNames);
   return leftNames.filter(name => !rightSet.has(name));
 };
 harden(listDifference);
@@ -152,124 +149,36 @@ export const applyLabelingError = (func, args, label = undefined) => {
 harden(applyLabelingError);
 
 /**
- * Prioritize symbols as earlier than strings.
- *
- * @param {string|symbol} a
- * @param {string|symbol} b
- * @returns {-1 | 0 | 1}
+ * @template T
+ * @typedef {{[KeyType in keyof T]: T[KeyType]} & {}} Simplify
+ * flatten the type output to improve type hints shown in editors
+ * https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
  */
-const compareStringified = (a, b) => {
-  if (typeof a === typeof b) {
-    const left = String(a);
-    const right = String(b);
-    // eslint-disable-next-line no-nested-ternary
-    return left < right ? -1 : left > right ? 1 : 0;
-  }
-  if (typeof a === 'symbol') {
-    assert(typeof b === 'string');
-    return -1;
-  }
-  assert(typeof a === 'string');
-  assert(typeof b === 'symbol');
-  return 1;
-};
 
 /**
- * TODO Consolidate with the `getMethodNames` in `@endo/eventual-send`
- *
- * @param {any} val
- * @returns {(string|symbol)[]}
+ * @typedef {(...args: any[]) => any} Callable
  */
-export const getMethodNames = val => {
-  let layer = val;
-  const names = new Set(); // Set to deduplicate
-  while (layer !== null && layer !== Object.prototype) {
-    // be tolerant of non-objects
-    const descs = getOwnPropertyDescriptors(layer);
-    for (const name of ownKeys(descs)) {
-      // In case a method is overridden by a non-method,
-      // test `val[name]` rather than `layer[name]`
-      if (typeof val[name] === 'function') {
-        names.add(name);
-      }
-    }
-    if (!isObject(val)) {
-      break;
-    }
-    layer = getPrototypeOf(layer);
-  }
-  return harden([...names].sort(compareStringified));
-};
-harden(getMethodNames);
-
-/**
- * TODO This function exists only to ease the
- * https://github.com/Agoric/agoric-sdk/pull/5970 transition, from all methods
- * being own properties to methods being inherited from a common prototype.
- * This transition breaks two patterns used in prior code: autobinding,
- * and enumerating methods by enumerating own properties. For both, the
- * preferred repairs are
- *    * autobinding: Replace, for example,
- *      `foo(obj.method)` with `foo(arg => `obj.method(arg))`. IOW, stop relying
- *      on expressions like `obj.method` to extract a method still bound to the
- *      state of `obj` because, for virtual and durable objects,
- *      they no longer will after #5970.
- *    * method enumeration: Replace, for example
- *      `Reflect.ownKeys(obj)` with `getMethodNames(obj)`.
- *
- * Once all problematic cases have been converted in this manner, this
- * `bindAllMethods` hack can and TODO should be deleted. However, we currently
- * have no reliable static way to track down and fix all autobinding sites.
- * For those objects that have not yet been fully repaired by the above two
- * techniques, `bindAllMethods` creates an object that acts much like the
- * pre-#5970 objects, with all their methods as instance-bound own properties.
- * It does this by making a new object inheriting from `obj` where the new
- * object has bound own methods overridding all the methods it would have
- * inherited from `obj`.
- *
- * @param {Remotable} obj
- * @returns {Remotable}
- */
-export const bindAllMethods = obj =>
-  harden(
-    create(
-      obj,
-      fromEntries(
-        getMethodNames(obj).map(name => [
-          name,
-          {
-            value: (/** @type {unknown[]} */ ...args) =>
-              apply(obj[name], obj, args),
-            enumerable: true,
-          },
-        ]),
-      ),
-    ),
-  );
-harden(bindAllMethods);
 
 /**
  * @template {{}} T
- * @typedef {{ [K in keyof T]: DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
+ * @typedef {{ [K in keyof T]: T[K] extends Callable ? T[K] : DeeplyAwaited<T[K]> }} DeeplyAwaitedObject
  */
 
 /**
- * Caveats:
- * - doesn't recur within Promise results
- * - resulting type has wrapper in its name
- *
  * @template T
- * @typedef {T extends PromiseLike<any> ? Awaited<T> : T extends {} ? DeeplyAwaitedObject<T> : Awaited<T>} DeeplyAwaited
+ * @typedef {T extends PromiseLike<any> ? Awaited<T> : T extends {} ? Simplify<DeeplyAwaitedObject<T>> : Awaited<T>} DeeplyAwaited
  */
 
 /**
- * A more constrained version of {deeplyFulfilled} for type safety until https://github.com/endojs/endo/issues/1257
- * Useful in starting contracts that need all terms to be fulfilled in order to be durable.
+ * A more constrained version of {deeplyFulfilled} for type safety until
+ * https://github.com/endojs/endo/issues/1257
+ * Useful in starting contracts that need all terms to be fulfilled
+ * in order to be durable.
  *
- * @type {<T extends {}>(unfulfilledTerms: T) => import('@endo/far').ERef<DeeplyAwaited<T>>}
+ * @type {<T extends {}>(unfulfilledTerms: T) => Promise<DeeplyAwaited<T>>}
  */
-export const deeplyFulfilledObject = obj => {
-  assert(isObject(obj), 'param must be an object');
+export const deeplyFulfilledObject = async obj => {
+  isObject(obj) || Fail`param must be an object`;
   return deeplyFulfilled(obj);
 };
 
@@ -297,7 +206,7 @@ export const makeMeasureSeconds = currentTimeMillisec => {
  * @param {string} [message]
  */
 export const makeAggregateError = (errors, message) => {
-  const err = new Error(message);
+  const err = Error(message);
   Object.defineProperties(err, {
     name: {
       value: 'AggregateError',
@@ -311,11 +220,11 @@ export const makeAggregateError = (errors, message) => {
 
 /**
  * @template T
- * @param {readonly (T | PromiseLike<T>)[]} values
+ * @param {readonly (T | PromiseLike<T>)[]} items
  * @returns {Promise<T[]>}
  */
-export const PromiseAllOrErrors = async values => {
-  return Promise.allSettled(values).then(results => {
+export const PromiseAllOrErrors = async items => {
+  return Promise.allSettled(items).then(results => {
     const errors = /** @type {PromiseRejectedResult[]} */ (
       results.filter(({ status }) => status === 'rejected')
     ).map(result => result.reason);
@@ -425,3 +334,13 @@ export const untilTrue = produce =>
       value,
     });
   });
+
+/** @type { <X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
+export const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
+
+/** @type { <T extends Record<string, ERef<any>>>(obj: T) => Promise<{ [K in keyof T]: Awaited<T[K]>}> } */
+export const allValues = async obj => {
+  const resolved = await Promise.all(values(obj));
+  // @ts-expect-error cast
+  return harden(fromEntries(zip(keys(obj), resolved)));
+};

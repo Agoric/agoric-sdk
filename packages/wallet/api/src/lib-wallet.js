@@ -13,7 +13,7 @@
 
 import { assert, q, Fail } from '@agoric/assert';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
-import { objectMap } from '@agoric/internal';
+import { objectMap, WalletName } from '@agoric/internal';
 import {
   makeLegacyMap,
   makeScalarMapStore,
@@ -863,7 +863,7 @@ export function makeWalletRoot({
     if (already) {
       depositFacet = actions;
     } else {
-      depositFacet = Far('depositFacet', {
+      depositFacet = Far(WalletName.depositFacet, {
         receive(paymentP) {
           return E(actions).receive(paymentP);
         },
@@ -1987,7 +1987,10 @@ export function makeWalletRoot({
       .then(addInviteDepositFacet);
     zoeInvitePurse = wallet.getPurse(ZOE_INVITE_PURSE_PETNAME);
 
-    await E(myAddressNameAdmin).update('depositFacet', selfDepositFacet);
+    await E(myAddressNameAdmin).update(
+      WalletName.depositFacet,
+      selfDepositFacet,
+    );
   };
 
   // Importing assets as virtual purses from the bank is a highly-trusted path.

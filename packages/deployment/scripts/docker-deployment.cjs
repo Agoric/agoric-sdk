@@ -43,13 +43,7 @@ const deployment = {
   SSH_PRIVATE_KEY_FILE: 'id_ecdsa',
   DETAILS: {
     VOLUMES: {
-      docker1: [
-        {
-          host_path: '/sys/fs/cgroup',
-          container_path: '/sys/fs/cgroup',
-        },
-        ...ADD_VOLUMES,
-      ],
+      docker1: ADD_VOLUMES,
     },
   },
   OFFSETS: {

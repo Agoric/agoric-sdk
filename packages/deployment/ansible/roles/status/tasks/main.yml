@@ -1,6 +1,6 @@
 ---
 - name: application service status
-  command: 'service {{service}} status'
+  command: 'systemctl log {{ service }} -n20'
   changed_when: false
   register: status
 

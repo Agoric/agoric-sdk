@@ -1,3 +1,4 @@
+// @ts-check
 import test from 'ava';
 import '@endo/init';
 

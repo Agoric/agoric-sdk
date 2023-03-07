@@ -12,7 +12,7 @@ import { natSafeMath } from '../src/contractSupport/index.js';
 
 import './types-ambient.js';
 
-const { details: X } = assert;
+const { Fail } = assert;
 
 // 'if (a >= b)' becomes 'if (timestampGTE(a,b))'
 const timestampGTE = (a, b) => TimeMath.compareAbs(a, b) >= 0;
@@ -50,10 +50,9 @@ export async function makeFakePriceAuthority(options) {
     quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
   } = options;
 
-  assert(
-    tradeList || priceList,
-    'One of priceList or tradeList must be specified',
-  );
+  tradeList ||
+    priceList ||
+    Fail`One of priceList or tradeList must be specified`;
 
   const unitValueIn = AmountMath.getValue(actualBrandIn, unitAmountIn);
 
@@ -74,16 +73,10 @@ export async function makeFakePriceAuthority(options) {
    * @param {Brand} allegedBrandOut
    */
   const assertBrands = (allegedBrandIn, allegedBrandOut) => {
-    assert.equal(
-      allegedBrandIn,
-      actualBrandIn,
-      X`${allegedBrandIn} is not an expected input brand`,
-    );
-    assert.equal(
-      allegedBrandOut,
-      actualBrandOut,
-      X`${allegedBrandOut} is not an expected output brand`,
-    );
+    allegedBrandIn === actualBrandIn ||
+      Fail`${allegedBrandIn} is not an expected input brand`;
+    allegedBrandOut === actualBrandOut ||
+      Fail`${allegedBrandOut} is not an expected output brand`;
   };
 
   const quoteIssuer = E(quoteMint).getIssuer();

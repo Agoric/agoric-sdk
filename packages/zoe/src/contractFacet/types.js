@@ -1,5 +1,7 @@
 /// <reference types="ses"/>
 
+/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+
 // XXX can be tighter than 'any'
 /**
  * @typedef {any} Completion
@@ -39,12 +41,17 @@
  * @property {<K extends AssetKind>(issuer: Issuer<K>) => Brand<K>} getBrandForIssuer
  * @property {<K extends AssetKind>(brand: Brand<K>) => Issuer<K>} getIssuerForBrand
  * @property {GetAssetKindByBrand} getAssetKind
- * @property {<K extends AssetKind = 'nat'>(keyword: Keyword, assetKind?: K, displayInfo?: AdditionalDisplayInfo) => Promise<ZCFMint<K>>} makeZCFMint
+ * @property {<K extends AssetKind = 'nat'>(
+ *   keyword: Keyword,
+ *   assetKind?: K,
+ *   displayInfo?: AdditionalDisplayInfo,
+ *   options?: IssuerOptionsRecord
+ * ) => Promise<ZCFMint<K>>} makeZCFMint
  * @property {ZCFRegisterFeeMint} registerFeeMint
  * @property {ZCFMakeEmptySeatKit} makeEmptySeatKit
  * @property {SetTestJig} setTestJig
  * @property {() => Promise<void>} stopAcceptingOffers
- * @property {(strings: Array<string>) => void} setOfferFilter
+ * @property {(strings: Array<string>) => Promise<void>} setOfferFilter
  * @property {() => Promise<Array<string>>} getOfferFilter
  * @property {() => Instance} getInstance
  */
@@ -89,7 +96,7 @@
  * @typedef {<Result>(
  *   offerHandler: OfferHandler<Result>,
  *   description: string,
- *   customProperties?: object,
+ *   customDetails?: object,
  *   proposalShape?: Pattern,
  * ) => Promise<Invitation<Awaited<Result>>>
  * } MakeInvitation
@@ -100,7 +107,7 @@
  * of the invitation. The contract must provide a `description` for
  * the invitation and should include whatever information is necessary
  * for a potential buyer of the invitation to know what they are
- * getting in the `customProperties`. `customProperties` will be
+ * getting in the `customDetails`. `customDetails` will be
  * placed in the details of the invitation.
  */
 

@@ -1,18 +1,18 @@
 /* global globalThis */
 
-import { assert } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { provideLazy } from '@agoric/store';
 
 /** @type {import('./types').VatData} */
 let VatDataGlobal;
 if ('VatData' in globalThis) {
-  assert(globalThis.VatData, 'VatData defined in global as null or undefined');
+  globalThis.VatData || Fail`VatData defined in global as null or undefined`;
   VatDataGlobal = globalThis.VatData;
 } else {
   // XXX this module has been known to get imported (transitively) in cases that
   // never use it so we make a version that will satisfy module resolution but
   // fail at runtime.
-  const unvailable = () => assert.fail('VatData unavailable');
+  const unvailable = () => Fail`VatData unavailable`;
   VatDataGlobal = {
     defineKind: unvailable,
     defineKindMulti: unvailable,

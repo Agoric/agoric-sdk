@@ -1,4 +1,4 @@
-import path from 'path';
+import { resolve as pathResolve } from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
@@ -13,7 +13,7 @@ import {
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
 import { Fail } from '@agoric/assert';
-import { makeSlogSender } from '@agoric/telemetry';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
 import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
@@ -52,22 +52,24 @@ const makePrefixedBridgeStorage = (
 
   return harden({
     get: key => {
-      const retStr = call(stringify({ method: 'get', key: `${prefix}${key}` }));
+      const retStr = call(
+        stringify({ method: 'get', args: [`${prefix}${key}`] }),
+      );
       const ret = JSON.parse(retStr);
-      if (!ret) {
+      if (ret == null) {
         return undefined;
       }
       const bridgeValue = JSON.parse(ret);
       return fromBridgeValue(bridgeValue);
     },
     set: (key, value) => {
-      const valueStr =
-        value === undefined ? '' : stringify(toBridgeValue(value));
+      const path = `${prefix}${key}`;
+      const entry =
+        value == null ? [path] : [path, stringify(toBridgeValue(value))];
       call(
         stringify({
           method: setterMethod,
-          key: `${prefix}${key}`,
-          value: valueStr,
+          args: [entry],
         }),
       );
     },
@@ -129,7 +131,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         return trueValue;
       default:
         if (option) {
-          return path.resolve(option);
+          return pathResolve(option);
         } else if (envName && flagName) {
           return getPathFromEnv({ flagName, trueValue });
         } else {
@@ -257,10 +259,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       ),
     );
     function setActivityhash(activityhash) {
+      const entry = [STORAGE_PATH.ACTIVITYHASH, activityhash];
       const msg = stringify({
         method: 'set',
-        key: STORAGE_PATH.ACTIVITYHASH,
-        value: activityhash,
+        args: [entry],
       });
       chainSend(portNums.storage, msg);
     }
@@ -326,7 +328,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const swingStoreTraceFile = getPathFromEnv({
       envName: 'SWING_STORE_TRACE',
       flagName: 'trace-store',
-      trueValue: path.resolve(stateDBDir, 'store-trace.log'),
+      trueValue: pathResolve(stateDBDir, 'store-trace.log'),
     });
 
     const keepSnapshots =
@@ -336,57 +338,63 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     let lastCommitTime = 0;
     let commitCallsSinceLastSnapshot = NaN;
-    const snapshotBaseDir = path.resolve(stateDBDir, 'node-heap-snapshots');
+    const snapshotBaseDir = pathResolve(stateDBDir, 'node-heap-snapshots');
 
     if (nodeHeapSnapshots >= 0) {
       fs.mkdirSync(snapshotBaseDir, { recursive: true });
     }
 
     const afterCommitCallback = async () => {
-      // delay until all current promise reactions are drained so we can be sure
-      // that the commit-block reply has been sent to agcc through replier.resolve
-      await waitUntilQuiescent();
-
-      let heapSnapshot;
-      let heapSnapshotTime;
-
-      const t0 = performance.now();
-      engineGC();
-      const t1 = performance.now();
-      const memoryUsage = process.memoryUsage();
-      const t2 = performance.now();
-      const heapStats = v8.getHeapStatistics();
-      const t3 = performance.now();
-
-      commitCallsSinceLastSnapshot += 1;
-      if (
-        (nodeHeapSnapshots >= 0 && t0 - lastCommitTime > 30 * 1000) ||
-        (nodeHeapSnapshots > 0 &&
-          !(nodeHeapSnapshots > commitCallsSinceLastSnapshot))
-      ) {
-        commitCallsSinceLastSnapshot = 0;
-        heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
-        const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
-        v8.writeHeapSnapshot(snapshotPath);
-        heapSnapshotTime = performance.now() - t3;
-      }
-      lastCommitTime = t0;
-
-      await Promise.resolve(slogSender?.forceFlush?.()).catch(err => {
-        console.warn('Failed to flush slog sender', err);
+      const slogSenderFlushed = tryFlushSlogSender(slogSender, {
+        env,
+        log: console.warn,
       });
 
-      return {
-        memoryUsage,
-        heapStats,
-        heapSnapshot,
-        statsTime: {
-          forcedGc: t1 - t0,
-          memoryUsage: t2 - t1,
-          heapStats: t3 - t2,
-          heapSnapshot: heapSnapshotTime,
-        },
-      };
+      // delay until all current promise reactions are drained so we can be sure
+      // that the commit-block reply has been sent to agcc through replier.resolve
+      await Promise.all([slogSenderFlushed, waitUntilQuiescent()]);
+
+      try {
+        let heapSnapshot;
+        let heapSnapshotTime;
+
+        const t0 = performance.now();
+        engineGC();
+        const t1 = performance.now();
+        const memoryUsage = process.memoryUsage();
+        const t2 = performance.now();
+        const heapStats = v8.getHeapStatistics();
+        const t3 = performance.now();
+
+        commitCallsSinceLastSnapshot += 1;
+        if (
+          (nodeHeapSnapshots >= 0 && t0 - lastCommitTime > 30 * 1000) ||
+          (nodeHeapSnapshots > 0 &&
+            !(nodeHeapSnapshots > commitCallsSinceLastSnapshot))
+        ) {
+          commitCallsSinceLastSnapshot = 0;
+          heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+          const snapshotPath = pathResolve(snapshotBaseDir, heapSnapshot);
+          v8.writeHeapSnapshot(snapshotPath);
+          heapSnapshotTime = performance.now() - t3;
+        }
+        lastCommitTime = t0;
+
+        return {
+          memoryUsage,
+          heapStats,
+          heapSnapshot,
+          statsTime: {
+            forcedGc: t1 - t0,
+            memoryUsage: t2 - t1,
+            heapStats: t3 - t2,
+            heapSnapshot: heapSnapshotTime,
+          },
+        };
+      } catch (err) {
+        console.warn('Failed to gather memory stats', err);
+        return {};
+      }
     };
 
     const s = await launch({

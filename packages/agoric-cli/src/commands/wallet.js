@@ -11,6 +11,7 @@ import {
 import { Command } from 'commander';
 import fs from 'fs';
 import util from 'util';
+import { execFileSync } from 'child_process';
 import { fmtRecordOfLines, summarize } from '../lib/format.js';
 import {
   boardSlottingMarshaller,
@@ -150,9 +151,13 @@ export const makeWalletCommand = async () => {
       try {
         const summary = summarize(current, coalesced, agoricNames);
         process.stdout.write(fmtRecordOfLines(summary));
+        process.stdout.write('\n');
       } catch (e) {
         console.error('CAUGHT HERE', e);
       }
+      execFileSync('agd', [`query`, 'bank', 'balances', opts.from], {
+        stdio: 'inherit',
+      });
     });
 
   wallet

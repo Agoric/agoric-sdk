@@ -15,8 +15,7 @@ import {
   makeNonceMaker,
 } from '@agoric/swingset-vat/src/vats/network/index.js';
 import { importBundle } from '@endo/import-bundle';
-import * as Collect from '@agoric/inter-protocol/src/collect.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
@@ -39,6 +38,7 @@ export const bridgeCoreEval = async allPowers => {
   // We need all of the powers to be available to the evaluator, but we only
   // need the bridgeManager to install our handler.
   const {
+    vatPowers: { D },
     consume: { bridgeManager: bridgeManagerP },
     produce: { coreEvalBridgeHandler },
   } = allPowers;
@@ -50,13 +50,14 @@ export const bridgeCoreEval = async allPowers => {
     Base64: globalThis.Base64, // Present only on XSnap
     URL: globalThis.URL, // Absent only on XSnap
   };
-  /** @param {Installation} installation */
-  const evaluateInstallation = async installation => {
-    const bundle = await E(installation).getBundle();
+
+  /** @param {BundleCap} bundleCap */
+  const evaluateBundleCap = async bundleCap => {
+    const bundle = await D(bundleCap).getBundle();
     const imported = await importBundle(bundle, { endowments });
     return imported;
   };
-  harden(evaluateInstallation);
+  harden(evaluateBundleCap);
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
@@ -76,7 +77,7 @@ export const bridgeCoreEval = async allPowers => {
                 .then(() => {
                   const permit = JSON.parse(jsonPermit);
                   const powers = extractPowers(permit, {
-                    evaluateInstallation,
+                    evaluateBundleCap,
                     ...allPowers,
                   });
 
@@ -275,7 +276,7 @@ export const setupClientManager = async (
       /** @type {ClientFacet} */
       const clientFacet = Far('chainProvisioner', {
         getChainBundle: () =>
-          bundleReady.promise.then(_ => Collect.allValues(clientHome)),
+          bundleReady.promise.then(_ => allValues(clientHome)),
         getConfiguration: () => notifier,
       });
 
@@ -403,7 +404,7 @@ export const publishAgoricNames = async (
       const kindNode = await E(nameStorage).makeChildNode(kind);
       const { publisher } = makeStoredPublishKit(kindNode, marshaller);
       publisher.publish([]);
-      kindAdmin.onUpdate(publisher.publish);
+      kindAdmin.onUpdate(v => publisher.publish(v));
     }),
   );
 };

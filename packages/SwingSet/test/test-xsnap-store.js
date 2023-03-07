@@ -1,36 +1,21 @@
 import '@endo/init/debug.js';
 
-import fs from 'fs';
 import { spawn } from 'child_process';
 import { type as osType } from 'os';
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { xsnap } from '@agoric/xsnap';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-
-const { freeze } = Object;
 
 const makeMockSnapStoreIO = () => ({
   ...makeSnapStoreIO(),
   measureSeconds: makeMeasureSeconds(() => 0),
 });
 
-const ld = (() => {
-  /** @param {string} ref */
-  // WARNING: ambient
-  const resolve = async ref => {
-    const parsed = await importMetaResolve(ref, import.meta.url);
-    return new URL(parsed).pathname;
-  };
-  const readFile = fs.promises.readFile;
-  return freeze({
-    resolve,
-    /**  @param {string} ref */
-    asset: async ref => readFile(await resolve(ref), 'utf-8'),
-  });
-})();
+const getBootScript = () =>
+  getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
 
 /** @type {(compressedSize: number, fullSize: number) => number} */
 const relativeSize = (compressedSize, fullSize) =>
@@ -66,9 +51,7 @@ async function bootWorker(name, handleCommand, script) {
  * @param {(request:Uint8Array) => Promise<Uint8Array>} handleCommand
  */
 async function bootSESWorker(name, handleCommand) {
-  const bootScript = await ld.asset(
-    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
-  );
+  const bootScript = await getBootScript();
   return bootWorker(name, handleCommand, bootScript);
 }
 
@@ -156,9 +139,7 @@ test('XS + SES snapshots are long-term deterministic', async t => {
   } = await store.saveSnapshot('vat0', 1, vat.snapshot);
   t.snapshot(info1, 'initial snapshot');
 
-  const bootScript = await ld.asset(
-    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
-  );
+  const bootScript = await getBootScript();
   await vat.evaluate(bootScript);
 
   const {
@@ -194,9 +175,7 @@ async function makeTestSnapshot() {
   const db = sqlite3(':memory:');
   const store = makeSnapStore(db, makeMockSnapStoreIO());
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
-  const bootScript = await ld.asset(
-    '@agoric/xsnap/dist/bundle-ses-boot.umd.js',
-  );
+  const bootScript = await getBootScript();
   await vat.evaluate(bootScript);
   await vat.evaluate('globalThis.x = harden({a: 1})');
   const info = await store.saveSnapshot('vat0', 1, vat.snapshot);

@@ -120,7 +120,7 @@
  *   `E(userBundle.bank).deposit(payment)` has to cast userBundle.bank;
  *   ideally, the cast is to some useful type. But unknown can't be cast directly to some other type;
  *   it has to be cast to any first.
- * @property {() => ConsistentAsyncIterable<Configuration>} getConfiguration
+ * @property {() => AsyncIterable<Configuration, Configuration>} getConfiguration
  *
  * @typedef {{ clientAddress: string, clientHome: Record<string, any>}} Configuration
  *
@@ -137,16 +137,16 @@
  *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
- *     'walletFactory' | 'provisionPool' |
+ *     'walletFactory' | 'provisionPool' | 'auction' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
- *     'amm' | 'VaultFactory' | 'liquidate' | 'stakeFactory' |
- *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'interchainPool' | 'priceAggregator',
+ *     'VaultFactory' | 'liquidate' | 'stakeFactory' |
+ *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'priceAggregator',
  *   instance: |
- *     'economicCommittee' | 'feeDistributor' |
- *     'amm' | 'ammGovernor' | 'VaultFactory' | 'VaultFactoryGovernor' |
+ *     'economicCommittee' | 'feeDistributor' | 'auction' |
+ *     'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
- *     'econCommitteeCharter' | 'interchainPool' |
+ *     'econCommitteeCharter' |
  *     'walletFactory' | 'provisionPool' |
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
@@ -172,9 +172,8 @@
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
- *       interchainPool: Promise<Installation<import('@agoric/inter-protocol/src/interchainPool.js').start>>,
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
- *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').start>>,
+ *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
  *     },
  *   },
  *   instance:{
@@ -192,7 +191,6 @@
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
- *   aggregators: Map<unknown, { aggregator: PriceAuthority, deleter: import('@agoric/zoe/tools/priceAuthorityRegistry').Deleter }>,
  *   bankManager: BankManager,
  *   bldIssuerKit: RemoteIssuerKit,
  *   board: import('@agoric/vats').Board,

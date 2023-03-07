@@ -29,6 +29,8 @@ import './internal-types.js';
 import '@agoric/swingset-vat/src/types-ambient.js';
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 
+/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
+
 const { Fail } = assert;
 
 /**
@@ -121,13 +123,15 @@ export const makeZCFZygote = async (
    * @param {Keyword} keyword
    * @param {K} [assetKind]
    * @param {AdditionalDisplayInfo} [displayInfo]
+   * @param {IssuerOptionsRecord} [options]
    * @returns {Promise<ZCFMint<K>>}
    */
   const makeZCFMint = async (
     keyword,
     // @ts-expect-error possible different subtype
     assetKind = AssetKind.NAT,
-    displayInfo,
+    displayInfo = undefined,
+    options = undefined,
   ) => {
     getInstanceRecHolder().assertUniqueKeyword(keyword);
 
@@ -135,6 +139,7 @@ export const makeZCFZygote = async (
       keyword,
       assetKind,
       displayInfo,
+      options,
     );
     return zcfMintFactory.makeZCFMintInternal(keyword, zoeMint);
   };
@@ -250,7 +255,7 @@ export const makeZCFZygote = async (
     makeInvitation: (
       offerHandler,
       description,
-      customProperties = harden({}),
+      customDetails = harden({}),
       proposalShape = undefined,
     ) => {
       typeof description === 'string' ||
@@ -266,7 +271,7 @@ export const makeZCFZygote = async (
       const invitationP = E(zoeInstanceAdmin).makeInvitation(
         invitationHandle,
         description,
-        customProperties,
+        customDetails,
         proposalShape,
       );
       return invitationP;
@@ -292,7 +297,7 @@ export const makeZCFZygote = async (
       // If the contract provided customTermsShape, validate the customTerms.
       if (customTermsShape) {
         const { brands: _b, issuers: _i, ...customTerms } = terms;
-        mustMatch(harden(customTerms), customTermsShape);
+        mustMatch(harden(customTerms), customTermsShape, 'customTerms');
       }
 
       return terms;
@@ -360,10 +365,11 @@ export const makeZCFZygote = async (
       zcfBaggage.init('zcfInstanceAdmin', instanceAdminFromZoe);
       instanceRecHolder = makeInstanceRecord(instanceRecordFromZoe);
       instantiateIssuerStorage(issuerStorageFromZoe);
+      zcfBaggage.init('instanceRecHolder', instanceRecHolder);
 
       const startFn = start || prepare;
       if (privateArgsShape) {
-        mustMatch(privateArgs, privateArgsShape);
+        mustMatch(privateArgs, privateArgsShape, 'privateArgs');
       }
       // start a contract for the first time
       return E.when(
@@ -395,9 +401,9 @@ export const makeZCFZygote = async (
     },
 
     restartContract: async (privateArgs = undefined) => {
-      const instanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
-      zoeInstanceAdmin = instanceAdmin;
       prepare || Fail`prepare must be defined to upgrade a contract`;
+      zoeInstanceAdmin = zcfBaggage.get('zcfInstanceAdmin');
+      instanceRecHolder = zcfBaggage.get('instanceRecHolder');
       initSeatMgrAndMintFactory();
 
       // restart an upgradeable contract

@@ -1,7 +1,7 @@
 import '@agoric/zoe/exported.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { makeTracer, objectMap } from '@agoric/internal';
+import { allValues, makeTracer, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
@@ -13,9 +13,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
-import * as Collect from '../../src/collect.js';
 import {
-  setupAmm,
   setupReserve,
   startVaultFactory,
 } from '../../src/proposals/econ-behaviors.js';
@@ -30,7 +28,7 @@ import {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('VFDriver');
+const trace = makeTracer('VFDriver', false);
 
 export const AT_NEXT = Symbol('AT_NEXT');
 
@@ -49,7 +47,6 @@ const contractRoots = {
   faucet: './test/vaultFactory/faucet.js',
   liquidate: './src/vaultFactory/liquidateIncrementally.js',
   VaultFactory: './src/vaultFactory/vaultFactory.js',
-  amm: './src/vpool-xyk-amm/multipoolMarketMaker.js',
   reserve: './src/reserve/assetReserve.js',
 };
 
@@ -105,14 +102,9 @@ export const makeDriverContext = async () => {
 
   // note that the liquidation might be a different bundle name
   // objectMap(contractRoots, (root, k) => loader.load(root, k)),
-  const bundles = await Collect.allValues({
+  const bundles = await allValues({
     faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
-    liquidate: bundleCache.load(
-      contractRoots.liquidate,
-      'liquidateIncrementally',
-    ),
     VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
-    amm: bundleCache.load(contractRoots.amm, 'amm'),
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = objectMap(bundles, bundle => E(zoe).install(bundle));
@@ -138,77 +130,29 @@ export const makeDriverContext = async () => {
 
 /**
  * @param {import('ava').ExecutionContext<DriverContext>} t
- * @param {any} aethLiquidity
- * @param {any} runLiquidity
  */
-const setupAmmAndElectorate = async (t, aethLiquidity, runLiquidity) => {
+const setupElectorate = async t => {
   const {
     zoe,
-    aeth,
     electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
     timer,
   } = t.context;
 
   const space = setupBootstrap(t, timer);
-  const { consume, instance } = space;
   installPuppetGovernance(zoe, space.installation.produce);
   // TODO consider using produceInstallations()
-  space.installation.produce.amm.resolve(t.context.installation.amm);
   space.installation.produce.reserve.resolve(t.context.installation.reserve);
   await startEconomicCommittee(space, {
     options: { econCommitteeOptions: electorateTerms },
   });
-  await setupAmm(space, {
-    options: { minInitialPoolLiquidity: 1000n },
-  });
   await setupReserve(space);
-
-  const governorCreatorFacet = E.get(consume.ammKit).governorCreatorFacet;
-  const governorInstance = await instance.consume.ammGovernor;
-  const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);
-  const governedInstance = E(governorPublicFacet).getGovernedContract();
-
-  /** @type { GovernedPublicFacet<XYKAMMPublicFacet> } */
-  const ammPublicFacet = await E(governorCreatorFacet).getPublicFacet();
-
-  const liquidityIssuer = await E(ammPublicFacet).addIssuer(
-    aeth.issuer,
-    'Aeth',
-  );
-  const liquidityBrand = await E(liquidityIssuer).getBrand();
-
-  const liqProposal = harden({
-    give: {
-      Secondary: aethLiquidity.proposal,
-      Central: runLiquidity.proposal,
-    },
-    want: { Liquidity: AmountMath.makeEmpty(liquidityBrand) },
-  });
-  const liqInvitation = await E(ammPublicFacet).addPoolInvitation();
-
-  const ammLiquiditySeat = await E(zoe).offer(
-    liqInvitation,
-    liqProposal,
-    harden({
-      Secondary: aethLiquidity.payment,
-      Central: runLiquidity.payment,
-    }),
-  );
 
   t.context.puppetGovernors = {
     // @ts-expect-error cast regular governor to puppet
     vaultFactory: E.get(space.consume.vaultFactoryKit).governorCreatorFacet,
   };
 
-  // TODO get the creator directly
-  const newAmm = {
-    ammCreatorFacet: await E.get(consume.ammKit).creatorFacet,
-    ammPublicFacet,
-    instance: governedInstance,
-    ammLiquidity: E(ammLiquiditySeat).getPayout('Liquidity'),
-  };
-
-  return { amm: newAmm, space };
+  return { space };
 };
 
 /**
@@ -244,7 +188,8 @@ const getRunFromFaucet = async (t, amt) => {
 };
 
 /**
- * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ * NOTE: called separately by each test so zoe/priceAuthority/etc. don't
+ * interfere.
  *
  * @param {import('ava').ExecutionContext<DriverContext>} t
  * @param {Amount} initialPrice
@@ -264,28 +209,14 @@ const setupServices = async (
     loanTiming,
     minInitialDebt,
     rates,
-    aethInitialLiquidity,
     runInitialLiquidity,
   } = t.context;
   t.context.timer = timer;
 
   const runPayment = await getRunFromFaucet(t, runInitialLiquidity);
   trace(t, 'faucet', { runInitialLiquidity, runPayment });
-  const runLiquidity = {
-    proposal: runInitialLiquidity,
-    payment: runPayment,
-  };
-  const aethLiquidity = {
-    proposal: aethInitialLiquidity,
-    payment: aeth.mint.mintPayment(aethInitialLiquidity),
-  };
-  const { amm: ammKit, space } = await setupAmmAndElectorate(
-    t,
-    aethLiquidity,
-    runLiquidity,
-  );
+  const { space } = await setupElectorate(t);
   const { consume, produce } = space;
-  trace(t, 'amm', { ammKit });
 
   // Cheesy hack for easy use of manual price authority
   const priceAuthority = makeManualPriceAuthority({
@@ -318,14 +249,14 @@ const setupServices = async (
   );
 
   /** @type {[any, VaultFactoryCreatorFacet, VFC['publicFacet'], VaultManager]} */
-  const [governorInstance, vaultFactory, lender, aethVaultManager] =
+  const [governorInstance, vaultFactory, vfPublic, aethVaultManager] =
     await Promise.all([
       E(consume.agoricNames).lookup('instance', 'VaultFactoryGovernor'),
       vaultFactoryCreatorFacet,
       E(governorCreatorFacet).getPublicFacet(),
       aethVaultManagerP,
     ]);
-  trace(t, 'pa', { governorInstance, vaultFactory, lender, priceAuthority });
+  trace(t, 'pa', { governorInstance, vaultFactory, vfPublic, priceAuthority });
 
   return {
     zoe,
@@ -336,11 +267,12 @@ const setupServices = async (
       governorCreatorFacet,
     },
     vaultFactory: {
+      // name for backwards compatiiblity
+      lender: E(vfPublic).getCollateralManager(aeth.brand),
       vaultFactory,
-      lender,
+      vfPublic,
       aethVaultManager,
     },
-    ammKit,
     priceAuthority,
   };
 };
@@ -360,11 +292,11 @@ export const makeManagerDriver = async (
 
   const { zoe, aeth, run } = t.context;
   const {
-    vaultFactory: { lender, vaultFactory },
+    vaultFactory: { lender, vaultFactory, vfPublic },
     priceAuthority,
   } = services;
   const managerNotifier = await makeNotifierFromSubscriber(
-    E(E(lender).getCollateralManager(aeth.brand)).getSubscriber(),
+    E(lender).getSubscriber(),
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
 
@@ -393,7 +325,7 @@ export const makeManagerDriver = async (
       }),
     );
     const { vault, publicSubscribers } = await E(vaultSeat).getOfferResult();
-    t.true(await E(vaultSeat).hasExited());
+    t.true(await E(vaultSeat).hasExited(), 'seat must have exited');
     const notifier = makeNotifierFromSubscriber(
       publicSubscribers.vault.subscriber,
     );
@@ -457,6 +389,15 @@ export const makeManagerDriver = async (
         );
         t.truthy(await E(vaultSeat).hasExited());
       },
+      transfer: async () => {
+        currentSeat = await E(zoe).offer(E(vault).makeTransferInvitation());
+        currentOfferResult = await E(currentSeat).getOfferResult();
+        console.log('DEBUG', { currentOfferResult });
+        t.like(currentOfferResult, {
+          publicSubscribers: { vault: { description: 'Vault holder status' } },
+        });
+        t.truthy(await E(vaultSeat).hasExited());
+      },
       /**
        *
        * @param {import('../../src/vaultFactory/vault.js').VaultPhase} phase
@@ -491,7 +432,7 @@ export const makeManagerDriver = async (
   };
 
   const driver = {
-    getVaultDirectorPublic: () => lender,
+    getVaultDirectorPublic: () => vfPublic,
     managerNotification: () => managerNotification,
     // XXX should return another ManagerDriver and maybe there should be a Director driver above them
     addVaultType: async keyword => {
@@ -523,31 +464,9 @@ export const makeManagerDriver = async (
         Minted: expectedMinted,
       });
     },
-    sellOnAMM: async (give, want, optStopAfter, expected) => {
-      const swapInvitation = E(
-        services.ammKit.ammPublicFacet,
-      ).makeSwapInvitation();
-      trace(t, 'AMM sell', { give, want, optStopAfter });
-      const offerArgs = optStopAfter
-        ? harden({ stopAfter: optStopAfter })
-        : undefined;
-      currentSeat = await E(zoe).offer(
-        await swapInvitation,
-        harden({ give: { In: give }, want: { Out: want } }),
-        harden({ In: aeth.mint.mintPayment(give) }),
-        offerArgs,
-      );
-      currentOfferResult = await E(currentSeat).getOfferResult();
-      if (expected) {
-        const payouts = await E(currentSeat).getFinalAllocation();
-        trace(t, 'AMM payouts', payouts);
-        t.like(payouts, expected);
-      }
-    },
     /** @param {Amount<'nat'>} p */
     setPrice: p => priceAuthority.setPrice(makeRatioFromAmounts(p, priceBase)),
     /**
-     *
      * @param {string} name
      * @param {*} newValue
      * @param {VaultFactoryParamPath} [paramPath] defaults to root path for the factory
@@ -565,6 +484,14 @@ export const makeManagerDriver = async (
           changes: { [name]: newValue },
         }),
       );
+    },
+    /**
+     * @param {string[]} filters
+     */
+    setGovernedFilters: filters => {
+      trace(t, 'setGovernedFilters', filters);
+      const vfGov = t.context.puppetGovernors.vaultFactory;
+      return E(vfGov).setFilters(harden(filters));
     },
     /**
      *
@@ -585,13 +512,7 @@ export const makeManagerDriver = async (
       const { reserveCreatorFacet } = t.context;
       const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
 
-      const liquidityIssuer = await E(
-        services.ammKit.ammPublicFacet,
-      ).getLiquidityIssuer(aeth.brand);
-      const liquidityBrand = await E(liquidityIssuer).getBrand();
-
       t.deepEqual(reserveAllocations, {
-        RaEthLiquidity: AmountMath.make(liquidityBrand, liquidityValue),
         Fee: run.make(stableValue),
       });
     },

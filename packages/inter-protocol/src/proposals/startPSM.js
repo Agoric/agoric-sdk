@@ -273,11 +273,9 @@ harden(makeAnchorAsset);
 
 /** @typedef {import('./econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
-/** @param {BootstrapSpace & EconomyBootstrapSpace & { devices: { vatAdmin: any }, vatPowers: { D: DProxy }, }} powers */
+/** @param {BootstrapSpace & EconomyBootstrapSpace} powers */
 export const installGovAndPSMContracts = async ({
-  vatPowers: { D },
-  devices: { vatAdmin },
-  consume: { zoe },
+  consume: { vatAdminSvc, zoe },
   produce: { psmKit },
   installation: {
     produce: {
@@ -303,9 +301,8 @@ export const installGovAndPSMContracts = async ({
       psm,
       econCommitteeCharter,
     }).map(async ([name, producer]) => {
-      const bundleCap = D(vatAdmin).getNamedBundleCap(name);
-      const bundle = D(bundleCap).getBundle();
-      const installation = E(zoe).install(bundle);
+      const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
+      const installation = await E(zoe).installBundleID(bundleID);
 
       producer.resolve(installation);
     }),
@@ -321,9 +318,7 @@ export const installGovAndPSMContracts = async ({
  */
 export const PSM_GOV_MANIFEST = {
   [installGovAndPSMContracts.name]: {
-    vatPowers: { D: true },
-    devices: { vatAdmin: true },
-    consume: { zoe: 'zoe' },
+    consume: { vatAdminSvc: 'true', zoe: 'zoe' },
     produce: { psmKit: 'true' },
     installation: {
       produce: {

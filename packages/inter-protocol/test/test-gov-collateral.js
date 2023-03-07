@@ -4,6 +4,7 @@ import url from 'url';
 import path from 'path';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import bundleSource from '@endo/bundle-source';
 import {
   addBankAssets,
   makeAddressNameHubs,
@@ -62,8 +63,9 @@ const voterAddresses = {
 let lastProposalSequence = 0;
 
 const makeTestContext = async () => {
-  const bundleCache = await makeNodeBundleCache('bundles/', s => import(s));
-  const { zoe, feeMintAccessP } = await setUpZoeForTest();
+  const bundleCache = await makeNodeBundleCache('bundles/', {}, s => import(s));
+  const { zoe, feeMintAccessP, vatAdminSvc, vatAdminState } =
+    await setUpZoeForTest();
 
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
@@ -80,11 +82,11 @@ const makeTestContext = async () => {
     ),
   };
 
-  const bundleIDToAbsolutePaths = new Map();
+  const bundleNameToAbsolutePaths = new Map();
   const bundlePathToInstallP = new Map();
-  const restoreBundleID = bundleID => {
-    const absolutePaths = bundleIDToAbsolutePaths.get(bundleID);
-    absolutePaths || Fail`bundleID ${bundleID} not found`;
+  const restoreBundleName = bundleName => {
+    const absolutePaths = bundleNameToAbsolutePaths.get(bundleName);
+    absolutePaths || Fail`bundleName ${bundleName} not found`;
     const { source, bundle } = absolutePaths;
     const bundlePath = bundle || source.replace(/(\\|\/|:)/g, '_');
     if (!bundlePathToInstallP.has(bundlePath)) {
@@ -95,20 +97,40 @@ const makeTestContext = async () => {
     return bundlePathToInstallP.get(bundlePath);
   };
 
-  const registerBundleHandles = bundleHandleMap => {
-    for (const [{ bundleID }, paths] of bundleHandleMap.entries()) {
-      !bundleIDToAbsolutePaths.has(bundleID) ||
-        Fail`bundleID ${bundleID} already registered`;
-      bundleIDToAbsolutePaths.set(bundleID, paths);
+  const registerOne = async (bundleName, paths) => {
+    !bundleNameToAbsolutePaths.has(bundleName) ||
+      Fail`bundleName ${bundleName} already registered`;
+    bundleNameToAbsolutePaths.set(bundleName, paths);
+    // use vatAdminState to install this bundle
+    let bundleP;
+    if (paths.bundle) {
+      bundleP = import(paths.bundle).then(ns => ns.default);
+    } else {
+      assert(paths.source);
+      bundleP = bundleSource(paths.source);
     }
+    const bundle = await bundleP;
+    const bundleID = bundle.endoZipBase64Sha512;
+    assert(bundleID);
+    vatAdminState.installNamedBundle(bundleName, bundleID, bundle);
+  };
+
+  const registerBundleHandles = async bundleHandleMap => {
+    const allP = [];
+    for (const [{ bundleName }, paths] of bundleHandleMap.entries()) {
+      allP.push(registerOne(bundleName, paths));
+    }
+    await Promise.all(allP);
   };
 
   return {
     registerBundleHandles,
-    restoreBundleID,
+    restoreBundleName,
     cleanups: [],
     zoe: await zoe,
     feeMintAccess: await feeMintAccessP,
+    vatAdminSvc,
+    vatAdminState,
     run: { issuer: runIssuer, brand: runBrand },
     installation,
   };
@@ -123,7 +145,10 @@ test.before(async t => {
  * @param {{ env?: Record<string, string|undefined> }} [io]
  */
 const makeScenario = async (t, { env = process.env } = {}) => {
-  const space = await setupBootstrap(t);
+  const rawSpace = await setupBootstrap(t);
+  const vatPowers = t.context.vatAdminState.getVatPowers();
+  const space = { vatPowers, ...rawSpace };
+  space.produce.vatAdminSvc.resolve(t.context.vatAdminSvc);
 
   const loadVat = name => {
     const baggage = makeScalarBigMapStore('baggage');
@@ -221,22 +246,22 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   };
 
   /** @type {any} */
-  const { restoreBundleID: produceRestoreBundleID } = space.produce;
-  produceRestoreBundleID.resolve(t.context.restoreBundleID);
+  const { restoreBundleName: produceRestoreBundleName } = space.produce;
+  produceRestoreBundleName.resolve(t.context.restoreBundleName);
   const makeEnactCoreProposalsFromBundleHandle =
     ({ makeCoreProposalArgs, E: cpE }) =>
     async allPowers => {
       const {
-        consume: { restoreBundleID },
+        consume: { restoreBundleName },
       } = allPowers;
-      const restoreRef = async ({ bundleID }) => {
-        return cpE(restoreBundleID)(bundleID);
+      const restoreRef = async ({ bundleName }) => {
+        return cpE(restoreBundleName)(bundleName);
       };
 
       await Promise.all(
         makeCoreProposalArgs.map(async ({ ref, call, overrideManifest }) => {
           const subBehavior = makeCoreProposalBehavior({
-            manifestInstallRef: ref,
+            manifestBundleRef: ref,
             getManifestCall: call,
             overrideManifest,
             E: cpE,
@@ -258,7 +283,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         makeEnactCoreProposalsFromBundleHandle,
         () => (lastProposalSequence += 1),
       );
-    t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
+    await t.context.registerBundleHandles(bundleHandleToAbsolutePaths);
 
     const coreEvalMessage = {
       type: 'CORE_EVAL',
@@ -291,9 +316,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
     ]);
   };
 
-  /** @type {PromiseKit<string>} */
-  const atomIssuerPK = makePromiseKit();
-
   const enactVaultAssetProposal = async () => {
     env.INTERCHAIN_DENOM = 'ibc/abc123';
     await evalProposals([coreProposals.addCollateral]);
@@ -320,49 +342,11 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   const makeBenefactor = home => {
     const {
       agoricNames,
-      board,
       zoe,
       wallet: { purses },
     } = home;
 
     return Far('benefactor', {
-      // This isn't used now that we make the pool from a denom
-      // in publishInterchainAssetFromBank in addAssetToVault.js
-      // But it should still work. TODO: Perhaps we should test both ways?
-      // i.e. from a board ID as well?
-      makePool: async (atomQty = 500n, istQty = 1000n) => {
-        const istBrand = await E(agoricNames).lookup('brand', 'RUN');
-        const istAmt = qty => AmountMath.make(istBrand, qty * UNIT);
-        const interchainPoolAPI = E(zoe).getPublicFacet(
-          E(agoricNames).lookup('instance', 'interchainPool'),
-        );
-
-        const proposal1 = harden({ give: { Central: istAmt(istQty) } });
-        const centralPmt = await E(purses.ist).withdraw(proposal1.give.Central);
-        const inv1 = await E(interchainPoolAPI).makeInterchainPoolInvitation();
-        const seat1 = await E(zoe).offer(
-          inv1,
-          proposal1,
-          harden({ Central: centralPmt }),
-          harden({ denom: 'ibc/abc123' }),
-        );
-        const { invitation: inv2, issuer: ibcIssuer } = await E(
-          seat1,
-        ).getOfferResult();
-        atomIssuerPK.resolve(E(board).getId(ibcIssuer));
-        const ibcBrand = await E(ibcIssuer).getBrand();
-        const atomAmt = qty => AmountMath.make(ibcBrand, qty * UNIT);
-
-        const proposal2 = harden({ give: { Secondary: atomAmt(atomQty) } });
-        const pmt2 = await E(purses.atom).withdraw(proposal2.give.Secondary);
-        const seat2 = await E(zoe).offer(
-          inv2,
-          proposal2,
-          harden({ Secondary: pmt2 }),
-        );
-        t.deepEqual(await E(seat2).getOfferResult(), 'Added liquidity.');
-      },
-
       depositInReserve: async (qty = 10_000n) => {
         const ibcAtomBrand = await E(agoricNames).lookup('brand', 'IbcATOM');
         /** @type {ERef<import('../src/reserve/assetReserve').AssetReservePublicFacet>} */
@@ -432,7 +416,7 @@ test('Benefactor can add to reserve', async t => {
   await s.startDevNet();
   await s.provisionMembers();
   await s.startRunPreview();
-  // await s.benefactor.makePool(2000n, 1000n);
+
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -447,7 +431,7 @@ test('voters get invitations', async t => {
   await s.startDevNet();
   const purses = await s.provisionMembers();
   await s.startRunPreview();
-  // await s.benefactor.makePool();
+
   await Promise.all([
     s.enactVaultAssetProposal(),
     s.enactInviteEconCommitteeProposal(),
@@ -474,7 +458,7 @@ test('voters get invitations', async t => {
   );
 });
 
-test('assets are in AMM, Vaults', async t => {
+test('assets are in Vaults', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   await s.provisionMembers();
@@ -492,11 +476,6 @@ test('assets are in AMM, Vaults', async t => {
   } = s.space;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
   const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
-
-  /** @type { ERef<XYKAMMPublicFacet> } */
-  const ammAPI = instanceP.amm.then(i => E(zoe).getPublicFacet(i));
-  const ammStuff = await E(ammAPI).getAllPoolBrands();
-  t.deepEqual(ammStuff, [brand]);
 
   /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
   const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));

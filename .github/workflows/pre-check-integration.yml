@@ -52,4 +52,4 @@ jobs:
             [ "$conclusion" != "null" ] && break
             sleep 10
           done
-          echo "::set-output name=concurrent_conclusion::$conclusion"
+          echo "concurrent_conclusion=$conclusion" >> $GITHUB_OUTPUT

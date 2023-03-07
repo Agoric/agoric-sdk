@@ -4,6 +4,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
 import bundleSource from '@endo/bundle-source';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeStartXSnap } from '../src/controller/controller.js';
@@ -12,9 +13,7 @@ import { kser } from '../src/lib/kmarshal.js';
 test('child termination distinguished from meter exhaustion', async t => {
   const makeb = rel =>
     bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
-  const lockdown = await makeb(
-    '../src/supervisors/subprocess-xsnap/lockdown-subprocess-xsnap.js',
-  );
+  const lockdown = await getLockdownBundle();
   const supervisor = await makeb(
     '../src/supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
   );

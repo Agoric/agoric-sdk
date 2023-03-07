@@ -1,12 +1,12 @@
 // @jessie-check
 import { AmountMath, AssetKind } from '@agoric/ertp';
-import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
-import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makePublishKit } from '@agoric/notifier';
 import { bindAllMethods, makeTracer } from '@agoric/internal';
+import { makePublishKit } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
-import { addSubtract, assertOnlyKeys, stageDelta } from '../contractSupport.js';
+import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { addSubtract, assertOnlyKeys } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { ManagerKW as KW } from './constants.js';
 
@@ -95,11 +95,12 @@ const initState = (zcf, startSeat, manager) => {
     AmountMath.isEqual(newDebt, toMint) || Fail`loan fee mismatch`;
     trace('init', { runWanted, fee, attestationGiven });
 
-    vaultSeat.incrementBy(
-      startSeat.decrementBy(harden({ [KW.Attestation]: attestationGiven })),
+    manager.mintAndReallocate(
+      startSeat,
+      toMint,
+      fee,
+      harden([[startSeat, vaultSeat, { [KW.Attestation]: attestationGiven }]]),
     );
-
-    manager.mintAndReallocate(toMint, fee, startSeat, vaultSeat);
 
     startSeat.exit();
     return newDebt;
@@ -296,9 +297,17 @@ const helperBehavior = {
       newDebt,
     });
 
-    stageDelta(clientSeat, vaultSeat, giveColl, wantColl, KW.Attestation);
-    stageDelta(clientSeat, vaultSeat, give, emptyDebt, KW.Debt);
-    manager.mintAndReallocate(toMint, fee, clientSeat, vaultSeat);
+    manager.mintAndReallocate(
+      clientSeat,
+      toMint,
+      fee,
+      harden([
+        [clientSeat, vaultSeat, { [KW.Attestation]: giveColl }],
+        [vaultSeat, clientSeat, { [KW.Attestation]: wantColl }],
+        [clientSeat, vaultSeat, { [KW.Debt]: give }],
+        // Minted into vaultSeat requires minting and so is done by mintAndTransfer
+      ]),
+    );
 
     // parent needs to know about the change in debt
     helper.updateDebtAccounting(debt, newDebt);

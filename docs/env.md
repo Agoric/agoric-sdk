@@ -216,6 +216,19 @@ sub-process which receives all SLOG events over an IPC connection.
 
 The default is `'self'`.
 
+## SLOGSENDER_FAIL_ON_ERROR
+
+Affects: cosmic-swingset
+
+Purpose: causes failures of the slogSender to be fatal
+
+Description: if set (to a non empty value), a failure of the slogSender flush
+operation will result in a rejection instead of mere logging. Can be used to
+validate during tests that complex slog senders like the otel converter do not
+have any unexpected errors.
+
+The default is `undefined`.
+
 ## SWINGSET_WORKER_TYPE
 
 Affects: solo

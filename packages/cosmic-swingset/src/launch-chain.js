@@ -1,3 +1,4 @@
+// @ts-check
 /* global process */
 /* eslint-disable @jessie.js/no-nested-await */
 import anylogger from 'anylogger';
@@ -22,7 +23,7 @@ import * as ActionType from '@agoric/internal/src/action-types.js';
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 
 import {
-  DEFAULT_METER_PROVIDER,
+  makeDefaultMeterProvider,
   makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
@@ -47,7 +48,16 @@ const blockManagerConsole = anylogger('block-manager');
  */
 const getHostKey = path => `host.${path}`;
 
-async function buildSwingset(
+/**
+ * @param {Map<*, *>} mailboxStorage
+ * @param {*} bridgeOutbound
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @param {string} vatconfig absolute path
+ * @param {Record<string, any>} argv XXX argv should be an array but it's being called with object
+ * @param {{ ROLE: string }} env
+ * @param {*} options
+ */
+export async function buildSwingset(
   mailboxStorage,
   bridgeOutbound,
   kernelStorage,
@@ -61,6 +71,7 @@ async function buildSwingset(
   env.ROLE = argv.ROLE;
 
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
+  /** @type {import('@agoric/swingset-vat').SwingSetConfig | null} */
   let config = await loadSwingsetConfigFile(vatconfig);
   if (config === null) {
     config = loadBasedir(vatconfig);
@@ -96,7 +107,7 @@ async function buildSwingset(
     if (swingsetIsInitialized(kernelStorage)) {
       return;
     }
-
+    if (!config) throw Fail`config not yet set`;
     // Find the entrypoints for all the core proposals.
     if (config.coreProposals) {
       const { bundles, code } = await extractCoreProposalBundles(
@@ -111,6 +122,7 @@ async function buildSwingset(
     }
     config.pinBootstrapRoot = true;
 
+    // @ts-expect-error XXX argv object
     await initializeSwingset(config, argv, kernelStorage, { debugPrefix });
   }
   await ensureSwingsetInitialized();
@@ -133,7 +145,7 @@ async function buildSwingset(
 /**
  * @typedef {import('@agoric/swingset-vat').RunPolicy & {
  *   shouldRun(): boolean;
- *   remainingBeans(): number;
+ *   remainingBeans(): bigint;
  * }} ChainRunPolicy
  */
 
@@ -213,7 +225,7 @@ export async function launch({
   env = process.env,
   debugName = undefined,
   verboseBlocks = false,
-  metricsProvider = DEFAULT_METER_PROVIDER,
+  metricsProvider = makeDefaultMeterProvider(),
   slogSender,
   swingStoreTraceFile,
   keepSnapshots,
@@ -263,6 +275,7 @@ export async function launch({
     kernelStorage,
     vatconfig,
     argv,
+    // @ts-expect-error process.env default
     env,
     {
       debugName,
@@ -283,11 +296,15 @@ export async function launch({
   const { crankScheduler } = exportKernelStats({
     controller,
     metricMeter,
+    // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
     log: console,
     inboundQueueMetrics,
   });
 
-  async function bootstrapBlock() {
+  async function bootstrapBlock(_blockHeight, blockTime) {
+    // We need to let bootstrap know of the chain time. The time of the first
+    // block may be the genesis time, or the block time of the upgrade block.
+    timer.poll(blockTime);
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
     const policy = neverStop();
@@ -359,6 +376,7 @@ export async function launch({
       inboundNum,
       source,
     });
+    if (!bridgeInbound) throw Fail`bridgeInbound undefined`;
     // console.log(`doBridgeInbound`);
     // the inbound bridge will push messages onto the kernel run-queue for
     // delivery+dispatch to some handler vat
@@ -398,6 +416,7 @@ export async function launch({
       installationPublisher === undefined &&
       makeInstallationPublisher !== undefined
     ) {
+      // @ts-expect-error not really undefined. TODO give provideInstallationPublisher a signature.
       installationPublisher = makeInstallationPublisher();
     }
   }
@@ -629,19 +648,14 @@ export async function launch({
   async function afterCommit(blockHeight, blockTime) {
     await Promise.resolve()
       .then(afterCommitCallback)
-      .then(
-        (afterCommitStats = {}) => {
-          controller.writeSlogObject({
-            type: 'cosmic-swingset-after-commit-stats',
-            blockHeight,
-            blockTime,
-            ...afterCommitStats,
-          });
-        },
-        error => {
-          console.warn('Error during afterCommitCallback', error);
-        },
-      );
+      .then((afterCommitStats = {}) => {
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-after-commit-stats',
+          blockHeight,
+          blockTime,
+          ...afterCommitStats,
+        });
+      });
   }
 
   async function blockingSend(action) {
@@ -676,7 +690,9 @@ export async function launch({
           blockHeight,
           runNum,
         });
-        await processAction(action.type, bootstrapBlock);
+        await processAction(action.type, async () =>
+          bootstrapBlock(blockHeight, blockTime),
+        );
         controller.writeSlogObject({
           type: 'cosmic-swingset-run-finish',
           blockHeight,

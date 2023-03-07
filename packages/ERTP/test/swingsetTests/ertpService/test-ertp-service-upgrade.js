@@ -8,9 +8,10 @@ import { buildVatController } from '@agoric/swingset-vat';
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test('ertp service upgrade', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     // includeDevDependencies: true, // for vat-data
-    defaultManagerType: /** @type {const} */ ('local'), // 'xs-worker',
+    defaultManagerType: 'local',
     bootstrap: 'bootstrap',
     // defaultReapInterval: 'never',
     // defaultReapInterval: 1,

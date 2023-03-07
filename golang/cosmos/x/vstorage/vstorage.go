@@ -8,6 +8,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 )
 
 type vstorageHandler struct {
@@ -15,19 +16,29 @@ type vstorageHandler struct {
 }
 
 type vstorageMessage struct {
-	Method string `json:"method"`
-	Path   string `json:"key"` // TODO: rename JSON to "path"
-	Value  string `json:"value"`
+	Method string            `json:"method"`
+	Args   []json.RawMessage `json:"args"`
 }
 
 type vstorageStoreKey struct {
 	StoreName       string `json:"storeName"`
 	StoreSubkey     string `json:"storeSubkey"`
 	DataPrefixBytes string `json:"dataPrefixBytes"`
+	NoDataValue     string `json:"noDataValue"`
 }
 
 func NewStorageHandler(keeper Keeper) vstorageHandler {
 	return vstorageHandler{keeper: keeper}
+}
+
+func unmarshalSinglePathFromArgs(args []json.RawMessage, path *string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("missing 'path' argument")
+	}
+	if len(args) != 1 {
+		return fmt.Errorf("extra arguments after 'path'")
+	}
+	return json.Unmarshal(args[0], path)
 }
 
 func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret string, err error) {
@@ -57,46 +68,89 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 	// Handle generic paths.
 	switch msg.Method {
 	case "set":
-		keeper.SetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
+		for _, arg := range msg.Args {
+			var entry types.StorageEntry
+			entry, err = types.UnmarshalStorageEntry(arg)
+			if err != nil {
+				return
+			}
+			keeper.SetStorageAndNotify(cctx.Context, entry)
+		}
 		return "true", nil
 
 		// We sometimes need to use LegacySetStorageAndNotify, because the solo's
 		// chain-cosmos-sdk.js consumes legacy events for `mailbox.*` and `egress.*`.
 		// FIXME: Use just "set" and remove this case.
 	case "legacySet":
-		//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", msg.Key, msg.Value)
-		keeper.LegacySetStorageAndNotify(cctx.Context, msg.Path, msg.Value)
+		for _, arg := range msg.Args {
+			var entry types.StorageEntry
+			entry, err = types.UnmarshalStorageEntry(arg)
+			if err != nil {
+				return
+			}
+			//fmt.Printf("giving Keeper.SetStorage(%s) %s\n", entry.Path(), entry.Value())
+			keeper.LegacySetStorageAndNotify(cctx.Context, entry)
+		}
 		return "true", nil
 
 	case "setWithoutNotify":
-		keeper.SetStorage(cctx.Context, msg.Path, msg.Value)
+		for _, arg := range msg.Args {
+			var entry types.StorageEntry
+			entry, err = types.UnmarshalStorageEntry(arg)
+			if err != nil {
+				return
+			}
+			keeper.SetStorage(cctx.Context, entry)
+		}
 		return "true", nil
 
 	case "append":
-		err = keeper.AppendStorageValueAndNotify(cctx.Context, msg.Path, msg.Value)
-		if err != nil {
-			return "", err
+		for _, arg := range msg.Args {
+			var entry types.StorageEntry
+			entry, err = types.UnmarshalStorageEntry(arg)
+			if err != nil {
+				return
+			}
+			if !entry.HasData() {
+				err = fmt.Errorf("no value for append entry with path: %q", entry.Path())
+				return
+			}
+			err = keeper.AppendStorageValueAndNotify(cctx.Context, entry.Path(), entry.StringValue())
+			if err != nil {
+				return
+			}
 		}
 		return "true", nil
 
 	case "get":
 		// Note that "get" does not (currently) unwrap a StreamCell.
-		value := keeper.GetData(cctx.Context, msg.Path)
-		if value == "" {
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
+
+		entry := keeper.GetEntry(cctx.Context, path)
+		if !entry.HasData() {
 			return "null", nil
 		}
-		//fmt.Printf("Keeper.GetStorage gave us %bz\n", value)
-		bz, err := json.Marshal(value)
+		bz, err := json.Marshal(entry.StringValue())
 		if err != nil {
 			return "", err
 		}
 		return string(bz), nil
 
 	case "getStoreKey":
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
 		value := vstorageStoreKey{
 			StoreName:       keeper.GetStoreName(),
-			StoreSubkey:     string(keeper.PathToEncodedKey(msg.Path)),
+			StoreSubkey:     string(keeper.PathToEncodedKey(path)),
 			DataPrefixBytes: string(keeper.GetDataPrefix()),
+			NoDataValue:     string(keeper.GetNoDataValue()),
 		}
 		bz, err := json.Marshal(value)
 		if err != nil {
@@ -105,15 +159,25 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bz), nil
 
 	case "has":
-		value := keeper.GetData(cctx.Context, msg.Path)
-		if value == "" {
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
+		value := keeper.HasStorage(cctx.Context, path)
+		if !value {
 			return "false", nil
 		}
 		return "true", nil
 
 	// TODO: "keys" is deprecated
 	case "children", "keys":
-		children := keeper.GetChildren(cctx.Context, msg.Path)
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
+		children := keeper.GetChildren(cctx.Context, path)
 		if children.Children == nil {
 			return "[]", nil
 		}
@@ -124,12 +188,17 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bytes), nil
 
 	case "entries":
-		children := keeper.GetChildren(cctx.Context, msg.Path)
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
+		children := keeper.GetChildren(cctx.Context, path)
 		ents := make([][]string, len(children.Children))
 		for i, child := range children.Children {
 			ents[i] = make([]string, 2)
 			ents[i][0] = child
-			ents[i][i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child))
+			ents[i][i] = keeper.GetEntry(cctx.Context, fmt.Sprintf("%s.%s", path, child)).StringValue()
 		}
 		bytes, err := json.Marshal(ents)
 		if err != nil {
@@ -138,10 +207,15 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bytes), nil
 
 	case "values":
-		children := keeper.GetChildren(cctx.Context, msg.Path)
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
+		children := keeper.GetChildren(cctx.Context, path)
 		vals := make([]string, len(children.Children))
 		for i, child := range children.Children {
-			vals[i] = keeper.GetData(cctx.Context, fmt.Sprintf("%s.%s", msg.Path, child))
+			vals[i] = keeper.GetEntry(cctx.Context, fmt.Sprintf("%s.%s", path, child)).StringValue()
 		}
 		bytes, err := json.Marshal(vals)
 		if err != nil {
@@ -150,7 +224,12 @@ func (sh vstorageHandler) Receive(cctx *vm.ControllerContext, str string) (ret s
 		return string(bytes), nil
 
 	case "size":
-		children := keeper.GetChildren(cctx.Context, msg.Path)
+		var path string
+		err = unmarshalSinglePathFromArgs(msg.Args, &path)
+		if err != nil {
+			return
+		}
+		children := keeper.GetChildren(cctx.Context, path)
 		if children.Children == nil {
 			return "0", nil
 		}

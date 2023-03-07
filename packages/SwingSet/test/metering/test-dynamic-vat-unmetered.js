@@ -8,6 +8,7 @@ import { kunser } from '../../src/lib/kmarshal.js';
 // Dynamic vats are created without metering by default
 
 test('unmetered dynamic vat', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker',

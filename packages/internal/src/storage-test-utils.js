@@ -2,6 +2,8 @@
 import { Far, makeMarshal } from '@endo/marshal';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
 
+const { Fail, quote: q } = assert;
+
 /**
  * For testing, creates a chainStorage root node over an in-memory map
  * and exposes both the map and the sequence of received messages.
@@ -22,19 +24,24 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'getStoreKey': {
         return {
           storeName: 'swingset',
-          storeSubkey: `fake:${message.key}`,
+          storeSubkey: `fake:${message.args[0]}`,
         };
       }
       case 'set':
-        if ('value' in message) {
-          data.set(message.key, message.value);
-        } else {
-          data.delete(message.key);
+        for (const [key, value] of message.args) {
+          if (value !== undefined) {
+            data.set(key, value);
+          } else {
+            data.delete(key);
+          }
         }
         break;
       case 'append':
-        if ('value' in message) {
-          let sequence = data.get(message.key);
+        for (const [key, value] of message.args) {
+          if (value === undefined) {
+            throw new Error(`attempt to append with no value`);
+          }
+          let sequence = data.get(key);
           if (!Array.isArray(sequence)) {
             if (sequence === undefined) {
               // Initialize an empty collection.
@@ -43,26 +50,25 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
               // Wrap a previous single value in a collection.
               sequence = [sequence];
             }
-            data.set(message.key, sequence);
+            data.set(key, sequence);
           }
-          sequence.push(message.value);
-        } else {
-          throw new Error(`attempt to append with no value`);
+          sequence.push(value);
         }
         break;
       case 'size':
         // Intentionally incorrect because it counts non-child descendants,
         // but nevertheless supports a "has children" test.
-        return [...data.keys()].filter(k => k.startsWith(`${message.key}.`))
+        return [...data.keys()].filter(k => k.startsWith(`${message.args[0]}.`))
           .length;
       default:
         throw new Error(`unsupported method: ${message.method}`);
     }
   };
   const rootNode = makeChainStorageRoot(toStorage, rootPath, rootOptions);
-  return { rootNode, data, messages };
+  return { rootNode, data, messages, toStorage };
 };
 harden(makeFakeStorageKit);
+/** @typedef {ReturnType< typeof makeFakeStorageKit>} FakeStorageKit */
 
 export const makeMockChainStorageRoot = () => {
   const { rootNode, data } = makeFakeStorageKit('mockChainStorageRoot');
@@ -83,11 +89,11 @@ export const makeMockChainStorageRoot = () => {
      * @returns {unknown}
      */
     getBody: (path, marshaller = defaultMarshaller) => {
-      assert(data.size, 'no data in storage');
+      data.size || Fail`no data in storage`;
       const dataStr = data.get(path);
       if (!dataStr) {
         console.debug('mockChainStorage data:', data);
-        assert.fail(`no data at ${path}`);
+        Fail`no data at ${q(path)}`;
       }
       assert.typeof(dataStr, 'string');
       const datum = JSON.parse(dataStr);

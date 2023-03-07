@@ -15,6 +15,7 @@ const { Fail } = assert;
  * @property {string} storeName
  * @property {string} storeSubkey
  * @property {string} dataPrefixBytes
+ * @property {string} [noDataValue]
  */
 
 /**
@@ -56,8 +57,19 @@ harden(assertPathSegment);
 /**
  * Must match the switch in vstorage.go using `vstorageMessage` type
  *
- * @typedef {'get' | 'getStoreKey' | 'set' | 'append' | 'has' |'entries' | 'values' |'size' } StorageMessageMethod
- * @typedef {{key: string, method: StorageMessageMethod, value: string}} StorageMessage
+ * @typedef { 'get' | 'getStoreKey' | 'has' | 'entries' | 'values' |'size' } StorageGetByPathMessageMethod
+ * @typedef { 'set' | 'append' } StorageUpdateEntriesMessageMethod
+ * @typedef {StorageGetByPathMessageMethod | StorageUpdateEntriesMessageMethod } StorageMessageMethod
+ * @typedef { [path: string] } StorageGetByPathMessageArgs
+ * @typedef { [path: string, value?: string | null] } StorageEntry
+ * @typedef { StorageEntry[] } StorageUpdateEntriesMessageArgs
+ * @typedef {{
+ *   method: StorageGetByPathMessageMethod;
+ *   args: StorageGetByPathMessageArgs;
+ *  } | {
+ *   method: StorageUpdateEntriesMessageMethod;
+ *   args: StorageUpdateEntriesMessageArgs;
+ * }} StorageMessage
  */
 
 /**
@@ -93,9 +105,8 @@ export function makeChainStorageRoot(
        */
       async getStoreKey() {
         return handleStorageMessage({
-          key: path,
           method: 'getStoreKey',
-          value: '',
+          args: [path],
         });
       },
       /** @type {(name: string, childNodeOptions?: {sequence?: boolean}) => StorageNode} */
@@ -108,10 +119,16 @@ export function makeChainStorageRoot(
       /** @type {(value: string) => Promise<void>} */
       async setValue(value) {
         assert.typeof(value, 'string');
+        /** @type {StorageEntry} */
+        let entry;
+        if (!sequence && !value) {
+          entry = [path];
+        } else {
+          entry = [path, value];
+        }
         await handleStorageMessage({
-          key: path,
           method: sequence ? 'append' : 'set',
-          value,
+          args: [entry],
         });
       },
       // Possible extensions:
@@ -153,18 +170,17 @@ export async function makeStorageNodeChild(storageNodeRef, childName) {
 }
 harden(makeStorageNodeChild);
 
+// TODO find a better module for this
 /**
  *
  * @param {import('@endo/far').ERef<StorageNode>} storageNode
  * @param {import('@endo/far').ERef<Marshaller>} marshaller
  * @returns {(value: unknown) => Promise<void>}
  */
-export const makeMarshallToStorage = (storageNode, marshaller) => {
-  return value =>
-    E(marshaller)
-      .serialize(value)
-      .then(serialized => {
-        const encoded = JSON.stringify(serialized);
-        return E(storageNode).setValue(encoded);
-      });
+export const makeSerializeToStorage = (storageNode, marshaller) => {
+  return async value => {
+    const marshalled = await E(marshaller).serialize(value);
+    const serialized = JSON.stringify(marshalled);
+    return E(storageNode).setValue(serialized);
+  };
 };

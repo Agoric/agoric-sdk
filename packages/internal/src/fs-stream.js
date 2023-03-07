@@ -1,6 +1,5 @@
 import { createWriteStream } from 'node:fs';
 import { open } from 'node:fs/promises';
-import { E } from '@endo/eventual-send';
 import { makeAggregateError } from './utils.js';
 
 /**
@@ -73,8 +72,7 @@ export const makeFsStreamWriter = async filePath => {
         }
       });
     });
-    flushed = E.when(
-      flushed,
+    flushed = flushed.then(
       () => written,
       async err =>
         Promise.reject(

@@ -126,19 +126,23 @@ test('single oracle', /** @param {ExecutionContext} t */ async t => {
   t.truthy(await E(invitationIssuer).isLive(invitation4));
 
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation1)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation1)).value[0].customDetails
+      .query,
     query1,
   );
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation2)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation2)).value[0].customDetails
+      .query,
     query2,
   );
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation3)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation3)).value[0].customDetails
+      .query,
     query3,
   );
   t.deepEqual(
-    (await E(invitationIssuer).getAmountOf(invitation4)).value[0].query,
+    (await E(invitationIssuer).getAmountOf(invitation4)).value[0].customDetails
+      .query,
     query4,
   );
 

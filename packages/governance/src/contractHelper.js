@@ -4,6 +4,7 @@ import { getMethodNames, objectMap } from '@agoric/internal';
 import { ignoreContext } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
+import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 
@@ -23,6 +24,8 @@ const publicMixinAPI = harden({
   getNat: M.call().returns(M.bigint()),
   getRatio: M.call().returns(M.record()),
   getString: M.call().returns(M.string()),
+  getTimestamp: M.call().returns(TimestampRecordShape),
+  getRelativeTime: M.call().returns(RelativeTimeRecordShape),
   getUnknown: M.call().returns(M.any()),
 });
 
@@ -51,6 +54,8 @@ const facetHelpers = (zcf, paramManager) => {
     getNat: paramManager.getNat,
     getRatio: paramManager.getRatio,
     getString: paramManager.getString,
+    getTimestamp: paramManager.getTimestamp,
+    getRelativeTime: paramManager.getRelativeTime,
     getUnknown: paramManager.getUnknown,
   };
 
@@ -115,7 +120,7 @@ const facetHelpers = (zcf, paramManager) => {
   /**
    * @template {{}} CF
    * @param {CF} limitedCreatorFacet
-   * @param {{}} [governedApis]
+   * @param {Record<string, (...any) => unknown>} [governedApis]
    * @returns {GovernorFacet<CF>}
    */
   const makeFarGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
@@ -127,7 +132,6 @@ const facetHelpers = (zcf, paramManager) => {
       // The contract provides a facet with the APIs that can be invoked by
       // governance
       /** @type {() => GovernedApis} */
-      // @ts-expect-error TS think this is a RemotableBrand??
       getGovernedApis: () => Far('governedAPIs', governedApis),
       // The facet returned by getGovernedApis is Far, so we can't see what
       // methods it has. There's no clean way to have contracts specify the APIs

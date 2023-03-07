@@ -32,7 +32,7 @@ import { makeLendInvitation } from './lend.js';
  *  * priceAuthority - will be used for getting the current value of
  *    collateral and setting liquidation triggers.
  *  * autoswapInstance - The running contract instance for an Autoswap
- *    or constant product AMM installation. The publicFacet of the
+ *    installation. The publicFacet of the
  *    instance is used for producing an invitation to sell the
  *    collateral on liquidation.
  *  * periodNotifier - the Notifier that provides notifications that

@@ -56,16 +56,14 @@
  */
 
 /**
- * @callback MintAndReallocate
- *
+ * @callback MintAndTransfer
  * Mint new debt `toMint` and transfer the `fee` portion to the vaultFactory's reward
  * pool. Then reallocate over all the seat arguments and the rewardPoolSeat. Update
  * the `totalDebt` if the reallocate succeeds.
- *
- * @param {Amount} toMint
- * @param {Amount} fee
- * @param {ZCFSeat} fromSeat
- * @param {...ZCFSeat} otherSeats
+ * @param {ZCFSeat} mintReceiver
+ * @param {Amount<'nat'>} toMint
+ * @param {Amount<'nat'>} fee
+ * @param {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} transfers
  * @returns {void}
  */
 
@@ -100,12 +98,6 @@
  * @typedef {object} LoanTiming
  * @property {RelativeTime} chargingPeriod in seconds
  * @property {RelativeTime} recordingPeriod in seconds
- */
-
-/**
- * @typedef {object} AMMFees
- * @property {bigint} poolFee
- * @property {bigint} protocolFee
  */
 
 /**

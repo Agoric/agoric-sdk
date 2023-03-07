@@ -29,6 +29,7 @@ function findClist(c, vatID, kref) {
 }
 
 async function dropPresence(t, dropExport) {
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     defaultManagerType: 'xs-worker', // Avoid local vat nondeterminism

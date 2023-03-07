@@ -2,6 +2,7 @@
 /* global process */
 import { Command } from 'commander';
 import path from 'path';
+import url from 'url';
 import { assert, details as X } from '@agoric/assert';
 import {
   DEFAULT_KEEP_POLLING_SECONDS,
@@ -24,7 +25,7 @@ const DEFAULT_DAPP_BRANCH = undefined;
 
 const STAMP = '_agstate';
 
-const filename = new URL(import.meta.url).pathname;
+const filename = url.fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
 
 const main = async (progname, rawArgs, powers) => {
@@ -51,7 +52,7 @@ const main = async (progname, rawArgs, powers) => {
     );
   }
 
-  const pj = await fs.readFile(`${dirname}/../package.json`);
+  const pj = await fs.readFile(path.join(dirname, '..', 'package.json'));
   const pkg = JSON.parse(pj);
   program.name(pkg.name).version(pkg.version);
 
@@ -74,6 +75,19 @@ const main = async (progname, rawArgs, powers) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(cosmosMain, ['cosmos', ...command], opts);
     });
+
+  const ibcSetup = path.join(
+    dirname,
+    '..',
+    'node_modules',
+    '.bin',
+    'ibc-setup',
+  );
+  program.command(
+    'ibc-setup <command...>',
+    'set up Inter Blockchain Communication',
+    { executableFile: ibcSetup },
+  );
 
   program
     .command('open')
@@ -156,6 +170,21 @@ const main = async (progname, rawArgs, powers) => {
       const opts = { ...program.opts(), ...cmd.opts() };
       return subMain(setDefaultsMain, ['set-defaults', prog, configDir], opts);
     });
+
+  const ibcRelayer = path.join(
+    dirname,
+    '..',
+    'node_modules',
+    '.bin',
+    'ibc-relayer',
+  );
+  program.command(
+    'ibc-relayer',
+    'run an Inter Blockchain Communications relayer',
+    {
+      executableFile: ibcRelayer,
+    },
+  );
 
   program
     .command('install [force-sdk-version]')

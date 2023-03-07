@@ -9,10 +9,10 @@ Usage:
 /* eslint-disable no-await-in-loop, @jessie.js/no-nested-await -- test code */
 import '@endo/init';
 import { assert, q, Fail } from '@agoric/assert';
+import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses
-const SESboot = `../dist/bundle-ses-boot-debug.umd.js`;
 const avaAssert = `./avaAssertXS.js`;
 const avaHandler = `./avaHandler.cjs`;
 
@@ -334,6 +334,9 @@ export async function main(
    */
   const hideImport = src => src.replace(/import\(/g, '');
 
+  const sesBoot = await getDebugLockdownBundle();
+  const sesBootScript = `(${sesBoot.source}\n)()`;
+
   const requiredBundles = await Promise.all(
     require
       .filter(specifier => !['esm', ...externals].includes(specifier))
@@ -344,7 +347,7 @@ export async function main(
   );
 
   const preamble = [
-    await asset(SESboot, readFile),
+    sesBootScript,
     ...requiredScripts,
     hideImport(await asset(avaAssert, readFile)),
     hideImport(await asset(avaHandler, readFile)),

@@ -1,29 +1,28 @@
 // @ts-check
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import path from 'path';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
   withAmountUtils,
 } from '@agoric/inter-protocol/test/supports.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { E, Far } from '@endo/far';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import { makeScalarMapStore } from '@agoric/store';
-import { makeSubscriptionKit } from '@agoric/notifier';
-import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { WalletName } from '@agoric/internal';
-import { makeBoard } from '../src/lib-board.js';
+import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { E } from '@endo/far';
+import path from 'path';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { makeBridgeProvisionTool } from '../src/provisionPool.js';
-import { makeNameHubKit } from '../src/nameHub.js';
 import { PowerFlags } from '../src/core/basic-behaviors.js';
+import { makeBoard } from '../src/lib-board.js';
+import { makeNameHubKit } from '../src/nameHub.js';
+import { makeBridgeProvisionTool } from '../src/provisionPool.js';
 import { buildRootObject as buildBankRoot } from '../src/vat-bank.js';
+import { makeFakeBankKit } from '../tools/bank-utils.js';
 
 const pathname = new URL(import.meta.url).pathname;
 const dirname = path.dirname(pathname);
@@ -129,28 +128,10 @@ const tools = context => {
   const { zoe, anchor, installs, storageRoot } = context;
   // @ts-expect-error missing mint
   const minted = withAmountUtils(context.minted);
-  const makeBank = () => {
-    const issuers = makeScalarMapStore();
-    [minted, anchor].forEach(kit => issuers.init(kit.brand, kit.issuer));
-    const purses = makeScalarMapStore();
-    [minted, anchor].forEach(kit => {
-      assert(kit.issuer);
-      purses.init(kit.brand, E(kit.issuer).makeEmptyPurse());
-    });
-
-    /** @type {SubscriptionRecord<import('../src/vat-bank.js').AssetDescriptor>} */
-    const { subscription, publication } = makeSubscriptionKit();
-
-    /** @type {import('../src/vat-bank.js').Bank} */
-    const bank = Far('mock bank', {
-      /** @param {Brand} brand */
-      getPurse: brand => purses.get(brand),
-      getAssetSubscription: () => subscription,
-    });
-
-    return { assetPublication: publication, bank };
-  };
-  const { assetPublication, bank: poolBank } = makeBank();
+  const { assetPublication, bank: poolBank } = makeFakeBankKit([
+    minted,
+    anchor,
+  ]);
 
   // Each driver needs its own to avoid state pollution between tests
   context.mockChainStorage = makeMockChainStorageRoot();
@@ -302,7 +283,7 @@ const makeWalletFactoryKitFor1 = async address => {
 
   const done = new Set();
   /** @type {import('@agoric/vats/src/core/startWalletFactory').WalletFactoryStartResult['creatorFacet']} */
-  // @ts-expect-error mock
+  // @ts-expect-error cast mock
   const walletFactory = {
     provideSmartWallet: async (a, _b, nameAdmin) => {
       assert.equal(a, address);

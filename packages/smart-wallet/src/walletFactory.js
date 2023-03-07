@@ -8,14 +8,12 @@ import { WalletName } from '@agoric/internal';
 import { observeIteration } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
-import { E, Far } from '@endo/far';
+import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
+import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
-
-// Ambient types. Needed only for dev but this does a runtime import.
-import '@agoric/vats/exported.js';
 
 export const privateArgsShape = harden(
   M.splitRecord(
@@ -61,7 +59,7 @@ export const publishDepositFacet = async (
 /**
  * @param {AssetPublisher} assetPublisher
  */
-const makeAssetRegistry = assetPublisher => {
+export const makeAssetRegistry = assetPublisher => {
   /**
    * @typedef {{
    *   brand: Brand,
@@ -93,14 +91,13 @@ const makeAssetRegistry = assetPublisher => {
     },
   });
 
-  // XXX marshal requires Far, but clients make sync calls
-  const registry = Far('AssetRegistry', {
+  const registry = {
     /** @param {Brand} brand */
-    getRegisteredAsset: brand => {
-      return brandDescriptors.get(brand);
-    },
-    getRegisteredBrands: () => [...brandDescriptors.values()],
-  });
+    has: brand => brandDescriptors.has(brand),
+    /** @param {Brand} brand */
+    get: brand => brandDescriptors.get(brand),
+    values: () => brandDescriptors.values(),
+  };
   return registry;
 };
 
@@ -130,14 +127,13 @@ const makeAssetRegistry = assetPublisher => {
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager } = privateArgs;
 
-  /** @type {MapStore<string, import('./smartWallet').SmartWallet>} */
-  const walletsByAddress = makeScalarBigMapStore('walletsByAddress');
+  const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
   const handleWalletAction = makeExo(
@@ -170,24 +166,20 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   );
 
-  // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
-  // by way of performAction() in cosmic-swingset/src/launch-chain.js
-  await (walletBridgeManager &&
-    E(walletBridgeManager).setHandler(handleWalletAction));
-
-  // Resolve these first because the wallet maker must be synchronous
+  // Zoe is an inter-vat call and thus cannot be made during upgrade. So ensure that
+  // the first incarnation saves them and subsequent ones read from baggage.
   const invitationIssuerP = E(zoe).getInvitationIssuer();
-  const [
+  const {
     invitationIssuer,
     invitationBrand,
     invitationDisplayInfo,
     publicMarshaller,
-  ] = await Promise.all([
-    invitationIssuerP,
-    E(invitationIssuerP).getBrand(),
-    E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
-    E(board).getReadonlyMarshaller(),
-  ]);
+  } = await provideAll(baggage, {
+    invitationIssuer: invitationIssuerP,
+    invitationBrand: E(invitationIssuerP).getBrand(),
+    invitationDisplayInfo: E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
+    publicMarshaller: E(board).getReadonlyMarshaller(),
+  });
 
   const registry = makeAssetRegistry(assetPublisher);
 
@@ -208,7 +200,8 @@ export const start = async (zcf, privateArgs, baggage) => {
    */
   const makeSmartWallet = prepareSmartWallet(baggage, shared);
 
-  const creatorFacet = makeExo(
+  const creatorFacet = prepareExo(
+    baggage,
     'walletFactoryCreator',
     M.interface('walletFactoryCreatorI', {
       provideSmartWallet: M.callWhen(
@@ -249,6 +242,11 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
     },
   );
+
+  // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
+  // by way of performAction() in cosmic-swingset/src/launch-chain.js
+  await (walletBridgeManager &&
+    E(walletBridgeManager).setHandler(handleWalletAction));
 
   return {
     creatorFacet,

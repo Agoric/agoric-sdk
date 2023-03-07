@@ -3,7 +3,7 @@
 
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -131,10 +131,13 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   t.false(cells.has(thirdPublishCount), 'third publishCount must be new');
   cells.set(thirdPublishCount, thirdCells[0]);
 
-  // @ts-ignore deliberate testing of invalid invocation
-  t.throws(() => subscriber.subscribeAfter(Number(secondPublishCount)), {
-    message: /bigint/,
-  });
+  t.throws(
+    // @ts-ignore deliberate testing of invalid invocation
+    () => subscriber.subscribeAfter(Number(secondPublishCount)),
+    {
+      message: /bigint/,
+    },
+  );
 
   const fourthVal = { position: 'fourth', deepPayload: [Symbol.match] };
   publisher.publish(fourthVal);
@@ -217,12 +220,10 @@ test('durable publish kit rejects non-durable values', async t => {
 });
 
 test('durable publish kit upgrade trauma (full-vat integration)', async t => {
+  /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType:
-      /** @type {import('@agoric/swingset-vat/src/types-external.js').ManagerType} */ (
-        'xs-worker'
-      ), // 'local',
+    defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {

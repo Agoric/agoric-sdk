@@ -21,6 +21,7 @@ export const defaultProposalBuilder = async (
     decimalPlaces = 6,
     keyword = 'IbcATOM',
     proposedName = oracleBrand,
+    initialPrice = undefined,
   } = interchainAssetOptions;
 
   if (!denom) {
@@ -38,6 +39,7 @@ export const defaultProposalBuilder = async (
           denom,
           issuerBoardId,
           decimalPlaces,
+          initialPrice,
           keyword,
           proposedName,
           oracleBrand,
@@ -69,6 +71,18 @@ export const psmGovernanceBuilder = async ({
         installKeys: {
           psm: publishRef(
             install('../src/psm/psm.js', '../bundles/bundle-psm.js'),
+          ),
+          vaults: publishRef(
+            install(
+              '../src/vaultFactory/vaultFactory.js',
+              '../bundles/bundle-vaultFactory.js',
+            ),
+          ),
+          auction: publishRef(
+            install(
+              '../src/auction/auctioneer.js',
+              '../bundles/bundle-auctioneer.js',
+            ),
           ),
           econCommitteeCharter: publishRef(
             install(

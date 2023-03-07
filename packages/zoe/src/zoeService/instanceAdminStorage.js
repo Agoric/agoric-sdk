@@ -134,7 +134,7 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       state.zoeInstanceStorageManager.getInstallation(),
     getInstance: ({ state }) => state.instanceHandle,
     assertAcceptingOffers: ({ state }) => {
-      assert(state.acceptingOffers, `No further offers are accepted`);
+      state.acceptingOffers || Fail`No further offers are accepted`;
     },
     exitAllSeats: ({ state }, completion) => {
       state.acceptingOffers = false;

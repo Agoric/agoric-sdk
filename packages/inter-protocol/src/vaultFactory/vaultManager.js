@@ -39,19 +39,15 @@ import {
 } from '@agoric/vat-data';
 import {
   assertProposalShape,
-  atomicTransfer,
-  ceilDivideBy,
-  getAmountIn,
-  getAmountOut,
   makeRatio,
-  makeRatioFromAmounts,
   provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { InstallationShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
+import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import { checkDebtLimit } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
-import { liquidate, makeQuote, updateQuote } from './liquidation.js';
+import { updateQuote } from './liquidation.js';
 import { maxDebtForVault } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
@@ -127,24 +123,30 @@ const trace = makeTracer('VM', false);
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {ZCFMint<'nat'>} debtMint
- * @param {Brand<'nat'>} collateralBrand
- * @param {Amount<'nat'>} collateralUnit
- * @param {import('./vaultDirector.js').FactoryPowersFacet} factoryPowers
- * @param {Timestamp} startTimeStamp
- * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @param {Readonly<{
+ * debtMint: ZCFMint<'nat'>,
+ * collateralBrand: Brand<'nat'>,
+ * collateralUnit: Amount<'nat'>,
+ * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ * descriptionScope: string,
+ * startTimeStamp: Timestamp,
+ * storageNode: ERef<StorageNode>,
+ * }>} unique per singleton
  */
 export const prepareVaultManagerKit = (
   baggage,
   zcf,
-  debtMint,
-  collateralBrand,
-  collateralUnit,
-  factoryPowers,
-  startTimeStamp,
-  storageNode,
   marshaller,
+  {
+    debtMint,
+    collateralBrand,
+    collateralUnit,
+    descriptionScope,
+    factoryPowers,
+    startTimeStamp,
+    storageNode,
+  },
 ) => {
   assert(
     storageNode && marshaller,
@@ -200,6 +202,8 @@ export const prepareVaultManagerKit = (
   );
 
   const poolIncrementSeat = provideEmptySeat(zcf, baggage, 'pool increment');
+
+  // TODO(#7074) not used while liquidation is disabled. Reinstate with #7074
   const retainedCollateralSeat = provideEmptySeat(
     zcf,
     baggage,
@@ -222,8 +226,11 @@ export const prepareVaultManagerKit = (
   // ephemeral state
   /** @type {boolean} */
   let liquidationQueueing = false;
+
+  // TODO: (#7047) this variable is vestigial and will go away when we replace
+  //  liquidation with use of an Auction
   /** @type {Promise<MutableQuote>?} */
-  let outstandingQuote = null;
+  const outstandingQuote = null;
 
   /**
    * This class is a singleton kind so initState will be called only once per prepare.
@@ -268,14 +275,18 @@ export const prepareVaultManagerKit = (
       manager: M.interface('manager', {
         getGovernedParams: M.call().returns(M.remotable()),
         maxDebtFor: M.call(AmountShape).returns(M.promise()),
-        mintAndReallocate: M.call(AmountShape, AmountShape, SeatShape)
-          .rest()
-          .returns(),
+        mintAndTransfer: M.call(
+          SeatShape,
+          AmountShape,
+          AmountShape,
+          M.arrayOf(TransferPartShape),
+        ).returns(),
         burnAndRecord: M.call(AmountShape, SeatShape).returns(),
         getAssetSubscriber: M.call().returns(SubscriberShape),
         getCollateralBrand: M.call().returns(BrandShape),
         getDebtBrand: M.call().returns(BrandShape),
         getCompoundedInterest: M.call().returns(RatioShape),
+        scopeDescription: M.call(M.string()).returns(M.string()),
         handleBalanceChange: M.call(
           AmountShape,
           AmountShape,
@@ -286,11 +297,7 @@ export const prepareVaultManagerKit = (
       }),
       self: M.interface('self', {
         getGovernedParams: M.call().returns(M.remotable()),
-        liquidateAll: M.call().returns(M.promise()),
         makeVaultKit: M.call(SeatShape).returns(M.promise()),
-        setupLiquidator: M.call(InstallationShape, M.record()).returns(
-          M.promise(),
-        ),
         getCollateralQuote: M.call().returns(M.promise()),
         getPublicFacet: M.call().returns(M.remotable()),
       }),
@@ -299,9 +306,10 @@ export const prepareVaultManagerKit = (
     {
       collateral: {
         makeVaultInvitation() {
+          const { facets } = this;
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
-            'MakeVault',
+            facets.manager.scopeDescription('MakeVault'),
           );
         },
         /** @deprecated use getPublicTopics */
@@ -343,7 +351,7 @@ export const prepareVaultManagerKit = (
           const changes = chargeInterest(
             {
               mint: debtMint,
-              mintAndReallocateWithFee: factoryPowers.mintAndReallocate,
+              mintAndTransferWithFee: factoryPowers.mintAndTransfer,
               poolIncrementSeat,
               seatAllocationKeyword: 'Minted',
             },
@@ -433,7 +441,6 @@ export const prepareVaultManagerKit = (
          * @returns {Promise<void>}
          */
         async reschedulePriceCheck(highestRatio) {
-          const { facets } = this;
           trace('reschedulePriceCheck', collateralBrand, {
             liquidationQueueing,
             outstandingQuote: !!outstandingQuote,
@@ -442,13 +449,8 @@ export const prepareVaultManagerKit = (
           // and process liquidations over time.
           if (!liquidationQueueing) {
             liquidationQueueing = true;
-            // eslint-disable-next-line consistent-return
-            return facets.helper
-              .processLiquidations()
-              .catch(e => console.error('Liquidator failed', e))
-              .finally(() => {
-                liquidationQueueing = false;
-              });
+            // TODO(7047) replace with new approach to liquidation
+            return;
           }
 
           if (!outstandingQuote) {
@@ -472,150 +474,6 @@ export const prepareVaultManagerKit = (
           // Safe to call extraneously (lightweight and idempotent)
           updateQuote(outstandingQuote, highestDebtRatio, liquidationMargin);
           trace('update quote', collateralBrand, highestDebtRatio);
-        },
-
-        async processLiquidations() {
-          const { facets } = this;
-          const govParams = factoryPowers.getGovernedParams();
-
-          async function* eventualLiquidations() {
-            while (true) {
-              const highestDebtRatio = prioritizedVaults.highestRatio();
-              if (!highestDebtRatio) {
-                return;
-              }
-              const liquidationMargin = govParams.getLiquidationMargin();
-
-              // ask to be alerted when the price level falls enough that the vault
-              // with the highest debt to collateral ratio will no longer be valued at the
-              // liquidationMargin above its debt.
-              outstandingQuote = makeQuote(
-                priceAuthority,
-                highestDebtRatio,
-                liquidationMargin,
-              );
-              trace('posted quote request', collateralBrand, highestDebtRatio);
-
-              // The rest of this method will not happen until after a quote is received.
-              // This may not happen until much later, when the market changes.
-              // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await -- loop/nesting to yield each unconditionally
-              const quote = await E(outstandingQuote).getPromise();
-              outstandingQuote = null;
-              // When we receive a quote, we check whether the vault with the highest
-              // ratio of debt to collateral is below the liquidationMargin, and if so,
-              // we liquidate it. We use ceilDivide to round up because ratios above
-              // this will be liquidated.
-              const quoteRatioPlusMargin = makeRatioFromAmounts(
-                ceilDivideBy(getAmountOut(quote), liquidationMargin),
-                getAmountIn(quote),
-              );
-              trace('quote', collateralBrand, quote, quoteRatioPlusMargin);
-
-              // Liquidate the head of the queue
-              const [next] =
-                prioritizedVaults.entriesPrioritizedGTE(quoteRatioPlusMargin);
-              if (next) {
-                yield next;
-              }
-            }
-          }
-          for await (const next of eventualLiquidations()) {
-            await facets.helper.liquidateAndRemove(next);
-            trace('price check liq', collateralBrand, next && next[0]);
-          }
-        },
-
-        /**
-         * @param {[key: string, vaultKit: Vault]} record
-         */
-        liquidateAndRemove([key, vault]) {
-          const { state, facets } = this;
-          const vaultSeat = vault.getVaultSeat();
-          trace('liquidating', collateralBrand, vaultSeat.getProposal());
-
-          const collateralPre = vault.getCollateralAmount();
-
-          // Start liquidation (vaultState: LIQUIDATING)
-          const liquidator = state.liquidator;
-          assert(liquidator);
-          liquidatingVaults.add(vault);
-          prioritizedVaults.removeVault(key);
-
-          return liquidate(
-            zcf,
-            vault,
-            liquidator,
-            collateralBrand,
-            factoryPowers.getGovernedParams().getLiquidationPenalty(),
-          )
-            .then(accounting => {
-              facets.manager.burnAndRecord(accounting.toBurn, vaultSeat);
-
-              // current values
-
-              // Sometimes, the AMM will sell less than all the collateral. If there
-              // was a shortfall, the investor doesn't keep the change, so we get it.
-              // If there was no shortfall, the collateral is returned.
-              const collateralPost = vault.getCollateralAmount();
-              if (
-                !AmountMath.isEmpty(collateralPost) &&
-                !AmountMath.isEmpty(accounting.shortfall)
-              ) {
-                // The borrower doesn't get the excess collateral remaining when
-                // liquidation results in a shortfall. We currently do nothing with
-                // it. We could hold it until it crosses some threshold, then sell it
-                // to the AMM, or we could transfer it to the reserve. At least it's
-                // visible in the accounting.
-                atomicTransfer(zcf, vaultSeat, retainedCollateralSeat, {
-                  Collateral: collateralPost,
-                });
-              }
-
-              // Reduce totalCollateral by collateralPre, since all the collateral was
-              // sold, returned to the vault owner, or held by the VaultManager.
-              state.totalCollateral = AmountMath.subtract(
-                state.totalCollateral,
-                collateralPre,
-              );
-              state.totalDebt = AmountMath.subtract(
-                state.totalDebt,
-                accounting.shortfall,
-              );
-
-              // cumulative values
-              state.totalProceedsReceived = AmountMath.add(
-                state.totalProceedsReceived,
-                accounting.proceeds,
-              );
-              state.totalOverageReceived = AmountMath.add(
-                state.totalOverageReceived,
-                accounting.overage,
-              );
-              state.totalShortfallReceived = AmountMath.add(
-                state.totalShortfallReceived,
-                accounting.shortfall,
-              );
-              liquidatingVaults.delete(vault);
-              trace('liquidated', collateralBrand);
-              state.numLiquidationsCompleted += 1;
-              facets.helper.updateMetrics();
-
-              if (!AmountMath.isEmpty(accounting.shortfall)) {
-                E(factoryPowers.getShortfallReporter())
-                  .increaseLiquidationShortfall(accounting.shortfall)
-                  .catch(reason =>
-                    console.error(
-                      'liquidateAndRemove failed to increaseLiquidationShortfall',
-                      reason,
-                    ),
-                  );
-              }
-            })
-            .catch(e => {
-              // XXX should notify interested parties
-              console.error('liquidateAndRemove failed with', e);
-              throw e;
-            });
         },
       },
       manager: {
@@ -643,17 +501,8 @@ export const prepareVaultManagerKit = (
             factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
         },
-        /**
-         * TODO utility method to turn a callback into non-actual one
-         * was type {MintAndReallocate}
-         *
-         * @param {Amount<'nat'>} toMint
-         * @param {Amount<'nat'>} fee
-         * @param {ZCFSeat} seat
-         * @param {...ZCFSeat} otherSeats
-         * @returns {void}
-         */
-        mintAndReallocate(toMint, fee, seat, ...otherSeats) {
+        /** @type {MintAndTransfer} */
+        mintAndTransfer(mintReceiver, toMint, fee, transfers) {
           const { state } = this;
           const { totalDebt } = state;
 
@@ -662,7 +511,7 @@ export const prepareVaultManagerKit = (
             totalDebt,
             toMint,
           );
-          factoryPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
+          factoryPowers.mintAndTransfer(mintReceiver, toMint, fee, transfers);
           state.totalDebt = AmountMath.add(state.totalDebt, toMint);
         },
         /**
@@ -687,6 +536,14 @@ export const prepareVaultManagerKit = (
         },
         getDebtBrand() {
           return debtBrand;
+        },
+        /**
+         * Prepend with an identifier of this vault manager
+         *
+         * @param {string} base
+         */
+        scopeDescription(base) {
+          return `${descriptionScope}: ${base}`;
         },
         /**
          * coefficient on existing debt to calculate new debt
@@ -769,20 +626,6 @@ export const prepareVaultManagerKit = (
         },
 
         /**
-         * In extreme situations, system health may require liquidating all vaults.
-         * This starts the liquidations all in parallel.
-         */
-        async liquidateAll() {
-          const {
-            facets: { helper },
-          } = this;
-          const toLiquidate = Array.from(prioritizedVaults.entries()).map(
-            entry => helper.liquidateAndRemove(entry),
-          );
-          await Promise.all(toLiquidate);
-        },
-
-        /**
          * @param {ZCFSeat} seat
          */
         async makeVaultKit(seat) {
@@ -799,9 +642,6 @@ export const prepareVaultManagerKit = (
             want: { Minted: null },
           });
 
-          // NB: This increments even when a vault fails to init and is removed
-          // from the manager, creating a sparse series of published vaults.
-          state.vaultCounter += 1;
           const vaultId = String(state.vaultCounter);
 
           // must be a presence to be stored in vault state
@@ -818,7 +658,11 @@ export const prepareVaultManagerKit = (
             const vaultKit = await vault.initVaultKit(seat, vaultStorageNode);
             // initVaultKit calls back to handleBalanceChange() which will add the
             // vault to prioritizedVaults
-            seat.exit();
+
+            // initVaultKit doesn't write to the storage node until it's returning
+            // so if it returned then we know the node key was consumed
+            state.vaultCounter += 1;
+
             return vaultKit;
           } catch (err) {
             // ??? do we still need this cleanup? it won't get into the store unless it has collateral,
@@ -836,59 +680,24 @@ export const prepareVaultManagerKit = (
                 collateralPre,
                 vaultId,
               );
-              console.error(
+              console.warn(
                 'removed vault',
                 vaultId,
                 'after initVaultKit failure',
               );
             } catch {
-              console.error(
+              console.info(
                 'vault',
                 vaultId,
                 'never stored during initVaultKit failure',
               );
             }
             throw err;
+          } finally {
+            if (!seat.hasExited()) {
+              seat.exit();
+            }
           }
-        },
-
-        /**
-         *
-         * @param {Installation} liquidationInstall
-         * @param {object} liquidationTerms
-         */
-        async setupLiquidator(liquidationInstall, liquidationTerms) {
-          const { state, facets } = this;
-          const { ammPublicFacet, reservePublicFacet } = zcf.getTerms();
-          const zoe = zcf.getZoeService();
-          const collateralIssuer = zcf.getIssuerForBrand(collateralBrand);
-          const debtIssuer = zcf.getIssuerForBrand(debtBrand);
-          trace('setup liquidator', collateralBrand, {
-            debtBrand,
-            debtIssuer,
-            collateralBrand,
-            liquidationTerms,
-          });
-          const { creatorFacet, instance } = await E(zoe).startInstance(
-            liquidationInstall,
-            harden({ Minted: debtIssuer, Collateral: collateralIssuer }),
-            harden({
-              ...liquidationTerms,
-              amm: ammPublicFacet,
-              debtBrand,
-              reservePublicFacet,
-              priceAuthority,
-              timerService,
-            }),
-          );
-          trace('setup liquidator complete', collateralBrand, {
-            instance,
-            old: state.liquidatorInstance,
-            equal: state.liquidatorInstance === instance,
-          });
-          state.liquidatorInstance = instance;
-          state.liquidator = creatorFacet;
-          facets.helper.assetNotify();
         },
 
         async getCollateralQuote() {

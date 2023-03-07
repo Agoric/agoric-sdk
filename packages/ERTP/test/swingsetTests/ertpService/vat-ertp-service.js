@@ -36,7 +36,7 @@ export const prepareErtpService = (baggage, exitVatWithFailure) => {
   });
 
   for (const issuerBaggage of issuerBaggageSet.values()) {
-    prepareIssuerKit(issuerBaggage);
+    prepareIssuerKit(issuerBaggage, exitVatWithFailure);
   }
 
   return ertpService;

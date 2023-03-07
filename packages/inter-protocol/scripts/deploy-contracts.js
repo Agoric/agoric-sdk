@@ -10,11 +10,10 @@ const contractRefs = [
   '../../governance/bundles/bundle-committee.js',
   '../../governance/bundles/bundle-binaryVoteCounter.js',
   '../bundles/bundle-stakeFactory.js',
-  '../bundles/bundle-amm.js',
   '../bundles/bundle-vaultFactory.js',
-  '../bundles/bundle-liquidateMinimum.js',
   '../bundles/bundle-reserve.js',
   '../bundles/bundle-psm.js',
+  '../bundles/bundle-auctioneer.js',
   '../../vats/bundles/bundle-mintHolder.js',
 ];
 const contractRoots = contractRefs.map(ref =>

@@ -14,6 +14,11 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 const { details: X, quote: q, Fail } = assert;
 
+/**
+ * @param {Brand} brand
+ * @param {AssetKind} assetKind
+ * @param {Matcher} elementShape
+ */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;
   switch (assetKind) {
@@ -81,6 +86,7 @@ export const preparePaymentLedger = (
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
+  // @ts-expect-error XXX callWhen
   const brand = prepareExo(issuerBaggage, `${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
@@ -307,11 +313,11 @@ export const preparePaymentLedger = (
     srcPayment,
     optAmountShape = undefined,
   ) => {
-    assert(
-      !isPromise(srcPayment),
-      `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
-      TypeError,
-    );
+    !isPromise(srcPayment) ||
+      assert.fail(
+        `deposit does not accept promises as first argument. Instead of passing the promise (deposit(paymentPromise)), consider unwrapping the promise first: E.when(paymentPromise, (actualPayment => deposit(actualPayment))`,
+        TypeError,
+      );
     assertLivePayment(srcPayment);
     const srcPaymentBalance = paymentLedger.get(srcPayment);
     assertAmountConsistent(srcPaymentBalance, optAmountShape);
@@ -377,6 +383,7 @@ export const preparePaymentLedger = (
   );
 
   /** @type {Issuer<K>} */
+  // @ts-expect-error cast due to callWhen discrepancy
   const issuer = prepareExo(issuerBaggage, `${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
@@ -393,16 +400,21 @@ export const preparePaymentLedger = (
     makeEmptyPurse() {
       return makeEmptyPurse();
     },
+    /** @param {Payment} payment awaited by callWhen */
     isLive(payment) {
       // IssuerI delays calling this method until `payment` is a Remotable
       return paymentLedger.has(payment);
     },
+    /** @param {Payment} payment awaited by callWhen */
     getAmountOf(payment) {
       // IssuerI delays calling this method until `payment` is a Remotable
       assertLivePayment(payment);
       return paymentLedger.get(payment);
     },
-
+    /**
+     * @param {Payment} payment awaited by callWhen
+     * @param {Pattern} optAmountShape
+     */
     burn(payment, optAmountShape = undefined) {
       // IssuerI delays calling this method until `payment` is a Remotable
       assertLivePayment(payment);
@@ -417,6 +429,10 @@ export const preparePaymentLedger = (
       }
       return paymentBalance;
     },
+    /**
+     * @param {Payment} srcPayment awaited by callWhen
+     * @param {Pattern} optAmountShape
+     */
     claim(srcPayment, optAmountShape = undefined) {
       // IssuerI delays calling this method until `srcPayment` is a Remotable
       assertLivePayment(srcPayment);
@@ -450,6 +466,10 @@ export const preparePaymentLedger = (
         return payment;
       });
     },
+    /**
+     * @param {Payment} srcPayment awaited by callWhen
+     * @param {Amount} paymentAmountA
+     */
     split(srcPayment, paymentAmountA) {
       // IssuerI delays calling this method until `srcPayment` is a Remotable
       paymentAmountA = coerce(paymentAmountA);
@@ -463,6 +483,10 @@ export const preparePaymentLedger = (
       );
       return newPayments;
     },
+    /**
+     * @param {Payment} srcPayment awaited by callWhen
+     * @param {*} amounts
+     */
     splitMany(srcPayment, amounts) {
       // IssuerI delays calling this method until `srcPayment` is a Remotable
       assertLivePayment(srcPayment);
@@ -480,6 +504,7 @@ export const preparePaymentLedger = (
       return issuer;
     },
     mintPayment(newAmount) {
+      // @ts-expect-error checked cast
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       const payment = makePayment();

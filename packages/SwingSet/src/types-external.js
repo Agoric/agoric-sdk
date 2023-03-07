@@ -238,36 +238,32 @@ export {};
  */
 
 /**
- * @typedef {object} SwingSetConfig a swingset config object
+ * @typedef {{ module: string, entrypoint: string, args?: Array<unknown>} | string} ConfigProposal
+ */
+
+/**
+ * @typedef {object} SwingSetOptions
  * @property {string} [bootstrap]
+ * @property {ConfigProposal[]} [coreProposals]
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
- * @property { ManagerType } [defaultManagerType]
- * @property {number} [snapshotInitial]
- * @property {number} [snapshotInterval]
- * @property {boolean} [relaxDurabilityRules]
- * @property {SwingSetConfigDescriptor} [vats]
+ * @property {string} [bundleCachePath] if present, SwingSet will use a bundle cache at this path
+ * @property {SwingSetConfigDescriptor} vats
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
  * format.
  * @property {*} [devices]
  */
+/**
+ * @typedef {KernelOptions & SwingSetOptions} SwingSetConfig a swingset config object
+ */
 
 /**
- * @typedef {object} SwingSetKernelConfig the config object passed to initializeKernel
- * @property {string} [bootstrap]
- * @property {boolean} [includeDevDependencies] indicates that
- * `devDependencies` of the surrounding `package.json` should be accessible to
- * bundles.
- * @property { ManagerType } [defaultManagerType]
- * @property {SwingSetConfigDescriptor} [vats]
- * @property {SwingSetConfigDescriptor} [bundles]
- * @property {Record<string, BundleID>} namedBundleIDs
- * @property {Record<BundleID, Bundle>} idToBundle
- * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
- * format.
- * @property {*} [devices]
+ * @typedef {SwingSetConfig & {
+ *   namedBundleIDs: Record<string, BundleID>,
+ *   idToBundle: Record<BundleID, Bundle>
+ * }} SwingSetKernelConfig the config object passed to initializeKernel
  */
 
 /**
@@ -329,7 +325,7 @@ export {};
  * @typedef { { enableDisavow?: boolean } } HasEnableDisavow
  * @typedef { DynamicVatOptions & HasEnableDisavow } StaticVatOptions
  *
- * @typedef { { vatParameters?: object, upgradeMessage: string } } VatUpgradeOptions
+ * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults
  *
  * @callback ShutdownWithFailure
@@ -367,10 +363,10 @@ export {};
  * @property {VatAdminFacet} adminNode
  *
  * @typedef {object} VatAdminSvc
- * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
- * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
- * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
- * @property {(name: string) => ERef<BundleID>} getBundleIDByName
- * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
+ * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => import('@endo/far').ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => import('@endo/far').ERef<BundleID>} getBundleIDByName
+ * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => import('@endo/far').ERef<CreateVatResults>} createVat
  *
  */

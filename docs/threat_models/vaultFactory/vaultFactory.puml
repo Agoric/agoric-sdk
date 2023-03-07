@@ -16,7 +16,6 @@ node "CloseVaultInvitation"
 
 node "Vat" {
     node VaultFactory {
-        node AMM
         node "publicAPI" {
             circle getCollaterals
             circle makeVaultInvitation

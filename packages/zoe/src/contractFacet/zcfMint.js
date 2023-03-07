@@ -64,10 +64,8 @@ export const makeZCFMintFactory = async (
         mintGains: (gains, zcfSeat = makeEmptySeatKit().zcfSeat) => {
           gains = coerceAmountKeywordRecord(gains, getAssetKindByBrand);
           const totalToMint = Object.values(gains).reduce(add, empty);
-          assert(
-            !zcfSeat.hasExited(),
-            'zcfSeat must be active to mint gains for the zcfSeat',
-          );
+          !zcfSeat.hasExited() ||
+            Fail`zcfSeat must be active to mint gains for the zcfSeat`;
           const allocationPlusGains = addToAllocation(
             zcfSeat.getCurrentAllocation(),
             gains,
@@ -97,10 +95,8 @@ export const makeZCFMintFactory = async (
         burnLosses: (losses, zcfSeat) => {
           losses = coerceAmountKeywordRecord(losses, getAssetKindByBrand);
           const totalToBurn = Object.values(losses).reduce(add, empty);
-          assert(
-            !zcfSeat.hasExited(),
-            'zcfSeat must be active to burn losses from the zcfSeat',
-          );
+          !zcfSeat.hasExited() ||
+            Fail`zcfSeat must be active to burn losses from the zcfSeat`;
           const allocationMinusLosses = subtractFromAllocation(
             zcfSeat.getCurrentAllocation(),
             losses,

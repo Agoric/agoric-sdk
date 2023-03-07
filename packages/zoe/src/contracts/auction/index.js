@@ -132,8 +132,8 @@ const start = zcf => {
       return defaultAcceptanceMsg;
     };
 
-    const customProperties = getSessionDetails();
-    return zcf.makeInvitation(performBid, 'bid', customProperties);
+    const customDetails = getSessionDetails();
+    return zcf.makeInvitation(performBid, 'bid', customDetails);
   };
 
   const sell = seat => {

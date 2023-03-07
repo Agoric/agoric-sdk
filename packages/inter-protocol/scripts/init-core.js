@@ -36,13 +36,9 @@ const installKeyGroups = {
     ],
   },
   main: {
-    amm: [
-      '../src/vpool-xyk-amm/multipoolMarketMaker.js',
-      '../bundles/bundle-amm.js',
-    ],
-    interchainPool: [
-      '../src/interchainPool.js',
-      '../bundles/bundle-interchainPool.js',
+    auction: [
+      '../src/auction/auctioneer.js',
+      '../bundles/bundle-auctioneer.js',
     ],
     vaultFactory: [
       '../src/vaultFactory/vaultFactory.js',
@@ -51,14 +47,6 @@ const installKeyGroups = {
     feeDistributor: [
       '../src/feeDistributor.js',
       '../bundles/bundle-feeDistributor.js',
-    ],
-    liquidateMinimum: [
-      '../src/vaultFactory/liquidateMinimum.js',
-      '../bundles/bundle-liquidateMinimum.js',
-    ],
-    liquidate: [
-      '../src/vaultFactory/liquidateIncrementally.js',
-      '../bundles/bundle-liquidateIncrementally.js',
     ],
     reserve: ['../src/reserve/assetReserve.js', '../bundles/bundle-reserve.js'],
   },
@@ -154,11 +142,13 @@ export const defaultProposalBuilder = async (
     ROLE = env.ROLE || 'chain',
     vaultFactoryControllerAddress = env.VAULT_FACTORY_CONTROLLER_ADDR,
     minInitialPoolLiquidity = env.MIN_INITIAL_POOL_LIQUIDITY,
+    endorsedUi,
     anchorOptions: {
       anchorDenom = env.ANCHOR_DENOM,
       anchorDecimalPlaces = '6',
       anchorKeyword = 'AUSD',
       anchorProposedName = anchorKeyword,
+      initialPrice = undefined,
     } = {},
     econCommitteeOptions: {
       committeeSize: econCommitteeSize = env.ECON_COMMITTEE_SIZE || '3',
@@ -172,6 +162,7 @@ export const defaultProposalBuilder = async (
   const anchorOptions = anchorDenom && {
     denom: anchorDenom,
     decimalPlaces: parseInt(anchorDecimalPlaces, 10),
+    initialPrice,
     keyword: anchorKeyword,
     proposedName: anchorProposedName,
   };
@@ -188,6 +179,7 @@ export const defaultProposalBuilder = async (
         ROLE,
         vaultFactoryControllerAddress,
         minInitialPoolLiquidity: optBigInt(minInitialPoolLiquidity),
+        endorsedUi,
         anchorOptions,
         econCommitteeOptions,
         installKeys: {

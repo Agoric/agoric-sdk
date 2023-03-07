@@ -13,6 +13,7 @@ const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
  * @param {ShutdownWithFailure | undefined} shutdownZoeVat
  */
 export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
+  /** @type {IssuerKit<'set'> | undefined} */
   let invitationKit;
 
   const invitationKitBaggage = provideDurableMapStore(

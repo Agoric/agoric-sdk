@@ -1,3 +1,4 @@
+import { Fail } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
@@ -74,7 +75,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return Promise.resolve().then(() => nameToBundleID.get(name));
     },
     createVat: (bundleCap, { vatParameters = {} } = {}) => {
-      assert.equal(bundleCap, zcfBundleCap, 'fakeVatAdmin only knows ZCF');
+      bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
       const exitKit = makePromiseKit();
       handlePKitWarning(exitKit);
       const exitVat = completion => {
@@ -114,13 +115,20 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
               return exitKit.promise;
             },
             terminateWithFailure: () => {},
-            upgrade: (_bundleCap, _options) => assert.fail('upgrade not faked'),
+            upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
           }),
         }),
       );
     },
   });
   const criticalVatKey = harden({});
+  const vatPowers = harden({
+    D: bcap => {
+      const bundle = bundleCapToBundle.get(bcap);
+      bundle || Fail`fake D only does fake bundlecaps`;
+      return harden({ getBundle: () => bundle });
+    },
+  });
   const vatAdminState = {
     getExitMessage: () => exitMessage,
     getHasExited: () => hasExited,
@@ -143,6 +151,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
       return vatAdminState.installBundle(id, bundle);
     },
     getCriticalVatKey: () => criticalVatKey,
+    getVatPowers: () => vatPowers,
   };
   return { admin, vatAdminState };
 }

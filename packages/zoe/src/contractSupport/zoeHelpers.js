@@ -140,7 +140,7 @@ export const fitProposalShape = (seat, proposalShape) =>
  */
 export const assertProposalShape = (seat, expected) => {
   assert.typeof(expected, 'object');
-  assert(!Array.isArray(expected), 'Expected must be an non-array object');
+  !Array.isArray(expected) || Fail`Expected must be an non-array object`;
   const assertValuesNull = e => {
     if (e !== undefined) {
       Object.values(e).forEach(
@@ -171,10 +171,8 @@ export const assertProposalShape = (seat, expected) => {
 
 /* Given a brand, assert that brand is AssetKind.NAT. */
 export const assertNatAssetKind = (zcf, brand) => {
-  assert(
-    zcf.getAssetKind(brand) === AssetKind.NAT,
-    'brand must be AssetKind.NAT',
-  );
+  zcf.getAssetKind(brand) === AssetKind.NAT ||
+    Fail`brand must be AssetKind.NAT`;
 };
 
 export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
@@ -191,7 +189,7 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
 export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
-  assert(!recipientSeat.hasExited(), 'The recipientSeat cannot have exited.');
+  !recipientSeat.hasExited() || Fail`The recipientSeat cannot have exited.`;
 
   // We will create a temporary offer to be able to escrow our payments
   // with Zoe.
@@ -231,7 +229,7 @@ export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
  * @returns {Promise<PaymentPKeywordRecord>}
  */
 export const withdrawFromSeat = async (zcf, seat, amounts) => {
-  assert(!seat.hasExited(), 'The seat cannot have exited.');
+  !seat.hasExited() || Fail`The seat cannot have exited.`;
   const { zcfSeat: tempSeat, userSeat: tempUserSeatP } = zcf.makeEmptySeatKit();
   atomicTransfer(zcf, seat, tempSeat, amounts);
   tempSeat.exit();

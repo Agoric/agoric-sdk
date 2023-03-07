@@ -1,14 +1,14 @@
 import test from 'ava';
 import '@endo/init/debug.js';
 
-import * as fs from 'fs';
 import * as proc from 'child_process';
 import * as os from 'os';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 
-import unconfinedInspect from '../src/object-inspect.js';
-
+const getBootScript = () =>
+  getLockdownBundle().then(bundle => `(${bundle.source}\n)()`.trim());
 const io = { spawn: proc.spawn, os: os.type() }; // WARNING: ambient
 const testCases = [
   '1',
@@ -56,26 +56,11 @@ const testCases = [
   ["new Proxy(() => {}, { get: () => 'foo' })", '[Function: foo]'],
 ];
 
-test('unconfined inspect', async t => {
-  for (const testCase of testCases) {
-    const [toEval, toRender] = Array.isArray(testCase)
-      ? testCase
-      : [testCase, testCase];
-    // eslint-disable-next-line no-eval
-    const evaled = (1, eval)(`(${toEval})`);
-    // t.log(evaled);
-    t.is(unconfinedInspect(evaled), toRender, toEval);
-  }
-});
-
 async function makeWorker() {
   const opts = options(io);
   const vat = xsnap(opts);
 
-  const boot = fs.readFileSync(
-    new URL('../dist/bundle-ses-boot.umd.js', import.meta.url).pathname,
-    'utf8',
-  );
+  const boot = await getBootScript();
 
   await vat.evaluate(`
     let printed = [];

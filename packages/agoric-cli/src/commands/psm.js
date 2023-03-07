@@ -4,10 +4,10 @@
 /* eslint-disable func-names */
 /* global fetch, process */
 import { Command } from 'commander';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { asPercent } from '../lib/format.js';
-import { makePSMSpendAction } from '../lib/psm.js';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
-import { outputAction } from '../lib/wallet.js';
+import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 
@@ -146,75 +146,24 @@ export const makePsmCommand = async logger => {
     .option('--wantMinted [DOLLARS]', 'amount of anchor tokens to give', Number)
     .option('--giveMinted [DOLLARS]', 'amount of minted tokens to give', Number)
     .option('--feePct [%]', 'Gas fee percentage', Number)
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option('--offerId [string]', 'Offer id', String, `swap-${Date.now()}`)
     .action(async function (opts) {
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
       // @ts-expect-error xxx RpcRemote
-      const spendAction = makePSMSpendAction(instance, agoricNames.brand, opts);
-      outputAction(spendAction);
-    });
-
-  psm
-    .command('committee')
-    .description('join the economic committee')
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function (opts) {
-      const { economicCommittee } = agoricNames.instance;
-      assert(economicCommittee, 'missing economicCommittee');
-
-      /** @type {import('../lib/psm.js').OfferSpec} */
-      const offer = {
-        id: Number(opts.offerId),
-        invitationSpec: {
-          source: 'purse',
-          // @ts-expect-error xxx RpcRemote
-          instance: economicCommittee,
-          description: 'Voter0', // XXX it may not always be
-        },
-        proposal: {},
-      };
-
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
-
-      console.warn('Now execute the prepared offer');
-    });
-
-  psm
-    .command('charter')
-    .description('prepare an offer to accept the charter invitation')
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .action(async function (opts) {
-      const { econCommitteeCharter } = agoricNames.instance;
-      assert(econCommitteeCharter, 'missing econCommitteeCharter');
-
-      /** @type {import('../lib/psm.js').OfferSpec} */
-      const offer = {
-        id: Number(opts.offerId),
-        invitationSpec: {
-          source: 'purse',
-          // @ts-expect-error xxx RpcRemote
-          instance: econCommitteeCharter,
-          description: 'charter member invitation',
-        },
-        proposal: {},
-      };
-
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
-
-      console.warn('Now execute the prepared offer');
+      const offer = Offers.psm.swap(instance, agoricNames.brand, opts);
+      outputExecuteOfferAction(offer);
     });
 
   psm
     .command('proposePauseOffers')
     .description('propose a vote')
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option(
+      '--offerId [string]',
+      'Offer id',
+      String,
+      `proposePauseOffers-${Date.now()}`,
+    )
     .requiredOption(
       '--pair [Minted.Anchor]',
       'token pair (Minted.Anchor)',
@@ -222,9 +171,8 @@ export const makePsmCommand = async logger => {
       ['IST', 'AUSD'],
     )
     .requiredOption(
-      '--psmCharterAcceptOfferId [number]',
+      '--charterAcceptOfferId [string]',
       'offer that had continuing invitation result',
-      Number,
     )
     .requiredOption(
       '--substring [string]',
@@ -241,12 +189,12 @@ export const makePsmCommand = async logger => {
     .action(async function (opts) {
       const psmInstance = lookupPsmInstance(opts.pair);
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
-        id: Number(opts.offerId),
+        id: opts.offerId,
         invitationSpec: {
           source: 'continuing',
-          previousOffer: opts.psmCharterAcceptOfferId,
+          previousOffer: opts.charterAcceptOfferId,
           invitationMakerName: 'VoteOnPauseOffers',
           // ( instance, strings list, timer deadline seconds )
           invitationArgs: harden([
@@ -258,10 +206,7 @@ export const makePsmCommand = async logger => {
         proposal: {},
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });
@@ -270,10 +215,10 @@ export const makePsmCommand = async logger => {
     .command('proposeChangeMintLimit')
     .description('propose to change the MintLimit parameter')
     .option(
-      '--offerId [number]',
+      '--offerId [string]',
       'id of this offer (optional)',
-      Number,
-      Date.now(),
+      String,
+      `proposeChangeMintLimit-${Date.now()}`,
     )
     .requiredOption(
       '--pair [Minted.Anchor]',
@@ -282,9 +227,8 @@ export const makePsmCommand = async logger => {
       ['IST', 'AUSD'],
     )
     .requiredOption(
-      '--previousOfferId [number]',
+      '--previousOfferId [string]',
       'offer using psm charter invitation',
-      Number,
     )
     .requiredOption('--limit [number]', 'new mint limit (in IST)', Number)
     .option(
@@ -301,9 +245,9 @@ export const makePsmCommand = async logger => {
         brand: istBrand,
         value: BigInt(opts.limit * 1_000_000),
       });
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
-        id: Number(opts.offerId),
+        id: opts.offerId,
         invitationSpec: {
           source: 'continuing',
           previousOffer: opts.previousOfferId,
@@ -317,74 +261,7 @@ export const makePsmCommand = async logger => {
         },
       };
 
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
-
-      console.warn('Now execute the prepared offer');
-    });
-
-  psm
-    .command('vote')
-    .description('vote on a question (hard-coded for now))')
-    .option('--offerId [number]', 'Offer id', Number, Date.now())
-    .requiredOption(
-      '--econCommAcceptOfferId [number]',
-      'offer that had continuing invitation result',
-      Number,
-    )
-    .requiredOption(
-      '--pair [Minted.Anchor]',
-      'token pair (Minted.Anchor)',
-      s => s.split('.'),
-      ['IST', 'AUSD'],
-    )
-    .requiredOption(
-      '--forPosition [number]',
-      'index of one position to vote for (within the question description.positions); ',
-      Number,
-    )
-    .action(async function (opts) {
-      const questionHandleCapDataStr = await vstorage.readLatest(
-        'published.committees.Economic_Committee.latestQuestion',
-      );
-      const questionDescriptions = storageHelper.unserializeTxt(
-        questionHandleCapDataStr,
-        fromBoard,
-      );
-
-      assert(questionDescriptions, 'missing questionDescriptions');
-      assert(
-        questionDescriptions.length === 1,
-        'multiple questions not supported',
-      );
-
-      const questionDesc = questionDescriptions[0];
-      // TODO support multiple position arguments
-      const chosenPositions = [questionDesc.positions[opts.forPosition]];
-      assert(chosenPositions, `undefined position index ${opts.forPosition}`);
-
-      /** @type {import('../lib/psm.js').OfferSpec} */
-      const offer = {
-        id: Number(opts.offerId),
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: opts.econCommAcceptOfferId,
-          invitationMakerName: 'makeVoteInvitation',
-          // (positionList, questionHandle)
-          invitationArgs: harden([
-            chosenPositions,
-            questionDesc.questionHandle,
-          ]),
-        },
-        proposal: {},
-      };
-
-      outputAction({
-        method: 'executeOffer',
-        offer,
-      });
+      outputExecuteOfferAction(offer);
 
       console.warn('Now execute the prepared offer');
     });

@@ -51,3 +51,76 @@ agoric follow :published.priceFeed.ATOM-USD_price_feed
 ```
 
  TODO document more of https://github.com/Agoric/documentation/issues/672
+
+## Upgrade
+
+A contract instance can be upgraded to use a new source code bundle in a process that is very similar to
+[upgrading a vat](https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/vat-upgrade.md).
+Most state is discarded, however "durable" collections are retained for use by the replacement version.
+
+The upgrade process is triggered through the "adminFacet" of the instance, and requires specifying the new source code. (Note that a "null upgrade" that re-uses the original bundle is valid, and a legitimate approach to deleting accumulated state).
+
+```js
+const results = E(instanceAdminFacet).upgradeContract(newBundleID);
+```
+
+The new bundle itself must export a `prepare` function in place of `start`, and is obligated to redefine every durable Kind that was created by its predecessor.
+
+For example, suppose v1 code of a simple single-increment-counter contract anticipated extension of exported functionality  and decided to track it by means of "codeVersion" data in baggage. v2 code could add multi-increment behavior like so:
+
+```js
+import { M } from '@agoric/store';
+import { prepareExo, prepareExoClass } from '@agoric/vat-data';
+
+const { quote: q, Fail } = assert;
+
+export const prepare = async (zcf, _privateArgs, instanceBaggage) => {
+  const CODE_VERSION = 2;
+  const isFirstIncarnation = !instanceBaggage.has('codeVersion');
+  if (isFirstIncarnation) {
+    // It is valid to instantiate from v2 code directly.
+    instanceBaggage.init('codeVersion', CODE_VERSION);
+  } else {
+    const previousVersion = instanceBaggage.get('codeVersion');
+    previousVersion <= CODE_VERSION ||
+      Fail`Cannot downgrade to codeVersion ${q(CODE_VERSION)} from ${q(previousVersion)}`;
+    instanceBaggage.set('codeVersion', CODE_VERSION);
+  }
+
+  const CounterI = M.interface('Counter', {
+    // v1 code used `M.call().returns(M.bigint())`,
+    // which v2 extends to include an optional `incrementBy` bigint argument.
+    increment: M.call().optional(M.bigint()).returns(M.bigint()),
+    read: M.call().returns(M.bigint()),
+  });
+  const initCounterState = () => ({ value: 0n });
+  const makeCounter = prepareExoClass(
+    instanceBaggage,
+    'Counter',
+    CounterI,
+    initCounterState,
+    {
+      // v1 code used `increment() { return this.state.value += 1n; }`.
+      increment(incrementBy = 1n) {
+        incrementBy > 0n || Fail`increment must be positive`;
+        return this.state.value += incrementBy;
+      },
+      read() { return this.state.value; },
+    },
+  );
+
+  const creatorI = M.interface('CounterExample', {
+    makeCounter: M.call().returns(M.remotable('Counter')),
+  });
+  const creatorFacet = prepareExo(
+    instanceBaggage,
+    'creatorFacet',
+    creatorI,
+    { makeCounter },
+  );
+  return harden({ creatorFacet });
+};
+harden(prepare);
+```
+
+For an example contract upgrade, see the test at https://github.com/Agoric/agoric-sdk/blob/master/packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js .

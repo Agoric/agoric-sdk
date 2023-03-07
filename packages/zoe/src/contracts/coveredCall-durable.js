@@ -73,23 +73,23 @@ const start = async (zcf, _privateArgs, instanceBaggage) => {
     }
 
     const exerciseOption = makeExerciser(sellSeat);
-    const customProps = harden({
+    const customDetails = harden({
       expirationDate: sellSeatExitRule.afterDeadline.deadline,
       timeAuthority: sellSeatExitRule.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });
-    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
+    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customDetails);
   };
 
-  const CoveredCallCratorFacetI = M.interface('CoveredCallCratorFacet', {
+  const CoveredCallCreatorFacetI = M.interface('CoveredCallCreatorFacet', {
     makeInvitation: M.call().returns(M.promise()),
   });
 
   const creatorFacet = prepareExo(
     instanceBaggage,
     'creatorFacet',
-    CoveredCallCratorFacetI,
+    CoveredCallCreatorFacetI,
     {
       makeInvitation() {
         return zcf.makeInvitation(makeOption, 'makeCallOption');

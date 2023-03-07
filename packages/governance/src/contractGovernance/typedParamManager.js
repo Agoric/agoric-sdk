@@ -51,6 +51,10 @@ const isAsync = {
  * @typedef {[type: T, value: ParamValueForType<T>]} ST param spec tuple
  */
 
+/**
+ * @typedef {{ type: 'invitation', value: Amount<'set'> }} InvitationParam
+ */
+
 // XXX better to use the manifest constant ParamTypes
 // but importing that here turns this file into a module,
 // breaking the ambient typing
@@ -62,6 +66,8 @@ const isAsync = {
  * | ST<'nat'>
  * | ST<'ratio'>
  * | ST<'string'>
+ * | ST<'timestamp'>
+ * | ST<'relativeTime'>
  * | ST<'unknown'>} SyncSpecTuple
  *
  * @typedef {['invitation', Invitation]} AsyncSpecTuple

@@ -2,6 +2,7 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
 
+const { Fail, quote: q } = assert;
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);
 
@@ -14,7 +15,9 @@ export const createBundlesFromAbsolute = async sourceBundles => {
     const base = path.basename(bundlePath);
 
     const match = base.match(/^bundle-(.*)\.js$/);
-    assert(match, `${bundlePath} is not 'DIR/bundle-NAME.js'`);
+    if (!match) {
+      throw Fail`${q(bundlePath)} is not 'DIR/bundle-NAME.js'`;
+    }
     const bundle = match[1];
 
     const args = cacheToArgs.get(cache) || ['--to', cache];
@@ -25,11 +28,8 @@ export const createBundlesFromAbsolute = async sourceBundles => {
   for (const args of cacheToArgs.values()) {
     console.log(BUNDLE_SOURCE_PROGRAM, ...args);
     const { status } = spawnSync(prog, args, { stdio: 'inherit' });
-    assert.equal(
-      status,
-      0,
-      `${BUNDLE_SOURCE_PROGRAM} failed with status ${status}`,
-    );
+    status === 0 ||
+      Fail`${q(BUNDLE_SOURCE_PROGRAM)} failed with status ${q(status)}`;
   }
 };
 
@@ -57,11 +57,10 @@ export const extractProposalBundles = async (
           const srcPath = req.resolve(src, { paths: [home] });
           if (toBundle.has(bundlePath)) {
             const oldSrc = toBundle.get(bundlePath);
-            assert.equal(
-              oldSrc,
-              srcPath,
-              `${bundlePath} already installed as ${oldSrc}, also given ${srcPath}`,
-            );
+            oldSrc === srcPath ||
+              Fail`${q(bundlePath)} already installed as ${q(
+                oldSrc,
+              )}, also given ${q(srcPath)}`;
           }
           toBundle.set(bundlePath, srcPath);
         }

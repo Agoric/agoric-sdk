@@ -4,19 +4,13 @@
 /* eslint-disable func-names */
 /* global fetch, process */
 import { Command } from 'commander';
-import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { makeRpcUtils } from '../lib/rpc.js';
 import {
   lookupOfferIdForVault,
-  makeAdjustSpendAction,
-  makeCloseSpendAction,
-  makeOpenSpendAction,
-} from '../lib/vaults.js';
-import { getCurrent, outputAction } from '../lib/wallet.js';
-
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferSpec} OfferSpec */
-/** @typedef {import('@agoric/smart-wallet/src/offers').OfferStatus} OfferStatus */
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} BridgeAction */
+  Offers,
+} from '@agoric/inter-protocol/src/clientSupport.js';
+import { normalizeAddressWithOptions } from '../lib/chain.js';
+import { makeRpcUtils } from '../lib/rpc.js';
+import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
 const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
 
@@ -65,18 +59,13 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--giveCollateral [number]', 'Collateral to give', Number)
     .requiredOption('--wantMinted [number]', 'Minted wants', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
+    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
 
-      const { VaultFactory } = agoricNames.instance;
+      const offer = Offers.vaults.OpenVault(agoricNames.brand, opts);
 
-      const spendAction = makeOpenSpendAction(
-        // @ts-expect-error xxx RpcRemote
-        VaultFactory,
-        agoricNames.brand,
-        opts,
-      );
-      outputAction(spendAction);
+      outputExecuteOfferAction(offer);
     });
 
   vaults
@@ -92,7 +81,7 @@ export const makeVaultsCommand = async logger => {
     .option('--giveMinted [number]', 'Minted to give back', Number)
     .option('--wantMinted [number]', 'More minted to borrow', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    // TODO method to disambiguate between managers
+    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
@@ -102,13 +91,12 @@ export const makeVaultsCommand = async logger => {
         getCurrent(opts.from, fromBoard, { vstorage }),
       );
 
-      const spendAction = makeAdjustSpendAction(
-        // @ts-expect-error xxx RpcRemote
+      const offer = Offers.vaults.AdjustBalances(
         agoricNames.brand,
         opts,
         previousOfferId,
       );
-      outputAction(spendAction);
+      outputExecuteOfferAction(offer);
     });
 
   vaults
@@ -121,7 +109,6 @@ export const makeVaultsCommand = async logger => {
     )
     .requiredOption('--giveMinted [number]', 'Minted to give back', Number)
     .option('--offerId [number]', 'Offer id', Number, Date.now())
-    // TODO method to disambiguate between managers
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
@@ -131,13 +118,12 @@ export const makeVaultsCommand = async logger => {
         getCurrent(opts.from, fromBoard, { vstorage }),
       );
 
-      const spendAction = makeCloseSpendAction(
-        // @ts-expect-error xxx RpcRemote
+      const offer = Offers.vaults.CloseVault(
         agoricNames.brand,
         opts,
         previousOfferId,
       );
-      outputAction(spendAction);
+      outputExecuteOfferAction(offer);
     });
 
   return vaults;

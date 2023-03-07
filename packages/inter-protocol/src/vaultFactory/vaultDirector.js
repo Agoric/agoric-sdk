@@ -1,37 +1,32 @@
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
-
-import '@agoric/governance/exported.js';
-import { E } from '@endo/eventual-send';
-
-import { keyEQ, M, makeScalarMapStore, mustMatch } from '@agoric/store';
-import {
-  assertProposalShape,
-  getAmountIn,
-  getAmountOut,
-  provideChildBaggage,
-  provideEmptySeat,
-  unitAmount,
-} from '@agoric/zoe/src/contractSupport/index.js';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { Far } from '@endo/marshal';
-
+import { Fail, q } from '@agoric/assert';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
-  makeStoredPublisherKit,
   makePublicTopic,
-  observeIteration,
+  makeStoredPublisherKit,
   pipeTopicToStorage,
   prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
+import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   defineDurableExoClassKit,
   makeKindHandle,
   provideDurableMapStore,
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
+import {
+  atomicRearrange,
+  getAmountIn,
+  getAmountOut,
+  makeRatioFromAmounts,
+  provideChildBaggage,
+  provideEmptySeat,
+  unitAmount,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   CHARGING_PERIOD_KEY,
@@ -42,7 +37,11 @@ import {
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
 
-const { details: X, quote: q, Fail } = assert;
+import '@agoric/governance/exported.js';
+import '@agoric/zoe/exported.js';
+import '@agoric/zoe/src/contracts/exported.js';
+
+const trace = makeTracer('VD');
 
 /**
  * @typedef {{
@@ -62,7 +61,7 @@ const { details: X, quote: q, Fail } = assert;
  * @typedef {{
  *  burnDebt: BurnDebt,
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
- *  mintAndReallocate: MintAndReallocate,
+ *  mintAndTransfer: MintAndTransfer,
  *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
  * }} FactoryPowersFacet
  *
@@ -94,10 +93,12 @@ export const prepareVaultDirector = (
     baggage,
     'Vault Director publish kit',
   );
-  /** For temporary staging of newly minted tokens */
-  const mintSeat = provideEmptySeat(zcf, baggage, 'mintSeat');
+  /** For holding newly minted tokens until transferred */
+  const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
+
   const rewardPoolSeat = provideEmptySeat(zcf, baggage, 'rewardPoolSeat');
 
+  /** @type {MapStore<Brand, VaultManager>} */
   const collateralTypes = provideDurableMapStore(baggage, 'collateralTypes');
 
   // Non-durable map because param managers aren't durable.
@@ -132,11 +133,6 @@ export const prepareVaultDirector = (
     };
   };
 
-  const getLiquidationConfig = () => ({
-    install: directorParamManager.getLiquidationInstall(),
-    terms: directorParamManager.getLiquidationTerms(),
-  });
-
   /**
    * @returns {MetricsNotification}
    */
@@ -144,29 +140,6 @@ export const prepareVaultDirector = (
     return harden({
       collaterals: Array.from(collateralTypes.keys()),
       rewardPoolAllocation: rewardPoolSeat.getCurrentAllocation(),
-    });
-  };
-
-  /**
-   *
-   * @param {VaultManager} vaultManager
-   * @param {Installation<unknown>} oldInstall
-   * @param {unknown} oldTerms
-   */
-  const watchGovernance = (vaultManager, oldInstall, oldTerms) => {
-    const subscription = directorParamManager.getSubscription();
-    void observeIteration(subscription, {
-      updateState(_paramUpdate) {
-        const { install, terms } = getLiquidationConfig();
-        if (install === oldInstall && keyEQ(terms, oldTerms)) {
-          return;
-        }
-        oldInstall = install;
-        oldTerms = terms;
-        vaultManager
-          .setupLiquidator(install, terms)
-          .catch(e => console.error('Failed to setup liquidator', e));
-      },
     });
   };
 
@@ -215,6 +188,7 @@ export const prepareVaultDirector = (
         getLimitedCreatorFacet: M.call().returns(M.remotable()),
         getGovernedApis: M.call().returns(M.record()),
         getGovernedApiNames: M.call().returns(M.record()),
+        setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
       }),
       machine: M.interface('machine', {
         addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
@@ -229,7 +203,6 @@ export const prepareVaultDirector = (
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getCollaterals: M.call().returns(M.promise()),
         getMetrics: M.call().returns(SubscriberShape),
-        makeVaultInvitation: M.call().returns(M.promise()),
         getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
           SubscriberShape,
@@ -274,6 +247,7 @@ export const prepareVaultDirector = (
         getGovernedApiNames() {
           return harden({});
         },
+        setOfferFilter: strings => zcf.setOfferFilter(strings),
       },
       machine: {
         // TODO move this under governance #3924
@@ -287,6 +261,7 @@ export const prepareVaultDirector = (
           collateralKeyword,
           initialParamValues,
         ) {
+          trace('addVaultType', collateralKeyword, initialParamValues);
           const { state, facets } = this;
           mustMatch(collateralIssuer, M.remotable(), 'collateralIssuer');
           assertKeywordName(collateralKeyword);
@@ -301,10 +276,10 @@ export const prepareVaultDirector = (
           !collateralTypes.has(collateralBrand) ||
             Fail`Collateral brand ${q(collateralBrand)} has already been added`;
 
+          // counter to be incremented at end of addVaultType
+          const managerId = `manager${state.managerCounter}`;
           const managerStorageNode =
-            storageNode &&
-            E(storageNode).makeChildNode(`manager${state.managerCounter}`);
-          state.managerCounter += 1;
+            storageNode && E(storageNode).makeChildNode(managerId);
 
           /** a powerful object; can modify parameters */
           const vaultParamManager = makeVaultParamManager(
@@ -321,40 +296,34 @@ export const prepareVaultDirector = (
           const startTimeStamp = await E(timerService).getCurrentTimestamp();
 
           /**
-           * We provide an easy way for the vaultManager to add rewards to
-           * the rewardPoolSeat, without directly exposing the rewardPoolSeat to them.
+           * Let the manager add rewards to the rewardPoolSeat without
+           * exposing the rewardPoolSeat to them.
            *
-           * @type {MintAndReallocate}
+           * @type {MintAndTransfer}
            */
-          const mintAndReallocate = (toMint, fee, seat, ...otherSeats) => {
+          const mintAndTransfer = (
+            mintReceiver,
+            toMint,
+            fee,
+            nonMintTransfers,
+          ) => {
             const kept = AmountMath.subtract(toMint, fee);
             debtMint.mintGains(harden({ Minted: toMint }), mintSeat);
+            /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+            const transfers = [
+              ...nonMintTransfers,
+              [mintSeat, rewardPoolSeat, { Minted: fee }],
+              [mintSeat, mintReceiver, { Minted: kept }],
+            ];
             try {
-              rewardPoolSeat.incrementBy(
-                mintSeat.decrementBy(harden({ Minted: fee })),
-              );
-              seat.incrementBy(mintSeat.decrementBy(harden({ Minted: kept })));
-              zcf.reallocate(rewardPoolSeat, mintSeat, seat, ...otherSeats);
+              atomicRearrange(zcf, harden(transfers));
             } catch (e) {
-              console.error('mintAndReallocate caught', e);
-              mintSeat.clear();
-              rewardPoolSeat.clear();
-              // Make best efforts to burn the newly minted tokens, for hygiene.
-              // That only relies on the internal mint, so it cannot fail without
-              // there being much larger problems. There's no risk of tokens being
-              // stolen here because the staging for them was already cleared.
+              console.error('mintAndTransfer failed to rearrange', e);
+              // If the rearrange fails, burn the newly minted tokens.
+              // Assume this won't fail because it relies on the internal mint.
+              // (Failure would imply much larger problems.)
               debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
               throw e;
-            } finally {
-              // Note that if this assertion may fail because of an error in the
-              // try{} block, but that error won't be thrown because this executes
-              // before the catch that rethrows it.
-              assert(
-                Object.values(mintSeat.getCurrentAllocation()).every(a =>
-                  AmountMath.isEmpty(a),
-                ),
-                X`Stage should be empty of Minted`,
-              );
             }
             facets.machine.updateMetrics();
           };
@@ -381,7 +350,7 @@ export const prepareVaultDirector = (
                 getRecordingPeriod: () =>
                   loanTimingParams[RECORDING_PERIOD_KEY].value,
               }),
-            mintAndReallocate,
+            mintAndTransfer,
             getShortfallReporter: async () => {
               await updateShortfallReporter();
               return shortfallReporter;
@@ -397,21 +366,22 @@ export const prepareVaultDirector = (
             brandName,
             prepareVaultManagerKit,
             zcf,
-            debtMint,
-            collateralBrand,
-            collateralUnit,
-            factoryPowers,
-            startTimeStamp,
-            managerStorageNode,
             marshaller,
+            {
+              debtMint,
+              collateralBrand,
+              collateralUnit,
+              descriptionScope: managerId,
+              factoryPowers,
+              startTimeStamp,
+              storageNode: managerStorageNode,
+            },
           );
 
           const { self: vm } = makeVaultManager();
           collateralTypes.init(collateralBrand, vm);
-          const { install, terms } = getLiquidationConfig();
-          await vm.setupLiquidator(install, terms);
-          watchGovernance(vm, install, terms);
           facets.machine.updateMetrics();
+          state.managerCounter += 1;
           return vm;
         },
         makeCollectFeesInvitation() {
@@ -471,40 +441,6 @@ export const prepareVaultDirector = (
         /** @deprecated use getPublicTopics */
         getMetrics() {
           return metricsSubscriber;
-        },
-        /**
-         * @deprecated use getCollateralManager and then makeVaultInvitation instead
-         *
-         * Make a vault in the vaultManager based on the collateral type.
-         */
-        makeVaultInvitation() {
-          /** @param {ZCFSeat} seat */
-          const makeVaultHook = async seat => {
-            assertProposalShape(seat, {
-              give: { Collateral: null },
-              want: { Minted: null },
-            });
-            const {
-              give: { Collateral: collateralAmount },
-              want: { Minted: requestedAmount },
-            } = seat.getProposal();
-            const { brand: brandIn } = collateralAmount;
-            collateralTypes.has(brandIn) ||
-              Fail`Not a supported collateral type ${brandIn}`;
-
-            AmountMath.isGTE(
-              requestedAmount,
-              directorParamManager.getMinInitialDebt(),
-            ) ||
-              Fail`The request must be for at least ${
-                directorParamManager.getMinInitialDebt().value
-              }. ${requestedAmount.value} is too small`;
-
-            /** @type {VaultManager} */
-            const mgr = collateralTypes.get(brandIn);
-            return mgr.makeVaultKit(seat);
-          };
-          return zcf.makeInvitation(makeVaultHook, 'MakeVault');
         },
         getRunIssuer() {
           return debtMint.getIssuerRecord().issuer;

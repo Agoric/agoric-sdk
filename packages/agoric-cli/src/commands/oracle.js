@@ -61,7 +61,7 @@ export const makeOracleCommand = async logger => {
     .action(async function (opts) {
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
         invitationSpec: {
@@ -92,7 +92,7 @@ export const makeOracleCommand = async logger => {
     )
     .requiredOption('--price [number]', 'price (format TODO)', String)
     .action(async function (opts) {
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
         invitationSpec: {
@@ -124,7 +124,7 @@ export const makeOracleCommand = async logger => {
     .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
     .requiredOption('--roundId [number]', 'round', Number)
     .action(async function (opts) {
-      /** @type {import('../lib/psm.js').OfferSpec} */
+      /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
         invitationSpec: {

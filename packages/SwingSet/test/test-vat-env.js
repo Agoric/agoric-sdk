@@ -64,6 +64,7 @@ test('store makers are in the test environment', t => {
 });
 
 async function testForExpectedGlobals(t, workerType) {
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     vats: {

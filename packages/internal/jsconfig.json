@@ -1,18 +1,10 @@
+// This file can contain .js-specific Typescript compiler config.
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
     // Disable b/c @endo/init can't pass noImplicitAny
     "checkJs": false,
-    "noEmit": true,
-    "downlevelIteration": true,
     "noImplicitAny": true,
-    "strictNullChecks": true,
-    "noImplicitThis": true,
-    "moduleResolution": "node",
-    "types": [
-      "node"
-    ]
   },
   "include": [
     "*.js",

@@ -2,6 +2,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { mustMatch } from '@agoric/store';
 
+import { makeTracer } from '@agoric/internal';
 import {
   CONTRACT_ELECTORATE,
   setupParamGovernance,
@@ -11,6 +12,8 @@ import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
 
 const { Fail } = assert;
+
+const trace = makeTracer('CGov', false);
 
 /**
  * Validate that the question details correspond to a parameter change question
@@ -121,7 +124,13 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * @template {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods} } SF Start function of governed contract
+ * @typedef {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}} GovernableStartFn
+ */
+
+/**
+ * Start an instance of a governor, governing a "governed" contract specified in terms.
+ *
+ * @template {GovernableStartFn} SF Start function of governed contract
  * @param {ZCF<{
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<SF>,
@@ -135,7 +144,9 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
+  trace('start');
   const zoe = zcf.getZoeService();
+  trace('getTerms', zcf.getTerms());
   const {
     timer,
     governedContractInstallation,
@@ -144,6 +155,7 @@ const start = async (zcf, privateArgs) => {
       terms: contractTerms,
     },
   } = zcf.getTerms();
+  trace('contractTerms', contractTerms);
   contractTerms.governedParams[CONTRACT_ELECTORATE] ||
     Fail`Contract must declare ${CONTRACT_ELECTORATE} as a governed parameter`;
 
@@ -152,6 +164,7 @@ const start = async (zcf, privateArgs) => {
     electionManager: zcf.getInstance(),
   });
 
+  trace('starting governedContractInstallation');
   const {
     creatorFacet: governedCF,
     instance: governedInstance,
@@ -191,9 +204,11 @@ const start = async (zcf, privateArgs) => {
     }
     return poserFacet;
   };
+  trace('awaiting getUpdatedPoserFacet');
   await getUpdatedPoserFacet();
   assert(poserFacet, 'question poser facet must be initialized');
 
+  trace('awaiting setupParamGovernance');
   // All governed contracts have at least a governed electorate
   const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
     await setupParamGovernance(
@@ -204,6 +219,7 @@ const start = async (zcf, privateArgs) => {
       getUpdatedPoserFacet,
     );
 
+  trace('awaiting setupFilterGovernance');
   const { voteOnFilter, createdFilterQuestion } = await setupFilterGovernance(
     zoe,
     governedInstance,

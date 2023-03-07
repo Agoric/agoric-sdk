@@ -36,7 +36,7 @@ const trace = makeTracer('RSM', false);
  *   assetPublisher: Publisher<AssetState>,
  *   assetSubscriber: Subscriber<AssetState>,
  *   brands: { debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> },
- *   mintPowers: { burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate },
+ *   mintPowers: { burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndTransfer: MintAndTransfer },
  *   chargingPeriod: RelativeTime,
  *   debtMint: ZCFMint<'nat'>,
  *   poolIncrementSeat: ZCFSeat,
@@ -58,7 +58,7 @@ const trace = makeTracer('RSM', false);
  * @param {ZCF} zcf
  * @param {ZCFMint<'nat'>} debtMint
  * @param {{ debt: Brand<'nat'>, Attestation: Brand<'copyBag'>, Stake: Brand<'nat'> }} brands
- * @param {{ burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndReallocate: MintAndReallocate }} mintPowers
+ * @param {{ burnDebt: BurnDebt, getGovernedParams: () => ParamManager, mintAndTransfer: MintAndTransfer }} mintPowers
  * @param {object} timing
  * @param {ERef<TimerService>} timing.timerService
  * @param {RelativeTime} timing.chargingPeriod
@@ -152,7 +152,7 @@ const helper = {
     const changes = chargeInterest(
       {
         mint: debtMint,
-        mintAndReallocateWithFee: mintPowers.mintAndReallocate,
+        mintAndTransferWithFee: mintPowers.mintAndTransfer,
         poolIncrementSeat,
         seatAllocationKeyword: KW.Debt,
       },
@@ -243,20 +243,20 @@ const manager = {
 
   /**
    * @param {MethodContext} context
+   * @param {ZCFSeat} seat
    * @param {Amount<'nat'>} toMint
    * @param {Amount<'nat'>} fee
-   * @param {ZCFSeat} seat
-   * @param {...ZCFSeat} otherSeats
+   * @param {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} transfers
    * @returns {void}
    */
-  mintAndReallocate: ({ state }, toMint, fee, seat, ...otherSeats) => {
+  mintAndReallocate: ({ state }, seat, toMint, fee, transfers) => {
     const { mintPowers } = state;
     checkDebtLimit(
       mintPowers.getGovernedParams().getDebtLimit(),
       state.totalDebt,
       toMint,
     );
-    mintPowers.mintAndReallocate(toMint, fee, seat, ...otherSeats);
+    mintPowers.mintAndTransfer(seat, toMint, fee, transfers);
     state.totalDebt = AmountMath.add(state.totalDebt, toMint);
   },
 

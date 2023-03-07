@@ -22,14 +22,6 @@ test.before(async t => {
   const bundleCache = await unsafeMakeBundleCache('bundles/');
 
   const contractBundles = {
-    liquidateMinimum: await bundleCache.load(
-      './src/vaultFactory/liquidateMinimum.js',
-      'liquidateMinimum',
-    ),
-    amm: await bundleCache.load(
-      './src/vpool-xyk-amm/multipoolMarketMaker.js',
-      'amm',
-    ),
     vaultFactory: await bundleCache.load(
       './src/vaultFactory/vaultFactory.js',
       'VaultFactory',

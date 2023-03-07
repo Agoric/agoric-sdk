@@ -3,6 +3,7 @@ import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
+import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';
@@ -15,6 +16,7 @@ export * from './startPSM.js';
  * @property {string} [proposedName]
  * @property {string} keyword
  * @property {string} oracleBrand
+ * @property {number} [initialPrice]
  */
 
 /**
@@ -42,44 +44,6 @@ export const publishInterchainAssetFromBoardId = async (
   ]);
 };
 
-const addPool = async (
-  zoe,
-  amm,
-  issuer,
-  keyword,
-  brand,
-  runBrand,
-  runIssuer,
-) => {
-  const ammPub = E(zoe).getPublicFacet(amm);
-  const [addPoolInvitation] = await Promise.all([
-    E(ammPub).addPoolInvitation(),
-    E(ammPub).addIssuer(issuer, keyword),
-  ]);
-  const proposal = harden({
-    give: {
-      Secondary: AmountMath.makeEmpty(brand),
-      Central: AmountMath.makeEmpty(runBrand),
-    },
-  });
-  const centralPurse = E(runIssuer).makeEmptyPurse();
-  const secondaryPurse = E(issuer).makeEmptyPurse();
-  const [emptyCentral, emptySecondary] = await Promise.all([
-    E(centralPurse).withdraw(proposal.give.Central),
-    E(secondaryPurse).withdraw(proposal.give.Secondary),
-  ]);
-  const payments = harden({
-    Central: emptyCentral,
-    Secondary: emptySecondary,
-  });
-  const addLiquiditySeat = await E(zoe).offer(
-    addPoolInvitation,
-    proposal,
-    payments,
-  );
-  await E(addLiquiditySeat).getOfferResult();
-};
-
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
@@ -88,19 +52,10 @@ const addPool = async (
  */
 export const publishInterchainAssetFromBank = async (
   {
-    consume: { zoe, bankManager, agoricNamesAdmin, bankMints },
+    consume: { zoe, bankManager, agoricNamesAdmin, bankMints, reserveKit },
     produce: { bankMints: produceBankMints },
     installation: {
       consume: { mintHolder },
-    },
-    instance: {
-      consume: { amm },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: runIssuer },
-    },
-    brand: {
-      consume: { [Stable.symbol]: stableBrandP },
     },
   },
   { options: { interchainAssetOptions } },
@@ -127,14 +82,10 @@ export const publishInterchainAssetFromBank = async (
     E(zoe).startInstance(mintHolder, {}, terms),
   );
 
-  const [issuer, brand, runBrand] = await Promise.all([
-    issuerP,
-    E(issuerP).getBrand(),
-    stableBrandP,
-  ]);
+  const [issuer, brand] = await Promise.all([issuerP, E(issuerP).getBrand()]);
   const kit = { mint: mintP, issuer, brand };
 
-  await addPool(zoe, amm, issuer, keyword, brand, runBrand, runIssuer);
+  await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 
   // Create the mint list if it doesn't exist and wasn't already rejected.
   produceBankMints.resolve([]);
@@ -160,7 +111,11 @@ export const registerScaledPriceAuthority = async (
   { consume: { agoricNamesAdmin, zoe, priceAuthorityAdmin, priceAuthority } },
   { options: { interchainAssetOptions } },
 ) => {
-  const { keyword, oracleBrand } = interchainAssetOptions;
+  const {
+    keyword,
+    oracleBrand,
+    initialPrice: initialPriceRaw,
+  } = interchainAssetOptions;
   assert.typeof(keyword, 'string');
   assert.typeof(oracleBrand, 'string');
 
@@ -215,12 +170,16 @@ export const registerScaledPriceAuthority = async (
     10n ** BigInt(decimalPlacesRun),
     runBrand,
   );
+  const initialPrice = initialPriceRaw
+    ? parseRatio(initialPriceRaw, runBrand, interchainBrand)
+    : undefined;
 
   const terms = await deeplyFulfilledObject(
     harden({
       sourcePriceAuthority,
       scaleIn,
       scaleOut,
+      initialPrice,
     }),
   );
   const { publicFacet } = E.get(
@@ -270,11 +229,15 @@ export const addAssetToVault = async (
   const vaultFactoryCreator = E.get(vaultFactoryKit).creatorFacet;
   await E(vaultFactoryCreator).addVaultType(interchainIssuer, oracleBrand, {
     debtLimit: AmountMath.make(stable, debtLimitValue),
-    // the rest of these are arbitrary, TBD by gov cttee
-    interestRate: makeRatio(1n, stable),
-    liquidationMargin: makeRatio(1n, stable),
+    // The rest of these we use safe defaults.
+    // In production they will be governed by the Econ Committee.
+    // Product deployments are also expected to have a low debtLimitValue at the outset,
+    // limiting the impact of these defaults.
+    liquidationPadding: makeRatio(25n, stable),
+    liquidationMargin: makeRatio(150n, stable),
+    loanFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
-    loanFee: makeRatio(1n, stable),
+    interestRate: makeRatio(1n, stable),
   });
 };
 
@@ -304,14 +267,12 @@ export const getManifestForAddAssetToVault = (
             bankManager: true,
             agoricNamesAdmin: true,
             bankMints: true,
+            reserveKit: true,
           },
           produce: { bankMints: true },
           installation: {
             consume: { mintHolder: true },
           },
-          instance: { consume: { amm: 'amm' } },
-          issuer: { consume: { [Stable.symbol]: 'zoe' } },
-          brand: { consume: { [Stable.symbol]: 'zoe' } },
         },
       }),
       [registerScaledPriceAuthority.name]: {

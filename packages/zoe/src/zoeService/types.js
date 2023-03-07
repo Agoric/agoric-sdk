@@ -33,7 +33,6 @@
  * @property {GetBrands} getBrands
  * @property {import('./utils').GetTerms} getTerms
  * @property {GetOfferFilter} getOfferFilter
- * @property {SetOfferFilter} setOfferFilter
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstance} getInstance
  * @property {GetInstallation} getInstallation
@@ -300,15 +299,12 @@
  */
 
 /**
- * @typedef {object} StandardInvitationDetails
+ * @typedef {object} InvitationDetails
  * @property {Installation} installation
  * @property {import('./utils').Instance<any>} instance
  * @property {InvitationHandle} handle
  * @property {string} description
- */
-
-/**
- * @typedef {StandardInvitationDetails & Record<string, any>} InvitationDetails
+ * @property {Record<string, any>} [customDetails]
  */
 
 /**

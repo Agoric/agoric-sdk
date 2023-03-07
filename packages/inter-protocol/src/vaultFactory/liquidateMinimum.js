@@ -1,7 +1,5 @@
-import { E } from '@endo/eventual-send';
 import {
   ceilMultiplyBy,
-  offerTo,
   atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
@@ -11,6 +9,9 @@ import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('LiqMin', false);
 
+// TODO: (#7047) this file goes away shortly, and is here to keep vaults happy
+// until we have a replacement. The reference to AMM is to ease the transition.
+
 /**
  * This contract liquidates the minimum amount of vault's collateral necessary
  * to satisfy the debt. It uses the AMM's swapOut, which sells no more than
@@ -19,11 +20,10 @@ const trace = makeTracer('LiqMin', false);
  * uses the AMM's swapIn instead.
  *
  * @param {ZCF<{
- *   amm: XYKAMMPublicFacet,
+ *   amm: unknown,
  * }>} zcf
  */
 const start = async zcf => {
-  const { amm } = zcf.getTerms();
   trace('start', zcf.getTerms());
 
   /**
@@ -45,27 +45,25 @@ const start = async zcf => {
       give: { In: amountIn },
     } = debtorSeat.getProposal();
 
-    const swapInvitation = E(amm).makeSwapInvitation();
-    const liqProposal = harden({
-      give: { In: amountIn },
-      want: { Out: AmountMath.makeEmpty(debtBrand) },
-    });
-    trace(`OFFER TO DEBT: `, debtWithPenalty, amountIn);
-    const { deposited } = await offerTo(
-      zcf,
-      swapInvitation,
-      undefined, // The keywords were mapped already
-      liqProposal,
-      debtorSeat,
-      debtorSeat,
-      { stopAfter: debtWithPenalty },
-    );
-    const amounts = await deposited;
+    // AMM is gone, and liquidateMinimum will follow shortly in #7074
+
+    // const liqProposal = harden({
+    //   give: { In: amountIn },
+    //   want: { Out: AmountMath.makeEmpty(debtBrand) },
+    // });
+    // const { deposited } = await offerTo(
+    //   zcf,
+    //   swapInvitation,
+    //   undefined, // The keywords were mapped already
+    //   liqProposal,
+    //   debtorSeat,
+    //   debtorSeat,
+    //   { stopAfter: debtWithPenalty },
+    // );
     trace(`Liq results`, {
       debtWithPenalty,
       amountIn,
       paid: debtorSeat.getCurrentAllocation(),
-      amounts,
     });
 
     // Now we need to know how much was sold so we can pay off the debt.

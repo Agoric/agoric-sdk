@@ -1,8 +1,7 @@
 /// <reference types="ses"/>
 
-import { HandledPromise, E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { E, Far } from '@endo/far';
 import { M } from '@agoric/store';
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
@@ -12,116 +11,64 @@ const { Fail, quote: q } = assert;
 
 const sink = () => {};
 const makeQuietRejection = reason => {
-  const rejection = HandledPromise.reject(reason);
+  const rejection = harden(Promise.reject(reason));
   void E.when(rejection, sink, sink);
-  return harden(rejection);
+  return rejection;
 };
-
-/**
- * Asyncronously iterates over the contents of a PublicationList as they appear.
- * This iteration must drop parts of publication records that are no longer
- * needed so they can be garbage collected.
- *
- * @template T
- * @param {PublicationList<T>} pubList
- * @returns {AsyncIterator<T>}
- */
-const makeEachIterator = pubList => {
-  // To understand the implementation, start with
-  // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
-  return Far('EachIterator', {
-    next: () => {
-      const resultP = E.get(pubList).head;
-      pubList = E.get(pubList).tail;
-      // We expect the tail to be the "cannot read past end" error at the end
-      // of the happy path.
-      // Since we are wrapping that error with eventual send, we sink the
-      // rejection here too so it doesn't become an invalid unhandled rejection
-      // later.
-      void E.when(pubList, sink, sink);
-      return resultP;
-    },
-  });
-};
-
-/**
- * Given a local or remote subscriber, returns a local AsyncIterable which
- * provides "prefix lossy" iterations of the underlying PublicationList.
- * By "prefix lossy", we mean that you may miss everything published before
- * you ask the returned iterable for an iterator. But the returned iterator
- * will enumerate each thing published from that iterator's starting point.
- *
- * If the underlying PublicationList is terminated, that terminal value will be
- * reported losslessly.
- *
- * @template T
- * @param {ERef<Subscriber<T>>} subscriber
- * @returns {AsyncIterable<T>}
- */
-export const subscribeEach = subscriber => {
-  const iterable = Far('EachIterable', {
-    [Symbol.asyncIterator]: () => {
-      const pubList = E(subscriber).subscribeAfter();
-      return makeEachIterator(pubList);
-    },
-  });
-  return iterable;
-};
-harden(subscribeEach);
-
-/**
- * @template T
- * @param {ERef<Subscriber<T>>} subscriber
- * @returns {AsyncIterator<T>}
- */
-const makeLatestIterator = subscriber => {
-  let latestPublishCount;
-  return Far('LatestIterator', {
-    next: () => {
-      const pubList = E(subscriber).subscribeAfter(latestPublishCount);
-      // Without an onRejection, if pubList is a rejection, this will
-      // propagate the rejection as it should.
-      return E.when(pubList, ({ head, publishCount }) => {
-        latestPublishCount = publishCount;
-        return head;
-      });
-    },
-  });
-};
-
-/**
- * Given a local or remote subscriber, returns a local AsyncIterable which
- * provides "lossy" iterations of the underlying PublicationList.
- * By "lossy", we mean that you may miss any published state if a more
- * recent published state can be reported instead.
- *
- * If the underlying PublicationList is terminated, that terminal value will be
- * reported losslessly.
- *
- * @template T
- * @param {ERef<Subscriber<T>>} subscriber
- * @returns {AsyncIterable<T>}
- */
-export const subscribeLatest = subscriber => {
-  const iterable = Far('LatestIterable', {
-    [Symbol.asyncIterator]: () => makeLatestIterator(subscriber),
-  });
-  return iterable;
-};
-harden(subscribeLatest);
 
 export const PublisherI = M.interface('Publisher', {
   publish: M.call(M.any()).returns(),
   finish: M.call(M.any()).returns(),
   fail: M.call(M.any()).returns(),
 });
+
+// For backwards compatibility with Notifier `getUpdateSince`.
+export const UpdateCountShape = M.or(M.bigint(), M.number());
 export const SubscriberI = M.interface('Subscriber', {
   subscribeAfter: M.call().optional(M.bigint()).returns(M.promise()),
+  getUpdateSince: M.call().optional(UpdateCountShape).returns(M.promise()),
 });
 export const publishKitIKit = harden({
   publisher: PublisherI,
   subscriber: SubscriberI,
 });
+
+/**
+ * @template {object} Arg
+ * @template Ret
+ * @param {(arg: Arg) => Ret} fn
+ * @returns {(arg: Arg) => Ret}
+ */
+const weakMemoizeUnary = fn => {
+  const cache = new WeakMap();
+  return arg => {
+    /** @type {object} */
+    const oarg = arg;
+    if (cache.has(oarg)) {
+      return cache.get(oarg);
+    }
+    const result = fn(arg);
+    cache.set(oarg, result);
+    return result;
+  };
+};
+
+/**
+ * @template T
+ * @param {PublicationRecord<T>} record
+ * @returns {UpdateRecord<T>}
+ */
+const makeUpdateRecordFromPublicationRecord = record => {
+  const {
+    head: { value, done },
+    publishCount,
+  } = record;
+  if (done) {
+    // Final results have undefined updateCount.
+    return harden({ value, updateCount: undefined });
+  }
+  return harden({ value, updateCount: publishCount });
+};
 
 /**
  * Makes a `{ publisher, subscriber }` pair for doing efficient
@@ -171,6 +118,10 @@ export const makePublishKit = () => {
     }
   };
 
+  const makeMemoizedUpdateRecord = weakMemoizeUnary(
+    makeUpdateRecordFromPublicationRecord,
+  );
+
   /**
    * @template T
    * @type {Subscriber<T>}
@@ -187,6 +138,22 @@ export const makePublishKit = () => {
           'subscribeAfter argument must be a previously-issued publishCount.',
         );
       }
+    },
+    getUpdateSince: updateCount => {
+      if (updateCount === undefined) {
+        return subscriber.subscribeAfter().then(makeMemoizedUpdateRecord);
+      }
+      updateCount = BigInt(updateCount);
+      return (
+        subscriber
+          // `subscribeAfter` may resolve with the update record numbered
+          // `updateCount + 1`, even if several updates are published in the
+          // same crank...
+          .subscribeAfter(updateCount)
+          // ... so we poll the latest published update, without waiting for any
+          // further ones.
+          .then(() => subscriber.getUpdateSince())
+      );
     },
   });
 
@@ -279,7 +246,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
       new Error('Cannot read past end of iteration.'),
     );
     newData = {
-      currentP: HandledPromise.resolve(
+      currentP: E.resolve(
         harden({
           head: { value: state.value, done: true },
           publishCount,
@@ -294,7 +261,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
     void E.when(tailP, sink, sink);
     newData = {
       currentP: state.hasValue
-        ? HandledPromise.resolve(
+        ? E.resolve(
             harden({
               head: { value: state.value, done: false },
               publishCount,
@@ -316,20 +283,18 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
  * Extends the sequence of results.
  *
  * @param {{state: DurablePublishKitState, facets: PublishKit<*>}} context
- * @param {boolean} done
  * @param {any} value
- * @param {any} [rejection]
+ * @param {DurablePublishKitState['status']} [targetStatus]
  */
-const advanceDurablePublishKit = (context, done, value, rejection) => {
+const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const { state, facets } = context;
   const { valueDurability, status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
   }
+  const done = targetStatus !== 'live';
   if (done || valueDurability === 'mandatory') {
     canBeDurable(value) || Fail`Cannot accept non-durable value: ${value}`;
-    canBeDurable(rejection) ||
-      Fail`Cannot accept non-durable rejection: ${rejection}`;
   }
   const { tailP: currentP, tailR: resolveCurrent } =
     provideDurablePublishKitEphemeralData(state, facets);
@@ -340,7 +305,7 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
   let tailR;
 
   if (done) {
-    state.status = rejection ? 'failed' : 'finished';
+    state.status = targetStatus;
     tailP = makeQuietRejection(new Error('Cannot read past end of iteration.'));
     tailR = undefined;
   } else {
@@ -352,9 +317,10 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
     harden({ currentP, tailP, tailR }),
   );
 
-  if (rejection) {
+  if (targetStatus === 'failed') {
     state.hasValue = true;
-    state.value = rejection;
+    state.value = value;
+    const rejection = makeQuietRejection(value);
     resolveCurrent(rejection);
   } else {
     // Persist a terminal value, or a non-terminal value
@@ -382,6 +348,10 @@ const advanceDurablePublishKit = (context, done, value, rejection) => {
  * @param {string} kindName
  */
 export const prepareDurablePublishKit = (baggage, kindName) => {
+  // TODO: Once we unify with makePublishKit, we will use a Zone-compatible weak
+  // map for memoization.
+  const makeMemoizedUpdateRecord = makeUpdateRecordFromPublicationRecord;
+
   /**
    * @returns {() => PublishKit<*>}
    */
@@ -395,14 +365,13 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
       // accepts new values.
       publisher: {
         publish(value) {
-          advanceDurablePublishKit(this, false, value);
+          advanceDurablePublishKit(this, value);
         },
         finish(finalValue) {
-          advanceDurablePublishKit(this, true, finalValue);
+          advanceDurablePublishKit(this, finalValue, 'finished');
         },
         fail(reason) {
-          const rejection = makeQuietRejection(reason);
-          advanceDurablePublishKit(this, true, undefined, rejection);
+          advanceDurablePublishKit(this, reason, 'failed');
         },
       },
 
@@ -425,6 +394,25 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
               'subscribeAfter argument must be a previously-issued publishCount.',
             );
           }
+        },
+        getUpdateSince(updateCount) {
+          const {
+            facets: { subscriber },
+          } = this;
+          if (updateCount === undefined) {
+            return subscriber.subscribeAfter().then(makeMemoizedUpdateRecord);
+          }
+          updateCount = BigInt(updateCount);
+          return (
+            subscriber
+              // `subscribeAfter` may resolve with the update record numbered
+              // `updateCount + 1`, even if several updates are published in the
+              // same crank...
+              .subscribeAfter(updateCount)
+              // ... so we poll the latest published update, without waiting for any
+              // further ones.
+              .then(() => subscriber.getUpdateSince())
+          );
         },
       },
     },

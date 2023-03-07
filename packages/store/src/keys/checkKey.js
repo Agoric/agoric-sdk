@@ -309,7 +309,7 @@ harden(makeCopyBag);
 /**
  * @template K
  * @param {Iterable<K>} elementIter
- * @returns {CopySet<K>}
+ * @returns {CopyBag<K>}
  */
 export const makeCopyBagFromElements = elementIter => {
   // This fullOrder contains history dependent state. It is specific
@@ -432,7 +432,7 @@ export const getCopyMapEntries = m => {
   const {
     payload: { keys, values },
   } = m;
-  const { length } = keys;
+  const { length } = /** @type {Array} */ (keys);
   return Far('CopyMap entries iterable', {
     [Symbol.iterator]: () => {
       let i = 0;

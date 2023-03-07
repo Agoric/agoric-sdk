@@ -1,3 +1,4 @@
+// @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';

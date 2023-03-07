@@ -1,20 +1,16 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import '@agoric/zoe/exported.js';
 
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makeZoeKit } from '@agoric/zoe';
-import bundleSource from '@endo/bundle-source';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
+import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
-import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 
-const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
-const contractGovernorRoot = '../../tools/puppetContractGovernor.js';
-const autoRefundRoot = '@agoric/zoe/src/contracts/automaticRefund.js';
+import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
+import { setUpGovernedContract } from '../../tools/puppetGovernance.js';
+import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 
 const makeBundle = async sourceRoot => {
   const url = await importMetaResolve(sourceRoot, import.meta.url);
@@ -22,12 +18,10 @@ const makeBundle = async sourceRoot => {
   const contractBundle = await bundleSource(path);
   return contractBundle;
 };
-
 // makeBundle is a slow step, so we do it once for all the tests.
-const contractGovernorBundleP = makeBundle(contractGovernorRoot);
-const governedBundleP = makeBundle(governedRoot);
-// could be called fakeCommittee. It's used as a source of invitations only
-const autoRefundBundleP = makeBundle(autoRefundRoot);
+const governedBundleP = await makeBundle(
+  '../swingsetTests/contractGovernor/governedContract.js',
+);
 
 const setUpZoeForTest = async setJig => {
   const makeFar = o => o;
@@ -50,72 +44,13 @@ const setUpZoeForTest = async setJig => {
   };
 };
 
-const installBundle = (zoe, contractBundle) => E(zoe).install(contractBundle);
-
-// contract governor wants a committee invitation. give it a random invitation
-async function getInvitation(zoe, autoRefundInstance) {
-  const autoRefundFacets = await E(zoe).startInstance(autoRefundInstance);
-  const invitationP = E(autoRefundFacets.publicFacet).makeInvitation();
-  const [fakeInvitationPayment, fakeInvitationAmount] = await Promise.all([
-    invitationP,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(invitationP),
-  ]);
-  return { fakeInvitationPayment, fakeInvitationAmount };
-}
-
-const setUpGovernedContract = async (zoe, electorateTerms, timer) => {
-  const [contractGovernorBundle, autoRefundBundle, governedBundle] =
-    await Promise.all([
-      contractGovernorBundleP,
-      autoRefundBundleP,
-      governedBundleP,
-    ]);
-
-  const [governor, autoRefund, governed] = await Promise.all([
-    installBundle(zoe, contractGovernorBundle),
-    installBundle(zoe, autoRefundBundle),
-    installBundle(zoe, governedBundle),
-  ]);
-  const installs = { governor, autoRefund, governed };
-  const { fakeInvitationPayment, fakeInvitationAmount } = await getInvitation(
-    zoe,
-    autoRefund,
-  );
-
-  const governedTerms = {
-    governedParams: {
-      [MALLEABLE_NUMBER]: {
-        type: ParamTypes.NAT,
-        value: 602214090000000000000000n,
-      },
-      [CONTRACT_ELECTORATE]: {
-        type: ParamTypes.INVITATION,
-        value: fakeInvitationAmount,
-      },
+const governedTerms = {
+  governedParams: {
+    [MALLEABLE_NUMBER]: {
+      type: ParamTypes.NAT,
+      value: 602214090000000000000000n,
     },
-    governedApis: ['governanceApi'],
-  };
-  const governorTerms = {
-    timer,
-    governedContractInstallation: governed,
-    governed: {
-      terms: governedTerms,
-      issuerKeywordRecord: {},
-    },
-  };
-
-  const governorFacets = await E(zoe).startInstance(
-    governor,
-    {},
-    governorTerms,
-    {
-      governed: {
-        initialPoserInvitation: fakeInvitationPayment,
-      },
-    },
-  );
-
-  return { governorFacets, installs };
+  },
 };
 
 test('multiple params bad change', async t => {
@@ -123,8 +58,9 @@ test('multiple params bad change', async t => {
   const timer = buildManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
-    { committeeName: 'Demos', committeeSize: 1 },
+    E(zoe).install(governedBundleP),
     timer,
+    governedTerms,
   );
 
   const paramChangesSpec = harden({
@@ -147,10 +83,11 @@ test('multiple params bad change', async t => {
 test('change a param', async t => {
   const { zoe } = await setUpZoeForTest(() => {});
   const timer = buildManualTimer(t.log);
-  const { governorFacets, installs } = await setUpGovernedContract(
+  const { governorFacets, getFakeInvitation } = await setUpGovernedContract(
     zoe,
-    { committeeName: 'Demos', committeeSize: 1 },
+    E(zoe).install(governedBundleP),
     timer,
+    governedTerms,
   );
 
   /** @type {GovernedPublicFacet<unknown>} */
@@ -173,10 +110,8 @@ test('change a param', async t => {
   });
 
   // This is the wrong kind of invitation, but governance can't tell
-  const { fakeInvitationPayment, fakeInvitationAmount } = await getInvitation(
-    zoe,
-    installs.autoRefund,
-  );
+  const { fakeInvitationPayment, fakeInvitationAmount } =
+    await getFakeInvitation();
 
   const paramChangesSpec = harden({
     paramPath: { key: 'governedParams' },
@@ -207,8 +142,9 @@ test('set offer Filter directly', async t => {
   const timer = buildManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
-    { committeeName: 'Demos', committeeSize: 1 },
+    E(zoe).install(governedBundleP),
     timer,
+    governedTerms,
   );
 
   await E(governorFacets.creatorFacet).setFilters(['whatever']);
@@ -223,12 +159,18 @@ test('call API directly', async t => {
   const timer = buildManualTimer(t.log);
   const { governorFacets } = await setUpGovernedContract(
     zoe,
-    { committeeName: 'Demos', committeeSize: 1 },
+    E(zoe).install(governedBundleP),
     timer,
+    governedTerms,
   );
 
-  await E(governorFacets.creatorFacet).invokeAPI('governanceApi', []);
+  const result = await E(governorFacets.creatorFacet).invokeAPI(
+    'governanceApi',
+    [],
+  );
+  t.deepEqual(result, { apiMethodName: 'governanceApi', methodArgs: [] });
   t.deepEqual(
+    // @ts-expect-error FIXME type the puppet extensions
     await E(E(governorFacets.creatorFacet).getPublicFacet()).getApiCalled(),
     1,
   );

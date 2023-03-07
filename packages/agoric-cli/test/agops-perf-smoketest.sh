@@ -10,17 +10,8 @@ if [ -z "$AGORIC_NET" ]; then
 yarn install && yarn build
 
 # local chain running with wallet provisioned
-packages/inter-protocol/scripts/start-local-chain.sh YOUR_ACCOUNT_KEY
+packages/inter-protocol/scripts/start-local-chain.sh
 "
-  exit 1
-fi
-
-WALLET=$1
-
-if [ -z "$WALLET" ]; then
-  echo "USAGE: $0 key"
-  echo "You can reference by name: agd keys list"
-  echo "Make sure it has been provisioned by the faucet: https://$AGORIC_NET.faucet.agoric.net/"
   exit 1
 fi
 
@@ -32,9 +23,9 @@ set -x
 # perf test wantMinted
 OFFER=$(mktemp -t agops.XXX)
 bin/agops psm swap --wantMinted 0.01 --feePct 0.01 --pair IST.USDC_axl >|"$OFFER"
-time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$WALLET" --keyring-backend="test"
+time bin/agops perf satisfaction --executeOffer "$OFFER" --from gov1 --keyring-backend="test"
 
 # perf test giveMinted
 OFFER=$(mktemp -t agops.XXX)
 bin/agops psm swap --giveMinted 0.01 --feePct 0.03 --pair IST.USDC_axl >|"$OFFER"
-time bin/agops perf satisfaction --executeOffer "$OFFER" --from "$WALLET" --keyring-backend="test"
+time bin/agops perf satisfaction --executeOffer "$OFFER" --from gov1 --keyring-backend="test"

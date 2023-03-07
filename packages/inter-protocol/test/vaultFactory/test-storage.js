@@ -105,14 +105,14 @@ test('storage keys', async t => {
   const vda1 = await d.makeVaultDriver(aeth.make(1000n), run.make(50n));
   t.is(
     await E.get(vda1.getVaultSubscriber()).storagePath,
-    'mockChainStorageRoot.vaultFactory.manager0.vaults.vault1',
+    'mockChainStorageRoot.vaultFactory.manager0.vaults.vault0',
   );
 
   // Second aeth vault
   const vda2 = await d.makeVaultDriver(aeth.make(1000n), run.make(50n));
   t.is(
     await E.get(vda2.getVaultSubscriber()).storagePath,
-    'mockChainStorageRoot.vaultFactory.manager0.vaults.vault2',
+    'mockChainStorageRoot.vaultFactory.manager0.vaults.vault1',
   );
 });
 

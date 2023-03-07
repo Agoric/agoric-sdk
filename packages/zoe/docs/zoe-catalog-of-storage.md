@@ -121,8 +121,7 @@ vat.)
 
 **Expected cardinality**: one entry per issuer per contract. On the testnet with
 only the bootstrap and load generation code running, this should be
-about 5-10 entries for each instance at most (the AMM has the most
-issuers by far).
+about 5-10 entries for each instance at most.
 
 **Access patterns**: `init`, `get`
 
@@ -137,8 +136,7 @@ vat.)
 
 **Expected cardinality**: one entry per issuer per contract. On the testnet with
 only the bootstrap and load generation code running, this should be
-about 5-10 entries for each instance at most (the AMM has the most
-issuers by far).
+about 5-10 entries for each instance at most.
 
 **Access patterns**: `init`, `has`, `get`
 

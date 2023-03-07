@@ -111,7 +111,7 @@
  * @callback ZoeInstanceAdminMakeInvitation
  * @param {InvitationHandle} invitationHandle
  * @param {string} description
- * @param {Record<string, any>} [customProperties]
+ * @param {Record<string, any>} [customDetails]
  * @param {Pattern} [proposalShape]
  * @returns {Invitation}
  */
@@ -156,7 +156,7 @@
  * @param {Keyword} keyword
  * @param {AssetKind} [assetKind]
  * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {Partial<{elementShape: Pattern}>} [options]
+ * @param {IssuerOptionsRecord} [options]
  * @returns {ZoeMint}
  */
 

@@ -1,10 +1,19 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import {
-  setUpZoeForTest,
-  setupAmmServices,
-} from '../amm/vpool-xyk-amm/setup.js';
-import { provideBundle } from '../supports.js';
+  makeAgoricNamesAccess,
+  makePromiseSpace,
+} from '@agoric/vats/src/core/utils.js';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { setupReserve } from '../../src/proposals/econ-behaviors.js';
+
+import {
+  installPuppetGovernance,
+  makeMockChainStorageRoot,
+  provideBundle,
+} from '../supports.js';
+import { setUpZoeForTest } from '../psm/setupPsm.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 const reserveRoot = './src/reserve/assetReserve.js'; // package relative
 const faucetRoot = './test/vaultFactory/faucet.js';
@@ -14,51 +23,35 @@ const faucetRoot = './test/vaultFactory/faucet.js';
  */
 
 /**
- * NOTE: called separately by each test so AMM/zoe/priceAuthority don't interfere
+ * NOTE: called separately by each test so zoe/priceAuthority don't interfere
  *
  * @param {*} t
  * @param {ManualTimer | undefined} timer
  * @param {FarZoeKit} farZoeKit
- * @param {Issuer} runIssuer
- * @param {{ committeeName: string, committeeSize: number}} electorateTerms
  */
-const setupReserveBootstrap = async (
-  t,
-  timer,
-  farZoeKit,
-  runIssuer,
-  electorateTerms,
-) => {
-  const runBrand = await E(runIssuer).getBrand();
-  const centralR = { issuer: runIssuer, brand: runBrand };
-
-  const ammSpaces = await setupAmmServices(
-    t,
-    electorateTerms,
-    centralR,
-    timer,
-    farZoeKit,
-  );
-  const { produce } =
+const setupReserveBootstrap = async (t, timer, farZoeKit) => {
+  const space = /** @type {any} */ (makePromiseSpace());
+  const { produce, consume } =
     /** @type { import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers } */ (
-      ammSpaces.space
+      space
     );
-  const zoe = await E.get(farZoeKit).zoe;
+
+  const { zoe, feeMintAccessP } = await E.get(farZoeKit);
 
   // @ts-expect-error could be undefined
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(zoe);
+  const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess();
+  produce.agoricNames.resolve(agoricNames);
+  produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+  produce.feeMintAccess.resolve(feeMintAccessP);
 
-  const newAmm = {
-    ammCreatorFacet: ammSpaces.amm.ammCreatorFacet,
-    ammPublicFacet: ammSpaces.amm.ammPublicFacet,
-    instance: ammSpaces.amm.instance,
-  };
+  installPuppetGovernance(zoe, spaces.installation.produce);
+  const mockChainStorage = makeMockChainStorageRoot();
+  produce.chainStorage.resolve(mockChainStorage);
+  produce.board.resolve(makeBoard());
 
-  return {
-    amm: newAmm,
-    ...ammSpaces.space,
-  };
+  return { produce, consume, ...spaces, mockChainStorage };
 };
 
 /**
@@ -87,18 +80,24 @@ export const setupReserveServices = async (
   const runIssuer = await E(zoe).getFeeIssuer();
   const runBrand = await E(runIssuer).getBrand();
 
-  const spaces = await setupReserveBootstrap(
-    t,
-    timer,
-    // @ts-expect-error confusion about awaited return types
-    farZoeKit,
-    runIssuer,
-    electorateTerms,
-  );
-  const { produce, consume, brand, issuer, installation, instance } = spaces;
+  // @ts-expect-error a non-promise can be used where a promise is expected.
+  const spaces = await setupReserveBootstrap(t, timer, farZoeKit);
+  startEconomicCommittee(spaces, {
+    options: { econCommitteeOptions: electorateTerms },
+  });
 
+  const { produce, consume, brand, issuer, installation, instance } = spaces;
   const reserveBundle = await provideBundle(t, reserveRoot, 'reserve');
   installation.produce.reserve.resolve(E(zoe).install(reserveBundle));
+
+  const istIssuer = await E(zoe).getFeeIssuer();
+  const istBrand = await E(istIssuer).getBrand();
+
+  brand.produce.IST.resolve(istBrand);
+  issuer.produce.IST.resolve(istIssuer);
+
+  await setupReserve(spaces);
+
   const faucetBundle = await provideBundle(t, faucetRoot, 'faucet');
   const faucetInstallation = E(zoe).install(faucetBundle);
   brand.produce.IST.resolve(runBrand);
@@ -106,8 +105,6 @@ export const setupReserveServices = async (
   const feeMintAccess = await feeMintAccessP;
   produce.feeMintAccess.resolve(await feeMintAccess);
 
-  /** @type {Promise<import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<import('../../src/reserve/assetReserve.js').start>['creatorFacet']>} */
-  // @ts-expect-error cast for testing env
   const governorCreatorFacet = E.get(consume.reserveKit).governorCreatorFacet;
   const governorInstance = await instance.consume.reserveGovernor;
   const governorPublicFacet = await E(zoe).getPublicFacet(governorInstance);

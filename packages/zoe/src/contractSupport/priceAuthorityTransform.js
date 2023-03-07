@@ -1,10 +1,39 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert, details as X } from '@agoric/assert';
+import { Fail, assert } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 
 /** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
+
+/**
+ *
+ * @param {Brand<'set'>} quoteBrand
+ * @param {Amount<'nat'>} amountIn
+ * @param {Amount<'nat'>} amountOut
+ * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
+ * @param {import('@agoric/time').Timestamp} timestamp
+ * @param {ERef<Mint<'set'>>} quoteMint
+ * @returns {Promise<PriceQuote>}
+ */
+export const mintQuote = async (
+  quoteBrand,
+  amountIn,
+  amountOut,
+  timer,
+  timestamp,
+  quoteMint,
+) => {
+  const quoteAmount = {
+    brand: quoteBrand,
+    value: [{ amountIn, amountOut, timer, timestamp }],
+  };
+  const quotePayment = await E(quoteMint).mintPayment({
+    brand: quoteBrand,
+    value: [quoteAmount],
+  });
+  return harden({ quoteAmount, quotePayment });
+};
 
 /**
  * @param {object} opts
@@ -41,16 +70,10 @@ export const makePriceAuthorityTransform = async ({
    * @param {Brand} brandOut
    */
   const assertBrands = (brandIn, brandOut) => {
-    assert.equal(
-      brandIn,
-      actualBrandIn,
-      X`Desired brandIn ${brandIn} must match ${actualBrandIn}`,
-    );
-    assert.equal(
-      brandOut,
-      actualBrandOut,
-      X`Desired brandOut ${brandOut} must match ${actualBrandOut}`,
-    );
+    brandIn === actualBrandIn ||
+      Fail`Desired brandIn ${brandIn} must match ${actualBrandIn}`;
+    brandOut === actualBrandOut ||
+      Fail`Desired brandOut ${brandOut} must match ${actualBrandOut}`;
   };
 
   /**
@@ -69,11 +92,8 @@ export const makePriceAuthorityTransform = async ({
       sourceQuotePayment,
     );
 
-    assert.equal(
-      sourceQuoteValue.length,
-      1,
-      X`sourceQuoteValue.length ${sourceQuoteValue.length} is not 1`,
-    );
+    sourceQuoteValue.length === 1 ||
+      Fail`sourceQuoteValue.length ${sourceQuoteValue.length} is not 1`;
 
     const {
       amountIn: sourceAmountIn,
@@ -84,15 +104,14 @@ export const makePriceAuthorityTransform = async ({
     const amountIn = transformSourceAmountIn(sourceAmountIn);
     const amountOut = transformSourceAmountOut(sourceAmountOut);
 
-    const quoteAmount = {
-      brand: quoteBrand,
-      value: [{ amountIn, amountOut, timer, timestamp }],
-    };
-    const quotePayment = await E(quoteMint).mintPayment({
-      brand: quoteBrand,
-      value: [quoteAmount],
-    });
-    return harden({ quoteAmount, quotePayment });
+    return mintQuote(
+      quoteBrand,
+      amountIn,
+      amountOut,
+      timer,
+      timestamp,
+      quoteMint,
+    );
   };
 
   /**
@@ -161,7 +180,7 @@ export const makePriceAuthorityTransform = async ({
     return mutableQuoteWhenOut;
   };
 
-  /** @type {EOnly<PriceAuthority>} */
+  /** @type {PriceAuthority} */
   const priceAuthority = Far('PriceAuthority', {
     getQuoteIssuer(brandIn, brandOut) {
       assertBrands(brandIn, brandOut);

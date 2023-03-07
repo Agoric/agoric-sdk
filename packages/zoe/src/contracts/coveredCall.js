@@ -96,13 +96,13 @@ const start = zcf => {
       return `The option was exercised. Please collect the assets in your payout.`;
     };
 
-    const customProps = harden({
+    const customDetails = harden({
       expirationDate: sellSeatExitRule.afterDeadline.deadline,
       timeAuthority: sellSeatExitRule.afterDeadline.timer,
       underlyingAssets: sellSeat.getProposal().give,
       strikePrice: sellSeat.getProposal().want,
     });
-    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customProps);
+    return zcf.makeInvitation(exerciseOption, 'exerciseOption', customDetails);
   };
 
   const creatorInvitation = zcf.makeInvitation(makeOption, 'makeCallOption');

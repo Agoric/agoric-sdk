@@ -1,3 +1,4 @@
+// @ts-check
 export {};
 
 // TODO move this type somewhere better

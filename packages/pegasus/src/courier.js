@@ -2,6 +2,7 @@
 import { details as X } from '@agoric/assert';
 
 import { AmountMath } from '@agoric/ertp';
+import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
@@ -95,7 +96,9 @@ export const makeCourierMaker =
       /** @type {DepositFacet} */
       const depositFacet = await E(board)
         .getValue(depositAddress)
-        .catch(_ => E(namesByAddress).lookup(depositAddress, 'depositFacet'));
+        .catch(_ =>
+          E(namesByAddress).lookup(depositAddress, WalletName.depositFacet),
+        );
 
       const { userSeat, zcfSeat } = zcf.makeEmptySeatKit();
 

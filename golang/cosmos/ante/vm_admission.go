@@ -37,7 +37,7 @@ func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 			if err := camsg.CheckAdmissibility(ctx, ad.data); err != nil {
 				errors = append(errors, err)
 				if !simulate {
-					defer func() {
+					defer func(msg sdk.Msg) {
 						telemetry.IncrCounterWithLabels(
 							[]string{"tx", "ante", "admission_refused"},
 							1,
@@ -45,7 +45,7 @@ func (ad AdmissionDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 								telemetry.NewLabel("msg", sdk.MsgTypeURL(msg)),
 							},
 						)
-					}()
+					}(msg)
 				}
 			}
 		}

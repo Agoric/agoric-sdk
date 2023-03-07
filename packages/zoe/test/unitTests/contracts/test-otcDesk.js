@@ -126,18 +126,21 @@ const makeBob = (
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Moola: moola(3n) },
         `bob will get 3 moola`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Simolean: simoleans(4n) },
         `bob must give 4 simoleans`,
       );
@@ -177,18 +180,21 @@ const makeBob = (
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Moola: moola(3n) },
         `bob will get 3 moola`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Simolean: simoleans(4n) },
         `bob must give 4 simoleans`,
       );
@@ -231,18 +237,21 @@ const makeBob = (
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Simolean: simoleans(15n) },
         `bob will get 15 simoleans`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Buck: bucks(500n), Moola: moola(35n) },
         `bob must give 500 bucks and 35 moola`,
       );
@@ -293,18 +302,21 @@ const makeBob = (
       const invitationIssuer = await E(zoe).getInvitationIssuer();
       const invitation = await E(invitationIssuer).claim(untrustedInvitation);
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
+      const { customDetails } = invitationValue;
+      assert(typeof customDetails === 'object');
+
       t.is(
         invitationValue.installation,
         coveredCallInstallation,
         'installation is coveredCall',
       );
       t.deepEqual(
-        invitationValue.underlyingAssets,
+        customDetails.underlyingAssets,
         { Simolean: simoleans(15n) },
         `bob will get 15 simoleans`,
       );
       t.deepEqual(
-        invitationValue.strikePrice,
+        customDetails.strikePrice,
         { Buck: bucks(500n), Moola: moola(35n) },
         `bob must give 500 bucks and 35 moola`,
       );

@@ -1,3 +1,4 @@
+// @ts-check
 import { E } from '@endo/far';
 
 /** @typedef {import('@agoric/deploy-script-support/src/externalTypes').Petname} Petname */

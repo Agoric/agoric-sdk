@@ -1,19 +1,19 @@
 import { assert } from '@agoric/assert';
+import { initEmpty } from '@agoric/store';
 import {
   M,
   makeScalarBigMapStore,
-  provideDurableWeakMapStore,
   prepareExo,
   prepareKind,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { initEmpty } from '@agoric/store';
 import {
   InstallationShape,
-  BundleCapShape,
   InstanceHandleShape,
+  UnwrappedInstallationShape,
 } from '../typeGuards.js';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
@@ -42,7 +42,7 @@ export const makeInstallationStorage = (
     zoeBaggage,
     'BundleIDInstallation',
     initEmpty,
-    { getBundle: _context => assert.fail('bundleID-based Installation') },
+    { getBundle: _context => Fail`bundleID-based Installation` },
   );
 
   const makeBundleInstallation = prepareKind(
@@ -73,18 +73,6 @@ export const makeInstallationStorage = (
     installationsBundle.init(installation, bundle);
     return installation;
   };
-
-  const UnwrappedInstallationShape = M.splitRecord(
-    harden({
-      installation: InstallationShape,
-    }),
-    harden({
-      bundle: M.recordOf(M.string(), M.string({ stringLengthLimit: Infinity })),
-      bundleCap: BundleCapShape,
-      bundleID: M.string(),
-    }),
-    harden({}),
-  );
 
   const InstallationStorageI = M.interface('InstallationStorage', {
     installBundle: M.call(
@@ -118,11 +106,10 @@ export const makeInstallationStorage = (
         const { moduleFormat } = allegedBundle;
         if (moduleFormat === 'endoZipBase64Sha512') {
           const { endoZipBase64Sha512 } = allegedBundle;
-          assert.typeof(
-            endoZipBase64Sha512,
-            'string',
-            `bundle endoZipBase64Sha512 must be a string, got ${endoZipBase64Sha512}`,
-          );
+          typeof endoZipBase64Sha512 === 'string' ||
+            Fail`bundle endoZipBase64Sha512 must be a string, got ${q(
+              endoZipBase64Sha512,
+            )}`;
           return self.installBundleID(`b1-${endoZipBase64Sha512}`);
         }
         return installSourceBundle(allegedBundle);

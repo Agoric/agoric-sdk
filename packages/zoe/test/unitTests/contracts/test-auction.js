@@ -107,18 +107,18 @@ test('zoe - secondPriceAuction w/ 3 bids', async t => {
           'installation is secondPriceAuction',
         );
         t.deepEqual(
-          invitationValue.auctionedAssets,
+          invitationValue.customDetails?.auctionedAssets,
           moola(1n),
           `asset to be auctioned is 1 moola`,
         );
         t.deepEqual(
-          invitationValue.minimumBid,
+          invitationValue.customDetails?.minimumBid,
           simoleans(3n),
           `minimum bid is 3 simoleans`,
         );
 
         t.deepEqual(
-          invitationValue.bidDuration,
+          invitationValue.customDetails?.bidDuration,
           1n,
           `auction will be closed after 1 tick according to the timeAuthority`,
         );
@@ -607,9 +607,13 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
 
   t.is(bobInvitationValue.installation, installation, 'bobInstallationId');
   t.deepEqual(bobIssuers, { Asset: ccIssuer, Ask: moolaIssuer }, 'bobIssuers');
-  t.deepEqual(bobInvitationValue.minimumBid, moola(3n), 'minimumBid');
   t.deepEqual(
-    bobInvitationValue.auctionedAssets,
+    bobInvitationValue.customDetails?.minimumBid,
+    moola(3n),
+    'minimumBid',
+  );
+  t.deepEqual(
+    bobInvitationValue.customDetails?.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'assets',
   );
@@ -651,9 +655,13 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     { Asset: ccIssuer, Ask: moolaIssuer },
     'carolIssuers',
   );
-  t.deepEqual(carolInvitationValue.minimumBid, moola(3n), 'carolMinimumBid');
   t.deepEqual(
-    carolInvitationValue.auctionedAssets,
+    carolInvitationValue.customDetails?.minimumBid,
+    moola(3n),
+    'carolMinimumBid',
+  );
+  t.deepEqual(
+    carolInvitationValue.customDetails?.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'carolAuctionedAssets',
   );
@@ -694,9 +702,13 @@ test('zoe - secondPriceAuction non-fungible asset', async t => {
     { Asset: ccIssuer, Ask: moolaIssuer },
     'daveIssuers',
   );
-  t.deepEqual(daveInvitationValue.minimumBid, moola(3n), 'daveMinimumBid');
   t.deepEqual(
-    daveInvitationValue.auctionedAssets,
+    daveInvitationValue.customDetails?.minimumBid,
+    moola(3n),
+    'daveMinimumBid',
+  );
+  t.deepEqual(
+    daveInvitationValue.customDetails?.auctionedAssets,
     cryptoCats(harden(['Felix'])),
     'daveAssets',
   );
@@ -912,18 +924,18 @@ test('zoe - firstPriceAuction w/ 3 bids', async t => {
           'installation is secondPriceAuction',
         );
         t.deepEqual(
-          invitationValue.auctionedAssets,
+          invitationValue.customDetails?.auctionedAssets,
           moola(1n),
           `asset to be auctioned is 1 moola`,
         );
         t.deepEqual(
-          invitationValue.minimumBid,
+          invitationValue.customDetails?.minimumBid,
           simoleans(3n),
           `minimum bid is 3 simoleans`,
         );
 
         t.deepEqual(
-          invitationValue.bidDuration,
+          invitationValue.customDetails?.bidDuration,
           1n,
           `auction will be closed after 1 tick according to the timeAuthority`,
         );

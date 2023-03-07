@@ -33,7 +33,7 @@ if (globalAssert === undefined) {
   );
 }
 
-const missing = [
+const missing = /** @type {const} */ ([
   'fail',
   'equal',
   'typeof',
@@ -43,7 +43,7 @@ const missing = [
   'Fail',
   'quote',
   'makeAssert',
-].filter(name => globalAssert[name] === undefined);
+]).filter(name => globalAssert[name] === undefined);
 if (missing.length > 0) {
   throw new Error(
     `Cannot initialize @agoric/assert, missing globalThis.assert methods ${missing.join(

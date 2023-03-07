@@ -37,9 +37,15 @@ main(progname, rawArgs, {
   process,
   spawn,
 }).then(
-  res => res === undefined || process.exit(res),
+  res => {
+    if (Number.isSafeInteger(res)) {
+      process.exitCode = res;
+    }
+  },
   rej => {
     log.error(rej);
-    process.exit(2);
+    if (!process.exitCode) {
+      process.exitCode = 2;
+    }
   },
 );

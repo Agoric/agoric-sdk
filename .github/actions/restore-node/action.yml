@@ -41,15 +41,22 @@ runs:
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
     - name: yarn install
-      run: yarn install
+      run: |-
+        set -e
+        if test "${{ inputs.xsnap-random-init }}" != 0 && test -d /etc/apt; then
+          # Need libbsd-dev, as it's referenced in xsnapPlatform.h
+          sudo apt-get update
+          sudo apt-get install libbsd-dev
+        fi
+        yarn install
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
-    - name: git diff --exit-code yarn.lock
-      run: git diff --exit-code yarn.lock
-      shell: bash
     - name: yarn build
       run: yarn build
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
       env:
         XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
+    - name: git diff --exit-code
+      run: git diff --exit-code
+      shell: bash

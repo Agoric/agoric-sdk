@@ -1,3 +1,4 @@
+// @ts-check
 import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
@@ -5,7 +6,7 @@ import path from 'path';
 import { deeplyFulfilled, defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
-  makeEnactCoreProposalsFromBundleCap,
+  makeEnactCoreProposalsFromBundleRef,
 } from './coreProposalBehavior.js';
 
 const { details: X, Fail } = assert;
@@ -40,16 +41,16 @@ const pathResolve = (...paths) => {
  * but for sim-chain and such, they can be declared statically in
  * the chain configuration, in which case they are run at bootstrap.
  *
- * @param {(ModuleSpecifier | FilePath)[]} coreProposals - governance
+ * @param {import('@agoric/swingset-vat').ConfigProposal[]} coreProposals - governance
  * proposals to run at chain bootstrap for scenarios such as sim-chain.
  * @param {FilePath} [dirname]
- * @param {typeof makeEnactCoreProposalsFromBundleCap} [makeEnactCoreProposals]
+ * @param {typeof makeEnactCoreProposalsFromBundleRef} [makeEnactCoreProposals]
  * @param {(i: number) => number} [getSequenceForProposal]
  */
 export const extractCoreProposalBundles = async (
   coreProposals,
   dirname = '.',
-  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleCap,
+  makeEnactCoreProposals = makeEnactCoreProposalsFromBundleRef,
   getSequenceForProposal,
 ) => {
   if (!getSequenceForProposal) {
@@ -62,7 +63,7 @@ export const extractCoreProposalBundles = async (
     .stat(dirname)
     .then(stbuf => (stbuf.isDirectory() ? dirname : path.dirname(dirname)));
 
-  /** @type {Map<{ bundleID?: string }, { source: string, bundle?: string }>} */
+  /** @type {Map<{ bundleName?: string }, { source: string, bundle?: string }>} */
   const bundleHandleToAbsolutePaths = new Map();
 
   const bundleToSource = new Map();
@@ -114,7 +115,7 @@ export const extractCoreProposalBundles = async (
             bundleToSource.set(absoluteBundle, absoluteSrc);
           }
         }
-        // Don't harden the bundleHandle since we need to set the bundleID on
+        // Don't harden the bundleHandle since we need to set the bundleName on
         // its unique identity later.
         thisProposalBundleHandles.add(bundleHandle);
         bundleHandleToAbsolutePaths.set(bundleHandle, harden(absolutePaths));
@@ -141,20 +142,20 @@ export const extractCoreProposalBundles = async (
           return 0;
         })
         .map(([handle, absolutePaths], j) => {
-          // Transform the bundle handle identity into a bundleID reference.
-          handle.bundleID = `coreProposal${thisProposalSequence}_${j}`;
+          // Transform the bundle handle identity into a bundleName reference.
+          handle.bundleName = `coreProposal${thisProposalSequence}_${j}`;
           harden(handle);
 
           /** @type {[string, { sourceSpec: string }]} */
           const specEntry = [
-            handle.bundleID,
+            handle.bundleName,
             { sourceSpec: absolutePaths.source },
           ];
           return specEntry;
         });
 
-      // Now that we've assigned all the bundleIDs and hardened the handles, we
-      // can extract the behavior bundle.
+      // Now that we've assigned all the bundleNames and hardened the
+      // handles, we can extract the behavior bundle.
       const { sourceSpec, getManifestCall } = await deeplyFulfilled(
         harden(proposal),
       );
@@ -167,7 +168,7 @@ export const extractCoreProposalBundles = async (
       ](harden({ restoreRef: () => null }), ...manifestArgs);
 
       const behaviorBundleHandle = harden({
-        bundleID: `coreProposal${thisProposalSequence}_behaviors`,
+        bundleName: `coreProposal${thisProposalSequence}_behaviors`,
       });
       const behaviorAbsolutePaths = harden({
         source: behaviorSource,
@@ -178,7 +179,7 @@ export const extractCoreProposalBundles = async (
       );
 
       bundleSpecEntries.unshift([
-        behaviorBundleHandle.bundleID,
+        behaviorBundleHandle.bundleName,
         { sourceSpec: behaviorAbsolutePaths.source },
       ]);
 

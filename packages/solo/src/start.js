@@ -17,7 +17,7 @@ import anylogger from 'anylogger';
 // import djson from 'deterministic-json';
 
 import { assert, Fail } from '@agoric/assert';
-import { makeSlogSender, getTelemetryProviders } from '@agoric/telemetry';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 import {
   loadSwingsetConfigFile,
   buildCommand,
@@ -33,7 +33,8 @@ import { openSwingStore } from '@agoric/swing-store';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
 import {
-  DEFAULT_METER_PROVIDER,
+  makeDefaultMeterProvider,
+  getTelemetryProviders,
   makeSlogCallbacks,
   exportKernelStats,
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';
@@ -171,11 +172,12 @@ const buildSwingset = async (
     ...process.env,
     ...soloEnv,
   };
-  const { metricsProvider = DEFAULT_METER_PROVIDER } = getTelemetryProviders({
-    console,
-    env,
-    serviceName: TELEMETRY_SERVICE_NAME,
-  });
+  const { metricsProvider = makeDefaultMeterProvider() } =
+    getTelemetryProviders({
+      console,
+      env,
+      serviceName: TELEMETRY_SERVICE_NAME,
+    });
 
   const { SWING_STORE_TRACE, XSNAP_KEEP_SNAPSHOTS } = env;
 
@@ -246,10 +248,12 @@ const buildSwingset = async (
 
   async function processKernel() {
     await crankScheduler(policy);
-    if (swingSetRunning) {
-      await saveState();
-      deliverOutbound();
+    if (!swingSetRunning) {
+      return;
     }
+    await saveState();
+    deliverOutbound();
+    await tryFlushSlogSender(slogSender, { env, log: console.warn });
   }
 
   // Use the input queue to make sure it doesn't overlap with

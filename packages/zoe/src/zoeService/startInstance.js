@@ -18,7 +18,7 @@ import { AdminFacetI, InstanceAdminI } from '../typeGuards.js';
 const { Fail, quote: q } = assert;
 
 /**
- * @param {any} startInstanceAccess
+ * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} [zoeBaggage]
@@ -47,6 +47,13 @@ export const makeStartInstance = (
     zoeBaggage,
     'zoeInstanceAdmin',
     InstanceAdminI,
+    /**
+     *
+     * @param {*} instanceStorage
+     * @param {*} instanceAdmin
+     * @param {*} seatHandleToSeatAdmin
+     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     */
     (instanceStorage, instanceAdmin, seatHandleToSeatAdmin, adminNode) => ({
       instanceStorage,
       instanceAdmin,
@@ -54,12 +61,12 @@ export const makeStartInstance = (
       adminNode,
     }),
     {
-      makeInvitation(handle, desc, customProps, proposalShape) {
+      makeInvitation(handle, desc, customDetails, proposalShape) {
         const { state } = this;
         return state.instanceStorage.makeInvitation(
           handle,
           desc,
-          customProps,
+          customDetails,
           proposalShape,
         );
       },
@@ -94,13 +101,13 @@ export const makeStartInstance = (
         const { state } = this;
         state.seatHandleToSeatAdmin.get(seatHandle).fail(reason);
       },
-      makeZoeMint(keyword, assetKind, displayInfo, pattern) {
+      makeZoeMint(keyword, assetKind, displayInfo, options) {
         const { state } = this;
         return state.instanceStorage.makeZoeMint(
           keyword,
           assetKind,
           displayInfo,
-          pattern,
+          options,
         );
       },
       registerFeeMint(keyword, feeMintAccess) {
@@ -157,6 +164,12 @@ export const makeStartInstance = (
     zoeBaggage,
     'adminFacet',
     AdminFacetI,
+    /**
+     *
+     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     * @param {*} zcfBundleCap
+     * @param {*} contractBundleCap
+     */
     (adminNode, zcfBundleCap, contractBundleCap) => ({
       adminNode,
       zcfBundleCap,

@@ -7,7 +7,7 @@ Zoe Service changes:
 * Instead of `zoe.makeInstance` returning an invite only, it now
   returns a record of `{ invite, instanceRecord }` such that
   information like the `instanceHandle` can be obtained directly from
-  the instanceRecord. 
+  the instanceRecord.
 * `installationHandle`, the identifier for the code that is used to
   create a new running contract instance, is added to the extent of
   invites for contracts so that interested parties can easily check
@@ -61,11 +61,11 @@ Built-in Zoe contract changes:
   items at a set price for money, and a generic `mintAndSellNFT`
   contract that mints NFT tokens and then immediately creates a new
   `sellItems` instance to sell them. The original operaTicket tests
-  are able to use these contracts. 
+  are able to use these contracts.
 * The `getCurrentPrice` helper in `bondingCurves.js` has been renamed
   to `getInputPrice` and now only returns the `outputExtent`.
 * A new built-in contract was added: barter-exchange.js. Barter
-  Exchange takes offers for trading arbitrary goods for one another. 
+  Exchange takes offers for trading arbitrary goods for one another.
 * Autoswap now has different keywords for different actions that can
   be taken. For example, a swap should have the keywords 'In' and
   'Out'.
@@ -83,24 +83,24 @@ Some helpers were removed, and others were added. The built-in Zoe contracts wer
   take advantage of these new helpers.
 * `satisfies` was added. It checks whether an allocation would satisfy
   a single offer's wants if that was the allocation passed to
-  `reallocate`. 
+  `reallocate`.
 * `isOfferSafe` was added. It checks whether an
   allocation for a particular offer would satisfy offer safety. Any
   allocation that returns true under `satisfy` will also return true
   under `isOfferSafe`. (`isOfferSafe` is equivalent of `satisfies` ||
-  gives a refund). 
+  gives a refund).
 * `trade` was added. `Trade` performs a trade between
   two offers given a declarative description of what each side loses
-  and gains. 
+  and gains.
 * `Swap` remains but has slightly different behavior: any
   surplus in a trade remains with the original offer
 * `canTradeWith`
   was removed and subsumed by `satisfies`.
 * `inviteAnOffer` was already
-  deprecated and was removed. 
+  deprecated and was removed.
 * `assertNatMathHelpers` was added, which
   checks whether a particular keyword is associated with an issuer
-  with natMathHelpers. 
+  with natMathHelpers.
 
 ERTP changes:
 * `purse.deposit()` now returns the amount of the deposit, rather than
@@ -116,13 +116,13 @@ ERTP changes:
   be removed in a few weeks.
 * `zcf.makeInvitation` now takes an offerHook, a required string
   `inviteDesc`, and an object of options, including the ability to add
-  `customProperties` to the extent of the invite. `inviteDesc` is
+  `customDetails` to the extent of the invite. `inviteDesc` is
   required such that different kinds of invites from the same contract
   are distinguishable.
 * The zoeHelper `inviteAnOffer` is deprecated
 * Instead of `inviteAnOffer`, we recommend using `checkHook` which
   more cleanly wraps an offerHook in a check of whether the offer
-  matches the expected proposal format. 
+  matches the expected proposal format.
 * We changed the `getOffer` and `getOffers` methods on the Zoe Service
   API to match the Zoe Contract Facet API. Now, in order to get the
   current allocation, you should call the new methods
@@ -130,7 +130,7 @@ ERTP changes:
 
 ## Release v0.4.0 (2-Apr-2020)
 
-* The `proposal` and `paymentKeywordRecord` arguments to `zoe.redeem` now default to an empty record. Previously, a user had to pass in an empty record for these arguments, which would be interpreted as a presence in @endo/marshal. 
+* The `proposal` and `paymentKeywordRecord` arguments to `zoe.redeem` now default to an empty record. Previously, a user had to pass in an empty record for these arguments, which would be interpreted as a presence in @endo/marshal.
 
 ## Release 0.3.0 (25-Mar-2020)
 
@@ -154,7 +154,7 @@ been renamed to "proposal". The structure of a proposal has changed to:
 There are no longer any keys such as 'payoutRules' or 'exitRule'. Most
 importantly, we no longer rely on the specific order of payoutRules
 arrays and payment/payout arrays to be the same. In fact, we can even
-make a partial proposal that will be filled in. 
+make a partial proposal that will be filled in.
 
 `Asset` and `Price` in the above example are called "keywords". Each
 contract has its own specific keywords. For instance, an auction
@@ -194,7 +194,7 @@ Changes to the Zoe Service (User-facing) API:
   `getOffers`, and `isOfferActive`. Note that `getOffer` and
   `getOffers` will throw if the offer is not found, whereas
   `isOfferActive` is safe to check whether an offer is still active or
-  not. 
+  not.
 
 Changes to the Contract Facet API and contract helpers:
 * The `userFlow` helpers have been renamed to `zoeHelpers`
@@ -218,7 +218,7 @@ Changes to the Contract Facet API and contract helpers:
   are the same.
 * In the offerRecord, amounts are no longer an array. Instead they are
   an `amountKeywordRecord`, an object with `keywords` as keys and `amount`
-  values. 
+  values.
 * Reallocate now takes an array of offerHandles/inviteHandles and an
   array of the above `amountKeywordRecord`s keyed on keywords.
 * AddNewIssuer now requires a keyword to be provided alongside the issuer.
@@ -226,7 +226,7 @@ Changes to the Contract Facet API and contract helpers:
 ## Release 0.2.1 (3-Feb-2020)
 
 Updates ERTP dependency to v0.3.0 and adds dependencies on new
-packages taken from ERTP. 
+packages taken from ERTP.
 
 ## Release 0.2.0 (21-Jan-2020)
 

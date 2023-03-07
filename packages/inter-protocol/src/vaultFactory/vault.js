@@ -1,6 +1,5 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
-import { makeTracer } from '@agoric/internal';
-import { StorageNodeShape } from '@agoric/notifier/src/typeGuards.js';
+import { makeTracer, makeTypeGuards } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   assertProposalShape,
@@ -9,12 +8,7 @@ import {
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import {
-  addSubtract,
-  allEmpty,
-  assertOnlyKeys,
-  stageDelta,
-} from '../contractSupport.js';
+import { addSubtract, allEmpty, assertOnlyKeys } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
@@ -23,6 +17,8 @@ import '@agoric/zoe/exported.js';
 import { calculateLoanCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
+
+const { StorageNodeShape } = makeTypeGuards(M);
 
 const trace = makeTracer('IV', false);
 
@@ -89,8 +85,9 @@ const validTransitions = {
  * @property {() => Subscriber<import('./vaultManager').AssetState>} getAssetSubscriber
  * @property {(collateralAmount: Amount) => ERef<Amount<'nat'>>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
+ * @property {(base: string) => string} scopeDescription
  * @property {() => Brand<'nat'>} getDebtBrand
- * @property {MintAndReallocate} mintAndReallocate
+ * @property {MintAndTransfer} mintAndTransfer
  * @property {(amount: Amount, seat: ZCFSeat) => void} burnAndRecord
  * @property {() => Ratio} getCompoundedInterest
  * @property {(oldDebt: import('./storeUtils.js').NormalizedDebt, oldCollateral: Amount<'nat'>, vaultId: VaultId, vaultPhase: VaultPhase, vault: Vault) => void} handleBalanceChange
@@ -141,9 +138,7 @@ const allocationsChangedSinceQuote = (
   if (AmountMath.isGTE(newCollateralPre, newCollateral)) {
     // The collateral did not go up. If the collateral decreased, we pro-rate maxDebt.
     // We can pro-rate maxDebt because the quote is either linear (price is
-    // unchanging) or super-linear (also called "convex"). Super-linear is from
-    // AMMs: selling less collateral would mean an even smaller price impact, so
-    // this is a conservative choice.
+    // unchanging) or super-linear (also called "convex").
     const debtPerCollateral = makeRatioFromAmounts(
       maxDebtPre,
       newCollateralPre,
@@ -630,37 +625,15 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
           const giveMintedTaken = AmountMath.subtract(fp.give.Minted, surplus);
 
-          // TODO use atomicRearrange https://github.com/Agoric/agoric-sdk/issues/5605
-          stageDelta(
-            clientSeat,
-            vaultSeat,
-            fp.give.Collateral,
-            fp.want.Collateral,
-            'Collateral',
-          );
-          // `wantMinted` is allocated in the reallocate and mint operation, and so not here
-          stageDelta(
-            clientSeat,
-            vaultSeat,
-            giveMintedTaken,
-            helper.emptyDebt(),
-            'Minted',
-          );
+          /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+          const transfers = harden([
+            [clientSeat, vaultSeat, { Collateral: fp.give.Collateral }],
+            [vaultSeat, clientSeat, { Collateral: fp.want.Collateral }],
+            [clientSeat, vaultSeat, { Minted: giveMintedTaken }],
+            // Minted into vaultSeat requires minting and so is done by mintAndTransfer
+          ]);
 
-          /** @type {Array<ZCFSeat>} */
-          const vaultSeatOpt = allEmpty([
-            fp.give.Collateral,
-            giveMintedTaken,
-            fp.want.Collateral,
-          ])
-            ? []
-            : [vaultSeat];
-          state.manager.mintAndReallocate(
-            toMint,
-            fee,
-            clientSeat,
-            ...vaultSeatOpt,
-          );
+          state.manager.mintAndTransfer(clientSeat, toMint, fee, transfers);
 
           // parent needs to know about the change in debt
           helper.updateDebtAccounting(
@@ -748,10 +721,14 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           await helper.assertSufficientCollateral(giveCollateral, newDebtPre);
 
           const { vaultSeat } = state;
-          vaultSeat.incrementBy(
-            seat.decrementBy(harden({ Collateral: giveCollateral })),
+          state.manager.mintAndTransfer(
+            seat,
+            toMint,
+            fee,
+            harden([[seat, vaultSeat, { Collateral: giveCollateral }]]),
           );
-          state.manager.mintAndReallocate(toMint, fee, seat, vaultSeat);
+          seat.exit();
+
           helper.updateDebtAccounting(
             normalizedDebtPre,
             collateralPre,
@@ -796,22 +773,22 @@ export const prepareVault = (baggage, marshaller, zcf) => {
         },
 
         makeAdjustBalancesInvitation() {
-          const { facets } = this;
+          const { state, facets } = this;
           const { helper } = facets;
           helper.assertActive();
           return zcf.makeInvitation(
             seat => helper.adjustBalancesHook(seat),
-            'AdjustBalances',
+            state.manager.scopeDescription('AdjustBalances'),
           );
         },
 
         makeCloseInvitation() {
-          const { facets } = this;
+          const { state, facets } = this;
           const { helper } = facets;
           helper.assertCloseable();
           return zcf.makeInvitation(
             seat => helper.closeHook(seat),
-            'CloseVault',
+            state.manager.scopeDescription('CloseVault'),
           );
         },
 
@@ -840,7 +817,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           };
           return zcf.makeInvitation(
             seat => helper.makeTransferInvitationHook(seat),
-            'TransferVault',
+            state.manager.scopeDescription('TransferVault'),
             transferState,
           );
         },

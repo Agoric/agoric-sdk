@@ -6,7 +6,17 @@ import { assertHasData } from '@agoric/smart-wallet/src/utils';
 import { Errors } from './errors';
 import { queryBankBalances } from './queryBankBalances';
 
-/** @typedef {import('./fetchCurrent').PurseInfo} PurseInfo */
+/** @typedef {import('@agoric/smart-wallet/src/types.js').Petname} Petname */
+
+/**
+ * @typedef {{
+ *  brand?: Brand,
+ *  brandPetname?: Petname,
+ *  currentAmount: Amount,
+ *  pursePetname?: Petname,
+ *  displayInfo?: DisplayInfo,
+ * }} PurseInfo
+ */
 
 const POLL_INTERVAL_MS = 6000;
 
