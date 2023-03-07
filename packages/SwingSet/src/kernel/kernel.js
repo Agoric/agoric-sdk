@@ -257,7 +257,9 @@ export default function buildKernel(
     // check will report 'false'. That's fine, there's no state to
     // clean up.
     if (kernelKeeper.vatIsAlive(vatID)) {
-      const promisesToReject = kernelKeeper.getDecidedPromises(vatID);
+      // Reject all promises decided by the vat, making sure to capture the list
+      // of kpids before that data is deleted.
+      const promisesToReject = [...kernelKeeper.getDecidedPromises(vatID)];
       kernelKeeper.cleanupAfterTerminatedVat(vatID);
       for (const kpid of promisesToReject) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
