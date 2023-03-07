@@ -22,6 +22,7 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 
 export { ActionType };
 
@@ -142,20 +143,14 @@ export const makeMockTestSpace = async log => {
 
   produce.testFirstAnchorKit.resolve(makeIssuerKit('AUSD', 'nat'));
 
+  const fakeBankKit = makeFakeBankKit([]);
+
   produce.bankManager.resolve(
     Promise.resolve(
       Far(
         'mockBankManager',
         /** @type {any} */ ({
-          getBankForAddress: _a =>
-            Far('mockBank', {
-              getPurse: () => ({
-                deposit: async (_, _x) => {
-                  assert.fail('not impl');
-                },
-              }),
-              getAssetSubscription: () => assert.fail('not impl'),
-            }),
+          getBankForAddress: _a => fakeBankKit.bank,
         }),
       ),
     ),

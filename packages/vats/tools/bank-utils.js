@@ -9,8 +9,10 @@ import { Far } from '@endo/marshal';
  */
 export const makeFakeBankKit = issuerKits => {
   const issuers = makeScalarMapStore();
-  issuerKits.forEach(kit => issuers.init(kit.brand, kit.issuer));
   const purses = makeScalarMapStore();
+
+  // XXX setup purses without publishing
+  issuerKits.forEach(kit => issuers.init(kit.brand, kit.issuer));
   issuerKits.forEach(kit => {
     assert(kit.issuer);
     purses.init(kit.brand, E(kit.issuer).makeEmptyPurse());
@@ -19,6 +21,23 @@ export const makeFakeBankKit = issuerKits => {
   /** @type {SubscriptionRecord<import('../src/vat-bank.js').AssetDescriptor>} */
   const { subscription, publication } = makeSubscriptionKit();
 
+  /**
+   * @param {string} denom lower-level denomination string
+   * @param {string} issuerName
+   * @param {string} proposedName
+   * @param {import('../src/vat-bank.js').AssetIssuerKit} kit ERTP issuer kit
+   */
+  const addAsset = (denom, issuerName, proposedName, kit) => {
+    issuers.init(kit.brand, kit.issuer);
+    purses.init(kit.brand, E(kit.issuer).makeEmptyPurse());
+    publication.updateState({
+      ...kit,
+      denom,
+      issuerName,
+      proposedName,
+    });
+  };
+
   /** @type {import('../src/vat-bank.js').Bank} */
   const bank = Far('mock bank', {
     /** @param {Brand} brand */
@@ -26,5 +45,5 @@ export const makeFakeBankKit = issuerKits => {
     getAssetSubscription: () => subscription,
   });
 
-  return { assetPublication: publication, bank };
+  return { addAsset, assetPublication: publication, bank };
 };
