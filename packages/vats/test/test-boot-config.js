@@ -8,32 +8,33 @@ import path from 'path';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { ParametersShape as BootParametersShape } from '../src/core/boot-psm.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
-const CONFIG_FILES = [
-  'decentral-core-config.json',
-  'decentral-demo-config.json',
-  'decentral-devnet-config.json',
-  'decentral-main-psm-config.json',
-  'decentral-psm-config.json',
-  'decentral-test-psm-config.json',
-  'decentral-test-vaults-config.json',
-];
-
 const PROD_CONFIG_FILES = [
   'decentral-main-psm-config.json',
   'decentral-psm-config.json',
   'decentral-test-vaults-config.json',
+  'decentral-test-psm-config.json',
+];
+
+const CONFIG_FILES = [
+  'decentral-core-config.json', // TODO: remove mints from core-config
+  'decentral-demo-config.json',
+  'decentral-devnet-config.json',
+  ...PROD_CONFIG_FILES,
 ];
 
 const NON_UPGRADEABLE_VATS = [
-  // TODO: move vat-network to a CoreEval proposal
+  // TODO(#6687): enforce vat-network
+  // IDEA: move vat-network to a CoreEval proposal?
   // 'vat-network',
   // 'vat-ibc',
-  // TODO: prune centralSupply from prod config
+  // 'pegasus',
+  // TODO(#6687): prune centralSupply from prod config
   // 'centralSupply',
   'mints',
   'sharing',
@@ -66,20 +67,20 @@ export const pspawn =
 const makeTestContext = async () => {
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
-  const resolve = (...ps) => path.join(dirname, ...ps);
-  const asset = (...ps) => fsPromises.readFile(resolve(...ps), 'utf-8');
+  const pathResolve = (...ps) => path.join(dirname, ...ps);
+  const asset = (...ps) => fsPromises.readFile(pathResolve(...ps), 'utf-8');
 
-  const cacheDir = resolve('..', 'bundles');
+  const cacheDir = pathResolve('..', 'bundles');
   const bundleCache = await makeNodeBundleCache(cacheDir, {}, s => import(s));
 
-  const vizTool = resolve('..', 'tools', 'authorityViz.js');
+  const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
   return {
     asset,
     bundleCache,
     cacheDir,
-    resolve,
+    pathResolve,
     basename: path.basename,
     runViz,
   };
@@ -106,17 +107,60 @@ test('Bootstrap SwingSet config file syntax', async t => {
   );
 });
 
+const noLog = () => {};
+
+const hashCode = s => {
+  let hash = 0;
+  let i;
+  let chr;
+  if (s.length === 0) return hash;
+  for (i = 0; i < s.length; i += 1) {
+    chr = s.charCodeAt(i);
+    // eslint-disable-next-line no-bitwise
+    hash = (hash << 5) - hash + chr;
+    // eslint-disable-next-line no-bitwise
+    hash |= 0; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+};
+
+const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
+  const { bundleCache, basename } = t.context;
+
+  const targetName = `${hashCode(sourceSpec)}-${basename(sourceSpec, '.js')}`;
+
+  // t.log('checking bundle path', name, spec.sourceSpec);
+  for (const vatName of NON_UPGRADEABLE_VATS) {
+    if (targetName.includes(vatName)) {
+      t.fail(`${configSpec} bundle ${sourceSpec} not upgradeable`);
+    }
+  }
+
+  if (!seen.has(targetName)) {
+    seen.add(targetName);
+
+    t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
+    await bundleCache.load(sourceSpec, targetName, noLog);
+    const meta = await bundleCache.validate(targetName);
+    t.truthy(meta, name);
+
+    for (const item of meta.contents) {
+      if (item.relativePath.includes('magic-cookie-test-only')) {
+        t.fail(`${configSpec} bundle ${name}: ${item.relativePath}`);
+      }
+    }
+  }
+};
+
 test('no test-only code is in production configs', async t => {
-  const { basename, bundleCache, resolve } = t.context;
+  const { pathResolve } = t.context;
   const { entries } = Object;
 
   const seen = new Set();
 
-  const noLog = () => {};
-
   for await (const configSpec of PROD_CONFIG_FILES) {
     t.log('checking config', configSpec);
-    const fullPath = resolve('..', configSpec);
+    const fullPath = pathResolve('..', configSpec);
     const config = await loadSwingsetConfigFile(fullPath);
     if (!config) throw t.truthy(config, configSpec); // if/throw refines type
     const { bundles } = config;
@@ -125,28 +169,32 @@ test('no test-only code is in production configs', async t => {
     for await (const [name, spec] of entries(bundles)) {
       if (!('sourceSpec' in spec)) throw t.fail();
 
-      // t.log('checking bundle path', name, spec.sourceSpec);
-      for (const vatName of NON_UPGRADEABLE_VATS) {
-        if (spec.sourceSpec.includes(vatName)) {
-          t.fail(`${configSpec} bundle ${spec.sourceSpec} not upgradeable`);
-        }
-      }
+      await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
+    }
+  }
+});
 
-      await bundleCache.load(spec.sourceSpec, undefined, noLog);
-      const targetName = basename(spec.sourceSpec, '.js');
+test('no test-only code is in production proposals', async t => {
+  const { pathResolve } = t.context;
 
-      if (!seen.has(targetName)) {
-        seen.add(targetName);
-        t.log('checking bundle', targetName);
-        const meta = await bundleCache.validate(targetName);
-        t.truthy(meta, name);
+  const seen = new Set();
 
-        for (const item of meta.contents) {
-          if (item.relativePath.includes('magic-cookie-test-only')) {
-            t.fail(`${configSpec} bundle ${name}: ${item.relativePath}`);
-          }
-        }
-      }
+  for await (const configSpec of PROD_CONFIG_FILES) {
+    t.log('checking config', configSpec);
+    const getProposals = async () => {
+      const fullPath = pathResolve('..', configSpec);
+      const config = await loadSwingsetConfigFile(fullPath);
+      if (!config) throw t.truthy(config, configSpec); // if/throw refines type
+      const { coreProposals } = config;
+      return coreProposals || [];
+    };
+
+    const coreProposals = await getProposals();
+    const { bundles } = await extractCoreProposalBundles(coreProposals);
+
+    const { entries } = Object;
+    for await (const [name, spec] of entries(bundles)) {
+      await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
     }
   }
 });
