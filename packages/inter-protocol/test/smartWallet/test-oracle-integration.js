@@ -252,6 +252,7 @@ test.serial('admin price', async t => {
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
     roundId: 1n,
     startedAt: 0n,
+    startedBy: 'adminPriceAddress',
   });
 });
 
