@@ -1,44 +1,53 @@
 // @ts-check
 import { Fail } from '@agoric/assert';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeSubscriptionKit } from '@agoric/notifier';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const trace = makeTracer('BootWFUpg', false);
 
 export const wfV1BundleName = 'walletFactoryV1';
 export const wfV2BundleName = 'walletFactoryV2';
+const walletAddr = 'agoric1whatever';
+
+const moolaKit = makeIssuerKit('moola');
 
 export const buildRootObject = () => {
+  const { bank, addAsset } = makeFakeBankKit([]);
   const storageKit = makeFakeStorageKit('walletFactoryUpgradeTest');
-  const walletPath = 'walletFactoryUpgradeTest.agoric1whatever.current';
+  const statusPath = `walletFactoryUpgradeTest.${walletAddr}`;
+  const currentPath = `${statusPath}.current`;
   const board = makeBoard();
   const { agoricNames } = makeAgoricNamesAccess();
-  const assetPublisher = Far('mockAssetPublisher', {
-    getAssetSubscription: () => makeSubscriptionKit().subscription,
-  });
   const { nameAdmin: namesByAddressAdmin } = makeNameHubKit();
 
+  /** @type {PromiseKit<ZoeService>} */
+  const { promise: zoe, ...zoePK } = makePromiseKit();
+  /** @type {PromiseKit<Instance>} */
+  const { promise: automaticRefundInstance, ...arPK } = makePromiseKit();
+
   let vatAdmin;
-  /** @type {ZoeService} */
-  let zoe;
   /** @type {AdminFacet} */
   let adminFacet;
   let creatorFacet;
-  let bank;
   /** @type {import('../../../src/smartWallet.js').SmartWallet} */
   let wallet;
 
   // for startInstance
   /** @type {Installation<import('../../../src/walletFactory.js').prepare>} */
   let installation;
-  const terms = { agoricNames, board, assetPublisher };
+  const terms = {
+    agoricNames,
+    board,
+    assetPublisher: bank,
+  };
   const privateArgs = {
     storageNode: storageKit.rootNode,
     // omit walletBridgeManager
@@ -47,17 +56,27 @@ export const buildRootObject = () => {
   return Far('root', {
     bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
-      ({ zoeService: zoe } = await E(vats.zoe).buildZoe(
+      const { zoeService } = await E(vats.zoe).buildZoe(
         vatAdmin,
         undefined,
         'zcf',
-      ));
-
-      ({ bank } = makeFakeBankKit([]));
+      );
+      zoePK.resolve(zoeService);
 
       const v1BundleId = await E(vatAdmin).getBundleIDByName(wfV1BundleName);
       assert(v1BundleId, 'bundleId must not be empty');
       installation = await E(zoe).installBundleID(v1BundleId);
+
+      const autoRefundBundleId = await E(vatAdmin).getBundleIDByName(
+        'automaticRefund',
+      );
+      const autoRefundInstallation = await E(zoe).installBundleID(
+        autoRefundBundleId,
+      );
+      const { instance } = await E(zoe).startInstance(autoRefundInstallation, {
+        Moola: moolaKit.issuer,
+      });
+      arPK.resolve(instance);
     },
 
     buildV1: async () => {
@@ -72,9 +91,10 @@ export const buildRootObject = () => {
         terms,
         privateArgs,
       );
+      trace('BOOT buildV1 started instance');
       ({ adminFacet, creatorFacet } = facets);
       const [newWallet, isNew] = await E(creatorFacet).provideSmartWallet(
-        'agoric1whatever',
+        walletAddr,
         bank,
         namesByAddressAdmin,
       );
@@ -84,9 +104,33 @@ export const buildRootObject = () => {
       const currentStoragePath = await E.get(
         E.get(E(wallet).getPublicTopics()).current,
       ).storagePath;
-      currentStoragePath === walletPath || Fail`bad storage path`;
+      currentStoragePath === currentPath || Fail`bad storage path`;
+
+      addAsset('umoola', 'moola', 'moola', moolaKit);
+      const depositFacet = E(wallet).getDepositFacet();
+      const payment = moolaKit.mint.mintPayment(
+        AmountMath.make(moolaKit.brand, 100n),
+      );
+      // @ts-expect-error casting far for test
+      await E(depositFacet).receive(payment);
 
       return true;
+    },
+
+    testOfferV1: async () => {
+      // If this doesn't throw, the offer succeeded.
+      // I tried to also check vstorage but it doesn't always update in time.
+      await E(E(wallet).getOffersFacet()).executeOffer({
+        id: 'firstOffer',
+        invitationSpec: {
+          source: 'contract',
+          instance: await automaticRefundInstance,
+          publicInvitationMaker: 'makeInvitation',
+        },
+        proposal: {
+          give: { Moola: AmountMath.make(moolaKit.brand, 100n) },
+        },
+      });
     },
 
     nullUpgradeV1: async () => {
@@ -101,7 +145,7 @@ export const buildRootObject = () => {
       assert.equal(upgradeResult.incarnationNumber, 2);
 
       const [wallet2, isNew] = await E(creatorFacet).provideSmartWallet(
-        'agoric1whatever',
+        walletAddr,
         bank,
         namesByAddressAdmin,
       );
@@ -111,7 +155,7 @@ export const buildRootObject = () => {
       const currentStoragePath = await E.get(
         E.get(E(wallet).getPublicTopics()).current,
       ).storagePath;
-      currentStoragePath === walletPath || Fail`bad storage path`;
+      currentStoragePath === currentPath || Fail`bad storage path`;
 
       return true;
     },
@@ -128,7 +172,7 @@ export const buildRootObject = () => {
       trace(`BOOT upgradeV2 startInstance`);
 
       const [wallet2, isNew] = await E(creatorFacet).provideSmartWallet(
-        'agoric1whatever',
+        walletAddr,
         bank,
         namesByAddressAdmin,
       );
@@ -138,14 +182,29 @@ export const buildRootObject = () => {
       const currentStoragePath = await E.get(
         E.get(E(wallet).getPublicTopics()).current,
       ).storagePath;
-      currentStoragePath === walletPath || Fail`bad storage path`;
+      currentStoragePath === currentPath || Fail`bad storage path`;
 
       // verify new method is present
       const result = await E(creatorFacet).sayHelloUpgrade();
       result === 'hello, upgrade' || Fail`bad upgrade`;
 
-      trace('Boot finished test');
       return true;
+    },
+
+    testOfferV2: async () => {
+      // If this doesn't throw, the offer succeeded.
+      // I tried to also check vstorage but it doesn't always update in time.
+      await E(E(wallet).getOffersFacet()).executeOffer({
+        id: 'secondOffer',
+        invitationSpec: {
+          source: 'contract',
+          instance: await automaticRefundInstance,
+          publicInvitationMaker: 'makeInvitation',
+        },
+        proposal: {
+          give: { Moola: AmountMath.make(moolaKit.brand, 100n) },
+        },
+      });
     },
   });
 };

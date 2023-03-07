@@ -60,8 +60,7 @@ test('bridge handler', async t => {
     lastOfferId: -1,
   });
 
-  assert(t.context.sendToBridge);
-  const res = await t.context.sendToBridge({
+  const validMsg = {
     type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress1,
     // consider a helper for each action type
@@ -72,8 +71,11 @@ test('bridge handler', async t => {
     ),
     blockTime: 0,
     blockHeight: 0,
+  };
+  assert(t.context.sendToBridge);
+  await t.throwsAsync(t.context.sendToBridge(validMsg), {
+    message: 'no invitation match (0 description and 0 instance)',
   });
-  t.is(res, undefined);
 
   t.deepEqual(await headValue(updates), {
     updated: 'offerStatus',
@@ -117,8 +119,9 @@ test('bridge with offerId string', async t => {
     blockTime: 0,
     blockHeight: 0,
   };
-  const res = await t.context.sendToBridge(validMsg);
-  t.is(res, undefined);
+  await t.throwsAsync(t.context.sendToBridge(validMsg), {
+    message: 'no invitation match (0 description and 0 instance)',
+  });
 
   // Verify it would have failed with a different 'type'.
   // This arguably belongs in a new test but putting it here makes clear

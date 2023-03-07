@@ -539,12 +539,12 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
     },
     {
-      finish: async ({ state, facets }) => {
+      finish: ({ state, facets }) => {
         const { invitationPurse } = state;
         const { helper } = facets;
 
         // @ts-expect-error RemotePurse cast
-        helper.watchPurse(invitationPurse);
+        void helper.watchPurse(invitationPurse);
       },
     },
   );

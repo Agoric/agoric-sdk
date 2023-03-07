@@ -39,7 +39,12 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     log('runMethod', method, args, 'at', cranksRun);
     assert(Array.isArray(args));
 
-    await mutex.get();
+    try {
+      // this promise for the last lock may fail
+      await mutex.get();
+    } catch {
+      // noop because the result will resolve for the previous runMethod return
+    }
 
     const kpid = controller.queueToVatRoot('bootstrap', method, args);
 
