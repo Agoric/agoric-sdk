@@ -63,6 +63,11 @@ func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{
 	return chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages)
 }
 
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgDeliverInbound) GetInboundMsgCount() int32 {
+	return 1
+}
+
 // Route should return the name of the module
 func (msg MsgDeliverInbound) Route() string { return RouterKey }
 
@@ -117,6 +122,11 @@ func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{})
 	}
 
 	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action})
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgWalletAction) GetInboundMsgCount() int32 {
+	return 1
 }
 
 func (msg MsgWalletAction) GetSigners() []sdk.AccAddress {
@@ -176,6 +186,10 @@ func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interfa
 	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction})
 }
 
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgWalletSpendAction) GetInboundMsgCount() int32 {
+	return 1
+}
 func (msg MsgWalletSpendAction) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
@@ -223,6 +237,11 @@ func (msg MsgProvision) ValidateBasic() error {
 	return nil
 }
 
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgProvision) GetInboundMsgCount() int32 {
+	return 1
+}
+
 // GetSignBytes encodes the message for signing
 func (msg MsgProvision) GetSignBytes() []byte {
 	if msg.PowerFlags == nil {
@@ -251,6 +270,11 @@ func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}
 	}
 
 	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle})
+}
+
+// GetInboundMsgCount implements InboundMsgCarrier.
+func (msg MsgInstallBundle) GetInboundMsgCount() int32 {
+	return 1
 }
 
 // Route should return the name of the module

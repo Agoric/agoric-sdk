@@ -7,6 +7,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 )
 
@@ -113,13 +114,8 @@ func (ia inboundAnte) allowedInbound(ctx sdk.Context) (int32, error) {
 
 // inboundMessages returns the nunber of inbound queue messages in msg.
 func inboundMessages(msg sdk.Msg) int32 {
-	switch msg.(type) {
-	case *swingtypes.MsgDeliverInbound,
-		*swingtypes.MsgInstallBundle,
-		*swingtypes.MsgProvision,
-		*swingtypes.MsgWalletAction,
-		*swingtypes.MsgWalletSpendAction:
-		return 1
+	if i, ok := msg.(vm.InboundMsgCarrier); ok {
+		return i.GetInboundMsgCount()
 	}
 	return 0
 }
