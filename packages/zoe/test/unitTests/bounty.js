@@ -12,7 +12,10 @@ import { AmountMath } from '@agoric/ertp';
  *
  * @type {ContractStartFn}
  */
-import { assertProposalShape } from '../../src/contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicTransfer,
+} from '../../src/contractSupport/index.js';
 
 /** @param {ZCF<any>} zcf */
 const start = async zcf => {
@@ -26,15 +29,9 @@ const start = async zcf => {
     assertProposalShape(funderSeat, endowBounty);
 
     function payOffBounty(seat) {
-      seat.incrementBy(
-        funderSeat.decrementBy(
-          harden({
-            Bounty: funderSeat.getCurrentAllocation().Bounty,
-          }),
-        ),
-      );
-
-      zcf.reallocate(funderSeat, seat);
+      atomicTransfer(zcf, funderSeat, seat, {
+        Bounty: funderSeat.getCurrentAllocation().Bounty,
+      });
       seat.exit();
       funderSeat.exit();
       zcf.shutdown('bounty was paid');
@@ -58,10 +55,9 @@ const start = async zcf => {
         assert.fail(X`Fee was required to be at least ${fee}`);
 
       // The funder gets the fee regardless of the outcome.
-      funderSeat.incrementBy(
-        bountySeat.decrementBy(harden({ Fee: feeAmount })),
-      );
-      zcf.reallocate(funderSeat, bountySeat);
+      atomicTransfer(zcf, bountySeat, funderSeat, {
+        Fee: feeAmount,
+      });
 
       const wakeHandler = Far('wakeHandler', {
         wake: async () => {
