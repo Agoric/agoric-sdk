@@ -21,7 +21,7 @@ import {
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, BASIS_POINTS } from '@agoric/internal';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
-
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { makeAuctionBook } from './auctionBook.js';
 import { AuctionState } from './util.js';
 import { makeScheduler } from './scheduler.js';
@@ -135,11 +135,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
   const addDeposit = (seat, amount) => {
-    const depositListForBrand = deposits.get(amount.brand);
-    deposits.set(
-      amount.brand,
-      harden([...depositListForBrand, { seat, amount }]),
-    );
+    appendToStoredArray(deposits, amount.brand, { seat, amount });
   };
 
   // Called "discount" rate even though it can be above or below 100%.
