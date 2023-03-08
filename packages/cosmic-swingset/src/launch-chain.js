@@ -297,10 +297,9 @@ export async function launch({
     await mailboxStorage.commit();
   }
 
-  async function saveOutsideState(blockHeight, blockTime) {
+  async function saveOutsideState(blockHeight) {
     const chainSends = clearChainSends();
     kvStore.set(getHostKey('height'), `${blockHeight}`);
-    kvStore.set(getHostKey('blockTime'), `${blockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
 
     await commit();
@@ -373,7 +372,6 @@ export async function launch({
   }
 
   let savedHeight = Number(kvStore.get(getHostKey('height')) || 0);
-  let savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   let runTime = 0;
   let chainTime;
   let saveTime = 0;
@@ -674,7 +672,7 @@ export async function launch({
 
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
-        await saveOutsideState(savedHeight, blockTime);
+        await saveOutsideState(savedHeight);
         saveTime = Date.now() - start2;
 
         blockParams = undefined;
@@ -765,7 +763,6 @@ export async function launch({
 
           // Advance our saved state variables.
           savedHeight = blockHeight;
-          savedBlockTime = blockTime;
         }
         controller.writeSlogObject({
           type: 'cosmic-swingset-end-block-finish',
@@ -793,7 +790,6 @@ export async function launch({
     blockingSend,
     shutdown,
     savedHeight,
-    savedBlockTime,
     savedChainSends: JSON.parse(kvStore.get(getHostKey('chainSends')) || '[]'),
   };
 }
