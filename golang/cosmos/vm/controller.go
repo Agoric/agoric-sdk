@@ -12,18 +12,13 @@ type ControllerContext struct {
 	IBCChannelHandlerPort int
 }
 
-// InboundMsgCarrier should be implemented by Cosmos-messages which
-// contain Swingset-messages which will be added to the inboundQueue.
-type InboundMsgCarrier interface {
+type ControllerAdmissionMsg interface {
+	sdk.Msg
+	CheckAdmissibility(sdk.Context, interface{}) error
+
 	// GetInboundMsgCount returns the number of Swingset messages which will
 	// be added to the inboundQueue.
 	GetInboundMsgCount() int32
-}
-
-type ControllerAdmissionMsg interface {
-	sdk.Msg
-	InboundMsgCarrier
-	CheckAdmissibility(sdk.Context, interface{}) error
 }
 
 // Jsonable is a value, j, that can be passed through json.Marshal(j).

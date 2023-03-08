@@ -114,8 +114,8 @@ func (ia inboundAnte) allowedInbound(ctx sdk.Context) (int32, error) {
 
 // inboundMessages returns the nunber of inbound queue messages in msg.
 func inboundMessages(msg sdk.Msg) int32 {
-	if i, ok := msg.(vm.InboundMsgCarrier); ok {
-		return i.GetInboundMsgCount()
+	if c, ok := msg.(vm.ControllerAdmissionMsg); ok {
+		return c.GetInboundMsgCount()
 	}
 	return 0
 }

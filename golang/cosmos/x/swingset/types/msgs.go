@@ -20,9 +20,9 @@ var (
 
 	_ vm.ControllerAdmissionMsg = &MsgDeliverInbound{}
 	_ vm.ControllerAdmissionMsg = &MsgInstallBundle{}
+	_ vm.ControllerAdmissionMsg = &MsgProvision{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletAction{}
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
-	// MsgProvision has its own fee mechanism and is intentionally omitted.
 )
 
 // Charge an account address for the beans associated with given messages.
@@ -234,6 +234,13 @@ func (msg MsgProvision) ValidateBasic() error {
 	if len(msg.Nickname) == 0 {
 		return sdkerrors.Wrap(sdkerrors.ErrUnknownRequest, "Nickname cannot be empty")
 	}
+	return nil
+}
+
+// CheckAdmissibility implements the vm.ControllerAdmissionMsg interface.
+func (msg MsgProvision) CheckAdmissibility(ctx sdk.Context, data interface{}) error {
+	// We have our own fee charging mechanism within Swingset itself,
+	// so there are no admission restriction here.
 	return nil
 }
 
