@@ -1,4 +1,5 @@
 {
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is minimal; it has no proposals. It is used by ../cosmic-swingset/Makefile and `agoric start`, which add proposals to it.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "vats": {
