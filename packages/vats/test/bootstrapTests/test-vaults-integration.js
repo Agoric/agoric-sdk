@@ -203,6 +203,7 @@ test('open vault with insufficient funds gives helpful error', async t => {
   );
 
   const giveCollateral = 9.0;
+  // offer fails but execute() doesn't throw because it returns once the execution is passed to the contract
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open-vault',
     collateralBrandKey,
