@@ -1,3 +1,4 @@
+import { Fail } from '@agoric/assert';
 import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
@@ -16,7 +17,7 @@ export const devices = {
     getNamedBundleCap: name => ({
       getBundle: () => {
         const bundle = bundles[name];
-        assert(bundle, `unknown bundle ${name}`);
+        bundle || Fail`unknown bundle ${name}`;
         return bundle;
       },
     }),

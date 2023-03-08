@@ -1,3 +1,4 @@
+import { Fail } from '@agoric/assert';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { E } from '@endo/far';
 
@@ -24,10 +25,8 @@ export const makePaymentsHelper = (purseForBrand, depositFacet) => {
      * @returns {PaymentPKeywordRecord}
      */
     withdrawGive(give) {
-      assert(
-        !keywordPaymentPromises,
-        'withdrawPayments can be called once per helper',
-      );
+      !keywordPaymentPromises ||
+        Fail`withdrawPayments can be called once per helper`;
       keywordPaymentPromises = objectMap(give, amount => {
         /** @type {Promise<import('./types').RemotePurse<any>>} */
         const purseP = purseForBrand(amount.brand);

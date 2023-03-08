@@ -488,7 +488,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             action => {
               switch (action.method) {
                 case 'executeOffer': {
-                  assert(canSpend, 'executeOffer requires spend authority');
+                  canSpend || Fail`executeOffer requires spend authority`;
                   return offers.executeOffer(action.offer);
                 }
                 default: {
