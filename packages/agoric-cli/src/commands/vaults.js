@@ -63,7 +63,13 @@ export const makeVaultsCommand = async logger => {
     .action(async function (opts) {
       logger.warn('running with options', opts);
 
-      const offer = Offers.vaults.OpenVault(agoricNames.brand, opts);
+      const offer = Offers.vaults.OpenVault(agoricNames.brand, {
+        giveCollateral: opts.giveCollateral,
+        wantMinted: opts.wantMinted,
+        offerId: opts.offerId,
+        // rename to allow CLI to be more concise
+        collateralBrandKey: opts.collateralBrand,
+      });
 
       outputExecuteOfferAction(offer);
     });
@@ -93,7 +99,15 @@ export const makeVaultsCommand = async logger => {
 
       const offer = Offers.vaults.AdjustBalances(
         agoricNames.brand,
-        opts,
+        {
+          giveCollateral: opts.giveCollateral,
+          wantCollateral: opts.wantCollateral,
+          giveMinted: opts.giveMinted,
+          wantMinted: opts.wantMinted,
+          offerId: opts.offerId,
+          // rename to allow CLI to be more concise
+          collateralBrandKey: opts.collateralBrand,
+        },
         previousOfferId,
       );
       outputExecuteOfferAction(offer);
@@ -120,7 +134,10 @@ export const makeVaultsCommand = async logger => {
 
       const offer = Offers.vaults.CloseVault(
         agoricNames.brand,
-        opts,
+        {
+          giveMinted: opts.giveMinted,
+          offerId: opts.offerId,
+        },
         previousOfferId,
       );
       outputExecuteOfferAction(offer);
