@@ -18,6 +18,19 @@ const test = anyTest;
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'IbcATOM';
 
+const likePayouts = (collateral, minted) => ({
+  Collateral: {
+    value: {
+      digits: String(collateral * 1_000_000),
+    },
+  },
+  Minted: {
+    value: {
+      digits: String(minted * 1_000_000),
+    },
+  },
+});
+
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
   const swingsetTestKit = await makeSwingsetTestKit(t);
@@ -130,11 +143,13 @@ test('close vault', async t => {
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1toclose');
 
+  const giveCollateral = 9.0;
+
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open-vault',
     collateralBrandKey,
     wantMinted: 5.0,
-    giveCollateral: 9.0,
+    giveCollateral,
   });
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
@@ -156,23 +171,28 @@ test('close vault', async t => {
     },
   );
 
-  await wd.executeOfferMaker(
-    Offers.vaults.CloseVault,
+  const message =
+    'Offer {"brand":"[Alleged: IST brand]","value":"[1n]"} is not sufficient to pay off debt {"brand":"[Alleged: IST brand]","value":"[5025000n]"}';
+  await t.throwsAsync(
+    wd.executeOfferMaker(
+      Offers.vaults.CloseVault,
+      {
+        offerId: 'close-insufficient',
+        collateralBrandKey,
+        giveMinted: 0.000_001,
+      },
+      'open-vault',
+    ),
     {
-      offerId: 'close-insufficient',
-      collateralBrandKey,
-      giveMinted: 0.000_001,
+      message,
     },
-    'open-vault',
   );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'close-insufficient',
-      // XXX there were no wants. Zoe treats as satisfied
-      numWantsSatisfied: 1,
-      error:
-        'Error: Offer {"brand":"[Alleged: IST brand]","value":"[1n]"} is not sufficient to pay off debt {"brand":"[Alleged: IST brand]","value":"[5025000n]"}',
+      numWantsSatisfied: 1, // trivially true because proposal `want` was empty.
+      error: `Error: ${message}`,
     },
   });
 
@@ -182,7 +202,7 @@ test('close vault', async t => {
     {
       offerId: 'close-well',
       collateralBrandKey,
-      giveMinted: 5.0,
+      giveMinted: 5.025,
     },
     'open-vault',
   );
@@ -190,7 +210,9 @@ test('close vault', async t => {
     updated: 'offerStatus',
     status: {
       id: 'close-well',
-      numWantsSatisfied: 1,
+      result: 'your loan is closed, thank you for your business',
+      // funds are returned
+      payouts: likePayouts(giveCollateral, 0),
     },
   });
 });
@@ -203,22 +225,27 @@ test('open vault with insufficient funds gives helpful error', async t => {
   );
 
   const giveCollateral = 9.0;
-  // offer fails but execute() doesn't throw because it returns once the execution is passed to the contract
-  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
-    offerId: 'open-vault',
-    collateralBrandKey,
-    giveCollateral,
-    wantMinted: giveCollateral * 100,
-  });
+  const wantMinted = giveCollateral * 100;
+  const message =
+    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: IbcATOM brand]","value":"[9000000n]"} collateral';
+  await t.throwsAsync(
+    wd.executeOfferMaker(Offers.vaults.OpenVault, {
+      offerId: 'open-vault',
+      collateralBrandKey,
+      giveCollateral,
+      wantMinted,
+    }),
+    { message },
+  );
 
-  // TODO verify funds are returned
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'open-vault',
       numWantsSatisfied: 0,
-      error:
-        'Error: Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: IbcATOM brand]","value":"[9000000n]"} collateral',
+      error: `Error: ${message}`,
+      // funds are returned
+      payouts: likePayouts(giveCollateral, 0),
     },
   });
 });
