@@ -24,23 +24,27 @@ export const getCurrent = async (addr, ctx, { vstorage }) => {
   return capDatas[0];
 };
 
-/** @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction */
-export const outputAction = bridgeAction => {
+/**
+ * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
+ * @param {typeof process.stdout} [stdout]
+ */
+export const outputAction = (bridgeAction, stdout = process.stdout) => {
   const capData = marshaller.serialize(bridgeAction);
-  process.stdout.write(JSON.stringify(capData));
-  process.stdout.write('\n');
+  stdout.write(JSON.stringify(capData));
+  stdout.write('\n');
 };
 
 /**
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+ * @param {typeof process.stdout} [stdout]
  */
-export const outputExecuteOfferAction = offer => {
+export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {
   /** @type {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} */
   const spendAction = {
     method: 'executeOffer',
     offer,
   };
-  outputAction(spendAction);
+  outputAction(spendAction, stdout);
 };
 
 /**

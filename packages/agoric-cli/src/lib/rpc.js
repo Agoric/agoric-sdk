@@ -31,21 +31,24 @@ const fromAgoricNet = str => {
   return fetch(networkConfigUrl(netName)).then(res => res.json());
 };
 
-/** @type {MinimalNetworkConfig} */
-export const networkConfig =
-  'AGORIC_NET' in process.env && process.env.AGORIC_NET !== 'local'
-    ? await fromAgoricNet(NonNullish(process.env.AGORIC_NET))
+export const getNetworkConfig = async env =>
+  'AGORIC_NET' in env && env.AGORIC_NET !== 'local'
+    ? fromAgoricNet(NonNullish(env.AGORIC_NET))
     : { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
+
+/** @type {MinimalNetworkConfig} */
+export const networkConfig = await getNetworkConfig(process.env);
 // console.warn('networkConfig', networkConfig);
 
 /**
  *
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
+ * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = powers => {
+export const makeVStorage = (powers, config = networkConfig) => {
   const getJSON = path => {
-    const url = networkConfig.rpcAddrs[0] + path;
+    const url = config.rpcAddrs[0] + path;
     // console.warn('fetching', url);
     return powers.fetch(url, { keepalive: true }).then(res => res.json());
   };
@@ -201,8 +204,8 @@ export const makeAgoricNames = async (ctx, vstorage) => {
   return { ...Object.fromEntries(entries), reverse };
 };
 
-export const makeRpcUtils = async ({ fetch }) => {
-  const vstorage = makeVStorage({ fetch });
+export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+  const vstorage = makeVStorage({ fetch }, config);
   const fromBoard = makeFromBoard();
   const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
