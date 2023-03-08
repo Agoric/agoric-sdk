@@ -4,14 +4,16 @@ import { AmountMath } from './amountMath.js';
 
 const { Fail } = assert;
 
-// This file contains safer alternatives to the similarly named helpers on
-// issuer. These are parameterized by a purse. Any payments created by these
+// This file contains safer helper function alternatives to the
+// similarly named methods on issuer.
+// These are parameterized by a purse. Any payments created by these
 // helper functions are in the recovery set of that purse until otherwise
 // used up.
 //
-// One helper is less safe in one way: `combine` is not failure atomic. If
-// it fails, some of the input payments may have been used up. However, even
-// in that case, no assets should be lost. The assets from the used up payments
+// One of these helper functions is less safe in one way:
+// `combine` is not failure atomic. If the `combine` helper function
+// fails, some of the input payments may have been used up. However, even
+// in that case, no assets would be lost. The assets from the used up payments
 // will be in the argument purse.
 
 /**
@@ -23,8 +25,9 @@ const { Fail } = assert;
  */
 export const claim = async (purse, srcPaymentP, optAmountShape = undefined) => {
   const srcPayment = await srcPaymentP;
-  const amount = await E(purse).deposit(srcPayment, optAmountShape);
-  return E(purse).withdraw(amount);
+  return E.when(E(purse).deposit(srcPayment, optAmountShape), amount =>
+    E(purse).withdraw(amount),
+  );
 };
 harden(claim);
 

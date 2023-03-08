@@ -89,7 +89,7 @@ const makeTestContext = async () => {
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
   /** @type {IssuerKit<'nat'>} */
-  // @ts-expect-error missing mint but it's not needed in the test
+  // @ts-expect-error missing IssuerKit properties not needed in the test
   const mintedKit = {
     issuer: mintedIssuer,
     brand: await E(mintedIssuer).getBrand(),

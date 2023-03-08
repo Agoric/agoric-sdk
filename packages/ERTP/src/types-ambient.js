@@ -249,6 +249,7 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} PaymentLedger
  * @property {Mint<K>} mint
+ * @property {Purse<K>} mintRecoveryPurse
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
@@ -257,6 +258,7 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
+ * @property {Purse<K>} mintRecoveryPurse
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
@@ -291,14 +293,6 @@
  * @property {() => Issuer<K>} getIssuer Gets the Issuer for this mint.
  * @property {(newAmount: Amount<K>) => Payment<K>} mintPayment
  * Creates a new Payment containing newly minted amount.
- * @property {() => CopySet<Payment<K>>} getRecoverySet
- * The set of payments created by this mint that are still live. These
- * are the payments that can still be recovered in emergencies by, for example,
- * depositing into a purse. Such a deposit action is like canceling an
- * outstanding check because you're tired of waiting for it. Once your
- * cancellation is acknowledged, you can spend the assets at stake on other
- * things. Afterwards, if the recipient of the original check finally gets
- * around to depositing it, their deposit fails.
  */
 
 /**

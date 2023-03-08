@@ -1,10 +1,10 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M } from '@agoric/store';
+import { mustMatch, M, keyEQ } from '@agoric/store';
 import {
   provideDurableWeakMapStore,
   prepareExo,
-  provideDurableSetStore,
+  provide,
 } from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
@@ -176,11 +176,13 @@ export const preparePaymentLedger = (
    *
    * @param {Payment} payment
    * @param {Amount} amount
-   * @param {SetStore<Payment>} recoverySet
+   * @param {SetStore<Payment>} [optRecoverySet]
    */
-  const initPayment = (payment, amount, recoverySet) => {
-    recoverySet.add(payment);
-    paymentRecoverySets.init(payment, recoverySet);
+  const initPayment = (payment, amount, optRecoverySet = undefined) => {
+    if (optRecoverySet !== undefined) {
+      optRecoverySet.add(payment);
+      paymentRecoverySets.init(payment, optRecoverySet);
+    }
     paymentLedger.init(payment, amount);
   };
 
@@ -432,9 +434,17 @@ export const preparePaymentLedger = (
     },
   });
 
-  const mintRecoverySet = provideDurableSetStore(
-    issuerBaggage,
-    `${name} mintRecoverySet`,
+  /**
+   * Provides for the recovery of newly minted but not-yet-deposited payments.
+   *
+   * Because the `mintRecoveryPurse` is placed in baggage, even if the
+   * caller of `makeIssuerKit` drops it on the floor, it can still be
+   * recovered in an emergency upgrade.
+   *
+   * @type {Purse<K>}
+   */
+  const mintRecoveryPurse = provide(issuerBaggage, 'mintRecoveryPurse', () =>
+    makeEmptyPurse(),
   );
 
   /** @type {Mint<K>} */
@@ -446,16 +456,21 @@ export const preparePaymentLedger = (
       // @ts-expect-error checked cast
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
-      const payment = makePayment();
-      initPayment(payment, newAmount, mintRecoverySet);
+      // `rawPayment` is not associated with any recovery set, and
+      // so must not escape.
+      const rawPayment = makePayment();
+      initPayment(rawPayment, newAmount, undefined);
+
+      const mintRecoveryPurseBefore = mintRecoveryPurse.getCurrentAmount();
+      mintRecoveryPurse.deposit(rawPayment, newAmount);
+      const payment = mintRecoveryPurse.withdraw(newAmount);
+      const mintRecoveryPurseAfter = mintRecoveryPurse.getCurrentAmount();
+      assert(keyEQ(mintRecoveryPurseBefore, mintRecoveryPurseAfter));
       return payment;
-    },
-    getRecoverySet() {
-      return mintRecoverySet.snapshot();
     },
   });
 
-  const issuerKit = harden({ issuer, mint, brand });
+  const issuerKit = harden({ issuer, mint, brand, mintRecoveryPurse });
   return issuerKit;
 };
 harden(preparePaymentLedger);
