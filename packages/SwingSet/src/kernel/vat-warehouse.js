@@ -382,7 +382,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function resetWorker(vatID) {
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.removeSnapshotAndTranscript();
+    vatKeeper.removeSnapshotAndResetTranscript();
   }
 
   /**

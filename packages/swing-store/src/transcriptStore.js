@@ -12,12 +12,13 @@ import { createSHA256 } from './hasher.js';
  *   initTranscript: (vatID: string) => void,
  *   rolloverSpan: (vatID: string) => void,
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string },
+ *   deleteVatTranscripts: (vatID: string) => void,
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => Iterable<string>,
  * }} TranscriptStore
  *
  * @typedef {{
- *   exportSpan: (vatID: string, startPos: number) => AsyncIterable<Uint8Array>
+ *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterable<Uint8Array>
  *   importSpan: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => Promise<void>,
  *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
@@ -46,10 +47,17 @@ function insistTranscriptPosition(position) {
 /**
  * @param {*} db
  * @param {() => void} ensureTxn
- * @param {(key: string, value: string) => void} noteExport
+ * @param {(key: string, value: string | undefined ) => void} noteExport
+ * @param {object} [options]
+ * @param {boolean | undefined} [options.keepTranscripts]
  * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
-export function makeTranscriptStore(db, ensureTxn, noteExport) {
+export function makeTranscriptStore(
+  db,
+  ensureTxn,
+  noteExport,
+  { keepTranscripts = true } = {},
+) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptItems (
       vatID TEXT,
@@ -82,6 +90,10 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       isCurrent INTEGER,
       PRIMARY KEY (vatID, startPos)
     )
+  `);
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS currentTranscriptIndex
+    ON transcriptSpans (vatID, isCurrent)
   `);
 
   const sqlDumpItemsQuery = db.prepare(`
@@ -200,6 +212,11 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     WHERE isCurrent = 1 AND vatID = ?
   `);
 
+  const sqlDeleteOldItems = db.prepare(`
+    DELETE FROM transcriptItems
+    WHERE vatID = ? AND position < ?
+  `);
+
   /**
    * End the current transcript span for a vat and start a new one.
    *
@@ -215,6 +232,41 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1);
     const newRec = spanRec(vatID, endPos, endPos, initialHash, 1);
     noteExport(currentSpanMetadataKey(newRec), JSON.stringify(newRec));
+    if (!keepTranscripts) {
+      sqlDeleteOldItems.run(vatID, endPos);
+    }
+  }
+
+  const sqlDeleteVatSpans = db.prepare(`
+    DELETE FROM transcriptSpans
+    WHERE vatID = ?
+  `);
+
+  const sqlDeleteVatItems = db.prepare(`
+    DELETE FROM transcriptItems
+    WHERE vatID = ?
+  `);
+
+  const sqlGetVatSpans = db.prepare(`
+    SELECT startPos
+    FROM transcriptSpans
+    WHERE vatID = ?
+  `);
+  sqlGetVatSpans.pluck(true);
+
+  /**
+   * Delete all transcript data for a given vat (for use when, e.g., a vat is terminated)
+   *
+   * @param {string} vatID
+   */
+  function deleteVatTranscripts(vatID) {
+    for (const startPos of sqlGetVatSpans.iterate(vatID)) {
+      const exportRec = spanRec(vatID, startPos);
+      noteExport(historicSpanMetadataKey(exportRec), undefined);
+    }
+    noteExport(currentSpanMetadataKey({ vatID }), undefined);
+    sqlDeleteVatItems.run(vatID);
+    sqlDeleteVatSpans.run(vatID);
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
@@ -233,16 +285,31 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
   /**
    * Obtain artifact metadata records for spans contained in this store.
    *
-   * @param {boolean} includeHistorical If true, include all spans that are
-   * present in the store regardless of their currency; if false, only include
-   * the current span for each vat.
+   * @param {boolean} includeHistorical  If true, include all metadata that is
+   *   present in the store regardless of its currency; if false, only include
+   *   the metadata that is part of the swingset's active operational state.
+   *
+   * Note: in the currently anticipated operational mode, this flag should
+   * always be set to `true`, because *all* transcript span metadata is, for
+   * now, considered part of the consensus set.  This metadata is being retained
+   * as a hedge against possible future need, wherein we find it necessary to
+   * replay a vat's entire history from t0 and therefor need to be able to
+   * validate historical transcript artifacts that were recovered from external
+   * archives rather than retained directly.  While such a need seems highly
+   * unlikely, it hypothetically could be forced by some necessary vat upgrade
+   * that implicates path-dependent ephemeral state despite our best efforts to
+   * avoid having any such state.  However, the flag itself is present in case
+   * future operational policy allows for pruning historical transcript span
+   * metadata, for example because we've determined that such full-history
+   * replay will never be required or because such replay would be prohibitively
+   * expensive regardless of need and therefor other repair strategies employed.
    *
    * @yields {[key: string, value: string]}
    * @returns {Iterable<[key: string, value: string]>}  An iterator over pairs of
    *    [historicSpanMetadataKey, rec], where `rec` is a JSON-encoded metadata record for the
    *    span named by `historicSpanMetadataKey`.
    */
-  function* getExportRecords(includeHistorical) {
+  function* getExportRecords(includeHistorical = true) {
     const sql = includeHistorical
       ? sqlGetAllSpanMetadata
       : sqlGetCurrentSpanMetadata;
@@ -325,17 +392,39 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     return reader();
   }
 
+  const sqlGetSpanIsCurrent = db.prepare(`
+    SELECT isCurrent
+    FROM transcriptSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlGetSpanIsCurrent.pluck(true);
+
   /**
    * Read a transcript span and return it as a stream of data suitable for
-   * export to another store.  Items are terminated by newlines.
+   * export to another store.  Transcript items are terminated by newlines.
    *
-   * @param {string} vatID  The vat whose transcript is being read
-   * @param {number} [startPos] A start position identifying the span to be read
+   * Transcript span artifact names should be strings of the form:
+   *   `transcript.${vatID}.${startPos}.${endPos}`
+   *
+   * @param {string} name  The name of the transcript artifact to be read
+   * @param {boolean} includeHistorical  If true, allow non-current spans to be fetched
    *
    * @returns {AsyncIterable<Uint8Array>}
    * @yields {Uint8Array}
    */
-  async function* exportSpan(vatID, startPos) {
+  async function* exportSpan(name, includeHistorical) {
+    typeof name === 'string' || Fail`artifact name must be a string`;
+    const parts = name.split('.');
+    const [type, vatID, pos] = parts;
+    // prettier-ignore
+    (parts.length === 4 && type === 'transcript') ||
+      Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${q(name)}`;
+    const isCurrent = sqlGetSpanIsCurrent.get(vatID, pos);
+    isCurrent !== undefined || Fail`transcript span ${q(name)} not available`;
+    isCurrent ||
+      includeHistorical ||
+      Fail`transcript span ${q(name)} not available`;
+    const startPos = Number(pos);
     for (const entry of readSpan(vatID, startPos)) {
       yield Buffer.from(`${entry}\n`);
     }
@@ -406,6 +495,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
       hash = computeItemHash(hash, item);
       pos += 1;
     }
+    pos === endPos || Fail`artifact ${name} is not available`;
     info.hash === hash ||
       Fail`artifact ${name} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
     sqlWriteSpan.run(
@@ -423,6 +513,7 @@ export function makeTranscriptStore(db, ensureTxn, noteExport) {
     getCurrentSpanBounds,
     addItem,
     readSpan,
+    deleteVatTranscripts,
 
     exportSpan,
     importSpan,

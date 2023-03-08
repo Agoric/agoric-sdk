@@ -78,10 +78,7 @@ function getKeyType(key) {
  *   setExportCallback: (cb: (updates: KVPair[]) => void) => void, // Set a callback invoked by swingStore when new serializable data is available for export
  * }} SwingStoreHostStorage
  */
-/*
- *   getExporter(): SwingStoreExporter, // Creates an exporter of the swingStore's content as of
- *     // the most recent commit point
- */
+
 /**
  * @typedef {{
  *   kvEntries: {},
@@ -137,7 +134,7 @@ function getKeyType(key) {
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
- * @property {(includeHistorical: boolean) => AsyncIterable<string>} getArtifactNames
+ * @property {() => AsyncIterable<string>} getArtifactNames
  *
  * Get a list of name of artifacts available from the swingStore.  A name returned
  * by this method guarantees that a call to `getArtifact` on the same exporter
@@ -161,10 +158,17 @@ function getKeyType(key) {
 
 /**
  * @param {string} dirPath
+ * @param {string} exportMode
  * @returns {SwingStoreExporter}
  */
-export function makeSwingStoreExporter(dirPath) {
+export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   typeof dirPath === 'string' || Fail`dirPath must be a string`;
+  exportMode === 'current' ||
+    exportMode === 'archival' ||
+    exportMode === 'debug' ||
+    Fail`invalid exportMode ${q(exportMode)}`;
+  const exportHistoricalSnapshots = exportMode === 'debug';
+  const exportHistoricalTranscripts = exportMode !== 'current';
   const filePath = path.join(dirPath, 'swingstore.sqlite');
   const db = sqlite3(filePath);
 
@@ -202,13 +206,12 @@ export function makeSwingStoreExporter(dirPath) {
   }
 
   /**
-   * @param {boolean} includeHistorical
    * @returns {AsyncIterable<string>}
    * @yields {string}
    */
-  async function* getArtifactNames(includeHistorical) {
-    yield* snapStore.getArtifactNames(includeHistorical);
-    yield* transcriptStore.getArtifactNames(includeHistorical);
+  async function* getArtifactNames() {
+    yield* snapStore.getArtifactNames(exportHistoricalSnapshots);
+    yield* transcriptStore.getArtifactNames(exportHistoricalTranscripts);
   }
 
   /**
@@ -217,21 +220,12 @@ export function makeSwingStoreExporter(dirPath) {
    */
   function getArtifact(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
-    const parts = name.split('.');
-    const [type, vatID, pos] = parts;
+    const [type] = name.split('.', 1);
 
     if (type === 'snapshot') {
-      // `snapshot.${vatID}.${endPos}`;
-      // prettier-ignore
-      parts.length === 3 ||
-        Fail`expected artifact name of the form 'snapshot.{vatID}.{endPos}', saw ${q(name)}`;
-      return snapStore.exportSnapshot(vatID, Number(pos));
+      return snapStore.exportSnapshot(name, exportHistoricalSnapshots);
     } else if (type === 'transcript') {
-      // `transcript.${vatID}.${startPos}.${endPos}`;
-      // prettier-ignore
-      parts.length === 4 ||
-        Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${q(name)}`;
-      return transcriptStore.exportSpan(vatID, Number(pos));
+      return transcriptStore.exportSpan(name, exportHistoricalTranscripts);
     } else {
       assert.fail(`invalid artifact type ${q(type)}`);
     }
@@ -356,7 +350,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     filePath = ':memory:';
   }
 
-  const { traceFile, keepSnapshots } = options;
+  const { traceFile, keepSnapshots, keepTranscripts } = options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -647,6 +641,9 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     db,
     ensureTxn,
     noteExport,
+    {
+      keepTranscripts,
+    },
   );
   const { dumpSnapshots, ...snapStore } = makeSnapStore(
     db,
@@ -812,6 +809,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     getCurrentSpanBounds: transcriptStore.getCurrentSpanBounds,
     addItem: transcriptStore.addItem,
     readSpan: transcriptStore.readSpan,
+    deleteVatTranscripts: transcriptStore.deleteVatTranscripts,
   };
 
   const snapStorePublic = {
@@ -1019,7 +1017,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   // If we're also importing historical artifacts, have the exporter enumerate
   // the complete set of artifacts it has and fetch all of them except for the
   // ones we've already fetched.
-  for await (const artifactName of exporter.getArtifactNames(true)) {
+  for await (const artifactName of exporter.getArtifactNames()) {
     if (fetchedArtifacts.has(artifactName)) {
       continue;
     }
