@@ -285,7 +285,7 @@ export const makeSwingsetTestKit = async (t, specifier) => {
     kernelStorage,
     configPath,
     [],
-    { ROLE: 'chain' },
+    {},
     { debugName: 'TESTBOOT' },
   );
   console.timeLog('makeSwingsetTestKit', 'buildSwingset');

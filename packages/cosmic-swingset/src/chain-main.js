@@ -302,7 +302,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const argv = {
-      ROLE: 'chain',
       bootMsg,
     };
     const vatHref = await importMetaResolve(

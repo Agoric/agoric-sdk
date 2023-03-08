@@ -53,8 +53,8 @@ const getHostKey = path => `host.${path}`;
  * @param {*} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string} vatconfig absolute path
- * @param {{ ROLE: string }} env
  * @param {unknown} bootstrapArgs JSON-serializable data
+ * @param {{}} env
  * @param {*} options
  */
 export async function buildSwingset(
@@ -66,10 +66,6 @@ export async function buildSwingset(
   env,
   { debugName = undefined, slogCallbacks, slogSender },
 ) {
-  // FIXME: Find a better way to propagate the role.
-  process.env.ROLE = argv.ROLE;
-  env.ROLE = argv.ROLE;
-
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   /** @type {import('@agoric/swingset-vat').SwingSetConfig | null} */
   let config = await loadSwingsetConfigFile(vatconfig);
@@ -277,7 +273,6 @@ export async function launch({
     kernelStorage,
     vatconfig,
     argv,
-    // @ts-expect-error process.env default
     env,
     {
       debugName,
