@@ -16,9 +16,9 @@ The SwingStore export protocol defines two stages (effectively two datasets). Th
 
 Each time a SwingStore API is used to modify the state somehow (e.g. adding/changing/deleting a `kvStore` entry, or pushing a new item on to a transcript), the contents of both datasets may change. New first-stage entries can be created, existing ones may be modified or deleted. And the set of second-stage artifacts may change.
 
-These export data/artifact changes can happen when calling into the kernel (e.g. invoking the external API of a device, causing the device code to change its own state or push messages onto the run-queue), or by normal kernel operations at it runs (any time `controller.run()` is executing). When the kernel is idle (after `controller.run()` has completed), the kernel will not make any changes to the SwingStore, and both datasets will be stable.
+These export data/artifact changes can happen when calling into the kernel (e.g. invoking the external API of a device, causing the device code to change its own state or push messages onto the run-queue), or by normal kernel operations as it runs (any time `controller.run()` is executing). When the kernel is idle (after `controller.run()` has completed), the kernel will not make any changes to the SwingStore, and both datasets will be stable.
 
-Among other things, the swing-store records a transcript of deliveries for each vat. The collection of all deliveries to a particular vat since its last heap snapshot was written is called the "current span". For each vat, the first-stage export data will record a single record that remembers the extent and the hash of the current span. This record then refers to a second-stage export artifact that contains the actual transcript contents.
+Among other things, the SwingStore records a transcript of deliveries for each vat. The collection of all deliveries to a particular vat since its last heap snapshot was written is called the "current span". For each vat, the first-stage export data will record a single record that remembers the extent and the hash of the current span. This record then refers to a second-stage export artifact that contains the actual transcript contents.
 
 ![image 2a](./images/data-export-2a.jpg)
 
@@ -32,7 +32,7 @@ The host application is responsible for delivering both datasets, but it is only
 
 ## Full Export
 
-The simplest (albeit more expensive) way to use SwingStore data export is by creating an "exporter" and asking it to a one-time full export operation.
+The simplest (albeit more expensive) way to use SwingStore data export is by creating an "exporter" and asking it to perform a one-time full export operation.
 
 The exporter is created by calling `makeSwingStoreExporter(dirpath)`, passing it the same directory pathname that was used to make your SwingStore instance. This API allows the exporter to use a separate SQLite database connection, so the original can continue executing deliveries and moving the application forward, while the exporter continues in the background. The exporter creates a new read-only SQLite transaction, which allows it to read from the old DB state even though new changes are being made on top of that checkpoint. In addition, the exporter can run in a thread or child process, so the export process can run in parallel with ongoing application work. This gives you as much time as you want to perform the export, without halting operations (however note that the child process must survive long enough to finish the export).
 
@@ -104,8 +104,8 @@ Then, on the few occasions when the application needs to build a full state-sync
    ...
    await controller.run();
    hostStorage.commit();
-   
-   // now, if the validator is configured to publish state-sync snapshots, 
+
+   // now, if the validator is configured to publish state-sync snapshots,
    // and if this block height is one of the publishing points,
    // do the following:
 
@@ -175,7 +175,7 @@ Likewise, each time a heap snapshot is recorded, we cease to need any previous s
 
 As a result, for each active vat, the first-stage Export Data contains a record for every old transcript span, plus one for the current span. It also contains a record for every old heap snapshot, plus one for the most recent heap snapshot, plus a `.current` record that points to the most recent snapshot. However the exported artifacts may or may not include blobs for the old transcript spans, or for the old heap snapshots.
 
-The `openSwingStore()` function has an option named `retainOldTranscripts` (which defaults to `true`), which causes the transcriptStore to retain the old transcript items. A second option named `retainOldSnapshots` (which defaults to `false`) causes the snapStore to retain the old heap snapshots. Opening the swingStore with a `false` option does not necessarily delete the old items immediately, but they'll probably get deleted the next time the kernel triggers a heap snapshot or transcript-span rollover. Validators who care about minimizing their disk usage will want to set both to `false`. In the future, we will arrange the SwingStore SQLite tables to provide easy `sqlite3` CLI commands that will delete the old data, so validators can also periodically use the CLI command to prune it.
+The `openSwingStore()` function has an option named `keepTranscripts` (which defaults to `true`), which causes the transcriptStore to retain the old transcript items. A second option named `keepSnapshots` (which defaults to `false`) causes the snapStore to retain the old heap snapshots. Opening the swingStore with a `false` option does not necessarily delete the old items immediately, but they'll probably get deleted the next time the kernel triggers a heap snapshot or transcript-span rollover. Validators who care about minimizing their disk usage will want to set both to `false`. In the future, we will arrange the SwingStore SQLite tables to provide easy `sqlite3` CLI commands that will delete the old data, so validators can also periodically use the CLI command to prune it.
 
 The `getArtifactNames()` API includes an option named `includeHistorical`. If `true`, all available historical artifacts will be included in the export (limited by what the `openSwingStore` options have deleted). If `false`, none will be included. Note that the "export data" is necessarily unaffected: if we *ever* want to validate this optional data, the hashes are mandatory. But the `getArtifactNames()` list will be smaller if you set `includeHistorical = false`. Also, re-exporting from a pruned copy will lack the old data, even if the re-export uses `includeHistorical = true`, because the second SwingStore cannot magically reconstruct the missing data.
 
