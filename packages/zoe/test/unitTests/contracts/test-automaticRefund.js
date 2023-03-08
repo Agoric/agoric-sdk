@@ -348,7 +348,7 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
   await E(aliceSeat).getOfferResult();
 
   await t.throwsAsync(() => E(aliceSeat).tryExit(), {
-    message: /seat has already exited/,
+    message: /seat has been exited/,
   });
 
   const moolaPayout = await aliceSeat.getPayout('ContributionA');
