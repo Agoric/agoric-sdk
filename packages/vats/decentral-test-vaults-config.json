@@ -1,4 +1,5 @@
 {
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vaults test networks in an automated fashion. It includes coreProposals to start vaults. Testing facilities are limited to an initialPrice for ATOM and addresses with known keys.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [

@@ -1,4 +1,5 @@
 {
+  "$comment": "This config is obsolete. TODO: prune it",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "snapshotInterval": 1000,
