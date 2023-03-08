@@ -549,9 +549,12 @@ export function makeVatKeeper(
   }
 
   function removeSnapshotAndTranscript() {
-    if (snapStore) {
-      snapStore.deleteVatSnapshots(vatID);
-    }
+    deleteSnapshots();
+    transcriptStore.deleteVatTranscripts(vatID);
+  }
+
+  function removeSnapshotAndResetTranscript() {
+    deleteSnapshots();
     transcriptStore.rolloverSpan(vatID);
   }
 
@@ -627,5 +630,6 @@ export function makeVatKeeper(
     deleteSnapshots,
     getSnapshotInfo,
     removeSnapshotAndTranscript,
+    removeSnapshotAndResetTranscript,
   });
 }

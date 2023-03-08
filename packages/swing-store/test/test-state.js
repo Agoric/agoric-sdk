@@ -151,6 +151,7 @@ async function testTranscriptStore(t, dbDir) {
   const exportLog = makeExportLog();
   const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
     exportCallback: exportLog.callback,
+    keepTranscripts: true, // XXX need to vary
   });
   const { transcriptStore } = kernelStorage;
   const { commit, close } = hostStorage;

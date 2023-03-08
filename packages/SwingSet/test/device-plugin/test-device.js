@@ -90,6 +90,12 @@ test.serial('plugin first time', async t => {
   ]);
 });
 
+// NOTE: the following test CANNOT be run standalone. It requires execution of
+// the prior test to establish its necessary starting state.  This is a bad
+// practice and should be fixed.  It's not bad enough to warrant fixing right
+// now, but worth flagging with this comment as a help to anyone else who gets
+// tripped up by it.
+
 test.serial('plugin after restart', async t => {
   const { bridge, cycle, dump, plugin, queueThunkForKernel } =
     await setupVatController(t);

@@ -37,7 +37,7 @@ import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
  * }} SnapStore
  *
  * @typedef {{
- *   exportSnapshot: (vatID: string, endPos: number) => AsyncIterable<Uint8Array>,
+ *   exportSnapshot: (name: string, includeHistorical: boolean) => AsyncIterable<Uint8Array>,
  *   importSnapshot: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => void,
  *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
@@ -84,7 +84,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
  *   tmpName: typeof import('tmp').tmpName,
  *   unlink: typeof import('fs').promises.unlink,
  * }} io
- * @param {(key: string, value: string) => void} noteExport
+ * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
@@ -157,9 +157,21 @@ export function makeSnapStore(
     return `snapshot.${rec.vatID}.current`;
   }
 
-  function snapshotRec(vatID, endPos, hash) {
-    return { vatID, endPos, hash };
+  function snapshotRec(vatID, endPos, hash, inUse) {
+    return { vatID, endPos, hash, inUse };
   }
+
+  const sqlGetPriorSnapshotInfo = db.prepare(`
+    SELECT endPos, hash
+    FROM snapshots
+    WHERE vatID = ? AND inUse = 1
+  `);
+
+  const sqlClearLastSnapshot = db.prepare(`
+    UPDATE snapshots
+    SET inUse = 0, compressedSnapshot = null
+    WHERE inUse = 1 AND vatID = ?
+  `);
 
   const sqlStopUsingLastSnapshot = db.prepare(`
     UPDATE snapshots
@@ -169,8 +181,8 @@ export function makeSnapStore(
 
   const sqlSaveSnapshot = db.prepare(`
     INSERT OR REPLACE INTO snapshots
-      (vatID, endPos, inUse, hash, uncompressedSize, compressedSize, compressedSnapshot)
-    VALUES (?, ?, 1, ?, ?, ?, ?)
+      (vatID, endPos, hash, uncompressedSize, compressedSize, compressedSnapshot, inUse)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   /**
@@ -217,9 +229,15 @@ export function makeSnapStore(
             await finished(snapReader);
 
             const h = hashStream.digest('hex');
-            sqlStopUsingLastSnapshot.run(vatID);
-            if (!keepSnapshots) {
-              deleteAllUnusedSnapshots();
+            const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
+            if (oldInfo) {
+              const rec = snapshotRec(vatID, oldInfo.endPos, oldInfo.hash, 0);
+              noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
+              if (keepSnapshots) {
+                sqlStopUsingLastSnapshot.run(vatID);
+              } else {
+                sqlClearLastSnapshot.run(vatID);
+              }
             }
             compressedSize = compressedSnapshot.length;
             sqlSaveSnapshot.run(
@@ -229,8 +247,9 @@ export function makeSnapStore(
               uncompressedSize,
               compressedSize,
               compressedSnapshot,
+              1,
             );
-            const rec = snapshotRec(vatID, endPos, h);
+            const rec = snapshotRec(vatID, endPos, h, 1);
             const exportKey = snapshotMetadataKey(rec);
             noteExport(exportKey, JSON.stringify(rec));
             noteExport(
@@ -257,24 +276,43 @@ export function makeSnapStore(
   }
 
   const sqlGetSnapshot = db.prepare(`
-    SELECT compressedSnapshot
+    SELECT compressedSnapshot, inUse
     FROM snapshots
     WHERE vatID = ? AND endPos = ?
   `);
-  sqlGetSnapshot.pluck(true);
 
   /**
-   * @param {string} vatID
-   * @param {number} endPos
+   * Read a snapshot and return it as a stream of data suitable for export to
+   * another store.
+   *
+   * Snapshot artifact names should be strings of the form:
+   *   `snapshot.${vatID}.${startPos}`
+   *
+   * @param {string} name
+   * @param {boolean} includeHistorical
    * @returns {AsyncIterable<Uint8Array>}
-   * @yields {Uint8Array}
    */
-  async function* exportSnapshot(vatID, endPos) {
-    const compressedSnapshot = sqlGetSnapshot.get(vatID, endPos);
-    const gzReader = Readable.from(compressedSnapshot);
-    const unzipper = createGunzip();
-    const snapshotReader = gzReader.pipe(unzipper);
-    yield* snapshotReader;
+  function exportSnapshot(name, includeHistorical) {
+    typeof name === 'string' || Fail`artifact name must be a string`;
+    const parts = name.split('.');
+    const [type, vatID, pos] = parts;
+    // prettier-ignore
+    (parts.length === 3 && type === 'snapshot') ||
+      Fail`expected artifact name of the form 'snapshot.{vatID}.{endPos}', saw ${q(name)}`;
+    const endPos = Number(pos);
+    const snapshotInfo = sqlGetSnapshot.get(vatID, endPos);
+    snapshotInfo || Fail`snapshot ${q(name)} not available`;
+    const { inUse, compressedSnapshot } = snapshotInfo;
+    compressedSnapshot || Fail`artifact ${q(name)} is not available`;
+    inUse || includeHistorical || Fail`artifact ${q(name)} is not available`;
+    // weird construct here is because we need to be able to throw before the generator starts
+    async function* exporter() {
+      const gzReader = Readable.from(compressedSnapshot);
+      const unzipper = createGunzip();
+      const snapshotReader = gzReader.pipe(unzipper);
+      yield* snapshotReader;
+    }
+    return exporter();
   }
 
   const sqlLoadSnapshot = db.prepare(`
@@ -341,12 +379,23 @@ export function makeSnapStore(
     WHERE vatID = ?
   `);
 
+  const sqlGetSnapshotList = db.prepare(`
+    SELECT endPos
+    FROM snapshots
+    WHERE vatID = ?
+  `);
+
   /**
    * Delete all snapshots for a given vat (for use when, e.g., a vat is terminated)
    *
    * @param {string} vatID
    */
   function deleteVatSnapshots(vatID) {
+    for (const rec of sqlGetSnapshotList.iterate(vatID)) {
+      const exportRec = snapshotRec(vatID, rec.endPos, undefined);
+      noteExport(snapshotMetadataKey(exportRec), undefined);
+    }
+    noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
     sqlDeleteVatSnapshots.run(vatID);
   }
 
@@ -411,27 +460,42 @@ export function makeSnapStore(
   }
 
   const sqlGetSnapshotMetadata = db.prepare(`
-    SELECT vatID, endPos, hash, uncompressedSize, compressedSize
+    SELECT vatID, endPos, hash, uncompressedSize, compressedSize, inUse
     FROM snapshots
     WHERE inUse = ?
     ORDER BY vatID, endPos
   `);
 
   /**
-   * @param {boolean} includeHistorical
+   * Obtain artifact metadata records for spanshots contained in this store.
+   *
+   * @param {boolean} includeHistorical  If true, include all metadata that is
+   *   present in the store regardless of its currency; if false, only include
+   *   the metadata that is part of the swingset's active operational state.
+   *
+   * Note: in the currently anticipated operational mode, this flag should
+   * always be set to `true`, because *all* snapshot metadata is, for now,
+   * considered part of the consensus set.  This metadata is being retained for
+   * diagnostic purposes and as a hedge against possible future need.  While
+   * such a need seems highly unlikely, the future is uncertain and it will be
+   * easier to purge this data later than to recover it if it is lost.  However,
+   * the flag itself is present in case future operational policy allows for
+   * pruning historical metadata, for example after further analysis and
+   * practical experience tells us that it will not be needed.
+   *
    * @yields {[key: string, value: string]}
    * @returns {Iterable<[key: string, value: string]>}
    */
-  function* getExportRecords(includeHistorical) {
+  function* getExportRecords(includeHistorical = true) {
     for (const rec of sqlGetSnapshotMetadata.iterate(1)) {
-      const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash);
+      const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash, 1);
       const exportKey = snapshotMetadataKey(rec);
       yield [exportKey, JSON.stringify(exportRec)];
       yield [currentSnapshotMetadataKey(rec), snapshotArtifactName(rec)];
     }
     if (includeHistorical) {
       for (const rec of sqlGetSnapshotMetadata.iterate(0)) {
-        const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash);
+        const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash, 0);
         yield [snapshotMetadataKey(rec), JSON.stringify(exportRec)];
       }
     }
@@ -489,18 +553,19 @@ export function makeSnapStore(
       size,
       compressedArtifact.length,
       compressedArtifact,
+      info.inUse,
     );
   }
 
   const sqlDumpCurrentSnapshots = db.prepare(`
-    SELECT vatID, endPos, hash, compressedSnapshot
+    SELECT vatID, endPos, hash, compressedSnapshot, inUse
     FROM snapshots
     WHERE inUse = 1
     ORDER BY vatID, endPos
   `);
 
   const sqlDumpAllSnapshots = db.prepare(`
-    SELECT vatID, endPos, hash, compressedSnapshot
+    SELECT vatID, endPos, hash, compressedSnapshot, inUse
     FROM snapshots
     ORDER BY vatID, endPos
   `);
@@ -516,8 +581,11 @@ export function makeSnapStore(
       : sqlDumpCurrentSnapshots;
     const dump = {};
     for (const row of sql.iterate()) {
-      const { vatID, endPos, hash, compressedSnapshot } = row;
-      dump[vatID] = { endPos, hash, compressedSnapshot };
+      const { vatID, endPos, hash, compressedSnapshot, inUse } = row;
+      if (!dump[vatID]) {
+        dump[vatID] = [];
+      }
+      dump[vatID].push({ endPos, hash, compressedSnapshot, inUse });
     }
     return dump;
   }
