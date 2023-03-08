@@ -284,7 +284,7 @@ export const makeSwingsetTestKit = async (t, specifier) => {
     bridgeOutbound,
     kernelStorage,
     configPath,
-    [],
+    {},
     {},
     { debugName: 'TESTBOOT' },
   );

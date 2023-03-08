@@ -13,7 +13,7 @@ export const installSimEgress = async ({
   const PROVISIONER_INDEX = 1;
 
   await Promise.all(
-    argv.hardcodedClientAddresses.map(async (addr, i) => {
+    (argv?.hardcodedClientAddresses || []).map(async (addr, i) => {
       const clientFacet = await E(clientCreator).createClientFacet(
         `solo${i}`,
         addr,
