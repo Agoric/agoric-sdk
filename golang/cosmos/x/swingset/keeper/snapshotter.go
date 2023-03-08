@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -24,6 +26,17 @@ const SnapshotFormat = 1
 
 // The manifest filename must be synchronized with the JS export/import tooling
 const ExportManifestFilename = "export-manifest.json"
+const ExportDataFilename = "export-data.jsonl"
+const ExportedFilesMode = 0644
+
+var disallowedArtifactNameChar = regexp.MustCompile(`[^-_.a-zA-Z0-9]`)
+
+// sanitizeArtifactName searches a string for all characters
+// other than ASCII alphanumerics, hyphens, underscores, and dots,
+// and replaces each of them with a hyphen.
+func sanitizeArtifactName(name string) string {
+	return disallowedArtifactNameChar.ReplaceAllString(name, "-")
+}
 
 type activeSnapshot struct {
 	// The block height of the snapshot in progress
@@ -321,7 +334,104 @@ func (snapshotter *SwingsetSnapshotter) RestoreExtension(height uint64, format u
 
 	ctx := snapshotter.app.NewUncachedContext(false, tmproto.Header{Height: int64(height)})
 
-	_ = snapshotter.exporter.ExportSwingStore(ctx)
+	exportDir, err := os.MkdirTemp("", fmt.Sprintf("agd-state-sync-restore-%d-*", height))
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(exportDir)
 
-	return errors.New("not implemented")
+	manifest := exportManifest{
+		BlockHeight: height,
+		Data:        ExportDataFilename,
+	}
+
+	exportDataFile, err := os.OpenFile(filepath.Join(exportDir, ExportDataFilename), os.O_CREATE|os.O_WRONLY, ExportedFilesMode)
+	if err != nil {
+		return err
+	}
+	defer exportDataFile.Close()
+
+	// Retrieve the SwingStore "ExportData" from the verified vstorage data.
+	// At this point the content of the cosmos DB has been verified against the
+	// AppHash, which means the SwingStore data it contains can be used as the
+	// trusted root against which to validate the artifacts.
+	swingStoreEntries := snapshotter.exporter.ExportSwingStore(ctx)
+
+	if len(swingStoreEntries) > 0 {
+		encoder := json.NewEncoder(exportDataFile)
+		encoder.SetEscapeHTML(false)
+		for _, dataEntry := range swingStoreEntries {
+			entry := []string{dataEntry.Path, dataEntry.Value}
+			err := encoder.Encode(entry)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	writeExportFile := func(filename string, data []byte) error {
+		return os.WriteFile(filepath.Join(exportDir, filename), data, ExportedFilesMode)
+	}
+
+	for {
+		payloadBytes, err := payloadReader()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		payload := types.ExtensionSnapshotterArtifactPayload{}
+		if err = payload.Unmarshal(payloadBytes); err != nil {
+			return err
+		}
+
+		// Since we cannot trust the state-sync payload at this point, we generate
+		// a safe and unique filename from the artifact name we received, by
+		// substituting any non letters-digits-hyphen-underscore-dot by a hyphen,
+		// and prefixing with an incremented id.
+		// The filename is not used for any purpose in the snapshotting logic.
+		filename := sanitizeArtifactName(payload.Name)
+		filename = fmt.Sprintf("%d-%s", len(manifest.Artifacts), filename)
+		manifest.Artifacts = append(manifest.Artifacts, [2]string{payload.Name, filename})
+		err = writeExportFile(filename, payload.Data)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	err = exportDataFile.Sync()
+	if err != nil {
+		return err
+	}
+	exportDataFile.Close()
+
+	manifestBytes, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return err
+	}
+	err = writeExportFile(ExportManifestFilename, manifestBytes)
+	if err != nil {
+		return err
+	}
+
+	encodedExportDir, err := json.Marshal(exportDir)
+	if err != nil {
+		return err
+	}
+
+	action := &snapshotAction{
+		Type:        "COSMOS_SNAPSHOT",
+		BlockHeight: int64(height),
+		Request:     "restore",
+		Args:        []json.RawMessage{encodedExportDir},
+	}
+
+	_, err = snapshotter.blockingSend(action)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
