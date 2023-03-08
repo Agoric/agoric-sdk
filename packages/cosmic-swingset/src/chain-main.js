@@ -4,6 +4,7 @@ import { resolve as pathResolve } from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
+import fsPromises from 'node:fs/promises';
 import { performance } from 'perf_hooks';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import tmpfs from 'tmp';
@@ -39,6 +40,7 @@ import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { makeProcessValue } from './helpers/process-value.js';
 import { spawnSwingStoreExport } from './export-kernel-db.js';
+import { performStateSyncImport } from './import-kernel-db.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -476,8 +478,18 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     return blockingSend;
   }
 
-  async function handleCosmosSnapshot(blockHeight, request, _requestArgs) {
+  async function handleCosmosSnapshot(blockHeight, request, requestArgs) {
     switch (request) {
+      case 'restore': {
+        const exportDir = requestArgs[0];
+        if (typeof exportDir !== 'string') {
+          throw Fail`Invalid exportDir argument ${q(exportDir)}`;
+        }
+        return performStateSyncImport(
+          { exportDir, stateDir: stateDBDir, blockHeight },
+          { fs: { ...fs, ...fsPromises }, pathResolve },
+        );
+      }
       case 'initiate': {
         !stateSyncExport ||
           Fail`Snapshot already in progress for ${stateSyncExport.blockHeight}`;
