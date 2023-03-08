@@ -58,7 +58,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
   const argv = {
-    ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
     bootMsg: {

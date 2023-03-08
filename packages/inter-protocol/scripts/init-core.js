@@ -104,7 +104,7 @@ export const mainProposalBuilder = async ({
   install: install0,
   wrapInstall,
 }) => {
-  const { ROLE = 'chain', VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
+  const { VAULT_FACTORY_CONTROLLER_ADDR } = process.env;
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
 
@@ -119,7 +119,6 @@ export const mainProposalBuilder = async ({
     getManifestCall: [
       getManifestForMain.name,
       {
-        ROLE,
         vaultFactoryControllerAddress: VAULT_FACTORY_CONTROLLER_ADDR,
         installKeys: {
           ...publishGroup(installKeyGroups.main),
@@ -139,7 +138,6 @@ export const defaultProposalBuilder = async (
   /** @param {string|undefined} s */
   const optBigInt = s => s && BigInt(s);
   const {
-    ROLE = env.ROLE || 'chain',
     vaultFactoryControllerAddress = env.VAULT_FACTORY_CONTROLLER_ADDR,
     minInitialPoolLiquidity = env.MIN_INITIAL_POOL_LIQUIDITY,
     endorsedUi,
@@ -176,7 +174,6 @@ export const defaultProposalBuilder = async (
     getManifestCall: [
       getManifestForInterProtocol.name,
       {
-        ROLE,
         vaultFactoryControllerAddress,
         minInitialPoolLiquidity: optBigInt(minInitialPoolLiquidity),
         endorsedUi,

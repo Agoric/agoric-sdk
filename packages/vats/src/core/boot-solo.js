@@ -43,7 +43,6 @@ const modules = harden({
  *   logger: (msg) => void,
  * }} vatPowers
  * @param {{
- *   argv: { ROLE: string },
  *   bootstrapManifest?: Record<string, Record<string, unknown>>,
  *   coreProposalCode?: string,
  * }} vatParameters

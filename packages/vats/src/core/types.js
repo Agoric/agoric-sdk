@@ -226,7 +226,6 @@
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {
- *     ROLE: string,
  *     hardcodedClientAddresses: string[],
  *     FIXME_GCI: string,
  *     PROVISIONER_INDEX: number,
