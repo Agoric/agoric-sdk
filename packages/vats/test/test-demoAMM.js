@@ -43,7 +43,7 @@ test('splitAllCentralPayments: count entries, spot check', async t => {
   // t.log(actual);
   t.is(actual.ATOM.amount.brand, central.brand);
   t.deepEqual(showAmount(actual.ATOM.amount), '33_280_000 IST');
-  t.deepEqual(Object.keys(actual), ['BLD', 'ATOM', 'WETH', 'LINK', 'USDC']);
+  t.deepEqual(Object.keys(actual), ['BLD', 'ATOM', 'WETH', 'LINK', 'DAI']);
 });
 
 test('poolRates: spot check WETH', t => {

@@ -20,7 +20,7 @@ export const DecimalPlaces = {
   ATOM: 6,
   WETH: 18,
   LINK: 18,
-  USDC: 18,
+  DAI: 18,
   moola: 2,
   simolean: 0,
 };
@@ -36,7 +36,9 @@ const FaucetPurseDetail = {
     balance: 53n,
   },
   LINK: { proposedName: 'Oracle fee', balance: 51n },
-  USDC: { proposedName: 'USD Coin', balance: 1_323n },
+  // WAS: USDC, but that interacts poorly with loadgen
+  // TODO: move connectFaucet from sim-behaviors to a coreProposal
+  DAI: { proposedName: 'DAI', balance: 1_323n },
 };
 
 const PCT = 100n;
@@ -146,7 +148,7 @@ export const AMMDemoState = {
     ],
   },
 
-  USDC: {
+  DAI: {
     config: {
       ...defaultConfig,
       collateralValue: 10_000_000n,
@@ -322,7 +324,7 @@ export const connectFaucet = async ({
       }),
     );
 
-    const faucetPaymentInfo = userPaymentRecords.flat();
+    const faucetPaymentInfo = harden(userPaymentRecords.flat());
 
     const userFeePurse = await E(E(zoe).getFeeIssuer()).makeEmptyPurse();
 

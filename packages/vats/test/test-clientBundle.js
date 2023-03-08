@@ -155,6 +155,6 @@ test('connectFaucet produces payments', async t => {
   );
   t.deepEqual(detail, [
     ['Oracle fee', '51 LINK'],
-    ['USD Coin', '1_323 USDC'],
+    ['DAI', '1_323 DAI'],
   ]);
 });
