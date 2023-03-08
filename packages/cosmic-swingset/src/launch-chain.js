@@ -53,8 +53,8 @@ const getHostKey = path => `host.${path}`;
  * @param {*} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string} vatconfig absolute path
- * @param {Record<string, any>} argv XXX argv should be an array but it's being called with object
  * @param {{ ROLE: string }} env
+ * @param {unknown} bootstrapArgs JSON-serializable data
  * @param {*} options
  */
 export async function buildSwingset(
@@ -62,7 +62,7 @@ export async function buildSwingset(
   bridgeOutbound,
   kernelStorage,
   vatconfig,
-  argv,
+  bootstrapArgs,
   env,
   { debugName = undefined, slogCallbacks, slogSender },
 ) {
@@ -122,8 +122,10 @@ export async function buildSwingset(
     }
     config.pinBootstrapRoot = true;
 
-    // @ts-expect-error XXX argv object
-    await initializeSwingset(config, argv, kernelStorage, { debugPrefix });
+    await initializeSwingset(config, bootstrapArgs, kernelStorage, {
+      // @ts-expect-error debugPrefix? what's that?
+      debugPrefix,
+    });
   }
   await ensureSwingsetInitialized();
   const controller = await makeSwingsetController(
