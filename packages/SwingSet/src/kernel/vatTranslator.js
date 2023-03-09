@@ -5,9 +5,13 @@ import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
 import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import {
   kdebug,
+  onToggleDebug,
   legibilizeMessageArgs,
   legibilizeValue,
 } from '../lib/kdebug.js';
+
+let debugEnabled = false;
+onToggleDebug(newEnableDebug => { debugEnabled = newEnableDebug; });
 
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');
@@ -114,7 +118,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       /** @type { VatOneResolution } */
       const vres = [vpid, ...translatePromiseDescriptor(p)];
       vResolutions.push(vres);
-      kdebug(`notify ${idx} ${kpid} ${JSON.stringify(vres)}`);
+      debugEnabled && kdebug(`notify ${idx} ${kpid} ${JSON.stringify(vres)}`);
       idx += 1;
     }
     /** @type { VatDeliveryNotify } */
@@ -282,7 +286,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     const target = mapVatSlotToKernelSlot(targetSlot);
     const [method, argList] = legibilizeMessageArgs(methargs);
     // prettier-ignore
-    kdebug(`syscall[${vatID}].send(${targetSlot}/${target}).${method}(${argList})`);
+    debugEnabled && kdebug(`syscall[${vatID}].send(${targetSlot}/${target}).${method}(${argList})`);
     const kernelSlots = methargs.slots.map(slot =>
       mapVatSlotToKernelSlot(slot),
     );
@@ -337,7 +341,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    */
   function translateExit(isFailure, info) {
     insistCapData(info);
-    kdebug(`syscall[${vatID}].exit(${isFailure},${legibilizeValue(info)})`);
+    debugEnabled && kdebug(`syscall[${vatID}].exit(${isFailure},${legibilizeValue(info)})`);
     const kernelSlots = info.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelInfo = harden({ ...info, slots: kernelSlots });
     return harden(['exit', vatID, !!isFailure, kernelInfo]);
@@ -350,7 +354,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    */
   function translateVatstoreGet(key) {
     assertValidVatstoreKey(key);
-    kdebug(`syscall[${vatID}].vatstoreGet(${key})`);
+    debugEnabled && kdebug(`syscall[${vatID}].vatstoreGet(${key})`);
     return harden(['vatstoreGet', vatID, key]);
   }
 
@@ -363,7 +367,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   function translateVatstoreSet(key, value) {
     assertValidVatstoreKey(key);
     assert.typeof(value, 'string');
-    kdebug(`syscall[${vatID}].vatstoreSet(${key},${value})`);
+    debugEnabled && kdebug(`syscall[${vatID}].vatstoreSet(${key},${value})`);
     return harden(['vatstoreSet', vatID, key, value]);
   }
 
@@ -374,7 +378,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    */
   function translateVatstoreGetNextKey(priorKey) {
     assertValidVatstoreKey(priorKey);
-    kdebug(`syscall[${vatID}].vatstoreGetNextKey(${priorKey})`);
+    debugEnabled && kdebug(`syscall[${vatID}].vatstoreGetNextKey(${priorKey})`);
     return harden(['vatstoreGetNextKey', vatID, priorKey]);
   }
 
@@ -385,7 +389,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
    */
   function translateVatstoreDelete(key) {
     assertValidVatstoreKey(key);
-    kdebug(`syscall[${vatID}].vatstoreDelete(${key})`);
+    debugEnabled && kdebug(`syscall[${vatID}].vatstoreDelete(${key})`);
     return harden(['vatstoreDelete', vatID, key]);
   }
 
@@ -409,7 +413,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       clearReachableFlag(kref, 'dropI');
       return kref;
     });
-    kdebug(`syscall[${vatID}].dropImports(${krefs.join(' ')})`);
+    debugEnabled && kdebug(`syscall[${vatID}].dropImports(${krefs.join(' ')})`);
     // we've done all the work here, during translation
     return harden(['dropImports', krefs]);
   }
@@ -434,7 +438,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
-    kdebug(`syscall[${vatID}].retireImports(${krefs.join(' ')})`);
+    debugEnabled && kdebug(`syscall[${vatID}].retireImports(${krefs.join(' ')})`);
     // we've done all the work here, during translation
     return harden(['retireImports', krefs]);
   }
@@ -456,7 +460,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
-    kdebug(`syscall[${vatID}].retireExports(${krefs.join(' ')})`);
+    debugEnabled && kdebug(`syscall[${vatID}].retireExports(${krefs.join(' ')})`);
     // retireExports still has work to do
     return harden(['retireExports', krefs]);
   }
@@ -477,7 +481,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       vatKeeper.deleteCListEntry(kref, vref);
       return kref;
     });
-    kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);
+    debugEnabled && kdebug(`syscall[${vatID}].abandonExports(${krefs.join(' ')})`);
     // abandonExports still has work to do
     return harden(['abandonExports', vatID, krefs]);
   }
@@ -503,13 +507,13 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...args, slots: kernelSlots });
     // prettier-ignore
-    kdebug(`syscall[${vatID}].callNow(${target}/${dev}).${method}(${JSON.stringify(args)})`);
+    debugEnabled && kdebug(`syscall[${vatID}].callNow(${target}/${dev}).${method}(${JSON.stringify(args)})`);
     return harden(['invoke', dev, method, kernelData]);
   }
 
   function translateSubscribe(vpid) {
     const kpid = mapVatSlotToKernelSlot(vpid);
-    kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
+    debugEnabled && kdebug(`syscall[${vatID}].subscribe(${vpid}/${kpid})`);
     kernelKeeper.hasKernelPromise(kpid) ||
       Fail`unknown kernelPromise id '${kpid}'`;
     /** @type { KernelSyscallSubscribe } */
@@ -548,7 +552,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       const kpid = mapVatSlotToKernelSlot(vpid);
       const kernelSlots = data.slots.map(slot => mapVatSlotToKernelSlot(slot));
       const kernelData = harden({ ...data, slots: kernelSlots });
-      kdebug(
+      debugEnabled && kdebug(
         `syscall[${vatID}].resolve[${idx}](${vpid}/${kpid}, ${rejected}) = ${
           data.body
         } ${JSON.stringify(data.slots)}/${JSON.stringify(kernelSlots)}`,

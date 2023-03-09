@@ -347,11 +347,11 @@ function build(
     // is associated with 'slot' so that all handled messages get sent to
     // that slot: pres~.foo() causes a syscall.send(target=slot, msg=foo).
 
-    lsdebug(`makeImportedPresence(${slot})`);
+    enableLSDebug && lsdebug(`makeImportedPresence(${slot})`);
     const fulfilledHandler = {
       applyMethod(o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
-        lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
+        enableLSDebug && lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
           // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
@@ -364,7 +364,7 @@ function build(
         return fulfilledHandler.applyMethod(o, undefined, args, returnedP);
       },
       get(o, prop) {
-        lsdebug(`makeImportedPresence handler.get (${slot})`);
+        enableLSDebug && lsdebug(`makeImportedPresence handler.get (${slot})`);
         if (disavowedPresences.has(o)) {
           // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
@@ -419,7 +419,7 @@ function build(
     // code, to which messages can be pipelined, and we prepare for the
     // kernel to tell us that it has been resolved in various ways.
     insistVatType('promise', vpid);
-    lsdebug(`makePipelinablePromise(${vpid})`);
+    enableLSDebug && lsdebug(`makePipelinablePromise(${vpid})`);
 
     // The Promise will we associated with a handler that converts p~.foo() into
     // a syscall.send() that targets the vpid. When the Promise is resolved
@@ -433,7 +433,7 @@ function build(
     const unfulfilledHandler = {
       applyMethod(_p, prop, args, returnedP) {
         // Support: p~.[prop](...args) remote method invocation
-        lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
+        enableLSDebug && lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
           Fail`mIPromise handler called after resolution`;
@@ -443,7 +443,7 @@ function build(
       },
       get(p, prop) {
         // Support: p~.[prop]
-        lsdebug(`makePipelinablePromise handler.get (${vpid})`);
+        enableLSDebug && lsdebug(`makePipelinablePromise handler.get (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
           Fail`mIPromise handler called after resolution`;
@@ -671,7 +671,7 @@ function build(
   );
 
   function convertValToSlot(val) {
-    // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
+    // enableLSDebug && lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
     // previously-serialized local Promise (in valToSlot), a new local
@@ -685,7 +685,7 @@ function build(
     if (!valToSlot.has(val)) {
       let slot;
       // must be a new export/store
-      // lsdebug('must be a new export', JSON.stringify(val));
+      // enableLSDebug && lsdebug('must be a new export', JSON.stringify(val));
       if (isPromise(val)) {
         // the promise either appeared in outbound arguments, or in a
         // virtual-object store operation, so immediately after
@@ -879,7 +879,7 @@ function build(
     serMethargs.slots.map(retainExportedVref);
 
     const resultVPID = allocatePromiseID();
-    lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
+    enableLSDebug && lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
     // create a Promise which callers follow for the result, give it a
     // handler so we can pipeline messages to it, and prepare for the kernel
     // to notify us of its resolution
@@ -895,7 +895,7 @@ function build(
     slotToVal.set(resultVPID, new WeakRef(returnedP));
 
     // prettier-ignore
-    lsdebug(
+    enableLSDebug && lsdebug(
       `ls.qm send(${JSON.stringify(targetSlot)}, ${legibilizeMethod(prop)}) -> ${resultVPID}`,
     );
     syscall.send(targetSlot, serMethargs, resultVPID);
@@ -1032,7 +1032,7 @@ function build(
     insistCapData(methargsdata);
 
     // prettier-ignore
-    lsdebug(
+    enableLSDebug && lsdebug(
       `ls[${forVatID}].dispatch.deliver ${target}.${extractMethod(methargsdata)} -> ${resultVPID}`,
     );
     const t = convertSlotToVal(target);
@@ -1114,7 +1114,7 @@ function build(
   }
 
   function unregisterUnreferencedVPID(vpid) {
-    lsdebug(`unregisterUnreferencedVPID ${forVatID}:${vpid}`);
+    enableLSDebug && lsdebug(`unregisterUnreferencedVPID ${forVatID}:${vpid}`);
     assert.equal(parseVatSlot(vpid).type, 'promise');
     // we are only called with vpids that are in exportedVPIDs or
     // importedVPIDs, so the WeakRef should still be populated, making
@@ -1135,7 +1135,7 @@ function build(
 
     function handle(isReject, value) {
       knownResolutions.set(p, harden([isReject, value]));
-      lsdebug(`ls.thenHandler fired`, value);
+      enableLSDebug && lsdebug(`ls.thenHandler fired`, value);
       assert(exportedVPIDs.has(vpid), vpid);
       const rc = resolutionCollector();
       const resolutions = rc.forPromise(vpid, isReject, value);
@@ -1174,7 +1174,7 @@ function build(
 
   function notifyOnePromise(promiseID, rejected, data) {
     insistCapData(data);
-    lsdebug(
+    enableLSDebug && lsdebug(
       `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
     );
     insistVatType('promise', promiseID);

@@ -13,7 +13,10 @@ import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 const { ownKeys } = Reflect;
 const { details: X, quote: q } = assert;
 
-// import { kdebug } from './kdebug.js';
+// import { kdebug, onToggleDebug } from './kdebug.js';
+// let debugEnabled = false;
+// onToggleDebug(newEnableDebug => { debugEnabled = newEnableDebug; });
+
 
 // Marker associated to flag objects that should be held onto strongly if
 // somebody attempts to use them as keys in a VirtualObjectAwareWeakSet or
@@ -47,7 +50,7 @@ export function makeCache(size, fetch, store) {
   const cache = {
     makeRoom() {
       while (liveTable.size > size && lruTail) {
-        // kdebug(`### vo LRU evict ${lruTail.baseRef} (dirty=${lruTail.dirty})`);
+        // debugEnabled && kdebug(`### vo LRU evict ${lruTail.baseRef} (dirty=${lruTail.dirty})`);
         liveTable.delete(lruTail.baseRef);
         if (lruTail.dirty) {
           store(lruTail.baseRef, lruTail.rawState);
@@ -108,7 +111,7 @@ export function makeCache(size, fetch, store) {
       if (!lruTail) {
         lruTail = innerObj;
       }
-      // kdebug(`### vo LRU remember ${lruHead.baseRef}`);
+      // debugEnabled && kdebug(`### vo LRU remember ${lruHead.baseRef}`);
     },
     refresh(innerObj) {
       if (innerObj !== lruHead) {
@@ -128,7 +131,7 @@ export function makeCache(size, fetch, store) {
         innerObj.next = lruHead;
         lruHead.prev = innerObj;
         lruHead = innerObj;
-        // kdebug(`### vo LRU refresh ${lruHead.baseRef}`);
+        // debugEnabled && kdebug(`### vo LRU refresh ${lruHead.baseRef}`);
       }
     },
     lookup(baseRef, load) {
@@ -793,7 +796,7 @@ export function makeVirtualObjectManager(
     }
 
     function reanimate(baseRef) {
-      // kdebug(`vo reanimate ${baseRef}`);
+      // debugEnabled && kdebug(`vo reanimate ${baseRef}`);
       const innerSelf = cache.lookup(baseRef, false);
       const [toHold] = makeRepresentative(innerSelf, false);
       return toHold;
@@ -816,7 +819,7 @@ export function makeVirtualObjectManager(
     function makeNewInstance(...args) {
       const id = getNextInstanceID(kindID, isDurable);
       const baseRef = makeBaseRef(kindID, id, isDurable);
-      // kdebug(`vo make ${baseRef}`);
+      // debugEnabled && kdebug(`vo make ${baseRef}`);
 
       const initialData = init ? init(...args) : {};
       const rawState = {};

@@ -6,12 +6,15 @@ import { assert, q, Fail } from '@agoric/assert';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
-import { kdebug } from '../../lib/kdebug.js';
+import { kdebug, onToggleDebug } from '../../lib/kdebug.js';
 import {
   parseReachableAndVatSlot,
   buildReachableAndVatSlot,
 } from './reachable.js';
 import { enumeratePrefixedKeys } from './storageHelper.js';
+
+let debugEnabled = false;
+onToggleDebug(newEnableDebug => { debugEnabled = newEnableDebug; });
 
 /**
  * @typedef { import('../../types-external.js').KVStore } KVStore
@@ -208,7 +211,7 @@ export function makeVatKeeper(
       // eslint-disable-next-line prefer-const
       let { reachable, recognizable } = getObjectRefCount(kernelSlot);
       reachable += 1;
-      // kdebug(`++ ${kernelSlot} ${tag} ${reachable},${recognizable}`);
+      // debugEnabled && kdebug(`++ ${kernelSlot} ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
   }
@@ -231,7 +234,7 @@ export function makeVatKeeper(
       // eslint-disable-next-line prefer-const
       let { reachable, recognizable } = getObjectRefCount(kernelSlot);
       reachable -= 1;
-      // kdebug(`-- ${kernelSlot} ${tag} ${reachable},${recognizable}`);
+      // debugEnabled && kdebug(`-- ${kernelSlot} ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
       if (reachable === 0) {
         addMaybeFreeKref(kernelSlot);
@@ -316,7 +319,7 @@ export function makeVatKeeper(
             vatSlot,
           );
         }
-        kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
+        debugEnabled && kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
       } else {
         // the vat didn't allocate it, and the kernel didn't allocate it
         // (else it would have been in the c-list), so it must be bogus
@@ -391,7 +394,7 @@ export function makeVatKeeper(
           vatSlot,
         );
       }
-      kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
+      debugEnabled && kdebug(`Add mapping k->v ${kernelKey}<=>${vatKey}`);
     }
 
     const { isReachable, vatSlot } = getReachableAndVatSlot(vatID, kernelSlot);
@@ -432,7 +435,7 @@ export function makeVatKeeper(
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     const vatKey = `${vatID}.c.${vatSlot}`;
     assert(kvStore.has(kernelKey));
-    kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
+    debugEnabled && kdebug(`Delete mapping ${kernelKey}<=>${vatKey}`);
     if (kernelSlog) {
       kernelSlog.changeCList(
         vatID,
