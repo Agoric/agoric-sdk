@@ -1206,6 +1206,10 @@ export default function buildKernel(
     return results;
   }
 
+  /**
+   * @param {RunQueueEvent} message
+   * @returns {Promise<PolicyInput>}
+   */
   async function processDeliveryMessage(message) {
     kdebug('');
     kdebug(`processQ ${JSON.stringify(message)}`);
@@ -1359,6 +1363,10 @@ export default function buildKernel(
     }
   }
 
+  /**
+   * @param {RunQueueEvent} message
+   * @returns {Promise<PolicyInput>}
+   */
   async function processAcceptanceMessage(message) {
     kdebug('');
     kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
@@ -1697,39 +1705,28 @@ export default function buildKernel(
     }
   }
 
-  function getNextDeliveryMessage() {
-    const gcMessage = processGCActionSet(kernelKeeper);
-    if (gcMessage) {
-      return gcMessage;
-    }
-    const reapMessage = kernelKeeper.nextReapAction();
-    if (reapMessage) {
-      return reapMessage;
-    }
-
-    if (!kernelKeeper.isRunQueueEmpty()) {
-      return kernelKeeper.getNextRunQueueMsg();
-    }
-    return undefined;
-  }
-
-  function getNextAcceptanceMessage() {
-    if (!kernelKeeper.isAcceptanceQueueEmpty()) {
-      return kernelKeeper.getNextAcceptanceQueueMsg();
-    }
-    return undefined;
-  }
-
+  /**
+   * Pulls the next message from the highest-priority queue and returns it
+   * along with a corresponding processor.
+   *
+   * @returns {{
+   *   message: RunQueueEvent | undefined,
+   *   processor: (message: RunQueueEvent) => Promise<PolicyInput>,
+   * }}
+   */
   function getNextMessageAndProcessor() {
-    let message = getNextAcceptanceMessage();
-    /** @type {(message:any) => Promise<PolicyInput>} */
-    let processor = processAcceptanceMessage;
-    if (!message) {
-      message = getNextDeliveryMessage();
-      processor = processDeliveryMessage;
+    const acceptanceMessage = kernelKeeper.getNextAcceptanceQueueMsg();
+    if (acceptanceMessage) {
+      return {
+        message: acceptanceMessage,
+        processor: processAcceptanceMessage,
+      };
     }
-
-    return { message, processor };
+    const message =
+      processGCActionSet(kernelKeeper) ||
+      kernelKeeper.nextReapAction() ||
+      kernelKeeper.getNextRunQueueMsg();
+    return { message, processor: processDeliveryMessage };
   }
 
   function changeKernelOptions(options) {
