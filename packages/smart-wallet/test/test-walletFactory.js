@@ -55,10 +55,6 @@ test('bridge handler', async t => {
       value: [],
     },
   });
-  t.like(await headValue(current), {
-    // error because it's deprecated
-    lastOfferId: -1,
-  });
 
   const validMsg = {
     type: ActionType.WALLET_SPEND_ACTION,

@@ -28,8 +28,6 @@ import { objectMapStoragePath } from './utils.js';
 const { Fail, quote: q } = assert;
 const { StorageNodeShape } = makeTypeGuards(M);
 
-const ERROR_LAST_OFFER_ID = -1;
-
 /**
  * @template K, V
  * @param {MapStore<K, V> } map
@@ -60,7 +58,6 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   purses: Array<{brand: Brand, balance: Amount}>,
  *   offerToUsedInvitation: { [offerId: string]: Amount },
  *   offerToPublicSubscriberPaths: { [offerId: string]: { [subscriberName: string]: string } },
- *   lastOfferId: string,
  * }} CurrentWalletRecord
  */
 
@@ -256,7 +253,6 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
-      getLastOfferId: M.call().returns(M.number()),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
@@ -317,8 +313,6 @@ export const prepareSmartWallet = (baggage, shared) => {
             offerToPublicSubscriberPaths: mapToRecord(
               offerToPublicSubscriberPaths,
             ),
-            // @ts-expect-error FIXME leftover from offer id string conversion
-            lastOfferId: ERROR_LAST_OFFER_ID,
           });
         },
 
@@ -384,13 +378,6 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
       },
       offers: {
-        /**
-         * @deprecated
-         * @returns {number} an error code, for backwards compatibility with clients expecting a number
-         */
-        getLastOfferId() {
-          return ERROR_LAST_OFFER_ID;
-        },
         /**
          * Take an offer description provided in capData, augment it with payments and call zoe.offer()
          *

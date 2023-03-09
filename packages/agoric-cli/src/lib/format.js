@@ -159,7 +159,6 @@ export const offerStatusTuples = (state, agoricNames) => {
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {
-    lastOfferId: [current.lastOfferId],
     purses: purseBalanceTuples(
       // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
       // @ts-ignore xxx RpcRemote
