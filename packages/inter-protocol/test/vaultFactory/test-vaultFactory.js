@@ -53,7 +53,7 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
- * loanTiming: LoanTiming,
+ * interestTiming: InterestTiming,
  * zoe: ZoeService,
  * }} Context */
 /** @type {import('ava').TestFn<Context>} */
@@ -125,7 +125,7 @@ test.before(async t => {
     bundles,
     installation,
     electorateTerms: undefined,
-    loanTiming: {
+    interestTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
@@ -238,7 +238,7 @@ const setupServices = async (
   quoteInterval = 1n,
   runInitialLiquidity,
 ) => {
-  const { zoe, run, aeth, loanTiming, minInitialDebt, endorsedUi, rates } =
+  const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
     t.context;
   t.context.timer = timer;
 
@@ -277,7 +277,7 @@ const setupServices = async (
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(
     space,
-    { loanParams: loanTiming, options: { endorsedUi } },
+    { interestTiming, options: { endorsedUi } },
     minInitialDebt,
   );
 
@@ -347,7 +347,7 @@ const setupServices = async (
 
 test('first', async t => {
   const { aeth, run, zoe, rates } = t.context;
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -456,7 +456,7 @@ test.skip('price drop', async t => {
   // When the price falls to 636, the loan will get liquidated. 636 for 900
   // Aeth is 1.4 each. The loan is 270 Minted. The margin is 1.05, so at 636, 400
   // Aeth collateral could support a loan of 268.
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -600,7 +600,7 @@ test.skip('price drop', async t => {
 // TODO (7047) reinstate when vaults can use auction
 test.skip('price falls precipitously', async t => {
   const { zoe, aeth, run, rates } = t.context;
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -768,7 +768,7 @@ test('interest on multiple vaults', async t => {
   };
   t.context.rates = rates;
   // charging period is 1 week. Clock ticks by days
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -1289,7 +1289,7 @@ test('adjust balances after interest charges', async t => {
   const manualTimer = buildManualTimer(trace, 0n, {
     timeStep: SECONDS_PER_DAY,
   });
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -1632,7 +1632,7 @@ test.skip('mutable liquidity triggers and interest', async t => {
   });
   t.context.rates = rates;
 
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -2125,7 +2125,7 @@ test('excessive debt on collateral type - debtLimit', async t => {
 test.skip('mutable liquidity sensitivity of triggers and interest', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
 
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -2407,7 +2407,7 @@ test.skip('manager notifiers', async t => {
     timeStep: SECONDS_PER_WEEK,
     eventLoopIteration,
   });
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -2721,7 +2721,7 @@ test.skip('manager notifiers', async t => {
 
 test('governance publisher', async t => {
   const { aeth } = t.context;
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };

@@ -27,7 +27,7 @@ import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
- *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
+ *   interestTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,

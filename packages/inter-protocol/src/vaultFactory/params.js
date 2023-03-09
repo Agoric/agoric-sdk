@@ -138,7 +138,7 @@ harden(makeVaultDirectorParamManager);
  *   priceAuthority: ERef<PriceAuthority>,
  *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   reservePublicFacet: AssetReservePublicFacet,
- *   loanTiming: LoanTiming,
+ *   interestTiming: InterestTiming,
  *   shortfallInvitationAmount: Amount,
  *   endorsedUi?: string,
  * }} opts
@@ -148,7 +148,7 @@ export const makeGovernedTerms = (
   {
     bootstrapPaymentValue,
     electorateInvitationAmount,
-    loanTiming,
+    interestTiming,
     minInitialDebt,
     priceAuthority,
     reservePublicFacet,
@@ -157,23 +157,23 @@ export const makeGovernedTerms = (
     endorsedUi = 'NO ENDORSEMENT',
   },
 ) => {
-  const loanTimingParams = makeParamManagerSync(
+  const interestTimingParams = makeParamManagerSync(
     makeStoredPublisherKit(storageNode, marshaller, 'timingParams'),
     {
       [CHARGING_PERIOD_KEY]: [
         'nat',
-        TimeMath.relValue(loanTiming.chargingPeriod),
+        TimeMath.relValue(interestTiming.chargingPeriod),
       ],
       [RECORDING_PERIOD_KEY]: [
         'nat',
-        TimeMath.relValue(loanTiming.recordingPeriod),
+        TimeMath.relValue(interestTiming.recordingPeriod),
       ],
     },
   ).getParams();
 
   return harden({
     priceAuthority,
-    loanTimingParams,
+    interestTimingParams,
     reservePublicFacet,
     timerService: timer,
     governedParams: makeVaultDirectorParams(

@@ -184,7 +184,7 @@ const buildOwner = async (
 
   const vaultManagerParams = makeRates(runBrand);
 
-  const loanTiming = {
+  const interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -209,7 +209,7 @@ const buildOwner = async (
     {},
     {
       priceAuthority: priceAuthorityKit.priceAuthority,
-      loanTiming,
+      interestTiming,
       timer,
       electorateInvitationAmount: poserInvitationAmount,
       ammPublicFacet: ammMock,

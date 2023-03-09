@@ -77,7 +77,7 @@ const defaultParamValues = debt =>
  * electorateTerms: any,
  * feeMintAccess: FeeMintAccess,
  * installation: Record<string, any>,
- * loanTiming: any,
+ * interestTiming: InterestTiming,
  * minInitialDebt: bigint,
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
@@ -115,7 +115,7 @@ export const makeDriverContext = async () => {
     installation,
     zoe,
     feeMintAccess,
-    loanTiming: {
+    interestTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
@@ -206,7 +206,7 @@ const setupServices = async (
     zoe,
     run,
     aeth,
-    loanTiming,
+    interestTiming,
     minInitialDebt,
     rates,
     runInitialLiquidity,
@@ -234,7 +234,7 @@ const setupServices = async (
   t.context.reserveCreatorFacet = E.get(space.consume.reserveKit).creatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
-  await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
+  await startVaultFactory(space, { interestTiming }, minInitialDebt);
 
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
