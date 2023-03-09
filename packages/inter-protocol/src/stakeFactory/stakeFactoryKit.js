@@ -91,8 +91,8 @@ const initState = (zcf, startSeat, manager) => {
       runWanted,
     );
     !AmountMath.isEmpty(fee) ||
-      Fail`loan requested (${runWanted}) is too small; cannot accrue interest`;
-    AmountMath.isEqual(newDebt, toMint) || Fail`loan fee mismatch`;
+      Fail`debt requested (${runWanted}) is too small; cannot accrue interest`;
+    AmountMath.isEqual(newDebt, toMint) || Fail`debt fee mismatch`;
     trace('init', { runWanted, fee, attestationGiven });
 
     manager.mintAndReallocate(

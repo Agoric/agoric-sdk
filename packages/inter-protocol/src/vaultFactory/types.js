@@ -31,9 +31,9 @@
  * @property {Ratio} liquidationMargin - margin below which collateral will be
  * liquidated to satisfy the debt.
  * @property {Ratio} liquidationPenalty - penalty charged upon liquidation as proportion of debt
- * @property {Ratio} interestRate - annual interest rate charged on loans
+ * @property {Ratio} interestRate - annual interest rate charged on debts
  * @property {Ratio} mintFee - The fee (in BasisPoints) charged when opening
- * or increasing a loan.
+ * or increasing a debt.
  * @property {Amount<'nat'>} debtLimit
  * @property {Ratio} [liquidationPadding] - vault must maintain this in order to remove collateral or add debt
  */
@@ -83,11 +83,11 @@
  * @property {() => Ratio} getLiquidationMargin
  * @property {() => Ratio} getLoanFee
  * @property {() => Promise<PriceQuote>} getCollateralQuote
- * @property {() => Ratio} getInterestRate - The annual interest rate on a loan
+ * @property {() => Ratio} getInterestRate - The annual interest rate on a debt
  * @property {() => RelativeTime} getChargingPeriod - The period (in seconds) at
- *   which interest is charged to the loan.
+ *   which interest is charged to the debt.
  * @property {() => RelativeTime} getRecordingPeriod - The period (in seconds)
- *   at which interest is recorded to the loan.
+ *   at which interest is recorded to the debt.
  */
 
 /**

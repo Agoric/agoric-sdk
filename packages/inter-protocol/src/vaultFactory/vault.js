@@ -200,11 +200,11 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
         storageNode,
 
-        // vaultSeat will hold the collateral until the loan is retired. The
+        // vaultSeat will hold the collateral until the vault is closed. The
         // payout from it will be handed to the user: if the vault dies early
         // (because the vaultFactory vat died), they'll get all their
         // collateral back. If that happens, the issuer for the Minted will be dead,
-        // so their loan will be worthless.
+        // so their vault will be worthless.
         vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
 
         // Two values from the same moment
@@ -708,7 +708,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             toMint,
           } = helper.mintFee(actualDebtPre, helper.emptyDebt(), wantMinted);
           !AmountMath.isEmpty(fee) ||
-            Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
+            Fail`debt requested (${wantMinted}) is too small; cannot accrue interest`;
           AmountMath.isEqual(newDebtPre, toMint) ||
             Fail`fee mismatch for vault`;
           trace(

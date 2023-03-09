@@ -1,6 +1,6 @@
 # stakeFactory design notes
 
-The stakeFactory contract provides loans on the basis of
+The stakeFactory contract lends on the basis of
 staked assets that earn rewards.
 
 The following sequence diagram shows an interaction between stakeFactory and:
@@ -56,7 +56,7 @@ sequenceDiagram
 In addition to the `stakeFactory.js` module with the contract `start` function:
 
  - `params.js`: utilities for governance parameters
- - `stakeFactoryKit.js`: `makeStakeFactoryKit` is called once per loan
- - `stakeFactoryManager.js`: handles interest etc. for all loans
+ - `stakeFactoryKit.js`: `makeStakeFactoryKit` is called once per staking pot
+ - `stakeFactoryManager.js`: handles interest etc. for all debts
  - `attestation.js`: minting tokens that attest to liens,
       and wrapping them in per-user attestation maker authorities.
