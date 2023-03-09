@@ -20,7 +20,7 @@ export const LIQUIDATION_MARGIN_KEY = 'LiquidationMargin';
 export const LIQUIDATION_PADDING_KEY = 'LiquidationPadding';
 export const LIQUIDATION_PENALTY_KEY = 'LiquidationPenalty';
 export const INTEREST_RATE_KEY = 'InterestRate';
-export const LOAN_FEE_KEY = 'LoanFee';
+export const MINT_FEE_KEY = 'LoanFee';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
 export const ENDORSED_UI_KEY = 'EndorsedUI';
@@ -73,7 +73,7 @@ export const makeVaultParamManager = (
     liquidationMargin,
     liquidationPadding = zeroRatio(liquidationMargin),
     liquidationPenalty,
-    loanFee,
+    mintFee,
   },
 ) =>
   makeParamManagerSync(publisherKit, {
@@ -82,7 +82,7 @@ export const makeVaultParamManager = (
     [LIQUIDATION_PADDING_KEY]: [ParamTypes.RATIO, liquidationPadding],
     [LIQUIDATION_MARGIN_KEY]: [ParamTypes.RATIO, liquidationMargin],
     [LIQUIDATION_PENALTY_KEY]: [ParamTypes.RATIO, liquidationPenalty],
-    [LOAN_FEE_KEY]: [ParamTypes.RATIO, loanFee],
+    [MINT_FEE_KEY]: [ParamTypes.RATIO, mintFee],
   });
 /** @typedef {ReturnType<typeof makeVaultParamManager>} VaultParamManager */
 
@@ -91,7 +91,7 @@ export const vaultParamPattern = M.splitRecord(
     liquidationMargin: ratioPattern,
     liquidationPenalty: ratioPattern,
     interestRate: ratioPattern,
-    loanFee: ratioPattern,
+    mintFee: ratioPattern,
     debtLimit: amountPattern,
   },
   {

@@ -65,7 +65,7 @@ const defaultParamValues = debt =>
     // periodic interest rate (per charging period)
     interestRate: debt.makeRatio(100n, BASIS_POINTS),
     // charge to create or increase loan balance
-    loanFee: debt.makeRatio(500n, BASIS_POINTS),
+    mintFee: debt.makeRatio(500n, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
   });
 
@@ -411,9 +411,9 @@ export const makeManagerDriver = async (
         }
         return notification;
       },
-      checkBorrowed: async (loanAmount, loanFee) => {
+      checkBorrowed: async (loanAmount, mintFee) => {
         const debtAmount = await E(vault).getCurrentDebt();
-        const fee = ceilMultiplyBy(loanAmount, loanFee);
+        const fee = ceilMultiplyBy(loanAmount, mintFee);
         t.deepEqual(
           debtAmount,
           AmountMath.add(loanAmount, fee),

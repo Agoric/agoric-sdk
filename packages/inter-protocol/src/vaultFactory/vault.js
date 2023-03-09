@@ -486,7 +486,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          * @param {Amount<'nat'>} giveAmount
          * @param {Amount<'nat'>} wantAmount
          */
-        loanFee(currentDebt, giveAmount, wantAmount) {
+        mintFee(currentDebt, giveAmount, wantAmount) {
           const { state } = this;
 
           return calculateLoanCosts(
@@ -526,7 +526,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
           // then mint, reallocate, and burn.
-          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+          const { newDebt, fee, surplus, toMint } = helper.mintFee(
             self.getCurrentDebt(),
             fp.give.Minted,
             fp.want.Minted,
@@ -706,7 +706,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             newDebt: newDebtPre,
             fee,
             toMint,
-          } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
+          } = helper.mintFee(actualDebtPre, helper.emptyDebt(), wantMinted);
           !AmountMath.isEmpty(fee) ||
             Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
           AmountMath.isEqual(newDebtPre, toMint) ||

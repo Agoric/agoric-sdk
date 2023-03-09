@@ -97,7 +97,7 @@ const defaultParamValues = debtBrand =>
     // periodic interest rate (per charging period)
     interestRate: makeRatio(100n, debtBrand, BASIS_POINTS),
     // charge to create or increase loan balance
-    loanFee: makeRatio(500n, debtBrand, BASIS_POINTS),
+    mintFee: makeRatio(500n, debtBrand, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
   });
 
@@ -380,7 +380,7 @@ test('first', async t => {
 
   const { vault } = await legacyOfferResult(vaultSeat);
   const debtAmount = await E(vault).getCurrentDebt();
-  const fee = ceilMultiplyBy(run.make(470n), rates.loanFee);
+  const fee = ceilMultiplyBy(run.make(470n), rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
@@ -499,7 +499,7 @@ test.skip('price drop', async t => {
   } = await legacyOfferResult(vaultSeat);
   trace(t, 'offer result', vault);
   const debtAmount = await E(vault).getCurrentDebt();
-  const fee = ceilMultiplyBy(loanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(loanAmount, rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
@@ -648,7 +648,7 @@ test.skip('price falls precipitously', async t => {
     publicNotifiers: { vault: vaultNotifier },
   } = await legacyOfferResult(userSeat);
   const debtAmount = await E(vault).getCurrentDebt();
-  const fee = ceilMultiplyBy(run.make(370n), rates.loanFee);
+  const fee = ceilMultiplyBy(run.make(370n), rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
@@ -737,7 +737,7 @@ test('vaultFactory display collateral', async t => {
   t.context.aethInitialLiquidity = aeth.make(900n);
   t.context.rates = harden({
     ...defaultRates,
-    loanFee: makeRatio(530n, run.brand, BASIS_POINTS),
+    mintFee: makeRatio(530n, run.brand, BASIS_POINTS),
   });
 
   const services = await setupServices(
@@ -806,7 +806,7 @@ test('interest on multiple vaults', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(aliceLoanAmount, fee),
@@ -845,7 +845,7 @@ test('interest on multiple vaults', async t => {
   } = await legacyOfferResult(bobLoanSeat);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
-  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
+  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.mintFee);
   t.deepEqual(
     bobDebtAmount,
     AmountMath.add(bobLoanAmount, bobFee),
@@ -995,7 +995,7 @@ test('adjust balances', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   let runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
   let collateralLevel = aeth.make(1000n);
 
@@ -1071,7 +1071,7 @@ test('adjust balances', async t => {
   const withdrawRunAmount = run.make(50n);
   const withdrawRunAmountWithFees = ceilMultiplyBy(
     withdrawRunAmount,
-    rates.loanFee,
+    rates.mintFee,
   );
   runDebtLevel = AmountMath.add(
     runDebtLevel,
@@ -1120,7 +1120,7 @@ test('adjust balances', async t => {
   // Alice reduce collateral by 100, withdrawing 50 Minted
   const collateralDecrement = aeth.make(100n);
   const withdrawRun2 = run.make(50n);
-  const withdrawRun2WithFees = ceilMultiplyBy(withdrawRun2, rates.loanFee);
+  const withdrawRun2WithFees = ceilMultiplyBy(withdrawRun2, rates.mintFee);
   runDebtLevel = AmountMath.add(
     runDebtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRun2WithFees),
@@ -1169,7 +1169,7 @@ test('adjust balances', async t => {
   // Alice reduce collateral by 100, withdrawing 50 Minted
   const collateralDecr2 = aeth.make(800n);
   const withdrawRun3 = run.make(500n);
-  const withdrawRun3WithFees = ceilMultiplyBy(withdrawRun3, rates.loanFee);
+  const withdrawRun3WithFees = ceilMultiplyBy(withdrawRun3, rates.mintFee);
   runDebtLevel = AmountMath.add(
     runDebtLevel,
     AmountMath.add(withdrawRunAmount, withdrawRun3WithFees),
@@ -1243,7 +1243,7 @@ test('adjust balances - withdraw RUN', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   let runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
@@ -1524,7 +1524,7 @@ test('overdeposit', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   let debtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   const runDebt = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(debtAmount, runDebt, 'vault lent 5000 Minted + fees');
@@ -1687,7 +1687,7 @@ test.skip('mutable liquidity triggers and interest', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(
@@ -1735,7 +1735,7 @@ test.skip('mutable liquidity triggers and interest', async t => {
   } = await legacyOfferResult(bobLoanSeat);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
-  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
+  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.mintFee);
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');
@@ -1904,7 +1904,7 @@ test.skip('collect fees from loan and AMM', async t => {
 
   const { vault } = await E(vaultSeat).getOfferResult();
   const debtAmount = await E(vault).getCurrentDebt();
-  const fee = ceilMultiplyBy(run.make(470n), rates.loanFee);
+  const fee = ceilMultiplyBy(run.make(470n), rates.mintFee);
   t.deepEqual(
     debtAmount,
     AmountMath.add(loanAmount, fee),
@@ -1968,7 +1968,7 @@ test('close loan', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   const debtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   const runDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(debtAmount, runDebtLevel, 'vault lent 5000 Minted + fees');
@@ -2134,7 +2134,7 @@ test.skip('mutable liquidity sensitivity of triggers and interest', async t => {
   const rates = harden({
     ...defaultRates,
     // charge 5% interest
-    loanFee: run.makeRatio(500n, BASIS_POINTS),
+    mintFee: run.makeRatio(500n, BASIS_POINTS),
   });
   t.context.rates = rates;
 
@@ -2175,7 +2175,7 @@ test.skip('mutable liquidity sensitivity of triggers and interest', async t => {
   } = await legacyOfferResult(aliceLoanSeat);
 
   const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
-  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.mintFee);
   const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
 
   t.deepEqual(
@@ -2220,7 +2220,7 @@ test.skip('mutable liquidity sensitivity of triggers and interest', async t => {
   } = await legacyOfferResult(bobLoanSeat);
 
   const bobDebtAmount = await E(bobVault).getCurrentDebt();
-  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.loanFee);
+  const bobFee = ceilMultiplyBy(bobLoanAmount, rates.mintFee);
   const bobRunDebtLevel = AmountMath.add(bobLoanAmount, bobFee);
 
   t.deepEqual(bobDebtAmount, bobRunDebtLevel, 'vault lent 5000 Minted + fees');

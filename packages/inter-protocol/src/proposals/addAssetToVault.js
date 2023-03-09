@@ -235,7 +235,7 @@ export const addAssetToVault = async (
     // limiting the impact of these defaults.
     liquidationPadding: makeRatio(25n, stable),
     liquidationMargin: makeRatio(150n, stable),
-    loanFee: makeRatio(50n, stable, 10_000n),
+    mintFee: makeRatio(50n, stable, 10_000n),
     liquidationPenalty: makeRatio(1n, stable),
     interestRate: makeRatio(1n, stable),
   });
