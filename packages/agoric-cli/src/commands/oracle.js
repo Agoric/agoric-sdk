@@ -66,7 +66,6 @@ export const makeOracleCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
-          // @ts-expect-error xxx RpcRemote
           instance,
           description: 'oracle invitation',
         },

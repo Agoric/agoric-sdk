@@ -150,7 +150,6 @@ export const makePsmCommand = async logger => {
     .action(async function (opts) {
       console.warn('running with options', opts);
       const instance = await lookupPsmInstance(opts.pair);
-      // @ts-expect-error xxx RpcRemote
       const offer = Offers.psm.swap(instance, agoricNames.brand, {
         offerId: opts.offerId,
         feePct: opts.feePct,

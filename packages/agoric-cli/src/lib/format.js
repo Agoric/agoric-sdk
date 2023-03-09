@@ -1,5 +1,5 @@
 // @ts-check
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
+import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 // eslint-disable-next-line no-unused-vars -- typeof below
 import { makeAgoricNames } from './rpc.js';
 
@@ -20,14 +20,17 @@ export const Natural = str => {
   return b;
 };
 
+/** @type {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail} */
 // eslint-disable-next-line no-unused-vars
 const exampleAsset = {
-  brand: { boardId: 'board0425', iface: 'Alleged: BLD brand' },
+  // @ts-expect-error cast
+  brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
   displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
-  issuer: { boardId: null, iface: undefined },
+  // @ts-expect-error cast
+  issuer: makeBoardRemote({ boardId: null, iface: undefined }),
   petname: 'Agoric staking token',
 };
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet').BrandDescriptor & {brand: import('./rpc').RpcRemote}} AssetDescriptor */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail & { brand: import('@agoric/vats/tools/board-utils.js').BoardRemote }} AssetDescriptor */
 
 /** @param {AssetDescriptor[]} assets */
 export const makeAmountFormatter = assets => amt => {
@@ -35,24 +38,22 @@ export const makeAmountFormatter = assets => amt => {
     brand: { boardId },
     value,
   } = amt;
-  const asset = assets.find(a => a.brand.boardId === boardId);
+  const asset = assets.find(a => a.brand.getBoardId() === boardId);
   if (!asset) return [NaN, boardId];
   const {
-    petname,
     displayInfo: { assetKind, decimalPlaces = 0 },
+    issuerName,
   } = asset;
-  const name = Array.isArray(petname) ? petname.join('.') : petname;
   switch (assetKind) {
     case 'nat':
-      /** @type {[petname: string, qty: number]} */
-      return [name, Number(value) / 10 ** decimalPlaces];
+      return [issuerName, Number(value) / 10 ** decimalPlaces];
     case 'set':
       if (value[0]?.handle?.iface?.includes('InvitationHandle')) {
-        return [name, value.map(v => v.description)];
+        return [issuerName, value.map(v => v.description)];
       }
-      return [name, value];
+      return [issuerName, value];
     default:
-      return [name, ['?']];
+      return [issuerName, ['?']];
   }
 };
 
@@ -97,11 +98,7 @@ export const fmtRecordOfLines = record => {
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { offerStatuses } = state;
-  const fmt = makeAmountFormatter(
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-    // @ts-ignore xxx RpcRemote
-    Object.values(agoricNames.vbankAsset),
-  );
+  const fmt = makeAmountFormatter(Object.values(agoricNames.vbankAsset));
   const fmtRecord = r =>
     r
       ? Object.fromEntries(
@@ -132,7 +129,6 @@ export const offerStatusTuples = (state, agoricNames) => {
         } = o;
         // xxx could be O(1)
         const entry = Object.entries(agoricNames.instance).find(
-          // @ts-ignore minimarshal types are off by a bit
           ([_name, candidate]) => candidate === instance,
         );
         const instanceName = entry ? entry[0] : '???';
@@ -161,11 +157,7 @@ export const summarize = (current, coalesced, agoricNames) => {
   return {
     lastOfferId: [current.lastOfferId],
     purses: purseBalanceTuples(
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-      // @ts-ignore xxx RpcRemote
       [...current.purses.values()],
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-      // @ts-ignore xxx RpcRemote
       Object.values(agoricNames.vbankAsset),
     ),
     usedInvitations: Object.entries(current.offerToUsedInvitation).map(
