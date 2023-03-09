@@ -472,7 +472,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             facets.self,
           );
 
-          return 'your loan is closed, thank you for your business';
+          return 'your vault is closed';
         },
 
         /**

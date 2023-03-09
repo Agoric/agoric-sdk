@@ -2027,7 +2027,7 @@ test('close loan', async t => {
   );
 
   const closeOfferResult = await E(aliceCloseSeat).getOfferResult();
-  t.is(closeOfferResult, 'your loan is closed, thank you for your business');
+  t.is(closeOfferResult, 'your vault is closed');
 
   const closeAlloc = await E(aliceCloseSeat).getFinalAllocation();
   t.deepEqual(closeAlloc, {

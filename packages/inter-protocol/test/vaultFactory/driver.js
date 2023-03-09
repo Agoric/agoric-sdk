@@ -383,10 +383,7 @@ export const makeManagerDriver = async (
       close: async () => {
         currentSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
         currentOfferResult = await E(currentSeat).getOfferResult();
-        t.is(
-          currentOfferResult,
-          'your loan is closed, thank you for your business',
-        );
+        t.is(currentOfferResult, 'your vault is closed');
         t.truthy(await E(vaultSeat).hasExited());
       },
       transfer: async () => {
