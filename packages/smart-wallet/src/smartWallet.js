@@ -7,6 +7,7 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
+import { makeTypeGuards } from '@agoric/internal';
 import {
   observeNotifier,
   pipeTopicToStorage,
@@ -14,8 +15,8 @@ import {
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
-import { makeTypeGuards } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
@@ -377,12 +378,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           // When there is no purse, save the payment into a queue.
           // It's not yet ever read but a future version of the contract can
-          if (queues.has(brand)) {
-            const extant = queues.get(brand);
-            queues.set(brand, harden([...extant, payment]));
-          } else {
-            queues.init(brand, harden([payment]));
-          }
+          appendToStoredArray(queues, brand, payment);
           return AmountMath.makeEmpty(brand);
         },
       },
