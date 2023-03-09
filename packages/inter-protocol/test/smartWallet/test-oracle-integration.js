@@ -272,16 +272,14 @@ test.serial('errors', async t => {
   await eventLoopIteration();
 
   // Invalid priceRound argument
-  t.like(
-    await walletPushPrice({
+  await t.throwsAsync(
+    walletPushPrice({
       roundId: 1,
       unitPrice: 1,
     }),
     {
-      error:
-        'Error: In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
-      // trivially satisfied because the Want is empty
-      numWantsSatisfied: 1,
+      message:
+        'In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
     },
   );
   await eventLoopIteration();
@@ -300,14 +298,13 @@ test.serial('errors', async t => {
   await eventLoopIteration();
 
   // Invalid attempt to push again to the same round
-  t.like(
-    await walletPushPrice({
+  await t.throwsAsync(
+    walletPushPrice({
       roundId: 1,
       unitPrice: 1n,
     }),
     {
-      error: 'Error: cannot report on previous rounds',
-      numWantsSatisfied: 1,
+      message: 'cannot report on previous rounds',
     },
   );
 });
@@ -518,17 +515,11 @@ test.serial('govern oracles list', async t => {
   await E(timer).tickN(20);
 
   // verify removed oracle can no longer PushPrice /////////////////////////
-  {
-    const pushPriceOfferId = await pushPrice(oracleWallet, oracleOfferId, {
+  await t.throwsAsync(
+    pushPrice(oracleWallet, oracleOfferId, {
       roundId: 1,
       unitPrice: 123n,
-    });
-
-    const offerStatus =
-      oracleWalletComputedState.offerStatuses.get(pushPriceOfferId);
-    t.like(offerStatus, {
-      id: pushPriceOfferId,
-      error: 'Error: pushPrice for disabled oracle',
-    });
-  }
+    }),
+    { message: 'pushPrice for disabled oracle' },
+  );
 });

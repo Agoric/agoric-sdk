@@ -23,6 +23,7 @@ import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { Fail } from '@agoric/assert';
 
 export { ActionType };
 
@@ -58,10 +59,8 @@ export const subscriptionKey = subscription => {
     .getStoreKey()
     .then(storeKey => {
       const [prefix, unique] = storeKey.storeSubkey.split(':');
-      assert(
-        prefix === 'fake',
-        'subscriptionKey helper only supports fake storage',
-      );
+      prefix === 'fake' ||
+        Fail`subscriptionKey helper only supports fake storage`;
       return unique;
     });
 };
@@ -89,7 +88,7 @@ const makeFakeBridgeManager = () =>
           assert.fail(`expected fromBridge`);
         },
         toBridge(obj) {
-          assert(handler, `No handler for ${bridgeId}`);
+          handler || Fail`No handler for ${bridgeId}`;
           // Rely on interface guard for validation.
           // This should also be validated upstream but don't rely on it.
           // @ts-expect-error handler possibly undefined
