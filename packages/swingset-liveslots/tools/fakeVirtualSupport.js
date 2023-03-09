@@ -268,15 +268,20 @@ export function makeFakeVirtualReferenceManager(
   );
 }
 
-export function makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff) {
-  return makeWatchedPromiseManager(
-    fakeStuff.syscall,
+export function makeFakeWatchedPromiseManager(
+  vrm,
+  vom,
+  collectionManager,
+  fakeStuff,
+) {
+  return makeWatchedPromiseManager({
+    syscall: fakeStuff.syscall,
     vrm,
     vom,
-    cm,
-    fakeStuff.convertValToSlot,
-    fakeStuff.convertSlotToVal,
-  );
+    collectionManager,
+    convertValToSlot: fakeStuff.convertValToSlot,
+    convertSlotToVal: fakeStuff.convertSlotToVal,
+  });
 }
 /**
  * Configure virtual stuff with relaxed durability rules and fake liveslots

@@ -551,7 +551,14 @@ function build(
 
   const knownResolutions = new WeakMap();
 
-  // this is called with all outbound argument vrefs
+  /**
+   * Determines if a vref from an outbound argument
+   * identifies a promise that should be exported, and if so then
+   * adds it to exportedVPIDs and sets up handlers.
+   *
+   * @param {any} vref
+   * @returns {boolean}
+   */
   function maybeExportPromise(vref) {
     // we only care about new vpids
     if (
@@ -570,7 +577,9 @@ function build(
       // if (!knownResolutions.has(p)) { // TODO really?
       // eslint-disable-next-line no-use-before-define
       followForKernel(vpid, p);
+      return true;
     }
+    return false;
   }
 
   function exportPassByPresence() {
@@ -657,18 +666,15 @@ function build(
     assertAcceptableSyscallCapdataSize,
   );
 
-  const watchedPromiseManager = makeWatchedPromiseManager(
+  const watchedPromiseManager = makeWatchedPromiseManager({
     syscall,
     vrm,
     vom,
     collectionManager,
     // eslint-disable-next-line no-use-before-define
     convertValToSlot,
-    unmeteredConvertSlotToVal,
-    // eslint-disable-next-line no-use-before-define
-    meterControl.unmetered(revivePromise),
-    unmeteredUnserialize,
-  );
+    convertSlotToVal: unmeteredConvertSlotToVal,
+  });
 
   function convertValToSlot(val) {
     // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
@@ -816,6 +822,7 @@ function build(
     registerValue(slot, p);
     return p;
   }
+  const unmeteredRevivePromise = meterControl.unmetered(revivePromise);
 
   function resolutionCollector() {
     const resolutions = [];
@@ -1424,7 +1431,10 @@ function build(
       Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
     // Need to load watched promises *after* buildRootObject() so that handler kindIDs
     // have a chance to be reassociated with their handlers.
-    watchedPromiseManager.loadWatchedPromiseTable();
+    watchedPromiseManager.loadWatchedPromiseTable(
+      unmeteredUnserialize,
+      unmeteredRevivePromise,
+    );
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);

@@ -279,7 +279,6 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
 // END: the preceding functions aren't ready for use yet
 
 export async function releaseOldState(tools) {
-
   // The next step is to pretend that the kernel has dropped all
   // non-durable exports: both the in-RAM Remotables and the on-disk
   // virtual objects (but not the root object). This will trigger

@@ -7,27 +7,23 @@ import { E } from '@endo/eventual-send';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**
- *
- * @param {*} syscall
- * @param {*} vrm
- * @param {import('./virtualObjectManager.js').VirtualObjectManager} vom
- * @param {*} cm
- * @param {*} convertValToSlot
- * @param {*} convertSlotToVal
- * @param {*} [revivePromise]
- * @param {*} [unserialize]
+ * @param {object} options
+ * @param {*} options.syscall
+ * @param {*} options.vrm
+ * @param {import('./virtualObjectManager.js').VirtualObjectManager} options.vom
+ * @param {*} options.collectionManager
+ * @param {import('@endo/marshal').ConvertValToSlot<any>} options.convertValToSlot
+ * @param {import('@endo/marshal').ConvertSlotToVal<any>} options.convertSlotToVal
  */
-export function makeWatchedPromiseManager(
+export function makeWatchedPromiseManager({
   syscall,
   vrm,
   vom,
-  cm,
+  collectionManager,
   convertValToSlot,
   convertSlotToVal,
-  revivePromise,
-  unserialize,
-) {
-  const { makeScalarBigMapStore } = cm;
+}) {
+  const { makeScalarBigMapStore } = collectionManager;
   const { defineDurableKind } = vom;
 
   // virtual Store (not durable) mapping vpid to Promise objects, to
@@ -104,7 +100,14 @@ export function makeWatchedPromiseManager(
     );
   }
 
-  function loadWatchedPromiseTable() {
+  /**
+   * Revives watched promises.
+   *
+   * @param {import('@endo/marshal').Unserialize<unknown>} unserialize
+   * @param {(vref: any) => Promise<any>} revivePromise
+   * @returns {void}
+   */
+  function loadWatchedPromiseTable(unserialize, revivePromise) {
     const deadPromisesRaw = syscall.vatstoreGet('deadPromises');
     if (!deadPromisesRaw) {
       return;
