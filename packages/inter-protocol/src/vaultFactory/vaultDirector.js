@@ -68,6 +68,8 @@ const trace = makeTracer('VD');
  * @typedef {Readonly<{
  *   state: State;
  * }>} MethodContext
+ *
+ * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} VaultDirectorParamManager
  */
 // TODO find a way to type 'finish' with the context (state and facets)
 
@@ -76,7 +78,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
- * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
+ * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<"nat">} debtMint
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
@@ -103,6 +105,9 @@ export const prepareVaultDirector = (
 
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
+  /**
+   * @type {MapStore<Brand, ReturnType<typeof makeVaultParamManager>>}
+   */
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
   /** @type {PublishKit<MetricsNotification>} */
@@ -176,7 +181,7 @@ export const prepareVaultDirector = (
    * "Director" of the vault factory, overseeing "vault managers".
    *
    * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
-   * @param {import('@agoric/governance/src/contractGovernance/typedParamManager').TypedParamManager<import('./params.js').VaultDirectorParams>} directorParamManager
+   * @param {VaultDirectorParamManager} directorParamManager
    * @param {ZCFMint<"nat">} debtMint
    */
   const makeVaultDirector = defineDurableExoClassKit(

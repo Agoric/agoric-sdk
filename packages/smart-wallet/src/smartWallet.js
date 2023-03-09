@@ -65,8 +65,9 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  */
 
 /**
- * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus } |
- *  { updated: 'balance'; currentAmount: Amount }
+ * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
+ *   | { updated: 'balance'; currentAmount: Amount }
+ *   | { updated: 'walletAction'; status: { error: string } }
  * } UpdateRecord Record of an update to the state of this wallet.
  *
  * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
@@ -412,7 +413,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           const logger = {
             info: (...args) => console.info('wallet', address, ...args),
-            error: (...args) => console.log('wallet', address, ...args),
+            error: (...args) => console.error('wallet', address, ...args),
           };
 
           const executor = makeOfferExecutor({
@@ -488,13 +489,27 @@ export const prepareSmartWallet = (baggage, shared) => {
             action => {
               switch (action.method) {
                 case 'executeOffer': {
-                  assert(canSpend, 'executeOffer requires spend authority');
+                  canSpend || Fail`executeOffer requires spend authority`;
                   return offers.executeOffer(action.offer);
                 }
                 default: {
                   throw Fail`invalid handle bridge action ${q(action)}`;
                 }
               }
+            },
+            /** @param {Error} err */
+            err => {
+              const { address, updatePublishKit } = this.state;
+              console.error(
+                'wallet',
+                address,
+                'handleBridgeAction error:',
+                err,
+              );
+              updatePublishKit.publisher.publish({
+                updated: 'walletAction',
+                status: { error: err.message },
+              });
             },
           );
         },

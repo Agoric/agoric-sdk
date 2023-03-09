@@ -77,9 +77,7 @@ zoe ->> addCollateralHook: call addCollateralHook
 addCollateralHook ->> seat: get proposal
 
 addCollateralHook ->> addCollateralHook: get Keyword for amountIn brand
-addCollateralHook ->> seat: decrementBy amountIn
-addCollateralHook ->> collateralSeat: incrementBy collateralKeyword: amountIn
-addCollateralHook ->> zcf: reallocate collateralSeat, seat
+addCollateralHook ->> zcf: atomicTransfer amountIn from seat to collateralSeat
 addCollateralHook ->> seat: seat.exit()
 seat ->> zoe: added collateral to the reserve
 zoe ->> caller: return status
