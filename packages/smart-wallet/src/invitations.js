@@ -104,7 +104,7 @@ export const makeInvitationsHelper = (
 
       const { instance, description } = spec;
       // @ts-expect-error TS thinks it's always true. I'm doubtful.
-      assert(instance && description, 'missing instance or description');
+      (instance && description) || Fail`missing instance or description`;
       /** @type {Amount<'set'>} */
       const purseAmount = await E(invitationsPurse).getCurrentAmount();
       const invitations = AmountMath.getValue(invitationBrand, purseAmount);
@@ -142,10 +142,7 @@ export const makeInvitationsHelper = (
 
       const { previousOffer, invitationArgs = [], invitationMakerName } = spec;
       const makers = getInvitationContinuation(String(previousOffer));
-      assert(
-        makers,
-        `invalid value stored for previous offer ${previousOffer}`,
-      );
+      makers || Fail`invalid value stored for previous offer ${previousOffer}`;
       return E(makers)[invitationMakerName](...invitationArgs);
     },
   });

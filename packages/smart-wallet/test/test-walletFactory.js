@@ -135,7 +135,35 @@ test('bridge with offerId string', async t => {
   );
 });
 
-test.todo('spend action over bridge');
+test('bad action value', async t => {
+  const owner = 'agoric1badActionValue';
+  // make a wallet and get its update stream, but don't use the wallet object
+  const updates = await E(
+    t.context.simpleProvideWallet(owner),
+  ).getUpdatesSubscriber();
+
+  const validMsg = {
+    type: ActionType.WALLET_SPEND_ACTION,
+    owner,
+    spendAction: JSON.stringify({
+      body: 'invalid capdata to force an error in handleBridgeAction',
+      slots: [],
+    }),
+    blockTime: 0,
+    blockHeight: 0,
+  };
+  assert(t.context.sendToBridge);
+  // sending over the bridge succeeds without rejecting
+  await t.context.sendToBridge(validMsg);
+
+  // the signal of an error is available in chain storage
+  t.deepEqual(await headValue(updates), {
+    updated: 'walletAction',
+    status: {
+      error: 'Unexpected token i in JSON at position 0',
+    },
+  });
+});
 
 test('notifiers', async t => {
   async function checkAddress(address) {

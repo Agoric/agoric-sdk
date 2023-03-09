@@ -143,6 +143,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const zoe = zcf.getZoeService();
   const { storageNode, walletBridgeManager } = privateArgs;
 
+  /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
 
@@ -153,8 +154,20 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     }),
     {
       /**
+       * Designed to be called by the bridgeManager vat.
+       *
+       * If this errors before calling handleBridgeAction(), the failure will not be observable. The
+       * promise does reject, but as of now bridge manager drops instead of handling it. Eventually
+       * we'll make the bridge able to give feedback about the requesting transaction. Meanwhile we
+       * could write the error to chainStorage but we don't have a guarantee of the wallet owner to
+       * associate it with. (We could have a shared `lastError` node but it would be so noisy as to
+       * not provide much info to the end user.)
+       *
+       * Once the owner is known, this calls handleBridgeAction which is then ensure that all errors
+       * are published in the owner wallet's vstorage path.
        *
        * @param {import('./types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg
+       * @returns {Promise<void>}
        */
       fromBridge: async obj => {
         console.log('walletFactory.fromBridge:', obj);

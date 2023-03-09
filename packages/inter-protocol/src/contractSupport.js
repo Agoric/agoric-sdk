@@ -50,28 +50,6 @@ export const allEmpty = amounts => {
 };
 
 /**
- * Stage a transfer between `fromSeat` and `toSeat`, specified as the delta between
- * the gain and a loss on the `fromSeat`. The gain/loss are typically from the
- * give/want respectively of a proposal. The `key` is the allocation keyword.
- *
- * @deprecated Use atomicRearrange instead
- * @param {ZCFSeat} fromSeat
- * @param {ZCFSeat} toSeat
- * @param {Amount} fromLoses
- * @param {Amount} fromGains
- * @param {Keyword} key
- */
-export const stageDelta = (fromSeat, toSeat, fromLoses, fromGains, key) => {
-  // Must check `isEmpty`; can't subtract `empty` from a missing allocation.
-  if (!AmountMath.isEmpty(fromLoses)) {
-    toSeat.incrementBy(fromSeat.decrementBy(harden({ [key]: fromLoses })));
-  }
-  if (!AmountMath.isEmpty(fromGains)) {
-    fromSeat.incrementBy(toSeat.decrementBy(harden({ [key]: fromGains })));
-  }
-};
-
-/**
  * @param {Amount<'nat'>} debtLimit
  * @param {Amount<'nat'>} totalDebt
  * @param {Amount<'nat'>} toMint
