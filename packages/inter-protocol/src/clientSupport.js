@@ -136,9 +136,7 @@ const makeCloseOffer = (brands, opts, previousOffer) => {
 export const lookupOfferIdForVault = async (vaultId, currentP) => {
   const { offerToPublicSubscriberPaths } = await currentP;
 
-  for (const [offerId, publicSubscribers] of Object.entries(
-    offerToPublicSubscriberPaths,
-  )) {
+  for (const [offerId, publicSubscribers] of offerToPublicSubscriberPaths) {
     if (publicSubscribers.vault?.endsWith(vaultId)) {
       return offerId;
     }

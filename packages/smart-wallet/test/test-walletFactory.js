@@ -28,7 +28,6 @@ test.before(async t => {
 test('bridge handler', async t => {
   const smartWallet = await t.context.simpleProvideWallet(mockAddress1);
   const updates = await E(smartWallet).getUpdatesSubscriber();
-  const current = await E(smartWallet).getCurrentSubscriber();
 
   const ctx = makeImportContext();
 

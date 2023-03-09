@@ -167,7 +167,7 @@ export const summarize = (current, coalesced, agoricNames) => {
       // @ts-ignore xxx RpcRemote
       Object.values(agoricNames.vbankAsset),
     ),
-    usedInvitations: Object.entries(current.offerToUsedInvitation).map(
+    usedInvitations: current.offerToUsedInvitation.map(
       ([offerId, invitationAmt]) => [
         agoricNames.reverse[invitationAmt.value[0].instance.boardId],
         invitationAmt.value[0].description,
