@@ -64,7 +64,7 @@ export const buildRootObject = () => {
       zoePK.resolve(zoeService);
 
       const v1BundleId = await E(vatAdmin).getBundleIDByName(wfV1BundleName);
-      assert(v1BundleId, 'bundleId must not be empty');
+      v1BundleId || Fail`bundleId must not be empty`;
       installation = await E(zoe).installBundleID(v1BundleId);
 
       const autoRefundBundleId = await E(vatAdmin).getBundleIDByName(

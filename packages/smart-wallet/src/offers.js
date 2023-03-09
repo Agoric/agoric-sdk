@@ -71,20 +71,6 @@ export const makeOfferExecutor = ({
         status = { ...status, ...changes };
         onStatusChange(status);
       };
-      /**
-       * Notify user and attempt to recover
-       *
-       * @param {Error} err
-       */
-      const handleError = err => {
-        logger.error('OFFER ERROR:', err);
-        updateStatus({ error: err.toString() });
-        void paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
-          if (result) {
-            updateStatus({ result });
-          }
-        });
-      };
 
       const tryBody = async () => {
         // 1. Prepare values and validate synchronously.
@@ -112,49 +98,43 @@ export const makeOfferExecutor = ({
         );
         logger.info(id, 'seated');
 
-        // publish 'result'
-        void E.when(
-          E(seatRef).getOfferResult(),
-          result => {
-            const passStyle = passStyleOf(result);
-            logger.info(id, 'offerResult', passStyle, result);
-            // someday can we get TS to type narrow based on the passStyleOf result match?
-            switch (passStyle) {
-              case 'bigint':
-              case 'boolean':
-              case 'null':
-              case 'number':
-              case 'string':
-              case 'symbol':
-              case 'undefined':
-                updateStatus({ result });
-                break;
-              case 'copyRecord':
-                // @ts-expect-error result narrowed by passStyle
-                if ('invitationMakers' in result) {
-                  // save for continuing invitation offer
-                  void onNewContinuingOffer(
-                    String(id),
-                    invitationAmount,
-                    // @ts-expect-error result narrowed by passStyle
-                    result.invitationMakers,
-                    // @ts-expect-error result narrowed by passStyle
-                    result.publicSubscribers,
-                  );
-                }
-                // copyRecord is valid to publish but not safe as it may have private info
-                updateStatus({ result: UNPUBLISHED_RESULT });
-                break;
-              default:
-                // drop the result
-                updateStatus({ result: UNPUBLISHED_RESULT });
-            }
-          },
-          handleError,
-        );
+        const publishResult = E.when(E(seatRef).getOfferResult(), result => {
+          const passStyle = passStyleOf(result);
+          logger.info(id, 'offerResult', passStyle, result);
+          // someday can we get TS to type narrow based on the passStyleOf result match?
+          switch (passStyle) {
+            case 'bigint':
+            case 'boolean':
+            case 'null':
+            case 'number':
+            case 'string':
+            case 'symbol':
+            case 'undefined':
+              updateStatus({ result });
+              break;
+            case 'copyRecord':
+              // @ts-expect-error result narrowed by passStyle
+              if ('invitationMakers' in result) {
+                // save for continuing invitation offer
+                void onNewContinuingOffer(
+                  String(id),
+                  invitationAmount,
+                  // @ts-expect-error result narrowed by passStyle
+                  result.invitationMakers,
+                  // @ts-expect-error result narrowed by passStyle
+                  result.publicSubscribers,
+                );
+              }
+              // copyRecord is valid to publish but not safe as it may have private info
+              updateStatus({ result: UNPUBLISHED_RESULT });
+              break;
+            default:
+              // drop the result
+              updateStatus({ result: UNPUBLISHED_RESULT });
+          }
+        });
 
-        // publish 'numWantsSatisfied'
-        void E.when(
+        const publishWantsSatisfied = E.when(
           E(seatRef).numWantsSatisfied(),
           numSatisfied => {
             logger.info(id, 'numSatisfied', numSatisfied);
@@ -165,23 +145,35 @@ export const makeOfferExecutor = ({
               numWantsSatisfied: numSatisfied,
             });
           },
-          handleError,
         );
 
-        // publish 'payouts'
         // This will block until all payouts succeed, but user will be updated
         // as each payout will trigger its corresponding purse notifier.
-        void E.when(
-          E(seatRef).getPayouts(),
-          payouts =>
-            paymentsManager.depositPayouts(payouts).then(amountsOrDeferred => {
-              updateStatus({ payouts: amountsOrDeferred });
-            }),
-          handleError,
+        const publishPayouts = E.when(E(seatRef).getPayouts(), payouts =>
+          paymentsManager.depositPayouts(payouts).then(amountsOrDeferred => {
+            updateStatus({ payouts: amountsOrDeferred });
+          }),
         );
+
+        // The offer is complete when these promises are resolved.
+        // If any reject then executeOffer rejects and that must be handled.
+        return Promise.all([
+          publishResult,
+          publishWantsSatisfied,
+          publishPayouts,
+        ]);
       };
+
       await tryBody().catch(err => {
-        handleError(err);
+        logger.error('OFFER ERROR:', err);
+        // Notify the user
+        updateStatus({ error: err.toString() });
+        // Attempt to recover payments
+        void paymentsManager.tryReclaimingWithdrawnPayments().then(result => {
+          if (result) {
+            updateStatus({ result });
+          }
+        });
         // propagate to caller
         throw err;
       });
