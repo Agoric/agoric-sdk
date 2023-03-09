@@ -58,13 +58,13 @@ const contractRoots = {
 const defaultParamValues = debt =>
   harden({
     debtLimit: debt.make(1_000_000n),
-    // margin required to maintain a loan
+    // margin required to maintain a vault
     liquidationMargin: debt.makeRatio(105n),
     // penalty upon liquidation as proportion of debt
     liquidationPenalty: debt.makeRatio(10n),
     // periodic interest rate (per charging period)
     interestRate: debt.makeRatio(100n, BASIS_POINTS),
-    // charge to create or increase loan balance
+    // charge to create or increase vault balance
     mintFee: debt.makeRatio(500n, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
   });
@@ -411,12 +411,12 @@ export const makeManagerDriver = async (
         }
         return notification;
       },
-      checkBorrowed: async (loanAmount, mintFee) => {
+      checkBorrowed: async (debt, mintFee) => {
         const debtAmount = await E(vault).getCurrentDebt();
-        const fee = ceilMultiplyBy(loanAmount, mintFee);
+        const fee = ceilMultiplyBy(debt, mintFee);
         t.deepEqual(
           debtAmount,
-          AmountMath.add(loanAmount, fee),
+          AmountMath.add(debt, fee),
           'borrower Minted amount does not match',
         );
         return debtAmount;

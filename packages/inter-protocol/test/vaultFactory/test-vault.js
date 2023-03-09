@@ -105,7 +105,7 @@ test('first', async t => {
     'vault holds 50 Collateral',
   );
 
-  // Add more collateral to an existing loan. We get nothing back but a warm
+  // Add more collateral to an existing vault. We get nothing back but a warm
   // fuzzy feeling.
 
   const collateralAmount = AmountMath.make(cBrand, 20n);
