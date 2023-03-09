@@ -1,6 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
 import {
   M,
   makeScalarBigMapStore,
@@ -16,7 +15,7 @@ import { AdminFacetI, InstanceAdminI } from '../typeGuards.js';
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 
-const { Fail, quote: q } = assert;
+const { Fail } = assert;
 
 /**
  * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
@@ -238,14 +237,6 @@ export const makeStartInstance = (
 
     const contractBundleCap = bundle || bundleCap;
     assert(contractBundleCap);
-
-    if (privateArgs !== undefined) {
-      const passStyle = passStyleOf(privateArgs);
-      passStyle === 'copyRecord' ||
-        Fail`privateArgs must be a pass-by-copy record, but instead was a ${q(
-          passStyle,
-        )}: ${privateArgs}`;
-    }
 
     const instanceHandle = makeInstanceHandle();
 

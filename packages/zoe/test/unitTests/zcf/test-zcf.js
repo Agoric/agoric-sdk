@@ -310,6 +310,10 @@ test(`zcf.makeInvitation - no customDetails`, async t => {
     handle: details.handle,
     installation,
     instance,
+    terms: {
+      brands: {},
+      issuers: {},
+    },
   });
 });
 
@@ -326,6 +330,10 @@ test(`zcf.makeInvitation - customDetails`, async t => {
     handle: details.handle,
     installation,
     instance,
+    terms: {
+      brands: {},
+      issuers: {},
+    },
     customDetails: {
       timer,
       whatever: 'whatever',
@@ -339,6 +347,10 @@ test(`zcf.makeInvitation - customDetails stratification`, async t => {
     description: 'whatever',
     installation: 'whatever',
     instance: 'whatever',
+    terms: {
+      brands: {},
+      issuers: {},
+    },
   });
   const details = await E(zoe).getInvitationDetails(invitationP);
   t.deepEqual(details, {
@@ -346,10 +358,18 @@ test(`zcf.makeInvitation - customDetails stratification`, async t => {
     handle: details.handle,
     installation,
     instance,
+    terms: {
+      brands: {},
+      issuers: {},
+    },
     customDetails: {
       description: 'whatever',
       installation: 'whatever',
       instance: 'whatever',
+      terms: {
+        brands: {},
+        issuers: {},
+      },
     },
   });
   t.falsy(typeof details.handle === 'string');
