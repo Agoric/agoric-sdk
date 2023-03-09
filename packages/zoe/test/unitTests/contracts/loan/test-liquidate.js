@@ -12,6 +12,7 @@ import {
   checkNoNewOffers,
   checkPayouts,
 } from './helpers.js';
+import { atomicRearrange } from '../../../../src/contractSupport/atomicTransfer.js';
 
 test('test doLiquidation with mocked autoswap', async t => {
   const { zcf, collateralKit, loanKit } = await setupLoanUnitTest();
@@ -43,14 +44,13 @@ test('test doLiquidation with mocked autoswap', async t => {
 
   const swapHandler = swapSeat => {
     // swapSeat gains 20 loan tokens from fakePoolSeat, loses all collateral
-
-    swapSeat.decrementBy(harden({ In: collateral }));
-    fakePoolSeat.incrementBy(harden({ Secondary: collateral }));
-
-    fakePoolSeat.decrementBy(harden({ Central: price }));
-    swapSeat.incrementBy(harden({ Out: price }));
-
-    zcf.reallocate(swapSeat, fakePoolSeat);
+    atomicRearrange(
+      zcf,
+      harden([
+        [swapSeat, fakePoolSeat, { In: collateral }, { Secondary: collateral }],
+        [fakePoolSeat, swapSeat, { Central: price }, { Out: price }],
+      ]),
+    );
 
     swapSeat.exit();
     return `Swap successfully completed.`;
