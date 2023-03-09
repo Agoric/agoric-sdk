@@ -1,17 +1,33 @@
-import { assert } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
-const typePriority = ['dropExport', 'retireExport', 'retireImport'];
+const { ownKeys } = Reflect;
+
+/**
+ * A descending-priority mapping of GC action type to queue event type.
+ *
+ * @enum {string}
+ */
+const typePriority = {
+  dropExport: 'dropExports',
+  retireExport: 'retireExports',
+  retireImport: 'retireImports',
+};
+Object.setPrototypeOf(typePriority, null);
 
 function parseAction(s) {
   const [vatID, type, kref] = s.split(' ');
   insistVatID(vatID);
-  assert(typePriority.includes(type), `unknown type ${type}`);
+  type in typePriority || Fail`unknown type ${type}`;
   insistKernelType('object', kref);
   return { vatID, type, kref };
 }
 
+/**
+ * @param {*} kernelKeeper
+ * @returns {import('../types-internal.js').RunQueueEvent | undefined}
+ */
 export function processGCActionSet(kernelKeeper) {
   const allActionsSet = kernelKeeper.getGCActions();
   let actionSetUpdated = false;
@@ -114,7 +130,7 @@ export function processGCActionSet(kernelKeeper) {
   for (const vatID of vatIDs) {
     const forVat = grouped.get(vatID);
     // find the highest-priority type of work to do within this vat
-    for (const type of typePriority) {
+    for (const type of ownKeys(typePriority)) {
       if (forVat.has(type)) {
         const actions = forVat.get(type);
         const krefs = filterActions(vatID, actions);
@@ -123,7 +139,7 @@ export function processGCActionSet(kernelKeeper) {
           krefs.sort();
           // remove the work we're about to do from the durable set
           kernelKeeper.setGCActions(allActionsSet);
-          return harden({ type: `${type}s`, vatID, krefs });
+          return harden({ type: typePriority[type], vatID, krefs });
         }
       }
     }
