@@ -153,6 +153,8 @@ export const makePsmCommand = async logger => {
       const offer = Offers.psm.swap(instance, agoricNames.brand, {
         offerId: opts.offerId,
         feePct: opts.feePct,
+        giveMinted: opts.giveMinted,
+        wantMinted: opts.wantMinted,
       });
       outputExecuteOfferAction(offer);
     });
