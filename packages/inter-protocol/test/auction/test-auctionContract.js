@@ -102,7 +102,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     params,
   );
   const { timerService } = terms;
-  /** @type {MapStore<Brand, { setPrice: (Ratio) => void }>} */
+  /** @type {MapStore<Brand, { setPrice: (r: Ratio) => void }>} */
   const priceAuthorities = makeScalarMapStore();
 
   // Each driver needs its own to avoid state pollution between tests

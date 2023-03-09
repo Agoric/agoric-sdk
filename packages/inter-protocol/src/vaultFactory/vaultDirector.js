@@ -106,8 +106,7 @@ export const prepareVaultDirector = (
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   /**
-   * @template T
-   * @type {MapStore<Brand<AssetKind>, ReturnType<makeVaultParamManager>>}
+   * @type {MapStore<Brand, ReturnType<typeof makeVaultParamManager>>}
    */
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
