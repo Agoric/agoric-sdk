@@ -8,7 +8,9 @@ import { Far } from '@endo/marshal';
  * @param {Array<Pick<IssuerKit, 'brand' | 'issuer'>>} issuerKits
  */
 export const makeFakeBankKit = issuerKits => {
+  /** @type {MapStore<Brand, ERef<Issuer>>} */
   const issuers = makeScalarMapStore();
+  /** @type {MapStore<Brand, ERef<import('../src/vat-bank.js').VirtualPurse>>} */
   const purses = makeScalarMapStore();
 
   // XXX setup purses without publishing
@@ -41,7 +43,7 @@ export const makeFakeBankKit = issuerKits => {
   /** @type {import('../src/vat-bank.js').Bank} */
   const bank = Far('mock bank', {
     /** @param {Brand} brand */
-    getPurse: brand => purses.get(brand),
+    getPurse: async brand => purses.get(brand),
     getAssetSubscription: () => subscription,
   });
 
