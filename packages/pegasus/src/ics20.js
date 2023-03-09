@@ -55,6 +55,7 @@ export const parseICS20TransferPacket = async packet => {
 
   assert.typeof(denom, 'string', X`Denom ${denom} must be a string`);
   assert.typeof(receiver, 'string', X`Receiver ${receiver} must be a string`);
+  memo === undefined || assert.typeof(memo, 'string', X`Memo ${memo} must be a string or 'undefined'`);
 
   // amount is a string in JSON.
   assert.typeof(amount, 'string', X`Amount ${amount} must be a string`);
