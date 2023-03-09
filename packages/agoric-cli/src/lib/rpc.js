@@ -189,9 +189,10 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
+      /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
-        reverse[remote.boardId] = name;
+        reverse[remote.getBoardId()] = name;
       }
       return [kind, Object.fromEntries(parts)];
     }),

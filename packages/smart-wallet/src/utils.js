@@ -15,7 +15,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /**
    * keyed by description; xxx assumes unique
    *
-   * @type {Map<import('./offers').OfferId, { acceptedIn: import('./offers').OfferId, description: string, instance: { boardId: string } }>}
+   * @type {Map<import('./offers').OfferId, { acceptedIn: import('./offers').OfferId, description: string, instance: Instance }>}
    */
   const invitationsReceived = new Map();
 
