@@ -230,6 +230,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function assertAcceptableSyscallCapdataSize(_capdatas) {}
 
+  const maybeExportPromise = _vref => false;
+
   return {
     syscall,
     allocateExportID,
@@ -250,6 +252,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     dumpStore,
     setVrm,
     assertAcceptableSyscallCapdataSize,
+    maybeExportPromise,
   };
 }
 
@@ -281,6 +284,7 @@ export function makeFakeWatchedPromiseManager(
     collectionManager,
     convertValToSlot: fakeStuff.convertValToSlot,
     convertSlotToVal: fakeStuff.convertSlotToVal,
+    maybeExportPromise: fakeStuff.maybeExportPromise,
   });
 }
 /**

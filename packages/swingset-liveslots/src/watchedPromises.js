@@ -14,6 +14,7 @@ import { parseVatSlot } from './parseVatSlots.js';
  * @param {*} options.collectionManager
  * @param {import('@endo/marshal').ConvertValToSlot<any>} options.convertValToSlot
  * @param {import('@endo/marshal').ConvertSlotToVal<any>} options.convertSlotToVal
+ * @param {(vref: any) => boolean} options.maybeExportPromise
  */
 export function makeWatchedPromiseManager({
   syscall,
@@ -22,6 +23,7 @@ export function makeWatchedPromiseManager({
   collectionManager,
   convertValToSlot,
   convertSlotToVal,
+  maybeExportPromise,
 }) {
   const { makeScalarBigMapStore } = collectionManager;
   const { defineDurableKind } = vom;
@@ -103,41 +105,14 @@ export function makeWatchedPromiseManager({
   /**
    * Revives watched promises.
    *
-   * @param {import('@endo/marshal').Unserialize<unknown>} unserialize
    * @param {(vref: any) => Promise<any>} revivePromise
    * @returns {void}
    */
-  function loadWatchedPromiseTable(unserialize, revivePromise) {
-    const deadPromisesRaw = syscall.vatstoreGet('deadPromises');
-    if (!deadPromisesRaw) {
-      return;
-    }
-    const disconnectObjectCapData = JSON.parse(
-      syscall.vatstoreGet('deadPromiseDO'),
-    );
-    const disconnectObject = unserialize(disconnectObjectCapData);
-    syscall.vatstoreDelete('deadPromises');
-    syscall.vatstoreDelete('deadPromiseDO');
-    const deadPromises = new Set(deadPromisesRaw.split(','));
-
-    for (const [vpid, watches] of watchedPromiseTable.entries()) {
-      if (deadPromises.has(vpid)) {
-        watchedPromiseTable.delete(vpid);
-        for (const watch of watches) {
-          const [watcher, ...args] = watch;
-          void Promise.resolve().then(() => {
-            if (watcher.onRejected) {
-              watcher.onRejected(disconnectObject, ...args);
-            } else {
-              throw disconnectObject;
-            }
-          });
-        }
-      } else {
-        const p = revivePromise(vpid);
-        promiseRegistrations.init(vpid, p);
-        pseudoThen(p, vpid);
-      }
+  function loadWatchedPromiseTable(revivePromise) {
+    for (const vpid of watchedPromiseTable.keys()) {
+      const p = revivePromise(vpid);
+      promiseRegistrations.init(vpid, p);
+      pseudoThen(p, vpid);
     }
   }
 
@@ -178,7 +153,6 @@ export function makeWatchedPromiseManager({
 
     // TODO: add vpid->p virtual table mapping, to keep registration alive
     // TODO: remove mapping upon resolution
-    // TODO: track watched but non-exported promises, add during prepareShutdownRejections
     //  maybe check importedVPIDs here and add to table if !has
     void Promise.resolve().then(() => {
       const watcherVref = convertValToSlot(watcher);
@@ -205,28 +179,16 @@ export function makeWatchedPromiseManager({
         watchedPromiseTable.set(vpid, harden([...watches, [watcher, ...args]]));
       } else {
         watchedPromiseTable.init(vpid, harden([[watcher, ...args]]));
+
+        // Ensure that this vat's promises are rejected at termination.
+        if (maybeExportPromise(vpid)) {
+          syscall.subscribe(vpid);
+        }
+
         promiseRegistrations.init(vpid, p);
         pseudoThen(p, vpid);
       }
     });
-  }
-
-  function prepareShutdownRejections(
-    importedVPIDsSet,
-    disconnectObjectCapData,
-  ) {
-    const deadPromises = [];
-    for (const vpid of watchedPromiseTable.keys()) {
-      if (!importedVPIDsSet.has(vpid)) {
-        deadPromises.push(vpid); // "exported" plus "neither" vpids
-      }
-    }
-    deadPromises.sort(); // just in case
-    syscall.vatstoreSet('deadPromises', deadPromises.join(','));
-    syscall.vatstoreSet(
-      'deadPromiseDO',
-      JSON.stringify(disconnectObjectCapData),
-    );
   }
 
   return harden({
@@ -234,6 +196,5 @@ export function makeWatchedPromiseManager({
     loadWatchedPromiseTable,
     providePromiseWatcher,
     watchPromise,
-    prepareShutdownRejections,
   });
 }
