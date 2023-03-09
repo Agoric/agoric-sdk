@@ -184,7 +184,7 @@
  */
 
 /**
- * @template {Key & object} K
+ * @template {Key} K
  * @typedef {object} SetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -225,7 +225,7 @@
  */
 
 /**
- * @template {Key & object} K
+ * @template {Key} K
  * @template {Passable} V
  * @typedef {object} MapStore
  * @property {(key: K) => boolean} has
