@@ -351,7 +351,8 @@ function build(
     const fulfilledHandler = {
       applyMethod(o, prop, args, returnedP) {
         // Support: o~.[prop](...args) remote method invocation
-        enableLSDebug && lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
+        enableLSDebug &&
+          lsdebug(`makeImportedPresence handler.applyMethod (${slot})`);
         if (disavowedPresences.has(o)) {
           // eslint-disable-next-line no-use-before-define
           exitVatWithFailure(disavowalError);
@@ -433,7 +434,8 @@ function build(
     const unfulfilledHandler = {
       applyMethod(_p, prop, args, returnedP) {
         // Support: p~.[prop](...args) remote method invocation
-        enableLSDebug && lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
+        enableLSDebug &&
+          lsdebug(`makePipelinablePromise handler.applyMethod (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
           Fail`mIPromise handler called after resolution`;
@@ -443,7 +445,8 @@ function build(
       },
       get(p, prop) {
         // Support: p~.[prop]
-        enableLSDebug && lsdebug(`makePipelinablePromise handler.get (${vpid})`);
+        enableLSDebug &&
+          lsdebug(`makePipelinablePromise handler.get (${vpid})`);
         if (!handlerActive) {
           console.error(`mIPromise handler called after resolution`);
           Fail`mIPromise handler called after resolution`;
@@ -879,7 +882,8 @@ function build(
     serMethargs.slots.map(retainExportedVref);
 
     const resultVPID = allocatePromiseID();
-    enableLSDebug && lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
+    enableLSDebug &&
+      lsdebug(`Promise allocation ${forVatID}:${resultVPID} in queueMessage`);
     // create a Promise which callers follow for the result, give it a
     // handler so we can pipeline messages to it, and prepare for the kernel
     // to notify us of its resolution
@@ -1174,9 +1178,9 @@ function build(
 
   function notifyOnePromise(promiseID, rejected, data) {
     insistCapData(data);
-    enableLSDebug && lsdebug(
-      `ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`,
-    );
+    enableLSDebug &&
+      // prettier-ignore
+      lsdebug(`ls.dispatch.notify(${promiseID}, ${rejected}, ${data.body}, [${data.slots}])`);
     insistVatType('promise', promiseID);
     const pRec = importedVPIDs.get(promiseID);
     // we check pRec to ignore stale notifies, either from before an

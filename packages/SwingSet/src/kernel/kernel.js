@@ -541,7 +541,8 @@ export default function buildKernel(
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
-      debugging() && kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
+      debugging() &&
+        kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const { meterID } = vatInfo;
@@ -553,14 +554,18 @@ export default function buildKernel(
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
-      debugging() && kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
-      debugging() && kdebug(`skipping notify of ${kpid} because it's already been done`);
+      if (debugging()) {
+        kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
+        kdebug(`skipping notify of ${kpid} because it's already been done`);
+      }
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const targets = getKpidsToRetire(kernelKeeper, kpid, p.data);
     if (targets.length === 0) {
-      debugging() && kdebug(`no kpids to retire`);
-      debugging() && kdebug(`skipping notify of ${kpid} because it's already been done`);
+      if (debugging()) {
+        kdebug(`no kpids to retire`);
+        kdebug(`skipping notify of ${kpid} because it's already been done`);
+      }
       return NO_DELIVERY_CRANK_RESULTS;
     }
     for (const toResolve of targets) {
@@ -645,6 +650,7 @@ export default function buildKernel(
     insistCapData(vatParameters);
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
+      // prettier-ignore
       debugging() && kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }

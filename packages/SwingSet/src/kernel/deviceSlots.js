@@ -194,10 +194,11 @@ export function makeDeviceSlots(
   function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);
     insistCapData(args);
-    enableLSDebug && lsdebug(
-      `ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`,
-      args.slots,
-    );
+    enableLSDebug &&
+      lsdebug(
+        `ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`,
+        args.slots,
+      );
     const t = slotToVal.get(deviceID);
     if (!(method in t)) {
       throw new TypeError(
@@ -219,7 +220,8 @@ export function makeDeviceSlots(
     const vres = m.serialize(res);
     /** @type { DeviceInvocationResultOk } */
     const ires = harden(['ok', vres]);
-    enableLSDebug && lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
+    enableLSDebug &&
+      lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
     return ires;
   }
 

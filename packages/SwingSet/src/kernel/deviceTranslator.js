@@ -113,7 +113,8 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
 
   function translateVatstoreGetNextKey(priorKey) {
     assertValidVatstoreKey(priorKey);
-    debugging() && kdebug(`syscall[${deviceID}].vatstoreGetNextKey(${priorKey})`);
+    debugging() &&
+      kdebug(`syscall[${deviceID}].vatstoreGetNextKey(${priorKey})`);
     return harden(['vatstoreGetNextKey', deviceID, priorKey]);
   }
 

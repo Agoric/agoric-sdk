@@ -15,7 +15,6 @@ const { details: X, quote: q } = assert;
 
 // import { kdebug, debugging } from './kdebug.js';
 
-
 // Marker associated to flag objects that should be held onto strongly if
 // somebody attempts to use them as keys in a VirtualObjectAwareWeakSet or
 // VirtualObjectAwareWeakMap, despite the fact that keys in such collections are
