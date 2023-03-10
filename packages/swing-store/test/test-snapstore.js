@@ -25,11 +25,14 @@ function makeExportLog() {
   };
 }
 
+function ensureTxn() {}
+
 test('build temp file; compress to cache file', async t => {
   const db = sqlite3(':memory:');
   const exportLog = makeExportLog();
   const store = makeSnapStore(
     db,
+    ensureTxn,
     {
       ...tmp,
       tmpFile: tmp.file,
@@ -106,7 +109,7 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, io, () => {}, {
+  const store = makeSnapStore(db, ensureTxn, io, () => {}, {
     keepSnapshots: true,
   });
 

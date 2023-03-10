@@ -177,12 +177,10 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
   sqlBeginTransaction.run();
 
-  const snapStore = makeSnapStore(db, makeSnapStoreIO());
-  const transcriptStore = makeTranscriptStore(
-    db,
-    () => {},
-    () => {},
-  );
+  // ensureTxn can be a dummy, we just started one
+  const ensureTxn = () => 0;
+  const snapStore = makeSnapStore(db, ensureTxn, makeSnapStoreIO());
+  const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
@@ -647,6 +645,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   );
   const { dumpSnapshots, ...snapStore } = makeSnapStore(
     db,
+    ensureTxn,
     makeSnapStoreIO(),
     noteExport,
     {

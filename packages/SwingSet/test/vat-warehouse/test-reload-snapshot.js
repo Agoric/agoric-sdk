@@ -24,7 +24,7 @@ test('vat reload from snapshot', async t => {
   };
 
   const db = sqlite3(':memory:');
-  const snapStore = makeSnapStore(db, makeSnapStoreIO());
+  const snapStore = makeSnapStore(db, () => {}, makeSnapStoreIO());
   const kernelStorage = { ...initSwingStore().kernelStorage, snapStore };
 
   const argv = [];

@@ -75,6 +75,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
 
 /**
  * @param {*} db
+ * @param {() => void} ensureTxn
  * @param {{
  *   createReadStream: typeof import('fs').createReadStream,
  *   createWriteStream: typeof import('fs').createWriteStream,
@@ -92,6 +93,7 @@ const noPath = /** @type {import('fs').PathLike} */ (
  */
 export function makeSnapStore(
   db,
+  ensureTxn,
   {
     createReadStream,
     createWriteStream,
@@ -104,6 +106,7 @@ export function makeSnapStore(
   noteExport = () => {},
   { keepSnapshots = false } = {},
 ) {
+  ensureTxn();
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
       vatID TEXT,
@@ -143,6 +146,7 @@ export function makeSnapStore(
    * use by some vat.
    */
   function deleteAllUnusedSnapshots() {
+    ensureTxn();
     sqlDeleteAllUnusedSnapshots.run();
   }
 
@@ -181,6 +185,7 @@ export function makeSnapStore(
   `);
 
   function stopUsingLastSnapshot(vatID) {
+    ensureTxn();
     const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
     if (oldInfo) {
       const rec = snapshotRec(vatID, oldInfo.endPos, oldInfo.hash, 0);
@@ -243,6 +248,7 @@ export function makeSnapStore(
             await finished(snapReader);
 
             const h = hashStream.digest('hex');
+            ensureTxn();
             stopUsingLastSnapshot(vatID);
             compressedSize = compressedSnapshot.length;
             sqlSaveSnapshot.run(
@@ -298,6 +304,7 @@ export function makeSnapStore(
    * @returns {AsyncIterable<Uint8Array>}
    */
   function exportSnapshot(name, includeHistorical) {
+    ensureTxn();
     typeof name === 'string' || Fail`artifact name must be a string`;
     const parts = name.split('.');
     const [type, vatID, pos] = parts;
@@ -337,6 +344,7 @@ export function makeSnapStore(
     const cleanup = [];
     return aggregateTryFinally(
       async () => {
+        ensureTxn();
         const loadInfo = sqlLoadSnapshot.get(vatID);
         loadInfo || Fail`no snapshot available for vat ${q(vatID)}`;
         const { hash, compressedSnapshot } = loadInfo;
@@ -396,6 +404,7 @@ export function makeSnapStore(
    * @param {string} vatID
    */
   function deleteVatSnapshots(vatID) {
+    ensureTxn();
     for (const rec of sqlGetSnapshotList.iterate(vatID)) {
       const exportRec = snapshotRec(vatID, rec.endPos, undefined);
       noteExport(snapshotMetadataKey(exportRec), undefined);
@@ -419,6 +428,7 @@ export function makeSnapStore(
    * @returns {SnapshotInfo}
    */
   function getSnapshotInfo(vatID) {
+    ensureTxn();
     return /** @type {SnapshotInfo} */ (sqlGetSnapshotInfo.get(vatID));
   }
 
@@ -441,6 +451,7 @@ export function makeSnapStore(
    * @returns {boolean}
    */
   function hasHash(vatID, hash) {
+    ensureTxn();
     return !!sqlHasHash.get(vatID, hash);
   }
 
@@ -459,6 +470,7 @@ export function makeSnapStore(
    * @param {string} hash
    */
   function deleteSnapshotByHash(vatID, hash) {
+    ensureTxn();
     sqlDeleteSnapshotByHash.run(vatID, hash);
   }
 
@@ -490,6 +502,7 @@ export function makeSnapStore(
    * @returns {Iterable<[key: string, value: string]>}
    */
   function* getExportRecords(includeHistorical = true) {
+    ensureTxn();
     for (const rec of sqlGetSnapshotMetadata.iterate(1)) {
       const exportRec = snapshotRec(rec.vatID, rec.endPos, rec.hash, 1);
       const exportKey = snapshotMetadataKey(rec);
@@ -505,6 +518,7 @@ export function makeSnapStore(
   }
 
   async function* getArtifactNames(includeHistorical) {
+    ensureTxn();
     for (const rec of sqlGetSnapshotMetadata.iterate(1)) {
       yield snapshotArtifactName(rec);
     }
@@ -549,6 +563,7 @@ export function makeSnapStore(
     // prettier-ignore
     info.hash === hash ||
       Fail`snapshot ${q(name)} hash is ${q(hash)}, metadata says ${q(info.hash)}`;
+    ensureTxn();
     sqlSaveSnapshot.run(
       vatID,
       endPos,
@@ -579,6 +594,13 @@ export function makeSnapStore(
    * @param {boolean} [includeHistorical]
    */
   function dumpSnapshots(includeHistorical = true) {
+    // We do not do ensureTxn() here, because tests run this after a
+    // commit(), and we don't want to leave the DB inside a txn
+    // afterwards. I *think* that's ok, but it means we should not be
+    // using this from with normal code, especially if it might
+    // somehow run as the first DB thing in a controller.run(), in
+    // which case it would create an auto-committing txn, and that
+    // would be bad.
     const sql = includeHistorical
       ? sqlDumpAllSnapshots
       : sqlDumpCurrentSnapshots;
