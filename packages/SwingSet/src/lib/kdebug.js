@@ -1,27 +1,9 @@
-import { assert } from '@agoric/assert';
-
 let enableKDebug = false;
-const toggleListeners = new Set();
 
-export function onToggleDebug(callback) {
-  assert.typeof(callback, 'function');
-  toggleListeners.add(callback);
-  callback(enableKDebug);
-}
-
-export function removeToggleDebugListener(callback) {
-  assert.typeof(callback, 'function');
-  return toggleListeners.delete(callback);
-}
+export const debugging = () => enableKDebug;
 
 export function kdebugEnable(flag) {
-  if (enableKDebug === !!flag) {
-    return;
-  }
-  enableKDebug = !enableKDebug;
-  for (const callback of toggleListeners) {
-    callback(enableKDebug);
-  }
+  enableKDebug = !!flag;
 }
 
 export function kdebug(...args) {

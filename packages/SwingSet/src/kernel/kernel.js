@@ -11,7 +11,7 @@ import makeKernelKeeper from './state/kernelKeeper.js';
 import {
   kdebug,
   kdebugEnable,
-  onToggleDebug,
+  debugging,
   legibilizeMessageArgs,
   extractMethod,
 } from '../lib/kdebug.js';
@@ -30,9 +30,6 @@ import { makeVatLoader } from './vat-loader/vat-loader.js';
 import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
-
-let debugEnabled = false;
-onToggleDebug(newEnableDebug => { debugEnabled = newEnableDebug; });
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
@@ -544,7 +541,7 @@ export default function buildKernel(
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
-      debugEnabled && kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
+      debugging() && kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const { meterID } = vatInfo;
@@ -556,14 +553,14 @@ export default function buildKernel(
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
-      debugEnabled && kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
-      debugEnabled && kdebug(`skipping notify of ${kpid} because it's already been done`);
+      debugging() && kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
+      debugging() && kdebug(`skipping notify of ${kpid} because it's already been done`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const targets = getKpidsToRetire(kernelKeeper, kpid, p.data);
     if (targets.length === 0) {
-      debugEnabled && kdebug(`no kpids to retire`);
-      debugEnabled && kdebug(`skipping notify of ${kpid} because it's already been done`);
+      debugging() && kdebug(`no kpids to retire`);
+      debugging() && kdebug(`skipping notify of ${kpid} because it's already been done`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     for (const toResolve of targets) {
@@ -648,7 +645,7 @@ export default function buildKernel(
     insistCapData(vatParameters);
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
-      debugEnabled && kdebug(`vat ${vatID} terminated before startVat delivered`);
+      debugging() && kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const { meterID } = vatInfo;
@@ -1165,9 +1162,9 @@ export default function buildKernel(
   }
 
   async function processDeliveryMessage(message) {
-    debugEnabled && kdebug('');
-    debugEnabled && kdebug(`processQ ${JSON.stringify(message)}`);
-    debugEnabled && kdebug(legibilizeMessage(message));
+    debugging() && kdebug('');
+    debugging() && kdebug(`processQ ${JSON.stringify(message)}`);
+    debugging() && kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
       crankType: 'delivery',
@@ -1260,7 +1257,7 @@ export default function buildKernel(
 
     if (crankResults.terminate) {
       const { vatID, reject, info } = crankResults.terminate;
-      debugEnabled && kdebug(`vat terminated: ${JSON.stringify(info)}`);
+      debugging() && kdebug(`vat terminated: ${JSON.stringify(info)}`);
       kernelSlog.terminateVat(vatID, reject, info);
       // this deletes state, rejects promises, notifies vat-admin
       // eslint-disable-next-line @jessie.js/no-nested-await
@@ -1318,9 +1315,9 @@ export default function buildKernel(
   }
 
   async function processAcceptanceMessage(message) {
-    debugEnabled && kdebug('');
-    debugEnabled && kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
-    debugEnabled && kdebug(legibilizeMessage(message));
+    debugging() && kdebug('');
+    debugging() && kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
+    debugging() && kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
       crankType: 'routing',
@@ -1423,7 +1420,7 @@ export default function buildKernel(
         // kernel bug, all of which are fatal to the vat.
         ksc = translators.vatSyscallToKernelSyscall(vatSyscallObject);
       } catch (vaterr) {
-        debugEnabled &&
+        debugging() &&
           // prettier-ignore
           kdebug(`vat ${vatID} terminated: error during translation: ${vaterr} ${JSON.stringify(vatSyscallObject)}`);
         console.log(`error during syscall translation:`, vaterr);

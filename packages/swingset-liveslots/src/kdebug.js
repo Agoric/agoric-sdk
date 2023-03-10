@@ -1,5 +1,7 @@
 let enableKDebug = false;
 
+export const debugging = () => enableKDebug;
+
 export function kdebugEnable(flag) {
   enableKDebug = !!flag;
 }
