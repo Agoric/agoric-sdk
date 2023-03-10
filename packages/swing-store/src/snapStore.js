@@ -33,6 +33,7 @@ import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
  *   saveSnapshot: (vatID: string, endPos: number, saveRaw: (filePath: string) => Promise<void>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
  *   deleteVatSnapshots: (vatID: string) => void,
+ *   stopUsingLastSnapshot: (vatID: string) => void,
  *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
  * }} SnapStore
  *
@@ -179,9 +180,22 @@ export function makeSnapStore(
     WHERE inUse = 1 AND vatID = ?
   `);
 
+  function stopUsingLastSnapshot(vatID) {
+    const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
+    if (oldInfo) {
+      const rec = snapshotRec(vatID, oldInfo.endPos, oldInfo.hash, 0);
+      noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
+      if (keepSnapshots) {
+        sqlStopUsingLastSnapshot.run(vatID);
+      } else {
+        sqlClearLastSnapshot.run(vatID);
+      }
+    }
+  }
+
   const sqlSaveSnapshot = db.prepare(`
     INSERT OR REPLACE INTO snapshots
-      (vatID, endPos, hash, uncompressedSize, compressedSize, compressedSnapshot, inUse)
+      (vatID, endPos, inUse, hash, uncompressedSize, compressedSize, compressedSnapshot)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
@@ -229,25 +243,16 @@ export function makeSnapStore(
             await finished(snapReader);
 
             const h = hashStream.digest('hex');
-            const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
-            if (oldInfo) {
-              const rec = snapshotRec(vatID, oldInfo.endPos, oldInfo.hash, 0);
-              noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
-              if (keepSnapshots) {
-                sqlStopUsingLastSnapshot.run(vatID);
-              } else {
-                sqlClearLastSnapshot.run(vatID);
-              }
-            }
+            stopUsingLastSnapshot(vatID);
             compressedSize = compressedSnapshot.length;
             sqlSaveSnapshot.run(
               vatID,
               endPos,
+              1,
               h,
               uncompressedSize,
               compressedSize,
               compressedSnapshot,
-              1,
             );
             const rec = snapshotRec(vatID, endPos, h, 1);
             const exportKey = snapshotMetadataKey(rec);
@@ -318,9 +323,7 @@ export function makeSnapStore(
   const sqlLoadSnapshot = db.prepare(`
     SELECT hash, compressedSnapshot
     FROM snapshots
-    WHERE vatID = ?
-    ORDER BY endPos DESC
-    LIMIT 1
+    WHERE vatID = ? AND inUse = 1
   `);
 
   /**
@@ -337,6 +340,7 @@ export function makeSnapStore(
         const loadInfo = sqlLoadSnapshot.get(vatID);
         loadInfo || Fail`no snapshot available for vat ${q(vatID)}`;
         const { hash, compressedSnapshot } = loadInfo;
+        compressedSnapshot || Fail`no snapshot available for vat ${q(vatID)}`;
         const gzReader = Readable.from(compressedSnapshot);
         cleanup.push(() => gzReader.destroy());
         const snapReader = gzReader.pipe(createGunzip());
@@ -383,6 +387,7 @@ export function makeSnapStore(
     SELECT endPos
     FROM snapshots
     WHERE vatID = ?
+    ORDER BY endPos
   `);
 
   /**
@@ -402,9 +407,7 @@ export function makeSnapStore(
   const sqlGetSnapshotInfo = db.prepare(`
     SELECT endPos, hash, uncompressedSize, compressedSize
     FROM snapshots
-    WHERE vatID = ?
-    ORDER BY endPos DESC
-    LIMIT 1
+    WHERE vatID = ? AND inUse = 1
   `);
 
   /**
@@ -549,11 +552,11 @@ export function makeSnapStore(
     sqlSaveSnapshot.run(
       vatID,
       endPos,
+      info.inUse,
       info.hash,
       size,
       compressedArtifact.length,
       compressedArtifact,
-      info.inUse,
     );
   }
 
@@ -595,6 +598,7 @@ export function makeSnapStore(
     loadSnapshot,
     deleteAllUnusedSnapshots,
     deleteVatSnapshots,
+    stopUsingLastSnapshot,
     getSnapshotInfo,
     getExportRecords,
     getArtifactNames,

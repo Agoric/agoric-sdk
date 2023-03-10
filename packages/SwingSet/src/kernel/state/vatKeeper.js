@@ -542,19 +542,17 @@ export function makeVatKeeper(
     return true;
   }
 
-  function deleteSnapshots() {
+  function deleteSnapshotsAndTranscript() {
     if (snapStore) {
       snapStore.deleteVatSnapshots(vatID);
     }
-  }
-
-  function removeSnapshotAndTranscript() {
-    deleteSnapshots();
     transcriptStore.deleteVatTranscripts(vatID);
   }
 
-  function removeSnapshotAndResetTranscript() {
-    deleteSnapshots();
+  function dropSnapshotAndResetTranscript() {
+    if (snapStore) {
+      snapStore.stopUsingLastSnapshot(vatID);
+    }
     transcriptStore.rolloverSpan(vatID);
   }
 
@@ -627,9 +625,8 @@ export function makeVatKeeper(
     vatStats,
     dumpState,
     saveSnapshot,
-    deleteSnapshots,
     getSnapshotInfo,
-    removeSnapshotAndTranscript,
-    removeSnapshotAndResetTranscript,
+    deleteSnapshotsAndTranscript,
+    dropSnapshotAndResetTranscript,
   });
 }

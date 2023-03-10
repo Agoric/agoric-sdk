@@ -817,6 +817,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     saveSnapshot: snapStore.saveSnapshot,
     deleteAllUnusedSnapshots: snapStore.deleteAllUnusedSnapshots,
     deleteVatSnapshots: snapStore.deleteVatSnapshots,
+    stopUsingLastSnapshot: snapStore.stopUsingLastSnapshot,
     getSnapshotInfo: snapStore.getSnapshotInfo,
   };
 

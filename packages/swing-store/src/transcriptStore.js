@@ -251,6 +251,7 @@ export function makeTranscriptStore(
     SELECT startPos
     FROM transcriptSpans
     WHERE vatID = ?
+    ORDER BY startPos
   `);
   sqlGetVatSpans.pluck(true);
 

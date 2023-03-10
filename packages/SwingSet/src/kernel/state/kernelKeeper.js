@@ -784,7 +784,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const promisePrefix = `${vatID}.c.p`;
     const kernelPromisesToReject = [];
 
-    vatKeeper.removeSnapshotAndTranscript();
+    vatKeeper.deleteSnapshotsAndTranscript();
 
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
