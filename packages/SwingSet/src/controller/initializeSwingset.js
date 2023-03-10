@@ -6,6 +6,7 @@ import { assert, Fail } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
 import bundleSource from '@endo/bundle-source';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
+import { makeNodeBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
@@ -15,7 +16,6 @@ import {
 } from './bundle-handler.js';
 
 import '../types-ambient.js';
-import { makeNodeBundleCache } from '../../tools/bundleTool.js';
 
 const trace = makeTracer('IniSwi', false);
 
