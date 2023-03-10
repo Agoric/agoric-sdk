@@ -257,6 +257,10 @@ export const main = async (
     flagName: 'check-block-height',
   });
 
+  const verbose = processValue.getBoolean({
+    flagName: 'verbose',
+  });
+
   const { registerShutdown } = makeShutdown(false);
 
   const exporter = initiateSwingStoreExport(
@@ -270,7 +274,7 @@ export const main = async (
     {
       fs,
       pathResolve,
-      log: console.log,
+      log: verbose ? console.log : undefined,
     },
   );
 
@@ -288,6 +292,7 @@ export const main = async (
   await exporter.onDone().then(
     () => send?.({ type: 'done' }),
     error => {
+      verbose && console.error('state-sync export failed', error);
       if (send) {
         send({ type: 'done', error });
       } else {
@@ -301,11 +306,12 @@ export const main = async (
  * @param {StateSyncExporterOptions} options
  * @param {object} powers
  * @param {typeof import('child_process')['fork']} powers.fork
+ * @param {boolean} [powers.verbose]
  * @returns {StateSyncExporter}
  */
 export const spawnSwingStoreExport = (
   { stateDir, exportDir, blockHeight, exportMode, includeExportData },
-  { fork },
+  { fork, verbose },
 ) => {
   const args = ['--state-dir', stateDir, '--export-dir', exportDir];
 
@@ -319,6 +325,10 @@ export const spawnSwingStoreExport = (
 
   if (includeExportData) {
     args.push('--include-export-data');
+  }
+
+  if (verbose) {
+    args.push('--verbose');
   }
 
   const cp = fork(fileURLToPath(import.meta.url), args, {
