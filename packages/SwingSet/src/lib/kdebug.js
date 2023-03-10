@@ -1,18 +1,21 @@
 let enableKDebug = false;
 
 export const debugging = () => enableKDebug;
+harden(debugging);
 
-export function kdebugEnable(flag) {
+export const kdebugEnable = flag => {
   enableKDebug = !!flag;
-}
+};
+harden(kdebugEnable);
 
-export function kdebug(...args) {
+export const kdebug = (...args) => {
   if (enableKDebug) {
     console.log(...args);
   }
-}
+};
+harden(kdebug);
 
-export function legibilizeValue(val, slots, smallcaps) {
+export const legibilizeValue = (val, slots, smallcaps) => {
   try {
     if (Array.isArray(val)) {
       let result = '[';
@@ -84,9 +87,10 @@ export function legibilizeValue(val, slots, smallcaps) {
   } catch {
     return '<unintelligible value>';
   }
-}
+};
+harden(legibilizeValue);
 
-export function legibilizeMethod(method, smallcaps) {
+export const legibilizeMethod = (method, smallcaps) => {
   try {
     if (typeof method === 'string') {
       if (!smallcaps) {
@@ -137,9 +141,10 @@ export function legibilizeMethod(method, smallcaps) {
   } catch {
     return '<unintelligible method>';
   }
-}
+};
+harden(legibilizeMethod);
 
-export function extractMethod(methargsCapdata) {
+export const extractMethod = methargsCapdata => {
   try {
     let smallcaps = false;
     let bodyString = methargsCapdata.body;
@@ -152,9 +157,10 @@ export function extractMethod(methargsCapdata) {
   } catch {
     return '<unknown>';
   }
-}
+};
+harden(extractMethod);
 
-export function legibilizeMessageArgs(methargsCapdata) {
+export const legibilizeMessageArgs = methargsCapdata => {
   try {
     let smallcaps = false;
     let bodyString = methargsCapdata.body;
@@ -172,4 +178,5 @@ export function legibilizeMessageArgs(methargsCapdata) {
   } catch {
     return '<unintelligible message args>';
   }
-}
+};
+harden(legibilizeMessageArgs);
