@@ -130,6 +130,7 @@ function build(
    * strong-vs-weak).
    */
 
+  /** @type {WeakMap<object, string>} */
   const valToSlot = new WeakMap(); // object -> vref
   const slotToVal = new Map(); // baseRef -> WeakRef(object)
   const exportedRemotables = new Set(); // objects
@@ -507,6 +508,7 @@ function build(
    * little less similar to each other.
    */
   const initialIDCounters = { exportID: 1, collectionID: 1, promiseID: 5 };
+  /** @type {Record<string, number>} */
   let idCounters;
   let idCountersAreDirty = false;
 
@@ -1326,6 +1328,7 @@ function build(
       Fail`attempt to disavow unknown ${presence}`;
     }
     const slot = valToSlot.get(presence);
+    // @ts-expect-error not undefined b/c of has() check
     const { type, allocatedByVat } = parseVatSlot(slot);
     type === 'object' || Fail`attempt to disavow non-object ${presence}`;
     // disavow() is only for imports: we'll use a different API to revoke
