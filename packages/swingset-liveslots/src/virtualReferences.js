@@ -313,7 +313,8 @@ export function makeVirtualReferenceManager(
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
-    kindInfo || Fail`no kind info for ${kindID}, call defineDurableKind`;
+    kindInfo ||
+      Fail`no kind info for ${kindID} (${baseRef}); check deserialize preceeding kind definitions`;
     const { reanimator } = kindInfo;
     if (reanimator) {
       return reanimator(baseRef);
