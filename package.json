@@ -65,7 +65,7 @@
     "timeout": "30m"
   },
   "dependencies": {
-    "patch-package": "^6.4.7"
+    "patch-package": "^6.5.1"
   },
   "resolutions": {
     "**/http-errors/depd": "^2.0.0",
