@@ -25,14 +25,13 @@ import (
 // Top-level paths for chain storage should remain synchronized with
 // packages/internal/src/chain-storage-paths.js
 const (
-	StoragePathActionQueue  = "actionQueue"
-	StoragePathActivityhash = "activityhash"
-	StoragePathBeansOwing   = "beansOwing"
-	StoragePathEgress       = "egress"
-	StoragePathMailbox      = "mailbox"
-	StoragePathCustom       = "published"
-	StoragePathBundles      = "bundles"
-	StoragePathSwingStore   = "swingStore"
+	StoragePathActionQueue = "actionQueue"
+	StoragePathBeansOwing  = "beansOwing"
+	StoragePathEgress      = "egress"
+	StoragePathMailbox     = "mailbox"
+	StoragePathCustom      = "published"
+	StoragePathBundles     = "bundles"
+	StoragePathSwingStore  = "swingStore"
 )
 
 // 2 ** 256 - 1

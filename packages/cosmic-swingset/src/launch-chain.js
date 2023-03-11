@@ -216,7 +216,6 @@ export async function launch({
   mailboxStorage,
   clearChainSends,
   replayChainSends,
-  setActivityhash,
   bridgeOutbound,
   makeInstallationPublisher,
   vatconfig,
@@ -303,9 +302,6 @@ export async function launch({
     // entire bootstrap before opening for business.
     const policy = neverStop();
     await crankScheduler(policy);
-    if (setActivityhash) {
-      setActivityhash(controller.getActivityhash());
-    }
   }
 
   async function saveChainState() {
@@ -482,46 +478,38 @@ export async function launch({
       return runPolicy.shouldRun();
     }
 
-    async function doRunKernel() {
-      // First, complete leftover work, if any
-      let keepGoing = await runSwingset();
-      if (!keepGoing) return;
+    // First, complete leftover work, if any
+    let keepGoing = await runSwingset();
+    if (!keepGoing) return;
 
-      // Then, update the timer device with the new external time, which might
-      // push work onto the kernel run-queue (if any timers were ready to wake).
-      const addedToQueue = timer.poll(blockTime);
-      console.debug(
-        `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
-        addedToQueue,
-      );
-      // We must run the kernel even if nothing was added since the kernel
-      // only notes state exports and updates consistency hashes when attempting
-      // to perform a crank.
+    // Then, update the timer device with the new external time, which might
+    // push work onto the kernel run-queue (if any timers were ready to wake).
+    const addedToQueue = timer.poll(blockTime);
+    console.debug(
+      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
+      addedToQueue,
+    );
+    // We must run the kernel even if nothing was added since the kernel
+    // only notes state exports and updates consistency hashes when attempting
+    // to perform a crank.
+    keepGoing = await runSwingset();
+    if (!keepGoing) return;
+
+    // Finally, process as much as we can from the actionQueue, which contains
+    // first the old actions followed by the newActions, running the
+    // kernel to completion after each.
+    for (const { action, context } of actionQueue.consumeAll()) {
+      const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
+      inboundQueueMetrics.decStat();
+      // eslint-disable-next-line no-await-in-loop
+      await performAction(action, inboundNum);
+      // eslint-disable-next-line no-await-in-loop
       keepGoing = await runSwingset();
-      if (!keepGoing) return;
-
-      // Finally, process as much as we can from the actionQueue, which contains
-      // first the old actions followed by the newActions, running the
-      // kernel to completion after each.
-      for (const { action, context } of actionQueue.consumeAll()) {
-        const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-        inboundQueueMetrics.decStat();
-        // eslint-disable-next-line no-await-in-loop
-        await performAction(action, inboundNum);
-        // eslint-disable-next-line no-await-in-loop
-        keepGoing = await runSwingset();
-        if (!keepGoing) {
-          // any leftover actions will remain on the actionQueue for possible
-          // processing in the next block
-          return;
-        }
+      if (!keepGoing) {
+        // any leftover actions will remain on the actionQueue for possible
+        // processing in the next block
+        return;
       }
-    }
-
-    await doRunKernel();
-
-    if (setActivityhash) {
-      setActivityhash(controller.getActivityhash());
     }
   }
 

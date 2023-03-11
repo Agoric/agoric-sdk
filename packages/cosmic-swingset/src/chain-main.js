@@ -279,14 +279,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         }),
       );
     };
-    function setActivityhash(activityhash) {
-      const entry = [STORAGE_PATH.ACTIVITYHASH, activityhash];
-      const msg = stringify({
-        method: 'set',
-        args: [entry],
-      });
-      chainSend(portNums.storage, msg);
-    }
     function doOutboundBridge(dstID, msg) {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
@@ -427,7 +419,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       mailboxStorage,
       clearChainSends,
       replayChainSends,
-      setActivityhash,
       bridgeOutbound: doOutboundBridge,
       vatconfig,
       argv,
