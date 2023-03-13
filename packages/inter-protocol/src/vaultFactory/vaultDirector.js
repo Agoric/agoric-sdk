@@ -24,6 +24,7 @@ import {
   getAmountIn,
   getAmountOut,
   makeRatioFromAmounts,
+  offerTo,
   provideChildBaggage,
   provideEmptySeat,
   unitAmount,
@@ -44,7 +45,7 @@ import { scheduleLiquidationWakeups } from './liquidation.js';
 
 const { Fail, quote: q } = assert;
 
-const trace = makeTracer('VD');
+const trace = makeTracer('VD', false);
 
 /**
  * @typedef {{
@@ -66,6 +67,7 @@ const trace = makeTracer('VD');
  *  getGovernedParams: () => import('./vaultManager.js').GovernedParamGetters,
  *  mintAndTransfer: MintAndTransfer,
  *  getShortfallReporter: () => Promise<import('../reserve/assetReserve.js').ShortfallReporter>,
+ *  sendToReserve: (collateral: Amount<'nat'>, seat: ZCFSeat, keyword: string) => undefined,
  * }} FactoryPowersFacet
  *
  * @typedef {Readonly<{
@@ -131,7 +133,7 @@ export const prepareVaultDirector = (
     ),
   });
 
-  const allVaultsDo = fn => {
+  const allManagersDo = fn => {
     for (const vm of collateralTypes.values()) {
       fn(vm);
     }
@@ -381,6 +383,22 @@ export const prepareVaultDirector = (
               return shortfallReporter;
             },
             burnDebt,
+            sendToReserve: (collateralAmount, seat, keyword) => {
+              const reserve = zcf.getTerms().reservePublicFacet;
+              const invitation = E(reserve).makeAddCollateralInvitation();
+
+              // don't wait for response
+              void E.when(invitation, invite => {
+                const proposal = { give: { Collateral: collateralAmount } };
+                offerTo(
+                  zcf,
+                  invite,
+                  { [keyword]: 'Collateral' },
+                  proposal,
+                  seat,
+                );
+              });
+            },
           });
 
           // alleged okay because used only as a diagnostic tag
@@ -430,7 +448,7 @@ export const prepareVaultDirector = (
 
         makeLiquidationWaker() {
           return makeWaker('liquidationWaker', _timestamp => {
-            allVaultsDo(vm => vm.liquidateVaults(auctioneer));
+            allManagersDo(vm => vm.liquidateVaults(auctioneer));
           });
         },
         makeReschedulerWaker() {
@@ -441,7 +459,7 @@ export const prepareVaultDirector = (
         },
         makePriceLockWaker() {
           return makeWaker('priceLockWaker', () => {
-            allVaultsDo(vm => vm.lockOraclePrices());
+            allManagersDo(vm => vm.lockOraclePrices());
           });
         },
       },

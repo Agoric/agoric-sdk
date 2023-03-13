@@ -65,7 +65,7 @@ export const Phase = /** @type {const} */ ({
  */
 const validTransitions = {
   [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
-  [Phase.LIQUIDATING]: [Phase.LIQUIDATED],
+  [Phase.LIQUIDATING]: [Phase.LIQUIDATED, Phase.ACTIVE],
   [Phase.LIQUIDATED]: [Phase.CLOSED],
   [Phase.CLOSED]: [],
 };
@@ -168,6 +168,7 @@ export const VaultI = M.interface('Vault', {
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
+  reactivate: M.call().returns(M.string()),
 });
 
 /**
@@ -772,6 +773,25 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
           helper.assignPhase(Phase.LIQUIDATED);
           helper.updateUiState();
+        },
+
+        /**
+         * Called by manager when collateral wasn't sold at auction. A fee was
+         * charged against collateral, but the debt is restored and the vault is
+         * active again.
+         */
+        reactivate() {
+          const { state, facets } = this;
+
+          const { helper } = facets;
+          // helper.updateDebtSnapshot(
+          //   // liquidated vaults retain no debt
+          //   AmountMath.makeEmpty(helper.debtBrand()),
+          // );
+
+          helper.assignPhase(Phase.ACTIVE);
+          helper.updateUiState();
+          return state.idInManager;
         },
 
         makeAdjustBalancesInvitation() {

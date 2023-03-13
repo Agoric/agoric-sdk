@@ -318,10 +318,6 @@ export { start };
 /**
  * @typedef {object} OriginalAssetReservePublicFacet
  * @property {() => Invitation} makeAddCollateralInvitation
-<<<<<<< HEAD
- * @property {(issuer: Issuer) => void} addLiquidityIssuer
-=======
->>>>>>> 50cb0eb60 (feat!(vaults): convert Vaults from liquidation on AMM to an auction)
  */
 
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */

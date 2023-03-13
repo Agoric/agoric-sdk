@@ -122,19 +122,6 @@ const fromVaultKey = key => {
 };
 
 /**
- * Sort key by ratio in descending debt.
- *
- * @param {NormalizedDebt} normalizedDebt
- * @param {Amount<'nat'>} collateral
- * @returns {string} lexically sortable string in which highest
- * debt-to-collateral is earliest
- */
-const toCollateralizationRatioKey = (normalizedDebt, collateral) => {
-  const cr = collateralizationRatio(normalizedDebt, collateral);
-  return `${encodeNumber(cr)}:`;
-};
-
-/**
  * Create a sort key for a normalized collateralization ratio. We want a float
  * with as much resolution as we can get, so we multiply out the numerator and
  * the denominator, and divide
@@ -151,12 +138,6 @@ const normalizedCrKey = (quote, compoundedInterest) => {
   const interestBase = compoundedInterest.denominator.value;
   const numerator = multiply(amountIn, interestNumerator);
   const denominator = multiply(amountOut, interestBase);
-  trace(
-    `CR Key`,
-    numerator / 10n ** 17n,
-    denominator / 10n ** 17n,
-    Number(numerator) / Number(denominator),
-  );
 
   return `${encodeNumber(Number(numerator) / Number(denominator))}:`;
 };
@@ -186,14 +167,7 @@ const normalizedCr = (quote, compoundedInterest) => {
 
 harden(fromVaultKey);
 harden(toVaultKey);
-harden(toCollateralizationRatioKey);
 harden(normalizedCrKey);
 harden(normalizedCr);
 
-export {
-  fromVaultKey,
-  toVaultKey,
-  toCollateralizationRatioKey,
-  normalizedCrKey,
-  normalizedCr,
-};
+export { fromVaultKey, toVaultKey, normalizedCrKey, normalizedCr };

@@ -1,12 +1,10 @@
 // @jessie-check
 
-import {
-  atomicRearrange,
-  makeRatioFromAmounts,
-} from '@agoric/zoe/src/contractSupport/index.js';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/vat-data';
+import { makeScalarMapStore } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import { toVaultKey } from './storeUtils.js';
 
@@ -110,55 +108,19 @@ export const makePrioritizedVaults = store => {
     return key;
   };
 
-  const prepVaultRemoval = (crKey, liqSeat) => {
+  const removeVaultsBelow = crKey => {
     // crKey represents a collateralizationRatio based on the locked price.
-    // We'll liquidate all vaults above that ratio, and return them with stats.
-    const vaultsToLiquidate = [];
-    let totalDebt;
-    let totalCollateral;
-    /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
-    const transfers = [];
+    // We'll remove all vaults below that ratio, and return them.
 
-    for (const vaultEntry of vaults.entries(M.lte(crKey))) {
-      vaultsToLiquidate.push(vaultEntry);
-      const vault = vaultEntry[1];
-      const collateralAmount = vault.getCollateralAmount();
-      totalCollateral = totalCollateral
-        ? AmountMath.add(totalCollateral, collateralAmount)
-        : collateralAmount;
-      const debtAmount = vault.getCurrentDebt();
-      transfers.push([
-        vault.getVaultSeat(),
-        liqSeat,
-        { Collateral: collateralAmount },
-      ]);
-      totalDebt = totalDebt
-        ? AmountMath.add(totalDebt, debtAmount)
-        : debtAmount;
+    /** @type {MapStore<string, Vault>} */
+    const vaultsToLiquidate = makeScalarMapStore();
+
+    for (const [key, vault] of vaults.entries(M.lte(crKey))) {
+      vaultsToLiquidate.init(key, vault);
+      vaults.removeByKey(key);
     }
 
-    for (const entry of vaultsToLiquidate) {
-      const [k] = entry;
-      vaults.removeByKey(k);
-    }
-
-    return { vaultsToLiquidate, totalDebt, totalCollateral, transfers };
-  };
-
-  const removeVaultsBelow = (crKey, zcf) => {
-    const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();
-    const { vaultsToLiquidate, totalDebt, totalCollateral, transfers } =
-      prepVaultRemoval(crKey, liqSeat);
-
-    if (transfers.length > 0) {
-      atomicRearrange(zcf, harden(transfers));
-    }
-    return {
-      totalDebt,
-      totalCollateral,
-      vaultsToLiquidate,
-      liqSeat,
-    };
+    return vaultsToLiquidate;
   };
 
   return Far('PrioritizedVaults', {
@@ -172,7 +134,6 @@ export const makePrioritizedVaults = store => {
     removeVaultsBelow,
 
     // visible for testing
-    prepVaultRemoval,
     countVaultsBelow: crKey => vaults.getSize(M.lte(crKey)),
   });
 };

@@ -283,7 +283,6 @@ export const installGovAndPSMContracts = async ({
       committee,
       binaryVoteCounter,
       psm,
-      VaultFactory: vaultFactory,
       econCommitteeCharter,
     },
   },
@@ -300,7 +299,6 @@ export const installGovAndPSMContracts = async ({
       committee,
       binaryVoteCounter,
       psm,
-      vaultFactory,
       econCommitteeCharter,
     }).map(async ([name, producer]) => {
       const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
@@ -328,7 +326,6 @@ export const PSM_GOV_MANIFEST = {
         committee: 'zoe',
         binaryVoteCounter: 'zoe',
         psm: 'zoe',
-        vaults: 'zoe',
         econCommitteeCharter: 'zoe',
       },
     },
@@ -424,7 +421,6 @@ export const getManifestForPsm = (
     manifest: PSM_MANIFEST,
     installations: {
       psm: restoreRef(installKeys.psm),
-      vaults: restoreRef(installKeys.vaults),
       mintHolder: restoreRef(installKeys.mintHolder),
     },
     options: {

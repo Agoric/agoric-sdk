@@ -1733,7 +1733,6 @@ test('manager notifiers', async t => {
     52n * 7n * 24n * 3600n,
   );
 
-  console.log(`TVF mgrs   svcs `);
   const { aethVaultManager, vfPublic } = services.vaultFactory;
   const cm = await E(aethVaultManager).getPublicFacet();
 
@@ -1750,9 +1749,12 @@ test('manager notifiers', async t => {
 
     // running
     numLiquidationsCompleted: 0,
+    numVaultsReconstituted: 0,
     totalOverageReceived: run.make(0n),
     totalProceedsReceived: run.make(0n),
     totalCollateralSold: aeth.make(0n),
+    liquidatingCollateral: aeth.make(0n),
+    liquidatingDebt: run.make(0n),
     totalShortfallReceived: run.make(0n),
   });
 

@@ -13,9 +13,11 @@ import {
   makeCompoundedInterestProvider,
   makeFakeVault,
 } from './interestSupport.js';
-import { toCollateralizationRatioKey } from '../../src/vaultFactory/storeUtils.js';
+import { toVaultKey } from '../../src/vaultFactory/storeUtils.js';
 
 /** @typedef {import('../../src/vaultFactory/vault.js').Vault} Vault */
+
+const MINIMAL_VAULT_KEY = 'id.';
 
 const { brand } = makeIssuerKit('ducats');
 const percent = n => makeRatio(BigInt(n), brand);
@@ -48,10 +50,11 @@ test('add to vault', async t => {
   );
   vaults.addVault('id-fakeVaultKit', fakeVault);
   const collector = makeCollector();
-  const crKey = toCollateralizationRatioKey(
+  const crKey = toVaultKey(
     // @ts-expect-error cast
     AmountMath.make(brand, 1n),
     AmountMath.make(brand, 10n),
+    MINIMAL_VAULT_KEY,
   );
 
   const results = vaults.prepVaultRemoval(crKey, fakeSeat);
@@ -85,10 +88,11 @@ test('updates', async t => {
   vaults.addVault('id-fakeVault1', fakeVault1);
   vaults.addVault('id-fakeVault2', fakeVault2);
 
-  const crKey = toCollateralizationRatioKey(
+  const crKey = toVaultKey(
     // @ts-expect-error cast
     AmountMath.make(brand, 1n),
     AmountMath.make(brand, 10n),
+    MINIMAL_VAULT_KEY,
   );
   const results = vaults.prepVaultRemoval(crKey, fakeSeat);
   const collector = makeCollector();
@@ -165,10 +169,11 @@ test('update changes ratio', async t => {
   // 95n from setDebt / 100n defaultCollateral
   t.deepEqual(vaults.highestRatio(), percent(95));
 
-  const crKey = toCollateralizationRatioKey(
+  const crKey = toVaultKey(
     // @ts-expect-error cast
     AmountMath.make(brand, 90n),
     AmountMath.make(brand, 100n),
+    MINIMAL_VAULT_KEY,
   );
 
   const results = vaults.prepVaultRemoval(crKey, fakeSeat);

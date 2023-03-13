@@ -4,6 +4,9 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';
+import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeScalarMapStore } from '@agoric/store';
+
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
 
 const trace = makeTracer('LIQ', false);
@@ -60,7 +63,6 @@ const scheduleLiquidationWakeups = async (
 const liquidationResults = (debt, minted) => {
   if (AmountMath.isEmpty(minted)) {
     return {
-      proceeds: minted,
       overage: minted,
       toBurn: minted,
       shortfall: debt,
@@ -77,14 +79,74 @@ const liquidationResults = (debt, minted) => {
   assert(AmountMath.isEqual(debt, AmountMath.add(toBurn, shortfall)));
 
   return {
-    proceeds: minted,
     overage,
     toBurn,
     shortfall,
   };
 };
 
+/**
+ * @param {ZCF} zcf
+ * @param {string} crKey
+ * @param {ReturnType<typeof import('./prioritizedVaults.js').makePrioritizedVaults>} prioritizedVaults
+ * @param {SetStore<Vault>} liquidatingVaults
+ * @returns {{
+ *    vaultData: MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>,
+ *    totalDebt: Amount<'nat'> | undefined,
+ *    totalCollateral: Amount<'nat'> | undefined,
+ *    liqSeat: ZCFSeat}}
+ */
+const getLiquidatableVaults = (
+  zcf,
+  crKey,
+  prioritizedVaults,
+  liquidatingVaults,
+) => {
+  // crKey represents a collateralizationRatio based on the locked price.
+  // We'll extract all vaults below that ratio, and return them with stats.
+
+  const vaultsToLiquidate = prioritizedVaults.removeVaultsBelow(crKey);
+  /** @type {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} */
+  const vaultData = makeScalarMapStore();
+
+  const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();
+  let totalDebt;
+  let totalCollateral;
+  /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
+  const transfers = [];
+
+  for (const vault of vaultsToLiquidate.values()) {
+    vault.liquidating();
+    liquidatingVaults.add(vault);
+
+    const collateralAmount = vault.getCollateralAmount();
+    totalCollateral = totalCollateral
+      ? AmountMath.add(totalCollateral, collateralAmount)
+      : collateralAmount;
+
+    const debtAmount = vault.getCurrentDebt();
+    totalDebt = totalDebt ? AmountMath.add(totalDebt, debtAmount) : debtAmount;
+    transfers.push([
+      vault.getVaultSeat(),
+      liqSeat,
+      { Collateral: collateralAmount },
+    ]);
+    vaultData.init(vault, { collateralAmount, debtAmount });
+  }
+
+  if (transfers.length > 0) {
+    atomicRearrange(zcf, harden(transfers));
+  }
+
+  return { vaultData, totalDebt, totalCollateral, liqSeat };
+};
+
 harden(scheduleLiquidationWakeups);
 harden(liquidationResults);
+harden(getLiquidatableVaults);
 
-export { scheduleLiquidationWakeups, liquidationResults };
+export {
+  scheduleLiquidationWakeups,
+  liquidationResults,
+  getLiquidatableVaults,
+};
