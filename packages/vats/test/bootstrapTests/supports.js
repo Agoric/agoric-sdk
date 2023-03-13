@@ -150,7 +150,7 @@ export const makeWalletFactoryDriver = async (
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
-     * @template {(brands: Record<string, import('../../tools/board-utils.js').BoardRemote>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]

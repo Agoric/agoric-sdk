@@ -155,9 +155,20 @@ export const makeWalletCommand = async () => {
       } catch (e) {
         console.error('CAUGHT HERE', e);
       }
-      execFileSync('agd', [`query`, 'bank', 'balances', opts.from], {
-        stdio: 'inherit',
-      });
+      execFileSync(
+        'agd',
+        [
+          'query',
+          '--node',
+          networkConfig.rpcAddrs[0],
+          'bank',
+          'balances',
+          opts.from,
+        ],
+        {
+          stdio: 'inherit',
+        },
+      );
     });
 
   wallet

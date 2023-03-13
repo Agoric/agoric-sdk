@@ -8,27 +8,29 @@ import '@agoric/store/exported.js';
 import './types.js';
 
 /**
+ * @template T
  * @typedef {object} Router A delimited string router implementation
- * @property {(addr: string) => [string, Protocol][]} getRoutes Return the match and route in order of preference
- * @property {(prefix: string, route: Protocol) => void} register Add a prefix->route to the database
- * @property {(prefix: string, route: Protocol) => void} unregister Remove a prefix->route from the database
+ * @property {(addr: string) => [string, T][]} getRoutes Return the match and route in order of preference
+ * @property {(prefix: string, route: T) => void} register Add a prefix->route to the database
+ * @property {(prefix: string, route: T) => void} unregister Remove a prefix->route from the database
  */
 
 /**
  * Create a slash-delimited router.
  *
- * @returns {Router} a new Router
+ * @template T
+ * @returns {Router<T>} a new Router
  */
 export default function makeRouter() {
   /**
-   * @type {MapStore<string, any>}
+   * @type {MapStore<string, T>}
    */
   const prefixToRoute = makeScalarMapStore('prefix');
   return Far('Router', {
     getRoutes(addr) {
       const parts = addr.split(ENDPOINT_SEPARATOR);
       /**
-       * @type {[string, Protocol][]}
+       * @type {[string, T][]}
        */
       const ret = [];
       for (let i = parts.length; i > 0; i -= 1) {
@@ -61,6 +63,7 @@ export default function makeRouter() {
     },
   });
 }
+
 /**
  * @typedef {object} RouterProtocol
  * @property {(prefix: string) => Promise<Port>} bind
@@ -76,7 +79,9 @@ export default function makeRouter() {
  */
 export function makeRouterProtocol(E = defaultE) {
   const router = makeRouter();
+  /** @type {MapStore<string, Protocol>} */
   const protocols = makeScalarMapStore('prefix');
+  /** @type {MapStore<string, ProtocolHandler>} */
   const protocolHandlers = makeScalarMapStore('prefix');
 
   function registerProtocolHandler(paths, protocolHandler) {

@@ -17,7 +17,8 @@ import { makeCurrentKeysKit } from './store-utils.js';
 const { quote: q } = assert;
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {Map<K,V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
@@ -125,7 +126,8 @@ export const makeMapStoreMethods = (
  * or remotables. Other storeMaps will accept, for example, copyArrays and
  * copyRecords, as keys and look them up based on equality of their contents.
  *
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {string} [tag='key'] - the column name for the key
  * @param {StoreOptions} [options]
  * @returns {MapStore<K,V>}

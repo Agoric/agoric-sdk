@@ -11,7 +11,7 @@ const COSMOS_UNIT = 1_000_000n;
 /**
  * Give/want
  *
- * @param {Record<string, import('@agoric/vats/tools/board-utils').BoardRemote>} brands
+ * @param {Record<string, Brand>} brands
  * @param {{ giveMinted?: number, wantMinted?: number } | { collateralBrandKey: string, giveCollateral?: number, wantCollateral?: number }} opts
  * @returns {Proposal}
  */
@@ -54,7 +54,7 @@ const makeVaultProposal = (brands, opts) => {
 // Then these can be used in tests as arguments to `executeOffer()` without a bridge.
 
 /**
- * @param {Record<string, import('@agoric/vats/tools/board-utils').BoardRemote>} brands
+ * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, wantMinted: number, giveCollateral: number, collateralBrandKey: string }} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
@@ -85,7 +85,7 @@ const makeOpenOffer = (brands, opts) => {
 };
 
 /**
- * @param {Record<string, import('@agoric/vats/tools/board-utils').BoardRemote>} brands
+ * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, collateralBrandKey?: string, giveCollateral?: number, wantCollateral?: number, giveMinted?: number, wantMinted?: number }} opts
  * @param {string} previousOffer
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
@@ -108,7 +108,7 @@ const makeAdjustOffer = (brands, opts, previousOffer) => {
 };
 
 /**
- * @param {Record<string, import('@agoric/vats/tools/board-utils').BoardRemote>} brands
+ * @param {Record<string, Brand>} brands
  * @param {{ offerId: string, collateralBrandKey?: string, giveMinted: number }} opts
  * @param {string} previousOffer
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
@@ -145,7 +145,7 @@ export const lookupOfferIdForVault = async (vaultId, currentP) => {
 };
 
 /**
- * @param {Record<string, import('@agoric/vats/tools/board-utils').BoardRemote>} brands
+ * @param {Record<string, Brand>} brands
  * @param {({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
  * @param {number} [fee=0]
  * @param {string} [anchor]
@@ -166,11 +166,9 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
   };
   return {
     give: {
-      // @ts-expect-error XXX BoardRemote not real remote
       In: { brand: brand.in, value: adjusted.in },
     },
     want: {
-      // @ts-expect-error XXX BoardRemote not real remote
       Out: { brand: brand.out, value: adjusted.out },
     },
   };
@@ -178,7 +176,7 @@ const makePsmProposal = (brands, opts, fee = 0, anchor = 'AUSD') => {
 
 /**
  * @param {Instance} instance
- * @param {Record<string, import('@agoric/vats/tools/board-utils').BoardRemote>} brands
+ * @param {Record<string, Brand>} brands
  * @param {{ offerId: number, feePct?: number } &
  *         ({ wantMinted: number | undefined, giveMinted: number | undefined })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}

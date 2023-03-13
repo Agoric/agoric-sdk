@@ -178,6 +178,7 @@ export function makeWalletRoot({
   const brandToAutoDepositPurse = makeScalarMapStore('brand');
 
   // Offers that the wallet knows about (the inbox).
+  /** @type {MapStore<string, any>} */
   const idToOffer = makeScalarMapStore('offerId');
   /** @type {LegacyMap<string, PromiseRecord<any>>} */
   // Legacy because promise kits are not passables

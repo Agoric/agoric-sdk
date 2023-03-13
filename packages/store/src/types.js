@@ -168,7 +168,7 @@
  */
 
 /**
- * @template K
+ * @template {Key & object} K
  * @typedef {object} WeakSetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -184,7 +184,7 @@
  */
 
 /**
- * @template K
+ * @template {Key} K
  * @typedef {object} SetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -205,7 +205,8 @@
  */
 
 /**
- * @template K,V
+ * @template {Key & object} K
+ * @template {Passable} V
  * @typedef {object} WeakMapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -224,7 +225,8 @@
  */
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @typedef {object} MapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the

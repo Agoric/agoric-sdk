@@ -3,13 +3,12 @@
 /* global Buffer, fetch, process */
 
 import { NonNullish } from '@agoric/assert';
-import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
+import {
+  boardSlottingMarshaller,
+  makeBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
 
 export { boardSlottingMarshaller };
-
-/**
- * @typedef {{boardId: string, iface: string}} RpcRemote
- */
 
 export const networkConfigUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.agoric.net/network-config`;
@@ -125,14 +124,14 @@ export const makeVStorage = powers => {
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
-export const makeFromBoard = (slotKey = 'boardId') => {
+export const makeFromBoard = () => {
   const cache = new Map();
-  const convertSlotToVal = (slot, iface) => {
-    if (cache.has(slot)) {
-      return cache.get(slot);
+  const convertSlotToVal = (boardId, iface) => {
+    if (cache.has(boardId)) {
+      return cache.get(boardId);
     }
-    const val = harden({ [slotKey]: slot, iface });
-    cache.set(slot, val);
+    const val = makeBoardRemote({ boardId, iface });
+    cache.set(boardId, val);
     return val;
   };
   return harden({ convertSlotToVal });
@@ -189,9 +188,12 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
+      /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
-        reverse[remote.boardId] = name;
+        if ('getBoardId' in remote) {
+          reverse[remote.getBoardId()] = name;
+        }
       }
       return [kind, Object.fromEntries(parts)];
     }),
