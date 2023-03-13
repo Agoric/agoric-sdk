@@ -1,5 +1,5 @@
 {
-  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. It is used by the sim chain (agoric start dev) and testnet-load-generator (aka loadgen). TODO: restore vaults proposal",
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. It is used by the sim chain (agoric start dev) and testnet-load-generator (aka loadgen).",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "snapshotInterval": 1000,
