@@ -40,7 +40,7 @@ export const agoricNamesReserved = harden({
     [Stable.denom]: Stable.proposedName,
   },
   installation: {
-    centralSupply: 'central supply',
+    faucetSupply: 'central supply',
     mintHolder: 'mint holder',
     walletFactory: 'multitenant smart wallet',
     provisionPool: 'provision accounts with initial IST',

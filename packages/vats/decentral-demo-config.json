@@ -116,7 +116,7 @@
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
-    "centralSupply": {
+    "faucetSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
     },
     "bridge": {

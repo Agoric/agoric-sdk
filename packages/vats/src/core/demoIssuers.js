@@ -183,7 +183,7 @@ const run2places = f =>
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupplyInstall: ERef<Installation>,
+ *   faucetSupplyInstall: ERef<Installation>,
  *   feeMintAccess: ERef<FeeMintAccess>,
  *   zoe: ERef<ZoeService>,
  * }} powers
@@ -191,13 +191,13 @@ const run2places = f =>
  */
 const mintRunPayment = async (
   value,
-  { centralSupplyInstall, feeMintAccess: feeMintAccessP, zoe },
+  { faucetSupplyInstall, feeMintAccess: feeMintAccessP, zoe },
 ) => {
   notForProductionUse();
   const feeMintAccess = await feeMintAccessP;
 
   const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
-    centralSupplyInstall,
+    faucetSupplyInstall,
     {},
     { bootstrapPaymentValue: value },
     { feeMintAccess },
@@ -240,7 +240,7 @@ export const connectFaucet = async ({
     zoe,
   },
   installation: {
-    consume: { centralSupply: centralSupplyInstall },
+    consume: { faucetSupply: faucetSupplyInstall },
   },
   produce: { mints },
 }) => {
@@ -251,8 +251,9 @@ export const connectFaucet = async ({
 
   const bldIssuerKit = await bldP;
   const LOTS = 1_000_000_000_000n; // TODO: design this.
+  notForProductionUse();
   let faucetRunSupply = await mintRunPayment(LOTS, {
-    centralSupplyInstall,
+    faucetSupplyInstall,
     feeMintAccess,
     zoe,
   });

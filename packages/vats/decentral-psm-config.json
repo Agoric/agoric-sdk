@@ -58,9 +58,6 @@
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
-    "centralSupply": {
-      "sourceSpec": "@agoric/vats/src/centralSupply.js"
-    },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },

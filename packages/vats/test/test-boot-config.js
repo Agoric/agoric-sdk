@@ -34,8 +34,7 @@ const NON_UPGRADEABLE_VATS = [
   // 'vat-network',
   // 'vat-ibc',
   // 'pegasus',
-  // TODO(#6687): prune centralSupply from prod config
-  // 'centralSupply',
+  'centralSupply',
   'mints',
   'sharing',
 ];

@@ -138,8 +138,10 @@
  *   issuer: |
  *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' |
+ *     'mintHolder' |
  *     'walletFactory' | 'provisionPool' | 'auctioneer' |
+ *     'mintHolder' |
+ *     'walletFactory' | 'provisionPool' | 'auction' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'VaultFactory' | 'liquidate' | 'stakeFactory' |

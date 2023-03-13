@@ -30,7 +30,6 @@ import {
   makeAddressNameHubs,
   makeBoard,
   makeVatsFromBundles,
-  mintInitialSupply,
 } from './basic-behaviors.js';
 import * as utils from './utils.js';
 import {
@@ -73,7 +72,6 @@ export const agoricNamesReserved = harden(
       USD: 'US Dollar',
     },
     installation: {
-      centralSupply: 'central supply',
       mintHolder: 'mint holder',
       walletFactory: 'multitenant smart wallet',
       contractGovernor: 'contract governor',
@@ -197,7 +195,6 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         },
       }),
       startWalletFactory(powersFor('startWalletFactory')),
-      mintInitialSupply(powersFor('mintInitialSupply')),
       addBankAssets(powersFor('addBankAssets')),
       startTimerService(powersFor('startTimerService')),
       installBootContracts(powersFor('installBootContracts')),

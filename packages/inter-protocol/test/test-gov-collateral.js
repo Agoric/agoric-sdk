@@ -203,8 +203,6 @@ const makeScenario = async (t, { env = process.env } = {}) => {
       t.context.installation.mintHolder,
     );
 
-    space.produce.initialSupply.resolve(emptyRunPayment());
-
     return Promise.all([
       // @ts-expect-error TODO: align types better
       addBankAssets(space),

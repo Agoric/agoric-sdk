@@ -5,13 +5,13 @@ import psm from '@agoric/inter-protocol/bundles/bundle-psm.js';
 import econCommitteeCharter from '@agoric/inter-protocol/bundles/bundle-econCommitteeCharter.js';
 import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
 
-import centralSupply from '../bundles/bundle-centralSupply.js';
+import faucetSupply from '../bundles/bundle-centralSupply.js';
 import mintHolder from '../bundles/bundle-mintHolder.js';
 import provisionPool from '../bundles/bundle-provisionPool.js';
 
 export const bundles = {
   binaryVoteCounter,
-  centralSupply,
+  faucetSupply,
   committee,
   contractGovernor,
   mintHolder,

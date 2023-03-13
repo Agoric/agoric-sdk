@@ -165,9 +165,6 @@
     "bridge": {
       "sourceSpec": "@agoric/vats/src/vat-bridge.js"
     },
-    "centralSupply": {
-      "sourceSpec": "@agoric/vats/src/centralSupply.js"
-    },
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
     },

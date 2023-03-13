@@ -23,6 +23,7 @@ import {
 import { Stable, Stake } from '../src/tokens.js';
 
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
+import { installFaucetContract } from '../src/core/sim-behaviors.js';
 
 const setUpZoeForTest = async () => {
   const { makeFar } = makeLoopback('zoeTest');
@@ -127,6 +128,7 @@ test('connectFaucet produces payments', async t => {
     makeBoard({ consume, produce, ...spaces }),
     makeAddressNameHubs({ consume, produce, ...spaces }),
     installBootContracts({ consume, produce, ...spaces }),
+    installFaucetContract({ consume, produce, ...spaces }),
     setupClientManager({ consume, produce, ...spaces }),
     connectFaucet({ consume, produce, ...spaces }),
     makeClientBanks({ consume, produce, ...spaces }),

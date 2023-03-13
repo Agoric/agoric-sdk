@@ -9,7 +9,6 @@ import { makeZoeKit } from '@agoric/zoe';
 import { observeIteration } from '@agoric/notifier';
 import { buildRootObject } from '../src/vat-bank.js';
 import {
-  mintInitialSupply,
   addBankAssets,
   installBootContracts,
 } from '../src/core/basic-behaviors.js';
@@ -193,7 +192,7 @@ test('communication', async t => {
   t.assert(AmountMath.isEqual(feeReceived, feeAmount));
 });
 
-test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
+test('addBankAssets bootstrap action', async t => {
   // Supply bootstrap prerequisites.
   const space = /** @type { any } */ (makePromiseSpace(t.log));
   const { produce, consume } =
@@ -208,53 +207,12 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(fma);
   produce.vatAdminSvc.resolve(vatAdminService);
+  const runIssuer = await E(zoeService).getFeeIssuer();
   await installBootContracts({
     consume,
     produce,
     ...spaces,
   });
-
-  // Genesis RUN supply: 50
-  const bootMsg = {
-    type: 'INIT@@',
-    chainID: 'ag',
-    storagePort: 1,
-    supplyCoins: [{ amount: '50000000', denom: 'uist' }],
-    vbankPort: 2,
-    vibcPort: 3,
-  };
-
-  // Now run the function under test.
-  await mintInitialSupply({
-    vatParameters: {
-      argv: {
-        bootMsg,
-        ROLE: 'x',
-        hardcodedClientAddresses: [],
-        FIXME_GCI: '',
-        PROVISIONER_INDEX: 1,
-      },
-    },
-    consume,
-    produce,
-    devices: /** @type { any } */ ({}),
-    vats: /** @type { any } */ ({}),
-    vatPowers: /** @type { any } */ ({}),
-    runBehaviors: /** @type { any } */ ({}),
-    modules: {},
-    ...spaces,
-  });
-
-  // check results: initialSupply
-  const runIssuer = await E(zoeService).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
-  const pmt = await consume.initialSupply;
-  const amt = await E(runIssuer).getAmountOf(pmt);
-  t.deepEqual(
-    amt,
-    { brand: runBrand, value: 50_000_000n },
-    'initialSupply of 50 RUN',
-  );
 
   const loadCriticalVat = async name => {
     assert.equal(name, 'bank');
