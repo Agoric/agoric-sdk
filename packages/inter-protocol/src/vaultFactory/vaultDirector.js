@@ -407,6 +407,7 @@ export const prepareVaultDirector = (
 
           const makeVaultManager = managerBaggages.addChild(
             brandName,
+            // @ts-expect-error I dunno what it's complaining about.
             prepareVaultManagerKit,
             zcf,
             marshaller,

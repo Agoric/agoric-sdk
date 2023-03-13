@@ -1485,7 +1485,7 @@ test('Auction sells all collateral w/shortfall', async t => {
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince(aliceUpdate.updateCount);
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
-  trace(t, 'alice liquidated');
+  trace(t, 'alice liquidated', currentTime);
   totalDebt += 30n;
   await aethVaultMetrics.assertChange({
     numActiveVaults: 0,

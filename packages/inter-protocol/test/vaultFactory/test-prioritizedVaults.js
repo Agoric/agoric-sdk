@@ -42,7 +42,6 @@ const makeCollector = () => {
 
 test('add to vault', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const fakeSeat = {};
   const vaults = makePrioritizedVaults(store);
   const fakeVault = makeFakeVault(
     'id-fakeVaultKit',
@@ -57,24 +56,17 @@ test('add to vault', async t => {
     MINIMAL_VAULT_KEY,
   );
 
-  const results = vaults.prepVaultRemoval(crKey, fakeSeat);
-  Array.from(results.vaultsToLiquidate).map(collector.lookForRatio);
+  const vaultsToLiquidate = vaults.removeVaultsBelow(crKey);
+  for (const entry of vaultsToLiquidate.entries()) {
+    collector.lookForRatio(entry);
+  }
 
   t.deepEqual(collector.getPercentages(), [130], 'expected vault');
-  t.deepEqual(results.totalCollateral, AmountMath.make(brand, 100n));
-  t.deepEqual(results.totalDebt, AmountMath.make(brand, 130n));
-  t.deepEqual(results.transfers, [
-    [
-      fakeVault.getVaultSeat(),
-      fakeSeat,
-      { Collateral: AmountMath.make(brand, 100n) },
-    ],
-  ]);
+  t.deepEqual([...vaultsToLiquidate.values()], [fakeVault]);
 });
 
 test('updates', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const fakeSeat = {};
   const vaults = makePrioritizedVaults(store);
   const fakeVault1 = makeFakeVault(
     'id1-fakeVaultKit',
@@ -94,30 +86,15 @@ test('updates', async t => {
     AmountMath.make(brand, 10n),
     MINIMAL_VAULT_KEY,
   );
-  const results = vaults.prepVaultRemoval(crKey, fakeSeat);
+  const vaultsToLiquidate = vaults.removeVaultsBelow(crKey);
   const collector = makeCollector();
-  Array.from(results.vaultsToLiquidate).map(collector.lookForRatio);
+  Array.from(vaultsToLiquidate.entries()).map(collector.lookForRatio);
 
   t.deepEqual(collector.getPercentages(), [80, 20], 'expected vault');
-  t.deepEqual(results.totalCollateral, AmountMath.make(brand, 200n));
-  t.deepEqual(results.totalDebt, AmountMath.make(brand, 100n));
-  t.deepEqual(results.transfers, [
-    [
-      fakeVault1.getVaultSeat(),
-      fakeSeat,
-      { Collateral: AmountMath.make(brand, 100n) },
-    ],
-    [
-      fakeVault2.getVaultSeat(),
-      fakeSeat,
-      { Collateral: AmountMath.make(brand, 100n) },
-    ],
-  ]);
 });
 
 test('update changes ratio', async t => {
   const store = makeScalarBigMapStore('orderedVaultStore');
-  const fakeSeat = {};
   const vaults = makePrioritizedVaults(store);
 
   // default collateral of makeFakeVaultKit
@@ -176,10 +153,10 @@ test('update changes ratio', async t => {
     MINIMAL_VAULT_KEY,
   );
 
-  const results = vaults.prepVaultRemoval(crKey, fakeSeat);
+  const vaultsToLiquidate = vaults.removeVaultsBelow(crKey);
 
   const collector = makeCollector();
-  Array.from(results.vaultsToLiquidate).map(collector.lookForRatio);
+  Array.from(vaultsToLiquidate.entries()).map(collector.lookForRatio);
   t.deepEqual(collector.getPercentages(), [95], 'only one is higher than 90%');
   t.deepEqual(vaults.highestRatio(), percent(80n));
 });

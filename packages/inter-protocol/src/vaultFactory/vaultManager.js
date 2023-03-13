@@ -141,13 +141,13 @@ const quoteAsRatio = quoteAmount =>
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {ERef<Marshaller>} marshaller
  * @param {Readonly<{
- * debtMint: ZCFMint<'nat'>,
- * collateralBrand: Brand<'nat'>,
- * collateralUnit: Amount<'nat'>,
- * factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
- * descriptionScope: string,
- * startTimeStamp: Timestamp,
- * storageNode: ERef<StorageNode>,
+ *   debtMint: ZCFMint<'nat'>,
+ *   collateralBrand: Brand<'nat'>,
+ *   collateralUnit: Amount<'nat'>,
+ *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
+ *   descriptionScope: string,
+ *   startTimeStamp: Timestamp,
+ *   storageNode: ERef<StorageNode>,
  * }>} unique per singleton
  */
 export const prepareVaultManagerKit = (
@@ -847,7 +847,7 @@ export const prepareVaultManagerKit = (
           const accounting = liquidationResults(totalDebt, mintedProceeds);
           const { Collateral: collateralProceeds } = proceeds;
 
-          const removeLiquidatedVault = v => {
+          const recordLiquidation = v => {
             v.liquidated();
             liquidatingVaults.delete(v);
           };
@@ -907,7 +907,7 @@ export const prepareVaultManagerKit = (
                   { Collateral: collat },
                 ]);
               }
-              removeLiquidatedVault(vault);
+              recordLiquidation(vault);
             }
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
@@ -938,7 +938,7 @@ export const prepareVaultManagerKit = (
             facets.helper.sendToReserve(accounting.overage, liqSeat, 'Minted');
 
             for (const [vault, amounts] of vaultData.entries()) {
-              removeLiquidatedVault(vault);
+              recordLiquidation(vault);
               facets.helper.subtractPhantomInterest(
                 amounts.debtAmount,
                 vault.getCurrentDebt(),
@@ -1006,7 +1006,7 @@ export const prepareVaultManagerKit = (
                 transfers.push([liqSeat, seat, { Minted: mintedToReturn }]);
               }
 
-              removeLiquidatedVault(vault);
+              recordLiquidation(vault);
             }
 
             if (transfers.length > 0) {
@@ -1073,7 +1073,7 @@ export const prepareVaultManagerKit = (
                   debtAmount,
                   vault.getCurrentDebt(),
                 );
-                removeLiquidatedVault(vault);
+                recordLiquidation(vault);
               }
             }
             if (transfers.length > 0) {
