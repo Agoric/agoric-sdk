@@ -1,6 +1,7 @@
 // @ts-check
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { assertPassable } from '@endo/marshal';
+import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
 import { makePromiseSpace } from './promise-space.js';
@@ -255,4 +256,22 @@ export const makeAgoricNamesAccess = (
     agoricNamesAdmin,
     spaces: typedSpaces,
   };
+};
+
+/**
+ * @param {string} address
+ */
+export const makeMyAddressNameAdminKit = address => {
+  // Create a name hub for this address.
+  const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
+
+  /** @type {import('../types').MyAddressNameAdmin} */
+  const myAddressNameAdmin = Far('myAddressNameAdmin', {
+    ...rawMyAddressNameAdmin,
+    getMyAddress: () => address,
+  });
+  // reserve space for deposit facet
+  myAddressNameAdmin.reserve(WalletName.depositFacet);
+
+  return { nameHub, myAddressNameAdmin };
 };

@@ -19,7 +19,8 @@ import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
-import { PowerFlags, BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
+import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
+import { PowerFlags } from '../walletFlags.js';
 
 const { Fail } = assert;
 const { keys } = Object;

@@ -9,7 +9,7 @@ import { observeIteration } from '@agoric/notifier';
 import { M, makeExo, makeScalarMapStore, mustMatch } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
-import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/basic-behaviors.js';
+import { makeMyAddressNameAdminKit } from '@agoric/vats/src/core/utils.js';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
