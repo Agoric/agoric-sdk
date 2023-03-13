@@ -34,7 +34,7 @@ const makeScenario = async (t, bundles) => {
   /** @type {SwingSetConfig} */
   const config = {
     includeDevDependencies: true, // for vat-data
-    defaultManagerType: 'local', // better debugging
+    defaultManagerType: 'xs-worker',
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
     vats: {
