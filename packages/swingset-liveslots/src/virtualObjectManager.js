@@ -984,7 +984,7 @@ export function makeVirtualObjectManager(
       kindIDID = `${allocateExportID()}`;
       syscall.vatstoreSet('kindIDID', kindIDID);
     }
-    vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
+    vrm.registerKind(kindIDID, reanimateDurableKindID, () => false, true);
   }
 
   function getNextInstanceID(kindID, isDurable) {
