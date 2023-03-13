@@ -212,9 +212,13 @@ test.serial('invitations', async t => {
   const currentSub = E(wallet).getCurrentSubscriber();
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   const currentState = await headValue(currentSub);
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [id]);
+  t.deepEqual(
+    currentState.offerToUsedInvitation.map(([k, _]) => k),
+    [id],
+  );
+  const usedInvitations = new Map(currentState.offerToUsedInvitation);
   t.is(
-    currentState.offerToUsedInvitation[id].value[0].description,
+    usedInvitations.get(id)?.value[0].description,
     ORACLE_INVITATION_MAKERS_DESC,
   );
 });
@@ -389,12 +393,13 @@ test.serial('govern oracles list', async t => {
       1,
       'one invitation consumed, one left',
     );
-    t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-      'acceptEcInvitationOID',
-    ]);
+    t.deepEqual(
+      currentState.offerToUsedInvitation.map(([k, _]) => k),
+      ['acceptEcInvitationOID'],
+    );
+    let usedInvitations = new Map(currentState.offerToUsedInvitation);
     t.is(
-      currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
-        .description,
+      usedInvitations.get('acceptEcInvitationOID')?.value[0].description,
       'charter member invitation',
     );
     await offersFacet.executeOffer({
@@ -413,15 +418,13 @@ test.serial('govern oracles list', async t => {
       0,
       'last invitation consumed, none left',
     );
-    t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-      'acceptEcInvitationOID',
-      'acceptVoterOID',
-    ]);
-    // 'acceptEcInvitationOID' tested above
-    t.is(
-      currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
-      'Voter0',
+    t.deepEqual(
+      currentState.offerToUsedInvitation.map(([k, _]) => k),
+      ['acceptEcInvitationOID', 'acceptVoterOID'],
     );
+    // 'acceptEcInvitationOID' tested above
+    usedInvitations = new Map(currentState.offerToUsedInvitation);
+    t.is(usedInvitations.get('acceptVoterOID')?.value[0].description, 'Voter0');
   }
 
   const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');

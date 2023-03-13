@@ -280,12 +280,14 @@ test('govern offerFilter', async t => {
     1,
     'one invitation consumed, one left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-    'acceptEcInvitationOID',
-  ]);
+  t.deepEqual(
+    currentState.offerToUsedInvitation.map(([k, _]) => k),
+    ['acceptEcInvitationOID'],
+  );
+
+  let usedInvitations = new Map(currentState.offerToUsedInvitation);
   t.is(
-    currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
-      .description,
+    usedInvitations.get('acceptEcInvitationOID')?.value[0].description,
     'charter member invitation',
   );
   const voteInvitationDetails = await getInvitationFor(
@@ -317,15 +319,13 @@ test('govern offerFilter', async t => {
     0,
     'last invitation consumed, none left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-    'acceptEcInvitationOID',
-    'acceptVoterOID',
-  ]);
-  // acceptEcInvitationOID tested above
-  t.is(
-    currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
-    'Voter0',
+  t.deepEqual(
+    currentState.offerToUsedInvitation.map(([k, _]) => k),
+    ['acceptEcInvitationOID', 'acceptVoterOID'],
   );
+  // acceptEcInvitationOID tested above
+  usedInvitations = new Map(currentState.offerToUsedInvitation);
+  t.is(usedInvitations.get('acceptVoterOID')?.value[0].description, 'Voter0');
 
   // Call for a vote ////////////////////////////////
 

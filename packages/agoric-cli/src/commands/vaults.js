@@ -43,9 +43,9 @@ export const makeVaultsCommand = async logger => {
     .action(async function (opts) {
       const current = await getCurrent(opts.from, fromBoard, { vstorage });
 
-      const vaultStoragePaths = Object.values(
-        current.offerToPublicSubscriberPaths,
-      ).map(pathmap => pathmap.vault);
+      const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
+        ([_offerId, pathmap]) => pathmap.vault,
+      );
 
       for (const path of vaultStoragePaths) {
         process.stdout.write(path);

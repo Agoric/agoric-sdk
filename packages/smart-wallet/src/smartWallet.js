@@ -28,15 +28,6 @@ import { objectMapStoragePath } from './utils.js';
 const { Fail, quote: q } = assert;
 const { StorageNodeShape } = makeTypeGuards(M);
 
-const ERROR_LAST_OFFER_ID = -1;
-
-/**
- * @template K, V
- * @param {MapStore<K, V> } map
- * @returns {Record<K, V>}
- */
-const mapToRecord = map => Object.fromEntries(map.entries());
-
 /**
  * @file Smart wallet module
  *
@@ -56,11 +47,23 @@ const mapToRecord = map => Object.fromEntries(map.entries());
 /**
  * Purses is an array to support a future requirement of multiple purses per brand.
  *
+ * Each map is encoded as an array of entries because a Map doesn't serialize directly.
+ * We also considered having a vstorage key for each offer but for now are sticking with this design.
+ *
+ * Cons
+ *    - Reserializes previously written results when a new result is added
+ *    - Optimizes reads though writes are on-chain (~100 machines) and reads are off-chain (to 1 machine)
+ *
+ * Pros
+ *    - Reading all offer results happens much more (>100) often than storing a new offer result
+ *    - Reserialization and writes are paid in execution gas, whereas reads are not
+ *
+ * This design should be revisited if ever batch querying across vstorage keys become cheaper or reads be paid.
+ *
  * @typedef {{
  *   purses: Array<{brand: Brand, balance: Amount}>,
- *   offerToUsedInvitation: { [offerId: string]: Amount },
- *   offerToPublicSubscriberPaths: { [offerId: string]: { [subscriberName: string]: string } },
- *   lastOfferId: string,
+ *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
+ *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
  * }} CurrentWalletRecord
  */
 
@@ -256,7 +259,6 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
-      getLastOfferId: M.call().returns(M.number()),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
@@ -313,12 +315,10 @@ export const prepareSmartWallet = (baggage, shared) => {
               brand: a.brand,
               balance: a,
             })),
-            offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
-            offerToPublicSubscriberPaths: mapToRecord(
-              offerToPublicSubscriberPaths,
-            ),
-            // @ts-expect-error FIXME leftover from offer id string conversion
-            lastOfferId: ERROR_LAST_OFFER_ID,
+            offerToUsedInvitation: [...offerToUsedInvitation.entries()],
+            offerToPublicSubscriberPaths: [
+              ...offerToPublicSubscriberPaths.entries(),
+            ],
           });
         },
 
@@ -384,13 +384,6 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
       },
       offers: {
-        /**
-         * @deprecated
-         * @returns {number} an error code, for backwards compatibility with clients expecting a number
-         */
-        getLastOfferId() {
-          return ERROR_LAST_OFFER_ID;
-        },
         /**
          * Take an offer description provided in capData, augment it with payments and call zoe.offer()
          *

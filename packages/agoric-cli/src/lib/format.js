@@ -155,12 +155,11 @@ export const offerStatusTuples = (state, agoricNames) => {
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {
-    lastOfferId: [current.lastOfferId],
     purses: purseBalanceTuples(
       [...current.purses.values()],
       Object.values(agoricNames.vbankAsset),
     ),
-    usedInvitations: Object.entries(current.offerToUsedInvitation).map(
+    usedInvitations: current.offerToUsedInvitation.map(
       ([offerId, invitationAmt]) => [
         agoricNames.reverse[invitationAmt.value[0].instance.boardId],
         invitationAmt.value[0].description,
