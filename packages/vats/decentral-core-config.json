@@ -11,9 +11,6 @@
     }
   },
   "bundles": {
-    "centralSupply": {
-      "sourceSpec": "@agoric/vats/src/centralSupply.js"
-    },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },

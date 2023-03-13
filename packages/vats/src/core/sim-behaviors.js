@@ -39,6 +39,25 @@ export const grantRunBehaviors = async ({
 };
 harden(grantRunBehaviors);
 
+/** @param {BootstrapSpace} powers */
+export const installFaucetContract = async ({
+  consume: { vatAdminSvc, zoe },
+  installation: {
+    produce: { faucetSupply },
+  },
+}) => {
+  for (const [name, producer] of Object.entries({
+    faucetSupply,
+  })) {
+    const idP = E(vatAdminSvc).getBundleIDByName(name);
+    const installationP = idP.then(bundleID =>
+      E(zoe).installBundleID(bundleID),
+    );
+
+    producer.resolve(installationP);
+  }
+};
+
 /** @type {import('./lib-boot').BootstrapManifest} */
 export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
   [installSimEgress.name]: {
@@ -48,6 +67,12 @@ export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
       comms: true,
     },
     consume: { clientCreator: true },
+  },
+  [installFaucetContract.name]: {
+    consume: { vatAdminSvc: 'vat-admin', zoe: 'zoe' },
+    installation: {
+      produce: { faucetSupply: 'zoe' },
+    },
   },
   [connectFaucet.name]: {
     consume: {
@@ -59,7 +84,7 @@ export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
       zoe: true,
     },
     installation: {
-      consume: { centralSupply: 'zoe' },
+      consume: { faucetSupply: 'zoe' },
     },
     produce: { mints: true },
     home: { produce: { faucet: true } },

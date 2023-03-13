@@ -136,7 +136,7 @@
  *   issuer: |
  *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
- *     'centralSupply' | 'mintHolder' |
+ *     'mintHolder' |
  *     'walletFactory' | 'provisionPool' | 'auction' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
@@ -201,7 +201,6 @@
  *   clientCreator: ClientCreator,
  *   coreEvalBridgeHandler: unknown,
  *   feeMintAccess: FeeMintAccess,
- *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,
  *   mints: MintsVat,
  *   namesByAddress: NameHub,

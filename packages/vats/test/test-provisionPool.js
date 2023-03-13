@@ -53,7 +53,7 @@ const makeTestContext = async () => {
 
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
-  const centralSupply = await E(zoe).install(centralSupplyBundle);
+  const faucetSupply = await E(zoe).install(centralSupplyBundle);
   /** @type {Installation<import('../src/provisionPool').start>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
@@ -92,7 +92,7 @@ const makeTestContext = async () => {
     installs: {
       committeeInstall,
       psmInstall,
-      centralSupply,
+      faucetSupply,
       provisionPool: policyInstall,
     },
     mintLimit,
