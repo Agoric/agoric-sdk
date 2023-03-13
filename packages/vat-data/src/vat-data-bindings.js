@@ -30,7 +30,7 @@ if ('VatData' in globalThis) {
 }
 
 /**
- * @deprecated Use Exos/ExoClasses instead of kinds
+ * @deprecated Use Exos/ExoClasses instead of Kinds
  */
 export const {
   defineKind,

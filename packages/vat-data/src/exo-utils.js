@@ -1,11 +1,11 @@
 import { initEmpty } from '@agoric/store';
 
-import { provideKindHandle } from './kind-utils.js';
 import {
   defineKind,
   defineKindMulti,
   defineDurableKind,
   defineDurableKindMulti,
+  makeKindHandle,
   provide,
 } from './vat-data-bindings.js';
 
@@ -16,6 +16,65 @@ import {
 /** @template T @typedef {import('./types.js').KindFacet<T>} KindFacet */
 /** @template T @typedef {import('./types.js').KindFacets<T>} KindFacets */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
+
+/**
+ * Make a version of the argument function that takes a kind context but
+ * ignores it.
+ *
+ * @type {<T extends Function>(fn: T) => import('./types.js').PlusContext<never, T>}
+ */
+export const ignoreContext =
+  fn =>
+  (_context, ...args) =>
+    fn(...args);
+harden(ignoreContext);
+
+/**
+ * @param {Baggage} baggage
+ * @param {string} kindName
+ * @returns {DurableKindHandle}
+ */
+export const provideKindHandle = (baggage, kindName) =>
+  provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
+harden(provideKindHandle);
+
+/**
+ * @deprecated Use prepareExoClass instead
+ * @type {import('./types.js').PrepareKind}
+ */
+export const prepareKind = (
+  baggage,
+  kindName,
+  init,
+  behavior,
+  options = undefined,
+) =>
+  defineDurableKind(
+    provideKindHandle(baggage, kindName),
+    init,
+    behavior,
+    options,
+  );
+harden(prepareKind);
+
+/**
+ * @deprecated Use prepareExoClassKit instead
+ * @type {import('./types.js').PrepareKindMulti}
+ */
+export const prepareKindMulti = (
+  baggage,
+  kindName,
+  init,
+  behavior,
+  options = undefined,
+) =>
+  defineDurableKindMulti(
+    provideKindHandle(baggage, kindName),
+    init,
+    behavior,
+    options,
+  );
+harden(prepareKindMulti);
 
 // TODO interfaceGuard type https://github.com/Agoric/agoric-sdk/issues/6206
 /**
