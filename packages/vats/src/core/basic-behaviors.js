@@ -7,23 +7,11 @@ import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
 import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
-import { feeIssuerConfig } from './utils.js';
+import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 import { Stable, Stake } from '../tokens.js';
+import { PowerFlags } from '../walletFlags.js';
 
 const { details: X } = assert;
-
-// XXX domain of @agoric/cosmic-proto
-/**
- * non-exhaustive list of powerFlags
- * REMOTE_WALLET is currently a default.
- *
- * See also MsgProvision in golang/cosmos/proto/agoric/swingset/msgs.proto
- */
-export const PowerFlags = /** @type {const} */ ({
-  SMART_WALLET: 'SMART_WALLET',
-  /** The ag-solo wallet is remote. */
-  REMOTE_WALLET: 'REMOTE_WALLET',
-});
 
 /**
  * In golang/cosmos/app/app.go, we define
@@ -188,24 +176,6 @@ export const makeBoard = async ({
   return E(client).assignBundle([_addr => ({ board })]);
 };
 harden(makeBoard);
-
-/**
- * @param {string} address
- */
-export const makeMyAddressNameAdminKit = address => {
-  // Create a name hub for this address.
-  const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
-
-  /** @type {import('../types').MyAddressNameAdmin} */
-  const myAddressNameAdmin = Far('myAddressNameAdmin', {
-    ...rawMyAddressNameAdmin,
-    getMyAddress: () => address,
-  });
-  // reserve space for deposit facet
-  myAddressNameAdmin.reserve(WalletName.depositFacet);
-
-  return { nameHub, myAddressNameAdmin };
-};
 
 /**
  * Make the agoricNames, namesByAddress name hierarchies.

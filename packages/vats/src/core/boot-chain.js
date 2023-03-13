@@ -2,20 +2,12 @@
 import { makeBootstrap } from './lib-boot.js';
 
 import * as basicBehaviorsPlus from './basic-behaviors.js';
-import { CHAIN_BOOTSTRAP_MANIFEST } from './chain-behaviors.js';
 import * as chainBehaviorsPlus from './chain-behaviors.js';
 import * as utils from './utils.js';
 
-export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
-
+const { BASIC_BOOTSTRAP_PERMITS: _b, ...basicBehaviors } = basicBehaviorsPlus;
 const {
-  BASIC_BOOTSTRAP_PERMITS: _b,
-  PowerFlags: _p,
-  makeMyAddressNameAdminKit: _m,
-  ...basicBehaviors
-} = basicBehaviorsPlus;
-const {
-  CHAIN_BOOTSTRAP_MANIFEST: _c,
+  CHAIN_BOOTSTRAP_MANIFEST,
   SHARED_CHAIN_BOOTSTRAP_MANIFEST: _s,
   ...chainBehaviors
 } = chainBehaviorsPlus;
@@ -25,6 +17,8 @@ const modules = {
   behaviors: { ...behaviors },
   utils: { ...utils },
 };
+
+export const MANIFEST = CHAIN_BOOTSTRAP_MANIFEST;
 
 /**
  * Build root object of the bootstrap vat.

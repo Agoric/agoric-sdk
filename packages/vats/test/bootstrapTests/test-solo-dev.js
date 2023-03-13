@@ -1,6 +1,6 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { PowerFlags } from '../../src/core/basic-behaviors.js';
+import { PowerFlags } from '../../src/walletFlags.js';
 
 import { makeSwingsetTestKit } from './supports.js';
 
