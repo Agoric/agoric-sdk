@@ -16,9 +16,7 @@
     "lint:types": "tsc -p jsconfig.json",
     "lint:eslint": "eslint ."
   },
-  "devDependencies": {
-    "@agoric/swingset-vat": "^0.30.2"
-  },
+  "devDependencies": {},
   "dependencies": {
     "@agoric/assert": "^0.5.1",
     "@agoric/internal": "^0.2.1",
