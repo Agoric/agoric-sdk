@@ -266,6 +266,7 @@ export const startWalletFactory = async (
   );
 };
 
+/** @type {import('./lib-boot.js').BootstrapManifest} */
 export const WALLET_FACTORY_MANIFEST = {
   [startWalletFactory.name]: {
     consume: {
