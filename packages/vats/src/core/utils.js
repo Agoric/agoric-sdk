@@ -130,23 +130,20 @@ export const extract = (template, specimen, path = []) => {
         specimen,
       )}`;
     }
-    const target = harden(
-      fromEntries(
-        entries(template).map(([propName, subTemplate]) => [
-          propName,
-          extract(subTemplate, specimen[propName], [...path, propName]),
-        ]),
-      ),
-    );
-    return new Proxy(target, {
-      get: (t, propName) => {
-        if (typeof propName !== 'symbol') {
-          propName in t ||
+    return new Proxy(
+      {},
+      {
+        get: (t, propName) => {
+          assert.typeof(propName, 'string');
+          propName in template ||
             Fail`${propName} not permitted, only ${keys(template)}`;
-        }
-        return t[propName];
+          return extract(template[propName], specimen[propName], [
+            ...path,
+            propName,
+          ]);
+        },
       },
-    });
+    );
   } else {
     throw Fail`unexpected template: ${q(template)}`;
   }
