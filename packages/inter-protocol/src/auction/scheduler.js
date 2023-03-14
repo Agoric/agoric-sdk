@@ -95,6 +95,7 @@ export const computeRoundTiming = (params, baseTime) => {
   const endTime = TimeMath.addAbsRel(startTime, actualDuration);
   const lockTime = TimeMath.subtractAbsRel(startTime, lockPeriod);
 
+  /** @type {Schedule} */
   const next = {
     startTime,
     endTime,
@@ -126,15 +127,27 @@ export const makeScheduler = async (
   params,
   timerBrand,
 ) => {
-  // live version is non-null when an auction is active.
+  /**
+   * live version is defined when an auction is active.
+   *
+   * @type {Schedule | undefined}
+   */
   let liveSchedule;
-  // Next should always be defined after initialization unless it's paused
+  /**
+   * Next should always be defined after initialization unless it's paused
+   *
+   * @type {Schedule | undefined}
+   */
   let nextSchedule;
   const stepCancelToken = makeCancelToken();
 
   /** @type {typeof AuctionState[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
 
+  /**
+   * @param {import("@agoric/time/src/types").Timestamp} time
+   * @param {Schedule} schedule
+   */
   const clockTick = (time, schedule) => {
     trace('clockTick', schedule.startTime, time);
     if (TimeMath.compareAbs(time, schedule.startTime) >= 0) {
@@ -151,6 +164,8 @@ export const makeScheduler = async (
       auctionState = AuctionState.WAITING;
 
       auctionDriver.finalize();
+
+      if (!nextSchedule) throw Fail`nextSchedule not defined`;
 
       // only recalculate the next schedule at this point if the lock time has
       // not been reached.
@@ -170,6 +185,7 @@ export const makeScheduler = async (
 
   const scheduleRound = time => {
     trace('nextRound', time);
+    if (!liveSchedule) throw Fail`liveSchedule not defined`;
 
     const { startTime } = liveSchedule;
     trace('START ', startTime);
@@ -237,10 +253,11 @@ export const makeScheduler = async (
  * @typedef {object} Schedule
  * @property {Timestamp} startTime
  * @property {Timestamp} endTime
- * @property {bigint} steps
- * @property {Ratio} endRate
+ * @property {NatValue} steps
+ * @property {NatValue} endRate
  * @property {RelativeTime} startDelay
  * @property {RelativeTime} clockStep
+ * @property {Timestamp} [lockTime]
  */
 
 /**
