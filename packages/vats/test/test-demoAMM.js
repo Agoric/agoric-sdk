@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { Stable } from '@agoric/vats/src/tokens.js';
+import { Stable } from '../src/tokens.js';
 
 import {
   AMMDemoState,
@@ -12,17 +12,19 @@ import {
   showAmount,
   showBrand,
   splitAllCentralPayments,
-} from '../src/proposals/demoIssuers.js';
+} from '../src/core/demoIssuers.js';
 
 /** @param { bigint } n */
 const showIST = n => `${decimal(n, 6)} IST`;
 
+// TODO: prune showIST formatting utility
 test('uist -> IST formatting test utility', t => {
   t.is(showIST(123456789n), '123.456789 IST', 'IST decimal point');
   t.is(showIST(1234567890n), '1_234.56789 IST', 'thousands separators');
   t.is(showIST(3286010000000000n), '3_286_010_000 IST', 'regression 1');
 });
 
+// TODO: prune splitAllCentralPayments AMM utility?
 test('splitAllCentralPayments: count entries, spot check', async t => {
   const central = makeIssuerKit(
     Stable.symbol,
@@ -41,7 +43,7 @@ test('splitAllCentralPayments: count entries, spot check', async t => {
   // t.log(actual);
   t.is(actual.ATOM.amount.brand, central.brand);
   t.deepEqual(showAmount(actual.ATOM.amount), '33_280_000 IST');
-  t.deepEqual(Object.keys(actual), ['BLD', 'ATOM', 'WETH', 'LINK', 'USDC']);
+  t.deepEqual(Object.keys(actual), ['BLD', 'ATOM', 'WETH', 'LINK', 'DAI']);
 });
 
 test('poolRates: spot check WETH', t => {

@@ -282,7 +282,8 @@ function sortObjectProperties(obj, firsts = []) {
   return result;
 }
 
-/** @typedef {{ kernelBundles?: Record<string, Bundle>, verbose?: boolean,
+/**
+ * @typedef {{ kernelBundles?: Record<string, Bundle>, verbose?: boolean,
  *              addVatAdmin?: boolean, addComms?: boolean, addVattp?: boolean,
  *              addTimer?: boolean,
  *            }} InitializationOptions
@@ -290,14 +291,14 @@ function sortObjectProperties(obj, firsts = []) {
 
 /**
  * @param {SwingSetConfig} config
- * @param {string[]} argv
+ * @param {unknown} bootstrapArgs
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
  */
 export async function initializeSwingset(
   config,
-  argv = [],
+  bootstrapArgs,
   kernelStorage,
   initializationOptions = {},
   runtimeOptions = {},
@@ -353,13 +354,13 @@ export async function initializeSwingset(
   kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
   kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 
-  if (config.bootstrap && argv) {
+  if (config.bootstrap && bootstrapArgs) {
     const bootConfig = config.vats[config.bootstrap];
     if (bootConfig) {
       if (!bootConfig.parameters) {
         bootConfig.parameters = {};
       }
-      bootConfig.parameters.argv = argv;
+      bootConfig.parameters.argv = bootstrapArgs;
     }
   }
 

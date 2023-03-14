@@ -1,69 +1,66 @@
 // @ts-check
 import { E, Far } from '@endo/far';
-
-import * as simBehaviors from '@agoric/inter-protocol/src/proposals/sim-behaviors.js';
 import { makePassableEncoding } from '@agoric/swingset-vat/tools/passableEncoding.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-  runModuleBehaviors,
-} from './utils.js';
-import {
-  CLIENT_BOOTSTRAP_MANIFEST,
-  CHAIN_BOOTSTRAP_MANIFEST,
-  SIM_CHAIN_BOOTSTRAP_MANIFEST,
-} from './manifest.js';
-
-import * as behaviors from './behaviors.js';
-import * as clientBehaviors from './client-behaviors.js';
-import * as utils from './utils.js';
+import { makeAgoricNamesAccess, runModuleBehaviors } from './utils.js';
+import { makePromiseSpace } from './promise-space.js';
 
 const { Fail, quote: q } = assert;
 
-// Choose a manifest based on runtime configured argv.ROLE.
-const roleToManifest = harden({
-  chain: CHAIN_BOOTSTRAP_MANIFEST,
-  'sim-chain': SIM_CHAIN_BOOTSTRAP_MANIFEST,
-  client: CLIENT_BOOTSTRAP_MANIFEST,
-});
-const roleToBehaviors = harden({
-  'sim-chain': { ...behaviors, ...simBehaviors },
-  // copy to avoid trying to harden a module namespace
-  client: { ...clientBehaviors },
-});
+/**
+ * @typedef {true | string | { [key: string]: BootstrapManifestPermit }} BootstrapManifestPermit
+ */
 
 /**
- * Build root object of the bootstrap vat.
+ * A manifest is an object in which each key is the name of a function to run
+ * at bootstrap and the corresponding value is a "permit" describing an
+ * attenuation of allPowers that should be provided as its first argument
+ * (cf. packages/vats/src/core/boot.js).
  *
+ * A permit is either
+ * - `true` or a string (both meaning no attenuation, with a string serving
+ *   as a grouping label for convenience and diagram generation), or
+ * - an object whose keys identify properties to preserve and whose values
+ *   are themselves (recursive) permits.
+ *
+ * @typedef {Record<string, BootstrapManifestPermit>} BootstrapManifest
+ *
+ */
+
+/**
+ * @typedef {(powers: *, config?: *) => Promise<void>} BootBehavior
+ * @typedef {Record<string, unknown>} ModuleNamespace
+ * @typedef {{ utils: typeof import('./utils.js') } & Record<string, Record<string, any>>} BootModules
+ */
+
+/** @type {<X>(a: X[], b: X[]) => X[]} */
+const setDiff = (a, b) => a.filter(x => !b.includes(x));
+
+/**
  * @param {{
  *   D: DProxy,
  *   logger: (msg) => void,
  * }} vatPowers
- * @param {{
- *   argv: { ROLE: string },
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
- *   coreProposalCode?: string,
- * }} vatParameters
+ * @param {Record<string, unknown>} vatParameters
+ * @param {BootstrapManifest} bootManifest
+ * @param {Record<string, BootBehavior>} behaviors
+ * @param {BootModules} modules
  */
-const buildRootObject = (vatPowers, vatParameters) => {
+export const makeBootstrap = (
+  vatPowers,
+  vatParameters,
+  bootManifest,
+  behaviors,
+  modules,
+) => {
+  const { keys } = Object;
+  const extra = setDiff(keys(bootManifest), keys(behaviors));
+  extra.length === 0 || Fail`missing behavior for manifest keys: ${extra}`;
+
   const log = vatPowers.logger || console.info;
   const { produce, consume } = makePromiseSpace(log);
   const { agoricNames, agoricNamesAdmin, spaces } = makeAgoricNamesAccess(log);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
-
-  const {
-    // XXX not for production ?!
-    argv: { ROLE = 'chain' },
-    bootstrapManifest,
-  } = vatParameters;
-  // ROLE || Fail`boot requires ROLE in argv`;
-  console.debug(`${ROLE} bootstrap starting`);
-
-  const bootManifest = bootstrapManifest || roleToManifest[ROLE];
-  const bootBehaviors = roleToBehaviors[ROLE] || behaviors;
-  bootManifest || Fail`no configured bootstrapManifest for role ${ROLE}`;
-  bootBehaviors || Fail`no configured bootstrapBehaviors for role ${ROLE}`;
 
   /**
    * Bootstrap vats and devices.
@@ -74,19 +71,18 @@ const buildRootObject = (vatPowers, vatParameters) => {
   const rawBootstrap = async (vats, devices) => {
     // Complete SwingSet wiring.
     const { D } = vatPowers;
-    if (devices.mailbox) {
-      D(devices.mailbox).registerInboundHandler(vats.vattp);
-      // eslint-disable-next-line @jessie.js/no-nested-await -- XXX
-      await E(vats.vattp).registerMailboxDevice(devices.mailbox);
-    } else {
+    if (!devices.mailbox) {
       console.warn('No mailbox device. Not registering with vattp');
     }
+    await (devices.mailbox &&
+      (D(devices.mailbox).registerInboundHandler(vats.vattp),
+      E(vats.vattp).registerMailboxDevice(devices.mailbox)));
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
         // eslint-disable-next-line no-use-before-define
         allPowers,
-        behaviors: bootBehaviors,
+        behaviors,
         manifest,
         makeConfig: (name, permit) => {
           log(`bootstrap: ${name}(${q(permit)}`);
@@ -106,12 +102,7 @@ const buildRootObject = (vatPowers, vatParameters) => {
       ...spaces,
       runBehaviors,
       // These module namespaces might be useful for core eval governance.
-      modules: {
-        clientBehaviors: { ...clientBehaviors },
-        simBehaviors: { ...simBehaviors },
-        behaviors: { ...behaviors },
-        utils: { ...utils },
-      },
+      modules,
     });
 
     await runBehaviors(bootManifest);
@@ -190,6 +181,3 @@ const buildRootObject = (vatPowers, vatParameters) => {
     // #endregion
   });
 };
-
-harden({ buildRootObject });
-export { buildRootObject };

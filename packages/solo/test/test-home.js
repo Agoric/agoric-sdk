@@ -2,7 +2,7 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import bundleSource from '@endo/bundle-source';
+import bundleSourceAmbient from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { Far } from '@endo/marshal';
@@ -12,20 +12,29 @@ import { makeFixture, E } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
 
-// This runs before all the tests.
-let home;
-let teardown;
+// #region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
+  const loadBundle = async specifier => {
+    const contractUrl = await importMetaResolve(specifier, import.meta.url);
+    const contractRoot = new URL(contractUrl).pathname;
+    t.log({ contractRoot });
+    const bundle = await bundleSourceAmbient(contractRoot);
+    return bundle;
+  };
   const { homeP, kill } = await makeFixture(SOLO_PORT, process.env.NOISY);
-  teardown = kill;
-  home = await homeP;
+  const home = await homeP;
+
+  t.context = { home, teardown: kill, loadBundle };
+
   t.truthy('ready');
 });
+// #endregion
 
 // Now come the tests that use `home`...
 // =========================================
 
 test.serial('home.board', async t => {
+  const { home } = t.context;
   const { board } = E.get(home);
   await t.throwsAsync(
     () => E(board).getValue('board0120'),
@@ -50,6 +59,7 @@ test.serial('home.board', async t => {
 });
 
 test.serial('home.wallet - transfer funds to the feePurse', async t => {
+  const { home } = t.context;
   const { wallet, faucet } = E.get(home);
   const feePurse = E(faucet).getFeePurse();
   const feeBrand = await E(feePurse).getAllegedBrand();
@@ -62,16 +72,13 @@ test.serial('home.wallet - transfer funds to the feePurse', async t => {
 });
 
 test.serial('home.wallet - receive zoe invite', async t => {
+  const { home, loadBundle } = t.context;
   const { wallet, zoe, board } = E.get(home);
 
   // Setup contract in order to get an invite to use in tests
-  const contractUrl = await importMetaResolve(
+  const bundle = await loadBundle(
     '@agoric/zoe/src/contracts/automaticRefund.js',
-    import.meta.url,
   );
-  const contractRoot = new URL(contractUrl).pathname;
-  t.log({ contractRoot });
-  const bundle = await bundleSource(contractRoot);
   const installationHandle = await E(zoe).install(bundle);
   const { creatorInvitation: invite } = await E(zoe).startInstance(
     installationHandle,
@@ -113,6 +120,7 @@ test.serial('home.wallet - receive zoe invite', async t => {
 });
 
 test.serial('home.wallet - central issuer setup', async t => {
+  const { home } = t.context;
   const { wallet } = E.get(home);
 
   // Check that the wallet knows about the central issuer.
@@ -127,6 +135,7 @@ test.serial('home.wallet - central issuer setup', async t => {
 });
 
 test.serial('home.localTimerService makeNotifier', async t => {
+  const { home } = t.context;
   const { localTimerService } = E.get(home);
   const notifier = E(localTimerService).makeNotifier(1n, 1n);
   const update1 = await E(notifier).getUpdateSince();
@@ -158,6 +167,7 @@ function makeHandler() {
 }
 
 test.serial('home.localTimerService makeRepeater', async t => {
+  const { home } = t.context;
   const { localTimerService } = E.get(home);
   const timestamp = await E(localTimerService).getCurrentTimestamp();
   const repeater = E(localTimerService).makeRepeater(1n, 1n);
@@ -173,6 +183,7 @@ test.serial('home.localTimerService makeRepeater', async t => {
 // =========================================
 // This runs after all the tests.
 test.after.always('teardown', async t => {
+  const { teardown } = t.context;
   await teardown();
   t.truthy('shutdown');
 });

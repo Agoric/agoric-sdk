@@ -1,4 +1,5 @@
 {
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vaults test networks in an automated fashion. It includes coreProposals to start vaults. Testing facilities are limited to an initialPrice for ATOM and addresses with known keys.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [
@@ -16,7 +17,6 @@
         }
       ]
     },
-    "@agoric/pegasus/scripts/init-core.js",
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
       "entrypoint": "psmGovernanceBuilder",
@@ -149,7 +149,7 @@
   ],
   "vats": {
     "bootstrap": {
-      "sourceSpec": "@agoric/vats/src/core/boot.js",
+      "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
       "creationOptions": {
         "critical": true
       }
@@ -177,9 +177,6 @@
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
     },
-    "mints": {
-      "sourceSpec": "@agoric/vats/src/vat-mints.js"
-    },
     "network": {
       "sourceSpec": "@agoric/vats/src/vat-network.js"
     },
@@ -191,9 +188,6 @@
     },
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
-    },
-    "sharing": {
-      "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
     "walletFactory": {
       "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"

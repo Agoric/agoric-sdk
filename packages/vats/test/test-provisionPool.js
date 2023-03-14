@@ -17,7 +17,7 @@ import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { E } from '@endo/far';
 import path from 'path';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { PowerFlags } from '../src/core/basic-behaviors.js';
+import { PowerFlags } from '../src/walletFlags.js';
 import { makeBoard } from '../src/lib-board.js';
 import { makeNameHubKit } from '../src/nameHub.js';
 import { makeBridgeProvisionTool } from '../src/provisionPool.js';

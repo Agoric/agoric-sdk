@@ -6,8 +6,9 @@ import {
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E, Far } from '@endo/far';
-import { Stake, Stable } from '@agoric/vats/src/tokens.js';
 import { Nat } from '@endo/nat';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { Stake, Stable } from '../tokens.js';
 
 const { Fail, quote: q } = assert;
 const { multiply, floorDivide } = natSafeMath;
@@ -20,7 +21,7 @@ export const DecimalPlaces = {
   ATOM: 6,
   WETH: 18,
   LINK: 18,
-  USDC: 18,
+  DAI: 18,
   moola: 2,
   simolean: 0,
 };
@@ -36,7 +37,9 @@ const FaucetPurseDetail = {
     balance: 53n,
   },
   LINK: { proposedName: 'Oracle fee', balance: 51n },
-  USDC: { proposedName: 'USD Coin', balance: 1_323n },
+  // WAS: USDC, but that interacts poorly with loadgen
+  // TODO: move connectFaucet from sim-behaviors to a coreProposal
+  DAI: { proposedName: 'DAI', balance: 1_323n },
 };
 
 const PCT = 100n;
@@ -146,7 +149,7 @@ export const AMMDemoState = {
     ],
   },
 
-  USDC: {
+  DAI: {
     config: {
       ...defaultConfig,
       collateralValue: 10_000_000n,
@@ -190,6 +193,7 @@ const mintRunPayment = async (
   value,
   { centralSupplyInstall, feeMintAccess: feeMintAccessP, zoe },
 ) => {
+  notForProductionUse();
   const feeMintAccess = await feeMintAccessP;
 
   const { creatorFacet: ammSupplier } = await E(zoe).startInstance(
@@ -297,6 +301,7 @@ export const connectFaucet = async ({
         const { issuer, brand, mint } = await provideIssuerKit(issuerName);
         const unit = 10n ** BigInt(DecimalPlaces[issuerName]);
         const amount = AmountMath.make(brand, Nat(record.balance) * unit);
+        notForProductionUse();
         const payment = await E(mint).mintPayment(amount);
 
         /** @type {UserPaymentRecord[]} */
@@ -321,7 +326,7 @@ export const connectFaucet = async ({
       }),
     );
 
-    const faucetPaymentInfo = userPaymentRecords.flat();
+    const faucetPaymentInfo = harden(userPaymentRecords.flat());
 
     const userFeePurse = await E(E(zoe).getFeeIssuer()).makeEmptyPurse();
 
@@ -457,7 +462,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 };
 
 /**
- * @param { import('./econ-behaviors.js').EconomyBootstrapPowers & {
+ * @param { import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers & {
  *   consume: { mints }
  * }} powers
  */

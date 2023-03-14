@@ -8,7 +8,7 @@ import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeMetricsPublishKit } from '@agoric/inter-protocol/src/contractSupport.js';
-import { PowerFlags } from './core/basic-behaviors.js';
+import { PowerFlags } from './walletFlags.js';
 
 const { details: X, quote: q } = assert;
 

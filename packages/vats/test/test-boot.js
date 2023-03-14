@@ -2,14 +2,16 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
-import bundleSource from '@endo/bundle-source';
+import bundleSourceAmbient from '@endo/bundle-source';
 import { E, passStyleOf } from '@endo/far';
 
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
-import { buildRootObject } from '../src/core/boot.js';
+import { buildRootObject } from '../src/core/boot-chain.js';
+import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
+import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
-import { makePromiseSpace } from '../src/core/utils.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 
 import {
   makeMock,
@@ -18,53 +20,72 @@ import {
   mockSwingsetVats,
 } from '../tools/boot-test-utils.js';
 
-const argvByRole = {
-  chain: {
-    ROLE: 'chain',
-  },
-  'sim-chain': {
-    ROLE: 'sim-chain',
-    FIXME_GCI: 'fake GCI',
-    hardcodedClientAddresses: ['a1'],
-  },
-  client: {
-    ROLE: 'client',
-    FIXME_GCI: 'fake GCI',
-    hardcodedClientAddresses: ['a1'],
-  },
+// #region ambient authority limited to test set-up
+/** @typedef {import('ava').ExecutionContext<ReturnType<makeTestContext>>} ECtx */
+
+const makeTestContext = () => {
+  const bundleSource = bundleSourceAmbient;
+  const loadBundle = async specifier => {
+    const modulePath = new URL(specifier, import.meta.url).pathname;
+    /** @type {import('@agoric/swingset-vat').Bundle} */
+    const bundle = await bundleSource(modulePath);
+    return bundle;
+  };
+
+  return { loadBundle };
 };
-const testRole = (ROLE, governanceActions) => {
-  test(`test manifest permits: ${ROLE} gov: ${governanceActions}`, async t => {
+test.before(t => {
+  t.context = makeTestContext();
+});
+// #endregion
+
+/**
+ * @callback BuildRootObject
+ * @param {{}} vatPowers
+ * @param {{}} vatParameters
+ * @param {import('@agoric/vat-data').Baggage} [baggage]
+ */
+
+/**
+ *
+ * @param {string} label
+ * @param {BuildRootObject} entryPoint
+ * @param {boolean} doCoreProposals
+ */
+const testBootstrap = (label, entryPoint, doCoreProposals) => {
+  const vatParameters = {
+    argv: {
+      FIXME_GCI: 'fake GCI',
+      hardcodedClientAddresses: ['a1'],
+    },
+  };
+
+  test(`test manifest permits: ${label} gov: ${doCoreProposals}`, async t => {
     const mock = makeMock(t.log);
-    const root = buildRootObject(
-      { D: mockDProxy, logger: t.log },
-      {
-        argv: argvByRole[ROLE],
-        // @ts-expect-error XXX
-        governanceActions,
-      },
-    );
+    const vatPowers = { D: mockDProxy, logger: t.log };
+    const root = entryPoint(vatPowers, vatParameters);
     const vats = mockSwingsetVats(mock);
-    const actual = await E(root).bootstrap(vats, mock.devices);
-    t.deepEqual(actual, undefined);
+    await t.notThrowsAsync(E(root).bootstrap(vats, mock.devices));
   });
 };
 
-testRole('client', false);
-testRole('chain', false);
-testRole('chain', true);
-testRole('sim-chain', false);
-testRole('sim-chain', true);
+testBootstrap('client', buildSoloRootObject, false);
+testBootstrap('chain', buildRootObject, false);
+testBootstrap('chain', buildRootObject, true);
+testBootstrap('sim', buildSimRootObject, false);
+testBootstrap('sim', buildSimRootObject, true);
 
-test('evaluateBundleCap is available to core eval', async t => {
+test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t) => {
+  const { loadBundle } = t.context;
+  /** @type {undefined | import('../src/types.js').BridgeHandler} */
   let handler;
-  const modulePath = new URL('../src/core/utils.js', import.meta.url).pathname;
   const { produce, consume } = makePromiseSpace(t.log);
   const { admin, vatAdminState } = makeFakeVatAdmin();
   const vatPowers = vatAdminState.getVatPowers();
 
   const prepare = async () => {
-    const bundle = await bundleSource(modulePath);
+    const bundle = await loadBundle('../src/core/utils.js');
+    if (bundle.moduleFormat !== 'endoZipBase64') throw t.fail();
     const bundleID = bundle.endoZipBase64Sha512;
     vatAdminState.installBundle(bundleID, bundle);
     const bridgeManager = {
@@ -81,7 +102,7 @@ test('evaluateBundleCap is available to core eval', async t => {
 
   // @ts-expect-error
   await bridgeCoreEval({ vatPowers, produce, consume });
-  t.truthy(handler);
+  if (!handler) throw t.fail();
 
   const produceThing = async ({
     consume: { vatAdminSvc },
@@ -105,7 +126,6 @@ test('evaluateBundleCap is available to core eval', async t => {
   };
   t.log({ bridgeMessage });
 
-  // @ts-expect-error
   await E(handler).fromBridge(bridgeMessage);
   const actual = await consume.thing;
 
@@ -114,14 +134,7 @@ test('evaluateBundleCap is available to core eval', async t => {
 });
 
 test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
-  const root = buildRootObject(
-    { D: mockDProxy, logger: t.log },
-    {
-      argv: argvByRole.chain,
-      // @ts-expect-error XXX
-      governanceActions: false,
-    },
-  );
+  const root = buildRootObject({ D: mockDProxy, logger: t.log }, {});
 
   await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
   t.deepEqual(await E(root).consumeItem('swissArmyKnife'), [1, 2, 3]);

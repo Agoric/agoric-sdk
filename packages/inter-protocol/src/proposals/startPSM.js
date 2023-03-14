@@ -15,6 +15,8 @@ import {
   inviteToEconCharter,
 } from './committee-proposal.js';
 
+/** @typedef {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} BootstrapManifest */
+
 const BASIS_POINTS = 10000n;
 const { details: X } = assert;
 
@@ -314,7 +316,7 @@ export const installGovAndPSMContracts = async ({
  * named swingset bundles only in
  * decentral-psm-config.json
  *
- * @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest}
+ * @type {BootstrapManifest}
  */
 export const PSM_GOV_MANIFEST = {
   [installGovAndPSMContracts.name]: {
@@ -345,8 +347,7 @@ export const PSM_GOV_MANIFEST = {
 };
 
 export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
-  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
-  ({
+  /** @type {BootstrapManifest} */ ({
     [inviteCommitteeMembers.name]: {
       consume: {
         namesByAddressAdmin: true,
@@ -363,9 +364,8 @@ export const INVITE_PSM_COMMITTEE_MANIFEST = harden(
   }),
 );
 
-/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
-export const PSM_MANIFEST = harden({
-  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifestPermit} */
+/** @type {BootstrapManifest} */
+export const PSM_MANIFEST = {
   [makeAnchorAsset.name]: {
     consume: { agoricNamesAdmin: true, bankManager: 'bank', zoe: 'zoe' },
     installation: { consume: { mintHolder: 'zoe' } },
@@ -395,7 +395,8 @@ export const PSM_MANIFEST = harden({
       consume: { [Stable.symbol]: 'zoe' },
     },
   },
-});
+};
+harden(PSM_MANIFEST);
 
 export const getManifestForPsmGovernance = (
   { restoreRef },

@@ -226,13 +226,10 @@
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {
- *     ROLE: string,
- *     hardcodedClientAddresses: string[],
+ *     hardcodedClientAddresses?: string[],
  *     FIXME_GCI: string,
- *     PROVISIONER_INDEX: number,
+ *     PROVISIONER_INDEX?: number,
  *   },
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
- *   governanceActions?: boolean,
  * }} BootstrapVatParams
  * @typedef { BootstrapSpace & {
  *   devices: SoloDevices | ChainDevices,

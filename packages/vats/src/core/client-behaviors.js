@@ -4,8 +4,7 @@ import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.
 import { deeplyFulfilled } from '@endo/marshal';
 import { observeNotifier } from '@agoric/notifier';
 import { registerNetworkProtocols } from './chain-behaviors.js';
-
-export { makeVatsFromBundles } from './basic-behaviors.js';
+import { makeVatsFromBundles } from './basic-behaviors.js';
 
 const { Fail } = assert;
 
@@ -164,3 +163,39 @@ export const startClient = async ({
   await Promise.all([addLocalPresences(), addChainPresences()]);
 };
 harden(startClient);
+
+/** @type {import('./lib-boot.js').BootstrapManifest} */
+export const CLIENT_BOOTSTRAP_MANIFEST = harden({
+  /** @type {import('./lib-boot.js').BootstrapManifestPermit} */
+  [makeVatsFromBundles.name]: {
+    vats: {
+      vatAdmin: 'vatAdmin',
+    },
+    devices: {
+      vatAdmin: true,
+    },
+    produce: {
+      vatAdminSvc: 'vatAdmin',
+      loadVat: true,
+      loadCriticalVat: true,
+      vatStore: true,
+    },
+  },
+  [startClient.name]: {
+    vatParameters: {
+      argv: { FIXME_GCI: true },
+    },
+    devices: { command: true, plugin: true, timer: true },
+    vats: {
+      comms: true,
+      http: true,
+      network: true,
+      spawner: true,
+      timer: true,
+      uploads: true,
+      vattp: true,
+    },
+    vatPowers: true,
+    consume: { vatAdminSvc: true },
+  },
+});

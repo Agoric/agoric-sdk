@@ -38,7 +38,7 @@ export const makeNameHubKit = () => {
       return E(firstValue).lookup(...remaining);
     },
     entries: () => {
-      return [
+      return harden([
         ...mapIterable(
           keyToRecord.entries(),
           ([key, record]) =>
@@ -47,7 +47,7 @@ export const makeNameHubKit = () => {
               record.promise || record.value,
             ]),
         ),
-      ];
+      ]);
     },
     values: () => {
       return [
@@ -58,7 +58,7 @@ export const makeNameHubKit = () => {
       ];
     },
     keys: () => {
-      return [...keyToRecord.keys()];
+      return harden([...keyToRecord.keys()]);
     },
   });
 
