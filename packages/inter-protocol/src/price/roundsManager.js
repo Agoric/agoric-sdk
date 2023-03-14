@@ -42,12 +42,15 @@ const validRoundId = roundId => {
 /**
  * @typedef {{ roundId: number | undefined, unitPrice: NatValue }} PriceRound
  *
- * @typedef {Pick<RoundData, 'roundId' | 'startedAt'>} LatestRound
+ * @typedef {Pick<RoundData, 'roundId' | 'startedAt'> &  { startedBy: string }} LatestRound
  */
 
 /**
- * @typedef {object} RoundData
- * @property {bigint} roundId  the round ID for which data was retrieved
+ * @typedef {Round & {roundId: bigint}} RoundData
+ */
+
+/**
+ * @typedef {object} Round
  * @property {bigint} answer the answer for the given round
  * @property {Timestamp} startedAt the timestamp when the round was started. This is 0
  * if the round hasn't been started yet.
@@ -57,14 +60,6 @@ const validRoundId = roundId => {
  * was computed. answeredInRound may be smaller than roundId when the round
  * timed out. answeredInRound is equal to roundId when the round didn't time out
  * and was completed regularly.
- */
-
-/**
- * @typedef {object} Round
- * @property {bigint} answer
- * @property {Timestamp} startedAt
- * @property {Timestamp} updatedAt
- * @property {bigint} answeredInRound
  */
 
 /**
@@ -238,11 +233,6 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
         helper.updateTimedOutRoundInfo(subtract(roundId, 1), blockTimestamp);
 
         this.state.reportingRoundId = roundId;
-        latestRoundPublisher.publish({
-          roundId,
-          startedAt: blockTimestamp,
-          startedBy: oracleId,
-        });
 
         details.init(
           roundId,
@@ -254,15 +244,18 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
           }),
         );
 
-        rounds.init(
+        const round = harden({
+          answer: 0n,
+          startedAt: blockTimestamp,
+          updatedAt: 0n,
+          answeredInRound: 0n,
+        });
+        rounds.init(roundId, round);
+        latestRoundPublisher.publish({
           roundId,
-          harden({
-            answer: 0n,
-            startedAt: blockTimestamp,
-            updatedAt: 0n,
-            answeredInRound: 0n,
-          }),
-        );
+          startedAt: round.startedAt,
+          startedBy: oracleId,
+        });
       },
 
       /**
