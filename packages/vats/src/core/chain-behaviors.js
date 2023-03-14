@@ -630,12 +630,22 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
 harden(SHARED_CHAIN_BOOTSTRAP_MANIFEST);
 
 /** @type {import('./lib-boot.js').BootstrapManifest} */
-export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+export const CHAIN_BOOTSTRAP_MANIFEST = {
   ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
+  [makeChainStorage.name]: {
+    consume: { bridgeManager: true },
+    produce: {
+      chainStorage: 'chainStorage',
+    },
+    namedVat: {
+      consume: { chainStorage: 'chainStorage' },
+    },
+  },
   [connectChainFaucet.name]: {
     consume: {
       client: true,
     },
     home: { produce: { faucet: true } },
   },
-});
+};
+harden(CHAIN_BOOTSTRAP_MANIFEST);

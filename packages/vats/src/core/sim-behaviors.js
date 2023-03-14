@@ -58,6 +58,11 @@ export const installFaucetContract = async ({
   }
 };
 
+/** @param {BootstrapSpace} powers */
+export const noChainStorage = async ({ produce: { chainStorage } }) => {
+  chainStorage.resolve(null);
+};
+
 /** @type {import('./lib-boot').BootstrapManifest} */
 export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
   [installSimEgress.name]: {
@@ -95,5 +100,6 @@ export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
     consume: { client: true },
     home: { produce: { runBehaviors: true, governanceActions: true } },
   },
+  [noChainStorage.name]: { produce: { chainStorage: true } },
 };
 harden(SIM_CHAIN_BOOTSTRAP_PERMITS);

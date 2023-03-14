@@ -1,6 +1,6 @@
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
-import { Far } from '@endo/far';
+import { E, Far } from '@endo/far';
 import {
   installGovAndPSMContracts,
   makeAnchorAsset,
@@ -157,6 +157,11 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const runBootstrapParts = async (vats, devices) => {
+    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
+    const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
+    produce.vatAdminSvc.resolve(svc);
+    const namedVat = utils.makeVatSpace(svc, criticalVatKey, log, 'namedVat');
+
     /** TODO: BootstrapPowers type puzzle */
     /** @type { any } */
     const allPowers = harden({
@@ -167,6 +172,7 @@ export const buildRootObject = (vatPowers, vatParameters) => {
       produce,
       consume,
       ...spaces,
+      namedVat,
       // ISSUE: needed? runBehaviors,
       // These module namespaces might be useful for core eval governance.
       modules: {
@@ -184,7 +190,6 @@ export const buildRootObject = (vatPowers, vatParameters) => {
     };
 
     await Promise.all([
-      makeVatsFromBundles(powersFor('makeVatsFromBundles')),
       buildZoe(powersFor('buildZoe')),
       makeBoard(powersFor('makeBoard')),
       makeBridgeManager(powersFor('makeBridgeManager')),

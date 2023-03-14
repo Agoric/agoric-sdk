@@ -211,14 +211,22 @@ test('addBankAssets bootstrap action', async t => {
     ...spaces,
   });
 
-  const loadCriticalVat = async name => {
-    assert.equal(name, 'bank');
-    return E(buildRootObject)();
-  };
-  produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);
 
-  await addBankAssets({ consume, produce, ...spaces });
+  const noop = _any => {};
+  await addBankAssets({
+    consume,
+    produce,
+    ...spaces,
+    namedVat: {
+      consume: {
+        get bank() {
+          return E(buildRootObject)();
+        },
+      },
+      produce: { bank: { resolve: noop, reject: noop, reset: noop } },
+    },
+  });
 
   // check results: bankManager assets
   const assets = E(consume.bankManager).getAssetSubscription();

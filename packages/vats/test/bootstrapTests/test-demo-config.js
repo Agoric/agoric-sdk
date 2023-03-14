@@ -58,8 +58,6 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   ].sort();
 
   const { EV } = t.context.runUtils;
-  await t.notThrowsAsync(EV.vat('bootstrap').consumeItem('provisioning'));
-  t.log('bootstrap produced provisioning vat');
   const addr = 'agoric123';
   const home = await makeHomeFor(addr, EV);
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
