@@ -216,9 +216,7 @@ const provideCoin = async (name, mints) => {
 };
 
 /**
- * @param { BootstrapSpace &
- *   { consume: {loadVat: VatLoader<MintsVat>} }
- * } powers
+ * @param { BootstrapSpace } powers
  *
  * TODO: sync this type with end-user docs?
  * @typedef {{
@@ -230,23 +228,15 @@ const provideCoin = async (name, mints) => {
  * }} UserPaymentRecord
  */
 export const connectFaucet = async ({
-  consume: {
-    bankManager,
-    bldIssuerKit: bldP,
-    client,
-    feeMintAccess,
-    loadVat,
-    zoe,
-  },
+  consume: { bankManager, bldIssuerKit: bldP, client, feeMintAccess, zoe },
   installation: {
     consume: { faucetSupply: faucetSupplyInstall },
   },
-  produce: { mints },
+  namedVat: {
+    consume: { mints },
+  },
 }) => {
-  const vats = {
-    mints: E(loadVat)('mints'),
-  };
-  mints.resolve(vats.mints);
+  const vats = { mints };
 
   const bldIssuerKit = await bldP;
   const LOTS = 1_000_000_000_000n; // TODO: design this.

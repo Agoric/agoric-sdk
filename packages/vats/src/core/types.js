@@ -188,6 +188,14 @@
  */
 
 /**
+ * @typedef {PromiseSpaceOf<{
+ *   ibc: IBCVat,
+ *   network: NetworkVat,
+ *   provisioning: Awaited<ProvisioningVat> | undefined,
+ * }>} NamedVatSpace
+ */
+
+/**
  * @typedef {{
  *   agoricNames: NameHub,
  *   agoricNamesAdmin: import('@agoric/vats').NameAdmin,
@@ -202,7 +210,7 @@
  *   coreEvalBridgeHandler: unknown,
  *   feeMintAccess: FeeMintAccess,
  *   lienBridge: unknown,
- *   mints: MintsVat,
+ *   namedVat: NamedVatSpace,
  *   namesByAddress: NameHub,
  *   namesByAddressAdmin: import('@agoric/vats').NameAdmin,
  *   pegasusConnections: import('@agoric/vats').NameHubKit,

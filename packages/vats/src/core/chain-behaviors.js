@@ -143,12 +143,14 @@ export const noProvisioner = async ({ produce: { provisioning } }) => {
 };
 harden(noProvisioner);
 
-/** @param {BootstrapPowers} powers */
+/** @param {BootstrapPowers & { namedVat: NamedVatSpace }} powers */
 export const bridgeProvisioner = async ({
   consume: {
-    provisioning: provisioningP,
     provisionBridgeManager: provisionBridgeManagerP,
     provisionWalletBridgeManager: provisionWalletBridgeManagerP,
+  },
+  namedVat: {
+    consume: { provisioning: provisioningP },
   },
 }) => {
   const [provisioning, provisionBridgeManager, provisionWalletBridgeManager] =
@@ -568,7 +570,7 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
       chainStorage: 'chainStorage',
     },
     namedVat: {
-      chainStorage: 'chainStorage',
+      consume: { chainStorage: 'chainStorage' },
     },
   },
   [publishAgoricNames.name]: {
@@ -592,10 +594,12 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
   },
   [bridgeProvisioner.name]: {
     consume: {
-      provisioning: true,
       bridgeManager: 'chainStorage',
       provisionBridgeManager: 'chainStorage',
       provisionWalletBridgeManager: 'chainStorage',
+    },
+    namedVat: {
+      consume: { provisioning: 'provisioning' },
     },
   },
   [setupClientManager.name]: {

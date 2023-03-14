@@ -80,13 +80,14 @@ export const SIM_CHAIN_BOOTSTRAP_PERMITS = {
       bldIssuerKit: true,
       client: true,
       feeMintAccess: true,
-      loadVat: true,
       zoe: true,
     },
     installation: {
       consume: { faucetSupply: 'zoe' },
     },
-    produce: { mints: true },
+    namedVat: {
+      consume: { mints: 'mints' },
+    },
     home: { produce: { faucet: true } },
   },
   [grantRunBehaviors.name]: {

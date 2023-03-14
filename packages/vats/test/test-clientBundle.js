@@ -43,19 +43,10 @@ const setUpZoeForTest = async () => {
 };
 harden(setUpZoeForTest);
 
-/**
- * @typedef {{
- *   (n: 'board'): import('../src/core/basic-behaviors.js').BoardVat
- *   (n: 'mint'): MintsVat
- * }} LoadVat
- */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
-  const { consume, produce } =
-    /** @type { BootstrapPowers & { consume: { loadVat: LoadVat, loadCriticalVat: LoadVat }} } */ (
-      space
-    );
-  const { agoricNames, spaces } = makeAgoricNamesAccess();
+  const { consume, produce } = /** @type { BootstrapPowers } */ (space);
+  const { agoricNames, spaces: spaces0 } = makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
 
   const { zoe, feeMintAccessP, vatAdminService } = await setUpZoeForTest();
@@ -78,8 +69,10 @@ test('connectFaucet produces payments', async t => {
         throw Error('unknown loadVat name');
     }
   };
-  produce.loadVat.resolve(vatLoader);
-  produce.loadCriticalVat.resolve(vatLoader);
+  const namedVat = {
+    consume: new Proxy({}, { get: (_t, prop, _rx) => vatLoader(prop) }),
+  };
+  const spaces = { ...spaces0, namedVat };
 
   t.plan(4); // be sure bank.deposit() gets called
 
