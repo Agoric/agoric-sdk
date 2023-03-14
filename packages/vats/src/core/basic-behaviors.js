@@ -285,6 +285,7 @@ export const addBankAssets = async ({
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
+  // XXX interposes bootstrap between agoricNames and vat-bank
   const nameUpdater = Far('AssetHub', {
     update: (name, val) => E(assetAdmin).update(name, val),
   });
