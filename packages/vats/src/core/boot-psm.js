@@ -71,6 +71,7 @@ export const agoricNamesReserved = harden(
       USD: 'US Dollar',
     },
     installation: {
+      // XXX installations are all in the Zoe vat
       mintHolder: 'mint holder',
       walletFactory: 'multitenant smart wallet',
       contractGovernor: 'contract governor',
