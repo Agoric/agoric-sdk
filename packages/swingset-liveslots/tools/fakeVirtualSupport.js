@@ -291,17 +291,22 @@ export function makeFakeWatchedPromiseManager(
  * Configure virtual stuff with relaxed durability rules and fake liveslots
  *
  * @param {object} [options]
+ * @param {number} [options.cacheSize=3]
  * @param {boolean} [options.relaxDurabilityRules=true]
- * @param {number} [options.cacheSize]
  */
 export function makeFakeVirtualStuff(options = {}) {
-  const fakeStuff = makeFakeLiveSlotsStuff(options);
-  const { relaxDurabilityRules = true } = options;
+  const actualOptions = {
+    cacheSize: 3,
+    relaxDurabilityRules: true,
+    ...options,
+  };
+  const { relaxDurabilityRules } = actualOptions;
+  const fakeStuff = makeFakeLiveSlotsStuff(actualOptions);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
-  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
+  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, actualOptions);
   vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
-  const cm = makeFakeCollectionManager(vrm, fakeStuff, options);
+  const cm = makeFakeCollectionManager(vrm, fakeStuff, actualOptions);
   const wpm = makeFakeWatchedPromiseManager(vrm, vom, cm, fakeStuff);
   return { fakeStuff, vrm, vom, cm, wpm };
 }
