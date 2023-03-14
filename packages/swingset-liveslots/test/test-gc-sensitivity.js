@@ -67,7 +67,7 @@ test.failing('kind handle reanimation', async t => {
   t.deepEqual(noGCLog, yesGCLog);
 });
 
-test.failing('representative reanimation', async t => {
+test('representative reanimation', async t => {
   const { syscall, log } = buildSyscall();
   const gcTools = makeMockGC();
 
