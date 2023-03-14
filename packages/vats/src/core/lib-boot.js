@@ -148,6 +148,7 @@ export const makeBootstrap = (
           vatData.set(name, { root });
         }
       }
+      // XXX this catch loses some stack traces
       rawBootstrap(vats, devices).catch(e => {
         console.error('BOOTSTRAP FAILED:', e);
         throw e;
