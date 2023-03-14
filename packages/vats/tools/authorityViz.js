@@ -14,6 +14,7 @@ const styles = {
   vatPowers: 'shape=star, style=filled, fillcolor=aqua',
   vats: 'shape=doubleoctagon, style=filled, fillcolor=tomato',
   vat: 'shape=doubleoctagon, style=filled, fillcolor=tomato3',
+  namedVat: 'shape=doubleoctagon, style=filled, fillcolor=skyblue',
   devices: 'shape=box, style=filled, fillcolor=gold',
   space: 'shape=house, style=filled, fillcolor=khaki',
   issuer: 'shape=trapezium, style=filled, fillcolor=chocolate',
@@ -77,6 +78,7 @@ function* fmtGraph(nodes, neighbors) {
  *   oracleBrand?: PowerSpace,
  *   installation?: PowerSpace,
  *   instance?: PowerSpace,
+ *    namedVat?: PowerSpace,
  * } & PowerSpace } Permit
  * @typedef {{produce?: Record<string, Status>, consume?: Record<string, Status>}} PowerSpace
  * @typedef { boolean | VatName } Status
