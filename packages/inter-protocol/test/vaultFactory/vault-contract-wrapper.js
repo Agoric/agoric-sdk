@@ -71,7 +71,7 @@ export async function start(zcf, privateArgs, baggage) {
     timer,
     quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
   };
-  const priceAuthority = makeFakePriceAuthority(options);
+  const priceAuthority = await makeFakePriceAuthority(options);
   const maxDebtFor = async collateralAmount => {
     const quoteAmount = await E(priceAuthority).quoteGiven(
       collateralAmount,

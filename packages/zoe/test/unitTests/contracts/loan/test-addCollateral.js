@@ -37,7 +37,7 @@ test('makeAddCollateralInvitation', async t => {
 
   const timer = buildManualTimer(t.log);
 
-  const priceAuthority = makeFakePriceAuthority({
+  const priceAuthority = await makeFakePriceAuthority({
     priceList: [],
     timer,
     actualBrandIn: collateralKit.brand,
