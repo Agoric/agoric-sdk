@@ -23,7 +23,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     const runBrand = await E(runIssuer).getBrand();
 
     /** @type {UserSeat<VaultKit>} */
-    const loanSeat = await E(zoe).offer(
+    const vaultSeat = await E(zoe).offer(
       E(vaultFactory).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
@@ -37,7 +37,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     const {
       publicSubscribers: { asset: assetSubscriber },
       vault,
-    } = await E(loanSeat).getOfferResult();
+    } = await E(vaultSeat).getOfferResult();
     const assetNotifier = makeNotifierFromSubscriber(assetSubscriber);
     const firstNotif = await E(assetNotifier).getUpdateSince();
     log(`Alice owes ${q(await E(vault).getCurrentDebt())} after borrowing`);

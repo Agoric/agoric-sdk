@@ -1,8 +1,8 @@
 /**
- * ** Create loan:
+ * ** Create vault:
  *
  * requires an NFT attestation of brand BldAttLoc, and the amount of
- * RUN that can be loaned is about 10% of the value of BLD represented
+ * RUN that can be vaulted is about 10% of the value of BLD represented
  * in the attestation value: amount.value[0].value. (We should allow
  * for multiple elements in the value array, not just one, so we need
  * to iterate through amount.value)
@@ -21,14 +21,14 @@
  * ** Withdraw a partial amount of BLD attestation:
  *
  * Must have returned some RUN, or the market value of collateral has
- * risen, or the loan was overcollateralized to start. Contract calls
+ * risen, or the vault was overcollateralized to start. Contract calls
  * a publicFacet method in the attestation contract that allows it to
  * split an attestation into multiple versions? Would require no offer
  * safety for the collateral, but that would be true already
  *
  * ** Withdraw all BLD attestation:
  *
- * Must pay back the loan. User gets the bld attestation back, needs
+ * Must pay back the vault. User gets the bld attestation back, needs
  * to make an offer to the attestation contract to turn it back in.
  *
  *

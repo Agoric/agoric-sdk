@@ -200,11 +200,11 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
         storageNode,
 
-        // vaultSeat will hold the collateral until the loan is retired. The
+        // vaultSeat will hold the collateral until the vault is closed. The
         // payout from it will be handed to the user: if the vault dies early
         // (because the vaultFactory vat died), they'll get all their
         // collateral back. If that happens, the issuer for the Minted will be dead,
-        // so their loan will be worthless.
+        // so their vault will be worthless.
         vaultSeat: zcf.makeEmptySeatKit().zcfSeat,
 
         // Two values from the same moment
@@ -472,7 +472,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             facets.self,
           );
 
-          return 'your loan is closed, thank you for your business';
+          return 'your vault is closed';
         },
 
         /**
@@ -486,7 +486,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          * @param {Amount<'nat'>} giveAmount
          * @param {Amount<'nat'>} wantAmount
          */
-        loanFee(currentDebt, giveAmount, wantAmount) {
+        mintFee(currentDebt, giveAmount, wantAmount) {
           const { state } = this;
 
           return calculateLoanCosts(
@@ -526,7 +526,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
           // then mint, reallocate, and burn.
-          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+          const { newDebt, fee, surplus, toMint } = helper.mintFee(
             self.getCurrentDebt(),
             fp.give.Minted,
             fp.want.Minted,
@@ -706,9 +706,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             newDebt: newDebtPre,
             fee,
             toMint,
-          } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
+          } = helper.mintFee(actualDebtPre, helper.emptyDebt(), wantMinted);
           !AmountMath.isEmpty(fee) ||
-            Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
+            Fail`debt requested (${wantMinted}) is too small; cannot accrue interest`;
           AmountMath.isEqual(newDebtPre, toMint) ||
             Fail`fee mismatch for vault`;
           trace(

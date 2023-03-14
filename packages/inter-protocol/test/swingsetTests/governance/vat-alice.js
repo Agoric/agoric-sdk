@@ -36,7 +36,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     const collateralManager = E(vaultFactory).getCollateralManager(moolaBrand);
 
     /** @type {UserSeat<VaultKit>} */
-    const loanSeat = await E(zoe).offer(
+    const vaultSeat = await E(zoe).offer(
       E(collateralManager).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
@@ -50,7 +50,7 @@ const build = async (log, zoe, brands, payments, timer) => {
     const assetNotifier = makeNotifierFromSubscriber(
       E(collateralManager).getSubscriber(),
     );
-    const { vault } = await E(loanSeat).getOfferResult();
+    const { vault } = await E(vaultSeat).getOfferResult();
 
     const timeLog = async msg =>
       log(

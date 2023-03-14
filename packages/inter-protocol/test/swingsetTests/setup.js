@@ -54,7 +54,7 @@ const makeRates = debtBrand => {
     liquidationMargin: makeRatio(105n, debtBrand),
     liquidationPenalty: makeRatio(10n, debtBrand, 100n, debtBrand),
     interestRate: makeRatio(250n, debtBrand, BASIS_POINTS),
-    loanFee: makeRatio(200n, debtBrand, BASIS_POINTS),
+    mintFee: makeRatio(200n, debtBrand, BASIS_POINTS),
   };
 };
 
@@ -184,7 +184,7 @@ const buildOwner = async (
 
   const vaultManagerParams = makeRates(runBrand);
 
-  const loanTiming = {
+  const interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -209,7 +209,7 @@ const buildOwner = async (
     {},
     {
       priceAuthority: priceAuthorityKit.priceAuthority,
-      loanTiming,
+      interestTiming,
       timer,
       electorateInvitationAmount: poserInvitationAmount,
       ammPublicFacet: ammMock,

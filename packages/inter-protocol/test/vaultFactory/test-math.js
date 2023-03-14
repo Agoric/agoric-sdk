@@ -90,9 +90,9 @@ function checkLoanCosts(
   const want = stable.make(BigInt(wantN));
 
   // 5%
-  const loanFee = stable.makeRatio(5n, 100n);
+  const mintFee = stable.makeRatio(5n, 100n);
 
-  t.deepEqual(calculateLoanCosts(currentDebt, give, want, loanFee), {
+  t.deepEqual(calculateLoanCosts(currentDebt, give, want, mintFee), {
     fee: stable.make(BigInt(fee)),
     newDebt: stable.make(BigInt(newDebt)),
     surplus: stable.make(BigInt(surplus)),

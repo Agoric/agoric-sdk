@@ -58,14 +58,14 @@ const contractRoots = {
 const defaultParamValues = debt =>
   harden({
     debtLimit: debt.make(1_000_000n),
-    // margin required to maintain a loan
+    // margin required to maintain a vault
     liquidationMargin: debt.makeRatio(105n),
     // penalty upon liquidation as proportion of debt
     liquidationPenalty: debt.makeRatio(10n),
     // periodic interest rate (per charging period)
     interestRate: debt.makeRatio(100n, BASIS_POINTS),
-    // charge to create or increase loan balance
-    loanFee: debt.makeRatio(500n, BASIS_POINTS),
+    // charge to create or increase vault balance
+    mintFee: debt.makeRatio(500n, BASIS_POINTS),
     // NB: liquidationPadding defaults to zero in contract
   });
 
@@ -77,7 +77,7 @@ const defaultParamValues = debt =>
  * electorateTerms: any,
  * feeMintAccess: FeeMintAccess,
  * installation: Record<string, any>,
- * loanTiming: any,
+ * interestTiming: InterestTiming,
  * minInitialDebt: bigint,
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
@@ -115,7 +115,7 @@ export const makeDriverContext = async () => {
     installation,
     zoe,
     feeMintAccess,
-    loanTiming: {
+    interestTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
@@ -206,7 +206,7 @@ const setupServices = async (
     zoe,
     run,
     aeth,
-    loanTiming,
+    interestTiming,
     minInitialDebt,
     rates,
     runInitialLiquidity,
@@ -234,7 +234,7 @@ const setupServices = async (
   t.context.reserveCreatorFacet = E.get(space.consume.reserveKit).creatorFacet;
   iProduce.VaultFactory.resolve(t.context.installation.VaultFactory);
   iProduce.liquidate.resolve(t.context.installation.liquidate);
-  await startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt);
+  await startVaultFactory(space, { interestTiming }, minInitialDebt);
 
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
@@ -383,10 +383,7 @@ export const makeManagerDriver = async (
       close: async () => {
         currentSeat = await E(zoe).offer(E(vault).makeCloseInvitation());
         currentOfferResult = await E(currentSeat).getOfferResult();
-        t.is(
-          currentOfferResult,
-          'your loan is closed, thank you for your business',
-        );
+        t.is(currentOfferResult, 'your vault is closed');
         t.truthy(await E(vaultSeat).hasExited());
       },
       transfer: async () => {
@@ -414,12 +411,12 @@ export const makeManagerDriver = async (
         }
         return notification;
       },
-      checkBorrowed: async (loanAmount, loanFee) => {
+      checkBorrowed: async (debt, mintFee) => {
         const debtAmount = await E(vault).getCurrentDebt();
-        const fee = ceilMultiplyBy(loanAmount, loanFee);
+        const fee = ceilMultiplyBy(debt, mintFee);
         t.deepEqual(
           debtAmount,
-          AmountMath.add(loanAmount, fee),
+          AmountMath.add(debt, fee),
           'borrower Minted amount does not match',
         );
         return debtAmount;

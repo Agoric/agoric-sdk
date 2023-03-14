@@ -48,8 +48,8 @@ power sufficiently constrained?
 ## Vaults
 
 When the user repays their debt, they can withdraw collateral. Actually, they can withdraw
-collateral to the extent that it isn't required by the current loan. Can they ever
-withdraw more than that, and leave their loan under-collateralized?
+collateral to the extent that it isn't required by the current vault. Can they ever
+withdraw more than that, and leave their vault under-collateralized?
 
 If prices are falling and the trader can see that more clearly than the Vaults do, could
 they withdraw liquidity before the Vaults realize that the price has changed? We

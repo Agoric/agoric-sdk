@@ -16,7 +16,7 @@ test.before(async t => {
   trace(t, 'CONTEXT');
 });
 
-test('excessive loan', async t => {
+test('excessive debt', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
 
@@ -43,7 +43,7 @@ test('add debt to vault under LiquidationMarging + LiquidationPadding', async t 
 
   const MARGIN_HOP = 20n;
 
-  // we can take a loan and pay it back
+  // we can borrow and pay it back
   await vd.giveCollateral(100n, aeth, MARGIN_HOP);
   await vd.giveMinted(MARGIN_HOP, aeth, 100n);
 
@@ -51,7 +51,7 @@ test('add debt to vault under LiquidationMarging + LiquidationPadding', async t 
   await md.setGovernedParam('LiquidationPadding', run.makeRatio(20n, 1n), {
     key: { collateralBrand: aeth.brand },
   });
-  // ...so we can't take the same loan out
+  // ...so we can't take the same debtout
   await t.throwsAsync(
     vd.giveCollateral(100n, aeth, MARGIN_HOP),
     { message: /is more than the collateralization ratio allows/ },

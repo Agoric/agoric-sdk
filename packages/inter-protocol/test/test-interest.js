@@ -294,7 +294,7 @@ test('reportingPeriod shorter than charging; start not even days', async t => {
   });
 });
 
-// 2.5 % APR charged daily, large enough loan to display compounding
+// 2.5 % APR charged daily, large enough debt to display compounding
 test('basic charge large numbers, compounding', async t => {
   const { brand } = makeIssuerKit('ducats');
   const annualRate = makeRatio(250n, brand, BASIS_POINTS);
@@ -340,7 +340,7 @@ test('basic charge large numbers, compounding', async t => {
   });
 });
 
-// 2.5 % APR charged daily, large loan value.
+// 2.5 % APR charged daily, large debt
 // charge at reporting period intervals
 test('basic charge reasonable numbers monthly', async t => {
   const { brand } = makeIssuerKit('ducats');
