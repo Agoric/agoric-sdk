@@ -3,7 +3,12 @@ import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { deeplyFulfilled } from '@endo/marshal';
 import { observeNotifier } from '@agoric/notifier';
-import { registerNetworkProtocols } from './chain-behaviors.js';
+import {
+  makeEchoConnectionHandler,
+  makeLoopbackProtocolHandler,
+  makeNonceMaker,
+} from '@agoric/swingset-vat/src/vats/network/network.js';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 const { Fail } = assert;
 
@@ -31,6 +36,7 @@ function makeVattpFrom(vats) {
 async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
   // This will eventually be a vat spawning service. Only needed by dev
   // environments.
+  notForProductionUse();
   const spawner = E(vats.spawner).buildSpawner(vatAdminSvc);
 
   const localTimerService = E(vats.timer).createTimerService(devices.timer);
@@ -85,6 +91,39 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
 }
 
 /**
+ * @param {SoloVats} vats
+ */
+export const registerClientNetworkProtocols = async vats => {
+  const ps = [];
+  // Every vat has a loopback device.
+  ps.push(
+    E(vats.network).registerProtocolHandler(
+      ['/local'],
+      makeLoopbackProtocolHandler(),
+    ),
+  );
+  const loHandler = makeLoopbackProtocolHandler(
+    makeNonceMaker('ibc-channel/channel-'),
+  );
+  ps.push(E(vats.network).registerProtocolHandler(['/ibc-port'], loHandler));
+  await Promise.all(ps);
+
+  // Add an echo listener on our ibc-port network (whether real or virtual).
+  const echoPort = await E(vats.network).bind('/ibc-port/echo');
+
+  return E(echoPort).addListener(
+    Far('listener', {
+      async onAccept(_port, _localAddr, _remoteAddr, _listenHandler) {
+        return harden(makeEchoConnectionHandler());
+      },
+      async onListen(port, _listenHandler) {
+        console.debug(`listening on echo port: ${port}`);
+      },
+    }),
+  );
+};
+
+/**
  * @param { BootDevices<SoloDevices> & BootstrapSpace & {
  *   vatParameters: BootstrapVatParams,
  *   vats: SwingsetVats & SoloVats,
@@ -114,7 +153,7 @@ export const startClient = async ({
     D(cmdDevice).registerInboundHandler(httpVat);
   }
   const addLocalPresences = async () => {
-    await registerNetworkProtocols(vats, undefined);
+    await registerClientNetworkProtocols(vats);
 
     await setupCommandDevice(vats.http, devices.command, {
       client: true,
