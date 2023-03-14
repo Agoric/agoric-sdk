@@ -43,37 +43,53 @@ test.before(t => {
 // #endregion
 
 /** @type {<X>(a: X[], b: X[]) => X[]} */
-const setDiff = (a, b) => a.filter(x => !b.includes(x));
+const bagDiff = (a, b) => a.filter(x => !b.includes(x));
+/** @type {<X>(xs: X[]) => X[]} */
+const uniq = xs => [...new Set(xs)];
 
-test('PSM manifest consumes 2 more things than it produces! oops!@@@', t => {
-  const { entries } = Object;
+const providedByStdBoot = (/** @type {string} */ p) =>
+  p.startsWith('namedVat.') ||
+  ['agoricNames', 'agoricNamesAdmin', 'vatAdminSvc'].includes(p);
+
+/**
+ * @typedef {string} ItemPath .-separated property path
+ * @param {import('../src/core/lib-boot.js').BootstrapManifest} manifest
+ * @param {(path: ItemPath) => boolean} [provided]
+ * @returns {ItemPath[]} items consumed but not provided nor produced
+ */
+const auditManifest = (manifest, provided = providedByStdBoot) => {
+  const { entries, fromEntries } = Object;
+
   /** @typedef {import('../src/core/lib-boot.js').BootstrapManifestPermit} Permit */
 
-  /** @type {(p: Permit) => string[]} */
+  /** @type {(p: Permit) => ItemPath[]} */
   const paths = permit => {
-    /** @type {(pfx: string[], part: Permit) => string[][]} */
+    /** @type {(prefixx: string[], part: Permit) => string[][]} */
     const recur = (prefix, part) =>
       typeof part === 'object'
-        ? entries(part).flatMap(([p, v]) => recur([...prefix, p], v))
+        ? entries(part).flatMap(([prop, v]) => recur([...prefix, prop], v))
         : [prefix];
-    return recur([], permit).map(p => p.join('.'));
+    return recur([], permit).map(path => path.join('.'));
   };
 
-  const all = entries(PSM_MANIFEST).flatMap(([_fn, p]) => paths(p));
-  const consumed = all
-    .filter(p => p.includes('consume'))
-    .map(p => p.replace('consume.', ''));
-  const produced = all
-    .filter(p => p.includes('produce'))
-    .map(p => p.replace('produce.', ''));
-  const missing = [...new Set(setDiff(consumed, produced))].filter(
-    p =>
-      !(
-        p.startsWith('namedVat.') ||
-        ['agoricNames', 'agoricNamesAdmin', 'vatAdminSvc'].includes(p)
-      ),
+  const all = entries(manifest).flatMap(([_fn, p]) => paths(p));
+  const kind = fromEntries(
+    ['consume', 'produce'].map(k => [
+      k,
+      all.filter(p => p.includes(k)).map(p => p.replace(`${k}.`, '')),
+    ]),
   );
-  t.deepEqual(missing, [
+
+  const missing = bagDiff(
+    kind.consume.filter(i => !provided(i)),
+    kind.produce,
+  );
+
+  return uniq(missing);
+};
+
+test('PSM manifest consumes 2 more things than it produces! oops!@@@', t => {
+  t.deepEqual(auditManifest(PSM_MANIFEST), [
     'installation.walletFactory',
     'installation.provisionPool',
   ]);
