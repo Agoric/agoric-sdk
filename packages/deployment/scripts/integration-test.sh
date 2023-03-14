@@ -20,6 +20,7 @@ cd "$NETWORK_NAME/setup"
 
 
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
+export AG_SETUP_COSMOS_STATE_SYNC_INTERVAL=20 
 AGORIC_SDK_PATH=${AGORIC_SDK_PATH-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
 if [ -d /usr/src/testnet-load-generator ]
@@ -57,6 +58,6 @@ then
     --no-stage.save-storage \
     --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
     --stage.loadgen.faucet.interval=6 --stage.loadgen.faucet.limit=4 \
-    --profile=testnet "--testnet-origin=file://$RESULTSDIR" \
+    --profile=testnet "--testnet-origin=file://$RESULTSDIR" --use-state-sync \
     --no-reset --custom-bootstrap
 fi
