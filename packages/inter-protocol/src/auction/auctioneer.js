@@ -34,6 +34,12 @@ const { Fail, quote: q } = assert;
 
 const trace = makeTracer('Auction', false);
 
+/**
+ *
+ * @param {NatValue} rate
+ * @param {Brand<'nat'>} currencyBrand
+ * @param {Brand<'nat'>} collateralBrand
+ */
 const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
   makeRatioFromAmounts(
     AmountMath.make(currencyBrand, rate),
@@ -135,6 +141,11 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
+  /**
+   *
+   * @param {ZCFSeat} seat
+   * @param {Amount<'nat'>} amount
+   */
   const addDeposit = (seat, amount) => {
     appendToStoredArray(deposits, amount.brand, { seat, amount });
   };
@@ -244,6 +255,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduler = await makeScheduler(driver, timer, params, timerBrand);
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
+  /**
+   * @param {ZCFSeat} zcfSeat
+   */
   const depositOfferHandler = zcfSeat => {
     const { Collateral: collateralAmount } = zcfSeat.getCurrentAllocation();
     const book = books.get(collateralAmount.brand);
@@ -346,5 +360,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 /** @typedef {ContractOf<typeof start>} AuctioneerContract */
 /** @typedef {AuctioneerContract['publicFacet']} AuctioneerPublicFacet */
 /** @typedef {AuctioneerContract['creatorFacet']} AuctioneerCreatorFacet */
+// xxx the governance types should handle this automatically
+/** @typedef {ReturnType<AuctioneerContract['creatorFacet']['getLimitedCreatorFacet']>} AuctioneerLimitedCreatorFacet */
 
 export const AuctionPFShape = M.remotable('Auction Public Facet');

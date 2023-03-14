@@ -133,6 +133,7 @@ const trace = makeTracer('VM', false);
  * }} MutableState
  */
 
+/** @param {Pick<PriceDescription, 'amountIn' | 'amountOut'>} quoteAmount */
 const quoteAsRatio = quoteAmount =>
   makeRatioFromAmounts(quoteAmount.amountIn, quoteAmount.amountOut);
 
@@ -462,7 +463,8 @@ export const prepareVaultManagerKit = (
             );
           });
         },
-        liquidationUpdate(collatSold, vaults, vaultsReconstituted = 0) {
+        /** @type {(collatSold: Amount<'nat'>, completed: number, aborted?: number) => void} */
+        liquidationUpdate(collatSold, completed, aborted = 0) {
           const { state } = this;
 
           state.totalCollateralSold = AmountMath.add(
@@ -473,8 +475,8 @@ export const prepareVaultManagerKit = (
             state.totalCollateral,
             collatSold,
           );
-          state.numLiquidationsCompleted += vaults;
-          state.numLiquidationsAborted += vaultsReconstituted;
+          state.numLiquidationsCompleted += completed;
+          state.numLiquidationsAborted += aborted;
         },
         liquidatingUpdate(debt, collateral) {
           const { state } = this;
@@ -794,6 +796,9 @@ export const prepareVaultManagerKit = (
             return quote;
           });
         },
+        /**
+         * @param {AuctioneerPublicFacet} auctionPF
+         */
         async liquidateVaults(auctionPF) {
           const { state, facets } = this;
           const { lockedQuote, compoundedInterest } = state;
@@ -864,6 +869,7 @@ export const prepareVaultManagerKit = (
           const accounting = liquidationResults(totalDebt, mintedProceeds);
           const { Collateral: collateralProceeds } = proceeds;
 
+          /** @type {(v: Vault) => void} */
           const recordLiquidation = v => {
             v.liquidated();
             liquidatingVaults.delete(v);

@@ -85,6 +85,14 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
+/**
+ *
+ * @param {Baggage} baggage
+ * @param {ZCF} zcf
+ * @param {Brand<'nat'>} currencyBrand
+ * @param {Brand<'nat'>} collateralBrand
+ * @param {PriceAuthority} priceAuthority
+ */
 export const makeAuctionBook = async (
   baggage,
   zcf,
@@ -211,7 +219,12 @@ export const makeAuctionBook = async (
     }
   };
 
-  // Settle with seat. The caller is responsible for updating the book, if any.
+  /**
+   * Settle with seat. The caller is responsible for updating the book, if any.
+   *
+   * @param {ZCFSeat} seat
+   * @param {Amount<'nat'>} collateralWanted
+   */
   const settle = (seat, collateralWanted) => {
     const { Currency: currencyAvailable } = seat.getCurrentAllocation();
     const { Collateral: collateralAvailable } =
@@ -262,7 +275,7 @@ export const makeAuctionBook = async (
    *
    *  @param {ZCFSeat} seat
    *  @param {Ratio} price
-   *  @param {Amount} want
+   *  @param {Amount<'nat'>} want
    *  @param {boolean} trySettle
    */
   const acceptPriceOffer = (seat, price, want, trySettle) => {
@@ -293,7 +306,7 @@ export const makeAuctionBook = async (
    *
    *  @param {ZCFSeat} seat
    *  @param {Ratio} bidScaling
-   *  @param {Amount} want
+   *  @param {Amount<'nat'>} want
    *  @param {boolean} trySettle
    */
   const acceptScaledBidOffer = (seat, bidScaling, want, trySettle) => {
@@ -316,6 +329,10 @@ export const makeAuctionBook = async (
   };
 
   return Far('AuctionBook', {
+    /**
+     * @param {Amount<'nat'>} assetAmount
+     * @param {ZCFSeat} sourceSeat
+     */
     addAssets(assetAmount, sourceSeat) {
       trace('add assets');
       assetsForSale = AmountMath.add(assetsForSale, assetAmount);
@@ -324,6 +341,7 @@ export const makeAuctionBook = async (
         harden([[sourceSeat, collateralSeat, { Collateral: assetAmount }]]),
       );
     },
+    /** @type {(reduction: Ratio) => void} */
     settleAtNewRate(reduction) {
       curAuctionPrice = multiplyRatios(reduction, lockedPriceForRound);
 
@@ -378,6 +396,12 @@ export const makeAuctionBook = async (
       trace('set startPrice', lockedPriceForRound);
       curAuctionPrice = multiplyRatios(lockedPriceForRound, rate);
     },
+    /**
+     *
+     * @param {BidSpec} bidSpec
+     * @param {ZCFSeat} seat
+     * @param {boolean} trySettle
+     */
     addOffer(bidSpec, seat, trySettle) {
       mustMatch(bidSpec, BidSpecShape);
       const { give } = seat.getProposal();
@@ -387,14 +411,14 @@ export const makeAuctionBook = async (
         'give must include "Currency"',
       );
 
-      if (bidSpec.offerPrice) {
+      if ('offerPrice' in bidSpec) {
         return acceptPriceOffer(
           seat,
           bidSpec.offerPrice,
           bidSpec.want,
           trySettle,
         );
-      } else if (bidSpec.offerBidScaling) {
+      } else if ('offerBidScaling' in bidSpec) {
         return acceptScaledBidOffer(
           seat,
           bidSpec.offerBidScaling,

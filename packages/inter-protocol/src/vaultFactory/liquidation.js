@@ -79,7 +79,6 @@ const liquidationResults = (debt, minted) => {
     };
   }
 
-  /** @type { [Amount<'nat'>, Amount<'nat'>] } */
   const [overage, shortfall] = AmountMath.isGTE(debt, minted)
     ? [AmountMath.makeEmptyFromAmount(debt), AmountMath.subtract(debt, minted)]
     : [AmountMath.subtract(minted, debt), AmountMath.makeEmptyFromAmount(debt)];

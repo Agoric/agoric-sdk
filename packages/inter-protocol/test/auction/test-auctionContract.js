@@ -128,9 +128,11 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     }),
     { governed: { initialPoserInvitation: fakeInvitationPayment } },
   );
-  // @ts-expect-error XXX Fix types
+
+  /** @type {Promise<import('../../src/auction/auctioneer.js').AuctioneerPublicFacet>} */
+  // @ts-expect-error xxx cast
   const publicFacet = E(GCF).getPublicFacet();
-  // @ts-expect-error XXX Fix types
+  /** @type {import('../../src/auction/auctioneer.js').AuctioneerLimitedCreatorFacet} */
   const creatorFacet = E(GCF).getCreatorFacet();
 
   /**
@@ -221,11 +223,11 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       );
     },
 
-    async bidForCollateralPayouts(giveCurrency, wantCollateral, discount) {
+    bidForCollateralPayouts(giveCurrency, wantCollateral, discount) {
       const seat = bidForCollateralSeat(giveCurrency, wantCollateral, discount);
       return E(seat).getPayouts();
     },
-    async bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit) {
+    bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit) {
       return bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit);
     },
     setupCollateralAuction,
@@ -237,7 +239,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       await eventLoopIteration();
     },
     depositCollateral,
-    async getLockPeriod() {
+    getLockPeriod() {
       return E(publicFacet).getPriceLockPeriod();
     },
     getSchedule() {
@@ -328,7 +330,7 @@ test.serial('priced bid settled', async t => {
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
   );
   const schedules = await driver.getSchedule();
-  t.is(schedules.nextAuctionSchedule.startTime.absValue, 170n);
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
 
   await driver.advanceTo(170n);
 
@@ -351,7 +353,7 @@ test.serial('discount bid settled', async t => {
   );
 
   const schedules = await driver.getSchedule();
-  t.is(schedules.nextAuctionSchedule.startTime.absValue, 170n);
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
   await driver.advanceTo(170n);
 
   const seat = await driver.bidForCollateralSeat(
@@ -377,8 +379,8 @@ test.serial('priced bid insufficient collateral added', async t => {
   );
 
   const schedules = await driver.getSchedule();
-  t.is(schedules.nextAuctionSchedule.startTime.absValue, 170n);
-  t.is(schedules.nextAuctionSchedule.endTime.absValue, 185n);
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
+  t.is(schedules.nextAuctionSchedule?.endTime.absValue, 185n);
   await driver.advanceTo(167n);
 
   const seat = await driver.bidForCollateralSeat(
@@ -419,6 +421,7 @@ test.serial('priced bid recorded then settled with price drop', async t => {
 
   await driver.advanceTo(170n);
   const schedules = await driver.getSchedule();
+  assert(schedules.liveAuctionSchedule);
   t.is(schedules.liveAuctionSchedule.startTime.absValue, 170n);
   t.is(schedules.liveAuctionSchedule.endTime.absValue, 185n);
 
@@ -440,7 +443,7 @@ test.serial('priced bid settled auction price below bid', async t => {
   );
 
   const schedules = await driver.getSchedule();
-  t.is(schedules.nextAuctionSchedule.startTime.absValue, 170n);
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
   await driver.advanceTo(170n);
 
   // overbid for current price
@@ -808,7 +811,7 @@ test.serial('multiple collaterals', async t => {
   t.is(await E(bidderSeat2A).getOfferResult(), 'Your offer has been received');
 
   const schedules = await driver.getSchedule();
-  t.is(schedules.nextAuctionSchedule.startTime.absValue, 170n);
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
 
   await driver.advanceTo(150n);
   await driver.advanceTo(170n);
@@ -853,6 +856,7 @@ test.serial('multiple bidders at one auction step', async t => {
   const result = await E(liqSeat).getOfferResult();
   t.is(result, 'deposited');
 
+  assert(nextAuctionSchedule?.startTime.absValue);
   let now = nextAuctionSchedule.startTime.absValue - 3n;
   await driver.advanceTo(now);
   const seat1 = await driver.bidForCollateralSeat(
@@ -870,6 +874,7 @@ test.serial('multiple bidders at one auction step', async t => {
     collateral.make(200n),
   );
 
+  assert(nextAuctionSchedule.startTime.absValue);
   now = nextAuctionSchedule.startTime.absValue;
   await driver.advanceTo(now);
   await eventLoopIteration();

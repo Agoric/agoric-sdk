@@ -24,6 +24,16 @@ const nextSequenceNumber = () => {
 };
 
 /**
+ * @typedef {{
+ * seat: ZCFSeat,
+ * wanted: Amount<'nat'>,
+ * seqNum: NatValue,
+ * received: Amount<'nat'>,
+ * } & ({ bidScaling: Pattern, price: undefined } | { bidScaling: undefined, price: Ratio})
+ * } BidderRecord
+ */
+
+/**
  * Prices in this book are expressed as percentage of the full oracle price
  * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
  *

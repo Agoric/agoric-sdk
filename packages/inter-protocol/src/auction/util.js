@@ -38,7 +38,7 @@ export const makeBrandedRatioPattern = (
 export const isScaledBidPriceHigher = (bidScaling, currentPrice, oraclePrice) =>
   ratioGTE(multiplyRatios(oraclePrice, bidScaling), currentPrice);
 
-/** @type {(PriceQuote) => Ratio} */
+/** @type {(quote: PriceQuote) => Ratio} */
 export const priceFrom = quote =>
   makeRatioFromAmounts(
     quote.quoteAmount.value[0].amountOut,
