@@ -10,7 +10,10 @@ import {
   buildRootObject as buildPSMRootObject,
   MANIFEST as PSM_MANIFEST,
 } from '../src/core/boot-psm.js';
-import { buildRootObject } from '../src/core/boot-chain.js';
+import {
+  buildRootObject,
+  MANIFEST as CHAIN_MANIFEST,
+} from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
 import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
@@ -102,6 +105,12 @@ test('PSM manifest consumes 2 more things than it produces! oops!@@@', t => {
     ['startWalletFactory', 'installation.consume.provisionPool'],
   ]);
 });
+
+test('Chain manifest produces what consumes, mostly', t => {
+  // TODO: include manifest from coreProposals
+  // TODO: consider moving makeClientBanks to the proposal with walletFactory
+  t.deepEqual(auditManifest(CHAIN_MANIFEST), [
+    ['makeClientBanks', 'consume.walletFactoryStartResult'],
   ]);
 });
 
