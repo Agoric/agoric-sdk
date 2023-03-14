@@ -74,6 +74,7 @@ export const startEconomicCommittee = async (
 };
 harden(startEconomicCommittee);
 
+/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 export const ECON_COMMITTEE_MANIFEST = harden({
   [startEconomicCommittee.name]: {
     consume: {
