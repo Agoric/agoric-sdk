@@ -117,12 +117,10 @@ export const NET_MANIFEST = {
   },
 };
 
+// unused, for now...
 export const getNetIBCManifest = ({ restoreRef }, { installKeys }) => {
   return {
     manifest: NET_MANIFEST,
-    installations: {
-      provisionPool: restoreRef(installKeys.provisionPool),
-      walletFactory: restoreRef(installKeys.walletFactory),
-    },
+    // TODO: how to make vats (or bundles) rather than installations?
   };
 };
