@@ -157,9 +157,9 @@ export const buildRootObject = (vatPowers, vatParameters) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const runBootstrapParts = async (vats, devices) => {
-    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
     const svc = E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     produce.vatAdminSvc.resolve(svc);
+    const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
     const namedVat = utils.makeVatSpace(svc, criticalVatKey, log, 'namedVat');
 
     /** TODO: BootstrapPowers type puzzle */
