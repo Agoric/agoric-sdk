@@ -131,8 +131,7 @@ export async function runVOTest(t, prepare, makeTestObject, testTestObject) {
     t,
     buildRootObject,
     'bob',
-    true,
-    true,
+    { forceGC: true, skipLogging: true },
   );
 
   await dispatchMessage('makeAndHold');

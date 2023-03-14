@@ -15,11 +15,13 @@ import {
 import { kser } from './kmarshal.js';
 
 /**
- * @param {boolean} [skipLogging = false]
+ * @param {object} [options]
+ * @param {boolean} [options.skipLogging = false]
+ * @param {Map<string, string>} [options.kvStore = new Map()]
  */
-export function buildSyscall(skipLogging) {
+export function buildSyscall(options = {}) {
+  const { skipLogging = false, kvStore: fakestore = new Map() } = options;
   const log = [];
-  const fakestore = new Map();
   let sortedKeys;
   let priorKeyReturned;
   let priorKeyIndex;
@@ -152,23 +154,38 @@ export async function makeDispatch(
   return { dispatch, testHooks };
 }
 
-function makeRPMaker() {
-  let idx = 0;
+function makeRPMaker(nextNumber = 1) {
+  let idx = nextNumber - 1;
   return () => {
     idx += 1;
     return `p-${idx}`;
   };
 }
 
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {Function} buildRootObject
+ * @param {string} vatName
+ * @param {object} [options]
+ * @param {boolean} [options.forceGC]
+ * @param {Map<string, string>} [options.kvStore = new Map()]
+ * @param {number} [options.nextPromiseImportNumber]
+ * @param {boolean} [options.skipLogging = false]
+ */
 export async function setupTestLiveslots(
   t,
   buildRootObject,
   vatName,
-  forceGC,
-  skipLogging,
+  options = {},
 ) {
-  const { log, syscall, fakestore } = buildSyscall(skipLogging);
-  const nextRP = makeRPMaker();
+  const {
+    forceGC,
+    kvStore = new Map(),
+    nextPromiseImportNumber,
+    skipLogging = false,
+  } = options;
+  const { log, syscall, fakestore } = buildSyscall({ skipLogging, kvStore });
+  const nextRP = makeRPMaker(nextPromiseImportNumber);
   const { dispatch, testHooks } = await makeDispatch(
     syscall,
     buildRootObject,
@@ -215,7 +232,7 @@ export async function setupTestLiveslots(
         for (const [vpid, rejected, value] of l.resolutions) {
           if (vpid === rp) {
             if (rejected) {
-              throw Error(`vpid ${vpid} rejected with ${value}`);
+              throw Error(`vpid ${rp} rejected with ${value}`);
             } else {
               return value; // resolved successfully
             }
@@ -249,6 +266,7 @@ export async function setupTestLiveslots(
 
   return {
     v,
+    dispatch,
     dispatchMessage,
     dispatchMessageSuccessfully,
     dispatchDropExports,
