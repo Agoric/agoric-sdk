@@ -48,6 +48,21 @@ import {
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 
+/** @type {import('./lib-boot.js').BootstrapManifest} */
+export const MANIFEST = {
+  ...CHAIN_BOOTSTRAP_MANIFEST,
+  ...WALLET_FACTORY_MANIFEST,
+  ...PSM_GOV_MANIFEST,
+  ...ECON_COMMITTEE_MANIFEST,
+  ...PSM_MANIFEST,
+  ...INVITE_PSM_COMMITTEE_MANIFEST,
+  [noProvisioner.name]: {
+    produce: {
+      provisioning: 'provisioning',
+    },
+  },
+};
+
 /**
  * We reserve these keys in name hubs.
  */
@@ -160,22 +175,10 @@ export const buildRootObject = (vatPowers, vatParameters) => {
         ERTP: { ...ERTPmod },
       },
     });
-    const manifest = {
-      ...CHAIN_BOOTSTRAP_MANIFEST,
-      ...WALLET_FACTORY_MANIFEST,
-      ...PSM_GOV_MANIFEST,
-      ...ECON_COMMITTEE_MANIFEST,
-      ...PSM_MANIFEST,
-      ...INVITE_PSM_COMMITTEE_MANIFEST,
-      [noProvisioner.name]: {
-        produce: {
-          provisioning: 'provisioning',
-        },
-      },
-    };
+
     /** @param {string} name */
     const powersFor = name => {
-      const permit = manifest[name];
+      const permit = MANIFEST[name];
       assert(permit, `missing permit for ${name}`);
       return utils.extractPowers(permit, allPowers);
     };
