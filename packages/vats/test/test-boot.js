@@ -55,16 +55,17 @@ const providedByStdBoot = (/** @type {string} */ p) =>
  * @typedef {string} ItemPath .-separated property path
  * @param {import('../src/core/lib-boot.js').BootstrapManifest} manifest
  * @param {(path: ItemPath) => boolean} [provided]
- * @returns {ItemPath[]} items consumed but not provided nor produced
+ * @returns {[string, ItemPath][]} fn name and item path
+ *   for each item consumed but not provided nor produced
  */
 const auditManifest = (manifest, provided = providedByStdBoot) => {
-  const { entries, fromEntries } = Object;
+  const { entries } = Object;
 
   /** @typedef {import('../src/core/lib-boot.js').BootstrapManifestPermit} Permit */
 
   /** @type {(p: Permit) => ItemPath[]} */
   const paths = permit => {
-    /** @type {(prefixx: string[], part: Permit) => string[][]} */
+    /** @type {(prefix: string[], part: Permit) => string[][]} */
     const recur = (prefix, part) =>
       typeof part === 'object'
         ? entries(part).flatMap(([prop, v]) => recur([...prefix, prop], v))
@@ -72,26 +73,35 @@ const auditManifest = (manifest, provided = providedByStdBoot) => {
     return recur([], permit).map(path => path.join('.'));
   };
 
-  const all = entries(manifest).flatMap(([_fn, p]) => paths(p));
-  const kind = fromEntries(
-    ['consume', 'produce'].map(k => [
-      k,
-      all.filter(p => p.includes(k)).map(p => p.replace(`${k}.`, '')),
-    ]),
+  const all = entries(manifest).flatMap(([b, p]) =>
+    paths(p).map(i => /** @type {[string, ItemPath]} */ ([b, i])),
   );
+  const pickKind = k =>
+    all
+      .filter(([_b, p]) => p.includes(k))
+      .map(([_b, p]) => p.replace(`${k}.`, ''));
+  const kind = {
+    consume: pickKind('consume'),
+    produce: pickKind('produce'),
+  };
 
   const missing = bagDiff(
     kind.consume.filter(i => !provided(i)),
     kind.produce,
   );
 
-  return uniq(missing);
+  const withFn = uniq(missing).flatMap(i =>
+    all.filter(([_b, p]) => i === p.replace(`consume.`, '')),
+  );
+  return withFn;
 };
 
 test('PSM manifest consumes 2 more things than it produces! oops!@@@', t => {
   t.deepEqual(auditManifest(PSM_MANIFEST), [
-    'installation.walletFactory',
-    'installation.provisionPool',
+    ['startWalletFactory', 'installation.consume.walletFactory'],
+    ['startWalletFactory', 'installation.consume.provisionPool'],
+  ]);
+});
   ]);
 });
 
