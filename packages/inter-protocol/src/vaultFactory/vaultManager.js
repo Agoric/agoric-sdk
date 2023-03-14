@@ -864,7 +864,7 @@ export const prepareVaultManagerKit = (
             ),
           );
 
-          // #7123 describes how to process liquidation proceeds
+          // Liquidation.md describes how to process liquidation proceeds
           if (AmountMath.isEmpty(accounting.shortfall)) {
             // Flow #1: no shortfall
 
