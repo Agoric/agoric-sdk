@@ -15,6 +15,7 @@ import { ParametersShape as BootParametersShape } from '../src/core/boot-psm.js'
 const test = anyTest;
 
 const PROD_CONFIG_FILES = [
+  'decentral-core-config.json',
   'decentral-main-psm-config.json',
   'decentral-psm-config.json',
   'decentral-test-vaults-config.json',
@@ -22,18 +23,15 @@ const PROD_CONFIG_FILES = [
 ];
 
 const CONFIG_FILES = [
-  'decentral-core-config.json', // TODO: remove mints from core-config
   'decentral-demo-config.json',
   'decentral-devnet-config.json',
   ...PROD_CONFIG_FILES,
 ];
 
 const NON_UPGRADEABLE_VATS = [
-  // TODO(#6687): enforce vat-network
-  // IDEA: move vat-network to a CoreEval proposal?
-  // 'vat-network',
-  // 'vat-ibc',
-  // 'pegasus',
+  'vat-network',
+  'vat-ibc',
+  'pegasus',
   'centralSupply',
   'mints',
   'sharing',

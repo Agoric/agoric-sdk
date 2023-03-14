@@ -171,12 +171,6 @@
     "chainStorage": {
       "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
     },
-    "ibc": {
-      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
-    },
-    "network": {
-      "sourceSpec": "@agoric/vats/src/vat-network.js"
-    },
     "priceAuthority": {
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
     },

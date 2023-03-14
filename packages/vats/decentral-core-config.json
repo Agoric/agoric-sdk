@@ -26,15 +26,6 @@
     "chainStorage": {
       "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
     },
-    "ibc": {
-      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
-    },
-    "mints": {
-      "sourceSpec": "@agoric/vats/src/vat-mints.js"
-    },
-    "network": {
-      "sourceSpec": "@agoric/vats/src/vat-network.js"
-    },
     "priceAuthority": {
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
     },
@@ -43,9 +34,6 @@
     },
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
-    },
-    "sharing": {
-      "sourceSpec": "@agoric/vats/src/vat-sharing.js"
     },
     "walletFactory": {
       "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
