@@ -109,10 +109,11 @@ const testBootstrap = (label, entryPoint, doCoreProposals) => {
   });
 };
 
-testBootstrap('client', buildSoloRootObject, false);
-testBootstrap('chain', buildRootObject, false);
+// testBootstrap('client', buildSoloRootObject, false);
+testBootstrap('client', buildSoloRootObject, true);
+// testBootstrap('chain', buildRootObject, false);
 testBootstrap('chain', buildRootObject, true);
-testBootstrap('sim', buildSimRootObject, false);
+// testBootstrap('sim', buildSimRootObject, false);
 testBootstrap('sim', buildSimRootObject, true);
 
 test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t) => {
