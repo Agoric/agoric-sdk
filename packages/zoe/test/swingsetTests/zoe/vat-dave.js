@@ -3,6 +3,7 @@ import { Far } from '@endo/marshal';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
@@ -19,7 +20,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
@@ -70,7 +74,10 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
-      const exclInvitation = await E(invitationIssuer).claim(invitation);
+      const exclInvitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitation,
+      );
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );

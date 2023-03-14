@@ -61,7 +61,6 @@ export const preparePurseKind = (
               updatePurseBalance(state, newPurseBalance, this.facets.purse),
             srcPayment,
             optAmountShape,
-            state.recoverySet,
           );
         },
         withdraw(amount) {

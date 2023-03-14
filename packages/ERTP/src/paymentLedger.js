@@ -1,14 +1,18 @@
 /* eslint-disable no-use-before-define */
 import { isPromise } from '@endo/promise-kit';
-import { assertCopyArray } from '@endo/marshal';
-import { mustMatch, M } from '@agoric/store';
-import { provideDurableWeakMapStore, prepareExo } from '@agoric/vat-data';
+import { mustMatch, M, keyEQ } from '@agoric/store';
+import {
+  provideDurableWeakMapStore,
+  prepareExo,
+  provide,
+} from '@agoric/vat-data';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
+import { claim, combine, split, splitMany } from './legacy-payment-helpers.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -104,7 +108,6 @@ export const preparePaymentLedger = (
     },
   });
 
-  const emptyAmount = AmountMath.makeEmpty(brand, assetKind);
   const amountShape = amountShapeFromElementShape(
     brand,
     assetKind,
@@ -206,7 +209,6 @@ export const preparePaymentLedger = (
   /** @type {(allegedAmount: Amount) => Amount} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
   /** @type {(left: Amount, right: Amount) => boolean } */
-  const isEqual = (left, right) => AmountMath.isEqual(left, right, brand);
 
   /**
    * Methods like deposit() have an optional second parameter
@@ -235,65 +237,6 @@ export const preparePaymentLedger = (
       Fail`${payment} was not a live payment for brand ${q(
         brand,
       )}. It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`;
-  };
-
-  /**
-   * Reallocate assets from the `payments` passed in to new payments
-   * created and returned, with balances from `newPaymentBalances`.
-   * Enforces that total assets are conserved.
-   *
-   * Note that this is not the only operation that moves assets.
-   * `purse.deposit` and `purse.withdraw` move assets between a purse and
-   * a payment, and so must also enforce conservation there.
-   *
-   * @param {Payment[]} payments
-   * @param {Amount[]} newPaymentBalances
-   * @returns {Payment[]}
-   */
-  const moveAssets = (payments, newPaymentBalances) => {
-    assertCopyArray(payments, 'payments');
-    assertCopyArray(newPaymentBalances, 'newPaymentBalances');
-
-    // There may be zero, one, or many payments as input to
-    // moveAssets. We want to protect against someone passing in
-    // what appears to be multiple payments that turn out to actually
-    // be the same payment (an aliasing issue). The `combine` method
-    // legitimately needs to take in multiple payments, but we don't
-    // need to pay the costs of protecting against aliasing for the
-    // other uses.
-
-    if (payments.length > 1) {
-      const antiAliasingStore = new Set();
-      payments.forEach(payment => {
-        !antiAliasingStore.has(payment) ||
-          Fail`same payment ${payment} seen twice`;
-        antiAliasingStore.add(payment);
-      });
-    }
-
-    const total = payments.map(paymentLedger.get).reduce(add, emptyAmount);
-
-    const newTotal = newPaymentBalances.reduce(add, emptyAmount);
-
-    // Invariant check
-    isEqual(total, newTotal) ||
-      Fail`rights were not conserved: ${total} vs ${newTotal}`;
-
-    let newPayments;
-    try {
-      // COMMIT POINT
-      payments.forEach(payment => deletePayment(payment));
-
-      newPayments = newPaymentBalances.map(balance => {
-        const newPayment = makePayment();
-        initPayment(newPayment, balance, undefined);
-        return newPayment;
-      });
-    } catch (err) {
-      shutdownLedgerWithFailure(err);
-      throw err;
-    }
-    return harden(newPayments);
   };
 
   /**
@@ -430,73 +373,79 @@ export const preparePaymentLedger = (
       return paymentBalance;
     },
     /**
+     * Inherent to the nature of the Issuer API, this method is less safe
+     * than the similarly named helper function in legacy-payment-helpers.js
+     * since those helper functions will associate any newly created payment
+     * with the recovery set of the argument purse. The methods here are
+     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
+     * to make the needed purse, which they unsafely then drop on the floor.
+     *
+     * @deprecated Use helper function from legacy-payment-helpers.js
      * @param {Payment} srcPayment awaited by callWhen
-     * @param {Pattern} optAmountShape
+     * @param {Pattern} [optAmountShape]
      */
     claim(srcPayment, optAmountShape = undefined) {
-      // IssuerI delays calling this method until `srcPayment` is a Remotable
-      assertLivePayment(srcPayment);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      assertAmountConsistent(srcPaymentBalance, optAmountShape);
-      // Note COMMIT POINT within moveAssets.
-      const [payment] = moveAssets(
-        harden([srcPayment]),
-        harden([srcPaymentBalance]),
-      );
-      return payment;
-    },
-    combine(fromPaymentsPArray, optTotalAmount = undefined) {
-      // IssuerI does *not* delay calling `combine`, but rather leaves it
-      // to `combine` to delay further processing until all the elements of
-      // `fromPaymentsPArray` have fulfilled.
-
-      // Payments in `fromPaymentsPArray` must be distinct. Alias
-      // checking is delegated to the `moveAssets` function.
-      return Promise.all(fromPaymentsPArray).then(fromPaymentsArray => {
-        fromPaymentsArray.every(assertLivePayment);
-        const totalPaymentsBalance = fromPaymentsArray
-          .map(paymentLedger.get)
-          .reduce(add, emptyAmount);
-        assertAmountConsistent(totalPaymentsBalance, optTotalAmount);
-        // Note COMMIT POINT within moveAssets.
-        const [payment] = moveAssets(
-          harden(fromPaymentsArray),
-          harden([totalPaymentsBalance]),
-        );
-        return payment;
-      });
+      return claim(makeEmptyPurse(), srcPayment, optAmountShape);
     },
     /**
+     * Inherent to the nature of the Issuer API, this method is less safe
+     * than the similarly named helper function in legacy-payment-helpers.js
+     * since those helper functions will associate any newly created payment
+     * with the recovery set of the argument purse. The methods here are
+     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
+     * to make the needed purse, which they unsafely then drop on the floor.
+     *
+     * @deprecated Use helper function from legacy-payment-helpers.js
+     * @param {ERef<Payment>[]} fromPaymentsPArray
+     * @param {Pattern} [optTotalAmount]
+     */
+    combine(fromPaymentsPArray, optTotalAmount = undefined) {
+      return combine(makeEmptyPurse(), fromPaymentsPArray, optTotalAmount);
+    },
+    /**
+     * Inherent to the nature of the Issuer API, this method is less safe
+     * than the similarly named helper function in legacy-payment-helpers.js
+     * since those helper functions will associate any newly created payment
+     * with the recovery set of the argument purse. The methods here are
+     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
+     * to make the needed purse, which they unsafely then drop on the floor.
+     *
+     * @deprecated Use helper function from legacy-payment-helpers.js
      * @param {Payment} srcPayment awaited by callWhen
      * @param {Amount} paymentAmountA
      */
     split(srcPayment, paymentAmountA) {
-      // IssuerI delays calling this method until `srcPayment` is a Remotable
-      paymentAmountA = coerce(paymentAmountA);
-      assertLivePayment(srcPayment);
-      const srcPaymentBalance = paymentLedger.get(srcPayment);
-      const paymentAmountB = subtract(srcPaymentBalance, paymentAmountA);
-      // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(
-        harden([srcPayment]),
-        harden([paymentAmountA, paymentAmountB]),
-      );
-      return newPayments;
+      return split(makeEmptyPurse(), srcPayment, paymentAmountA);
     },
     /**
+     * Inherent to the nature of the Issuer API, this method is less safe
+     * than the similarly named helper function in legacy-payment-helpers.js
+     * since those helper functions will associate any newly created payment
+     * with the recovery set of the argument purse. The methods here are
+     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
+     * to make the needed purse, which they unsafely then drop on the floor.
+     *
+     * @deprecated Use helper function from legacy-payment-helpers.js
      * @param {Payment} srcPayment awaited by callWhen
      * @param {*} amounts
      */
     splitMany(srcPayment, amounts) {
-      // IssuerI delays calling this method until `srcPayment` is a Remotable
-      assertLivePayment(srcPayment);
-      assertCopyArray(amounts, 'amounts');
-      amounts = amounts.map(coerce);
-      // Note COMMIT POINT within moveAssets.
-      const newPayments = moveAssets(harden([srcPayment]), harden(amounts));
-      return newPayments;
+      return splitMany(makeEmptyPurse(), srcPayment, amounts);
     },
   });
+
+  /**
+   * Provides for the recovery of newly minted but not-yet-deposited payments.
+   *
+   * Because the `mintRecoveryPurse` is placed in baggage, even if the
+   * caller of `makeIssuerKit` drops it on the floor, it can still be
+   * recovered in an emergency upgrade.
+   *
+   * @type {Purse<K>}
+   */
+  const mintRecoveryPurse = provide(issuerBaggage, 'mintRecoveryPurse', () =>
+    makeEmptyPurse(),
+  );
 
   /** @type {Mint<K>} */
   const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
@@ -507,13 +456,21 @@ export const preparePaymentLedger = (
       // @ts-expect-error checked cast
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
-      const payment = makePayment();
-      initPayment(payment, newAmount, undefined);
+      // `rawPayment` is not associated with any recovery set, and
+      // so must not escape.
+      const rawPayment = makePayment();
+      initPayment(rawPayment, newAmount, undefined);
+
+      const mintRecoveryPurseBefore = mintRecoveryPurse.getCurrentAmount();
+      mintRecoveryPurse.deposit(rawPayment, newAmount);
+      const payment = mintRecoveryPurse.withdraw(newAmount);
+      const mintRecoveryPurseAfter = mintRecoveryPurse.getCurrentAmount();
+      assert(keyEQ(mintRecoveryPurseBefore, mintRecoveryPurseAfter));
       return payment;
     },
   });
 
-  const issuerKit = harden({ issuer, mint, brand });
+  const issuerKit = harden({ issuer, mint, brand, mintRecoveryPurse });
   return issuerKit;
 };
 harden(preparePaymentLedger);

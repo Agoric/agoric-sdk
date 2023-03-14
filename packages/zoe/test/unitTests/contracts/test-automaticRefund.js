@@ -5,6 +5,7 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
+import { claim, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
@@ -154,7 +155,10 @@ test('zoe with automaticRefund', async t => {
   // will do a claim on the invitation with the Zoe invitation issuer and
   // will check that the installation and terms match what he
   // expects
-  const exclusBobInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const exclusBobInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   const {
     value: [bobInvitationValue],
@@ -238,7 +242,8 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
   // Setup Alice
   const aliceMoolaPayment = moolaKit.mint.mintPayment(moola(30n));
   const moola10 = moola(10n);
-  const aliceMoolaPayments = await moolaKit.issuer.splitMany(
+  const aliceMoolaPayments = await splitMany(
+    moolaKit.issuer.makeEmptyPurse(),
     aliceMoolaPayment,
     harden([moola10, moola10, moola10]),
   );

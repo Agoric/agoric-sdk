@@ -7,6 +7,8 @@ import path from 'path';
 import { E } from '@endo/eventual-send';
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { installationPFromSource } from '../installFromSource.js';
@@ -123,7 +125,10 @@ test('simpleExchange with valid offers', async t => {
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
 
   // 5: Bob decides to join.
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   const bobIssuers = await E(zoe).getIssuers(instance);
 
@@ -262,7 +267,8 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds another sell order to the exchange
-  const aliceInvitation2 = await E(invitationIssuer).claim(
+  const aliceInvitation2 = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     await E(publicFacet).makeInvitation(),
   );
   const aliceSale2OrderProposal = harden({
@@ -280,7 +286,8 @@ test('simpleExchange with multiple sell offers', async t => {
   );
 
   // 5: Alice adds a buy order to the exchange
-  const aliceInvitation3 = await E(invitationIssuer).claim(
+  const aliceInvitation3 = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     await E(publicFacet).makeInvitation(),
   );
   const aliceBuyOrderProposal = harden({
@@ -370,7 +377,10 @@ test('simpleExchange with non-fungible assets', async t => {
   // 5: Bob decides to join.
   const bobInstance = await E(zoe).getInstance(bobInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobInvitation);
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
 
   t.is(bobInstallation, installation);
 

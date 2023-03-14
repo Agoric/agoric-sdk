@@ -2,6 +2,8 @@ import { E } from '@endo/eventual-send';
 import { assert, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
@@ -17,7 +19,10 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
   return Far('carolstuff', {
     doSecondPriceAuctionBid: async invitationP => {
-      const invitation = await E(invitationIssuer).claim(invitationP);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        invitationP,
+      );
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);

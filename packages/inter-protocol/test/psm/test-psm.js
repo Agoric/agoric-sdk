@@ -4,6 +4,7 @@ import '@agoric/zoe/exported.js';
 import '../../src/vaultFactory/types.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
@@ -88,7 +89,7 @@ const makeTestContext = async () => {
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
   /** @type {IssuerKit<'nat'>} */
-  // @ts-expect-error missing mint but it's not needed in the test
+  // @ts-expect-error missing IssuerKit properties not needed in the test
   const mintedKit = {
     issuer: mintedIssuer,
     brand: await E(mintedIssuer).getBrand(),
@@ -296,7 +297,8 @@ test('simple trades', async t => {
 
   const giveRun = AmountMath.make(minted.brand, scale6(100));
   trace('get minted', { giveRun, expectedRun, actualRun });
-  const [runPayment, _moreRun] = await E(minted.issuer).split(
+  const [runPayment, _moreRun] = await split(
+    E(minted.issuer).makeEmptyPurse(),
     runPayouts.Out,
     giveRun,
   );
@@ -486,7 +488,8 @@ test('anchor is 2x minted', async t => {
 
   const giveRun = AmountMath.make(minted.brand, scale6(100));
   trace('get minted ratio', { giveRun, expectedRun, actualRun });
-  const [runPayment, _moreRun] = await E(minted.issuer).split(
+  const [runPayment, _moreRun] = await split(
+    E(minted.issuer).makeEmptyPurse(),
     runPayouts.Out,
     giveRun,
   );
@@ -594,7 +597,8 @@ test('metrics', async t => {
 
   // get anchor
   const giveMinted = AmountMath.make(minted.brand, scale6(100));
-  const [runPayment, _moreRun] = await E(minted.issuer).split(
+  const [runPayment, _moreRun] = await split(
+    E(minted.issuer).makeEmptyPurse(),
     mintedPayouts.Out,
     giveMinted,
   );

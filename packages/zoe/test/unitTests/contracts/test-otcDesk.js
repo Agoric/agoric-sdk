@@ -7,6 +7,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
@@ -124,7 +125,10 @@ const makeBob = (
   return Far('Bob', {
     offerOk: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       const { customDetails } = invitationValue;
       assert(typeof customDetails === 'object');
@@ -178,7 +182,10 @@ const makeBob = (
     },
     offerExpired: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       const { customDetails } = invitationValue;
       assert(typeof customDetails === 'object');
@@ -235,7 +242,10 @@ const makeBob = (
     },
     offerWantTooMuch: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       const { customDetails } = invitationValue;
       assert(typeof customDetails === 'object');
@@ -300,7 +310,10 @@ const makeBob = (
     },
     offerNotCovered: async untrustedInvitation => {
       const invitationIssuer = await E(zoe).getInvitationIssuer();
-      const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+      const invitation = await claim(
+        E(invitationIssuer).makeEmptyPurse(),
+        untrustedInvitation,
+      );
       const invitationValue = await E(zoe).getInvitationDetails(invitation);
       const { customDetails } = invitationValue;
       assert(typeof customDetails === 'object');

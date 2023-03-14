@@ -4,6 +4,8 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { makeNotifierKit } from '@agoric/notifier';
 import { makeVirtualPurse } from '../src/virtual-purse.js';
 
@@ -274,7 +276,7 @@ test('vpurse.deposit promise', async t => {
   const fungible25 = AmountMath.make(brand, 25n);
 
   const payment = mint.mintPayment(fungible25);
-  const exclusivePaymentP = E(issuer).claim(payment);
+  const exclusivePaymentP = claim(E(issuer).makeEmptyPurse(), payment);
 
   await t.throwsAsync(
     // @ts-expect-error deliberate invalid arguments for testing

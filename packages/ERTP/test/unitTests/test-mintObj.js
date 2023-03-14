@@ -6,6 +6,7 @@ import { assert } from '@agoric/assert';
 
 import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
+import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');
@@ -139,14 +140,18 @@ test('non-fungible tokens example', async t => {
   // Alice will buy ticket 1
   const paymentForAlice = balletTicketPayments[0];
   // Bob will buy tickets 3 and 4
-  const paymentForBob = balletTicketIssuer.combine(
+  const paymentForBob = combine(
+    balletTicketIssuer.makeEmptyPurse(),
     harden([balletTicketPayments[2], balletTicketPayments[3]]),
   );
 
   // ALICE SIDE
   // Alice bought ticket 1 and has access to the balletTicketIssuer, because
   // it's public
-  const myTicketPaymentAlice = await balletTicketIssuer.claim(paymentForAlice);
+  const myTicketPaymentAlice = await claim(
+    balletTicketIssuer.makeEmptyPurse(),
+    paymentForAlice,
+  );
   // the call to claim() hasn't thrown, so Alice knows myTicketPaymentAlice
   // is a genuine 'Agoric Ballet Opera tickets' payment and she has exclusive
   // access to its handle
@@ -162,7 +167,10 @@ test('non-fungible tokens example', async t => {
   // BOB SIDE
   // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because
   // it's public
-  const bobTicketPayment = await balletTicketIssuer.claim(paymentForBob);
+  const bobTicketPayment = await claim(
+    balletTicketIssuer.makeEmptyPurse(),
+    paymentForBob,
+  );
   const paymentAmountBob = await balletTicketIssuer.getAmountOf(
     bobTicketPayment,
   );

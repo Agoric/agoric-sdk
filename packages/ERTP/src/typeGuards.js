@@ -147,6 +147,7 @@ export const DisplayInfoShape = M.splitRecord(
 export const IssuerKitShape = harden({
   brand: BrandShape,
   mint: MintShape,
+  mintRecoveryPurse: PurseShape,
   issuer: IssuerShape,
   displayInfo: DisplayInfoShape,
 });

@@ -1,6 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E, Far } from '@endo/far';
 
 import { makeCopyBag } from '@agoric/store';
@@ -152,7 +153,8 @@ test('attestations can be combined and split', async t => {
   };
 
   // split the 1st attestation
-  const [attest20pmt, attestRestPmt] = await E(issuer).split(
+  const [attest20pmt, attestRestPmt] = await split(
+    E(issuer).makeEmptyPurse(),
     attest50pmt,
     AmountMath.make(brand, makeCopyBag([[address1, 20n]])),
   );
