@@ -192,6 +192,7 @@ export const startWalletFactory = async (
     harden({
       agoricNames,
       board,
+      // XXX interposes bootstrap between bank and walletFactory
       assetPublisher: Far('AssetPublisher', {
         getAssetSubscription: () => E(poolBank).getAssetSubscription(),
       }),
