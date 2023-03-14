@@ -6,7 +6,10 @@ import bundleSourceAmbient from '@endo/bundle-source';
 import { E, passStyleOf } from '@endo/far';
 
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { buildRootObject as buildPSMRootObject } from '../src/core/boot-psm.js';
+import {
+  buildRootObject as buildPSMRootObject,
+  MANIFEST as PSM_MANIFEST,
+} from '../src/core/boot-psm.js';
 import { buildRootObject } from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
 import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
@@ -38,6 +41,43 @@ test.before(t => {
   t.context = makeTestContext();
 });
 // #endregion
+
+/** @type {<X>(a: X[], b: X[]) => X[]} */
+const setDiff = (a, b) => a.filter(x => !b.includes(x));
+
+test('PSM manifest consumes 2 more things than it produces! oops!@@@', t => {
+  const { entries } = Object;
+  /** @typedef {import('../src/core/lib-boot.js').BootstrapManifestPermit} Permit */
+
+  /** @type {(p: Permit) => string[]} */
+  const paths = permit => {
+    /** @type {(pfx: string[], part: Permit) => string[][]} */
+    const recur = (prefix, part) =>
+      typeof part === 'object'
+        ? entries(part).flatMap(([p, v]) => recur([...prefix, p], v))
+        : [prefix];
+    return recur([], permit).map(p => p.join('.'));
+  };
+
+  const all = entries(PSM_MANIFEST).flatMap(([_fn, p]) => paths(p));
+  const consumed = all
+    .filter(p => p.includes('consume'))
+    .map(p => p.replace('consume.', ''));
+  const produced = all
+    .filter(p => p.includes('produce'))
+    .map(p => p.replace('produce.', ''));
+  const missing = [...new Set(setDiff(consumed, produced))].filter(
+    p =>
+      !(
+        p.startsWith('namedVat.') ||
+        ['agoricNames', 'agoricNamesAdmin', 'vatAdminSvc'].includes(p)
+      ),
+  );
+  t.deepEqual(missing, [
+    'installation.walletFactory',
+    'installation.provisionPool',
+  ]);
+});
 
 /**
  * @callback BuildRootObject
