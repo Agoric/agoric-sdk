@@ -7,6 +7,7 @@ import fs from 'fs';
 import test from 'ava';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import tmp from 'tmp';
+import bundleSource from '@endo/bundle-source';
 
 import {
   initSwingStore,
@@ -51,6 +52,13 @@ const tmpDir = prefix =>
       }
     });
   });
+
+async function embundle(filename) {
+  const bundleFile = new URL(filename, import.meta.url).pathname;
+  const bundle = await bundleSource(bundleFile);
+  const bundleID = `b1-${bundle.endoZipBase64Sha512}`;
+  return [bundleID, bundle];
+}
 
 function actLikeAVatRunningACrank(vat, ks, crank, doFail) {
   const { kvStore, transcriptStore } = ks;
@@ -183,6 +191,12 @@ async function testExportImport(
   });
   const { kernelStorage, debug } = ssOut;
 
+  const [bundleID1, bundle1] = await embundle('./faux-module.js');
+  const [bundleID2, bundle2] = await embundle('./bohr-module.js');
+
+  kernelStorage.bundleStore.addBundle(bundleID1, bundle1);
+  kernelStorage.bundleStore.addBundle(bundleID2, bundle2);
+
   const vats = [
     { vatID: 'vatA', endPos: 0 },
     { vatID: 'vatB', endPos: 0 },
@@ -225,6 +239,8 @@ async function testExportImport(
 
   t.deepEqual(exportData, feedData);
   t.deepEqual(exportData, [
+    [`bundle.${bundleID1}`, `${bundleID1}`],
+    [`bundle.${bundleID2}`, `${bundleID2}`],
     ['kv.brigadoon', 'here during 16'],
     ['kv.kval', 'set in 16'],
     ['kv.vatA.monotonic.10', 'more and more'],
@@ -280,6 +296,10 @@ async function testExportImport(
       '{"vatID":"vatB","startPos":4,"endPos":8,"hash":"34fa09207bfb7af5fc3e65acb07f13b60834d0fbd2c6b9708f794c4397bd865d","isCurrent":1}',
     ],
   ]);
+
+  expectedArtifactNames = Array.from(expectedArtifactNames);
+  expectedArtifactNames.push(`bundle.${bundleID1}`);
+  expectedArtifactNames.push(`bundle.${bundleID2}`);
 
   const artifactNames = [];
   for await (const name of exporter.getArtifactNames()) {

@@ -12,9 +12,25 @@ import { makeMeasureSeconds } from '@agoric/internal';
 
 import { makeTranscriptStore } from './transcriptStore.js';
 import { makeSnapStore } from './snapStore.js';
+import { makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
 
-export { makeSnapStore };
+export { makeSnapStore, makeBundleStore };
+
+/**
+ * This is a polyfill for the `buffer` function from Node's
+ * 'stream/consumers' package, which unfortunately only exists in newer versions
+ * of Node.
+ *
+ * @param {AsyncIterable<Buffer>} inStream
+ */
+export const buffer = async inStream => {
+  const chunks = [];
+  for await (const chunk of inStream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+};
 
 export function makeSnapStoreIO() {
   return {
@@ -58,10 +74,15 @@ function getKeyType(key) {
  * @typedef { import('./transcriptStore').TranscriptStoreInternal } TranscriptStoreInternal
  * @typedef { import('./transcriptStore').TranscriptStoreDebug } TranscriptStoreDebug
  *
+ * @typedef { import('./bundleStore').BundleStore } BundleStore
+ * @typedef { import('./bundleStore').BundleStoreInternal } BundleStoreInternal
+ * @typedef { import('./bundleStore').BundleStoreDebug } BundleStoreDebug
+ *
  * @typedef {{
  *   kvStore: KVStore, // a key-value API object to load and store data on behalf of the kernel
  *   transcriptStore: TranscriptStore, // a stream-oriented API object to append and read transcript entries
  *   snapStore: SnapStore,
+ *   bundleStore: BundleStore,
  *   startCrank: () => void,
  *   establishCrankSavepoint: (savepoint: string) => void,
  *   rollbackCrank: (savepoint: string) => void,
@@ -94,6 +115,7 @@ function getKeyType(key) {
  * @typedef {{
  *    transcriptStore: TranscriptStoreInternal,
  *    snapStore: SnapStoreInternal,
+ *    bundleStore: BundleStoreInternal,
  * }} SwingStoreInternal
  *
  * @typedef {{
@@ -180,6 +202,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   // ensureTxn can be a dummy, we just started one
   const ensureTxn = () => {};
   const snapStore = makeSnapStore(db, ensureTxn, makeSnapStoreIO());
+  const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
   const sqlGetAllKVData = db.prepare(`
@@ -201,6 +224,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
     }
     yield* snapStore.getExportRecords(true);
     yield* transcriptStore.getExportRecords(true);
+    yield* bundleStore.getExportRecords();
   }
 
   /**
@@ -210,6 +234,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   async function* getArtifactNames() {
     yield* snapStore.getArtifactNames(exportHistoricalSnapshots);
     yield* transcriptStore.getArtifactNames(exportHistoricalTranscripts);
+    yield* bundleStore.getArtifactNames();
   }
 
   /**
@@ -224,6 +249,8 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
       return snapStore.exportSnapshot(name, exportHistoricalSnapshots);
     } else if (type === 'transcript') {
       return transcriptStore.exportSpan(name, exportHistoricalTranscripts);
+    } else if (type === 'bundle') {
+      return bundleStore.exportBundle(name);
     } else {
       assert.fail(`invalid artifact type ${q(type)}`);
     }
@@ -273,8 +300,12 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
  *   to metadata kept in the kvStore.  Persistently stored in a sqllite table.
  *
  * snapStore - large object store used to hold XS memory image snapshots of
- *   vats.  Objects are stored in files named by the cryptographic hash of the
- *   data they hold, with tracking metadata kept in the kvStore.
+ *   vats.  Objects are stored in a separate table keyed to the vat and delivery
+ *   number of the snapshot, with tracking metadata kept in the kvStore.
+ *
+ * bundleStore - large object store used to hold JavaScript code bundles.
+ *   Objects are stored in a separated table keyed by bundleID, with tracking
+ *   metadata kept in the kvStore.
  *
  * All persistent data is kept within a single directory belonging to the swing
  * store.  The individual stores present individual APIs suitable for their
@@ -382,8 +413,42 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   // mode that defers merge work for a later attempt rather than block any
   // potential readers or writers. See https://sqlite.org/wal.html for details.
 
+  // PRAGMAs have to happen outside a transaction
   db.exec(`PRAGMA journal_mode=WAL`);
   db.exec(`PRAGMA synchronous=FULL`);
+
+  // We use IMMEDIATE because the kernel is supposed to be the sole writer of
+  // the DB, and if some other process is holding a write lock, we want to find
+  // out earlier rather than later. We do not use EXCLUSIVE because we should
+  // allow external *readers*, and we use WAL mode. Read all of
+  // https://sqlite.org/lang_transaction.html, especially section 2.2
+  const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
+
+  // We use explicit transactions to 1: not commit writes until the host
+  // application calls commit() and 2: avoid expensive fsyncs until the
+  // appropriate commit point. All API methods that modify the database should
+  // call `ensureTxn` first, otherwise SQLite will automatically start a transaction
+  // for us, but it will commit/fsync at the end of the SQL statement.
+  //
+  // It is critical to call ensureTxn as the first step of any API call that
+  // might modify the database (any INSERT or DELETE, etc), to prevent SQLite
+  // from creating an automatic transaction, which will commit as soon as the
+  // SQL statement finishes. This would cause partial writes to be committed to
+  // the DB, and if the application crashes before the real hostStorage.commit()
+  // happens, it would wake up with inconsistent state. Aside from the setup
+  // initialization done here, the only commit point must be the
+  // hostStorage.commit() call.
+  function ensureTxn() {
+    db || Fail`db not initialized`;
+    if (!db.inTransaction) {
+      sqlBeginTransaction.run();
+      db.inTransaction || Fail`must be in a transaction`;
+    }
+    return db;
+  }
+
+  // Perform all database initialization in a single transaction
+  sqlBeginTransaction.run();
   db.exec(`
     CREATE TABLE IF NOT EXISTS kvStore (
       key TEXT,
@@ -399,6 +464,38 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       PRIMARY KEY (key)
     )
   `);
+
+  const { dumpTranscripts, ...transcriptStore } = makeTranscriptStore(
+    db,
+    ensureTxn,
+    // eslint-disable-next-line no-use-before-define
+    noteExport,
+    {
+      keepTranscripts,
+    },
+  );
+  const { dumpSnapshots, ...snapStore } = makeSnapStore(
+    db,
+    ensureTxn,
+    makeSnapStoreIO(),
+    // eslint-disable-next-line no-use-before-define
+    noteExport,
+    {
+      keepSnapshots,
+    },
+  );
+  const { dumpBundles, ...bundleStore } = makeBundleStore(
+    db,
+    ensureTxn,
+    // eslint-disable-next-line no-use-before-define
+    noteExport,
+  );
+
+  const sqlCommit = db.prepare('COMMIT');
+
+  // At this point, all database initialization should be complete, so commit now.
+  sqlCommit.run();
+
   let exportCallback;
   function setExportCallback(cb) {
     typeof cb === 'function' || Fail`callback must be a function`;
@@ -408,35 +505,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     setExportCallback(options.exportCallback);
   }
 
-  const sqlBeginTransaction = db.prepare('BEGIN IMMEDIATE TRANSACTION');
   let inCrank = false;
-
-  // We use explicit transactions to 1: not commit writes until the host
-  // application calls commit() and 2: avoid expensive fsyncs until the
-  // appropriate commit point. All API methods should call this first, otherwise
-  // SQLite will automatically start a transaction for us, but it will
-  // commit/fsync at the end of the DB run(). We use IMMEDIATE because the
-  // kernel is supposed to be the sole writer of the DB, and if some other
-  // process is holding a write lock, we want to find out earlier rather than
-  // later. We do not use EXCLUSIVE because we should allow external *readers*,
-  // and we use WAL mode. Read all of https://sqlite.org/lang_transaction.html,
-  // especially section 2.2
-  //
-  // It is critical to call ensureTxn as the first step of any API call that
-  // might modify the database (any INSERT or DELETE, etc), to prevent SQLite
-  // from creating an automatic transaction, which will commit as soon as the
-  // SQL statement finishes. This would cause partial writes to be committed to
-  // the DB, and if the application crashes before the real hostStorage.commit()
-  // happens, it would wake up with inconsistent state. The only commit point
-  // must be the hostStorage.commit().
-  function ensureTxn() {
-    db || Fail`db not initialized`;
-    if (!db.inTransaction) {
-      sqlBeginTransaction.run();
-      db.inTransaction || Fail`must be in a transaction`;
-    }
-    return db;
-  }
 
   function diskUsage() {
     if (dirPath) {
@@ -635,24 +704,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     },
   };
 
-  const { dumpTranscripts, ...transcriptStore } = makeTranscriptStore(
-    db,
-    ensureTxn,
-    noteExport,
-    {
-      keepTranscripts,
-    },
-  );
-  const { dumpSnapshots, ...snapStore } = makeSnapStore(
-    db,
-    ensureTxn,
-    makeSnapStoreIO(),
-    noteExport,
-    {
-      keepSnapshots,
-    },
-  );
-
   const savepoints = [];
   const sqlReleaseSavepoints = db.prepare('RELEASE SAVEPOINT t0');
 
@@ -750,8 +801,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     inCrank = false;
   }
 
-  const sqlCommit = db.prepare('COMMIT');
-
   /**
    * Commit unsaved changes.
    */
@@ -803,6 +852,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
       kvEntries: dumpKVEntries(),
       transcripts: dumpTranscripts(includeHistorical),
       snapshots: dumpSnapshots(includeHistorical),
+      bundles: dumpBundles(),
     });
   }
 
@@ -824,10 +874,18 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
     getSnapshotInfo: snapStore.getSnapshotInfo,
   };
 
+  const bundleStorePublic = {
+    addBundle: bundleStore.addBundle,
+    hasBundle: bundleStore.hasBundle,
+    getBundle: bundleStore.getBundle,
+    deleteBundle: bundleStore.deleteBundle,
+  };
+
   const kernelStorage = {
     kvStore: kernelKVStore,
     transcriptStore: transcriptStorePublic,
     snapStore: snapStorePublic,
+    bundleStore: bundleStorePublic,
     startCrank,
     establishCrankSavepoint,
     rollbackCrank,
@@ -849,6 +907,7 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
   const internal = {
     snapStore,
     transcriptStore,
+    bundleStore,
   };
 
   return harden({
@@ -928,6 +987,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   // tracks which of these we've seen, keyed by vatID.
   // vatID -> { snapshotKey: metadataKey, transcriptKey: metatdataKey }
   const vatArtifacts = new Map();
+  const bundleArtifacts = new Map();
 
   for await (const [key, value] of exporter.getExportData()) {
     const [tag] = key.split('.', 1);
@@ -939,6 +999,13 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
         kernelStorage.kvStore.delete(subKey);
       } else {
         kernelStorage.kvStore.set(subKey, value);
+      }
+    } else if (tag === 'bundle') {
+      // 'bundle' keys contain bundle IDs
+      if (value == null) {
+        bundleArtifacts.delete(key);
+      } else {
+        bundleArtifacts.set(key, value);
       }
     } else if (tag === 'transcript' || tag === 'snapshot') {
       // 'transcript' and 'snapshot' keys contain artifact description info.
@@ -1008,6 +1075,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
         exporter,
         snapshotInfo,
       ));
+
     const transcriptArtifactName = `${vatInfo.transcriptKey}.${transcriptInfo.endPos}`;
     await internal.transcriptStore.importSpan(
       transcriptArtifactName,
@@ -1016,6 +1084,15 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
     );
     fetchedArtifacts.add(transcriptArtifactName);
   }
+  const bundleArtifactNames = Array.from(bundleArtifacts.keys()).sort();
+  for await (const bundleArtifactName of bundleArtifactNames) {
+    await internal.bundleStore.importBundle(
+      bundleArtifactName,
+      exporter,
+      bundleArtifacts.get(bundleArtifactName),
+    );
+  }
+
   if (!includeHistorical) {
     return store;
   }
@@ -1042,6 +1119,9 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
         exporter,
         artifactMetadata.get(metadataKey),
       );
+    } else if (artifactName.startsWith('bundle.')) {
+      // already taken care of
+      continue;
     } else {
       Fail`unknown artifact type: ${artifactName}`;
     }
