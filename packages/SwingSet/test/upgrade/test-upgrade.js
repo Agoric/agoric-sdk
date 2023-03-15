@@ -18,6 +18,7 @@ import { bundleOpts, restartVatAdminVat } from '../util.js';
 // import { NUM_SENSORS } from './num-sensors.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   t.context.data = { kernelBundles };
@@ -34,46 +35,90 @@ const dumpState = (debug, vatID) => {
   }
 };
 
-const makeRun = swingsetController => {
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = swingsetController.queueToVatRoot('bootstrap', method, args);
-    await swingsetController.run();
-    const status = swingsetController.kpStatus(kpid);
-    if (status === 'fulfilled') {
-      const result = swingsetController.kpResolution(kpid);
-      return kunser(result);
-    }
-    assert(status === 'rejected');
-    const err = swingsetController.kpResolution(kpid);
-    throw kunser(err);
+/**
+ * @param {string} bootstrapVatPath
+ * @param {KernelOptions & {
+ *  staticVatPaths?: Record<string, string>,
+ *  bundlePaths?: Record<string, string>,
+ * }} [options]
+ * @returns {SwingSetConfig}
+ */
+const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
+  const { staticVatPaths = {}, bundlePaths = {}, ...kernelOptions } = options;
+  /**
+   * @param {Record<string, string>} paths
+   * @returns {Record<string, {sourceSpec: string}>}
+   */
+  const specsFromPaths = paths => {
+    const entries = Object.entries(paths).map(([name, path]) => [
+      name,
+      { sourceSpec: bfile(path) },
+    ]);
+    return Object.fromEntries(entries);
   };
-  return run;
+  assert(!Object.hasOwn(staticVatPaths, 'bootstrap'));
+  const vats = specsFromPaths({
+    bootstrap: bootstrapVatPath,
+    ...staticVatPaths,
+  });
+  const bundles = specsFromPaths(bundlePaths);
+  return {
+    includeDevDependencies: true, // for vat-data
+    ...kernelOptions,
+    bootstrap: 'bootstrap',
+    vats,
+    bundles,
+  };
 };
 
-const testNullUpgrade = async (t, defaultManagerType) => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
-    defaultManagerType,
-    bootstrap: 'bootstrap',
-    defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('../bootstrap-relay.js') },
-    },
-    bundles: {
-      durableSingleton: { sourceSpec: bfile('../vat-durable-singleton.js') },
-    },
-  };
-
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {object} bundleData
+ * @param {SwingSetConfig} config
+ * @returns {{
+ *   controller: ReturnType<typeof makeSwingsetController>,
+ *   kvStore: KVStore,
+ *   run: (method: string, args?: unknown[]) => Promise<unknown>,
+ * }}
+ */
+const initKernelForTest = async (t, bundleData, config) => {
   const { kernelStorage } = initSwingStore();
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  const { kvStore } = kernelStorage;
+  const { initOpts, runtimeOpts } = bundleOpts(bundleData);
   await initializeSwingset(config, [], kernelStorage, initOpts);
   const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  const run = makeRun(c);
+  const run = async (method, args = []) => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    if (status === 'fulfilled') {
+      const result = c.kpResolution(kpid);
+      return kunser(result);
+    }
+    assert(status === 'rejected');
+    const err = c.kpResolution(kpid);
+    throw kunser(err);
+  };
+  return {
+    controller: c,
+    kvStore,
+    run,
+  };
+};
+
+const testNullUpgrade = async (t, defaultManagerType) => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultManagerType,
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      durableSingleton: '../vat-durable-singleton.js',
+    },
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   await run('createVat', [
     {
@@ -111,37 +156,26 @@ test('null upgrade - xsnap', async t => {
   return testNullUpgrade(t, 'xs-worker');
 });
 
-const testUpgrade = async (
-  t,
-  defaultManagerType,
-  doVatAdminRestart = false,
-) => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {ManagerType} defaultManagerType
+ * @param {object} [options]
+ * @param {boolean} [options.restartVatAdmin=false]
+ */
+const testUpgrade = async (t, defaultManagerType, options = {}) => {
+  const { restartVatAdmin: doVatAdminRestart = false } = options;
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType,
-    bootstrap: 'bootstrap',
-    // defaultReapInterval: 'never',
-    // defaultReapInterval: 1,
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  // const { kernelStorage, debug } = initSwingStore();
-  const { kernelStorage } = initSwingStore();
-  const { kvStore } = kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const {
+    controller: c,
+    kvStore,
+    run,
+  } = await initKernelForTest(t, t.context.data, config);
 
   const marker = await run('getMarker'); // probably ko26
   t.is(marker.iface(), 'marker');
@@ -336,11 +370,11 @@ const testUpgrade = async (
 };
 
 test('vat upgrade - local', async t => {
-  return testUpgrade(t, 'local', false);
+  return testUpgrade(t, 'local', { restartVatAdmin: false });
 });
 
 test('vat upgrade - local with VA restarts', async t => {
-  return testUpgrade(t, 'local', true);
+  return testUpgrade(t, 'local', { restartVatAdmin: true });
 });
 
 test('vat upgrade - xsnap', async t => {
@@ -348,29 +382,15 @@ test('vat upgrade - xsnap', async t => {
 });
 
 test('vat upgrade - omit vatParameters', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   const result = await run('doUpgradeWithoutVatParameters', []);
@@ -378,28 +398,14 @@ test('vat upgrade - omit vatParameters', async t => {
 });
 
 test('failed upgrade - relaxed durable rules', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     relaxDurabilityRules: true,
-    includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   await run('buildV1', []);
@@ -412,29 +418,15 @@ test('failed upgrade - relaxed durable rules', async t => {
 });
 
 test('failed upgrade - lost kind', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   const v1result = await run('buildV1WithLostKind', []);
@@ -472,27 +464,15 @@ test('failed upgrade - lost kind', async t => {
 // TODO: test stopVat failure
 
 test('failed upgrade - explode', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const { kernelStorage } = initSwingStore();
-  await initializeSwingset(config, [], kernelStorage);
-  const c = await makeSwingsetController(kernelStorage);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   const v1result = await run('buildV1WithPing', []);
@@ -517,29 +497,15 @@ test('failed upgrade - explode', async t => {
 });
 
 async function testMultiKindUpgradeChecks(t, mode, complaint) {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   await run('buildV1WithMultiKind', [mode]);
@@ -601,29 +567,15 @@ test('facet kind redefinition - fail on multi- to single-facet redefinition', as
 });
 
 test('failed upgrade - unknown options', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   await t.throwsAsync(run('doUpgradeWithBadOption', []), {
     instanceOf: Error,
@@ -635,25 +587,17 @@ test('failed upgrade - unknown options', async t => {
 });
 
 test('failed vatAdmin upgrade - bad replacement code', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  await initializeSwingset(config, [], kernelStorage);
-  const c = await makeSwingsetController(kernelStorage);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { controller: c, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
 
   const badVABundle = await bundleSource(
     new URL('./vat-junk.js', import.meta.url).pathname,
