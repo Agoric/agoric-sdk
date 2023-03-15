@@ -12,13 +12,13 @@ import {
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import {
-  makeBinaryVoteCounter,
   ChoiceMethod,
   ElectionType,
   QuorumRule,
   coerceQuestionSpec,
   makeParamChangePositions,
 } from '../../src/index.js';
+import { makeBinaryVoteCounter } from '../../src/binaryVoteCounter.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });
