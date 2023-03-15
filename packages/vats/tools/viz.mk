@@ -6,10 +6,12 @@ CONFIG=decentral-test-vaults-config
 
 SRC=../src/core/chain-behaviors.js ../src/core/basic-behaviors.js
 
-$(CONFIG).svg: $(CONFIG).dot
+DIAGRAM=$(CONFIG)
+
+$(DIAGRAM).svg: $(DIAGRAM).dot
 	$(DOT) -Tsvg $< >$@ || rm $@
 
-view: $(CONFIG).svg
+view: $(DIAGRAM).svg
 	$(VIEWER) $<
 
 $(CONFIG).dot: ../$(CONFIG).json $(SRC) authorityViz.js
