@@ -10,11 +10,8 @@
  */
 const NAT = 'nat';
 
-/** @typedef {Capitalize<string>} Keyword */
-
 export const Stable = harden(
   /** @type {const } */ ({
-    /** @type {Keyword} */
     symbol: 'IST',
     denom: 'uist',
     proposedName: 'Agoric stable local currency',
@@ -28,7 +25,6 @@ export const Stable = harden(
 
 export const Stake = harden(
   /** @type {const } */ ({
-    /** @type {Keyword} */
     symbol: 'BLD',
     denom: 'ubld',
     proposedName: 'Agoric staking token',
