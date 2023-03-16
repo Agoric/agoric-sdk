@@ -885,25 +885,32 @@ export default function buildKernel(
       return results;
     }
 
-    // stopVat succeeded. finish cleanup on behalf of the worker.
+    // stopVat succeeded, now we finish cleanup on behalf of the worker
 
-    // TODO: send BOYD to the vat, to give it one last chance to clean
-    // up, drop imports, and delete durable data. If we ever have a
-    // vat that is so broken it can't do BOYD, we can make that
-    // optional. #7001
+    // TODO: send BOYD so the terminating vat has one last chance to clean
+    // up, drop imports, and delete durable data.
+    // If a vat is so broken it can't do BOYD, we can make that optional.
+    // https://github.com/Agoric/agoric-sdk/issues/7001
 
-    // walk c-list for all decided promises, reject them all
+    // reject all promises for which the vat was decider
     for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
       resolveToError(kpid, disconnectionCapData, vatID);
     }
 
-    // TODO: getNonDurableObjectExports, synthesize abandonVSO,
-    // execute it as if it were a syscall. (maybe distinguish between
-    // reachable/recognizable exports, abandon the reachable, retire
-    // the recognizable) #6696
+    // simulate an abandonExports syscall from the vat,
+    // without making an *actual* syscall that could pollute logs
+    const abandonedObjects = [
+      ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
+    ];
+    for (const { kref, vref } of abandonedObjects) {
+      /** @see translateAbandonExports in {@link ./vatTranslator.js} */
+      vatKeeper.deleteCListEntry(kref, vref);
+      /** @see abandonExports in {@link ./kernelSyscall.js} */
+      kernelKeeper.orphanKernelObject(kref, vatID);
+    }
 
-    // cleanup done, now we stop the worker, delete the transcript and
-    // any snapshot
+    // cleanup done, now we reset the worker to a clean state with no
+    // transcript or snapshot and prime everything for the next incarnation.
 
     await vatWarehouse.resetWorker(vatID);
     const source = { bundleID };

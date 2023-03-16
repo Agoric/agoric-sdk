@@ -196,6 +196,8 @@ export function makeKernelSyscallHandler(tools) {
   function abandonExports(vatID, koids) {
     Array.isArray(koids) || Fail`abandonExports given non-Array ${koids}`;
     for (const koid of koids) {
+      // note that this is effectful and also performed outside of a syscall
+      // by processUpgradeVat in {@link ./kernel.js}
       kernelKeeper.orphanKernelObject(koid, vatID);
     }
     return OKNULL;
