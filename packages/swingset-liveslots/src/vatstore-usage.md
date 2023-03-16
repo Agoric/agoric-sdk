@@ -176,19 +176,19 @@ c1.init('key4', foo2);
 
 Each collection stores a number of metadata keys in the vatstore, all with a prefix of `vc.${collectionID}.|` (note that the collection *type* is not a part of the key, only the collection *index*). The currently defined metadata keys (copied from the record for the "mylabel" Kind stored in `c1`) are:
 
-* `v6.vs.vc.2.|entryCount`: `4` (the size of the collection&mdash;4 entries = 4 calls to `c1.init`)
-* `v6.vs.vc.2.|label`: `mylabel` (a debugging label applied when the collection is created)
-* `v6.vs.vc.2.|nextOrdinal`: `1` (a counter used to allocate index values for Objects used as keys)
-* `v6.vs.vc.2.|schemata`: `{"body":"[{\"@qclass\":\"tagged\",\"tag\":\"match:scalar\",\"payload\":{\"@qclass\":\"undefined\"}}]","slots":[]}`
+* `v6.vs.vc.2.|entryCount`: `4` (the size of the collection as a numeric string)
+* `v6.vs.vc.2.|label`: `mylabel` (a debugging label provided in the `make*Store` call that creates the collection)
+* `v6.vs.vc.2.|nextOrdinal`: `1` (a numeric string counter used to allocate index values for Objects used as keys)
+* `v6.vs.vc.2.|schemata`: `{"body":"#[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}]","slots":[]}`
 
-The `schemata` is a capdata serialization of the Matcher constraints recorded for the collection. These constraints can limit keys to be just strings, or numbers, etc. The schemata consists of one schema for the keys and a separate schema for the values.
+The `schemata` is a capdata serialization of the Matcher constraints recorded for the collection. These constraints can limit keys to be just strings, or numbers, etc. The schemata consists of an array in which the first element is a schema for the keys and the second is a separate schema for the values.
 
-Each entry in the collection gets put into a single vatstore entry:
+Each entry in the collection gets put into a single vatstore entry with a capdata-serialized value:
 
-* `v6.vs.vc.2.skey1`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/1"]}`
-* `v6.vs.vc.2.skey2`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/1"]}`
-* `v6.vs.vc.2.skey3`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/1"]}`
-* `v6.vs.vc.2.skey4`: `{"body":"{\"@qclass\":\"slot\",\"iface\":\"Alleged: foo\",\"index\":0}","slots":["o+d9/2"]}`
+* `v6.vs.vc.2.skey1`: `{"body":"#\"$0.Alleged: foo\"","slots":["o+d9/1"]}`
+* `v6.vs.vc.2.skey2`: `{"body":"#\"$0.Alleged: foo\"","slots":["o+d9/1"]}`
+* `v6.vs.vc.2.skey3`: `{"body":"#\"$0.Alleged: foo\"","slots":["o+d9/1"]}`
+* `v6.vs.vc.2.skey4`: `{"body":"#\"$0.Alleged: foo\"","slots":["o+d9/2"]}`
 
 The key string for each entry (e.g. `skey1`) is formed by serializing the key object. Strings get a simple `s` prefix. Other objects use more complex encodings, designed to allow numbers (floats and BigInts, separately) to sort numerically despite the kvStore keys sorting lexicographically. See `packages/store/src/patterns/encodePassable.js` for details. Object references involve an additional kvStore entry, to manage the mapping from Object to ordinal and back.
 
