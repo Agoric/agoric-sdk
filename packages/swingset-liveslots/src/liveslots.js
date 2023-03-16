@@ -557,7 +557,7 @@ function build(
    * adds it to exportedVPIDs and sets up handlers.
    *
    * @param {any} vref
-   * @returns {boolean}
+   * @returns {boolean} whether the vref was added to exportedVPIDs
    */
   function maybeExportPromise(vref) {
     // we only care about new vpids

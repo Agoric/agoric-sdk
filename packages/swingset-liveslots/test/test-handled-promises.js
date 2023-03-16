@@ -12,8 +12,8 @@ import { kslot, kser } from './kmarshal.js';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { makeResolve, makeReject } from './util.js';
 
-// eslint-disable-next-line no-underscore-dangle, no-nested-ternary
-const _compareByKey = (a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+// eslint-disable-next-line no-unused-vars
+const compareEntriesByKey = ([ka], [kb]) => (ka < kb ? -1 : 1);
 
 // cf. packages/SwingSet/test/vat-durable-promise-watcher.js
 const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
@@ -205,7 +205,7 @@ test('past-incarnation watched promises', async t => {
   );
 
   // Simulate upgrade by starting from the non-empty kvStore.
-  // t.log(Object.fromEntries([...kvStore.entries()].sort(_compareByKey)));
+  // t.log(Object.fromEntries([...kvStore.entries()].sort(compareEntriesByKey)));
   const clonedStore = new Map(kvStore);
   ({ v, dispatch, dispatchMessage } = await setupTestLiveslots(
     t,

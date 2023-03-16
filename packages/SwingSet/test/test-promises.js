@@ -252,8 +252,8 @@ test('local promises are rejected by vat upgrade', async t => {
   };
   const messageVat = (name, methodName, args) =>
     run('messageVat', [{ name, methodName, args }]);
-  // eslint-disable-next-line no-underscore-dangle
-  const _messageObject = (presence, methodName, args) =>
+  // eslint-disable-next-line no-unused-vars
+  const messageObject = (presence, methodName, args) =>
     run('messageVatObject', [{ presence, methodName, args }]);
 
   const S = Symbol.for('passable');
