@@ -98,7 +98,7 @@ const collateralizationRatio = (normalizedDebt, collateral) => {
  * @returns {string} lexically sortable string in which highest
  * debt-to-collateral is earliest
  */
-const toVaultKey = (normalizedDebt, collateral, vaultId) => {
+export const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   assert(normalizedDebt);
   assert(collateral);
   assert(vaultId);
@@ -111,15 +111,36 @@ const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   trace(`To Vault Key `, collateralizationRatio(normalizedDebt, collateral));
   return `${numberPart}:${vaultId}`;
 };
+harden(toVaultKey);
 
 /**
  * @param {string} key
  * @returns {[normalizedCollateralization: number, vaultId: VaultId]}
  */
-const fromVaultKey = key => {
+export const fromVaultKey = key => {
   const [numberPart, vaultIdPart] = key.split(':');
   return [decodeNumber(numberPart), vaultIdPart];
 };
+harden(fromVaultKey);
+
+/**
+ * For use by `normalizedCollRatioKey` and tests.
+ *
+ * @param {PriceQuote} quote
+ * @param {Ratio} compoundedInterest
+ * @returns {number}
+ */
+export const normalizedCollRatio = (quote, compoundedInterest) => {
+  const amountIn = getAmountIn(quote).value;
+  const amountOut = getAmountOut(quote).value;
+  const interestNumerator = compoundedInterest.numerator.value;
+  const interestBase = compoundedInterest.denominator.value;
+  const numerator = multiply(amountIn, interestNumerator);
+  const denominator = multiply(amountOut, interestBase);
+
+  return Number(numerator) / Number(denominator);
+};
+harden(normalizedCollRatio);
 
 /**
  * Create a sort key for a normalized collateralization ratio. We want a float
@@ -131,48 +152,8 @@ const fromVaultKey = key => {
  * @returns {string} lexically sortable string in which highest
  * debt-to-collateral is earliest
  */
-const normalizedCollRatioKey = (quote, compoundedInterest) => {
-  const amountIn = getAmountIn(quote).value;
-  const amountOut = getAmountOut(quote).value;
-  const interestNumerator = compoundedInterest.numerator.value;
-  const interestBase = compoundedInterest.denominator.value;
-  const numerator = multiply(amountIn, interestNumerator);
-  const denominator = multiply(amountOut, interestBase);
-
-  return `${encodeNumber(Number(numerator) / Number(denominator))}:`;
+export const normalizedCollRatioKey = (quote, compoundedInterest) => {
+  const collRatio = normalizedCollRatio(quote, compoundedInterest);
+  return `${encodeNumber(collRatio)}:`;
 };
-
-/**
- * DEBUGGING ONLY
- *
- * reveal a sort key for a normalized collateralization ratio. We want a float
- * with as much resolution as we can get, so we multiply out the numerator and
- * the denominator and divide rather than using Ratios.
- *
- * @param {PriceQuote} quote
- * @param {Ratio} compoundedInterest
- * @returns {number} lexically sortable string in which highest
- * debt-to-collateral is earliest
- */
-const normalizedCollRatio = (quote, compoundedInterest) => {
-  const amountIn = getAmountIn(quote).value;
-  const amountOut = getAmountOut(quote).value;
-  const interestNumerator = compoundedInterest.numerator.value;
-  const interestBase = compoundedInterest.denominator.value;
-  const numerator = multiply(amountIn, interestNumerator);
-  const denominator = multiply(amountOut, interestBase);
-
-  return Number(numerator) / Number(denominator);
-};
-
-harden(fromVaultKey);
-harden(toVaultKey);
 harden(normalizedCollRatioKey);
-harden(normalizedCollRatio);
-
-export {
-  fromVaultKey,
-  toVaultKey,
-  normalizedCollRatioKey,
-  normalizedCollRatio,
-};
