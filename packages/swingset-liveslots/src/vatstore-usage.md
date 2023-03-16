@@ -51,7 +51,7 @@ Those vrefs are used when interacting with the kernel (in `syscall.send` etc.), 
 
 The baseref is built out of two pieces separated by a literal `/`:
 
-1. Prefixed Kind ID, e.g. `o+v11` or `o+d11`. These are allocated using the same exportID [counter](#counters) as exported Remotables (JavaScript objects marked with `Far`).
+1. Prefixed Kind ID, e.g. `o+v11` or `o+d11`. These are allocated using the same exportID [counter](#counters) as exported Remotables (JavaScript objects marked with `Far`), meaning exported objects and Kind IDs share a numberspace.
 2. Instance ID, an integer. `1` for the first instance of each Kind and incremented for each subsequent instance.
 
 The vref for a Representative of a single-facet virtual Kind is just the `o+v${kindID}/${instanceID}` baseref. The vref for a Representative of a facet of a multi-facet virtual Kind extends that to `o+v${kindID}/${instanceID}:${facetID}`, where the additional component is:
@@ -87,7 +87,7 @@ In the export-status portion of the vatstore (`vom.es.${baseref}`), you will see
   * value `r`: the plain Remotable has been exported and is "reachable" by the kernel
   * value `s`: the Remotable was exported, the kernel dropped it, and is still "recognizable" by the kernel ("s" for "see", refer to [Garbage Collection in SwingSet](../../SwingSet/docs/garbage-collection.md) for details)
   * If the kernel can neither reach nor recognize the export, the vatstore key will be missing entirely.
-* `v6.vs.vom.es.o+d12/1` records the export status for all facets of the first instance of durable Kind `o+d12`
+* `v6.vs.vom.es.o+d12/1` records the export status for all facets of the durable object whose vref is `o+d12/1` (i.e., the first instance of durable Kind `o+d12`)
   * If the Kind is single-facet, the value will be the same as for a plain Remotable: a single `r` or `s` character
   * If the Kind is multi-facet, the value will be a string with one letter for each facet, in the same order as their Facet ID. `n` is used to indicate neither reachable nor recognizable. For example, a value of `rsnr` means there are four facets, the first (`o+d12/1:0`) and last (`o+d12/1:3`) are reachable, the second (`o+d12/1:1`) is recognizable, and the third (`o+d12/1:2`) is neither.
 
@@ -98,7 +98,7 @@ Virtual objects are held on disk, which makes them suitable for high-cardinality
 
 Durable Kinds are defined just like virtual Kinds, but they use a different constructor (`defineDurableKind` instead of `defineKind`), which requires a "handle" created by `makeKindHandle`. Durable virtual objects can only hold durable data in their `state`.
 
-The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets exportID 1 and the kind handles for virtual and durable Kinds get vrefs like `o+d1/${kindHandleID}`.
+The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets exportID 1 to use as a Kind ID, and the kind handles for virtual and durable Kinds get vrefs like `o+d1/${kindHandleID}`.
 
 
 # Kind Metadata
@@ -114,7 +114,7 @@ For each virtual object kind that is defined, we store a metadata record for pur
 
 # Virtual/Durable Collections (aka Stores)
 
-Liveslots provides to vats a handful of "virtual collection" types for storing high-cardinality data on disk rather than in RAM. Each instance of one of these types is described as a "[Store](../../store/docs/store-taxonomy.md)". They provide limited range queries and offer a single fixed sort index: numbers sort as usual, BigInts sort as usual but separate from numbers, strings sort lexicographically by UTF-8 encoding, and object references sort by insertion order.
+Liveslots provides vats with a handful of "virtual collection" types for storing high-cardinality data on disk rather than in RAM. Each instance of one of these types is described as a "[Store](../../store/docs/store-taxonomy.md)". They provide limited range queries and offer a single fixed sort index: numbers sort as usual, BigInts sort as usual but separate from numbers, strings sort lexicographically by UTF-8 encoding, and object references sort by insertion order.
 
 Collections are created by functions on the `VatStore` global:
 
@@ -133,7 +133,7 @@ These index values are stored in `storeKindIDTable`, as a mapping from the colle
 
 which means `2` is the Kind ID for non-durable merely-virtual "scalarMapStore", instances of which will have vrefs like `o+v2/${collectionID}`.
 
-Each new store, regardless of type, is allocated the next available collectionID [counter](#counters). This is an incrementing integer that starts at 1, and is independent of the exportID counter used by exported Remotables and Kind IDs. The same collectionID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+v${kindID}/${instanceID}` is scoped to `o+v${kindID}`), for collections the collectionID in `o+v${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
+Each new store, regardless of type, is allocated the next available collectionID [counter](#counters). This is an incrementing integer that starts at 1, and forms a numberspace independent of the exportID counter used by exported Remotables and Kind IDs. The same collectionID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+v${kindID}/${instanceID}` is scoped to `o+v${kindID}`), for collections the collectionID in `o+v${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
 
 The interpretation of a vref therefore varies based on whether the initial "type" portion before a slash (`o+v${exportID}` or `o+d${exportID}`) identifies a collection type or a virtual object kind:
 
@@ -179,7 +179,7 @@ c1.init('key4', foo2);
 
 Each collection stores a number of metadata keys in the vatstore, all with a prefix of `vc.${collectionID}.|` (note that the collection *type* is not a part of the key, only the collection *index*). The currently defined metadata keys (copied from the record for the "mylabel" Kind stored in `c1`) are:
 
-* `v6.vs.vc.2.|entryCount`: `4` (the size of the collection as a numeric string)
+* `v6.vs.vc.2.|entryCount`: `4` (the size of the collection as a numeric string, incremented with each call to `c1.init` and decremented with each call to `c1.delete`)
 * `v6.vs.vc.2.|label`: `mylabel` (a debugging label provided in the `make*Store` call that creates the collection)
 * `v6.vs.vc.2.|nextOrdinal`: `1` (a numeric string counter used to allocate index values for Objects used as keys, see `generateOrdinal` in [collectionManager.js](./collectionManager.js))
 * `v6.vs.vc.2.|schemata`: `{"body":"#[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}]","slots":[]}`
