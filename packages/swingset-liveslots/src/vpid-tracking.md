@@ -82,7 +82,7 @@ Remember that the `slotToVal` registration uses a WeakRef, so being registered t
   * construct a promise `res` to capture the userspace-provided result
   * if the VPID is present in `importedVPIDs`: retrieve the `[resolve, reject]` pRec and use `resolve(res)` to forward eventual settlement of `res` to settlement of the previously-imported promise, then remove the VPID from `importedVPIDs`
   * else: register marshaller association between the VPID and `res`
-  * in either case, use `followForKernel` to add the VPID to `exportedVPIDs` and attach `.then(onFulfill, onReject)` callbacks that will map fulfillment/rejection to `syscall.resolve()
+  * in either case, use `followForKernel` to add the VPID to `exportedVPIDs` and attach `.then(onFulfill, onReject)` callbacks that will map fulfillment/rejection to `syscall.resolve()`
 
 
 If the serialization is for storage in virtual data, the act of storing the VPID will add the Promise to `remotableRefCounts`, which maintains a strong reference for as long as the VPID is held. When it is removed from virtual data (or the object/collection is deleted), the refcount will be decremented. When the refcount drops to zero, we perform the `exportedVPIDs`/`importedVPIDs` check and then maybe unregister the promise.
