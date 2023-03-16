@@ -805,15 +805,15 @@ function build(
     return result;
   }
 
-  function revivePromise(slot) {
+  function revivePromise(vpid) {
     meterControl.assertNotMetered();
-    const { type } = parseVatSlot(slot);
-    type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
-    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
-    const pRec = makePipelinablePromise(slot);
-    importedVPIDs.set(slot, pRec);
+    const { type } = parseVatSlot(vpid);
+    type === 'promise' || Fail`revivePromise called on non-promise ${vpid}`;
+    !getValForSlot(vpid) || Fail`revivePromise called on pre-existing ${vpid}`;
+    const pRec = makePipelinablePromise(vpid);
+    importedVPIDs.set(vpid, pRec);
     const p = pRec.promise;
-    registerValue(slot, p);
+    registerValue(vpid, p);
     return p;
   }
 
