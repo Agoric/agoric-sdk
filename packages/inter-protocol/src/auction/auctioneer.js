@@ -23,7 +23,7 @@ import { makeTracer, BASIS_POINTS } from '@agoric/internal';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { mustMatch } from '@agoric/store';
-import { makeAuctionBook } from './auctionBook.js';
+import { makeAuctionBook, makeBidSpecShape } from './auctionBook.js';
 import { AuctionState } from './util.js';
 import { makeScheduler } from './scheduler.js';
 import { auctioneerParamTypes } from './params.js';
@@ -261,6 +261,16 @@ export const start = async (zcf, privateArgs, baggage) => {
       M.splitRecord({ give: { Collateral: AmountShape } }),
     );
 
+  const bidProposalShape = M.splitRecord(
+    {
+      give: { Currency: { brand: brands.Currency, value: M.nat() } },
+    },
+    {
+      want: M.or({ Collateral: AmountShape }, {}),
+      exit: FullProposalShape.exit,
+    },
+  );
+
   const publicFacet = augmentPublicFacet(
     harden({
       /** @param {Brand<'nat'>} collateralBrand */
@@ -268,24 +278,18 @@ export const start = async (zcf, privateArgs, baggage) => {
         mustMatch(collateralBrand, BrandShape);
         books.has(collateralBrand) ||
           Fail`No book for brand ${collateralBrand}`;
+        const bidSpecShape = makeBidSpecShape(brands.Currency, collateralBrand);
         /**
          * @param {ZCFSeat} zcfSeat
          * @param {import('./auctionBook.js').BidSpec} bidSpec
          */
         const newBidHandler = (zcfSeat, bidSpec) => {
+          // xxx consider having Zoe guard the offerArgs with a provided shape
+          mustMatch(bidSpec, bidSpecShape);
           const auctionBook = books.get(collateralBrand);
           auctionBook.addOffer(bidSpec, zcfSeat, isActive());
           return 'Your offer has been received';
         };
-        const bidProposalShape = M.splitRecord(
-          {
-            give: { Currency: { brand: brands.Currency, value: M.nat() } },
-          },
-          {
-            want: M.or({ Collateral: AmountShape }, {}),
-            exit: FullProposalShape.exit,
-          },
-        );
 
         return zcf.makeInvitation(
           newBidHandler,

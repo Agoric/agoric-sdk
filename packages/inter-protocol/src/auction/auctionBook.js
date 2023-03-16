@@ -50,6 +50,39 @@ const DEFAULT_DECIMALS = 9;
 
 const trace = makeTracer('AucBook', false);
 
+/**
+ * @typedef {{
+ * want: Amount<'nat'>
+ * } & ({
+ * offerPrice: Ratio,
+ * } | {
+ * offerBidScaling: Ratio,
+ * })} BidSpec
+ */
+/**
+ *
+ * @param {Brand<'nat'>} currencyBrand
+ * @param {Brand<'nat'>} collateralBrand
+ */
+export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
+  const currencyAmountShape = { brand: currencyBrand, value: M.nat() };
+  const collateralAmountShape = { brand: collateralBrand, value: M.nat() };
+  return M.splitRecord(
+    { want: collateralAmountShape },
+    {
+      // xxx should have exactly one of these properties
+      offerPrice: makeBrandedRatioPattern(
+        currencyAmountShape,
+        collateralAmountShape,
+      ),
+      offerBidScaling: makeBrandedRatioPattern(
+        currencyAmountShape,
+        currencyAmountShape,
+      ),
+    },
+  );
+};
+
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 export const makeAuctionBook = async (
@@ -127,6 +160,7 @@ export const makeAuctionBook = async (
 
   let curAuctionPrice = zeroRatio;
 
+  // FIXME the maker callbacks return a non-durable object
   const scaledBidBook = provide(baggage, 'scaledBidBook', () => {
     const ratioPattern = makeBrandedRatioPattern(
       currencyAmountShape,
