@@ -178,7 +178,7 @@
  *
  * fail called with the reason for this failure, where reason is
  * normally an instanceof Error.
- * @param {Error} reason
+ * @param {unknown} reason
  * @returns {Error}
  */
 
@@ -193,7 +193,7 @@
 
 /**
  * @typedef {object} ZCFSeat
- * @property {() => void} exit
+ * @property {(completion?: Completion) => void} exit
  * @property {ZCFSeatFail} fail
  * @property {() => Promise<Subscriber<Allocation>>} getSubscriber
  * @property {() => boolean} hasExited

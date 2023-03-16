@@ -90,7 +90,7 @@ test('change a param', async t => {
     governedTerms,
   );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),

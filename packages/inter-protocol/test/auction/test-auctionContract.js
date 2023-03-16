@@ -3,27 +3,26 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import {
-  makeRatioFromAmounts,
   makeRatio,
+  makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { deeplyFulfilled } from '@endo/marshal';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
-import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
-import { makeTracer } from '@agoric/internal';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
+import { E } from '@endo/eventual-send';
 
+import { makeAuctioneerParams } from '../../src/auction/params.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
   withAmountUtils,
 } from '../supports.js';
-import { makeAuctioneerParams } from '../../src/auction/params.js';
 import { getInvitation, setUpInstallations } from './tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
@@ -47,7 +46,7 @@ const makeTestContext = async () => {
   const currency = withAmountUtils(makeIssuerKit('Currency'));
   const collateral = withAmountUtils(makeIssuerKit('Collateral'));
 
-  const installs = await deeplyFulfilled(setUpInstallations(zoe));
+  const installs = await deeplyFulfilledObject(setUpInstallations(zoe));
 
   trace('makeContext');
   return {
@@ -113,11 +112,11 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     marshaller: makeBoard().getReadonlyMarshaller(),
   });
 
-  /** @type {Awaited<ReturnType<import('../../src/auction/auctioneer.js').start>>} */
   const { creatorFacet: GCF } = await E(zoe).startInstance(
     installs.governor,
     harden({}),
     harden({
+      timer: timerService,
       governedContractInstallation: installs.auctioneer,
       governed: {
         issuerKeywordRecord: {

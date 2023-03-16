@@ -110,13 +110,7 @@ export const distributeProportionalShares = (
 };
 
 /**
- * @param {ZCF<GovernanceTerms<{
- *   StartFrequency: 'relativeTime',
- *   ClockStep: 'relativeTime',
- *   StartingRate: 'nat',
- *   lowestRate: 'nat',
- *   DiscountStep: 'nat',
- * }> & {
+ * @param {ZCF<GovernanceTerms<typeof auctioneerParamTypes> & {
  *   timerService: import('@agoric/time/src/types').TimerService,
  *   priceAuthority: PriceAuthority
  * }>} zcf
@@ -200,7 +194,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
-      // @ts-expect-error XXX How to type this?
       auctioneerParamTypes,
       privateArgs.storageNode,
       privateArgs.marshaller,

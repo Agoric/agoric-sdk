@@ -118,13 +118,13 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam}},
  *   }
  * }>}
  */
 
 /**
- * @typedef {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}} GovernableStartFn
+ * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
  */
 
 /**
@@ -136,7 +136,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam}},
  *   }
  * }>} zcf
  * @param {{
