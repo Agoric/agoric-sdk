@@ -443,7 +443,7 @@ test.serial('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
-  const kernelStorage = initSwingStore().kernelStorage;
+  const { kernelStorage, debug } = initSwingStore();
 
   const controller = await buildVatController(config, [], {
     kernelStorage,
@@ -456,16 +456,22 @@ test.serial('dead vat state removed', async t => {
     controller.kpResolution(controller.bootstrapResult),
     kser('bootstrap done'),
   );
-  const kvStore = kernelStorage.kvStore;
+  const { kvStore } = kernelStorage;
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
   t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 30, true);
+  const beforeDump = debug.dump(true);
+  t.truthy(beforeDump.transcripts.v6);
+  t.truthy(beforeDump.snapshots.v6);
 
   controller.queueToVatRoot('bootstrap', 'phase2', []);
   await controller.run();
   t.is(kvStore.get('vat.dynamicIDs'), '[]');
   t.is(kvStore.get('ko26.owner'), undefined);
   t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length, 0);
+  const afterDump = debug.dump(true);
+  t.falsy(afterDump.transcripts.v6);
+  t.falsy(afterDump.snapshots.v6);
 });
 
 test.serial('terminate with presence', async t => {

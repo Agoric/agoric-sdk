@@ -1,25 +1,30 @@
-import { assert } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 import { createHash } from 'crypto';
 
 /**
- * @typedef { (initial?: string) => {
- *             add: (more: string) => void,
- *             finish: () => string,
- *            }
- *          } CreateSHA256
+ * @typedef {{
+ *   add: (more: string | Buffer) => Hasher,
+ *   finish: () => string,
+ * }} Hasher
  */
 
-/** @type { CreateSHA256 } */
+/**
+ * @param {string | Buffer} [initial]
+ * @returns {Hasher}
+ */
 function createSHA256(initial = undefined) {
   const hash = createHash('sha256');
   let done = false;
+  // eslint-disable-next-line no-use-before-define
+  const self = harden({ add, finish, sample });
   function add(more) {
-    assert(!done);
+    !done || Fail`hash already finished`;
     hash.update(more);
+    return self;
   }
   function finish() {
-    assert(!done);
+    !done || Fail`hash already finished`;
     done = true;
     return hash.digest('hex');
   }
@@ -29,7 +34,7 @@ function createSHA256(initial = undefined) {
   if (initial) {
     add(initial);
   }
-  return harden({ add, finish, sample });
+  return self;
 }
 harden(createSHA256);
 export { createSHA256 };

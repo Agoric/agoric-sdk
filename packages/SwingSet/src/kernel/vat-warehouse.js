@@ -241,7 +241,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     }
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
-    kernelKeeper.closeVatTranscript(vatID);
     kernelKeeper.evictVatKeeper(vatID);
 
     // console.log('evict: shutting down', vatID);
@@ -383,7 +382,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function resetWorker(vatID) {
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.removeSnapshotAndTranscript();
+    vatKeeper.dropSnapshotAndResetTranscript();
   }
 
   /**
