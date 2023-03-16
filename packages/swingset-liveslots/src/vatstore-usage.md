@@ -50,10 +50,12 @@ Each time the kind constructor is called, a new "baseref" is allocated for the c
 Those vrefs are used when interacting with the kernel (in `syscall.send` etc.), and in virtualized data (inside the capdata `slots` that point to other objects), but the vatstore keys that track GC refcounts and export status use the "baseref" instead.
 
 The baseref is built out of two pieces separated by a literal `/`:
+
 1. Prefixed Kind ID, e.g. `o+v11` or `o+d11`. These are allocated using the same exportID [counter](#counters) as exported Remotables (JavaScript objects marked with `Far`).
 2. Instance ID, an integer. `1` for the first instance of each Kind and incremented for each subsequent instance.
 
 The vref for a Representative of a single-facet virtual Kind is just the `o+v${kindID}/${instanceID}` baseref. The vref for a Representative of a facet of a multi-facet virtual Kind extends that to `o+v${kindID}/${instanceID}:${facetID}`, where the additional component is:
+
 3. Facet ID, an integer. `0` for the first facet and incremented for each subsequent facet.
 
 In a c-list or virtualized data, you may see vrefs like these:

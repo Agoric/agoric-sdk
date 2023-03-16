@@ -230,7 +230,7 @@ Even after the kernel drops the Remotable, some downstream vat might still be ab
 
 Later, if/when the Remotable is released by any remaining local references, and after the next GC sweep occurs, the WeakRef will die (along with the `valToSlot` entry, since it's a WeakMap), and eventually the finalizer callback will be run. Liveslots reacts to this by sending a `syscall.retireExport` and deleting the lame-duck `slotToVal` entry. This informs the kernel that the SwingSet object identity is gone, so any remaining downstream vats can give up their ability to recognize the object (and delete their WeakMap values, if any).
 
-The virtual object manager must keep track of Remotables that are used in virtualized data, and hold onto an additional strong reference for as long as the
+The virtual object manager must keep track of Remotables that are used in virtualized data, and hold onto an additional strong reference for as long as the <!-- TODO: complete this paragraph added by https://github.com/Agoric/agoric-sdk/pull/3298 -->
 
 ## Imported Presences
 
