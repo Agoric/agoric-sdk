@@ -63,21 +63,21 @@ In a c-list or virtualized data, you may see vrefs like these:
 * `o-3`: an imported Presence, pointing to some object in a different vat
 * `o+0`: the root object, a plain Remotable
 * `o+10`: another plain Remotable, exported from this vat or stored in virtualized data
-* `o+d11/1`: a Representative for the first instance of single-facet virtual Kind "o+v11"
-* `o+d11/2`: a Representative for the second instance of single-facet virtual Kind "o+v11"
-* `o+d12/1:0`: the first facet of the first instance of a multi-facet durable Kind "o+d12"
+* `o+d11/1`: a Representative for the first instance of single-facet virtual Kind `o+v11`
+* `o+d11/2`: a Representative for the second instance of single-facet virtual Kind `o+v11`
+* `o+d12/1:0`: the first facet of the first instance of a multi-facet durable Kind `o+d12`
 * `o+d12/1:1`: the second facet of that same instance
 * `o+d12/2:0`: the first facet of a different instance
-* `o+d12/3:0`: the first facet of another different instance
+* `o+d12/3:0`: the first facet of yet another different instance
 
-Each instance of a virtual object stores state in a vatstore key indexed by the baseref. If `o+d12/1:0` and `o+d12/1:1` are the facet vrefs for a cohort whose baseref is `o+d12/1`, the cohort's shared state will be stored in `vom.o+d12/1` as a JSON-serialized record. The keys of this record are property names: if the Kind uses `state.prop1`, the record will have a key named `prop1`. For each property, the value is a `{ body: string, slots: any[] }` capdata record with string-valued slot items (and unlike the treatment of capdata in many other parts of the system, it is not independently serialized).
+Each instance of a virtual object stores state in a vatstore key indexed by the baseref. If `o+d12/1:0` and `o+d12/1:1` are the facet vrefs for a cohort whose baseref is `o+d12/1`, the cohort's shared state will be stored by the virtual object manager in `vom.o+d12/1` as a JSON-serialized record. The keys of this record are property names: if the Kind uses `state.prop1`, the record will have a key named `prop1`. For each property, the value is a `{ body: string, slots: any[] }` capdata record with string-valued slot items (and unlike the treatment of capdata in many other parts of the system, it is not serialized independently of the enclosing structure).
 
 * `v6.vs.vom.o+d12/1` : `{"booleanProp":{"body":"true","slots":[]},"arrayProp":{"body":"[]","slots":[]}}`
 
 In the refcounting portion of the vatstore (`vom.rc.${baseref}`), you will see baserefs:
 
 * `v6.vs.vom.rc.o+10`: the count of virtualized references to plain Remotable `o+10` (held in RAM)
-* `v6.vs.vom.rc.o+d12/1`: the count of references to any member of the cohort for the first instance of Kind `o+d12`
+* `v6.vs.vom.rc.o+d12/1`: the count of references to any member of the cohort for the first instance of durable Kind `o+d12`
   * This Kind might be single-facet or multi-facet.
   * References to distinct facets of the same cohort are counted independently. For example, if one object references both the first and second facets (`o+d12/1:0` and `o+d12/1:1`), it accounts for two increments to this value.
 
@@ -87,7 +87,7 @@ In the export-status portion of the vatstore (`vom.es.${baseref}`), you will see
   * value `r`: the plain Remotable has been exported and is "reachable" by the kernel
   * value `s`: the Remotable was exported, the kernel dropped it, and is still "recognizable" by the kernel ("s" for "see", refer to [Garbage Collection in SwingSet](../../SwingSet/docs/garbage-collection.md) for details)
   * If the kernel can neither reach nor recognize the export, the vatstore key will be missing entirely.
-* `v6.vs.vom.es.o+d12/1` records the export status for all facets of virtual object `o+d12/1`
+* `v6.vs.vom.es.o+d12/1` records the export status for all facets of the first instance of durable Kind `o+d12`
   * If the Kind is single-facet, the value will be the same as for a plain Remotable: a single `r` or `s` character
   * If the Kind is multi-facet, the value will be a string with one letter for each facet, in the same order as their Facet ID. `n` is used to indicate neither reachable nor recognizable. For example, a value of `rsnr` means there are four facets, the first (`o+d12/1:0`) and last (`o+d12/1:3`) are reachable, the second (`o+d12/1:1`) is recognizable, and the third (`o+d12/1:2`) is neither.
 
