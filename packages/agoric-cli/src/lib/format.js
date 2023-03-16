@@ -34,10 +34,8 @@ const exampleAsset = {
 
 /** @param {AssetDescriptor[]} assets */
 export const makeAmountFormatter = assets => amt => {
-  const {
-    brand: { boardId },
-    value,
-  } = amt;
+  const { brand, value } = amt;
+  const boardId = brand.getBoardId();
   const asset = assets.find(a => a.brand.getBoardId() === boardId);
   if (!asset) return [NaN, boardId];
   const {
