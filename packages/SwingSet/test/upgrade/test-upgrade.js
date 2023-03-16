@@ -115,37 +115,50 @@ const testNullUpgrade = async (t, defaultManagerType) => {
     defaultManagerType,
     defaultReapInterval: 'never',
     bundlePaths: {
-      durableSingleton: '../vat-durable-singleton.js',
+      exporter: '../vat-exporter.js',
     },
   });
   const { run } = await initKernelForTest(t, t.context.data, config);
 
   await run('createVat', [
     {
-      name: 'durableSingleton',
-      bundleCapName: 'durableSingleton',
+      name: 'exporter',
+      bundleCapName: 'exporter',
       vatParameters: { version: 'v1' },
     },
   ]);
   t.is(
-    await run('messageVat', [
-      { name: 'durableSingleton', methodName: 'getVersion' },
-    ]),
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
     'v1',
   );
+  const counter = await run('messageVat', [
+    { name: 'exporter', methodName: 'getDurableCounter' },
+  ]);
+  const val1 = await run('messageVatObject', [
+    {
+      presence: counter,
+      methodName: 'increment',
+    },
+  ]);
+  t.is(val1, 1);
   await run('upgradeVat', [
     {
-      name: 'durableSingleton',
-      bundleCapName: 'durableSingleton',
+      name: 'exporter',
+      bundleCapName: 'exporter',
       vatParameters: { version: 'v2' },
     },
   ]);
   t.is(
-    await run('messageVat', [
-      { name: 'durableSingleton', methodName: 'getVersion' },
-    ]),
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
     'v2',
   );
+  const val2 = await run('messageVatObject', [
+    {
+      presence: counter,
+      methodName: 'increment',
+    },
+  ]);
+  t.is(val2, 2);
 };
 
 test('null upgrade - local', async t => {
