@@ -240,6 +240,7 @@ export const addAssetToVault = async (
     interestRate: makeRatio(1n, stable),
   });
   const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
+  // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
   await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
 };
 
