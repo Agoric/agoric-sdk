@@ -97,13 +97,13 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
-   * @template {{}} CF creator facet
-   * @param {CF} originalCreatorFacet
-   * @returns {LimitedCreatorFacet<CF>}
+   * @template {{}} M Methods for this limited creator facet
+   * @param {M} methods
+   * @returns {LimitedCreatorFacet<M>}
    */
-  const makeLimitedCreatorFacet = originalCreatorFacet => {
+  const makeLimitedCreatorFacet = methods => {
     return Far('governedContract creator facet', {
-      ...originalCreatorFacet,
+      ...methods,
       getContractGovernor: () => electionManager,
     });
   };
@@ -118,10 +118,9 @@ const facetHelpers = (zcf, paramManager) => {
    */
 
   /**
-   * @template {{}} CF
-   * @param {CF} limitedCreatorFacet
+   * @template {{ getContractGovernor: () => Instance }} LCF
+   * @param {LCF} limitedCreatorFacet
    * @param {Record<string, (...any) => unknown>} [governedApis]
-   * @returns {GovernorFacet<CF>}
    */
   const makeFarGovernorFacet = (limitedCreatorFacet, governedApis = {}) => {
     const governorFacet = Far('governorFacet', {
@@ -145,22 +144,24 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
-   * @template {{}} CF
-   * @param {CF} originalCreatorFacet
+   * @template {{}} M methods of the limitedCreatorFacet
+   * @param {M} methods
    * @param {{}} [governedApis]
-   * @returns {GovernorFacet<CF>}
+   * @returns {GovernorFacet<unknown>} xxx untyped
    */
-  const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+  const makeGovernorFacet = (methods, governedApis = {}) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(methods);
     return makeFarGovernorFacet(limitedCreatorFacet, governedApis);
   };
 
   /**
    * Add required methods to a creatorFacet for a virtual/durable contract.
    *
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   * @template {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} CM Contextualized methods
+   * @param {CM} originalCreatorFacet
    */
   const makeVirtualGovernorFacet = originalCreatorFacet => {
+    /** @type {LimitedCreatorFacet<CM>} */
     const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
 
     /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<originalCreatorFacet>>} */

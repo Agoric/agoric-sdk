@@ -518,7 +518,7 @@
 /** @typedef {{ [methodName: string]: (...args: any) => unknown }} GovernedApis */
 
 /**
- * @template {{}} CF
+ * @template {GovernableCreatorFacet} CF
  * @typedef {GovernedCreatorFacet<CF> & {
  * getGovernedApis: () => ERef<GovernedApis>;
  * getGovernedApiNames: () => (string | symbol)[];
@@ -559,29 +559,48 @@
  */
 
 /**
- * @template {{}} CF
- * @typedef {CF} LimitedCreatorFacet
- *
- * The creatorFacet for the governed contract that will be passed to the
- * responsible party. It does not have access to the paramManager.
- * @property {() => Instance} getContractGovernor
+ * @template {{}} M Methods for this LimitedCreatorFacet
+ * @typedef {M & { getContractGovernor: () => Instance }} LimitedCreatorFacet
  */
 
 /**
- * @template {{}} PF Public facet of governed contract
- * @template {{}} CF Creator facet of governed contract
+ * @typedef {{ getLimitedCreatorFacet: () => LimitedCreatorFacet<any> }} GovernableCreatorFacet
+ */
+/**
+ * @template {GovernableCreatorFacet} CF
+ * @typedef {ReturnType<CF['getLimitedCreatorFacet']>} LimitedCreatorFor
+ *
+ * The creatorFacet for the governed contract that will be passed to the
+ * responsible party. It does not have access to the paramManager.
+ */
+
+/**
+ * @template {{}} [PF={}] Public facet of governed contract
+ * @template {GovernableCreatorFacet} [CF=GovernableCreatorFacet] Creator facet of governed contract
  * @typedef {object} GovernedContractFacetAccess
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {VoteOnOfferFilter} voteOnOfferFilter
- * @property {() => Promise<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
+ * @property {() => LimitedCreatorFor<CF>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
- * @property {() => Promise<AdminFacet>} getAdminFacet
+ * @property {() => AdminFacet} getAdminFacet
  * @property {() => GovernedPublicFacet<PF>} getPublicFacet - public facet of the governed contract
  * @property {() => Instance} getInstance - instance of the governed
  *   contract
+ */
+
+/**
+ * Note the spelling: governED (underlying contract) vs governOR
+ *
+ * @template {import('./contractGovernor').GovernableStartFn} SF
+ * @typedef {object} GovernanceFacetHelper
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').StartResult<SF>['creatorFacet']} governedCreatorFacet
+ * @property {import('@agoric/zoe/src/zoeService/utils.js').StartResult<SF>['publicFacet']} governedPublicFacet
+ * @property {GovernedContractFacetAccess<import('@agoric/zoe/src/zoeService/utils.js').StartResult<SF>['publicFacet'], import('@agoric/zoe/src/zoeService/utils.js').StartResult<SF>['creatorFacet']>} governorCreatorFacet
+ * @property {ReturnType<import('@agoric/zoe/src/zoeService/utils.js').StartResult<SF>['creatorFacet']['getLimitedCreatorFacet']>} limitedCreatorFacet
+ * @property {GovernorPublic} governorPublicFacet
  */
 
 /**
@@ -594,7 +613,7 @@
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
  * @property {(name: string) => Installation} getInstallation
- * @property {(name: string) => Amount} getInvitationAmount
+ * @property {(name: string) => Amount<'set'>} getInvitationAmount
  * @property {(name: string) => bigint} getNat
  * @property {(name: string) => Ratio} getRatio
  * @property {(name: string) => string} getString
@@ -607,12 +626,12 @@
  */
 
 /**
- * @template {{}} CF creator facet
+ * @template {GovernableCreatorFacet} CF creator facet
  * @typedef GovernedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => LimitedCreatorFacet<CF>} getLimitedCreatorFacet - the creator
+ * @property {() => LimitedCreatorFor<CF>} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation

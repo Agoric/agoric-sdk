@@ -247,7 +247,6 @@ export const prepareVaultDirector = (
       creator: {
         getParamMgrRetriever: () =>
           Far('paramManagerRetriever', {
-            /** @param {VaultFactoryParamPath} paramPath */
             get: paramPath => {
               if (paramPath.key === 'governedParams') {
                 return directorParamManager;
@@ -271,7 +270,7 @@ export const prepareVaultDirector = (
           return harden({});
         },
         getGovernedApiNames() {
-          return harden({});
+          return harden([]);
         },
         setOfferFilter: strings => zcf.setOfferFilter(strings),
       },

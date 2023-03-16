@@ -23,8 +23,6 @@ const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 const BASIS_POINTS = 10_000n;
 
 /**
- * @typedef {GovernedCreatorFacet<import('../stakeFactory/stakeFactory.js').StakeFactoryCreator>} StakeFactoryCreator
- * @typedef {import('../stakeFactory/stakeFactory.js').StakeFactoryPublic} StakeFactoryPublic
  * @typedef {import('../reserve/assetReserve.js').GovernedAssetReserveFacetAccess} GovernedAssetReserveFacetAccess
  * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
@@ -36,16 +34,22 @@ const BASIS_POINTS = 10_000n;
  * @property {Instance} psm
  * @property {Instance} psmGovernor
  * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
- * @property {GovernedContractFacetAccess<import('../../src/psm/psm.js').PsmPublicFacet,{}>} psmGovernorCreatorFacet
+ * @property {GovernedContractFacetAccess<import('../../src/psm/psm.js').PsmPublicFacet, GovernableCreatorFacet>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 
 /**
- * @typedef {object} AuctioneerKit
- * @property {Awaited<ReturnType<import('../auction/auctioneer.js').start>>['creatorFacet']} creatorFacet
- * @property {Awaited<ReturnType<import('../auction/auctioneer.js').start>>['publicFacet']} publicFacet
- * @property {GovernedContractFacetAccess<{},{}>} governorCreatorFacet
+ * @see {StartedInstanceKit}
+ * @template {import('@agoric/governance/src/contractGovernor.js').GovernableStartFn} SF
+ * @typedef {object} GovernorInstanceKit
+ * @property {GovernanceFacetHelper<SF>['governedPublicFacet']} publicFacet
+ * @property {GovernanceFacetHelper<SF>['limitedCreatorFacet']} creatorFacet
+ * @property {GovernanceFacetHelper<SF>['governorCreatorFacet']} governorCreatorFacet
  * @property {AdminFacet} adminFacet
+ */
+
+/**
+ * @typedef {GovernorInstanceKit<typeof import('../auction/auctioneer.js').start>} AuctioneerKit
  */
 
 /**
@@ -62,24 +66,9 @@ const BASIS_POINTS = 10_000n;
  *   bankMints: Mint[],
  *   psmKit: MapStore<Brand, PSMKit>,
  *   econCharterKit: EconCharterStartResult,
- *   reserveKit: {
- *     publicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
- *     creatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
- *     governorCreatorFacet: GovernedAssetReserveFacetAccess,
- *     adminFacet: AdminFacet,
- *   },
- *   stakeFactoryKit: {
- *     creatorFacet: StakeFactoryCreator,
- *     governorCreatorFacet: GovernedContractFacetAccess<{}, {}>,
- *     adminFacet: AdminFacet,
- *     publicFacet: StakeFactoryPublic,
- *   },
- *   vaultFactoryKit: {
- *     publicFacet: VaultFactoryPublicFacet,
- *     creatorFacet: VaultFactoryCreatorFacet,
- *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
- *     adminFacet: AdminFacet,
- *   },
+ *   reserveKit: GovernorInstanceKit<typeof import('../reserve/assetReserve.js').start>,
+ *   stakeFactoryKit: GovernorInstanceKit<typeof import('../stakeFactory/stakeFactory.js').start>,
+ *   vaultFactoryKit: GovernorInstanceKit<typeof import('../vaultFactory/vaultFactory.js').start>,
  *   auctioneerKit: AuctioneerKit,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
@@ -146,12 +135,12 @@ export const setupReserve = async ({
       },
     }),
   );
-  /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
     reserveGovernorTerms,
     {
+      // @ts-expect-error fixme bug detected by static types
       electorateCreatorFacet: committeeCreator,
       governed: {
         feeMintAccess,
@@ -169,10 +158,12 @@ export const setupReserve = async ({
   ]);
 
   reserveKit.resolve(
+    // @ts-expect-error xxx governance with virtual methods (context-style)
     harden({
-      publicFacet,
+      governedPublicFacet: publicFacet,
       creatorFacet,
       governorCreatorFacet: g.creatorFacet,
+      governorPublicFacet: g.publicFacet,
       adminFacet: g.adminFacet,
     }),
   );
@@ -591,19 +582,18 @@ export const startAuctioneer = async (
     }),
   );
 
-  const [governedInstance, governedCreatorFacet, governedPublicFacet] =
-    await Promise.all([
-      E(governorStartResult.creatorFacet).getInstance(),
-      E(governorStartResult.creatorFacet).getCreatorFacet(),
-      E(governorStartResult.creatorFacet).getPublicFacet(),
-    ]);
+  const [governedInstance, creatorFacet, publicFacet] = await Promise.all([
+    E(governorStartResult.creatorFacet).getInstance(),
+    E(governorStartResult.creatorFacet).getCreatorFacet(),
+    E(governorStartResult.creatorFacet).getPublicFacet(),
+  ]);
 
   auctioneerKit.resolve(
     harden({
-      creatorFacet: governedCreatorFacet,
+      creatorFacet,
       governorCreatorFacet: governorStartResult.creatorFacet,
       adminFacet: governorStartResult.adminFacet,
-      publicFacet: governedPublicFacet,
+      publicFacet,
     }),
   );
 
@@ -717,7 +707,6 @@ export const startStakeFactory = async (
     }),
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>, adminFacet: AdminFacet}} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},

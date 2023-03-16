@@ -1,4 +1,5 @@
 import { Callable } from '@agoric/eventual-send';
+import { Baggage } from '@agoric/vat-data';
 
 import type { IssuerKeywordRecord, Payment } from './types.js';
 
@@ -18,6 +19,12 @@ export type AdminFacet = {
   ) => Promise<{ incarnationNumber: number }>;
   restartContract: (newPrivateArgs?: any) => void;
 };
+
+export type ContractStart = (
+  zcf?: ZCF,
+  pa?: {},
+  baggage?: Baggage,
+) => {} | Promise<{}>;
 
 /**
  * Installation of a contract, typed by its start function.
@@ -50,9 +57,7 @@ type StartParams<SF> = SF extends (
   ? { terms: any }
   : {};
 
-type StartResult<S> = S extends (...args: any) => Promise<infer U>
-  ? U
-  : ReturnType<S>;
+type StartResult<SF extends ContractStart> = Awaited<ReturnType<SF>>;
 
 /**
  * Convenience record for contract start function, merging its result with params.

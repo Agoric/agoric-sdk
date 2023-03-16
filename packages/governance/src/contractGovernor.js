@@ -59,12 +59,6 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
 };
 
 /**
- * @typedef {StandardTerms} ContractGovernorTerms
- * @property {import('@agoric/time/src/types').TimerService} timer
- * @property {Installation} governedContractInstallation
- */
-
-/**
  * ContractGovernor is an ElectionManager that starts up a contract and hands
  * its own creator a facet that allows them to manage that contract's APIs,
  * offer filters, and parameters.
@@ -124,7 +118,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  */
 
 /**
- * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
+ * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernorFacet<any>, publicFacet: { getInvitationAmount: (n: string) => Amount<'set'>} }>} GovernableStartFn
  */
 
 /**
@@ -188,6 +182,8 @@ const start = async (zcf, privateArgs) => {
   };
 
   // CRUCIAL: only contractGovernor should get the ability to update params
+  // xxx should be automatic
+  /** @type {() => GovernanceFacetHelper<SF>['limitedCreatorFacet']} */
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 
   let currentInvitation;

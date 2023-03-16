@@ -30,7 +30,7 @@ const makeOfferFilterPositions = strings => {
  * @param {Instance} governedInstance
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @param {GovernorFacet<{}>} governorFacet
+ * @param {GovernorFacet<any>} governorFacet
  * @returns {Promise<FilterGovernor>}
  */
 const setupFilterGovernance = async (
