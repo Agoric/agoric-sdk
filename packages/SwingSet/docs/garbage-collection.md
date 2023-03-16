@@ -65,7 +65,7 @@ Each vat has a set of "root references": these keep all other objects alive. The
 
 Vats have two kinds of root references. "Vat Globals" are top-level declarations (`const` and `let` declarations that appear in the highest scope of any module, outside any function definition). Top-level `const` declarations are eternal, while `let` declarations are mutable and could be added or removed later as the value is modified. These references are controlled entirely by the code that makes up a vat.
 
-"Vat Exports" are the subset of objects that have been used exported through the kernel to other vats. Such objects are added to the export table when they are used as an argument in an outbound message, or in the resolution of a Promise that some other vat is following. Each exported object is allocated a new integer and assigned a "vref" (vat-reference ID), in the form `o+NN`. A special initial "root object" is defined when the vat is first constructed (the return object of `buildRootObject()`) and assigned vref `o+0`.
+"Vat Exports" are the subset of objects that have been used exported through the kernel to other vats. Such objects are added to the export table when they are used as an argument in an outbound message, or in the resolution of a Promise that some other vat is following. Each exported object is allocated a new integer and assigned a "vref" (vat-reference ID), in the form `o+NN`. A special initial "root object" is defined when the vat is first constructed (the return object of `buildRootObject()`) and assigned vref `o+0` (see [How Liveslots Uses the Vatstore](../../swingset-liveslots/src/vatstore-usage.md)).
 
 Objects are removed from the export table when no other vat retains a reference. If an object is not exported, and not a global, and not transitively reachable by any object in either of those two categories, then the object is unreachable and will be deleted.
 
@@ -185,11 +185,11 @@ The previous distinctions are only for the zero or more vats which *import* a Sw
 * exported (RECOGNIZABLE)
 * unknown
 
-The kernel is responsible for managing these per-vat states, and reacting to syscalls that the vat emits to change their state (which may result in deliveries to other vats, to inform them to update their own states). Vats, through `liveSlots.js`, are responsible for managing their internal JS `Object` states, and emitting syscalls to notify the kernel about changes.
+The kernel is responsible for managing these per-vat states, and reacting to syscalls that the vat emits to change their state (which may result in deliveries to other vats, to inform them to update their own states). Vats, through [liveslots.js](../../swingset-liveslots/src/liveslots.js), are responsible for managing their internal JS `Object` states, and emitting syscalls to notify the kernel about changes.
 
 ## Virtualized Data
 
-To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use. The second is a "virtual collection" (e.g. what `makeScalarWeakMapStore()` returns), which is like a WeakMap except that any values keyed by a virtual object are also stored as serialized data on disk.
+To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use (see [Virtual and Durable Objects](./virtual-objects.md)). The second is a "virtual collection", which is like a Map or Set or WeakMap or WeakSet (see [Store-making Functions](../../store/docs/store-taxonomy.md)).
 
 Instead of Remotables, virtual objects use "Representatives" as the handle with which the object is sent, received, and manipulated. The Representative is a JS `Object`, however it goes away when userspace drops the last strong reference. But a new one might be created the next time the object is received (or retrieved from offline data), As a result, a virtual object might be defined and populated, and even reachable/recognizable by other vats (or serialized local data), even though there is no local Representative object at that moment.
 
