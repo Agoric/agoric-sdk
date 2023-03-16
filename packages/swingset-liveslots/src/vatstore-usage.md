@@ -26,10 +26,10 @@ Kind handles are necessarily durable, as is the "baggage" object. Promises are n
 Liveslots maintains three durable counters to create the distinct vrefs that it transmits to the kernel. These counters are initialized when `startVat` is called to create the first incarnation of a vat (see `initialIDCounters` and `initializeIDCounters` in [liveslots.js](./liveslots.js)), and written to the vatstore at the end of each delivery as a JSON-serialized record at key `idCounters` (see `flushIDCounters`).
 
 * `exportID`: an integer indicating the ID of the next exported Remotable or defined Kind and incremented upon each allocation of such a value. Technically starts at 1, but that is mostly irrelevant because the root object itself is associated with 0 and many initial values are claimed before any userspace vat code has a chance to run (described below).
-* `collectionID`: an integer indicating the Collection ID of the next collection and incremented upon each allocation of a new collection. Starts at 1, which is claimed by "[baggage](#baggage)".
-* `promiseID`: an integer indicating the ID for the next exported promise (including a promise implicitly created for outbound-message results). Starts at 5.
+* `collectionID`: an integer indicating the ID of the next collection and incremented upon each allocation of a new collection. Starts at 1, which is claimed by "[baggage](#baggage)".
+* `promiseID`: an integer indicating the ID for the next exported promise (including a promise implicitly created for outbound-message results) and incremented upon each allocation. Starts at 5.
 
-The current version of liveslots consumes the first ten exportIDs (covering `o+0` through `o+9`) during vat startup, leaving `10` as the first Kind ID available for userspace.
+The current version of liveslots consumes the first ten exportIDs (covering `o+0` through `o+9`) during vat startup, leaving `10` as the first exportID available for userspace.
 
 * `o+0`: root object
 * `o+d1`: identifies the KindHandle Kind ID, each `o+d1/${kindHandleID}` instance of which is a KindHandle
@@ -96,7 +96,7 @@ Virtual objects are held on disk, which makes them suitable for high-cardinality
 
 Durable Kinds are defined just like virtual Kinds, but they use a different constructor (`defineDurableKind` instead of `defineKind`), which requires a "handle" created by `makeKindHandle`. Durable virtual objects can only hold durable data in their `state`.
 
-The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets Kind ID 1 and the handles get vrefs like `o+d1/${kindHandleID}`.
+The KindHandle is a durable virtual object of a special internal Kind. This is the first Kind allocated, so usually it gets exportID 1 and the kind handles for virtual and durable Kinds get vrefs like `o+d1/${kindHandleID}`.
 
 
 # Kind Metadata
@@ -131,7 +131,7 @@ These index values are stored in `storeKindIDTable`, as a mapping from the colle
 
 which means `2` is the Kind ID for non-durable merely-virtual "scalarMapStore", instances of which will have vrefs like `o+v2/${collectionID}`.
 
-Each new store, regardless of type, is allocated the next available collectionID [counter](#counters). This is an incrementing integer that starts at 1, and is independent of the "Export ID" numberspace used by exported Remotables and Kind IDs. The same Collection ID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+v${kindID}/${instanceID}` is scoped to `o+v${kindID}`), for collections the collectionID in `o+v${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
+Each new store, regardless of type, is allocated the next available collectionID [counter](#counters). This is an incrementing integer that starts at 1, and is independent of the exportID counter used by exported Remotables and Kind IDs. The same collectionID numberspace is shared by all collection types. So unlike virtual objects (where the instanceID in `o+v${kindID}/${instanceID}` is scoped to `o+v${kindID}`), for collections the collectionID in `o+v${collectionType}/${collectionID}` is global to the entire vat. No two stores will have the same collectionID, even if they are of different types.
 
 The interpretation of a vref therefore varies based on whether the initial "type" portion before a slash (`o+v${exportID}` or `o+d${exportID}`) identifies a collection type or a virtual object kind:
 
@@ -153,7 +153,7 @@ This object needs to be pre-generated because the second (and subsequent) versio
 The above rules about kindID and collectionID allocation result in the baggage being associated with vref `o+d6/1`, indicating that it is a scalarDurableMapStore (`o+d6` is used for that collection type) and also that it is the first collection of any type allocated in the vat. This value is also stored under key `baggageID` (see `provideBaggage` in [collectionManager.js](./collectionManager.js)).
 * `v6.vs.baggageID` : `o+d6/1`
 
-If userspace version 1 starts `buildRootObject` by calling `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s, they are likely to be assigned `o+v5/2`, `o+v4/3`, `o+v4/4`, and `o+v4/5` respectively. Such collections IDs start with `2` because `1` is claimed by baggage.
+If userspace version 1 starts `buildRootObject` by calling `makeScalarBigWeakSetStore()` and then three `makeScalarSetStore()`s, the collections are likely to be assigned `o+v5/2`, `o+v4/3`, `o+v4/4`, and `o+v4/5` respectively. Such collectionIDs start with `2` because `1` is claimed by baggage.
 
 
 # Collection Data Records
@@ -193,4 +193,4 @@ Each entry in the collection gets put into a single vatstore entry with a capdat
 
 The key string for each entry (e.g. `skey1`) is formed by serializing the key object. Strings get a simple `s` prefix. Other objects use more complex encodings, designed to allow numbers (floats and BigInts, separately) to sort numerically despite the kvStore keys sorting lexicographically. See Endo [encodePassable.js](https://github.com/endojs/endo/blob/master/packages/marshal/src/encodePassable.js) for details. Object references involve an additional kvStore entry, to manage the mapping from Object to ordinal and back.
 
-For weak stores, the collection manager also maintains database keys of the form `vom.ir.${vref}|${collectionID}`, where in this case `${vref}` is the vref of a virtual object, store, import, or remotable, and `${collectionID}` is the collection ID of a weak store in which the given vref is used as a key. This is to enable the collection manager to locate and remove collection entries whose keys are being garbage collected. Note that mere presence or absence of such a key in the database is significant but the value associated with it is not.
+For weak stores, the collection manager also maintains inbound-reference database keys of the form `vom.ir.${vref}|${collectionID}`, where in this case `${vref}` is the vref of a virtual object, store, import, or remotable, and `${collectionID}` is the collectionID of a weak store in which the given vref is used as a key. This enables the collection manager to locate and remove collection entries whose keys are being garbage collected. Note that mere presence or absence of such a key in the database is significant but the value associated with it is not.
