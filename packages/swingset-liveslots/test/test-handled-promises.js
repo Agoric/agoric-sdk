@@ -1,19 +1,89 @@
-/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await */
+/* eslint-disable no-await-in-loop, @jessie.js/no-nested-await, no-shadow */
 import test from 'ava';
 import '@endo/init/debug.js';
 
 import { Far } from '@endo/marshal';
 import { Fail } from '@agoric/assert';
-import { M } from '@agoric/store';
+import { M, provideLazy as provide } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
-// import { makeStoreUtils } from '../../vat-data/src/vat-data-bindings.js';
-import { makeExoUtils } from '../../vat-data/src/exo-utils.js';
+// Disabled to avoid circular dependencies.
+// import { makeStoreUtils } from '@agoric/vat-data/src/vat-data-bindings.js';
+// import { makeExoUtils } from '@agoric/vat-data/src/exo-utils.js';
 import { kslot, kser } from './kmarshal.js';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { makeResolve, makeReject } from './util.js';
 
 // eslint-disable-next-line no-unused-vars
 const compareEntriesByKey = ([ka], [kb]) => (ka < kb ? -1 : 1);
+
+// Paritally duplicates @agoric/vat-data to avoid circular dependencies.
+const makeExoUtils = VatData => {
+  const { defineDurableKind, makeKindHandle, watchPromise } = VatData;
+
+  const provideKindHandle = (baggage, kindName) =>
+    provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
+
+  const emptyRecord = harden({});
+  const initEmpty = () => emptyRecord;
+
+  const defineDurableExoClass = (
+    kindHandle,
+    interfaceGuard,
+    init,
+    methods,
+    options,
+  ) =>
+    defineDurableKind(kindHandle, init, methods, {
+      ...options,
+      thisfulMethods: true,
+      interfaceGuard,
+    });
+
+  const prepareExoClass = (
+    baggage,
+    kindName,
+    interfaceGuard,
+    init,
+    methods,
+    options = undefined,
+  ) =>
+    defineDurableExoClass(
+      provideKindHandle(baggage, kindName),
+      interfaceGuard,
+      init,
+      methods,
+      options,
+    );
+
+  const prepareExo = (
+    baggage,
+    kindName,
+    interfaceGuard,
+    methods,
+    options = undefined,
+  ) => {
+    const makeSingleton = prepareExoClass(
+      baggage,
+      kindName,
+      interfaceGuard,
+      initEmpty,
+      methods,
+      options,
+    );
+    return provide(baggage, `the_${kindName}`, () => makeSingleton());
+  };
+
+  return {
+    defineDurableKind,
+    makeKindHandle,
+    watchPromise,
+
+    provideKindHandle,
+    defineDurableExoClass,
+    prepareExoClass,
+    prepareExo,
+  };
+};
 
 // cf. packages/SwingSet/test/vat-durable-promise-watcher.js
 const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
@@ -283,7 +353,6 @@ test('past-incarnation watched promises from original-format kvStore', async t =
     { kvStore: finalClonedStore, nextPromiseImportNumber: 200 },
   ));
   vatLogs = v.log;
-  console.log(...vatLogs);
   vatLogs.length = 0;
   for (const vpid of kvStoreDataV1VpidsToKeep) {
     await dispatch(makeResolve(vpid, kser('finally')));
