@@ -226,16 +226,7 @@ export const defendPrototype = (
     );
   }
 
-  // TODO If I leave the following line of code unmarked, then it fails
-  // locally with a type error. If I annotation it with the following line,
-  // then it fails in CI "Unused 'at-ts-expect-error' directive.".
-  // at-ts-expect-error could be instantiated with different subtype
-  // So we use at-ts-ignore instead, and then have to suppress the
-  // complaint that we should use at-ts-expect-error instead.
-  //
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
-  return Far(tag, prototype);
+  return Far(tag, /** @type {T} */ (prototype));
 };
 harden(defendPrototype);
 
