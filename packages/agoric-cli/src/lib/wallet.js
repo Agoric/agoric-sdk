@@ -50,15 +50,16 @@ export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {
 /**
  * @deprecated use `.current` node for current state
  * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>>} follower
+ * @param {Brand<'set'>} [invitationBrand]
  */
-export const coalesceWalletState = async follower => {
+export const coalesceWalletState = async (follower, invitationBrand) => {
   // values with oldest last
   const history = [];
   for await (const followerElement of iterateReverse(follower)) {
     history.push(followerElement.value);
   }
 
-  const coalescer = makeWalletStateCoalescer();
+  const coalescer = makeWalletStateCoalescer(invitationBrand);
   // update with oldest first
   for (const record of history.reverse()) {
     coalescer.update(record);
