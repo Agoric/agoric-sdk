@@ -145,7 +145,10 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     discount = undefined,
     exitRule = undefined,
   ) => {
-    const bidInvitation = E(publicFacet).getBidInvitation(wantCollateral.brand);
+    // await so any rejection is in this async function instead of Zoe's offer() wrapper
+    const bidInvitation = await E(publicFacet).makeBidInvitation(
+      wantCollateral.brand,
+    );
     const rawProposal = {
       give: { Currency: giveCurrency },
       // IF we had multiples, the buyer could express an offer-safe want.
@@ -907,4 +910,17 @@ test('deposit unregistered collateral', async t => {
   await t.throwsAsync(() => driver.depositCollateral(asset.make(500n), asset), {
     message: /no ordinal/,
   });
+});
+
+test('bid on unregistered collateral', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  await t.throwsAsync(
+    driver.bidForCollateralSeat(
+      currency.make(100n),
+      collateral.make(200n), // re-use this brand, which isn't collateral
+    ),
+    { message: 'No book for brand "[Alleged: Collateral brand]"' },
+  );
 });

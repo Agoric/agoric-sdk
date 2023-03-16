@@ -9,7 +9,7 @@ import {
   makeScalarBigMapStore,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import {
   atomicRearrange,
   makeRatioFromAmounts,
@@ -22,6 +22,7 @@ import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, BASIS_POINTS } from '@agoric/internal';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { mustMatch } from '@agoric/store';
 import { makeAuctionBook } from './auctionBook.js';
 import { AuctionState } from './util.js';
 import { makeScheduler } from './scheduler.js';
@@ -262,16 +263,19 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const publicFacet = augmentPublicFacet(
     harden({
-      getBidInvitation(collateralBrand) {
+      /** @param {Brand<'nat'>} collateralBrand */
+      makeBidInvitation(collateralBrand) {
+        mustMatch(collateralBrand, BrandShape);
+        books.has(collateralBrand) ||
+          Fail`No book for brand ${collateralBrand}`;
+        /**
+         * @param {ZCFSeat} zcfSeat
+         * @param {import('./auctionBook.js').BidSpec} bidSpec
+         */
         const newBidHandler = (zcfSeat, bidSpec) => {
-          if (books.has(collateralBrand)) {
-            const auctionBook = books.get(collateralBrand);
-            auctionBook.addOffer(bidSpec, zcfSeat, isActive());
-            return 'Your offer has been received';
-          } else {
-            zcfSeat.exit(`No book for brand ${collateralBrand}`);
-            return 'Your offer was refused';
-          }
+          const auctionBook = books.get(collateralBrand);
+          auctionBook.addOffer(bidSpec, zcfSeat, isActive());
+          return 'Your offer has been received';
         };
         const bidProposalShape = M.splitRecord(
           {

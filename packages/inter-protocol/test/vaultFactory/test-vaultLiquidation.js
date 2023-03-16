@@ -244,7 +244,7 @@ const setClockAndAdvanceNTimes = async (timer, times, start, incr = 1n) => {
 
 const bid = async (t, zoe, auctioneerKit, aeth, bidAmount, desired) => {
   const bidderSeat = await E(zoe).offer(
-    E(auctioneerKit.publicFacet).getBidInvitation(aeth.brand),
+    E(auctioneerKit.publicFacet).makeBidInvitation(aeth.brand),
     harden({ give: { Currency: bidAmount } }),
     harden({ Currency: getRunFromFaucet(t, bidAmount.value) }),
     { want: desired, offerPrice: makeRatioFromAmounts(bidAmount, desired) },
