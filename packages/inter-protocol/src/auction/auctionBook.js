@@ -19,7 +19,7 @@ import {
 import { E } from '@endo/captp';
 import { makeTracer } from '@agoric/internal';
 
-import { makeScaledBidBook, makePriceBook } from './offerBook.js';
+import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
 import {
   isScaledBidPriceHigher,
   makeBrandedRatioPattern,
@@ -160,13 +160,15 @@ export const makeAuctionBook = async (
 
   let curAuctionPrice = zeroRatio;
 
-  // FIXME the maker callbacks return a non-durable object
+  const makeScaledBidBook = prepareScaledBidBook(baggage);
+  const makePriceBook = preparePriceBook(baggage);
+
   const scaledBidBook = provide(baggage, 'scaledBidBook', () => {
     const ratioPattern = makeBrandedRatioPattern(
       currencyAmountShape,
       currencyAmountShape,
     );
-    return makeScaledBidBook(baggage, ratioPattern, collateralBrand);
+    return makeScaledBidBook(ratioPattern, collateralBrand);
   });
 
   const priceBook = provide(baggage, 'sortedOffers', () => {
@@ -175,7 +177,7 @@ export const makeAuctionBook = async (
       collateralAmountShape,
     );
 
-    return makePriceBook(baggage, ratioPattern, collateralBrand);
+    return makePriceBook(ratioPattern, collateralBrand);
   });
 
   /**
