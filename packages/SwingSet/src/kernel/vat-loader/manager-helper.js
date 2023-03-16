@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import '../../types-ambient.js';
 import { insistVatDeliveryResult } from '../../lib/message.js';
 import { makeTranscriptManager } from './transcript.js';
@@ -49,12 +49,15 @@ import { makeTranscriptManager } from './transcript.js';
 // slots on the inbound (dispatch) path.
 
 /**
- *
- * @typedef { { getManager: (shutdown: () => Promise<void>,
- *                           makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>) => VatManager,
- *              syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
- *              setDeliverToWorker: (dtw: unknown) => void,
- *            } } ManagerKit
+ * @typedef {{
+ *   deliverToWorker: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
+ *   shutdown: () => Promise<void>,
+ *   makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>,
+ * }} VatManagerLateBoundMethods
+ * @typedef {{
+ *   finishManager: (methods: VatManagerLateBoundMethods) => VatManager,
+ *   syscallFromWorker: (vso: VatSyscallObject) => VatSyscallResult,
+ * }} ManagerKit
  */
 
 /**
@@ -65,17 +68,14 @@ import { makeTranscriptManager } from './transcript.js';
  * vatSyscallHandler.
  *
  * When you build the handler that accepts syscall requests from the worker,
- * that handler should call my { syscallFromWorker } function, so I can
+ * that handler should call my `syscallFromWorker` function, so I can
  * forward those requests to vatSyscallHandler (after going through the
  * transcript).
  *
- * At some point, you must give me a way to send deliveries to the worker, by
- * calling setDeliverToWorker. This usually happens after the worker
- * connection is established.
- *
- * At the end of the factory, use my getManager(shutdown) method to create,
- * harden, and return the VatManager object. Give me a manager-specific
- * shutdown function which I can include in the VatManager.
+ * The returned kit is not complete until it has a way to send deliveries to the
+ * worker, which must usually wait for a connection to be established.
+ * At that time, use `finishManager` to create, harden, and return a VatManager
+ * object suitable for use by the kernel.
  *
  *
  * deliverToWorker is expected to accept a VatDeliveryObject and return a
@@ -91,14 +91,11 @@ import { makeTranscriptManager } from './transcript.js';
  * managerFactory. It is expected to accept a VatSyscallObject and return a
  * (synchronous) VatSyscallResult, never throwing.
  *
- * The returned syscallFromWorker function should be called when the worker
+ * The returned `syscallFromWorker` function should be called when the worker
  * wants to make a syscall. It accepts a VatSyscallObject and will return a
  * (synchronous) VatSyscallResult, never throwing. For remote workers, this
  * should be called from a handler that receives a syscall message from the
  * child process.
- *
- * The returned getManager() function will return a VatManager suitable for
- * handing to the kernel, which can use it to send deliveries to the vat.
  *
  * @param {string} vatID
  * @param {KernelKeeper} kernelKeeper
@@ -130,16 +127,8 @@ function makeManagerKit(
     );
   }
 
-  /** @type { (delivery: VatDeliveryObject) => Promise<VatDeliveryResult> } */
+  /** @type {VatManagerLateBoundMethods['deliverToWorker']} */
   let deliverToWorker;
-
-  /**
-   * @param {(delivery: VatDeliveryObject) => Promise<VatDeliveryResult>} dtw
-   */
-  function setDeliverToWorker(dtw) {
-    assert(!deliverToWorker, `setDeliverToWorker called twice`);
-    deliverToWorker = dtw;
-  }
 
   /**
    *
@@ -261,12 +250,14 @@ function makeManagerKit(
   }
 
   /**
-   *
-   * @param { () => Promise<void>} shutdown
-   * @param {(endPos: number, ss: SnapStore) => Promise<SnapshotResult>} makeSnapshot
+   * @param {VatManagerLateBoundMethods} methods
    * @returns {VatManager}
    */
-  function getManager(shutdown, makeSnapshot) {
+  function finishManager(methods) {
+    !deliverToWorker || Fail`finishManager called twice`;
+    const { deliverToWorker: dtw, shutdown, makeSnapshot } = methods;
+    assert.typeof(dtw, 'function');
+    deliverToWorker = dtw;
     return harden({
       replayTranscript,
       replayOneDelivery,
@@ -276,7 +267,7 @@ function makeManagerKit(
     });
   }
 
-  return harden({ getManager, syscallFromWorker, setDeliverToWorker });
+  return harden({ finishManager, syscallFromWorker });
 }
 harden(makeManagerKit);
 export { makeManagerKit };

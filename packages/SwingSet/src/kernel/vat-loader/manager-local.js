@@ -32,14 +32,14 @@ export function makeLocalVatManagerFactory(tools) {
 
     function finish(dispatch) {
       assert.typeof(dispatch, 'function');
-      // this 'deliverToWorker' never throws, even if liveslots has an internal error
-      mk.setDeliverToWorker(makeSupervisorDispatch(dispatch));
 
-      async function shutdown() {
-        // local workers don't need anything special to shut down between turns
-      }
+      // this `deliverToWorker` never throws, even if liveslots has an internal error
+      const deliverToWorker = makeSupervisorDispatch(dispatch);
 
-      return mk.getManager(shutdown);
+      // local workers don't need anything special to shut down between turns
+      const shutdown = async () => {};
+
+      return mk.finishManager({ deliverToWorker, shutdown });
     }
     const syscall = makeSupervisorSyscall(mk.syscallFromWorker, true);
     return { syscall, finish };
