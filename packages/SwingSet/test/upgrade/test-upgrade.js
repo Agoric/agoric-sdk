@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
@@ -408,6 +409,132 @@ test('vat upgrade - omit vatParameters', async t => {
   // create initial version
   const result = await run('doUpgradeWithoutVatParameters', []);
   t.deepEqual(result, [undefined, undefined]);
+});
+
+test('non-durable exports are abandoned by vat upgrade', async t => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultManagerType: 'xs-worker',
+    bundlePaths: {
+      exporter: '../vat-exporter.js',
+    },
+  });
+  const { controller, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
+
+  await run('createVat', [
+    {
+      name: 'exporter',
+      bundleCapName: 'exporter',
+      vatParameters: { version: 'v1' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
+    'v1',
+  );
+  const counterGetters = {
+    ephCounter: 'getEphemeralCounter',
+    virCounter: 'getVirtualCounter',
+    durCounter: 'getDurableCounter',
+  };
+  const counters = {};
+  const runIncrement = presence =>
+    run('messageVatObject', [{ presence, methodName: 'increment' }]);
+  for (const [name, methodName] of Object.entries(counterGetters)) {
+    const counter = await run('messageVat', [{ name: 'exporter', methodName }]);
+    const val = await runIncrement(counter);
+    t.is(val, 1, `initial increment of ${name}`);
+    const counterRef = await run('awaitVatObject', [
+      { presence: counter, rawOutput: true },
+    ]);
+    const kref = krefOf(counterRef);
+    counters[name] = { presence: counter, kref };
+  }
+
+  // Check kernel state for `objects` rows like [kref, vatID, ...] and
+  // `kernelTable` rows like [kref, vatID, vref].
+  const { kernelTable: kt1, objects: rc1 } = controller.dump();
+  const findRowByKref = (rows, searchKref) =>
+    rows.find(([kref]) => kref === searchKref);
+  const findExportByKref = (rows, searchKref) =>
+    rows.find(
+      ([kref, _vatID, vref]) => kref === searchKref && vref.startsWith('o+'),
+    );
+  const ephCounterRC1 = findRowByKref(rc1, counters.ephCounter.kref);
+  const virCounterRC1 = findRowByKref(rc1, counters.virCounter.kref);
+  const durCounterRC1 = findRowByKref(rc1, counters.durCounter.kref);
+  const ephCounterExport1 = findExportByKref(kt1, counters.ephCounter.kref);
+  const virCounterExport1 = findExportByKref(kt1, counters.virCounter.kref);
+  const durCounterExport1 = findExportByKref(kt1, counters.durCounter.kref);
+  t.truthy(ephCounterRC1?.[1]);
+  t.truthy(virCounterRC1?.[1]);
+  t.truthy(durCounterRC1?.[1]);
+  t.truthy(ephCounterExport1);
+  t.truthy(virCounterExport1);
+  t.truthy(durCounterExport1);
+
+  // Upgrade and then check new kernel state for `objects` rows like
+  // [kref, vatID | null, ...] and `kernelTable` rows like [kref, vatID, vref].
+  await run('upgradeVat', [
+    {
+      name: 'exporter',
+      bundleCapName: 'exporter',
+      vatParameters: { version: 'v2' },
+    },
+  ]);
+  const { kernelTable: kt2, objects: rc2 } = controller.dump();
+  const ephCounterRC2 = findRowByKref(rc2, counters.ephCounter.kref);
+  const virCounterRC2 = findRowByKref(rc2, counters.virCounter.kref);
+  const durCounterRC2 = findRowByKref(rc2, counters.durCounter.kref);
+  const ephCounterExport2 = findExportByKref(kt2, counters.ephCounter.kref);
+  const virCounterExport2 = findExportByKref(kt2, counters.virCounter.kref);
+  const durCounterExport2 = findExportByKref(kt2, counters.durCounter.kref);
+  t.is(ephCounterRC2?.[1], null, 'ephemeral counter must be abandoned');
+  t.is(virCounterRC2?.[1], null, 'merely virtual counter must be abandoned');
+  t.is(
+    durCounterRC2?.[1],
+    durCounterRC1?.[1],
+    'durable counter must not be abandoned',
+  );
+  t.is(
+    ephCounterExport2,
+    undefined,
+    'ephemeral counter export must be dropped',
+  );
+  t.is(
+    virCounterExport2,
+    undefined,
+    'merely virtual counter export must be dropped',
+  );
+  t.deepEqual(
+    durCounterExport2,
+    durCounterExport1,
+    'durable counter export must be preserved',
+  );
+
+  // Verify post-upgrade behavior.
+  t.is(
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
+    'v2',
+  );
+  await t.throwsAsync(
+    () => runIncrement(counters.ephCounter.presence),
+    { message: 'vat terminated' },
+    'message to ephemeral object from previous incarnation must go splat',
+  );
+  await t.throwsAsync(
+    () => runIncrement(counters.virCounter.presence),
+    { message: 'vat terminated' },
+    'message to non-durable virtual object from previous incarnation must go splat',
+  );
+  t.is(
+    await runIncrement(counters.durCounter.presence),
+    2,
+    'message to durable object from previous incarnation must work with preserved state',
+  );
 });
 
 test('failed upgrade - relaxed durable rules', async t => {
