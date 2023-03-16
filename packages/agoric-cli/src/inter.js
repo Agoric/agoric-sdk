@@ -2,7 +2,7 @@
 import '@endo/init';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { createCommand } from 'commander';
-import { makeFollower, makeLeader } from '@agoric/casting';
+import { iterateLatest, makeFollower, makeLeader } from '@agoric/casting';
 import { M, matches } from '@agoric/store';
 import {
   boardSlottingMarshaller,
@@ -77,6 +77,23 @@ const Offers = {
 const mapValues = (obj, fn) =>
   fromEntries(entries(obj).map(([prop, val]) => [prop, fn(val)]));
 
+const fmtMetrics = (metrics, quote, assets) => {
+  const fmtAmtTuple = makeAmountFormatter(assets);
+  const fmtAmt = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(amt));
+  const { liquidatingCollateral, liquidatingDebt } = metrics;
+
+  const {
+    quoteAmount: {
+      value: [{ amountIn, amountOut }],
+    },
+  } = quote;
+  // TODO: divide num, denom by GCD
+  const price = `${fmtAmt(amountOut)}/${fmtAmt(amountIn)}}`;
+
+  const amounts = mapValues({ liquidatingCollateral, liquidatingDebt }, fmtAmt);
+  return { ...amounts, price };
+};
+
 export const fmtBid = (bid, assets) => {
   const fmtAmtTuple = makeAmountFormatter(assets);
   const fmtAmt = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(amt));
@@ -117,14 +134,61 @@ export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
 
   const config = await getNetworkConfig(env);
   const { agoricNames, fromBoard } = await makeRpcUtils({ fetch }, config);
+  const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
-  const auctionCmd = interCmd
-    .command('auction')
-    .description('auction commands');
+  const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
-  auctionCmd
+  const liquidationCmd = interCmd
+    .command('liquidation')
+    .description('liquidation commands');
+  liquidationCmd
+    .command('status')
+    .description('show liquidation status')
+    .option('--manager [number]', 'Vault Manager', Number, 0)
+    .action(async opts => {
+      const networkConfig = await getNetworkConfig(env);
+      const leader = makeLeader(networkConfig.rpcAddrs[0]);
+      const pathFollower = path =>
+        makeFollower(
+          path,
+          leader,
+          // @ts-expect-error xxx
+          { unserializer },
+        );
+      const metricsFollower = await pathFollower(
+        `:published.vaultFactory.manager${opts.manager}.metrics`,
+      );
+      let metrics;
+      for await (const it of iterateLatest(metricsFollower)) {
+        // do anything with it.blockHeight?
+        metrics = it.value;
+        break;
+      }
+      const quoteFollower = await pathFollower(
+        `:published.vaultFactory.manager${opts.manager}.quotes`,
+      );
+      let quote;
+      for await (const it of iterateLatest(quoteFollower)) {
+        quote = it.value;
+        break;
+      }
+      stdout.write(
+        JSON.stringify(
+          fmtMetrics(metrics, quote, values(agoricNames.vbankAsset)),
+          bigintReplacer,
+          2,
+        ),
+      );
+      stdout.write('\n');
+    });
+
+  const bidCmd = interCmd
     .command('bid')
-    .description('bid on collateral')
+    .description('auction bidding commands');
+
+  bidCmd
+    .command('place')
+    .description('place bid on collateral')
     .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
     .requiredOption('--wantCollateral [number]', 'Minted wants', Number)
     .option('--offerId [number]', 'Offer id', Number, clock())
@@ -135,9 +199,9 @@ export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
     }); // TODO: discount
 
   const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, auctionCmd.opts());
+    normalizeAddressWithOptions(literalOrName, bidCmd.opts());
 
-  auctionCmd
+  bidCmd
     .command('list')
     .description('list bids')
     .requiredOption(
@@ -146,17 +210,13 @@ export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
       const networkConfig = await getNetworkConfig(env);
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(
         `:published.wallet.${opts.from}`,
         leader,
-        {
-          // @ts-expect-error xxx
-          unserializer,
-        },
+        // @ts-expect-error xxx
+        { unserializer },
       );
 
       const coalesced = await coalesceWalletState(
