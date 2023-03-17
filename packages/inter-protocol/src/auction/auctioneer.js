@@ -27,6 +27,7 @@ import { makeAuctionBook, makeBidSpecShape } from './auctionBook.js';
 import { AuctionState } from './util.js';
 import { makeScheduler } from './scheduler.js';
 import { auctioneerParamTypes } from './params.js';
+import { makeNatAmountShape } from '../contractSupport.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -270,7 +271,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const bidProposalShape = M.splitRecord(
     {
-      give: { Currency: { brand: brands.Currency, value: M.nat() } },
+      give: { Currency: makeNatAmountShape(brands.Currency) },
     },
     {
       want: M.or({ Collateral: AmountShape }, {}),

@@ -26,8 +26,8 @@ import {
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import {
-  makeStoredNotifier,
   makePublicTopic,
+  makeStoredNotifier,
   observeNotifier,
   pipeTopicToStorage,
   prepareDurablePublishKit,
@@ -40,8 +40,8 @@ import {
   provideDurableMapStore,
   provideDurableSetStore,
 } from '@agoric/vat-data';
+import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
-  assertProposalShape,
   atomicRearrange,
   ceilMultiplyBy,
   floorMultiplyBy,
@@ -55,15 +55,14 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
-import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
-import { checkDebtLimit } from '../contractSupport.js';
+import { AuctionPFShape } from '../auction/auctioneer.js';
+import { checkDebtLimit, makeNatAmountShape } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
+import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
 import { maxDebtForVault } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
-import { Phase, prepareVault } from './vault.js';
 import { normalizedCollRatio, normalizedCollRatioKey } from './storeUtils.js';
-import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
-import { AuctionPFShape } from '../auction/auctioneer.js';
+import { Phase, prepareVault } from './vault.js';
 
 const { details: X, Fail } = assert;
 
@@ -322,6 +321,15 @@ export const prepareVaultManagerKit = (
           return zcf.makeInvitation(
             seat => this.facets.self.makeVaultKit(seat),
             facets.manager.scopeDescription('MakeVault'),
+            undefined,
+            M.splitRecord({
+              give: {
+                Collateral: makeNatAmountShape(collateralBrand),
+              },
+              want: {
+                Minted: makeNatAmountShape(debtBrand),
+              },
+            }),
           );
         },
         /** @deprecated use getPublicTopics */
@@ -711,10 +719,6 @@ export const prepareVaultManagerKit = (
           assert(marshaller, 'makeVaultKit missing marshaller');
           assert(storageNode, 'makeVaultKit missing storageNode');
           assert(zcf, 'makeVaultKit missing zcf');
-          assertProposalShape(seat, {
-            give: { Collateral: null },
-            want: { Minted: null },
-          });
 
           const vaultId = String(state.vaultCounter);
 
