@@ -122,7 +122,8 @@ export const makeBootstrap = (
         },
       ],
     };
-    /** @type {any} */
+    /** @type {{coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>}} */
+    // @ts-expect-error cast
     const { coreEvalBridgeHandler } = consume;
     await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
   };
