@@ -1,33 +1,29 @@
+import '@agoric/governance/exported.js';
 import '@agoric/zoe/exported.js';
 import '@agoric/zoe/src/contracts/exported.js';
-import '@agoric/governance/exported.js';
 
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
-import {
-  M,
-  makeScalarBigMapStore,
-  provideDurableMapStore,
-} from '@agoric/vat-data';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
+import { handleParamGovernance } from '@agoric/governance';
+import { BASIS_POINTS, makeTracer } from '@agoric/internal';
+import { mustMatch } from '@agoric/store';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { M, provideDurableMapStore } from '@agoric/vat-data';
 import {
   atomicRearrange,
-  makeRatioFromAmounts,
-  makeRatio,
-  natSafeMath,
   floorMultiplyBy,
+  makeRatio,
+  makeRatioFromAmounts,
+  natSafeMath,
   provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { handleParamGovernance } from '@agoric/governance';
-import { makeTracer, BASIS_POINTS } from '@agoric/internal';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { mustMatch } from '@agoric/store';
-import { makeAuctionBook, makeBidSpecShape } from './auctionBook.js';
-import { AuctionState } from './util.js';
-import { makeScheduler } from './scheduler.js';
-import { auctioneerParamTypes } from './params.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeNatAmountShape } from '../contractSupport.js';
+import { makeBidSpecShape, prepareAuctionBook } from './auctionBook.js';
+import { auctioneerParamTypes } from './params.js';
+import { makeScheduler } from './scheduler.js';
+import { AuctionState } from './util.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -135,6 +131,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
 
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
+
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
 
   /**
    *
@@ -326,10 +324,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           Fail`cannot add brand with keyword ${kwd}. it's in use`;
         const { brand } = await zcf.saveIssuer(issuer, kwd);
 
-        baggage.init(kwd, makeScalarBigMapStore(kwd, { durable: true }));
         const newBook = await makeAuctionBook(
-          baggage.get(kwd),
-          zcf,
           brands.Currency,
           brand,
           priceAuthority,

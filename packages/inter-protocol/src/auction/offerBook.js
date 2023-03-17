@@ -53,7 +53,7 @@ export const prepareScaledBidBook = baggage =>
       bidScalingPattern,
       collateralBrand,
       /** @type {MapStore<string, BidderRecord>} */
-      records: makeScalarBigMapStore('scaledBidRecords'),
+      records: makeScalarBigMapStore('scaledBidRecords', { durable: true }),
     }),
     {
       /**
@@ -136,7 +136,7 @@ export const preparePriceBook = baggage =>
       priceRatioPattern,
       collateralBrand,
       /** @type {MapStore<string, BidderRecord>} */
-      records: makeScalarBigMapStore('scaledBidRecords'),
+      records: makeScalarBigMapStore('scaledBidRecords', { durable: true }),
     }),
     {
       add(seat, price, wanted) {

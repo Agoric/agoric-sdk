@@ -1,5 +1,6 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { PowerFlags } from '../../src/walletFlags.js';
 
 import { makeSwingsetTestKit } from './supports.js';
@@ -95,3 +96,6 @@ test('demo config meets loadgen constraint: no USDC', async t => {
   const found = pmtInfo.find(p => p.issuerPetname === 'USDC');
   t.deepEqual(found, undefined);
 });
+
+// FIXME tests can pass when console shows "BOOTSTRAP FAILED"
+test.todo('demo config bootstrap succeeds');
