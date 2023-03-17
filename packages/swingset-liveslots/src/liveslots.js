@@ -483,14 +483,15 @@ function build(
     return Remotable(iface);
   }
 
-  // We start exportIDs with 1 because 'o+0' is always automatically
-  // pre-assigned to the root object.  The starting point for
-  // numbering promiseIDs is pretty arbitrary.  We start from 5 as a
-  // very minor aid to debugging: It helps, when puzzling over trace
-  // logs and the like, for the numbers in the various species of IDs
-  // to be a little out of sync and thus a little less similar to each
-  // other when jumbled together.
-
+  /**
+   * Counters to track the next number for various categories of allocation.
+   * `exportID` starts at 1 because 'o+0' is always automatically
+   * pre-assigned to the root object.
+   * `promiseID` starts at 5 as a very minor aid to debugging: when puzzling
+   * over trace logs and the like, it helps for the numbers in various species
+   * of IDs that are jumbled together to be a little out of sync and thus a
+   * little less similar to each other.
+   */
   const initialIDCounters = { exportID: 1, collectionID: 1, promiseID: 5 };
   let idCounters;
   let idCountersAreDirty = false;
