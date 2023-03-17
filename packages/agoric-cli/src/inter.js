@@ -1,7 +1,6 @@
 // @ts-check
 import '@endo/init';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { createCommand } from 'commander';
 import { iterateLatest, makeFollower, makeLeader } from '@agoric/casting';
 import { M, matches } from '@agoric/store';
 import {
@@ -117,13 +116,28 @@ export const fmtBid = (bid, assets) => {
   return harden({ id, ...amounts, error });
 };
 
+/** distinguish IO errors etc. from logic bugs */
+export class RuntimeError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'RuntimeError';
+  }
+}
+
 /**
- * @param {{ argv: string[], env: Partial<Record<string, string>>,
- *           stdout: typeof process.stdout, clock: () => number,
- *           execFile: typeof import('child_process').execFile }} process
+ * @param {{
+ *   argv: string[], env: Partial<Record<string, string>>,
+ *   stdout: typeof process.stdout, clock: () => number,
+ *   createCommand: typeof import('commander').createCommand,
+ *   execFile: typeof import('child_process').execFile
+ * }} process
+ * Note: createCommand includes access to process.stdout, .stderr, .exit
  * @param {{ fetch: typeof window.fetch }} net
  */
-export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
+export const main = async (
+  { argv, env, stdout, clock, createCommand },
+  { fetch },
+) => {
   const interCmd = createCommand('inter')
     .description('Inter Protocol commands')
     .option('--home [dir]', 'agd CosmosSDK application home directory')
@@ -132,8 +146,22 @@ export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
       'keyring\'s backend (os|file|test) (default "os")',
     );
 
-  const config = await getNetworkConfig(env);
-  const { agoricNames, fromBoard } = await makeRpcUtils({ fetch }, config);
+  // XXX attempting IO before arg parsing leads to poor diagnostis
+  const networkConfig = await getNetworkConfig(env).catch(err => {
+    throw Error(
+      `cannot get network config (${env.AGORIC_NET || 'local'}): ${
+        err.message
+      }`,
+    );
+  });
+  const { agoricNames, fromBoard } = await makeRpcUtils(
+    { fetch },
+    networkConfig,
+  ).catch(err => {
+    throw new RuntimeError(
+      `RPC failure (${env.AGORIC_NET || 'local'}): ${err.message}`,
+    );
+  });
   const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
   const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
@@ -146,7 +174,6 @@ export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
     .description('show liquidation status')
     .option('--manager [number]', 'Vault Manager', Number, 0)
     .action(async opts => {
-      const networkConfig = await getNetworkConfig(env);
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const pathFollower = path =>
         makeFollower(
@@ -210,7 +237,6 @@ export const main = async ({ argv, env, stdout, clock }, { fetch }) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const networkConfig = await getNetworkConfig(env);
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(
         `:published.wallet.${opts.from}`,
