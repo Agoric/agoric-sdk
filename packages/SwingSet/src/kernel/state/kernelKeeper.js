@@ -781,8 +781,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const vatKeeper = provideVatKeeper(vatID);
     const exportPrefix = `${vatID}.c.o+`;
     const importPrefix = `${vatID}.c.o-`;
-    const promisePrefix = `${vatID}.c.p`;
-    const kernelPromisesToReject = [];
 
     vatKeeper.deleteSnapshotsAndTranscript();
 
@@ -822,23 +820,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       // that will also delete both db keys
     }
 
-    // now find all orphaned promises, which must be rejected
-    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
-      // The vpid for a promise imported or exported by a vat (and thus
-      // potentially a promise for which the vat *might* be the decider) will
-      // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
-      // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
-      // independent of whether the promise was imported or exported, so we
-      // have to look up the corresponding kernel promise table entry to see
-      // whether the vat is the decider or not.  If it is, we add the promise
-      // to the list of promises that must be rejected because the dead vat
-      // will never be able to act upon them.
-      const kpid = kvStore.get(k);
-      const p = getKernelPromise(kpid);
-      if (p.state === 'unresolved' && p.decider === vatID) {
-        kernelPromisesToReject.push(kpid);
-      }
-    }
+    // the caller used enumeratePromisesByDecider() before calling us,
+    // so they already know the orphaned promises to reject
 
     // now loop back through everything and delete it all
     for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
@@ -870,8 +853,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       }
       decStat('vats');
     }
-
-    return kernelPromisesToReject;
   }
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
@@ -923,6 +904,27 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     p.state === 'unresolved' || Fail`${kpid} was already resolved`;
     p.decider || Fail`${kpid} does not have a decider`;
     kvStore.set(`${kpid}.decider`, '');
+  }
+
+  function* enumeratePromisesByDecider(vatID) {
+    insistVatID(vatID);
+    const promisePrefix = `${vatID}.c.p`;
+    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
+      // The vpid for a promise imported or exported by a vat (and thus
+      // potentially a promise for which the vat *might* be the decider) will
+      // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
+      // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
+      // independent of whether the promise was imported or exported, so we
+      // have to look up the corresponding kernel promise table entry to see
+      // whether the vat is the decider or not.  If it is, we add the promise
+      // to the list of promises that must be rejected because the dead vat
+      // will never be able to act upon them.
+      const kpid = kvStore.get(k);
+      const p = getKernelPromise(kpid);
+      if (p.state === 'unresolved' && p.decider === vatID) {
+        yield kpid;
+      }
+    }
   }
 
   function addSubscriberToPromise(kernelSlot, vatID) {
@@ -1568,6 +1570,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     addSubscriberToPromise,
     setDecider,
     clearDecider,
+    enumeratePromisesByDecider,
     incrementRefCount,
     decrementRefCount,
     getObjectRefCount,

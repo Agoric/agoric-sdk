@@ -144,7 +144,7 @@ test('unserialize promise', async t => {
   t.truthy(p instanceof Promise);
 });
 
-test('kernel serialzation of errors', async t => {
+test('kernel serialization of errors', async t => {
   // The kernel synthesizes e.g. `Error('vat-upgrade failure')`, so we
   // need kmarshal to serialize those errors in a deterministic
   // way. This test checks that we don't get surprising things like

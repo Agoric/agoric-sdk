@@ -29,8 +29,11 @@ if ('VatData' in globalThis) {
   };
 }
 
+const VatDataExport = VatDataGlobal;
+export { VatDataExport as VatData };
+
 /**
- * @deprecated Use Exos/ExoClasses instead of kinds
+ * @deprecated Use Exos/ExoClasses instead of Kinds
  */
 export const {
   defineKind,
@@ -140,35 +143,60 @@ harden(partialAssign);
  */
 export const provide = provideLazy;
 
-/**
- * @param {import('./types').Baggage} baggage
- * @param {string} name
- * @param {Omit<StoreOptions, 'durable'>} options
- */
-export const provideDurableMapStore = (baggage, name, options = {}) =>
-  provide(baggage, name, () =>
-    makeScalarBigMapStore(name, { durable: true, ...options }),
-  );
-harden(provideDurableMapStore);
+// TODO: Find a good home for this function used by @agoric/vat-data and testing code
+export const makeStoreUtils = VatData => {
+  const {
+    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+    makeScalarBigMapStore,
+    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+    makeScalarBigWeakMapStore,
+    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+    makeScalarBigSetStore,
+  } = VatData;
 
-/**
- * @param {import('./types').Baggage} baggage
- * @param {string} name
- * @param {Omit<StoreOptions, 'durable'>} options
- */
-export const provideDurableWeakMapStore = (baggage, name, options = {}) =>
-  provide(baggage, name, () =>
-    makeScalarBigWeakMapStore(name, { durable: true, ...options }),
-  );
-harden(provideDurableWeakMapStore);
+  /**
+   * @param {import('./types').Baggage} baggage
+   * @param {string} name
+   * @param {Omit<StoreOptions, 'durable'>} options
+   */
+  const provideDurableMapStore = (baggage, name, options = {}) =>
+    provide(baggage, name, () =>
+      makeScalarBigMapStore(name, { durable: true, ...options }),
+    );
+  harden(provideDurableMapStore);
 
-/**
- * @param {import('./types').Baggage} baggage
- * @param {string} name
- * @param {Omit<StoreOptions, 'durable'>} options
- */
-export const provideDurableSetStore = (baggage, name, options = {}) =>
-  provide(baggage, name, () =>
-    makeScalarBigSetStore(name, { durable: true, ...options }),
-  );
-harden(provideDurableSetStore);
+  /**
+   * @param {import('./types').Baggage} baggage
+   * @param {string} name
+   * @param {Omit<StoreOptions, 'durable'>} options
+   */
+  const provideDurableWeakMapStore = (baggage, name, options = {}) =>
+    provide(baggage, name, () =>
+      makeScalarBigWeakMapStore(name, { durable: true, ...options }),
+    );
+  harden(provideDurableWeakMapStore);
+
+  /**
+   * @param {import('./types').Baggage} baggage
+   * @param {string} name
+   * @param {Omit<StoreOptions, 'durable'>} options
+   */
+  const provideDurableSetStore = (baggage, name, options = {}) =>
+    provide(baggage, name, () =>
+      makeScalarBigSetStore(name, { durable: true, ...options }),
+    );
+  harden(provideDurableSetStore);
+
+  return harden({
+    provideDurableMapStore,
+    provideDurableWeakMapStore,
+    provideDurableSetStore,
+  });
+};
+
+const globalStoreUtils = makeStoreUtils(VatDataGlobal);
+export const {
+  provideDurableMapStore,
+  provideDurableWeakMapStore,
+  provideDurableSetStore,
+} = globalStoreUtils;
