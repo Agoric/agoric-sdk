@@ -28,7 +28,7 @@ test.serial('store refcount management 1', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -100,7 +100,7 @@ test.serial('store refcount management 2', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -136,7 +136,7 @@ test.serial('store refcount management 3', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -176,7 +176,7 @@ test.serial('presence refcount management 1', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -224,7 +224,7 @@ test.serial('presence refcount management 2', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -280,7 +280,7 @@ test.serial('remotable refcount management 1', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -316,7 +316,7 @@ test.serial('remotable refcount management 2', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 

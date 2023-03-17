@@ -37,6 +37,7 @@ export const makeFakeVault = (
     manager.getCompoundedInterest(),
   );
   let collateral = initCollateral;
+  const fakeSeat = {};
   const vault = Far('Vault', {
     getCollateralAmount: () => collateral,
     getNormalizedDebt: () => normalizedDebt,
@@ -50,6 +51,7 @@ export const makeFakeVault = (
     setCollateral: newCollateral => (collateral = newCollateral),
     getIdInManager: () => vaultId,
     liquidate: () => {},
+    getVaultSeat: () => fakeSeat,
   });
   // @ts-expect-error cast
   return vault;

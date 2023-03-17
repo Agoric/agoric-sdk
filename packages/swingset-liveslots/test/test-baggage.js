@@ -22,7 +22,7 @@ test.serial('exercise baggage', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 

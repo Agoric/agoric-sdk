@@ -78,7 +78,7 @@ export const psmGovernanceBuilder = async ({
               '../bundles/bundle-vaultFactory.js',
             ),
           ),
-          auction: publishRef(
+          auctioneer: publishRef(
             install(
               '../src/auction/auctioneer.js',
               '../bundles/bundle-auctioneer.js',

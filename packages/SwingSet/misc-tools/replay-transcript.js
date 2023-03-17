@@ -142,7 +142,7 @@ async function replay(transcriptFile) {
           return loadRaw(snapFile);
         },
       }
-    : makeSnapStore(process.cwd(), makeSnapStoreIO());
+    : makeSnapStore(process.cwd(), () => {}, makeSnapStoreIO());
   const testLog = undefined;
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({

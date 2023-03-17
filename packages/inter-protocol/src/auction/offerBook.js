@@ -1,16 +1,15 @@
 // book of offers to buy liquidating vaults with prices in terms of
 // discount/markup from the current oracle price.
 
-import { Far } from '@endo/marshal';
-import { M, mustMatch } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
-import { provideDurableMapStore } from '@agoric/vat-data';
+import { M, mustMatch } from '@agoric/store';
+import { makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 
 import {
   toBidScalingComparator,
-  toScaledRateOfferKey,
   toPartialOfferKey,
   toPriceOfferKey,
+  toScaledRateOfferKey,
 } from './sortedOffers.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
@@ -25,106 +24,171 @@ const nextSequenceNumber = () => {
 };
 
 /**
+ * @typedef {{
+ * seat: ZCFSeat,
+ * wanted: Amount<'nat'>,
+ * seqNum: NatValue,
+ * received: Amount<'nat'>,
+ * } & ({ bidScaling: Pattern, price: undefined } | { bidScaling: undefined, price: Ratio})
+ * } BidderRecord
+ */
+
+/**
  * Prices in this book are expressed as percentage of the full oracle price
  * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
  *
  * @param {Baggage} baggage
- * @param {Pattern} bidScalingPattern
- * @param {Brand} collateralBrand
  */
-export const makeScaledBidBook = (
-  baggage,
-  bidScalingPattern,
-  collateralBrand,
-) => {
-  const store = provideDurableMapStore(baggage, 'scaledBidStore');
+export const prepareScaledBidBook = baggage =>
+  prepareExoClass(
+    baggage,
+    'scaledBidBook',
+    undefined,
+    /**
+     *
+     * @param {Pattern} bidScalingPattern
+     * @param {Brand} collateralBrand
+     */
+    (bidScalingPattern, collateralBrand) => ({
+      bidScalingPattern,
+      collateralBrand,
+      /** @type {MapStore<string, BidderRecord>} */
+      records: makeScalarBigMapStore('scaledBidRecords'),
+    }),
+    {
+      /**
+       * @param {ZCFSeat} seat
+       * @param {Ratio} bidScaling
+       * @param {Amount<'nat'>} wanted
+       */
+      add(seat, bidScaling, wanted) {
+        const { bidScalingPattern, collateralBrand, records } = this.state;
+        mustMatch(bidScaling, bidScalingPattern);
 
-  return Far('scaledBidBook ', {
-    add(seat, bidScaling, wanted) {
-      mustMatch(bidScaling, bidScalingPattern);
-
-      const seqNum = nextSequenceNumber();
-      const key = toScaledRateOfferKey(bidScaling, seqNum);
-      const empty = AmountMath.makeEmpty(collateralBrand);
-      const bidderRecord = {
-        seat,
-        bidScaling,
-        wanted,
-        seqNum,
-        received: empty,
-      };
-      store.init(key, harden(bidderRecord));
-      return key;
-    },
-    offersAbove(bidScaling) {
-      return [...store.entries(M.gte(toBidScalingComparator(bidScaling)))];
-    },
-    hasOrders() {
-      return store.getSize() > 0;
-    },
-    delete(key) {
-      store.delete(key);
-    },
-    updateReceived(key, sold) {
-      const oldRec = store.get(key);
-      store.set(
-        key,
-        harden({ ...oldRec, received: AmountMath.add(oldRec.received, sold) }),
-      );
-    },
-    exitAllSeats() {
-      for (const { seat } of store.entries()) {
-        if (!seat.hasExited()) {
-          seat.exit();
+        const seqNum = nextSequenceNumber();
+        const key = toScaledRateOfferKey(bidScaling, seqNum);
+        const empty = AmountMath.makeEmpty(collateralBrand);
+        /** @type {BidderRecord} */
+        const bidderRecord = {
+          bidScaling,
+          price: undefined,
+          received: empty,
+          seat,
+          seqNum,
+          wanted,
+        };
+        records.init(key, harden(bidderRecord));
+        return key;
+      },
+      /** @param {Ratio} bidScaling */
+      offersAbove(bidScaling) {
+        const { records } = this.state;
+        return [...records.entries(M.gte(toBidScalingComparator(bidScaling)))];
+      },
+      hasOrders() {
+        const { records } = this.state;
+        return records.getSize() > 0;
+      },
+      delete(key) {
+        const { records } = this.state;
+        records.delete(key);
+      },
+      updateReceived(key, sold) {
+        const { records } = this.state;
+        const oldRec = records.get(key);
+        records.set(
+          key,
+          harden({
+            ...oldRec,
+            received: AmountMath.add(oldRec.received, sold),
+          }),
+        );
+      },
+      exitAllSeats() {
+        const { records } = this.state;
+        for (const [key, { seat }] of records.entries()) {
+          if (!seat.hasExited()) {
+            seat.exit();
+            records.delete(key);
+          }
         }
-      }
+      },
     },
-  });
-};
+  );
 
 /**
  * Prices in this book are actual prices expressed in terms of currency amount
  * and collateral amount.
  *
  * @param {Baggage} baggage
- * @param {Pattern} ratioPattern
- * @param {Brand} collateralBrand
  */
-export const makePriceBook = (baggage, ratioPattern, collateralBrand) => {
-  const store = provideDurableMapStore(baggage, 'pricedBidStore');
-  return Far('priceBook ', {
-    add(seat, price, wanted) {
-      mustMatch(price, ratioPattern);
+export const preparePriceBook = baggage =>
+  prepareExoClass(
+    baggage,
+    'priceBook',
+    undefined,
+    /**
+     *
+     * @param {Pattern} priceRatioPattern
+     * @param {Brand} collateralBrand
+     */
+    (priceRatioPattern, collateralBrand) => ({
+      priceRatioPattern,
+      collateralBrand,
+      /** @type {MapStore<string, BidderRecord>} */
+      records: makeScalarBigMapStore('scaledBidRecords'),
+    }),
+    {
+      add(seat, price, wanted) {
+        const { priceRatioPattern, collateralBrand, records } = this.state;
+        mustMatch(price, priceRatioPattern);
 
-      const seqNum = nextSequenceNumber();
-      const key = toPriceOfferKey(price, seqNum);
-      const empty = AmountMath.makeEmpty(collateralBrand);
-      const bidderRecord = { seat, price, wanted, seqNum, received: empty };
-      store.init(key, harden(bidderRecord));
-      return key;
-    },
-    offersAbove(price) {
-      return [...store.entries(M.gte(toPartialOfferKey(price)))];
-    },
-    hasOrders() {
-      return store.getSize() > 0;
-    },
-    delete(key) {
-      store.delete(key);
-    },
-    updateReceived(key, sold) {
-      const oldRec = store.get(key);
-      store.set(
-        key,
-        harden({ ...oldRec, received: AmountMath.add(oldRec.received, sold) }),
-      );
-    },
-    exitAllSeats() {
-      for (const { seat } of store.values()) {
-        if (!seat.hasExited()) {
-          seat.exit();
+        const seqNum = nextSequenceNumber();
+        const key = toPriceOfferKey(price, seqNum);
+        const empty = AmountMath.makeEmpty(collateralBrand);
+        /** @type {BidderRecord} */
+        const bidderRecord = {
+          bidScaling: undefined,
+          price,
+          received: empty,
+          seat,
+          seqNum,
+          wanted,
+        };
+        records.init(key, harden(bidderRecord));
+        return key;
+      },
+      offersAbove(price) {
+        const { records } = this.state;
+        return [...records.entries(M.gte(toPartialOfferKey(price)))];
+      },
+      hasOrders() {
+        const { records } = this.state;
+        return records.getSize() > 0;
+      },
+      delete(key) {
+        const { records } = this.state;
+        records.delete(key);
+      },
+      updateReceived(key, sold) {
+        const { records } = this.state;
+        const oldRec = records.get(key);
+        records.set(
+          key,
+          harden({
+            ...oldRec,
+            received: AmountMath.add(oldRec.received, sold),
+          }),
+        );
+      },
+      exitAllSeats() {
+        const { records } = this.state;
+        for (const [key, { seat }] of records.entries()) {
+          if (!seat.hasExited()) {
+            seat.exit();
+            records.delete(key);
+          }
         }
-      }
+      },
     },
-  });
-};
+  );

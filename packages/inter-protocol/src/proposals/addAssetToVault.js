@@ -204,7 +204,7 @@ export const registerScaledPriceAuthority = async (
  */
 export const addAssetToVault = async (
   {
-    consume: { vaultFactoryKit, agoricNamesAdmin },
+    consume: { vaultFactoryKit, agoricNamesAdmin, auctioneerKit },
     brand: {
       consume: { [Stable.symbol]: stableP },
     },
@@ -239,6 +239,9 @@ export const addAssetToVault = async (
     liquidationPenalty: makeRatio(1n, stable),
     interestRate: makeRatio(1n, stable),
   });
+  const auctioneerCreator = E.get(auctioneerKit).creatorFacet;
+  // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
+  await E(auctioneerCreator).addBrand(interchainIssuer, keyword);
 };
 
 export const getManifestForAddAssetToVault = (
@@ -288,7 +291,8 @@ export const getManifestForAddAssetToVault = (
       },
       [addAssetToVault.name]: {
         consume: {
-          vaultFactoryKit: true,
+          auctioneerKit: 'auctioneer',
+          vaultFactoryKit: 'vaultFactory',
           agoricNamesAdmin: true,
         },
         brand: {

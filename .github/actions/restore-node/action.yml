@@ -20,6 +20,10 @@ runs:
       with:
         clean: 'false'
         submodules: 'true'
+        persist-credentials: false
+    - name: Reconfigure git to use HTTP authentication
+      run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+      shell: bash
     - uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node-version }}

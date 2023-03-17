@@ -6,6 +6,7 @@
  * @typedef {import('./vaultManager').CollateralManager} CollateralManager
  * @typedef {import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet} AssetReserveCreatorFacet
  * @typedef {import('../reserve/assetReserve.js').AssetReservePublicFacet} AssetReservePublicFacet
+ * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
  * @typedef {import('./vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
  *
  * @typedef {import('@agoric/time/src/types').RelativeTime} RelativeTime
@@ -53,6 +54,8 @@
  * @property {() => Instance} getContractGovernor
  * @property {() => Promise<Invitation>} makeCollectFeesInvitation
  * @property {() => void} updateMetrics
+ * @property {() => import('@agoric/time/src/types').TimerWaker} makeLiquidationWaker
+ * @property {() => import('@agoric/time/src/types').TimerWaker} makePriceLockWaker
  */
 
 /**

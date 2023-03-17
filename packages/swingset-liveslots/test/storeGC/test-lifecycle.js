@@ -71,7 +71,7 @@ test.serial('store lifecycle 1', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
 
   // lerv -> Lerv  Create store
@@ -100,7 +100,7 @@ test.serial('store lifecycle 2', async t => {
     dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
-  } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');
@@ -176,7 +176,7 @@ test.serial('store lifecycle 3', async t => {
     dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
-  } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');
@@ -213,7 +213,7 @@ test.serial('store lifecycle 3', async t => {
 // test 4: lerv -> Lerv -> LERv -> LeRv -> lerv
 test.serial('store lifecycle 4', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');
@@ -245,7 +245,7 @@ test.serial('store lifecycle 5', async t => {
     dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
-  } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');
@@ -279,7 +279,7 @@ test.serial('store lifecycle 5', async t => {
 // test 6: lerv -> Lerv -> LERv -> LeRv -> LeRV -> LeRv -> LeRV -> leRV -> lerv
 test.serial('store lifecycle 6', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');
@@ -324,7 +324,7 @@ test.serial('store lifecycle 6', async t => {
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
 test.serial('store lifecycle 7', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');
@@ -363,7 +363,7 @@ test.serial('store lifecycle 7', async t => {
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
 test.serial('store lifecycle 8', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
 
   // lerv -> Lerv  Create store
   await dispatchMessageSuccessfully('makeAndHold');

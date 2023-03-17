@@ -205,7 +205,7 @@ export {};
  *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
  *            } } VatManagerFactory
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: (startPos: StreamPosition | undefined) => Promise<number?>,
+ *              replayTranscript: (startPos: number | undefined) => Promise<number?>,
  *              makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>,
  *              shutdown: () => Promise<void>,
  *            } } VatManager
@@ -273,8 +273,7 @@ export {};
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
  * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
- * @typedef { import('@agoric/swing-store').StreamStore } StreamStore
- * @typedef { import('@agoric/swing-store').StreamPosition } StreamPosition
+ * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore
  * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
  * @typedef { import('@agoric/swing-store').SwingStoreKernelStorage } SwingStoreKernelStorage
  * @typedef { import('@agoric/swing-store').SwingStoreHostStorage } SwingStoreHostStorage

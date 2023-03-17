@@ -36,7 +36,7 @@ const installKeyGroups = {
     ],
   },
   main: {
-    auction: [
+    auctioneer: [
       '../src/auction/auctioneer.js',
       '../bundles/bundle-auctioneer.js',
     ],

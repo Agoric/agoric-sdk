@@ -417,7 +417,7 @@ async function voLifeCycleTest1(t, isf) {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const vref = facetRef(isf, thingVref(isf, 2), '1');
 
@@ -452,7 +452,7 @@ async function voLifeCycleTest2(t, isf) {
     dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
-  } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -533,7 +533,7 @@ async function voLifeCycleTest3(t, isf) {
     dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
-  } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -577,7 +577,7 @@ test.serial('VO lifecycle 3 faceted', async t => {
 // test 4: lerv -> Lerv -> LERv -> LeRv -> lerv
 async function voLifeCycleTest4(t, isf) {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -614,7 +614,7 @@ async function voLifeCycleTest5(t, isf) {
     dispatchMessageSuccessfully,
     dispatchDropExports,
     dispatchRetireExports,
-  } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -650,7 +650,7 @@ test.serial('VO lifecycle 5 faceted', async t => {
 // test 6: lerv -> Lerv -> LERv -> LeRv -> LeRV -> LeRv -> LeRV -> leRV -> lerv
 async function voLifeCycleTest6(t, isf) {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -699,7 +699,7 @@ test.serial('VO lifecycle 6 faceted', async t => {
 // test 7: lerv -> Lerv -> LERv -> lERv -> LERv -> lERv -> lerv
 async function voLifeCycleTest7(t, isf) {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -740,7 +740,7 @@ test.serial('VO lifecycle 7 faceted', async t => {
 // test 8: lerv -> Lerv -> LERv -> LERV -> LERv -> LERV -> lERV -> lERv -> lerv
 async function voLifeCycleTest8(t, isf) {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
 
@@ -792,7 +792,7 @@ test.serial('VO multifacet export 1', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const vref = facetRef(true, thingVref(true, 2), '1');
 
@@ -810,7 +810,7 @@ test.serial('VO multifacet export 1', async t => {
 // multifacet export test 2a: export A, drop A, retire A
 test.serial('VO multifacet export 2a', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(true, thingVref(true, 2), '0');
   const thingA = kslot(vref, 'thing facetA');
 
@@ -838,7 +838,7 @@ test.serial('VO multifacet export 2a', async t => {
 // multifacet export test 2b: export B, drop B, retire B
 test.serial('VO multifacet export 2b', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(true, thingVref(true, 2), '1');
   const thingB = kslot(vref, 'thing facetB');
 
@@ -865,7 +865,7 @@ test.serial('VO multifacet export 2b', async t => {
 // multifacet export test 3abba: export A, export B, drop B, drop A, retire
 test.serial('VO multifacet export 3abba', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vrefA = facetRef(true, thingVref(true, 2), '0');
   const thingA = kslot(vrefA, 'thing facetA');
   const vrefB = facetRef(true, thingVref(true, 2), '1');
@@ -903,7 +903,7 @@ test.serial('VO multifacet export 3abba', async t => {
 // multifacet export test 3abab: export A, export B, drop A, drop B, retire
 test.serial('VO multifacet export 3abab', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vrefA = facetRef(true, thingVref(true, 2), '0');
   const thingA = kslot(vrefA, 'thing facetA');
   const vrefB = facetRef(true, thingVref(true, 2), '1');
@@ -943,7 +943,7 @@ test.serial('VO multifacet markers only', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const vrefA = facetRef(true, `${markerBaseRef}/1`, '0');
   const { baseRef } = parseVatSlot(vrefA);
@@ -961,7 +961,7 @@ test.serial('VO multifacet markers only', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest1(t, isf) {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const { baseRef } = parseVatSlot(vref);
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
@@ -1002,7 +1002,7 @@ test.serial('VO refcount management 1 faceted', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest2(t, isf) {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const { baseRef } = parseVatSlot(vref);
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
@@ -1043,7 +1043,7 @@ test.serial('VO refcount management 2 faceted', async t => {
 
 // prettier-ignore
 async function voRefcountManagementTest3(t, isf) {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const { baseRef } = parseVatSlot(vref);
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
@@ -1093,7 +1093,7 @@ test.serial('VO refcount management 3 faceted', async t => {
 
 // prettier-ignore
 test.serial('presence refcount management 1', async t => {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
   const vref = 'o-5';
@@ -1132,7 +1132,7 @@ test.serial('presence refcount management 1', async t => {
 
 // prettier-ignore
 test.serial('presence refcount management 2', async t => {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
   const vref = 'o-5';
@@ -1170,7 +1170,7 @@ test.serial('presence refcount management 2', async t => {
 
 // prettier-ignore
 test.serial('remotable refcount management 1', async t => {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
@@ -1213,7 +1213,7 @@ test.serial('remotable refcount management 1', async t => {
 
 // prettier-ignore
 test.serial('remotable refcount management 2', async t => {
-  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
@@ -1234,7 +1234,7 @@ test.serial('remotable refcount management 2', async t => {
 
 // prettier-ignore
 async function voWeakKeyGCTest(t, isf) {
-  const { v, dispatchMessageSuccessfully, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v, dispatchMessageSuccessfully, testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = facetRef(isf, thingVref(isf, 2), '1');
   const thing = kslot(vref, isf ? 'thing facetB' : 'thing');
   const { baseRef } = parseVatSlot(vref);
@@ -1265,7 +1265,7 @@ test.serial('verify VO weak key GC faceted', async t => {
 // prettier-ignore
 test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessageSuccessfully, dispatchRetireImports, testHooks } =
-        await setupTestLiveslots(t, buildRootObject, 'bob', true);
+        await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const vref = 'o-5';
   const presence = kslot(vref, 'thing');
   // hold a Presence weakly by a VOAwareWeak(Map/Set), also by RAM
@@ -1316,7 +1316,7 @@ test.serial('verify presence weak key GC', async t => {
 // prettier-ignore
 test.serial('VO holding non-VO', async t => {
   const { v, dispatchMessageSuccessfully, dispatchDropExports, dispatchRetireExports } =
-        await setupTestLiveslots(t, buildRootObject, 'bob', true);
+        await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
   // lerv -> Lerv  Create non-VO

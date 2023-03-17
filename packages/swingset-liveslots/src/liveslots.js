@@ -552,7 +552,14 @@ function build(
 
   const knownResolutions = new WeakMap();
 
-  // this is called with all outbound argument vrefs
+  /**
+   * Determines if a vref from a watched promise or outbound argument
+   * identifies a promise that should be exported, and if so then
+   * adds it to exportedVPIDs and sets up handlers.
+   *
+   * @param {any} vref
+   * @returns {boolean} whether the vref was added to exportedVPIDs
+   */
   function maybeExportPromise(vref) {
     // we only care about new vpids
     if (
@@ -571,7 +578,9 @@ function build(
       // if (!knownResolutions.has(p)) { // TODO really?
       // eslint-disable-next-line no-use-before-define
       followForKernel(vpid, p);
+      return true;
     }
+    return false;
   }
 
   function exportPassByPresence() {
@@ -658,18 +667,16 @@ function build(
     assertAcceptableSyscallCapdataSize,
   );
 
-  const watchedPromiseManager = makeWatchedPromiseManager(
+  const watchedPromiseManager = makeWatchedPromiseManager({
     syscall,
     vrm,
     vom,
     collectionManager,
     // eslint-disable-next-line no-use-before-define
     convertValToSlot,
-    unmeteredConvertSlotToVal,
-    // eslint-disable-next-line no-use-before-define
-    meterControl.unmetered(revivePromise),
-    unmeteredUnserialize,
-  );
+    convertSlotToVal: unmeteredConvertSlotToVal,
+    maybeExportPromise,
+  });
 
   function convertValToSlot(val) {
     // lsdebug(`serializeToSlot`, val, Object.isFrozen(val));
@@ -817,6 +824,7 @@ function build(
     registerValue(slot, p);
     return p;
   }
+  const unmeteredRevivePromise = meterControl.unmetered(revivePromise);
 
   function resolutionCollector() {
     const resolutions = [];
@@ -1184,7 +1192,6 @@ function build(
     // upgrade, or if we acquire decider authority for a
     // previously-imported promise
     if (pRec) {
-      // TODO: insist that we do not have decider authority for promiseID
       meterControl.assertNotMetered();
       const val = m.unserialize(data);
       if (rejected) {
@@ -1425,7 +1432,7 @@ function build(
       Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
     // Need to load watched promises *after* buildRootObject() so that handler kindIDs
     // have a chance to be reassociated with their handlers.
-    watchedPromiseManager.loadWatchedPromiseTable();
+    watchedPromiseManager.loadWatchedPromiseTable(unmeteredRevivePromise);
 
     const rootSlot = makeVatSlot('object', true, BigInt(0));
     valToSlot.set(rootObject, rootSlot);
@@ -1517,26 +1524,11 @@ function build(
     assert(!didStopVat);
     didStopVat = true;
 
-    // all vpids are either "imported" (kernel knows about it and
-    // kernel decides), "exported" (kernel knows about it but we
-    // decide), or neither (local, we decide, kernel is unaware). TODO
-    // this could be cheaper if we tracked all three states (make a
-    // Set for "neither") instead of doing enumeration and set math.
-
     try {
-      // mark "imported" plus "neither" for rejection at next startup
-      const importedVPIDsSet = new Set(importedVPIDs.keys());
-      watchedPromiseManager.prepareShutdownRejections(
-        importedVPIDsSet,
-        disconnectObjectCapData,
-      );
-      // reject all "exported" vpids now
-      const deciderVPIDs = Array.from(exportedVPIDs.keys()).sort();
       // eslint-disable-next-line @jessie.js/no-nested-await
       await releaseOldState({
         m,
         disconnectObjectCapData,
-        deciderVPIDs,
         syscall,
         exportedRemotables,
         addToPossiblyDeadSet,

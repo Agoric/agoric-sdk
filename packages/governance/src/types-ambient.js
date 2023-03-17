@@ -602,7 +602,7 @@
  */
 
 /**
- * @template {object} PF Public facet
+ * @template {{}} PF Public facet
  * @typedef {PF & GovernedPublicFacetMethods} GovernedPublicFacet
  */
 
@@ -616,20 +616,6 @@
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
- */
-
-/**
- * @callback WrapPublicFacet
- * @param {T} originalPublicFacet
- * @returns {T & GovernedPublicFacet}
- * @template T
- */
-
-/**
- * @callback WrapCreatorFacet
- * @param {T} originalCreatorFacet
- * @returns {GovernedCreatorFacet<T>}
- * @template T
  */
 
 /**

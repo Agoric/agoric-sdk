@@ -9,6 +9,16 @@ import {
   makeDecodePassable,
   makeEncodePassable,
 } from '@endo/marshal/src/encodePassable.js';
+import {
+  getAmountIn,
+  getAmountOut,
+  natSafeMath,
+} from '@agoric/zoe/src/contractSupport/index.js';
+import { makeTracer } from '@agoric/internal';
+
+const { multiply } = natSafeMath;
+
+const trace = makeTracer('Store', false);
 
 /**
  * @typedef {import('@endo/marshal').PureData} PureData
@@ -88,7 +98,7 @@ const collateralizationRatio = (normalizedDebt, collateral) => {
  * @returns {string} lexically sortable string in which highest
  * debt-to-collateral is earliest
  */
-const toVaultKey = (normalizedDebt, collateral, vaultId) => {
+export const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   assert(normalizedDebt);
   assert(collateral);
   assert(vaultId);
@@ -97,19 +107,53 @@ const toVaultKey = (normalizedDebt, collateral, vaultId) => {
   const numberPart = encodeNumber(
     collateralizationRatio(normalizedDebt, collateral),
   );
+
+  trace(`To Vault Key `, collateralizationRatio(normalizedDebt, collateral));
   return `${numberPart}:${vaultId}`;
 };
+harden(toVaultKey);
 
 /**
  * @param {string} key
  * @returns {[normalizedCollateralization: number, vaultId: VaultId]}
  */
-const fromVaultKey = key => {
+export const fromVaultKey = key => {
   const [numberPart, vaultIdPart] = key.split(':');
   return [decodeNumber(numberPart), vaultIdPart];
 };
-
 harden(fromVaultKey);
-harden(toVaultKey);
 
-export { fromVaultKey, toVaultKey };
+/**
+ * For use by `normalizedCollRatioKey` and tests.
+ *
+ * @param {PriceQuote} quote
+ * @param {Ratio} compoundedInterest
+ * @returns {number}
+ */
+export const normalizedCollRatio = (quote, compoundedInterest) => {
+  const amountIn = getAmountIn(quote).value;
+  const amountOut = getAmountOut(quote).value;
+  const interestNumerator = compoundedInterest.numerator.value;
+  const interestBase = compoundedInterest.denominator.value;
+  const numerator = multiply(amountIn, interestNumerator);
+  const denominator = multiply(amountOut, interestBase);
+
+  return Number(numerator) / Number(denominator);
+};
+harden(normalizedCollRatio);
+
+/**
+ * Create a sort key for a normalized collateralization ratio. We want a float
+ * with as much resolution as we can get, so we multiply out the numerator and
+ * the denominator, and divide
+ *
+ * @param {PriceQuote} quote
+ * @param {Ratio} compoundedInterest
+ * @returns {string} lexically sortable string in which highest
+ * debt-to-collateral is earliest
+ */
+export const normalizedCollRatioKey = (quote, compoundedInterest) => {
+  const collRatio = normalizedCollRatio(quote, compoundedInterest);
+  return `${encodeNumber(collRatio)}:`;
+};
+harden(normalizedCollRatioKey);

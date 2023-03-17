@@ -90,7 +90,7 @@ test('change a param', async t => {
     governedTerms,
   );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -170,7 +170,8 @@ test('call API directly', async t => {
   );
   t.deepEqual(result, { apiMethodName: 'governanceApi', methodArgs: [] });
   t.deepEqual(
-    // @ts-expect-error FIXME type the puppet extensions
+    // FIXME type the puppet extensions
+    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     await E(E(governorFacets.creatorFacet).getPublicFacet()).getApiCalled(),
     1,
   );

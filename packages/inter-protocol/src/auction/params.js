@@ -68,7 +68,7 @@ export const auctioneerParamTypes = harden({
 
 /**
  * @param {object} initial
- * @param {Amount} initial.electorateInvitationAmount
+ * @param {Amount<'set'>} initial.electorateInvitationAmount
  * @param {RelativeTime} initial.startFreq
  * @param {RelativeTime} initial.clockStep
  * @param {bigint} initial.startingRate
@@ -161,7 +161,7 @@ harden(makeAuctioneerParamManager);
 /**
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
  * @param {{
- *   electorateInvitationAmount: Amount,
+ *   electorateInvitationAmount: Amount<'set'>,
  *   priceAuthority: ERef<PriceAuthority>,
  *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   startFreq: RelativeTime,

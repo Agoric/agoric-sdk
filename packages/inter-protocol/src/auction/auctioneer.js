@@ -9,7 +9,7 @@ import {
   makeScalarBigMapStore,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import {
   atomicRearrange,
   makeRatioFromAmounts,
@@ -22,10 +22,12 @@ import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, BASIS_POINTS } from '@agoric/internal';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { makeAuctionBook } from './auctionBook.js';
+import { mustMatch } from '@agoric/store';
+import { makeAuctionBook, makeBidSpecShape } from './auctionBook.js';
 import { AuctionState } from './util.js';
 import { makeScheduler } from './scheduler.js';
 import { auctioneerParamTypes } from './params.js';
+import { makeNatAmountShape } from '../contractSupport.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -33,6 +35,12 @@ const { Fail, quote: q } = assert;
 
 const trace = makeTracer('Auction', false);
 
+/**
+ *
+ * @param {NatValue} rate
+ * @param {Brand<'nat'>} currencyBrand
+ * @param {Brand<'nat'>} collateralBrand
+ */
 const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
   makeRatioFromAmounts(
     AmountMath.make(currencyBrand, rate),
@@ -103,13 +111,7 @@ export const distributeProportionalShares = (
 };
 
 /**
- * @param {ZCF<GovernanceTerms<{
- *   StartFrequency: 'relativeTime',
- *   ClockStep: 'relativeTime',
- *   StartingRate: 'nat',
- *   lowestRate: 'nat',
- *   DiscountStep: 'nat',
- * }> & {
+ * @param {ZCF<GovernanceTerms<typeof auctioneerParamTypes> & {
  *   timerService: import('@agoric/time/src/types').TimerService,
  *   priceAuthority: PriceAuthority
  * }>} zcf
@@ -134,6 +136,11 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
+  /**
+   *
+   * @param {ZCFSeat} seat
+   * @param {Amount<'nat'>} amount
+   */
   const addDeposit = (seat, amount) => {
     appendToStoredArray(deposits, amount.brand, { seat, amount });
   };
@@ -188,7 +195,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
-      // @ts-expect-error XXX How to type this?
       auctioneerParamTypes,
       privateArgs.storageNode,
       privateArgs.marshaller,
@@ -243,6 +249,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduler = await makeScheduler(driver, timer, params, timerBrand);
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
+  /**
+   * @param {ZCFSeat} zcfSeat
+   */
   const depositOfferHandler = zcfSeat => {
     const { Collateral: collateralAmount } = zcfSeat.getCurrentAllocation();
     const book = books.get(collateralAmount.brand);
@@ -260,28 +269,35 @@ export const start = async (zcf, privateArgs, baggage) => {
       M.splitRecord({ give: { Collateral: AmountShape } }),
     );
 
+  const bidProposalShape = M.splitRecord(
+    {
+      give: { Currency: makeNatAmountShape(brands.Currency) },
+    },
+    {
+      want: M.or({ Collateral: AmountShape }, {}),
+      exit: FullProposalShape.exit,
+    },
+  );
+
   const publicFacet = augmentPublicFacet(
     harden({
-      getBidInvitation(collateralBrand) {
+      /** @param {Brand<'nat'>} collateralBrand */
+      makeBidInvitation(collateralBrand) {
+        mustMatch(collateralBrand, BrandShape);
+        books.has(collateralBrand) ||
+          Fail`No book for brand ${collateralBrand}`;
+        const bidSpecShape = makeBidSpecShape(brands.Currency, collateralBrand);
+        /**
+         * @param {ZCFSeat} zcfSeat
+         * @param {import('./auctionBook.js').BidSpec} bidSpec
+         */
         const newBidHandler = (zcfSeat, bidSpec) => {
-          if (books.has(collateralBrand)) {
-            const auctionBook = books.get(collateralBrand);
-            auctionBook.addOffer(bidSpec, zcfSeat, isActive());
-            return 'Your offer has been received';
-          } else {
-            zcfSeat.exit(`No book for brand ${collateralBrand}`);
-            return 'Your offer was refused';
-          }
+          // xxx consider having Zoe guard the offerArgs with a provided shape
+          mustMatch(bidSpec, bidSpecShape);
+          const auctionBook = books.get(collateralBrand);
+          auctionBook.addOffer(bidSpec, zcfSeat, isActive());
+          return 'Your offer has been received';
         };
-        const bidProposalShape = M.splitRecord(
-          {
-            give: { Currency: { brand: brands.Currency, value: M.nat() } },
-          },
-          {
-            want: M.or({ Collateral: AmountShape }, {}),
-            exit: FullProposalShape.exit,
-          },
-        );
 
         return zcf.makeInvitation(
           newBidHandler,
@@ -324,8 +340,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         books.init(brand, newBook);
         brandToKeyword.init(brand, kwd);
       },
-      // XXX if it's in public, doesn't also need to be in creatorFacet.
-      getDepositInvitation,
       /** @returns {Promise<import('./scheduler.js').FullSchedule>} */
       getSchedule() {
         return E(scheduler).getSchedule();
@@ -340,5 +354,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 /** @typedef {ContractOf<typeof start>} AuctioneerContract */
 /** @typedef {AuctioneerContract['publicFacet']} AuctioneerPublicFacet */
 /** @typedef {AuctioneerContract['creatorFacet']} AuctioneerCreatorFacet */
+// xxx the governance types should handle this automatically
+/** @typedef {ReturnType<AuctioneerContract['creatorFacet']['getLimitedCreatorFacet']>} AuctioneerLimitedCreatorFacet */
 
 export const AuctionPFShape = M.remotable('Auction Public Facet');

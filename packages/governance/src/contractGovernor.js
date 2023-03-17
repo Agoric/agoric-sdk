@@ -118,13 +118,13 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governedContractInstallation: Installation<CF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: InvitationParam}},
  *   }
  * }>}
  */
 
 /**
- * @typedef {() => {creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}} GovernableStartFn
+ * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernorFacet<any>, publicFacet: GovernedPublicFacetMethods}>} GovernableStartFn
  */
 
 /**
@@ -136,7 +136,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governedContractInstallation: Installation<SF>,
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
- *     terms: {governedParams: {[CONTRACT_ELECTORATE]: Amount<'set'>}},
+ *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam}},
  *   }
  * }>} zcf
  * @param {{
@@ -174,7 +174,7 @@ const start = async (zcf, privateArgs) => {
     governedContractInstallation,
     governedIssuerKeywordRecord,
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-    // @ts-ignore XXX governance types
+    // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     augmentedTerms,
     privateArgs.governed,
   );
