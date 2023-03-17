@@ -242,10 +242,10 @@ export const makeAgoricNamesAccess = (
     const { nameAdmin } = hubs[key];
     const subSpaceLog = (...args) => log(key, ...args);
     const { produce, consume } = makePromiseSpace(subSpaceLog);
-    keys(detail).forEach(k => {
+    for (const k of keys(detail)) {
       nameAdmin.reserve(k);
-      consume[k].then(v => nameAdmin.update(k, v));
-    });
+      void consume[k].then(v => nameAdmin.update(k, v));
+    }
     return [key, { produce, consume }];
   });
   const typedSpaces = /** @type { WellKnownSpaces } */ (

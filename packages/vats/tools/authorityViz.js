@@ -255,18 +255,19 @@ const main = async (args, { stdout, fsp, meta }) => {
 };
 
 (async () => {
-  // eslint-disable-next-line import/no-extraneous-dependencies
-  Promise.all([import('fs/promises'), import('import-meta-resolve')]).then(
-    ([fsp, metaResolve]) => {
-      return main(process.argv.slice(2), {
-        stdout: process.stdout,
-        fsp,
-        meta: {
-          resolve: metaResolve.resolve,
-          url: import.meta.url,
-          load: specifier => import(specifier),
-        },
-      });
-    },
-  );
+  await Promise.all([
+    import('fs/promises'),
+    // eslint-disable-next-line import/no-extraneous-dependencies
+    import('import-meta-resolve'),
+  ]).then(([fsp, metaResolve]) => {
+    return main(process.argv.slice(2), {
+      stdout: process.stdout,
+      fsp,
+      meta: {
+        resolve: metaResolve.resolve,
+        url: import.meta.url,
+        load: specifier => import(specifier),
+      },
+    });
+  });
 })().catch(console.error);

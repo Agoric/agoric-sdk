@@ -163,7 +163,9 @@ export const makeNameHubKit = () => {
           if (old.reject) {
             old.reject(Error(`Value has been deleted`));
             // Silence unhandled rejections.
-            old.promise && old.promise.catch(_ => {});
+            if (old.promise) {
+              void old.promise.catch(_ => {});
+            }
           }
         }
       }
