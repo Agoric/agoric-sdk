@@ -5,11 +5,9 @@ import '@endo/init/debug.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assert, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import engineGC from './engine-gc.js';
-import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
-import { makeDummyMeterControl } from './dummyMeterControl.js';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { kslot, kser, kunser } from './kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
@@ -23,6 +21,7 @@ import {
   makeRetireExports,
   makeRetireImports,
 } from './util.js';
+import { makeMockGC } from './mock-gc.js';
 
 function matchIDCounterSet(t, log) {
   t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });
@@ -1200,99 +1199,6 @@ test('GC dispatch.retireExports', async t => {
   await dispatch(makeRetireExports(ex1));
   t.deepEqual(log, []);
 });
-
-// Create a WeakRef/FinalizationRegistry pair that can be manipulated for
-// tests. Limitations:
-// * only one WeakRef per object
-// * no deregister
-// * extra debugging properties like FR.countCallbacks and FR.runOneCallback
-// * nothing is hardened
-
-function makeMockGC() {
-  const weakRefToVal = new Map();
-  const valToWeakRef = new Map();
-  const allFRs = [];
-  // eslint-disable-next-line no-unused-vars
-  function log(...args) {
-    // console.log(...args);
-  }
-
-  const mockWeakRefProto = {
-    deref() {
-      return weakRefToVal.get(this);
-    },
-  };
-  function mockWeakRef(val) {
-    assert(!valToWeakRef.has(val));
-    weakRefToVal.set(this, val);
-    valToWeakRef.set(val, this);
-  }
-  mockWeakRef.prototype = mockWeakRefProto;
-
-  function kill(val) {
-    log(`kill`, val);
-    if (valToWeakRef.has(val)) {
-      log(` killing weakref`);
-      const wr = valToWeakRef.get(val);
-      valToWeakRef.delete(val);
-      weakRefToVal.delete(wr);
-    }
-    for (const fr of allFRs) {
-      if (fr.registry.has(val)) {
-        log(` pushed on FR queue, context=`, fr.registry.get(val));
-        fr.ready.push(val);
-      }
-    }
-    log(` kill done`);
-  }
-
-  const mockFinalizationRegistryProto = {
-    register(val, context) {
-      log(`FR.register(context=${context})`);
-      this.registry.set(val, context);
-    },
-    countCallbacks() {
-      log(`countCallbacks:`);
-      log(` ready:`, this.ready);
-      log(` registry:`, this.registry);
-      return this.ready.length;
-    },
-    runOneCallback() {
-      log(`runOneCallback`);
-      const val = this.ready.shift();
-      log(` val:`, val);
-      assert(this.registry.has(val));
-      const context = this.registry.get(val);
-      log(` context:`, context);
-      this.registry.delete(val);
-      this.callback(context);
-    },
-  };
-
-  function mockFinalizationRegistry(callback) {
-    this.registry = new Map();
-    this.callback = callback;
-    this.ready = [];
-    allFRs.push(this);
-  }
-  mockFinalizationRegistry.prototype = mockFinalizationRegistryProto;
-
-  function getAllFRs() {
-    return allFRs;
-  }
-
-  function mockGCAndFinalize() {}
-
-  return harden({
-    WeakRef: mockWeakRef,
-    FinalizationRegistry: mockFinalizationRegistry,
-    kill,
-    getAllFRs,
-    waitUntilQuiescent,
-    gcAndFinalize: mockGCAndFinalize,
-    meterControl: makeDummyMeterControl(),
-  });
-}
 
 test('dropImports', async t => {
   const { syscall } = buildSyscall();
