@@ -13,7 +13,7 @@ import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 
 import { setup } from '../../../zoe/test/unitTests/setupBasicMints.js';
-import { makeAuctionBook } from '../../src/auction/auctionBook.js';
+import { prepareAuctionBook } from '../../src/auction/auctionBook.js';
 
 const buildManualPriceAuthority = initialPrice =>
   makeManualPriceAuthority({
@@ -31,15 +31,11 @@ test('states', async t => {
   await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
 
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
+
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
-  const auct = await makeAuctionBook(
-    baggage,
-    zcf,
-    moolaKit.brand,
-    simoleanKit.brand,
-    pa,
-  );
+  const auct = await makeAuctionBook(moolaKit.brand, simoleanKit.brand, pa);
   t.deepEqual(
     auct.getCurrentPrice(),
     makeRatioFromAmounts(
@@ -77,6 +73,8 @@ test('simple addOffer', async t => {
   );
 
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
+
   const donorSeat = await makeSeatWithAssets(
     zoe,
     zcf,
@@ -88,13 +86,7 @@ test('simple addOffer', async t => {
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
 
-  const book = await makeAuctionBook(
-    baggage,
-    zcf,
-    moolaKit.brand,
-    simoleanKit.brand,
-    pa,
-  );
+  const book = await makeAuctionBook(moolaKit.brand, simoleanKit.brand, pa);
   pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
   await eventLoopIteration();
 
@@ -125,6 +117,7 @@ test('getOffers to a price limit', async t => {
   await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
 
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
 
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
@@ -137,13 +130,7 @@ test('getOffers to a price limit', async t => {
     simoleanKit,
   );
 
-  const book = await makeAuctionBook(
-    baggage,
-    zcf,
-    moolaKit.brand,
-    simoleanKit.brand,
-    pa,
-  );
+  const book = await makeAuctionBook(moolaKit.brand, simoleanKit.brand, pa);
   pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
   await eventLoopIteration();
 
@@ -182,6 +169,7 @@ test('Bad keyword', async t => {
   await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
 
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
 
   const donorSeat = await makeSeatWithAssets(
     zoe,
@@ -194,13 +182,7 @@ test('Bad keyword', async t => {
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
 
-  const book = await makeAuctionBook(
-    baggage,
-    zcf,
-    moolaKit.brand,
-    simoleanKit.brand,
-    pa,
-  );
+  const book = await makeAuctionBook(moolaKit.brand, simoleanKit.brand, pa);
 
   pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
   await eventLoopIteration();
@@ -239,6 +221,7 @@ test('getOffers w/discount', async t => {
   await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
 
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
 
   const donorSeat = await makeSeatWithAssets(
     zoe,
@@ -251,13 +234,7 @@ test('getOffers w/discount', async t => {
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
 
-  const book = await makeAuctionBook(
-    baggage,
-    zcf,
-    moolaKit.brand,
-    simoleanKit.brand,
-    pa,
-  );
+  const book = await makeAuctionBook(moolaKit.brand, simoleanKit.brand, pa);
 
   pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
   await eventLoopIteration();
