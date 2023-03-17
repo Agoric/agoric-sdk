@@ -23,7 +23,7 @@ test.serial('verify store weak key GC', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -108,7 +108,7 @@ test.serial('verify weakly held value GC', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   const { fakestore } = v;
 
@@ -147,7 +147,7 @@ test.serial('verify weakly held value GC', async t => {
 // prettier-ignore
 test.serial('verify presence weak key GC', async t => {
   const { v, dispatchMessage, dispatchRetireImports, testHooks } =
-    await setupTestLiveslots(t, buildRootObject, 'bob', true);
+    await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const { fakestore } = v;
 
   const presenceRef = 'o-5'; // Presence5

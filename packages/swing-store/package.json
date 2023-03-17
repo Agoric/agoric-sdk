@@ -21,6 +21,7 @@
     "@agoric/assert": "^0.5.1",
     "@agoric/internal": "^0.2.1",
     "better-sqlite3": "^7.5.0",
+    "readline-transform": "^1.0.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {

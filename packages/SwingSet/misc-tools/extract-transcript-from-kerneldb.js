@@ -18,7 +18,7 @@ if (!dirPath) {
 if (!isSwingStore(dirPath)) {
   throw Error(`${dirPath} does not appear to be a swingstore (no ./data.mdb)`);
 }
-const { kvStore, streamStore } = openSwingStore(dirPath).kernelStorage;
+const { kvStore, transcriptStore } = openSwingStore(dirPath).kernelStorage;
 function get(key) {
   return kvStore.get(key);
 }
@@ -98,7 +98,7 @@ if (!vatName) {
   fs.writeSync(fd, JSON.stringify(first));
   fs.writeSync(fd, '\n');
 
-  // The streamStore holds concatenated transcripts from all upgraded
+  // The transcriptStore holds concatenated transcripts from all upgraded
   // versions. For each old version, it holds every delivery from
   // `startVat` through `stopVat`. For the current version, it holds
   // every delivery from `startVat` up through the last delivery
@@ -123,9 +123,8 @@ if (!vatName) {
   console.log(`${transcriptLength} transcript entries`);
 
   let deliveryNum = 0;
-  const transcriptStream = `transcript-${vatID}`;
-  const stream = streamStore.readStream(transcriptStream, startPos, endPos);
-  for (const entry of stream) {
+  const transcript = transcriptStore.readSpan(vatID, startPos, endPos);
+  for (const entry of transcript) {
     // entry is JSON.stringify({ d, syscalls }), syscall is { d, response }
     const t = { transcriptNum, ...JSON.parse(entry) };
     // console.log(`t.${deliveryNum} : ${t}`);
