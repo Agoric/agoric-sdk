@@ -170,7 +170,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
     const action = JSON.parse(str);
     const p = Promise.resolve(handler(action));
-    E.when(
+    void E.when(
       p,
       res => {
         // console.error(`Replying in Node to ${str} with`, res);

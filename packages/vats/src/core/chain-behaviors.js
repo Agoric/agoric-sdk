@@ -281,7 +281,7 @@ export const setupClientManager = async (
         getConfiguration: () => notifier,
       });
 
-      observeIteration(subscription, {
+      void observeIteration(subscription, {
         updateState(newPropertyMakers) {
           makeUpdatedConfiguration(newPropertyMakers)
             .then(x => updater.updateState(x))

@@ -272,7 +272,7 @@ export const makeSwingsetTestKit = async (t, specifier) => {
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
       case BridgeId.STORAGE:
-        storage.toStorage(obj);
+        void storage.toStorage(obj);
         return undefined;
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);

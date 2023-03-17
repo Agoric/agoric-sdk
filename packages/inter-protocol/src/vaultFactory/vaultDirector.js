@@ -547,9 +547,9 @@ export const prepareVaultDirector = (
       },
     },
     {
-      finish: async ({ facets }) => {
+      finish: ({ facets }) => {
         facets.helper.rescheduleLiquidationWakeups();
-        await updateShortfallReporter();
+        void updateShortfallReporter();
       },
     },
   );
