@@ -44,13 +44,13 @@ export const TransferPartShape = M.splitArray(
          - A giving into a `toSeat`'s allocation. See the `toOnly`
            helper.
  *
- * TODO Refactor `atomicRearrange`from being a helper into being
- * zcf's replacement for reallocate. Is currently a helper during
+ * TODO(6679) Refactor `atomicRearrange`from being a helper into being
+ * zcf's replacement for reallocate. It was made a helper during
  * the transition, to avoid interference with progress on Zoe durability.
  *
  * See the helpers below, `fromOnly`, `toOnly`, and `atomicTransfer`,
  * which will remain helpers. These helper are for convenience
- * in expressing atomic rearragements clearly.
+ * in expressing atomic rearrangements clearly.
  *
  * @param {ZCF} zcf
  * @param {TransferPart[]} transfers

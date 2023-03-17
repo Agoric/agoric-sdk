@@ -19,7 +19,7 @@ import {
 import { E } from '@endo/captp';
 import { makeTracer } from '@agoric/internal';
 
-import { makeScaledBidBook, makePriceBook } from './offerBook.js';
+import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
 import {
   isScaledBidPriceHigher,
   makeBrandedRatioPattern,
@@ -28,7 +28,7 @@ import {
 
 const { Fail } = assert;
 
-const DEFAULT_DECIMALS = 9n;
+const DEFAULT_DECIMALS = 9;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -50,8 +50,49 @@ const DEFAULT_DECIMALS = 9n;
 
 const trace = makeTracer('AucBook', false);
 
+/**
+ * @typedef {{
+ * want: Amount<'nat'>
+ * } & ({
+ * offerPrice: Ratio,
+ * } | {
+ * offerBidScaling: Ratio,
+ * })} BidSpec
+ */
+/**
+ *
+ * @param {Brand<'nat'>} currencyBrand
+ * @param {Brand<'nat'>} collateralBrand
+ */
+export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
+  const currencyAmountShape = { brand: currencyBrand, value: M.nat() };
+  const collateralAmountShape = { brand: collateralBrand, value: M.nat() };
+  return M.splitRecord(
+    { want: collateralAmountShape },
+    {
+      // xxx should have exactly one of these properties
+      offerPrice: makeBrandedRatioPattern(
+        currencyAmountShape,
+        collateralAmountShape,
+      ),
+      offerBidScaling: makeBrandedRatioPattern(
+        currencyAmountShape,
+        currencyAmountShape,
+      ),
+    },
+  );
+};
+
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
+/**
+ *
+ * @param {Baggage} baggage
+ * @param {ZCF} zcf
+ * @param {Brand<'nat'>} currencyBrand
+ * @param {Brand<'nat'>} collateralBrand
+ * @param {PriceAuthority} priceAuthority
+ */
 export const makeAuctionBook = async (
   baggage,
   zcf,
@@ -95,16 +136,16 @@ export const makeAuctionBook = async (
 
   let lockedPriceForRound = zeroRatio;
   let updatingOracleQuote = zeroRatio;
-  E.when(
+  void E.when(
     E(collateralBrand).getDisplayInfo(),
     ({ decimalPlaces = DEFAULT_DECIMALS }) => {
       // TODO(#6946) use this to keep a current price that can be published in state.
       const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-        AmountMath.make(collateralBrand, 10n ** decimalPlaces),
+        AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
         currencyBrand,
       );
 
-      observeNotifier(quoteNotifier, {
+      void observeNotifier(quoteNotifier, {
         updateState: quote => {
           trace(
             `BOOK notifier ${priceFrom(quote).numerator.value}/${
@@ -127,12 +168,15 @@ export const makeAuctionBook = async (
 
   let curAuctionPrice = zeroRatio;
 
+  const makeScaledBidBook = prepareScaledBidBook(baggage);
+  const makePriceBook = preparePriceBook(baggage);
+
   const scaledBidBook = provide(baggage, 'scaledBidBook', () => {
     const ratioPattern = makeBrandedRatioPattern(
       currencyAmountShape,
       currencyAmountShape,
     );
-    return makeScaledBidBook(baggage, ratioPattern, collateralBrand);
+    return makeScaledBidBook(ratioPattern, collateralBrand);
   });
 
   const priceBook = provide(baggage, 'sortedOffers', () => {
@@ -141,7 +185,7 @@ export const makeAuctionBook = async (
       collateralAmountShape,
     );
 
-    return makePriceBook(baggage, ratioPattern, collateralBrand);
+    return makePriceBook(ratioPattern, collateralBrand);
   });
 
   /**
@@ -175,7 +219,12 @@ export const makeAuctionBook = async (
     }
   };
 
-  // Settle with seat. The caller is responsible for updating the book, if any.
+  /**
+   * Settle with seat. The caller is responsible for updating the book, if any.
+   *
+   * @param {ZCFSeat} seat
+   * @param {Amount<'nat'>} collateralWanted
+   */
   const settle = (seat, collateralWanted) => {
     const { Currency: currencyAvailable } = seat.getCurrentAllocation();
     const { Collateral: collateralAvailable } =
@@ -226,7 +275,7 @@ export const makeAuctionBook = async (
    *
    *  @param {ZCFSeat} seat
    *  @param {Ratio} price
-   *  @param {Amount} want
+   *  @param {Amount<'nat'>} want
    *  @param {boolean} trySettle
    */
   const acceptPriceOffer = (seat, price, want, trySettle) => {
@@ -257,7 +306,7 @@ export const makeAuctionBook = async (
    *
    *  @param {ZCFSeat} seat
    *  @param {Ratio} bidScaling
-   *  @param {Amount} want
+   *  @param {Amount<'nat'>} want
    *  @param {boolean} trySettle
    */
   const acceptScaledBidOffer = (seat, bidScaling, want, trySettle) => {
@@ -280,6 +329,10 @@ export const makeAuctionBook = async (
   };
 
   return Far('AuctionBook', {
+    /**
+     * @param {Amount<'nat'>} assetAmount
+     * @param {ZCFSeat} sourceSeat
+     */
     addAssets(assetAmount, sourceSeat) {
       trace('add assets');
       assetsForSale = AmountMath.add(assetsForSale, assetAmount);
@@ -288,6 +341,7 @@ export const makeAuctionBook = async (
         harden([[sourceSeat, collateralSeat, { Collateral: assetAmount }]]),
       );
     },
+    /** @type {(reduction: Ratio) => void} */
     settleAtNewRate(reduction) {
       curAuctionPrice = multiplyRatios(reduction, lockedPriceForRound);
 
@@ -342,6 +396,12 @@ export const makeAuctionBook = async (
       trace('set startPrice', lockedPriceForRound);
       curAuctionPrice = multiplyRatios(lockedPriceForRound, rate);
     },
+    /**
+     *
+     * @param {BidSpec} bidSpec
+     * @param {ZCFSeat} seat
+     * @param {boolean} trySettle
+     */
     addOffer(bidSpec, seat, trySettle) {
       mustMatch(bidSpec, BidSpecShape);
       const { give } = seat.getProposal();
@@ -351,14 +411,14 @@ export const makeAuctionBook = async (
         'give must include "Currency"',
       );
 
-      if (bidSpec.offerPrice) {
+      if ('offerPrice' in bidSpec) {
         return acceptPriceOffer(
           seat,
           bidSpec.offerPrice,
           bidSpec.want,
           trySettle,
         );
-      } else if (bidSpec.offerBidScaling) {
+      } else if ('offerBidScaling' in bidSpec) {
         return acceptScaledBidOffer(
           seat,
           bidSpec.offerBidScaling,

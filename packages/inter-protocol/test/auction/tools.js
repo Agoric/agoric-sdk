@@ -13,6 +13,17 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
+/**
+ * @typedef {{
+ * autoRefund: Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>,
+ * auctioneer: Installation<import('../../src/auction/auctioneer').start>,
+ * governor: Installation<import('@agoric/governance/src/contractGovernor').start>,
+ * }} AuctionTestInstallations
+ */
+
+/**
+ * @param {ZoeService} zoe
+ */
 export const setUpInstallations = async zoe => {
   const autoRefund = '@agoric/zoe/src/contracts/automaticRefund.js';
   const autoRefundUrl = await importMetaResolve(autoRefund, import.meta.url);
@@ -25,7 +36,10 @@ export const setUpInstallations = async zoe => {
     auctioneer: bundleCache.load('./src/auction/auctioneer.js', 'auctioneer'),
     governor: contractGovernorBundle,
   });
-  return objectMap(bundles, bundle => E(zoe).install(bundle));
+  /** @type {AuctionTestInstallations} */
+  // @ts-expect-error cast
+  const installations = objectMap(bundles, bundle => E(zoe).install(bundle));
+  return installations;
 };
 
 export const makeDefaultParams = (invitation, timerBrand) =>
@@ -74,7 +88,12 @@ export const setUpZoeForTest = async (setJig = () => {}) => {
   return zoeService;
 };
 
-// contract governor wants a committee invitation. give it a random invitation
+/**
+ * contract governor wants a committee invitation. give it a random invitation
+ *
+ * @param {ZoeService} zoe
+ * @param {AuctionTestInstallations} installations
+ */
 export const getInvitation = async (zoe, installations) => {
   const autoRefundFacets = await E(zoe).startInstance(installations.autoRefund);
   const invitationP = E(autoRefundFacets.publicFacet).makeInvitation();

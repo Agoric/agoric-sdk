@@ -47,7 +47,7 @@
  * rejected.
  * @property {(nonFinalValue: T) => void} updateState
  * @property {(completion: T) => void} finish
- * @property {(reason: any) => void} fail
+ * @property {(reason: unknown) => void} fail
  */
 
 // /////////////////////////////////////////////////////////////////////////////

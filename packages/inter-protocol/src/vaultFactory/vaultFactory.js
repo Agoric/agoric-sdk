@@ -27,6 +27,7 @@ import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
+ *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
  *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
@@ -67,6 +68,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     mintedIssuerRecord: debtMint.getIssuerRecord(),
   }));
 
+  const { timerService, auctioneerPublicFacet } = zcf.getTerms();
   const {
     [MIN_INITIAL_DEBT_KEY]: { value: minInitialDebt },
     [ENDORSED_UI_KEY]: { value: endorsedUi },
@@ -91,6 +93,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
     vaultDirectorParamManager,
     debtMint,
+    timerService,
+    auctioneerPublicFacet,
     storageNode,
     marshaller,
   );

@@ -147,7 +147,7 @@ test('governParam no votes', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -232,7 +232,7 @@ test('change multiple params', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -240,7 +240,7 @@ test('change multiple params', async t => {
   const update1 = await notifier.getUpdateSince();
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
-    // @ts-expect-error reaching into unknown values
+    // @ts-expect-error reaching into {} values
     update1.value.current.Electorate.value.value[0].description,
     'questionPoser',
   );
@@ -314,7 +314,7 @@ test('change multiple params used invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -385,7 +385,7 @@ test('change param continuing invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),

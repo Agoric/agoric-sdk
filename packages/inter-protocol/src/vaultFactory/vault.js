@@ -65,7 +65,7 @@ export const Phase = /** @type {const} */ ({
  */
 const validTransitions = {
   [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
-  [Phase.LIQUIDATING]: [Phase.LIQUIDATED],
+  [Phase.LIQUIDATING]: [Phase.LIQUIDATED, Phase.ACTIVE],
   [Phase.LIQUIDATED]: [Phase.CLOSED],
   [Phase.CLOSED]: [],
 };
@@ -168,6 +168,7 @@ export const VaultI = M.interface('Vault', {
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
+  abortLiquidation: M.call().returns(M.string()),
 });
 
 /**
@@ -460,7 +461,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           helper.assignPhase(Phase.CLOSED);
           helper.updateDebtSnapshot(helper.emptyDebt());
           helper.updateUiState();
-
           helper.assertVaultHoldsNoMinted();
           vaultSeat.exit();
 
@@ -770,6 +770,22 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
           helper.assignPhase(Phase.LIQUIDATED);
           helper.updateUiState();
+        },
+
+        /**
+         * Called by vaultManager when the auction wasn't able to sell the
+         * collateral. The liquidation fee was charged against the collateral,
+         * but the debt will be restored and the vault will be active again.
+         * Liquidation.md has details on the liquidation approach.
+         */
+        abortLiquidation() {
+          const { state, facets } = this;
+
+          const { helper } = facets;
+
+          helper.assignPhase(Phase.ACTIVE);
+          helper.updateUiState();
+          return state.idInManager;
         },
 
         makeAdjustBalancesInvitation() {

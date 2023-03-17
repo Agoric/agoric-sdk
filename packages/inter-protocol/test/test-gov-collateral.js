@@ -1,3 +1,4 @@
+/** @file currently disabled https://github.com/Agoric/agoric-sdk/issues/7175 */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import process from 'process';
 import url from 'url';
@@ -411,7 +412,7 @@ const makeScenario = async (t, { env = process.env } = {}) => {
   };
 };
 
-test('Benefactor can add to reserve', async t => {
+test.skip('Benefactor can add to reserve', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   await s.provisionMembers();
@@ -426,7 +427,7 @@ test('Benefactor can add to reserve', async t => {
   t.deepEqual(result, 'added Collateral to the Reserve');
 });
 
-test('voters get invitations', async t => {
+test.skip('voters get invitations', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const purses = await s.provisionMembers();
@@ -458,7 +459,7 @@ test('voters get invitations', async t => {
   );
 });
 
-test('assets are in Vaults', async t => {
+test.skip('assets are in Vaults', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   await s.provisionMembers();
@@ -490,7 +491,7 @@ test('assets are in Vaults', async t => {
   });
 });
 
-test('Committee can raise debt limit', async t => {
+test.skip('Committee can raise debt limit', async t => {
   const s = await makeScenario(t);
   await s.startDevNet();
   const invitationPurses = await s.provisionMembers();

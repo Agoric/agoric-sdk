@@ -12,7 +12,7 @@ import { E } from '@endo/far';
 import { LienBridgeId, makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeStakeFactoryTerms } from '../stakeFactory/params.js';
-import { makeGovernedTerms } from '../vaultFactory/params.js';
+import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 
 const trace = makeTracer('RunEconBehaviors', false);
@@ -38,6 +38,14 @@ const BASIS_POINTS = 10_000n;
  * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
  * @property {GovernedContractFacetAccess<import('../../src/psm/psm.js').PsmPublicFacet,{}>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
+ */
+
+/**
+ * @typedef {object} AuctioneerKit
+ * @property {Awaited<ReturnType<import('../auction/auctioneer.js').start>>['creatorFacet']} creatorFacet
+ * @property {Awaited<ReturnType<import('../auction/auctioneer.js').start>>['publicFacet']} publicFacet
+ * @property {GovernedContractFacetAccess<{},{}>} governorCreatorFacet
+ * @property {AdminFacet} adminFacet
  */
 
 /**
@@ -72,12 +80,7 @@ const BASIS_POINTS = 10_000n;
  *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
  *     adminFacet: AdminFacet,
  *   },
- *   auctioneerKit: {
- *     publicFacet: AuctioneerPublicFacet,
- *     creatorFacet: AuctioneerCreatorFacet,
- *     governorCreatorFacet: GovernedContractFacetAccess<{},{}>,
- *     adminFacet: AdminFacet,
- *   }
+ *   auctioneerKit: AuctioneerKit,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
  */
@@ -121,10 +124,6 @@ export const setupReserve = async ({
   trace('setupReserve');
   const poserInvitationP = E(committeeCreator).getPoserInvitation();
 
-  await poserInvitationP;
-  await E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP);
-  await feeMintAccessP;
-
   const [poserInvitation, poserInvitationAmount, feeMintAccess] =
     await Promise.all([
       poserInvitationP,
@@ -132,13 +131,10 @@ export const setupReserve = async ({
       feeMintAccessP,
     ]);
 
-  const reserveTerms = makeReserveTerms(
-    poserInvitationAmount,
-    chainTimerService,
-  );
-
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
+
+  const reserveTerms = makeReserveTerms(poserInvitationAmount);
 
   const reserveGovernorTerms = await deeplyFulfilledObject(
     harden({
@@ -206,6 +202,7 @@ export const startVaultFactory = async (
       feeMintAccess: feeMintAccessP,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
+      auctioneerKit,
     },
     produce: { vaultFactoryKit },
     brand: {
@@ -245,12 +242,14 @@ export const startVaultFactory = async (
     initialShortfallInvitation,
     shortfallInvitationAmount,
     feeMintAccess,
+    auctioneerPublicFacet,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     shortfallInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(shortfallInvitationP),
     feeMintAccessP,
+    E.get(auctioneerKit).publicFacet,
   ]);
 
   const centralBrand = await centralBrandP;
@@ -259,10 +258,11 @@ export const startVaultFactory = async (
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const vaultFactoryTerms = makeGovernedTerms(
+  const vaultFactoryTerms = makeGovernedVFTerms(
     { storageNode, marshaller },
     {
       priceAuthority,
+      auctioneerPublicFacet,
       reservePublicFacet,
       loanTiming: loanParams,
       timer: chainTimerService,
@@ -505,11 +505,11 @@ export const startAuctioneer = async (
     },
     produce: { auctioneerKit },
     instance: {
-      produce: { auction: auctionInstance },
+      produce: { auctioneer: auctionInstance },
     },
     installation: {
       consume: {
-        auction: auctionInstallation,
+        auctioneer: auctionInstallation,
         contractGovernor: contractGovernorInstallation,
       },
     },
@@ -649,7 +649,7 @@ export const startStakeFactory = async (
       },
     },
     instance: {
-      produce: { stakeFactory: stakeFactoryinstanceR },
+      produce: { stakeFactory: stakeFactoryInstanceR },
     },
     brand: {
       consume: { [Stake.symbol]: bldBrandP, [Stable.symbol]: runBrandP },
@@ -754,7 +754,7 @@ export const startStakeFactory = async (
     }),
   );
 
-  stakeFactoryinstanceR.resolve(governedInstance);
+  stakeFactoryInstanceR.resolve(governedInstance);
   attestationBrandR.resolve(attBrand);
   attestationIssuerR.resolve(attIssuer);
   return Promise.all([

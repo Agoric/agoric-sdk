@@ -218,13 +218,17 @@ export type TimeMathType = {
   toRel: (rel: RelativeTime | number, brand?: TimerBrand) => RelativeTime;
   /**
    * An absolute time + a relative time gives a new absolute time.
+   *
+   * @template {Timestamp} T
    */
-  addAbsRel: (abs: Timestamp, rel: RelativeTime) => Timestamp;
+  addAbsRel: (abs: T, rel: RelativeTime) => T;
   /**
    * A relative time (i.e., a duration) + another relative time
    * gives a new relative time.
+   *
+   * @template {RelativeTime} T
    */
-  addRelRel: (rel1: RelativeTime, rel2: RelativeTime) => RelativeTime;
+  addRelRel: (rel1: T, rel2: T) => T;
   /**
    * The difference between two absolute times is a relative time. If abs1 > abs2
    * the difference would be negative, so this method throws instead.
