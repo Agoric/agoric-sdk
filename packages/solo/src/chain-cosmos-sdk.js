@@ -20,11 +20,11 @@ import { forever, whileTrue } from '@agoric/internal';
 
 const console = anylogger('chain-cosmos-sdk');
 
-// the `agd` tool in our repo is built by 'cd golang/cosmos &&
-// make'. It lives in the build tree along with `bin/ag-solo`, in case there are
-// multiple checkouts of `agoric-sdk`.
+// the `agd` tool in our repo is built on demand.  It lives in the build tree
+// along with `bin/ag-solo`, in case there are multiple checkouts of
+// `agoric-sdk`.
 export const HELPER = url.fileURLToPath(
-  new URL('../../../golang/cosmos/build/agd', import.meta.url),
+  new URL('../../../bin/agd', import.meta.url),
 );
 
 // Transaction simulation should be an accurate measure of gas.
