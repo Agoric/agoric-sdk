@@ -91,9 +91,9 @@ const initKernelForTest = async (t, bundleData, config) => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  const run = async (method, args = []) => {
+  const run = async (method, args = [], vatName = 'bootstrap') => {
     assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot('bootstrap', method, args);
+    const kpid = c.queueToVatRoot(vatName, method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     if (status === 'fulfilled') {
@@ -411,7 +411,7 @@ test('vat upgrade - omit vatParameters', async t => {
   t.deepEqual(result, [undefined, undefined]);
 });
 
-test('non-durable exports are abandoned by vat upgrade', async t => {
+test('non-durable exports are abandoned by upgrade of liveslots vat', async t => {
   const config = makeConfigFromPaths('../bootstrap-relay.js', {
     defaultManagerType: 'xs-worker',
     bundlePaths: {
@@ -435,11 +435,14 @@ test('non-durable exports are abandoned by vat upgrade', async t => {
     await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
     'v1',
   );
+
+  // Export some objects.
   const counterGetters = {
     ephCounter: 'getEphemeralCounter',
     virCounter: 'getVirtualCounter',
     durCounter: 'getDurableCounter',
   };
+  /** @type {Record<string, { presence: unknown, kref: string }>} */
   const counters = {};
   const runIncrement = presence =>
     run('messageVatObject', [{ presence, methodName: 'increment' }]);
@@ -535,6 +538,85 @@ test('non-durable exports are abandoned by vat upgrade', async t => {
     2,
     'message to durable object from previous incarnation must work with preserved state',
   );
+});
+
+test('non-durable exports are abandoned by upgrade of non-liveslots vat', async t => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultManagerType: 'xs-worker',
+  });
+  config.vats.exporter = {
+    sourceSpec: bfile('../vat-direct.js'),
+    parameters: { vatName: 'exporter' },
+    creationOptions: { enableSetup: true },
+  };
+  config.vats.observer = {
+    sourceSpec: bfile('../vat-direct.js'),
+    parameters: { vatName: 'observer' },
+    creationOptions: { enableSetup: true },
+  };
+  const { controller, kvStore, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
+
+  const exporterVatID = controller.vatNameToID('exporter');
+
+  // Export two objects from exporter to observer,
+  // one to be held strongly and the other weakly.
+  const observerPresence = await run('getVatRoot', [{ name: 'observer' }]);
+  const observer = await run('awaitVatObject', [
+    { presence: observerPresence, rawOutput: true },
+  ]);
+  const strongObj = await run('exportFakeObject', [], 'exporter');
+  await run(
+    'syscall-send',
+    [observer, 'acceptImports', [strongObj]],
+    'exporter',
+  );
+  const weakObj = await run('exportFakeObject', [], 'exporter');
+  await run(
+    'syscall-send',
+    [observer, 'acceptWeakImports', [weakObj]],
+    'exporter',
+  );
+
+  // Verify kernel tracking of the objects.
+  const getKrefReachableAndRecognizable = kref =>
+    kvStore.get(`${kref}.refCount`).split(',').map(Number);
+  const strongKref = krefOf(strongObj);
+  t.is(kvStore.get(`${strongKref}.owner`), exporterVatID);
+  const strongRefCounts = getKrefReachableAndRecognizable(strongKref);
+  t.deepEqual(
+    strongRefCounts,
+    [strongRefCounts[0], strongRefCounts[1]],
+    'strong observation must increment both reachable and recognizable ref counts',
+  );
+  const weakKref = krefOf(weakObj);
+  t.is(kvStore.get(`${weakKref}.owner`), exporterVatID);
+  const weakRefCounts = getKrefReachableAndRecognizable(weakKref);
+  t.deepEqual(
+    weakRefCounts,
+    [strongRefCounts[0] - 1, strongRefCounts[1]],
+    'weak observation must increment recognizable but not reachable ref counts',
+  );
+
+  // Null-upgrade exporter and verify updated kernel tracking.
+  const bundle = await bundleSource(config.vats.exporter.sourceSpec);
+  const bundleID = await controller.validateAndInstallBundle(bundle);
+  const upgradeKpid = controller.upgradeStaticVat('exporter', false, bundleID, {
+    vatParameters: config.vats.exporter.parameters,
+  });
+  await controller.run();
+  t.is(controller.kpStatus(upgradeKpid), 'fulfilled');
+  t.is(kvStore.get(`${strongKref}.owner`), undefined);
+  t.is(kvStore.get(`${weakKref}.owner`), undefined);
+  // TODO: Assert refcount decrease/removal.
+
+  // TODO: Verify observer receipt of dispatch.retireExports
+  // https://github.com/Agoric/agoric-sdk/issues/6696#issuecomment-1431881255
+  const observerLog = await run('getDispatchLog', [], 'observer');
+  t.deepEqual(observerLog, [], 'TODO');
 });
 
 test('failed upgrade - relaxed durable rules', async t => {

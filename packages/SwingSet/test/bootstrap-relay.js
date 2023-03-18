@@ -36,6 +36,12 @@ export const buildRootObject = () => {
 
     getTimer: async () => encodePassable(timer),
 
+    getVatRoot: async ({ name }) => {
+      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
+      const { root } = vat;
+      return encodePassable(root);
+    },
+
     createVat: async ({ name, bundleCapName, vatParameters = {} }) => {
       const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
       const options = { vatParameters };
