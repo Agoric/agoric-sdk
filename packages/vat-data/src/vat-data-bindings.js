@@ -152,6 +152,8 @@ export const makeStoreUtils = VatData => {
     makeScalarBigWeakMapStore,
     // eslint-disable-next-line no-shadow -- these literally do shadow the globals
     makeScalarBigSetStore,
+    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+    makeScalarBigWeakSetStore,
   } = VatData;
 
   /**
@@ -187,10 +189,22 @@ export const makeStoreUtils = VatData => {
     );
   harden(provideDurableSetStore);
 
+  /**
+   * @param {import('./types').Baggage} baggage
+   * @param {string} name
+   * @param {Omit<StoreOptions, 'durable'>} options
+   */
+  const provideDurableWeakSetStore = (baggage, name, options = {}) =>
+    provide(baggage, name, () =>
+      makeScalarBigWeakSetStore(name, { durable: true, ...options }),
+    );
+  harden(provideDurableWeakSetStore);
+
   return harden({
     provideDurableMapStore,
     provideDurableWeakMapStore,
     provideDurableSetStore,
+    provideDurableWeakSetStore,
   });
 };
 
@@ -199,4 +213,5 @@ export const {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   provideDurableSetStore,
+  provideDurableWeakSetStore,
 } = globalStoreUtils;
