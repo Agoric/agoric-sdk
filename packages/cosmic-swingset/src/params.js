@@ -55,3 +55,26 @@ export const parseParams = params => {
 
   return { beansPerUnit, feeUnitPrice, queueMax };
 };
+
+export const encodeParams = parsedParams => {
+  const { beansPerUnit, feeUnitPrice, queueMax } = parsedParams;
+
+  // eslint-disable-next-line camelcase
+  const beans_per_unit = Object.entries(beansPerUnit).map(([key, beans]) => {
+    isNat(beans) || Fail`beans ${beans} for ${key} is not a positive integer`;
+    return { key, beans: String(beans) };
+  });
+
+  Array.isArray(feeUnitPrice) ||
+    Fail`feeUnitPrice ${feeUnitPrice} must be an array`;
+  // eslint-disable-next-line camelcase
+  const fee_unit_price = feeUnitPrice.map(({ denom, amount }) => {
+    denom || Fail`denom ${denom} must be non-empty`;
+    return { denom, amount: String(amount) };
+  });
+
+  // eslint-disable-next-line camelcase
+  const queue_max = encodeQueueSizes(queueMax);
+
+  return { beans_per_unit, fee_unit_price, queue_max };
+};

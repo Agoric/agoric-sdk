@@ -36,6 +36,8 @@
     "@endo/import-bundle": "^0.3.0",
     "@endo/init": "^0.5.52",
     "@endo/marshal": "^0.8.1",
+    "@endo/promise-kit": "^0.2.52",
+    "@endo/stream": "^0.3.21",
     "@iarna/toml": "^2.2.3",
     "@opentelemetry/sdk-metrics": "^0.32.0",
     "anylogger": "^0.21.0",
@@ -45,7 +47,8 @@
   },
   "devDependencies": {
     "ava": "^5.1.0",
-    "c8": "^7.12.0"
+    "c8": "^7.12.0",
+    "readline-transform": "^1.0.0"
   },
   "publishConfig": {
     "access": "public"
