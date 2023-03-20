@@ -20,28 +20,34 @@ module.exports = {
       }
     : undefined,
   plugins: [
-    '@jessie.js/eslint-plugin',
     '@typescript-eslint',
     'eslint-plugin-import',
     'eslint-plugin-prettier',
+    'prettier',
   ],
-  extends: ['@agoric'],
+  extends: ['@agoric', 'plugin:jsdoc/recommended', 'prettier'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
     '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
+
+    'jsdoc/no-multi-asterisks': ['warn', { allowWhitespace: true }],
+    'jsdoc/no-undefined-types': 'off',
+    'jsdoc/require-jsdoc': 'off',
+    'jsdoc/require-property-description': 'off',
+    'jsdoc/require-param-description': 'off',
+    'jsdoc/require-returns': 'off',
+    'jsdoc/require-returns-check': 'off', // TS checks
+    'jsdoc/require-returns-description': 'off',
+    'jsdoc/require-yields': 'off',
+    'jsdoc/tag-lines': 'off',
+    'jsdoc/valid-types': 'off',
+
     // Not severe but the default 'warning' clutters output and it's easy to fix
     'jsdoc/check-param-names': 'error',
     'jsdoc/check-syntax': 'error',
-    'jsdoc/no-multi-asterisks': 'off',
-    'jsdoc/multiline-blocks': 'off',
-    // Use these rules to warn about JSDoc type problems, such as after
-    // upgrading eslint-plugin-jsdoc.
-    // Bump the 1's to 2's to get errors.
-    // "jsdoc/valid-types": 1,
-    // "jsdoc/no-undefined-types": [1, {"definedTypes": ["never", "unknown"]}],
-    'jsdoc/tag-lines': 'off',
+
     'import/no-extraneous-dependencies': [
       'error',
       {
