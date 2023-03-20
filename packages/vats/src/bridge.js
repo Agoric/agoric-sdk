@@ -11,7 +11,7 @@ export const BridgeHandlerI = M.interface('BridgeHandler', {
   fromBridge: M.call(M.any()).returns(M.promise()),
 });
 
-export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
+export const BridgeChannelI = M.interface('ScopedBridgeManager', {
   fromBridge: M.call(M.any()).returns(M.promise()),
   toBridge: M.call(M.any()).returns(M.promise()),
   setHandler: M.call(M.remotable('BridgeHandler')).returns(),
@@ -20,7 +20,7 @@ export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
 export const BridgeManagerI = M.interface('BridgeManager', {
   register: M.call(M.string())
     .optional(M.remotable('BridgeHandler'))
-    .returns(M.remotable('BridgeScopedManager')),
+    .returns(M.remotable('BridgeChannel')),
 });
 
 const BridgeManagerIKit = harden({
@@ -36,10 +36,10 @@ const BridgeManagerIKit = harden({
 /**
  * @param {import('@agoric/zone').Zone} zone
  */
-const prepareScopedManager = zone => {
-  const makeScopedManager = zone.exoClass(
-    'BridgeScopedManager',
-    BridgeScopedManagerI,
+const prepareBridgeChannel = zone => {
+  const makeBridgeChannel = zone.exoClass(
+    'BridgeChannel',
+    BridgeChannelI,
     /**
      * @param {string} bridgeId
      * @param {{ outbound: (bridgeId: string, obj: unknown) => Promise<any> }} toBridge
@@ -67,12 +67,12 @@ const prepareScopedManager = zone => {
         // implement a set once check for the handler and pass a single
         // object around.
         !this.state.inboundHandler ||
-          Fail`Bridge handler already set for ${this.state.bridgeId}`;
+          Fail`Bridge channel inbound handler already set for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
     },
   );
-  return makeScopedManager;
+  return makeBridgeChannel;
 };
 
 /**
@@ -80,7 +80,7 @@ const prepareScopedManager = zone => {
  * @param {DProxy} D The device sender
  */
 export const prepareBridgeManager = (zone, D) => {
-  const makeScopedManager = prepareScopedManager(zone);
+  const makeBridgeChannel = prepareBridgeChannel(zone);
 
   /**
    * Create a bridge manager for multiplexing messages to and from a bridge device
@@ -89,8 +89,8 @@ export const prepareBridgeManager = (zone, D) => {
    * @param {BridgeDevice} bridgeDevice The bridge to manage
    * @returns {{
    *   manager: import('./types.js').BridgeManager,
-   *   privateInbounder: { inbound(srcID: string, obj: unknown): void },
-   *   privateOutbounder: { outbound(dstID: string, obj: unknown): Promise<any> },
+   *   privateInbounder: { inbound(channelId: string, obj: unknown): void },
+   *   privateOutbounder: { outbound(channelId: string, obj: unknown): Promise<any> },
    * }}
    */
   const makeBridgeManagerKit = zone.exoClassKit(
@@ -98,31 +98,34 @@ export const prepareBridgeManager = (zone, D) => {
     BridgeManagerIKit,
     /** @param {BridgeDevice} bridgeDevice */
     bridgeDevice => ({
-      /** @type {MapStore<string, ReturnType<ReturnType<typeof prepareScopedManager>>>} */
-      scopedManagers: zone.detached().mapStore('scopedManagers'),
+      /** @type {MapStore<string, ReturnType<typeof makeBridgeChannel>>} */
+      idToChannel: zone.detached().mapStore('idToChannel'),
       bridgeDevice,
     }),
     {
       manager: {
-        register(bridgeId, handler) {
-          !this.state.scopedManagers.has(bridgeId) ||
-            Fail`Scoped bridge manager already registered for ${bridgeId}`;
-          const scopedManager = makeScopedManager(
-            bridgeId,
+        register(tag, handler) {
+          !this.state.idToChannel.has(tag) ||
+            Fail`Bridge channel already registered for ${tag}`;
+          const bridgeChannel = makeBridgeChannel(
+            tag,
             this.facets.privateOutbounder,
             handler,
           );
-          this.state.scopedManagers.init(bridgeId, scopedManager);
-          return scopedManager;
+          this.state.idToChannel.init(tag, bridgeChannel);
+          return bridgeChannel;
         },
       },
       /**
-       * This facet is registered with each scoped manager to handle outbound
+       * This facet is registered with each bridge channel to handle outbound
        * traffic, and is not exposed anywhere else.
        */
       privateOutbounder: {
-        async outbound(dstID, obj) {
-          const retobj = D(this.state.bridgeDevice).callOutbound(dstID, obj);
+        async outbound(channelId, obj) {
+          const retobj = D(this.state.bridgeDevice).callOutbound(
+            channelId,
+            obj,
+          );
           // note: *we* get this return value synchronously, but any callers
           // only get a Promise, and will receive the value in some future turn
           if (retobj && retobj.error) {
@@ -136,9 +139,9 @@ export const prepareBridgeManager = (zone, D) => {
        * messages, and is not exposed anywhere else.
        */
       privateInbounder: {
-        inbound(srcID, obj) {
+        inbound(channelId, obj) {
           // Notify the specific handler, if there was one.
-          void this.state.scopedManagers.get(srcID).fromBridge(obj);
+          void this.state.idToChannel.get(channelId).fromBridge(obj);
 
           // No return value.
         },
@@ -146,11 +149,25 @@ export const prepareBridgeManager = (zone, D) => {
     },
   );
 
+  // Retrieve or create the collection of manager kits.
   /** @type {MapStore<BridgeDevice, ReturnType<typeof makeBridgeManagerKit>>} */
   const bridgeToManagerKit = zone.mapStore('bridgeToManagerKit');
 
+  // Restore inbound handlers from a previous incarnation.
+  for (const [device, { privateInbounder }] of bridgeToManagerKit.entries()) {
+    D(device).unregisterInboundHandler();
+    D(device).registerInboundHandler(privateInbounder);
+  }
+
   /**
-   * Obtain the single manager associated with a bridge device.
+   * A read-only create-on-demand interface to the map from a bridge device to a
+   * bridge manager. Each of these bridge managers exposes a collection of
+   * channels.
+   *
+   * Each channel is bound to an ID string, multiplexes outbound messages on the
+   * bridge device by attaching its ID, and the manager demultiplexes inbound
+   * messages by dispaching them to the channel handler (if any) associated with
+   * the inbound ID.
    *
    * @param {BridgeDevice} bridgeDevice
    * @returns {import('./types.js').BridgeManager}
@@ -166,18 +183,11 @@ export const prepareBridgeManager = (zone, D) => {
       // Register the new manager with the bridge device.
       D(bridgeDevice).registerInboundHandler(kit.privateInbounder);
 
-      // Safe now to add the kit.
+      // Safe now to track the kit persistently.
       bridgeToManagerKit.init(bridgeDevice, kit);
     }
     return kit.manager;
   };
-
-  // Register all the handlers with their bridge devices.  This is necessary
-  // because the device has no memory of its existing handler.
-  for (const [device, { privateInbounder }] of bridgeToManagerKit.entries()) {
-    D(device).unregisterInboundHandler();
-    D(device).registerInboundHandler(privateInbounder);
-  }
 
   return provideManagerForBridge;
 };
