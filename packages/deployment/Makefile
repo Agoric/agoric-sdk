@@ -1,5 +1,5 @@
-REPOSITORY = agoric/cosmic-swingset
-REPOSITORY_SDK = agoric/agoric-sdk
+REPOSITORY = ghcr.io/agoric/cosmic-swingset
+REPOSITORY_SDK = ghcr.io/agoric/agoric-sdk
 SS := ../cosmic-swingset/
 VERSION := $(shell node -e 'console.log(require("../../package.json").version??"")' 2>/dev/null)
 
