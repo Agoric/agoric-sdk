@@ -267,8 +267,7 @@ test('bid for liquidation', async t => {
     status: {
       id: 'bid',
       numWantsSatisfied: 1,
-      // TODO a more explicit messsage such as, 'Your bid has been added to the books'
-      result: 'Your offer has been received',
+      result: 'Your bid has been accepted',
     },
   });
 });

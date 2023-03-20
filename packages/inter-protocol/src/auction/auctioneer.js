@@ -294,7 +294,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           mustMatch(bidSpec, bidSpecShape);
           const auctionBook = books.get(collateralBrand);
           auctionBook.addOffer(bidSpec, zcfSeat, isActive());
-          return 'Your offer has been received';
+          return 'Your bid has been accepted';
         };
 
         return zcf.makeInvitation(
