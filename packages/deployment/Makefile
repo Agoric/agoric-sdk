@@ -39,8 +39,8 @@ docker-build-solo:
 	docker tag $(REPOSITORY)-solo:$(TAG) $(REPOSITORY)-solo:latest
 
 docker-build-ssh-node:
-	docker build --build-arg=TAG=$(TAG)  -t agoric/ssh-node:$(TAG) --file=Dockerfile.ssh-node ./docker
-	docker tag agoric/ssh-node:$(TAG) agoric/ssh-node:latest
+	docker build --build-arg=TAG=$(TAG)  -t ghcr.io/agoric/ssh-node:$(TAG) --file=Dockerfile.ssh-node ./docker
+	docker tag ghcr.io/agoric/ssh-node:$(TAG) ghcr.io/agoric/ssh-node:latest
 
 # Just push $(TAG)
 docker-push-only:
@@ -69,5 +69,5 @@ docker-push-solo:
 	docker push $(REPOSITORY)-solo:$(TAG)
 
 docker-push-ssh-node:
-	$(DONT_PUSH_LATEST) docker push agoric/ssh-node:latest
-	docker push agoric/ssh-node:$(TAG)
+	$(DONT_PUSH_LATEST) docker push ghcr.io/agoric/ssh-node:latest
+	docker push ghcr.io/agoric/ssh-node:$(TAG)
