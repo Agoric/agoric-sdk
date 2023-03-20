@@ -4,6 +4,8 @@ import {
   provideDurableSetStore,
   makeScalarBigMapStore,
   prepareSingleton,
+  prepareExo,
+  M,
 } from '@agoric/vat-data';
 
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
@@ -130,26 +132,37 @@ export const makeZCFMintFactory = async (
     return provideDurableZcfMint(zcfMintBaggage);
   };
 
+  const ZCFMintFactoryI = M.interface('ZCFMintFactory', {
+    makeZCFMintInternal: M.call(M.string(), M.remotable('ZoeMint')).returns(
+      M.promise(),
+    ),
+  });
+
   /**
    * zcfMintFactory has a method makeZCFMintInternal() that takes a keyword and the
    * promise returned by a makeZoeMint() call. makeZCFMintInternal() creates a new
    * baggage for the state of the zcfMint, makes a durableZcfMint from that
    * baggage, and registers that baggage to be revived with the factory.
    */
-  const zcfMintFactory = prepareSingleton(zcfBaggage, 'zcfMintFactory', {
-    makeZCFMintInternal: async (keyword, zoeMint) => {
-      const zcfMintBaggage = makeScalarBigMapStore('zcfMintBaggage', {
-        durable: true,
-      });
-      const zcfMint = await makeDurableZcfMint(
-        keyword,
-        zoeMint,
-        zcfMintBaggage,
-      );
-      zcfMintBaggageSet.add(zcfMint);
-      return zcfMint;
+  const zcfMintFactory = prepareExo(
+    zcfBaggage,
+    'zcfMintFactory',
+    ZCFMintFactoryI,
+    {
+      async makeZCFMintInternal(keyword, zoeMint) {
+        const zcfMintBaggage = makeScalarBigMapStore('zcfMintBaggage', {
+          durable: true,
+        });
+        const zcfMint = await makeDurableZcfMint(
+          keyword,
+          zoeMint,
+          zcfMintBaggage,
+        );
+        zcfMintBaggageSet.add(zcfMint);
+        return zcfMint;
+      },
     },
-  });
+  );
 
   for (const zcfMintBaggage of zcfMintBaggageSet.values()) {
     provideDurableZcfMint(zcfMintBaggage);
