@@ -161,7 +161,8 @@ const helperBehavior = {
 
   /**
    * @param {MethodContext} context
-   *  @param {boolean} newActive */
+   * @param {boolean} newActive
+   */
   snapshotState: ({ state, facets }, newActive) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
     const { helper } = facets;

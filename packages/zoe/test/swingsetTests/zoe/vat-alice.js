@@ -4,7 +4,7 @@ import { assert, details as X } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
-import { SECOND_PRICE } from '../../../src/contracts/auction/index';
+import { SECOND_PRICE } from '../../../src/contracts/auction/index.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);

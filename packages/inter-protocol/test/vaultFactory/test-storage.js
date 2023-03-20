@@ -7,8 +7,10 @@ import '../../src/vaultFactory/types.js';
 import { assertTopicPathData, subscriptionKey } from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
-/** @typedef {import('./driver.js').DriverContext & {
- * }} Context */
+/**
+ * @typedef {import('./driver.js').DriverContext & {
+ * }} Context
+ */
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 

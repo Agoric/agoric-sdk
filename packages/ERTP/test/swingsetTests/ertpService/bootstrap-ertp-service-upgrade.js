@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '../../../src';
+import { AmountMath } from '../../../src/index.js';
 
 const mintInto = (kit, purse, value) =>
   E(kit.mint)

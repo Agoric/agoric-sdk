@@ -116,7 +116,7 @@ test.before('setup aggregator and oracles', async t => {
 
   /**
    *  @type {MakeFakePriceOracle}
-   * */
+   */
   const makeFakePriceOracle = async (valueOut = 0n) => {
     /** @type {OracleHandler} */
     const oracleHandler = Far('OracleHandler', {

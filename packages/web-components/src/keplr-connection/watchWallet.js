@@ -3,8 +3,8 @@ import { makeFollower, iterateLatest } from '@agoric/casting';
 import { makeNotifierKit } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { assertHasData } from '@agoric/smart-wallet/src/utils';
-import { Errors } from './errors';
-import { queryBankBalances } from './queryBankBalances';
+import { Errors } from './errors.js';
+import { queryBankBalances } from './queryBankBalances.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/types.js').Petname} Petname */
 
