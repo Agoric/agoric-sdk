@@ -212,16 +212,47 @@ const makePsmSwapOffer = (instance, brands, opts) => {
 
 /**
  * @param {Record<string, Brand>} brands
- * @param {{ offerId: string, wantCollateral: number, giveCurrency: number, collateralBrandKey: string }} opts
+ * @param {{
+ *   offerId: string,
+ *   collateralBrandKey: string,
+ *   giveCurrency: number,
+ *   wantCollateral: number,
+ * } & ({
+ *   price: number,
+ * } | {
+ *   discount: number,
+ * })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makeBidOffer = (brands, opts) => {
   const give = {
     Currency: AmountMath.make(brands.IST, scaleDecimals(opts.giveCurrency)),
   };
+  /** @type {Brand<'nat'>} */
+  // @ts-expect-error XXX how to narrow AssetKind?
   const collateralBrand = brands[opts.collateralBrandKey];
 
   const proposal = { give };
+  const want = AmountMath.make(
+    collateralBrand,
+    scaleDecimals(opts.wantCollateral),
+  );
+
+  /** @type {import('./auction/auctionBook.js').BidSpec} */
+  const offerArgs =
+    'price' in opts
+      ? {
+          want,
+          offerPrice: parseRatio(opts.price, brands.IST, collateralBrand),
+        }
+      : {
+          want,
+          offerBidScaling: parseRatio(
+            1 - opts.discount,
+            brands.IST,
+            brands.IST,
+          ),
+        };
   /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
   const offerSpec = {
     id: opts.offerId,
@@ -231,14 +262,7 @@ const makeBidOffer = (brands, opts) => {
       callPipe: [['makeBidInvitation', [collateralBrand]]],
     },
     proposal,
-    offerArgs: /** @type {import('./auction/auctionBook.js').BidSpec} */ ({
-      want: AmountMath.make(
-        collateralBrand,
-        scaleDecimals(opts.wantCollateral),
-      ),
-      // FIXME hard-coded
-      offerBidScaling: parseRatio(1.1, brands.IST, brands.IST),
-    }),
+    offerArgs,
   };
   return offerSpec;
 };

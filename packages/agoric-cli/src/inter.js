@@ -1,8 +1,8 @@
 // @ts-check
 import '@endo/init';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { iterateLatest, makeFollower, makeLeader } from '@agoric/casting';
 import { M, matches } from '@agoric/store';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
   boardSlottingMarshaller,
   getNetworkConfig,
@@ -12,66 +12,7 @@ import { coalesceWalletState, outputExecuteOfferAction } from './lib/wallet.js';
 import { normalizeAddressWithOptions } from './lib/chain.js';
 import { makeAmountFormatter } from './lib/format.js';
 
-const { Fail } = assert;
 const { entries, fromEntries, values } = Object;
-
-const Offers = {
-  auction: {
-    /**
-     * @param {{
-     *   offerId: string,
-     *   giveCurrency: number,
-     *   wantCollateral: number,
-     *   collateralBrand: string,
-     *   string
-     * }} opts
-     * @param {Record<string, Brand>} brands
-     * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
-     */
-    bid: (opts, brands) => {
-      const currency = {
-        brand: brands.IST || Fail`missing IST brand`,
-        unit: 1_000_000n,
-        make: qty =>
-          harden({
-            brand: currency.brand,
-            value: BigInt(qty * Number(currency.unit)),
-          }),
-      };
-      const collateral = {
-        brand: brands[opts.collateralBrand] || Fail`missing collateral brand`,
-        unit: 1_000_000n, // TODO: look up in agoricNames.vbankAssets
-        make: qty =>
-          harden({
-            brand: collateral.brand,
-            value: BigInt(qty * Number(collateral.unit)),
-          }),
-      };
-
-      const proposal = harden({
-        give: { Currency: currency.make(opts.giveCurrency) },
-      });
-      const wantCollateral = collateral.make(opts.wantCollateral);
-      const offerArgs = harden({
-        want: { Collateral: wantCollateral },
-        offerPrice: makeRatioFromAmounts(
-          proposal.give.Currency,
-          wantCollateral,
-        ),
-      });
-      return {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'agoricContract',
-          instancePath: ['auctioneer'],
-          callPipe: [['makeBidInvitation', [collateral.brand]]],
-        },
-        proposal,
-        offerArgs,
-      };
-    },
-  },
-};
 
 const mapValues = (obj, fn) =>
   fromEntries(entries(obj).map(([prop, val]) => [prop, fn(val)]));
@@ -214,16 +155,58 @@ export const main = async (
     .description('auction bidding commands');
 
   bidCmd
-    .command('place')
-    .description('place bid on collateral')
+    .command('by-price')
+    .description('place priced bid on collateral')
     .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
-    .requiredOption('--wantCollateral [number]', 'Minted wants', Number)
-    .option('--offerId [number]', 'Offer id', Number, clock())
+    .requiredOption('--wantCollateral [number]', 'bid price', Number)
+    .requiredOption('--price [number]', 'bid price', Number)
+    .option('--offerId [number]', 'Offer id', String, `bid-${clock()}`)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
-    .action(opts => {
-      const offer = Offers.auction.bid(opts, agoricNames.brand);
-      outputExecuteOfferAction(offer, stdout);
-    }); // TODO: discount
+    .action(
+      /** @param {{
+       *   giveCurrency: number,
+       *   wantCollateral: number,
+       *   price: number,
+       *   offerId: string,
+       *   collateralBrand: string,
+       * }} opts */
+      ({ collateralBrand, ...opts }) => {
+        const offer = Offers.auction.Bid(agoricNames.brand, {
+          collateralBrandKey: collateralBrand,
+          ...opts,
+        });
+        outputExecuteOfferAction(offer, stdout);
+      },
+    );
+
+  bidCmd
+    .command('by-discount')
+    .description('place discount bid on collateral')
+    .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
+    .requiredOption('--wantCollateral [number]', 'bid price', Number)
+    .requiredOption(
+      '--discount [number]',
+      'bid discount (%)',
+      v => Number(v) / 100,
+    )
+    .option('--offerId [number]', 'Offer id', String, `bid-${clock()}`)
+    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
+    .action(
+      /** @param {{
+       *   giveCurrency: number,
+       *   wantCollateral: number,
+       *   discount: number,
+       *   offerId: string,
+       *   collateralBrand: string,
+       * }} opts */
+      ({ collateralBrand, ...opts }) => {
+        const offer = Offers.auction.Bid(agoricNames.brand, {
+          collateralBrandKey: collateralBrand,
+          ...opts,
+        });
+        outputExecuteOfferAction(offer, stdout);
+      },
+    );
 
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, bidCmd.opts());
@@ -245,10 +228,10 @@ export const main = async (
         { unserializer },
       );
 
-      const coalesced = await coalesceWalletState(
-        follower,
-        agoricNames.brand.Invitation,
-      );
+      /** @type {{ Invitation: Brand<'set'> }} */
+      // @ts-expect-error XXX how to narrow AssetKind to set?
+      const { Invitation } = agoricNames.brand;
+      const coalesced = await coalesceWalletState(follower, Invitation);
       const bidInvitationShape = harden({
         source: 'agoricContract',
         instancePath: ['auctioneer'],
