@@ -249,3 +249,25 @@ test('open vault with insufficient funds gives helpful error', async t => {
     },
   });
 });
+
+// STORY: Liquidation Bidder Amara has provided 50 IST to buy ATOM at a price of $9
+test('bid for liquidation', async t => {
+  const { walletFactoryDriver } = t.context;
+
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
+
+  await wd.executeOfferMaker(Offers.auction.Bid, {
+    offerId: 'bid',
+    wantCollateral: 1.23,
+    giveCurrency: 0.0,
+    collateralBrandKey: 'IbcATOM',
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    updated: 'offerStatus',
+    status: {
+      id: 'bid',
+      numWantsSatisfied: 1,
+      result: 'Your bid has been accepted',
+    },
+  });
+});

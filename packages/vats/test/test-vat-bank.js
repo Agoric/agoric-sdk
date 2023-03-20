@@ -270,7 +270,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   const expected = ['BLD', 'IST'];
   const seen = new Set();
   const done = makePromiseKit();
-  observeIteration(assets, {
+  void observeIteration(assets, {
     updateState: asset => {
       seen.add(asset.issuerName);
       if (asset.issuerName === 'IST') {

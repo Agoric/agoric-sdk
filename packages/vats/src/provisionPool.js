@@ -170,14 +170,14 @@ export const start = async (zcf, privateArgs) => {
   /** @type {MapStore<Brand, Instance>} */
   const brandToPSM = makeScalarMapStore();
 
-  observeIteration(E(poolBank).getAssetSubscription(), {
+  void observeIteration(E(poolBank).getAssetSubscription(), {
     updateState: async desc => {
       console.log('provisionPool notified of new asset', desc.brand);
       await zcf.saveIssuer(desc.issuer, desc.issuerName);
       /** @type {ERef<Purse>} */
       // @ts-expect-error vbank purse is close enough for our use.
       const exchangePurse = E(poolBank).getPurse(desc.brand);
-      observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
+      void observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
         updateState: async amount => {
           console.log('provisionPool balance update', amount);
           if (AmountMath.isEmpty(amount) || amount.brand === poolBrand) {
@@ -192,7 +192,7 @@ export const start = async (zcf, privateArgs) => {
           await swap(payment, amount, instance).catch(async reason => {
             console.error(X`swap failed: ${reason}`);
             const resolvedPayment = await payment;
-            E(exchangePurse).deposit(resolvedPayment);
+            return E(exchangePurse).deposit(resolvedPayment);
           });
         },
         fail: reason => console.error(reason),

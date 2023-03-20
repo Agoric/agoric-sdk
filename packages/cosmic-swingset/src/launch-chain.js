@@ -599,7 +599,7 @@ export async function launch({
     const p = fn();
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
-    E.when(p, finish, e => {
+    void E.when(p, finish, e => {
       // None of these must fail, and if they do, log them verbosely before
       // returning to the chain.
       blockManagerConsole.error(type, 'error:', e);

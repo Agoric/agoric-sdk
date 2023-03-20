@@ -402,7 +402,7 @@ function build(
     // `HandledPromise.resolve(presence)`. So we must harden it now, for
     // safety, to prevent it from being used as a communication channel
     // between isolated objects that share a reference to the Presence.
-    harden(p);
+    void harden(p);
 
     // Up at the application level, presence~.foo(args) starts by doing
     // HandledPromise.resolve(presence), which retrieves it, and then does
@@ -1138,6 +1138,11 @@ function build(
     }
   }
 
+  /**
+   *
+   * @param {string} vpid
+   * @param {Promise<unknown>} p
+   */
   function followForKernel(vpid, p) {
     insistVatType('promise', vpid);
     exportedVPIDs.set(vpid, p);
@@ -1174,7 +1179,7 @@ function build(
       exportedVPIDs.delete(vpid);
     }
 
-    E.when(
+    void E.when(
       p,
       value => handle(false, value),
       value => handle(true, value),

@@ -113,7 +113,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
  *
  * @param {ReturnType<typeof makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {*} agoricNamesRemotes
+ * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  */
 export const makeWalletFactoryDriver = async (
   runUtils,
@@ -272,7 +272,7 @@ export const makeSwingsetTestKit = async (t, specifier) => {
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
       case BridgeId.STORAGE:
-        storage.toStorage(obj);
+        void storage.toStorage(obj);
         return undefined;
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);

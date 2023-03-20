@@ -303,7 +303,7 @@ test.serial('priced bid recorded', async t => {
     currency.make(100n),
     collateral.make(200n),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
 });
 
 test.serial('discount bid recorded', async t => {
@@ -317,7 +317,7 @@ test.serial('discount bid recorded', async t => {
     collateral.make(200n),
     makeRatioFromAmounts(currency.make(10n), currency.make(100n)),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
 });
 
 test.serial('priced bid settled', async t => {
@@ -337,7 +337,7 @@ test.serial('priced bid settled', async t => {
     currency.make(250n),
     collateral.make(200n),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
 
   await assertPayouts(t, seat, currency, collateral, 19n, 200n);
 });
@@ -360,7 +360,7 @@ test.serial('discount bid settled', async t => {
     collateral.make(200n),
     makeRatioFromAmounts(currency.make(120n), currency.make(100n)),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   await driver.advanceTo(180n);
 
   // 250 - 200 * (1.1 * 1.05)
@@ -389,7 +389,7 @@ test.serial('priced bid insufficient collateral added', async t => {
     { afterDeadline: { timer: driver.getTimerService(), deadline: 185n } },
   );
   await driver.advanceTo(170n);
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
   await driver.advanceTo(175n);
@@ -416,7 +416,7 @@ test.serial('priced bid recorded then settled with price drop', async t => {
     currency.make(116n),
     collateral.make(100n),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
 
   await driver.advanceTo(170n);
   const schedules = await driver.getSchedule();
@@ -450,7 +450,7 @@ test.serial('priced bid settled auction price below bid', async t => {
     currency.make(2240n),
     collateral.make(200n),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
 
   t.true(await E(seat).hasExited());
   await driver.advanceTo(185n);
@@ -480,7 +480,7 @@ test.serial('complete auction liquidator gets proceeds', async t => {
     currency.make(231n),
     collateral.make(200n),
   );
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
   await driver.advanceTo(170n);
@@ -528,7 +528,7 @@ test.serial('multiple Depositors, not all assets are sold', async t => {
     collateral.make(1000n),
   );
 
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
   await driver.advanceTo(170n);
@@ -579,7 +579,7 @@ test.serial('multiple Depositors, all assets are sold', async t => {
     collateral.make(1500n),
   );
 
-  t.is(await E(seat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
   await driver.advanceTo(170n);
@@ -628,7 +628,7 @@ test.serial('onDemand exit', async t => {
     { onDemand: null },
   );
 
-  t.is(await E(exitingSeat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
 
   await driver.advanceTo(170n);
@@ -673,7 +673,7 @@ test.serial('onDeadline exit', async t => {
     { afterDeadline: { timer: driver.getTimerService(), deadline: 185n } },
   );
 
-  t.is(await E(exitingSeat).getOfferResult(), 'Your offer has been received');
+  t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
 
   await driver.advanceTo(170n);
@@ -713,7 +713,7 @@ test.serial('add assets to open auction', async t => {
     currency.make(1733n),
     collateral.make(1500n),
   );
-  t.is(await E(bidderSeat1).getOfferResult(), 'Your offer has been received');
+  t.is(await E(bidderSeat1).getOfferResult(), 'Your bid has been accepted');
 
   // price lock period before auction start
   await driver.advanceTo(167n);
@@ -783,7 +783,7 @@ test.serial('multiple collaterals', async t => {
     collateral.make(300n),
     makeRatioFromAmounts(currency.make(950n), collateral.make(1000n)),
   );
-  t.is(await E(bidderSeat1C).getOfferResult(), 'Your offer has been received');
+  t.is(await E(bidderSeat1C).getOfferResult(), 'Your bid has been accepted');
 
   // offers up to 500 for 2000 at 1.1 * 75%, so will trigger at second discount step
   const bidderSeat2C = await driver.bidForCollateralSeat(
@@ -791,7 +791,7 @@ test.serial('multiple collaterals', async t => {
     collateral.make(2000n),
     makeRatioFromAmounts(currency.make(75n), currency.make(100n)),
   );
-  t.is(await E(bidderSeat2C).getOfferResult(), 'Your offer has been received');
+  t.is(await E(bidderSeat2C).getOfferResult(), 'Your bid has been accepted');
 
   // offers 50 for 200 at .25 * 50% discount, so triggered at third step
   const bidderSeat1A = await driver.bidForCollateralSeat(
@@ -799,7 +799,7 @@ test.serial('multiple collaterals', async t => {
     asset.make(200n),
     makeRatioFromAmounts(currency.make(50n), currency.make(100n)),
   );
-  t.is(await E(bidderSeat1A).getOfferResult(), 'Your offer has been received');
+  t.is(await E(bidderSeat1A).getOfferResult(), 'Your bid has been accepted');
 
   // offers 100 for 300 at .25 * 33%, so triggered at fourth step
   const bidderSeat2A = await driver.bidForCollateralSeat(
@@ -807,7 +807,7 @@ test.serial('multiple collaterals', async t => {
     asset.make(300n),
     makeRatioFromAmounts(currency.make(100n), asset.make(1000n)),
   );
-  t.is(await E(bidderSeat2A).getOfferResult(), 'Your offer has been received');
+  t.is(await E(bidderSeat2A).getOfferResult(), 'Your bid has been accepted');
 
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
@@ -863,7 +863,7 @@ test.serial('multiple bidders at one auction step', async t => {
     currency.make(231n),
     collateral.make(200n),
   );
-  t.is(await E(seat1).getOfferResult(), 'Your offer has been received');
+  t.is(await E(seat1).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat1).hasExited());
 
   // higher bid, later

@@ -199,7 +199,7 @@
  *   chainTimerService: import('@agoric/time/src/types').TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
- *   coreEvalBridgeHandler: unknown,
+ *   coreEvalBridgeHandler: import('../types.js').BridgeHandler,
  *   feeMintAccess: FeeMintAccess,
  *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,

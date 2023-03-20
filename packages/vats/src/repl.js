@@ -253,7 +253,7 @@ export function getReplHandler(replObjects, send) {
 
       if (isPromise(r)) {
         display[histnum] = `unresolved Promise`;
-        E.when(
+        void E.when(
           r,
           res => {
             history[histnum] = res;

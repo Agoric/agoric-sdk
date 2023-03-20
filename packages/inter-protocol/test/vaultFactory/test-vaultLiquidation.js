@@ -273,7 +273,7 @@ const startAuctionClock = async (auctioneerKit, manualTimer) => {
 
 const assertBidderPayout = async (t, bidderSeat, run, curr, aeth, coll) => {
   const bidderResult = await E(bidderSeat).getOfferResult();
-  t.is(bidderResult, 'Your offer has been received');
+  t.is(bidderResult, 'Your bid has been accepted');
   const payouts = await E(bidderSeat).getPayouts();
   const { Collateral: bidderCollateral, Currency: bidderCurrency } = payouts;
   await assertPayoutAmount(t, run.issuer, bidderCurrency, run.make(curr));
