@@ -25,6 +25,7 @@ import {
   makeBrandedRatioPattern,
   priceFrom,
 } from './util.js';
+import { makeNatAmountShape } from '../contractSupport.js';
 
 const { Fail } = assert;
 
@@ -65,8 +66,8 @@ const trace = makeTracer('AucBook', false);
  * @param {Brand<'nat'>} collateralBrand
  */
 export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
-  const currencyAmountShape = { brand: currencyBrand, value: M.nat() };
-  const collateralAmountShape = { brand: collateralBrand, value: M.nat() };
+  const currencyAmountShape = makeNatAmountShape(currencyBrand);
+  const collateralAmountShape = makeNatAmountShape(collateralBrand);
   return M.splitRecord(
     { want: collateralAmountShape },
     {

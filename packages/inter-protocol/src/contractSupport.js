@@ -119,3 +119,8 @@ export const makeMetricsPublishKit = (storageNode, marshaller) => {
   };
 };
 harden(makeMetricsPublishKit);
+
+/**
+ * @param {Brand} brand must be a 'nat' brand, not checked
+ */
+export const makeNatAmountShape = brand => harden({ brand, value: M.nat() });

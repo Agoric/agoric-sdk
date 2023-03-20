@@ -54,8 +54,8 @@ For garbage-collection purposes, the incrementer can reach the counter. The plat
 Objects reference other objects in several ways:
 
 * Object properties
-* the Object's `.__prototype__`, which is effectively another property for GC purposes
-* code (including methods: object properties which are functions) which closes over variable bindings from an enclosing scope
+* the Object's prototype, which is effectively another property for GC purposes
+* code which closes over variable bindings from an enclosing scope (including methods: object properties which are functions)
 
 And of course most data structures (Arrays, Maps) hold strong references to their members.
 
@@ -63,9 +63,9 @@ And of course most data structures (Arrays, Maps) hold strong references to thei
 
 Each vat has a set of "root references": these keep all other objects alive. These are the only starting points: if there is no pathway from a root reference to a target object, the target object is unreachable and will eventually be deleted.
 
-Vats have two kinds of root references. "Vat Globals" are top-level declarations (`const` and `let` declarations that appear in the highest scope of any module, outside any function definition). Top-level `const` declarations are eternal, while `let` declarations are mutable and could be added or removed later as the value is modified. These references are controlled entirely by the code that makes up a vat.
+Vats have two kinds of root references. "Vat Globals" are top-level declarations (`const` and `let` declarations that appear in the highest scope of any module, outside any function definition). Top-level `const` declarations eternally reference the same value, while `let` declarations are mutable and their reference targets change as the value is modified. These references are controlled entirely by the code that makes up a vat.
 
-"Vat Exports" are the subset of objects that have been used exported through the kernel to other vats. Such objects are added to the export table when they are used as an argument in an outbound message, or in the resolution of a Promise that some other vat is following. Each exported object is allocated a new integer and assigned a "vref" (vat-reference ID), in the form `o+NN`. A special initial "root object" is defined when the vat is first constructed (the return object of `buildRootObject()`) and assigned vref `o+0`.
+"Vat Exports" are the subset of objects that have been used exported through the kernel to other vats. Such objects are added to the export table when they are used as an argument in an outbound message, or in the resolution of a Promise that some other vat is following. Each exported object is allocated a new integer and assigned a "vref" (vat-reference ID), in the form `o+NN`. A special initial "root object" is defined when the vat is first constructed (the return object of `buildRootObject()`) and assigned vref `o+0` (see [How Liveslots Uses the Vatstore](../../swingset-liveslots/src/vatstore-usage.md)).
 
 Objects are removed from the export table when no other vat retains a reference. If an object is not exported, and not a global, and not transitively reachable by any object in either of those two categories, then the object is unreachable and will be deleted.
 
@@ -185,11 +185,11 @@ The previous distinctions are only for the zero or more vats which *import* a Sw
 * exported (RECOGNIZABLE)
 * unknown
 
-The kernel is responsible for managing these per-vat states, and reacting to syscalls that the vat emits to change their state (which may result in deliveries to other vats, to inform them to update their own states). Vats, through `liveSlots.js`, are responsible for managing their internal JS `Object` states, and emitting syscalls to notify the kernel about changes.
+The kernel is responsible for managing these per-vat states, and reacting to syscalls that the vat emits to change their state (which may result in deliveries to other vats, to inform them to update their own states). Vats, through [liveslots.js](../../swingset-liveslots/src/liveslots.js), are responsible for managing their internal JS `Object` states, and emitting syscalls to notify the kernel about changes.
 
 ## Virtualized Data
 
-To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use. The second is a "virtual collection" (e.g. what `makeScalarWeakMapStore()` returns), which is like a WeakMap except that any values keyed by a virtual object are also stored as serialized data on disk.
+To move large data out of RAM and onto disk, SwingSet gives vats a handful of "virtualized data" tools. The most basic is a "virtual object", which is a SwingSet object whose state (properties) are kept on disk when not in active use (see [Virtual and Durable Objects](./virtual-objects.md)). The second is a "virtual collection", which is like a Map or Set or WeakMap or WeakSet (see [Store-making Functions](../../store/docs/store-taxonomy.md)).
 
 Instead of Remotables, virtual objects use "Representatives" as the handle with which the object is sent, received, and manipulated. The Representative is a JS `Object`, however it goes away when userspace drops the last strong reference. But a new one might be created the next time the object is received (or retrieved from offline data), As a result, a virtual object might be defined and populated, and even reachable/recognizable by other vats (or serialized local data), even though there is no local Representative object at that moment.
 
@@ -202,17 +202,17 @@ Liveslots and the virtual object manager cooperate to ensure these abstract obje
 
 Within a Vat, and for the purpose of SwingSet objects, liveslots and the virtual object manager interact with three kinds of JS `Objects` for use by vat code:
 
-* `Remotable`: vat code creates this with `Far(interfacename, methods)` to expose identity and behavior to external callers. Remotables are held in RAM for their entire lifetime, and exist only within the exporting vat. The `Remotable` object is "precious": the lifetime of the  "SwingSet object" is the same as the `Remotable`, and liveslots is responsible for keeping the Remotable alive until all other vats have lost reachability to it. At any given moment, there is exactly one Remotable for each (non-virtual) SwingSet object exported by a given vat.
-* `Representative`: vat code defines a "Kind" by calling `makeKind()` to define how new instances of the Kind should be created, and how they behave. `makeKind()` returns a "kind constructor", which vat code then uses to make new instances. These instances are represented by a single `Representative` object, however this object is *not* precious: the `Representative` can be dropped without deleting the abstract SwingSet object (or its state). At any given moment, there is either zero or one Representatives for each (virtual) SwingSet object exported by a given vat.
-* `Presence`: vats which import a SwingSet object are given a `Presence` to serve as a proxy for the remote object. This Presence can be used as the target of an `E(presence).method(args)` call, or it can be passed around in method arguments, or within the resolution of a promise. At any given moment, there is either zero or one Presences for each SwingSet object imported by a given vat.
+* `Remotable`: vat code creates this with `Far(interfacename, methods)` to expose identity and behavior to external callers. Remotables are held in RAM for their entire lifetime, and exist only within the exporting vat. The `Remotable` object is "precious": the lifetime of the  "SwingSet object" is the same as that of the `Remotable`, and liveslots is responsible for keeping the Remotable alive until all other vats have lost reachability to it. At any given moment, each non-virtual SwingSet object exported by a given vat has exactly one Remotable.
+* `Representative`: vat code defines a "Kind" by calling `makeKind()` to define how new instances of the Kind should be created, and how they behave. `makeKind()` returns a "kind constructor", which vat code then uses to make new instances. These instances are represented by a single `Representative` object, however this object is *not* precious: the `Representative` can be dropped without deleting the abstract SwingSet object (or its state). At any given moment, each virtual SwingSet object exported by a given vat has either no Representative or one Representative.
+* `Presence`: vats which import a SwingSet object are given a `Presence` to serve as a proxy for the remote object. This Presence can be used as the target of an `E(presence)[methodName](...args)` call such as `E(remoteMap).get(key)`, or it can be passed around in method arguments, or within the resolution of a promise. At any given moment, each SwingSet object imported by a given vat has either no Presence or one Presence.
   * this Presence might be used as a key of a WeakMap or WeakSet, and the Presence might be dropped within the importing vat and then re-introduced by some other vat
   * hence the vat might retain recognizability of the SwingSet object even if it drops the Presence (and perhaps also loses reachability of the object)
   * therefore we modify the WeakMap/WeakSet made available to userspace code to act upon the SwingSet object identity of the Presence, rather than the JS `Object` identity, and to remember the recognizability status independently of the reachability status
 
 Within a Vat, liveslots uses four data structures to keep track of JS `Objects` and their relationship to the kernel:
 
-* `slotToVal`: this is a `Map` whose keys are vrefs and values are `WeakRef` objects which point (while alive) at a Remotable, Representative, or Presence
-* `valToslot`: a `WeakMap` whose keys are a Remotable/Representative/Presence and values are a vref
+* `slotToVal`: a `Map` in which each key is a vref and the corresponding value is a `WeakRef` which points (while alive) at a Remotable, Representative, or Presence
+* `valToslot`: the logical inversion of `slotToVal`, a `WeakMap` in which each key is a Remotable/Representative/Presence and the corresponding value is a vref
 * `exportedRemotables`: a `Set` whose members are `Remotables`
 * `droppedRegistry`: a `FinalizationRegistry` whose subjects are a Remotable/Representative/Presence
 
@@ -230,7 +230,7 @@ Even after the kernel drops the Remotable, some downstream vat might still be ab
 
 Later, if/when the Remotable is released by any remaining local references, and after the next GC sweep occurs, the WeakRef will die (along with the `valToSlot` entry, since it's a WeakMap), and eventually the finalizer callback will be run. Liveslots reacts to this by sending a `syscall.retireExport` and deleting the lame-duck `slotToVal` entry. This informs the kernel that the SwingSet object identity is gone, so any remaining downstream vats can give up their ability to recognize the object (and delete their WeakMap values, if any).
 
-The virtual object manager must keep track of Remotables that are used in virtualized data, and hold onto an additional strong reference for as long as the
+The virtual object manager must keep track of Remotables that are used in virtualized data, and hold onto an additional strong reference for as long as the vref is referenced by that data. A table of refcounts is maintained in the DB, incremented for each virtual object state property, virtual collection value, and non-weak virtual collection key that includes the Remotable's vref.
 
 ## Imported Presences
 

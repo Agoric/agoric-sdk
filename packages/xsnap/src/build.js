@@ -147,6 +147,7 @@ const makeSubmodule = (path, repoUrl, { git }) => {
  *   spawn: typeof import('child_process').spawn,
  *   fs: {
  *     existsSync: typeof import('fs').existsSync,
+ *     rmdirSync: typeof import('fs').rmdirSync,
  *     readFile: typeof import('fs').promises.readFile,
  *   },
  *   os: {
@@ -201,6 +202,11 @@ async function main(args, { env, stdout, spawn, fs, os }) {
     // Allow overriding of the checked-out version of the submodule.
     if (commitHash) {
       // Do the moral equivalent of submodule update when explicitly overriding.
+      try {
+        fs.rmdirSync(submodule.path);
+      } catch (_e) {
+        // ignore
+      }
       if (!fs.existsSync(submodule.path)) {
         // eslint-disable-next-line no-await-in-loop
         await submodule.clone();
@@ -246,6 +252,7 @@ main(process.argv.slice(2), {
   fs: {
     readFile: fsTop.promises.readFile,
     existsSync: fsTop.existsSync,
+    rmdirSync: fsTop.rmdirSync,
   },
   os: {
     type: osTop.type,

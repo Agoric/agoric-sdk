@@ -43,5 +43,6 @@ export default [
   "@agoric/xsnap",
   "@agoric/xsnap-lockdown",
   "@agoric/zoe",
+  "@agoric/zone",
   "agoric"
 ];
