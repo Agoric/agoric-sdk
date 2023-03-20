@@ -19,47 +19,14 @@ module.exports = {
         extraFileExtensions: ['.cjs'],
       }
     : undefined,
-  plugins: [
-    '@typescript-eslint',
-    'eslint-plugin-import',
-    'eslint-plugin-prettier',
-    'prettier',
-  ],
-  extends: ['@agoric', 'plugin:jsdoc/recommended', 'prettier'],
+  plugins: ['@typescript-eslint', 'import', 'prettier'],
+  extends: ['@agoric'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
     '@typescript-eslint/no-floating-promises': lintTypes ? 'warn' : 'off',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
 
-    'jsdoc/no-multi-asterisks': ['warn', { allowWhitespace: true }],
-    'jsdoc/no-undefined-types': 'off',
-    'jsdoc/require-jsdoc': 'off',
-    'jsdoc/require-property-description': 'off',
-    'jsdoc/require-param-description': 'off',
-    'jsdoc/require-returns': 'off',
-    'jsdoc/require-returns-check': 'off', // TS checks
-    'jsdoc/require-returns-description': 'off',
-    'jsdoc/require-yields': 'off',
-    'jsdoc/tag-lines': 'off',
-    'jsdoc/valid-types': 'off',
-
-    // Not severe but the default 'warning' clutters output and it's easy to fix
-    'jsdoc/check-param-names': 'error',
-    'jsdoc/check-syntax': 'error',
-
-    'import/no-extraneous-dependencies': [
-      'error',
-      {
-        devDependencies: [
-          '**/*.config.js',
-          '**/*.config.*.js',
-          '**/*test*/**/*.js',
-          '**/demo*/**/*.js',
-          '**/scripts/**/*.js',
-        ],
-      },
-    ],
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',

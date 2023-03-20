@@ -1,8 +1,8 @@
 {
   "name": "@agoric/eslint-config",
   "version": "0.3.25",
-  "description": "Agoric style rules",
-  "main": "./eslint-config.json",
+  "description": "Rules used by the @agoric packages",
+  "main": "./eslint-config.cjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Agoric/agoric-sdk.git"

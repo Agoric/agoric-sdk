@@ -1,9 +1,0 @@
-{
-  "extends": [
-    "@endo",
-    "plugin:@jessie.js/recommended"
-  ],
-  "rules": {
-    "no-continue": "off"
-  }
-}
