@@ -4,6 +4,7 @@ import { iterateLatest, makeFollower, makeLeader } from '@agoric/casting';
 import { M, matches } from '@agoric/store';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
+import { makeBidSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import {
   boardSlottingMarshaller,
   getNetworkConfig,
@@ -261,16 +262,51 @@ export const main = async (
         instancePath: ['auctioneer'],
         callPipe: [['makeBidInvitation', M.any()]],
       });
+
+      /**
+       * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
+       * @param {typeof console.warn} warn
+       */
+      const coerceBid = (offerStatus, warn) => {
+        const { offerArgs } = offerStatus;
+        /** @type {unknown} */
+        const collateralBrand = /** @type {any} */ (offerArgs)?.want?.brand;
+        if (!collateralBrand) {
+          warn('mal-formed bid offerArgs', offerArgs);
+          return null;
+        }
+        const bidSpecShape = makeBidSpecShape(
+          // @ts-expect-error XXX AssetKind narrowing?
+          agoricNames.brand.IST,
+          collateralBrand,
+        );
+        if (!matches(offerStatus.offerArgs, bidSpecShape)) {
+          warn('mal-formed bid offerArgs', offerArgs);
+          return null;
+        }
+
+        /**
+         * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+         *        { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+         */
+        // @ts-expect-error dynamic cast
+        const bid = offerStatus;
+        return bid;
+      };
+
       for (const offerStatus of coalesced.offerStatuses.values()) {
         harden(offerStatus); // coalesceWalletState should do this
         // console.debug(offerStatus.invitationSpec);
         if (!matches(offerStatus.invitationSpec, bidInvitationShape)) continue;
 
-        const info = fmtBid(offerStatus, values(agoricNames.vbankAsset));
+        const bid = coerceBid(offerStatus, console.warn);
+        if (!bid) continue;
+
+        const info = fmtBid(bid, values(agoricNames.vbankAsset));
         stdout.write(JSON.stringify(info));
         stdout.write('\n');
       }
-    }); // TODO: discount
+    });
 
   interCmd.parse(argv);
 };
