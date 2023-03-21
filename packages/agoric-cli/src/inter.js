@@ -131,6 +131,7 @@ export const main = async (
   const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
   const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
+  const pprint = v => JSON.stringify(v, bigintReplacer, 2);
 
   const liquidationCmd = interCmd
     .command('liquidation')
@@ -141,36 +142,27 @@ export const main = async (
     .option('--manager [number]', 'Vault Manager', Number, 0)
     .action(async opts => {
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
-      const pathFollower = path =>
-        makeFollower(
+      const latest = async path => {
+        const follower = makeFollower(
           path,
           leader,
           // @ts-expect-error xxx
           { unserializer },
         );
-      const metricsFollower = await pathFollower(
-        `:published.vaultFactory.manager${opts.manager}.metrics`,
-      );
-      let metrics;
-      for await (const it of iterateLatest(metricsFollower)) {
-        // do anything with it.blockHeight?
-        metrics = it.value;
-        break;
-      }
-      const quoteFollower = await pathFollower(
-        `:published.vaultFactory.manager${opts.manager}.quotes`,
-      );
-      let quote;
-      for await (const it of iterateLatest(quoteFollower)) {
-        quote = it.value;
-        break;
-      }
+        let value;
+        for await (const it of iterateLatest(follower)) {
+          // do anything with it.blockHeight?
+          ({ value } = it);
+          break;
+        }
+        return value;
+      };
+      const [metrics, quote] = await Promise.all([
+        latest(`:published.vaultFactory.manager${opts.manager}.metrics`),
+        latest(`:published.vaultFactory.manager${opts.manager}.quotes`),
+      ]);
       stdout.write(
-        JSON.stringify(
-          fmtMetrics(metrics, quote, values(agoricNames.vbankAsset)),
-          bigintReplacer,
-          2,
-        ),
+        pprint(fmtMetrics(metrics, quote, values(agoricNames.vbankAsset))),
       );
       stdout.write('\n');
     });
@@ -182,19 +174,20 @@ export const main = async (
   bidCmd
     .command('by-price')
     .description('place priced bid on collateral')
+    .requiredOption('--price [number]', 'bid price', Number)
     .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
     .requiredOption('--wantCollateral [number]', 'bid price', Number)
-    .requiredOption('--price [number]', 'bid price', Number)
-    .option('--offerId [number]', 'Offer id', String, `bid-${clock()}`)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
+    .option('--offerId [number]', 'Offer id', String, `bid-${clock()}`)
     .action(
-      /** @param {{
-       *   giveCurrency: number,
-       *   wantCollateral: number,
+      /**
+       * @param {{
        *   price: number,
-       *   offerId: string,
+       *   giveCurrency: number, wantCollateral: number,
        *   collateralBrand: string,
-       * }} opts */
+       *   offerId: string,
+       * }} opts
+       */
       ({ collateralBrand, ...opts }) => {
         const offer = Offers.auction.Bid(agoricNames.brand, {
           collateralBrandKey: collateralBrand,
@@ -207,23 +200,24 @@ export const main = async (
   bidCmd
     .command('by-discount')
     .description('place discount bid on collateral')
-    .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
-    .requiredOption('--wantCollateral [number]', 'bid price', Number)
     .requiredOption(
       '--discount [number]',
       'bid discount (%)',
       v => Number(v) / 100,
     )
-    .option('--offerId [number]', 'Offer id', String, `bid-${clock()}`)
+    .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
+    .requiredOption('--wantCollateral [number]', 'bid price', Number)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
+    .option('--offerId [number]', 'Offer id', String, `bid-${clock()}`)
     .action(
-      /** @param {{
-       *   giveCurrency: number,
-       *   wantCollateral: number,
+      /**
+       * @param {{
        *   discount: number,
-       *   offerId: string,
+       *   giveCurrency: number,  wantCollateral: number,
        *   collateralBrand: string,
-       * }} opts */
+       *   offerId: string,
+       * }} opts
+       */
       ({ collateralBrand, ...opts }) => {
         const offer = Offers.auction.Bid(agoricNames.brand, {
           collateralBrandKey: collateralBrand,
