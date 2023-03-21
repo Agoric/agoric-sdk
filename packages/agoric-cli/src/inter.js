@@ -3,6 +3,7 @@ import '@endo/init';
 import { iterateLatest, makeFollower, makeLeader } from '@agoric/casting';
 import { M, matches } from '@agoric/store';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { objectMap } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   getNetworkConfig,
@@ -12,14 +13,27 @@ import { coalesceWalletState, outputExecuteOfferAction } from './lib/wallet.js';
 import { normalizeAddressWithOptions } from './lib/chain.js';
 import { makeAmountFormatter } from './lib/format.js';
 
-const { entries, fromEntries, values } = Object;
+const { values } = Object;
 
-const mapValues = (obj, fn) =>
-  fromEntries(entries(obj).map(([prop, val]) => [prop, fn(val)]));
+const makeFormatters = assets => {
+  const fmtAmtTuple = makeAmountFormatter(assets);
+  /** @param {Amount} amt */
+  const amount = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(amt));
+  /** @param {Record<string, Amount> | undefined} r */
+  const record = r => (r ? objectMap(r, amount) : undefined);
+  /** @param {Ratio} r */
+  const price = r => {
+    const [nl, nm] = fmtAmtTuple(r.numerator);
+    const [dl, dm] = fmtAmtTuple(r.denominator);
+    return `${Number(nm) / Number(dm)} ${nl}/${dl}`;
+  };
+  const discount = r =>
+    100 - (Number(r.numerator.value) / Number(r.denominator.value)) * 100;
+  return { amount, record, price, discount };
+};
 
 const fmtMetrics = (metrics, quote, assets) => {
-  const fmtAmtTuple = makeAmountFormatter(assets);
-  const fmtAmt = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(amt));
+  const fmt = makeFormatters(assets);
   const { liquidatingCollateral, liquidatingDebt } = metrics;
 
   const {
@@ -27,34 +41,44 @@ const fmtMetrics = (metrics, quote, assets) => {
       value: [{ amountIn, amountOut }],
     },
   } = quote;
-  // TODO: divide num, denom by GCD
-  const price = `${fmtAmt(amountOut)}/${fmtAmt(amountIn)}}`;
+  const price = fmt.price({ numerator: amountOut, denominator: amountIn });
 
-  const amounts = mapValues({ liquidatingCollateral, liquidatingDebt }, fmtAmt);
+  const amounts = objectMap(
+    { liquidatingCollateral, liquidatingDebt },
+    fmt.amount,
+  );
   return { ...amounts, price };
 };
 
+/**
+ * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}} bid
+ * @param {import('./lib/format.js').AssetDescriptor[]} assets
+ */
 export const fmtBid = (bid, assets) => {
-  const fmtAmtTuple = makeAmountFormatter(assets);
-  const fmtAmt = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(amt));
-  const fmtRecord = r => (r ? mapValues(r, fmtAmt) : undefined);
+  const fmt = makeFormatters(assets);
+
+  const { offerArgs } = bid;
+  /** @type {{ price: string } | { discount: number }} */
+  const spec =
+    'offerPrice' in offerArgs
+      ? { price: fmt.price(offerArgs.offerPrice) }
+      : { discount: fmt.discount(offerArgs.offerBidScaling) };
 
   const {
     id,
     error,
     proposal: { give },
-    offerArgs: { want, offerPrice }, // TODO: other kind of bid
+    offerArgs: { want },
     payouts,
   } = bid;
-  const amounts = {
-    give: give ? fmtRecord(give) : undefined,
-    want: want ? fmtAmt(want) : undefined,
-    price: offerPrice
-      ? `${fmtAmt(offerPrice.numerator)}/${fmtAmt(offerPrice.denominator)}}`
-      : undefined,
-    payouts: fmtRecord(payouts),
+  const props = {
+    ...(give ? { give: fmt.record(give) } : {}),
+    ...(want ? { want: fmt.amount(want) } : {}),
+    ...(payouts ? { payouts: fmt.record(payouts) } : {}),
+    ...(error ? { error } : {}),
   };
-  return harden({ id, ...amounts, error });
+  return harden({ id, ...spec, ...props });
 };
 
 /** distinguish IO errors etc. from logic bugs */
