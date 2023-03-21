@@ -351,9 +351,11 @@ export const prepareAuctionBook = (baggage, zcf) => {
             } else {
               const collateralSold = helper.settle(seat, wanted);
 
+              const alloc = seat.getCurrentAllocation();
               if (
-                AmountMath.isEmpty(seat.getCurrentAllocation().Currency) ||
-                AmountMath.isGTE(seat.getCurrentAllocation().Collateral, wanted)
+                AmountMath.isEmpty(alloc.Currency) ||
+                ('Collateral' in alloc &&
+                  AmountMath.isGTE(alloc.Collateral, wanted))
               ) {
                 seat.exit();
                 helper.removeFromItsBook(key, p);
