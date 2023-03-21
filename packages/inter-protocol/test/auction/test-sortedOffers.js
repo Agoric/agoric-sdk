@@ -5,8 +5,7 @@ import {
   makeRatioFromAmounts,
   quantize,
 } from '@agoric/zoe/src/contractSupport/index.js';
-
-import { setup } from '../../../zoe/test/unitTests/setupBasicMints.js';
+import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import {
   fromPriceOfferKey,
   toPriceOfferKey,

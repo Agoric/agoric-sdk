@@ -124,11 +124,12 @@ const makeProviders = ({ env, inquirer, wr, setup, fetch }) => ({
           .split(',')
           .filter(vol => vol.trim())
           .map(vol => vol.split(':'))
-          // eslint-disable-next-line camelcase
+          /* eslint-disable camelcase */
           .map(([host_path, container_path]) => ({
             host_path,
             container_path,
           })),
+        /* eslint-enable */
       };
     },
     askDatacenter: async (provider, PLACEMENT, dcs, placement) => {

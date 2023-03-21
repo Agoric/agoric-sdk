@@ -11,8 +11,7 @@ import { makeOffer } from '@agoric/zoe/test/unitTests/makeOffer.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
-
-import { setup } from '../../../zoe/test/unitTests/setupBasicMints.js';
+import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { prepareAuctionBook } from '../../src/auction/auctionBook.js';
 
 const buildManualPriceAuthority = initialPrice =>
