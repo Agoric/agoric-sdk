@@ -16,7 +16,7 @@ env:
   DATADOG_SITE: us3.datadoghq.com
   DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
   TEST_COLLECT: 'tee -a _testoutput.txt'
-
+  NODE_V8_COVERAGE: coverage
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
 # test instrumentation
@@ -149,6 +149,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -216,6 +219,10 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
+
 
   ##############
   # Long-running tests are executed individually.
@@ -248,6 +255,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -280,6 +290,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
@@ -310,6 +323,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -347,6 +363,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -375,6 +394,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -404,6 +426,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -435,6 +460,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -466,6 +494,9 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3
 
   test-docker-build:
     runs-on: ubuntu-latest
