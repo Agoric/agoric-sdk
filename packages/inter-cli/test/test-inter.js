@@ -1,21 +1,28 @@
+// @ts-check
 import '@endo/init';
+/* eslint-disable-next-line import/no-unresolved */
 import test from 'ava';
 import { fmtBid } from '../src/inter.js';
 
 const brand = {
+  /** @type {Brand<'nat'> & import('@agoric/vats/tools/board-utils.js').BoardRemote} */
+  // @ts-expect-error XXX BoardRemote
   ATOM: { getBoardId: () => 'board00848' },
+  /** @type {Brand<'nat'> & import('@agoric/vats/tools/board-utils.js').BoardRemote} */
+  // @ts-expect-error XXX BoardRemote
   IST: { getBoardId: () => 'board0566' },
 };
 
 const agoricNames = harden({
   brand,
 
+  /** @type {Record<string,import('agoric/src/lib/format.js').AssetDescriptor>} */
   vbankAsset: {
     uist: {
       brand: brand.IST,
       denom: 'uist',
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
-      issuer: {},
+      issuer: /** @type {any} */ ({}),
       issuerName: 'IST',
       proposedName: 'Agoric stable local currency',
     },
@@ -24,7 +31,7 @@ const agoricNames = harden({
       brand: brand.ATOM,
       denom: 'ibc/toyatom',
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
-      issuer: {},
+      issuer: /** @type {any} */ ({}),
       issuerName: 'ATOM',
       proposedName: 'ATOM',
     },
