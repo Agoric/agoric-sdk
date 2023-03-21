@@ -112,23 +112,25 @@ export const main = async (
       'keyring\'s backend (os|file|test) (default "os")',
     );
 
-  // XXX attempting IO before arg parsing leads to poor diagnostis
-  const networkConfig = await getNetworkConfig(env).catch(err => {
-    throw Error(
-      `cannot get network config (${env.AGORIC_NET || 'local'}): ${
-        err.message
-      }`,
-    );
-  });
-  const { agoricNames, fromBoard } = await makeRpcUtils(
-    { fetch },
-    networkConfig,
-  ).catch(err => {
-    throw new RuntimeError(
-      `RPC failure (${env.AGORIC_NET || 'local'}): ${err.message}`,
-    );
-  });
-  const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+  const rpcTools = async () => {
+    const networkConfig = await getNetworkConfig(env).catch(err => {
+      throw Error(
+        `cannot get network config (${env.AGORIC_NET || 'local'}): ${
+          err.message
+        }`,
+      );
+    });
+    const { agoricNames, fromBoard } = await makeRpcUtils(
+      { fetch },
+      networkConfig,
+    ).catch(err => {
+      throw new RuntimeError(
+        `RPC failure (${env.AGORIC_NET || 'local'}): ${err.message}`,
+      );
+    });
+    const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+    return { networkConfig, agoricNames, unserializer };
+  };
 
   const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
   const pprint = v => JSON.stringify(v, bigintReplacer, 2);
@@ -141,6 +143,7 @@ export const main = async (
     .description('show liquidation status')
     .option('--manager [number]', 'Vault Manager', Number, 0)
     .action(async opts => {
+      const { agoricNames, networkConfig, unserializer } = await rpcTools();
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const latest = async path => {
         const follower = makeFollower(
@@ -188,7 +191,8 @@ export const main = async (
        *   offerId: string,
        * }} opts
        */
-      ({ collateralBrand, ...opts }) => {
+      async ({ collateralBrand, ...opts }) => {
+        const { agoricNames } = await rpcTools();
         const offer = Offers.auction.Bid(agoricNames.brand, {
           collateralBrandKey: collateralBrand,
           ...opts,
@@ -218,7 +222,8 @@ export const main = async (
        *   offerId: string,
        * }} opts
        */
-      ({ collateralBrand, ...opts }) => {
+      async ({ collateralBrand, ...opts }) => {
+        const { agoricNames } = await rpcTools();
         const offer = Offers.auction.Bid(agoricNames.brand, {
           collateralBrandKey: collateralBrand,
           ...opts,
@@ -239,6 +244,8 @@ export const main = async (
       normalizeAddress,
     )
     .action(async opts => {
+      const { agoricNames, networkConfig, unserializer } = await rpcTools();
+
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(
         `:published.wallet.${opts.from}`,
