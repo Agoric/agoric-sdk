@@ -197,6 +197,8 @@ async function testExportImport(
   kernelStorage.bundleStore.addBundle(bundleID1, bundle1);
   kernelStorage.bundleStore.addBundle(bundleID2, bundle2);
 
+  const [bundleIDA, bundleIDB] = [bundleID1, bundleID2].sort();
+
   const vats = [
     { vatID: 'vatA', endPos: 0 },
     { vatID: 'vatB', endPos: 0 },
@@ -239,8 +241,8 @@ async function testExportImport(
 
   t.deepEqual(exportData, feedData);
   t.deepEqual(exportData, [
-    [`bundle.${bundleID1}`, `${bundleID1}`],
-    [`bundle.${bundleID2}`, `${bundleID2}`],
+    [`bundle.${bundleIDA}`, `${bundleIDA}`],
+    [`bundle.${bundleIDB}`, `${bundleIDB}`],
     ['kv.brigadoon', 'here during 16'],
     ['kv.kval', 'set in 16'],
     ['kv.vatA.monotonic.10', 'more and more'],
@@ -298,8 +300,8 @@ async function testExportImport(
   ]);
 
   expectedArtifactNames = Array.from(expectedArtifactNames);
-  expectedArtifactNames.push(`bundle.${bundleID1}`);
-  expectedArtifactNames.push(`bundle.${bundleID2}`);
+  expectedArtifactNames.push(`bundle.${bundleIDA}`);
+  expectedArtifactNames.push(`bundle.${bundleIDB}`);
 
   const artifactNames = [];
   for await (const name of exporter.getArtifactNames()) {
