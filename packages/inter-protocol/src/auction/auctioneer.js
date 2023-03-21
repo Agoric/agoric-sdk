@@ -36,6 +36,8 @@ const { add, multiply } = natSafeMath;
 
 const trace = makeTracer('Auction', false);
 
+const MINIMUM_BID_CURRENCY = 1n;
+
 /**
  * @param {NatValue} rate
  * @param {Brand<'nat'>} currencyBrand
@@ -525,7 +527,9 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const bidProposalShape = M.splitRecord(
     {
-      give: { Currency: makeNatAmountShape(brands.Currency) },
+      give: {
+        Currency: makeNatAmountShape(brands.Currency, MINIMUM_BID_CURRENCY),
+      },
     },
     {
       want: M.or({ Collateral: AmountShape }, {}),
