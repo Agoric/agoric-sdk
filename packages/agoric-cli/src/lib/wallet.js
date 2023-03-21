@@ -26,7 +26,7 @@ export const getCurrent = async (addr, ctx, { vstorage }) => {
 
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
- * @param {typeof process.stdout} [stdout]
+ * @param {Pick<import('stream').Writable,'write'>} [stdout]
  */
 export const outputAction = (bridgeAction, stdout = process.stdout) => {
   const capData = marshaller.serialize(bridgeAction);
@@ -36,7 +36,7 @@ export const outputAction = (bridgeAction, stdout = process.stdout) => {
 
 /**
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
- * @param {typeof process.stdout} [stdout]
+ * @param {Pick<import('stream').Writable,'write'>} [stdout]
  */
 export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {
   /** @type {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} */

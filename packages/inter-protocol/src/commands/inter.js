@@ -89,7 +89,7 @@ export const fmtBid = (bid, assets) => {
 /**
  * @param {{
  *   env: Partial<Record<string, string>>,
- *   stdout: typeof process.stdout, clock: () => number,
+ *   stdout: Pick<import('stream').Writable,'write'>, clock: () => number,
  *   createCommand: typeof import('commander').createCommand,
  *   execFile: typeof import('child_process').execFile
  * }} process
