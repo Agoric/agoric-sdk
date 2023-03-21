@@ -2,8 +2,7 @@ import { assert } from '@agoric/assert';
 import {
   insistVatSyscallObject,
   insistVatSyscallResult,
-} from '../lib/message.js';
-import '../types-ambient.js';
+} from '@agoric/swingset-liveslots';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject

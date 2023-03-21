@@ -259,6 +259,11 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
 
   return kernelDeliveryToVatDelivery;
 }
+/**
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResultOk} VatSyscallResultOk
+ */
 
 /**
  * return a function that converts VatSyscall objects into KernelSyscall
@@ -572,56 +577,56 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   function vatSyscallToKernelSyscall(vsc) {
     switch (vsc[0]) {
       case 'send': {
-        const [_, ...args] = vsc;
-        return translateSend(...args);
+        const [_, target, msg] = vsc;
+        return translateSend(target, msg);
       }
       case 'callNow': {
-        const [_, ...args] = vsc;
-        return translateCallNow(...args); // becomes invoke()
+        const [_, target, method, args] = vsc;
+        return translateCallNow(target, method, args); // becomes invoke()
       }
       case 'subscribe': {
-        const [_, ...args] = vsc;
-        return translateSubscribe(...args);
+        const [_, vpid] = vsc;
+        return translateSubscribe(vpid);
       }
       case 'resolve': {
-        const [_, ...args] = vsc;
-        return translateResolve(...args);
+        const [_, resolutions] = vsc;
+        return translateResolve(resolutions);
       }
       case 'exit': {
-        const [_, ...args] = vsc;
-        return translateExit(...args);
+        const [_, isFailure, info] = vsc;
+        return translateExit(isFailure, info);
       }
       case 'vatstoreGet': {
-        const [_, ...args] = vsc;
-        return translateVatstoreGet(...args);
+        const [_, key] = vsc;
+        return translateVatstoreGet(key);
       }
       case 'vatstoreSet': {
-        const [_, ...args] = vsc;
-        return translateVatstoreSet(...args);
+        const [_, key, data] = vsc;
+        return translateVatstoreSet(key, data);
       }
       case 'vatstoreGetNextKey': {
-        const [_, ...args] = vsc;
-        return translateVatstoreGetNextKey(...args);
+        const [_, priorKey] = vsc;
+        return translateVatstoreGetNextKey(priorKey);
       }
       case 'vatstoreDelete': {
-        const [_, ...args] = vsc;
-        return translateVatstoreDelete(...args);
+        const [_, key] = vsc;
+        return translateVatstoreDelete(key);
       }
       case 'dropImports': {
-        const [_, ...args] = vsc;
-        return translateDropImports(...args);
+        const [_, slots] = vsc;
+        return translateDropImports(slots);
       }
       case 'retireImports': {
-        const [_, ...args] = vsc;
-        return translateRetireImports(...args);
+        const [_, slots] = vsc;
+        return translateRetireImports(slots);
       }
       case 'retireExports': {
-        const [_, ...args] = vsc;
-        return translateRetireExports(...args);
+        const [_, slots] = vsc;
+        return translateRetireExports(slots);
       }
       case 'abandonExports': {
-        const [_, ...args] = vsc;
-        return translateAbandonExports(...args);
+        const [_, slots] = vsc;
+        return translateAbandonExports(slots);
       }
       default: {
         throw Fail`unknown vatSyscall type ${vsc[0]}`;
