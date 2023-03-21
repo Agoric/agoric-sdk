@@ -22,10 +22,11 @@ import { createSHA256 } from './hasher.js';
  *   importSpan: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => Promise<void>,
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
+ *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
  * }} TranscriptStoreInternal
  *
  * @typedef {{
- *   dumpTranscripts: (includeHistorical?: boolean) => any,
+ *   dumpTranscripts: (includeHistorical?: boolean) => {[vatID: string]: {[position: number]: string}}
  * }} TranscriptStoreDebug
  *
  */
@@ -110,8 +111,16 @@ export function makeTranscriptStore(
     ORDER BY vatID, startPos
   `);
 
+  const sqlDumpVatSpansQuery = db.prepare(`
+    SELECT startPos, endPos
+    FROM transcriptSpans
+    WHERE vatID = ?
+    ORDER BY startPos
+  `);
+
   function dumpTranscripts(includeHistorical = true) {
     // debug function to return: dump[vatID][position] = item
+    /** @type {Record<string, Record<number, string>>} */
     const transcripts = {};
     for (const spanRow of sqlDumpSpansQuery.iterate()) {
       if (includeHistorical || spanRow.isCurrent) {
@@ -129,6 +138,14 @@ export function makeTranscriptStore(
       }
     }
     return transcripts;
+  }
+
+  function* readFullVatTranscript(vatID) {
+    for (const { startPos, endPos } of sqlDumpVatSpansQuery.iterate(vatID)) {
+      for (const row of sqlDumpItemsQuery.iterate(vatID, startPos, endPos)) {
+        yield row;
+      }
+    }
   }
 
   function spanArtifactName(rec) {
@@ -523,5 +540,6 @@ export function makeTranscriptStore(
     getArtifactNames,
 
     dumpTranscripts,
+    readFullVatTranscript,
   });
 }
