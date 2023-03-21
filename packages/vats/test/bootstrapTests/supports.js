@@ -174,7 +174,7 @@ export const makeWalletFactoryDriver = async (
 
   /**
    * @param {string} walletAddress
-   * @param {unknown} walletPresence
+   * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
    */
   const makeWalletDriver = (walletAddress, walletPresence) => ({
     /**
@@ -186,7 +186,6 @@ export const makeWalletFactoryDriver = async (
         method: 'executeOffer',
         offer,
       });
-
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
@@ -200,6 +199,13 @@ export const makeWalletFactoryDriver = async (
       });
 
       return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
+    },
+    tryExitOffer(offerId) {
+      const capData = marshaller.serialize({
+        method: 'tryExitOffer',
+        offerId,
+      });
+      return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
      * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
@@ -228,7 +234,7 @@ export const makeWalletFactoryDriver = async (
      */
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
-      const lastWalletStatus = JSON.parse(storage.data.get(key).at(-1));
+      const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
       return JSON.parse(lastWalletStatus.body);
     },
   });

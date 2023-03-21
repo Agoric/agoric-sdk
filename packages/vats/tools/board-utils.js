@@ -49,7 +49,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
     const key = `published.agoricNames.${kind}`;
 
     const values = data.get(key);
-    (values && values.length > 0) || Fail`no data for ${key}`;
+    if (!(values && values.length > 0)) throw Fail`no data for ${key}`;
     /** @type {import("@endo/marshal").CapData<string>} */
     const latestCapData = JSON.parse(values.at(-1));
     /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
