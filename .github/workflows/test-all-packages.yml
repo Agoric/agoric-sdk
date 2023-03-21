@@ -466,3 +466,16 @@ jobs:
           if [ "$DATADOG_API_KEY" != "" ]; then
             ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
           fi
+
+  test-docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: docker build (sdk)
+        run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi

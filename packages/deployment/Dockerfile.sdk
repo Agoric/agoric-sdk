@@ -90,6 +90,8 @@ RUN ln -s /data /agoric
 RUN ln -s /data/solo /usr/src/agoric-sdk/packages/cosmic-swingset/solo
 RUN ln -s /data/chains /usr/src/agoric-sdk/packages/cosmic-swingset/chains
 
+RUN /usr/src/agoric-sdk/packages/deployment/scripts/smoketest-binaries.sh
+
 # By default, run the daemon with specified arguments.
 WORKDIR /root
 EXPOSE 1317 9090 26657
