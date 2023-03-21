@@ -1,4 +1,5 @@
-/** @file
+/**
+ * @file
  * Adaptation of Chainlink algorithm to the Agoric platform.
  * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
  */

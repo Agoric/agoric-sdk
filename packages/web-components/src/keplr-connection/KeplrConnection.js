@@ -1,9 +1,9 @@
 // @ts-check
 import { makeLeader } from '@agoric/casting';
 import { makeImportContext } from '@agoric/smart-wallet/src/marshal-contexts.js';
-import { getKeplrAddress } from './getKeplrAddress';
-import { getChainInfo } from './getChainInfo';
-import { watchWallet } from './watchWallet';
+import { getKeplrAddress } from './getKeplrAddress.js';
+import { getChainInfo } from './getChainInfo.js';
+import { watchWallet } from './watchWallet.js';
 
 // TODO: We need a way to detect the appropriate network-config, and default it
 // to mainnet.

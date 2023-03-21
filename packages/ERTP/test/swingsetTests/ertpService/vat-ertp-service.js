@@ -9,7 +9,7 @@ import {
   AssetKind,
   makeDurableIssuerKit,
   prepareIssuerKit,
-} from '../../../src';
+} from '../../../src/index.js';
 
 export const prepareErtpService = (baggage, exitVatWithFailure) => {
   const issuerBaggageSet = provideDurableSetStore(baggage, 'BaggageSet');

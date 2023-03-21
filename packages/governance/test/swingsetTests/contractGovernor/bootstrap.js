@@ -6,7 +6,10 @@ import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
-import { CONTRACT_ELECTORATE, assertContractElectorate } from '../../../src';
+import {
+  CONTRACT_ELECTORATE,
+  assertContractElectorate,
+} from '../../../src/index.js';
 
 const { quote: q } = assert;
 
