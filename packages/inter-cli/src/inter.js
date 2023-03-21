@@ -9,10 +9,13 @@ import {
   boardSlottingMarshaller,
   getNetworkConfig,
   makeRpcUtils,
-} from './lib/rpc.js';
-import { coalesceWalletState, outputExecuteOfferAction } from './lib/wallet.js';
-import { normalizeAddressWithOptions } from './lib/chain.js';
-import { makeAmountFormatter } from './lib/format.js';
+} from 'agoric/src/lib/rpc.js';
+import {
+  coalesceWalletState,
+  outputExecuteOfferAction,
+} from 'agoric/src/lib/wallet.js';
+import { normalizeAddressWithOptions } from 'agoric/src/lib/chain.js';
+import { makeAmountFormatter } from 'agoric/src/lib/format.js';
 
 const { values } = Object;
 
@@ -54,7 +57,7 @@ const fmtMetrics = (metrics, quote, assets) => {
 /**
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}} bid
- * @param {import('./lib/format.js').AssetDescriptor[]} assets
+ * @param {import('agoric/src/lib/format.js').AssetDescriptor[]} assets
  */
 export const fmtBid = (bid, assets) => {
   const fmt = makeFormatters(assets);
