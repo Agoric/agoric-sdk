@@ -813,11 +813,18 @@ export const prepareVaultManagerKit = (
             Fail`Must have locked a quote before liquidating vaults.`;
           assert(lockedQuote); // redundant with previous line
 
-          const crKey = normalizedCollRatioKey(lockedQuote, compoundedInterest);
+          const liqMargin = facets.self
+            .getGovernedParams()
+            .getLiquidationMargin();
+          const crKey = normalizedCollRatioKey(
+            lockedQuote,
+            compoundedInterest,
+            liqMargin,
+          );
 
           trace(
             `Liquidating vaults worse than`,
-            normalizedCollRatio(lockedQuote, compoundedInterest),
+            normalizedCollRatio(lockedQuote, compoundedInterest, liqMargin),
           );
           const { totalDebt, totalCollateral, vaultData, liqSeat } =
             getLiquidatableVaults(

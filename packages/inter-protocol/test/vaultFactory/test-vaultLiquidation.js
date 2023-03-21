@@ -571,7 +571,7 @@ test('price falls precipitously', async t => {
 
 // We'll make two loans, and trigger liquidation of one via price changes, and
 // the other via interest charges. The interest rate is 40%. The liquidation
-// margin is 105%. The priceAuthority will initially quote 10:1 Run:Aeth, and
+// margin is 103%. The priceAuthority will initially quote 10:1 Run:Aeth, and
 // drop to 7:1. Both loans will initially be over collateralized 100%. Alice
 // will withdraw enough of the overage that she'll get caught when prices drop.
 // Bob will be charged interest, which will trigger liquidation.
@@ -583,7 +583,7 @@ test('mutable liquidity triggers and interest', async t => {
     ...defaultRates,
     // charge 40% interest / year
     interestRate: run.makeRatio(40n),
-    liquidationMargin: run.makeRatio(130n),
+    liquidationMargin: run.makeRatio(103n),
   });
   t.context.rates = rates;
 
@@ -698,9 +698,9 @@ test('mutable liquidity triggers and interest', async t => {
 
   // BOB //////////////////////////////////////////////
 
-  // Create a loan for Bob for 655 Minted with 100 Aeth collateral
+  // Create a loan for Bob for 630 Minted with 100 Aeth collateral
   const bobCollateralAmount = aeth.make(100n);
-  const bobLoanAmount = run.make(655n);
+  const bobLoanAmount = run.make(630n);
   /** @type {UserSeat<VaultKit>} */
   const bobLoanSeat = await E(zoe).offer(
     await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
@@ -737,7 +737,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   let bobUpdate = await E(bobNotifier).getUpdateSince();
   t.deepEqual(bobUpdate.value.debtSnapshot.debt, bobRunDebtLevel);
-  totalDebt += 655n + 33n;
+  totalDebt += 630n + 32n;
   await aethVaultMetrics.assertChange({
     numActiveVaults: 2,
     totalCollateral: { value: 1100n },
@@ -855,7 +855,7 @@ test('mutable liquidity triggers and interest', async t => {
 
   totalDebt += 13n;
   await aethVaultMetrics.assertChange({
-    liquidatingDebt: { value: 706n },
+    liquidatingDebt: { value: 680n },
     liquidatingCollateral: { value: 100n },
     totalDebt: { value: totalDebt },
     numActiveVaults: 0,
@@ -882,7 +882,7 @@ test('mutable liquidity triggers and interest', async t => {
     totalDebt: { value: totalDebt },
     numLiquidatingVaults: 0,
     numLiquidationsCompleted: 2,
-    totalOverageReceived: { value: 29n },
+    totalOverageReceived: { value: 55n },
     totalCollateralSold: { value: 800n },
     totalProceedsReceived: { value: 5880n },
   });
@@ -893,12 +893,10 @@ test('mutable liquidity triggers and interest', async t => {
 
 // We'll make two loans, and trigger one via interest charges, and not trigger
 // liquidation of the other. The interest rate is 200% per annum. The liquidation margin is
-// 105%. Alice's loan will initially be over collateralized 100%. Alice will
+// 103%. Alice's loan will initially be over collateralized 100%. Alice will
 // withdraw enough of the overage that she's on the cusp of getting caught when
 // prices drop. Bob won't be so overcollateralized. When he is charged interest
-// it will trigger liquidation. Alice's withdrawal is precisely gauged so the
-// difference between a floorDivideBy and a ceilingDivideBy will leave her
-// unliquidated.
+// it will trigger liquidation.
 test('sell goods at auction', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
 
@@ -914,6 +912,7 @@ test('sell goods at auction', async t => {
     ...defaultRates,
     // charge 200% interest
     interestRate: run.makeRatio(200n),
+    liquidationMargin: run.makeRatio(103n),
   });
   t.context.rates = rates;
 
@@ -1523,4 +1522,95 @@ test('Auction sells all collateral w/shortfall', async t => {
 
   //  Bidder bought 800 Aeth
   await assertBidderPayout(t, bidderSeat, run, 115n, aeth, 700n);
+});
+
+// See #7191.  Changing the price from 12.34 to 9.99 should liquidate a vault
+// with 15 collateral and 100 debt at liquidationMargin of 150%.
+test('liquidation Margin matters', async t => {
+  const { zoe, aeth, run, rates: defaultRates } = t.context;
+
+  const rates = harden({
+    ...defaultRates,
+    interestRate: run.makeRatio(105n),
+    liquidationMargin: run.makeRatio(150n),
+  });
+  t.context.rates = rates;
+
+  const manualTimer = buildManualTimer();
+  const services = await setupServices(
+    t,
+    makeRatio(1234n, run.brand, 100n, aeth.brand),
+    aeth.make(1n),
+    manualTimer,
+    SECONDS_PER_WEEK,
+    500n,
+  );
+
+  const {
+    auctioneerKit,
+    priceAuthority,
+    reserveKit: { reserveCreatorFacet },
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+
+  const { vfPublic } = services.vaultFactory;
+
+  const aliceCollateralAmount = aeth.make(15n);
+  const aliceLoanAmount = run.make(100n);
+  /** @type {UserSeat<VaultKit>} */
+  const aliceLoanSeat = await E(zoe).offer(
+    await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
+    harden({
+      give: { Collateral: aliceCollateralAmount },
+      want: { Minted: aliceLoanAmount },
+    }),
+    harden({
+      Collateral: aeth.mint.mintPayment(aliceCollateralAmount),
+    }),
+  );
+  const {
+    vault: aliceVault,
+    publicNotifiers: { vault: aliceNotifier },
+  } = await legacyOfferResult(aliceLoanSeat);
+
+  const aliceDebtAmount = await E(aliceVault).getCurrentDebt();
+  const fee = ceilMultiplyBy(aliceLoanAmount, rates.loanFee);
+  const aliceRunDebtLevel = AmountMath.add(aliceLoanAmount, fee);
+
+  t.deepEqual(
+    aliceDebtAmount,
+    aliceRunDebtLevel,
+    'vault lent 5000 Minted + fees',
+  );
+  const { Minted: aliceLentAmount } = await E(
+    aliceLoanSeat,
+  ).getFinalAllocation();
+  const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
+  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 Minted');
+
+  const aliceRunLent = await aliceLoanProceeds.Minted;
+  t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), run.make(100n));
+
+  let aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+
+  // A BIDDER places a BID //////////////////////////
+  const bidAmount = run.make(100n);
+  const desired = aeth.make(15n);
+  const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
+
+  // price falls
+  // @ts-expect-error setupServices() should return the right type
+  await priceAuthority.setPrice(makeRatio(999n, run.brand, 100n, aeth.brand));
+
+  const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
+
+  await setClockAndAdvanceNTimes(manualTimer, 2n, startTime, 2n);
+
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
+
+  //  Bidder bought 100 Aeth
+  await assertBidderPayout(t, bidderSeat, run, 2n, aeth, 15n);
 });
