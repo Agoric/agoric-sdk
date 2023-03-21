@@ -133,7 +133,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   walletBridgeManager?: ERef<import('@agoric/vats').ScopedBridgeManager>,
+ *   walletBridgeManager?: ERef<import('@agoric/vats').BridgeChannel>,
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

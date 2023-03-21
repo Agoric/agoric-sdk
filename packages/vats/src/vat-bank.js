@@ -112,7 +112,7 @@ const makePurseController = (
 export function buildRootObject() {
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP] a bridge
+     * @param {ERef<import('./types.js').BridgeChannel | undefined>} [bankBridgeManagerP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
      * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdmin] update facet of
@@ -152,7 +152,7 @@ export function buildRootObject() {
       };
 
       /**
-       * @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr]
+       * @param {ERef<import('./types.js').BridgeChannel>} [bankBridgeMgr]
        */
       async function makeBankCaller(bankBridgeMgr) {
         // We do the logic here if the bridge manager is available.  Otherwise,

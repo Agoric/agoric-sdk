@@ -24,7 +24,7 @@ test('communication', async t => {
   /** @type {undefined | ERef<import('../src/types.js').BridgeHandler>} */
   let bankHandler;
 
-  /** @type {import('../src/types.js').ScopedBridgeManager} */
+  /** @type {import('../src/types.js').BridgeChannel} */
   const bankBridgeMgr = Far('fakeBankBridgeManager', {
     async fromBridge(_obj) {
       t.fail('unexpected fromBridge');

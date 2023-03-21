@@ -21,7 +21,7 @@ const XLien = /** @type { const } */ ({
 export const LienBridgeId = /** @type {const} */ ('lien');
 
 /**
- * @param {ERef<import('@agoric/vats').ScopedBridgeManager>} lienBridgeManager
+ * @param {ERef<import('@agoric/vats').BridgeChannel>} lienBridgeManager
  * @param {Brand<'nat'>} brand
  * @param {string} [denom]
  * @returns {StakingAuthority}

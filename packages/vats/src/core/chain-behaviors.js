@@ -424,7 +424,7 @@ harden(connectChainFaucet);
 
 /**
  * @param {SoloVats | NetVats} vats
- * @param {ERef<import('../types.js').ScopedBridgeManager>} [dibcBridgeManager]
+ * @param {ERef<import('../types.js').BridgeChannel>} [dibcBridgeManager]
  */
 export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
   const ps = [];
