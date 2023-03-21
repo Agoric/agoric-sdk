@@ -2,24 +2,28 @@
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
-import { makeLiveSlots } from '@agoric/swingset-liveslots';
-import '../../types-ambient.js';
-// grumble... waitUntilQuiescent is exported and closes over ambient authority
-import { waitUntilQuiescent } from '../../lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '../../lib-nodejs/gc-and-finalize.js';
 import {
+  makeLiveSlots,
   insistVatDeliveryObject,
   insistVatSyscallResult,
-} from '../../lib/message.js';
+} from '@agoric/swingset-liveslots';
+// import '../../types-ambient.js';
+// grumble... waitUntilQuiescent is exported and closes over ambient authority
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
 
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
-} from '../supervisor-helper.js';
+} from './supervisor-helper.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscaller} VatSyscaller
  * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
  * @typedef {import('@agoric/swingset-liveslots').MeterControl} MeterControl
  */
@@ -192,7 +196,7 @@ function makeWorker(port) {
    * @returns {Promise<Tagged>}
    */
   async function setBundle(vatID, bundle, liveSlotsOptions) {
-    /** @type { (vso: VatSyscallObject) => VatSyscallResult } */
+    /** @type { VatSyscaller } */
     function syscallToManager(vatSyscallObject) {
       workerLog('doSyscall', vatSyscallObject);
       const result = port.call(['syscall', vatSyscallObject]);
