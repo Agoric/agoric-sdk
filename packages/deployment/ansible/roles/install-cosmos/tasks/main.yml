@@ -80,6 +80,13 @@
     option: laddr
     value: '"tcp://0.0.0.0:26657"'
 
+- name: Shorten Timeout Commit
+  ini_file:
+    path: '/home/{{ service }}/.{{ service }}/config/config.toml'
+    section: consensus
+    option: timeout_commit
+    value: '"1s"'
+
 - name: Turn on API server
   ini_file:
     path: '/home/{{ service }}/.{{ service }}/config/app.toml'
