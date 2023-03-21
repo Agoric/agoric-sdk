@@ -31,12 +31,14 @@ import {
 
 import {
   BeansPerBlockComputeLimit,
+  BeansPerInterBlockComputeLimit,
   BeansPerVatCreation,
   BeansPerXsnapComputron,
   QueueInbound,
 } from './sim-params.js';
 import { parseParams, encodeQueueSizes } from './params.js';
 import { makeQueue } from './make-queue.js';
+import { makeActiveGuard } from './active-guard.js';
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -64,7 +66,14 @@ export async function buildSwingset(
   vatconfig,
   bootstrapArgs,
   env,
-  { debugName = undefined, slogCallbacks, slogSender },
+  {
+    debugName = undefined,
+    slogCallbacks,
+    slogSender,
+    whenActiveWrap = fn =>
+      (...args) =>
+        fn(...args),
+  },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   /** @type {import('@agoric/swingset-vat').SwingSetConfig | null} */
@@ -73,9 +82,14 @@ export async function buildSwingset(
     config = loadBasedir(vatconfig);
   }
 
-  const mbs = buildMailboxStateMap(mailboxStorage);
+  const rawMailboxStateMap = buildMailboxStateMap(mailboxStorage);
+  const mailboxStateMap = {
+    add: whenActiveWrap(rawMailboxStateMap.add),
+    remove: whenActiveWrap(rawMailboxStateMap.remove),
+    setAcknum: whenActiveWrap(rawMailboxStateMap.setAcknum),
+  };
   const timer = buildTimer();
-  const mb = buildMailbox(mbs);
+  const mb = buildMailbox(mailboxStateMap);
   config.devices = {
     mailbox: {
       sourceSpec: mb.srcPath,
@@ -91,7 +105,21 @@ export async function buildSwingset(
 
   let bridgeInbound;
   if (bridgeOutbound) {
-    const bd = buildBridge(bridgeOutbound);
+    const activeBridgeOutbound = whenActiveWrap((dstID, msg, bpid) => {
+      const retobj = bridgeOutbound(dstID, msg);
+      // note: *we* get this return value synchronously, but we arrange for it
+      // to be sent to the vat-side bridge through deliverInbound, which means
+      // the caller only gets a Promise, and will receive the value in some
+      // future crank
+      /** @type {PromiseSettledResult<any>} */
+      const result =
+        retobj && retobj.error
+          ? { status: 'rejected', reason: retobj.error }
+          : { status: 'fulfilled', value: retobj };
+      bridgeInbound(BRIDGE_ID.OUTBOUND_RESULT, [{ bpid, result }]);
+    });
+
+    const bd = buildBridge(activeBridgeOutbound);
     config.devices.bridge = {
       sourceSpec: bd.srcPath,
     };
@@ -149,26 +177,28 @@ export async function buildSwingset(
 
 /**
  * @typedef {object} BeansPerUnit
- * @property {bigint} blockComputeLimit
  * @property {bigint} vatCreation
  * @property {bigint} xsnapComputron
  */
 
 /**
  * @param {BeansPerUnit} beansPerUnit
+ * @param {bigint} computeLimit
  * @returns {ChainRunPolicy}
  */
-function computronCounter({
-  [BeansPerBlockComputeLimit]: blockComputeLimit,
-  [BeansPerVatCreation]: vatCreation,
-  [BeansPerXsnapComputron]: xsnapComputron,
-}) {
-  assert.typeof(blockComputeLimit, 'bigint');
+function computronCounter(
+  {
+    [BeansPerVatCreation]: vatCreation,
+    [BeansPerXsnapComputron]: xsnapComputron,
+  },
+  computeLimit,
+) {
+  assert.typeof(computeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
   let totalBeans = 0n;
-  const shouldRun = () => totalBeans < blockComputeLimit;
-  const remainingBeans = () => blockComputeLimit - totalBeans;
+  const shouldRun = () => totalBeans < computeLimit;
+  const remainingBeans = () => computeLimit - totalBeans;
 
   const policy = harden({
     vatCreated() {
@@ -217,7 +247,7 @@ export async function launch({
   replayChainSends,
   setActivityhash,
   bridgeOutbound,
-  makeInstallationPublisher = undefined,
+  makeInstallationPublisher,
   vatconfig,
   argv,
   env = process.env,
@@ -266,6 +296,24 @@ export async function launch({
     metricMeter,
   });
 
+  // Helpers to ensure that no swingset activity will result in a chainSend
+  // outside of when we're actively processing an action.
+  // The following chain callbacks trigger chainSend:
+  // - bridgeOutbound
+  // - mailboxStorage
+  // - installationPublisher
+  // - setActivityhash
+  // - actionQueue
+  //
+  // The first 4 are sinks only and can simply be wrapped in the active guard.
+  // However, the actionQueue is meant to be used as a synchronous iterator, but
+  // it's ok to not guard it since it's only used when processing END_BLOCK.
+  const { whenActiveWrap, updateActive } = makeActiveGuard();
+
+  if (setActivityhash) {
+    setActivityhash = whenActiveWrap(setActivityhash);
+  }
+
   console.debug(`buildSwingset`);
   const { controller, mb, bridgeInbound, timer } = await buildSwingset(
     mailboxStorage,
@@ -278,6 +326,7 @@ export async function launch({
       debugName,
       slogCallbacks,
       slogSender,
+      whenActiveWrap,
     },
   );
 
@@ -413,8 +462,13 @@ export async function launch({
       installationPublisher === undefined &&
       makeInstallationPublisher !== undefined
     ) {
-      // @ts-expect-error not really undefined. TODO give provideInstallationPublisher a signature.
-      installationPublisher = makeInstallationPublisher();
+      /** @type {Publisher<unknown>} */
+      const publisher = makeInstallationPublisher();
+      installationPublisher = {
+        publish: whenActiveWrap(publisher.publish),
+        finish: whenActiveWrap(publisher.finish),
+        fail: whenActiveWrap(publisher.fail),
+      };
     }
   }
 
@@ -482,13 +536,14 @@ export async function launch({
     return p;
   }
 
-  async function runKernel(runPolicy, blockHeight) {
+  async function runKernel(runPolicy, blockHeight, phase) {
     let runNum = 0;
     async function runSwingset() {
       const initialBeans = runPolicy.remainingBeans();
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-start',
         blockHeight,
+        phase,
         runNum,
         initialBeans,
       });
@@ -504,6 +559,7 @@ export async function launch({
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-finish',
         blockHeight,
+        phase,
         runNum,
         remainingBeans,
         usedBeans: initialBeans - remainingBeans,
@@ -567,9 +623,12 @@ export async function launch({
     );
 
     // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit);
+    const runPolicy = computronCounter(
+      params.beansPerUnit,
+      params.beansPerUnit[BeansPerBlockComputeLimit],
+    );
 
-    await runKernel(runPolicy, blockHeight);
+    await runKernel(runPolicy, blockHeight, 'endBlock');
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
@@ -585,7 +644,7 @@ export async function launch({
    */
   async function processAction(type, fn) {
     const start = Date.now();
-    const finish = res => {
+    const finish = async res => {
       // blockManagerConsole.error(
       //   'Action',
       //   action.type,
@@ -593,9 +652,11 @@ export async function launch({
       //   'is done!',
       // );
       runTime += Date.now() - start;
+      await updateActive(false);
       return res;
     };
 
+    await updateActive(true);
     const p = fn();
     // Just attach some callbacks, but don't use the resulting neutered result
     // promise.
@@ -603,7 +664,7 @@ export async function launch({
       // None of these must fail, and if they do, log them verbosely before
       // returning to the chain.
       blockManagerConsole.error(type, 'error:', e);
-      finish();
+      return finish();
     });
     // Return the original promise so that the caller gets the original
     // resolution or rejection.
@@ -642,7 +703,7 @@ export async function launch({
     throw decohered;
   }
 
-  async function afterCommit(blockHeight, blockTime) {
+  async function afterCommit(blockHeight, blockTime, params) {
     await Promise.resolve()
       .then(afterCommitCallback)
       .then((afterCommitStats = {}) => {
@@ -653,6 +714,15 @@ export async function launch({
           ...afterCommitStats,
         });
       });
+
+    const computeLimit = params.beansPerUnit[BeansPerInterBlockComputeLimit];
+
+    if (!(computeLimit > 0n)) {
+      return;
+    }
+
+    const runPolicy = computronCounter(params.beansPerUnit, computeLimit);
+    await runKernel(runPolicy, blockHeight, 'afterCommit');
   }
 
   async function blockingSend(action) {
@@ -728,13 +798,27 @@ export async function launch({
           blockTime,
         });
 
-        blockParams = undefined;
-
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
 
-        afterCommitWorkDone = afterCommit(blockHeight, blockTime);
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-after-commit-block-start',
+          blockHeight,
+          blockTime,
+        });
+        afterCommitWorkDone = afterCommit(
+          blockHeight,
+          blockTime,
+          blockParams,
+        ).then(() => {
+          controller.writeSlogObject({
+            type: 'cosmic-swingset-after-commit-block-finish',
+            blockHeight,
+            blockTime,
+          });
+        });
+        blockParams = undefined;
 
         return undefined;
       }

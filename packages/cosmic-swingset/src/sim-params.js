@@ -16,6 +16,7 @@ const makeQueueSize = (key, size) => ({ key, size });
 // experience if they don't.
 
 export const BeansPerBlockComputeLimit = 'blockComputeLimit';
+export const BeansPerInterBlockComputeLimit = 'interBockComputeLimit';
 export const BeansPerFeeUnit = 'feeUnit';
 export const BeansPerInboundTx = 'inboundTx';
 export const BeansPerMessage = 'message';
@@ -32,6 +33,8 @@ export const defaultBeansPerXsnapComputron = 100n;
 // computation.
 export const defaultBeansPerBlockComputeLimit =
   8_000_000n * defaultBeansPerXsnapComputron;
+export const defaultBeansPerInterBlockComputeLimit =
+  24_000_000n * defaultBeansPerXsnapComputron;
 // observed: 0.385 sec
 export const defaultBeansPerVatCreation =
   300_000n * defaultBeansPerXsnapComputron;
@@ -51,6 +54,10 @@ export const defaultBeansPerUnit = [
   makeStringBeans(BeansPerFeeUnit, defaultBeansPerFeeUnit),
   makeStringBeans(BeansPerInboundTx, defaultBeansPerInboundTx),
   makeStringBeans(BeansPerBlockComputeLimit, defaultBeansPerBlockComputeLimit),
+  makeStringBeans(
+    BeansPerInterBlockComputeLimit,
+    defaultBeansPerInterBlockComputeLimit,
+  ),
   makeStringBeans(BeansPerMessage, defaultBeansPerMessage),
   makeStringBeans(BeansPerMessageByte, defaultBeansPerMessageByte),
   makeStringBeans(BeansPerMinFeeDebit, defaultBeansPerMinFeeDebit),

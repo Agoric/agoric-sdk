@@ -19,6 +19,7 @@ export const BridgeId = {
   PROVISION: 'provision',
   PROVISION_SMART_WALLET: 'provisionWallet',
   WALLET: 'wallet',
+  OUTBOUND_RESULT: 'outboundResult', // Synthetic source used to send results back asynchronously
 };
 harden(BridgeId);
 

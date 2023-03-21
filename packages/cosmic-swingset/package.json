@@ -36,6 +36,7 @@
     "@endo/import-bundle": "^0.3.0",
     "@endo/init": "^0.5.52",
     "@endo/marshal": "^0.8.1",
+    "@endo/promise-kit": "^0.2.52",
     "@iarna/toml": "^2.2.3",
     "@opentelemetry/sdk-metrics": "^0.32.0",
     "anylogger": "^0.21.0",

@@ -13,8 +13,8 @@ function sanitize(data) {
 
 /**
  * @typedef {object} BridgeDevice
- * @property {(dstID: string, obj: any) => any} callOutbound
- * @property {(handler: { inbound: (srcID: string, obj: any) => void}) => void} registerInboundHandler
+ * @property {(...args: any[]) => any} callOutbound
+ * @property {(handler: { inbound: (...args: any[]) => void}) => void} registerInboundHandler
  */
 
 /**

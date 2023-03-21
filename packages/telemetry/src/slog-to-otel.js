@@ -909,8 +909,8 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-begin-block': {
-        if (spans.topKind() === 'intra-block') {
-          spans.pop('intra-block');
+        if (spans.topKind() === 'inter-block') {
+          spans.pop('inter-block');
           spans.pop('block');
         }
         if (currentBlockHeight > 0) {
@@ -936,14 +936,22 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       }
       case 'cosmic-swingset-commit-block-finish': {
         spans.pop(['commit-block', slogAttrs.blockHeight]);
+        break;
+      }
+      case 'cosmic-swingset-after-commit-block-start': {
+        spans.push(['after-commit', slogAttrs.blockHeight]);
+        break;
+      }
+      case 'cosmic-swingset-after-commit-block-finish': {
+        spans.pop(['after-commit', slogAttrs.blockHeight]);
         // Push a span to capture the time between blocks from cosmic-swingset POV
-        spans.push(['intra-block', slogAttrs.blockHeight]);
+        spans.push(['inter-block', slogAttrs.blockHeight]);
         break;
       }
       case 'cosmic-swingset-after-commit-stats': {
-        // Add the event to whatever the current top span is (most likely intra-block)
+        // Add the event to whatever the current top span is (most likely after-commit)
         // TODO: add as a span of the block
-        spans.top()?.addEvent('after-commit', cleanAttrs(slogAttrs), now);
+        spans.top()?.addEvent('after-commit-stats', cleanAttrs(slogAttrs), now);
         if (currentBlockHeight === slogAttrs.blockHeight) {
           dbTransactionManager.end();
           currentBlockHeight = -1;
