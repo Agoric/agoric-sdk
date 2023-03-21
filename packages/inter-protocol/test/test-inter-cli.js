@@ -2,7 +2,8 @@
 import '@endo/init';
 /* eslint-disable-next-line import/no-unresolved */
 import test from 'ava';
-import { fmtBid } from '../src/commands/inter.js';
+import { createCommand as ambientCreateCommand } from 'commander';
+import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
 const brand = {
   /** @type {Brand<'nat'> & import('@agoric/vats/tools/board-utils.js').BoardRemote} */
@@ -115,4 +116,46 @@ test('formatBid', t => {
       discount: 10,
     });
   }
+});
+
+test.before(t => {
+  t.context = {
+    createCommand: ambientCreateCommand,
+  };
+});
+
+// TODO: figure out how to interpose network access for cosmjs, casting
+test.skip('inter bid list', async t => {
+  // @ts-expect-error XXX typed t.context
+  const { createCommand, setFetchImpl } = t.context;
+  const out = [];
+  const stdout = harden({
+    write: x => (out.push(x), true),
+  });
+  const clock = () => 1000;
+  const fetch = (...args) => {
+    console.log('@@featch', ...args);
+    throw Error('fetch failed');
+  };
+
+  // cosmjs grabs ambient fetch
+  setFetchImpl({ fetch });
+
+  /** @type {typeof import('child_process').execFileSync} */
+  // @ts-expect-error mock
+  const execFileSync = (file, args) => {
+    switch (file) {
+      case 'agd':
+        t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
+        return `agoric1${args[3]}`;
+      default:
+        throw Error('not impl');
+    }
+  };
+  const cmd = await makeInterCommand(
+    { env: {}, stdout, clock, createCommand, execFileSync },
+    { fetch },
+  );
+
+  await cmd.parseAsync(['node', 'inter', 'bid', 'list', '--from', 'gov1']);
 });
