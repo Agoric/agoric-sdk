@@ -531,7 +531,7 @@ export const setupNetworkProtocols = async ({
       let bindAddr = '/ibc-port/';
       if (i === NUM_IBC_PORTS_PER_CLIENT - 1) {
         lastICAPort += 1;
-        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}-${lastICAPort}`;
+        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}${lastICAPort}`;
       }
       const port = E(vats.network).bind(bindAddr);
       ibcportP.push(port);
