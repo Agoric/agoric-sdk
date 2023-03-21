@@ -91,13 +91,13 @@ export const fmtBid = (bid, assets) => {
  *   env: Partial<Record<string, string>>,
  *   stdout: Pick<import('stream').Writable,'write'>, clock: () => number,
  *   createCommand: typeof import('commander').createCommand,
- *   execFile: typeof import('child_process').execFile
+ *   execFileSync: typeof import('child_process').execFileSync
  * }} process
  * Note: createCommand includes access to process.stdout, .stderr, .exit
  * @param {{ fetch: typeof window.fetch }} net
  */
 export const makeInterCommand = async (
-  { env, stdout, clock, createCommand },
+  { env, stdout, clock, execFileSync, createCommand },
   { fetch },
 ) => {
   const interCmd = createCommand('inter')
@@ -231,7 +231,7 @@ export const makeInterCommand = async (
     );
 
   const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, bidCmd.opts());
+    normalizeAddressWithOptions(literalOrName, bidCmd.opts(), { execFileSync });
 
   bidCmd
     .command('list')
