@@ -27,7 +27,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, walletBridgeManager } = privateArgs;
+  const { storageNode, walletBridgeChannel } = privateArgs;
 
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
   const provider = makeAtomicProvider(walletsByAddress);
@@ -145,8 +145,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of performAction() in cosmic-swingset/src/launch-chain.js
-  await (walletBridgeManager &&
-    E(walletBridgeManager).setHandler(handleWalletAction));
+  await (walletBridgeChannel &&
+    E(walletBridgeChannel).setHandler(handleWalletAction));
 
   return {
     creatorFacet,

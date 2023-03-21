@@ -25,7 +25,7 @@ test('communication', async t => {
   let bankHandler;
 
   /** @type {import('../src/types.js').BridgeChannel} */
-  const bankBridgeMgr = Far('fakeBankBridgeManager', {
+  const bankBridgeChannel = Far('fakeBankBridgeChannel', {
     async fromBridge(_obj) {
       t.fail('unexpected fromBridge');
     },
@@ -97,7 +97,7 @@ test('communication', async t => {
   });
 
   // Create a bank manager.
-  const bankMgr = await E(bankVat).makeBankManager(bankBridgeMgr);
+  const bankMgr = await E(bankVat).makeBankManager(bankBridgeChannel);
   const bank = E(bankMgr).getBankForAddress('agoricfoo');
 
   const sub = await E(bank).getAssetSubscription();

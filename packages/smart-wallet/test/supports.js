@@ -80,7 +80,7 @@ harden(setUpZoeForTest);
 const makeFakeBridgeManager = () =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
-      return Far('scopedBridgeManager', {
+      return Far('fakeBridgeChannel', {
         fromBridge(_obj) {
           assert.fail(`expected fromBridge`);
         },

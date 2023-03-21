@@ -114,8 +114,8 @@ const startGovernedInstance = async (
  *     creatorFacet: Awaited<ReturnType<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>['creatorFacet'],
  *     adminFacet: AdminFacet,
  *   } ,
- *   walletBridgeManager: import('../types.js').BridgeChannel;
- *   provisionWalletBridgeManager: import('../types.js').BridgeChannel;
+ *   walletBridgeChannel: import('../types.js').BridgeChannel;
+ *   provisionWalletBridgeChannel: import('../types.js').BridgeChannel;
  * }>} powers
  * @param {{
  *   options?: {
@@ -129,8 +129,8 @@ export const startWalletFactory = async (
       agoricNames,
       bankManager,
       board,
-      walletBridgeManager: walletBridgeManagerP,
-      provisionWalletBridgeManager: provisionWalletBridgeManagerP,
+      walletBridgeChannel: walletBridgeChannelP,
+      provisionWalletBridgeChannel: provisionWalletBridgeChannelP,
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
       zoe,
@@ -154,13 +154,13 @@ export const startWalletFactory = async (
 ) => {
   const WALLET_STORAGE_PATH = 'wallet';
   const POOL_STORAGE_PATH = 'provisionPool';
-  const [walletBridgeManager, provisionWalletBridgeManager, poolAddr] =
+  const [walletBridgeChannel, provisionWalletBridgeChannel, poolAddr] =
     await Promise.all([
-      walletBridgeManagerP,
-      provisionWalletBridgeManagerP,
+      walletBridgeChannelP,
+      provisionWalletBridgeChannelP,
       E(bankManager).getModuleAccountAddress(VBankAccount.provision.module),
     ]);
-  if (!walletBridgeManager || !provisionWalletBridgeManager) {
+  if (!walletBridgeChannel || !provisionWalletBridgeChannel) {
     console.warn(
       'startWalletFactory needs wallet and provision bridgeManagers (not sim chain)',
     );
@@ -204,7 +204,7 @@ export const startWalletFactory = async (
     terms,
     {
       storageNode: walletStorageNode,
-      walletBridgeManager,
+      walletBridgeChannel,
     },
   );
   walletFactoryStartResult.resolve(wfFacets);
@@ -244,7 +244,7 @@ export const startWalletFactory = async (
   });
 
   await Promise.all([
-    E(provisionWalletBridgeManager).setHandler(handler),
+    E(provisionWalletBridgeChannel).setHandler(handler),
     E(E.get(econCharterKit).creatorFacet).addInstance(
       ppFacets.instance,
       ppFacets.creatorFacet,
@@ -272,8 +272,8 @@ export const WALLET_FACTORY_MANIFEST = {
       agoricNames: true,
       bankManager: 'bank',
       board: 'board',
-      walletBridgeManager: true,
-      provisionWalletBridgeManager: true,
+      walletBridgeChannel: true,
+      provisionWalletBridgeChannel: true,
       chainStorage: 'bridge',
       namesByAddressAdmin: true,
       zoe: 'zoe',

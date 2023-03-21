@@ -482,9 +482,9 @@ export const startLienBridge = async ({
   if (!bridgeManager) {
     return;
   }
-  const lienBridgeManager = E(bridgeManager).register(LienBridgeId);
+  const lienBridgeChannel = E(bridgeManager).register(LienBridgeId);
   const bldBrand = await bldP;
-  const reporter = makeStakeReporter(lienBridgeManager, bldBrand);
+  const reporter = makeStakeReporter(lienBridgeChannel, bldBrand);
   lienBridge.resolve(reporter);
 };
 

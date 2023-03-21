@@ -365,10 +365,10 @@ export const addBankAssets = async ({
   });
 
   const bridgeManager = await bridgeManagerP;
-  const bankBridgeManager =
+  const bankBridgeChannel =
     bridgeManager && E(bridgeManager).register(BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
-    bankBridgeManager,
+    bankBridgeChannel,
     nameUpdater,
   );
   bankManager.resolve(bankMgr);

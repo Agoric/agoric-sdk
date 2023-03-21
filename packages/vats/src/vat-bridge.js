@@ -21,21 +21,21 @@ export function buildRootObject(vatPowers, _args, baggage) {
   );
 
   /**
-   * @param {ERef<import('./types.js').BridgeChannel>} storageBridgeManagerP
+   * @param {ERef<import('./types.js').BridgeChannel>} storageBridgeChannelP
    * @param {string} rootPath must be unique (caller responsibility to ensure)
    * @param {object} [options]
    */
   const makeBridgedChainStorageRoot = async (
-    storageBridgeManagerP,
+    storageBridgeChannelP,
     rootPath,
     options,
   ) => {
     // Note that the uniqueness of rootPath is not validated here,
     // and is instead the responsibility of callers.
 
-    const storageBridgeManager = await storageBridgeManagerP;
+    const storageBridgeChannel = await storageBridgeChannelP;
     const rootNode = makeChainStorageNode(
-      cb.makeMethodCallback(storageBridgeManager, 'toBridge'),
+      cb.makeMethodCallback(storageBridgeChannel, 'toBridge'),
       rootPath,
       options,
     );

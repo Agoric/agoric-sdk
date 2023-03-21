@@ -21,12 +21,12 @@ const XLien = /** @type { const } */ ({
 export const LienBridgeId = /** @type {const} */ ('lien');
 
 /**
- * @param {ERef<import('@agoric/vats').BridgeChannel>} lienBridgeManager
+ * @param {ERef<import('@agoric/vats').BridgeChannel>} lienBridgeChannel
  * @param {Brand<'nat'>} brand
  * @param {string} [denom]
  * @returns {StakingAuthority}
  */
-export const makeStakeReporter = (lienBridgeManager, brand, denom = 'ubld') => {
+export const makeStakeReporter = (lienBridgeChannel, brand, denom = 'ubld') => {
   const { make: makeAmt } = AmountMath;
   const toStake = numeral => makeAmt(brand, BigInt(numeral));
   /**
@@ -36,7 +36,7 @@ export const makeStakeReporter = (lienBridgeManager, brand, denom = 'ubld') => {
    */
   const changeLiened = async (address, delta) => {
     assert.typeof(address, 'string');
-    const newAmount = await E(lienBridgeManager).toBridge({
+    const newAmount = await E(lienBridgeChannel).toBridge({
       type: XLien.LIEN_CHANGE_LIENED,
       address,
       denom,
@@ -60,7 +60,7 @@ export const makeStakeReporter = (lienBridgeManager, brand, denom = 'ubld') => {
         Fail`Cannot getAccountState for ${wantedBrand}. Expected ${brand}.`;
       /** @type { AccountState<string> } */
       const { currentTime, bonded, liened, locked, total, unbonding } = await E(
-        lienBridgeManager,
+        lienBridgeChannel,
       ).toBridge({
         type: XLien.LIEN_GET_ACCOUNT_STATE,
         address,

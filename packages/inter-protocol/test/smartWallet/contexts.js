@@ -41,7 +41,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'anyAddress',
   );
   const bridgeManager = await consume.bridgeManager;
-  const walletBridgeManager = await (bridgeManager &&
+  const walletBridgeChannel = await (bridgeManager &&
     E(bridgeManager).register(BridgeId.WALLET));
   const walletFactory = await E(zoe).startInstance(
     installation,
@@ -51,7 +51,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       board: consume.board,
       assetPublisher,
     },
-    { storageNode, walletBridgeManager },
+    { storageNode, walletBridgeChannel },
   );
 
   /**
@@ -136,7 +136,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     anchor,
     invitationBrand: await E(E(zoe).getInvitationIssuer()).getBrand(),
     sendToBridge:
-      walletBridgeManager && (obj => E(walletBridgeManager).toBridge(obj)),
+      walletBridgeChannel && (obj => E(walletBridgeChannel).toBridge(obj)),
     consume,
     provideWalletAndBalances,
     simpleProvideWallet,

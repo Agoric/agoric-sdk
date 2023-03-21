@@ -50,7 +50,7 @@ export const buildRootObject = () => {
   };
   const privateArgs = {
     storageNode: storageKit.rootNode,
-    // omit walletBridgeManager
+    // omit walletBridgeChannel
   };
 
   return Far('root', {

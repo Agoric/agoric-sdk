@@ -147,17 +147,17 @@ harden(noProvisioner);
 export const bridgeProvisioner = async ({
   consume: {
     provisioning: provisioningP,
-    provisionBridgeManager: provisionBridgeManagerP,
-    provisionWalletBridgeManager: provisionWalletBridgeManagerP,
+    provisionBridgeChannel: provisionBridgeChannelP,
+    provisionWalletBridgeChannel: provisionWalletBridgeChannelP,
   },
 }) => {
-  const [provisioning, provisionBridgeManager, provisionWalletBridgeManager] =
+  const [provisioning, provisionBridgeChannel, provisionWalletBridgeChannel] =
     await Promise.all([
       provisioningP,
-      provisionBridgeManagerP,
-      provisionWalletBridgeManagerP,
+      provisionBridgeChannelP,
+      provisionWalletBridgeChannelP,
     ]);
-  if (!provisionBridgeManager || !provisionWalletBridgeManager) {
+  if (!provisionBridgeChannel || !provisionWalletBridgeChannel) {
     return;
   }
 
@@ -172,7 +172,7 @@ export const bridgeProvisioner = async ({
               let provisionP;
               if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
                 // Only provision a smart wallet.
-                provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
+                provisionP = E(provisionWalletBridgeChannel).fromBridge(obj);
               } else {
                 // Provision a mailbox and REPL.
                 provisionP = E(provisioning).pleaseProvision(
@@ -196,8 +196,8 @@ export const bridgeProvisioner = async ({
           }
         },
       })
-    : provisionWalletBridgeManager;
-  await E(provisionBridgeManager).setHandler(handler);
+    : provisionWalletBridgeChannel;
+  await E(provisionBridgeChannel).setHandler(handler);
 };
 harden(bridgeProvisioner);
 
@@ -321,9 +321,9 @@ export const makeBridgeManager = async ({
   devices: { bridge },
   produce: {
     bridgeManager: bridgeManagerP,
-    provisionBridgeManager,
-    provisionWalletBridgeManager,
-    walletBridgeManager,
+    provisionBridgeChannel,
+    provisionWalletBridgeChannel,
+    walletBridgeChannel,
   },
 }) => {
   if (!bridge) {
@@ -331,21 +331,21 @@ export const makeBridgeManager = async ({
       'Running without a bridge device; this is not an actual chain.',
     );
     bridgeManagerP.resolve(undefined);
-    provisionBridgeManager.resolve(undefined);
-    provisionWalletBridgeManager.resolve(undefined);
-    walletBridgeManager.resolve(undefined);
+    provisionBridgeChannel.resolve(undefined);
+    provisionWalletBridgeChannel.resolve(undefined);
+    walletBridgeChannel.resolve(undefined);
     return;
   }
   const vat = E(loadCriticalVat)('bridge');
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
-  provisionBridgeManager.resolve(
+  provisionBridgeChannel.resolve(
     E(bridgeManager).register(BRIDGE_ID.PROVISION),
   );
-  provisionWalletBridgeManager.resolve(
+  provisionWalletBridgeChannel.resolve(
     E(bridgeManager).register(BRIDGE_ID.PROVISION_SMART_WALLET),
   );
-  walletBridgeManager.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
+  walletBridgeChannel.resolve(E(bridgeManager).register(BRIDGE_ID.WALLET));
 };
 harden(makeBridgeManager);
 
@@ -367,11 +367,11 @@ export const makeChainStorage = async ({
 
   const ROOT_PATH = STORAGE_PATH.CUSTOM;
 
-  const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
+  const storageBridgeChannel = E(bridgeManager).register(BRIDGE_ID.STORAGE);
 
   const vat = E(loadCriticalVat)('bridge');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
-    storageBridgeManager,
+    storageBridgeChannel,
     ROOT_PATH,
     { sequence: true },
   );
@@ -424,9 +424,9 @@ harden(connectChainFaucet);
 
 /**
  * @param {SoloVats | NetVats} vats
- * @param {ERef<import('../types.js').BridgeChannel>} [dibcBridgeManager]
+ * @param {ERef<import('../types.js').BridgeChannel>} [dibcBridgeChannel]
  */
-export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
+export const registerNetworkProtocols = async (vats, dibcBridgeChannel) => {
   const ps = [];
   // Every vat has a loopback device.
   ps.push(
@@ -435,12 +435,12 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
       makeLoopbackProtocolHandler(),
     ),
   );
-  if (dibcBridgeManager) {
+  if (dibcBridgeChannel) {
     assert('ibc' in vats);
     // We have access to the bridge, and therefore IBC.
     const callbacks = Far('callbacks', {
       downcall(method, obj) {
-        return E(dibcBridgeManager).toBridge({
+        return E(dibcBridgeChannel).toBridge({
           ...obj,
           type: 'IBC_METHOD',
           method,
@@ -451,7 +451,7 @@ export const registerNetworkProtocols = async (vats, dibcBridgeManager) => {
       E(vats.ibc)
         .createInstance(callbacks)
         .then(ibcHandler =>
-          E(dibcBridgeManager)
+          E(dibcBridgeChannel)
             .setHandler(ibcHandler)
             .then(() =>
               E(vats.network).registerProtocolHandler(
@@ -517,7 +517,7 @@ export const setupNetworkProtocols = async ({
   networkVat.reset();
   networkVat.resolve(vats.network);
   const bridgeManager = await bridgeManagerP;
-  const dibcBridgeManager =
+  const dibcBridgeChannel =
     bridgeManager && E(bridgeManager).register(BRIDGE_ID.DIBC);
 
   // The Interchain Account (ICA) Controller must be bound to a port that starts
@@ -542,7 +542,7 @@ export const setupNetworkProtocols = async ({
   // Note: before we add the pegasus transfer port,
   // we need to finish registering handlers for
   // ibc-port etc.
-  await registerNetworkProtocols(vats, dibcBridgeManager);
+  await registerNetworkProtocols(vats, dibcBridgeChannel);
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
 
@@ -556,9 +556,9 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     devices: { bridge: 'kernel' },
     produce: {
       bridgeManager: 'bridge',
-      provisionBridgeManager: 'bridge',
-      provisionWalletBridgeManager: 'bridge',
-      walletBridgeManager: 'bridge',
+      provisionBridgeChannel: 'bridge',
+      provisionWalletBridgeChannel: 'bridge',
+      walletBridgeChannel: 'bridge',
     },
   },
   [startTimerService.name]: {
@@ -604,8 +604,8 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     consume: {
       provisioning: true,
       bridgeManager: 'bridge',
-      provisionBridgeManager: 'bridge',
-      provisionWalletBridgeManager: 'bridge',
+      provisionBridgeChannel: 'bridge',
+      provisionWalletBridgeChannel: 'bridge',
     },
   },
   [setupClientManager.name]: {

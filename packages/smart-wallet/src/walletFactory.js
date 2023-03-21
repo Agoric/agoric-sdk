@@ -20,7 +20,7 @@ const trace = makeTracer('WltFct');
 export const privateArgsShape = harden(
   M.splitRecord(
     { storageNode: M.eref(M.remotable('StorageNode')) },
-    { walletBridgeManager: M.eref(M.remotable('walletBridgeManager')) },
+    { walletBridgeChannel: M.eref(M.remotable('walletBridgeChannel')) },
   ),
 );
 
@@ -133,7 +133,7 @@ export const makeAssetRegistry = assetPublisher => {
  * @param {ZCF<SmartWalletContractTerms>} zcf
  * @param {{
  *   storageNode: ERef<StorageNode>,
- *   walletBridgeManager?: ERef<import('@agoric/vats').BridgeChannel>,
+ *   walletBridgeChannel?: ERef<import('@agoric/vats').BridgeChannel>,
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -141,7 +141,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
   const { agoricNames, board, assetPublisher } = zcf.getTerms();
 
   const zoe = zcf.getZoeService();
-  const { storageNode, walletBridgeManager } = privateArgs;
+  const { storageNode, walletBridgeChannel } = privateArgs;
 
   /** @type {MapStore<string, import('./smartWallet.js').SmartWallet>} */
   const walletsByAddress = provideDurableMapStore(baggage, 'walletsByAddress');
@@ -268,8 +268,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   // NOTE: both `MsgWalletAction` and `MsgWalletSpendAction` arrive as BRIDGE_ID.WALLET
   // by way of performAction() in cosmic-swingset/src/launch-chain.js
-  await (walletBridgeManager &&
-    E(walletBridgeManager).setHandler(handleWalletAction));
+  await (walletBridgeChannel &&
+    E(walletBridgeChannel).setHandler(handleWalletAction));
 
   return {
     creatorFacet,

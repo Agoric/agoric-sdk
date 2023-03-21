@@ -112,17 +112,17 @@ const makePurseController = (
 export function buildRootObject() {
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./types.js').BridgeChannel | undefined>} [bankBridgeManagerP] a bridge
+     * @param {ERef<import('./types.js').BridgeChannel | undefined>} [bankBridgeChannelP] a bridge
      * manager for the "remote" bank (such as on cosmos-sdk).  If not supplied
      * (such as on sim-chain), we just use local purses.
      * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdmin] update facet of
      *   a NameAdmin; see addAsset() for detail.
      */
     async makeBankManager(
-      bankBridgeManagerP = undefined,
+      bankBridgeChannelP = undefined,
       nameAdmin = undefined,
     ) {
-      const bankBridgeManager = await bankBridgeManagerP;
+      const bankBridgeChannel = await bankBridgeChannelP;
       /** @type {WeakMapStore<Brand, AssetRecord>} */
       const brandToAssetRecord = makeScalarWeakMapStore('brand');
 
@@ -152,13 +152,13 @@ export function buildRootObject() {
       };
 
       /**
-       * @param {ERef<import('./types.js').BridgeChannel>} [bankBridgeMgr]
+       * @param {ERef<import('./types.js').BridgeChannel>} [bridgeChannel]
        */
-      async function makeBankCaller(bankBridgeMgr) {
+      async function makeBankCaller(bridgeChannel) {
         // We do the logic here if the bridge manager is available.  Otherwise,
         // the bank is not "remote" (such as on sim-chain), so we just use
         // immediate purses instead of virtual ones.
-        if (!bankBridgeMgr) {
+        if (!bridgeChannel) {
           return undefined;
         }
         // We need to synchronise with the remote bank.
@@ -170,13 +170,13 @@ export function buildRootObject() {
           },
         });
 
-        await E(bankBridgeMgr).setHandler(handler);
+        await E(bridgeChannel).setHandler(handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return obj => E(bankBridgeMgr).toBridge(obj);
+        return obj => E(bridgeChannel).toBridge(obj);
       }
 
-      const bankCall = await makeBankCaller(bankBridgeManager);
+      const bankCall = await makeBankCaller(bankBridgeChannel);
 
       /** @type {SubscriptionRecord<AssetDescriptor>} */
       const { subscription: assetSubscription, publication: assetPublication } =
