@@ -201,6 +201,8 @@ jobs:
         run: cd packages/time && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-liveslots)
         run: cd packages/swingset-liveslots && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (swingset-xsnap-supervisor)
+        run: cd packages/swingset-xsnap-supervisor && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (zone)
         run: cd packages/zone && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
 
@@ -458,6 +460,19 @@ jobs:
       - name: yarn test (zoe)
         timeout-minutes: 30
         run: cd packages/zoe && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Report tests
+        if: success() || failure()
+        run: |
+          if [ "$DATADOG_API_KEY" != "" ]; then
+            ./scripts/ci-collect-testruns.sh && npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
+          fi
+
+  test-docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: docker build (sdk)
+        run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
       - name: Report tests
         if: success() || failure()
         run: |

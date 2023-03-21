@@ -12,7 +12,6 @@
 # $DAEMON_ALLOW_DOWNLOAD_BINARIES variables to enable the automatic downloading
 # of Golang and NodeJS versions needed to build and run the current version of
 # the SDK.
-set -x
 set -ueo pipefail
 
 GVM_URL=${GVM_URL-https://github.com/devnw/gvm/releases/download/latest/gvm}

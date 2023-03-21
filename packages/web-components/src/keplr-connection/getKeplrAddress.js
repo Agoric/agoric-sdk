@@ -1,6 +1,6 @@
 // @ts-check
-import { onLoadP } from './onLoad';
-import { Errors } from './errors';
+import { onLoadP } from './onLoad.js';
+import { Errors } from './errors.js';
 
 /**
  * @param {string} chainId

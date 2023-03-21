@@ -336,8 +336,10 @@ function build(
     }
   }
 
-  /** Remember disavowed Presences which will kill the vat if you try to talk
-   * to them */
+  /**
+   * Remember disavowed Presences which will kill the vat if you try to talk
+   * to them
+   */
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 

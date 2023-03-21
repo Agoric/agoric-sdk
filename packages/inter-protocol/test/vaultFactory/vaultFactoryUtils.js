@@ -21,14 +21,16 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 
 export const BASIS_POINTS = 10000n;
 
-/** @typedef {Record<string, any> & {
+/**
+ * @typedef {Record<string, any> & {
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * bundleCache: Awaited<ReturnType<typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
  * loanTiming: LoanTiming,
  * zoe: ZoeService,
- * }} Context */
+ * }} Context
+ */
 
 /**
  * dL: 1M, lM: 105%, lP: 10%, iR: 100, lF: 500

@@ -12,8 +12,8 @@ if [ -z "$DSTTAG" ]; then
 fi
 
 for img in agoric-sdk cosmic-swingset-setup cosmic-swingset-solo deployment; do
-  SRC="$DOCKERUSER/$img:$SRCTAG"
-  DST="$DOCKERUSER/$img:$DSTTAG"
+  SRC="ghcr.io/$DOCKERUSER/$img:$SRCTAG"
+  DST="ghcr.io/$DOCKERUSER/$img:$DSTTAG"
   if manifest=$(docker manifest inspect "$SRC"); then
     AMENDS=$(jq -r .manifests[].digest <<<"$manifest" | sed -e "s!^!--amend $DOCKERUSER/$img@!")
     docker manifest create "$DST" $AMENDS
