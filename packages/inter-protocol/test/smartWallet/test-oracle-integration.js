@@ -129,6 +129,12 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 };
 
 let pushPriceCounter = 0;
+/**
+ * @param {*} wallet
+ * @param {string} adminOfferId
+ * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
+ * @returns
+ */
 const pushPrice = async (wallet, adminOfferId, priceRound) => {
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
