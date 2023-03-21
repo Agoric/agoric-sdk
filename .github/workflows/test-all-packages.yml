@@ -152,6 +152,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -222,7 +224,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
-
+        with:
+          override_branch: master
 
   ##############
   # Long-running tests are executed individually.
@@ -258,6 +261,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -293,6 +298,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
@@ -326,6 +333,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
@@ -366,6 +375,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
@@ -397,6 +408,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
@@ -429,6 +442,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -463,6 +478,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -497,6 +514,8 @@ jobs:
       - name: Upload coverage reports to Codecov
         if: success() || failure()
         uses: codecov/codecov-action@v3
+        with:
+          override_branch: master
 
   test-docker-build:
     runs-on: ubuntu-latest
