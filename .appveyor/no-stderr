@@ -1,7 +1,0 @@
-#!/bin/bash -ie
-
-if "$@" 2>&1; then
-    echo "command succeeded"
-else
-    echo "command failed $?" >&2
-fi
