@@ -25,6 +25,7 @@ module.exports = {
     'no-inner-declarations': 'off',
     'no-loop-func': 'off',
     'no-param-reassign': 'off',
+    'no-promise-executor-return': 'off', // common to return setTimeout(), we know the value won't be accessible
     'no-restricted-syntax': ['off'],
     'no-return-assign': 'off',
     'no-unused-expressions': 'off',
