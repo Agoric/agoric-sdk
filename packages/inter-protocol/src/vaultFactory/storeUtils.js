@@ -124,6 +124,11 @@ export const fromVaultKey = key => {
 harden(fromVaultKey);
 
 /**
+ * Create a float representing a Normalized Collateralization Ratio that can be
+ * compared to the NCRs of vaults. We want a float with as much resolution as we
+ * can get, so we multiply out the numerator and the denominator, and only
+ * divide the results once.
+ *
  * For use by `normalizedCollRatioKey` and tests.
  *
  * @param {PriceQuote} quote
@@ -150,9 +155,9 @@ export const normalizedCollRatio = (quote, compoundedInterest, margin) => {
 harden(normalizedCollRatio);
 
 /**
- * Create a sort key for a normalized collateralization ratio. We want a float
- * with as much resolution as we can get, so we multiply out the numerator and
- * the denominator, and divide
+ * Create a sort key for a normalized collateralization ratio. We want the key
+ * to be based on a float with as much resolution as we can get, so we multiply
+ * out the numerator and the denominator, and divide only once.
  *
  * @param {PriceQuote} quote
  * @param {Ratio} compoundedInterest

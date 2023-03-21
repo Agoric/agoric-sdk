@@ -1525,13 +1525,14 @@ test('Auction sells all collateral w/shortfall', async t => {
 });
 
 // See #7191.  Changing the price from 12.34 to 9.99 should liquidate a vault
-// with 15 collateral and 100 debt at liquidationMargin of 150%.
+// with 15 collateral and 100 debt at liquidationMargin of 150%. Interest won't
+// be charged over this period.
 test('liquidation Margin matters', async t => {
   const { zoe, aeth, run, rates: defaultRates } = t.context;
 
   const rates = harden({
     ...defaultRates,
-    interestRate: run.makeRatio(105n),
+    interestRate: run.makeRatio(0n),
     liquidationMargin: run.makeRatio(150n),
   });
   t.context.rates = rates;
@@ -1556,7 +1557,9 @@ test('liquidation Margin matters', async t => {
   const { vfPublic } = services.vaultFactory;
 
   const aliceCollateralAmount = aeth.make(15n);
-  const aliceLoanAmount = run.make(100n);
+
+  // a loan of 95 with 5% fee produces a debt of 100.
+  const aliceLoanAmount = run.make(95n);
   /** @type {UserSeat<VaultKit>} */
   const aliceLoanSeat = await E(zoe).offer(
     await E(E(vfPublic).getCollateralManager(aeth.brand)).makeVaultInvitation(),
@@ -1586,10 +1589,10 @@ test('liquidation Margin matters', async t => {
     aliceLoanSeat,
   ).getFinalAllocation();
   const aliceLoanProceeds = await E(aliceLoanSeat).getPayouts();
-  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 5000 Minted');
+  t.deepEqual(aliceLentAmount, aliceLoanAmount, 'received 95 Minted');
 
   const aliceRunLent = await aliceLoanProceeds.Minted;
-  t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), run.make(100n));
+  t.deepEqual(await E(run.issuer).getAmountOf(aliceRunLent), run.make(95n));
 
   let aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.deepEqual(aliceUpdate.value.debtSnapshot.debt, aliceRunDebtLevel);
@@ -1600,17 +1603,27 @@ test('liquidation Margin matters', async t => {
   const desired = aeth.make(15n);
   const bidderSeat = await bid(t, zoe, auctioneerKit, aeth, bidAmount, desired);
 
-  // price falls
+  // price falls to 10.00. notice that no liquidation takes place.
+  // @ts-expect-error setupServices() should return the right type
+  await priceAuthority.setPrice(makeRatio(1000n, run.brand, 100n, aeth.brand));
+
+  let { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
+
+  await setClockAndAdvanceNTimes(manualTimer, 2n, startTime, 2n);
+
+  aliceUpdate = await E(aliceNotifier).getUpdateSince();
+  t.is(aliceUpdate.value.vaultState, Phase.ACTIVE);
+
+  // price falls to 9.99. Now it liquidates.
   // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(999n, run.brand, 100n, aeth.brand));
 
-  const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
+  ({ startTime } = await startAuctionClock(auctioneerKit, manualTimer));
 
   await setClockAndAdvanceNTimes(manualTimer, 2n, startTime, 2n);
 
   aliceUpdate = await E(aliceNotifier).getUpdateSince();
   t.is(aliceUpdate.value.vaultState, Phase.LIQUIDATED);
 
-  //  Bidder bought 100 Aeth
   await assertBidderPayout(t, bidderSeat, run, 2n, aeth, 15n);
 });

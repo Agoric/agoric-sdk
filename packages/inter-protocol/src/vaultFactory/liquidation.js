@@ -8,7 +8,6 @@ import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeScalarMapStore } from '@agoric/store';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
-import { normalizedCollRatioKey } from './storeUtils';
 
 const trace = makeTracer('LIQ', false);
 
