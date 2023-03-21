@@ -2,7 +2,7 @@
 import '@endo/init';
 /* eslint-disable-next-line import/no-unresolved */
 import test from 'ava';
-import { fmtBid } from '../src/inter.js';
+import { fmtBid } from '../src/commands/inter.js';
 
 const brand = {
   /** @type {Brand<'nat'> & import('@agoric/vats/tools/board-utils.js').BoardRemote} */

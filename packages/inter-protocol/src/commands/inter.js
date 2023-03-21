@@ -16,6 +16,7 @@ import {
 } from 'agoric/src/lib/wallet.js';
 import { normalizeAddressWithOptions } from 'agoric/src/lib/chain.js';
 import { makeAmountFormatter } from 'agoric/src/lib/format.js';
+import { CommanderError } from 'commander';
 
 const { values } = Object;
 
@@ -85,17 +86,9 @@ export const fmtBid = (bid, assets) => {
   return harden({ id, ...spec, ...props });
 };
 
-/** distinguish IO errors etc. from logic bugs */
-export class RuntimeError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = 'RuntimeError';
-  }
-}
-
 /**
  * @param {{
- *   argv: string[], env: Partial<Record<string, string>>,
+ *   env: Partial<Record<string, string>>,
  *   stdout: typeof process.stdout, clock: () => number,
  *   createCommand: typeof import('commander').createCommand,
  *   execFile: typeof import('child_process').execFile
@@ -103,8 +96,8 @@ export class RuntimeError extends Error {
  * Note: createCommand includes access to process.stdout, .stderr, .exit
  * @param {{ fetch: typeof window.fetch }} net
  */
-export const main = async (
-  { argv, env, stdout, clock, createCommand },
+export const makeInterCommand = async (
+  { env, stdout, clock, createCommand },
   { fetch },
 ) => {
   const interCmd = createCommand('inter')
@@ -127,7 +120,9 @@ export const main = async (
       { fetch },
       networkConfig,
     ).catch(err => {
-      throw new RuntimeError(
+      throw new CommanderError(
+        1,
+        'RPC_FAIL',
         `RPC failure (${env.AGORIC_NET || 'local'}): ${err.message}`,
       );
     });
@@ -312,5 +307,5 @@ export const main = async (
       }
     });
 
-  interCmd.parse(argv);
+  return interCmd;
 };

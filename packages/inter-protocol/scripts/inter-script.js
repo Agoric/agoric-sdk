@@ -3,21 +3,26 @@
 // @ts-check
 import process from 'process';
 import { execFile } from 'child_process';
-import { createCommand } from 'commander';
-import { main, RuntimeError } from '../src/inter.js';
+import { createCommand, CommanderError } from 'commander';
 
-main(
-  {
-    argv: [...process.argv],
-    env: { ...process.env },
-    stdout: process.stdout,
-    createCommand,
-    execFile,
-    clock: () => Date.now(),
-  },
-  { fetch },
-).catch(err => {
-  if (err instanceof RuntimeError) {
+import { makeInterCommand } from '../src/commands/inter.js';
+
+const main = async () => {
+  const interCmd = await makeInterCommand(
+    {
+      env: { ...process.env },
+      stdout: process.stdout,
+      createCommand,
+      execFile,
+      clock: () => Date.now(),
+    },
+    { fetch },
+  );
+  interCmd.parse(process.argv);
+};
+
+main().catch(err => {
+  if (err instanceof CommanderError) {
     console.error(err.message);
   } else {
     console.error(err); // CRASH! show stack trace
