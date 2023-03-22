@@ -873,6 +873,9 @@ test.serial('multiple bidders at one auction step', async t => {
     collateral.make(200n),
   );
 
+  // regression test for getCurrentAllocation() bug
+  await driver.bidForCollateralSeat(currency.make(210n), collateral.make(200n));
+
   assert(nextAuctionSchedule.startTime.absValue);
   now = nextAuctionSchedule.startTime.absValue;
   await driver.advanceTo(now);

@@ -85,6 +85,10 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
+/**
+ * @param {Baggage} baggage
+ * @param {ZCF} zcf
+ */
 export const prepareAuctionBook = (baggage, zcf) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
