@@ -10,6 +10,10 @@ import { outputAction } from '../lib/wallet.js';
 
 const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
 
+// XXX support other decimal places
+const COSMOS_UNIT = 1_000_000n;
+const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
+
 /**
  *
  * @param {import('anylogger').Logger} logger
@@ -120,9 +124,10 @@ export const makeOracleCommand = async logger => {
       'offer that had continuing invitation result',
       Number,
     )
-    .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
     .requiredOption('--roundId [number]', 'round', Number)
+    .requiredOption('--price [number]', 'price', Number)
     .action(async function (opts) {
+      const unitPrice = scaleDecimals(opts.price);
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -130,9 +135,7 @@ export const makeOracleCommand = async logger => {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
           invitationMakerName: 'PushPrice',
-          invitationArgs: harden([
-            { unitPrice: opts.price, roundId: opts.roundId },
-          ]),
+          invitationArgs: harden([{ unitPrice, roundId: opts.roundId }]),
         },
         proposal: {},
       };
