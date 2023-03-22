@@ -134,14 +134,17 @@ export const applyLabelingError = (func, args, label = undefined) => {
     throwLabeled(err, label);
   }
   if (isPromise(result)) {
-    // @ts-expect-error If result is a rejected promise, this will
-    // return a promise with a different rejection reason. But this
-    // confuses TypeScript because it types that case as `Promise<never>`
-    // which is cool for a promise that will never fulfll.
-    // But TypeScript doesn't understand that this will only happen
-    // when `result` was a rejected promise. In only this case `R`
-    // should already allow `Promise<never>` as a subtype.
-    return E.when(result, undefined, reason => throwLabeled(reason, label));
+    // If result is a rejected promise, this will return a promise with a
+    // different rejection reason. But this confuses TypeScript because it types
+    // that case as `Promise<never>` which is cool for a promise that will never
+    // fulfill.  But TypeScript doesn't understand that this will only happen
+    // when `result` was a rejected promise. In only this case `R` should
+    // already allow `Promise<never>` as a subtype.
+    /** @type {unknown} */
+    const relabeled = E.when(result, undefined, reason =>
+      throwLabeled(reason, label),
+    );
+    return /** @type {R} */ (relabeled);
   } else {
     return result;
   }
