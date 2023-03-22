@@ -249,7 +249,7 @@
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
- * @typedef {ERef<ReturnType<import('../vat-chainStorage.js').buildRootObject>>} ChainStorageVat
+ * @typedef {ERef<ReturnType<import('../vat-bridge.js').buildRootObject>>} ChainStorageVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat

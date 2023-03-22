@@ -9,8 +9,6 @@ const { getPrototypeOf, create, fromEntries, getOwnPropertyDescriptors } =
   Object;
 const { ownKeys, apply } = Reflect;
 
-/** @typedef {import('@endo/marshal/src/types').Remotable} Remotable */
-
 /**
  * Prioritize symbols as earlier than strings.
  *
@@ -37,8 +35,9 @@ const compareStringified = (a, b) => {
 /**
  * TODO Consolidate with the `getMethodNames` in `@endo/eventual-send`
  *
- * @param {any} val
- * @returns {(string|symbol)[]}
+ * @template {PropertyKey} K
+ * @param {Record<K, any>} val
+ * @returns {K[]}
  */
 export const getMethodNames = val => {
   let layer = val;
@@ -46,7 +45,8 @@ export const getMethodNames = val => {
   while (layer !== null && layer !== Object.prototype) {
     // be tolerant of non-objects
     const descs = getOwnPropertyDescriptors(layer);
-    for (const name of ownKeys(descs)) {
+    const ownNames = /** @type {K[]} */ (ownKeys(descs));
+    for (const name of ownNames) {
       // In case a method is overridden by a non-method,
       // test `val[name]` rather than `layer[name]`
       if (typeof val[name] === 'function') {
@@ -87,8 +87,9 @@ harden(getMethodNames);
  * object has bound own methods overridding all the methods it would have
  * inherited from `obj`.
  *
- * @param {Remotable} obj
- * @returns {Remotable}
+ * @template {Record<PropertyKey, any>} T
+ * @param {T} obj
+ * @returns {T}
  */
 export const bindAllMethods = obj =>
   harden(

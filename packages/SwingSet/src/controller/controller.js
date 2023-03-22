@@ -508,12 +508,14 @@ export async function makeSwingsetController(
  *   testTrackDecref?: unknown;
  *    warehousePolicy?: { maxVatsOnline?: number };
  * }} runtimeOptions
+ * @param {Record<string, unknown>} deviceEndowments
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,
   argv = [],
   runtimeOptions = {},
+  deviceEndowments = {},
 ) {
   const {
     kernelStorage = initSwingStore().kernelStorage,
@@ -551,7 +553,7 @@ export async function buildVatController(
   }
   const controller = await makeSwingsetController(
     kernelStorage,
-    {},
+    deviceEndowments,
     actualRuntimeOptions,
   );
   return harden({ bootstrapResult, ...controller });

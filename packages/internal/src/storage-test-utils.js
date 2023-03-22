@@ -1,6 +1,8 @@
 // @ts-check
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
+import { bindAllMethods } from './method-tools.js';
 
 const { Fail, quote: q } = assert;
 
@@ -78,7 +80,7 @@ export const makeMockChainStorageRoot = () => {
   }));
 
   return Far('mockChainStorage', {
-    ...rootNode,
+    ...bindAllMethods(rootNode),
     /**
      *  Defaults to deserializing pass-by-presence objects into { iface } representations.
      * Note that this is **not** a null transformation; capdata `@qclass` and `index` properties

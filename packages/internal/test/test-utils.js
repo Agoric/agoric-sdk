@@ -2,7 +2,7 @@
 import test from 'ava';
 import '@endo/init';
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import {
   fromUniqueEntries,
   objectMap,

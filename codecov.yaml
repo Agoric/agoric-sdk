@@ -6,6 +6,9 @@ comment:
   show_carryforward_flags: false
 coverage:
   status:
+    patch:
+      default:
+        informational: true
     project:
       default:
         informational: true

@@ -141,8 +141,8 @@
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
-    "chainStorage": {
-      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
     },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
