@@ -564,6 +564,7 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
     t,
     t.context.data,
     config,
+    { holdObjectRefs: false },
   );
 
   const exporterVatID = controller.vatNameToID('exporter');
@@ -588,22 +589,18 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
   );
 
   // Verify kernel tracking of the objects.
-  const getKrefReachableAndRecognizable = kref =>
-    kvStore.get(`${kref}.refCount`).split(',').map(Number);
   const strongKref = krefOf(strongObj);
   t.is(kvStore.get(`${strongKref}.owner`), exporterVatID);
-  const strongRefCounts = getKrefReachableAndRecognizable(strongKref);
-  t.deepEqual(
-    strongRefCounts,
-    [strongRefCounts[0], strongRefCounts[1]],
+  t.is(
+    kvStore.get(`${strongKref}.refCount`),
+    '1,1',
     'strong observation must increment both reachable and recognizable ref counts',
   );
   const weakKref = krefOf(weakObj);
   t.is(kvStore.get(`${weakKref}.owner`), exporterVatID);
-  const weakRefCounts = getKrefReachableAndRecognizable(weakKref);
-  t.deepEqual(
-    weakRefCounts,
-    [strongRefCounts[0] - 1, strongRefCounts[1]],
+  t.is(
+    kvStore.get(`${weakKref}.refCount`),
+    '0,1',
     'weak observation must increment recognizable but not reachable ref counts',
   );
 
@@ -617,12 +614,25 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
   t.is(controller.kpStatus(upgradeKpid), 'fulfilled');
   t.is(kvStore.get(`${strongKref}.owner`), undefined);
   t.is(kvStore.get(`${weakKref}.owner`), undefined);
-  // TODO: Assert refcount decrease/removal.
-
-  // TODO: Verify observer receipt of dispatch.retireExports
-  // https://github.com/Agoric/agoric-sdk/issues/6696#issuecomment-1431881255
-  const observerLog = await run('getDispatchLog', [], 'observer');
-  t.deepEqual(observerLog, [], 'TODO');
+  t.is(
+    kvStore.get(`${strongKref}.refCount`),
+    '1,1',
+    'strong observation of abandoned object retains ref counts',
+  );
+  // TODO: Expect and verify observer receipt of dispatch.retireExports
+  // and corresponding removal of weakKref ref counts.
+  // https://github.com/Agoric/agoric-sdk/issues/7212
+  t.is(
+    kvStore.get(`${weakKref}.refCount`),
+    '0,1',
+    'weak observation of abandoned object retains ref counts before #7212',
+  );
+  // t.is(
+  //   kvStore.get(`${weakKref}.refCount`),
+  //   undefined,
+  //   'unreachable abandoned object is forgotten',
+  // );
+  // const observerLog = await run('getDispatchLog', [], 'observer');
 });
 
 test('failed upgrade - relaxed durable rules', async t => {
