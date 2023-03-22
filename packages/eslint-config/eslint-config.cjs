@@ -13,6 +13,7 @@ module.exports = {
     'function-paren-newline': 'off',
     strict: 'off',
     'prefer-destructuring': 'off',
+    'prefer-regex-literals': 'off',
     'no-else-return': 'off',
     'no-console': 'off',
     'no-unused-vars': [
@@ -25,10 +26,14 @@ module.exports = {
     'no-inner-declarations': 'off',
     'no-loop-func': 'off',
     'no-param-reassign': 'off',
+    'no-promise-executor-return': 'off', // common to return setTimeout(), we know the value won't be accessible
     'no-restricted-syntax': ['off'],
     'no-return-assign': 'off',
     'no-unused-expressions': 'off',
     'prefer-arrow-callback': 'off',
+    'default-param-last': 'off', // unaware of TS type annotations
+    'consistent-return': 'off', // unaware of throws. TS detects more reliably.
+    'no-fallthrough': 'warn', // unaware of throws.
 
     // Work around https://github.com/import-js/eslint-plugin-import/issues/1810
     'import/no-unresolved': ['error', { ignore: ['ava'] }],
