@@ -1890,7 +1890,10 @@ export default function buildKernel(
     }
   }
 
-  function kpResolution(kpid) {
+  function kpResolution(kpid, options = {}) {
+    // `incref` should ultimately be removed,
+    // see https://github.com/Agoric/agoric-sdk/issues/7213
+    const { incref = true } = options;
     const p = kernelKeeper.getKernelPromise(kpid);
     switch (p.state) {
       case 'unresolved': {
@@ -1899,8 +1902,10 @@ export default function buildKernel(
       case 'fulfilled':
       case 'rejected': {
         kernelKeeper.decrementRefCount(kpid, 'external');
-        for (const kref of p.data.slots) {
-          kernelKeeper.incrementRefCount(kref, 'external');
+        if (incref) {
+          for (const kref of p.data.slots) {
+            kernelKeeper.incrementRefCount(kref, 'external');
+          }
         }
         return p.data;
       }

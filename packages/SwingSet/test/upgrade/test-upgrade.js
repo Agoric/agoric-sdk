@@ -76,32 +76,38 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @param {import('ava').ExecutionContext} t
  * @param {object} bundleData
  * @param {SwingSetConfig} config
+ * @param {object} [options]
+ * @deprecated Refcount incrementing should be manual,
+ * see https://github.com/Agoric/agoric-sdk/issues/7213
+ * @param {boolean} [options.holdObjectRefs=true]
  * @returns {{
  *   controller: ReturnType<typeof makeSwingsetController>,
  *   kvStore: KVStore,
  *   run: (method: string, args?: unknown[]) => Promise<unknown>,
  * }}
  */
-const initKernelForTest = async (t, bundleData, config) => {
+const initKernelForTest = async (t, bundleData, config, options = {}) => {
   const { kernelStorage } = initSwingStore();
   const { kvStore } = kernelStorage;
   const { initOpts, runtimeOpts } = bundleOpts(bundleData);
+  const { holdObjectRefs = true } = options;
   await initializeSwingset(config, [], kernelStorage, initOpts);
   const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
+  const kpResolutionOptions = { incref: holdObjectRefs };
   const run = async (method, args = [], vatName = 'bootstrap') => {
     assert(Array.isArray(args));
     const kpid = c.queueToVatRoot(vatName, method, args);
     await c.run();
     const status = c.kpStatus(kpid);
     if (status === 'fulfilled') {
-      const result = c.kpResolution(kpid);
+      const result = c.kpResolution(kpid, kpResolutionOptions);
       return kunser(result);
     }
     assert(status === 'rejected');
-    const err = c.kpResolution(kpid);
+    const err = c.kpResolution(kpid, kpResolutionOptions);
     throw kunser(err);
   };
   return {

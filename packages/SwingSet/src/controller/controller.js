@@ -423,8 +423,8 @@ export async function makeSwingsetController(
       return kernel.kpStatus(kpid);
     },
 
-    kpResolution(kpid) {
-      const result = kernel.kpResolution(kpid);
+    kpResolution(kpid, options) {
+      const result = kernel.kpResolution(kpid, options);
       // kpResolution does DB write (changes refcounts) so we need emitCrankHashes here
       kernelStorage.emitCrankHashes();
       return result;
