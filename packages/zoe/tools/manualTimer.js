@@ -14,14 +14,13 @@ const { Fail } = assert;
 /**
  * @typedef {{
  *  timeStep?: import('@agoric/time/src/types').RelativeTime,
- *  eventLoopIteration?: () => Promise<unknown>,
+ *  eventLoopIteration?: () => Promise<void>,
  * }} ZoeManualTimerOptions
  */
 
 const nolog = (..._args) => {};
 
 /**
- *
  * A fake TimerService, for unit tests that do not use a real
  * kernel. You can make time pass by calling `advanceTo(when)`, or one
  * `timeStep` at a time by calling `tick()`.
@@ -60,11 +59,7 @@ const nolog = (..._args) => {};
  */
 
 const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
-  const {
-    timeStep = 1n,
-    eventLoopIteration = () => 0,
-    ...buildOptions
-  } = options;
+  const { timeStep = 1n, eventLoopIteration, ...buildOptions } = options;
   assert.typeof(timeStep, 'bigint');
 
   const timerService = build({ startTime: startValue, ...buildOptions });
@@ -75,7 +70,7 @@ const buildManualTimer = (log = nolog, startValue = 0n, options = {}) => {
     log(`@@ tick:${newTime}${msg ? `: ${msg}` : ''} @@`);
     timerService.advanceTo(newTime);
     // that schedules wakeups, but they don't fire until a later turn
-    return eventLoopIteration();
+    return eventLoopIteration && eventLoopIteration();
   };
 
   const tickN = async (nTimes, msg) => {

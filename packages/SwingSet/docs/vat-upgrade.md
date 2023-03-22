@@ -63,12 +63,36 @@ During the upgrade phase, v2 code is obligated to re-define all durable Kinds cr
 
 As a special case, the root object returned from v2's `buildRootObject()` is automatically associated with exportID `o+0` (see [How Liveslots Uses the Vatstore](../../swingset-liveslots/src/vatstore-usage.md#counters)) and is therefore also obligated to support the same methods as its predecessor. This means that the root object is effectively always durable, and should not be explicitly persisted.
 
+### Zone API
+
+The [zone API](https://github.com/Agoric/agoric-sdk/tree/master/packages/zone#readme) provides a unified model for creating the objects mentioned above, regardless of their backing storage:
+
+  * singleton objects created with `zone.exo()`
+  * instances created with a "make" function from `zone.exoClass()`
+  * multifaceted kit instances created with a "makeKit" function from `zone.exoClassKit()`
+
+You can obtain individual zones implementing this API as follows:
+  * Heap objects in vat RAM
+    - `import { heapZone } from '@agoric/zone';`
+  * Virtual objects in disk-based storage
+    - `import { virtualZone } from '@agoric/zone/virtual.js';`
+  * Durable objects in disk-based storage
+    - zone API maker found at `import { makeDurableZone } from '@agoric/zone/durable.js';` and
+    - zone API backed by a durable map and created by `makeDurableZone(durableMap)`
+
 ## Durable State
 
 The v2 code runs in a brand new JavaScript environment; nothing is carried over from the RAM image of the v1 vat. To fulfill its obligations, v1 must arrange to deliver data and imported object references to v2. This uses two mechanisms: durable storage, and the "baggage".
 
 Vat code has access to three categories of collection objects, each of which offers both Map and Set collections in both strong and weak forms. The simplest category consists of "_heap_" collections provided by JavaScript as `Map`, `Set`, `WeakMap`, and `WeakSet`; their data is held only in RAM.
 The second two categories are both referred to as "[Stores](../../swingset-liveslots/src/vatstore-usage.md#virtualdurable-collections-aka-stores)"; they are created by `makeScalarBigMapStore()`, `makeScalarBigWeakMapStore()`, `makeScalarBigSetStore()`, or `makeScalarBigWeakSetStore()`, and their contents are held in disk-based storage. What differentiates the second two categories from each other is use of the `durable` option: when it is false, the collection is "_[merely-]virtual_" and not preserved across upgrade, but when it is true, the collection is "_durable_" and **is** preserved. Durable collections can only hold durable objects.
+
+The zone API exposes providers for these collections as `zone.mapStore(label)`,
+`zone.setStore(label)`, `zone.weakMapStore(label)`, and
+`zone.weakSetStore(label)`.  They only create a new collection if the `label`
+entry in the zone has not been used before.  If you want to unconditionally
+create a fresh, unnamed collection in the zone, you can use the providers
+exposed under `zone.detached()`, such as `zone.detached().mapStore(label)`.
 
 Heap and merely-virtual collections are _ephemeral_ and discarded during upgrade. More precisely, the v2 code has no way to reach anything but durable data, so even if the kernel did not delete the DB records, the v2 code could not ever read them.
 
@@ -107,6 +131,16 @@ const FooI = M.interface('foo', fooMethodGuards);
 const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods);
 ```
 
+or with the zone API:
+
+```js
+import { M, makeDurableZone } from '@agoric/zone';
+const FooI = M.interface('foo', fooMethodGuards);
+// someDurableMap should generally be reachable from baggage.
+const zone = makeDurableZone(someDurableMap);
+const makeFoo = zone.exoClass('foo', fooI, initFoo, fooMethods);
+```
+
 The v1 code can also store imported objects (Presences) and plain data in a durable collection. Durable collections are themselves durable objects, so they can be nested:
 
 ```js
@@ -114,6 +148,13 @@ const parentMap = makeScalarBigMapStore(parentLabel, { durable: true });
 baggage.init('parent', parentMap);
 const childMap = makeScalarBigMapStore(childLabel, { durable: true });
 parentMap.init('child', childMap);
+```
+
+or with the zone API:
+
+```js
+const parentMap = makeDurableZone(baggage).mapStore('parent');
+const childMap = makeDurableZone(parentMap).mapStore('child');
 ```
 
 The "baggage" is a special instance of `makeScalarBigMapStore`, with backing data is stored in a well-known per-vat location so each version can be given a reference. For every piece of data that v1 wrote into the baggage, v2 can read an equivalent item from the baggage it receives. However, any data associated with such items that v1 did _not_ write into baggage is lost -- v2 is a distinct process from v1, with its own independent heap and virtual memory.
@@ -127,6 +168,16 @@ const fooData = makeScalarBigMapStore(fooLabel, { durable: true });
 const barData = makeScalarBigMapStore(barLabel, { durable: true });
 baggage.set('foo data', fooData);
 baggage.set('bar data', barData);
+initializeFoo(fooData);
+initializeBar(barData);
+```
+
+or with the zone API:
+
+```js
+const zone = makeDurableZone(baggage);
+const fooData = zone.mapStore('foo data');
+const barData = zone.mapStore('bar data');
 initializeFoo(fooData);
 initializeBar(barData);
 ```

@@ -20,7 +20,8 @@
     "lint:types": "tsc -p jsconfig.json"
   },
   "dependencies": {
-    "@endo/eventual-send": "^0.16.8",
+    "@agoric/zone": "^0.1.0",
+    "@endo/far": "^0.2.14",
     "@endo/marshal": "^0.8.1",
     "@endo/promise-kit": "^0.2.52",
     "jessie.js": "^0.3.2"

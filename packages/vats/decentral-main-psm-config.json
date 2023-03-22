@@ -78,8 +78,8 @@
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
-    "chainStorage": {
-      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
     },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
