@@ -159,10 +159,8 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * Anyone can deposit any assets to the reserve
-   *
-   * @param {ZCFSeat} seat
    */
-  const addCollateralHook = async seat => {
+  const addCollateralHook = state => async (/** @type {ZCFSeat} */ seat) => {
     const {
       give: { Collateral: amountIn },
     } = seat.getProposal();
@@ -177,13 +175,14 @@ const start = async (zcf, privateArgs, baggage) => {
       { [collateralKeyword]: amountIn },
     );
     seat.exit();
+    updateMetrics({ state });
 
     trace('received collateral', amountIn);
     return 'added Collateral to the Reserve';
   };
 
-  const makeAddCollateralInvitation = () =>
-    zcf.makeInvitation(addCollateralHook, 'Add Collateral');
+  const makeAddCollateralInvitation = ({ state }) =>
+    zcf.makeInvitation(addCollateralHook(state), 'Add Collateral');
 
   /** @type {import('../contractSupport.js').MetricsPublisherKit<MetricsNotification>} */
   const { metricsPublication, metricsSubscription } = makeMetricsPublisherKit(
