@@ -335,8 +335,6 @@ async function testExportImport(
     const afterDump = ssIn.debug.dump(keepSnapshots);
     t.deepEqual(beforeDump, afterDump);
   }
-
-  exporter.close();
 }
 
 const expectedCurrentArtifacts = [

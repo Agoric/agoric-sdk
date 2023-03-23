@@ -1099,6 +1099,8 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
   }
 
   if (!includeHistorical) {
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    await exporter.close();
     return store;
   }
 
@@ -1132,6 +1134,7 @@ export async function importSwingStore(exporter, dirPath = null, options = {}) {
     }
     await fetchedP;
   }
+  await exporter.close();
   return store;
 }
 
