@@ -213,6 +213,7 @@ export const makeWalletFactoryDriver = async (
 };
 
 export const getNodeTestVaultsConfig = async (
+  bundleDir,
   specifier = '@agoric/vats/decentral-test-vaults-config.json',
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
@@ -224,15 +225,15 @@ export const getNodeTestVaultsConfig = async (
   // speed up (e.g. 80s vs 133s with xs-worker in production config)
   config.defaultManagerType = 'local';
   // speed up build (60s down to 10s in testing)
-  config.bundleCachePath = 'bundles';
+  config.bundleCachePath = bundleDir;
+  await fs.mkdir(bundleDir, { recursive: true });
 
   // remove Pegasus because it relies on IBC to Golang that isn't running
   config.coreProposals = config.coreProposals?.filter(
     v => v !== '@agoric/pegasus/scripts/init-core.js',
   );
 
-  // XXX assumes the test is being run from the package root and that bundles/ exists
-  const testConfigPath = 'bundles/local-decentral-test-vaults-config.json';
+  const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;
   await fs.writeFile(testConfigPath, JSON.stringify(config), 'utf-8');
   return testConfigPath;
 };
@@ -244,11 +245,12 @@ export const getNodeTestVaultsConfig = async (
  * factory metrics using separate collateral managers. (Or use test.serial)
  *
  * @param {import('ava').ExecutionContext} t
+ * @param {string} bundleDir directory to write bundles and config to
  * @param {string} [specifier] bootstrap config specifier
  */
-export const makeSwingsetTestKit = async (t, specifier) => {
+export const makeSwingsetTestKit = async (t, bundleDir, specifier) => {
   console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(specifier);
+  const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
   const { kernelStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
