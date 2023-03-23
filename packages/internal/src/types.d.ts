@@ -4,7 +4,7 @@ export declare class Callback<I extends (...args: unknown[]) => any> {
 
   public target: any;
 
-  public method?: PropertyKey;
+  public methodName?: PropertyKey;
 
   public bound: unknown[];
 }
