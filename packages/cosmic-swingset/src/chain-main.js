@@ -1,3 +1,5 @@
+// @ts-check
+
 import { resolve as pathResolve } from 'path';
 import v8 from 'node:v8';
 import process from 'node:process';
@@ -21,11 +23,13 @@ import { makePublishKit, pipeTopicToStorage } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { makeReadCachingStorage } from './bufferedStorage.js';
+import {
+  makeBufferedStorage,
+  makeReadCachingStorage,
+} from './bufferedStorage.js';
 import stringify from './json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
-import { makeQueue } from './make-queue.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -41,16 +45,32 @@ const toNumber = specimen => {
   return number;
 };
 
+/**
+ * @template {unknown} [T=unknown]
+ * @param {(req: string) => string} call
+ * @param {string} prefix
+ * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
+ * @param {(value: string) => T} fromBridgeStringValue
+ * @param {(value: T) => string} toBridgeStringValue
+ * @returns {import("./bufferedStorage.js").KVStore<T>}
+ */
 const makePrefixedBridgeStorage = (
   call,
   prefix,
   setterMethod,
-  fromBridgeValue = x => x,
-  toBridgeValue = x => x,
+  fromBridgeStringValue = x => JSON.parse(x),
+  toBridgeStringValue = x => stringify(x),
 ) => {
   prefix.endsWith('.') || Fail`prefix ${prefix} must end with a dot`;
 
   return harden({
+    has: key => {
+      const retStr = call(
+        stringify({ method: 'has', args: [`${prefix}${key}`] }),
+      );
+      const ret = JSON.parse(retStr);
+      return ret;
+    },
     get: key => {
       const retStr = call(
         stringify({ method: 'get', args: [`${prefix}${key}`] }),
@@ -59,19 +79,30 @@ const makePrefixedBridgeStorage = (
       if (ret == null) {
         return undefined;
       }
-      const bridgeValue = JSON.parse(ret);
-      return fromBridgeValue(bridgeValue);
+      return fromBridgeStringValue(ret);
     },
     set: (key, value) => {
       const path = `${prefix}${key}`;
-      const entry =
-        value == null ? [path] : [path, stringify(toBridgeValue(value))];
+      const entry = [path, toBridgeStringValue(value)];
       call(
         stringify({
           method: setterMethod,
           args: [entry],
         }),
       );
+    },
+    delete: key => {
+      const path = `${prefix}${key}`;
+      const entry = [path];
+      call(
+        stringify({
+          method: setterMethod,
+          args: [entry],
+        }),
+      );
+    },
+    getNextKey(_previousKey) {
+      throw new Error('not implemented');
     },
   });
 };
@@ -245,19 +276,24 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         sendToChain,
         `${STORAGE_PATH.MAILBOX}.`,
         'legacySet',
-        fromBridgeMailbox,
-        exportMailbox,
+        val => fromBridgeMailbox(JSON.parse(val)),
+        val => stringify(exportMailbox(val)),
       ),
     );
-    const actionQueue = makeQueue(
-      makeReadCachingStorage(
-        makePrefixedBridgeStorage(
-          sendToChain,
-          `${STORAGE_PATH.ACTION_QUEUE}.`,
-          'setWithoutNotify',
-        ),
+    const actionQueueRawStorage = makeBufferedStorage(
+      makePrefixedBridgeStorage(
+        sendToChain,
+        `${STORAGE_PATH.ACTION_QUEUE}.`,
+        'setWithoutNotify',
+        x => x,
+        x => x,
       ),
     );
+    const actionQueueStorage = harden({
+      ...actionQueueRawStorage.kvStore,
+      commit: actionQueueRawStorage.commit,
+      abort: actionQueueRawStorage.abort,
+    });
     function setActivityhash(activityhash) {
       const entry = [STORAGE_PATH.ACTIVITYHASH, activityhash];
       const msg = stringify({
@@ -397,7 +433,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const s = await launch({
-      actionQueue,
+      actionQueueStorage,
       kernelStateDBDir: stateDBDir,
       makeInstallationPublisher,
       mailboxStorage,
