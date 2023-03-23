@@ -121,9 +121,6 @@
     ],
     "timeout": "20m"
   },
-  "eslintIgnore": [
-    "bundle-*.js"
-  ],
   "publishConfig": {
     "access": "public"
   }

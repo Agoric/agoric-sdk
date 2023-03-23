@@ -5,6 +5,7 @@ module.exports = {
     'plugin:jsdoc/recommended',
     'prettier',
   ],
+  plugins: ['import'],
   rules: {
     'arrow-body-style': 'off',
     'arrow-parens': 'off',
@@ -61,9 +62,10 @@ module.exports = {
         devDependencies: [
           '**/*.config.js',
           '**/*.config.*.js',
-          '*test*/**/*.js',
-          'demo*/**/*.js',
-          'scripts/**/*.js',
+          // leading wildcard to work in CLI (package path) and IDE (repo path)
+          '**/test/**',
+          '**/demo*/**/*.js',
+          '**/scripts/**/*.js',
         ],
       },
     ],

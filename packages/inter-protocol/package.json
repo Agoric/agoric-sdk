@@ -72,9 +72,6 @@
     ],
     "timeout": "10m"
   },
-  "eslintIgnore": [
-    "bundle-*.js"
-  ],
   "publishConfig": {
     "access": "public"
   }
