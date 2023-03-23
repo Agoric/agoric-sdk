@@ -19,7 +19,7 @@ module.exports = {
         extraFileExtensions: ['.cjs'],
       }
     : undefined,
-  plugins: ['@typescript-eslint', 'import', 'prettier'],
+  plugins: ['@typescript-eslint', 'prettier'],
   extends: ['@agoric'],
   rules: {
     '@typescript-eslint/prefer-ts-expect-error': 'warn',
