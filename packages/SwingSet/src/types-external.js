@@ -13,8 +13,8 @@ export {};
  */
 
 /**
- * @typedef { { moduleFormat: 'getExport', source: string, sourceMap: string? } } GetExportBundle
- * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap: string? } } NestedEvaluateBundle
+ * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
+ * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  *
  * @typedef {{
