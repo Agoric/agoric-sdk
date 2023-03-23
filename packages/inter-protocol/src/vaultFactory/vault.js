@@ -430,7 +430,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             // you must pay off the entire remainder but if you offer too much, we won't
             // take more than you owe
             AmountMath.isGTE(given, debt) ||
-              Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
+              Fail`Offer ${q(given)} is not sufficient to pay off debt ${q(
+                debt,
+              )}`;
 
             // Return any overpayment
             atomicTransfer(
