@@ -573,5 +573,8 @@ export async function initializeSwingset(
   if (verbose) {
     kdebugEnable(true);
   }
-  return initializeKernel(kconfig, kernelStorage);
+
+  // returns the kpid of the bootstrap() result
+  const bootKpid = await initializeKernel(kconfig, kernelStorage);
+  return bootKpid;
 }

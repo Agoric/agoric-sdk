@@ -15,7 +15,8 @@ function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
 }
 
-export function initializeKernel(config, kernelStorage, verbose = false) {
+export async function initializeKernel(config, kernelStorage, options = {}) {
+  const { verbose = false } = options;
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(kernelStorage.kvStore);
 

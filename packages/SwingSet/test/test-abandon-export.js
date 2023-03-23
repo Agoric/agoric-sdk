@@ -7,10 +7,10 @@ import { extractMethod } from '../src/lib/kdebug.js';
 import { makeKernelEndowments, buildDispatch } from './util.js';
 import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
-const makeKernel = () => {
+const makeKernel = async () => {
   const endowments = makeKernelEndowments();
   const { kvStore } = endowments.kernelStorage;
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   return { kernel, kvStore };
 };
@@ -77,7 +77,7 @@ async function doAbandon(t, reachable) {
   // vatB abandons it
   // vatA should retain the object
   // sending to the abandoned object should get an error
-  const { kernel, kvStore } = makeKernel();
+  const { kernel, kvStore } = await makeKernel();
   await kernel.start();
 
   const {

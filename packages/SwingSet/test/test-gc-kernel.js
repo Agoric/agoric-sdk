@@ -56,10 +56,10 @@ function makeEndowments() {
   };
 }
 
-function makeKernel() {
+async function makeKernel() {
   const endowments = makeEndowments();
   const { kvStore } = endowments.kernelStorage;
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   return { kernel, kvStore };
 }
@@ -110,7 +110,7 @@ async function prep(t, options = {}) {
     sendToBob = true,
     sendPromiseToCarol = true,
   } = options;
-  const { kernel, kvStore } = makeKernel();
+  const { kernel, kvStore } = await makeKernel();
   await kernel.start();
 
   const vrefs = {}; // track vrefs within vats
@@ -549,7 +549,7 @@ test('mode24B', async t => {
 });
 
 test('retire before drop is error', async t => {
-  const { kernel } = makeKernel();
+  const { kernel } = await makeKernel();
   await kernel.start();
 
   const amyForAlice = 'o+101';

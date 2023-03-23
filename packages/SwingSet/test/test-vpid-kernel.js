@@ -200,7 +200,7 @@ function inCList(kernel, vatID, kpid, vpid) {
 
 async function doTest123(t, which, mode) {
   const endowments = makeEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatA is our primary actor
@@ -369,7 +369,7 @@ for (const caseNum of [1, 2, 3]) {
 
 async function doTest4567(t, which, mode) {
   const endowments = makeEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatA is our primary actor
@@ -560,7 +560,7 @@ for (const caseNum of [4, 5, 6, 7]) {
 
 test(`kernel vpid handling crossing resolutions`, async t => {
   const endowments = makeEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
   // vatX controls the scenario, vatA and vatB are the players
@@ -774,7 +774,7 @@ test(`kernel vpid handling crossing resolutions`, async t => {
 
 async function doReflectedMessageTest(t, enablePipelining) {
   const endowments = makeEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
 
@@ -878,7 +878,7 @@ test('', doReflectedMessageTest, false);
 
 test('kernel vpid handling rejects imported result promise', async t => {
   const endowments = makeEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
 
@@ -948,7 +948,7 @@ test('kernel vpid handling rejects imported result promise', async t => {
 
 test('kernel vpid handling rejects previously exported result promise', async t => {
   const endowments = makeEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(undefined); // no bootstrapVatName, so no bootstrap call
 
