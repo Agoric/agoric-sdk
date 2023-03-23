@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
@@ -24,6 +25,30 @@ export const bootstrapMethods = {
   messageVat: 'messageVat',
   messageVatObject: 'messageVatObject',
   awaitVatObject: 'awaitVatObject',
+};
+
+/**
+ * @template {PropertyKey} K
+ * @template V
+ * @param {K[]} keys
+ * @param {(key: K, i: number) => V} valueMaker
+ */
+const keysToObject = (keys, valueMaker) => {
+  return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
+};
+
+/**
+ * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of strings.
+ *
+ * @param {{ deepEqual: (a: unknown, b: unknown, message?: string) => void}} t
+ * @param {PropertyKey[]} a
+ * @param {PropertyKey[]} b
+ * @param {string} [message]
+ */
+export const keyArrayEqual = (t, a, b, message) => {
+  const aobj = keysToObject(a, () => 1);
+  const bobj = keysToObject(b, () => 1);
+  return t.deepEqual(aobj, bobj, message);
 };
 
 /**

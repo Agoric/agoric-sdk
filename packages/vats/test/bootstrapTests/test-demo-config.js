@@ -3,7 +3,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { PowerFlags } from '../../src/walletFlags.js';
 
-import { makeSwingsetTestKit } from './supports.js';
+import { makeSwingsetTestKit, keyArrayEqual } from './supports.js';
 
 const { keys } = Object;
 /**
@@ -65,7 +65,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   const home = await makeHomeFor(addr, EV);
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
   t.is(actual, addr, 'my address');
-  t.deepEqual(keys(home).sort(), homeKeys);
+  keyArrayEqual(t, keys(home).sort(), homeKeys);
 });
 
 test('sim/demo config launches Vaults as expected by loadgen', async t => {
