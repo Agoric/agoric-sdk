@@ -127,6 +127,11 @@ function getKeyType(key) {
  */
 
 /**
+ * @template T
+ *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
+ */
+
+/**
  * @typedef {[
  *   key: string,
  *   value: string|undefined,
@@ -141,7 +146,7 @@ function getKeyType(key) {
  * the concurrent activity of other swingStore instances, the data representing
  * the commit point will stay consistent and available.
  *
- * @property {() => AsyncIterable<KVPair>} getExportData
+ * @property {() => AnyIterable<KVPair>} getExportData
  *
  * Get a full copy of the first-stage export data (key-value pairs) from the
  * swingStore. This represents both the contents of the KVStore (excluding host
@@ -156,7 +161,7 @@ function getKeyType(key) {
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
- * @property {() => AsyncIterable<string>} getArtifactNames
+ * @property {() => AnyIterable<string>} getArtifactNames
  *
  * Get a list of name of artifacts available from the swingStore.  A name returned
  * by this method guarantees that a call to `getArtifact` on the same exporter
@@ -167,7 +172,7 @@ function getKeyType(key) {
  * - transcript.${vatID}.${startPos}.${endPos}
  * - snapshot.${vatID}.${endPos}
  *
- * @property {(name: string) => AsyncIterable<Uint8Array>} getArtifact
+ * @property {(name: string) => AnyIterable<Uint8Array>} getArtifact
  *
  * Retrieve an artifact by name.  May throw if the artifact is not available,
  * which can occur if the artifact is historical and wasn't been preserved.

@@ -8,14 +8,12 @@ import { Fail, q } from '@agoric/assert';
 import { buffer } from './util.js';
 
 /**
- * @typedef { { moduleFormat: 'getExport', source: string, sourceMap: string? } } GetExportBundle
- * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap: string? } } NestedEvaluateBundle
+ * @typedef { { moduleFormat: 'getExport', source: string, sourceMap?: string } } GetExportBundle
+ * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
- * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle_proper
+ * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  */
 /**
- * @typedef { { moduleFormat: string, endoZipBase64: string, endoZipBase64Sha512: string } } Bundle
- *
  * @typedef { import('./swingStore').SwingStoreExporter } SwingStoreExporter
  *
  * @typedef {{
@@ -74,9 +72,10 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @param {Bundle} bundle
    */
   function addBundle(bundleID, bundle) {
-    const { moduleFormat, endoZipBase64, endoZipBase64Sha512 } = bundle;
-    moduleFormat === 'endoZipBase64' ||
-      Fail`unsupported module format ${q(moduleFormat)}`;
+    const { moduleFormat } = bundle;
+    if (moduleFormat !== 'endoZipBase64')
+      throw Fail`unsupported module format ${q(moduleFormat)}`;
+    const { endoZipBase64, endoZipBase64Sha512 } = bundle;
     bundleID === bundleIdFromHash(endoZipBase64Sha512) ||
       Fail`bundleID ${q(bundleID)} does not match bundle`;
     ensureTxn();
@@ -103,6 +102,10 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
   `);
   sqlGetBundle.pluck(true);
 
+  /**
+   * @param {string} bundleID
+   * @returns {EndoZipBase64Bundle}
+   */
   function getBundle(bundleID) {
     bundleID.startsWith('b1-') || Fail`invalid bundleID ${q(bundleID)}`;
     const rawBundle = sqlGetBundle.get(bundleID);
@@ -200,6 +203,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     const artifactChunks = exporter.getArtifact(name);
     const inStream = Readable.from(artifactChunks);
     const rawBundle = await buffer(inStream);
+    /** @type {EndoZipBase64Bundle} */
     const bundle = harden({
       moduleFormat: 'endoZipBase64',
       endoZipBase64Sha512: bundleID.substring(3),
