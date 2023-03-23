@@ -297,11 +297,14 @@ export function makeCollectionManager(
 
     function get(key) {
       mustMatch(key, keyShape, invalidKeyTypeMsg);
-      const result = syscall.vatstoreGet(keyToDBKey(key));
-      if (result) {
-        return unserializeValue(JSON.parse(result));
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        throw Fail`key ${key} not found in collection ${q(label)}`;
       }
-      throw Fail`key ${key} not found in collection ${q(label)}`;
+      const result = syscall.vatstoreGet(keyToDBKey(key));
+      if (!result) {
+        throw Fail`key ${key} not found in collection ${q(label)}`;
+      }
+      return unserializeValue(JSON.parse(result));
     }
 
     function updateEntryCount(delta) {
@@ -366,6 +369,9 @@ export function makeCollectionManager(
 
     function deleteInternal(key) {
       mustMatch(key, keyShape, invalidKeyTypeMsg);
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        throw Fail`key ${key} not found in collection ${q(label)}`;
+      }
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
       rawValue || Fail`key ${key} not found in collection ${q(label)}`;

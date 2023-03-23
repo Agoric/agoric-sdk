@@ -915,7 +915,8 @@ test('deposit unregistered collateral', async t => {
   const driver = await makeAuctionDriver(t);
 
   await t.throwsAsync(() => driver.depositCollateral(asset.make(500n), asset), {
-    message: /no ordinal/,
+    message:
+      /key "\[Alleged: Asset brand\]" not found in collection "brandToIssuerRecord"/,
   });
 });
 
