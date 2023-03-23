@@ -41,13 +41,13 @@ ORACLE2_OFFER_ID=$(jq -r ".body | fromjson | .offer.id" <"$ORACLE_OFFER")
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 101 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 0.101 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
 # submit another price in the round from the second oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 0.201 --roundId 1 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
 jq ".body | fromjson" <"$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov2 --keyring-backend="test"
 
@@ -64,14 +64,32 @@ agd query vstorage keys published.priceFeed
 agoric follow :published.priceFeed.ATOM-USD_price_feed.latestRound
 
 # Set it to $13 per ATOM
+# second round, second oracle has to be first this time (alternating start)
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops oracle pushPriceRound --price 14.0 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from gov2 --keyring-backend="test"
 # second round, first oracle
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 120000000 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops oracle pushPriceRound --price 12.0 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
-# second round, second oracle
-PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops oracle pushPriceRound --price 14000000 --roundId 2 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
-agoric wallet send --offer "$PROPOSAL_OFFER" --from gov2 --keyring-backend="test"
 
 # see new price
 agoric follow :published.priceFeed.ATOM-USD_price_feed
+
+# Set it to $20 per ATOM
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops oracle pushPriceRound --price 15.0 --roundId 3 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
+# second oracle
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops oracle pushPriceRound --price 25.0 --roundId 3 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from gov2 --keyring-backend="test"
+
+# leave round unspecified for contract to suggest ($21.2)
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops oracle pushPriceRound --price 21.0 --oracleAdminAcceptOfferId "$ORACLE2_OFFER_ID" >|"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from gov2 --keyring-backend="test"
+# alternate
+PROPOSAL_OFFER=$(mktemp -t agops.XXX)
+bin/agops oracle pushPriceRound --price 21.4 --oracleAdminAcceptOfferId "$ORACLE_OFFER_ID" >|"$PROPOSAL_OFFER"
+agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"

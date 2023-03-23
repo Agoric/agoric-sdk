@@ -56,9 +56,12 @@ const AdminI = M.interface('OracleKitAdmin', {
 });
 
 const OracleI = M.interface('Oracle', {
-  pushPrice: M.call({ roundId: M.any(), unitPrice: M.bigint() }).returns(
-    M.promise(),
-  ),
+  pushPrice: M.call(
+    M.splitRecord(
+      { unitPrice: M.bigint() },
+      { roundId: M.or(M.bigint(), M.number()) },
+    ),
+  ).returns(M.promise()),
   getStatus: M.call().returns(M.record()),
 });
 
