@@ -33,6 +33,7 @@ import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 const rootSlot = makeVatSlot('object', true, 0n);
 
+// eslint-disable-next-line no-unused-vars
 function identifyExportedRemotables(
   vrefSet,
   { exportedRemotables, valToSlot },
@@ -59,6 +60,7 @@ function identifyExportedRemotables(
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 function identifyExportedFacets(vrefSet, { syscall, vrm }) {
   // Find all exported (non-durable) virtual object facets, which are
   // doomed because merely-virtual objects don't survive upgrade. We
@@ -96,6 +98,7 @@ function identifyExportedFacets(vrefSet, { syscall, vrm }) {
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 function abandonExports(vrefSet, tools) {
   // Pretend the kernel dropped everything in the set. The Remotables
   // will be removed from exportedRemotables. If the export was the
@@ -285,10 +288,15 @@ export async function releaseOldState(tools) {
   // refcount decrements which may drop some virtuals from the DB. It
   // might also drop some objects from RAM.
 
-  const abandonedVrefSet = new Set();
-  identifyExportedRemotables(abandonedVrefSet, tools);
-  identifyExportedFacets(abandonedVrefSet, tools);
-  abandonExports(abandonedVrefSet, tools);
+  // TODO: Decide how much (if any) cleanup to do here in the vat.
+  // The kernel simulates abandonExports as part of vat upgrade,
+  // but does not decrement vat-side refcounts which could allow us to
+  // drop durable objects that were only being kept alive by references from
+  // non-durable objects.
+  // const abandonedVrefSet = new Set();
+  // identifyExportedRemotables(abandonedVrefSet, tools);
+  // identifyExportedFacets(abandonedVrefSet, tools);
+  // abandonExports(abandonedVrefSet, tools);
 
   // bringOutYourDead remains to ensure that the LRU cache is flushed,
   // but the rest of this function has been disabled to improve stop-vat

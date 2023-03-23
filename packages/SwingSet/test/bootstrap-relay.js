@@ -36,6 +36,12 @@ export const buildRootObject = () => {
 
     getTimer: async () => encodePassable(timer),
 
+    getVatRoot: async ({ name }) => {
+      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
+      const { root } = vat;
+      return encodePassable(root);
+    },
+
     createVat: async ({ name, bundleCapName, vatParameters = {} }) => {
       const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
       const options = { vatParameters };
@@ -110,13 +116,13 @@ export const buildRootObject = () => {
       return encodePassable(result);
     },
 
-    awaitVatObject: async ({ presence, path = [] }) => {
+    awaitVatObject: async ({ presence, path = [], rawOutput = false }) => {
       let value = await decodePassable(presence);
       for (const key of path) {
         // eslint-disable-next-line no-await-in-loop
         value = await value[key];
       }
-      return encodePassable(value);
+      return rawOutput ? value : encodePassable(value);
     },
   });
 };
