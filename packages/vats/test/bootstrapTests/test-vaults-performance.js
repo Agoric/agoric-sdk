@@ -4,10 +4,15 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { PerformanceObserver, performance } from 'node:perf_hooks';
+import v8 from 'node:v8';
+import process from 'node:process';
+import util from 'node:util';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
+import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
+
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
@@ -16,6 +21,39 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
  * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
  */
 const test = anyTest;
+
+const snapshotHeap = () => {
+  console.log('Snapshotting heap...');
+  try {
+    const t0 = performance.now();
+    engineGC();
+    const t1 = performance.now();
+    const memoryUsage = process.memoryUsage();
+    const t2 = performance.now();
+    const heapStats = v8.getHeapStatistics();
+    const t3 = performance.now();
+
+    const heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+    // TODO write to a gitignored path
+    v8.writeHeapSnapshot(heapSnapshot);
+    const heapSnapshotTime = performance.now() - t3;
+
+    return {
+      memoryUsage,
+      heapStats,
+      heapSnapshot,
+      statsTime: {
+        forcedGc: t1 - t0,
+        memoryUsage: t2 - t1,
+        heapStats: t3 - t2,
+        heapSnapshot: heapSnapshotTime,
+      },
+    };
+  } catch (err) {
+    console.warn('Failed to gather memory stats', err);
+    return {};
+  }
+};
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'IbcATOM';
@@ -63,7 +101,8 @@ const rows = [];
 const perfObserver = new PerformanceObserver(items => {
   items.getEntries().forEach(entry => {
     // @ts-expect-error cast
-    const { vaultsOpened } = entry.detail;
+    const { vaultsOpened, ...heapDetails } = entry.detail;
+    console.log(`HEAP DETAILS at ${vaultsOpened} vaults: `, heapDetails);
     rows.push({
       vaultsOpened,
       duration: entry.duration,
@@ -106,17 +145,20 @@ test('stress vaults', async t => {
     performance.mark(`start-open`);
     await Promise.all(range.map(i => openVault(i, n)));
     performance.mark(`end-open`);
+    const snapshotDetails = snapshotHeap();
     performance.measure(`open-${n}`, {
       start: 'start-open',
       end: 'end-open',
-      detail: { vaultsOpened: n },
+      detail: { ...snapshotDetails, vaultsOpened: n },
     });
   };
 
+  // clear out for a baseline
+  snapshotHeap();
   await openN(1);
   await openN(10);
-  await openN(100);
-  await openN(1000);
+  // await openN(100);
+  // await openN(1000);
 
   // let perfObserver get the last measurement
   await eventLoopIteration();
