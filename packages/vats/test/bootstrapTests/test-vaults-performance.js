@@ -22,8 +22,9 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
  */
 const test = anyTest;
 
-const snapshotHeap = () => {
+const snapshotHeap = async () => {
   console.log('Snapshotting heap...');
+  await eventLoopIteration();
   try {
     const t0 = performance.now();
     engineGC();
@@ -145,7 +146,7 @@ test('stress vaults', async t => {
     performance.mark(`start-open`);
     await Promise.all(range.map(i => openVault(i, n)));
     performance.mark(`end-open`);
-    const snapshotDetails = snapshotHeap();
+    const snapshotDetails = await snapshotHeap();
     performance.measure(`open-${n}`, {
       start: 'start-open',
       end: 'end-open',
@@ -154,7 +155,7 @@ test('stress vaults', async t => {
   };
 
   // clear out for a baseline
-  snapshotHeap();
+  await snapshotHeap();
   await openN(1);
   await openN(10);
   // await openN(100);
