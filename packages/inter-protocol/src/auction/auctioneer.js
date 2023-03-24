@@ -29,7 +29,7 @@ import { AuctionState } from './util.js';
 
 const { Fail, quote: q } = assert;
 
-const trace = makeTracer('Auction', false);
+const trace = makeTracer('Auction', true); // @@
 
 /**
  *

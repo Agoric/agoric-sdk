@@ -26,6 +26,7 @@ export const makeOrderedVaultStore = store => {
     const debt = vault.getNormalizedDebt();
     const collateral = vault.getCollateralAmount();
     const key = toVaultKey(debt, collateral, vaultId);
+    console.log('addVault', { debt, collateral, vaultId, key });
     store.init(key, vault);
     return key;
   };

@@ -48,7 +48,7 @@ const DEFAULT_DECIMALS = 9;
  * added in the appropriate place and settled when the price reaches that level.
  */
 
-const trace = makeTracer('AucBook', false);
+const trace = makeTracer('AucBook', true); // @@@@@@
 
 /**
  * @typedef {{

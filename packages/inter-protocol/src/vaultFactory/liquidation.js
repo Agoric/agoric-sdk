@@ -9,7 +9,7 @@ import { makeScalarMapStore } from '@agoric/store';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
 
-const trace = makeTracer('LIQ', false);
+const trace = makeTracer('LIQ', true); // @@
 
 /** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
 /** @typedef {import('@agoric/time/src/types').TimerWaker} TimerWaker */

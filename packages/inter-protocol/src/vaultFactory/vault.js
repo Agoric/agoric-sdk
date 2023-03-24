@@ -752,6 +752,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const { facets } = this;
 
           const { helper } = facets;
+          trace(this.state.idInManager, '.liquidating() @@@');
           helper.assignPhase(Phase.LIQUIDATING);
           helper.updateUiState();
         },
