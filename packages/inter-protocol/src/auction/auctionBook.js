@@ -27,6 +27,7 @@ import {
 } from './util.js';
 
 const { Fail } = assert;
+const { makeEmpty } = AmountMath;
 
 const DEFAULT_DECIMALS = 9;
 
@@ -105,8 +106,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
      */
     (currencyBrand, collateralBrand, priceAuthority) => {
       assertAllDefined({ currencyBrand, collateralBrand, priceAuthority });
+      const zeroCurrency = makeEmpty(currencyBrand);
       const zeroRatio = makeRatioFromAmounts(
-        AmountMath.makeEmpty(currencyBrand),
+        zeroCurrency,
         AmountMath.make(collateralBrand, 1n),
       );
 
@@ -139,12 +141,14 @@ export const prepareAuctionBook = (baggage, zcf) => {
         priceBook,
         scaledBidBook,
 
-        assetsForSale: AmountMath.makeEmpty(collateralBrand),
         collateralSeat,
         curAuctionPrice: zeroRatio,
         currencySeat,
         lockedPriceForRound: zeroRatio,
         updatingOracleQuote: zeroRatio,
+        // undefined indicates no limit; empty indicates limit exhausted
+        /** @type {Amount<'nat'> | undefined} */
+        totalToRaise: undefined,
       };
     },
     {
@@ -189,51 +193,63 @@ export const prepareAuctionBook = (baggage, zcf) => {
          * @param {Amount<'nat'>} collateralWanted
          */
         settle(seat, collateralWanted) {
-          const { collateralSeat, curAuctionPrice, currencySeat } = this.state;
-          const { Currency: currencyAvailable } = seat.getCurrentAllocation();
+          const { collateralSeat, collateralBrand } = this.state;
+          const { Currency: currencyAlloc } = seat.getCurrentAllocation();
           const { Collateral: collateralAvailable } =
             collateralSeat.getCurrentAllocation();
           if (!collateralAvailable || AmountMath.isEmpty(collateralAvailable)) {
-            return AmountMath.makeEmptyFromAmount(collateralWanted);
+            return makeEmpty(collateralBrand);
           }
 
           /** @type {Amount<'nat'>} */
-          const collateralTarget = AmountMath.min(
+          let collateralTarget = AmountMath.min(
             collateralWanted,
             collateralAvailable,
           );
 
+          const { curAuctionPrice, currencySeat, totalToRaise } = this.state;
           const currencyNeeded = ceilMultiplyBy(
             collateralTarget,
             curAuctionPrice,
           );
           if (AmountMath.isEmpty(currencyNeeded)) {
-            seat.fail('price fell to zero');
-            return AmountMath.makeEmptyFromAmount(collateralWanted);
+            seat.fail(Error('price fell to zero'));
+            return makeEmpty(collateralBrand);
           }
 
-          const affordableAmounts = () => {
-            if (AmountMath.isGTE(currencyAvailable, currencyNeeded)) {
-              return [collateralTarget, currencyNeeded];
-            } else {
-              const affordableCollateral = floorDivideBy(
-                currencyAvailable,
-                curAuctionPrice,
-              );
-              return [affordableCollateral, currencyAvailable];
-            }
-          };
-          const [collateralAmount, currencyAmount] = affordableAmounts();
-          trace('settle', { collateralAmount, currencyAmount });
+          let currencyTarget = AmountMath.min(currencyNeeded, currencyAlloc);
+          const currencyLimit = totalToRaise
+            ? AmountMath.min(totalToRaise, currencyTarget)
+            : currencyTarget;
+          if (
+            totalToRaise ||
+            !AmountMath.isGTE(currencyLimit, currencyNeeded)
+          ) {
+            currencyTarget = currencyLimit;
+            collateralTarget = floorDivideBy(currencyLimit, curAuctionPrice);
+          }
+
+          trace('settle', {
+            collateral: collateralTarget,
+            currency: currencyTarget,
+            toRaise: totalToRaise,
+          });
 
           atomicRearrange(
             zcf,
             harden([
-              [collateralSeat, seat, { Collateral: collateralAmount }],
-              [seat, currencySeat, { Currency: currencyAmount }],
+              [collateralSeat, seat, { Collateral: collateralTarget }],
+              [seat, currencySeat, { Currency: currencyTarget }],
             ]),
           );
-          return collateralAmount;
+
+          if (totalToRaise) {
+            this.state.totalToRaise = AmountMath.subtract(
+              totalToRaise,
+              currencyTarget,
+            );
+          }
+          return collateralTarget;
         },
 
         /**
@@ -308,11 +324,53 @@ export const prepareAuctionBook = (baggage, zcf) => {
         /**
          * @param {Amount<'nat'>} assetAmount
          * @param {ZCFSeat} sourceSeat
+         * @param {Amount<'nat'>} [toRaise] an amount that the depositor would
+         *    like to raise. The auction is requested to not sell more
+         *    collateral than required to raise that much. The auctioneer might
+         *    sell more if there is more than one supplier of collateral, and
+         *    they request inconsistent limits.
          */
-        addAssets(assetAmount, sourceSeat) {
+        addAssets(assetAmount, sourceSeat, toRaise) {
           trace('add assets');
-          const { assetsForSale, collateralSeat } = this.state;
-          this.state.assetsForSale = AmountMath.add(assetsForSale, assetAmount);
+          const { collateralBrand, collateralSeat, totalToRaise } = this.state;
+
+          // When adding assets, the new ratio of toRaise to collateral
+          // allocation will be the larger of the existing ratio and the ratio
+          // implied by the new deposit. Add the new collateral and raise
+          // totalToRaise so it's proportional to the new ratio. This can
+          // result in raising more currency than one depositor wanted, but
+          // that's better than not selling as much as the other desired.
+
+          const allocation = collateralSeat.getCurrentAllocation();
+          const curCollateral =
+            'Collateral' in allocation
+              ? allocation.Collateral
+              : makeEmpty(collateralBrand);
+
+          if (totalToRaise && !toRaise) {
+            const curRatio = makeRatioFromAmounts(totalToRaise, curCollateral);
+            this.state.totalToRaise = ceilMultiplyBy(
+              AmountMath.add(curCollateral, assetAmount),
+              curRatio,
+            );
+          } else if (toRaise && !totalToRaise) {
+            const newRatio = makeRatioFromAmounts(toRaise, assetAmount);
+            this.state.totalToRaise = ceilMultiplyBy(
+              AmountMath.add(curCollateral, assetAmount),
+              newRatio,
+            );
+          } else if (toRaise && totalToRaise) {
+            const curRatio = makeRatioFromAmounts(totalToRaise, curCollateral);
+            const newRatio = makeRatioFromAmounts(toRaise, assetAmount);
+            const highestRatio = ratioGTE(newRatio, curRatio)
+              ? newRatio
+              : curRatio;
+            this.state.totalToRaise = ceilMultiplyBy(
+              AmountMath.add(curCollateral, assetAmount),
+              highestRatio,
+            );
+          }
+
           atomicRearrange(
             zcf,
             harden([[sourceSeat, collateralSeat, { Collateral: assetAmount }]]),
@@ -348,9 +406,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
             (a, b) => compareValues(a[1].seqNum, b[1].seqNum),
           );
 
+          const { totalToRaise } = this.state;
           const { helper } = this.facets;
           for (const [key, { seat, price: p, wanted }] of prioritizedOffers) {
-            if (seat.hasExited()) {
+            if (totalToRaise && AmountMath.isEmpty(totalToRaise)) {
+              break;
+            } else if (seat.hasExited()) {
               helper.removeFromItsBook(key, p);
             } else {
               const collateralSold = helper.settle(seat, wanted);
@@ -444,6 +505,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
         },
         getSeats() {
           const { collateralSeat, currencySeat } = this.state;
+          this.state.totalToRaise = undefined;
           return { collateralSeat, currencySeat };
         },
         exitAllSeats() {
