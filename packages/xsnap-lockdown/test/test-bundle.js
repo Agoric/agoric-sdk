@@ -5,7 +5,7 @@ import crypto from 'crypto';
 
 import {
   getLockdownBundle,
-  lockdownBundleSHA256,
+  getLockdownBundleSHA256,
   getDebugLockdownBundle,
 } from '../src/index.js';
 import { bundlePaths } from '../src/paths.js';
@@ -40,7 +40,8 @@ test('bundle hash', async t => {
   const bundleString = fs.readFileSync(lockdownBundleSpec, {
     encoding: 'utf-8',
   });
-  t.is(sha256(encode(bundleString)), lockdownBundleSHA256);
+  const publishedHash = await getLockdownBundleSHA256();
+  t.is(sha256(encode(bundleString)), publishedHash);
 
   // The bundle object can be JSON-stringified and then hashed. This
   // serialization should be deterministic (JSON.stringify uses
@@ -49,5 +50,5 @@ test('bundle hash', async t => {
 
   const bundle = await getLockdownBundle();
   const bundleString2 = JSON.stringify(bundle);
-  t.is(sha256(encode(bundleString2)), lockdownBundleSHA256);
+  t.is(sha256(encode(bundleString2)), publishedHash);
 });
