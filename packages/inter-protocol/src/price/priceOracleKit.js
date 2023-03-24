@@ -1,6 +1,6 @@
 import { Fail } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { defineDurableExoClassKit, M, makeKindHandle } from '@agoric/vat-data';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 
 const trace = makeTracer('OrKit', false);
 
@@ -34,8 +34,6 @@ export const INVITATION_MAKERS_DESC = 'oracle invitation';
  */
 /** @typedef {ImmutableState & MutableState} State */
 
-const oracleKitKind = makeKindHandle('OracleKit');
-
 /**
  * @param {HeldParams} heldParams
  * @returns {State}
@@ -65,63 +63,65 @@ const OracleI = M.interface('Oracle', {
   getStatus: M.call().returns(M.record()),
 });
 
-export const makeOracleAdminKit = defineDurableExoClassKit(
-  oracleKitKind,
-  { admin: AdminI, oracle: OracleI },
-  initState,
-  {
-    admin: {
-      disable() {
-        trace(`oracle ${this.state.oracleId} disabled`);
-        this.state.disabled = true;
+export const prepareOracleAdminKit = baggage =>
+  prepareExoClassKit(
+    baggage,
+    'OracleKit',
+    { admin: AdminI, oracle: OracleI },
+    initState,
+    {
+      admin: {
+        disable() {
+          trace(`oracle ${this.state.oracleId} disabled`);
+          this.state.disabled = true;
+        },
       },
-    },
-    oracle: {
-      /**
-       * push a unitPrice result from this oracle
-       *
-       * @param {PriceDatum} datum
-       */
-      async pushPrice({
-        roundId: roundIdRaw = undefined,
-        unitPrice: valueRaw,
-      }) {
-        const { state } = this;
-        !state.disabled || Fail`pushPrice for disabled oracle`;
-        const { roundPowers } = state;
-        const result = await roundPowers.handlePush(
-          {
+      oracle: {
+        /**
+         * push a unitPrice result from this oracle
+         *
+         * @param {PriceDatum} datum
+         */
+        async pushPrice({
+          roundId: roundIdRaw = undefined,
+          unitPrice: valueRaw,
+        }) {
+          const { state } = this;
+          !state.disabled || Fail`pushPrice for disabled oracle`;
+          const { roundPowers } = state;
+          const result = await roundPowers.handlePush(
+            {
+              oracleId: state.oracleId,
+              lastReportedRound: state.lastReportedRound,
+              lastStartedRound: state.lastStartedRound,
+              latestSubmission: state.latestSubmission,
+            },
+            {
+              roundId: roundIdRaw,
+              unitPrice: valueRaw,
+            },
+          );
+
+          state.lastReportedRound = result.lastReportedRound;
+          state.lastStartedRound = result.lastStartedRound;
+          state.latestSubmission = result.latestSubmission;
+        },
+        /**
+         *
+         * @returns {OracleStatus}
+         */
+        getStatus() {
+          const { state } = this;
+          return {
             oracleId: state.oracleId,
+            disabled: state.disabled,
             lastReportedRound: state.lastReportedRound,
             lastStartedRound: state.lastStartedRound,
             latestSubmission: state.latestSubmission,
-          },
-          {
-            roundId: roundIdRaw,
-            unitPrice: valueRaw,
-          },
-        );
-
-        state.lastReportedRound = result.lastReportedRound;
-        state.lastStartedRound = result.lastStartedRound;
-        state.latestSubmission = result.latestSubmission;
-      },
-      /**
-       *
-       * @returns {OracleStatus}
-       */
-      getStatus() {
-        const { state } = this;
-        return {
-          oracleId: state.oracleId,
-          disabled: state.disabled,
-          lastReportedRound: state.lastReportedRound,
-          lastStartedRound: state.lastStartedRound,
-          latestSubmission: state.latestSubmission,
-        };
+          };
+        },
       },
     },
-  },
-);
+  );
 
-/** @typedef {ReturnType<typeof makeOracleAdminKit>} OracleKit */
+/** @typedef {ReturnType<ReturnType<typeof prepareOracleAdminKit>>} OracleKit */

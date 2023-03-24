@@ -127,7 +127,7 @@ export const createPriceFeed = async (
   /**
    * Values come from economy-template.json, which at this writing had IN:ATOM, OUT:USD
    *
-   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/governance/src/contractGovernor.js').start>, Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start>]]}
+   * @type {[[Brand<'nat'>, Brand<'nat'>], [Installation<import('@agoric/governance/src/contractGovernor.js').start>, Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>]]}
    */
   const [[brandIn, brandOut], [contractGovernor, priceAggregator]] =
     await Promise.all([
@@ -198,7 +198,7 @@ export const createPriceFeed = async (
         initialPoserInvitation,
         marshaller,
         namesByAddressAdmin,
-        storageNode: E(storageNode).makeChildNode(label),
+        storageNode: await E(storageNode).makeChildNode(label),
       },
     },
     label,

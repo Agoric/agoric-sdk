@@ -5,16 +5,22 @@
  */
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
-import { M, makeScalarBigMapStore } from '@agoric/vat-data';
+import {
+  makeNotifierFromSubscriber,
+  observeNotifier,
+  SubscriberShape,
+} from '@agoric/notifier';
+import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   defineRecorderKit,
   makeOnewayPriceAuthorityKit,
+  makeRecorderTopic,
+  provideAll,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeOracleAdminKit } from './priceOracleKit.js';
-import { makeRoundsManagerKit } from './roundsManager.js';
+import { prepareOracleAdminKit } from './priceOracleKit.js';
+import { prepareRoundsManagerKit } from './roundsManager.js';
 
 const trace = makeTracer('FlxAgg', false);
 
@@ -57,10 +63,14 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  */
 
 /**
- * PriceAuthority for their median. Unlike the simpler `priceAggregator.js`, this approximates
- * the *Node Operator Aggregation* logic of [Chainlink price
+ * Returns a maker for a single durable FluxAggregatorKit, closed over the prepare() arguments.
+ *
+ * The kit aggregates price inputs to produce a PriceAuthority. Unlike the
+ * simpler `priceAggregator.js`, this approximates the *Node Operator
+ * Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
+ * @param {Baggage} baggage
  * @param {ZCF<ChainlinkConfig & {
  * timer: TimerService,
  * brandIn: Brand<'nat'>,
@@ -68,12 +78,14 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
  * @param {TimerService} timerPresence
- * @param {IssuerRecord<'set'> & { mint: Mint<'set'> }} quoteKit
+ * @param {import('./roundsManager.js').QuoteKit} quoteKit
  * @param {StorageNode} storageNode
- * @param {*} makeDurablePublishKit
+ * @param {() => PublishKit<any>} makeDurablePublishKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
+ * @returns a method to call once to create the prepared kit
  */
-export const makeFluxAggregator = async (
+export const prepareFluxAggregatorKit = async (
+  baggage,
   zcf,
   timerPresence,
   quoteKit,
@@ -109,64 +121,64 @@ export const makeFluxAggregator = async (
     unitAmountIn,
   });
 
+  const makeRoundsManagerKit = prepareRoundsManagerKit(baggage);
+  const makeOracleAdminKit = prepareOracleAdminKit(baggage);
+
   const makeRecorderKit = defineRecorderKit({
+    // @ts-expect-error XXX
     makeDurablePublishKit,
     makeRecorder,
   });
 
-  // For publishing priceAuthority values to off-chain storage
-  const { recorder: priceRecorder, subscriber: quoteSubscriber } =
-    makeRecorderKit(
-      storageNode,
-      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
-        M.any()
-      ),
-    );
+  // end of maker definitions /////////////////////////////////
 
-  const { recorder: latestRoundPublisher, subscriber: latestRoundSubscriber } =
-    makeRecorderKit(
-      await E(storageNode).makeChildNode('latestRound'),
-      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./roundsManager.js').LatestRound>} */ (
-        M.any()
+  const { answerKit, latestRoundKit, priceKit } = await provideAll(baggage, {
+    /** This is just a signal that there's a new answer, which is read from `lastValueOutForUnitIn` */
+    answerKit: () => makeDurablePublishKit(),
+    /** For publishing priceAuthority values to off-chain storage */
+    priceKit: () =>
+      makeRecorderKit(
+        storageNode,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
+          M.any()
+        ),
       ),
-    );
-
-  /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
-  const oracles = makeScalarBigMapStore('oracles', {
-    durable: true,
+    latestRoundKit: () =>
+      E.when(E(storageNode).makeChildNode('latestRound'), node =>
+        makeRecorderKit(
+          node,
+          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./roundsManager.js').LatestRound>} */ (
+            M.any()
+          ),
+        ),
+      ),
   });
 
-  // --- [end] Chainlink specific values
+  const { roundsManagerKit } = await provideAll(baggage, {
+    roundsManagerKit: () =>
+      makeRoundsManagerKit(
+        harden({
+          answerPublisher: answerKit.publisher,
+          brandIn,
+          brandOut,
+          latestRoundPublisher: latestRoundKit.recorder,
+          minSubmissionCount,
+          maxSubmissionCount,
+          minSubmissionValue,
+          maxSubmissionValue,
+          quoteKit,
+          restartDelay,
+          timerPresence,
+          timeout,
+          unitAmountIn,
+        }),
+      ),
+  });
 
-  /**
-   * This is just a signal that there's a new answer, which is read from `lastValueOutForUnitIn`
-   *
-   * @type {PublishKit<void>}
-   */
-  const { publisher: answerPublisher, subscriber: answerSubscriber } =
-    makeDurablePublishKit();
-
-  const roundsManagerKit = makeRoundsManagerKit(
-    harden({
-      answerPublisher,
-      brandIn,
-      brandOut,
-      latestRoundPublisher,
-      minSubmissionCount,
-      maxSubmissionCount,
-      minSubmissionValue,
-      maxSubmissionValue,
-      quoteKit,
-      restartDelay,
-      timerPresence,
-      timeout,
-      unitAmountIn,
-    }),
-  );
-
+  // not durable, held in closure and remade in every call of enclosing
   const { priceAuthority } = makeOnewayPriceAuthorityKit({
     createQuote: roundsManagerKit.contract.makeCreateQuote(),
-    notifier: makeNotifierFromSubscriber(answerSubscriber),
+    notifier: makeNotifierFromSubscriber(answerKit.subscriber),
     quoteIssuer: quoteKit.issuer,
     timer: timerPresence,
     actualBrandIn: brandIn,
@@ -177,8 +189,9 @@ export const makeFluxAggregator = async (
   void observeNotifier(
     priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
     {
-      updateState: quote =>
-        priceRecorder.write(priceDescriptionFromQuote(quote)),
+      updateState: quote => {
+        priceKit.recorder.write(priceDescriptionFromQuote(quote));
+      },
       fail: reason => {
         throw Error(`priceAuthority observer failed: ${reason}`);
       },
@@ -188,150 +201,176 @@ export const makeFluxAggregator = async (
     },
   );
 
-  const creatorFacet = Far('PriceAggregatorChainlinkCreatorFacet', {
-    /**
-     * An "oracle invitation" is an invitation to be able to submit data to
-     * include in the priceAggregator's results.
-     *
-     * The offer result from this invitation is a OracleAdmin, which can be used
-     * directly to manage the price submissions as well as to terminate the
-     * relationship.
-     *
-     * @param {string} oracleId unique per contract instance
-     */
-    makeOracleInvitation: async oracleId => {
-      trace('makeOracleInvitation', oracleId);
-      /**
-       * If custom arguments are supplied to the `zoe.offer` call, they can
-       * indicate an OraclePriceSubmission notifier and a corresponding
-       * `shiftValueOut` that should be adapted as part of the priceAuthority's
-       * reported data.
-       *
-       * @param {ZCFSeat} seat
-       */
-      const offerHandler = async seat => {
-        const { oracle } = await creatorFacet.initOracle(oracleId);
-        const invitationMakers = Far('invitation makers', {
-          /** @param {import('./roundsManager.js').PriceRound} result */
-          PushPrice(result) {
-            return zcf.makeInvitation(
-              /** @param {ZCFSeat} cSeat */
-              async cSeat => {
-                cSeat.exit();
-                await oracle.pushPrice(result);
-              },
-              'PushPrice',
-            );
-          },
-        });
-        seat.exit();
-
-        return harden({
-          invitationMakers,
-          oracle,
-        });
-      };
-
-      return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
-    },
-    /** @param {string} oracleId */
-    removeOracle: async oracleId => {
-      trace('deleteOracle', oracleId);
-      const kit = oracles.get(oracleId);
-      kit.admin.disable();
-      oracles.delete(oracleId);
-    },
-
-    getRoundData: roundIdRaw => {
-      return roundsManagerKit.contract.getRoundData(roundIdRaw);
-    },
-
-    /** @param {string} oracleId */
-    async initOracle(oracleId) {
-      trace('initOracle', oracleId);
-      assert.typeof(oracleId, 'string');
-
-      const oracleKit = makeOracleAdminKit(
-        harden({
-          minSubmissionValue,
-          maxSubmissionValue,
-          oracleId, // must be unique per vat
-          roundPowers: roundsManagerKit.oracle,
-          timer: timerPresence,
+  const makeFluxAggregatorKit = prepareExoClassKit(
+    baggage,
+    'fluxAggregator',
+    {
+      creator: M.interface('fluxAggregator creatorFacet', {}, { sloppy: true }),
+      public: M.interface('fluxAggregator publicFacet', {
+        getPriceAuthority: M.call().returns(M.any()),
+        getSubscriber: M.call().returns(SubscriberShape),
+        getRoundStartNotifier: M.call().returns(SubscriberShape),
+        getPublicTopics: M.call().returns({
+          quotes: M.any(),
+          latestRound: M.any(),
         }),
-      );
-      oracles.init(oracleId, oracleKit);
-
-      return oracleKit;
+      }),
     },
-
-    /**
-     * a method to provide all current info oracleStatuses need. Intended only
-     * only to be callable by oracleStatuses. Not for use by contracts to read state.
-     *
-     * @param {string} oracleId
-     * @param {bigint} queriedRoundId
-     * @returns {Promise<RoundState>}
-     */
-    async oracleRoundState(oracleId, queriedRoundId) {
-      const blockTimestamp = await E(timerPresence).getCurrentTimestamp();
-      const status = await E(oracles.get(oracleId).oracle).getStatus();
-
-      const oracleCount = oracles.getSize();
-
-      const { contract } = roundsManagerKit;
-      if (queriedRoundId > 0) {
-        const roundStatus = contract.getRoundStatus(queriedRoundId);
-        return {
-          eligibleForSpecificRound: contract.eligibleForSpecificRound(
-            status,
-            queriedRoundId,
-            blockTimestamp,
-          ),
-          queriedRoundId,
-          latestSubmission: status.latestSubmission,
-          startedAt: roundStatus.startedAt,
-          roundTimeout: roundStatus.roundTimeout,
-          oracleCount,
-        };
-      } else {
-        return {
-          ...contract.oracleRoundStateSuggestRound(status, blockTimestamp),
-          oracleCount,
-        };
-      }
+    () => {
+      /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
+      const oracles = makeScalarBigMapStore('oracles', {
+        durable: true,
+      });
+      return { oracles };
     },
-  });
+    {
+      creator: {
+        /**
+         * An "oracle invitation" is an invitation to be able to submit data to
+         * include in the priceAggregator's results.
+         *
+         * The offer result from this invitation is a OracleAdmin, which can be used
+         * directly to manage the price submissions as well as to terminate the
+         * relationship.
+         *
+         * @param {string} oracleId unique per contract instance
+         */
+        async makeOracleInvitation(oracleId) {
+          const { facets } = this;
+          trace('makeOracleInvitation', oracleId);
+          /**
+           * If custom arguments are supplied to the `zoe.offer` call, they can
+           * indicate an OraclePriceSubmission notifier and a corresponding
+           * `shiftValueOut` that should be adapted as part of the priceAuthority's
+           * reported data.
+           *
+           * @param {ZCFSeat} seat
+           */
+          const offerHandler = async seat => {
+            const { oracle } = await facets.creator.initOracle(oracleId);
+            const invitationMakers = Far('invitation makers', {
+              /** @param {import('./roundsManager.js').PriceRound} result */
+              PushPrice(result) {
+                return zcf.makeInvitation(
+                  /** @param {ZCFSeat} cSeat */
+                  async cSeat => {
+                    cSeat.exit();
+                    await oracle.pushPrice(result);
+                  },
+                  'PushPrice',
+                );
+              },
+            });
+            seat.exit();
 
-  const publicFacet = Far('publicFacet', {
-    getPriceAuthority() {
-      return priceAuthority;
-    },
-    /** @deprecated use getPublicTopics */
-    getSubscriber: () => {
-      return quoteSubscriber;
-    },
-    /** @deprecated use getPublicTopics */
-    getRoundStartNotifier() {
-      return latestRoundSubscriber;
-    },
-    getPublicTopics() {
-      return {
-        quotes: {
-          description: 'Quotes from this price aggregator',
-          subscriber: quoteSubscriber,
-          storagePath: E(priceRecorder).getStoragePath(),
+            return harden({
+              invitationMakers,
+              oracle,
+            });
+          };
+
+          return zcf.makeInvitation(offerHandler, INVITATION_MAKERS_DESC);
         },
-        latestRound: {
-          description: 'Notification of each round',
-          subscriber: latestRoundSubscriber,
-          storagePath: E(latestRoundPublisher).getStoragePath(),
+        /** @param {string} oracleId */
+        async removeOracle(oracleId) {
+          const { oracles } = this.state;
+          trace('deleteOracle', oracleId);
+          const kit = oracles.get(oracleId);
+          kit.admin.disable();
+          oracles.delete(oracleId);
         },
-      };
-    },
-  });
 
-  return harden({ creatorFacet, publicFacet });
+        getRoundData: roundIdRaw => {
+          return roundsManagerKit.contract.getRoundData(roundIdRaw);
+        },
+
+        /** @param {string} oracleId */
+        async initOracle(oracleId) {
+          const { oracles } = this.state;
+          trace('initOracle', oracleId);
+          assert.typeof(oracleId, 'string');
+
+          const oracleKit = makeOracleAdminKit(
+            harden({
+              minSubmissionValue,
+              maxSubmissionValue,
+              oracleId, // must be unique per vat
+              roundPowers: roundsManagerKit.oracle,
+              timer: timerPresence,
+            }),
+          );
+          oracles.init(oracleId, oracleKit);
+
+          return oracleKit;
+        },
+
+        /**
+         * a method to provide all current info oracleStatuses need. Intended only
+         * only to be callable by oracleStatuses. Not for use by contracts to read state.
+         *
+         * @param {string} oracleId
+         * @param {bigint} queriedRoundId
+         * @returns {Promise<RoundState>}
+         */
+        async oracleRoundState(oracleId, queriedRoundId) {
+          const { oracles } = this.state;
+          const blockTimestamp = await E(timerPresence).getCurrentTimestamp();
+          const status = await E(oracles.get(oracleId).oracle).getStatus();
+
+          const oracleCount = oracles.getSize();
+
+          const { contract } = roundsManagerKit;
+          if (queriedRoundId > 0) {
+            const roundStatus = contract.getRoundStatus(queriedRoundId);
+            return {
+              eligibleForSpecificRound: contract.eligibleForSpecificRound(
+                status,
+                queriedRoundId,
+                blockTimestamp,
+              ),
+              queriedRoundId,
+              latestSubmission: status.latestSubmission,
+              startedAt: roundStatus.startedAt,
+              roundTimeout: roundStatus.roundTimeout,
+              oracleCount,
+            };
+          } else {
+            return {
+              ...contract.oracleRoundStateSuggestRound(status, blockTimestamp),
+              oracleCount,
+            };
+          }
+        },
+      },
+      public: {
+        getPriceAuthority() {
+          return priceAuthority;
+        },
+        /** @deprecated use getPublicTopics */
+        getSubscriber: () => {
+          return priceKit.subscriber;
+        },
+        /** @deprecated use getPublicTopics */
+        getRoundStartNotifier() {
+          return latestRoundKit.subscriber;
+        },
+        getPublicTopics() {
+          return {
+            quotes: makeRecorderTopic(
+              'Quotes from this price aggregator',
+              priceKit,
+            ),
+            latestRound: makeRecorderTopic(
+              'Notification of each round',
+              latestRoundKit,
+            ),
+          };
+        },
+      },
+    },
+  );
+
+  return makeFluxAggregatorKit;
 };
-harden(makeFluxAggregator);
-/** @typedef {ReturnType<typeof makeFluxAggregator>} FluxAggregator */
+harden(prepareFluxAggregatorKit);
+/** @typedef {ReturnType<Awaited<ReturnType<typeof prepareFluxAggregatorKit>>>} FluxAggregatorKit */

@@ -101,7 +101,7 @@ const setupFeedWithWallets = async (t, oracleAddresses) => {
 
   await t.context.simpleCreatePriceFeed(oracleAddresses, 'ATOM', 'USD');
 
-  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start>} */
+  /** @type {import('@agoric/zoe/src/zoeService/utils.js').Instance<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>} */
   const governedPriceAggregator = await E(agoricNames).lookup(
     'instance',
     'ATOM-USD price feed',

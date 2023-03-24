@@ -1,13 +1,18 @@
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import {
+  hasIssuer,
+  makeDurableIssuerKit,
+  prepareIssuerKit,
+} from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
+import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
-import { makeFluxAggregator } from './fluxAggregatorKit.js';
+import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 
-const trace = makeTracer('FluxAgg', false);
+const trace = makeTracer('FluxAgg');
 /**
  * @typedef {import('@agoric/vat-data').Baggage} Baggage
  * @typedef {import('@agoric/time/src/types').TimerService} TimerService
@@ -28,36 +33,28 @@ const trace = makeTracer('FluxAgg', false);
  * initialPoserInvitation: Invitation,
  * marshaller: Marshaller,
  * namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
- * quoteMint?: ERef<Mint<'set'>>,
- * storageNode: ERef<StorageNode>,
+ * storageNode: StorageNode,
  * }} privateArgs
  * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  trace('start');
-  const { timer: timerP } = zcf.getTerms();
+export const prepare = async (zcf, privateArgs, baggage) => {
+  trace('prepare with baggage keys', [...baggage.keys()]);
 
-  const quoteMintP =
-    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
-  const [quoteMint, quoteIssuerRecord] = await Promise.all([
-    quoteMintP,
-    zcf.saveIssuer(E(quoteMintP).getIssuer(), 'Quote'),
-  ]);
-  const quoteKit = {
-    ...quoteIssuerRecord,
-    mint: quoteMint,
-  };
+  // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
+  /** @type {import('./roundsManager.js').QuoteKit} */
+  const quoteIssuerKit = hasIssuer(baggage)
+    ? prepareIssuerKit(baggage)
+    : makeDurableIssuerKit(baggage, 'quote', 'set');
 
   const {
     initialPoserInvitation,
     marshaller,
     namesByAddressAdmin,
-    storageNode: storageNodeP,
+    storageNode,
   } = privateArgs;
-  assertAllDefined({ initialPoserInvitation, marshaller, storageNodeP });
+  assertAllDefined({ initialPoserInvitation, marshaller, storageNode });
 
-  const timer = await timerP;
-  const storageNode = await storageNodeP;
+  const { timer } = zcf.getTerms();
 
   trace('awaited args');
 
@@ -67,17 +64,24 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
   const makeRecorder = prepareRecorder(baggage, marshaller);
 
-  const fa = await makeFluxAggregator(
+  const makeFluxAggregatorKit = await prepareFluxAggregatorKit(
+    baggage,
     zcf,
     timer,
-    quoteKit,
+    quoteIssuerKit,
     storageNode,
     makeDurablePublishKit,
     makeRecorder,
   );
-  trace('got fa', fa);
 
-  const { makeGovernorFacet } = await handleParamGovernance(
+  const { faKit } = await provideAll(baggage, {
+    faKit: () => makeFluxAggregatorKit(),
+  });
+  trace('got faKit', faKit);
+
+  // cannot be stored in baggage because not durable
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  const { makeDurableGovernorFacet } = handleParamGovernance(
     // @ts-expect-error FIXME include Governance params
     zcf,
     initialPoserInvitation,
@@ -88,6 +92,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
 
+  trace('got makeDurableGovernorFacet', makeDurableGovernorFacet);
+
   /**
    * Initialize a new oracle and send an invitation to control it.
    *
@@ -95,7 +101,7 @@ export const start = async (zcf, privateArgs, baggage) => {
    */
   const addOracle = async addr => {
     trace('addOracle', addr);
-    const invitation = await E(fa.creatorFacet).makeOracleInvitation(addr);
+    const invitation = await E(faKit.creator).makeOracleInvitation(addr);
     // XXX imported from 'proposals' path
     await reserveThenDeposit(
       `fluxAggregator oracle ${addr}`,
@@ -113,7 +119,7 @@ export const start = async (zcf, privateArgs, baggage) => {
    */
   const removeOracle = async oracleId => {
     trace('removeOracle', oracleId);
-    await E(fa.creatorFacet).removeOracle(oracleId);
+    await E(faKit.creator).removeOracle(oracleId);
     return `removed ${oracleId}`;
   };
 
@@ -139,10 +145,16 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   };
 
-  const governorFacet = makeGovernorFacet(fa.creatorFacet, governedApis);
+  const { governorFacet } = makeDurableGovernorFacet(
+    baggage,
+    faKit.creator,
+    governedApis,
+  );
+  trace('made governorFacet', governorFacet);
+
   return harden({
     creatorFacet: governorFacet,
-    publicFacet: fa.publicFacet,
+    publicFacet: faKit.public,
   });
 };
-harden(start);
+harden(prepare);

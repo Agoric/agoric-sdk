@@ -16,7 +16,7 @@ import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { makeFluxAggregator } from '../../src/price/fluxAggregatorKit.js';
+import { prepareFluxAggregatorKit } from '../../src/price/fluxAggregatorKit.js';
 import { topicPath } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
@@ -35,7 +35,7 @@ const makeContext = async () => {
   const link = makeIssuerKit('$LINK', AssetKind.NAT);
   const usd = makeIssuerKit('$USD', AssetKind.NAT);
 
-  async function makeChainlinkAggregator(config) {
+  async function makeTestFluxAggregator(config) {
     const terms = { ...config, brandIn: link.brand, brandOut: usd.brand };
     const zcfTestKit = await setupZCFTest(undefined, terms);
 
@@ -54,19 +54,22 @@ const makeContext = async () => {
       marshaller,
     );
 
-    const aggregator = await makeFluxAggregator(
+    const makeFluxAggregator = await prepareFluxAggregatorKit(
+      baggage,
       zcfTestKit.zcf,
       manualTimer,
-      { ...quoteIssuerKit, assetKind: 'set', displayInfo: undefined },
+      { ...quoteIssuerKit, displayInfo: { assetKind: 'set' } },
       await E(storageNode).makeChildNode('LINK-USD_price_feed'),
       makeDurablePublishKit,
       makeRecorder,
     );
 
+    const aggregator = makeFluxAggregator();
+
     return { ...aggregator, manualTimer, mockStorageRoot };
   }
 
-  return { makeChainlinkAggregator };
+  return { makeTestFluxAggregator };
 };
 
 test.before('setup aggregator and oracles', async t => {
@@ -74,16 +77,16 @@ test.before('setup aggregator and oracles', async t => {
 });
 
 test('basic, with snapshot', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator(defaultConfig);
+  const aggregator = await t.context.makeTestFluxAggregator(defaultConfig);
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
 
@@ -94,7 +97,7 @@ test('basic, with snapshot', async t => {
   await E(oracleC).pushPrice({ roundId: 1, unitPrice: 300n });
   await oracleTimer.tick();
 
-  const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
@@ -111,9 +114,9 @@ test('basic, with snapshot', async t => {
   await E(oracleC).pushPrice({ roundId: 2, unitPrice: 3000n });
   await oracleTimer.tick();
 
-  const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt2 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt2.answer, 200n);
-  const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
+  const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
   t.is(round2Attempt1.answer, 2500n);
 
   t.log('----- round 3: check oracle submission order');
@@ -125,9 +128,9 @@ test('basic, with snapshot', async t => {
   await E(oracleB).pushPrice({ roundId: 3, unitPrice: 6000n });
   await oracleTimer.tick();
 
-  const round1Attempt3 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt3 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt3.answer, 200n);
-  const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
+  const round3Attempt1 = await E(aggregator.creator).getRoundData(3);
   t.is(round3Attempt1.answer, 5000n);
 
   const doc = {
@@ -138,20 +141,20 @@ test('basic, with snapshot', async t => {
 });
 
 test('timeout', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     restartDelay: 2,
     timeout: 5,
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
 
@@ -163,7 +166,7 @@ test('timeout', async t => {
   await oracleTimer.tick();
   await E(oracleC).pushPrice({ roundId: 1, unitPrice: 300n });
 
-  const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
@@ -181,28 +184,28 @@ test('timeout', async t => {
   await E(oracleC).pushPrice({ roundId: 3, unitPrice: 1000n });
   await E(oracleA).pushPrice({ roundId: 3, unitPrice: 3000n });
 
-  const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt2 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt2.answer, 200n);
-  const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
+  const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
   t.is(round2Attempt1.answer, 200n);
-  const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
+  const round3Attempt1 = await E(aggregator.creator).getRoundData(3);
   t.is(round3Attempt1.answer, 2000n);
 });
 
 test('issue check', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     restartDelay: 2,
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
 
@@ -216,7 +219,7 @@ test('issue check', async t => {
   await oracleTimer.tick();
   await E(oracleC).pushPrice({ roundId: 1, unitPrice: 300n });
 
-  const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.answer, 250n);
 
   // ----- round 2: ignore too high values
@@ -228,24 +231,24 @@ test('issue check', async t => {
   await E(oracleA).pushPrice({ roundId: 2, unitPrice: 3000n });
   await oracleTimer.tick();
 
-  const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
+  const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
   t.is(round2Attempt1.answer, 2000n);
 });
 
 test('supersede', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     restartDelay: 1,
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
 
@@ -258,7 +261,7 @@ test('supersede', async t => {
   await E(oracleB).pushPrice({ roundId: 1, unitPrice: 200n });
   await oracleTimer.tick();
 
-  const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.answer, 150n);
 
   // ----- round 2: oracle C's value from before should have been IGNORED
@@ -267,7 +270,7 @@ test('supersede', async t => {
   await E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n });
   await oracleTimer.tick();
 
-  const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
+  const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
   t.is(round2Attempt1.answer, 1500n);
 
   // ----- round 3: oracle C should NOT be able to supersede round 3
@@ -277,14 +280,14 @@ test('supersede', async t => {
   });
 
   try {
-    await E(aggregator.creatorFacet).getRoundData(4);
+    await E(aggregator.creator).getRoundData(4);
   } catch (error) {
     t.is(error.message, 'No data present');
   }
 });
 
 test('interleaved', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     maxSubmissionCount: 3,
     minSubmissionCount: 3, // requires ALL the oracles for consensus in this case
@@ -293,13 +296,13 @@ test('interleaved', async t => {
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
 
@@ -313,7 +316,7 @@ test('interleaved', async t => {
   await oracleTimer.tick();
 
   try {
-    await E(aggregator.creatorFacet).getRoundData(1);
+    await E(aggregator.creator).getRoundData(1);
   } catch (error) {
     t.is(error.message, 'No data present');
   }
@@ -335,14 +338,14 @@ test('interleaved', async t => {
   await E(oracleA).pushPrice({ roundId: 3, unitPrice: 5000n });
   await oracleTimer.tick();
 
-  const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
-  const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
+  const round1Attempt2 = await E(aggregator.creator).getRoundData(1);
+  const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
 
   t.is(round1Attempt2.answer, 200n);
   t.is(round2Attempt1.answer, 2000n);
 
   try {
-    await E(aggregator.creatorFacet).getRoundData(3);
+    await E(aggregator.creator).getRoundData(3);
   } catch (error) {
     t.is(error.message, 'No data present');
   }
@@ -364,13 +367,13 @@ test('interleaved', async t => {
   await oracleTimer.tick(); // --- round 3 has NOW timed out, meaning it is now supersedable
 
   try {
-    await E(aggregator.creatorFacet).getRoundData(3);
+    await E(aggregator.creator).getRoundData(3);
   } catch (error) {
     t.is(error.message, 'No data present');
   }
 
   try {
-    await E(aggregator.creatorFacet).getRoundData(4);
+    await E(aggregator.creator).getRoundData(4);
   } catch (error) {
     t.is(error.message, 'No data present');
   }
@@ -385,8 +388,8 @@ test('interleaved', async t => {
   });
   await oracleTimer.tick();
 
-  const round3Attempt3 = await E(aggregator.creatorFacet).getRoundData(3);
-  const round4Attempt2 = await E(aggregator.creatorFacet).getRoundData(4);
+  const round3Attempt3 = await E(aggregator.creator).getRoundData(3);
+  const round4Attempt2 = await E(aggregator.creator).getRoundData(4);
 
   t.is(round3Attempt3.answer, 2000n);
   t.is(round4Attempt2.answer, 5000n);
@@ -409,15 +412,15 @@ test('interleaved', async t => {
   await oracleTimer.tick();
   await E(oracleC).pushPrice({ roundId: 7, unitPrice: 1000n });
 
-  const round5Attempt1 = await E(aggregator.creatorFacet).getRoundData(5);
-  const round6Attempt1 = await E(aggregator.creatorFacet).getRoundData(6);
+  const round5Attempt1 = await E(aggregator.creator).getRoundData(5);
+  const round6Attempt1 = await E(aggregator.creator).getRoundData(6);
 
   t.is(round5Attempt1.answer, 5000n);
   t.is(round6Attempt1.answer, 5000n);
 });
 
 test('larger', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     minSubmissionCount: 3,
     restartDelay: 1,
@@ -425,19 +428,19 @@ test('larger', async t => {
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
-  const { oracle: oracleD } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleD } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleD',
   );
-  const { oracle: oracleE } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleE } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleE',
   );
 
@@ -459,7 +462,7 @@ test('larger', async t => {
   await oracleTimer.tick();
   await E(oracleE).pushPrice({ roundId: 1, unitPrice: 300n });
 
-  const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.answer, 200n);
 
   // ----- round 2: ignore late arrival
@@ -484,14 +487,14 @@ test('larger', async t => {
     { message: 'cannot report on previous rounds' },
   );
 
-  const round1Attempt2 = await E(aggregator.creatorFacet).getRoundData(1);
-  const round2Attempt1 = await E(aggregator.creatorFacet).getRoundData(2);
+  const round1Attempt2 = await E(aggregator.creator).getRoundData(1);
+  const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
   t.is(round1Attempt2.answer, 250n);
   t.is(round2Attempt1.answer, 600n);
 });
 
 test('suggest', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     minSubmissionCount: 3,
     restartDelay: 1,
@@ -499,13 +502,13 @@ test('suggest', async t => {
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
-  const { oracle: oracleC } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleC',
   );
 
@@ -516,7 +519,7 @@ test('suggest', async t => {
   await E(oracleC).pushPrice({ roundId: 1, unitPrice: 300n });
   await oracleTimer.tick();
 
-  const round1Attempt1 = await E(aggregator.creatorFacet).getRoundData(1);
+  const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
@@ -525,10 +528,7 @@ test('suggest', async t => {
   await E(oracleB).pushPrice({ roundId: 2, unitPrice: 1000n });
 
   t.deepEqual(
-    await E(aggregator.creatorFacet).oracleRoundState(
-      'agorice1priceOracleC',
-      1n,
-    ),
+    await E(aggregator.creator).oracleRoundState('agorice1priceOracleC', 1n),
     {
       eligibleForSpecificRound: false,
       oracleCount: 3,
@@ -540,10 +540,7 @@ test('suggest', async t => {
   );
 
   t.deepEqual(
-    await E(aggregator.creatorFacet).oracleRoundState(
-      'agorice1priceOracleB',
-      0n,
-    ),
+    await E(aggregator.creator).oracleRoundState('agorice1priceOracleB', 0n),
     {
       eligibleForSpecificRound: false,
       oracleCount: 3,
@@ -561,10 +558,7 @@ test('suggest', async t => {
   await E(oracleC).pushPrice({ roundId: 2, unitPrice: 3000n });
 
   t.deepEqual(
-    await E(aggregator.creatorFacet).oracleRoundState(
-      'agorice1priceOracleA',
-      0n,
-    ),
+    await E(aggregator.creator).oracleRoundState('agorice1priceOracleA', 0n),
     {
       eligibleForSpecificRound: true,
       oracleCount: 3,
@@ -583,28 +577,28 @@ test('suggest', async t => {
   await oracleTimer.tick();
   await E(oracleB).pushPrice({ roundId: undefined, unitPrice: 300n });
 
-  const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
+  const round3Attempt1 = await E(aggregator.creator).getRoundData(3);
   t.is(round3Attempt1.roundId, 3n);
   t.is(round3Attempt1.answer, 200n);
 });
 
 test('notifications', async t => {
-  const aggregator = await t.context.makeChainlinkAggregator({
+  const aggregator = await t.context.makeTestFluxAggregator({
     ...defaultConfig,
     maxSubmissionCount: 1000,
     restartDelay: 1, // have to alternate to start rounds
   });
   const oracleTimer = aggregator.manualTimer;
 
-  const { oracle: oracleA } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleA } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleA',
   );
-  const { oracle: oracleB } = await E(aggregator.creatorFacet).initOracle(
+  const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
 
   const latestRoundSubscriber = await E(
-    aggregator.publicFacet,
+    aggregator.public,
   ).getRoundStartNotifier();
   const eachLatestRound = subscribeEach(latestRoundSubscriber)[
     Symbol.asyncIterator
@@ -651,7 +645,6 @@ test('notifications', async t => {
   );
   // B gets to start it
   await E(oracleB).pushPrice({ roundId: 2, unitPrice: 1000n });
-  // now it's roundId=2
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 2n,
     startedAt: 1n,
@@ -694,7 +687,7 @@ test('notifications', async t => {
 });
 
 test('storage keys', async t => {
-  const { publicFacet } = await t.context.makeChainlinkAggregator(
+  const { public: publicFacet } = await t.context.makeTestFluxAggregator(
     defaultConfig,
   );
 
@@ -705,13 +698,13 @@ test('storage keys', async t => {
 });
 
 test('disabling', async t => {
-  const { creatorFacet, manualTimer } = await t.context.makeChainlinkAggregator(
+  const { creator, manualTimer } = await t.context.makeTestFluxAggregator(
     defaultConfig,
   );
 
-  const kitA = await creatorFacet.initOracle('agoric1priceOracleA');
-  const kitB = await creatorFacet.initOracle('agoric1priceOracleB');
-  const kitC = await creatorFacet.initOracle('agoric1priceOracleC');
+  const kitA = await creator.initOracle('agoric1priceOracleA');
+  const kitB = await creator.initOracle('agoric1priceOracleB');
+  const kitC = await creator.initOracle('agoric1priceOracleC');
 
   // ----- pushes drive a price
   await manualTimer.tick();
@@ -720,7 +713,7 @@ test('disabling', async t => {
   await E(kitC.oracle).pushPrice({ roundId: 1, unitPrice: 300n });
   await manualTimer.tick();
 
-  t.like(await E(creatorFacet).getRoundData(1), {
+  t.like(await E(creator).getRoundData(1), {
     roundId: 1n,
     // median of three
     answer: 200n,
@@ -740,7 +733,7 @@ test('disabling', async t => {
   await E(kitB.oracle).pushPrice({ roundId: 2, unitPrice: 200n });
   await E(kitC.oracle).pushPrice({ roundId: 2, unitPrice: 300n });
   await manualTimer.tick();
-  t.like(await E(creatorFacet).getRoundData(2), {
+  t.like(await E(creator).getRoundData(2), {
     roundId: 2n,
     // median of two is their average
     answer: 250n,
