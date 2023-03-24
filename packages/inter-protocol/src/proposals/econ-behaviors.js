@@ -519,8 +519,8 @@ export const startAuctioneer = async (
   },
   {
     auctionParams = {
-      startFreq: 3600n,
-      clockStep: 3n * 60n,
+      startFreq: 2n * 60n, // 3600n,
+      clockStep: 40n, // 3n * 60n,
       startingRate: 10500n,
       lowestRate: 4500n,
       discountStep: 500n,
