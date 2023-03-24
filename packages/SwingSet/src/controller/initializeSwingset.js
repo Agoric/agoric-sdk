@@ -291,6 +291,7 @@ function sortObjectProperties(obj, firsts = []) {
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
+ * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */
 export async function initializeSwingset(
   config,

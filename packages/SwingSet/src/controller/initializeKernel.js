@@ -157,6 +157,10 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
   // ----------------------------------------------------------------------
 
+  /**
+   * @param {import('../types-internal.js').VatID} bootstrapVatID
+   * @returns {string} the KPID of the bootstrap message result promise
+   */
   function enqueueBootstrap(bootstrapVatID) {
     // we invoke obj[0].bootstrap with an object that contains 'vats'.
     insistVatID(bootstrapVatID);
@@ -213,6 +217,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
     const args = kunser(m.serialize(harden([vatObj0s, deviceObj0s])));
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
     const resultKpid = queueToKref(rootKref, 'bootstrap', args, 'panic');
+    assert(resultKpid); // appease tsc: 'panic' ensures a kpid is returned
     kernelKeeper.incrementRefCount(resultKpid, 'external');
     return resultKpid;
   }
