@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { NUM_SENSORS } from './num-sensors.js';
+const NUM_SENSORS = 38;
 
 const insistMissing = (ref, isCollection = false) => {
   let p;
@@ -27,9 +27,12 @@ export const buildRootObject = () => {
   let ulrikRoot;
   let ulrikAdmin;
   const marker = Far('marker', {});
-  // sensors are numbered from '1' to match the vobj o+N/1.. vrefs
+  // for debugging, this array starts with a dummy element so
+  // the vref of each contained object in an importing vat
+  // (o-NN where NN starts at 1) is aligned with its index
+  /** @type {[string, ...object]} */
   const importSensors = ['skip0'];
-  for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
+  for (let i = 1; i <= NUM_SENSORS; i += 1) {
     importSensors.push(Far(`import-${i}`, {}));
   }
   const { promise, resolve } = makePromiseKit();
@@ -64,13 +67,17 @@ export const buildRootObject = () => {
 
       dur = await E(ulrikRoot).getDurandal({ d1: 'd1' });
       const d1arg = await E(dur).get();
-      assert.equal(d1arg.d1, 'd1');
+      // poor man's deepEqual
+      // (each enumerable own property as a [key, value] pair)
+      assert.equal(JSON.stringify(Object.entries(d1arg)), '[["d1","d1"]]');
 
-      // give ver1 a promise that won't be resolved until ver2
+      // give version 1 a promise that won't be resolved until after upgrade
       await E(ulrikRoot).acceptPromise(promise);
-      const { p1 } = await E(ulrikRoot).getEternalPromise();
+
+      // get promises that never resolve (and will be rejected at upgrade)
+      const [p1] = await E(ulrikRoot).getEternalPromiseInArray();
       p1.catch(() => 'hush');
-      const p2 = E(ulrikRoot).returnEternalPromise(); // never resolves
+      const p2 = E(ulrikRoot).getEternalPromise();
       p2.catch(() => 'hush');
 
       return { version, data, p1, p2, retain, ...parameters };

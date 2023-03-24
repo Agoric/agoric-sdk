@@ -5,6 +5,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
+import { objectMap } from '@agoric/internal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
@@ -16,13 +17,11 @@ import {
 } from '../../src/index.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
-// import { NUM_SENSORS } from './num-sensors.js';
-
 const bfile = name => new URL(name, import.meta.url).pathname;
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
-  t.context.data = { kernelBundles };
+  /** @type {any} */ (t.context).data = { kernelBundles };
 });
 
 // eslint-disable-next-line no-unused-vars
@@ -191,21 +190,35 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
       ulrik2: 'vat-ulrik-2.js',
     },
   });
+  /** @type {object} */
+  const { data: bundleData } = t.context;
   const {
     controller: c,
     kvStore,
     run,
-  } = await initKernelForTest(t, t.context.data, config);
+  } = await initKernelForTest(t, bundleData, config);
 
-  const marker = await run('getMarker'); // probably ko26
-  t.is(marker.iface(), 'marker');
+  const verifyPresence = (presence, iface = undefined) => {
+    const kref = krefOf(presence);
+    t.truthy(kref);
+    if (iface) {
+      t.is(presence.iface(), iface);
+    }
+    return kref;
+  };
 
-  // fetch all the "importSensors": exported by bootstrap, imported by
+  const marker = await run('getMarker');
+  const markerKref = verifyPresence(marker, 'marker'); // probably 'ko26'
+
+  // fetch all the "import sensors": exported by bootstrap, imported by
   // the upgraded vat. We'll determine their krefs and later query the
   // upgraded vat to see if it's still importing them or not
-  const impresult = await run('getImportSensors', []);
+  const sensors = await run('getImportSensors', []);
   // eslint-disable-next-line no-unused-vars
-  const impKrefs = ['skip0', ...impresult.slice(1).map(krefOf)];
+  const sensorKrefs = [
+    'skip0',
+    ...sensors.slice(1).map(obj => verifyPresence(obj)),
+  ];
 
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
@@ -213,98 +226,72 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
 
   // create initial version
   const v1result = await run('buildV1', []);
-  t.is(v1result.version, 'v1');
-  t.is(v1result.youAre, 'v1');
-  t.truthy(krefOf(v1result.marker));
-  t.truthy(krefOf(marker));
-  t.is(krefOf(v1result.marker), krefOf(marker));
-  t.is(v1result.marker.iface(), 'marker');
-  t.deepEqual(v1result.data, ['some', 'data']);
+  t.like(v1result, {
+    version: 'v1',
+    youAre: 'v1',
+    data: ['some', 'data'],
+  });
+  const v1MarkerKref = verifyPresence(v1result.marker, 'marker');
+  t.is(v1MarkerKref, markerKref);
   // grab the promises that should be rejected
-  const v1p1Kref = krefOf(v1result.p1);
-  const v1p2Kref = krefOf(v1result.p2);
-  t.truthy(v1p1Kref);
-  t.truthy(v1p2Kref);
+  const v1p1Kref = verifyPresence(v1result.p1);
+  const v1p2Kref = verifyPresence(v1result.p2);
+  // grab krefs for the exported durable/virtual objects to check their abandonment
+  const retainedKrefs = objectMap(v1result.retain, obj => verifyPresence(obj));
+  const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3';
+  t.deepEqual(
+    Object.keys(retainedKrefs).sort(),
+    retainedNames.split(' ').sort(),
+  );
+  const { dur1: dur1Kref, vir2: vir2Kref } = retainedKrefs;
 
-  // grab exports to deduce durable/virtual vrefs
-  const dur1Kref = krefOf(v1result.retain.dur1);
-  const vir2Kref = krefOf(v1result.retain.vir2);
-  const vir5Kref = krefOf(v1result.retain.vir5);
-  const vir7Kref = krefOf(v1result.retain.vir7);
-  t.truthy(dur1Kref);
-  t.truthy(vir2Kref);
-  t.truthy(vir5Kref);
-  t.truthy(vir7Kref);
-
-  const vatID = kvStore.get(`${dur1Kref}.owner`); // probably v6
+  // use the kvStore to support assertions about exported durable/virtual vrefs
+  const vatID = kvStore.get(`${dur1Kref}.owner`); // probably 'v6'
+  // dumpState(debug, vatID);
   const getVref = kref => {
     const s = kvStore.get(`${vatID}.c.${kref}`);
     return parseReachableAndVatSlot(s).vatSlot;
   };
-  // const krefReachable = kref => {
-  //   const s = kvStore.get(`${vatID}.c.${kref}`);
-  //   return !!(s && parseReachableAndVatSlot(s).isReachable);
-  // };
-
-  // We look in the vat's vatstore to see if the virtual/durable
-  // object exists or not (as a state record).
-  const vomHas = vref => {
-    return kvStore.has(`${vatID}.vs.vom.${vref}`);
-  };
-
-  // dumpState(debug, vatID);
-
-  // deduce exporter vrefs for all durable/virtual objects, and assert
-  // that they're still in DB
+  const vomHas = vref => kvStore.has(`${vatID}.vs.vom.${vref}`);
   const dur1Vref = getVref(dur1Kref);
   t.is(parseVatSlot(dur1Vref).subid, 1n);
-  const durBase = dur1Vref.slice(0, dur1Vref.length - 2);
-  const durVref = i => {
-    return `${durBase}/${i}`;
-  };
+  const durPrefix = dur1Vref.slice(0, -1); // everything before the trailing '1'
+  const durVref = i => `${durPrefix}${i}`;
   const vir2Vref = getVref(vir2Kref);
   t.is(parseVatSlot(vir2Vref).subid, 2n);
-  const virBase = vir2Vref.slice(0, vir2Vref.length - 2);
-  const virVref = i => {
-    return `${virBase}/${i}`;
-  };
+  const virPrefix = vir2Vref.slice(0, -1); // everything before the trailing '2'
+  const virVref = i => `${virPrefix}${i}`;
 
   t.true(vomHas(durVref(1)));
   t.true(vomHas(virVref(2)));
-  t.false(vomHas(virVref(1))); // deleted before upgrade
-  t.false(vomHas(durVref(2))); // deleted before upgrade
-
-  // remember krefs for the exported objects so we can check their
-  // abandonment
-  const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3';
-  const retainedKrefs = {};
-  for (const name of retainedNames.split(' ')) {
-    retainedKrefs[name] = krefOf(v1result.retain[name]);
-  }
+  t.false(vomHas(virVref(1))); // GCed before upgrade
+  t.false(vomHas(durVref(2))); // GCed before upgrade
 
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
   }
 
   // now perform the upgrade
-  // console.log(`-- starting upgradeV2`);
-
   const v2result = await run('upgradeV2', []);
-  t.deepEqual(v2result.version, 'v2');
-  t.deepEqual(v2result.youAre, 'v2');
-  t.deepEqual(krefOf(v2result.marker), krefOf(marker));
-  t.deepEqual(v2result.data, ['some', 'data']);
+  // dumpState(debug, vatID);
+  t.like(v2result, {
+    version: 'v2',
+    youAre: 'v2',
+    data: ['some', 'data'],
+    remoerr: Error('vat terminated'),
+  });
   t.deepEqual(v2result.upgradeResult, { incarnationNumber: 2 });
-  t.deepEqual(v2result.remoerr, Error('vat terminated'));
+  const v2MarkerKref = verifyPresence(v2result.marker, 'marker');
+  t.deepEqual(v2MarkerKref, v1MarkerKref);
 
-  // newDur() (the first Durandal instance created in vat-ulrik-2)
+  // newDur (the first Durandal instance created in vat-ulrik-2)
   // should get a new vref, because the per-Kind instance counter
   // should persist and pick up where it left off. If that was broken,
   // newDur would have the same vref as dur1 (the first Durandal
   // instance created in vat-ulrik-1). And since it's durable, the
   // c-list entry will still exist, so we'll see the same kref as
   // before.
-  const newDurKref = krefOf(v2result.newDur);
+  const newDurKref = verifyPresence(v2result.newDur);
   t.not(newDurKref, dur1Kref);
 
   // the old version's non-durable promises should be rejected
@@ -318,10 +305,8 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   t.is(c.kpStatus(v1p2Kref), 'rejected');
   t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
 
-  // dumpState(debug, vatID);
-
   // all the merely-virtual exports should be gone
-  // for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
+  // for (let i = 1; i < sensors.length; i += 1) {
   //   t.false(vomHas(virVref(i)));
   // }
 
@@ -365,9 +350,9 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   survivingDurables.push(23);
   survivingImported.push(23);
 
-  for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
+  for (let i = 1; i < sensors.length; i += 1) {
     const vref = durVref(i);
-    // const impKref = impKrefs[i];
+    // const impKref = sensorKrefs[i];
     const expD = survivingDurables.includes(i);
     // const expI = survivingImported.includes(i);
     // const reachable = krefReachable(impKref);
@@ -385,8 +370,8 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
 
   // check koNN.owner to confirm the exported virtuals (2/5/7) are abandoned
   t.false(kvStore.has(`${vir2Kref}.owner`));
-  t.false(kvStore.has(`${vir5Kref}.owner`));
-  t.false(kvStore.has(`${vir7Kref}.owner`));
+  t.false(kvStore.has(`${v1result.retain.vir5}.owner`));
+  t.false(kvStore.has(`${v1result.retain.vir7}.owner`));
 };
 
 test('vat upgrade - local', async t => {
