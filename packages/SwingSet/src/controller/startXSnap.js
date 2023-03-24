@@ -12,18 +12,19 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   snapStore?: SnapStore,
  *   spawn: typeof import('child_process').spawn
  *   debug?: boolean,
- *   traceFile?: string,
+ *   workerTraceRootPath?: string,
  * }} options
  */
 export function makeStartXSnap(bundles, options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
-  const { snapStore, spawn, debug = false, traceFile } = options;
+  const { snapStore, spawn, debug = false, workerTraceRootPath } = options;
 
   let serial = 0;
-  const makeTraceFile = traceFile
+  const makeNextTraceDir = workerTraceRootPath
     ? () => {
-        const workerTrace = path.resolve(`${traceFile}/${serial}`) + path.sep;
+        const rel = `${workerTraceRootPath}/${serial}`;
+        const workerTrace = path.resolve(rel) + path.sep;
         serial += 1;
         return workerTrace;
       }
@@ -54,12 +55,12 @@ export function makeStartXSnap(bundles, options) {
     };
 
     let doXSnap = xsnap;
-    if (makeTraceFile) {
+    if (makeNextTraceDir) {
       doXSnap = opts => {
-        const workerTrace = makeTraceFile();
-        console.log('SwingSet xs-worker tracing:', { workerTrace });
-        fs.mkdirSync(workerTrace, { recursive: true });
-        return recordXSnap(opts, workerTrace, {
+        const workerTraceDir = makeNextTraceDir();
+        console.log('SwingSet xs-worker tracing:', { workerTraceDir });
+        fs.mkdirSync(workerTraceDir, { recursive: true });
+        return recordXSnap(opts, workerTraceDir, {
           writeFileSync: fs.writeFileSync,
         });
       };

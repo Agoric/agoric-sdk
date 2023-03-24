@@ -161,7 +161,7 @@ async function replay(transcriptFile) {
     const startXSnap = makeStartXSnap(bundles, {
       snapStore,
       spawn: capturePIDSpawn,
-      traceFile: RECORD_XSNAP_TRACE ? process.cwd() : undefined,
+      workerTraceRootPath: RECORD_XSNAP_TRACE ? process.cwd() : undefined,
     });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,

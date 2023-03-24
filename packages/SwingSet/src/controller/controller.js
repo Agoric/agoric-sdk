@@ -190,7 +190,7 @@ export async function makeSwingsetController(
     snapStore: kernelStorage.snapStore,
     spawn,
     debug: !!env.XSNAP_DEBUG,
-    traceFile: env.XSNAP_TEST_RECORD,
+    workerTraceRootPath: env.XSNAP_TEST_RECORD,
   });
 
   const kernelEndowments = {
