@@ -20,15 +20,35 @@ export function makeStartXSnap(bundles, options) {
   // 'startXSnap' function we return
   const { snapStore, spawn, debug = false, workerTraceRootPath } = options;
 
-  let serial = 0;
-  const makeNextTraceDir = workerTraceRootPath
-    ? () => {
-        const rel = `${workerTraceRootPath}/${serial}`;
-        const workerTrace = path.resolve(rel) + path.sep;
-        serial += 1;
-        return workerTrace;
-      }
-    : undefined;
+  let doXSnap = xsnap;
+
+  if (workerTraceRootPath) {
+    let serial = 0;
+    const makeNextTraceDir = () => {
+      const rel = `${workerTraceRootPath}/${serial}`;
+      const workerTrace = path.resolve(rel) + path.sep;
+      serial += 1;
+      return workerTrace;
+    };
+    doXSnap = opts => {
+      const workerTraceDir = makeNextTraceDir();
+      console.log('SwingSet xs-worker tracing:', { workerTraceDir });
+      fs.mkdirSync(workerTraceDir, { recursive: true });
+      return recordXSnap(opts, workerTraceDir, {
+        writeFileSync: fs.writeFileSync,
+      });
+    };
+  }
+
+  /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
+  const xsnapOpts = {
+    os: osType(),
+    spawn,
+    stdout: 'inherit',
+    stderr: 'inherit',
+    debug,
+    netstringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
+  };
 
   /**
    * @param {string} vatID
@@ -44,28 +64,6 @@ export function makeStartXSnap(bundles, options) {
     metered,
     reload = false,
   ) {
-    /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
-    const xsnapOpts = {
-      os: osType(),
-      spawn,
-      stdout: 'inherit',
-      stderr: 'inherit',
-      debug,
-      netstringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
-    };
-
-    let doXSnap = xsnap;
-    if (makeNextTraceDir) {
-      doXSnap = opts => {
-        const workerTraceDir = makeNextTraceDir();
-        console.log('SwingSet xs-worker tracing:', { workerTraceDir });
-        fs.mkdirSync(workerTraceDir, { recursive: true });
-        return recordXSnap(opts, workerTraceDir, {
-          writeFileSync: fs.writeFileSync,
-        });
-      };
-    }
-
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && reload) {
       // console.log('startXSnap from', { snapshotHash });
