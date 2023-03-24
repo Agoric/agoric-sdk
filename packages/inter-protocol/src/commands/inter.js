@@ -1,6 +1,7 @@
 // @ts-check
 import { M, matches } from '@agoric/store';
 import { objectMap } from '@agoric/internal';
+import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import {
   boardSlottingMarshaller,
   getNetworkConfig,
@@ -14,7 +15,6 @@ import { CommanderError } from 'commander';
 
 import { Offers } from '../clientSupport.js';
 import { makeBidSpecShape } from '../auction/auctionBook.js';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 
 const { values } = Object;
 

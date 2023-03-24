@@ -1,4 +1,5 @@
 // @ts-check
+/* global Buffer */
 import '@endo/init';
 import test from 'ava';
 import { createCommand, CommanderError } from 'commander';
@@ -15,18 +16,24 @@ const unused = (...args) => {
   assert.fail('should not be needed');
 };
 
-/** @returns {Brand<'nat'> & import('@agoric/vats/tools/board-utils.js').BoardRemote} */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
+
+/**
+ * @param {{ boardId: string, iface: string }} detail
+ * @returns {BoardRemote}
+ */
 const makeBoardRemote = ({ boardId, iface }) =>
-  // @ts-expect-error XXX BoardRemote
   Far(iface, { getBoardId: () => boardId });
 
-const brand = harden({
+/** @type {Record<string, (Brand<'nat'> & BoardRemote)>} */
+// @ts-expect-error mock
+const topBrands = harden({
   ATOM: makeBoardRemote({ boardId: 'board00848', iface: 'Brand' }),
   IST: makeBoardRemote({ boardId: 'board0566', iface: 'Brand' }),
 });
 
 const agoricNames = harden({
-  brand: { IST: brand.IST, ATOM: brand.ATOM, IbcATOM: brand.ATOM },
+  brand: { IST: topBrands.IST, ATOM: topBrands.ATOM, IbcATOM: topBrands.ATOM },
 
   instance: {
     auctioneer: makeBoardRemote({ boardId: 'board434', iface: 'Instance' }),
@@ -35,8 +42,8 @@ const agoricNames = harden({
   /** @type {Record<string,import('agoric/src/lib/format.js').AssetDescriptor>} */
   vbankAsset: {
     uist: {
-      brand: brand.IST,
       denom: 'uist',
+      brand: topBrands.IST,
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'IST',
@@ -44,8 +51,8 @@ const agoricNames = harden({
     },
 
     'ibc/toyatom': {
-      brand: brand.ATOM,
       denom: 'ibc/toyatom',
+      brand: topBrands.ATOM,
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'ATOM',
@@ -55,10 +62,10 @@ const agoricNames = harden({
 });
 
 const bslot = {
-  ATOM: { ['@qclass']: 'slot', index: 0 },
-  IST: { ['@qclass']: 'slot', index: 1 },
+  ATOM: { '@qclass': 'slot', index: 0 },
+  IST: { '@qclass': 'slot', index: 1 },
 };
-const qi = i => ({ ['@qclass']: 'bigint', digits: `${i}` });
+const qi = i => ({ '@qclass': 'bigint', digits: `${i}` });
 const mk = (brand, v) => ({ brand, value: qi(v) });
 
 const offerSpec1 = harden({
@@ -85,7 +92,7 @@ const offerSpec1 = harden({
   },
 });
 
-const published = {
+const publishedNames = {
   agoricNames: {
     brand: entries(agoricNames.brand),
     instance: entries(agoricNames.instance),
@@ -130,7 +137,7 @@ const makeNet = published => {
   return { fetch };
 };
 
-const keyring = {
+const govKeyring = {
   gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
   gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
 };
@@ -140,7 +147,7 @@ const makeProcess = (t, keyring, out) => {
   // @ts-expect-error mock
   const execFileSync = (file, args) => {
     switch (file) {
-      case 'agd':
+      case 'agd': {
         t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
         const name = args[3];
         const addr = keyring[name];
@@ -148,15 +155,22 @@ const makeProcess = (t, keyring, out) => {
           throw Error(`no such key in keyring: ${name}`);
         }
         return addr;
+      }
       default:
         throw Error('not impl');
     }
   };
 
-  const stdout = harden({ write: x => (out.push(x), true) });
+  const stdout = harden({
+    write: x => {
+      out.push(x);
+      return true;
+    },
+  });
   return {
     env: {},
     stdout,
+    stderr: { write: _s => true },
     clock: () => Date.parse('2001-01-01'),
     createCommand,
     execFileSync,
@@ -171,8 +185,8 @@ test('inter bid place by-price: output is correct', async t => {
 
   const out = [];
   const cmd = await makeInterCommand(
-    { ...makeProcess(t, keyring, out), execFileSync: unused },
-    makeNet(published),
+    { ...makeProcess(t, govKeyring, out), execFileSync: unused },
+    makeNet(publishedNames),
   );
   cmd.exitOverride(() => t.fail('exited'));
 
@@ -185,25 +199,62 @@ test('inter bid place by-price: output is correct', async t => {
   t.deepEqual(o, offerSpec1);
   t.deepEqual(
     slots,
-    [brand.ATOM, brand.IST].map(b => b.getBoardId()),
+    [topBrands.ATOM, topBrands.IST].map(b => b.getBoardId()),
   );
 });
 
-/** @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus} */
-const bid1 = harden({
-  id: 'bid-1',
+/**
+ * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+ */
+const offerStatus1 = harden({
+  error: 'Error: "nameKey" not found: (a string)',
+  id: 1678990150266,
   invitationSpec: {
-    source: 'agoricContract',
+    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
     instancePath: ['auctioneer'],
-    callPipe: [['makeBidInvitation', [brand.ATOM]]],
+    source: 'agoricContract',
   },
-  proposal: { give: { Currency: { value: 50_000_000n, brand: brand.IST } } },
   offerArgs: {
-    want: { brand: brand.ATOM, value: 3_500_000n },
     offerPrice: {
-      numerator: { value: 9n, brand: brand.IST },
-      denominator: { value: 1n, brand: brand.ATOM },
+      denominator: { brand: topBrands.ATOM, value: 2000000n },
+      numerator: { brand: topBrands.IST, value: 20000000n },
     },
+    want: { brand: topBrands.ATOM, value: 2000000n },
+  },
+  proposal: {
+    give: {
+      Currency: { brand: topBrands.ATOM, value: 20000000n },
+    },
+  },
+});
+
+/**
+ * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ *         { offerArgs: import('../src/auction/auctionBook.js').BidSpec}}
+ */
+const offerStatus2 = harden({
+  id: 'bid-234234',
+  invitationSpec: {
+    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
+    instancePath: ['auctioneer'],
+    source: 'agoricContract',
+  },
+  offerArgs: {
+    offerBidScaling: {
+      denominator: { brand: topBrands.IST, value: 100n },
+      numerator: { brand: topBrands.IST, value: 90n },
+    },
+    want: { brand: topBrands.ATOM, value: 2000000n },
+  },
+  proposal: {
+    give: {
+      Currency: { brand: topBrands.ATOM, value: 20000000n },
+    },
+  },
+  payouts: {
+    Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
+    Currency: { brand: topBrands.IST, value: 37_000_000n },
   },
 });
 
@@ -211,15 +262,15 @@ test('inter bid list: finds one bid', async t => {
   const argv = 'node inter bid list --from gov1'.split(' ');
 
   const wallet = {
-    [keyring.gov1]: { updated: 'offerStatus', status: offerStatus2 },
-    [keyring.gov2]: { updated: 'XXX' },
+    [govKeyring.gov1]: { updated: 'offerStatus', status: offerStatus2 },
+    [govKeyring.gov2]: { updated: 'XXX' },
   };
 
   const out = [];
 
   const cmd = await makeInterCommand(
-    makeProcess(t, keyring, out),
-    makeNet({ ...published, wallet }),
+    makeProcess(t, govKeyring, out),
+    makeNet({ ...publishedNames, wallet }),
   );
   cmd.exitOverride(() => t.fail('exited'));
 
@@ -265,61 +316,6 @@ usageTest('inter bid by-price');
 usageTest('inter bid by-discount');
 usageTest('inter bid list');
 usageTest('inter reserve add');
-
-/**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
- */
-const offerStatus1 = harden({
-  error: 'Error: "nameKey" not found: (a string)',
-  id: 1678990150266,
-  invitationSpec: {
-    callPipe: [['makeBidInvitation', [brand.ATOM]]],
-    instancePath: ['auctioneer'],
-    source: 'agoricContract',
-  },
-  offerArgs: {
-    offerPrice: {
-      denominator: { brand: brand.ATOM, value: 2000000n },
-      numerator: { brand: brand.IST, value: 20000000n },
-    },
-    want: { brand: brand.ATOM, value: 2000000n },
-  },
-  proposal: {
-    give: {
-      Currency: { brand: brand.ATOM, value: 20000000n },
-    },
-  },
-});
-
-/**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
- */
-const offerStatus2 = harden({
-  id: 'bid-234234',
-  invitationSpec: {
-    callPipe: [['makeBidInvitation', [brand.ATOM]]],
-    instancePath: ['auctioneer'],
-    source: 'agoricContract',
-  },
-  offerArgs: {
-    offerBidScaling: {
-      denominator: { brand: brand.IST, value: 100n },
-      numerator: { brand: brand.IST, value: 90n },
-    },
-    want: { brand: brand.ATOM, value: 2000000n },
-  },
-  proposal: {
-    give: {
-      Currency: { brand: brand.ATOM, value: 20000000n },
-    },
-  },
-  payouts: {
-    Collateral: { brand: brand.ATOM, value: 5_000_000n },
-    Currency: { brand: brand.IST, value: 37_000_000n },
-  },
-});
 
 test('formatBid', t => {
   const { values } = Object;
