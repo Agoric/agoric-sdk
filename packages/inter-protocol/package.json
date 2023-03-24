@@ -4,6 +4,9 @@
   "description": "Core cryptoeconomy contracts",
   "type": "module",
   "main": "src/index.js",
+  "bin": {
+    "inter": "scripts/inter-script.js"
+  },
   "engines": {
     "node": ">=14.15.0"
   },
@@ -43,7 +46,8 @@
     "@endo/eventual-send": "^0.16.8",
     "@endo/far": "^0.2.14",
     "@endo/marshal": "^0.8.1",
-    "@endo/nat": "^4.1.23"
+    "@endo/nat": "^4.1.23",
+    "commander": "^10.0.0"
   },
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.9.4",
