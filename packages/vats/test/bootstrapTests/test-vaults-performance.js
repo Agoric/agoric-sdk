@@ -3,10 +3,12 @@
  * @file Bootstrap stress test of vaults
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { PerformanceObserver, performance } from 'node:perf_hooks';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -17,19 +19,6 @@ const test = anyTest;
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'IbcATOM';
-
-const likePayouts = (collateral, minted) => ({
-  Collateral: {
-    value: {
-      digits: String(collateral * 1_000_000),
-    },
-  },
-  Minted: {
-    value: {
-      digits: String(minted * 1_000_000),
-    },
-  },
-});
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
@@ -70,42 +59,100 @@ test.after(async t => {
   await E(t.context.controller).shutdown();
 });
 
+const rows = [];
+const perfObserver = new PerformanceObserver(items => {
+  items.getEntries().forEach(entry => {
+    // @ts-expect-error cast
+    const { vaultsOpened } = entry.detail;
+    rows.push({
+      vaultsOpened,
+      duration: entry.duration,
+      avgPerVault: entry.duration / vaultsOpened,
+    });
+  });
+});
+perfObserver.observe({ entryTypes: ['measure'], buffered: true });
+
 test('stress vaults', async t => {
-  console.time('stress vaults');
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1open');
 
-  /** @param {number} i */
-  const openVault = async i => {
+  /**
+   * @param {number} i
+   * @param {number} n
+   */
+  const openVault = async (i, n) => {
     assert.typeof(i, 'number');
-    console.time(`openVault ${i}`);
 
-    const offerId = `open-vault-${i}-at-${Date.now()}`;
+    const offerId = `open-vault-${i}-of-${n}`;
     await wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId,
       collateralBrandKey,
-      wantMinted: 5.0,
-      giveCollateral: 9.0,
+      wantMinted: 0.5,
+      giveCollateral: 1.0,
     });
-    console.timeLog(`openVault ${i}`, 'executed offer');
 
     t.like(wd.getLatestUpdateRecord(), {
       updated: 'offerStatus',
       status: { id: offerId, numWantsSatisfied: 1 },
     });
-    console.timeEnd(`openVault ${i}`);
   };
 
   /** @param {number} n */
   const openN = async n => {
-    console.time(`open ${n} vaults`);
-    const range = [...Array(n)].map((_, i) => i);
-    await Promise.all(range.map(i => openVault(i)));
-    console.timeEnd(`open ${n} vaults`);
+    t.log(`opening ${n} vaults`);
+    const range = [...Array(n)].map((_, i) => i + 1);
+    performance.mark(`start-open`);
+    await Promise.all(range.map(i => openVault(i, n)));
+    performance.mark(`end-open`);
+    performance.measure(`open-${n}`, {
+      start: 'start-open',
+      end: 'end-open',
+      detail: { vaultsOpened: n },
+    });
   };
 
+  await openN(1);
   await openN(10);
   await openN(100);
   await openN(1000);
+
+  // let perfObserver get the last measurement
+  await eventLoopIteration();
+
+  t.is(rows.length, 4);
+
+  console.table(rows);
+  /* recent runs
+defaultManagerType=local
+┌─────────┬──────────────┬────────────────────┬────────────────────┐
+│ (index) │ vaultsOpened │      duration      │    avgPerVault     │
+├─────────┼──────────────┼────────────────────┼────────────────────┤
+│    0    │      1       │ 205.27995777130127 │ 205.27995777130127 │
+│    1    │      10      │ 2573.005709171295  │ 257.3005709171295  │
+│    2    │     100      │ 28077.323541641235 │ 280.7732354164124  │
+│    3    │     1000     │ 469665.9919581413  │ 469.6659919581413  │
+└─────────┴──────────────┴────────────────────┴────────────────────┘
+
+defaultManagerType=local
+┌─────────┬──────────────┬────────────────────┬────────────────────┐
+│ (index) │ vaultsOpened │      duration      │    avgPerVault     │
+├─────────┼──────────────┼────────────────────┼────────────────────┤
+│    0    │      1       │ 205.07262516021729 │ 205.07262516021729 │
+│    1    │      10      │ 2340.7778749465942 │ 234.07778749465942 │
+│    2    │     100      │ 28595.91691684723  │ 285.9591691684723  │
+│    3    │     1000     │ 483244.96612501144 │ 483.24496612501144 │
+└─────────┴──────────────┴────────────────────┴────────────────────┘
+
+defaultManagerType=xs-worker
+┌─────────┬──────────────┬───────────────────┬────────────────────┐
+│ (index) │ vaultsOpened │     duration      │    avgPerVault     │
+├─────────┼──────────────┼───────────────────┼────────────────────┤
+│    0    │      1       │ 612.6521253585815 │ 612.6521253585815  │
+│    1    │      10      │ 7219.540999889374 │ 721.9540999889374  │
+│    2    │     100      │ 93713.79333305359 │ 937.1379333305359  │
+│    3    │     1000     │ 2373681.821790695 │ 2373.6818217906953 │
+└─────────┴──────────────┴───────────────────┴────────────────────┘
+*/
 });
