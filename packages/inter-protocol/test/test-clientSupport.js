@@ -19,6 +19,7 @@ test('Offers.auction.Bid', async t => {
       wantCollateral: 1.23,
       giveCurrency: 4.56,
       collateralBrandKey: 'ATOM',
+      discount: -0.1,
     }),
     {
       id: 'foo1',
@@ -34,6 +35,34 @@ test('Offers.auction.Bid', async t => {
         offerBidScaling: {
           denominator: ist.make(10n),
           numerator: ist.make(11n),
+        },
+        want: atom.make(1_230_000n),
+      },
+    },
+  );
+
+  t.deepEqual(
+    Offers.auction.Bid(brands, {
+      offerId: 'by-price2',
+      wantCollateral: 1.23,
+      giveCurrency: 4.56,
+      collateralBrandKey: 'ATOM',
+      price: 7,
+    }),
+    {
+      id: 'by-price2',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['auctioneer'],
+        callPipe: [['makeBidInvitation', [atom.brand]]],
+      },
+      proposal: {
+        give: { Currency: ist.make(4_560_000n) },
+      },
+      offerArgs: {
+        offerPrice: {
+          denominator: atom.make(1n),
+          numerator: ist.make(7n),
         },
         want: atom.make(1_230_000n),
       },
