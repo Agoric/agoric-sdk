@@ -8,6 +8,7 @@ const agdBinary = 'agd';
 export const normalizeAddressWithOptions = (
   literalOrName,
   { keyringBackend = undefined } = {},
+  io = { execFileSync },
 ) => {
   try {
     return normalizeBech32(literalOrName);
@@ -16,7 +17,7 @@ export const normalizeAddressWithOptions = (
     const backendOpt = keyringBackend
       ? [`--keyring-backend=${keyringBackend}`]
       : [];
-    const buff = execFileSync(agdBinary, [
+    const buff = io.execFileSync(agdBinary, [
       `keys`,
       ...backendOpt,
       `show`,

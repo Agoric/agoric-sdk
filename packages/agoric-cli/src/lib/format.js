@@ -30,16 +30,18 @@ const exampleAsset = {
   issuer: makeBoardRemote({ boardId: null, iface: undefined }),
   petname: 'Agoric staking token',
 };
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail & { brand: import('@agoric/vats/tools/board-utils.js').BoardRemote }} AssetDescriptor */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 
-/** @param {AssetDescriptor[]} assets */
+/**
+ * @param {AssetDescriptor[]} assets
+ * @returns {(a: Amount) => [string, number | any[]]}
+ */
 export const makeAmountFormatter = assets => amt => {
-  const {
-    brand: { boardId },
-    value,
-  } = amt;
+  const { brand, value } = amt;
+  // @ts-expect-error XXX BoardRemote
+  const boardId = brand.getBoardId();
   const asset = assets.find(a => a.brand.getBoardId() === boardId);
-  if (!asset) return [NaN, boardId];
+  if (!asset) return ['?', boardId];
   const {
     displayInfo: { assetKind, decimalPlaces = 0 },
     issuerName,
@@ -48,12 +50,13 @@ export const makeAmountFormatter = assets => amt => {
     case 'nat':
       return [issuerName, Number(value) / 10 ** decimalPlaces];
     case 'set':
+      assert(Array.isArray(value));
       if (value[0]?.handle?.iface?.includes('InvitationHandle')) {
         return [issuerName, value.map(v => v.description)];
       }
       return [issuerName, value];
     default:
-      return [issuerName, ['?']];
+      return [issuerName, [NaN]];
   }
 };
 
