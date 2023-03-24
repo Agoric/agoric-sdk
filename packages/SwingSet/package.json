@@ -21,6 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
+    "@endo/far": "^0.2.14",
     "@types/better-sqlite3": "^7.5.0",
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",

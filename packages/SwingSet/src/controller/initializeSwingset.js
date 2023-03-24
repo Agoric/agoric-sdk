@@ -291,6 +291,7 @@ function sortObjectProperties(obj, firsts = []) {
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
  * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
+ * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */
 export async function initializeSwingset(
   config,
@@ -573,5 +574,8 @@ export async function initializeSwingset(
   if (verbose) {
     kdebugEnable(true);
   }
-  return initializeKernel(kconfig, kernelStorage);
+
+  // returns the kpid of the bootstrap() result
+  const bootKpid = await initializeKernel(kconfig, kernelStorage);
+  return bootKpid;
 }
