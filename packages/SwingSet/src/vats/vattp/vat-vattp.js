@@ -6,9 +6,9 @@ import {
   provideDurableMapStore,
   provideDurableSetStore,
   provideKindHandle,
-  prepareSingleton,
 } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
@@ -28,7 +28,6 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
   const { D } = vatPowers;
 
   // Define all durable baggage keys and kind handles.
-  const serviceSingletonBaggageKey = 'vat-tp handler';
   const mailboxDeviceBaggageKey = 'mailboxDevice';
   const mailboxHandle = provideKindHandle(baggage, 'mailboxHandle');
   const mailboxMapBaggageKey = 'mailboxes';
@@ -285,8 +284,8 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     },
   };
 
-  // Expose a durable service singleton.
-  return prepareSingleton(baggage, serviceSingletonBaggageKey, {
+  // Expose the service
+  return Far('vat-tp handler', {
     ...serviceMailboxFunctions,
     ...serviceNetworkFunctions,
   });
