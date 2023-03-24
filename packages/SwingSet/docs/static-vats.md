@@ -14,12 +14,14 @@ Static vats are defined by a JS module file which exports a function named `buil
 
 The `buildRootObject` function will be called with one object, named `vatPowers`. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports, and vat-specific authorities that are not easy to express through syscalls. See below for the current property list.
 
-`buildRootObject` is expected to return a hardened object with callable methods and no data properties (note that `harden` is available as a global). For example:
+`buildRootObject` is expected to return a hardened "Remotable" object with callable methods and no data properties. The best way to do this is with the `Far` function:
 
 ```js
+import { Far } from '@endo/far';
+
 export function buildRootObject(vatPowers) {
   let counter = 0;
-  return harden({
+  return Far('root', {
     increment() {
       counter += 1;
     },
@@ -29,6 +31,8 @@ export function buildRootObject(vatPowers) {
   });
 }
 ```
+
+The root object *must* be an "ephemeral" object, i.e. created with `Far`. It cannot be a virtual or durable object (created with a maker returned by `defineKind` or `defineDurableKind`, or the vat-data convenience wrappers like `prepareSingleton`). This ensures that the root object's identity is stable across upgrade.
 
 Each vat has a name. A *Presence* for this vat's root object will be made available to the bootstrap function, in its `vats` argument. For example, if this vat is named `counter`, then the bootstrap function could do:
 

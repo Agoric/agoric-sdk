@@ -29,6 +29,8 @@ See `static-vats.md`, `dynamic-vats.md`, and `vat-environment.md` in this direct
 
 This function returns the "root object". A remote reference to it will be made available to the bootstrap vat, which can use it to trigger whatever initialization needs to happen.
 
+The root object *must* be an "ephemeral" object, i.e. created with `Far`. It cannot be a virtual or durable object (created with a maker returned by `defineKind` or `defineDurableKind`, or the vat-data convenience wrappers like `prepareSingleton`). This ensures that the root object's identity is stable across upgrade.
+
 ## Returning New Objects
 
 ```js
