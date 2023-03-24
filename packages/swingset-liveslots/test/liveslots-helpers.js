@@ -218,6 +218,8 @@ export async function setupTestLiveslots(
       // environment.  Nevertheless there's a chance we may be courting some
       // deeper problem, hence this comment.
       engineGC();
+      engineGC();
+      engineGC();
     }
     await dispatch(makeBringOutYourDead());
     return rp;
