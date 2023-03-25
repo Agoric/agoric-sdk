@@ -1483,6 +1483,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     }
 
     function compareStrings(a, b) {
+      // natural-sort strings having a shared prefix followed by digits
+      // (e.g., 'ko42' and 'ko100')
+      const [_a, aPrefix, aDigits] = /^(\D+)(\d+)$/.exec(a) || [];
+      if (aPrefix) {
+        const [_b, bPrefix, bDigits] = /^(\D+)(\d+)$/.exec(b) || [];
+        if (bPrefix === aPrefix) {
+          return compareNumbers(aDigits, bDigits);
+        }
+      }
+
+      // otherwise use the default string ordering
       if (a > b) {
         return 1;
       }
