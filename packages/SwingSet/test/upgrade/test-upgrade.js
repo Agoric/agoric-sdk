@@ -9,7 +9,7 @@ import { objectMap } from '@agoric/internal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
-import { kunser, krefOf } from '../../src/lib/kmarshal.js';
+import { kser, kunser, krefOf } from '../../src/lib/kmarshal.js';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -76,6 +76,7 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @param {object} bundleData
  * @param {SwingSetConfig} config
  * @param {object} [options]
+ * @param {object} [options.extraRuntimeOpts]
  * @param {boolean} [options.holdObjectRefs=true] - DEPRECATED -
  * Refcount incrementing should be manual,
  * see https://github.com/Agoric/agoric-sdk/issues/7213
@@ -89,8 +90,8 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
 const initKernelForTest = async (t, bundleData, config, options = {}) => {
   const { kernelStorage } = initSwingStore();
   const { kvStore } = kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(bundleData);
-  const { holdObjectRefs = true } = options;
+  const { extraRuntimeOpts, holdObjectRefs = true } = options;
+  const { initOpts, runtimeOpts } = bundleOpts(bundleData, extraRuntimeOpts);
   await initializeSwingset(config, [], kernelStorage, initOpts);
   const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
@@ -177,6 +178,124 @@ test('null upgrade - local', async t => {
 
 test('null upgrade - xsnap', async t => {
   return testNullUpgrade(t, 'xs-worker');
+});
+
+test('kernel sends bringOutYourDead for vat upgrade', async t => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultReapInterval: 'never',
+    staticVatPaths: {
+      staticVat: '../vat-exporter.js',
+    },
+    bundlePaths: {
+      exporter: '../vat-exporter.js',
+    },
+  });
+  let isSlogging = false;
+  const deliveries = [];
+  const deliverySpy = slogEntry => {
+    if (isSlogging && slogEntry.type === 'deliver') {
+      deliveries.push(slogEntry);
+    }
+  };
+  const { controller, kvStore, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+    { extraRuntimeOpts: { slogSender: deliverySpy } },
+  );
+
+  // ava t.like does not support array shapes, but object analogs are fine
+  const arrayShape = sparseArr => Object.fromEntries(Object.entries(sparseArr));
+  const capDataShape = obj => {
+    const capData = kser(obj);
+    const { body, ..._slotsEtc } = capData;
+    return { body };
+  };
+  // Kernel deliveries are [type, ...args] arrays.
+  const deliveryShape = (deliveryNum, kdShape) => {
+    return { deliveryNum, kd: arrayShape(kdShape) };
+  };
+  const messageDeliveryShape = (deliveryNum, method, args, resultKpid) => {
+    const methargs = capDataShape([method, args]);
+    const messageShape = resultKpid
+      ? { methargs, result: resultKpid }
+      : { methargs };
+    // sparse array to ignore target kref
+    // eslint-disable-next-line no-sparse-arrays
+    return deliveryShape(deliveryNum, ['message', , messageShape]);
+  };
+
+  // Null-upgrade the static vat with some messages before and after
+  // to catch any unexpected BOYD.
+  const staticVatID = controller.vatNameToID('staticVat');
+  const bundle = await bundleSource(config.vats.staticVat.sourceSpec);
+  const bundleID = await controller.validateAndInstallBundle(bundle);
+  isSlogging = true;
+  const staticVatV1 = await run('getVersion', [], 'staticVat');
+  t.is(staticVatV1, undefined);
+  const staticVatUpgradeKpid = controller.upgradeStaticVat(
+    'staticVat',
+    false,
+    bundleID,
+    {
+      vatParameters: { version: 'v2' },
+    },
+  );
+  await controller.run();
+  t.is(controller.kpStatus(staticVatUpgradeKpid), 'fulfilled');
+  const staticVatV2 = await run('getVersion', [], 'staticVat');
+  t.is(staticVatV2, 'v2');
+  isSlogging = false;
+
+  const staticVatDeliveries = deliveries.filter(
+    slogEntry => slogEntry.vatID === staticVatID,
+  );
+  const expectedDeliveries = [
+    messageDeliveryShape(1n, 'getVersion', []),
+    deliveryShape(2n, ['stopVat']),
+    deliveryShape(3n, ['bringOutYourDead']),
+    deliveryShape(4n, ['startVat']),
+    messageDeliveryShape(5n, 'getVersion', []),
+  ];
+  t.like(staticVatDeliveries, arrayShape(expectedDeliveries));
+  t.is(staticVatDeliveries.length, expectedDeliveries.length);
+
+  // Repeat the process with a dynamic vat.
+  await run('createVat', [
+    {
+      name: 'dynamicVat',
+      bundleCapName: 'exporter',
+      vatParameters: { version: 'v1' },
+    },
+  ]);
+  const dynamicVat = await run('getVatRoot', [
+    { name: 'dynamicVat', rawOutput: true },
+  ]);
+  const dynamicVatKref = krefOf(dynamicVat);
+  const dynamicVatID = kvStore.get(`${dynamicVatKref}.owner`); // probably 'v7'
+  isSlogging = true;
+  const dynamicVatV1 = await run('messageVat', [
+    { name: 'dynamicVat', methodName: 'getVersion' },
+  ]);
+  t.is(dynamicVatV1, 'v1');
+  await run('upgradeVat', [
+    {
+      name: 'dynamicVat',
+      bundleCapName: 'exporter',
+      vatParameters: { version: 'v2' },
+    },
+  ]);
+  const dynamicVatV2 = await run('messageVat', [
+    { name: 'dynamicVat', methodName: 'getVersion' },
+  ]);
+  t.is(dynamicVatV2, 'v2');
+  isSlogging = false;
+
+  const dynamicVatDeliveries = deliveries.filter(
+    slogEntry => slogEntry.vatID === dynamicVatID,
+  );
+  t.like(dynamicVatDeliveries, arrayShape(expectedDeliveries));
+  t.is(dynamicVatDeliveries.length, expectedDeliveries.length);
 });
 
 /**

@@ -7,7 +7,7 @@ import {
 } from '@agoric/vat-data';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
-  const { version } = vatParameters;
+  const { version } = vatParameters || {};
 
   // Define a family of analogous simple ephemeral/virtual/durable classes.
   const CounterI = M.interface('Counter', {
