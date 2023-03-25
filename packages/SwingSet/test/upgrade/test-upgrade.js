@@ -252,10 +252,9 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
   );
   const expectedDeliveries = [
     messageDeliveryShape(1n, 'getVersion', []),
-    deliveryShape(2n, ['stopVat']),
-    deliveryShape(3n, ['bringOutYourDead']),
-    deliveryShape(4n, ['startVat']),
-    messageDeliveryShape(5n, 'getVersion', []),
+    deliveryShape(2n, ['bringOutYourDead']),
+    deliveryShape(3n, ['startVat']),
+    messageDeliveryShape(4n, 'getVersion', []),
   ];
   t.like(staticVatDeliveries, arrayShape(expectedDeliveries));
   t.is(staticVatDeliveries.length, expectedDeliveries.length);
@@ -752,7 +751,8 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
   // const observerLog = await run('getDispatchLog', [], 'observer');
 });
 
-test('failed upgrade - relaxed durable rules', async t => {
+// No longer valid as of removing stopVat per #6650
+test.failing('failed upgrade - relaxed durable rules', async t => {
   const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     relaxDurabilityRules: true,
     bundlePaths: {
