@@ -802,7 +802,6 @@ export default function buildKernel(
   }
 
   /**
-   *
    * @param {RunQueueEventUpgradeVat} message
    * @returns {Promise<CrankResults>}
    */
@@ -887,10 +886,16 @@ export default function buildKernel(
 
     // stopVat succeeded, now we finish cleanup on behalf of the worker
 
-    // TODO: send BOYD so the terminating vat has one last chance to clean
+    // send BOYD so the terminating vat has one last chance to clean
     // up, drop imports, and delete durable data.
-    // If a vat is so broken it can't do BOYD, we can make that optional.
-    // https://github.com/Agoric/agoric-sdk/issues/7001
+    // If a vat is so broken it can't do BOYD, we can make this optional.
+    /** @type { import('../types-external.js').KernelDeliveryBringOutYourDead } */
+    const boydKD = harden(['bringOutYourDead']);
+    const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
+    const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
+    const boydResults = deliveryCrankResults(vatID, boydStatus, false);
+    (!boydResults.abort && !boydResults.terminate) ||
+      Fail`Unexpected abort/terminate result from upgrade-internal bringOutYourDead: ${boydResults}`;
 
     // reject all promises for which the vat was decider
     for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
