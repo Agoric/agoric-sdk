@@ -689,9 +689,8 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
 
   // Export two objects from exporter to observer,
   // one to be held strongly and the other weakly.
-  const observerPresence = await run('getVatRoot', [{ name: 'observer' }]);
-  const observer = await run('awaitVatObject', [
-    { presence: observerPresence, rawOutput: true },
+  const observer = await run('getVatRoot', [
+    { name: 'observer', rawOutput: true },
   ]);
   const strongObj = await run('exportFakeObject', [], 'exporter');
   await run(
