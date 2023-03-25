@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 import { makePromiseKit } from '@endo/promise-kit';
 
-const NUM_SENSORS = 38;
+const NUM_SENSORS = 39;
 
 const insistMissing = (ref, isCollection = false) => {
   let p;

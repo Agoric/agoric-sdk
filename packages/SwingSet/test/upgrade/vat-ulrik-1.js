@@ -108,7 +108,7 @@ const buildExports = (baggage, imp) => {
   dc3.init(imp[25], dur[25]);
   dc4.init(dur[26], dur[27]);
   dc4.init(imp[28], dur[28]);
-  dc5.init(imp[32], dur[33]); // imp[32] exported+held by bootstrap
+  dc5.init(imp[32], dur[33]); // imp[32] is recognizable but not reachable
   dc6.init(dur[34], dur[35]);
   dc6.init(imp[36], dur[36]);
   baggage.init('dc5', dc5);

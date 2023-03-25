@@ -76,14 +76,15 @@ const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
  * @param {object} bundleData
  * @param {SwingSetConfig} config
  * @param {object} [options]
- * @deprecated Refcount incrementing should be manual,
+ * @param {boolean} [options.holdObjectRefs=true] - DEPRECATED -
+ * Refcount incrementing should be manual,
  * see https://github.com/Agoric/agoric-sdk/issues/7213
- * @param {boolean} [options.holdObjectRefs=true]
- * @returns {{
- *   controller: ReturnType<typeof makeSwingsetController>,
+ * @returns {Promise<{
+ *   controller: Awaited<ReturnType<typeof makeSwingsetController>>,
  *   kvStore: KVStore,
  *   run: (method: string, args?: unknown[]) => Promise<unknown>,
- * }}
+ *   runAndRetain: (method: string, args?: unknown[]) => Promise<unknown>,
+ * }>}
  */
 const initKernelForTest = async (t, bundleData, config, options = {}) => {
   const { kernelStorage } = initSwingStore();
@@ -95,24 +96,27 @@ const initKernelForTest = async (t, bundleData, config, options = {}) => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  const kpResolutionOptions = { incref: holdObjectRefs };
-  const run = async (method, args = [], vatName = 'bootstrap') => {
-    assert(Array.isArray(args));
-    const kpid = c.queueToVatRoot(vatName, method, args);
-    await c.run();
-    const status = c.kpStatus(kpid);
-    if (status === 'fulfilled') {
-      const result = c.kpResolution(kpid, kpResolutionOptions);
-      return kunser(result);
-    }
-    assert(status === 'rejected');
-    const err = c.kpResolution(kpid, kpResolutionOptions);
-    throw kunser(err);
+  const makeRun = kpResolutionOptions => {
+    const run = async (method, args = [], vatName = 'bootstrap') => {
+      assert(Array.isArray(args));
+      const kpid = c.queueToVatRoot(vatName, method, args);
+      await c.run();
+      const status = c.kpStatus(kpid);
+      if (status === 'fulfilled') {
+        const result = c.kpResolution(kpid, kpResolutionOptions);
+        return kunser(result);
+      }
+      assert(status === 'rejected');
+      const err = c.kpResolution(kpid, kpResolutionOptions);
+      throw kunser(err);
+    };
+    return run;
   };
   return {
     controller: c,
     kvStore,
-    run,
+    run: makeRun({ incref: holdObjectRefs }),
+    runAndRetain: makeRun({ incref: true }),
   };
 };
 
@@ -180,9 +184,11 @@ test('null upgrade - xsnap', async t => {
  * @param {ManagerType} defaultManagerType
  * @param {object} [options]
  * @param {boolean} [options.restartVatAdmin=false]
+ * @param {boolean} [options.suppressGC=false]
  */
 const testUpgrade = async (t, defaultManagerType, options = {}) => {
-  const { restartVatAdmin: doVatAdminRestart = false } = options;
+  const { restartVatAdmin: doVatAdminRestart = false, suppressGC = false } =
+    options;
   const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType,
     bundlePaths: {
@@ -192,12 +198,26 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   });
   /** @type {object} */
   const { data: bundleData } = t.context;
+  if (suppressGC) {
+    config.defaultReapInterval = 'never';
+    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+    // @ts-ignore reapInterval is valid
+    config.vats.bootstrap.reapInterval = 1;
+  }
   const {
     controller: c,
     kvStore,
     run,
-  } = await initKernelForTest(t, bundleData, config);
+    runAndRetain,
+  } = await initKernelForTest(t, bundleData, config, {
+    holdObjectRefs: false,
+  });
 
+  /**
+   * @param {object} presence
+   * @param {string} [iface]
+   * @returns {string} kref
+   */
   const verifyPresence = (presence, iface = undefined) => {
     const kref = krefOf(presence);
     t.truthy(kref);
@@ -207,14 +227,15 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
     return kref;
   };
 
-  const marker = await run('getMarker');
+  const marker = await runAndRetain('getMarker');
   const markerKref = verifyPresence(marker, 'marker'); // probably 'ko26'
 
   // fetch all the "import sensors": exported by bootstrap, imported by
   // the upgraded vat. We'll determine their krefs and later query the
   // upgraded vat to see if it's still importing them or not
-  const sensors = await run('getImportSensors', []);
-  // eslint-disable-next-line no-unused-vars
+  const sensors = /** @type {[unknown, ...object]} */ (
+    await runAndRetain('getImportSensors', [])
+  );
   const sensorKrefs = [
     'skip0',
     ...sensors.slice(1).map(obj => verifyPresence(obj)),
@@ -225,6 +246,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   }
 
   // create initial version
+  /** @type {any} */
   const v1result = await run('buildV1', []);
   t.like(v1result, {
     version: 'v1',
@@ -238,19 +260,19 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const v1p2Kref = verifyPresence(v1result.p2);
   // grab krefs for the exported durable/virtual objects to check their abandonment
   const retainedKrefs = objectMap(v1result.retain, obj => verifyPresence(obj));
-  const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3';
-  t.deepEqual(
-    Object.keys(retainedKrefs).sort(),
-    retainedNames.split(' ').sort(),
+  const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3'.split(
+    ' ',
   );
+  t.deepEqual(Object.keys(retainedKrefs).sort(), retainedNames.sort());
   const { dur1: dur1Kref, vir2: vir2Kref } = retainedKrefs;
 
   // use the kvStore to support assertions about exported durable/virtual vrefs
   const vatID = kvStore.get(`${dur1Kref}.owner`); // probably 'v6'
   // dumpState(debug, vatID);
+  const getCListEntry = kref => kvStore.get(`${vatID}.c.${kref}`);
   const getVref = kref => {
-    const s = kvStore.get(`${vatID}.c.${kref}`);
-    return parseReachableAndVatSlot(s).vatSlot;
+    const entry = getCListEntry(kref);
+    return parseReachableAndVatSlot(entry).vatSlot;
   };
   const vomHas = vref => kvStore.has(`${vatID}.vs.vom.${vref}`);
   const dur1Vref = getVref(dur1Kref);
@@ -261,17 +283,57 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   t.is(parseVatSlot(vir2Vref).subid, 2n);
   const virPrefix = vir2Vref.slice(0, -1); // everything before the trailing '2'
   const virVref = i => `${virPrefix}${i}`;
-
-  t.true(vomHas(durVref(1)));
-  t.true(vomHas(virVref(2)));
-  t.false(vomHas(virVref(1))); // GCed before upgrade
-  t.false(vomHas(durVref(2))); // GCed before upgrade
+  const collectableVrefs = [virVref(1), durVref(2), virVref(39), durVref(39)];
+  /**
+   * @param {string} when
+   * @param {object} expectations
+   * @param {boolean} expectations.afterGC
+   * @param {string[]} [expectations.stillOwned=retainedNames]
+   */
+  const verifyObjectTracking = (when, expectations) => {
+    const { afterGC, stillOwned = retainedNames } = expectations;
+    // imported object reachability
+    for (let i = 1; i < sensorKrefs.length; i += 1) {
+      const entry = getCListEntry(sensorKrefs[i]);
+      if (i === 39 && afterGC) {
+        // import-39 is ignored
+        t.is(entry, undefined, `import-39 is retired ${when}`);
+        continue;
+      }
+      const { isReachable } = parseReachableAndVatSlot(entry);
+      if (i === 32) {
+        // import-32 is a WeakMap key that is initialized in v1 and
+        // probed in v2 by bootstrap-scripted-upgrade.js "upgradeV2";
+        // it should be reachable iff GC is suppressed
+        t.is(isReachable, suppressGC, `import-32 reachability ${when}`);
+      } else {
+        // reachability of all other imports should be retained
+        // by object references
+        t.is(isReachable, true, `import-${i} reachability ${when}`);
+      }
+    }
+    // exported object ownership
+    for (const name of retainedNames) {
+      const owner = kvStore.get(`${retainedKrefs[name]}.owner`);
+      const expectedOwner = stillOwned.includes(name) ? vatID : undefined;
+      t.is(owner, expectedOwner, `${name} ownership ${when}`);
+    }
+    // liveslots vom tracking
+    t.true(vomHas(durVref(1)));
+    t.true(vomHas(virVref(2)));
+    for (const vref of collectableVrefs) {
+      const present = vomHas(vref);
+      t.is(present, !afterGC, `${vref} must be collected by GC ${when}`);
+    }
+  };
 
   if (doVatAdminRestart) {
     await restartVatAdminVat(c);
   }
+  verifyObjectTracking('before upgrade', { afterGC: !suppressGC });
 
   // now perform the upgrade
+  /** @type {any} */
   const v2result = await run('upgradeV2', []);
   // dumpState(debug, vatID);
   t.like(v2result, {
@@ -305,73 +367,17 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   t.is(c.kpStatus(v1p2Kref), 'rejected');
   t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
 
-  // all the merely-virtual exports should be gone
-  // for (let i = 1; i < sensors.length; i += 1) {
-  //   t.false(vomHas(virVref(i)));
-  // }
-
-  /* Disabling this portion of the test as it is irrelevant and non-working so
-     long as non-durable object cleanup in stop-vat is also disabled.
-
-  // of the durables, only these survive
-  const survivingDurables = [
-    1, 16, 17, 18, 19, 20, 26, 27, 28, 33, 34, 35, 36, 37,
-  ];
-  // and these imports (imp38 is held by baggage)
-  const survivingImported = [
-    1, 16, 17, 18, 19, 20, 26, 27, 28, 33, 34, 35, 36, 37, 38,
-  ];
-
-  // but implementation limitations/bugs cause the following unwanted
-  // effects (these adjustments should be deleted as we fix them):
-
-  // stopVat() uses deleteVirtualObjectsWithoutDecref, rather than
-  // deleteVirtualObjectsWithDecref, which means lingering virtual
-  // objects (i.e. cycles) don't drop their referenced objects as we
-  // delete them
-  survivingDurables.push(9);
-  survivingImported.push(7);
-  survivingImported.push(8);
-  survivingImported.push(9);
-
-  // When a virtual collection is deleted, the loop that deletes all
-  // entries will re-instantiate all the keys, but doesn't set
-  // doMoreGC, so processDeadSet doesn't redo the gcAndFinalize, and
-  // the virtual object cache is probably still holding onto the new
-  // Representative anyways. This retains the durables that were held
-  // by deleted collections (dur10/dur13/dur23, depending on the cache
-  // size, just dur23 if size=0) and the imports they hold. Bug #5053
-  // is about fixing clearInternal to avoid this, when that's fixed
-  // these should be removed.
-  survivingDurables.push(10);
-  survivingImported.push(10);
-  survivingDurables.push(13);
-  survivingImported.push(13);
-  survivingDurables.push(23);
-  survivingImported.push(23);
-
-  for (let i = 1; i < sensors.length; i += 1) {
-    const vref = durVref(i);
-    // const impKref = sensorKrefs[i];
-    const expD = survivingDurables.includes(i);
-    // const expI = survivingImported.includes(i);
-    // const reachable = krefReachable(impKref);
-    t.is(vomHas(vref), expD, `dur[${i}] not ${expD}`);
-    // t.is(reachable, expI, `imp[${i}] not ${expI}`);
-    // const abb = (b) => b.toString().slice(0,1).toUpperCase();
-    // const vomS = `vom: ${abb(expD)} ${abb(vomHas(vref))}`;
-    // const reachS = `${abb(expI)} ${abb(reachable)}`;
-    // const match = (expD === vomHas(vref)) && (expI === reachable);
-    // const matchS = `${match ? 'true' : 'FALSE'}`;
-    // const s = kvStore.get(`${vatID}.c.${impKref}`);
-    // console.log(`${i}: ${vomS} imp: ${reachS} ${matchS}  ${impKref} ${s}`);
-  }
-  */
-
-  // check koNN.owner to confirm the exported virtuals (2/5/7) are abandoned
-  t.false(kvStore.has(`${vir2Kref}.owner`));
-  t.false(kvStore.has(`${v1result.retain.vir5}.owner`));
-  t.false(kvStore.has(`${v1result.retain.vir7}.owner`));
+  // verify export abandonment/garbage collection/etc.
+  // This used to be MUCH more extensive, but GC was cut to the bone
+  // in commits like 91480dee8e48ae26c39c420febf73b93deba6ea5
+  // basically reverting 1cfbeaa3c925d0f8502edfb313ecb12a1cab5eac
+  // (see also #5342 and #6650).
+  // It can be restored once we add back correct sophisticated logic
+  // by e.g. having liveslots sweep the database when restoring a vat.
+  verifyObjectTracking('after upgrade', {
+    afterGC: true,
+    stillOwned: ['dur1', 'dc4'],
+  });
 };
 
 test('vat upgrade - local', async t => {
@@ -382,8 +388,16 @@ test('vat upgrade - local with VA restarts', async t => {
   return testUpgrade(t, 'local', { restartVatAdmin: true });
 });
 
+test('vat upgrade - local without automatic GC', async t => {
+  return testUpgrade(t, 'local', { suppressGC: true });
+});
+
 test('vat upgrade - xsnap', async t => {
   return testUpgrade(t, 'xs-worker');
+});
+
+test('vat upgrade - xsnap without automatic GC', async t => {
+  return testUpgrade(t, 'xs-worker', { suppressGC: true });
 });
 
 test('vat upgrade - omit vatParameters', async t => {
