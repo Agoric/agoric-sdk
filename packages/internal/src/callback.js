@@ -20,11 +20,11 @@ import { E } from '@endo/far';
  * @returns {ReturnType<I>}
  */
 export const callSync = (callback, ...args) => {
-  const { target, method, bound } = callback;
-  if (method === undefined) {
+  const { target, methodName, bound } = callback;
+  if (methodName === undefined) {
     return target(...bound, ...args);
   }
-  return target[method](...bound, ...args);
+  return target[methodName](...bound, ...args);
 };
 
 /**
@@ -36,11 +36,11 @@ export const callSync = (callback, ...args) => {
  * @returns {Promise<Awaited<ReturnType<I>>>}
  */
 export const callE = (callback, ...args) => {
-  const { target, method, bound } = callback;
-  if (method === undefined) {
+  const { target, methodName, bound } = callback;
+  if (methodName === undefined) {
     return E(target)(...bound, ...args);
   }
-  return E(target)[method](...bound, ...args);
+  return E(target)[methodName](...bound, ...args);
 };
 
 /**
@@ -95,7 +95,7 @@ harden(makeFunctionCallback);
  */
 export const makeSyncMethodCallback = (target, methodName, ...bound) => {
   /** @type {unknown} */
-  const cb = harden({ target, method: methodName, bound });
+  const cb = harden({ target, methodName, bound });
   return /** @type {SyncCallback<I>} */ (cb);
 };
 harden(makeSyncMethodCallback);
@@ -116,7 +116,7 @@ harden(makeSyncMethodCallback);
  */
 export const makeMethodCallback = (target, methodName, ...bound) => {
   /** @type {unknown} */
-  const cb = harden({ target, method: methodName, bound });
+  const cb = harden({ target, methodName, bound });
   return /** @type {Callback<I>} */ (cb);
 };
 harden(makeMethodCallback);

@@ -61,19 +61,19 @@ test('near method callbacks', t => {
 
   /** @type {import('../src/callback').SyncCallback<typeof o.m1>} */
   const cb0 = cb.makeSyncMethodCallback(o, 'm1');
-  t.deepEqual(cb0, { target: o, method: 'm1', bound: [] });
+  t.deepEqual(cb0, { target: o, methodName: 'm1', bound: [] });
 
   /** @type {import('../src/callback').SyncCallback<(b: number, c: string) => string>} */
   const cb1 = cb.makeSyncMethodCallback(o, 'm1', 9);
-  t.deepEqual(cb1, { target: o, method: 'm1', bound: [9] });
+  t.deepEqual(cb1, { target: o, methodName: 'm1', bound: [9] });
 
   /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
   const cb2 = cb.makeSyncMethodCallback(o, 'm1', 9, 10);
-  t.deepEqual(cb2, { target: o, method: 'm1', bound: [9, 10] });
+  t.deepEqual(cb2, { target: o, methodName: 'm1', bound: [9, 10] });
 
   // @ts-expect-error deliberate: boolean is not assignable to string
   const cb3 = cb.makeSyncMethodCallback(o, 'm1', 9, 10, true);
-  t.deepEqual(cb3, { target: o, method: 'm1', bound: [9, 10, true] });
+  t.deepEqual(cb3, { target: o, methodName: 'm1', bound: [9, 10, true] });
 
   // @ts-expect-error deliberate: Expected 4 arguments but got 5
   t.is(cb.callSync(cb0, 2, 3, 'go', 'bad'), '5go');
@@ -86,7 +86,7 @@ test('near method callbacks', t => {
 
   // @ts-expect-error deliberate: Promise provides no match for the signature
   const cbp2 = cb.makeSyncMethodCallback(Promise.resolve(o), 'm1', 9, 10);
-  t.like(cbp2, { method: 'm1', bound: [9, 10] });
+  t.like(cbp2, { methodName: 'm1', bound: [9, 10] });
   t.assert(cbp2.target instanceof Promise);
   t.throws(() => cb.callSync(cbp2, 'go'), { message: /not a function/ });
 });
@@ -107,7 +107,7 @@ test('far method callbacks', async t => {
 
   /** @type {import('../src/callback').Callback<(c: string) => Promise<string>>} */
   const cbp2 = cb.makeMethodCallback(Promise.resolve(o), 'm1', 9, 10);
-  t.like(cbp2, { method: 'm1', bound: [9, 10] });
+  t.like(cbp2, { methodName: 'm1', bound: [9, 10] });
   t.assert(cbp2.target instanceof Promise);
   // @ts-expect-error deliberate: is not assignable to SyncCallback
   const thunk = () => cb.callSync(cbp2, 'go');
