@@ -1,5 +1,4 @@
-diff --git a/node_modules/ses/src/error/assert.js b/node_modules/ses/src/error/assert.js
-index db7ecdd..ffe685f 100644
+unchanged:
 --- a/node_modules/ses/src/error/assert.js
 +++ b/node_modules/ses/src/error/assert.js
 @@ -134,6 +134,7 @@ const redactedDetails = (template, ...args) => {
@@ -46,11 +45,31 @@ index db7ecdd..ffe685f 100644
      );
      if (optDetails === undefined) {
        // Like
-diff --git a/node_modules/ses/src/make-hardener.js b/node_modules/ses/src/make-hardener.js
-index 15efd5e..d395e54 100644
---- a/node_modules/ses/src/make-hardener.js
+diff -u b/node_modules/ses/src/make-hardener.js b/node_modules/ses/src/make-hardener.js
+--- b/node_modules/ses/src/make-hardener.js
 +++ b/node_modules/ses/src/make-hardener.js
-@@ -227,10 +227,10 @@ export const makeHardener = () => {
+@@ -121,12 +121,20 @@
+   });
+ };
+ 
++const warn = typeof print === 'function' ? print : console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ export const makeHardener = () => {
++  // Use a native hardener if possible.
++  if (typeof globalThis.harden === 'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++  }
++
+   const hardened = new WeakSet();
+ 
+   const { harden } = {!<!!s
+@@ -226,10 +234,10 @@
          setForEach(toFreeze, markHardened);
        }
  
@@ -64,3 +83,498 @@ index 15efd5e..d395e54 100644
  
        return root;
      },
+\ No newline at end of file
+only in patch2:
+unchanged:
+--- a/node_modules/ses/dist/lockdown.cjs
++++ b/node_modules/ses/dist/lockdown.cjs
+@@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
+ function initProperty(obj, name, desc) {
+   if( objectHasOwnProperty(obj, name)) {
+     const preDesc=  getOwnPropertyDescriptor(obj, name);
+-    if(
+-      !is(preDesc.value, desc.value)||
+-      preDesc.get!==  desc.get||
+-      preDesc.set!==  desc.set||
+-      preDesc.writable!==  desc.writable||
+-      preDesc.enumerable!==  desc.enumerable||
+-      preDesc.configurable!==  desc.configurable)
+-      {
+-      throw new TypeError( `Conflicting definitions of ${name}`);
++    const bad=  [];
++    if( !is(preDesc.value, desc.value)) {
++      bad.push('value');
++     }
++    if( preDesc.get!==  desc.get) {
++      bad.push('get');
++     }
++    if( preDesc.set!==  desc.set) {
++      bad.push('set');
++     }
++    if( preDesc.writable!==  desc.writable) {
++      bad.push('writable');
++     }
++    if( preDesc.enumerable!==  desc.enumerable) {
++      bad.push('enumerable');
++     }
++    if( preDesc.configurable!==  desc.configurable) {
++      bad.push('configurable');
++     }
++    if( bad.length) {
++      throw new TypeError( `Conflicting definitions of ${name}; ${bad.join(', ')}`);
+      }
+    }
+   defineProperty(obj, name, desc);
+@@ -7817,12 +7829,20 @@ const freezeTypedArray=  (array)=>{
+    });
+  };
+ 
++const warn=  typeof print===  'function'?  print:  console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ const        makeHardener=  ()=>  {
++  // Use a native hardener if possible.
++  if( typeof globalThis.harden===  'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++   }
++
+   const hardened=  new WeakSet();
+ 
+   const { harden}=   {
+@@ -9045,7 +9065,9 @@ const        repairIntrinsics=  (options=  {})=>  {
+     finalIntrinsics}=
+       makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden});
++  if( typeof globalThis.harden!==  'function') {
++    addIntrinsics({ harden});
++   }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
+only in patch2:
+unchanged:
+--- a/node_modules/ses/dist/lockdown.mjs
++++ b/node_modules/ses/dist/lockdown.mjs
+@@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
+ function initProperty(obj, name, desc) {
+   if( objectHasOwnProperty(obj, name)) {
+     const preDesc=  getOwnPropertyDescriptor(obj, name);
+-    if(
+-      !is(preDesc.value, desc.value)||
+-      preDesc.get!==  desc.get||
+-      preDesc.set!==  desc.set||
+-      preDesc.writable!==  desc.writable||
+-      preDesc.enumerable!==  desc.enumerable||
+-      preDesc.configurable!==  desc.configurable)
+-      {
+-      throw new TypeError( `Conflicting definitions of ${name}`);
++    const bad=  [];
++    if( !is(preDesc.value, desc.value)) {
++      bad.push('value');
++     }
++    if( preDesc.get!==  desc.get) {
++      bad.push('get');
++     }
++    if( preDesc.set!==  desc.set) {
++      bad.push('set');
++     }
++    if( preDesc.writable!==  desc.writable) {
++      bad.push('writable');
++     }
++    if( preDesc.enumerable!==  desc.enumerable) {
++      bad.push('enumerable');
++     }
++    if( preDesc.configurable!==  desc.configurable) {
++      bad.push('configurable');
++     }
++    if( bad.length) {
++      throw new TypeError( `Conflicting definitions of ${name}; ${bad.join(', ')}`);
+      }
+    }
+   defineProperty(obj, name, desc);
+@@ -7817,12 +7829,20 @@ const freezeTypedArray=  (array)=>{
+    });
+  };
+ 
++const warn=  typeof print===  'function'?  print:  console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ const        makeHardener=  ()=>  {
++  // Use a native hardener if possible.
++  if( typeof globalThis.harden===  'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++   }
++
+   const hardened=  new WeakSet();
+ 
+   const { harden}=   {
+@@ -9045,7 +9065,9 @@ const        repairIntrinsics=  (options=  {})=>  {
+     finalIntrinsics}=
+       makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden});
++  if( typeof globalThis.harden!==  'function') {
++    addIntrinsics({ harden});
++   }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
+only in patch2:
+unchanged:
+--- a/node_modules/ses/dist/lockdown.umd.js
++++ b/node_modules/ses/dist/lockdown.umd.js
+@@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
+ function initProperty(obj, name, desc) {
+   if( objectHasOwnProperty(obj, name)) {
+     const preDesc=  getOwnPropertyDescriptor(obj, name);
+-    if(
+-      !is(preDesc.value, desc.value)||
+-      preDesc.get!==  desc.get||
+-      preDesc.set!==  desc.set||
+-      preDesc.writable!==  desc.writable||
+-      preDesc.enumerable!==  desc.enumerable||
+-      preDesc.configurable!==  desc.configurable)
+-      {
+-      throw new TypeError( `Conflicting definitions of ${name}`);
++    const bad=  [];
++    if( !is(preDesc.value, desc.value)) {
++      bad.push('value');
++     }
++    if( preDesc.get!==  desc.get) {
++      bad.push('get');
++     }
++    if( preDesc.set!==  desc.set) {
++      bad.push('set');
++     }
++    if( preDesc.writable!==  desc.writable) {
++      bad.push('writable');
++     }
++    if( preDesc.enumerable!==  desc.enumerable) {
++      bad.push('enumerable');
++     }
++    if( preDesc.configurable!==  desc.configurable) {
++      bad.push('configurable');
++     }
++    if( bad.length) {
++      throw new TypeError( `Conflicting definitions of ${name}; ${bad.join(', ')}`);
+      }
+    }
+   defineProperty(obj, name, desc);
+@@ -7817,12 +7829,20 @@ const freezeTypedArray=  (array)=>{
+    });
+  };
+ 
++const warn=  typeof print===  'function'?  print:  console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ const        makeHardener=  ()=>  {
++  // Use a native hardener if possible.
++  if( typeof globalThis.harden===  'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++   }
++
+   const hardened=  new WeakSet();
+ 
+   const { harden}=   {
+@@ -9045,7 +9065,9 @@ const        repairIntrinsics=  (options=  {})=>  {
+     finalIntrinsics}=
+       makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden});
++  if( typeof globalThis.harden!==  'function') {
++    addIntrinsics({ harden});
++   }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
+only in patch2:
+unchanged:
+--- a/node_modules/ses/dist/ses.cjs
++++ b/node_modules/ses/dist/ses.cjs
+@@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
+ function initProperty(obj, name, desc) {
+   if( objectHasOwnProperty(obj, name)) {
+     const preDesc=  getOwnPropertyDescriptor(obj, name);
+-    if(
+-      !is(preDesc.value, desc.value)||
+-      preDesc.get!==  desc.get||
+-      preDesc.set!==  desc.set||
+-      preDesc.writable!==  desc.writable||
+-      preDesc.enumerable!==  desc.enumerable||
+-      preDesc.configurable!==  desc.configurable)
+-      {
+-      throw new TypeError( `Conflicting definitions of ${name}`);
++    const bad=  [];
++    if( !is(preDesc.value, desc.value)) {
++      bad.push('value');
++     }
++    if( preDesc.get!==  desc.get) {
++      bad.push('get');
++     }
++    if( preDesc.set!==  desc.set) {
++      bad.push('set');
++     }
++    if( preDesc.writable!==  desc.writable) {
++      bad.push('writable');
++     }
++    if( preDesc.enumerable!==  desc.enumerable) {
++      bad.push('enumerable');
++     }
++    if( preDesc.configurable!==  desc.configurable) {
++      bad.push('configurable');
++     }
++    if( bad.length) {
++      throw new TypeError( `Conflicting definitions of ${name}; ${bad.join(', ')}`);
+      }
+    }
+   defineProperty(obj, name, desc);
+@@ -7817,12 +7829,20 @@ const freezeTypedArray=  (array)=>{
+    });
+  };
+ 
++const warn=  typeof print===  'function'?  print:  console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ const        makeHardener=  ()=>  {
++  // Use a native hardener if possible.
++  if( typeof globalThis.harden===  'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++   }
++
+   const hardened=  new WeakSet();
+ 
+   const { harden}=   {
+@@ -9045,7 +9065,9 @@ const        repairIntrinsics=  (options=  {})=>  {
+     finalIntrinsics}=
+       makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden});
++  if( typeof globalThis.harden!==  'function') {
++    addIntrinsics({ harden});
++   }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
+only in patch2:
+unchanged:
+--- a/node_modules/ses/dist/ses.mjs
++++ b/node_modules/ses/dist/ses.mjs
+@@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
+ function initProperty(obj, name, desc) {
+   if( objectHasOwnProperty(obj, name)) {
+     const preDesc=  getOwnPropertyDescriptor(obj, name);
+-    if(
+-      !is(preDesc.value, desc.value)||
+-      preDesc.get!==  desc.get||
+-      preDesc.set!==  desc.set||
+-      preDesc.writable!==  desc.writable||
+-      preDesc.enumerable!==  desc.enumerable||
+-      preDesc.configurable!==  desc.configurable)
+-      {
+-      throw new TypeError( `Conflicting definitions of ${name}`);
++    const bad=  [];
++    if( !is(preDesc.value, desc.value)) {
++      bad.push('value');
++     }
++    if( preDesc.get!==  desc.get) {
++      bad.push('get');
++     }
++    if( preDesc.set!==  desc.set) {
++      bad.push('set');
++     }
++    if( preDesc.writable!==  desc.writable) {
++      bad.push('writable');
++     }
++    if( preDesc.enumerable!==  desc.enumerable) {
++      bad.push('enumerable');
++     }
++    if( preDesc.configurable!==  desc.configurable) {
++      bad.push('configurable');
++     }
++    if( bad.length) {
++      throw new TypeError( `Conflicting definitions of ${name}; ${bad.join(', ')}`);
+      }
+    }
+   defineProperty(obj, name, desc);
+@@ -7817,12 +7829,20 @@ const freezeTypedArray=  (array)=>{
+    });
+  };
+ 
++const warn=  typeof print===  'function'?  print:  console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ const        makeHardener=  ()=>  {
++  // Use a native hardener if possible.
++  if( typeof globalThis.harden===  'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++   }
++
+   const hardened=  new WeakSet();
+ 
+   const { harden}=   {
+@@ -9045,7 +9065,9 @@ const        repairIntrinsics=  (options=  {})=>  {
+     finalIntrinsics}=
+       makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden});
++  if( typeof globalThis.harden!==  'function') {
++    addIntrinsics({ harden});
++   }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
+only in patch2:
+unchanged:
+--- a/node_modules/ses/dist/ses.umd.js
++++ b/node_modules/ses/dist/ses.umd.js
+@@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
+ function initProperty(obj, name, desc) {
+   if( objectHasOwnProperty(obj, name)) {
+     const preDesc=  getOwnPropertyDescriptor(obj, name);
+-    if(
+-      !is(preDesc.value, desc.value)||
+-      preDesc.get!==  desc.get||
+-      preDesc.set!==  desc.set||
+-      preDesc.writable!==  desc.writable||
+-      preDesc.enumerable!==  desc.enumerable||
+-      preDesc.configurable!==  desc.configurable)
+-      {
+-      throw new TypeError( `Conflicting definitions of ${name}`);
++    const bad=  [];
++    if( !is(preDesc.value, desc.value)) {
++      bad.push('value');
++     }
++    if( preDesc.get!==  desc.get) {
++      bad.push('get');
++     }
++    if( preDesc.set!==  desc.set) {
++      bad.push('set');
++     }
++    if( preDesc.writable!==  desc.writable) {
++      bad.push('writable');
++     }
++    if( preDesc.enumerable!==  desc.enumerable) {
++      bad.push('enumerable');
++     }
++    if( preDesc.configurable!==  desc.configurable) {
++      bad.push('configurable');
++     }
++    if( bad.length) {
++      throw new TypeError( `Conflicting definitions of ${name}; ${bad.join(', ')}`);
+      }
+    }
+   defineProperty(obj, name, desc);
+@@ -7817,12 +7829,20 @@ const freezeTypedArray=  (array)=>{
+    });
+  };
+ 
++const warn=  typeof print===  'function'?  print:  console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ const        makeHardener=  ()=>  {
++  // Use a native hardener if possible.
++  if( typeof globalThis.harden===  'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++   }
++
+   const hardened=  new WeakSet();
+ 
+   const { harden}=   {
+@@ -9045,7 +9065,9 @@ const        repairIntrinsics=  (options=  {})=>  {
+     finalIntrinsics}=
+       makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden});
++  if( typeof globalThis.harden!==  'function') {
++    addIntrinsics({ harden});
++   }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
+only in patch2:
+unchanged:
+--- a/node_modules/ses/src/intrinsics.js
++++ b/node_modules/ses/src/intrinsics.js
+@@ -33,15 +33,27 @@ const isFunction = obj => typeof obj === 'function';
+ function initProperty(obj, name, desc) {
+   if (objectHasOwnProperty(obj, name)) {
+     const preDesc = getOwnPropertyDescriptor(obj, name);
+-    if (
+-      !is(preDesc.value, desc.value) ||
+-      preDesc.get !== desc.get ||
+-      preDesc.set !== desc.set ||
+-      preDesc.writable !== desc.writable ||
+-      preDesc.enumerable !== desc.enumerable ||
+-      preDesc.configurable !== desc.configurable
+-    ) {
+-      throw new TypeError(`Conflicting definitions of ${name}`);
++    const bad = [];
++    if (!is(preDesc.value, desc.value)) {
++      bad.push('value');
++    }
++    if (preDesc.get !== desc.get) {
++      bad.push('get');
++    }
++    if (preDesc.set !== desc.set) {
++      bad.push('set');
++    }
++    if (preDesc.writable !== desc.writable) {
++      bad.push('writable');
++    }
++    if (preDesc.enumerable !== desc.enumerable) {
++      bad.push('enumerable');
++    }
++    if (preDesc.configurable !== desc.configurable) {
++      bad.push('configurable');
++    }
++    if (bad.length) {
++      throw new TypeError(`Conflicting definitions of ${name}; ${bad.join(', ')}`);
+     }
+   }
+   defineProperty(obj, name, desc);
+only in patch2:
+unchanged:
+--- a/node_modules/ses/src/lockdown-shim.js
++++ b/node_modules/ses/src/lockdown-shim.js
+@@ -266,7 +266,9 @@ export const repairIntrinsics = (options = {}) => {
+     finalIntrinsics,
+   } = makeIntrinsicsCollector();
+ 
+-  addIntrinsics({ harden });
++  if (typeof globalThis.harden !== 'function') {
++    addIntrinsics({ harden });
++  }
+ 
+   addIntrinsics(tameFunctionConstructors());
+ 
