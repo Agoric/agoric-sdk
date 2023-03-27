@@ -14,7 +14,11 @@ import {
 } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { bigintReplacer, makeAmountFormatter } from '../lib/format.js';
+import {
+  asBoardRemote,
+  bigintReplacer,
+  makeAmountFormatter,
+} from '../lib/format.js';
 
 const { values } = Object;
 
@@ -26,15 +30,16 @@ const { values } = Object;
  * @param {AssetDescriptor[]} assets
  */
 const makeFormatters = assets => {
+  const br = asBoardRemote;
   const fmtAmtTuple = makeAmountFormatter(assets);
   /** @param {Amount} amt */
-  const amount = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(amt));
+  const amount = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(br(amt)));
   /** @param {Record<string, Amount> | undefined} r */
   const record = r => (r ? objectMap(r, amount) : undefined);
   /** @param {Ratio} r */
   const price = r => {
-    const [nl, nm] = fmtAmtTuple(r.numerator);
-    const [dl, dm] = fmtAmtTuple(r.denominator);
+    const [nl, nm] = fmtAmtTuple(br(r.numerator));
+    const [dl, dm] = fmtAmtTuple(br(r.denominator));
     return `${Number(nm) / Number(dm)} ${nl}/${dl}`;
   };
   const discount = r =>

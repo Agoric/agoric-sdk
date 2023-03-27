@@ -76,6 +76,16 @@ export const asPercent = ratio => {
 };
 
 /**
+ * @param {Amount} x
+ * @returns {Amount & { brand: BoardRemote }}
+ */
+export const asBoardRemote = x => {
+  assert('getBoardId' in x.brand);
+  // @ts-expect-error dynamic check
+  return x;
+};
+
+/**
  * Summarize the balances array as user-facing informative tuples
  
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord['purses']} purses
@@ -83,7 +93,7 @@ export const asPercent = ratio => {
  */
 export const purseBalanceTuples = (purses, assets) => {
   const fmt = makeAmountFormatter(assets);
-  return purses.map(b => fmt(b.balance));
+  return purses.map(b => fmt(asBoardRemote(b.balance)));
 };
 
 /**
