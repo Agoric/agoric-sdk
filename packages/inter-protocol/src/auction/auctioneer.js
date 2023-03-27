@@ -50,9 +50,6 @@ const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
  * collateralReturn and currencyRaise proportionally to each seat's deposited
  * amount. Any uneven split should be allocated to the reserve.
  *
- * This function is exported for testability, and is not expected to be used
- * outside the contract below.
- *
  * @param {Amount} collateralReturn
  * @param {Amount} currencyRaise
  * @param {{seat: ZCFSeat, amount: Amount<'nat'>, toRaise: Amount<'nat'>}[]} deposits
@@ -62,7 +59,7 @@ const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
  * @param {ZCFSeat} reserveSeat
  * @param {Brand} brand
  */
-export const distributeProportionalShares = (
+const distributeProportionalShares = (
   collateralReturn,
   currencyRaise,
   deposits,
@@ -115,13 +112,14 @@ export const distributeProportionalShares = (
  *
  * This function is exported for testability, and is not expected to be used
  * outside the contract below.
- * some or all of the depositors may have specified a toRaise target.
+ *
+ * Some or all of the depositors may have specified a toRaise target.
  *  A if none did, return collateral and currency prorated to deposits.
- *  B if currencyRaise matches totalToRaise, everyone gets the currency they
+ *  B if currencyRaise < totalToRaise everyone gets prorated amounts of both.
+ *  C if currencyRaise matches totalToRaise, everyone gets the currency they
  *    asked for, plus enough collateral to reach the same proportional payout.
  *    If any depositor's toRaise limit exceeded their share of the total,
  *    we'll fall back to the first approach.
- *  C if currencyRaise < totalToRaise everyone gets prorated amounts of both.
  *  D if currencyRaise > totalToRaise && all depositors specified a limit,
  *    all depositors get their toRaise first, then we distribute the
  *    remainder (collateral and currency) to get the same proportional payout.
@@ -185,7 +183,7 @@ export const distributeProportionalSharesWithLimits = (
       brand,
     );
 
-  // cases A and C
+  // cases A and B
   if (
     AmountMath.isEmpty(totalToRaise) ||
     !AmountMath.isGTE(currencyRaise, totalToRaise)
@@ -237,7 +235,7 @@ export const distributeProportionalSharesWithLimits = (
   let currencyLeft = currencyRaise;
   let collateralLeft = collateralReturn;
 
-  // case B
+  // case C
   if (AmountMath.isEqual(totalToRaise, currencyRaise)) {
     // each depositor gets a share that equals their amount deposited
     // multiplied by totalValueRatio computed above.
