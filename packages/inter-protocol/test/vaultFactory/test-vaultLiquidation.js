@@ -427,6 +427,12 @@ test('price drop', async t => {
 
   //  Bidder bought 400 Aeth
   await assertBidderPayout(t, bidderSeat, run, 320n, aeth, 400n);
+
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {
+    Aeth: aeth.makeEmpty(),
+    Fee: run.makeEmpty(),
+  });
 });
 
 test('price falls precipitously', async t => {
@@ -891,6 +897,12 @@ test('liquidate two loans', async t => {
   await E(bidderSeat).tryExit();
   //  Bidder bought 792 Aeth
   await assertBidderPayout(t, bidderSeat, run, 4175n, aeth, 792n);
+
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {
+    Aeth: aeth.make(8n),
+    Fee: run.makeEmpty(),
+  });
 });
 
 // We'll make two loans, and trigger one via interest charges, and not trigger
@@ -1810,4 +1822,10 @@ test('reinstate vault', async t => {
   t.is(bobUpdate.value.vaultState, Phase.ACTIVE);
 
   await assertBidderPayout(t, bidderSeat, run, 66n, aeth, 8n);
+
+  const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
+  t.deepEqual(reserveAllocations, {
+    Aeth: aeth.make(4n),
+    Fee: run.makeEmpty(),
+  });
 });
