@@ -7,6 +7,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -250,24 +251,39 @@ test('open vault with insufficient funds gives helpful error', async t => {
   });
 });
 
-// STORY: Liquidation Bidder Amara has provided 50 IST to buy ATOM at a price of $9
-test('bid for liquidation', async t => {
+test('exit bid', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
 
-  await wd.executeOfferMaker(Offers.auction.Bid, {
+  // get some IST
+  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
+    offerId: 'bid-open-vault',
+    collateralBrandKey,
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+
+  wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
     wantCollateral: 1.23,
-    giveCurrency: 0.0,
+    giveCurrency: 0.1,
     collateralBrandKey: 'IbcATOM',
   });
+
+  await wd.tryExitOffer('bid');
+  await eventLoopIteration();
+
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'bid',
-      numWantsSatisfied: 1,
-      result: 'Your bid has been accepted',
+      result: 'Your bid has been accepted', // it was accepted before being exited
+      numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
+      payouts: {
+        // got back the give
+        Currency: { value: { digits: '100000' } },
+      },
     },
   });
 });

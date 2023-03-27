@@ -28,6 +28,7 @@ test('Offers.auction.Bid', async t => {
         callPipe: [['makeBidInvitation', [atom.brand]]],
       },
       proposal: {
+        exit: { onDemand: null },
         give: { Currency: ist.make(4_560_000n) },
       },
       offerArgs: {

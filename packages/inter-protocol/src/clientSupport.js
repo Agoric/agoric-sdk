@@ -221,7 +221,6 @@ const makeBidOffer = (brands, opts) => {
   };
   const collateralBrand = brands[opts.collateralBrandKey];
 
-  const proposal = { give };
   /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
   const offerSpec = {
     id: opts.offerId,
@@ -230,7 +229,7 @@ const makeBidOffer = (brands, opts) => {
       instancePath: ['auctioneer'],
       callPipe: [['makeBidInvitation', [collateralBrand]]],
     },
-    proposal,
+    proposal: { give, exit: { onDemand: null } },
     offerArgs: /** @type {import('./auction/auctionBook.js').BidSpec} */ ({
       want: AmountMath.make(
         collateralBrand,

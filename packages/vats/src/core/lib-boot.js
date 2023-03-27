@@ -171,6 +171,12 @@ export const makeBootstrap = (
       const result = await E(object)[methodName](...decodedArgs);
       return encodePassable(result);
     },
+    /* Like `messageVatObject` but does not await return value */
+    messageVatObjectSendOnly: ({ presence, methodName, args = [] }) => {
+      const object = decodePassable(presence);
+      const decodedArgs = args.map(decodePassable);
+      void E(object)[methodName](...decodedArgs);
+    },
     awaitVatObject: async ({ presence, path = [] }) => {
       let value = await decodePassable(presence);
       for (const key of path) {
