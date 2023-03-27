@@ -347,27 +347,26 @@ export const prepareAuctionBook = (baggage, zcf) => {
               ? allocation.Collateral
               : makeEmpty(collateralBrand);
 
-          if (totalToRaise && !toRaise) {
-            const curRatio = makeRatioFromAmounts(totalToRaise, curCollateral);
+          const calcTargetRatio = () => {
+            if (totalToRaise && !toRaise) {
+              return makeRatioFromAmounts(totalToRaise, curCollateral);
+            } else if (toRaise && !totalToRaise) {
+              return makeRatioFromAmounts(toRaise, assetAmount);
+            } else if (toRaise && totalToRaise) {
+              const curRatio = makeRatioFromAmounts(
+                totalToRaise,
+                curCollateral,
+              );
+              const newRatio = makeRatioFromAmounts(toRaise, assetAmount);
+              return ratioGTE(newRatio, curRatio) ? newRatio : curRatio;
+            }
+          };
+
+          if (toRaise || totalToRaise) {
             this.state.totalToRaise = ceilMultiplyBy(
               AmountMath.add(curCollateral, assetAmount),
-              curRatio,
-            );
-          } else if (toRaise && !totalToRaise) {
-            const newRatio = makeRatioFromAmounts(toRaise, assetAmount);
-            this.state.totalToRaise = ceilMultiplyBy(
-              AmountMath.add(curCollateral, assetAmount),
-              newRatio,
-            );
-          } else if (toRaise && totalToRaise) {
-            const curRatio = makeRatioFromAmounts(totalToRaise, curCollateral);
-            const newRatio = makeRatioFromAmounts(toRaise, assetAmount);
-            const highestRatio = ratioGTE(newRatio, curRatio)
-              ? newRatio
-              : curRatio;
-            this.state.totalToRaise = ceilMultiplyBy(
-              AmountMath.add(curCollateral, assetAmount),
-              highestRatio,
+              // @ts-expect-error calcTargetRatio always returns a ratio here
+              calcTargetRatio(),
             );
           }
 
