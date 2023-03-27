@@ -602,6 +602,7 @@ test('notifications', async t => {
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 1n,
     startedAt: 1n,
+    startedBy: 'agorice1priceOracleA',
   });
   await E(oracleB).pushPrice({ roundId: 1, unitPrice: 200n });
 
@@ -632,6 +633,7 @@ test('notifications', async t => {
     {
       roundId: 1n,
       startedAt: 1n,
+      startedBy: 'agorice1priceOracleA',
     },
   );
   // B gets to start it
@@ -640,6 +642,7 @@ test('notifications', async t => {
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 2n,
     startedAt: 1n,
+    startedBy: 'agorice1priceOracleB',
   });
   // A joins in
   await E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n });
@@ -648,7 +651,7 @@ test('notifications', async t => {
     aggregator.mockStorageRoot.getBody(
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
     ),
-    { roundId: 2n, startedAt: 1n },
+    { roundId: 2n, startedAt: 1n, startedBy: 'agorice1priceOracleB' },
   );
 
   await eventLoopIteration();
@@ -672,6 +675,7 @@ test('notifications', async t => {
   t.deepEqual((await eachLatestRound.next()).value, {
     roundId: 3n,
     startedAt: 1n,
+    startedBy: 'agorice1priceOracleA',
   });
   // no new price yet publishable
 });
