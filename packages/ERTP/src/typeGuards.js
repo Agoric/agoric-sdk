@@ -147,6 +147,7 @@ export const DisplayInfoShape = M.splitRecord(
 export const IssuerKitShape = harden({
   brand: BrandShape,
   mint: MintShape,
+  mintRecoveryPurse: PurseShape,
   issuer: IssuerShape,
   displayInfo: DisplayInfoShape,
 });
@@ -182,19 +183,6 @@ export const makeIssuerInterfaces = (
     burn: M.callWhen(M.await(PaymentShape))
       .optional(M.pattern())
       .returns(amountShape),
-    claim: M.callWhen(M.await(PaymentShape))
-      .optional(M.pattern())
-      .returns(PaymentShape),
-    combine: M.call(M.arrayOf(M.eref(PaymentShape)))
-      .optional(amountShape)
-      .returns(M.eref(PaymentShape)),
-    split: M.callWhen(M.await(PaymentShape), amountShape).returns(
-      M.arrayOf(PaymentShape),
-    ),
-    splitMany: M.callWhen(
-      M.await(PaymentShape),
-      M.arrayOf(amountShape),
-    ).returns(M.arrayOf(PaymentShape)),
   });
 
   const MintI = M.interface('Mint', {

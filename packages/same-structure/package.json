@@ -37,9 +37,6 @@
     "*.js",
     "NEWS.md"
   ],
-  "eslintIgnore": [
-    "bundle-*.js"
-  ],
   "publishConfig": {
     "access": "public"
   }

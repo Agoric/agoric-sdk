@@ -239,16 +239,13 @@
  * @property {IssuerIsLive} isLive
  * @property {IssuerGetAmountOf<K>} getAmountOf
  * @property {IssuerBurn} burn
- * @property {IssuerClaim<K>} claim
- * @property {IssuerCombine<K>} combine
- * @property {IssuerSplit<K>} split
- * @property {IssuerSplitMany} splitMany
  */
 
 /**
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} PaymentLedger
  * @property {Mint<K>} mint
+ * @property {Purse<K>} mintRecoveryPurse
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  */
@@ -257,6 +254,7 @@
  * @template {AssetKind} [K=AssetKind]
  * @typedef {object} IssuerKit
  * @property {Mint<K>} mint
+ * @property {Purse<K>} mintRecoveryPurse
  * @property {Issuer<K>} issuer
  * @property {Brand<K>} brand
  * @property {DisplayInfo} displayInfo
@@ -352,7 +350,7 @@
  * Withdraw amount from this purse into a new Payment.
  *
  * @property {() => CopySet<Payment<K>>} getRecoverySet
- * The set of payments associated with this purse that are still live. These
+ * The set of payments withdrawn from this purse that are still live. These
  * are the payments that can still be recovered in emergencies by, for example,
  * depositing into this purse. Such a deposit action is like canceling an
  * outstanding check because you're tired of waiting for it. Once your

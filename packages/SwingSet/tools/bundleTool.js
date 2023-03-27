@@ -55,6 +55,13 @@ const toBundleMeta = n => `bundle-${n}-meta.json`;
  * @param {*} readPowers
  */
 export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
+  const dimLog = (...args) =>
+    console.log(
+      `${styles.dim.open}[bundleTool] ${[...args].join(' ')}${
+        styles.dim.close
+      }`,
+    );
+
   const add = async (rootPath, targetName) => {
     const srcRd = cwd.neighbor(rootPath);
 
@@ -157,47 +164,20 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
    *
    * @param {string} rootPath
    * @param {string} targetName
-   * @param {*} log
    * @returns {Promise<BundleMeta>}
    */
-  const validateOrAdd = async (rootPath, targetName, log = console.debug) => {
+  const validateOrAdd = async (rootPath, targetName) => {
     let meta;
     if (wr.readOnly().neighbor(toBundleMeta(targetName)).exists()) {
       try {
         meta = await validate(targetName, rootPath);
-        const { bundleTime, contents } = meta;
-        log(
-          styles.dim.open,
-          `${wr}`,
-          toBundleName(targetName),
-          'valid:',
-          contents.length,
-          'files bundled at',
-          bundleTime,
-          styles.dim.close,
-        );
       } catch (invalid) {
-        console.error(
-          styles.red.open,
-          'ERROR in bundleTool:',
-          invalid.message,
-          styles.red.close,
-        );
+        dimLog(invalid.message);
       }
     }
     if (!meta) {
-      log(`${wr}`, 'add:', targetName, 'from', rootPath);
+      dimLog(`${wr}`, 'add:', targetName, 'from', rootPath);
       meta = await add(rootPath, targetName);
-      const { bundleFileName, bundleTime, contents } = meta;
-      log(
-        `${wr}`,
-        'bundled',
-        contents.length,
-        'files in',
-        bundleFileName,
-        'at',
-        bundleTime,
-      );
     }
     return meta;
   };
@@ -206,12 +186,10 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
   /**
    * @param {string} rootPath
    * @param {string} [targetName]
-   * @param {(message: *) => void} [log]
    */
   const load = async (
     rootPath,
     targetName = readPowers.basename(rootPath, '.js'),
-    log = console.debug,
   ) => {
     const found = loaded.get(targetName);
     // console.log('load', { targetName, found: !!found, rootPath });
@@ -220,7 +198,7 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
     }
     const todo = makePromiseKit();
     loaded.set(targetName, { rootPath, bundle: todo.promise });
-    const bundle = await validateOrAdd(rootPath, targetName, log)
+    const bundle = await validateOrAdd(rootPath, targetName)
       .then(({ bundleFileName }) =>
         import(`${wr.readOnly().neighbor(bundleFileName)}`),
       )

@@ -373,7 +373,7 @@ export const parseRatio = (
     throw Fail`Invalid numeric data: ${numeric}`;
   }
 
-  const [whole, part = ''] = [match[1], match[2]];
+  const [_, whole, part = ''] = match;
   return makeRatio(
     BigInt(`${whole}${part}`),
     numeratorBrand,

@@ -1,5 +1,6 @@
 ARG TAG=latest
 ARG REPO=agoric/agoric-sdk
+ARG REGISTRY=ghcr.io
 
 # FIXME: Journalbeat compilation is currently broken, but non-essential.
 # Removed from the build.
@@ -9,7 +10,7 @@ ARG REPO=agoric/agoric-sdk
 # RUN apt-get update -y && apt-get install -y libsystemd-dev
 # RUN go get github.com/mheese/journalbeat
 
-FROM $REPO:$TAG
+FROM $REGISTRY/$REPO:$TAG
 
 RUN /usr/src/agoric-sdk/packages/deployment/scripts/install-deps.sh
 

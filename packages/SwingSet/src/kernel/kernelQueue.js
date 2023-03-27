@@ -45,9 +45,7 @@ export function makeKernelQueueHandler(tools) {
       const p = kernelKeeper.getResolveablePromise(kpid, vatID);
       const { subscribers } = p;
       for (const subscriber of subscribers) {
-        if (subscriber !== vatID) {
-          notify(subscriber, kpid);
-        }
+        notify(subscriber, kpid);
       }
       kernelKeeper.resolveKernelPromise(kpid, rejected, data);
       const tag = rejected ? 'rejected' : 'fulfilled';

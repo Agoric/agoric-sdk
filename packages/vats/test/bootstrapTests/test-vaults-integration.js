@@ -7,6 +7,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -18,9 +19,22 @@ const test = anyTest;
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'IbcATOM';
 
+const likePayouts = (collateral, minted) => ({
+  Collateral: {
+    value: {
+      digits: String(collateral * 1_000_000),
+    },
+  },
+  Minted: {
+    value: {
+      digits: String(minted * 1_000_000),
+    },
+  },
+});
+
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t);
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -130,54 +144,56 @@ test('close vault', async t => {
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1toclose');
 
+  const giveCollateral = 9.0;
+
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open-vault',
     collateralBrandKey,
     wantMinted: 5.0,
-    giveCollateral: 9.0,
+    giveCollateral,
   });
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: { id: 'open-vault', numWantsSatisfied: 1 },
   });
-
   t.log('try giving more than is available in the purse/vbank');
-  await wd.executeOfferMaker(
-    Offers.vaults.CloseVault,
+  await t.throwsAsync(
+    wd.executeOfferMaker(
+      Offers.vaults.CloseVault,
+      {
+        offerId: 'close-extreme',
+        collateralBrandKey,
+        giveMinted: 99_999_999.999_999,
+      },
+      'open-vault',
+    ),
     {
-      offerId: 'close-extreme',
-      collateralBrandKey,
-      giveMinted: 99_999_999.999_999,
+      message: /^Withdrawal .* failed because the purse only contained .*/,
     },
-    'open-vault',
   );
-  t.like(wd.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: {
-      id: 'close-extreme',
-      numWantsSatisfied: undefined,
-      error:
-        'Error: Withdrawal of {"brand":"[Alleged: IST brand]","value":"[99999999999999n]"} failed because the purse only contained {"brand":"[Alleged: IST brand]","value":"[14999500n]"}',
-    },
-  });
 
-  await wd.executeOfferMaker(
-    Offers.vaults.CloseVault,
+  const message =
+    'Offer {"brand":"[Alleged: IST brand]","value":"[1n]"} is not sufficient to pay off debt {"brand":"[Alleged: IST brand]","value":"[5025000n]"}';
+  await t.throwsAsync(
+    wd.executeOfferMaker(
+      Offers.vaults.CloseVault,
+      {
+        offerId: 'close-insufficient',
+        collateralBrandKey,
+        giveMinted: 0.000_001,
+      },
+      'open-vault',
+    ),
     {
-      offerId: 'close-insufficient',
-      collateralBrandKey,
-      giveMinted: 0.000_001,
+      message,
     },
-    'open-vault',
   );
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'close-insufficient',
-      // XXX there were no wants. Zoe treats as satisfied
-      numWantsSatisfied: 1,
-      error:
-        'Error: Offer {"brand":"[Alleged: IST brand]","value":"[1n]"} is not sufficient to pay off debt {"brand":"[Alleged: IST brand]","value":"[5025000n]"}',
+      numWantsSatisfied: 1, // trivially true because proposal `want` was empty.
+      error: `Error: ${message}`,
     },
   });
 
@@ -187,7 +203,7 @@ test('close vault', async t => {
     {
       offerId: 'close-well',
       collateralBrandKey,
-      giveMinted: 5.0,
+      giveMinted: 5.025,
     },
     'open-vault',
   );
@@ -195,7 +211,9 @@ test('close vault', async t => {
     updated: 'offerStatus',
     status: {
       id: 'close-well',
-      numWantsSatisfied: 1,
+      result: 'your loan is closed, thank you for your business',
+      // funds are returned
+      payouts: likePayouts(giveCollateral, 0),
     },
   });
 });
@@ -208,21 +226,64 @@ test('open vault with insufficient funds gives helpful error', async t => {
   );
 
   const giveCollateral = 9.0;
-  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
-    offerId: 'open-vault',
-    collateralBrandKey,
-    giveCollateral,
-    wantMinted: giveCollateral * 100,
-  });
+  const wantMinted = giveCollateral * 100;
+  const message =
+    'Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: IbcATOM brand]","value":"[9000000n]"} collateral';
+  await t.throwsAsync(
+    wd.executeOfferMaker(Offers.vaults.OpenVault, {
+      offerId: 'open-vault',
+      collateralBrandKey,
+      giveCollateral,
+      wantMinted,
+    }),
+    { message },
+  );
 
-  // TODO verify funds are returned
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'open-vault',
       numWantsSatisfied: 0,
-      error:
-        'Error: Proposed debt {"brand":"[Alleged: IST brand]","value":"[904500000n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[63462857n]"} for {"brand":"[Alleged: IbcATOM brand]","value":"[9000000n]"} collateral',
+      error: `Error: ${message}`,
+      // funds are returned
+      payouts: likePayouts(giveCollateral, 0),
+    },
+  });
+});
+
+test('exit bid', async t => {
+  const { walletFactoryDriver } = t.context;
+
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
+
+  // get some IST
+  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
+    offerId: 'bid-open-vault',
+    collateralBrandKey,
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+
+  wd.sendOfferMaker(Offers.auction.Bid, {
+    offerId: 'bid',
+    wantCollateral: 1.23,
+    giveCurrency: 0.1,
+    collateralBrandKey: 'IbcATOM',
+  });
+
+  await wd.tryExitOffer('bid');
+  await eventLoopIteration();
+
+  t.like(wd.getLatestUpdateRecord(), {
+    updated: 'offerStatus',
+    status: {
+      id: 'bid',
+      result: 'Your bid has been accepted', // it was accepted before being exited
+      numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
+      payouts: {
+        // got back the give
+        Currency: { value: { digits: '100000' } },
+      },
     },
   });
 });

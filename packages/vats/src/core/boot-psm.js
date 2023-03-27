@@ -20,7 +20,8 @@ import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from './utils.js';
+import { makeAgoricNamesAccess } from './utils.js';
+import { makePromiseSpace } from './promise-space.js';
 import { Stable, Stake } from '../tokens.js';
 import {
   addBankAssets,
@@ -40,8 +41,8 @@ import {
   noProvisioner,
   publishAgoricNames,
   startTimerService,
+  CHAIN_BOOTSTRAP_MANIFEST,
 } from './chain-behaviors.js';
-import { CHAIN_BOOTSTRAP_MANIFEST } from './manifest.js';
 import {
   startWalletFactory,
   WALLET_FACTORY_MANIFEST,

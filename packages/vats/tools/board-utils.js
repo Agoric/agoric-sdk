@@ -1,27 +1,40 @@
 // @ts-check
 /**
- * @typedef {{boardId: string, iface: string}} BoardRemote
+ * Should be a union with Remotable, but that's `any`, making this type meaningless
+ *
+ * @typedef {{ getBoardId: () => string }} BoardRemote
  */
 /**
  * @typedef {{
- *   brand: BoardRemote,
+ *   brand: BoardRemote & Brand,
  *   denom: string,
  *   displayInfo: DisplayInfo,
- *   issuer: BoardRemote,
+ *   issuer: BoardRemote & Issuer,
  *   issuerName: string,
  *   proposedName: string,
  * }} VBankAssetDetail
  */
 /**
  * @typedef {{
- *   brand: Record<string, BoardRemote>,
- *   instance: Record<string, BoardRemote>,
- *   vbankAsset?: Record<string, VBankAssetDetail>,
+ *   brand: Record<string, Brand>,
+ *   instance: Record<string, Instance>,
+ *   vbankAsset: Record<string, VBankAssetDetail>,
  *   reverse: Record<string, string>,
  * }} AgoricNamesRemotes
  */
 
 import { Fail } from '@agoric/assert';
+import { Far } from '@endo/marshal';
+
+/**
+ * @param {*} slotInfo
+ * @returns {BoardRemote}
+ */
+export const makeBoardRemote = ({ boardId, iface }) => {
+  const nonalleged =
+    iface && iface.length ? iface.slice('Alleged: '.length) : '';
+  return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
+};
 
 /**
  * @param {import("@agoric/internal/src/storage-test-utils.js").FakeStorageKit} fakeStorageKit
@@ -36,15 +49,19 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
     const key = `published.agoricNames.${kind}`;
 
     const values = data.get(key);
-    (values && values.length > 0) || Fail`no data for ${key}`;
+    if (!(values && values.length > 0)) throw Fail`no data for ${key}`;
     /** @type {import("@endo/marshal").CapData<string>} */
     const latestCapData = JSON.parse(values.at(-1));
+    /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
     const parts = JSON.parse(latestCapData.body).map(([name, slotInfo]) => [
       name,
-      { boardId: latestCapData.slots[slotInfo.index], iface: slotInfo.iface },
+      makeBoardRemote({
+        boardId: latestCapData.slots[slotInfo.index],
+        iface: slotInfo.iface,
+      }),
     ]);
     for (const [name, remote] of parts) {
-      reverse[remote.boardId] = name;
+      reverse[remote.getBoardId()] = name;
     }
     return [kind, Object.fromEntries(parts)];
   });
@@ -55,7 +72,7 @@ harden(makeAgoricNamesRemotesFromFakeStorage);
 /**
  * Like makeMarshal but,
  * - slotToVal takes an iface arg
- * - if a part being serialized has a boardId property, it passes through as a slot value whereas the normal marshaller would treat it as a copyRecord
+ * - if a part being serialized has getBoardId(), it passes through as a slot value whereas the normal marshaller would treat it as a copyRecord
  *
  * @param {(slot: string, iface: string) => any} slotToVal
  * @returns {import('@endo/marshal').Marshal<string>}
@@ -102,8 +119,9 @@ export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
         return part.map(recur);
       }
       if (typeof part === 'object') {
-        if ('boardId' in part) {
-          return { '@qclass': 'slot', index: slotIndex(part.boardId) };
+        if ('getBoardId' in part) {
+          const index = slotIndex(part.getBoardId());
+          return { '@qclass': 'slot', index };
         }
         return Object.fromEntries(
           Object.entries(part).map(([k, v]) => [k, recur(v)]),

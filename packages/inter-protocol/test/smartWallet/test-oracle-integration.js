@@ -129,6 +129,12 @@ const acceptInvitation = async (wallet, priceAggregator) => {
 };
 
 let pushPriceCounter = 0;
+/**
+ * @param {*} wallet
+ * @param {string} adminOfferId
+ * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
+ * @returns {Promise<string>} offer id
+ */
 const pushPrice = async (wallet, adminOfferId, priceRound) => {
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
   const proposeInvitationSpec = {
@@ -212,9 +218,13 @@ test.serial('invitations', async t => {
   const currentSub = E(wallet).getCurrentSubscriber();
   /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */
   const currentState = await headValue(currentSub);
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [id]);
+  t.deepEqual(
+    currentState.offerToUsedInvitation.map(([k, _]) => k),
+    [id],
+  );
+  const usedInvitations = new Map(currentState.offerToUsedInvitation);
   t.is(
-    currentState.offerToUsedInvitation[id].value[0].description,
+    usedInvitations.get(id)?.value[0].description,
     ORACLE_INVITATION_MAKERS_DESC,
   );
 });
@@ -273,16 +283,14 @@ test.serial('errors', async t => {
   await eventLoopIteration();
 
   // Invalid priceRound argument
-  t.like(
-    await walletPushPrice({
+  await t.throwsAsync(
+    walletPushPrice({
       roundId: 1,
       unitPrice: 1,
     }),
     {
-      error:
-        'Error: In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
-      // trivially satisfied because the Want is empty
-      numWantsSatisfied: 1,
+      message:
+        'In "pushPrice" method of (OracleKit oracle): arg 0: unitPrice: number 1 - Must be a bigint',
     },
   );
   await eventLoopIteration();
@@ -301,14 +309,13 @@ test.serial('errors', async t => {
   await eventLoopIteration();
 
   // Invalid attempt to push again to the same round
-  t.like(
-    await walletPushPrice({
+  await t.throwsAsync(
+    walletPushPrice({
       roundId: 1,
       unitPrice: 1n,
     }),
     {
-      error: 'Error: cannot report on previous rounds',
-      numWantsSatisfied: 1,
+      message: 'cannot report on previous rounds',
     },
   );
 });
@@ -393,12 +400,13 @@ test.serial('govern oracles list', async t => {
       1,
       'one invitation consumed, one left',
     );
-    t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-      'acceptEcInvitationOID',
-    ]);
+    t.deepEqual(
+      currentState.offerToUsedInvitation.map(([k, _]) => k),
+      ['acceptEcInvitationOID'],
+    );
+    let usedInvitations = new Map(currentState.offerToUsedInvitation);
     t.is(
-      currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
-        .description,
+      usedInvitations.get('acceptEcInvitationOID')?.value[0].description,
       'charter member invitation',
     );
     await offersFacet.executeOffer({
@@ -417,15 +425,13 @@ test.serial('govern oracles list', async t => {
       0,
       'last invitation consumed, none left',
     );
-    t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-      'acceptEcInvitationOID',
-      'acceptVoterOID',
-    ]);
-    // 'acceptEcInvitationOID' tested above
-    t.is(
-      currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
-      'Voter0',
+    t.deepEqual(
+      currentState.offerToUsedInvitation.map(([k, _]) => k),
+      ['acceptEcInvitationOID', 'acceptVoterOID'],
     );
+    // 'acceptEcInvitationOID' tested above
+    usedInvitations = new Map(currentState.offerToUsedInvitation);
+    t.is(usedInvitations.get('acceptVoterOID')?.value[0].description, 'Voter0');
   }
 
   const feed = await E(agoricNames).lookup('instance', 'ATOM-USD price feed');
@@ -519,17 +525,11 @@ test.serial('govern oracles list', async t => {
   await E(timer).tickN(20);
 
   // verify removed oracle can no longer PushPrice /////////////////////////
-  {
-    const pushPriceOfferId = await pushPrice(oracleWallet, oracleOfferId, {
+  await t.throwsAsync(
+    pushPrice(oracleWallet, oracleOfferId, {
       roundId: 1,
       unitPrice: 123n,
-    });
-
-    const offerStatus =
-      oracleWalletComputedState.offerStatuses.get(pushPriceOfferId);
-    t.like(offerStatus, {
-      id: pushPriceOfferId,
-      error: 'Error: pushPrice for disabled oracle',
-    });
-  }
+    }),
+    { message: 'pushPrice for disabled oracle' },
+  );
 });

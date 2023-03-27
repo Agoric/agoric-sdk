@@ -32,6 +32,9 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  */
 
 function abbreviateReplacer(_, arg) {
@@ -257,8 +260,11 @@ export default function buildKernel(
     // check will report 'false'. That's fine, there's no state to
     // clean up.
     if (kernelKeeper.vatIsAlive(vatID)) {
-      const promisesToReject = kernelKeeper.cleanupAfterTerminatedVat(vatID);
-      for (const kpid of promisesToReject) {
+      // Reject all promises decided by the vat, making sure to capture the list
+      // of kpids before that data is deleted.
+      const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];
+      kernelKeeper.cleanupAfterTerminatedVat(vatID);
+      for (const kpid of deadPromises) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
       }
     }
@@ -345,7 +351,7 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { import('../types-external.js').MeterConsumption } MeterConsumption
+   * @typedef { import('@agoric/swingset-liveslots').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
@@ -818,33 +824,37 @@ export default function buildKernel(
       upgradeMessage,
       incarnationNumber: vatKeeper.getIncarnationNumber(),
     };
+    const disconnectionCapData = kser(disconnectObject);
     /** @type { import('../types-external.js').KernelDeliveryStopVat } */
-    const kd1 = harden(['stopVat', kser(disconnectObject)]);
-    const vd1 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd1);
-    const status1 = await deliverAndLogToVat(vatID, kd1, vd1);
+    const stopVatKD = harden(['stopVat', disconnectionCapData]);
+    const stopVatVD = vatWarehouse.kernelDeliveryToVatDelivery(
+      vatID,
+      stopVatKD,
+    );
+    const stopVatStatus = await deliverAndLogToVat(vatID, stopVatKD, stopVatVD);
+    const stopVatResults = deliveryCrankResults(vatID, stopVatStatus, false);
 
-    // make arguments for vat-vat-admin.js vatUpgradeCallback()
+    // We don't meter stopVat, since no user code is running, but we
+    // still report computrons to the runPolicy
+    let { computrons } = stopVatResults; // BigInt or undefined
+    if (computrons !== undefined) {
+      assert.typeof(computrons, 'bigint');
+    }
+
     /**
-     * @param {SwingSetCapData} _errorCD
+     * Make a method-arguments structure representing failure
+     * for vat-vat-admin.js vatUpgradeCallback().
+     *
+     * @param {SwingSetCapData} _errorCapData
      * @returns {RawMethargs}
      */
-    function makeFailure(_errorCD) {
-      insistCapData(_errorCD); // kser(Error)
+    const makeFailureMethargs = _errorCapData => {
+      insistCapData(_errorCapData); // kser(Error)
       // const error = kunser(_errorCD)
       // actually we shouldn't reveal the details, so instead we do:
       const error = Error('vat-upgrade failure');
       return ['vatUpgradeCallback', [upgradeID, false, error]];
-    }
-
-    // We use deliveryCrankResults to parse the stopVat status.
-    const results1 = deliveryCrankResults(vatID, status1, false);
-
-    // We don't meter stopVat, since no user code is running, but we
-    // still report computrons to the runPolicy
-    let { computrons } = results1; // BigInt or undefined
-    if (computrons !== undefined) {
-      assert.typeof(computrons, 'bigint');
-    }
+    };
 
     // TODO: if/when we implement vat pause/suspend, and if
     // deliveryCrankResults changes to not use .terminate to indicate
@@ -852,18 +862,20 @@ export default function buildKernel(
     // pause/suspend a vat for a delivery error, here we want to
     // unwind the upgrade.
 
-    if (results1.terminate) {
+    if (stopVatResults.terminate) {
       // get rid of the worker, so the next delivery to this vat will
       // re-create one from the previous state
       // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.stopWorker(vatID);
 
       // notify vat-admin of the failed upgrade
-      const vatAdminMethargs = makeFailure(results1.terminate.info);
+      const vatAdminMethargs = makeFailureMethargs(
+        stopVatResults.terminate.info,
+      );
 
       // we still report computrons to the runPolicy
       const results = harden({
-        ...results1,
+        ...stopVatResults,
         computrons,
         abort: true, // always unwind
         consumeMessage: true, // don't repeat the upgrade
@@ -873,8 +885,32 @@ export default function buildKernel(
       return results;
     }
 
-    // stopVat succeeded, so now we stop the worker, delete the
-    // transcript and any snapshot
+    // stopVat succeeded, now we finish cleanup on behalf of the worker
+
+    // TODO: send BOYD so the terminating vat has one last chance to clean
+    // up, drop imports, and delete durable data.
+    // If a vat is so broken it can't do BOYD, we can make that optional.
+    // https://github.com/Agoric/agoric-sdk/issues/7001
+
+    // reject all promises for which the vat was decider
+    for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+      resolveToError(kpid, disconnectionCapData, vatID);
+    }
+
+    // simulate an abandonExports syscall from the vat,
+    // without making an *actual* syscall that could pollute logs
+    const abandonedObjects = [
+      ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
+    ];
+    for (const { kref, vref } of abandonedObjects) {
+      /** @see translateAbandonExports in {@link ./vatTranslator.js} */
+      vatKeeper.deleteCListEntry(kref, vref);
+      /** @see abandonExports in {@link ./kernelSyscall.js} */
+      kernelKeeper.orphanKernelObject(kref, vatID);
+    }
+
+    // cleanup done, now we reset the worker to a clean state with no
+    // transcript or snapshot and prime everything for the next incarnation.
 
     await vatWarehouse.resetWorker(vatID);
     const source = { bundleID };
@@ -888,23 +924,32 @@ export default function buildKernel(
 
     // deliver a startVat with the new vatParameters
     /** @type { import('../types-external.js').KernelDeliveryStartVat } */
-    const kd2 = harden(['startVat', vatParameters]);
-    const vd2 = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd2);
+    const startVatKD = harden(['startVat', vatParameters]);
+    const startVatVD = vatWarehouse.kernelDeliveryToVatDelivery(
+      vatID,
+      startVatKD,
+    );
     // decref vatParameters now that translation did incref
     for (const kref of vatParameters.slots) {
       kernelKeeper.decrementRefCount(kref, 'upgrade-vat-event');
     }
-    const status2 = await deliverAndLogToVat(vatID, kd2, vd2);
-    const results2 = deliveryCrankResults(vatID, status2, false);
-    computrons = addComputrons(computrons, results2.computrons);
+    const startVatStatus = await deliverAndLogToVat(
+      vatID,
+      startVatKD,
+      startVatVD,
+    );
+    const startVatResults = deliveryCrankResults(vatID, startVatStatus, false);
+    computrons = addComputrons(computrons, startVatResults.computrons);
 
-    if (results2.terminate) {
+    if (startVatResults.terminate) {
       // unwind just like above
       // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.stopWorker(vatID);
-      const vatAdminMethargs = makeFailure(results2.terminate.info);
+      const vatAdminMethargs = makeFailureMethargs(
+        startVatResults.terminate.info,
+      );
       const results = harden({
-        ...results2,
+        ...startVatResults,
         computrons,
         abort: true, // always unwind
         consumeMessage: true, // don't repeat the upgrade
@@ -1845,7 +1890,10 @@ export default function buildKernel(
     }
   }
 
-  function kpResolution(kpid) {
+  function kpResolution(kpid, options = {}) {
+    // `incref` should ultimately be removed,
+    // see https://github.com/Agoric/agoric-sdk/issues/7213
+    const { incref = true } = options;
     const p = kernelKeeper.getKernelPromise(kpid);
     switch (p.state) {
       case 'unresolved': {
@@ -1854,8 +1902,10 @@ export default function buildKernel(
       case 'fulfilled':
       case 'rejected': {
         kernelKeeper.decrementRefCount(kpid, 'external');
-        for (const kref of p.data.slots) {
-          kernelKeeper.incrementRefCount(kref, 'external');
+        if (incref) {
+          for (const kref of p.data.slots) {
+            kernelKeeper.incrementRefCount(kref, 'external');
+          }
         }
         return p.data;
       }

@@ -152,7 +152,7 @@ test('makeAgoricNamesRemotesFromFakeStorage', t => {
   for (const path of ['brand', 'instance']) {
     t.true(
       Object.values(agoricNamesRemotes[path]).every(v =>
-        v.boardId.startsWith('board0'),
+        v.getBoardId().startsWith('board0'),
       ),
     );
   }
@@ -185,7 +185,7 @@ test(
 test(
   'board ids',
   serialize,
-  { boardId: 'board123' },
+  { getBoardId: () => 'board123' },
   { body: '{"@qclass":"slot","index":0}', slots: ['board123'] },
 );
 
@@ -193,8 +193,8 @@ test(
   'nested board ids',
   serialize,
   {
-    istBrand: { boardId: 'board123Ist' },
-    atomBrand: { boardId: 'board123Atom' },
+    istBrand: { getBoardId: () => 'board123Ist' },
+    atomBrand: { getBoardId: () => 'board123Atom' },
   },
   {
     body: '{"istBrand":{"@qclass":"slot","index":0},"atomBrand":{"@qclass":"slot","index":1}}',

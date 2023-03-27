@@ -13,7 +13,8 @@ import {
   addBankAssets,
   installBootContracts,
 } from '../src/core/basic-behaviors.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
+import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 test('communication', async t => {
@@ -269,7 +270,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   const expected = ['BLD', 'IST'];
   const seen = new Set();
   const done = makePromiseKit();
-  observeIteration(assets, {
+  void observeIteration(assets, {
     updateState: asset => {
       seen.add(asset.issuerName);
       if (asset.issuerName === 'IST') {

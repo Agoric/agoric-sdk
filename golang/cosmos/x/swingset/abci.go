@@ -3,7 +3,6 @@ package swingset
 import (
 	// "fmt"
 	// "os"
-	"encoding/json"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -21,10 +20,6 @@ type beginBlockAction struct {
 	BlockTime   int64        `json:"blockTime"`
 	ChainID     string       `json:"chainID"`
 	Params      types.Params `json:"params"`
-}
-
-type beginBlockResult struct {
-	QueueAllowed []types.QueueSize `json:"queue_allowed"`
 }
 
 type endBlockAction struct {
@@ -50,19 +45,13 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 		ChainID:     ctx.ChainID(),
 		Params:      keeper.GetParams(ctx),
 	}
-	out, err := keeper.BlockingSend(ctx, action)
+	_, err := keeper.BlockingSend(ctx, action)
 	// fmt.Fprintf(os.Stderr, "BEGIN_BLOCK Returned from SwingSet: %s, %v\n", out, err)
-
-	if out != "" {
-		var result beginBlockResult
-		err := json.Unmarshal([]byte(out), &result)
-		if err != nil {
-			panic(err)
-		}
-		state := keeper.GetState(ctx)
-		state.QueueAllowed = result.QueueAllowed
-		keeper.SetState(ctx, state)
+	if err != nil {
+		panic(err)
 	}
+
+	err = keeper.UpdateQueueAllowed(ctx)
 
 	return err
 }

@@ -1,5 +1,6 @@
 // @ts-check
-/** @file
+/**
+ * @file
  *
  * Some of this config info may make more sense in a particular package. However
  * due to https://github.com/Agoric/agoric-sdk/issues/4620 and our lax package

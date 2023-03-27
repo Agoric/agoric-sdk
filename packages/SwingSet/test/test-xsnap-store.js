@@ -60,7 +60,7 @@ test(`create XS Machine, snapshot (${snapSize.raw} Kb), compress to smaller`, as
   t.teardown(() => vat.close());
 
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const { compressedSize } = await store.saveSnapshot(
     'vat0',
@@ -81,7 +81,7 @@ test('SES bootstrap, save, compress', async t => {
   t.teardown(() => vat.close());
 
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   await vat.evaluate('globalThis.x = harden({a: 1})');
 
@@ -101,7 +101,7 @@ test('SES bootstrap, save, compress', async t => {
 
 test('create SES worker, save, restore, resume', async t => {
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const vat0 = await bootSESWorker('ses-boot2', async m => m);
   t.teardown(() => vat0.close());
@@ -127,7 +127,7 @@ test('create SES worker, save, restore, resume', async t => {
  */
 test('XS + SES snapshots are long-term deterministic', async t => {
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
 
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   t.teardown(() => vat.close());
@@ -173,7 +173,7 @@ Then commit the changes in .../snapshots/ path.
 
 async function makeTestSnapshot() {
   const db = sqlite3(':memory:');
-  const store = makeSnapStore(db, makeMockSnapStoreIO());
+  const store = makeSnapStore(db, () => {}, makeMockSnapStoreIO());
   const vat = await bootWorker('xs1', async m => m, '1 + 1');
   const bootScript = await getBootScript();
   await vat.evaluate(bootScript);

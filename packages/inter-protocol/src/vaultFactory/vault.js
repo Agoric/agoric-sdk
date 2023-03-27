@@ -2,13 +2,16 @@ import { AmountMath, AmountShape } from '@agoric/ertp';
 import { makeTracer, makeTypeGuards } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
-  assertProposalShape,
   atomicTransfer,
   floorMultiplyBy,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { addSubtract, allEmpty, assertOnlyKeys } from '../contractSupport.js';
+import {
+  addSubtract,
+  allEmpty,
+  makeNatAmountShape,
+} from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
@@ -65,7 +68,7 @@ export const Phase = /** @type {const} */ ({
  */
 const validTransitions = {
   [Phase.ACTIVE]: [Phase.LIQUIDATING, Phase.CLOSED],
-  [Phase.LIQUIDATING]: [Phase.LIQUIDATED],
+  [Phase.LIQUIDATING]: [Phase.LIQUIDATED, Phase.ACTIVE],
   [Phase.LIQUIDATED]: [Phase.CLOSED],
   [Phase.CLOSED]: [],
 };
@@ -168,6 +171,7 @@ export const VaultI = M.interface('Vault', {
   makeAdjustBalancesInvitation: M.call().returns(M.promise()),
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
+  abortLiquidation: M.call().returns(M.string()),
 });
 
 /**
@@ -236,7 +240,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          * @returns {FullProposal}
          */
         fullProposal(partial) {
-          assertOnlyKeys(partial, ['Collateral', 'Minted']);
           return {
             give: {
               Collateral:
@@ -417,20 +420,19 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           const oldCollateral = self.getCollateralAmount();
 
           if (phase === Phase.ACTIVE) {
-            assertProposalShape(seat, {
-              give: { Minted: null },
-            });
-
             // you're paying off the debt, you get everything back.
             const debt = self.getCurrentDebt();
             const {
               give: { Minted: given },
             } = seat.getProposal();
+            given || Fail`closing an active vault requires a give`;
 
             // you must pay off the entire remainder but if you offer too much, we won't
             // take more than you owe
             AmountMath.isGTE(given, debt) ||
-              Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
+              Fail`Offer ${q(given)} is not sufficient to pay off debt ${q(
+                debt,
+              )}`;
 
             // Return any overpayment
             atomicTransfer(
@@ -460,7 +462,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           helper.assignPhase(Phase.CLOSED);
           helper.updateDebtSnapshot(helper.emptyDebt());
           helper.updateUiState();
-
           helper.assertVaultHoldsNoMinted();
           vaultSeat.exit();
 
@@ -772,13 +773,53 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           helper.updateUiState();
         },
 
+        /**
+         * Called by vaultManager when the auction wasn't able to sell the
+         * collateral. The liquidation fee was charged against the collateral,
+         * but the debt will be restored and the vault will be active again.
+         * Liquidation.md has details on the liquidation approach.
+         */
+        abortLiquidation() {
+          const { state, facets } = this;
+
+          const { helper } = facets;
+
+          helper.assignPhase(Phase.ACTIVE);
+          helper.updateUiState();
+          return state.idInManager;
+        },
+
         makeAdjustBalancesInvitation() {
           const { state, facets } = this;
           const { helper } = facets;
           helper.assertActive();
+
           return zcf.makeInvitation(
             seat => helper.adjustBalancesHook(seat),
             state.manager.scopeDescription('AdjustBalances'),
+            undefined,
+            M.splitRecord({
+              give: M.splitRecord(
+                {},
+                {
+                  // It may seem odd to give both at once but there is use case:
+                  // To rescue a vault that's on the verge of being liquidated
+                  // when you have limited resources, you might add collateral
+                  // at the same time that you're repaying IST.
+                  Collateral: makeNatAmountShape(helper.collateralBrand()),
+                  Minted: makeNatAmountShape(helper.debtBrand()),
+                },
+                {},
+              ),
+              want: M.splitRecord(
+                {},
+                {
+                  Collateral: makeNatAmountShape(helper.collateralBrand()),
+                  Minted: makeNatAmountShape(helper.debtBrand()),
+                },
+                {},
+              ),
+            }),
           );
         },
 
@@ -789,6 +830,23 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           return zcf.makeInvitation(
             seat => helper.closeHook(seat),
             state.manager.scopeDescription('CloseVault'),
+            undefined,
+            M.splitRecord({
+              give: M.splitRecord(
+                {},
+                {
+                  Minted: makeNatAmountShape(helper.debtBrand()),
+                },
+                {},
+              ),
+              want: M.splitRecord(
+                {},
+                {
+                  Collateral: makeNatAmountShape(helper.collateralBrand()),
+                },
+                {},
+              ),
+            }),
           );
         },
 

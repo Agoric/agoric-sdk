@@ -12,7 +12,7 @@ import anylogger from 'anylogger';
 import { makeSlogSender } from '@agoric/telemetry';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { assert, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
 import stringify from './json-stable-stringify.js';
@@ -20,6 +20,7 @@ import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 import { parseQueueSizes } from './params.js';
+import { makeQueue, makeQueueStorageMock } from './make-queue.js';
 
 const console = anylogger('fake-chain');
 
@@ -58,7 +59,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const mailboxStorage = await makeMapStorage(mailboxFile);
 
   const argv = {
-    ROLE: 'sim-chain',
     giveMeAllTheAgoricPowers: true,
     hardcodedClientAddresses: [bootAddress],
     bootMsg: {
@@ -97,18 +97,11 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     env,
   });
 
-  let aqContents = [];
-  const actionQueue = {
-    /** @returns {Iterable<unknown>} */
-    consumeAll: () => {
-      const iterable = aqContents;
-      aqContents = [];
-      return iterable;
-    },
-  };
+  const actionQueueStorage = makeQueueStorageMock().storage;
+  const actionQueue = makeQueue(actionQueueStorage);
 
   const s = await launch({
-    actionQueue,
+    actionQueueStorage,
     kernelStateDBDir: stateDBdir,
     mailboxStorage,
     clearChainSends,
@@ -142,22 +135,27 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
         blockTime,
         params,
       };
-      const beginBlockResult = await blockingSend(beginAction);
-      assert(beginBlockResult);
-      const queueAllowed = parseQueueSizes(beginBlockResult.queue_allowed);
-      assert(QueueInbound in queueAllowed);
+      await blockingSend(beginAction);
+      const inboundQueueMax = parseQueueSizes(params.queue_max)[QueueInbound];
+      const inboundQueueAllowed = Math.max(
+        0,
+        inboundQueueMax - actionQueue.size(),
+      );
 
       // Gather up the new messages into the latest block.
-      const thisBlock = intoChain.splice(0, queueAllowed[QueueInbound]);
+      const thisBlock = intoChain.splice(0, inboundQueueAllowed);
 
-      for (const [newMessages, acknum] of thisBlock) {
-        aqContents.push({
-          type: 'DELIVER_INBOUND',
-          peer: bootAddress,
-          messages: newMessages,
-          ack: acknum,
-          blockHeight,
-          blockTime,
+      for (const [i, [newMessages, acknum]] of thisBlock.entries()) {
+        actionQueue.push({
+          action: {
+            type: 'DELIVER_INBOUND',
+            peer: bootAddress,
+            messages: newMessages,
+            ack: acknum,
+            blockHeight,
+            blockTime,
+          },
+          context: { blockHeight, txHash: 'simTx', msgIdx: i },
         });
       }
       const endAction = { type: 'END_BLOCK', blockHeight, blockTime };

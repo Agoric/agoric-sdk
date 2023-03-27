@@ -1,4 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
+import { splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { observeNotifier } from '@agoric/notifier';
@@ -159,8 +160,25 @@ export const sharePayment = async (
     })
     .filter(([_, amt]) => !AmountMath.isEmpty(amt));
 
+  /**
+   * If the `sharedPayment[i]` payments that are sent to the fee
+   * `destination` with `pushPayment` never arrive, or never get deposited
+   * (or otherwise used up), then they remain in the recovery set of the
+   * `recoveryPurse`. The purpose of this, and of recovery sets in general,
+   * is to be able, in emergencies, to recover the assets of payments in flight
+   * that seem to be stuck. This is much like cancelling a check that may still
+   * be undeposited.
+   *
+   * TODO: However, for this to be possible, the `recoveryPurse` holding that
+   * recovery set must remain accessible to someone that should legitimately
+   * be able to recover those payments. But this `recoveryPurse` is currently
+   * dropped on the floor instead.
+   */
+  const recoveryPurse = E(issuer).makeEmptyPurse();
+
   // Split the payment, which asserts conservation of the total.
-  const sharedPayment = await E(issuer).splitMany(
+  const sharedPayment = await splitMany(
+    recoveryPurse,
     payment,
     destinedAmountEntries.map(([_dst, amt]) => amt),
   );

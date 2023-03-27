@@ -4,7 +4,10 @@ import { bindAllMethods, makeTracer } from '@agoric/internal';
 import { makePublishKit } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
-import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import {
+  assertProposalShape,
+  atomicRearrange,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { ceilMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { addSubtract, assertOnlyKeys } from '../contractSupport.js';
 import { calculateCurrentDebt, reverseInterest } from '../interest-math.js';
@@ -158,7 +161,8 @@ const helperBehavior = {
 
   /**
    * @param {MethodContext} context
-   *  @param {boolean} newActive */
+   * @param {boolean} newActive
+   */
   snapshotState: ({ state, facets }, newActive) => {
     const { debtSnapshot: debt, interestSnapshot: interest } = state;
     const { helper } = facets;
@@ -342,14 +346,17 @@ const helperBehavior = {
     } = seat.getProposal();
     AmountMath.isGTE(runOffered, currentDebt) ||
       Fail`Offer ${runOffered} is not sufficient to pay off debt ${currentDebt}`;
-    vaultSeat.incrementBy(seat.decrementBy(harden({ [KW.Debt]: currentDebt })));
-    seat.incrementBy(
-      vaultSeat.decrementBy(
-        harden({ Attestation: vaultSeat.getAmountAllocated('Attestation') }),
-      ),
+    atomicRearrange(
+      zcf,
+      harden([
+        [seat, vaultSeat, { [KW.Debt]: currentDebt }],
+        [
+          vaultSeat,
+          seat,
+          { Attestation: vaultSeat.getAmountAllocated('Attestation') },
+        ],
+      ]),
     );
-
-    zcf.reallocate(seat, vaultSeat);
 
     manager.burnDebt(currentDebt, vaultSeat);
     state.open = false;

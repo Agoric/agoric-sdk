@@ -8,10 +8,7 @@ import {
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import '@agoric/vats/src/core/types.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -22,6 +19,8 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeLoopback } from '@endo/captp';
 import { E, Far } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeFakeBankKit } from '@agoric/vats/tools/bank-utils.js';
+import { Fail } from '@agoric/assert';
 
 export { ActionType };
 
@@ -57,10 +56,8 @@ export const subscriptionKey = subscription => {
     .getStoreKey()
     .then(storeKey => {
       const [prefix, unique] = storeKey.storeSubkey.split(':');
-      assert(
-        prefix === 'fake',
-        'subscriptionKey helper only supports fake storage',
-      );
+      prefix === 'fake' ||
+        Fail`subscriptionKey helper only supports fake storage`;
       return unique;
     });
 };
@@ -88,7 +85,7 @@ const makeFakeBridgeManager = () =>
           assert.fail(`expected fromBridge`);
         },
         toBridge(obj) {
-          assert(handler, `No handler for ${bridgeId}`);
+          handler || Fail`No handler for ${bridgeId}`;
           // Rely on interface guard for validation.
           // This should also be validated upstream but don't rely on it.
           // @ts-expect-error handler possibly undefined
@@ -142,20 +139,14 @@ export const makeMockTestSpace = async log => {
 
   produce.testFirstAnchorKit.resolve(makeIssuerKit('AUSD', 'nat'));
 
+  const fakeBankKit = makeFakeBankKit([]);
+
   produce.bankManager.resolve(
     Promise.resolve(
       Far(
         'mockBankManager',
         /** @type {any} */ ({
-          getBankForAddress: _a =>
-            Far('mockBank', {
-              getPurse: () => ({
-                deposit: async (_, _x) => {
-                  assert.fail('not impl');
-                },
-              }),
-              getAssetSubscription: () => assert.fail('not impl'),
-            }),
+          getBankForAddress: _a => fakeBankKit.bank,
         }),
       ),
     ),

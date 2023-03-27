@@ -169,3 +169,19 @@ harden(makeAtomicProvider);
  * @template V
  * @typedef {ReturnType<typeof makeAtomicProvider<K, V>>} AtomicProvider<K, V>
  */
+
+/**
+ * @template K, V
+ * @param {MapStore<K, V[]>} mapStore
+ * @param {K} key
+ * @param {V} item
+ */
+export const appendToStoredArray = (mapStore, key, item) => {
+  if (mapStore.has(key)) {
+    const extant = mapStore.get(key);
+    mapStore.set(key, harden([...extant, item]));
+  } else {
+    mapStore.init(key, harden([item]));
+  }
+};
+harden(appendToStoredArray);

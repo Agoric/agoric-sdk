@@ -1,9 +1,10 @@
 // @ts-check
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { assertPassable } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
+import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
 import { Stable, Stake } from '../tokens.js';
+import { makePromiseSpace } from './promise-space.js';
 
 const { entries, fromEntries, keys } = Object;
 const { Fail, quote: q } = assert;
@@ -47,7 +48,7 @@ export const agoricNamesReserved = harden({
     noActionElectorate: 'no action electorate',
     binaryVoteCounter: 'binary vote counter',
     VaultFactory: 'vault factory',
-    auction: 'auctioneer',
+    auctioneer: 'auctioneer',
     feeDistributor: 'fee distributor',
     liquidate: 'liquidate',
     stakeFactory: 'stakeFactory',
@@ -62,7 +63,7 @@ export const agoricNamesReserved = harden({
     VaultFactory: 'vault factory',
     feeDistributor: 'fee distributor',
     Treasury: 'Treasury', // for compatibility
-    auction: 'auctioneer',
+    auctioneer: 'auctioneer',
     VaultFactoryGovernor: 'vault factory governor',
     stakeFactory: 'stakeFactory',
     stakeFactoryGovernor: 'stakeFactory governor',
@@ -108,110 +109,6 @@ harden(addRemote);
  */
 export const callProperties = (builders, ...args) =>
   fromEntries(builders.map(fn => entries(fn(...args))).flat());
-
-/**
- * Make { produce, consume } where for each name, `consume[name]` is a promise
- * and `produce[name].resolve` resolves it.
- *
- * Note: repeated resolves() are noops.
- *
- * @param {typeof console.log} [log]
- * @returns {PromiseSpace}
- */
-export const makePromiseSpace = (log = (..._args) => {}) => {
-  /**
-   * @typedef {PromiseRecord<unknown> & {
-   *   reset: (reason?: unknown) => void,
-   *   isSettling: boolean,
-   * }} PromiseState
-   */
-  /** @type {Map<string, PromiseState>} */
-  const nameToState = new Map();
-  const remaining = new Set();
-
-  const findOrCreateState = name => {
-    /** @type {PromiseState} */
-    let state;
-    const currentState = nameToState.get(name);
-    if (currentState) {
-      state = currentState;
-    } else {
-      log(`${name}: new Promise`);
-      const pk = makePromiseKit();
-
-      pk.promise
-        .finally(() => {
-          remaining.delete(name);
-          log(name, 'settled; remaining:', [...remaining.keys()].sort());
-        })
-        .catch(() => {});
-
-      const settling = () => {
-        assert(state);
-        state = harden({ ...state, isSettling: true });
-        nameToState.set(name, state);
-      };
-
-      const resolve = value => {
-        settling();
-        pk.resolve(value);
-      };
-      const reject = reason => {
-        settling();
-        pk.reject(reason);
-      };
-
-      const reset = (reason = undefined) => {
-        if (!state.isSettling) {
-          if (!reason) {
-            // Reuse the old promise; don't reject it.
-            return;
-          }
-          reject(reason);
-        }
-        // Now publish a new promise.
-        nameToState.delete(name);
-        remaining.delete(name);
-      };
-
-      state = harden({
-        isSettling: false,
-        resolve,
-        reject,
-        reset,
-        promise: pk.promise,
-      });
-      nameToState.set(name, state);
-      remaining.add(name);
-    }
-    return state;
-  };
-
-  const consume = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        const kit = findOrCreateState(name);
-        return kit.promise;
-      },
-    },
-  );
-
-  const produce = new Proxy(
-    {},
-    {
-      get: (_target, name) => {
-        assert.typeof(name, 'string');
-        const { reject, resolve, reset } = findOrCreateState(name);
-        return harden({ reject, resolve, reset });
-      },
-    },
-  );
-
-  return harden({ produce, consume });
-};
-harden(makePromiseSpace);
 
 /**
  * Attenuate `specimen` to only allow acccess to properties specified in `template`
@@ -345,10 +242,10 @@ export const makeAgoricNamesAccess = (
     const { nameAdmin } = hubs[key];
     const subSpaceLog = (...args) => log(key, ...args);
     const { produce, consume } = makePromiseSpace(subSpaceLog);
-    keys(detail).forEach(k => {
+    for (const k of keys(detail)) {
       nameAdmin.reserve(k);
-      consume[k].then(v => nameAdmin.update(k, v));
-    });
+      void consume[k].then(v => nameAdmin.update(k, v));
+    }
     return [key, { produce, consume }];
   });
   const typedSpaces = /** @type { WellKnownSpaces } */ (
@@ -359,4 +256,22 @@ export const makeAgoricNamesAccess = (
     agoricNamesAdmin,
     spaces: typedSpaces,
   };
+};
+
+/**
+ * @param {string} address
+ */
+export const makeMyAddressNameAdminKit = address => {
+  // Create a name hub for this address.
+  const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
+
+  /** @type {import('../types').MyAddressNameAdmin} */
+  const myAddressNameAdmin = Far('myAddressNameAdmin', {
+    ...rawMyAddressNameAdmin,
+    getMyAddress: () => address,
+  });
+  // reserve space for deposit facet
+  myAddressNameAdmin.reserve(WalletName.depositFacet);
+
+  return { nameHub, myAddressNameAdmin };
 };

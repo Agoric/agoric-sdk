@@ -21,6 +21,7 @@ export {
   provideDurableMapStore,
   provideDurableWeakMapStore,
   provideDurableSetStore,
+  provideDurableWeakSetStore,
   // deprecated
   defineKind,
   defineKindMulti,
@@ -35,7 +36,7 @@ export {
   prepareExoClass,
   prepareExoClassKit,
   prepareExo,
-  // deorecated
+  // deprecated
   prepareSingleton,
 } from './exo-utils.js';
 
@@ -45,10 +46,12 @@ export {
 
 // //////////////////////////// deprecated /////////////////////////////////////
 
+/**
+ * @deprecated Use Exos/ExoClasses instead of Kinds
+ */
 export {
-  // deprecated
   ignoreContext,
   provideKindHandle,
   prepareKind,
   prepareKindMulti,
-} from './kind-utils.js';
+} from './exo-utils.js';

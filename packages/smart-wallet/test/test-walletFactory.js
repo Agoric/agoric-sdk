@@ -28,7 +28,6 @@ test.before(async t => {
 test('bridge handler', async t => {
   const smartWallet = await t.context.simpleProvideWallet(mockAddress1);
   const updates = await E(smartWallet).getUpdatesSubscriber();
-  const current = await E(smartWallet).getCurrentSubscriber();
 
   const ctx = makeImportContext();
 
@@ -55,13 +54,8 @@ test('bridge handler', async t => {
       value: [],
     },
   });
-  t.like(await headValue(current), {
-    // error because it's deprecated
-    lastOfferId: -1,
-  });
 
-  assert(t.context.sendToBridge);
-  const res = await t.context.sendToBridge({
+  const validMsg = {
     type: ActionType.WALLET_SPEND_ACTION,
     owner: mockAddress1,
     // consider a helper for each action type
@@ -72,8 +66,11 @@ test('bridge handler', async t => {
     ),
     blockTime: 0,
     blockHeight: 0,
+  };
+  assert(t.context.sendToBridge);
+  await t.throwsAsync(t.context.sendToBridge(validMsg), {
+    message: 'no invitation match (0 description and 0 instance)',
   });
-  t.is(res, undefined);
 
   t.deepEqual(await headValue(updates), {
     updated: 'offerStatus',
@@ -117,8 +114,9 @@ test('bridge with offerId string', async t => {
     blockTime: 0,
     blockHeight: 0,
   };
-  const res = await t.context.sendToBridge(validMsg);
-  t.is(res, undefined);
+  await t.throwsAsync(t.context.sendToBridge(validMsg), {
+    message: 'no invitation match (0 description and 0 instance)',
+  });
 
   // Verify it would have failed with a different 'type'.
   // This arguably belongs in a new test but putting it here makes clear
@@ -132,7 +130,35 @@ test('bridge with offerId string', async t => {
   );
 });
 
-test.todo('spend action over bridge');
+test('bad action value', async t => {
+  const owner = 'agoric1badActionValue';
+  // make a wallet and get its update stream, but don't use the wallet object
+  const updates = await E(
+    t.context.simpleProvideWallet(owner),
+  ).getUpdatesSubscriber();
+
+  const validMsg = {
+    type: ActionType.WALLET_SPEND_ACTION,
+    owner,
+    spendAction: JSON.stringify({
+      body: 'invalid capdata to force an error in handleBridgeAction',
+      slots: [],
+    }),
+    blockTime: 0,
+    blockHeight: 0,
+  };
+  assert(t.context.sendToBridge);
+  // sending over the bridge succeeds without rejecting
+  await t.context.sendToBridge(validMsg);
+
+  // the signal of an error is available in chain storage
+  t.deepEqual(await headValue(updates), {
+    updated: 'walletAction',
+    status: {
+      error: 'Unexpected token i in JSON at position 0',
+    },
+  });
+});
 
 test('notifiers', async t => {
   async function checkAddress(address) {

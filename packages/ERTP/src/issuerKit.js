@@ -55,7 +55,7 @@ const setupIssuerKit = (
   // Attenuate the powerful authority to mint and change balances
   /** @type {PaymentLedger<K>} */
   // @ts-expect-error could be instantiated with different subtype of AssetKind
-  const { issuer, mint, brand } = preparePaymentLedger(
+  const { issuer, mint, brand, mintRecoveryPurse } = preparePaymentLedger(
     issuerBaggage,
     name,
     assetKind,
@@ -68,6 +68,7 @@ const setupIssuerKit = (
     brand,
     issuer,
     mint,
+    mintRecoveryPurse,
     displayInfo: cleanDisplayInfo,
   });
 };

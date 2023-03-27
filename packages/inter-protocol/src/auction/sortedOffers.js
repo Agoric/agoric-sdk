@@ -49,6 +49,14 @@ export const toPriceOfferKey = (offerPrice, sequenceNumber) => {
   return encodeData(harden([mostSignificantPart, sequenceNumber]));
 };
 
+/**
+ *
+ * @param {number} floatPrice
+ * @param {Brand<'nat'>} numBrand
+ * @param {Brand<'nat'>} denomBrand
+ * @param {number} useDecimals
+ * @returns {Ratio}
+ */
 const priceRatioFromFloat = (floatPrice, numBrand, denomBrand, useDecimals) => {
   const denominatorValue = 10 ** useDecimals;
   return makeRatio(
@@ -72,8 +80,8 @@ const bidScalingRatioFromKey = (bidScaleFloat, numBrand, useDecimals) => {
  * fromPriceOfferKey is only used for diagnostics.
  *
  * @param {string} key
- * @param {Brand} numBrand
- * @param {Brand} denomBrand
+ * @param {Brand<'nat'>} numBrand
+ * @param {Brand<'nat'>} denomBrand
  * @param {number} useDecimals
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
@@ -85,6 +93,7 @@ export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
   ];
 };
 
+/** @type {(rate: Ratio) => string} */
 export const toBidScalingComparator = rate => {
   assert(rate);
   const mostSignificantPart = ratioToNumber(rate);

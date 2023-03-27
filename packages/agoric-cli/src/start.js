@@ -63,8 +63,8 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn, process } = powers;
   const log = anylogger('agoric:start');
 
-  const SDK_IMAGE = `agoric/agoric-sdk:${opts.dockerTag}`;
-  const SOLO_IMAGE = `agoric/cosmic-swingset-solo:${opts.dockerTag}`;
+  const SDK_IMAGE = `ghcr.io/agoric/agoric-sdk:${opts.dockerTag}`;
+  const SOLO_IMAGE = `ghcr.io/agoric/cosmic-swingset-solo:${opts.dockerTag}`;
 
   const pspawnEnv = { ...process.env };
   if (opts.verbose > 1) {

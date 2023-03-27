@@ -10,6 +10,7 @@ import '@agoric/zoe/exported.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
 import { Stable } from '../src/tokens.js';
 
@@ -120,7 +121,10 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
 
   const issuers = { IST: istIssuer };
 
-  const claimedPayment = await E(issuers.IST).claim(bootstrapPayment);
+  const claimedPayment = await claim(
+    E(issuers.IST).makeEmptyPurse(),
+    bootstrapPayment,
+  );
   const bootstrapAmount = await E(issuers.IST).getAmountOf(claimedPayment);
 
   t.true(
@@ -134,9 +138,12 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
 
   const bootstrapPayment2 = E(creatorFacet).getBootstrapPayment();
 
-  await t.throwsAsync(() => E(issuers.IST).claim(bootstrapPayment2), {
-    message: /was not a live payment/,
-  });
+  await t.throwsAsync(
+    () => claim(E(issuers.IST).makeEmptyPurse(), bootstrapPayment2),
+    {
+      message: /was not a live payment/,
+    },
+  );
 });
 
 test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyTestContext} */ t) => {

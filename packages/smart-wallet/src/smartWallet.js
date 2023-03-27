@@ -7,6 +7,7 @@ import {
   PaymentShape,
   PurseShape,
 } from '@agoric/ertp';
+import { makeTypeGuards } from '@agoric/internal';
 import {
   observeNotifier,
   pipeTopicToStorage,
@@ -14,8 +15,8 @@ import {
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
-import { makeTypeGuards } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
@@ -27,45 +28,61 @@ import { objectMapStoragePath } from './utils.js';
 const { Fail, quote: q } = assert;
 const { StorageNodeShape } = makeTypeGuards(M);
 
-const ERROR_LAST_OFFER_ID = -1;
-
-/**
- * @template K, V
- * @param {MapStore<K, V> } map
- * @returns {Record<K, V>}
- */
-const mapToRecord = map => Object.fromEntries(map.entries());
-
 /**
  * @file Smart wallet module
  *
  * @see {@link ../README.md}}
  */
 
-// One method yet but structured to support more. For example,
-// maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
-// setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
 /**
  * @typedef {{
  *   method: 'executeOffer'
  *   offer: import('./offers.js').OfferSpec,
- * }} BridgeAction
+ * }} ExecuteOfferAction
+ */
+
+/**
+ * @typedef {{
+ *   method: 'tryExitOffer'
+ *   offerId: import('./offers.js').OfferId,
+ * }} TryExitOfferAction
+ */
+
+// Discriminated union. Possible future messages types:
+// maybe suggestIssuer for https://github.com/Agoric/agoric-sdk/issues/6132
+// setting petnames and adding brands for https://github.com/Agoric/agoric-sdk/issues/6126
+/**
+ * @typedef { ExecuteOfferAction | TryExitOfferAction } BridgeAction
  */
 
 /**
  * Purses is an array to support a future requirement of multiple purses per brand.
  *
+ * Each map is encoded as an array of entries because a Map doesn't serialize directly.
+ * We also considered having a vstorage key for each offer but for now are sticking with this design.
+ *
+ * Cons
+ *    - Reserializes previously written results when a new result is added
+ *    - Optimizes reads though writes are on-chain (~100 machines) and reads are off-chain (to 1 machine)
+ *
+ * Pros
+ *    - Reading all offer results happens much more (>100) often than storing a new offer result
+ *    - Reserialization and writes are paid in execution gas, whereas reads are not
+ *
+ * This design should be revisited if ever batch querying across vstorage keys become cheaper or reads be paid.
+ *
  * @typedef {{
  *   purses: Array<{brand: Brand, balance: Amount}>,
- *   offerToUsedInvitation: { [offerId: string]: Amount },
- *   offerToPublicSubscriberPaths: { [offerId: string]: { [subscriberName: string]: string } },
- *   lastOfferId: string,
+ *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
+ *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
+ *   liveOffers: Array<[import('./offers.js').OfferId, import('./offers.js').OfferStatus]>,
  * }} CurrentWalletRecord
  */
 
 /**
- * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus } |
- *  { updated: 'balance'; currentAmount: Amount }
+ * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
+ *   | { updated: 'balance'; currentAmount: Amount }
+ *   | { updated: 'walletAction'; status: { error: string } }
  * } UpdateRecord Record of an update to the state of this wallet.
  *
  * Client is responsible for coalescing updates into a current state. See `coalesceUpdates` utility.
@@ -125,6 +142,8 @@ const mapToRecord = map => Object.fromEntries(map.entries());
  *   purseBalances: MapStore<RemotePurse, Amount>,
  *   updatePublishKit: PublishKit<UpdateRecord>,
  *   currentPublishKit: PublishKit<CurrentWalletRecord>,
+ *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
+ *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
  * }>} ImmutableState
  *
  * @typedef {{
@@ -234,6 +253,11 @@ export const prepareSmartWallet = (baggage, shared) => {
       /** @type {PublishKit<CurrentWalletRecord>} */
       currentPublishKit,
       walletStorageNode,
+      liveOffers: makeScalarBigMapStore('live offers', { durable: true }),
+      // Keep seats separate from the offers because we don't want to publish these.
+      liveOfferSeats: makeScalarBigMapStore('live offer seats', {
+        durable: true,
+      }),
     };
 
     return {
@@ -254,7 +278,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
     offers: M.interface('offers facet', {
       executeOffer: M.call(shape.OfferSpec).returns(M.promise()),
-      getLastOfferId: M.call().returns(M.number()),
+      tryExitOffer: M.call(M.scalar()).returns(M.promise()),
     }),
     self: M.interface('selfFacetI', {
       handleBridgeAction: M.call(shape.StringCapData, M.boolean()).returns(
@@ -305,18 +329,18 @@ export const prepareSmartWallet = (baggage, shared) => {
             offerToUsedInvitation,
             offerToPublicSubscriberPaths,
             purseBalances,
+            liveOffers,
           } = this.state;
           currentPublishKit.publisher.publish({
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
               balance: a,
             })),
-            offerToUsedInvitation: mapToRecord(offerToUsedInvitation),
-            offerToPublicSubscriberPaths: mapToRecord(
-              offerToPublicSubscriberPaths,
-            ),
-            // @ts-expect-error FIXME leftover from offer id string conversion
-            lastOfferId: ERROR_LAST_OFFER_ID,
+            offerToUsedInvitation: [...offerToUsedInvitation.entries()],
+            offerToPublicSubscriberPaths: [
+              ...offerToPublicSubscriberPaths.entries(),
+            ],
+            liveOffers: [...liveOffers.entries()],
           });
         },
 
@@ -377,32 +401,20 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           // When there is no purse, save the payment into a queue.
           // It's not yet ever read but a future version of the contract can
-          if (queues.has(brand)) {
-            const extant = queues.get(brand);
-            queues.set(brand, harden([...extant, payment]));
-          } else {
-            queues.init(brand, harden([payment]));
-          }
+          appendToStoredArray(queues, brand, payment);
           return AmountMath.makeEmpty(brand);
         },
       },
       offers: {
         /**
-         * @deprecated
-         * @returns {number} an error code, for backwards compatibility with clients expecting a number
-         */
-        getLastOfferId() {
-          return ERROR_LAST_OFFER_ID;
-        },
-        /**
          * Take an offer description provided in capData, augment it with payments and call zoe.offer()
          *
          * @param {import('./offers.js').OfferSpec} offerSpec
-         * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
+         * @returns {Promise<void>} after the offer has been both seated and exited by Zoe.
          * @throws if any parts of the offer can be determined synchronously to be invalid
          */
         async executeOffer(offerSpec) {
-          const { facets } = this;
+          const { facets, state } = this;
           const {
             address,
             bank,
@@ -416,7 +428,7 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           const logger = {
             info: (...args) => console.info('wallet', address, ...args),
-            error: (...args) => console.log('wallet', address, ...args),
+            error: (...args) => console.error('wallet', address, ...args),
           };
 
           const executor = makeOfferExecutor({
@@ -449,10 +461,23 @@ export const prepareSmartWallet = (baggage, shared) => {
             },
             onStatusChange: offerStatus => {
               logger.info('offerStatus', offerStatus);
+
               updatePublishKit.publisher.publish({
                 updated: 'offerStatus',
                 status: offerStatus,
               });
+
+              const isSeatExited = 'numWantsSatisfied' in offerStatus;
+              if (isSeatExited) {
+                if (state.liveOfferSeats.has(offerStatus.id)) {
+                  state.liveOfferSeats.delete(offerStatus.id);
+                }
+
+                if (state.liveOffers.has(offerStatus.id)) {
+                  state.liveOffers.delete(offerStatus.id);
+                  facets.helper.publishCurrentState();
+                }
+              }
             },
             /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
@@ -471,7 +496,23 @@ export const prepareSmartWallet = (baggage, shared) => {
               facets.helper.publishCurrentState();
             },
           });
-          await executor.executeOffer(offerSpec);
+
+          return executor.executeOffer(offerSpec, seatRef => {
+            state.liveOffers.init(offerSpec.id, offerSpec);
+            facets.helper.publishCurrentState();
+            state.liveOfferSeats.init(offerSpec.id, seatRef);
+          });
+        },
+        /**
+         * Take an offer's id, look up its seat, try to exit.
+         *
+         * @param {import('./offers.js').OfferId} offerId
+         * @returns {Promise<void>}
+         * @throws if the seat can't be found or E(seatRef).tryExit() fails.
+         */
+        async tryExitOffer(offerId) {
+          const seatRef = this.state.liveOfferSeats.get(offerId);
+          await E(seatRef).tryExit();
         },
       },
       self: {
@@ -492,13 +533,31 @@ export const prepareSmartWallet = (baggage, shared) => {
             action => {
               switch (action.method) {
                 case 'executeOffer': {
-                  assert(canSpend, 'executeOffer requires spend authority');
+                  canSpend || Fail`executeOffer requires spend authority`;
                   return offers.executeOffer(action.offer);
+                }
+                case 'tryExitOffer': {
+                  assert(canSpend, 'tryExitOffer requires spend authority');
+                  return offers.tryExitOffer(action.offerId);
                 }
                 default: {
                   throw Fail`invalid handle bridge action ${q(action)}`;
                 }
               }
+            },
+            /** @param {Error} err */
+            err => {
+              const { address, updatePublishKit } = this.state;
+              console.error(
+                'wallet',
+                address,
+                'handleBridgeAction error:',
+                err,
+              );
+              updatePublishKit.publisher.publish({
+                updated: 'walletAction',
+                status: { error: err.message },
+              });
             },
           );
         },
@@ -539,12 +598,12 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
     },
     {
-      finish: async ({ state, facets }) => {
+      finish: ({ state, facets }) => {
         const { invitationPurse } = state;
         const { helper } = facets;
 
         // @ts-expect-error RemotePurse cast
-        helper.watchPurse(invitationPurse);
+        void helper.watchPurse(invitationPurse);
       },
     },
   );

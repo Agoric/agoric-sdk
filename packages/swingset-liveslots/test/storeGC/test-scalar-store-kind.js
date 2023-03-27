@@ -18,7 +18,7 @@ test.serial('assert known scalarMapStore ID', async t => {
   // registered. Check it explicity here. If this test fails, consider
   // updating `mapRef()` to use the new value.
 
-  const { testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { testHooks } = await setupTestLiveslots(t, buildRootObject, 'bob', { forceGC: true });
   const id = testHooks.obtainStoreKindID('scalarMapStore');
   t.is(id, 2);
   t.is(mapRef('INDEX'), 'o+v2/INDEX');

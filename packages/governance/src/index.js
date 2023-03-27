@@ -44,5 +44,3 @@ export {
 } from './validators.js';
 
 export { ParamTypes } from './constants.js';
-
-export { makeBinaryVoteCounter } from './binaryVoteCounter.js';

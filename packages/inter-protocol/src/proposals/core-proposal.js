@@ -3,15 +3,14 @@ import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 
 export * from './econ-behaviors.js';
-export * from './sim-behaviors.js';
 // @ts-expect-error Module './econ-behaviors.js' has already exported a member
 // named 'EconomyBootstrapPowers'.
 export * from './startPSM.js'; // eslint-disable-line import/export
 export * from './startEconCommittee.js'; // eslint-disable-line import/export
 
-/** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifest} */
+/** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifest} */
 const SHARED_MAIN_MANIFEST = harden({
-  /** @type {import('@agoric/vats/src/core/manifest.js').BootstrapManifestPermit} */
+  /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
   [econBehaviors.startVaultFactory.name]: {
     consume: {
       board: 'board',
@@ -22,7 +21,7 @@ const SHARED_MAIN_MANIFEST = harden({
       priceAuthority: 'priceAuthority',
       economicCommitteeCreatorFacet: 'economicCommittee',
       reserveKit: 'reserve',
-      auction: 'auction',
+      auctioneerKit: 'auction',
     },
     produce: { vaultFactoryKit: 'VaultFactory' },
     brand: { consume: { [Stable.symbol]: 'zoe' } },
@@ -36,7 +35,7 @@ const SHARED_MAIN_MANIFEST = harden({
     instance: {
       consume: {
         reserve: 'reserve',
-        auction: 'auction',
+        auctioneer: 'auction',
       },
       produce: {
         VaultFactory: 'VaultFactory',
@@ -87,10 +86,10 @@ const SHARED_MAIN_MANIFEST = harden({
     },
     produce: { auctioneerKit: 'auction' },
     instance: {
-      produce: { auction: 'auction' },
+      produce: { auctioneer: 'auction' },
     },
     installation: {
-      consume: { contractGovernor: 'zoe', auction: 'zoe' },
+      consume: { contractGovernor: 'zoe', auctioneer: 'zoe' },
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },
@@ -188,7 +187,7 @@ export const getManifestForMain = (
     manifest: SHARED_MAIN_MANIFEST,
     installations: {
       VaultFactory: restoreRef(installKeys.vaultFactory),
-      auction: restoreRef(installKeys.auction),
+      auctioneer: restoreRef(installKeys.auctioneer),
       feeDistributor: restoreRef(installKeys.feeDistributor),
       reserve: restoreRef(installKeys.reserve),
     },
@@ -200,19 +199,9 @@ export const getManifestForMain = (
   };
 };
 
-const roleToManifest = harden({
-  chain: {
-    ...REWARD_MANIFEST,
-    ...STAKE_FACTORY_MANIFEST,
-  },
-  'sim-chain': SIM_CHAIN_MANIFEST,
-  client: {},
-});
-
 export const getManifestForInterProtocol = (
   { restoreRef },
   {
-    ROLE = 'chain',
     econCommitteeOptions,
     installKeys,
     vaultFactoryControllerAddress,
@@ -237,7 +226,8 @@ export const getManifestForInterProtocol = (
     manifest: {
       ...econCommitteeManifest.manifest,
       ...mainManifest.manifest,
-      ...roleToManifest[ROLE],
+      ...REWARD_MANIFEST,
+      ...STAKE_FACTORY_MANIFEST,
     },
     installations: {
       ...econCommitteeManifest.installations,

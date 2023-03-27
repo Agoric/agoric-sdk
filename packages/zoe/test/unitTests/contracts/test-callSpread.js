@@ -64,7 +64,7 @@ test('fundedCallSpread below Strike1', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
-  const priceAuthority = makeTestPriceAuthority(
+  const priceAuthority = await makeTestPriceAuthority(
     brands,
     [54, 20, 35, 15, 28],
     manualTimer,
@@ -175,7 +175,11 @@ test('fundedCallSpread above Strike2', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 55], manualTimer);
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 55],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
     expiration: 2n,
@@ -279,7 +283,11 @@ test('fundedCallSpread, mid-strike', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 45],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
     expiration: 2n,
@@ -382,7 +390,11 @@ test('fundedCallSpread, late exercise', async t => {
   const carolBucksPurse = bucksIssuer.makeEmptyPurse();
 
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 45],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
     expiration: 2n,
@@ -487,7 +499,11 @@ test('fundedCallSpread, sell options', async t => {
   const carolBucksPayment = bucksMint.mintPayment(bucks(100n));
 
   const manualTimer = buildManualTimer(t.log, 0n, { eventLoopIteration });
-  const priceAuthority = makeTestPriceAuthority(brands, [20, 45], manualTimer);
+  const priceAuthority = await makeTestPriceAuthority(
+    brands,
+    [20, 45],
+    manualTimer,
+  );
   // underlying is 2 Simoleans, strike range is 30-50 (doubled)
   const terms = harden({
     expiration: 2n,

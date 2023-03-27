@@ -38,8 +38,7 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
  * @typedef { import('../../types-external.js').ManagerType } ManagerType
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').StreamPosition } StreamPosition
- * @typedef { import('../../types-external.js').StreamStore } StreamStore
+ * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
  * @typedef { import('../../types-external.js').VatManager } VatManager
  */
@@ -86,8 +85,6 @@ const enableKernelGC = true;
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.nextDeliveryNum = $NN
-// v$NN.t.startPosition = $NN // inclusive
-// v$NN.t.endPosition = $NN  // exclusive
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN // XXX does this exist?
 // v$NN.reapInterval = $NN or 'never'
@@ -174,7 +171,7 @@ const FIRST_METER_ID = 1n;
  * @param {KernelSlog|null} kernelSlog
  */
 export default function makeKernelKeeper(kernelStorage, kernelSlog) {
-  const { kvStore, streamStore, snapStore } = kernelStorage;
+  const { kvStore, transcriptStore, snapStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
 
@@ -545,6 +542,37 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
+   * Iterate over non-durable objects exported by a vat.
+   *
+   * @param {string} vatID
+   * @yields {{kref: string, vref: string}}
+   */
+  function* enumerateNonDurableObjectExports(vatID) {
+    insistVatID(vatID);
+    // vrefs for exported objects start with o+NN (ephemeral),
+    // o+vNN/MM (merely-virtual), or o+dNN/MM (durable).
+    // We iterate through all ephemeral and virtual entries so the kernel
+    // can ensure that they are abandoned by a vat being upgraded.
+    const prefix = `${vatID}.c.`;
+    const ephStart = `${prefix}o+`;
+    const durStart = `${prefix}o+d`;
+    const virStart = `${prefix}o+v`;
+    /** @type {[string, string?][]} */
+    const ranges = [[ephStart, durStart], [virStart]];
+    for (const range of ranges) {
+      for (const k of enumeratePrefixedKeys(kvStore, ...range)) {
+        const vref = k.slice(prefix.length);
+        // exclude the root object, which is replaced by upgrade
+        if (vref !== 'o+0') {
+          const kref = kvStore.get(k);
+          assert.typeof(kref, 'string');
+          yield { kref, vref };
+        }
+      }
+    }
+  }
+
+  /**
    * Allocate a new koid.
    *
    * @param {string} ownerID
@@ -784,10 +812,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const vatKeeper = provideVatKeeper(vatID);
     const exportPrefix = `${vatID}.c.o+`;
     const importPrefix = `${vatID}.c.o-`;
-    const promisePrefix = `${vatID}.c.p`;
-    const kernelPromisesToReject = [];
 
-    vatKeeper.deleteSnapshots();
+    vatKeeper.deleteSnapshotsAndTranscript();
 
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
@@ -825,23 +851,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       // that will also delete both db keys
     }
 
-    // now find all orphaned promises, which must be rejected
-    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
-      // The vpid for a promise imported or exported by a vat (and thus
-      // potentially a promise for which the vat *might* be the decider) will
-      // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
-      // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
-      // independent of whether the promise was imported or exported, so we
-      // have to look up the corresponding kernel promise table entry to see
-      // whether the vat is the decider or not.  If it is, we add the promise
-      // to the list of promises that must be rejected because the dead vat
-      // will never be able to act upon them.
-      const kpid = kvStore.get(k);
-      const p = getKernelPromise(kpid);
-      if (p.state === 'unresolved' && p.decider === vatID) {
-        kernelPromisesToReject.push(kpid);
-      }
-    }
+    // the caller used enumeratePromisesByDecider() before calling us,
+    // so they already know the orphaned promises to reject
 
     // now loop back through everything and delete it all
     for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
@@ -873,8 +884,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       }
       decStat('vats');
     }
-
-    return kernelPromisesToReject;
   }
 
   function addMessageToPromiseQueue(kernelSlot, msg) {
@@ -926,6 +935,27 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     p.state === 'unresolved' || Fail`${kpid} was already resolved`;
     p.decider || Fail`${kpid} does not have a decider`;
     kvStore.set(`${kpid}.decider`, '');
+  }
+
+  function* enumeratePromisesByDecider(vatID) {
+    insistVatID(vatID);
+    const promisePrefix = `${vatID}.c.p`;
+    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
+      // The vpid for a promise imported or exported by a vat (and thus
+      // potentially a promise for which the vat *might* be the decider) will
+      // always be of the form `p+NN` or `p-NN`.  The corresponding vpid->kpid
+      // c-list entry will thus always begin with `vMM.c.p`.  Decider-ship is
+      // independent of whether the promise was imported or exported, so we
+      // have to look up the corresponding kernel promise table entry to see
+      // whether the vat is the decider or not.  If it is, we add the promise
+      // to the list of promises that must be rejected because the dead vat
+      // will never be able to act upon them.
+      const kpid = kvStore.get(k);
+      const p = getKernelPromise(kpid);
+      if (p.state === 'unresolved' && p.decider === vatID) {
+        yield kpid;
+      }
+    }
   }
 
   function addSubscriberToPromise(kernelSlot, vatID) {
@@ -1297,11 +1327,11 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       return found;
     }
     if (!kvStore.has(`${vatID}.o.nextID`)) {
-      initializeVatState(kvStore, streamStore, vatID);
+      initializeVatState(kvStore, transcriptStore, vatID);
     }
     const vk = makeVatKeeper(
       kvStore,
-      streamStore,
+      transcriptStore,
       kernelSlog,
       vatID,
       addKernelObject,
@@ -1328,20 +1358,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   * Cease writing to the vat's transcript.
-   *
-   * @param {string} vatID
-   */
-  function closeVatTranscript(vatID) {
-    insistVatID(vatID);
-    const transcriptStream = `transcript-${vatID}`;
-    streamStore.closeStream(transcriptStream);
-  }
-
-  /**
-   * NOTE: caller is responsible to closeVatTranscript()
-   * before evicting a VatKeeper.
-   *
    * @param {string} vatID
    */
   function evictVatKeeper(vatID) {
@@ -1448,7 +1464,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       if (vk) {
         // TODO: find some way to expose the liveSlots internal tables, the
         // kernel doesn't see them
-        closeVatTranscript(vatID);
         const vatTable = {
           vatID,
           state: { transcript: Array.from(vk.getTranscript()) },
@@ -1586,9 +1601,11 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     addSubscriberToPromise,
     setDecider,
     clearDecider,
+    enumeratePromisesByDecider,
     incrementRefCount,
     decrementRefCount,
     getObjectRefCount,
+    enumerateNonDurableObjectExports,
 
     addToRunQueue,
     isRunQueueEmpty,
@@ -1615,7 +1632,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     provideVatKeeper,
     vatIsAlive,
     evictVatKeeper,
-    closeVatTranscript,
     cleanupAfterTerminatedVat,
     addDynamicVatID,
     getDynamicVats,

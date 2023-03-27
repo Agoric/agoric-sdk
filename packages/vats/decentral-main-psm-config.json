@@ -1,4 +1,5 @@
 {
+  "$comment": "This config is obsolete. TODO: prune it",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "snapshotInterval": 1000,
@@ -77,8 +78,8 @@
     "board": {
       "sourceSpec": "@agoric/vats/src/vat-board.js"
     },
-    "chainStorage": {
-      "sourceSpec": "@agoric/vats/src/vat-chainStorage.js"
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
     },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"

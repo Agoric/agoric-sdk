@@ -97,7 +97,8 @@ test('basic', async t => {
   // should ONLY be between the OracleB and C values, which is why it is 25000
   await oracleTimer.tick();
   await t.throwsAsync(E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n }), {
-    message: 'round not accepting submissions',
+    message:
+      'round 2 not accepting submissions from oracle "agorice1priceOracleA"',
   });
   await E(oracleB).pushPrice({ roundId: 2, unitPrice: 2000n });
   await E(oracleC).pushPrice({ roundId: 2, unitPrice: 3000n });
@@ -342,7 +343,8 @@ test('interleaved', async t => {
   await oracleTimer.tick();
   // round 3 is NOT yet supersedeable (since no value present and not yet timed out), so these should fail
   await t.throwsAsync(E(oracleA).pushPrice({ roundId: 4, unitPrice: 4000n }), {
-    message: 'round not accepting submissions',
+    message:
+      'round 4 not accepting submissions from oracle "agorice1priceOracleA"',
   });
   await E(oracleB).pushPrice({ roundId: 4, unitPrice: 5000n });
   await E(oracleC).pushPrice({ roundId: 4, unitPrice: 6000n });
@@ -621,7 +623,8 @@ test('notifications', async t => {
   );
 
   await t.throwsAsync(E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n }), {
-    message: 'round not accepting submissions',
+    message:
+      'round 2 not accepting submissions from oracle "agorice1priceOracleA"',
   });
   // A started last round so fails to start next round
   t.deepEqual(

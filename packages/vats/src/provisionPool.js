@@ -8,7 +8,7 @@ import { observeIteration, observeNotifier } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp';
 import { handleParamGovernance, ParamTypes } from '@agoric/governance';
 import { makeMetricsPublishKit } from '@agoric/inter-protocol/src/contractSupport.js';
-import { PowerFlags } from './core/basic-behaviors.js';
+import { PowerFlags } from './walletFlags.js';
 
 const { details: X, quote: q } = assert;
 
@@ -170,14 +170,14 @@ export const start = async (zcf, privateArgs) => {
   /** @type {MapStore<Brand, Instance>} */
   const brandToPSM = makeScalarMapStore();
 
-  observeIteration(E(poolBank).getAssetSubscription(), {
+  void observeIteration(E(poolBank).getAssetSubscription(), {
     updateState: async desc => {
       console.log('provisionPool notified of new asset', desc.brand);
       await zcf.saveIssuer(desc.issuer, desc.issuerName);
       /** @type {ERef<Purse>} */
       // @ts-expect-error vbank purse is close enough for our use.
       const exchangePurse = E(poolBank).getPurse(desc.brand);
-      observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
+      void observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
         updateState: async amount => {
           console.log('provisionPool balance update', amount);
           if (AmountMath.isEmpty(amount) || amount.brand === poolBrand) {
@@ -192,7 +192,7 @@ export const start = async (zcf, privateArgs) => {
           await swap(payment, amount, instance).catch(async reason => {
             console.error(X`swap failed: ${reason}`);
             const resolvedPayment = await payment;
-            E(exchangePurse).deposit(resolvedPayment);
+            return E(exchangePurse).deposit(resolvedPayment);
           });
         },
         fail: reason => console.error(reason),
@@ -208,7 +208,7 @@ export const start = async (zcf, privateArgs) => {
   const sendInitialPayment = async (address, destBank) => {
     console.log('sendInitialPayment', address);
     /** @type {Amount<'nat'>} */
-    // @ts-expect-error xxx governance types
+    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     const perAccountInitialAmount = params.getPerAccountInitialAmount();
     const initialPmt = await E(fundPurse).withdraw(perAccountInitialAmount);
 

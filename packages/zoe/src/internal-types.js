@@ -31,7 +31,8 @@
  * @property {ZoeSeatAdmin} zoeSeatAdmin
  */
 
-/** @callback MakeZoeSeatAdminKit
+/**
+ * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
  * @param {InstanceAdminHelper} instanceAdminHelper
@@ -56,6 +57,7 @@
  * @property {ShutdownWithFailure} fail called with the reason
  * @property {() => Promise<Notifier<Allocation>> } getNotifier
  * for calling fail on this seat, where reason is normally an instanceof Error.
+ * @property {() => Subscriber<unknown>} getExitSubscriber
  */
 
 /**
@@ -132,7 +134,7 @@
  * @property {(seatHandle: SeatHandle, reason: Error) => void} failSeat
  * @property {() => void} stopAcceptingOffers
  * @property {(strings: Array<string>) => void} setOfferFilter
- * @property {() => Promise<Array<string>>} getOfferFilter
+ * @property {() => Array<string>} getOfferFilter
  * @property {(seatHandle: SeatHandle) => Subscriber<any>} getExitSubscriber
  */
 

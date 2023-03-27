@@ -3,7 +3,6 @@ import { M } from '@agoric/store';
 export const TimerBrandShape = M.remotable('TimerBrand');
 export const TimestampValueShape = M.nat();
 export const RelativeTimeValueShape = M.nat(); // Should we allow negatives?
-export const TimerServiceShape = M.remotable('TimerService');
 
 export const TimestampRecordShape = harden({
   timerBrand: TimerBrandShape,
@@ -20,3 +19,5 @@ export const RelativeTimeShape = M.or(
   RelativeTimeRecordShape,
   RelativeTimeValueShape,
 );
+
+export const TimerServiceShape = M.remotable('TimerService');

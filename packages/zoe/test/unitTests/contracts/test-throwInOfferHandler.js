@@ -84,6 +84,6 @@ test('throw in offerHandler', async t => {
       // https://github.com/endojs/endo/pull/640
       //
       // /"brand" not found: .*/,
-      /no ordinal for .*/,
+      'key "[Alleged: token brand]" not found in collection "brandToIssuerRecord"',
   });
 });

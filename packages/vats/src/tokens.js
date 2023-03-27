@@ -1,19 +1,24 @@
 // @ts-check
 
-import { AssetKind } from '@agoric/ertp';
-import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
-
 /** @typedef { 'IST' | 'BLD' } TokenKeyword */
+
+/**
+ * Use static type check and unit tests rather than runtime import
+ * to avoid bundling all of ERTP just to get Stable.symbol.
+ *
+ * @type {typeof import('@agoric/ertp').AssetKind.NAT}
+ */
+const NAT = 'nat';
 
 export const Stable = harden(
   /** @type {const } */ ({
     symbol: 'IST',
     denom: 'uist',
     proposedName: 'Agoric stable local currency',
-    assetKind: AssetKind.NAT,
+    assetKind: NAT,
     displayInfo: {
       decimalPlaces: 6,
-      assetKind: AssetKind.NAT,
+      assetKind: NAT,
     },
   }),
 );
@@ -23,13 +28,10 @@ export const Stake = harden(
     symbol: 'BLD',
     denom: 'ubld',
     proposedName: 'Agoric staking token',
-    assetKind: AssetKind.NAT,
+    assetKind: NAT,
     displayInfo: {
       decimalPlaces: 6,
-      assetKind: AssetKind.NAT,
+      assetKind: NAT,
     },
   }),
 );
-
-assertKeywordName(Stable.symbol);
-assertKeywordName(Stake.symbol);

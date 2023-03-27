@@ -5,26 +5,22 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
 import bundleSource from '@endo/bundle-source';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
+import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
 
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
-import { makeStartXSnap } from '../src/controller/controller.js';
+import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { kser } from '../src/lib/kmarshal.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
-  const makeb = rel =>
-    bundleSource(new URL(rel, import.meta.url).pathname, 'getExport');
   const lockdown = await getLockdownBundle();
-  const supervisor = await makeb(
-    '../src/supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
-  );
+  const supervisor = await getSupervisorBundle();
   const bundles = [lockdown, supervisor];
 
   /** @type { ReturnType<typeof spawn> } */
   let theProc;
 
   const startXSnap = makeStartXSnap(bundles, {
-    snapstorePath: undefined, // close enough for this test
-    env: {},
+    snapstore: undefined, // unused by this test
     // @ts-expect-error we only need one path thru spawn
     spawn: (command, args, opts) => {
       const noMetering = ['-l', '0'];

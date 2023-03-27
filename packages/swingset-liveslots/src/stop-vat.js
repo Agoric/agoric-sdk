@@ -33,25 +33,7 @@ import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 const rootSlot = makeVatSlot('object', true, 0n);
 
-function rejectAllPromises({ deciderVPIDs, syscall, disconnectObjectCapData }) {
-  // Pretend that userspace rejected all non-durable promises. We
-  // basically do the same thing that `thenReject(p, vpid)(rejection)`
-  // would have done, but we skip ahead to the syscall.resolve
-  // part. The real `thenReject` also does pRec.reject(), which would
-  // give control to userspace (who might have re-imported the promise
-  // and attached a .then to it), and stopVat() must not allow
-  // userspace to gain agency.
-
-  const rejections = deciderVPIDs.map(vpid => [
-    vpid,
-    true,
-    disconnectObjectCapData,
-  ]);
-  if (rejections.length) {
-    syscall.resolve(rejections);
-  }
-}
-
+// eslint-disable-next-line no-unused-vars
 function identifyExportedRemotables(
   vrefSet,
   { exportedRemotables, valToSlot },
@@ -78,6 +60,7 @@ function identifyExportedRemotables(
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 function identifyExportedFacets(vrefSet, { syscall, vrm }) {
   // Find all exported (non-durable) virtual object facets, which are
   // doomed because merely-virtual objects don't survive upgrade. We
@@ -115,6 +98,7 @@ function identifyExportedFacets(vrefSet, { syscall, vrm }) {
   }
 }
 
+// eslint-disable-next-line no-unused-vars
 function abandonExports(vrefSet, tools) {
   // Pretend the kernel dropped everything in the set. The Remotables
   // will be removed from exportedRemotables. If the export was the
@@ -298,22 +282,21 @@ function deleteCollectionsWithDecref({ syscall, vrm }) {
 // END: the preceding functions aren't ready for use yet
 
 export async function releaseOldState(tools) {
-  // First, pretend that userspace has rejected all non-durable
-  // promises, so we'll resolve them into the kernel (and retire their
-  // IDs).
-
-  rejectAllPromises(tools);
-
   // The next step is to pretend that the kernel has dropped all
   // non-durable exports: both the in-RAM Remotables and the on-disk
   // virtual objects (but not the root object). This will trigger
   // refcount decrements which may drop some virtuals from the DB. It
   // might also drop some objects from RAM.
 
-  const abandonedVrefSet = new Set();
-  identifyExportedRemotables(abandonedVrefSet, tools);
-  identifyExportedFacets(abandonedVrefSet, tools);
-  abandonExports(abandonedVrefSet, tools);
+  // TODO: Decide how much (if any) cleanup to do here in the vat.
+  // The kernel simulates abandonExports as part of vat upgrade,
+  // but does not decrement vat-side refcounts which could allow us to
+  // drop durable objects that were only being kept alive by references from
+  // non-durable objects.
+  // const abandonedVrefSet = new Set();
+  // identifyExportedRemotables(abandonedVrefSet, tools);
+  // identifyExportedFacets(abandonedVrefSet, tools);
+  // abandonExports(abandonedVrefSet, tools);
 
   // bringOutYourDead remains to ensure that the LRU cache is flushed,
   // but the rest of this function has been disabled to improve stop-vat

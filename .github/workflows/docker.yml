@@ -9,6 +9,8 @@ on:
     tags:
       - '@agoric/sdk@*'
   workflow_dispatch:
+env:
+  REGISTRY: ghcr.io
 
 jobs:
   snapshot:
@@ -33,6 +35,9 @@ jobs:
   docker-parallel-build:
     needs: snapshot
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         platform:
@@ -55,11 +60,12 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Login to DockerHub
+      - name: Login to Docker Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
       - name: Build and Push ssh-node
         uses: docker/build-push-action@v3
         with:
@@ -67,7 +73,7 @@ jobs:
           context: packages/deployment/docker
           platforms: ${{ matrix.platform }}
           push: true
-          tags: 'agoric/ssh-node:${{ env.BUILD_TAG }}'
+          tags: '${{ env.REGISTRY }}/agoric/ssh-node:${{ env.BUILD_TAG }}'
       - name: Build and Push sdk
         uses: docker/build-push-action@v3
         with:
@@ -75,7 +81,7 @@ jobs:
           context: ./
           platforms: ${{ matrix.platform }}
           push: true
-          tags: 'agoric/agoric-sdk:${{ env.BUILD_TAG }}'
+          tags: '${{ env.REGISTRY }}/agoric/agoric-sdk:${{ env.BUILD_TAG }}'
           # When changing/adding entries here, make sure to search the whole
           # project for `@@AGORIC_DOCKER_SUBMODULES@@`
           build-args: |
@@ -91,7 +97,7 @@ jobs:
           file: packages/deployment/Dockerfile
           context: packages/deployment
           platforms: ${{ matrix.platform }}
-          tags: 'agoric/cosmic-swingset-setup:${{ env.BUILD_TAG }}'
+          tags: '${{ env.REGISTRY }}/agoric/cosmic-swingset-setup:${{ env.BUILD_TAG }}'
           push: true
           build-args: |
             TAG=${{ env.BUILD_TAG }}
@@ -104,10 +110,13 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
-  # Publish the build's multiarch images to DockerHub.
+  # Publish the build's multiarch images to Docker Registry.
   docker-sdk:
     needs: [docker-parallel-build, snapshot]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
@@ -116,11 +125,12 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Login to DockerHub
+      - name: Login to Docker Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
       - name: Compute tags
         id: docker-tags
         run: |
@@ -153,9 +163,9 @@ jobs:
               for ARCH in linux/amd64 linux/arm64/v8; do
                 uarch=$(echo "$ARCH" | tr / _)
                 BUILD_TAG="${{ needs.snapshot.outputs.tag }}-$uarch"
-                sources="$sources $IMAGE:$BUILD_TAG"
+                sources="$sources $REGISTRY/$IMAGE:$BUILD_TAG"
               done
-              docker buildx imagetools create --tag "$IMAGE:$TAG"$sources
+              docker buildx imagetools create --tag "$REGISTRY/$IMAGE:$TAG"$sources
             done
           done
 
@@ -164,6 +174,9 @@ jobs:
   docker-ibc-alpha:
     needs: [docker-sdk, snapshot]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     if: ${{ needs.docker-sdk.outputs.tag }} != dev
     steps:
       - uses: actions/checkout@v3
@@ -172,7 +185,7 @@ jobs:
       - name: Prefix tags
         id: prefix-tags
         run: |
-          IMAGE="agoric/agoric-sdk"
+          IMAGE="$REGISTRY/agoric/agoric-sdk"
           for TAG in ibc-alpha; do
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
@@ -182,11 +195,12 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Login to DockerHub
+      - name: Login to Docker Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
       - name: Build and Push
         uses: docker/build-push-action@v3
         with:
@@ -209,6 +223,9 @@ jobs:
   docker-solo:
     needs: [docker-sdk, snapshot]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v3
       - name: Save SDK_TAG
@@ -216,7 +233,7 @@ jobs:
       - name: Prefix tags
         id: prefix-tags
         run: |
-          IMAGE="agoric/cosmic-swingset-solo"
+          IMAGE="$REGISTRY/agoric/cosmic-swingset-solo"
           for TAG in ${{ needs.docker-sdk.outputs.tags }}; do
             PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
             sep=,
@@ -226,11 +243,12 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Login to DockerHub
+      - name: Login to Docker Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
       - name: Build and Push
         uses: docker/build-push-action@v3
         with:

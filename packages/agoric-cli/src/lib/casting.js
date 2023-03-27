@@ -3,8 +3,10 @@
 import { delay, exponentialBackoff, randomBackoff } from '@agoric/casting';
 
 // TODO: https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/
-/** @param {{log: (...args: any) => void, sleep: number, jitter: number }} config
- * @returns {import('@agoric/casting').LeaderOptions} */
+/**
+ * @param {{log: (...args: any) => void, sleep: number, jitter: number }} config
+ * @returns {import('@agoric/casting').LeaderOptions}
+ */
 export const makeLeaderOptions = ({ log, sleep, jitter }) => {
   return {
     retryCallback: (where, e, attempt) => {

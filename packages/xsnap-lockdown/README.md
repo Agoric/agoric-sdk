@@ -37,9 +37,9 @@ await worker.evaluate(`(${bundle.source}\n)()`.trim());
 To help detect version drift or build/import problems, the package also exports the hex-encoded SHA256 hash of the JSON-stringified bundle. This should be identical to running `/usr/bin/shasum -a 256` on the pathname recorded in the internal `bundlePaths.lockdown` (typically `xsnap-lockdown/bundles/lockdown.bundle`). Clients which have selected a particular version of `@agoric/xsnap-lockdown` in their `package.json` can retrieve this hash at import time and compare it against a hard-coded copy, to assert that their preferred version is actually in use. Such clients would need to update their copy of the hash each time they deliberately switch to a different version.
 
 ```js
-import { lockdownBundleSHA256 } from '@agoric/xsnap-lockdown';
+import { getLockdownBundleSHA256 } from '@agoric/xsnap-lockdown';
 const expected = '54434e4a0eb0c2883e30cc43a30ac66bb792bec3b4975bb147cb8f25c2c6365a';
-assert.equal(lockdownBundleSHA256, expected, 'somehow got wrong version');
+assert.equal(await getLockdownBundleSHA256(), expected, 'somehow got wrong version');
 ```
 
 ## Debug Version

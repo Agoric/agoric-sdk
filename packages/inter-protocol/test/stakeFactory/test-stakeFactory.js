@@ -9,10 +9,7 @@ import { makeCopyBag } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolderBundle from '@agoric/vats/bundles/bundle-mintHolder.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';

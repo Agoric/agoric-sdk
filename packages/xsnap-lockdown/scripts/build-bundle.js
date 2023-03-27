@@ -5,7 +5,7 @@ import { promises as fsp } from 'fs';
 import crypto from 'crypto';
 
 import bundleSource from '@endo/bundle-source';
-import { bundlePaths, entryPaths } from '../src/paths.js';
+import { bundlePaths, entryPaths, hashPaths } from '../src/paths.js';
 
 /** @param {Uint8Array} bytes */
 const computeSha256 = bytes => {
@@ -14,29 +14,24 @@ const computeSha256 = bytes => {
   return hash.digest().toString('hex');
 };
 
-const make = async (name, entrypath, spec) => {
+const make = async name => {
+  const spec = bundlePaths[name];
+  const entryPath = entryPaths[name];
+  const hashPath = hashPaths[name];
   await fsp.mkdir(path.dirname(spec), { recursive: true });
-  const format = 'nestedEvaluate';
-  const bundle = await bundleSource(entrypath, { format });
+  const bundle = await bundleSource(entryPath, { format: 'nestedEvaluate' });
   const bundleString = JSON.stringify(bundle);
   const sha256 = computeSha256(bundleString);
   await fsp.writeFile(spec, bundleString);
-  return { length: bundleString.length, sha256, spec };
+  await fsp.writeFile(hashPath, `${sha256}\n`);
+  return { length: bundleString.length, sha256, where: spec };
 };
 
 const run = async () => {
-  const ld = await make('lockdown', entryPaths.lockdown, bundlePaths.lockdown);
-  console.log(`wrote ${ld.spec}: ${ld.length} bytes`);
+  const ld = await make('lockdown');
+  console.log(`wrote ${ld.where}: ${ld.length} bytes`);
   console.log(`lockdown.bundle SHA256: ${ld.sha256}`);
-  const lockdownHashFile = `${ld.spec}.sha256.js`;
-  const template = `export const lockdownBundleSHA256 = 'HASH';\n`;
-  await fsp.writeFile(lockdownHashFile, template.replace('HASH', ld.sha256));
-
-  await make(
-    'lockdown-debug',
-    entryPaths.lockdownDebug,
-    bundlePaths.lockdownDebug,
-  );
+  await make('lockdownDebug');
 };
 
 run().catch(err => console.log(err));

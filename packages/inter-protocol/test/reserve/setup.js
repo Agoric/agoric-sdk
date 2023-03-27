@@ -1,9 +1,6 @@
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 
@@ -82,7 +79,7 @@ export const setupReserveServices = async (
 
   // @ts-expect-error a non-promise can be used where a promise is expected.
   const spaces = await setupReserveBootstrap(t, timer, farZoeKit);
-  startEconomicCommittee(spaces, {
+  void startEconomicCommittee(spaces, {
     options: { econCommitteeOptions: electorateTerms },
   });
 

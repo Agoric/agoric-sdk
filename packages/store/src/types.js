@@ -168,7 +168,7 @@
  */
 
 /**
- * @template K
+ * @template {Key & object} K
  * @typedef {object} WeakSetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -184,7 +184,7 @@
  */
 
 /**
- * @template K
+ * @template {Key} K
  * @typedef {object} SetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -205,7 +205,8 @@
  */
 
 /**
- * @template K,V
+ * @template {Key & object} K
+ * @template {Passable} V
  * @typedef {object} WeakMapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -224,7 +225,8 @@
  */
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @typedef {object} MapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -751,10 +753,17 @@
 
 /**
  * @typedef {any} MethodGuardMaker
- * a parameter list like foo(a, b, c = d, …e) => f should be guarded by
- * something like
- * foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape)
- * optional is for optional (=) params. rest is for … (varargs) params
+ * A method name and parameter/return signature like:
+ * ```js
+ *   foo(a, b, c = d, ...e) => f
+ * ```
+ * should be guarded by something like:
+ * ```js
+ * {
+ *   ...otherMethodGuards,
+ *   foo: M.call(AShape, BShape).optional(CShape).rest(EShape).returns(FShape),
+ * }
+ * ```
  */
 
 /** @typedef {{ klass: 'methodGuard', callKind: 'sync' | 'async', returnGuard: unknown }} MethodGuard */

@@ -19,7 +19,8 @@ import { allValues, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
-import { PowerFlags } from './basic-behaviors.js';
+import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
+import { PowerFlags } from '../walletFlags.js';
 
 const { Fail } = assert;
 const { keys } = Object;
@@ -280,7 +281,7 @@ export const setupClientManager = async (
         getConfiguration: () => notifier,
       });
 
-      observeIteration(subscription, {
+      void observeIteration(subscription, {
         updateState(newPropertyMakers) {
           makeUpdatedConfiguration(newPropertyMakers)
             .then(x => updater.updateState(x))
@@ -335,7 +336,7 @@ export const makeBridgeManager = async ({
     walletBridgeManager.resolve(undefined);
     return;
   }
-  const vat = E(loadCriticalVat)('chainStorage');
+  const vat = E(loadCriticalVat)('bridge');
   const bridgeManager = E(vat).provideManagerForBridge(bridge);
   bridgeManagerP.resolve(bridgeManager);
   provisionBridgeManager.resolve(
@@ -368,7 +369,7 @@ export const makeChainStorage = async ({
 
   const storageBridgeManager = E(bridgeManager).register(BRIDGE_ID.STORAGE);
 
-  const vat = E(loadCriticalVat)('chainStorage');
+  const vat = E(loadCriticalVat)('bridge');
   const rootNodeP = E(vat).makeBridgedChainStorageRoot(
     storageBridgeManager,
     ROOT_PATH,
@@ -530,7 +531,7 @@ export const setupNetworkProtocols = async ({
       let bindAddr = '/ibc-port/';
       if (i === NUM_IBC_PORTS_PER_CLIENT - 1) {
         lastICAPort += 1;
-        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}-${lastICAPort}`;
+        bindAddr += `${INTERCHAIN_ACCOUNT_CONTROLLER_PORT_PREFIX}${lastICAPort}`;
       }
       const port = E(vats.network).bind(bindAddr);
       ibcportP.push(port);
@@ -544,3 +545,97 @@ export const setupNetworkProtocols = async ({
   await registerNetworkProtocols(vats, dibcBridgeManager);
   return E(client).assignBundle([_a => ({ ibcport: makePorts() })]);
 };
+
+/** @type {import('./lib-boot').BootstrapManifest} */
+export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
+  ...BASIC_BOOTSTRAP_PERMITS,
+
+  [bridgeCoreEval.name]: true, // Needs all the powers.
+  [makeBridgeManager.name]: {
+    consume: { loadCriticalVat: true },
+    devices: { bridge: 'kernel' },
+    produce: {
+      bridgeManager: 'bridge',
+      provisionBridgeManager: 'bridge',
+      provisionWalletBridgeManager: 'bridge',
+      walletBridgeManager: 'bridge',
+    },
+  },
+  [startTimerService.name]: {
+    devices: {
+      timer: 'kernel',
+    },
+    vats: {
+      timer: 'timer',
+    },
+    consume: { client: true },
+    produce: {
+      chainTimerService: 'timer',
+    },
+    home: { produce: { chainTimerService: 'timer' } },
+  },
+  [makeChainStorage.name]: {
+    consume: { loadCriticalVat: true, bridgeManager: true },
+    produce: {
+      chainStorage: 'bridge',
+    },
+  },
+  [publishAgoricNames.name]: {
+    consume: {
+      agoricNamesAdmin: true,
+      board: 'board',
+      chainStorage: 'bridge',
+    },
+  },
+  [makeProvisioner.name]: {
+    consume: {
+      loadCriticalVat: true,
+      clientCreator: true,
+    },
+    produce: {
+      provisioning: 'provisioning',
+    },
+    vats: {
+      comms: 'comms',
+      vattp: 'vattp',
+    },
+  },
+  [bridgeProvisioner.name]: {
+    consume: {
+      provisioning: true,
+      bridgeManager: 'bridge',
+      provisionBridgeManager: 'bridge',
+      provisionWalletBridgeManager: 'bridge',
+    },
+  },
+  [setupClientManager.name]: {
+    produce: {
+      client: true,
+      clientCreator: true,
+    },
+  },
+  [setupNetworkProtocols.name]: {
+    consume: {
+      client: true,
+      loadCriticalVat: true,
+      bridgeManager: 'bridge',
+      zoe: 'zoe',
+      provisioning: 'provisioning',
+    },
+    produce: {
+      networkVat: 'network',
+    },
+  },
+};
+harden(SHARED_CHAIN_BOOTSTRAP_MANIFEST);
+
+/** @type {import('./lib-boot.js').BootstrapManifest} */
+export const CHAIN_BOOTSTRAP_MANIFEST = harden({
+  ...SHARED_CHAIN_BOOTSTRAP_MANIFEST,
+  [connectChainFaucet.name]: {
+    consume: {
+      client: true,
+    },
+    home: { produce: { faucet: true } },
+  },
+});

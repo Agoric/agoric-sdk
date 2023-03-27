@@ -13,6 +13,7 @@ import '../internal-types.js';
  * Amount values. The amounts are the sums.
  */
 const sumByBrand = amounts => {
+  /** @type {MapStore<Brand, Amount>} */
   const sumsByBrand = makeScalarMapStore('brand');
   amounts.forEach(amount => {
     const { brand } = amount;

@@ -51,7 +51,9 @@ function buildRootObject(vatPowers, vatParameters, baggage) {
 }
 
 test('initial vatstore contents', async t => {
-  const { v } = await setupTestLiveslots(t, buildRootObject, 'bob', true);
+  const { v } = await setupTestLiveslots(t, buildRootObject, 'bob', {
+    forceGC: true,
+  });
   const { fakestore } = v;
   const get = key => fakestore.get(key);
 
@@ -100,7 +102,7 @@ test('vrefs', async t => {
     t,
     buildRootObject,
     'bob',
-    true,
+    { forceGC: true },
   );
   // const { fakestore, dumpFakestore } = v;
   const { fakestore } = v;

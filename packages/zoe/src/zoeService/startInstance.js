@@ -49,9 +49,9 @@ export const makeStartInstance = (
     InstanceAdminI,
     /**
      *
-     * @param {*} instanceStorage
-     * @param {*} instanceAdmin
-     * @param {*} seatHandleToSeatAdmin
+     * @param {ZoeInstanceStorageManager} instanceStorage
+     * @param {InstanceAdmin} instanceAdmin
+     * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToSeatAdmin
      * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
      */
     (instanceStorage, instanceAdmin, seatHandleToSeatAdmin, adminNode) => ({
@@ -185,7 +185,7 @@ export const makeStartInstance = (
         const { state } = this;
 
         const vatParameters = { contractBundleCap: state.contractBundleCap };
-        return E(state.adminNode).upgrade(state.zcfBundleCap.value, {
+        return E(state.adminNode).upgrade(state.zcfBundleCap, {
           vatParameters,
         });
       },
@@ -198,7 +198,7 @@ export const makeStartInstance = (
           contractBundleCap: newContractBundleCap,
           privateArgs: newPrivateArgs,
         };
-        return E(state.adminNode).upgrade(state.zcfBundleCap.value, {
+        return E(state.adminNode).upgrade(state.zcfBundleCap, {
           vatParameters,
         });
       },
@@ -290,33 +290,26 @@ export const makeStartInstance = (
     instanceAdmin.initDelayedState(handleOfferObj, publicFacet);
 
     const settledBundleCap = await getZcfBundleCapP();
+    settledBundleCap !== undefined || Fail`the bundle cap was broken`;
+
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
     return E.when(
-      Promise.allSettled([
+      Promise.all([
         creatorInvitationP,
-        zoeInstanceStorageManager
-          .getInvitationIssuer()
-          .isLive(creatorInvitationP),
-        settledBundleCap,
+        creatorInvitationP !== undefined &&
+          zoeInstanceStorageManager
+            .getInvitationIssuer()
+            .isLive(creatorInvitationP),
       ]),
-      ([invitationResult, isLiveResult, zcfBundleCapResult]) => {
-        let creatorInvitation;
-        if (invitationResult.status === 'fulfilled') {
-          creatorInvitation = invitationResult.value;
-        }
-        if (creatorInvitation !== undefined) {
-          (isLiveResult.status === 'fulfilled' && isLiveResult.value) ||
-            Fail`The contract did not correctly return a creatorInvitation`;
-        }
-        if (zcfBundleCapResult !== undefined) {
-          (zcfBundleCapResult.status === 'fulfilled' &&
-            zcfBundleCapResult.value) ||
-            Fail`the bundle cap was broken`;
-        }
+      ([creatorInvitation, isLiveResult]) => {
+        creatorInvitation === undefined ||
+          isLiveResult ||
+          Fail`The contract did not correctly return a creatorInvitation`;
+
         const adminFacet = makeAdminFacet(
           adminNode,
-          harden(zcfBundleCapResult),
+          harden(settledBundleCap),
           contractBundleCap,
         );
 

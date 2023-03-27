@@ -298,7 +298,9 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
         const { helper } = this.facets;
         const { details } = this.state;
         helper.acceptingSubmissions(roundId) ||
-          Fail`round not accepting submissions`;
+          Fail`round ${q(
+            Number(roundId),
+          )} not accepting submissions from oracle ${q(status.oracleId)}`;
 
         const lastRoundDetails = details.get(roundId);
         details.set(roundId, {

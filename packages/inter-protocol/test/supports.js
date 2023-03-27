@@ -4,10 +4,7 @@ import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
 import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpace,
-} from '@agoric/vats/src/core/utils.js';
+import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -19,6 +16,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 export { makeMockChainStorageRoot };
 
@@ -272,4 +270,26 @@ export const assertTopicPathData = async (
     // TODO consider making this a shape instead
     t.deepEqual(Object.keys(latest), dataKeys, 'keys in topic feed must match');
   }
+};
+
+/**
+ * Sequence currents from a wallet UpdateRecord publication feed. Note that local
+ * state may not reflect the wallet's state if the initial currents are missed.
+ *
+ * If this proves to be a problem we can add an option to this or a related
+ * utility to reset state from RPC.
+ *
+ * @param {ERef<Subscriber<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>>} currents
+ * @returns {Array<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>} array that grows as the subscription feeds
+ */
+export const sequenceCurrents = currents => {
+  const sequence = [];
+
+  void observeIteration(subscribeEach(currents), {
+    updateState: updateRecord => {
+      sequence.push(updateRecord);
+    },
+  });
+
+  return sequence;
 };

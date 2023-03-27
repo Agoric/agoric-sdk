@@ -5,6 +5,8 @@ import path from 'path';
 
 import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import {
   makeTrader,
   outputFromInputPrice,
@@ -104,7 +106,10 @@ test('autoSwap API interactions, no jig', async t => {
   const bobInvitation = await E(publicFacet).makeSwapInvitation();
 
   // Bob claims it
-  const bobExclInvitation = await E(invitationIssuer).claim(bobInvitation);
+  const bobExclInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
+    bobInvitation,
+  );
   const bobInstance = await E(zoe).getInstance(bobExclInvitation);
   const bobInstallation = await E(zoe).getInstallation(bobExclInvitation);
   t.is(bobInstallation, installation, `installation`);

@@ -934,7 +934,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
    * replace the device), just in case that's useful someday
    *
    * @param {unknown} timerNode
-   * @returns {Promise<TimerService>}
+   * @returns {TimerService}
    */
   const createTimerService = timerNode => {
     timerDevice = timerNode;

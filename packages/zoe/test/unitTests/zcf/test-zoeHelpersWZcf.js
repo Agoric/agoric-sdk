@@ -151,7 +151,7 @@ test(`zcf assertNatAssetKind - brand not registered`, async t => {
       //
       // /"brand" not found: .*/,
       // / not found: /,
-      /no ordinal /,
+      'key "[Alleged: gelt brand]" not found in collection "brandToIssuerRecord"',
   });
 });
 
@@ -219,7 +219,7 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
         //
         // /"issuer" not found: /,
         // /not found: /,
-        /no ordinal for /,
+        'key "[Alleged: pieces of eight issuer]" not found in collection "issuerToIssuerRecord"',
     },
     'issuer should not be found',
   );
@@ -233,7 +233,7 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
       //
       // /"brand" not found: /,
       // /not found: /,
-      /no ordinal for /,
+      'key "[Alleged: pieces of eight brand]" not found in collection "brandToIssuerRecord"',
   });
 });
 

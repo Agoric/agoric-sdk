@@ -6,6 +6,8 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 import { makeZoeKit } from '../../../src/zoeService/zoe.js';
@@ -41,7 +43,10 @@ test('zoe - mint payments', async t => {
     return {
       offer: async untrustedInvitation => {
         const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const {
           value: [invitationValue],
@@ -120,7 +125,10 @@ test('zoe - mint payments with unrelated give and want', async t => {
     return {
       offer: async untrustedInvitation => {
         const invitationIssuer = E(zoe).getInvitationIssuer();
-        const invitation = E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
 
         const {
           value: [invitationValue],

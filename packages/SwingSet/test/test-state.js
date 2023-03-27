@@ -125,6 +125,21 @@ test('storage helpers', t => {
     'bar.3',
     'bar.5',
   ]);
+
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.1')), []);
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.4')), [
+    'bar.1',
+    'bar.3',
+  ]);
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.5')), [
+    'bar.1',
+    'bar.3',
+  ]);
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.6')), [
+    'bar.1',
+    'bar.3',
+    'bar.5',
+  ]);
 });
 
 function buildKeeperStorageInMemory() {
@@ -145,13 +160,15 @@ function duplicateKeeper(serialize) {
 
 test('kernelStorage param guards', async t => {
   const { kvStore } = buildKeeperStorageInMemory();
-  const exp = { message: /true must be a string/ };
-  t.throws(() => kvStore.set('foo', true), exp);
-  t.throws(() => kvStore.set(true, 'foo'), exp);
-  t.throws(() => kvStore.has(true), exp);
-  t.throws(() => kvStore.getNextKey(true), exp);
-  t.throws(() => kvStore.get(true), exp);
-  t.throws(() => kvStore.delete(true), exp);
+  const expv = { message: /value must be a string/ };
+  const expk = { message: /key must be a string/ };
+  const exppk = { message: /previousKey must be a string/ };
+  t.throws(() => kvStore.set('foo', true), expv);
+  t.throws(() => kvStore.set(true, 'foo'), expk);
+  t.throws(() => kvStore.has(true), expk);
+  t.throws(() => kvStore.getNextKey(true), exppk);
+  t.throws(() => kvStore.get(true), expk);
+  t.throws(() => kvStore.delete(true), expk);
 });
 
 test('kernel state', async t => {

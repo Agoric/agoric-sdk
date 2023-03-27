@@ -32,16 +32,16 @@ function emptySetup(_syscall) {
   return dispatch;
 }
 
-function makeKernel() {
+async function makeKernel() {
   const endowments = makeKernelEndowments();
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   return buildKernel(endowments, {}, {});
 }
 
 const tsv = [{ d: ['startVat', kser({})], syscalls: [] }];
 
 test('build kernel', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start(); // empty queue
   const data = kernel.dump();
   t.deepEqual(data.vatTables, []);
@@ -49,7 +49,7 @@ test('build kernel', async t => {
 });
 
 test('simple call', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup1(syscall, state, _helpers, vatPowers) {
@@ -98,7 +98,7 @@ test('simple call', async t => {
 });
 
 test('vat store', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup(syscall, _state, _helpers, _vatPowers) {
@@ -157,7 +157,7 @@ test('vat store', async t => {
 });
 
 test('map inbound', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup1(_syscall) {
@@ -209,7 +209,7 @@ test('map inbound', async t => {
 });
 
 test('addImport', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   function setup(_syscall) {
     function dispatch() {}
@@ -229,7 +229,7 @@ test('addImport', async t => {
 });
 
 test('outbound call', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   let v1tovat25;
@@ -463,7 +463,7 @@ test('outbound call', async t => {
 });
 
 test('three-party', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   let bobForA;
@@ -612,7 +612,7 @@ test('three-party', async t => {
 });
 
 test('transfer promise', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   let syscallA;
   const logA = [];
@@ -722,7 +722,7 @@ test('transfer promise', async t => {
 });
 
 test('subscribe to promise', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   let syscall;
   const log = [];
@@ -768,7 +768,7 @@ test('subscribe to promise', async t => {
 });
 
 test('promise resolveToData', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -844,7 +844,7 @@ test('promise resolveToData', async t => {
 });
 
 test('promise resolveToPresence', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -924,7 +924,7 @@ test('promise resolveToPresence', async t => {
 });
 
 test('promise fails when resolve to promise', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -982,7 +982,7 @@ test('promise fails when resolve to promise', async t => {
 });
 
 test('promise reject', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -1059,7 +1059,7 @@ test('promise reject', async t => {
 
 async function doResultInArgs(t, enablePipelining) {
   // https://github.com/Agoric/agoric-sdk/issues/5189
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
 
   // Alice sends a message to Bob which references its own result
@@ -1139,7 +1139,7 @@ test('result promise in args (non-pipelining)', doResultInArgs, false);
 
 test('transcript', async t => {
   const aliceForAlice = 'o+1';
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
 
   function setup(syscall, _state) {
@@ -1201,7 +1201,7 @@ test('transcript', async t => {
 // have a decider. Make sure urgh gets queued in p2 rather than exploding.
 
 test('non-pipelined promise queueing', async t => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -1326,7 +1326,7 @@ test('non-pipelined promise queueing', async t => {
 // get delivered to vat-with-x.
 
 const pipelinedSendTest = async (t, delayed) => {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
 
@@ -1555,7 +1555,7 @@ test('pipelined promise queueing with delay', pipelinedSendTest, true);
 
 test('xs-worker default manager type', async t => {
   const endowments = makeKernelEndowments();
-  initializeKernel(
+  await initializeKernel(
     { defaultManagerType: 'xs-worker' },
     endowments.kernelStorage,
   );
@@ -1567,7 +1567,7 @@ test('xs-worker default manager type', async t => {
 });
 
 async function reapTest(t, freq) {
-  const kernel = makeKernel();
+  const kernel = await makeKernel();
   await kernel.start();
   const log = [];
   function setup() {

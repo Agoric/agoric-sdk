@@ -3,12 +3,17 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch */
+import { Nat } from '@endo/nat';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputAction } from '../lib/wallet.js';
 
 const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
+
+// XXX support other decimal places
+const COSMOS_UNIT = 1_000_000n;
+const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 
 /**
  *
@@ -66,7 +71,6 @@ export const makeOracleCommand = async logger => {
         id: Number(opts.offerId),
         invitationSpec: {
           source: 'purse',
-          // @ts-expect-error xxx RpcRemote
           instance,
           description: 'oracle invitation',
         },
@@ -121,9 +125,11 @@ export const makeOracleCommand = async logger => {
       'offer that had continuing invitation result',
       Number,
     )
-    .requiredOption('--price [number]', 'price (per unitAmount)', BigInt)
-    .requiredOption('--roundId [number]', 'round', Number)
+    .requiredOption('--price [number]', 'price', Number)
+    .option('--roundId [number]', 'round', Number)
     .action(async function (opts) {
+      const unitPrice = scaleDecimals(opts.price);
+      const roundId = 'roundId' in opts ? Nat(opts.roundId) : undefined;
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -131,9 +137,7 @@ export const makeOracleCommand = async logger => {
           source: 'continuing',
           previousOffer: opts.oracleAdminAcceptOfferId,
           invitationMakerName: 'PushPrice',
-          invitationArgs: harden([
-            { unitPrice: opts.price, roundId: opts.roundId },
-          ]),
+          invitationArgs: harden([{ unitPrice, roundId }]),
         },
         proposal: {},
       };

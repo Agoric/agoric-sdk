@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makePromiseSpace } from '../src/core/utils.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 
 test('makePromiseSpace', async t => {
   const { produce, consume } = makePromiseSpace();

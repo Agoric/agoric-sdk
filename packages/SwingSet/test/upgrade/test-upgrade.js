@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop */
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
@@ -18,6 +19,7 @@ import { bundleOpts, restartVatAdminVat } from '../util.js';
 // import { NUM_SENSORS } from './num-sensors.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
+
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
   t.context.data = { kernelBundles };
@@ -34,73 +36,136 @@ const dumpState = (debug, vatID) => {
   }
 };
 
-const makeRun = swingsetController => {
-  const run = async (method, args = []) => {
-    assert(Array.isArray(args));
-    const kpid = swingsetController.queueToVatRoot('bootstrap', method, args);
-    await swingsetController.run();
-    const status = swingsetController.kpStatus(kpid);
-    if (status === 'fulfilled') {
-      const result = swingsetController.kpResolution(kpid);
-      return kunser(result);
-    }
-    assert(status === 'rejected');
-    const err = swingsetController.kpResolution(kpid);
-    throw kunser(err);
+/**
+ * @param {string} bootstrapVatPath
+ * @param {KernelOptions & {
+ *  staticVatPaths?: Record<string, string>,
+ *  bundlePaths?: Record<string, string>,
+ * }} [options]
+ * @returns {SwingSetConfig}
+ */
+const makeConfigFromPaths = (bootstrapVatPath, options = {}) => {
+  const { staticVatPaths = {}, bundlePaths = {}, ...kernelOptions } = options;
+  /**
+   * @param {Record<string, string>} paths
+   * @returns {Record<string, {sourceSpec: string}>}
+   */
+  const specsFromPaths = paths => {
+    const entries = Object.entries(paths).map(([name, path]) => [
+      name,
+      { sourceSpec: bfile(path) },
+    ]);
+    return Object.fromEntries(entries);
   };
-  return run;
+  assert(!Object.hasOwn(staticVatPaths, 'bootstrap'));
+  const vats = specsFromPaths({
+    bootstrap: bootstrapVatPath,
+    ...staticVatPaths,
+  });
+  const bundles = specsFromPaths(bundlePaths);
+  return {
+    includeDevDependencies: true, // for vat-data
+    ...kernelOptions,
+    bootstrap: 'bootstrap',
+    vats,
+    bundles,
+  };
 };
 
-const testNullUpgrade = async (t, defaultManagerType) => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
-    defaultManagerType,
-    bootstrap: 'bootstrap',
-    defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('../bootstrap-relay.js') },
-    },
-    bundles: {
-      durableSingleton: { sourceSpec: bfile('../vat-durable-singleton.js') },
-    },
-  };
-
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {object} bundleData
+ * @param {SwingSetConfig} config
+ * @param {object} [options]
+ * @deprecated Refcount incrementing should be manual,
+ * see https://github.com/Agoric/agoric-sdk/issues/7213
+ * @param {boolean} [options.holdObjectRefs=true]
+ * @returns {{
+ *   controller: ReturnType<typeof makeSwingsetController>,
+ *   kvStore: KVStore,
+ *   run: (method: string, args?: unknown[]) => Promise<unknown>,
+ * }}
+ */
+const initKernelForTest = async (t, bundleData, config, options = {}) => {
   const { kernelStorage } = initSwingStore();
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
+  const { kvStore } = kernelStorage;
+  const { initOpts, runtimeOpts } = bundleOpts(bundleData);
+  const { holdObjectRefs = true } = options;
   await initializeSwingset(config, [], kernelStorage, initOpts);
   const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  const run = makeRun(c);
+  const kpResolutionOptions = { incref: holdObjectRefs };
+  const run = async (method, args = [], vatName = 'bootstrap') => {
+    assert(Array.isArray(args));
+    const kpid = c.queueToVatRoot(vatName, method, args);
+    await c.run();
+    const status = c.kpStatus(kpid);
+    if (status === 'fulfilled') {
+      const result = c.kpResolution(kpid, kpResolutionOptions);
+      return kunser(result);
+    }
+    assert(status === 'rejected');
+    const err = c.kpResolution(kpid, kpResolutionOptions);
+    throw kunser(err);
+  };
+  return {
+    controller: c,
+    kvStore,
+    run,
+  };
+};
+
+const testNullUpgrade = async (t, defaultManagerType) => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultManagerType,
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      exporter: '../vat-exporter.js',
+    },
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   await run('createVat', [
     {
-      name: 'durableSingleton',
-      bundleCapName: 'durableSingleton',
+      name: 'exporter',
+      bundleCapName: 'exporter',
       vatParameters: { version: 'v1' },
     },
   ]);
   t.is(
-    await run('messageVat', [
-      { name: 'durableSingleton', methodName: 'getVersion' },
-    ]),
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
     'v1',
   );
+  const counter = await run('messageVat', [
+    { name: 'exporter', methodName: 'getDurableCounter' },
+  ]);
+  const val1 = await run('messageVatObject', [
+    {
+      presence: counter,
+      methodName: 'increment',
+    },
+  ]);
+  t.is(val1, 1);
   await run('upgradeVat', [
     {
-      name: 'durableSingleton',
-      bundleCapName: 'durableSingleton',
+      name: 'exporter',
+      bundleCapName: 'exporter',
       vatParameters: { version: 'v2' },
     },
   ]);
   t.is(
-    await run('messageVat', [
-      { name: 'durableSingleton', methodName: 'getVersion' },
-    ]),
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
     'v2',
   );
+  const val2 = await run('messageVatObject', [
+    {
+      presence: counter,
+      methodName: 'increment',
+    },
+  ]);
+  t.is(val2, 2);
 };
 
 test('null upgrade - local', async t => {
@@ -111,37 +176,26 @@ test('null upgrade - xsnap', async t => {
   return testNullUpgrade(t, 'xs-worker');
 });
 
-const testUpgrade = async (
-  t,
-  defaultManagerType,
-  doVatAdminRestart = false,
-) => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {ManagerType} defaultManagerType
+ * @param {object} [options]
+ * @param {boolean} [options.restartVatAdmin=false]
+ */
+const testUpgrade = async (t, defaultManagerType, options = {}) => {
+  const { restartVatAdmin: doVatAdminRestart = false } = options;
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType,
-    bootstrap: 'bootstrap',
-    // defaultReapInterval: 'never',
-    // defaultReapInterval: 1,
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  // const { kernelStorage, debug } = initSwingStore();
-  const { kernelStorage } = initSwingStore();
-  const { kvStore } = kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const {
+    controller: c,
+    kvStore,
+    run,
+  } = await initKernelForTest(t, t.context.data, config);
 
   const marker = await run('getMarker'); // probably ko26
   t.is(marker.iface(), 'marker');
@@ -336,11 +390,11 @@ const testUpgrade = async (
 };
 
 test('vat upgrade - local', async t => {
-  return testUpgrade(t, 'local', false);
+  return testUpgrade(t, 'local', { restartVatAdmin: false });
 });
 
 test('vat upgrade - local with VA restarts', async t => {
-  return testUpgrade(t, 'local', true);
+  return testUpgrade(t, 'local', { restartVatAdmin: true });
 });
 
 test('vat upgrade - xsnap', async t => {
@@ -348,58 +402,248 @@ test('vat upgrade - xsnap', async t => {
 });
 
 test('vat upgrade - omit vatParameters', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   const result = await run('doUpgradeWithoutVatParameters', []);
   t.deepEqual(result, [undefined, undefined]);
 });
 
-test('failed upgrade - relaxed durable rules', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    relaxDurabilityRules: true,
-    includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+test('non-durable exports are abandoned by upgrade of liveslots vat', async t => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultManagerType: 'xs-worker',
+    bundlePaths: {
+      exporter: '../vat-exporter.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
+  });
+  const { controller, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
 
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  await run('createVat', [
+    {
+      name: 'exporter',
+      bundleCapName: 'exporter',
+      vatParameters: { version: 'v1' },
+    },
+  ]);
+  t.is(
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
+    'v1',
+  );
+
+  // Export some objects.
+  const counterGetters = {
+    ephCounter: 'getEphemeralCounter',
+    virCounter: 'getVirtualCounter',
+    durCounter: 'getDurableCounter',
+  };
+  /** @type {Record<string, { presence: unknown, kref: string }>} */
+  const counters = {};
+  const runIncrement = presence =>
+    run('messageVatObject', [{ presence, methodName: 'increment' }]);
+  for (const [name, methodName] of Object.entries(counterGetters)) {
+    const counter = await run('messageVat', [{ name: 'exporter', methodName }]);
+    const val = await runIncrement(counter);
+    t.is(val, 1, `initial increment of ${name}`);
+    const counterRef = await run('awaitVatObject', [
+      { presence: counter, rawOutput: true },
+    ]);
+    const kref = krefOf(counterRef);
+    counters[name] = { presence: counter, kref };
+  }
+
+  // Check kernel state for `objects` rows like [kref, vatID, ...] and
+  // `kernelTable` rows like [kref, vatID, vref].
+  const { kernelTable: kt1, objects: rc1 } = controller.dump();
+  const findRowByKref = (rows, searchKref) =>
+    rows.find(([kref]) => kref === searchKref);
+  const findExportByKref = (rows, searchKref) =>
+    rows.find(
+      ([kref, _vatID, vref]) => kref === searchKref && vref.startsWith('o+'),
+    );
+  const ephCounterRC1 = findRowByKref(rc1, counters.ephCounter.kref);
+  const virCounterRC1 = findRowByKref(rc1, counters.virCounter.kref);
+  const durCounterRC1 = findRowByKref(rc1, counters.durCounter.kref);
+  const ephCounterExport1 = findExportByKref(kt1, counters.ephCounter.kref);
+  const virCounterExport1 = findExportByKref(kt1, counters.virCounter.kref);
+  const durCounterExport1 = findExportByKref(kt1, counters.durCounter.kref);
+  t.truthy(ephCounterRC1?.[1]);
+  t.truthy(virCounterRC1?.[1]);
+  t.truthy(durCounterRC1?.[1]);
+  t.truthy(ephCounterExport1);
+  t.truthy(virCounterExport1);
+  t.truthy(durCounterExport1);
+
+  // Upgrade and then check new kernel state for `objects` rows like
+  // [kref, vatID | null, ...] and `kernelTable` rows like [kref, vatID, vref].
+  await run('upgradeVat', [
+    {
+      name: 'exporter',
+      bundleCapName: 'exporter',
+      vatParameters: { version: 'v2' },
+    },
+  ]);
+  const { kernelTable: kt2, objects: rc2 } = controller.dump();
+  const ephCounterRC2 = findRowByKref(rc2, counters.ephCounter.kref);
+  const virCounterRC2 = findRowByKref(rc2, counters.virCounter.kref);
+  const durCounterRC2 = findRowByKref(rc2, counters.durCounter.kref);
+  const ephCounterExport2 = findExportByKref(kt2, counters.ephCounter.kref);
+  const virCounterExport2 = findExportByKref(kt2, counters.virCounter.kref);
+  const durCounterExport2 = findExportByKref(kt2, counters.durCounter.kref);
+  t.is(ephCounterRC2?.[1], null, 'ephemeral counter must be abandoned');
+  t.is(virCounterRC2?.[1], null, 'merely virtual counter must be abandoned');
+  t.is(
+    durCounterRC2?.[1],
+    durCounterRC1?.[1],
+    'durable counter must not be abandoned',
+  );
+  t.is(
+    ephCounterExport2,
+    undefined,
+    'ephemeral counter export must be dropped',
+  );
+  t.is(
+    virCounterExport2,
+    undefined,
+    'merely virtual counter export must be dropped',
+  );
+  t.deepEqual(
+    durCounterExport2,
+    durCounterExport1,
+    'durable counter export must be preserved',
+  );
+
+  // Verify post-upgrade behavior.
+  t.is(
+    await run('messageVat', [{ name: 'exporter', methodName: 'getVersion' }]),
+    'v2',
+  );
+  await t.throwsAsync(
+    () => runIncrement(counters.ephCounter.presence),
+    { message: 'vat terminated' },
+    'message to ephemeral object from previous incarnation must go splat',
+  );
+  await t.throwsAsync(
+    () => runIncrement(counters.virCounter.presence),
+    { message: 'vat terminated' },
+    'message to non-durable virtual object from previous incarnation must go splat',
+  );
+  t.is(
+    await runIncrement(counters.durCounter.presence),
+    2,
+    'message to durable object from previous incarnation must work with preserved state',
+  );
+});
+
+test('non-durable exports are abandoned by upgrade of non-liveslots vat', async t => {
+  const config = makeConfigFromPaths('../bootstrap-relay.js', {
+    defaultManagerType: 'xs-worker',
+  });
+  config.vats.exporter = {
+    sourceSpec: bfile('../vat-direct.js'),
+    parameters: { vatName: 'exporter' },
+    creationOptions: { enableSetup: true },
+  };
+  config.vats.observer = {
+    sourceSpec: bfile('../vat-direct.js'),
+    parameters: { vatName: 'observer' },
+    creationOptions: { enableSetup: true },
+  };
+  const { controller, kvStore, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+    { holdObjectRefs: false },
+  );
+
+  const exporterVatID = controller.vatNameToID('exporter');
+
+  // Export two objects from exporter to observer,
+  // one to be held strongly and the other weakly.
+  const observerPresence = await run('getVatRoot', [{ name: 'observer' }]);
+  const observer = await run('awaitVatObject', [
+    { presence: observerPresence, rawOutput: true },
+  ]);
+  const strongObj = await run('exportFakeObject', [], 'exporter');
+  await run(
+    'syscall-send',
+    [observer, 'acceptImports', [strongObj]],
+    'exporter',
+  );
+  const weakObj = await run('exportFakeObject', [], 'exporter');
+  await run(
+    'syscall-send',
+    [observer, 'acceptWeakImports', [weakObj]],
+    'exporter',
+  );
+
+  // Verify kernel tracking of the objects.
+  const strongKref = krefOf(strongObj);
+  t.is(kvStore.get(`${strongKref}.owner`), exporterVatID);
+  t.is(
+    kvStore.get(`${strongKref}.refCount`),
+    '1,1',
+    'strong observation must increment both reachable and recognizable ref counts',
+  );
+  const weakKref = krefOf(weakObj);
+  t.is(kvStore.get(`${weakKref}.owner`), exporterVatID);
+  t.is(
+    kvStore.get(`${weakKref}.refCount`),
+    '0,1',
+    'weak observation must increment recognizable but not reachable ref counts',
+  );
+
+  // Null-upgrade exporter and verify updated kernel tracking.
+  const bundle = await bundleSource(config.vats.exporter.sourceSpec);
+  const bundleID = await controller.validateAndInstallBundle(bundle);
+  const upgradeKpid = controller.upgradeStaticVat('exporter', false, bundleID, {
+    vatParameters: config.vats.exporter.parameters,
+  });
+  await controller.run();
+  t.is(controller.kpStatus(upgradeKpid), 'fulfilled');
+  t.is(kvStore.get(`${strongKref}.owner`), undefined);
+  t.is(kvStore.get(`${weakKref}.owner`), undefined);
+  t.is(
+    kvStore.get(`${strongKref}.refCount`),
+    '1,1',
+    'strong observation of abandoned object retains ref counts',
+  );
+  // TODO: Expect and verify observer receipt of dispatch.retireExports
+  // and corresponding removal of weakKref ref counts.
+  // https://github.com/Agoric/agoric-sdk/issues/7212
+  t.is(
+    kvStore.get(`${weakKref}.refCount`),
+    '0,1',
+    'weak observation of abandoned object retains ref counts before #7212',
+  );
+  // t.is(
+  //   kvStore.get(`${weakKref}.refCount`),
+  //   undefined,
+  //   'unreachable abandoned object is forgotten',
+  // );
+  // const observerLog = await run('getDispatchLog', [], 'observer');
+});
+
+test('failed upgrade - relaxed durable rules', async t => {
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
+    relaxDurabilityRules: true,
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
+    },
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   await run('buildV1', []);
@@ -412,29 +656,15 @@ test('failed upgrade - relaxed durable rules', async t => {
 });
 
 test('failed upgrade - lost kind', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   const v1result = await run('buildV1WithLostKind', []);
@@ -472,27 +702,15 @@ test('failed upgrade - lost kind', async t => {
 // TODO: test stopVat failure
 
 test('failed upgrade - explode', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  await initializeSwingset(config, [], kernelStorage);
-  const c = await makeSwingsetController(kernelStorage);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   const v1result = await run('buildV1WithPing', []);
@@ -517,29 +735,15 @@ test('failed upgrade - explode', async t => {
 });
 
 async function testMultiKindUpgradeChecks(t, mode, complaint) {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   // create initial version
   await run('buildV1WithMultiKind', [mode]);
@@ -601,29 +805,15 @@ test('facet kind redefinition - fail on multi- to single-facet redefinition', as
 });
 
 test('failed upgrade - unknown options', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultManagerType: 'xs-worker',
-    bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-      ulrik2: { sourceSpec: bfile('vat-ulrik-2.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  const { initOpts, runtimeOpts } = bundleOpts(t.context.data);
-  await initializeSwingset(config, [], kernelStorage, initOpts);
-  const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { run } = await initKernelForTest(t, t.context.data, config);
 
   await t.throwsAsync(run('doUpgradeWithBadOption', []), {
     instanceOf: Error,
@@ -635,25 +825,17 @@ test('failed upgrade - unknown options', async t => {
 });
 
 test('failed vatAdmin upgrade - bad replacement code', async t => {
-  /** @type {SwingSetConfig} */
-  const config = {
-    includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
     defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { sourceSpec: bfile('bootstrap-scripted-upgrade.js') },
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
     },
-    bundles: {
-      ulrik1: { sourceSpec: bfile('vat-ulrik-1.js') },
-    },
-  };
-
-  const kernelStorage = initSwingStore().kernelStorage;
-  await initializeSwingset(config, [], kernelStorage);
-  const c = await makeSwingsetController(kernelStorage);
-  c.pinVatRoot('bootstrap');
-  await c.run();
-  const run = makeRun(c);
+  });
+  const { controller: c, run } = await initKernelForTest(
+    t,
+    t.context.data,
+    config,
+  );
 
   const badVABundle = await bundleSource(
     new URL('./vat-junk.js', import.meta.url).pathname,

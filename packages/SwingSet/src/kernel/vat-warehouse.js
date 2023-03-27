@@ -55,7 +55,7 @@ export const makeLRU = max => {
  *   maxVatsOnline?: number,
  * }} [policyOptions]
  *
- * @typedef {(syscall: VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
+ * @typedef {(syscall: import('@agoric/swingset-liveslots').VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
@@ -241,7 +241,6 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
     }
     ephemeral.vats.delete(vatID);
     xlate.delete(vatID);
-    kernelKeeper.closeVatTranscript(vatID);
     kernelKeeper.evictVatKeeper(vatID);
 
     // console.log('evict: shutting down', vatID);
@@ -273,7 +272,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /** @type { string | undefined } */
   let lastVatID;
 
-  /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<VatDeliveryResult> } */
+  /** @type {(vatID: string, kd: KernelDeliveryObject, d: VatDeliveryObject, vs: VatSlog) => Promise<import('@agoric/swingset-liveslots').VatDeliveryResult> } */
   async function deliverToVat(vatID, kd, vd, vs) {
     await applyAvailabilityPolicy(vatID);
     lastVatID = vatID;
@@ -383,7 +382,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   async function resetWorker(vatID) {
     await evict(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.removeSnapshotAndTranscript();
+    vatKeeper.dropSnapshotAndResetTranscript();
   }
 
   /**

@@ -11,9 +11,9 @@ import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { MALLEABLE_NUMBER } from '../swingsetTests/contractGovernor/governedContract.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
-import { eventLoopIteration } from '../../../zoe/tools/eventLoopIteration.js';
 
 const voteCounterRoot = '../../src/binaryVoteCounter.js';
 const governedRoot = '../swingsetTests/contractGovernor/governedContract.js';
@@ -147,7 +147,7 @@ test('governParam no votes', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -232,7 +232,7 @@ test('change multiple params', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = await E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -240,7 +240,7 @@ test('change multiple params', async t => {
   const update1 = await notifier.getUpdateSince();
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
-    // @ts-expect-error reaching into unknown values
+    // @ts-expect-error reaching into {} values
     update1.value.current.Electorate.value.value[0].description,
     'questionPoser',
   );
@@ -314,7 +314,7 @@ test('change multiple params used invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
@@ -385,7 +385,7 @@ test('change param continuing invitation', async t => {
       timer,
     );
 
-  /** @type {GovernedPublicFacet<unknown>} */
+  /** @type {GovernedPublicFacet<{}>} */
   const publicFacet = E(governorFacets.creatorFacet).getPublicFacet();
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),

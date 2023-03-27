@@ -455,7 +455,7 @@ test('comms gc', t => {
     dispatch(makeMessage(receiverID, 'receive', [msg]));
   }
 
-  // Alice is a Remoteable on some vat of machine A
+  // Alice is a Remotable on some vat of machine A
   const aliceKernel = 'o-10';
   // const aliceLocal = ck.provideLocalForKernel(aliceKernel);
 

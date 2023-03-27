@@ -1,4 +1,5 @@
 // @ts-check
+/* eslint-disable import/no-extraneous-dependencies */
 import { Fail } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { BridgeId, VBankAccount } from '@agoric/internal';
@@ -11,7 +12,9 @@ import { promises as fs } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { boardSlottingMarshaller } from '../../tools/board-utils.js';
 
-/** @typedef {ReturnType<import('@agoric/vats/src/core/boot').buildRootObject>} BootstrapRootObject */
+const sink = () => {};
+
+/** @typedef {ReturnType<import('@agoric/vats/src/core/lib-boot').makeBootstrap>} BootstrapRootObject */
 
 /** @type {Record<keyof BootstrapRootObject, keyof BootstrapRootObject>} */
 export const bootstrapMethods = {
@@ -21,7 +24,32 @@ export const bootstrapMethods = {
   resetItem: 'resetItem',
   messageVat: 'messageVat',
   messageVatObject: 'messageVatObject',
+  messageVatObjectSendOnly: 'messageVatObjectSendOnly',
   awaitVatObject: 'awaitVatObject',
+};
+
+/**
+ * @template {PropertyKey} K
+ * @template V
+ * @param {K[]} keys
+ * @param {(key: K, i: number) => V} valueMaker
+ */
+const keysToObject = (keys, valueMaker) => {
+  return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
+};
+
+/**
+ * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of strings.
+ *
+ * @param {{ deepEqual: (a: unknown, b: unknown, message?: string) => void}} t
+ * @param {PropertyKey[]} a
+ * @param {PropertyKey[]} b
+ * @param {string} [message]
+ */
+export const keyArrayEqual = (t, a, b, message) => {
+  const aobj = keysToObject(a, () => 1);
+  const bobj = keysToObject(b, () => 1);
+  return t.deepEqual(aobj, bobj, message);
 };
 
 /**
@@ -39,7 +67,12 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     log('runMethod', method, args, 'at', cranksRun);
     assert(Array.isArray(args));
 
-    await mutex.get();
+    try {
+      // this promise for the last lock may fail
+      await mutex.get();
+    } catch {
+      // noop because the result will resolve for the previous runMethod return
+    }
 
     const kpid = controller.queueToVatRoot('bootstrap', method, args);
 
@@ -62,53 +95,65 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
       log(`kernel ran ${cranks} cranks`);
       return getResult();
     });
-    mutex.put(result);
+    mutex.put(result.then(sink, sink));
     return result;
   };
 
   /**
    * @type {( (presence: unknown) => Record<string, (...args: any) => Promise<any>> ) & {
+   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>,
    *   get: (presence: unknown) => Record<string, Promise<any>>,
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
+   *   rawBoot: Record<string, (...args: any) => Promise<any>>,
    * }}
    */
   const EV = presence =>
-    new Proxy(
-      {},
-      {
-        get:
-          (_t, methodName, _rx) =>
-          (...args) =>
-            runMethod('messageVatObject', [{ presence, methodName, args }]),
-      },
-    );
+    new Proxy(harden({}), {
+      get: (_t, methodName, _rx) =>
+        harden((...args) =>
+          runMethod('messageVatObject', [{ presence, methodName, args }]),
+        ),
+    });
   EV.vat = name =>
+    new Proxy(harden({}), {
+      get: (_t, methodName, _rx) =>
+        harden((...args) => {
+          if (name === 'meta') {
+            return runMethod(methodName, args);
+          }
+          return runMethod('messageVat', [{ name, methodName, args }]);
+        }),
+    });
+  EV.rawBoot = new Proxy(harden({}), {
+    get: (_t, methodName, _rx) =>
+      harden((...args) => runMethod(methodName, args)),
+  });
+  EV.sendOnly = presence =>
     new Proxy(
       {},
       {
         get:
           (_t, methodName, _rx) =>
           (...args) =>
-            runMethod('messageVat', [{ name, methodName, args }]),
+            runMethod('messageVatObjectSendOnly', [
+              { presence, methodName, args },
+            ]),
       },
     );
   EV.get = presence =>
-    new Proxy(
-      {},
-      {
-        get: (_t, pathElement, _rx) =>
-          runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
-      },
-    );
+    new Proxy(harden({}), {
+      get: (_t, pathElement, _rx) =>
+        runMethod('awaitVatObject', [{ presence, path: [pathElement] }]),
+    });
 
-  return { runMethod, EV };
+  return harden({ EV });
 };
 
 /**
  *
  * @param {ReturnType<typeof makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {*} agoricNamesRemotes
+ * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  */
 export const makeWalletFactoryDriver = async (
   runUtils,
@@ -129,7 +174,7 @@ export const makeWalletFactoryDriver = async (
 
   /**
    * @param {string} walletAddress
-   * @param {unknown} walletPresence
+   * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
    */
   const makeWalletDriver = (walletAddress, walletPresence) => ({
     /**
@@ -141,11 +186,29 @@ export const makeWalletFactoryDriver = async (
         method: 'executeOffer',
         offer,
       });
-
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
     },
     /**
-     * @template {(brands: Record<string, import('../../tools/board-utils.js').BoardRemote>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+     * @returns {void}
+     */
+    sendOffer(offer) {
+      const offerCapData = marshaller.serialize({
+        method: 'executeOffer',
+        offer,
+      });
+
+      return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
+    },
+    tryExitOffer(offerId) {
+      const capData = marshaller.serialize({
+        method: 'tryExitOffer',
+        offerId,
+      });
+      return EV(walletPresence).handleBridgeAction(capData, true);
+    },
+    /**
+     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
      * @param {M} makeOffer
      * @param {Parameters<M>[1]} firstArg
      * @param {Parameters<M>[2]} [secondArg]
@@ -153,15 +216,25 @@ export const makeWalletFactoryDriver = async (
      */
     executeOfferMaker(makeOffer, firstArg, secondArg) {
       const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
-
       return this.executeOffer(offer);
+    },
+    /**
+     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @param {M} makeOffer
+     * @param {Parameters<M>[1]} firstArg
+     * @param {Parameters<M>[2]} [secondArg]
+     * @returns {void}
+     */
+    sendOfferMaker(makeOffer, firstArg, secondArg) {
+      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
+      this.sendOffer(offer);
     },
     /**
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
      */
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
-      const lastWalletStatus = JSON.parse(storage.data.get(key).at(-1));
+      const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
       return JSON.parse(lastWalletStatus.body);
     },
   });
@@ -181,26 +254,28 @@ export const makeWalletFactoryDriver = async (
   };
 };
 
-export const getNodeTestVaultsConfig = async () => {
-  const fullPath = await importMetaResolve(
-    '@agoric/vats/decentral-test-vaults-config.json',
-    import.meta.url,
-  ).then(u => new URL(u).pathname);
+export const getNodeTestVaultsConfig = async (
+  bundleDir,
+  specifier = '@agoric/vats/decentral-test-vaults-config.json',
+) => {
+  const fullPath = await importMetaResolve(specifier, import.meta.url).then(
+    u => new URL(u).pathname,
+  );
   const config = await loadSwingsetConfigFile(fullPath);
   assert(config);
 
   // speed up (e.g. 80s vs 133s with xs-worker in production config)
   config.defaultManagerType = 'local';
   // speed up build (60s down to 10s in testing)
-  config.bundleCachePath = 'bundles';
+  config.bundleCachePath = bundleDir;
+  await fs.mkdir(bundleDir, { recursive: true });
 
   // remove Pegasus because it relies on IBC to Golang that isn't running
   config.coreProposals = config.coreProposals?.filter(
     v => v !== '@agoric/pegasus/scripts/init-core.js',
   );
 
-  // XXX assumes the test is being run from the package root and that bundles/ exists
-  const testConfigPath = 'bundles/local-decentral-test-vaults-config.json';
+  const testConfigPath = `${bundleDir}/decentral-test-vaults-config.json`;
   await fs.writeFile(testConfigPath, JSON.stringify(config), 'utf-8');
   return testConfigPath;
 };
@@ -212,10 +287,12 @@ export const getNodeTestVaultsConfig = async () => {
  * factory metrics using separate collateral managers. (Or use test.serial)
  *
  * @param {import('ava').ExecutionContext} t
+ * @param {string} bundleDir directory to write bundles and config to
+ * @param {string} [specifier] bootstrap config specifier
  */
-export const makeSwingsetTestKit = async t => {
+export const makeSwingsetTestKit = async (t, bundleDir, specifier) => {
   console.time('makeSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig();
+  const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
   const { kernelStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
@@ -265,7 +342,7 @@ export const makeSwingsetTestKit = async t => {
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
       case BridgeId.STORAGE:
-        storage.toStorage(obj);
+        void storage.toStorage(obj);
         return undefined;
       default:
         throw Error(`unknown bridgeId ${bridgeId}`);
@@ -277,8 +354,8 @@ export const makeSwingsetTestKit = async t => {
     bridgeOutbound,
     kernelStorage,
     configPath,
-    [],
-    { ROLE: 'chain' },
+    {},
+    {},
     { debugName: 'TESTBOOT' },
   );
   console.timeLog('makeSwingsetTestKit', 'buildSwingset');

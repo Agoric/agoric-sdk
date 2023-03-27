@@ -137,13 +137,13 @@
  *     TokenKeyword | 'Invitation' | 'Attestation' | 'AUSD',
  *   installation: |
  *     'centralSupply' | 'mintHolder' |
- *     'walletFactory' | 'provisionPool' | 'auction' |
+ *     'walletFactory' | 'provisionPool' | 'auctioneer' |
  *     'feeDistributor' |
  *     'contractGovernor' | 'committee' | 'noActionElectorate' | 'binaryVoteCounter' |
  *     'VaultFactory' | 'liquidate' | 'stakeFactory' |
  *     'Pegasus' | 'reserve' | 'psm' | 'econCommitteeCharter' | 'priceAggregator',
  *   instance: |
- *     'economicCommittee' | 'feeDistributor' | 'auction' |
+ *     'economicCommittee' | 'feeDistributor' | 'auctioneer' |
  *     'VaultFactory' | 'VaultFactoryGovernor' |
  *     'stakeFactory' | 'stakeFactoryGovernor' |
  *     'econCommitteeCharter' |
@@ -199,7 +199,7 @@
  *   chainTimerService: import('@agoric/time/src/types').TimerService,
  *   client: ClientManager,
  *   clientCreator: ClientCreator,
- *   coreEvalBridgeHandler: unknown,
+ *   coreEvalBridgeHandler: import('../types.js').BridgeHandler,
  *   feeMintAccess: FeeMintAccess,
  *   initialSupply: Payment<'nat'>,
  *   lienBridge: unknown,
@@ -226,13 +226,10 @@
  * IDEA/TODO: make types of demo stuff invisible in production behaviors
  * @typedef {{
  *   argv: {
- *     ROLE: string,
- *     hardcodedClientAddresses: string[],
+ *     hardcodedClientAddresses?: string[],
  *     FIXME_GCI: string,
- *     PROVISIONER_INDEX: number,
+ *     PROVISIONER_INDEX?: number,
  *   },
- *   bootstrapManifest?: Record<string, Record<string, unknown>>,
- *   governanceActions?: boolean,
  * }} BootstrapVatParams
  * @typedef { BootstrapSpace & {
  *   devices: SoloDevices | ChainDevices,
@@ -252,7 +249,7 @@
  * @typedef {{ mint: ERef<Mint>, issuer: ERef<Issuer>, brand: Brand }} RemoteIssuerKit
  * @typedef {Awaited<ReturnType<Awaited<BankVat>['makeBankManager']>>} BankManager
  * @typedef {ERef<ReturnType<import('../vat-bank.js').buildRootObject>>} BankVat
- * @typedef {ERef<ReturnType<import('../vat-chainStorage.js').buildRootObject>>} ChainStorageVat
+ * @typedef {ERef<ReturnType<import('../vat-bridge.js').buildRootObject>>} ChainStorageVat
  * @typedef {ERef<ReturnType<import('../vat-provisioning.js').buildRootObject>>} ProvisioningVat
  * @typedef {ERef<ReturnType<import('../vat-mints.js').buildRootObject>>} MintsVat
  * @typedef {ERef<ReturnType<import('../vat-priceAuthority.js').buildRootObject>>} PriceAuthorityVat

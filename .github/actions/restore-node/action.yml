@@ -20,7 +20,11 @@ runs:
       with:
         clean: 'false'
         submodules: 'true'
-    - uses: actions/setup-node@v1
+        persist-credentials: false
+    - name: Reconfigure git to use HTTP authentication
+      run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+      shell: bash
+    - uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node-version }}
     - uses: kenchan0130/actions-system-info@master
@@ -49,14 +53,24 @@ runs:
           sudo apt-get install libbsd-dev
         fi
         yarn install
+        mkdir -p node_modules/.cache/agoric
+        date > node_modules/.cache/agoric/yarn-installed
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn build
-      run: yarn build
+      run: |-
+        yarn build
+        mkdir -p node_modules/.cache/agoric
+        date > node_modules/.cache/agoric/yarn-built
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
       env:
         XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
-    - name: git diff --exit-code
-      run: git diff --exit-code
+    - name: git dirty check
+      run: |-
+        if [ -n "$(git status --porcelain)" ];
+        then
+          git status
+          exit 1
+        fi
       shell: bash

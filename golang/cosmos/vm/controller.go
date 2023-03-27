@@ -15,6 +15,10 @@ type ControllerContext struct {
 type ControllerAdmissionMsg interface {
 	sdk.Msg
 	CheckAdmissibility(sdk.Context, interface{}) error
+
+	// GetInboundMsgCount returns the number of Swingset messages which will
+	// be added to the inboundQueue.
+	GetInboundMsgCount() int32
 }
 
 // Jsonable is a value, j, that can be passed through json.Marshal(j).

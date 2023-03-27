@@ -1,4 +1,5 @@
-/** @file
+/**
+ * @file
  * Adaptation of Chainlink algorithm to the Agoric platform.
  * Modeled on https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol (version?)
  */
@@ -51,7 +52,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * @typedef {object} ChainlinkConfig
  * @property {number} maxSubmissionCount
  * @property {number} minSubmissionCount
- * @property {RelativeTimeValue} restartDelay the number of rounds an Oracle has to wait before they can initiate a round
+ * @property {bigint} restartDelay the number of rounds an Oracle has to wait before they can initiate a round
  * @property {number} minSubmissionValue an immutable check for a lower bound of what
  * submission values are accepted from an oracle
  * @property {number} maxSubmissionValue an immutable check for an upper bound of what

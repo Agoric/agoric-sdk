@@ -401,7 +401,8 @@ export const assertCopyMap = m => {
 harden(assertCopyMap);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {CopyMap<K,V>} m
  * @returns {K[]}
  */
@@ -412,7 +413,8 @@ export const getCopyMapKeys = m => {
 harden(getCopyMapKeys);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {CopyMap<K,V>} m
  * @returns {V[]}
  */
@@ -423,7 +425,8 @@ export const getCopyMapValues = m => {
 harden(getCopyMapValues);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {CopyMap<K,V>} m
  * @returns {Iterable<[K,V]>}
  */
@@ -456,7 +459,8 @@ export const getCopyMapEntries = m => {
 harden(getCopyMapEntries);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {CopyMap<K,V>} m
  * @param {(key: K, index: number) => boolean} fn
  * @returns {boolean}
@@ -466,7 +470,8 @@ export const everyCopyMapKey = (m, fn) =>
 harden(everyCopyMapKey);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {CopyMap<K,V>} m
  * @param {(value: V, index: number) => boolean} fn
  * @returns {boolean}
@@ -476,7 +481,8 @@ export const everyCopyMapValue = (m, fn) =>
 harden(everyCopyMapValue);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {CopyMap<K,V>} m
  * @returns {CopySet<K>}
  */
@@ -486,7 +492,8 @@ export const copyMapKeySet = m =>
 harden(copyMapKeySet);
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {Iterable<[K, V]>} entries
  * @returns {CopyMap<K,V>}
  */

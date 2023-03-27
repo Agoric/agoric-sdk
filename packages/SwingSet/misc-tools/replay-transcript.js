@@ -16,21 +16,16 @@ import { file as tmpFile, tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
-import { entryPaths } from '@agoric/xsnap-lockdown/src/paths.js';
+import { entryPaths as lockdownEntryPaths } from '@agoric/xsnap-lockdown/src/paths.js';
+import { entryPaths as supervisorEntryPaths } from '@agoric/swingset-xsnap-supervisor/src/paths.js';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
-import { makeStartXSnap } from '../src/controller/controller.js';
+import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
 import { requireIdentical } from '../src/kernel/vat-loader/transcript.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 import { makeGcAndFinalize } from '../src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '../src/lib-nodejs/engine-gc.js';
-
-// Set the absolute path of the SDK to use for bundling
-// This can help if there are symlinks in the path that should be respected
-// to match the path of the SDK that produced the initial transcript
-// For e.g. set to '/src' if replaying a docker based loadgen transcript
-const ABSOLUTE_SDK_PATH = null;
 
 // Rebuild the bundles when starting the replay.
 // Disable if bundles were previously extracted form a Kernel DB, or
@@ -71,22 +66,13 @@ function makeSnapStoreIO() {
 }
 
 async function makeBundles() {
-  const controllerUrl = new URL(
-    `${
-      ABSOLUTE_SDK_PATH ? `${ABSOLUTE_SDK_PATH}/packages/SwingSet` : '..'
-    }/src/controller/initializeSwingset.js`,
-    import.meta.url,
-  );
-
   // we explicitly re-bundle these entry points, rather than using
   // getLockdownBundle(), because if you're calling this, you're
   // probably editing the sources anyways
-  const lockdown = await bundleSource(entryPaths.lockdown, 'nestedEvaluate');
-  const srcGE = rel =>
-    bundleSource(new URL(rel, controllerUrl).pathname, 'getExport');
-  const supervisor = await srcGE(
-    '../supervisors/subprocess-xsnap/supervisor-subprocess-xsnap.js',
-  );
+  const lockdownPath = lockdownEntryPaths.lockdown;
+  const lockdown = await bundleSource(lockdownPath, 'nestedEvaluate');
+  const supervisorPath = supervisorEntryPaths.supervisor;
+  const supervisor = await bundleSource(supervisorPath, 'nestedEvaluate');
   fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
   fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
   console.log(`xs bundles written`);
@@ -142,7 +128,7 @@ async function replay(transcriptFile) {
           return loadRaw(snapFile);
         },
       }
-    : makeSnapStore(process.cwd(), makeSnapStoreIO());
+    : makeSnapStore(process.cwd(), () => {}, makeSnapStoreIO());
   const testLog = undefined;
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -166,10 +152,6 @@ async function replay(transcriptFile) {
       JSON.parse(fs.readFileSync('lockdown-bundle')),
       JSON.parse(fs.readFileSync('supervisor-bundle')),
     ];
-    const env = {};
-    if (RECORD_XSNAP_TRACE) {
-      env.XSNAP_TEST_RECORD = process.cwd();
-    }
 
     const capturePIDSpawn = (...args) => {
       const child = spawn(...args);
@@ -178,8 +160,8 @@ async function replay(transcriptFile) {
     };
     const startXSnap = makeStartXSnap(bundles, {
       snapStore,
-      env,
       spawn: capturePIDSpawn,
+      workerTraceRootPath: RECORD_XSNAP_TRACE ? process.cwd() : undefined,
     });
     factory = makeXsSubprocessFactory({
       kernelKeeper: fakeKernelKeeper,

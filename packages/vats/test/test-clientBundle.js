@@ -7,13 +7,11 @@ import { E, Far } from '@endo/far';
 import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import {
-  connectFaucet,
-  showAmount,
-} from '@agoric/inter-protocol/src/proposals/demoIssuers.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '../src/core/utils.js';
+import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
 import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import {
@@ -145,7 +143,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type { import('@agoric/inter-protocol/src/proposals/demoIssuers.js').UserPaymentRecord[] } */
+  /** @type { import('../src/core/demoIssuers.js').UserPaymentRecord[] } */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(
@@ -157,6 +155,6 @@ test('connectFaucet produces payments', async t => {
   );
   t.deepEqual(detail, [
     ['Oracle fee', '51 LINK'],
-    ['USD Coin', '1_323 USDC'],
+    ['DAI', '1_323 DAI'],
   ]);
 });

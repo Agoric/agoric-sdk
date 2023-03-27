@@ -6,6 +6,7 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
@@ -92,7 +93,10 @@ test('zoe - atomicSwap', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
         t.is(
           invitationValue.installation,
@@ -256,7 +260,10 @@ test('zoe - non-fungible atomicSwap', async t => {
         // Bob is able to use the trusted invitationIssuer from Zoe to
         // transform an untrusted invitation that Alice also has access to, to
         // an
-        const invitation = await E(invitationIssuer).claim(untrustedInvitation);
+        const invitation = await claim(
+          E(invitationIssuer).makeEmptyPurse(),
+          untrustedInvitation,
+        );
         const invitationValue = await E(zoe).getInvitationDetails(invitation);
 
         t.is(
@@ -389,7 +396,8 @@ test('zoe - atomicSwap like-for-like', async t => {
   // counter-party.
 
   const bobInvitationP = E(aliceSeat).getOfferResult();
-  const bobExclusiveInvitation = await E(invitationIssuer).claim(
+  const bobExclusiveInvitation = await claim(
+    E(invitationIssuer).makeEmptyPurse(),
     bobInvitationP,
   );
   const bobInvitationValue = await E(zoe).getInvitationDetails(

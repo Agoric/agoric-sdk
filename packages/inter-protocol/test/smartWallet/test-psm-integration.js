@@ -19,7 +19,7 @@ import {
   makeDefaultTestContext,
   voteForOpenQuestion,
 } from './contexts.js';
-import { headValue, withAmountUtils } from '../supports.js';
+import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -64,6 +64,7 @@ test('null swap', async t => {
     'agoric1nullswap',
   );
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const currents = sequenceCurrents(E(wallet).getCurrentSubscriber());
 
   /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
   const invitationSpec = {
@@ -72,7 +73,7 @@ test('null swap', async t => {
     callPipe: [['makeGiveMintedInvitation']],
   };
 
-  await wallet.getOffersFacet().executeOffer({
+  const offer = {
     id: 'nullSwap',
     invitationSpec,
     proposal: {
@@ -80,14 +81,21 @@ test('null swap', async t => {
       give: { In: AmountMath.makeEmpty(mintedBrand) },
       want: { Out: anchor.makeEmpty() },
     },
-  });
+  };
+
+  await wallet.getOffersFacet().executeOffer(harden(offer));
+
   await eventLoopIteration();
 
-  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
-  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
   const status = computedState.offerStatuses.get('nullSwap');
   t.is(status?.id, 'nullSwap');
   t.false('error' in NonNullish(status), 'should not have an error');
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+
+  t.deepEqual(currents[0].liveOffers, []);
+  t.deepEqual(currents[1].liveOffers, [['nullSwap', offer]]);
+  t.deepEqual(currents[2].liveOffers, []);
 });
 
 // we test this direction of swap because wanting anchor would require the PSM to have anchor in it first
@@ -169,14 +177,16 @@ test('want stable (insufficient funds)', async t => {
     callPipe: [['makeWantMintedInvitation']],
   };
 
-  await offersFacet.executeOffer({
-    id: 'insufficientFunds',
-    invitationSpec,
-    proposal: {
-      give: { In: anchor.make(anchorFunding * 2n) }, // twice the available funds
-      want: {},
-    },
-  });
+  await t.throwsAsync(
+    offersFacet.executeOffer({
+      id: 'insufficientFunds',
+      invitationSpec,
+      proposal: {
+        give: { In: anchor.make(anchorFunding * 2n) }, // twice the available funds
+        want: {},
+      },
+    }),
+  );
   await eventLoopIteration();
   t.is(await E.get(getBalanceFor(anchor.brand)).value, anchorFunding); // remains after failure
   t.is(await E.get(getBalanceFor(stableBrand)).value, 0n);
@@ -278,12 +288,14 @@ test('govern offerFilter', async t => {
     1,
     'one invitation consumed, one left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-    'acceptEcInvitationOID',
-  ]);
+  t.deepEqual(
+    currentState.offerToUsedInvitation.map(([k, _]) => k),
+    ['acceptEcInvitationOID'],
+  );
+
+  let usedInvitations = new Map(currentState.offerToUsedInvitation);
   t.is(
-    currentState.offerToUsedInvitation.acceptEcInvitationOID.value[0]
-      .description,
+    usedInvitations.get('acceptEcInvitationOID')?.value[0].description,
     'charter member invitation',
   );
   const voteInvitationDetails = await getInvitationFor(
@@ -315,15 +327,13 @@ test('govern offerFilter', async t => {
     0,
     'last invitation consumed, none left',
   );
-  t.deepEqual(Object.keys(currentState.offerToUsedInvitation), [
-    'acceptEcInvitationOID',
-    'acceptVoterOID',
-  ]);
-  // acceptEcInvitationOID tested above
-  t.is(
-    currentState.offerToUsedInvitation.acceptVoterOID.value[0].description,
-    'Voter0',
+  t.deepEqual(
+    currentState.offerToUsedInvitation.map(([k, _]) => k),
+    ['acceptEcInvitationOID', 'acceptVoterOID'],
   );
+  // acceptEcInvitationOID tested above
+  usedInvitations = new Map(currentState.offerToUsedInvitation);
+  t.is(usedInvitations.get('acceptVoterOID')?.value[0].description, 'Voter0');
 
   // Call for a vote ////////////////////////////////
 
@@ -412,16 +422,18 @@ test('recover when some withdrawals succeed and others fail', async t => {
     give: { Anchor: make(anchor.brand, 10n), Oops: make(brand.BLD, 10n) },
     want: { Proceeds: make(brand.IST, 1n) },
   });
-  await E(smartWallet.getOffersFacet()).executeOffer({
-    id: 'recover',
-    invitationSpec: {
-      source: 'contract',
-      instance,
-      publicInvitationMaker: 'makeWantMintedInvitation',
-      invitationArgs: [],
-    },
-    proposal,
-  });
+  await t.throwsAsync(
+    E(smartWallet.getOffersFacet()).executeOffer({
+      id: 'recover',
+      invitationSpec: {
+        source: 'contract',
+        instance,
+        publicInvitationMaker: 'makeWantMintedInvitation',
+        invitationArgs: [],
+      },
+      proposal,
+    }),
+  );
 
   t.log('He still has 10 AUSD');
   t.deepEqual(await getBalance(jAddr, anchor.brand), make(anchor.brand, 10n));
@@ -436,74 +448,78 @@ test('agoricName invitation source errors', async t => {
   const { getBalanceFor, wallet } = await t.context.provideWalletAndBalances(
     'agoric1nullswap',
   );
-  const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
 
-  await wallet.getOffersFacet().executeOffer({
-    id: 'missing property',
-    // @ts-expect-error intentional violation
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['psm-IST-AUSD'],
-      // callPipe: [['makeGiveMintedInvitation']],
+  await t.throwsAsync(
+    wallet.getOffersFacet().executeOffer({
+      id: 'missing property',
+      // @ts-expect-error intentional violation
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['psm-IST-AUSD'],
+        // callPipe: [['makeGiveMintedInvitation']],
+      },
+      proposal: {},
+    }),
+    {
+      message:
+        '{"source":"agoricContract","instancePath":["psm-IST-AUSD"]} - Must have missing properties ["callPipe"]',
     },
-    proposal: {},
-  });
+  );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
-  t.like(computedState.offerStatuses.get('missing property'), {
-    error:
-      'Error: {"source":"agoricContract","instancePath":["psm-IST-AUSD"]} - Must have missing properties ["callPipe"]',
-  });
 
-  await wallet.getOffersFacet().executeOffer({
-    id: 'bad namepath',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['not-present'],
-      callPipe: [['makeGiveMintedInvitation']],
-    },
-    proposal: {},
-  });
+  await t.throwsAsync(
+    wallet.getOffersFacet().executeOffer({
+      id: 'bad namepath',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['not-present'],
+        callPipe: [['makeGiveMintedInvitation']],
+      },
+      proposal: {},
+    }),
+    { message: '"nameKey" not found: "not-present"' },
+  );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
-  t.like(computedState.offerStatuses.get('bad namepath'), {
-    error: 'Error: "nameKey" not found: "not-present"',
-  });
 
-  await wallet.getOffersFacet().executeOffer({
-    id: 'method typo',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['psm-IST-AUSD'],
-      callPipe: [['makeGiveMintedInvitation ']],
+  await t.throwsAsync(
+    wallet.getOffersFacet().executeOffer({
+      id: 'method typo',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['psm-IST-AUSD'],
+        callPipe: [['makeGiveMintedInvitation ']],
+      },
+      proposal: {},
+    }),
+    {
+      message: 'target has no method "makeGiveMintedInvitation ", has []',
     },
-    proposal: {},
-  });
+  );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
-  t.like(computedState.offerStatuses.get('method typo'), {
-    error:
-      'TypeError: target has no method "makeGiveMintedInvitation ", has []',
-  });
 
-  await wallet.getOffersFacet().executeOffer({
-    id: 'long pipe',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['psm-IST-AUSD'],
-      callPipe: [
-        ['zoe.getPublicFacet'],
-        ['makeGiveMintedInvitation'],
-        ['excessiveCall'],
-      ],
+  await t.throwsAsync(
+    wallet.getOffersFacet().executeOffer({
+      id: 'long pipe',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['psm-IST-AUSD'],
+        callPipe: [
+          ['zoe.getPublicFacet'],
+          ['makeGiveMintedInvitation'],
+          ['excessiveCall'],
+        ],
+      },
+      proposal: {},
+    }),
+    {
+      message: 'callPipe longer than MAX_PIPE_LENGTH=2',
     },
-    proposal: {},
-  });
+  );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
-  t.like(computedState.offerStatuses.get('long pipe'), {
-    error: 'Error: callPipe longer than MAX_PIPE_LENGTH=2',
-  });
 });
 
 test.todo('bad offer schema');
