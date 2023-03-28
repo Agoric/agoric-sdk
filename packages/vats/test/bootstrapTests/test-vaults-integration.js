@@ -269,6 +269,7 @@ test('exit bid', async t => {
     wantCollateral: 1.23,
     giveCurrency: 0.1,
     collateralBrandKey: 'IbcATOM',
+    price: 5,
   });
 
   await wd.tryExitOffer('bid');
