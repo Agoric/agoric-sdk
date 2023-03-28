@@ -1,91 +1,5 @@
-unchanged:
---- a/node_modules/ses/src/error/assert.js
-+++ b/node_modules/ses/src/error/assert.js
-@@ -134,6 +134,7 @@ const redactedDetails = (template, ...args) => {
-   // a details token that is never used, so this path must remain as fast as
-   // possible. Hence we store what we've got with little processing, postponing
-   // all the work to happen only if needed, for example, if an assertion fails.
-+  return { __proto__: DetailsTokenProto };
-   const detailsToken = freeze({ __proto__: DetailsTokenProto });
-   weakmapSet(hiddenDetailsMap, detailsToken, { template, args });
-   return detailsToken;
-@@ -155,7 +156,7 @@ freeze(redactedDetails);
-  */
- const unredactedDetails = (template, ...args) => {
-   args = arrayMap(args, arg =>
--    weakmapHas(declassifiers, arg) ? arg : quote(arg),
-+    weakmapHas(declassifiers, arg) ? arg : (arg),
-   );
-   return redactedDetails(template, ...args);
- };
-@@ -236,7 +237,7 @@ const makeError = (
-   }
-   const hiddenDetails = weakmapGet(hiddenDetailsMap, optDetails);
-   if (hiddenDetails === undefined) {
--    throw new TypeError(`unrecognized details ${quote(optDetails)}`);
-+    throw new TypeError(`unrecognized details ${(optDetails)}`);
-   }
-   const messageString = getMessageString(hiddenDetails);
-   const error = new ErrorConstructor(messageString);
-@@ -286,7 +287,7 @@ const note = (error, detailsNote) => {
-   }
-   const hiddenDetails = weakmapGet(hiddenDetailsMap, detailsNote);
-   if (hiddenDetails === undefined) {
--    throw new TypeError(`unrecognized details ${quote(detailsNote)}`);
-+    throw new TypeError(`unrecognized details ${(detailsNote)}`);
-   }
-   const logArgs = getLogArgs(hiddenDetails);
-   const callbacks = weakmapGet(hiddenNoteCallbackArrays, error);
-@@ -407,7 +408,7 @@ const makeAssert = (optRaise = undefined, unredacted = false) => {
-   const assertTypeof = (specimen, typename, optDetails) => {
-     baseAssert(
-       typeof typename === 'string',
--      details`${quote(typename)} must be a string`,
-+      details`${(typename)} must be a string`,
-     );
-     if (optDetails === undefined) {
-       // Like
-diff -u b/node_modules/ses/src/make-hardener.js b/node_modules/ses/src/make-hardener.js
---- b/node_modules/ses/src/make-hardener.js
-+++ b/node_modules/ses/src/make-hardener.js
-@@ -121,12 +121,20 @@
-   });
- };
- 
-+const warn = typeof print === 'function' ? print : console.warn;
-+
- /**
-  * Create a `harden` function.
-  *
-  * @returns {Harden}
-  */
- export const makeHardener = () => {
-+  // Use a native hardener if possible.
-+  if (typeof globalThis.harden === 'function') {
-+    warn('using native harden()');
-+    return globalThis.harden;
-+  }
-+
-   const hardened = new WeakSet();
- 
-   const { harden } = {!<!!s
-@@ -226,10 +234,10 @@
-         setForEach(toFreeze, markHardened);
-       }
- 
--      enqueue(root);
--      dequeue();
-+      //enqueue(root);
-+      //dequeue();
-       // console.warn("toFreeze set:", toFreeze);
--      commit();
-+      //commit();
- 
-       return root;
-     },
-\ No newline at end of file
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/dist/lockdown.cjs b/node_modules/ses/dist/lockdown.cjs
+index 2f32ec5..956961c 100644
 --- a/node_modules/ses/dist/lockdown.cjs
 +++ b/node_modules/ses/dist/lockdown.cjs
 @@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
@@ -157,8 +71,8 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/dist/lockdown.mjs b/node_modules/ses/dist/lockdown.mjs
+index 2f32ec5..956961c 100644
 --- a/node_modules/ses/dist/lockdown.mjs
 +++ b/node_modules/ses/dist/lockdown.mjs
 @@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
@@ -230,8 +144,8 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/dist/lockdown.umd.js b/node_modules/ses/dist/lockdown.umd.js
+index 2f32ec5..956961c 100644
 --- a/node_modules/ses/dist/lockdown.umd.js
 +++ b/node_modules/ses/dist/lockdown.umd.js
 @@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
@@ -303,8 +217,8 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/dist/ses.cjs b/node_modules/ses/dist/ses.cjs
+index 2f32ec5..956961c 100644
 --- a/node_modules/ses/dist/ses.cjs
 +++ b/node_modules/ses/dist/ses.cjs
 @@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
@@ -376,8 +290,8 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/dist/ses.mjs b/node_modules/ses/dist/ses.mjs
+index 2f32ec5..956961c 100644
 --- a/node_modules/ses/dist/ses.mjs
 +++ b/node_modules/ses/dist/ses.mjs
 @@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
@@ -449,8 +363,8 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/dist/ses.umd.js b/node_modules/ses/dist/ses.umd.js
+index 2f32ec5..956961c 100644
 --- a/node_modules/ses/dist/ses.umd.js
 +++ b/node_modules/ses/dist/ses.umd.js
 @@ -5619,15 +5619,27 @@ const isFunction=  (obj)=>typeof obj===  'function';
@@ -522,8 +436,56 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/src/error/assert.js b/node_modules/ses/src/error/assert.js
+index db7ecdd..ffe685f 100644
+--- a/node_modules/ses/src/error/assert.js
++++ b/node_modules/ses/src/error/assert.js
+@@ -134,6 +134,7 @@ const redactedDetails = (template, ...args) => {
+   // a details token that is never used, so this path must remain as fast as
+   // possible. Hence we store what we've got with little processing, postponing
+   // all the work to happen only if needed, for example, if an assertion fails.
++  return { __proto__: DetailsTokenProto };
+   const detailsToken = freeze({ __proto__: DetailsTokenProto });
+   weakmapSet(hiddenDetailsMap, detailsToken, { template, args });
+   return detailsToken;
+@@ -155,7 +156,7 @@ freeze(redactedDetails);
+  */
+ const unredactedDetails = (template, ...args) => {
+   args = arrayMap(args, arg =>
+-    weakmapHas(declassifiers, arg) ? arg : quote(arg),
++    weakmapHas(declassifiers, arg) ? arg : (arg),
+   );
+   return redactedDetails(template, ...args);
+ };
+@@ -236,7 +237,7 @@ const makeError = (
+   }
+   const hiddenDetails = weakmapGet(hiddenDetailsMap, optDetails);
+   if (hiddenDetails === undefined) {
+-    throw new TypeError(`unrecognized details ${quote(optDetails)}`);
++    throw new TypeError(`unrecognized details ${(optDetails)}`);
+   }
+   const messageString = getMessageString(hiddenDetails);
+   const error = new ErrorConstructor(messageString);
+@@ -286,7 +287,7 @@ const note = (error, detailsNote) => {
+   }
+   const hiddenDetails = weakmapGet(hiddenDetailsMap, detailsNote);
+   if (hiddenDetails === undefined) {
+-    throw new TypeError(`unrecognized details ${quote(detailsNote)}`);
++    throw new TypeError(`unrecognized details ${(detailsNote)}`);
+   }
+   const logArgs = getLogArgs(hiddenDetails);
+   const callbacks = weakmapGet(hiddenNoteCallbackArrays, error);
+@@ -407,7 +408,7 @@ const makeAssert = (optRaise = undefined, unredacted = false) => {
+   const assertTypeof = (specimen, typename, optDetails) => {
+     baseAssert(
+       typeof typename === 'string',
+-      details`${quote(typename)} must be a string`,
++      details`${(typename)} must be a string`,
+     );
+     if (optDetails === undefined) {
+       // Like
+diff --git a/node_modules/ses/src/intrinsics.js b/node_modules/ses/src/intrinsics.js
+index f9a024b..4b70469 100644
 --- a/node_modules/ses/src/intrinsics.js
 +++ b/node_modules/ses/src/intrinsics.js
 @@ -33,15 +33,27 @@ const isFunction = obj => typeof obj === 'function';
@@ -563,8 +525,8 @@ unchanged:
      }
    }
    defineProperty(obj, name, desc);
-only in patch2:
-unchanged:
+diff --git a/node_modules/ses/src/lockdown-shim.js b/node_modules/ses/src/lockdown-shim.js
+index 78bf7d1..52dba3a 100644
 --- a/node_modules/ses/src/lockdown-shim.js
 +++ b/node_modules/ses/src/lockdown-shim.js
 @@ -266,7 +266,9 @@ export const repairIntrinsics = (options = {}) => {
@@ -578,3 +540,42 @@ unchanged:
  
    addIntrinsics(tameFunctionConstructors());
  
+diff --git a/node_modules/ses/src/make-hardener.js b/node_modules/ses/src/make-hardener.js
+index 15efd5e..166af7c 100644
+--- a/node_modules/ses/src/make-hardener.js
++++ b/node_modules/ses/src/make-hardener.js
+@@ -121,12 +121,20 @@ const freezeTypedArray = array => {
+   });
+ };
+ 
++const warn = typeof print === 'function' ? print : console.warn;
++
+ /**
+  * Create a `harden` function.
+  *
+  * @returns {Harden}
+  */
+ export const makeHardener = () => {
++  // Use a native hardener if possible.
++  if (typeof globalThis.harden === 'function') {
++    warn('using native harden()');
++    return globalThis.harden;
++  }
++
+   const hardened = new WeakSet();
+ 
+   const { harden } = {
+@@ -227,10 +235,10 @@ export const makeHardener = () => {
+         setForEach(toFreeze, markHardened);
+       }
+ 
+-      enqueue(root);
+-      dequeue();
++      // enqueue(root);
++      // dequeue();
+       // console.warn("toFreeze set:", toFreeze);
+-      commit();
++      // commit();
+ 
+       return root;
+     },
