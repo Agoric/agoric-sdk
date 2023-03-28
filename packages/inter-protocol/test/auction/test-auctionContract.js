@@ -650,7 +650,7 @@ test.serial('multiple Depositors, with goal', async t => {
   await E(seat).tryExit();
   t.true(await E(seat).hasExited());
 
-  // 1500 Collateral was put up for auction by  two bidders (1000 and 500), so
+  // 1500 Collateral was put up for auction by two bidders (1000 and 500), so
   // one seller gets 66% of the proceeds, and the other 33%. The price authority
   // quote was 1.1, and the goods were sold in the first auction round at 105%.
   // At those rates, 900 pays for 799 collateral. The sellers pro-rate 900 and

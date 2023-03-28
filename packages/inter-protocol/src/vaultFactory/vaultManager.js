@@ -1038,7 +1038,7 @@ export const prepareVaultManagerKit = (
             const transfers = [];
             let liquidated = 0;
             /** @type {MapStore<string, Vault>} */
-            const reinstateVaults = makeScalarMapStore();
+            const vaultsToReinstate = makeScalarMapStore();
             let collateralReduction = AmountMath.makeEmpty(collateralBrand);
             const reduceCollateral = amount =>
               (collateralReduction = AmountMath.add(
@@ -1069,7 +1069,7 @@ export const prepareVaultManagerKit = (
                 const vaultId = vault.abortLiquidation();
                 liquidatingVaults.delete(vault);
                 // must reinstate after atomicRearrange(), so we record them.
-                reinstateVaults.init(vaultId, vault);
+                vaultsToReinstate.init(vaultId, vault);
                 reduceCollateral(vaultDebt);
               } else {
                 reconstituteVaults = false;
@@ -1086,7 +1086,7 @@ export const prepareVaultManagerKit = (
             if (transfers.length > 0) {
               atomicRearrange(zcf, harden(transfers));
             }
-            for (const [vaultId, vault] of reinstateVaults.entries()) {
+            for (const [vaultId, vault] of vaultsToReinstate.entries()) {
               prioritizedVaults.addVault(vaultId, vault);
             }
 
