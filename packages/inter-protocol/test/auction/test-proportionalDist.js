@@ -62,7 +62,7 @@ const checkProportions = (
     deposits.push({
       seat,
       amount: collateral.make(BigInt(rawDeposits[i].deposit)),
-      toRaise: collect ? currency.make(BigInt(collect)) : undefined,
+      goal: collect ? currency.make(BigInt(collect)) : null,
     });
     const currencyRecord = { Currency: currency.make(rawExp[i][1]) };
     expectedXfer.push([fakeCurrencySeat, seat, currencyRecord]);
@@ -205,7 +205,7 @@ const transferSharing450 = /** @type {Array<[bigint, bigint]>} */ ([
   [19n, 90n],
 ]);
 
-// currencyRaise < totalToRaise so everyone gets prorated amounts of both
+// currencyRaise < proceedsGoal so everyone gets prorated amounts of both
 test(
   'B: proportional of 20 limit',
   checkProportions,
@@ -218,10 +218,10 @@ test(
   [transferSharing20, [0n, 0n]],
 );
 
-// A. toRaise is not in proportion to deposit. Prevented by addAssets. Fallback
+// A. goal is not in proportion to deposit. Prevented by addAssets. Fallback
 // to proportional to deposit.
 test(
-  'A; toRaise not proportional to deposits',
+  'A; goal not proportional to deposits',
   checkProportions,
   [100n, 20n],
   [
@@ -232,10 +232,10 @@ test(
   [transferSharing20, [0n, 0n]],
 );
 
-// C if currencyRaise matches totalToRaise, everyone gets the currency they
+// C if currencyRaise matches proceedsGoal, everyone gets the currency they
 //   asked for, plus enough collateral to reach the same proportional payout.
 test(
-  'C: currencyRaise matches totalToRaise, negligible collateral',
+  'C: currencyRaise matches proceedsGoal, negligible collateral',
   checkProportions,
   [100n, 45n],
   [
@@ -246,10 +246,10 @@ test(
   [transferSharing45, [100n, 0n]],
 );
 
-// C if currencyRaise matches totalToRaise, everyone gets the currency they
+// C if currencyRaise matches proceedsGoal, everyone gets the currency they
 //   asked for, plus enough collateral to reach the same proportional payout.
 test(
-  'C: currencyRaise matches totalToRaise more collateral',
+  'C: currencyRaise matches proceedsGoal more collateral',
   checkProportions,
   [100n, 450n],
   [
@@ -260,10 +260,10 @@ test(
   [transferSharing450, [3n, 0n]],
 );
 
-//   If any depositor's toRaise limit exceeded their share of the total,
+//   If any depositor's goal limit exceeded their share of the total,
 //   we'll fall back to the first approach.
 test(
-  'C: greedy toRaise',
+  'C: greedy goal',
   checkProportions,
   [100n, 20n],
   [
@@ -280,11 +280,11 @@ const transferSharing200 = /** @type {Array<[bigint, bigint]>} */ ([
   [60n, 119n],
   [20n, 39n],
 ]);
-// D if currencyRaise > totalToRaise && all depositors specified a limit,
-//   all depositors get their toRaise first, then we distribute the
+// D if currencyRaise > proceedsGoal && all depositors specified a limit,
+//   all depositors get their goal first, then we distribute the
 //   remainder (collateral and currency) to get the same proportional payout.
 test(
-  'D: currencyRaise > totalToRaise && all depositors specified a limit a',
+  'D: currencyRaise > proceedsGoal && all depositors specified a limit a',
   checkProportions,
   [100n, 200n],
   [
@@ -300,11 +300,11 @@ const transferSharing200a = /** @type {Array<[bigint, bigint]>} */ ([
   [60n, 120n],
   [20n, 40n],
 ]);
-// D if currencyRaise > totalToRaise && all depositors specified a limit,
-//   all depositors get their toRaise first, then we distribute the
+// D if currencyRaise > proceedsGoal && all depositors specified a limit,
+//   all depositors get their goal first, then we distribute the
 //   remainder (collateral and currency) to get the same proportional payout.
 test(
-  'D: currencyRaise > totalToRaise && all depositors specified a limit b',
+  'D: currencyRaise > proceedsGoal && all depositors specified a limit b',
   checkProportions,
   [100n, 200n],
   [
@@ -321,12 +321,12 @@ const transferSharing2000 = /** @type {Array<[bigint, bigint]>} */ ([
   [60n, 1199n],
   [0n, 400n],
 ]);
-// E currencyRaise > totalToRaise && some depositors didn't specify a limit
-// if totalToRaise + value of collateralReturn >= limitedShare then those
+// E currencyRaise > proceedsGoal && some depositors didn't specify a limit
+// if proceedsGoal + value of collateralReturn >= limitedShare then those
 // who specified a limit can get all the excess over their limit in
 // collateral. Others share whatever is left.
 test(
-  'E: currencyRaise > totalToRaise && some depositors didn`t specify a limit',
+  'E: currencyRaise > proceedsGoal && some depositors didn`t specify a limit',
   checkProportions,
   [100n, 2000n],
   [
@@ -342,12 +342,12 @@ const transferSharing2000b = /** @type {Array<[bigint, bigint]>} */ ([
   [300n, 2700n],
   [600n, 400n],
 ]);
-// E currencyRaise > totalToRaise && some depositors didn't specify a limit
-// if totalToRaise + value of collateralReturn >= limitedShare then those
+// E currencyRaise > proceedsGoal && some depositors didn't specify a limit
+// if proceedsGoal + value of collateralReturn >= limitedShare then those
 // who specified a limit can get all the excess over their limit in
 // collateral. Others share whatever is left.
 test(
-  'E: currencyRaise > totalToRaise && some depositors had no limit, enuf collateral returned for those who had',
+  'E: currencyRaise > proceedsGoal && some depositors had no limit, enuf collateral returned for those who had',
   checkProportions,
   [1000n, 4000n],
   [

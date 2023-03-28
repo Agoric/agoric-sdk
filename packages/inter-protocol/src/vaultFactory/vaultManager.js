@@ -843,7 +843,7 @@ export const prepareVaultManagerKit = (
                 harden({ give: { Collateral: totalCollateral } }),
                 liqSeat,
                 liqSeat,
-                { toRaise: totalDebt },
+                { goal: totalDebt },
               ),
           );
 

@@ -148,7 +148,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
         updatingOracleQuote: zeroRatio,
         // undefined indicates no limit; empty indicates limit exhausted
         /** @type {Amount<'nat'> | undefined} */
-        totalToRaise: undefined,
+        totalProceedsGoal: undefined,
       };
     },
     {
@@ -202,14 +202,15 @@ export const prepareAuctionBook = (baggage, zcf) => {
           }
 
           /** @type {Amount<'nat'>} */
-          let collateralTarget = AmountMath.min(
+          const initialCollateralTarget = AmountMath.min(
             collateralWanted,
             collateralAvailable,
           );
 
-          const { curAuctionPrice, currencySeat, totalToRaise } = this.state;
+          const { curAuctionPrice, currencySeat, totalProceedsGoal } =
+            this.state;
           const currencyNeeded = ceilMultiplyBy(
-            collateralTarget,
+            initialCollateralTarget,
             curAuctionPrice,
           );
           if (AmountMath.isEmpty(currencyNeeded)) {
@@ -217,22 +218,25 @@ export const prepareAuctionBook = (baggage, zcf) => {
             return makeEmpty(collateralBrand);
           }
 
-          let currencyTarget = AmountMath.min(currencyNeeded, currencyAlloc);
-          const currencyLimit = totalToRaise
-            ? AmountMath.min(totalToRaise, currencyTarget)
-            : currencyTarget;
-          if (
-            totalToRaise ||
-            !AmountMath.isGTE(currencyLimit, currencyNeeded)
-          ) {
-            currencyTarget = currencyLimit;
-            collateralTarget = floorDivideBy(currencyLimit, curAuctionPrice);
-          }
+          const initialCurrencyTarget = AmountMath.min(
+            currencyNeeded,
+            currencyAlloc,
+          );
+          const currencyLimit = totalProceedsGoal
+            ? AmountMath.min(totalProceedsGoal, initialCurrencyTarget)
+            : initialCurrencyTarget;
+          const isRaiseBounded =
+            totalProceedsGoal ||
+            !AmountMath.isGTE(currencyLimit, currencyNeeded);
+
+          const [currencyTarget, collateralTarget] = isRaiseBounded
+            ? [currencyLimit, floorDivideBy(currencyLimit, curAuctionPrice)]
+            : [initialCurrencyTarget, initialCollateralTarget];
 
           trace('settle', {
             collateral: collateralTarget,
             currency: currencyTarget,
-            toRaise: totalToRaise,
+            totalProceedsGoal,
           });
 
           atomicRearrange(
@@ -243,9 +247,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
             ]),
           );
 
-          if (totalToRaise) {
-            this.state.totalToRaise = AmountMath.subtract(
-              totalToRaise,
+          if (totalProceedsGoal) {
+            this.state.totalProceedsGoal = AmountMath.subtract(
+              totalProceedsGoal,
               currencyTarget,
             );
           }
@@ -324,20 +328,21 @@ export const prepareAuctionBook = (baggage, zcf) => {
         /**
          * @param {Amount<'nat'>} assetAmount
          * @param {ZCFSeat} sourceSeat
-         * @param {Amount<'nat'>} [toRaise] an amount that the depositor would
-         *    like to raise. The auction is requested to not sell more
+         * @param {Amount<'nat'>} [proceedsGoal] an amount that the depositor
+         *    would like to raise. The auction is requested to not sell more
          *    collateral than required to raise that much. The auctioneer might
          *    sell more if there is more than one supplier of collateral, and
          *    they request inconsistent limits.
          */
-        addAssets(assetAmount, sourceSeat, toRaise) {
+        addAssets(assetAmount, sourceSeat, proceedsGoal) {
           trace('add assets');
-          const { collateralBrand, collateralSeat, totalToRaise } = this.state;
+          const { collateralBrand, collateralSeat, totalProceedsGoal } =
+            this.state;
 
-          // When adding assets, the new ratio of toRaise to collateral
+          // When adding assets, the new ratio of totalCollectionGoal to collateral
           // allocation will be the larger of the existing ratio and the ratio
           // implied by the new deposit. Add the new collateral and raise
-          // totalToRaise so it's proportional to the new ratio. This can
+          // totalProceedsGoal so it's proportional to the new ratio. This can
           // result in raising more currency than one depositor wanted, but
           // that's better than not selling as much as the other desired.
 
@@ -347,25 +352,25 @@ export const prepareAuctionBook = (baggage, zcf) => {
               ? allocation.Collateral
               : makeEmpty(collateralBrand);
 
-          // when neither toRaise nor totalToRaise is defined, we don't need an
+          // when neither proceedsGoal nor totalProceedsGoal is defined, we don't need an
           // update and the call immediately below won't invoke this function.
           const calcTargetRatio = () => {
-            if (totalToRaise && !toRaise) {
-              return makeRatioFromAmounts(totalToRaise, curCollateral);
-            } else if (toRaise && !totalToRaise) {
-              return makeRatioFromAmounts(toRaise, assetAmount);
-            } else if (toRaise && totalToRaise) {
+            if (totalProceedsGoal && !proceedsGoal) {
+              return makeRatioFromAmounts(totalProceedsGoal, curCollateral);
+            } else if (proceedsGoal && !totalProceedsGoal) {
+              return makeRatioFromAmounts(proceedsGoal, assetAmount);
+            } else if (proceedsGoal && totalProceedsGoal) {
               const curRatio = makeRatioFromAmounts(
-                totalToRaise,
+                totalProceedsGoal,
                 curCollateral,
               );
-              const newRatio = makeRatioFromAmounts(toRaise, assetAmount);
+              const newRatio = makeRatioFromAmounts(proceedsGoal, assetAmount);
               return ratioGTE(newRatio, curRatio) ? newRatio : curRatio;
             }
           };
 
-          if (toRaise || totalToRaise) {
-            this.state.totalToRaise = ceilMultiplyBy(
+          if (proceedsGoal || totalProceedsGoal) {
+            this.state.totalProceedsGoal = ceilMultiplyBy(
               AmountMath.add(curCollateral, assetAmount),
               // @ts-expect-error calcTargetRatio always returns a ratio here
               calcTargetRatio(),
@@ -407,10 +412,10 @@ export const prepareAuctionBook = (baggage, zcf) => {
             (a, b) => compareValues(a[1].seqNum, b[1].seqNum),
           );
 
-          const { totalToRaise } = this.state;
+          const { totalProceedsGoal } = this.state;
           const { helper } = this.facets;
           for (const [key, { seat, price: p, wanted }] of prioritizedOffers) {
-            if (totalToRaise && AmountMath.isEmpty(totalToRaise)) {
+            if (totalProceedsGoal && AmountMath.isEmpty(totalProceedsGoal)) {
               break;
             } else if (seat.hasExited()) {
               helper.removeFromItsBook(key, p);
@@ -506,7 +511,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
         },
         getSeats() {
           const { collateralSeat, currencySeat } = this.state;
-          this.state.totalToRaise = undefined;
+          this.state.totalProceedsGoal = undefined;
           return { collateralSeat, currencySeat };
         },
         exitAllSeats() {

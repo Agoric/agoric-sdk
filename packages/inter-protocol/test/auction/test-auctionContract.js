@@ -195,7 +195,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
   /**
    * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} issuerKit
    * @param {Amount<'nat'>} collateralAmount
-   * @param {undefined | { toRaise: Amount<'nat'> }} limit
+   * @param {undefined | { goal: Amount<'nat'> }} limit
    */
   const setupCollateralAuction = async (
     issuerKit,
@@ -520,7 +520,7 @@ test.serial('complete auction limit on amountRaised', async t => {
   const liqSeat = await driver.setupCollateralAuction(
     collateral,
     collateral.make(500n),
-    { toRaise: AmountMath.make(currency.brand, 200n) },
+    { goal: AmountMath.make(currency.brand, 200n) },
   );
   await driver.updatePriceAuthority(
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
@@ -609,7 +609,7 @@ test.serial('multiple Depositors, not all assets are sold', async t => {
 });
 
 // serial because dynamicConfig is shared across tests
-test.serial('multiple Depositors, with toRaise', async t => {
+test.serial('multiple Depositors, with goal', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
@@ -620,7 +620,7 @@ test.serial('multiple Depositors, with toRaise', async t => {
   const liqSeatB = await driver.depositCollateral(
     collateral.make(500n),
     collateral,
-    { toRaise: currency.make(300n) },
+    { goal: currency.make(300n) },
   );
   await driver.updatePriceAuthority(
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
