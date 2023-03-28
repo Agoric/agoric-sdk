@@ -250,7 +250,16 @@ For example:
 
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, interCmd.opts(), {
-      execFileSync,
+      // @ts-expect-error execFileSync is overloaded
+      execFileSync: (file, args) => {
+        try {
+          return execFileSync(file, args);
+        } catch (err) {
+          throw new InvalidArgumentError(
+            `${err.message}: is ${file} in your $PATH?`,
+          );
+        }
+      },
     });
 
   bidCmd

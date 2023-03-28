@@ -16,6 +16,7 @@ const unused = (...args) => {
   assert.fail('should not be needed');
 };
 
+/** @typedef {import('commander').Command} Command */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
 
 /**
@@ -288,7 +289,37 @@ test('inter bid list: finds one bid', async t => {
   );
 });
 
+/** @type {(c: Command) => Command[]} */
 const subCommands = c => [c, ...c.commands.flatMap(subCommands)];
+
+test('diagnostic for agd ENOENT', async t => {
+  const argv = 'node inter bid list --from gov1'.split(' ');
+
+  const out = [];
+  const diag = [];
+  const proc = makeProcess(t, govKeyring, out);
+  const cmd = await makeInterCommand(
+    {
+      ...proc,
+      execFileSync: file => {
+        t.is(file, 'agd');
+        throw Error('ENOENT');
+      },
+    },
+    makeNet({}),
+  );
+  subCommands(cmd).forEach(c => {
+    c.exitOverride();
+    c.configureOutput({ writeErr: s => diag.push(s) });
+  });
+
+  await t.throwsAsync(cmd.parseAsync(argv), { instanceOf: CommanderError });
+  t.deepEqual(
+    diag.join('').trim(),
+    "error: option '--from <address>' argument 'gov1' is invalid. ENOENT: is agd in your $PATH?",
+  );
+  t.deepEqual(out.join('').trim(), '');
+});
 
 const usageTest = (words, blurb = 'Command usage:') => {
   test(`Usage: ${words}`, async t => {
