@@ -119,7 +119,10 @@ export const makeInterCommand = async (
     .option('--home [dir]', 'agd CosmosSDK application home directory')
     .option(
       '--keyring-backend [os|file|test]',
-      'keyring\'s backend (os|file|test) (default "os")',
+      `keyring's backend (os|file|test) (default "${
+        env.AGORIC_KEYRING_BACKEND || 'os'
+      }")`,
+      env.AGORIC_KEYRING_BACKEND,
     );
 
   const rpcTools = async () => {
