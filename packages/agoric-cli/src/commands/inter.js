@@ -32,7 +32,7 @@ const makeFormatters = assets => {
   const br = asBoardRemote;
   const fmtAmtTuple = makeAmountFormatter(assets);
   /** @param {Amount} amt */
-  const amount = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(br(amt)));
+  const amount = amt => (([l, m]) => `${m} ${l}`)(fmtAmtTuple(br(amt)));
   /** @param {Record<string, Amount> | undefined} r */
   const record = r => (r ? objectMap(r, amount) : undefined);
   /** @param {Ratio} r */
@@ -147,8 +147,8 @@ export const makeInterCommand = async (
 For example:
 
 {
-  "liquidatingCollateral": "10IbcATOM",
-  "liquidatingDebt": "120IST",
+  "liquidatingCollateral": "10 IbcATOM",
+  "liquidatingDebt": "120 IST",
   "price": "12.00 IST/IbcATOM"
 }
 `,
