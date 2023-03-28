@@ -159,6 +159,8 @@ const start = async (zcf, privateArgs, baggage) => {
 
   /**
    * Anyone can deposit any assets to the reserve
+   *
+   * @param {*} state
    */
   const addCollateralHook = state => async (/** @type {ZCFSeat} */ seat) => {
     const {
@@ -175,6 +177,7 @@ const start = async (zcf, privateArgs, baggage) => {
       { [collateralKeyword]: amountIn },
     );
     seat.exit();
+    // eslint-disable-next-line no-use-before-define
     updateMetrics({ state });
 
     trace('received collateral', amountIn);
