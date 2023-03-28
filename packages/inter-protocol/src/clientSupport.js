@@ -232,7 +232,6 @@ const makeBidOffer = (brands, opts) => {
   // @ts-expect-error XXX how to narrow AssetKind?
   const collateralBrand = brands[opts.collateralBrandKey];
 
-  const proposal = { give };
   const want = AmountMath.make(
     collateralBrand,
     scaleDecimals(opts.wantCollateral),
@@ -266,7 +265,7 @@ const makeBidOffer = (brands, opts) => {
       instancePath: ['auctioneer'],
       callPipe: [['makeBidInvitation', [collateralBrand]]],
     },
-    proposal,
+    proposal: { give, exit: { onDemand: null } },
     offerArgs,
   };
   return offerSpec;
@@ -276,7 +275,7 @@ const makeBidOffer = (brands, opts) => {
  * @param {Record<string, Brand>} brands
  * @param {{
  *   offerId: string,
- *   giveCollateral: Number,
+ *   giveCollateral: number,
  *   collateralBrandKey: string,
  * }} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
