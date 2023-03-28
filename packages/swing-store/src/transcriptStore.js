@@ -363,16 +363,17 @@ export function makeTranscriptStore(
    * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
    */
   function readSpan(vatID, startPos) {
+    /** @type {number | undefined} */
     let endPos;
     if (startPos === undefined) {
       ({ startPos, endPos } = getCurrentSpanBounds(vatID));
     } else {
       insistTranscriptPosition(startPos);
       endPos = sqlGetSpanEndPos.get(vatID, startPos);
-      typeof endPos === 'number' ||
-        Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
+      if (typeof endPos !== 'number') {
+        throw Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
+      }
     }
-    insistTranscriptPosition(startPos);
     startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
 
     function* reader() {
