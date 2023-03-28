@@ -87,7 +87,7 @@ export function makeTranscriptStore(
       startPos INTEGER, -- inclusive
       endPos INTEGER, -- exclusive
       hash TEXT, -- cumulative hash of this item and previous cumulative hash
-      isCurrent INTEGER,
+      isCurrent INTEGER CHECK (isCurrent = 1),
       PRIMARY KEY (vatID, startPos),
       UNIQUE (vatID, isCurrent)
     )
