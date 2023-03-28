@@ -347,6 +347,8 @@ export const prepareAuctionBook = (baggage, zcf) => {
               ? allocation.Collateral
               : makeEmpty(collateralBrand);
 
+          // when neither toRaise nor totalToRaise is defined, we don't need an
+          // update and the call immediately below won't invoke this function.
           const calcTargetRatio = () => {
             if (totalToRaise && !toRaise) {
               return makeRatioFromAmounts(totalToRaise, curCollateral);

@@ -16,6 +16,8 @@ import {
   makeRatioFromAmounts,
   natSafeMath,
   provideEmptySeat,
+  ceilMultiplyBy,
+  ceilDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
@@ -128,6 +130,10 @@ const distributeProportionalShares = (
  *    the remainder (collateral and currency) to get the same proportional
  *    payout. If any depositor's toRaise limit exceeded their share of the
  *    total, we'll fall back as above.
+ * Think of it this way: those who specified a limit want as much collateral
+ * back as possible, consistent with raising a certain amount of currency. Those
+ * who didn't specify a limit are trying to sell collateral, and would prefer to
+ * have it all converted to currency.
  *
  * @param {Amount<'nat'>} collateralReturn
  * @param {Amount<'nat'>} currencyRaise
@@ -195,7 +201,7 @@ export const distributeProportionalSharesWithLimits = (
   // should get.
   //
   // The average price of collateral is CurrencyRaise / CollateralSold.
-  // The value of Collateral is Price * CollateralRaise.
+  // The value of Collateral is Price * collateralReturn.
   // The overall total value to be distributed is
   //     CurrencyRaise + collateralValue.
   // Each depositor should get currency and collateral that sum to the overall
@@ -205,8 +211,8 @@ export const distributeProportionalSharesWithLimits = (
   // To improve the resolution of the result, we only divide once, so we
   // multiply each depositor's collateral remaining by this expression.
   //
-  //        collSold * currencyRaise  +  currencyRaise * collRaise
-  //         -----------------------------------------------------
+  //        collSold * currencyRaise  +  currencyRaise * collateralReturn
+  //         -----------------------------------------------------------
   //                   collSold * totalCollDeposit
   //
   // If you do the dimension analysis, we'll multiply collateral by a ratio
@@ -225,11 +231,11 @@ export const distributeProportionalSharesWithLimits = (
   );
 
   const avgPrice = makeRatioFromAmounts(currencyRaise, collateralSold);
+
   // Allocate the toRaise to depositors who specified it. Add collateral to
   // reach their share. Then see what's left, and allocate it among the
   // remaining depositors. Escape to distributeProportionalShares if anything
   // doesn't work.
-
   /** @type {import('@agoric/zoe/src/contractSupport/atomicTransfer.js').TransferPart[]} */
   const transfers = [];
   let currencyLeft = currencyRaise;
@@ -260,48 +266,96 @@ export const distributeProportionalSharesWithLimits = (
       }
     }
   } else {
-    // Cases D & E. Any depositors that didn't specify toRaise get a share of
-    // the excess of currencyRaise above totalToRaise
+    // Cases D & E. CurrencyRaise > totalToRaise, so those who specified a limit
+    // receive at least their target.
 
-    const excessCurrency = AmountMath.isEmpty(unmatchedDeposits)
-      ? AmountMath.makeEmptyFromAmount(currencyRaise)
-      : AmountMath.subtract(currencyRaise, totalToRaise);
+    const collateralValue = floorMultiplyBy(collateralReturn, avgPrice);
+    const totalDistributableValue = AmountMath.add(
+      currencyRaise,
+      collateralValue,
+    );
+    // The share for those who specified a limit is proportional to their
+    // collateral. ceiling because it's a lower limit on the restrictive branch
+    const limitedShare = ceilMultiplyBy(
+      AmountMath.subtract(collDeposited, unmatchedDeposits),
+      makeRatioFromAmounts(totalDistributableValue, collDeposited),
+    );
+
+    // if totalToRaise + value of collateralReturn >= limitedShare then those
+    // who specified a limit can get all the excess over their limit in
+    // collateral. Others share whatever is left.
+    // If totalToRaise + collateralReturn < limitedShare then those who
+    // specified share all the collateral, and everyone gets currency to cover
+    // the remainder of their share.
+    const limitedGetMaxCollateral = AmountMath.isGTE(
+      AmountMath.add(totalToRaise, collateralValue),
+      limitedShare,
+    );
+
+    const calcNotLimitedCollateralShare = () => {
+      if (limitedGetMaxCollateral) {
+        // those who limited will get limitedShare - totalToRaise in collateral
+        const ltdCollatValue = AmountMath.subtract(limitedShare, totalToRaise);
+        const ltdCollatShare = ceilDivideBy(ltdCollatValue, avgPrice);
+        // the unlimited will get the remainder of the collateral
+        return AmountMath.subtract(collateralReturn, ltdCollatShare);
+      } else {
+        return AmountMath.makeEmpty(brand);
+      }
+    };
+    const notLimitedCollateralShare = calcNotLimitedCollateralShare();
 
     for (const { seat, amount, toRaise } of deposits.values()) {
       const depositorValue = floorMultiplyBy(amount, totalValueRatio);
-      if (toRaise && AmountMath.isGTE(toRaise, depositorValue)) {
-        // This is the exception mentioned above.
-        // ignore transfers and distribute everything proportionally.
-        return distributeProportionally();
-      }
 
-      let valueNeeded = depositorValue;
-      if (
-        (!toRaise || AmountMath.isEmpty(toRaise)) &&
-        !AmountMath.isEmpty(excessCurrency)
-      ) {
-        // give 'em a share of excessCurrency, and collateral to top it off
+      debugger;
 
-        // share excess currency by amount / totalDeposit
-        const excessCurrencyShare = floorMultiplyBy(
-          amount,
-          makeRatioFromAmounts(excessCurrency, collDeposited),
+      const addRemainderInCurrency = collateralAdded => {
+        const collateralVal = ceilMultiplyBy(collateralAdded, avgPrice);
+        const valueNeeded = AmountMath.subtract(depositorValue, collateralVal);
+
+        debugger;
+
+        currencyLeft = AmountMath.subtract(currencyLeft, valueNeeded);
+        transfers.push([currencySeat, seat, { Currency: valueNeeded }]);
+      };
+
+      if (!toRaise || AmountMath.isEmpty(toRaise)) {
+        const collateralShare = floorMultiplyBy(
+          notLimitedCollateralShare,
+          makeRatioFromAmounts(amount, unmatchedDeposits),
         );
-        currencyLeft = AmountMath.subtract(currencyLeft, excessCurrencyShare);
-        transfers.push([currencySeat, seat, { Currency: excessCurrencyShare }]);
-        valueNeeded = AmountMath.subtract(depositorValue, excessCurrencyShare);
-      } else if (!toRaise || AmountMath.isGTE(currencyLeft, toRaise)) {
-        return distributeProportionally();
+        collateralLeft = AmountMath.subtract(collateralLeft, collateralShare);
+        addRemainderInCurrency(collateralShare);
+        const collateralShareRecord = { Collateral: collateralShare };
+        transfers.push([collateralSeat, seat, collateralShareRecord]);
       } else {
-        // give 'em the toRaise they asked for, and collateral to top it off
-        currencyLeft = AmountMath.subtract(currencyLeft, toRaise);
-        transfers.push([currencySeat, seat, { Currency: toRaise }]);
-        valueNeeded = AmountMath.subtract(depositorValue, toRaise);
-      }
+        if (limitedGetMaxCollateral) {
+          currencyLeft = AmountMath.subtract(currencyLeft, toRaise);
+          transfers.push([currencySeat, seat, { Currency: toRaise }]);
 
-      const collateralToAdd = floorDivideBy(valueNeeded, avgPrice);
-      collateralLeft = AmountMath.subtract(collateralLeft, collateralToAdd);
-      transfers.push([collateralSeat, seat, { Collateral: collateralToAdd }]);
+          const valueNeeded = AmountMath.subtract(depositorValue, toRaise);
+          const collateralToAdd = floorDivideBy(valueNeeded, avgPrice);
+          collateralLeft = AmountMath.subtract(collateralLeft, collateralToAdd);
+          transfers.push([
+            collateralSeat,
+            seat,
+            { Collateral: collateralToAdd },
+          ]);
+        } else {
+          // There's not enough collateral to completely cover the gap above
+          // toRaise, so each depositor gets a proportional share of
+          // collateralReturn plus enough currency to reach their share.
+          const collateralShare = floorMultiplyBy(
+            collateralReturn,
+            makeRatioFromAmounts(amount, collDeposited),
+          );
+          collateralLeft = AmountMath.subtract(collateralLeft, collateralShare);
+          addRemainderInCurrency(collateralShare);
+          const collateralShareRecord = { Collateral: collateralShare };
+          transfers.push([collateralSeat, seat, collateralShareRecord]);
+        }
+      }
     }
   }
 

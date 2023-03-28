@@ -657,7 +657,7 @@ test.serial('multiple Depositors, with toRaise', async t => {
   // the returned collateral. The auctioneer sets the remainder aside.
   await assertPayouts(t, seat, currency, collateral, 600n, 779n);
   await assertPayouts(t, liqSeatA, currency, collateral, 600n, 480n);
-  await assertPayouts(t, liqSeatB, currency, collateral, 300n, 240n);
+  await assertPayouts(t, liqSeatB, currency, collateral, 300n, 239n);
 });
 
 // serial because dynamicConfig is shared across tests

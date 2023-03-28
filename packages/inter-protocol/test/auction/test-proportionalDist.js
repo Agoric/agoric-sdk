@@ -194,10 +194,15 @@ const transferSharing20 = /** @type {Array<[bigint, bigint]>} */ ([
   [60n, 12n],
   [20n, 4n],
 ]);
-const transferSharing2000 = /** @type {Array<[bigint, bigint]>} */ ([
-  [20n, 400n],
-  [60n, 1200n],
-  [20n, 400n],
+const transferSharing45 = /** @type {Array<[bigint, bigint]>} */ ([
+  [0n, 9n],
+  [0n, 27n],
+  [0n, 9n],
+]);
+const transferSharing450 = /** @type {Array<[bigint, bigint]>} */ ([
+  [19n, 90n],
+  [59n, 270n],
+  [19n, 90n],
 ]);
 
 // currencyRaise < totalToRaise so everyone gets prorated amounts of both
@@ -213,10 +218,10 @@ test(
   [transferSharing20, [0n, 0n]],
 );
 
-// C if currencyRaise matches totalToRaise, everyone gets the currency they
-//   asked for, plus enough collateral to reach the same proportional payout.
+// A. toRaise is not in proportion to deposit. Prevented by addAssets. Fallback
+// to proportional to deposit.
 test(
-  'C: currencyRaise matches totalToRaise',
+  'A; toRaise not proportional to deposits',
   checkProportions,
   [100n, 20n],
   [
@@ -225,6 +230,34 @@ test(
     { deposit: 10_000, collect: 9 },
   ],
   [transferSharing20, [0n, 0n]],
+);
+
+// C if currencyRaise matches totalToRaise, everyone gets the currency they
+//   asked for, plus enough collateral to reach the same proportional payout.
+test(
+  'C: currencyRaise matches totalToRaise, negligible collateral',
+  checkProportions,
+  [100n, 45n],
+  [
+    { deposit: 10_000, collect: 9 },
+    { deposit: 30_000, collect: 27 },
+    { deposit: 10_000, collect: 9 },
+  ],
+  [transferSharing45, [100n, 0n]],
+);
+
+// C if currencyRaise matches totalToRaise, everyone gets the currency they
+//   asked for, plus enough collateral to reach the same proportional payout.
+test(
+  'C: currencyRaise matches totalToRaise more collateral',
+  checkProportions,
+  [100n, 450n],
+  [
+    { deposit: 100, collect: 90 },
+    { deposit: 300, collect: 270 },
+    { deposit: 100, collect: 90 },
+  ],
+  [transferSharing450, [3n, 0n]],
 );
 
 //   If any depositor's toRaise limit exceeded their share of the total,
@@ -241,34 +274,86 @@ test(
   [transferSharing20, [0n, 0n]],
 );
 
+// rounding happens because the value of collateral is negligible.
+const transferSharing200 = /** @type {Array<[bigint, bigint]>} */ ([
+  [20n, 39n],
+  [60n, 119n],
+  [20n, 39n],
+]);
 // D if currencyRaise > totalToRaise && all depositors specified a limit,
 //   all depositors get their toRaise first, then we distribute the
 //   remainder (collateral and currency) to get the same proportional payout.
 test(
-  'D: currencyRaise > totalToRaise && all depositors specified a limit',
+  'D: currencyRaise > totalToRaise && all depositors specified a limit a',
   checkProportions,
-  [100n, 2000n],
+  [100n, 200n],
   [
     { deposit: 10_000, collect: 9 },
-    { deposit: 30_000, collect: 2 },
+    { deposit: 30_000, collect: 27 },
     { deposit: 10_000, collect: 9 },
   ],
-  [transferSharing2000, [0n, 0n]],
+  [transferSharing200, [0n, 3n]],
 );
 
-// E if currencyRaise > totalToRaise && some depositors didn't specify a
-//   limit, depositors who did get their toRaise first, then we distribute
-//   the remainder (collateral and currency) to get the same proportional
-//   payout. If any depositor's toRaise limit exceeded their share of the
-//   total, we'll fall back as above.
+const transferSharing200a = /** @type {Array<[bigint, bigint]>} */ ([
+  [20n, 40n],
+  [60n, 120n],
+  [20n, 40n],
+]);
+// D if currencyRaise > totalToRaise && all depositors specified a limit,
+//   all depositors get their toRaise first, then we distribute the
+//   remainder (collateral and currency) to get the same proportional payout.
+test(
+  'D: currencyRaise > totalToRaise && all depositors specified a limit b',
+  checkProportions,
+  [100n, 200n],
+  [
+    { deposit: 10_000, collect: 900 },
+    { deposit: 30_000, collect: 2700 },
+    { deposit: 10_000, collect: 900 },
+  ],
+  [transferSharing200a, [0n, 0n]],
+);
+
+// rounding happens because the value of collateral is negligible.
+const transferSharing2000 = /** @type {Array<[bigint, bigint]>} */ ([
+  [20n, 399n],
+  [60n, 1199n],
+  [0n, 400n],
+]);
+// E currencyRaise > totalToRaise && some depositors didn't specify a limit
+// if totalToRaise + value of collateralReturn >= limitedShare then those
+// who specified a limit can get all the excess over their limit in
+// collateral. Others share whatever is left.
 test(
   'E: currencyRaise > totalToRaise && some depositors didn`t specify a limit',
   checkProportions,
   [100n, 2000n],
   [
     { deposit: 10_000, collect: 9 },
-    { deposit: 30_000, collect: 2 },
+    { deposit: 30_000, collect: 27 },
     { deposit: 10_000 },
   ],
-  [transferSharing2000, [0n, 0n]],
+  [transferSharing2000, [20n, 2n]],
+);
+
+const transferSharing2000b = /** @type {Array<[bigint, bigint]>} */ ([
+  [100n, 900n],
+  [300n, 2700n],
+  [600n, 400n],
+]);
+// E currencyRaise > totalToRaise && some depositors didn't specify a limit
+// if totalToRaise + value of collateralReturn >= limitedShare then those
+// who specified a limit can get all the excess over their limit in
+// collateral. Others share whatever is left.
+test(
+  'E: currencyRaise > totalToRaise && some depositors had no limit, enuf collateral returned for those who had',
+  checkProportions,
+  [1000n, 4000n],
+  [
+    { deposit: 1000, collect: 900 },
+    { deposit: 3000, collect: 2700 },
+    { deposit: 1000 },
+  ],
+  [transferSharing2000b, [0n, 0n]],
 );
