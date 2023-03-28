@@ -131,6 +131,23 @@ export function makeTranscriptStore(
     return transcripts;
   }
 
+  function spanArtifactName(rec) {
+    return `transcript.${rec.vatID}.${rec.startPos}.${rec.endPos}`;
+  }
+
+  function spanMetadataKey(rec) {
+    if (rec.isCurrent) {
+      return `transcript.${rec.vatID}.current`;
+    } else {
+      return `transcript.${rec.vatID}.${rec.startPos}`;
+    }
+  }
+
+  function spanRec(vatID, startPos, endPos, hash, isCurrent) {
+    isCurrent = isCurrent ? 1 : 0;
+    return { vatID, startPos, endPos, hash, isCurrent };
+  }
+
   /**
    * Compute a new cumulative hash for a span that includes a new transcript
    * item.  This is computed by hashing together the hash from the previous item
@@ -166,6 +183,8 @@ export function makeTranscriptStore(
   function initTranscript(vatID) {
     ensureTxn();
     sqlWriteSpan.run(vatID, 0, 0, initialHash, 1);
+    const newRec = spanRec(vatID, 0, 0, initialHash, 1);
+    noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
   const sqlGetCurrentSpanBounds = db.prepare(`
@@ -185,23 +204,6 @@ export function makeTranscriptStore(
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
     bounds || Fail`no current transcript for ${q(vatID)}`;
     return bounds;
-  }
-
-  function spanArtifactName(rec) {
-    return `transcript.${rec.vatID}.${rec.startPos}.${rec.endPos}`;
-  }
-
-  function spanMetadataKey(rec) {
-    if (rec.isCurrent) {
-      return `transcript.${rec.vatID}.current`;
-    } else {
-      return `transcript.${rec.vatID}.${rec.startPos}`;
-    }
-  }
-
-  function spanRec(vatID, startPos, endPos, hash, isCurrent) {
-    isCurrent = isCurrent ? 1 : 0;
-    return { vatID, startPos, endPos, hash, isCurrent };
   }
 
   const sqlEndCurrentSpan = db.prepare(`
