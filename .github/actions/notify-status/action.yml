@@ -33,7 +33,7 @@ runs:
         body: |-
           Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }} status ${{ job.status }}
 
-          Please take discussion to @agoric#eng_coordination
+          Please take discussion to #ops-engineering
 
           Details at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         # comma-separated string, send email to
