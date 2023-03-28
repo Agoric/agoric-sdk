@@ -3,7 +3,6 @@ import { E } from '@endo/eventual-send';
 
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
@@ -11,6 +10,7 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { allValues } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
+import { Stable } from '../../src/tokens.js';
 
 import {
   installGovernance,

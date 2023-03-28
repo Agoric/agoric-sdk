@@ -3,12 +3,14 @@ import '../../exported.js';
 import { AmountMath } from '@agoric/ertp';
 import '@agoric/governance/exported.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
+// How do stop these runtime imports for types?
 import '@agoric/vats/exported.js';
 import '@agoric/vats/src/core/types.js';
-import { Stable, Stake } from '@agoric/vats/src/tokens.js';
+// FIXME we could move this to agoric/internal
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
+import { Stable, Stake } from '../tokens.js';
 import { LienBridgeId, makeStakeReporter } from '../my-lien.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeStakeFactoryTerms } from '../stakeFactory/params.js';

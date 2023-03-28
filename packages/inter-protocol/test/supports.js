@@ -6,7 +6,6 @@ import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-pupp
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makePromiseSpace, makeAgoricNamesAccess } from '@agoric/vats';
 import { makeBoard } from '@agoric/vats/src/lib-board.js';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -17,6 +16,7 @@ import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { Stable } from '../src/tokens.js';
 
 export { makeMockChainStorageRoot };
 

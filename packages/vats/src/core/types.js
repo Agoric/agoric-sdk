@@ -130,7 +130,7 @@
  */
 
 /**
- * @typedef {import('../tokens.js').TokenKeyword} TokenKeyword
+ * @typedef {import('@agoric/inter-protocol/src/tokens.js').TokenKeyword} TokenKeyword
  *
  * @typedef {{
  *   issuer: |

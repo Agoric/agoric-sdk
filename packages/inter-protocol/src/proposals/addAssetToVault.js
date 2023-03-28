@@ -1,9 +1,9 @@
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import { E } from '@endo/far';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { Stable } from '../tokens.js';
 import { reserveThenGetNames } from './utils.js';
 
 export * from './startPSM.js';

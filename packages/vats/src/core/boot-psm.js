@@ -1,28 +1,26 @@
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
-import { Far } from '@endo/far';
+import * as ERTPmod from '@agoric/ertp';
+import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import {
   installGovAndPSMContracts,
-  makeAnchorAsset,
-  startPSM,
-  inviteToEconCharter,
   inviteCommitteeMembers,
-  PSM_MANIFEST,
-  PSM_GOV_MANIFEST,
-  startEconCharter,
+  inviteToEconCharter,
   INVITE_PSM_COMMITTEE_MANIFEST,
+  makeAnchorAsset,
+  PSM_GOV_MANIFEST,
+  PSM_MANIFEST,
+  startEconCharter,
+  startPSM,
 } from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as startPSMmod from '@agoric/inter-protocol/src/proposals/startPSM.js';
-import * as ERTPmod from '@agoric/ertp';
+import { Far } from '@endo/far';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
-import { mustMatch, M } from '@agoric/store';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
 } from '@agoric/inter-protocol/src/proposals/startEconCommittee.js';
-import { makeAgoricNamesAccess } from './utils.js';
-import { makePromiseSpace } from './promise-space.js';
-import { Stable, Stake } from '../tokens.js';
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { M, mustMatch } from '@agoric/store';
 import {
   addBankAssets,
   buildZoe,
@@ -32,21 +30,23 @@ import {
   makeVatsFromBundles,
   mintInitialSupply,
 } from './basic-behaviors.js';
-import * as utils from './utils.js';
 import {
   bridgeCoreEval,
   bridgeProvisioner,
+  CHAIN_BOOTSTRAP_MANIFEST,
   makeBridgeManager,
   makeChainStorage,
   noProvisioner,
   publishAgoricNames,
   startTimerService,
-  CHAIN_BOOTSTRAP_MANIFEST,
 } from './chain-behaviors.js';
+import { makePromiseSpace } from './promise-space.js';
 import {
   startWalletFactory,
   WALLET_FACTORY_MANIFEST,
 } from './startWalletFactory.js';
+import * as utils from './utils.js';
+import { makeAgoricNamesAccess } from './utils.js';
 
 /** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
 

@@ -1,4 +1,4 @@
-import { Stable } from '@agoric/vats/src/tokens.js';
+import { Stable } from '../tokens.js';
 import * as econBehaviors from './econ-behaviors.js';
 import { ECON_COMMITTEE_MANIFEST } from './startEconCommittee.js';
 

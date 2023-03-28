@@ -1,15 +1,15 @@
 // @ts-check
 
-import { Nat } from '@endo/nat';
-import { E, Far } from '@endo/far';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
-import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
+import { E, Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 import { makeNameHubKit } from '../nameHub.js';
-import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
-import { Stable, Stake } from '../tokens.js';
 import { PowerFlags } from '../walletFlags.js';
+import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
 
 const { details: X } = assert;
 

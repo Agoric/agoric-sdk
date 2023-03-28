@@ -9,7 +9,7 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { Stable } from '../tokens.js';
+import { Stable } from '@agoric/inter-protocol/src/tokens.js';
 
 const trace = makeTracer('StartWF');
 

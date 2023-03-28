@@ -1,7 +1,7 @@
 import { Far } from '@endo/marshal';
 
 import { makeZoeKit } from '@agoric/zoe';
-import { Stable } from '@agoric/vats/src/tokens.js';
+import { Stable } from '../../../src/tokens.js';
 
 /** @type {BuildRootObjectForTestVat} */
 export function buildRootObject(vatPowers) {

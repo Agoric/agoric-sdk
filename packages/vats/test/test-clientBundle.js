@@ -8,6 +8,7 @@ import { makeZoeKit } from '@agoric/zoe';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
 import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
 import { setupClientManager } from '../src/core/chain-behaviors.js';
 import { makeAgoricNamesAccess } from '../src/core/utils.js';
@@ -20,7 +21,6 @@ import {
   makeBoard,
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
-import { Stable, Stake } from '../src/tokens.js';
 
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 

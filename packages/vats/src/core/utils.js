@@ -1,9 +1,9 @@
 // @ts-check
+import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import { WalletName } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { assertPassable } from '@endo/marshal';
-import { WalletName } from '@agoric/internal';
 import { makeNameHubKit } from '../nameHub.js';
-import { Stable, Stake } from '../tokens.js';
 import { makePromiseSpace } from './promise-space.js';
 
 const { entries, fromEntries, keys } = Object;

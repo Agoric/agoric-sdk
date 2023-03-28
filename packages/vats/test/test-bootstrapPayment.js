@@ -11,8 +11,8 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKit } from '@agoric/zoe';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { Stable } from '@agoric/inter-protocol/src/tokens.js';
 import centralSupplyBundle from '../bundles/bundle-centralSupply.js';
-import { Stable } from '../src/tokens.js';
 
 const setUpZoeForTest = async setJig => {
   const { makeFar } = makeLoopback('zoeTest');

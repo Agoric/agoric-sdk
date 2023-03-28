@@ -57,6 +57,7 @@
   },
   "devDependencies": {
     "@agoric/ertp": "^0.15.3",
+    "@agoric/inter-protocol": "^0.13.1",
     "@endo/bundle-source": "^2.4.2",
     "ava": "^5.2.0",
     "c8": "^7.13.0"
