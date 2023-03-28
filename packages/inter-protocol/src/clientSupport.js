@@ -225,10 +225,16 @@ const makeBidOffer = (brands, opts) => {
   // @ts-expect-error XXX how to narrow AssetKind?
   const collateralBrand = brands[opts.collateralBrandKey];
 
-  const want = AmountMath.make(
+  const wantAmt = AmountMath.make(
     collateralBrand,
     scaleDecimals(opts.wantCollateral),
   );
+
+  const proposal = {
+    give,
+    ...('price' in opts ? { want: { Collateral: wantAmt } } : {}),
+    exit: { onDemand: null },
+  };
 
   const bounds = (x, lo, hi) => {
     assert(x >= lo && x <= hi);
@@ -239,17 +245,18 @@ const makeBidOffer = (brands, opts) => {
   const offerArgs =
     'price' in opts
       ? {
-          want,
+          want: wantAmt,
           offerPrice: parseRatio(opts.price, brands.IST, collateralBrand),
         }
       : {
-          want,
+          want: wantAmt,
           offerBidScaling: parseRatio(
             (1 - bounds(opts.discount, -1, 1)).toFixed(2),
             brands.IST,
             brands.IST,
           ),
         };
+
   /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
   const offerSpec = {
     id: opts.offerId,
@@ -258,7 +265,7 @@ const makeBidOffer = (brands, opts) => {
       instancePath: ['auctioneer'],
       callPipe: [['makeBidInvitation', [collateralBrand]]],
     },
-    proposal: { give, exit: { onDemand: null } },
+    proposal,
     offerArgs,
   };
   return offerSpec;

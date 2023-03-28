@@ -83,13 +83,12 @@ const offerSpec1 = harden({
         numerator: mk(bslot.IST, 9n),
         denominator: mk(bslot.ATOM, 1n),
       },
-      want: mk(bslot.ATOM, 5000000n),
+      want: mk(bslot.ATOM, 5_000_000n),
     },
     proposal: {
       exit: { onDemand: null },
-      give: {
-        Currency: mk(bslot.IST, 50000000n),
-      },
+      give: { Currency: mk(bslot.IST, 50_000_000n) },
+      want: { Collateral: mk(bslot.ATOM, 5_000_000n) },
     },
   },
 });

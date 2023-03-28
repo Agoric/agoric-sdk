@@ -71,6 +71,7 @@ test('Offers.auction.Bid', async t => {
       proposal: {
         exit: { onDemand: null },
         give: { Currency: ist.make(4_560_000n) },
+        want: { Collateral: atom.make(1_230_000n) },
       },
       offerArgs: {
         offerPrice,
