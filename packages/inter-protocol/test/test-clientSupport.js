@@ -26,8 +26,7 @@ test('Offers.auction.Bid', async t => {
     t.deepEqual(
       Offers.auction.Bid(brands, {
         offerId: 'foo1',
-        wantCollateral: 1.23,
-        giveCurrency: 4.56,
+        give: 4.56,
         collateralBrandKey: 'ATOM',
         discount: cliArg,
       }),
@@ -39,12 +38,10 @@ test('Offers.auction.Bid', async t => {
           callPipe: [['makeBidInvitation', [atom.brand]]],
         },
         proposal: {
-          exit: { onDemand: null },
           give: { Currency: ist.make(4_560_000n) },
         },
         offerArgs: {
           offerBidScaling,
-          want: atom.make(1_230_000n),
         },
       },
     );
@@ -52,12 +49,30 @@ test('Offers.auction.Bid', async t => {
 
   const price = 7;
   const offerPrice = makeRatio(7n, ist.brand, 1n, atom.brand);
-  t.log({ price, offerPrice });
   t.deepEqual(
     Offers.auction.Bid(brands, {
       offerId: 'by-price2',
-      wantCollateral: 1.23,
-      giveCurrency: 4.56,
+      give: 4.56,
+      collateralBrandKey: 'ATOM',
+      price,
+    }),
+    {
+      id: 'by-price2',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['auctioneer'],
+        callPipe: [['makeBidInvitation', [atom.brand]]],
+      },
+      proposal: { give: { Currency: ist.make(4_560_000n) } },
+      offerArgs: { offerPrice },
+    },
+  );
+
+  t.deepEqual(
+    Offers.auction.Bid(brands, {
+      offerId: 'by-price2',
+      want: 1.23,
+      give: 4.56,
       collateralBrandKey: 'ATOM',
       price,
     }),
@@ -69,13 +84,14 @@ test('Offers.auction.Bid', async t => {
         callPipe: [['makeBidInvitation', [atom.brand]]],
       },
       proposal: {
-        exit: { onDemand: null },
         give: { Currency: ist.make(4_560_000n) },
+        want: { Collateral: atom.make(1_230_000n) },
       },
       offerArgs: {
         offerPrice,
         want: atom.make(1_230_000n),
       },
     },
+    'optional want',
   );
 });

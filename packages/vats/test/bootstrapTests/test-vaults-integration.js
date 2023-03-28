@@ -266,8 +266,8 @@ test('exit bid', async t => {
 
   wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
-    wantCollateral: 1.23,
-    giveCurrency: 0.1,
+    want: 1.23,
+    give: 0.1,
     collateralBrandKey: 'IbcATOM',
     price: 5,
   });

@@ -2,7 +2,9 @@
 /* global process */
 
 import { iterateReverse } from '@agoric/casting';
+import { AmountMath } from '@agoric/ertp';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import { execSwingsetTransaction, pollTx } from './chain.js';
 import { boardSlottingMarshaller } from './rpc.js';
 
 const marshaller = boardSlottingMarshaller();
@@ -25,6 +27,21 @@ export const outputAction = (bridgeAction, stdout = process.stdout) => {
   const capData = marshaller.serialize(bridgeAction);
   stdout.write(JSON.stringify(capData));
   stdout.write('\n');
+};
+
+const sendHint =
+  'Now use `agoric wallet send ...` to sign and broadcast the offer.\n';
+
+/**
+ * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
+ * @param {{
+ *   stdout: Pick<import('stream').Writable,'write'>,
+ *   stderr: Pick<import('stream').Writable,'write'>,
+ * }} io
+ */
+export const outputActionAndHint = (bridgeAction, { stdout, stderr }) => {
+  outputAction(bridgeAction, stdout);
+  stderr.write(sendHint);
 };
 
 /**
@@ -59,4 +76,56 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
   }
 
   return coalescer.state;
+};
+
+/**
+ * @param {string} address
+ * @param {import('./rpc').VStorage} vstorage
+ * @param {ReturnType<import('./rpc').makeFromBoard>} fromBoard
+ */
+export const getLiveOffers = async (address, vstorage, fromBoard) => {
+  const content = await vstorage.readLatest(
+    `published.wallet.${address}.current`,
+  );
+  /** @type {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} */
+  const current = storageHelper.unserializeTxt(content, fromBoard).at(-1);
+  return current.liveOffers;
+};
+
+/**
+ * Sign and broadcast a wallet-action.
+ *
+ * @throws { Error & { code: number } } if transaction fails
+ * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
+ * @param {import('./rpc').MinimalNetworkConfig & {
+ *   from: string,
+ *   verbose?: boolean,
+ *   keyring?: {home: string, backend: string},
+ *   stdout: Pick<import('stream').Writable, 'write'>,
+ *   execFileSync: typeof import('child_process').execFileSync,
+ *   delay: (ms: number) => Promise<void>,
+ * }} opts
+ */
+export const sendAction = async (bridgeAction, opts) => {
+  const offerBody = JSON.stringify(marshaller.serialize(bridgeAction));
+
+  // tryExit should not require --allow-spend
+  // https://github.com/Agoric/agoric-sdk/issues/7291
+  const spendMethods = ['executeOffer', 'tryExitOffer'];
+  const spendArg = spendMethods.includes(bridgeAction.method)
+    ? ['--allow-spend']
+    : [];
+
+  const act = ['wallet-action', ...spendArg, offerBody];
+  const out = execSwingsetTransaction([...act, '--output', 'json'], opts);
+  assert(out); // not dry run
+  const tx = JSON.parse(out);
+  if (tx.code !== 0) {
+    const err = Error(`failed to send action. code: ${tx.code}`);
+    // @ts-expect-error XXX how to add properties to an error?
+    err.code = tx.code;
+    throw err;
+  }
+
+  return pollTx(tx.txhash, opts);
 };
