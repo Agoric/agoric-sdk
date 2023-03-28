@@ -498,22 +498,21 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   });
 };
 
-test('vat upgrade - local', async t => {
+// run GC-sensitive upgrade tests that use a local worker serially
+// to mitigate any V8 gremlins
+test.serial('vat upgrade - local', async t => {
   return testUpgrade(t, 'local', { restartVatAdmin: false });
 });
-
-test('vat upgrade - local with VA restarts', async t => {
+test.serial('vat upgrade - local with VA restarts', async t => {
   return testUpgrade(t, 'local', { restartVatAdmin: true });
 });
-
-test('vat upgrade - local without automatic GC', async t => {
+test.serial('vat upgrade - local without automatic GC', async t => {
   return testUpgrade(t, 'local', { suppressGC: true });
 });
 
 test('vat upgrade - xsnap', async t => {
   return testUpgrade(t, 'xs-worker');
 });
-
 test('vat upgrade - xsnap without automatic GC', async t => {
   return testUpgrade(t, 'xs-worker', { suppressGC: true });
 });
