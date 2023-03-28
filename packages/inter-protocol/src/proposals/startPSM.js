@@ -6,7 +6,6 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
-import { Stable } from '@agoric/vats/src/tokens.js';
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -14,6 +13,7 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { Stable } from '../tokens.js';
 
 import { reserveThenGetNamePaths } from './utils.js';
 
