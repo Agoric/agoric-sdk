@@ -351,6 +351,7 @@ usageTest('inter liquidation status');
 usageTest('inter bid by-price');
 usageTest('inter bid by-discount');
 usageTest('inter bid list');
+usageTest('inter bid cancel');
 usageTest('inter reserve add');
 
 test('formatBid', t => {
