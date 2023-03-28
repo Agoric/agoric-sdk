@@ -11,7 +11,7 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import { outputExecuteOfferAction, outputAction } from '../lib/wallet.js';
+import { outputActionAndHint } from '../lib/wallet.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import {
   asBoardRemote,
@@ -174,9 +174,6 @@ For example:
     .command('bid')
     .description('auction bidding commands');
 
-  const sendHint =
-    'Now use `agoric wallet send ...` to sign and broadcast the offer.\n';
-
   bidCmd
     .command('by-price')
     .description('Print an offer to bid collateral by price.')
@@ -204,8 +201,10 @@ For example:
           collateralBrandKey: collateralBrand,
           ...opts,
         });
-        outputExecuteOfferAction(offer, stdout);
-        stderr.write(sendHint);
+        outputActionAndHint(
+          { method: 'executeOffer', offer },
+          { stdout, stderr },
+        );
       },
     );
 
@@ -246,8 +245,10 @@ For example:
           collateralBrandKey: collateralBrand,
           ...opts,
         });
-        outputExecuteOfferAction(offer, stdout);
-        stderr.write(sendHint);
+        outputActionAndHint(
+          { method: 'executeOffer', offer },
+          { stdout, stderr },
+        );
       },
     );
 
@@ -263,8 +264,7 @@ For example:
           method: 'tryExitOffer',
           offerId: id,
         };
-        outputAction(action, stdout);
-        stderr.write(sendHint);
+        outputActionAndHint(action, { stdout, stderr });
       },
     );
 
@@ -390,7 +390,10 @@ $ inter bid list --from my-acct
           collateralBrandKey: collateralBrand,
           ...opts,
         });
-        outputExecuteOfferAction(offer, stdout);
+        outputActionAndHint(
+          { method: 'executeOffer', offer },
+          { stdout, stderr },
+        );
       },
     );
   return interCmd;
