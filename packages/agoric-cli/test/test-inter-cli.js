@@ -85,6 +85,7 @@ const offerSpec1 = harden({
       want: mk(bslot.ATOM, 5000000n),
     },
     proposal: {
+      exit: { onDemand: null },
       give: {
         Currency: mk(bslot.IST, 50000000n),
       },
