@@ -26,10 +26,10 @@ import { buffer } from './util.js';
  * }} BundleStore
  *
  * @typedef {{
- *   exportBundle: (name: string) => AsyncIterable<Uint8Array>,
+ *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>,
  *   importBundle: (artifactName: string, exporter: SwingStoreExporter, bundleID: string) => void,
- *   getExportRecords: () => Iterable<[key: string, value: string]>,
- *   getArtifactNames: () => AsyncIterable<string>,
+ *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
+ *   getArtifactNames: () => AsyncIterableIterator<string>,
  * }} BundleStoreInternal
  *
  * @typedef {{
@@ -162,7 +162,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @param {string} name
    *
    * @yields {Uint8Array}
-   * @returns {AsyncIterable<Uint8Array>}
+   * @returns {AsyncIterableIterator<Uint8Array>}
    */
   async function* exportBundle(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
@@ -187,7 +187,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * Obtain artifact metadata records for bundles contained in this store.
    *
    * @yields {[key: string, value: string]}
-   * @returns {Iterable<[key: string, value: string]>}
+   * @returns {IterableIterator<readonly [key: string, value: string]>}
    */
   function* getExportRecords() {
     for (const bundleID of sqlGetBundleIDs.iterate()) {

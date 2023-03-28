@@ -38,10 +38,10 @@ import { buffer } from './util.js';
  * }} SnapStore
  *
  * @typedef {{
- *   exportSnapshot: (name: string, includeHistorical: boolean) => AsyncIterable<Uint8Array>,
+ *   exportSnapshot: (name: string, includeHistorical: boolean) => AsyncIterableIterator<Uint8Array>,
  *   importSnapshot: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => void,
- *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
- *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
+ *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
+ *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
  * }} SnapStoreInternal
  *
  * @typedef {{
@@ -291,7 +291,7 @@ export function makeSnapStore(
    *
    * @param {string} name
    * @param {boolean} includeHistorical
-   * @returns {AsyncIterable<Uint8Array>}
+   * @returns {AsyncIterableIterator<Uint8Array>}
    */
   function exportSnapshot(name, includeHistorical) {
     typeof name === 'string' || Fail`artifact name must be a string`;
@@ -486,8 +486,8 @@ export function makeSnapStore(
    * pruning historical metadata, for example after further analysis and
    * practical experience tells us that it will not be needed.
    *
-   * @yields {[key: string, value: string]}
-   * @returns {Iterable<[key: string, value: string]>}
+   * @yields {readonly [key: string, value: string]}
+   * @returns {IterableIterator<readonly [key: string, value: string]>}
    */
   function* getExportRecords(includeHistorical = true) {
     for (const rec of sqlGetSnapshotMetadata.iterate(1)) {

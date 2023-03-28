@@ -14,14 +14,14 @@ import { createSHA256 } from './hasher.js';
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string },
  *   deleteVatTranscripts: (vatID: string) => void,
  *   addItem: (vatID: string, item: string) => void,
- *   readSpan: (vatID: string, startPos?: number) => Iterable<string>,
+ *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
  * }} TranscriptStore
  *
  * @typedef {{
- *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterable<Uint8Array>
+ *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterableIterator<Uint8Array>
  *   importSpan: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => Promise<void>,
- *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
- *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
+ *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
+ *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
  * }} TranscriptStoreInternal
  *
  * @typedef {{
@@ -304,10 +304,10 @@ export function makeTranscriptStore(
    * replay will never be required or because such replay would be prohibitively
    * expensive regardless of need and therefor other repair strategies employed.
    *
-   * @yields {[key: string, value: string]}
-   * @returns {Iterable<[key: string, value: string]>}  An iterator over pairs of
-   *    [spanMetadataKey, rec], where `rec` is a JSON-encoded metadata record for the
-   *    span named by `spanMetadataKey`.
+   * @yields {readonly [key: string, value: string]}
+   * @returns {IterableIterator<readonly [key: string, value: string]>}
+   *    An iterator over pairs of [spanMetadataKey, rec], where `rec` is a
+   *    JSON-encoded metadata record for the span named by `spanMetadataKey`.
    */
   function* getExportRecords(includeHistorical = true) {
     const sql = includeHistorical
@@ -328,7 +328,7 @@ export function makeTranscriptStore(
    * the current span for each vat.
    *
    * @yields {string}
-   * @returns {AsyncIterable<string>}  An iterator over the names of all the artifacts requested
+   * @returns {AsyncIterableIterator<string>}  An iterator over the names of all the artifacts requested
    */
   async function* getArtifactNames(includeHistorical) {
     const sql = includeHistorical
@@ -360,7 +360,7 @@ export function makeTranscriptStore(
    * @param {number} [startPos] A start position identifying the span to be
    *    read; defaults to the current span, whatever it is
    *
-   * @returns {Iterable<string>}  An iterator over the items in the indicated span
+   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
    */
   function readSpan(vatID, startPos) {
     let endPos;
@@ -409,7 +409,7 @@ export function makeTranscriptStore(
    * @param {string} name  The name of the transcript artifact to be read
    * @param {boolean} includeHistorical  If true, allow non-current spans to be fetched
    *
-   * @returns {AsyncIterable<Uint8Array>}
+   * @returns {AsyncIterableIterator<Uint8Array>}
    * @yields {Uint8Array}
    */
   async function* exportSpan(name, includeHistorical) {
