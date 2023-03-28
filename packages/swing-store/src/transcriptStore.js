@@ -1,8 +1,8 @@
 // @ts-check
-import ReadlineTransform from 'readline-transform';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { Fail, q } from '@agoric/assert';
+import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { createSHA256 } from './hasher.js';
 
 /**
@@ -486,11 +486,12 @@ export function makeTranscriptStore(
       Fail`artifact name says endPos ${q(endPos)}, metadata says ${q(info.endPos)}`;
     const artifactChunks = exporter.getArtifact(name);
     const inStream = Readable.from(artifactChunks);
-    const lineTransform = new ReadlineTransform();
-    const lineStream = inStream.pipe(lineTransform);
+    const lineTransform = new BufferLineTransform();
+    const lineStream = inStream.pipe(lineTransform).setEncoding('utf8');
     let hash = initialHash;
     let pos = startPos;
-    for await (const item of lineStream) {
+    for await (const line of lineStream) {
+      const item = line.trimEnd();
       sqlAddItem.run(vatID, item, pos);
       hash = updateSpanHash(hash, item);
       pos += 1;
