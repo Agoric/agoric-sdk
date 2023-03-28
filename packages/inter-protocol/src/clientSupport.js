@@ -233,7 +233,6 @@ const makeBidOffer = (brands, opts) => {
   const proposal = {
     give,
     ...('price' in opts ? { want: { Collateral: wantAmt } } : {}),
-    exit: { onDemand: null },
   };
 
   const bounds = (x, lo, hi) => {
