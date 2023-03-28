@@ -1,0 +1,19 @@
+diff --git a/node_modules/@endo/check-bundle/lite.js b/node_modules/@endo/check-bundle/lite.js
+index c81f191..7a4c1ae 100644
+--- a/node_modules/@endo/check-bundle/lite.js
++++ b/node_modules/@endo/check-bundle/lite.js
+@@ -32,10 +32,10 @@ export const checkBundle = async (
+   if (bundle === null) {
+     throw Fail`checkBundle expects a bundle object`;
+   }
+-  Object.isFrozen(bundle) ||
+-    Fail`checkBundle cannot vouch for the ongoing integrity of an unfrozen object, got ${q(
+-      bundle,
+-    )}`;
++  // Object.isFrozen(bundle) ||
++  //   Fail`checkBundle cannot vouch for the ongoing integrity of an unfrozen object, got ${q(
++  //     bundle,
++  //   )}`;
+   const properties = Object.entries(Object.getOwnPropertyDescriptors(bundle));
+   const nonValues = properties.filter(
+     ([, property]) => typeof property.get === 'function',

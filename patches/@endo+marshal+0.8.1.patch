@@ -1,0 +1,120 @@
+diff --git a/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js
+index 46e7dd0..81e03a0 100644
+--- a/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js
++++ b/node_modules/@endo/marshal/src/helpers/passStyle-helpers.js
+@@ -151,8 +151,8 @@ const makeCheckTagRecord = checkProto => {
+       (isObject(tagRecord) ||
+         (reject &&
+           reject(X`A non-object cannot be a tagRecord: ${tagRecord}`))) &&
+-      (isFrozen(tagRecord) ||
+-        (reject && reject(X`A tagRecord must be frozen: ${tagRecord}`))) &&
++      // (isFrozen(tagRecord) ||
++      //   (reject && reject(X`A tagRecord must be frozen: ${tagRecord}`))) &&
+       (!isArray(tagRecord) ||
+         (reject && reject(X`An array cannot be a tagRecord: ${tagRecord}`))) &&
+       checkNormalProperty(tagRecord, PASS_STYLE, false, check) &&
+diff --git a/node_modules/@endo/marshal/src/helpers/remotable.js b/node_modules/@endo/marshal/src/helpers/remotable.js
+index 5c1b68d..35b9812 100644
+--- a/node_modules/@endo/marshal/src/helpers/remotable.js
++++ b/node_modules/@endo/marshal/src/helpers/remotable.js
+@@ -154,9 +154,9 @@ const checkRemotable = (val, check) => {
+     return true;
+   }
+   const reject = !!check && (details => check(false, details));
+-  if (!isFrozen(val)) {
+-    return reject && reject(X`cannot serialize non-frozen objects like ${val}`);
+-  }
++  // if (!isFrozen(val)) {
++  //   return reject && reject(X`cannot serialize non-frozen objects like ${val}`);
++  // }
+   // eslint-disable-next-line no-use-before-define
+   if (!RemotableHelper.canBeValid(val, check)) {
+     return false;
+diff --git a/node_modules/@endo/marshal/src/helpers/safe-promise.js b/node_modules/@endo/marshal/src/helpers/safe-promise.js
+index 17f5112..6506bf9 100644
+--- a/node_modules/@endo/marshal/src/helpers/safe-promise.js
++++ b/node_modules/@endo/marshal/src/helpers/safe-promise.js
+@@ -58,7 +58,7 @@ const checkPromiseOwnKeys = (pr, check) => {
+     if (
+       typeof val === 'object' &&
+       val !== null &&
+-      isFrozen(val) &&
++      // isFrozen(val) &&
+       getPrototypeOf(val) === Object.prototype
+     ) {
+       const subKeys = ownKeys(val);
+@@ -103,7 +103,7 @@ const checkPromiseOwnKeys = (pr, check) => {
+ const checkSafePromise = (pr, check) => {
+   const reject = details => check(false, details);
+   return (
+-    (isFrozen(pr) || reject(X`${pr} - Must be frozen`)) &&
++    // (isFrozen(pr) || reject(X`${pr} - Must be frozen`)) &&
+     (isPromise(pr) || reject(X`${pr} - Must be a promise`)) &&
+     (getPrototypeOf(pr) === Promise.prototype ||
+       reject(
+diff --git a/node_modules/@endo/marshal/src/make-far.js b/node_modules/@endo/marshal/src/make-far.js
+index 6c6a1b0..5b219cf 100644
+--- a/node_modules/@endo/marshal/src/make-far.js
++++ b/node_modules/@endo/marshal/src/make-far.js
+@@ -101,7 +101,7 @@ export const Remotable = (
+       remotable[PASS_STYLE],
+     )}`;
+   // Ensure that the remotable isn't already frozen.
+-  !isFrozen(remotable) || Fail`Remotable ${remotable} is already frozen`;
++  // !isFrozen(remotable) || Fail`Remotable ${remotable} is already frozen`;
+   const remotableProto = makeRemotableProto(remotable, iface);
+ 
+   // Take a static copy of the enumerable own properties as data properties.
+diff --git a/node_modules/@endo/marshal/src/makeTagged.js b/node_modules/@endo/marshal/src/makeTagged.js
+index f277749..54c44f2 100644
+--- a/node_modules/@endo/marshal/src/makeTagged.js
++++ b/node_modules/@endo/marshal/src/makeTagged.js
+@@ -14,7 +14,7 @@ export const makeTagged = (tag, payload) => {
+     'string',
+     X`The tag of a tagged record must be a string: ${tag}`,
+   );
+-  assertPassable(harden(payload));
++  // assertPassable(harden(payload));
+   return harden(
+     create(objectPrototype, {
+       [PASS_STYLE]: { value: 'tagged' },
+diff --git a/node_modules/@endo/marshal/src/passStyleOf.js b/node_modules/@endo/marshal/src/passStyleOf.js
+index 1d7e50d..57b21c0 100644
+--- a/node_modules/@endo/marshal/src/passStyleOf.js
++++ b/node_modules/@endo/marshal/src/passStyleOf.js
+@@ -142,15 +142,15 @@ const makePassStyleOf = passStyleHelpers => {
+           if (inner === null) {
+             return 'null';
+           }
+-          if (!isFrozen(inner)) {
+-            assert.fail(
+-              // TypedArrays get special treatment in harden()
+-              // and a corresponding special error message here.
+-              isTypedArray(inner)
+-                ? X`Cannot pass mutable typed arrays like ${inner}.`
+-                : X`Cannot pass non-frozen objects like ${inner}. Use harden()`,
+-            );
+-          }
++          // if (!isFrozen(inner)) {
++          //   assert.fail(
++          //     // TypedArrays get special treatment in harden()
++          //     // and a corresponding special error message here.
++          //     isTypedArray(inner)
++          //       ? X`Cannot pass mutable typed arrays like ${inner}.`
++          //       : X`Cannot pass non-frozen objects like ${inner}. Use harden()`,
++          //   );
++          // }
+           if (isPromise(inner)) {
+             assertSafePromise(inner);
+             return 'promise';
+@@ -176,8 +176,8 @@ const makePassStyleOf = passStyleHelpers => {
+           return 'remotable';
+         }
+         case 'function': {
+-          (isFrozen(inner)) ||
+-            Fail`Cannot pass non-frozen objects like ${inner}. Use harden()`;
++          // (isFrozen(inner)) ||
++          //   Fail`Cannot pass non-frozen objects like ${inner}. Use harden()`;
+           (typeof inner.then !== 'function') ||
+             Fail`Cannot pass non-promise thenables`;
+           remotableHelper.assertValid(inner, passStyleOfRecur);
