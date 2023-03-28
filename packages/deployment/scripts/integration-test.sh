@@ -38,12 +38,9 @@ DOCKER_VOLUMES="$AGORIC_SDK_PATH:/usr/src/agoric-sdk" \
 "$thisdir/setup.sh" init --noninteractive
 
 # Go ahead and bootstrap with detailed debug logging.
-AG_COSMOS_START_ARGS="--log_level=info --trace-store=.ag-chain-cosmos/data/kvstore-trace" \
+AG_COSMOS_START_ARGS="--log_level=info" \
 VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
 CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
-XSNAP_TEST_RECORD=.ag-chain-cosmos/data/xsnap-trace \
-SWING_STORE_TRACE=.ag-chain-cosmos/data/swingstore-trace \
-XSNAP_KEEP_SNAPSHOTS=1 \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
 if [ -d /usr/src/testnet-load-generator ]
@@ -57,7 +54,7 @@ then
   SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER= \
   SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
   SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=/usr/src/agoric-sdk OUTPUT_DIR="$RESULTSDIR" ./start.sh \
-    --stage.save-storage --trace kvstore swingstore xsnap \
+    --no-stage.save-storage \
     --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
     --stage.loadgen.faucet.interval=6 --stage.loadgen.faucet.limit=4 \
     --profile=testnet "--testnet-origin=file://$RESULTSDIR" \
