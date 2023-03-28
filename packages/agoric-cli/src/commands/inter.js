@@ -11,7 +11,7 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import { outputExecuteOfferAction } from '../lib/wallet.js';
+import { outputExecuteOfferAction, outputAction } from '../lib/wallet.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import {
   asBoardRemote,
@@ -22,6 +22,7 @@ import {
 const { values } = Object;
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
@@ -170,6 +171,9 @@ For example:
     .command('bid')
     .description('auction bidding commands');
 
+  const sendHint =
+    'Now use `agoric wallet send ...` to sign and broadcast the offer.\n';
+
   bidCmd
     .command('by-price')
     .description('Print an offer to bid collateral by price.')
@@ -198,9 +202,7 @@ For example:
           ...opts,
         });
         outputExecuteOfferAction(offer, stdout);
-        stderr.write(
-          'Now use `agoric wallet send ...` to sign and broadcast the offer.\n',
-        );
+        stderr.write(sendHint);
       },
     );
 
@@ -242,9 +244,24 @@ For example:
           ...opts,
         });
         outputExecuteOfferAction(offer, stdout);
-        stderr.write(
-          'Now use `agoric wallet send ...` to sign and broadcast the offer.\n',
-        );
+        stderr.write(sendHint);
+      },
+    );
+
+  bidCmd
+    .command('cancel')
+    .description('Print a request to exit a bid offer')
+    .argument('id', 'offer id (as from bid list)')
+    .action(
+      /** @param {string} id */
+      async id => {
+        /** @type {TryExitOfferAction} */
+        const action = {
+          method: 'tryExitOffer',
+          offerId: id,
+        };
+        outputAction(action, stdout);
+        stderr.write(sendHint);
       },
     );
 
