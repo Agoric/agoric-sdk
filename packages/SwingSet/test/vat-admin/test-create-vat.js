@@ -34,6 +34,9 @@ test.before(async t => {
   const brokenHangVatBundle = await bundleSource(
     new URL('broken-hang-vat.js', import.meta.url).pathname,
   );
+  const durableRootVatBundle = await bundleSource(
+    new URL('durable-root-vat.js', import.meta.url).pathname,
+  );
   const vatRefcountBundle = await bundleSource(
     new URL('new-vat-refcount.js', import.meta.url).pathname,
   );
@@ -44,6 +47,7 @@ test.before(async t => {
     brokenModuleVatBundle,
     brokenRootVatBundle,
     brokenHangVatBundle,
+    durableRootVatBundle,
     vatRefcountBundle,
     nonBundle,
   };
@@ -59,6 +63,7 @@ async function doTestSetup(t, doVatAdminRestart = false, enableSlog = false) {
     brokenModule: { bundle: bundles.brokenModuleVatBundle },
     brokenRoot: { bundle: bundles.brokenRootVatBundle },
     brokenHang: { bundle: bundles.brokenHangVatBundle },
+    durableRoot: { bundle: bundles.durableRootVatBundle },
   };
   let doSlog = false;
   function slogSender(slogObj) {
@@ -182,6 +187,10 @@ test('broken vat creation fails (bad buildRootObject)', async t => {
 
 test('broken vat creation fails (buildRootObject hangs)', async t => {
   await brokenVatTest(t, 'brokenHang', /buildRootObject unresolved/);
+});
+
+test('broken vat creation fails (durable root object)', async t => {
+  await brokenVatTest(t, 'durableRoot', /must return ephemeral, not virtual/);
 });
 
 test('error creating vat from non-bundle', async t => {
