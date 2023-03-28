@@ -72,6 +72,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @param {Bundle} bundle
    */
   function addBundle(bundleID, bundle) {
+    bundleID.startsWith('b1-') || Fail`invalid bundleID ${q(bundleID)}`;
     const { moduleFormat } = bundle;
     if (moduleFormat !== 'endoZipBase64')
       throw Fail`unsupported module format ${q(moduleFormat)}`;

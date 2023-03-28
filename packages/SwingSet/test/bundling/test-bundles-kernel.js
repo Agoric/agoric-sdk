@@ -12,22 +12,16 @@ import { initializeKernel } from '../../src/controller/initializeKernel.js';
 
 test('install bundle', async t => {
   const endowments = makeKernelEndowments();
-  const { kvStore } = endowments.kernelStorage;
+  const { bundleStore } = endowments.kernelStorage;
   await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(); // empty queue
 
   const bundleFile = new URL('./bootstrap-bundles.js', import.meta.url)
     .pathname;
-  // during the transition to endo's new format, preemptively ignore the
-  // hash it provides
-  let bundle = await bundleSource(bundleFile);
+  const bundle = await bundleSource(bundleFile);
   const { endoZipBase64Sha512: expectedSha512 } = bundle;
   const bundleID = `b1-${expectedSha512}`;
-  bundle = harden({
-    moduleFormat: bundle.moduleFormat,
-    endoZipBase64: bundle.endoZipBase64,
-  });
 
   // confirm that Endo agrees
   function computeSha512(bytes) {
@@ -46,25 +40,19 @@ test('install bundle', async t => {
   const badVersion =
     'b2-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
   await t.throwsAsync(() => kernel.installBundle(badVersion, bundle), {
-    message: /is not a bundleID/,
+    message: /invalid bundleID/,
   });
 
   const tooShort = 'b1-000';
   await t.throwsAsync(() => kernel.installBundle(tooShort, bundle), {
-    message: /is not a bundleID/,
+    message: /does not match bundle/,
   });
 
   // actual installation should succeed
   await kernel.installBundle(bundleID, bundle);
-  t.deepEqual(JSON.parse(kvStore.get(`bundle.${bundleID}`)), bundle);
+  t.deepEqual(bundleStore.getBundle(bundleID), bundle);
 
   // installing the same bundle twice is a NOP
   await kernel.installBundle(bundleID, bundle);
-  t.deepEqual(JSON.parse(kvStore.get(`bundle.${bundleID}`)), bundle);
-
-  // the kernel's installBundle() doesn't validate
-  const wrong =
-    'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
-  await kernel.installBundle(wrong, bundle);
-  t.deepEqual(JSON.parse(kvStore.get(`bundle.${wrong}`)), bundle);
+  t.deepEqual(bundleStore.getBundle(bundleID), bundle);
 });
