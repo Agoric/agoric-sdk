@@ -1437,6 +1437,10 @@ function build(
     );
     getInterfaceOf(rootObject) !== undefined ||
       Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
+    if (valToSlot.has(rootObject)) {
+      Fail`buildRootObject() must return ephemeral, not virtual/durable object`;
+    }
+
     // Need to load watched promises *after* buildRootObject() so that handler kindIDs
     // have a chance to be reassociated with their handlers.
     watchedPromiseManager.loadWatchedPromiseTable(unmeteredRevivePromise);

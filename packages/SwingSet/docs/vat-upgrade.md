@@ -27,7 +27,7 @@ Vat upgrade is triggered by an `upgrade()` message to the vat's "adminNode" cont
   business
 * messages from other vats start to arrive at the v2 code
 
-The first time the v2 code is invoked is called the "upgrade phase", and represents a limited window of time (a single crank) during which v2 must perform a number of tasks. The v2 code can use Promises to defer work into the (very) near future, however all this work must be complete by the time the promise queue is drained.
+The first time the v2 code is invoked is called the "upgrade phase", and represents a limited window of time (a single crank) during which v2 must perform a number of tasks. The v2 code can use Promises to defer work into the (very) near future, however all this work must be complete by the time the promise queue is drained. This means `buildRootObject` may not `await` messages sent off-vat, because their responses cannot return before the initial `startVat` delivery is complete.
 
 If a large number of data records need updating, the v2 code can (and should) use lazy/on-demand data migration, to avoid doing too much work in a single crank. However, the new vat only has a single upgrade-phase crank to prepare for incoming messages. So any lazy migration must be prepared to handle arbitrary messages despite the migration not being complete.
 
@@ -62,6 +62,8 @@ There are three basic categories of exports (cf. [A Taxonomy of Exo-making Funct
 During the upgrade phase, v2 code is obligated to re-define all durable Kinds created by v1 (i.e., those associated with objects in the third category) with the same facets and methods or a superset thereof. Once complete, this allows liveslots to satisfy deserialization of any inbound message addressed to (or referencing) a previously-exported durable object.
 
 As a special case, the root object returned from v2's `buildRootObject()` is automatically associated with exportID `o+0` (see [How Liveslots Uses the Vatstore](../../swingset-liveslots/src/vatstore-usage.md#counters)) and is therefore also obligated to support the same methods as its predecessor. This means that the root object is effectively always durable, and should not be explicitly persisted.
+
+To be precise, the root object *must* be an "ephemeral" object as documented in [swingset-liveslots](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/docs/liveslots.md#buildrootobject) (e.g. created with `Far` or `makeExo()`). It cannot be a virtual or durable object (created with a maker returned by `defineKind` or `defineDurableKind`, or the vat-data convenience wrappers like `prepareExo` or `prepareSingleton`). This ensures that the root object's identity is stable across upgrades.
 
 ### Zone API
 
@@ -196,7 +198,7 @@ An important property of `options` is `vatParameters`. This value is passed to t
 
 The v2 code wakes up inside the upgrade phase when `buildRootObject(vatPowers, vatParameters, baggage)` is called, where `vatParameters` will come from the call to `upgrade`. This `buildRootObject()` is expected to return an object, or a Promise that resolves to an object, and that object will assume the identity of the root object.
 
-Before completion of `buildRootObject()` is indicated by either returning a non-promise or by fulfilling a returned promise, the v2 code is obligated to redefine every Kind that was created by the v1 code. If any durable Kinds are defined incompletely or left undefined by the time of that indication, the upgrade fails and the vat is rolled back to v1.
+Before completion of `buildRootObject()` is indicated (either by returning a non-promise or by fulfilling a returned promise), the v2 code is obligated to redefine every Kind that was created by the v1 code. If any durable Kinds are defined incompletely or left undefined by the time of that indication, the upgrade fails and the vat is rolled back to v1.
 
 ```js
 import { M } from '@agoric/store';
@@ -206,10 +208,6 @@ const FooI = M.interface('foo', fooMethodGuards);
 const makeFoo = prepareExoClass(someDurableMap, 'foo', fooI, initFoo, fooMethods);
 ```
 
-It also needs to reattach every singleton `Far()` object exported by the v1 code.
+When `buildRootObject()` finishes and the upgrade phase completes successfully, the kernel will reject all Promises that v1 had exported (specifically all promises for which v1 was the "decider"). It will abandon any non-durable exports made by v1, and external vats which imported those objects will find themselves holding a broken reference (i.e. every message sent to it will be rejected with an Error, just as if they were exported by a vat which was then terminated).
 
-When `buildRootObject()` finishes and the upgrade phase completes successfully, the kernel will reject all Promises that v1 had exported (specifically all promises for which v1 was the "decider"). It will terminate any non-durable exports made by v1, and external vats which imported those objects will find themselves holding a broken reference (i.e. every message sent to it will be rejected with an Error, just as if they were exported by a vat which was then terminated).
-
-TBD: we might terminate any Durable exported objects which v2 does not reattach, or we might treat that as an error.
-
-(TODO) If the v2 code experiences an error during the upgrade phase, the entire upgrade is aborted and the v1 code is reinstated.
+If the v2 code experiences an error during the upgrade phase, the entire upgrade is aborted and the v1 code is reinstated. The caller of `E(adminNode).upgrade()` will observe their result promise get rejected.
