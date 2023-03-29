@@ -11,11 +11,23 @@
  *
  * @typedef {object} MeterControl
  * @property {() => boolean} isMeteringDisabled Ask whether metering is currently disabled.
- * @property {*} assertIsMetered
- * @property {*} assertNotMetered
- * @property {*} runWithoutMetering Run a callback outside metering
- * @property {*} runWithoutMeteringAsync Run an async callback outside metering
- * @property {*} unmetered Wrap a callback with runWithoutMetering
+ * @property {() => void} assertIsMetered
+ * @property {() => void} assertNotMetered
+ * @property {(fn: () => any) => ReturnType<fn>} runWithoutMetering Run a callback outside metering
+ * @property {(fn: () => any) => Promise<ReturnType<fn>>} runWithoutMeteringAsync Run an async callback outside metering
+ * @property {(fn: (...args: unknown[]) => any) => typeof fn} unmetered Wrap a callback with runWithoutMetering
+ */
+
+/**
+ * GcTools is the interface through which liveslots interacts with
+ * host environment garbage collection.
+ *
+ * @typedef {object} GcTools
+ * @property {typeof WeakRef} WeakRef
+ * @property {typeof FinalizationRegistry} FinalizationRegistry
+ * @property {() => Promise<void>} waitUntilQuiescent
+ * @property {() => Promise<void>} gcAndFinalize
+ * @property {MeterControl} meterControl
  */
 
 /**
@@ -47,9 +59,10 @@
  *          } VatDeliveryObject
  *
  * @typedef { { compute: number } } MeterConsumption
- * @typedef { [tag: 'ok', message: null, usage: MeterConsumption | null] |
- *            [tag: 'error', message: string, usage: MeterConsumption | null] } VatDeliveryResult
+ * @typedef { [tag: 'ok', problem: null, usage: MeterConsumption | null] |
+ *            [tag: 'error', problem: string, usage: MeterConsumption | null] } VatDeliveryResult
  *
+ * @typedef { (delivery: VatDeliveryObject) => (void | Promise<void>) } VatDeliveryProcessor
  *
  * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
  * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow

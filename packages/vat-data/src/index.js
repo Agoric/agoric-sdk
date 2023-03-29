@@ -40,6 +40,7 @@ export {
   prepareSingleton,
 } from './exo-utils.js';
 
+/** @typedef {import('./types.js').VatData} VatData */
 /** @typedef {import('./types.js').Baggage} Baggage */
 /** @typedef {import('./types.js').DurableKindHandle} DurableKindHandle */
 /** @template T @typedef {import('./types.js').DefineKindOptions<T>} DefineKindOptions */
