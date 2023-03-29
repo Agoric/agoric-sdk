@@ -1,3 +1,5 @@
+// Use modules not prefixed with `node:` since some deploy scripts may
+// still be running in esm emulation
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
