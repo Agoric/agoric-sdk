@@ -40,7 +40,7 @@ test('install bundle', async t => {
   const badVersion =
     'b2-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
   await t.throwsAsync(() => kernel.installBundle(badVersion, bundle), {
-    message: /invalid bundleID/,
+    message: /unsupported BundleID/,
   });
 
   const tooShort = 'b1-000';

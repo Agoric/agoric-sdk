@@ -23,6 +23,7 @@
     "@endo/base64": "^0.2.28",
     "@endo/bundle-source": "^2.4.2",
     "@endo/check-bundle": "^0.2.14",
+    "@endo/nat": "^4.1.23",
     "better-sqlite3": "^8.2.0",
     "readline-transform": "^1.0.0",
     "tmp": "^0.2.1"
