@@ -84,15 +84,17 @@ export const fmtBid = (bid, assets) => {
 
   const {
     id,
-    error,
     proposal: { give },
     offerArgs: { want },
     payouts,
+    result,
+    error,
   } = bid;
+  const resultProp = result && result !== 'UNPUBLISHED' ? { result } : {};
   const props = {
     ...(give ? { give: fmt.record(give) } : {}),
     ...(want ? { want: fmt.amount(want) } : {}),
-    ...(payouts ? { payouts: fmt.record(payouts) } : {}),
+    ...(payouts ? { payouts: fmt.record(payouts) } : resultProp),
     ...(error ? { error } : {}),
   };
   return harden({ id, ...spec, ...props });
