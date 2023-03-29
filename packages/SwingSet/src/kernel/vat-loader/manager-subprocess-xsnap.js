@@ -15,6 +15,7 @@ import './types.js';
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
+ * @typedef {import('../../types-internal.js').VatManagerFactory} VatManagerFactory
  */
 
 // eslint-disable-next-line no-unused-vars
@@ -47,7 +48,7 @@ export function makeXsSubprocessFactory({
   /**
    * @param {string} vatID
    * @param {unknown} bundle
-   * @param {ManagerOptions} managerOptions
+   * @param {import('../../types-internal.js').ManagerOptions} managerOptions
    * @param {LiveSlotsOptions} liveSlotsOptions
    * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
    */

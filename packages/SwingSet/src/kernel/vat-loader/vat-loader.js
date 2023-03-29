@@ -19,6 +19,7 @@ export function makeVatLoader(stuff) {
   } = stuff;
 
   /** @typedef {ReturnType<typeof import('../vatTranslator.js').makeVatTranslators>} Translators */
+  /** @typedef {import('../../types-internal.js').VatManager} VatManager */
 
   /**
    * Create a new vat at runtime (called when a 'create-vat' event reaches
@@ -126,51 +127,7 @@ export function makeVatLoader(stuff) {
    *
    * @param {Translators} translators
    *
-   * @param {object} options  an options bag. These options are currently understood:
-   *
-   * @param {ManagerType} options.managerType
-   *
-   * @param {number} options.virtualObjectCacheSize
-   *
-   * @param {string} [options.meterID] If a meterID is provided, the new
-   *        dynamic vat is limited to a fixed amount of computation and
-   *        allocation that can occur during any given crank. Peak stack
-   *        frames are limited as well. In addition, the given meter's
-   *        "remaining" value will be reduced by the amount of computation
-   *        used by each crank. The meter will eventually underflow unless it
-   *        is topped up, at which point the vat is terminated. If undefined,
-   *        the vat is unmetered. Static vats cannot be metered.
-   *
-   * @param {boolean} [options.enableSetup] If true,
-   *        permits the vat to construct itself using the
-   *        `setup()` API, which bypasses the imposition of LiveSlots but
-   *        requires the vat implementation to enforce the vat invariants
-   *        manually.  If false, the vat will be constructed using the
-   *        `buildRootObject()` API, which uses LiveSlots to enforce the vat
-   *        invariants automatically.  Defaults to false.
-   *
-   * @param {boolean} [options.enablePipelining] If true,
-   *        permits the kernel to pipeline messages to
-   *        promises for which the vat is the decider directly to the vat
-   *        without waiting for the promises to be resolved.  If false, such
-   *        messages will be queued inside the kernel.  Defaults to false.
-   *
-   * @param {boolean} [options.useTranscript] If true, saves a transcript of a
-   *        vat's inbound deliveries and outbound syscalls so that the vat's
-   *        internal state can be reconstructed via replay.  If false, no such
-   *        record is kept.  Defaults to true.
-   *
-   * @param {number|'never'} [options.reapInterval] The interval (measured
-   *        in number of deliveries to the vat) after which the kernel will
-   *        deliver the 'bringOutYourDead' directive to the vat.  If the value
-   *        is 'never', 'bringOutYourDead' will never be delivered and the vat
-   *        will be responsible for internally managing (in a deterministic
-   *        manner) any visible effects of garbage collection.  Defaults to the
-   *        kernel's configured 'defaultReapInterval' value.
-   *
-   * @param {string} [options.name]
-   * @param {boolean} [options.enableDisavow]
-   * @param {boolean} [options.critical]
+   * @param {import('../../types-internal.js').RecordedVatOptions} options
    *
    * @param {boolean} isDynamic  If true, the vat being created is a dynamic vat;
    *    if false, it's a static vat (these have differences in their allowed

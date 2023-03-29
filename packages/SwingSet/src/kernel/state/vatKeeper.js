@@ -15,11 +15,10 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
 
 /**
  * @typedef { import('../../types-external.js').KVStore } KVStore
- * @typedef { import('../../types-external.js').ManagerOptions } ManagerOptions
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
- * @typedef { import('../../types-external.js').VatManager } VatManager
+ * @typedef { import('../../types-internal.js').VatManager } VatManager
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-external.js').TranscriptEntry } TranscriptEntry
  */
@@ -117,13 +116,13 @@ export function makeVatKeeper(
 
   function getSourceAndOptions() {
     const source = JSON.parse(getRequired(`${vatID}.source`));
-    /** @type { ManagerOptions } */
+    /** @type { RecordedVatOptions } */
     const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden({ source, options });
   }
 
   function getOptions() {
-    /** @type { ManagerOptions } */
+    /** @type { RecordedVatOptions } */
     const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
     return harden(options);
   }

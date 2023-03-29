@@ -17,31 +17,7 @@ export {};
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  *
- * @typedef {{
- *   bundle: Bundle,
- *   enableSetup: false,
- * }} HasBundle
- * @typedef {{
- *   setup: unknown,
- *   enableSetup: true,
- * }} HasSetup
- *
  * @typedef { 'local' | 'xs-worker' } ManagerType
- * @typedef {{
- *   enablePipelining?: boolean,
- *   managerType: ManagerType,
- *   metered?: boolean,
- *   critical?: boolean,
- *   enableDisavow?: boolean,
- *   useTranscript?: boolean,
- *   reapInterval?: number | 'never',
- *   vatParameters: Record<string, unknown>,
- *   virtualObjectCacheSize: number,
- *   name: string,
- *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
- *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
- *   meterID?: string,
- * } & (HasBundle | HasSetup)} ManagerOptions
  */
 
 /**
@@ -174,18 +150,6 @@ export {};
  *             } } KernelSlog
  * @typedef { * } VatSlog
  *
- * @typedef { { createFromBundle: (vatID: string,
- *                                 bundle: Bundle,
- *                                 managerOptions: ManagerOptions,
- *                                 liveSlotsOptions: import('@agoric/swingset-liveslots').LiveSlotsOptions,
- *                                 vatSyscallHandler: unknown) => Promise<VatManager>,
- *            } } VatManagerFactory
- * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
- *              replayTranscript: (startPos: number | undefined) => Promise<number?>,
- *              makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>,
- *              shutdown: () => Promise<void>,
- *            } } VatManager
- *
  * @typedef { () => Promise<void> } WaitUntilQuiescent
  */
 
@@ -280,25 +244,82 @@ export {};
  * @typedef { unknown } Meter
  *
  * E(vatAdminService).createVat(bundle, options: DynamicVatOptions)
+ */
+
+/**
+ * The options used to define vats pass can come from two primary APIs:
+ *  * config record: config.vats[name].creationOptions
+ *  * E(vatAdminService).createVat(bundlecap, options)
  *
- * @typedef { { description?: string,
- *              meter?: Meter,
- *              managerType?: ManagerType,
- *              vatParameters?: *,
- *              enableSetup?: boolean,
- *              enablePipelining?: boolean
- *              virtualObjectCacheSize?: number,
- *              useTranscript?: boolean,
- *              reapInterval? : number | 'never',
- *              critical?: boolean,
- *            }} DynamicVatOptionsWithoutMeter
- * @typedef { { meter?: Meter } } HasMeter
- * @typedef { DynamicVatOptionsWithoutMeter & HasMeter } DynamicVatOptions
+ * These two sources use StaticVatOptions and DynamicVatOptions
+ * respectively (the dynamic options are more restrictive, but can include
+ * a Meter object). The dynamic `createVat()` process creates a run-queue
+ * event named 'create-vat', which carries a form named
+ * InternalDynamicVatOptions (which can include a MeterID integer).
+ *
+ * For both types, when we finally create the vat, the options are
+ * converted into RecordedVatOptions, which is plain data and gets stored
+ * in the DB (vatKeeper.setSourceAndOptions).
+ *
+ * Later, when a worker is launched for this vat, vat-loader.js converts
+ * the recorded options into ManagerOptions, which explains to the manager
+ * how to configure and communicate with the worker.
+ *
+ * 'BaseVatOptions' holds the common subset of all these types. The other
+ * types are then defined as amendments to this base type.
+ *
+ * @typedef { object } BaseVatOptions
+ * @property { string } name
+ * @property { string } [description]
+ * @property { * } [vatParameters]
+ * @property { boolean } [enableSetup]
+ *           If true, permits the vat to construct itself using the
+ *           `setup()` API, which bypasses the imposition of LiveSlots but
+ *           requires the vat implementation to enforce the vat invariants
+ *           manually.  If false, the vat will be constructed using the
+ *           `buildRootObject()` API, which uses LiveSlots to enforce the
+ *           vat invariants automatically.  Defaults to false.
+ * @property { boolean } [enablePipelining]
+ *            If true, permits the kernel to pipeline messages to promises
+ *            for which the vat is the decider directly to the vat without
+ *            waiting for the promises to be resolved.  If false, such
+ *            messages will be queued inside the kernel.  Defaults to
+ *            false.
+ * @property { number } [virtualObjectCacheSize]
+ * @property { boolean } [useTranscript]
+ *            If true, saves a transcript of a vat's inbound deliveries and
+ *            outbound syscalls so that the vat's internal state can be
+ *            reconstructed via replay.  If false, no such record is kept.
+ *            Defaults to true.
+ * @property { number | 'never' } [reapInterval]
+ *            The interval (measured in number of deliveries to the vat)
+ *            after which the kernel will deliver the 'bringOutYourDead'
+ *            directive to the vat.  If the value is 'never',
+ *            'bringOutYourDead' will never be delivered and the vat will
+ *            be responsible for internally managing (in a deterministic
+ *            manner) any visible effects of garbage collection.  Defaults
+ *            to the kernel's configured 'defaultReapInterval' value.
+ * @property { boolean } [critical]
+ */
+
+/**
+ * @typedef { { meter?: Meter } } OptMeter
+ *        If a meter is provided, the new dynamic vat is limited to a fixed
+ *        amount of computation and allocation that can occur during any
+ *        given crank. Peak stack frames are limited as well. In addition,
+ *        the given meter's "remaining" value will be reduced by the amount
+ *        of computation used by each crank. The meter will eventually
+ *        underflow unless it is topped up, at which point the vat is
+ *        terminated. If undefined, the vat is unmetered. Static vats
+ *        cannot be metered.
+ *
+ * @typedef { { managerType?: ManagerType } } OptManagerType
+ * @typedef { BaseVatOptions & OptMeter & OptManagerType } DynamicVatOptions
  *
  * config.vats[name].creationOptions: StaticVatOptions
  *
- * @typedef { { enableDisavow?: boolean } } HasEnableDisavow
- * @typedef { DynamicVatOptions & HasEnableDisavow } StaticVatOptions
+ * @typedef { { enableDisavow?: boolean } } OptEnableDisavow
+ * @typedef { BaseVatOptions & OptManagerType & OptEnableDisavow } StaticVatOptions
  *
  * @typedef { { vatParameters?: object, upgradeMessage?: string } } VatUpgradeOptions
  * @typedef { { incarnationNumber: number } } VatUpgradeResults

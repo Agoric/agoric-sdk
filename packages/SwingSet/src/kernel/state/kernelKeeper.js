@@ -40,7 +40,6 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
- * @typedef { import('../../types-external.js').VatManager } VatManager
  */
 
 // Kernel state lives in a key-value store supporting key retrieval by

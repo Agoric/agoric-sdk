@@ -6,6 +6,7 @@ import { insistVatDeliveryResult } from '../lib/message.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('../types-internal.js').VatManager} VatManager
  */
 
 /** @param {number} max */
@@ -348,7 +349,7 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
   /**
    * @param {string} vatID
    * @param {unknown} setup
-   * @param {ManagerOptions} creationOptions
+   * @param {import('../types-external.js').StaticVatOptions} creationOptions
    */
   async function loadTestVat(vatID, setup, creationOptions) {
     const translators = provideTranslators(vatID);

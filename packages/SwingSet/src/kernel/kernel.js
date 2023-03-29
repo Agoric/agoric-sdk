@@ -229,7 +229,7 @@ export default function buildKernel(
   // error at the first opportunity
   let kernelPanic = null;
 
-  /** @type {(problem: unknown, err?: Error) => void } */
+  /** @type {import('../types-internal.js').KernelPanic} */
   function panic(problem, err = undefined) {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = err || new Error(`kernel panic ${problem}`);
