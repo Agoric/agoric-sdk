@@ -10,7 +10,6 @@ import {
   boardSlottingMarshaller,
   getNetworkConfig,
   makeRpcUtils,
-  storageHelper,
 } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
@@ -33,7 +32,7 @@ const makeFormatters = assets => {
   const br = asBoardRemote;
   const fmtAmtTuple = makeAmountFormatter(assets);
   /** @param {Amount} amt */
-  const amount = amt => (([l, m]) => `${m}${l}`)(fmtAmtTuple(br(amt)));
+  const amount = amt => (([l, m]) => `${m} ${l}`)(fmtAmtTuple(br(amt)));
   /** @param {Record<string, Amount> | undefined} r */
   const record = r => (r ? objectMap(r, amount) : undefined);
   /** @param {Ratio} r */
@@ -124,25 +123,16 @@ export const makeInterCommand = async (
 
   const rpcTools = async () => {
     const networkConfig = await getNetworkConfig(env);
-    const { agoricNames, fromBoard, vstorage } = await makeRpcUtils(
-      { fetch },
-      networkConfig,
-    ).catch(err => {
-      throw new CommanderError(
-        1,
-        'RPC_FAIL',
-        `RPC failure (${env.AGORIC_NET || 'local'}): ${err.message}`,
-      );
-    });
-    const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-    const unBoard = txt => storageHelper.unserializeTxt(txt, fromBoard).at(-1);
+    const { agoricNames, fromBoard, readLatestHead, vstorage } =
+      await makeRpcUtils({ fetch }, networkConfig).catch(err => {
+        throw new CommanderError(1, 'RPC_FAIL', err.message);
+      });
     return {
       networkConfig,
       agoricNames,
       fromBoard,
-      unserializer,
       vstorage,
-      unBoard,
+      readLatestHead,
     };
   };
 
@@ -157,23 +147,19 @@ export const makeInterCommand = async (
 For example:
 
 {
-  "liquidatingCollateral": "10IbcATOM",
-  "liquidatingDebt": "120IST",
+  "liquidatingCollateral": "10 IbcATOM",
+  "liquidatingDebt": "120 IST",
   "price": "12.00 IST/IbcATOM"
 }
 `,
     )
     .option('--manager [number]', 'Vault Manager', Number, 0)
     .action(async opts => {
-      const { agoricNames, vstorage, unBoard } = await rpcTools();
+      const { agoricNames, readLatestHead } = await rpcTools();
 
       const [metrics, quote] = await Promise.all([
-        vstorage
-          .readLatest(`published.vaultFactory.manager${opts.manager}.metrics`)
-          .then(unBoard),
-        vstorage
-          .readLatest(`published.vaultFactory.manager${opts.manager}.quotes`)
-          .then(unBoard),
+        readLatestHead(`published.vaultFactory.manager${opts.manager}.metrics`),
+        readLatestHead(`published.vaultFactory.manager${opts.manager}.quotes`),
       ]);
       const info = fmtMetrics(metrics, quote, values(agoricNames.vbankAsset));
       stdout.write(JSON.stringify(info, bigintReplacer, 2));

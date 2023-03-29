@@ -225,9 +225,31 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 };
 
 export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
-  const vstorage = makeVStorage({ fetch }, config);
-  const fromBoard = makeFromBoard();
-  const agoricNames = await makeAgoricNames(fromBoard, vstorage);
+  try {
+    const vstorage = makeVStorage({ fetch }, config);
+    const fromBoard = makeFromBoard();
+    const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
-  return { vstorage, fromBoard, agoricNames };
+    const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+    /** @type {(txt: string) => unknown} */
+    const unserializeHead = txt =>
+      storageHelper.unserializeTxt(txt, fromBoard).at(-1);
+
+    /** @type {(path: string) => Promise<unknown>} */
+    const readLatestHead = path =>
+      vstorage.readLatest(path).then(unserializeHead);
+
+    return {
+      agoricNames,
+      fromBoard,
+      readLatestHead,
+      unserializeHead,
+      unserializer,
+      vstorage,
+    };
+  } catch (err) {
+    throw new Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
+  }
 };
+/** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */

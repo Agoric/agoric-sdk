@@ -281,9 +281,9 @@ test('inter bid list: finds one bid', async t => {
     JSON.stringify({
       id: 'bid-234234',
       discount: 10,
-      give: { Currency: '20ATOM' },
-      want: '2ATOM',
-      payouts: { Collateral: '5ATOM', Currency: '37IST' },
+      give: { Currency: '20 ATOM' },
+      want: '2 ATOM',
+      payouts: { Collateral: '5 ATOM', Currency: '37 IST' },
     }),
   );
 });
@@ -329,18 +329,18 @@ test('formatBid', t => {
     t.deepEqual(actual, {
       id: 1678990150266,
       error: 'Error: "nameKey" not found: (a string)',
-      give: { Currency: '20ATOM' },
+      give: { Currency: '20 ATOM' },
       price: '10 IST/ATOM',
-      want: '2ATOM',
+      want: '2 ATOM',
     });
   }
   {
     const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
     t.deepEqual(actual, {
       id: 'bid-234234',
-      give: { Currency: '20ATOM' },
-      payouts: { Collateral: '5ATOM', Currency: '37IST' },
-      want: '2ATOM',
+      give: { Currency: '20 ATOM' },
+      payouts: { Collateral: '5 ATOM', Currency: '37 IST' },
+      want: '2 ATOM',
       discount: 10,
     });
   }

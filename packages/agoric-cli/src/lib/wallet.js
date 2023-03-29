@@ -3,25 +3,18 @@
 
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { boardSlottingMarshaller, storageHelper } from './rpc.js';
+import { boardSlottingMarshaller } from './rpc.js';
 
 const marshaller = boardSlottingMarshaller();
 
 /**
  * @param {string} addr
- * @param {import('./rpc').IdMap} ctx
- * @param {object} io
- * @param {import('./rpc.js').VStorage} io.vstorage
+ * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord>}
  */
-export const getCurrent = async (addr, ctx, { vstorage }) => {
-  const capDataStr = await vstorage.readLatest(
-    `published.wallet.${addr}.current`,
-  );
-
-  const capDatas = storageHelper.unserializeTxt(capDataStr, ctx);
-
-  return capDatas[0];
+export const getCurrent = (addr, { readLatestHead }) => {
+  // @ts-expect-error cast
+  return readLatestHead(`published.wallet.${addr}.current`);
 };
 
 /**
