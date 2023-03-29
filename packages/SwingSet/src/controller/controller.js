@@ -8,7 +8,7 @@ import { spawn as ambientSpawn } from 'child_process';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
@@ -243,16 +243,17 @@ export async function makeSwingsetController(
     // TODO The following assertion may be removed when checkBundle subsumes
     // the responsibility to verify the permanence of a bundle's properties.
     // https://github.com/endojs/endo/issues/1106
-    assert(
-      Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
-        descriptor =>
-          descriptor.get === undefined &&
-          descriptor.writable === false &&
-          descriptor.configurable === false &&
-          typeof descriptor.value === 'string',
-      ),
-      `Bundle with alleged ID ${allegedBundleID} must be a frozen object with only string value properties, no accessors`,
-    );
+
+    Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
+      ({ value, get, writable, configurable }) =>
+        typeof value === 'string' &&
+        get === undefined &&
+        // @ts-ignore `isFake` purposely omitted from type
+        (harden.isFake || (writable === false && configurable === false)),
+    ) ||
+      Fail`Bundle with alleged ID ${q(
+        allegedBundleID,
+      )} must be a frozen object with only string value properties, no accessors`;
     await checkBundle(bundle, computeSha512, allegedBundleID);
     const { endoZipBase64Sha512 } = bundle;
     assert.typeof(endoZipBase64Sha512, 'string');
