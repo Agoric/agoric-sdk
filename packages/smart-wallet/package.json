@@ -19,7 +19,7 @@
     "@agoric/cosmic-proto": "^0.2.1",
     "@endo/captp": "^2.0.18",
     "@endo/init": "^0.5.52",
-    "ava": "^5.1.0"
+    "ava": "^5.2.0"
   },
   "dependencies": {
     "@agoric/assert": "^0.5.1",

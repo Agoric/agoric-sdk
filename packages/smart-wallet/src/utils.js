@@ -98,7 +98,6 @@ export const coalesceUpdates = (updates, invitationBrand) => {
 };
 
 /**
- *
  * @param {import('@agoric/casting').Follower<any>} follower
  * @throws if there is no first height
  */

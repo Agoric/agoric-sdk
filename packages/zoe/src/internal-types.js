@@ -31,7 +31,8 @@
  * @property {ZoeSeatAdmin} zoeSeatAdmin
  */
 
-/** @callback MakeZoeSeatAdminKit
+/**
+ * @callback MakeZoeSeatAdminKit
  * Make the Zoe seat admin, user seat and a notifier
  * @param {Allocation} initialAllocation
  * @param {InstanceAdminHelper} instanceAdminHelper

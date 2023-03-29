@@ -54,10 +54,11 @@ export const makeOfferExecutor = ({
      * Take an offer description provided in capData, augment it with payments and call zoe.offer()
      *
      * @param {OfferSpec} offerSpec
+     * @param {(seatRef: UserSeat) => void} onSeatCreated
      * @returns {Promise<void>} when the offer has been sent to Zoe; payouts go into this wallet's purses
      * @throws if any parts of the offer are determined to be invalid before calling Zoe's `offer()`
      */
-    async executeOffer(offerSpec) {
+    async executeOffer(offerSpec, onSeatCreated) {
       logger.info('starting executeOffer', offerSpec.id);
 
       const paymentsManager = makePaymentsHelper(purseForBrand, depositFacet);
@@ -71,6 +72,9 @@ export const makeOfferExecutor = ({
         status = { ...status, ...changes };
         onStatusChange(status);
       };
+
+      /** @type {UserSeat} */
+      let seatRef;
 
       const tryBody = async () => {
         // 1. Prepare values and validate synchronously.
@@ -90,13 +94,14 @@ export const makeOfferExecutor = ({
         // failed they'd get an 'error' status update.
 
         // eslint-disable-next-line @jessie.js/no-nested-await -- unconditional
-        const seatRef = await E(zoe).offer(
+        seatRef = await E(zoe).offer(
           invitation,
           proposal,
           paymentKeywordRecord,
           offerArgs,
         );
         logger.info(id, 'seated');
+        onSeatCreated(seatRef);
 
         const publishResult = E.when(E(seatRef).getOfferResult(), result => {
           const passStyle = passStyleOf(result);
@@ -174,6 +179,15 @@ export const makeOfferExecutor = ({
             updateStatus({ result });
           }
         });
+        if (seatRef) {
+          E(seatRef)
+            .hasExited()
+            .then(hasExited => {
+              if (!hasExited) {
+                E(seatRef).tryExit();
+              }
+            });
+        }
         // propagate to caller
         throw err;
       });

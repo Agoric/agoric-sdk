@@ -4,8 +4,8 @@ import { AmountMath } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
 
-import { daysForVoting } from './bootstrap';
-import { ONE_DAY } from '../setup';
+import { daysForVoting } from './bootstrap.js';
+import { ONE_DAY } from '../setup.js';
 
 const { Fail, quote: q } = assert;
 

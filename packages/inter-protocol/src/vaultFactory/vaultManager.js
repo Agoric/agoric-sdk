@@ -61,7 +61,6 @@ import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
 import { maxDebtForVault } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
-import { normalizedCollRatio, normalizedCollRatioKey } from './storeUtils.js';
 import { Phase, prepareVault } from './vault.js';
 
 const { details: X, Fail } = assert;
@@ -813,16 +812,18 @@ export const prepareVaultManagerKit = (
             Fail`Must have locked a quote before liquidating vaults.`;
           assert(lockedQuote); // redundant with previous line
 
-          const crKey = normalizedCollRatioKey(lockedQuote, compoundedInterest);
+          const liqMargin = facets.self
+            .getGovernedParams()
+            .getLiquidationMargin();
 
-          trace(
-            `Liquidating vaults worse than`,
-            normalizedCollRatio(lockedQuote, compoundedInterest),
-          );
           const { totalDebt, totalCollateral, vaultData, liqSeat } =
             getLiquidatableVaults(
               zcf,
-              crKey,
+              {
+                quote: lockedQuote,
+                interest: compoundedInterest,
+                margin: liqMargin,
+              },
               prioritizedVaults,
               liquidatingVaults,
               debtBrand,

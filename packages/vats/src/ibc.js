@@ -409,7 +409,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
             // Clean up after our failed attempt.
             channelKeyToAttemptP.delete(channelKey);
             channelKeyToInfo.delete(channelKey);
-            E(attemptP).close();
+            void E(attemptP).close();
             throw e;
           }
           break;
@@ -493,7 +493,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
             order,
           );
           const localAddr = await E(attemptP).getLocalAddress();
-          E(attemptP).accept({
+          void E(attemptP).accept({
             localAddress: `${localAddr}/ibc-channel/${channelID}`,
             handler: rchandler,
           });
@@ -559,7 +559,7 @@ export function makeIBCProtocolHandler(E, rawCallIBCDevice) {
           if (channelKeyToConnP.has(channelKey)) {
             const connP = channelKeyToConnP.get(channelKey);
             channelKeyToConnP.delete(channelKey);
-            E(connP).close();
+            void E(connP).close();
           }
           break;
         }

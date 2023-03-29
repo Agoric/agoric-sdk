@@ -125,6 +125,21 @@ test('storage helpers', t => {
     'bar.3',
     'bar.5',
   ]);
+
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.1')), []);
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.4')), [
+    'bar.1',
+    'bar.3',
+  ]);
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.5')), [
+    'bar.1',
+    'bar.3',
+  ]);
+  t.deepEqual(Array.from(enumeratePrefixedKeys(kv, 'bar', 'bar.6')), [
+    'bar.1',
+    'bar.3',
+    'bar.5',
+  ]);
 });
 
 function buildKeeperStorageInMemory() {

@@ -96,7 +96,10 @@ const liquidationResults = (debt, minted) => {
 
 /**
  * @param {ZCF} zcf
- * @param {string} crKey
+ * @param {object} collateralizationDetails
+ * @param {PriceQuote} collateralizationDetails.quote
+ * @param {Ratio} collateralizationDetails.interest
+ * @param {Ratio} collateralizationDetails.margin
  * @param {ReturnType<typeof import('./prioritizedVaults.js').makePrioritizedVaults>} prioritizedVaults
  * @param {SetStore<Vault>} liquidatingVaults
  * @param {Brand<'nat'>} debtBrand
@@ -109,16 +112,15 @@ const liquidationResults = (debt, minted) => {
  */
 const getLiquidatableVaults = (
   zcf,
-  crKey,
+  collateralizationDetails,
   prioritizedVaults,
   liquidatingVaults,
   debtBrand,
   collateralBrand,
 ) => {
-  // crKey represents a collateralizationRatio based on the locked price.
-  // We'll extract all vaults below that ratio, and return them with stats.
-
-  const vaultsToLiquidate = prioritizedVaults.removeVaultsBelow(crKey);
+  const vaultsToLiquidate = prioritizedVaults.removeVaultsBelow(
+    collateralizationDetails,
+  );
   /** @type {MapStore<Vault, { collateralAmount: Amount<'nat'>, debtAmount:  Amount<'nat'>}>} */
   const vaultData = makeScalarMapStore();
 

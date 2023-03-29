@@ -3,7 +3,7 @@
 # running incidental Node.js programs to avoid starting debuggers you probably
 # don't want.
 
-REPOSITORY = agoric/cosmic-swingset
+REPOSITORY = ghcr.io/agoric/cosmic-swingset
 CHAIN_ID = agoriclocal
 INITIAL_HEIGHT = 17
 GENESIS_TIME = $(shell TZ=UTC date +%Y-%m-%dT%H:%M:%SZ)

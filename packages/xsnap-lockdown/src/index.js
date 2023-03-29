@@ -1,7 +1,21 @@
 import fs from 'fs';
-import { bundlePaths } from './paths.js';
+import { bundlePaths, hashPaths } from './paths.js';
 
-export { lockdownBundleSHA256 } from '../dist/lockdown.bundle.sha256.js';
+const read = (name, path) => {
+  return fs.promises.readFile(path, { encoding: 'utf-8' }).catch(err => {
+    console.error(`unable to read lockdown ${name} at ${path}`);
+    console.error(`perhaps run 'yarn build' in @agoric/xsnap-lockdown`);
+    throw err;
+  });
+};
+
+/**
+ * @returns { Promise<string> }
+ */
+export const getLockdownBundleSHA256 = async () => {
+  const path = hashPaths.lockdown;
+  return read('hash', path).then(data => data.trim());
+};
 
 /**
  * @param { boolean } debug
@@ -10,14 +24,7 @@ export { lockdownBundleSHA256 } from '../dist/lockdown.bundle.sha256.js';
  */
 const getBundle = async debug => {
   const path = debug ? bundlePaths.lockdownDebug : bundlePaths.lockdown;
-  const bundleStringP = fs.promises.readFile(path, { encoding: 'utf-8' });
-  return bundleStringP
-    .catch(err => {
-      console.error(`lockdown bundle not present at ${path}`);
-      console.error(`perhaps run 'yarn build' in @agoric/xsnap-lockdown`);
-      throw err;
-    })
-    .then(bundleString => JSON.parse(bundleString));
+  return read('bundle', path).then(bundleString => JSON.parse(bundleString));
 };
 
 export const getLockdownBundle = () => getBundle(false);

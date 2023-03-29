@@ -12,7 +12,6 @@ import { preparePurseKind } from './purse.js';
 
 import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
-import { claim, combine, split, splitMany } from './legacy-payment-helpers.js';
 
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
@@ -371,66 +370,6 @@ export const preparePaymentLedger = (
         throw err;
       }
       return paymentBalance;
-    },
-    /**
-     * Inherent to the nature of the Issuer API, this method is less safe
-     * than the similarly named helper function in legacy-payment-helpers.js
-     * since those helper functions will associate any newly created payment
-     * with the recovery set of the argument purse. The methods here are
-     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
-     * to make the needed purse, which they unsafely then drop on the floor.
-     *
-     * @deprecated Use helper function from legacy-payment-helpers.js
-     * @param {Payment} srcPayment awaited by callWhen
-     * @param {Pattern} [optAmountShape]
-     */
-    claim(srcPayment, optAmountShape = undefined) {
-      return claim(makeEmptyPurse(), srcPayment, optAmountShape);
-    },
-    /**
-     * Inherent to the nature of the Issuer API, this method is less safe
-     * than the similarly named helper function in legacy-payment-helpers.js
-     * since those helper functions will associate any newly created payment
-     * with the recovery set of the argument purse. The methods here are
-     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
-     * to make the needed purse, which they unsafely then drop on the floor.
-     *
-     * @deprecated Use helper function from legacy-payment-helpers.js
-     * @param {ERef<Payment>[]} fromPaymentsPArray
-     * @param {Pattern} [optTotalAmount]
-     */
-    combine(fromPaymentsPArray, optTotalAmount = undefined) {
-      return combine(makeEmptyPurse(), fromPaymentsPArray, optTotalAmount);
-    },
-    /**
-     * Inherent to the nature of the Issuer API, this method is less safe
-     * than the similarly named helper function in legacy-payment-helpers.js
-     * since those helper functions will associate any newly created payment
-     * with the recovery set of the argument purse. The methods here are
-     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
-     * to make the needed purse, which they unsafely then drop on the floor.
-     *
-     * @deprecated Use helper function from legacy-payment-helpers.js
-     * @param {Payment} srcPayment awaited by callWhen
-     * @param {Amount} paymentAmountA
-     */
-    split(srcPayment, paymentAmountA) {
-      return split(makeEmptyPurse(), srcPayment, paymentAmountA);
-    },
-    /**
-     * Inherent to the nature of the Issuer API, this method is less safe
-     * than the similarly named helper function in legacy-payment-helpers.js
-     * since those helper functions will associate any newly created payment
-     * with the recovery set of the argument purse. The methods here are
-     * now trivial wrappers around those helpers, using a `makeEmptyPurse()`
-     * to make the needed purse, which they unsafely then drop on the floor.
-     *
-     * @deprecated Use helper function from legacy-payment-helpers.js
-     * @param {Payment} srcPayment awaited by callWhen
-     * @param {*} amounts
-     */
-    splitMany(srcPayment, amounts) {
-      return splitMany(makeEmptyPurse(), srcPayment, amounts);
     },
   });
 

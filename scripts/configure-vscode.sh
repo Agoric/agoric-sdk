@@ -23,6 +23,7 @@ cat >.vscode/settings.json.new <<\EOF ||
   "editor.defaultFormatter": "esbenp.prettier-vscode",
 
   "typescript.preferences.importModuleSpecifierEnding": "js",
+  "typescript.tsdk": "node_modules/typescript/lib",
 
   // ESLint config
   "editor.codeActionsOnSave": {

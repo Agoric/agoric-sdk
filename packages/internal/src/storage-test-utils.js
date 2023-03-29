@@ -1,6 +1,8 @@
 // @ts-check
-import { Far, makeMarshal } from '@endo/marshal';
+import { Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { makeChainStorageRoot } from './lib-chainStorage.js';
+import { bindAllMethods } from './method-tools.js';
 
 const { Fail, quote: q } = assert;
 
@@ -12,7 +14,7 @@ const { Fail, quote: q } = assert;
  * @param {object} [rootOptions]
  */
 export const makeFakeStorageKit = (rootPath, rootOptions) => {
-  /** @type {Map<string, any>} */
+  /** @type {Map<string, any[]>} */
   const data = new Map();
   /** @type {import('../src/lib-chainStorage.js').StorageMessage[]} */
   const messages = [];
@@ -30,7 +32,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
       case 'set':
         for (const [key, value] of message.args) {
           if (value !== undefined) {
-            data.set(key, value);
+            data.set(key, [value]);
           } else {
             data.delete(key);
           }
@@ -78,9 +80,9 @@ export const makeMockChainStorageRoot = () => {
   }));
 
   return Far('mockChainStorage', {
-    ...rootNode,
+    ...bindAllMethods(rootNode),
     /**
-     *  Defaults to deserializing pass-by-presence objects into { iface } representations.
+     * Defaults to deserializing pass-by-presence objects into { iface } representations.
      * Note that this is **not** a null transformation; capdata `@qclass` and `index` properties
      * are dropped and `iface` is _added_ for repeat references.
      *
@@ -90,7 +92,7 @@ export const makeMockChainStorageRoot = () => {
      */
     getBody: (path, marshaller = defaultMarshaller) => {
       data.size || Fail`no data in storage`;
-      const dataStr = data.get(path);
+      const dataStr = data.get(path)?.at(-1);
       if (!dataStr) {
         console.debug('mockChainStorage data:', data);
         Fail`no data at ${q(path)}`;

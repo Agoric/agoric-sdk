@@ -274,7 +274,7 @@ export const WALLET_FACTORY_MANIFEST = {
       board: 'board',
       walletBridgeManager: true,
       provisionWalletBridgeManager: true,
-      chainStorage: 'chainStorage',
+      chainStorage: 'bridge',
       namesByAddressAdmin: true,
       zoe: 'zoe',
       chainTimerService: 'timer',

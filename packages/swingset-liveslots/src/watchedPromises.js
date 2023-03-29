@@ -72,6 +72,11 @@ export function makeWatchedPromiseManager({
     }
   }
 
+  /**
+   *
+   * @param {Promise<unknown>} p
+   * @param {string} vpid
+   */
   function pseudoThen(p, vpid) {
     function settle(value, wasFulfilled) {
       const watches = watchedPromiseTable.get(vpid);
@@ -95,7 +100,7 @@ export function makeWatchedPromiseManager({
       }
     }
 
-    E.when(
+    void E.when(
       p,
       res => settle(res, true),
       rej => settle(rej, false),

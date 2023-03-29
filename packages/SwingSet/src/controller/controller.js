@@ -1,19 +1,15 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 /* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
-import fs from 'fs';
-import path from 'path';
 import process from 'process';
 import crypto from 'crypto';
 import { performance } from 'perf_hooks';
 import { spawn as ambientSpawn } from 'child_process';
-import { type as osType } from 'os';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
 import { assert, Fail } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
-import { xsnap, recordXSnap } from '@agoric/xsnap';
 import { initSwingStore } from '@agoric/swing-store';
 
 import { checkBundle } from '@endo/check-bundle/lite.js';
@@ -27,8 +23,7 @@ import {
   swingsetIsInitialized,
   initializeSwingset,
 } from './initializeSwingset.js';
-
-const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
+import { makeStartXSnap } from './startXSnap.js';
 
 /** @param {Uint8Array} bytes */
 export function computeSha512(bytes) {
@@ -75,85 +70,6 @@ function unhandledRejectionHandler(e, pr) {
   // Don't trigger sensitive hosts (like AVA).
   pr.catch(() => {});
   console.error('UnhandledPromiseRejectionWarning:', e);
-}
-
-/**
- * @param {{ moduleFormat: string, source: string }[]} bundles
- * @param {{
- *   snapStore?: SnapStore,
- *   spawn: typeof import('child_process').spawn
- *   env: Record<string, string | undefined>,
- * }} opts
- */
-export function makeStartXSnap(bundles, { snapStore, env, spawn }) {
-  /** @type { import('@agoric/xsnap/src/xsnap').XSnapOptions } */
-  const xsnapOpts = {
-    os: osType(),
-    spawn,
-    stdout: 'inherit',
-    stderr: 'inherit',
-    debug: !!env.XSNAP_DEBUG,
-    netstringMaxChunkSize: NETSTRING_MAX_CHUNK_SIZE,
-  };
-
-  let doXSnap = xsnap;
-  const { XSNAP_TEST_RECORD } = env;
-  if (XSNAP_TEST_RECORD) {
-    console.log('SwingSet xs-worker tracing:', { XSNAP_TEST_RECORD });
-    let serial = 0;
-    doXSnap = opts => {
-      const workerTrace =
-        path.resolve(`${XSNAP_TEST_RECORD}/${serial}`) + path.sep;
-      serial += 1;
-      fs.mkdirSync(workerTrace, { recursive: true });
-      return recordXSnap(opts, workerTrace, {
-        writeFileSync: fs.writeFileSync,
-      });
-    };
-  }
-
-  /**
-   * @param {string} vatID
-   * @param {string} name
-   * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
-   * @param {boolean} [metered]
-   * @param {boolean} [reload]
-   */
-  async function startXSnap(
-    vatID,
-    name,
-    handleCommand,
-    metered,
-    reload = false,
-  ) {
-    const meterOpts = metered ? {} : { meteringLimit: 0 };
-    if (snapStore && reload) {
-      // console.log('startXSnap from', { snapshotHash });
-      return snapStore.loadSnapshot(vatID, async snapshot => {
-        const xs = doXSnap({
-          snapshot,
-          name,
-          handleCommand,
-          ...meterOpts,
-          ...xsnapOpts,
-        });
-        await xs.isReady();
-        return xs;
-      });
-    }
-    // console.log('fresh xsnap', { snapStore: snapStore });
-    const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
-
-    for (const bundle of bundles) {
-      bundle.moduleFormat === 'getExport' ||
-        bundle.moduleFormat === 'nestedEvaluate' ||
-        Fail`unexpected: ${bundle.moduleFormat}`;
-      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
-      await worker.evaluate(`(${bundle.source}\n)()`.trim());
-    }
-    return worker;
-  }
-  return startXSnap;
 }
 
 /**
@@ -272,8 +188,9 @@ export async function makeSwingsetController(
   ];
   const startXSnap = makeStartXSnap(bundles, {
     snapStore: kernelStorage.snapStore,
-    env,
     spawn,
+    debug: !!env.XSNAP_DEBUG,
+    workerTraceRootPath: env.XSNAP_TEST_RECORD,
   });
 
   const kernelEndowments = {
@@ -423,8 +340,8 @@ export async function makeSwingsetController(
       return kernel.kpStatus(kpid);
     },
 
-    kpResolution(kpid) {
-      const result = kernel.kpResolution(kpid);
+    kpResolution(kpid, options) {
+      const result = kernel.kpResolution(kpid, options);
       // kpResolution does DB write (changes refcounts) so we need emitCrankHashes here
       kernelStorage.emitCrankHashes();
       return result;
@@ -508,12 +425,14 @@ export async function makeSwingsetController(
  *   testTrackDecref?: unknown;
  *    warehousePolicy?: { maxVatsOnline?: number };
  * }} runtimeOptions
+ * @param {Record<string, unknown>} deviceEndowments
  * @typedef { import('@agoric/swing-store').KVStore } KVStore
  */
 export async function buildVatController(
   config,
   argv = [],
   runtimeOptions = {},
+  deviceEndowments = {},
 ) {
   const {
     kernelStorage = initSwingStore().kernelStorage,
@@ -551,7 +470,7 @@ export async function buildVatController(
   }
   const controller = await makeSwingsetController(
     kernelStorage,
-    {},
+    deviceEndowments,
     actualRuntimeOptions,
   );
   return harden({ bootstrapResult, ...controller });

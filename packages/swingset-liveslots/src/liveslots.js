@@ -336,8 +336,10 @@ function build(
     }
   }
 
-  /** Remember disavowed Presences which will kill the vat if you try to talk
-   * to them */
+  /**
+   * Remember disavowed Presences which will kill the vat if you try to talk
+   * to them
+   */
   const disavowedPresences = new WeakSet();
   const disavowalError = harden(Error(`this Presence has been disavowed`));
 
@@ -402,7 +404,7 @@ function build(
     // `HandledPromise.resolve(presence)`. So we must harden it now, for
     // safety, to prevent it from being used as a communication channel
     // between isolated objects that share a reference to the Presence.
-    harden(p);
+    void harden(p);
 
     // Up at the application level, presence~.foo(args) starts by doing
     // HandledPromise.resolve(presence), which retrieves it, and then does
@@ -1138,6 +1140,11 @@ function build(
     }
   }
 
+  /**
+   *
+   * @param {string} vpid
+   * @param {Promise<unknown>} p
+   */
   function followForKernel(vpid, p) {
     insistVatType('promise', vpid);
     exportedVPIDs.set(vpid, p);
@@ -1174,7 +1181,7 @@ function build(
       exportedVPIDs.delete(vpid);
     }
 
-    E.when(
+    void E.when(
       p,
       value => handle(false, value),
       value => handle(true, value),
@@ -1430,6 +1437,10 @@ function build(
     );
     getInterfaceOf(rootObject) !== undefined ||
       Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
+    if (valToSlot.has(rootObject)) {
+      Fail`buildRootObject() must return ephemeral, not virtual/durable object`;
+    }
+
     // Need to load watched promises *after* buildRootObject() so that handler kindIDs
     // have a chance to be reassociated with their handlers.
     watchedPromiseManager.loadWatchedPromiseTable(unmeteredRevivePromise);

@@ -189,7 +189,7 @@ const manager = {
   /**
    * @param {MethodContext} context
    * @param { Amount<'copyBag'>} attestationGiven
-   * */
+   */
   maxDebtForLien: ({ state }, attestationGiven) => {
     const { brands, mintPowers } = state;
     const mintingRatio = mintPowers.getGovernedParams().getMintingRatio();

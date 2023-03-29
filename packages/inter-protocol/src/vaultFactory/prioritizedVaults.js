@@ -1,15 +1,22 @@
 // @jessie-check
 
+import { makeTracer } from '@agoric/internal';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import { M } from '@agoric/vat-data';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
-import { toVaultKey } from './storeUtils.js';
+import {
+  toVaultKey,
+  normalizedCollRatioKey,
+  normalizedCollRatio,
+} from './storeUtils.js';
 
 /** @typedef {import('./vault').Vault} Vault */
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
+
+const trace = makeTracer('PVaults', false);
 
 /**
  *
@@ -108,9 +115,16 @@ export const makePrioritizedVaults = store => {
     return key;
   };
 
-  const removeVaultsBelow = crKey => {
-    // crKey represents a collateralizationRatio based on the locked price.
+  const removeVaultsBelow = ({ margin, quote, interest }) => {
+    // crKey represents a collateralizationRatio based on the locked price, the
+    // interest charged so far, and the liquidation margin.
     // We'll remove all vaults below that ratio, and return them.
+    const crKey = normalizedCollRatioKey(quote, interest, margin);
+
+    trace(
+      `Liquidating vaults worse than`,
+      normalizedCollRatio(quote, interest, margin),
+    );
 
     /** @type {MapStore<string, Vault>} */
     const vaultsRemoved = makeScalarMapStore();

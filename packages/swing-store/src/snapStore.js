@@ -1,5 +1,4 @@
 // @ts-check
-import { Buffer } from 'buffer';
 import { createHash } from 'crypto';
 import { finished as finishedCallback, Readable } from 'stream';
 import { promisify } from 'util';
@@ -7,6 +6,7 @@ import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@agoric/assert';
 import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
 import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
+import { buffer } from './util.js';
 
 /**
  * @typedef {object} SnapshotResult
@@ -51,21 +51,6 @@ import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
  * }} SnapStoreDebug
  *
  */
-
-/**
- * This is a polyfill for the `buffer` function from Node's
- * 'stream/consumers' package, which unfortunately only exists in newer versions
- * of Node.
- *
- * @param {AsyncIterable<Buffer>} inStream
- */
-export const buffer = async inStream => {
-  const chunks = [];
-  for await (const chunk of inStream) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-};
 
 const finished = promisify(finishedCallback);
 

@@ -7,6 +7,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -33,7 +34,7 @@ const likePayouts = (collateral, minted) => ({
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t);
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -246,6 +247,44 @@ test('open vault with insufficient funds gives helpful error', async t => {
       error: `Error: ${message}`,
       // funds are returned
       payouts: likePayouts(giveCollateral, 0),
+    },
+  });
+});
+
+test('exit bid', async t => {
+  const { walletFactoryDriver } = t.context;
+
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
+
+  // get some IST
+  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
+    offerId: 'bid-open-vault',
+    collateralBrandKey,
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+
+  wd.sendOfferMaker(Offers.auction.Bid, {
+    offerId: 'bid',
+    wantCollateral: 1.23,
+    giveCurrency: 0.1,
+    collateralBrandKey: 'IbcATOM',
+    price: 5,
+  });
+
+  await wd.tryExitOffer('bid');
+  await eventLoopIteration();
+
+  t.like(wd.getLatestUpdateRecord(), {
+    updated: 'offerStatus',
+    status: {
+      id: 'bid',
+      result: 'Your bid has been accepted', // it was accepted before being exited
+      numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
+      payouts: {
+        // got back the give
+        Currency: { value: { digits: '100000' } },
+      },
     },
   });
 });

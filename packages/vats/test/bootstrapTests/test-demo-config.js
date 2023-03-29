@@ -1,8 +1,9 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { PowerFlags } from '../../src/walletFlags.js';
 
-import { makeSwingsetTestKit } from './supports.js';
+import { makeSwingsetTestKit, keyArrayEqual } from './supports.js';
 
 const { keys } = Object;
 /**
@@ -13,6 +14,7 @@ const test = anyTest;
 const makeDefaultTestContext = async t => {
   const swingsetTestKit = await makeSwingsetTestKit(
     t,
+    'bundles/demo-config',
     '@agoric/vats/decentral-demo-config.json',
   );
   return swingsetTestKit;
@@ -64,7 +66,7 @@ test('sim/demo config provides home with .myAddressNameAdmin', async t => {
   const home = await makeHomeFor(addr, EV);
   const actual = await EV(home.myAddressNameAdmin).getMyAddress();
   t.is(actual, addr, 'my address');
-  t.deepEqual(keys(home).sort(), homeKeys);
+  keyArrayEqual(t, keys(home).sort(), homeKeys);
 });
 
 test('sim/demo config launches Vaults as expected by loadgen', async t => {
@@ -95,3 +97,6 @@ test('demo config meets loadgen constraint: no USDC', async t => {
   const found = pmtInfo.find(p => p.issuerPetname === 'USDC');
   t.deepEqual(found, undefined);
 });
+
+// FIXME tests can pass when console shows "BOOTSTRAP FAILED"
+test.todo('demo config bootstrap succeeds');

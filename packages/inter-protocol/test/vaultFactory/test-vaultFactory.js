@@ -46,14 +46,16 @@ import {
   setupElectorateReserveAndAuction,
 } from './vaultFactoryUtils.js';
 
-/** @typedef {Record<string, any> & {
+/**
+ * @typedef {Record<string, any> & {
  * aeth: IssuerKit & import('../supports.js').AmountUtils,
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
  * loanTiming: LoanTiming,
  * zoe: ZoeService,
- * }} Context */
+ * }} Context
+ */
 /** @type {import('ava').TestFn<Context>} */
 const test = unknownTest;
 
@@ -93,7 +95,7 @@ test.before(async t => {
   const bundles = await allValues({
     faucet: bundleCache.load(contractRoots.faucet, 'faucet'),
     VaultFactory: bundleCache.load(contractRoots.VaultFactory, 'VaultFactory'),
-    auctioneer: bundleCache.load(contractRoots.auction, 'auction'),
+    auctioneer: bundleCache.load(contractRoots.auctioneer, 'auction'),
     reserve: bundleCache.load(contractRoots.reserve, 'reserve'),
   });
   const installation = objectMap(bundles, bundle => E(zoe).install(bundle));

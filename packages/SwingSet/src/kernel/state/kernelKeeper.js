@@ -542,6 +542,37 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
+   * Iterate over non-durable objects exported by a vat.
+   *
+   * @param {string} vatID
+   * @yields {{kref: string, vref: string}}
+   */
+  function* enumerateNonDurableObjectExports(vatID) {
+    insistVatID(vatID);
+    // vrefs for exported objects start with o+NN (ephemeral),
+    // o+vNN/MM (merely-virtual), or o+dNN/MM (durable).
+    // We iterate through all ephemeral and virtual entries so the kernel
+    // can ensure that they are abandoned by a vat being upgraded.
+    const prefix = `${vatID}.c.`;
+    const ephStart = `${prefix}o+`;
+    const durStart = `${prefix}o+d`;
+    const virStart = `${prefix}o+v`;
+    /** @type {[string, string?][]} */
+    const ranges = [[ephStart, durStart], [virStart]];
+    for (const range of ranges) {
+      for (const k of enumeratePrefixedKeys(kvStore, ...range)) {
+        const vref = k.slice(prefix.length);
+        // exclude the root object, which is replaced by upgrade
+        if (vref !== 'o+0') {
+          const kref = kvStore.get(k);
+          assert.typeof(kref, 'string');
+          yield { kref, vref };
+        }
+      }
+    }
+  }
+
+  /**
    * Allocate a new koid.
    *
    * @param {string} ownerID
@@ -1574,6 +1605,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     incrementRefCount,
     decrementRefCount,
     getObjectRefCount,
+    enumerateNonDurableObjectExports,
 
     addToRunQueue,
     isRunQueueEmpty,

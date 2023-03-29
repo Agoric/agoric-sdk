@@ -2,13 +2,24 @@
 
 import { assert } from '@agoric/assert';
 
-export function* enumeratePrefixedKeys(kvStore, prefix) {
-  // return an iterator of all existing keys that start with
-  // ${prefix}, in lexicographic order, excluding ${prefix} itself
+/**
+ * Iterate over keys with a given prefix, in lexicographic order,
+ * excluding an exact match of the prefix.
+ *
+ * @param {KVStore} kvStore
+ * @param {string} prefix
+ * @param {string} [exclusiveEnd]
+ * @yields {string} the next key with the prefix that is not >= exclusiveEnd
+ */
+export function* enumeratePrefixedKeys(kvStore, prefix, exclusiveEnd) {
+  /** @type {string | undefined} */
   let key = prefix;
   for (;;) {
     key = kvStore.getNextKey(key);
     if (!key || !key.startsWith(prefix)) {
+      break;
+    }
+    if (exclusiveEnd && key >= exclusiveEnd) {
       break;
     }
     yield key;

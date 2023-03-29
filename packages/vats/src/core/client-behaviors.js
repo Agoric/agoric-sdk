@@ -153,7 +153,7 @@ export const startClient = async ({
       updateState(state) {
         const { clientHome } = state;
         chainBundle = clientHome;
-        updatePresences();
+        void updatePresences();
       },
     });
   };

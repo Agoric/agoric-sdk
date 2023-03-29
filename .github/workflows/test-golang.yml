@@ -2,6 +2,9 @@ name: Test Golang
 
 on:
   pull_request:
+  push:
+    branches: [master]
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,4 +19,7 @@ jobs:
         with:
           go-version: 1.18
       - name: go test
-        run: cd golang && go test ./...
+        run: cd golang && go test -coverprofile=coverage.txt -covermode=atomic ./...
+      - name: Upload coverage reports to Codecov
+        if: success() || failure()
+        uses: codecov/codecov-action@v3

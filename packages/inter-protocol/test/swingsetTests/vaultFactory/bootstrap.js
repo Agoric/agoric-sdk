@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { installContracts, makeVats } from '../setup';
+import { installContracts, makeVats } from '../setup.js';
 
 function makeBootstrap(argv, cb, vatPowers) {
   return async (vats, devices) => {

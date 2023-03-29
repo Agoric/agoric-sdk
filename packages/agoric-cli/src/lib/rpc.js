@@ -31,29 +31,52 @@ const fromAgoricNet = str => {
   return fetch(networkConfigUrl(netName)).then(res => res.json());
 };
 
+/**
+ * @param {typeof process.env} env
+ * @returns {Promise<MinimalNetworkConfig>}
+ */
+export const getNetworkConfig = async env => {
+  if (!('AGORIC_NET' in env) || env.AGORIC_NET === 'local') {
+    return { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
+  }
+
+  return fromAgoricNet(NonNullish(env.AGORIC_NET)).catch(err => {
+    throw Error(
+      `cannot get network config (${env.AGORIC_NET || 'local'}): ${
+        err.message
+      }`,
+    );
+  });
+};
+
 /** @type {MinimalNetworkConfig} */
-export const networkConfig =
-  'AGORIC_NET' in process.env && process.env.AGORIC_NET !== 'local'
-    ? await fromAgoricNet(NonNullish(process.env.AGORIC_NET))
-    : { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
+export const networkConfig = await getNetworkConfig(process.env);
 // console.warn('networkConfig', networkConfig);
 
 /**
  *
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
+ * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = powers => {
+export const makeVStorage = (powers, config = networkConfig) => {
+  /** @param {string} path */
   const getJSON = path => {
-    const url = networkConfig.rpcAddrs[0] + path;
+    const url = config.rpcAddrs[0] + path;
     // console.warn('fetching', url);
     return powers.fetch(url, { keepalive: true }).then(res => res.json());
   };
+  // height=0 is the same as omitting height and implies the highest block
+  const url = (path = 'published', { kind = 'children', height = 0 } = {}) =>
+    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`;
+
+  const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
+    getJSON(url(path, { kind, height })).catch(err => {
+      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+    });
 
   return {
-    // height=0 is the same as omitting height and implies the highest block
-    url: (path = 'published', { kind = 'children', height = 0 } = {}) =>
-      `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`,
+    url,
     decode({ result: { response } }) {
       const { code } = response;
       if (code !== 0) {
@@ -68,11 +91,11 @@ export const makeVStorage = powers => {
      * @returns {Promise<string>} latest vstorage value at path
      */
     async readLatest(path = 'published') {
-      const raw = await getJSON(this.url(path, { kind: 'data' }));
+      const raw = await readStorage(path, { kind: 'data' });
       return this.decode(raw);
     },
     async keys(path = 'published') {
-      const raw = await getJSON(this.url(path, { kind: 'children' }));
+      const raw = await readStorage(path, { kind: 'children' });
       return JSON.parse(this.decode(raw)).children;
     },
     /**
@@ -81,7 +104,7 @@ export const makeVStorage = powers => {
      * @returns {Promise<{blockHeight: number, values: string[]}>}
      */
     async readAt(path, height = undefined) {
-      const raw = await getJSON(this.url(path, { kind: 'data', height }));
+      const raw = await readStorage(path, { kind: 'data', height });
       const txt = this.decode(raw);
       /** @type {{ value: string }} */
       const { value } = JSON.parse(txt);
@@ -98,25 +121,25 @@ export const makeVStorage = powers => {
       // undefined the first iteration, to query at the highest
       let blockHeight;
       do {
-        console.debug('READING', { blockHeight });
+        // console.debug('READING', { blockHeight });
         let values;
         try {
           // eslint-disable-next-line no-await-in-loop
           ({ blockHeight, values } = await this.readAt(
             path,
-            blockHeight && blockHeight - 1,
+            blockHeight && Number(blockHeight) - 1,
           ));
-          console.debug('readAt returned', { blockHeight });
+          // console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if ('log' in err && err.log.match(/unknown request/)) {
-            console.error(err);
+            // console.error(err);
             break;
           }
           throw err;
         }
         parts.push(values);
-        console.debug('PUSHED', values);
-        console.debug('NEW', { blockHeight });
+        // console.debug('PUSHED', values);
+        // console.debug('NEW', { blockHeight });
       } while (blockHeight > 0);
       return parts.flat();
     },
@@ -201,8 +224,8 @@ export const makeAgoricNames = async (ctx, vstorage) => {
   return { ...Object.fromEntries(entries), reverse };
 };
 
-export const makeRpcUtils = async ({ fetch }) => {
-  const vstorage = makeVStorage({ fetch });
+export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+  const vstorage = makeVStorage({ fetch }, config);
   const fromBoard = makeFromBoard();
   const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 

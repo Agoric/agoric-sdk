@@ -19,7 +19,7 @@ import {
   makeDefaultTestContext,
   voteForOpenQuestion,
 } from './contexts.js';
-import { headValue, withAmountUtils } from '../supports.js';
+import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
  * @type {import('ava').TestFn<Awaited<ReturnType<makeDefaultTestContext>>
@@ -64,6 +64,7 @@ test('null swap', async t => {
     'agoric1nullswap',
   );
   const computedState = coalesceUpdates(E(wallet).getUpdatesSubscriber());
+  const currents = sequenceCurrents(E(wallet).getCurrentSubscriber());
 
   /** @type {import('@agoric/smart-wallet/src/invitations').AgoricContractInvitationSpec} */
   const invitationSpec = {
@@ -72,7 +73,7 @@ test('null swap', async t => {
     callPipe: [['makeGiveMintedInvitation']],
   };
 
-  await wallet.getOffersFacet().executeOffer({
+  const offer = {
     id: 'nullSwap',
     invitationSpec,
     proposal: {
@@ -80,14 +81,21 @@ test('null swap', async t => {
       give: { In: AmountMath.makeEmpty(mintedBrand) },
       want: { Out: anchor.makeEmpty() },
     },
-  });
+  };
+
+  await wallet.getOffersFacet().executeOffer(harden(offer));
+
   await eventLoopIteration();
 
-  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
-  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
   const status = computedState.offerStatuses.get('nullSwap');
   t.is(status?.id, 'nullSwap');
   t.false('error' in NonNullish(status), 'should not have an error');
+  t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
+  t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
+
+  t.deepEqual(currents[0].liveOffers, []);
+  t.deepEqual(currents[1].liveOffers, [['nullSwap', offer]]);
+  t.deepEqual(currents[2].liveOffers, []);
 });
 
 // we test this direction of swap because wanting anchor would require the PSM to have anchor in it first

@@ -4,7 +4,6 @@ This directory contains the `fluxAggregator.js` contract which takes prices as
 input and outputs a best known price. There are multiple ways to get the price,
 including a PriceAuthority interface.
 
-
 ## Usage
 
 See the [Smart Wallet integration test](/packages/inter-protocol/test/smartWallet/test-oracle-integration.js) for how it's used.

@@ -122,7 +122,8 @@ export const makeBootstrap = (
         },
       ],
     };
-    /** @type {any} */
+    /** @type {{coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>}} */
+    // @ts-expect-error cast
     const { coreEvalBridgeHandler } = consume;
     await E(coreEvalBridgeHandler).fromBridge(coreEvalMessage);
   };
@@ -169,6 +170,12 @@ export const makeBootstrap = (
       const decodedArgs = args.map(decodePassable);
       const result = await E(object)[methodName](...decodedArgs);
       return encodePassable(result);
+    },
+    /* Like `messageVatObject` but does not await return value */
+    messageVatObjectSendOnly: ({ presence, methodName, args = [] }) => {
+      const object = decodePassable(presence);
+      const decodedArgs = args.map(decodePassable);
+      void E(object)[methodName](...decodedArgs);
     },
     awaitVatObject: async ({ presence, path = [] }) => {
       let value = await decodePassable(presence);

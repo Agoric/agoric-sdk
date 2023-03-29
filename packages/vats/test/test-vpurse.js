@@ -134,7 +134,7 @@ test('makeVirtualPurse', async t => {
   };
 
   const checkWithdrawal = async newPayment => {
-    issuer.getAmountOf(newPayment).then(amount => {
+    await issuer.getAmountOf(newPayment).then(amount => {
       t.assert(
         AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,
@@ -199,7 +199,7 @@ test('makeVirtualPurse withdraw from escrowPurse', async t => {
   };
 
   const checkWithdrawal = async newPayment => {
-    issuer.getAmountOf(newPayment).then(amount => {
+    await issuer.getAmountOf(newPayment).then(amount => {
       t.assert(
         AmountMath.isEqual(amount, fungible837),
         `the withdrawn payment has the right balance`,

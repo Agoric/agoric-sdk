@@ -86,11 +86,16 @@ test('check allocations', async t => {
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildManualTimer(t.log);
 
-  const { zoe, reserve } = await setupReserveServices(
+  const { zoe, reserve, space } = await setupReserveServices(
     t,
     electorateTerms,
     timer,
   );
+
+  const runBrand = await space.brand.consume.IST;
+  const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
+  const m = await subscriptionTracker(t, metricsSub);
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
 
   const invitation = await E(
     reserve.reservePublicFacet,
@@ -115,6 +120,10 @@ test('check allocations', async t => {
     }),
     'expecting more',
   );
+
+  await m.assertChange({
+    allocations: { Moola: moola(10_000n) },
+  });
 });
 
 test('reserve track shortfall', async t => {
@@ -219,6 +228,9 @@ test('reserve burn IST', async t => {
     'added Collateral to the Reserve',
     `added RUN to the collateral Reserve`,
   );
+  await m.assertChange({
+    allocations: { Fee: AmountMath.make(runBrand, 1000n) },
+  });
 
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
@@ -234,7 +246,7 @@ test('reserve burn IST', async t => {
   );
 
   await m.assertChange({
-    allocations: { Fee: AmountMath.makeEmpty(runBrand) },
+    allocations: { Fee: { value: 0n } },
     totalFeeBurned: { value: 1000n },
   });
 });

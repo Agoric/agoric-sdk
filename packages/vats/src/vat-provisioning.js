@@ -50,7 +50,7 @@ export function buildRootObject() {
         );
         // Update the notifier when the chainBundle resolves.
         const { notifier, updater } = makeNotifierKit();
-        E.when(chainBundle, clientHome => {
+        void E.when(chainBundle, clientHome => {
           updater.updateState(harden({ clientHome, clientAddress: address }));
         });
         return Far('emulatedClientFacet', {

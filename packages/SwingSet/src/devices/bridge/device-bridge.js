@@ -12,15 +12,18 @@ function sanitize(data) {
 }
 
 /**
- * @typedef {object} BridgeDevice
- * @property {(dstID: string, obj: any) => any} callOutbound
- * @property {(handler: { inbound: (srcID: string, obj: any) => void}) => void} registerInboundHandler
+ * @typedef {object} BridgeRoot
+ * An object representing a bridge device from which messages can be received
+ * via a handler and to which messages can be sent.
+ * For multiplexing, each inbound or outbound message is associated with a string identifying its channel.
+ * @property {(channelId: string, obj: any) => any} callOutbound
+ * @property {(handler: { inbound: (channelId: string, obj: any) => void }) => void} registerInboundHandler
+ * @property {() => void} unregisterInboundHandler
  */
 
 /**
- *
  * @param {*} tools
- * @returns {BridgeDevice}
+ * @returns {BridgeRoot}
  */
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
@@ -44,6 +47,10 @@ export function buildRootDeviceNode(tools) {
         throw Error('inboundHandler already registered');
       }
       inboundHandler = handler;
+      setDeviceState(harden({ inboundHandler }));
+    },
+    unregisterInboundHandler() {
+      inboundHandler = undefined;
       setDeviceState(harden({ inboundHandler }));
     },
     callOutbound(...args) {

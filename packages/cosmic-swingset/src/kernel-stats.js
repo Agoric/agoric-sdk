@@ -256,9 +256,14 @@ export function makeInboundQueueMetrics(initialLength) {
   let remove = 0;
 
   return harden({
-    incStat: (delta = 1) => {
-      length += delta;
-      add += delta;
+    updateLength: newLength => {
+      const delta = newLength - length;
+      length = newLength;
+      if (delta > 0) {
+        add += delta;
+      } else {
+        remove -= delta;
+      }
     },
 
     decStat: (delta = 1) => {

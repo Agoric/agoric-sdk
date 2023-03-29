@@ -32,6 +32,9 @@ import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /**
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
+ * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
+ * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  */
 
 function abbreviateReplacer(_, arg) {
@@ -348,7 +351,7 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { import('../types-external.js').MeterConsumption } MeterConsumption
+   * @typedef { import('@agoric/swingset-liveslots').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
    *
    *  Any delivery crank (send, notify, start-vat.. anything which is allowed
@@ -882,25 +885,32 @@ export default function buildKernel(
       return results;
     }
 
-    // stopVat succeeded. finish cleanup on behalf of the worker.
+    // stopVat succeeded, now we finish cleanup on behalf of the worker
 
-    // TODO: send BOYD to the vat, to give it one last chance to clean
-    // up, drop imports, and delete durable data. If we ever have a
-    // vat that is so broken it can't do BOYD, we can make that
-    // optional. #7001
+    // TODO: send BOYD so the terminating vat has one last chance to clean
+    // up, drop imports, and delete durable data.
+    // If a vat is so broken it can't do BOYD, we can make that optional.
+    // https://github.com/Agoric/agoric-sdk/issues/7001
 
-    // walk c-list for all decided promises, reject them all
+    // reject all promises for which the vat was decider
     for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
       resolveToError(kpid, disconnectionCapData, vatID);
     }
 
-    // TODO: getNonDurableObjectExports, synthesize abandonVSO,
-    // execute it as if it were a syscall. (maybe distinguish between
-    // reachable/recognizable exports, abandon the reachable, retire
-    // the recognizable) #6696
+    // simulate an abandonExports syscall from the vat,
+    // without making an *actual* syscall that could pollute logs
+    const abandonedObjects = [
+      ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
+    ];
+    for (const { kref, vref } of abandonedObjects) {
+      /** @see translateAbandonExports in {@link ./vatTranslator.js} */
+      vatKeeper.deleteCListEntry(kref, vref);
+      /** @see abandonExports in {@link ./kernelSyscall.js} */
+      kernelKeeper.orphanKernelObject(kref, vatID);
+    }
 
-    // cleanup done, now we stop the worker, delete the transcript and
-    // any snapshot
+    // cleanup done, now we reset the worker to a clean state with no
+    // transcript or snapshot and prime everything for the next incarnation.
 
     await vatWarehouse.resetWorker(vatID);
     const source = { bundleID };
@@ -1880,7 +1890,10 @@ export default function buildKernel(
     }
   }
 
-  function kpResolution(kpid) {
+  function kpResolution(kpid, options = {}) {
+    // `incref` should ultimately be removed,
+    // see https://github.com/Agoric/agoric-sdk/issues/7213
+    const { incref = true } = options;
     const p = kernelKeeper.getKernelPromise(kpid);
     switch (p.state) {
       case 'unresolved': {
@@ -1889,8 +1902,10 @@ export default function buildKernel(
       case 'fulfilled':
       case 'rejected': {
         kernelKeeper.decrementRefCount(kpid, 'external');
-        for (const kref of p.data.slots) {
-          kernelKeeper.incrementRefCount(kref, 'external');
+        if (incref) {
+          for (const kref of p.data.slots) {
+            kernelKeeper.incrementRefCount(kref, 'external');
+          }
         }
         return p.data;
       }

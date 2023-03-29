@@ -5,7 +5,7 @@ const DEFAULT_CONTRACT_TERMS = {
   POLL_INTERVAL: 30n,
   maxSubmissionCount: 1000,
   minSubmissionCount: 1,
-  restartDelay: 5, // in seconds according to chainTimerService
+  restartDelay: 1, // the number of rounds an Oracle has to wait before they can initiate another round
   timeout: 10, // in seconds according to chainTimerService
   minSubmissionValue: 1n,
   maxSubmissionValue: 2n ** 256n,

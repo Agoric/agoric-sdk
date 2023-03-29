@@ -512,7 +512,7 @@ export const BASIC_BOOTSTRAP_PERMITS = {
     consume: {
       agoricNamesAdmin: true,
       initialSupply: true,
-      bridgeManager: 'chainStorage',
+      bridgeManager: 'bridge',
       // TODO: re-org loadCriticalVat to be subject to permits
       loadCriticalVat: true,
       zoe: true,

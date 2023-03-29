@@ -7,80 +7,112 @@ import { extractMethod } from '../src/lib/kdebug.js';
 import { makeKernelEndowments, buildDispatch } from './util.js';
 import { kser, kunser, kslot } from '../src/lib/kmarshal.js';
 
-function makeKernel() {
+const makeKernel = async () => {
   const endowments = makeKernelEndowments();
   const { kvStore } = endowments.kernelStorage;
-  initializeKernel({}, endowments.kernelStorage);
+  await initializeKernel({}, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   return { kernel, kvStore };
-}
+};
+
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {object[]} log
+ * @param {string} type
+ * @param {object} [details]
+ * @param {string} [details.method]
+ */
+const assertFirstLogEntry = (t, log, type, details = {}) => {
+  const { method, ...otherDetails } = details;
+  t.is(Math.min(log.length, 1), 1);
+  const entry = log.shift();
+  t.is(entry.type, type);
+  if (method) {
+    t.is(extractMethod(entry.methargs), method);
+  }
+  if (Reflect.ownKeys(otherDetails).length) {
+    t.like(entry, otherDetails);
+  }
+  return entry;
+};
+
+const assertSingleEntryLog = (t, log, type, details = {}) => {
+  const entry = assertFirstLogEntry(t, log, type, details);
+  t.deepEqual(log, []);
+  return entry;
+};
+
+const makeTestVat = async (t, kernel, name) => {
+  const { log, dispatch } = buildDispatch();
+  let syscall;
+  const setup = providedSyscall => {
+    syscall = providedSyscall;
+    return dispatch;
+  };
+  await kernel.createTestVat(name, setup);
+  assert(syscall);
+  const vatID = kernel.vatNameToID(name);
+  const kref = kernel.getRootObject(vatID);
+  kernel.pinObject(kref);
+  const flushDeliveries = async () => {
+    // Make a dummy delivery so the kernel will call processRefcounts().
+    // This isn't normally needed, but we're directly making syscalls
+    // outside of a delivery.
+    // If that ever stops working, we can update `makeTestVat` to return
+    // functions supporting more true-to-production vat behavior like
+    // ```js
+    // enqueueSyscall('send', target, kser([...args]), resultVPID);
+    // enqueueSyscall('subscribe', resultVPID);
+    // flushSyscalls(); // issues queued syscalls inside a dummy delivery
+    // ```
+    kernel.queueToKref(kref, 'flush', []);
+    await kernel.run();
+    assertFirstLogEntry(t, log, 'deliver', { method: 'flush' });
+  };
+  return { vatID, kref, dispatch, log, syscall, flushDeliveries };
+};
 
 async function doAbandon(t, reachable) {
   // vatA receives an object from vatB, holds it or drops it
   // vatB abandons it
   // vatA should retain the object
   // sending to the abandoned object should get an error
-  const { kernel, kvStore } = makeKernel();
+  const { kernel, kvStore } = await makeKernel();
   await kernel.start();
 
-  const { log: logA, dispatch: dispatchA } = buildDispatch();
-  let syscallA;
-  function setupA(syscall) {
-    syscallA = syscall;
-    return dispatchA;
-  }
-  await kernel.createTestVat('vatA', setupA);
-  const vatA = kernel.vatNameToID('vatA');
-  const aliceKref = kernel.getRootObject(vatA);
-  kernel.pinObject(aliceKref);
-
-  const { log: logB, dispatch: dispatchB } = buildDispatch();
-  let syscallB;
-  function setupB(syscall) {
-    syscallB = syscall;
-    return dispatchB;
-  }
-  await kernel.createTestVat('vatB', setupB);
-  const vatB = kernel.vatNameToID('vatB');
-  const bobKref = kernel.getRootObject(vatB);
-  kernel.pinObject(bobKref);
-
+  const {
+    vatID: vatA,
+    kref: aliceKref,
+    log: logA,
+    syscall: syscallA,
+    flushDeliveries: flushDeliveriesA,
+  } = await makeTestVat(t, kernel, 'vatA');
+  const {
+    vatID: vatB,
+    kref: bobKref,
+    log: logB,
+    syscall: syscallB,
+  } = await makeTestVat(t, kernel, 'vatB');
   await kernel.run();
-
-  async function flushDeliveries() {
-    // make a dummy delivery to vatA, so the kernel will call
-    // processRefcounts(), this isn't normally needed but we're
-    // calling the syscall object directly here
-    kernel.queueToKref(aliceKref, 'flush', []);
-    await kernel.run();
-    t.truthy(logA.length >= 1);
-    const f = logA.shift();
-    t.is(f.type, 'deliver');
-    t.is(extractMethod(f.methargs), 'flush');
-  }
 
   // introduce B to A, so it can send 'holdThis' later
   kernel.queueToKref(bobKref, 'exportToA', [kslot(aliceKref)], 'none');
   await kernel.run();
-  t.is(logB.length, 1);
-  t.is(logB[0].type, 'deliver');
-  t.is(extractMethod(logB[0].methargs), 'exportToA');
-  const aliceForBob = logB[0].methargs.slots[0]; // probably o-50
-  logB.length = 0;
+  const aliceForBobDelivery = assertSingleEntryLog(t, logB, 'deliver', {
+    method: 'exportToA',
+  });
+  const aliceForBob = aliceForBobDelivery.methargs.slots[0];
 
   // tell B to export 'target' to A, so it gets a c-list and refcounts
   const targetForBob = 'o+100';
   syscallB.send(aliceForBob, kser(['holdThis', [kslot(targetForBob)]]));
   await kernel.run();
-
-  t.is(logA.length, 1);
-  t.is(logA[0].type, 'deliver');
-  t.is(extractMethod(logA[0].methargs), 'holdThis');
-  const targetForAlice = logA[0].methargs.slots[0];
+  const targetForAliceDelivery = assertSingleEntryLog(t, logA, 'deliver', {
+    method: 'holdThis',
+  });
+  const targetForAlice = targetForAliceDelivery.methargs.slots[0];
   const targetKref = kvStore.get(`${vatA}.c.${targetForAlice}`);
   t.regex(targetKref, /^ko\d+$/);
-  logA.length = 0;
-
   let targetOwner = kvStore.get(`${targetKref}.owner`);
   let targetRefCount = kvStore.get(`${targetKref}.refCount`);
   let expectedRefCount = '1,1'; // reachable+recognizable by vatA
@@ -90,20 +122,15 @@ async function doAbandon(t, reachable) {
   // vatA can send a message to the target
   const p1ForAlice = 'p+1'; // left unresolved because vatB is lazy
   syscallA.send(targetForAlice, kser(['ping', []]), p1ForAlice);
-  await flushDeliveries();
-  t.is(logB.length, 1);
-  t.is(logB[0].type, 'deliver');
-  t.is(extractMethod(logB[0].methargs), 'ping');
-  logB.length = 0;
+  await flushDeliveriesA();
+  assertSingleEntryLog(t, logB, 'deliver', { method: 'ping' });
 
   if (!reachable) {
     // vatA drops, but does not retire
     syscallA.dropImports([targetForAlice]);
-    await flushDeliveries();
+    await flushDeliveriesA();
     // vatB gets a dispatch.dropExports
-    t.is(logB.length, 1);
-    t.deepEqual(logB[0], { type: 'dropExports', vrefs: [targetForBob] });
-    logB.length = 0;
+    assertSingleEntryLog(t, logB, 'dropExports', { vrefs: [targetForBob] });
     // the object still exists, now only recognizable
     targetOwner = kvStore.get(`${targetKref}.owner`);
     targetRefCount = kvStore.get(`${targetKref}.refCount`);
@@ -114,12 +141,11 @@ async function doAbandon(t, reachable) {
 
   // now have vatB abandon the export
   syscallB.abandonExports([targetForBob]);
-  await flushDeliveries();
+  await flushDeliveriesA();
 
-  // vatA is not informed (no GC messages)
-  t.is(logA.length, 0);
-  // vatB isn't either
-  t.is(logB.length, 0);
+  // no GC messages for either vat
+  t.deepEqual(logA, []);
+  t.deepEqual(logB, []);
 
   targetOwner = kvStore.get(`${targetKref}.owner`);
   targetRefCount = kvStore.get(`${targetKref}.refCount`);
@@ -131,13 +157,13 @@ async function doAbandon(t, reachable) {
     const p2ForAlice = 'p+2'; // rejected by kernel
     syscallA.send(targetForAlice, kser(['ping2', []]), p2ForAlice);
     syscallA.subscribe(p2ForAlice);
-    await flushDeliveries();
+    await flushDeliveriesA();
 
-    t.is(logB.length, 0);
-    t.is(logA.length, 1);
-    t.is(logA[0].type, 'notify');
-    t.is(logA[0].resolutions.length, 1);
-    const [vpid, rejected, data] = logA[0].resolutions[0];
+    t.deepEqual(logB, []);
+    const notifyDelivery = assertSingleEntryLog(t, logA, 'notify');
+    const firstResolution = notifyDelivery.resolutions[0];
+    t.deepEqual(notifyDelivery.resolutions, [firstResolution]);
+    const [vpid, rejected, data] = firstResolution;
     t.is(vpid, p2ForAlice);
     t.is(rejected, true);
     t.deepEqual(data.slots, []);
@@ -145,15 +171,14 @@ async function doAbandon(t, reachable) {
     // an upgrade or a termination that revoked the object, so the error
     // message is a bit misleading
     t.deepEqual(kunser(data), Error('vat terminated'));
-    logA.length = 0;
   }
 
   if (reachable) {
     // now vatA drops the object
     syscallA.dropImports([targetForAlice]);
-    await flushDeliveries();
+    await flushDeliveriesA();
     // vatB should not get a dispatch.dropImports
-    t.is(logB.length, 0);
+    t.deepEqual(logB, []);
     // the object still exists, now only recognizable
     targetRefCount = kvStore.get(`${targetKref}.refCount`);
     expectedRefCount = '0,1';
@@ -162,9 +187,9 @@ async function doAbandon(t, reachable) {
 
   // now vatA retires the object too
   syscallA.retireImports([targetForAlice]);
-  await flushDeliveries();
+  await flushDeliveriesA();
   // vatB should not get a dispatch.retireImports
-  t.is(logB.length, 0);
+  t.deepEqual(logB, []);
   // the object no longer exists
   targetRefCount = kvStore.get(`${targetKref}.refCount`);
   expectedRefCount = undefined;

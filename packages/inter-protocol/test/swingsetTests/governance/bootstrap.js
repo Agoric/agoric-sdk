@@ -2,8 +2,13 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 
-import { INTEREST_RATE_KEY } from '../../../src/vaultFactory/params';
-import { createCommittee, installContracts, makeVats, ONE_DAY } from '../setup';
+import { INTEREST_RATE_KEY } from '../../../src/vaultFactory/params.js';
+import {
+  createCommittee,
+  installContracts,
+  makeVats,
+  ONE_DAY,
+} from '../setup.js';
 
 const BASIS_POINTS = 10000n;
 
