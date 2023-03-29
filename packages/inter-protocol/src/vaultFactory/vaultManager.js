@@ -551,9 +551,15 @@ export const prepareVaultManagerKit = (
           metricsPublisher.publish(payload);
         },
 
-        distributeProceeds(proceeds, totalDebt, oraclePriceAtStart, liqSeat) {
+        distributeProceeds(
+          proceeds,
+          totalDebt,
+          oraclePriceAtStart,
+          liqSeat,
+          vaultData,
+          totalCollateral,
+        ) {
           const { state, facets } = this;
-          const { totalCollateral, vaultData } = state;
 
           state.totalCollateralSold = AmountMath.add(
             state.totalCollateralSold,
@@ -1113,7 +1119,14 @@ export const prepareVaultManagerKit = (
           ]);
 
           trace(`LiqV after long wait`, proceeds);
-          helper.distributeProceeds(proceeds, totalDebt, oraclePrice, liqSeat);
+          helper.distributeProceeds(
+            proceeds,
+            totalDebt,
+            oraclePrice,
+            liqSeat,
+            vaultData,
+            totalCollateral,
+          );
         },
       },
     },
