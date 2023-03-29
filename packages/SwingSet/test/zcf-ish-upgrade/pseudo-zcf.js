@@ -1,7 +1,7 @@
 /* global VatData */
 /* eslint-disable no-unused-vars */
 
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 import { defineDurableKind } from '@agoric/vat-data';
 import { assert } from '@agoric/assert';

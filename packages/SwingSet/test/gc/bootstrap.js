@@ -1,5 +1,4 @@
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   let A = Far('A', { hello() {} });

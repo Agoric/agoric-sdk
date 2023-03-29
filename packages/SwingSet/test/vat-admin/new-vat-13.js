@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject(_vatPowers, vatParameters) {
   const { adder } = vatParameters;
