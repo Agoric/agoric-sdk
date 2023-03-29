@@ -54,8 +54,16 @@ export function makeVatManagerFactory({
     !setup || enableSetup || Fail`setup() provided, but not enabled`;
   }
 
-  // returns promise for new vatManager
-  function vatManagerFactory(
+  /**
+   * returns promise for new vatManager
+   *
+   * @param {import('../../types-internal.js').VatID} vatID
+   * @param {import('../../types-internal.js').ManagerOptions} managerOptions
+   * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} liveSlotsOptions
+   * @param {import('../vat-warehouse.js').VatSyscallHandler} vatSyscallHandler
+   * @returns { Promise<import('../../types-internal.js').VatManager> }
+   */
+  async function vatManagerFactory(
     vatID,
     managerOptions,
     liveSlotsOptions,
@@ -64,8 +72,6 @@ export function makeVatManagerFactory({
     validateManagerOptions(managerOptions);
     const {
       managerType = defaultManagerType,
-      setup,
-      bundle,
       metered,
       enableSetup,
     } = managerOptions;
@@ -73,21 +79,21 @@ export function makeVatManagerFactory({
     if (metered && managerType !== 'local' && managerType !== 'xs-worker') {
       console.warn(`TODO: support metered with ${managerType}`);
     }
-    if (setup && managerType !== 'local') {
+    if (managerType !== 'local' && 'setup' in managerOptions) {
       console.warn(`TODO: stop using setup() with ${managerType}`);
     }
     if (enableSetup) {
-      if (setup) {
+      if (managerOptions.setup) {
         return localFactory.createFromSetup(
           vatID,
-          setup,
+          managerOptions.setup,
           managerOptions,
           vatSyscallHandler,
         );
       } else {
         return localFactory.createFromBundle(
           vatID,
-          bundle,
+          managerOptions.bundle,
           managerOptions,
           liveSlotsOptions,
           vatSyscallHandler,
@@ -96,7 +102,7 @@ export function makeVatManagerFactory({
     } else if (managerType === 'local') {
       return localFactory.createFromBundle(
         vatID,
-        bundle,
+        managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
         vatSyscallHandler,
@@ -104,9 +110,10 @@ export function makeVatManagerFactory({
     }
 
     if (managerType === 'xs-worker') {
+      assert(managerOptions.bundle, 'xsnap requires Bundle');
       return xsWorkerFactory.createFromBundle(
         vatID,
-        bundle,
+        managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
         vatSyscallHandler,
