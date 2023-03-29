@@ -49,11 +49,35 @@ More generally, vats are defined in terms of a `syscall` object (for the vat to 
 Most vats use "liveslots", a layer which provides an object-capability environment within a vat. Liveslots is a library which provides a `makeLiveslots()` function. Vats which use liveslots will export a `setup()` function which calls `makeLiveslots()` internally. These vats tend to have boilerplate like this:
 
 ```js
-export default function setup(syscall, state, helpers, vatPowers0) {
-  return helpers.makeLiveSlots(syscall, state,
-                               (E, D, vatPowers) => buildRootObject(vatPowers),
-                               helpers.vatID,
-                               vatPowers0);
+import { makeSimpleMeterControl } from '@agoric/swingset-vat';
+import { makeLiveSlots } from '@agoric/swingset-liveslots';
+
+function buildRootObject(vatPowers, vatParameters, baggage) {
+  // ...
+}
+
+export default function setup(syscall, state, helpers, vatPowers) {
+  const vatID = 'unknown';
+  const options = {};
+  const gcTools = harden({
+    WeakRef,
+    FinalizationRegistry,
+    waitUntilQuiescent: () => 
+      new Promise(resolve => setImmediate(() => resolve())),
+    gcAndFinalize: () => {},
+    meterControl: makeSimpleMeterControl(),
+  });
+  const buildVatNamespace = () => ({ buildRootObject });
+
+  return makeLiveSlots(
+    syscall,
+    vatID,
+    vatPowers,
+    options,
+    gcTools,
+    console,
+    buildVatNamespace,
+  );
 }
 ```
 

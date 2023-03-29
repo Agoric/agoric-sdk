@@ -19,6 +19,8 @@ export { buildBridge } from './devices/bridge/bridge.js';
 export { default as buildCommand } from './devices/command/command.js';
 export { buildPlugin } from './devices/plugin/plugin.js';
 
+export { makeDummyMeterControl as makeSimpleMeterControl } from './kernel/dummyMeterControl.js';
+
 // eslint-disable-next-line import/export
 export * from './types-external.js';
 
