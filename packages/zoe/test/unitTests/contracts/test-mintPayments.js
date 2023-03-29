@@ -50,7 +50,7 @@ test('zoe - mint payments', async t => {
 
         const {
           value: {
-            payload: [invitationValue],
+            payload: [[invitationValue]],
           },
         } = await E(invitationIssuer).getAmountOf(invitation);
 
@@ -134,7 +134,7 @@ test('zoe - mint payments with unrelated give and want', async t => {
 
         const {
           value: {
-            payload: [invitationValue],
+            payload: [[invitationValue]],
           },
         } = await E(invitationIssuer).getAmountOf(invitation);
 

@@ -162,7 +162,7 @@ test('zoe with automaticRefund', async t => {
 
   const {
     value: {
-      payload: [bobInvitationValue],
+      payload: [[bobInvitationValue]],
     },
   } = await E(invitationIssuer).getAmountOf(exclusBobInvitation);
   t.is(bobInvitationValue.installation, installation);
