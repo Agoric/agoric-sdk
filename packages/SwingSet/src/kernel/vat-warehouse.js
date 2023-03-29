@@ -50,18 +50,25 @@ export const makeLRU = max => {
 };
 
 /**
- * @param {KernelKeeper} kernelKeeper
- * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
- * @param {{
- *   maxVatsOnline?: number,
- * }} [policyOptions]
- *
  * @typedef {(syscall: import('@agoric/swingset-liveslots').VatSyscallObject) => ['error', string] | ['ok', null] | ['ok', Capdata]} VatSyscallHandler
  * @typedef {{ body: string, slots: unknown[] }} Capdata
  * @typedef { [unknown, ...unknown[]] } Tagged
  * @typedef { { moduleFormat: string }} Bundle
  */
-export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
+
+/**
+ * @param {KernelKeeper} kernelKeeper
+ * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
+ * @param { import('../types-internal.js').KernelPanic } panic
+ * @param {object} policyOptions
+ * @param {number} [policyOptions.maxVatsOnline] Limit the number of simultaneous workers
+ */
+export function makeVatWarehouse(
+  kernelKeeper,
+  vatLoader,
+  panic,
+  policyOptions,
+) {
   const { maxVatsOnline = 50 } = policyOptions || {};
   // Often a large contract evaluation is among the first few deliveries,
   // so let's do a snapshot after just a few deliveries.
@@ -113,19 +120,17 @@ export function makeVatWarehouse(kernelKeeper, vatLoader, policyOptions) {
 
     const translators = provideTranslators(vatID);
 
-    const chooseLoader = () => {
-      if (recreate) {
-        const isDynamic = kernelKeeper.getDynamicVats().includes(vatID);
-        if (isDynamic) {
-          return vatLoader.recreateDynamicVat;
-        } else {
-          return vatLoader.recreateStaticVat;
-        }
-      } else {
-        return vatLoader.createVatDynamically;
-      }
-    };
-    const manager = await chooseLoader()(vatID, source, translators, options);
+    const isDynamic = kernelKeeper.getDynamicVats().includes(vatID);
+    const managerP = vatLoader.create(vatID, {
+      isDynamic,
+      source,
+      translators,
+      options,
+    });
+    if (recreate) {
+      managerP.catch(err => panic(`unable to re-create vat ${vatID}`, err));
+    }
+    const manager = await managerP;
 
     // TODO(3218): persist this option; avoid spinning up a vat that isn't pipelined
     const { enablePipelining = false } = options;

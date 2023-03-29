@@ -1519,13 +1519,16 @@ export default function buildKernel(
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
-    panic,
     buildVatSyscallHandler,
-    vatAdminRootKref,
     overrideVatManagerOptions,
   });
 
-  vatWarehouse = makeVatWarehouse(kernelKeeper, vatLoader, warehousePolicy);
+  vatWarehouse = makeVatWarehouse(
+    kernelKeeper,
+    vatLoader,
+    panic,
+    warehousePolicy,
+  );
 
   /**
    * Create a dynamically generated vat for testing purposes.  Such vats are
