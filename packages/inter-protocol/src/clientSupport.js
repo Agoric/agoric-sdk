@@ -208,8 +208,8 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  * @param {{
  *   offerId: string,
  *   collateralBrandKey: string,
- *   giveCurrency: number,
- *   wantCollateral: number,
+ *   give: number,
+ *   want?: number,
  * } & ({
  *   price: number,
  * } | {
@@ -219,20 +219,25 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  */
 const makeBidOffer = (brands, opts) => {
   const give = {
-    Currency: AmountMath.make(brands.IST, scaleDecimals(opts.giveCurrency)),
+    Currency: AmountMath.make(brands.IST, scaleDecimals(opts.give)),
   };
   /** @type {Brand<'nat'>} */
   // @ts-expect-error XXX how to narrow AssetKind?
   const collateralBrand = brands[opts.collateralBrandKey];
 
-  const wantAmt = AmountMath.make(
-    collateralBrand,
-    scaleDecimals(opts.wantCollateral),
-  );
+  const optWantArg = {};
+  const optWantRecord = {};
+  if ('want' in opts) {
+    const amt = AmountMath.make(collateralBrand, scaleDecimals(opts.want));
+    optWantArg.want = amt;
+    optWantRecord.want = { Collateral: amt };
+  }
+  harden(optWantArg);
+  harden(optWantRecord);
 
   const proposal = {
     give,
-    ...('price' in opts ? { want: { Collateral: wantAmt } } : {}),
+    ...optWantRecord,
   };
 
   const bounds = (x, lo, hi) => {
@@ -244,11 +249,11 @@ const makeBidOffer = (brands, opts) => {
   const offerArgs =
     'price' in opts
       ? {
-          want: wantAmt,
+          ...optWantArg,
           offerPrice: parseRatio(opts.price, brands.IST, collateralBrand),
         }
       : {
-          want: wantAmt,
+          ...optWantArg,
           offerBidScaling: parseRatio(
             (1 - bounds(opts.discount, -1, 1)).toFixed(2),
             brands.IST,
@@ -274,7 +279,7 @@ const makeBidOffer = (brands, opts) => {
  * @param {Record<string, Brand>} brands
  * @param {{
  *   offerId: string,
- *   giveCollateral: number,
+ *   give: number,
  *   collateralBrandKey: string,
  * }} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
@@ -284,7 +289,7 @@ const makeAddCollateralOffer = (brands, opts) => {
   const give = {
     Collateral: AmountMath.make(
       brands[opts.collateralBrandKey],
-      scaleDecimals(opts.giveCollateral),
+      scaleDecimals(opts.give),
     ),
   };
 

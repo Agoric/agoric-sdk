@@ -177,20 +177,16 @@ For example:
   bidCmd
     .command('by-price')
     .description('Print an offer to bid collateral by price.')
-    .requiredOption('--price [number]', 'bid price', Number)
-    .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
-    .requiredOption(
-      '--wantCollateral [number]',
-      'Collateral expected for the currency',
-      Number,
-    )
+    .requiredOption('--price [number]', 'bid price (IST/Collateral)', Number)
+    .requiredOption('--give [number]', 'IST to bid', Number)
+    .option('--want [number]', 'Collateral required for the bid', Number)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
       /**
        * @param {{
        *   price: number,
-       *   giveCurrency: number, wantCollateral: number,
+       *   give: number, want?: number,
        *   collateralBrand: string,
        *   offerId: string,
        * }} opts
@@ -226,15 +222,15 @@ For example:
       'bid discount (0 to 100) or markup (0 to -100) %',
       parsePercent,
     )
-    .requiredOption('--giveCurrency [number]', 'Currency to give', Number)
-    .requiredOption('--wantCollateral [number]', 'bid price', Number)
+    .requiredOption('--give [number]', 'IST to bid', Number)
+    .option('--want [number]', 'Collateral required for the bid', Number)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
       /**
        * @param {{
        *   discount: number,
-       *   giveCurrency: number,  wantCollateral: number,
+       *   give: number,  want?: number,
        *   collateralBrand: string,
        *   offerId: string,
        * }} opts
@@ -373,13 +369,13 @@ $ inter bid list --from my-acct
   reserveCmd
     .command('add')
     .description('add collateral to the reserve')
-    .requiredOption('--giveCollateral [number]', 'Collateral to give', Number)
+    .requiredOption('--give [number]', 'Collateral to give', Number)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
       /**
        * @param {{
-       *   giveCollateral: number,
+       *   give: number,
        *   collateralBrand: string,
        *   offerId: string,
        * }} opts

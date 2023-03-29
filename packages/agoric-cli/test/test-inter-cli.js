@@ -83,11 +83,9 @@ const offerSpec1 = harden({
         numerator: mk(bslot.IST, 9n),
         denominator: mk(bslot.ATOM, 1n),
       },
-      want: mk(bslot.ATOM, 5_000_000n),
     },
     proposal: {
       give: { Currency: mk(bslot.IST, 50_000_000n) },
-      want: { Collateral: mk(bslot.ATOM, 5_000_000n) },
     },
   },
 });
@@ -178,10 +176,7 @@ const makeProcess = (t, keyring, out) => {
 };
 
 test('inter bid place by-price: output is correct', async t => {
-  const argv =
-    'node inter bid by-price --giveCurrency 50 --price 9 --wantCollateral 5'
-      .trim()
-      .split(' ');
+  const argv = 'node inter bid by-price --give 50 --price 9'.trim().split(' ');
 
   const out = [];
   const cmd = await makeInterCommand(
