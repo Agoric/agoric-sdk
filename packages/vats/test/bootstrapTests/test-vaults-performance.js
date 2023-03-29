@@ -6,7 +6,6 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { PerformanceObserver, performance } from 'node:perf_hooks';
 import v8 from 'node:v8';
 import process from 'node:process';
-import util from 'node:util';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
@@ -22,8 +21,8 @@ import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
  */
 const test = anyTest;
 
-const snapshotHeap = async () => {
-  console.log('Snapshotting heap...');
+const snapshotHeap = async step => {
+  console.log(`Snapshotting heap at step ${step}...`);
   await eventLoopIteration();
   try {
     const t0 = performance.now();
@@ -34,12 +33,14 @@ const snapshotHeap = async () => {
     const heapStats = v8.getHeapStatistics();
     const t3 = performance.now();
 
-    const heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
+    const heapSnapshot = `Heap-${
+      process.pid
+    }-${Date.now()}-${step}.heapsnapshot`;
     // TODO write to a gitignored path
     v8.writeHeapSnapshot(heapSnapshot);
     const heapSnapshotTime = performance.now() - t3;
 
-    return {
+    console.log(`HEAP DETAILS at step${step} vaults: `, {
       memoryUsage,
       heapStats,
       heapSnapshot,
@@ -49,10 +50,9 @@ const snapshotHeap = async () => {
         heapStats: t3 - t2,
         heapSnapshot: heapSnapshotTime,
       },
-    };
+    });
   } catch (err) {
     console.warn('Failed to gather memory stats', err);
-    return {};
   }
 };
 
@@ -102,10 +102,9 @@ const rows = [];
 const perfObserver = new PerformanceObserver(items => {
   items.getEntries().forEach(entry => {
     // @ts-expect-error cast
-    const { vaultsOpened, ...heapDetails } = entry.detail;
-    console.log(`HEAP DETAILS at ${vaultsOpened} vaults: `, heapDetails);
+    const { vaultsOpened, round } = entry.detail;
     rows.push({
-      vaultsOpened,
+      name: `${round}:${vaultsOpened}`,
       duration: entry.duration,
       avgPerVault: entry.duration / vaultsOpened,
     });
@@ -121,11 +120,14 @@ test('stress vaults', async t => {
   /**
    * @param {number} i
    * @param {number} n
+   * @param {number} r
    */
-  const openVault = async (i, n) => {
+  const openVault = async (i, n, r) => {
     assert.typeof(i, 'number');
+    assert.typeof(n, 'number');
+    assert.typeof(r, 'number');
 
-    const offerId = `open-vault-${i}-of-${n}`;
+    const offerId = `open-vault-${i}-of-${n}-round-${r}`;
     await wd.executeOfferMaker(Offers.vaults.OpenVault, {
       offerId,
       collateralBrandKey,
@@ -139,32 +141,32 @@ test('stress vaults', async t => {
     });
   };
 
-  /** @param {number} n */
-  const openN = async n => {
+  /**
+   * @param {number} n
+   * @param {number} r
+   */
+  const openN = async (n, r) => {
     t.log(`opening ${n} vaults`);
     const range = [...Array(n)].map((_, i) => i + 1);
     performance.mark(`start-open`);
-    await Promise.all(range.map(i => openVault(i, n)));
+    await Promise.all(range.map(i => openVault(i, n, r)));
     performance.mark(`end-open`);
-    const snapshotDetails = await snapshotHeap();
-    performance.measure(`open-${n}`, {
+    performance.measure(`open-${n}-round-${r}`, {
       start: 'start-open',
       end: 'end-open',
-      detail: { ...snapshotDetails, vaultsOpened: n },
+      detail: { vaultsOpened: n, round: r },
     });
   };
 
   // clear out for a baseline
-  await snapshotHeap();
-  await openN(1);
-  await openN(10);
-  // await openN(100);
-  // await openN(1000);
+  await snapshotHeap('start');
+  await openN(100, 1);
+  await snapshotHeap('round1');
+  await openN(100, 2);
+  await snapshotHeap('round2');
 
   // let perfObserver get the last measurement
   await eventLoopIteration();
-
-  t.is(rows.length, 4);
 
   console.table(rows);
   /*
