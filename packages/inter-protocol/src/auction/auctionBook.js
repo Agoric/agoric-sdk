@@ -146,9 +146,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
         currencySeat,
         lockedPriceForRound: zeroRatio,
         updatingOracleQuote: zeroRatio,
-        // undefined indicates no limit; empty indicates limit exhausted
-        /** @type {Amount<'nat'> | undefined} */
-        totalProceedsGoal: undefined,
+        /**
+         * null indicates no limit; empty indicates limit exhausted
+         *
+         * @type {Amount<'nat'> | null}
+         */
+        totalProceedsGoal: null,
       };
     },
     {
@@ -225,11 +228,11 @@ export const prepareAuctionBook = (baggage, zcf) => {
           const currencyLimit = totalProceedsGoal
             ? AmountMath.min(totalProceedsGoal, initialCurrencyTarget)
             : initialCurrencyTarget;
-          const isRaiseBounded =
+          const isRaiseLimited =
             totalProceedsGoal ||
             !AmountMath.isGTE(currencyLimit, currencyNeeded);
 
-          const [currencyTarget, collateralTarget] = isRaiseBounded
+          const [currencyTarget, collateralTarget] = isRaiseLimited
             ? [currencyLimit, floorDivideBy(currencyLimit, curAuctionPrice)]
             : [initialCurrencyTarget, initialCollateralTarget];
 
@@ -357,9 +360,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
           const calcTargetRatio = () => {
             if (totalProceedsGoal && !proceedsGoal) {
               return makeRatioFromAmounts(totalProceedsGoal, curCollateral);
-            } else if (proceedsGoal && !totalProceedsGoal) {
+            } else if (!totalProceedsGoal && proceedsGoal) {
               return makeRatioFromAmounts(proceedsGoal, assetAmount);
-            } else if (proceedsGoal && totalProceedsGoal) {
+            } else if (totalProceedsGoal && proceedsGoal) {
               const curRatio = makeRatioFromAmounts(
                 totalProceedsGoal,
                 curCollateral,
@@ -367,12 +370,13 @@ export const prepareAuctionBook = (baggage, zcf) => {
               const newRatio = makeRatioFromAmounts(proceedsGoal, assetAmount);
               return ratioGTE(newRatio, curRatio) ? newRatio : curRatio;
             }
+
+            throw Fail`calcTargetRatio called with !totalProceedsGoal && !proceedsGoal`;
           };
 
           if (proceedsGoal || totalProceedsGoal) {
             this.state.totalProceedsGoal = ceilMultiplyBy(
               AmountMath.add(curCollateral, assetAmount),
-              // @ts-expect-error calcTargetRatio always returns a ratio here
               calcTargetRatio(),
             );
           }
@@ -511,7 +515,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
         },
         getSeats() {
           const { collateralSeat, currencySeat } = this.state;
-          this.state.totalProceedsGoal = undefined;
+          this.state.totalProceedsGoal = null;
           return { collateralSeat, currencySeat };
         },
         exitAllSeats() {

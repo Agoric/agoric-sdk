@@ -175,7 +175,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     return E(zoe).offer(bidInvitation, proposal, payment, harden(offerArgs));
   };
 
-  const depositCollateral = async (collateralAmount, issuerKit, limit) => {
+  const depositCollateral = async (collateralAmount, issuerKit, offerArgs) => {
     const collateralPayment = E(issuerKit.mint).mintPayment(
       harden(collateralAmount),
     );
@@ -185,7 +185,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
         give: { Collateral: collateralAmount },
       }),
       harden({ Collateral: collateralPayment }),
-      limit,
+      offerArgs,
     );
     await eventLoopIteration();
 
@@ -195,13 +195,9 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
   /**
    * @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} issuerKit
    * @param {Amount<'nat'>} collateralAmount
-   * @param {undefined | { goal: Amount<'nat'> }} limit
+   * @param {{ goal: Amount<'nat'> }} [limit]
    */
-  const setupCollateralAuction = async (
-    issuerKit,
-    collateralAmount,
-    limit = undefined,
-  ) => {
+  const setupCollateralAuction = async (issuerKit, collateralAmount, limit) => {
     const collateralBrand = collateralAmount.brand;
 
     const pa = makeManualPriceAuthority({
@@ -240,8 +236,11 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       return bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit);
     },
     setupCollateralAuction,
-    async advanceTo(time) {
+    async advanceTo(time, wait) {
       await timerService.advanceTo(time);
+      if (wait) {
+        await eventLoopIteration();
+      }
     },
     async updatePriceAuthority(newPrice) {
       priceAuthorities.get(newPrice.denominator.brand).setPrice(newPrice);
@@ -493,17 +492,10 @@ test.serial('complete auction liquidator gets proceeds', async t => {
   t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   t.true(await E(seat).hasExited());
 
@@ -538,17 +530,10 @@ test.serial('complete auction limit on amountRaised', async t => {
   t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   t.true(await E(seat).hasExited());
 
@@ -586,14 +571,10 @@ test.serial('multiple Depositors, not all assets are sold', async t => {
   t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   t.true(await E(seat).hasExited());
 
@@ -638,14 +619,10 @@ test.serial('multiple Depositors, with goal', async t => {
   t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   await E(seat).tryExit();
   t.true(await E(seat).hasExited());
@@ -689,14 +666,10 @@ test.serial('multiple Depositors, all assets are sold', async t => {
   t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   t.true(await E(seat).hasExited());
 
@@ -738,14 +711,10 @@ test.serial('onDemand exit', async t => {
   t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   t.false(await E(exitingSeat).hasExited());
 
@@ -783,14 +752,10 @@ test.serial('onDeadline exit', async t => {
   t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
 
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
-  await driver.advanceTo(175n);
-  await eventLoopIteration();
-  await driver.advanceTo(180n);
-  await eventLoopIteration();
-  await driver.advanceTo(185n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
+  await driver.advanceTo(175n, 'wait');
+  await driver.advanceTo(180n, 'wait');
+  await driver.advanceTo(185n, 'wait');
 
   t.true(await E(exitingSeat).hasExited());
 
@@ -920,8 +885,7 @@ test.serial('multiple collaterals', async t => {
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
 
   await driver.advanceTo(150n);
-  await driver.advanceTo(170n);
-  await eventLoopIteration();
+  await driver.advanceTo(170n, 'wait');
   await driver.advanceTo(175n);
 
   t.true(await E(bidderSeat1C).hasExited());
@@ -985,24 +949,19 @@ test.serial('multiple bidders at one auction step', async t => {
 
   assert(nextAuctionSchedule.startTime.absValue);
   now = nextAuctionSchedule.startTime.absValue;
-  await driver.advanceTo(now);
-  await eventLoopIteration();
+  await driver.advanceTo(now, 'wait');
 
   now += 5n;
-  await driver.advanceTo(now);
-  await eventLoopIteration();
+  await driver.advanceTo(now, 'wait');
 
   now += 5n;
-  await driver.advanceTo(now);
-  await eventLoopIteration();
+  await driver.advanceTo(now, 'wait');
 
   now += 5n;
-  await driver.advanceTo(now);
-  await eventLoopIteration();
+  await driver.advanceTo(now, 'wait');
 
   now += 5n;
-  await driver.advanceTo(now);
-  await eventLoopIteration();
+  await driver.advanceTo(now, 'wait');
 
   t.true(await E(seat1).hasExited());
   t.false(await E(seat2).hasExited());

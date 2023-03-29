@@ -33,7 +33,7 @@ test.before(async t => {
  *
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
  * @param {[collateralReturned: bigint, currencyRaise: bigint]} amountsReturned
- * @param {Array<{deposit: number, collect?: number}>} rawDeposits
+ * @param {Array<{deposit: number, goal?: number}>} rawDeposits
  * @param {[transfers: Array<[bigint, bigint]>, leftovers: [bigint, bigint]]} rawExpected
  * @param {string} kwd
  */
@@ -58,11 +58,11 @@ const checkProportions = (
   const expectedXfer = [];
   for (let i = 0; i < rawDeposits.length; i += 1) {
     const seat = harden({});
-    const { collect } = rawDeposits[i];
+    const { goal } = rawDeposits[i];
     deposits.push({
       seat,
       amount: collateral.make(BigInt(rawDeposits[i].deposit)),
-      goal: collect ? currency.make(BigInt(collect)) : null,
+      goal: goal ? currency.make(BigInt(goal)) : null,
     });
     const currencyRecord = { Currency: currency.make(rawExp[i][1]) };
     expectedXfer.push([fakeCurrencySeat, seat, currencyRecord]);
@@ -194,16 +194,6 @@ const transferSharing20 = /** @type {Array<[bigint, bigint]>} */ ([
   [60n, 12n],
   [20n, 4n],
 ]);
-const transferSharing45 = /** @type {Array<[bigint, bigint]>} */ ([
-  [0n, 9n],
-  [0n, 27n],
-  [0n, 9n],
-]);
-const transferSharing450 = /** @type {Array<[bigint, bigint]>} */ ([
-  [19n, 90n],
-  [59n, 270n],
-  [19n, 90n],
-]);
 
 // currencyRaise < proceedsGoal so everyone gets prorated amounts of both
 test(
@@ -211,9 +201,9 @@ test(
   checkProportions,
   [100n, 20n],
   [
-    { deposit: 10_000, collect: 10 },
-    { deposit: 30_000, collect: 30 },
-    { deposit: 10_000, collect: 10 },
+    { deposit: 10_000, goal: 10 },
+    { deposit: 30_000, goal: 30 },
+    { deposit: 10_000, goal: 10 },
   ],
   [transferSharing20, [0n, 0n]],
 );
@@ -225,9 +215,9 @@ test(
   checkProportions,
   [100n, 20n],
   [
-    { deposit: 10_000, collect: 9 },
-    { deposit: 30_000, collect: 2 },
-    { deposit: 10_000, collect: 9 },
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 2 },
+    { deposit: 10_000, goal: 9 },
   ],
   [transferSharing20, [0n, 0n]],
 );
@@ -239,11 +229,18 @@ test(
   checkProportions,
   [100n, 45n],
   [
-    { deposit: 10_000, collect: 9 },
-    { deposit: 30_000, collect: 27 },
-    { deposit: 10_000, collect: 9 },
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 27 },
+    { deposit: 10_000, goal: 9 },
   ],
-  [transferSharing45, [100n, 0n]],
+  [
+    [
+      [0n, 9n],
+      [0n, 27n],
+      [0n, 9n],
+    ],
+    [100n, 0n],
+  ],
 );
 
 // C if currencyRaise matches proceedsGoal, everyone gets the currency they
@@ -253,11 +250,18 @@ test(
   checkProportions,
   [100n, 450n],
   [
-    { deposit: 100, collect: 90 },
-    { deposit: 300, collect: 270 },
-    { deposit: 100, collect: 90 },
+    { deposit: 100, goal: 90 },
+    { deposit: 300, goal: 270 },
+    { deposit: 100, goal: 90 },
   ],
-  [transferSharing450, [3n, 0n]],
+  [
+    [
+      [19n, 90n],
+      [59n, 270n],
+      [19n, 90n],
+    ],
+    [3n, 0n],
+  ],
 );
 
 //   If any depositor's goal limit exceeded their share of the total,
@@ -267,19 +271,13 @@ test(
   checkProportions,
   [100n, 20n],
   [
-    { deposit: 100_000, collect: 9 },
-    { deposit: 300_000, collect: 2000 },
-    { deposit: 100_000, collect: 9 },
+    { deposit: 100_000, goal: 9 },
+    { deposit: 300_000, goal: 2000 },
+    { deposit: 100_000, goal: 9 },
   ],
   [transferSharing20, [0n, 0n]],
 );
 
-// rounding happens because the value of collateral is negligible.
-const transferSharing200 = /** @type {Array<[bigint, bigint]>} */ ([
-  [20n, 39n],
-  [60n, 119n],
-  [20n, 39n],
-]);
 // D if currencyRaise > proceedsGoal && all depositors specified a limit,
 //   all depositors get their goal first, then we distribute the
 //   remainder (collateral and currency) to get the same proportional payout.
@@ -288,18 +286,21 @@ test(
   checkProportions,
   [100n, 200n],
   [
-    { deposit: 10_000, collect: 9 },
-    { deposit: 30_000, collect: 27 },
-    { deposit: 10_000, collect: 9 },
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 27 },
+    { deposit: 10_000, goal: 9 },
   ],
-  [transferSharing200, [0n, 3n]],
+  // rounding happens because the value of collateral is negligible.
+  [
+    [
+      [20n, 39n],
+      [60n, 119n],
+      [20n, 39n],
+    ],
+    [0n, 3n],
+  ],
 );
 
-const transferSharing200a = /** @type {Array<[bigint, bigint]>} */ ([
-  [20n, 40n],
-  [60n, 120n],
-  [20n, 40n],
-]);
 // D if currencyRaise > proceedsGoal && all depositors specified a limit,
 //   all depositors get their goal first, then we distribute the
 //   remainder (collateral and currency) to get the same proportional payout.
@@ -308,19 +309,20 @@ test(
   checkProportions,
   [100n, 200n],
   [
-    { deposit: 10_000, collect: 900 },
-    { deposit: 30_000, collect: 2700 },
-    { deposit: 10_000, collect: 900 },
+    { deposit: 10_000, goal: 900 },
+    { deposit: 30_000, goal: 2700 },
+    { deposit: 10_000, goal: 900 },
   ],
-  [transferSharing200a, [0n, 0n]],
+  [
+    [
+      [20n, 40n],
+      [60n, 120n],
+      [20n, 40n],
+    ],
+    [0n, 0n],
+  ],
 );
 
-// rounding happens because the value of collateral is negligible.
-const transferSharing2000 = /** @type {Array<[bigint, bigint]>} */ ([
-  [20n, 399n],
-  [60n, 1199n],
-  [0n, 400n],
-]);
 // E currencyRaise > proceedsGoal && some depositors didn't specify a limit
 // if proceedsGoal + value of collateralReturn >= limitedShare then those
 // who specified a limit can get all the excess over their limit in
@@ -330,18 +332,21 @@ test(
   checkProportions,
   [100n, 2000n],
   [
-    { deposit: 10_000, collect: 9 },
-    { deposit: 30_000, collect: 27 },
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 27 },
     { deposit: 10_000 },
   ],
-  [transferSharing2000, [20n, 2n]],
+  // rounding happens because the value of collateral is negligible.
+  [
+    [
+      [20n, 399n],
+      [60n, 1199n],
+      [0n, 400n],
+    ],
+    [20n, 2n],
+  ],
 );
 
-const transferSharing2000b = /** @type {Array<[bigint, bigint]>} */ ([
-  [100n, 900n],
-  [300n, 2700n],
-  [600n, 400n],
-]);
 // E currencyRaise > proceedsGoal && some depositors didn't specify a limit
 // if proceedsGoal + value of collateralReturn >= limitedShare then those
 // who specified a limit can get all the excess over their limit in
@@ -351,9 +356,16 @@ test(
   checkProportions,
   [1000n, 4000n],
   [
-    { deposit: 1000, collect: 900 },
-    { deposit: 3000, collect: 2700 },
+    { deposit: 1000, goal: 900 },
+    { deposit: 3000, goal: 2700 },
     { deposit: 1000 },
   ],
-  [transferSharing2000b, [0n, 0n]],
+  [
+    [
+      [100n, 900n],
+      [300n, 2700n],
+      [600n, 400n],
+    ],
+    [0n, 0n],
+  ],
 );
