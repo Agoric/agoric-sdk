@@ -42,6 +42,7 @@ jobs:
   # We split the package tests into two jobs because type linting
   # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
+    timeout-minutes: 10
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -58,6 +59,7 @@ jobs:
         run: ./scripts/lint-with-types.sh primary
 
   lint-rest:
+    timeout-minutes: 10
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -73,6 +75,7 @@ jobs:
   # Fast-running tests run as a group:
   test-quick:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -148,6 +151,7 @@ jobs:
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -216,6 +220,7 @@ jobs:
   # Long-running tests are executed individually.
   test-solo:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -235,7 +240,6 @@ jobs:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
       - name: yarn test (solo)
-        timeout-minutes: 20
         run: cd packages/solo && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
@@ -245,6 +249,7 @@ jobs:
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -277,6 +282,7 @@ jobs:
   # The test-swingset* tests are split by alphabetical test name.
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -305,6 +311,7 @@ jobs:
 
   test-swingset2:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -341,6 +348,7 @@ jobs:
 
   test-swingset3:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -368,6 +376,7 @@ jobs:
 
   test-swingset4:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -396,6 +405,7 @@ jobs:
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -426,6 +436,7 @@ jobs:
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
     needs: build
     runs-on: ubuntu-latest
     strategy:
