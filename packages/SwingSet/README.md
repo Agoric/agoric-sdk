@@ -68,6 +68,8 @@ anything else.
 
 ## Vat Sources
 
+**TODO: This is outdated, should content from docs/static-vats.md move here?**
+
 Each Vat source file (like `vat-foo.js` or `vat-bar.js`) is treated as a
 starting point for the `rollup` tool, which converts the Vat's source tree
 into a single string (so it can be evaluated in a SES realm). This starting
