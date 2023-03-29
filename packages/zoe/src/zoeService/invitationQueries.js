@@ -1,6 +1,8 @@
 import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
+import { getCopyBagEntries } from '@agoric/store';
 
+/** @param {Issuer<'copyBag'>} invitationIssuer */
 export const makeInvitationQueryFns = invitationIssuer => {
   /** @type {GetInvitationDetails} */
   const getInvitationDetails = async invitationP => {
@@ -11,10 +13,8 @@ export const makeInvitationQueryFns = invitationIssuer => {
       assert.note(err, X`Due to ${reason}`);
       throw err;
     };
-    return E.get(
-      E.get(E(invitationIssuer).getAmountOf(invitationP).catch(onRejected))
-        .value,
-    )[0];
+    const amtP = E(invitationIssuer).getAmountOf(invitationP).catch(onRejected);
+    return amtP.then(({ value }) => getCopyBagEntries(value)[0][0]);
   };
 
   /** @type {GetInstance} */
