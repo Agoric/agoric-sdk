@@ -179,8 +179,8 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
       state.handleOfferObj || Fail`incomplete setup of zoe seat`;
       E.when(
         E(state.handleOfferObj).handleOffer(invitationHandle, seatData),
-        ({ offerResultPromise, exitObj }) =>
-          zoeSeatAdmin.resolveExitAndResult(offerResultPromise, exitObj),
+        /** @param {HandleOfferResult} result */
+        result => zoeSeatAdmin.resolveExitAndResult(result),
         err => {
           state.adminNode.terminateWithFailure(err);
           throw err;

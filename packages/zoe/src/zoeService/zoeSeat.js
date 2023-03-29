@@ -21,7 +21,10 @@ const ZoeSeatIKit = harden({
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
     fail: M.call(M.any()).returns(),
-    resolveExitAndResult: M.call(M.promise(), ExitObjectShape).returns(),
+    resolveExitAndResult: M.call({
+      offerResultPromise: M.promise(),
+      exitObj: ExitObjectShape,
+    }).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
     // The return promise is empty, but doExit relies on settlement as a signal
     // that the payouts have settled. The exit publisher is notified after that.
@@ -88,7 +91,7 @@ export const makeZoeSeatAdminFactory = baggage => {
   // the kit here. When resolveExitAndResult() is called, it saves
   // state.offerResult and resolves the promise if it exists, then removes the
   // table entry.
-  const ephemeralOfferResultStore = new Map();
+  const ephemeralOfferResultStore = new WeakMap();
 
   return prepareExoClassKit(
     baggage,
@@ -176,32 +179,38 @@ export const makeZoeSeatAdminFactory = baggage => {
           );
         },
         // called only for seats resulting from offers.
-        resolveExitAndResult(offerResultPromise, exitObj) {
+        /** @param {HandleOfferResult} result */
+        resolveExitAndResult({ offerResultPromise, exitObj }) {
           const { state, facets } = this;
 
-          if (ephemeralOfferResultStore.has(facets.userSeat)) {
-            const pKit = ephemeralOfferResultStore.get(facets.userSeat);
-            E.when(
-              offerResultPromise,
-              offerResult => {
-                pKit.resolve(offerResult);
-                state.offerResult = offerResult;
-                state.offerResultValid = true;
-                ephemeralOfferResultStore.delete(facets.userSeat);
-              },
-              e => {
-                pKit.reject(e);
-                state.offerResult = pKit.promise;
-                state.offerResultValid = true;
-                ephemeralOfferResultStore.delete(facets.userSeat);
-              },
-            );
-          } else {
+          !state.offerResultValid ||
+            Fail`offerResultValid before offerResultPromise`;
+
+          if (!ephemeralOfferResultStore.has(facets.userSeat)) {
+            // this was called before getOfferResult
             const kit = makePromiseKit();
             kit.resolve(offerResultPromise);
             ephemeralOfferResultStore.set(facets.userSeat, kit);
-            state.offerResultValid = false;
           }
+
+          const pKit = ephemeralOfferResultStore.get(facets.userSeat);
+          E.when(
+            offerResultPromise,
+            offerResult => {
+              pKit.resolve(offerResult);
+              ephemeralOfferResultStore.delete(facets.userSeat);
+              // The next line will fail if offerResult is not durable.
+              // The map entry is deleted above so it doesn't linger in that case.
+              state.offerResult = offerResult;
+              state.offerResultValid = true;
+            },
+            e => {
+              pKit.reject(e);
+              ephemeralOfferResultStore.delete(facets.userSeat);
+              state.offerResult = pKit.promise;
+              state.offerResultValid = true;
+            },
+          );
 
           state.exitObj = exitObj;
         },
@@ -242,6 +251,7 @@ export const makeZoeSeatAdminFactory = baggage => {
             () => state.payouts[keyword],
           );
         },
+
         async getOfferResult() {
           const { state, facets } = this;
 
