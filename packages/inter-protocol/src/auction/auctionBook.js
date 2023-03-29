@@ -54,10 +54,12 @@ const trace = makeTracer('AucBook', false);
 /**
  * @typedef {{
  * want: Amount<'nat'>
+ * } & {
+ *   exitAfterBuy?: boolean,
  * } & ({
- * offerPrice: Ratio,
+ *   offerPrice: Ratio,
  * } | {
- * offerBidScaling: Ratio,
+ *    offerBidScaling: Ratio,
  * })} BidSpec
  */
 /**
@@ -71,6 +73,7 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
   return M.splitRecord(
     { want: collateralAmountShape },
     {
+      exitAfterBuy: true,
       // xxx should have exactly one of these properties
       offerPrice: makeBrandedRatioPattern(
         currencyAmountShape,
@@ -267,8 +270,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
          *  @param {Ratio} price
          *  @param {Amount<'nat'>} want
          *  @param {boolean} trySettle
+         *  @param {boolean} [exitAfterBuy]
          */
-        acceptPriceOffer(seat, price, want, trySettle) {
+        acceptPriceOffer(seat, price, want, trySettle, exitAfterBuy = false) {
           const { priceBook, curAuctionPrice } = this.state;
           const { helper } = this.facets;
           trace('acceptPrice');
@@ -281,13 +285,14 @@ export const prepareAuctionBook = (baggage, zcf) => {
 
           const stillWant = AmountMath.subtract(want, collateralSold);
           if (
+            (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
             AmountMath.isEmpty(stillWant) ||
             AmountMath.isEmpty(seat.getCurrentAllocation().Currency)
           ) {
             seat.exit();
           } else {
             trace('added Offer ', price, stillWant.value);
-            priceBook.add(seat, price, stillWant);
+            priceBook.add(seat, price, stillWant, exitAfterBuy);
           }
         },
 
@@ -300,8 +305,15 @@ export const prepareAuctionBook = (baggage, zcf) => {
          *  @param {Ratio} bidScaling
          *  @param {Amount<'nat'>} want
          *  @param {boolean} trySettle
+         *  @param {boolean} [exitAfterBuy]
          */
-        acceptScaledBidOffer(seat, bidScaling, want, trySettle) {
+        acceptScaledBidOffer(
+          seat,
+          bidScaling,
+          want,
+          trySettle,
+          exitAfterBuy = false,
+        ) {
           trace('accept scaled bid offer');
           const { curAuctionPrice, lockedPriceForRound, scaledBidBook } =
             this.state;
@@ -318,12 +330,13 @@ export const prepareAuctionBook = (baggage, zcf) => {
 
           const stillWant = AmountMath.subtract(want, collateralSold);
           if (
+            (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
             AmountMath.isEmpty(stillWant) ||
             AmountMath.isEmpty(seat.getCurrentAllocation().Currency)
           ) {
             seat.exit();
           } else {
-            scaledBidBook.add(seat, bidScaling, stillWant);
+            scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
           }
         },
       },
@@ -418,7 +431,8 @@ export const prepareAuctionBook = (baggage, zcf) => {
 
           const { totalProceedsGoal } = this.state;
           const { helper } = this.facets;
-          for (const [key, { seat, price: p, wanted }] of prioritizedOffers) {
+          for (const [key, seatRecord] of prioritizedOffers) {
+            const { seat, price: p, wanted, exitAfterBuy } = seatRecord;
             if (totalProceedsGoal && AmountMath.isEmpty(totalProceedsGoal)) {
               break;
             } else if (seat.hasExited()) {
@@ -428,6 +442,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
 
               const alloc = seat.getCurrentAllocation();
               if (
+                (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
                 AmountMath.isEmpty(alloc.Currency) ||
                 ('Collateral' in alloc &&
                   AmountMath.isGTE(alloc.Collateral, wanted))
@@ -462,32 +477,17 @@ export const prepareAuctionBook = (baggage, zcf) => {
           );
         },
         /**
-         *
          * @param {BidSpec} bidSpec
          * @param {ZCFSeat} seat
          * @param {boolean} trySettle
          */
         addOffer(bidSpec, seat, trySettle) {
-          const { collateralAmountShape, currencyAmountShape } = this.state;
-          const BidSpecShape = M.or(
-            {
-              want: collateralAmountShape,
-              offerPrice: makeBrandedRatioPattern(
-                currencyAmountShape,
-                collateralAmountShape,
-              ),
-            },
-            {
-              want: collateralAmountShape,
-              offerBidScaling: makeBrandedRatioPattern(
-                currencyAmountShape,
-                currencyAmountShape,
-              ),
-            },
-          );
+          const { currencyBrand, collateralBrand } = this.state;
+          const BidSpecShape = makeBidSpecShape(currencyBrand, collateralBrand);
 
           mustMatch(bidSpec, BidSpecShape);
           const { give } = seat.getProposal();
+          const { currencyAmountShape } = this.state;
           mustMatch(
             give.Currency,
             currencyAmountShape,
@@ -495,12 +495,14 @@ export const prepareAuctionBook = (baggage, zcf) => {
           );
 
           const { helper } = this.facets;
+          const exitAfterBuy = bidSpec.exitAfterBuy;
           if ('offerPrice' in bidSpec) {
             return helper.acceptPriceOffer(
               seat,
               bidSpec.offerPrice,
               bidSpec.want,
               trySettle,
+              exitAfterBuy,
             );
           } else if ('offerBidScaling' in bidSpec) {
             return helper.acceptScaledBidOffer(
@@ -508,6 +510,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
               bidSpec.offerBidScaling,
               bidSpec.want,
               trySettle,
+              exitAfterBuy,
             );
           } else {
             throw Fail`Offer was neither a price nor a scaled bid`;
