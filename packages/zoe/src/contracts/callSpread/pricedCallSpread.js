@@ -4,6 +4,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
+import { getCopyBagEntries } from '@agoric/store';
 import {
   assertProposalShape,
   depositToSeat,
@@ -127,8 +128,9 @@ const start = zcf => {
 
       // assert that the requested option was the right one.
       assert(
-        spreadAmount.Option.value[0].instance ===
-          desiredOption.value[0].instance,
+        getCopyBagEntries(spreadAmount.Option.value)[0][0].instance ===
+          // @ts-expect-error runtime narrow
+          getCopyBagEntries(desiredOption.value)[0][0].instance,
         'wanted option not a match',
       );
 
