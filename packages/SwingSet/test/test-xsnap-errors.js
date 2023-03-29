@@ -51,9 +51,10 @@ test('child termination distinguished from meter exhaustion', async t => {
   const fn = new URL('vat-xsnap-hang.js', import.meta.url).pathname;
   const bundle = await bundleSource(fn);
 
+  const workerOptions = { type: 'xsnap' };
   /** @type { ManagerOptions } */
   // @ts-expect-error close enough for this test
-  const managerOptions = { useTranscript: true };
+  const managerOptions = { useTranscript: true, workerOptions };
   const schandler = _vso => ['ok', null];
 
   const m = await xsWorkerFactory.createFromBundle(

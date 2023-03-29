@@ -104,7 +104,7 @@ export function makeVatKeeper(
    */
   function setSourceAndOptions(source, options) {
     // take care with API change
-    options.managerType || Fail`vat options missing managerType`;
+    options.workerOptions || Fail`vat options missing workerOptions`;
     assert(source);
     assert(
       'bundle' in source || 'bundleName' in source || 'bundleID' in source,

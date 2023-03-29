@@ -354,19 +354,19 @@ export function makeVatWarehouse(
   /**
    * @param {string} vatID
    * @param {unknown} setup
-   * @param {import('../types-external.js').StaticVatOptions} creationOptions
+   * @param {import('../types-internal.js').RecordedVatOptions} vatOptions
    */
-  async function loadTestVat(vatID, setup, creationOptions) {
+  async function loadTestVat(vatID, setup, vatOptions) {
     const translators = provideTranslators(vatID);
 
     const manager = await vatLoader.loadTestVat(
       vatID,
       setup,
       translators,
-      creationOptions,
+      vatOptions,
     );
 
-    const { enablePipelining = false } = creationOptions;
+    const { enablePipelining = false } = vatOptions;
 
     const result = {
       manager,

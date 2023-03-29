@@ -21,7 +21,7 @@ export function makeVatLoader(stuff) {
 
   const allowedOptions = [
     'name',
-    'managerType', // TODO: not sure we want vats to be able to control this
+    'workerOptions',
     'meterID',
     'enableDisavow',
     'enableSetup',
@@ -88,7 +88,7 @@ export function makeVatLoader(stuff) {
     assertKnownOptions(options, allowedOptions);
     const {
       meterID,
-      managerType,
+      workerOptions,
       enableSetup = false,
       enableDisavow = false,
       enablePipelining = false,
@@ -112,10 +112,11 @@ export function makeVatLoader(stuff) {
       description,
       name,
       vatSourceBundle,
-      managerType,
+      workerOptions.type,
     );
 
     const managerOptions = {
+      workerOptions,
       bundle: vatSourceBundle,
       metered: !!meterID,
       enableSetup,

@@ -8,6 +8,7 @@ import { insistVatID } from '../lib/id.js';
 import { kser, kunser } from '../lib/kmarshal.js';
 import { makeVatSlot } from '../lib/parseVatSlots.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
+import { makeWorkerOptions } from '../lib/workerOptions.js';
 import makeKernelKeeper from '../kernel/state/kernelKeeper.js';
 import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
@@ -17,6 +18,7 @@ function makeVatRootObjectSlot() {
 }
 
 export async function initializeKernel(config, kernelStorage, options = {}) {
+  await 0; // no sync prelude
   const { verbose = false } = options;
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(kernelStorage.kvStore);
@@ -82,22 +84,28 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         'critical',
         'reapInterval',
       ]);
-      creationOptions.name = name;
-      if (creationOptions.useTranscript === undefined) {
-        creationOptions.useTranscript = true;
-      }
-      if (!creationOptions.managerType) {
-        creationOptions.managerType = kernelKeeper.getDefaultManagerType();
-      }
-      if (!creationOptions.reapInterval) {
-        creationOptions.reapInterval = kernelKeeper.getDefaultReapInterval();
-      }
+      const {
+        managerType,
+        useTranscript = true,
+        reapInterval = kernelKeeper.getDefaultReapInterval(),
+        ...otherOptions
+      } = creationOptions;
+      // eslint-disable-next-line @jessie.js/no-nested-await,no-await-in-loop
+      const workerOptions = await makeWorkerOptions(kernelKeeper, managerType);
+      /** @type {import('../types-internal.js').RecordedVatOptions} */
+      const vatOptions = harden({
+        name,
+        useTranscript,
+        reapInterval,
+        workerOptions,
+        ...otherOptions,
+      });
 
       const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
       logStartup(`assigned VatID ${vatID} for genesis vat ${name}`);
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-      vatKeeper.setSourceAndOptions({ bundleID }, creationOptions);
-      vatKeeper.initializeReapCountdown(creationOptions.reapInterval);
+      vatKeeper.setSourceAndOptions({ bundleID }, vatOptions);
+      vatKeeper.initializeReapCountdown(reapInterval);
       kernelKeeper.addToAcceptanceQueue(
         harden({ type: 'startVat', vatID, vatParameters: kser(vatParameters) }),
       );

@@ -9,7 +9,6 @@ export function makeVatManagerFactory({
   vatEndowments,
   startXSnap,
   gcTools,
-  defaultManagerType,
   kernelSlog,
 }) {
   const localFactory = makeLocalVatManagerFactory({
@@ -31,7 +30,7 @@ export function makeVatManagerFactory({
   function validateManagerOptions(managerOptions) {
     assertKnownOptions(managerOptions, [
       'enablePipelining',
-      'managerType',
+      'workerOptions',
       'setup',
       'bundle',
       'metered',
@@ -70,17 +69,11 @@ export function makeVatManagerFactory({
     vatSyscallHandler,
   ) {
     validateManagerOptions(managerOptions);
-    const {
-      managerType = defaultManagerType,
-      metered,
-      enableSetup,
-    } = managerOptions;
+    const { workerOptions, enableSetup } = managerOptions;
+    const { type } = workerOptions;
 
-    if (metered && managerType !== 'local' && managerType !== 'xs-worker') {
-      console.warn(`TODO: support metered with ${managerType}`);
-    }
-    if (managerType !== 'local' && 'setup' in managerOptions) {
-      console.warn(`TODO: stop using setup() with ${managerType}`);
+    if (type !== 'local' && 'setup' in managerOptions) {
+      console.warn(`TODO: stop using setup() with ${type}`);
     }
     if (enableSetup) {
       if (managerOptions.setup) {
@@ -99,7 +92,7 @@ export function makeVatManagerFactory({
           vatSyscallHandler,
         );
       }
-    } else if (managerType === 'local') {
+    } else if (type === 'local') {
       return localFactory.createFromBundle(
         vatID,
         managerOptions.bundle,
@@ -109,7 +102,7 @@ export function makeVatManagerFactory({
       );
     }
 
-    if (managerType === 'xs-worker') {
+    if (type === 'xsnap') {
       assert(managerOptions.bundle, 'xsnap requires Bundle');
       return xsWorkerFactory.createFromBundle(
         vatID,
@@ -120,7 +113,7 @@ export function makeVatManagerFactory({
       );
     }
 
-    throw Error(`unknown type ${managerType}, not 'local' or 'xs-worker'`);
+    throw Error(`unknown type ${type}, not 'local' or 'xsnap'`);
   }
 
   return harden(vatManagerFactory);
