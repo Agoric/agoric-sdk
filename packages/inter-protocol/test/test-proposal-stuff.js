@@ -9,7 +9,7 @@ const noop = harden(() => {});
 /** @type {import('ava').TestFn<ReturnType<typeof makeTestContext>>} */
 const test = anyTest;
 
-// #region test setup, isolating ambient authority
+//#region test setup, isolating ambient authority
 const makeTestContext = t => {
   /** @param {string} specifier */
   const loadConfig = async specifier => {
@@ -40,7 +40,7 @@ const makeTestContext = t => {
 test.before(async t => {
   t.context = makeTestContext(t);
 });
-// #endregion
+//#endregion
 
 test('inter-protocol vaults proposal handles endorsedUi option', async t => {
   const proposalModule = '@agoric/inter-protocol/scripts/init-core.js';

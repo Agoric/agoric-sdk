@@ -157,7 +157,7 @@ export const makeBootstrap = (
       produce[name].reset();
     },
 
-    // #region testing supports
+    //#region testing supports
     messageVat: async ({ name, methodName, args = [] }) => {
       const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
       const { root } = vat;
@@ -185,6 +185,6 @@ export const makeBootstrap = (
       }
       return encodePassable(value);
     },
-    // #endregion
+    //#endregion
   });
 };

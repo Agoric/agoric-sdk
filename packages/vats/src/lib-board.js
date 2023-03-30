@@ -15,7 +15,7 @@ import { crc6 } from './crc.js';
 export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
-// #region Interface Guards
+//#region Interface Guards
 // TODO import from Endo
 const CapDataShape = { body: M.string(), slots: M.array() };
 const MarshalI = M.interface('Marshaller', {
@@ -38,7 +38,7 @@ const BoardKitIKit = {
   publishingMarshaller: MarshalI,
   readonlyMarshaller: MarshalI,
 };
-// #endregion
+//#endregion
 
 /**
  * For a value with a known id in the board, we can use
@@ -116,7 +116,7 @@ const initDurableBoardState = (
   };
 };
 
-// #region Marshaller utils
+//#region Marshaller utils
 // These utils are used by the {readonlyMarshaller, publishingMarshaller} facets
 // to serialize/unserialize. They can't return the marshallers themselves
 // because of the heap cost of maintaining those objects. Instead they make
@@ -229,7 +229,7 @@ const makePublishingMarshaller = state => {
   const valToSlot = val => getId(val, state);
   return makeMarshal(valToSlot, slotToVal);
 };
-// #endregion
+//#endregion
 
 /**
  * A board is a two-way mapping between objects (such as issuers,

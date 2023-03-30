@@ -12,7 +12,7 @@ import { withAmountUtils } from '../supports.js';
 const stable = withAmountUtils(makeIssuerKit('Stable'));
 const aeth = withAmountUtils(makeIssuerKit('Aeth'));
 
-// #region maxDebtForVaults
+//#region maxDebtForVaults
 /**
  * Max debt for a fixed collateral of 1_000 aeth
  *
@@ -69,9 +69,9 @@ test('negative liquidationPadding throws', t => {
     message: 'value "[-50n]" must be a natural number',
   });
 });
-// #endregion
+//#endregion
 
-// #region calculateLoanFees
+//#region calculateLoanFees
 
 /**
  * Max debt for a fixed collateral of 1_000 aeth
@@ -121,4 +121,4 @@ test('give=want', checkLoanCosts, [2_000, 1_000, 1_000], {
   toMint: 1_050,
 });
 
-// #endregion
+//#endregion

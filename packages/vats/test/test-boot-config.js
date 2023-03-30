@@ -63,7 +63,7 @@ export const pspawn =
     return { child: child || assert.fail(), exit };
   };
 
-// #region NOTE: confine ambient authority to test.before
+//#region NOTE: confine ambient authority to test.before
 const makeTestContext = async () => {
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
@@ -89,7 +89,7 @@ const makeTestContext = async () => {
 test.before(async t => {
   t.context = await makeTestContext();
 });
-// #endregion
+//#endregion
 
 test('Bootstrap SwingSet config file syntax', async t => {
   const { asset } = t.context;

@@ -218,7 +218,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
     },
     {
       helper: {
-        // #region Computed constants
+        //#region Computed constants
         collateralBrand() {
           return this.state.manager.getCollateralBrand();
         },
@@ -255,9 +255,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             },
           };
         },
-        // #endregion
+        //#endregion
 
-        // #region Phase logic
+        //#region Phase logic
         /**
          * @param {VaultPhase} newPhase
          */
@@ -282,7 +282,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             phase === Phase.LIQUIDATED ||
             Fail`to be closed a vault must be active or liquidated, not ${phase}`;
         },
-        // #endregion
+        //#endregion
 
         /**
          * Called whenever the debt is paid or created through a transaction,
