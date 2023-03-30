@@ -91,6 +91,9 @@ export const makeZoeSeatAdminFactory = baggage => {
   // the kit here. When resolveExitAndResult() is called, it saves
   // state.offerResult and resolves the promise if it exists, then removes the
   // table entry.
+  /**
+   * @typedef {WeakMap<ZCFSeat, unknown>}
+   */
   const ephemeralOfferResultStore = new WeakMap();
 
   return prepareExoClassKit(
@@ -198,17 +201,23 @@ export const makeZoeSeatAdminFactory = baggage => {
             offerResultPromise,
             offerResult => {
               pKit.resolve(offerResult);
-              ephemeralOfferResultStore.delete(facets.userSeat);
-              // The next line will fail if offerResult is not durable.
-              // The map entry is deleted above so it doesn't linger in that case.
-              state.offerResult = offerResult;
-              state.offerResultValid = true;
+              try {
+                // The next line will fail if offerResult is not durable.
+                // So for non-durable results, offerResultValid stays false and
+                // the promise stays in ephemeralOfferResultStore to be returned in getOfferResult
+                state.offerResult = offerResult;
+                state.offerResultValid = true;
+                ephemeralOfferResultStore.delete(facets.userSeat);
+              } catch (err) {
+                console.warn(
+                  `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
+                );
+              }
             },
             e => {
               pKit.reject(e);
-              ephemeralOfferResultStore.delete(facets.userSeat);
-              state.offerResult = pKit.promise;
-              state.offerResultValid = true;
+              // NB: leave the rejected promise in the ephemeralOfferResultStore
+              // because it can't go in durable state
             },
           );
 
@@ -257,7 +266,9 @@ export const makeZoeSeatAdminFactory = baggage => {
 
           if (state.offerResultValid) {
             return state.offerResult;
-          } else if (ephemeralOfferResultStore.has(facets.userSeat)) {
+          }
+
+          if (ephemeralOfferResultStore.has(facets.userSeat)) {
             return ephemeralOfferResultStore.get(facets.userSeat).promise;
           }
 
