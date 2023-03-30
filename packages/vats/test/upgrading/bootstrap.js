@@ -1,6 +1,6 @@
+import { stableFeeConfig } from '@agoric/inter-protocol/src/tokens.js';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { feeIssuerConfig } from '../../src/core/utils.js';
 
 const bundles = {
   mintHolder: 'mintHolder',
@@ -20,7 +20,7 @@ export const buildRootObject = () => {
       );
       const zoeKit = await E(vats.zoe).buildZoe(
         vatAdmin,
-        feeIssuerConfig,
+        stableFeeConfig,
         zcfBundleName,
       );
 

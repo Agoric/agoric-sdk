@@ -83,13 +83,6 @@ export const agoricNamesReserved = harden({
   },
 });
 
-/** @type { FeeIssuerConfig } */
-export const feeIssuerConfig = {
-  name: Stable.symbol,
-  assetKind: Stable.assetKind,
-  displayInfo: Stable.displayInfo,
-};
-
 /**
  * Wire up a remote between the comms vat and vattp.
  *

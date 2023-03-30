@@ -1,7 +1,11 @@
 // @ts-check
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { Stable, Stake } from '@agoric/inter-protocol/src/tokens.js';
+import {
+  stableFeeConfig,
+  Stable,
+  Stake,
+} from '@agoric/inter-protocol/src/tokens.js';
 import { BridgeId, VBankAccount, WalletName } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
@@ -9,7 +13,7 @@ import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
-import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
+import { makeMyAddressNameAdminKit } from './utils.js';
 
 const { details: X } = assert;
 
@@ -103,7 +107,7 @@ export const buildZoe = async ({
   const zcfBundleName = 'zcf'; // should match config.bundles.zcf=
   const { zoeService, feeMintAccess: fma } = await E(
     E(loadCriticalVat)('zoe'),
-  ).buildZoe(vatAdminSvc, feeIssuerConfig, zcfBundleName);
+  ).buildZoe(vatAdminSvc, stableFeeConfig, zcfBundleName);
 
   zoe.resolve(zoeService);
   const issuer = E(zoeService).getInvitationIssuer();

@@ -3,6 +3,13 @@
 /** @typedef { 'IST' | 'BLD' } TokenKeyword */
 
 /**
+ * @typedef {object} FeeIssuerConfig
+ * @property {string} name
+ * @property {AssetKind} assetKind
+ * @property {DisplayInfo} displayInfo
+ */
+
+/**
  * Use static type check and unit tests rather than runtime import
  * to avoid bundling all of ERTP just to get Stable.symbol.
  *
@@ -35,3 +42,10 @@ export const Stake = harden(
     },
   }),
 );
+
+/** @type {FeeIssuerConfig} */
+export const stableFeeConfig = {
+  name: Stable.symbol,
+  assetKind: Stable.assetKind,
+  displayInfo: Stable.displayInfo,
+};
