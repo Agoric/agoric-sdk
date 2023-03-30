@@ -211,9 +211,9 @@ export const makeInterCommand = async (
         // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
         const { offerStatuses } = await storedWalletState(from, minHeight);
         const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
-        if (!offerStatus) {
-          throw Error('retry');
-        }
+        if (!offerStatus) throw Error('retry');
+        harden(offerStatus);
+        return offerStatus;
       };
       return pollBlocks({ ...networkConfig, execFileSync, delay })(lookup);
     };
@@ -235,7 +235,7 @@ export const makeInterCommand = async (
   liquidationCmd
     .command('status')
     .description(
-      `show amount liquidating, oracle price
+      `show amount liquidating, vault manager price
 
 For example:
 
@@ -278,10 +278,15 @@ For example:
 
   bidCmd
     .command('by-price')
-    .description('Print an offer to bid collateral by price.')
-    .requiredOption('--price [number]', 'bid price (IST/Collateral)', Number)
-    .requiredOption('--give [number]', 'IST to bid', Number)
-    .option('--want [number]', 'Collateral required for the bid', Number)
+    .description('Place a bid on collateral by price.')
+    .requiredOption(
+      '--from <address>',
+      'wallet address literal or name',
+      normalizeAddress,
+    )
+    .requiredOption('--price <number>', 'bid price (IST/Collateral)', Number)
+    .requiredOption('--give <number>', 'IST to bid', Number)
+    .option('--want <number>', 'Collateral required for the bid', Number)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
@@ -291,18 +296,35 @@ For example:
        *   give: number, want?: number,
        *   collateralBrand: string,
        *   offerId: string,
+       *   from: string,
        * }} opts
        */
       async ({ collateralBrand, ...opts }) => {
-        const { agoricNames } = await rpcTools();
+        const { agoricNames, networkConfig, pollOffer } = await rpcTools();
+        const io = { ...networkConfig, execFileSync, delay, stdout };
+
         const offer = Offers.auction.Bid(agoricNames.brand, {
           collateralBrandKey: collateralBrand,
           ...opts,
         });
-        outputActionAndHint(
+
+        const result = await doAction(
           { method: 'executeOffer', offer },
-          { stdout, stderr },
+          { from: opts.from, verbose: false, ...io },
         );
+        if (!result) return;
+        const { timestamp, txhash, height } = result;
+        console.error('bid is broadcast:');
+        show({ timestamp, height, offerId: opts.offerId, txhash });
+        const found = await pollOffer(opts.from, opts.offerId, height);
+        // TODO: command to wait 'till bid exits?
+        const bid = coerceBid(found, agoricNames, console.warn);
+        if (!bid) {
+          console.warn('malformed bid', found);
+          return;
+        }
+        const info = fmtBid(bid, values(agoricNames.vbankAsset));
+        show(info);
       },
     );
 
@@ -326,7 +348,7 @@ For example:
     )
     .requiredOption('--give [number]', 'IST to bid', Number)
     .option('--want [number]', 'Collateral required for the bid', Number)
-    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
+    .option('--collateral-brand [string]', 'Collateral brand key', 'IbcATOM')
     .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
       /**
@@ -352,7 +374,7 @@ For example:
 
   bidCmd
     .command('cancel')
-    .description('Exit a bid offer')
+    .description('Try to exit a bid offer')
     .argument('id', 'offer id (as from bid list)')
     .requiredOption(
       '--from <address>',
@@ -446,7 +468,7 @@ $ inter bid list --from my-acct
         // console.debug(offerStatus.invitationSpec);
         if (!matches(offerStatus.invitationSpec, bidInvitationShape)) continue;
 
-        const bid = coerceBid(offerStatus, console.warn);
+        const bid = coerceBid(offerStatus, agoricNames, console.warn);
         if (!bid) continue;
 
         const info = fmtBid(bid, values(agoricNames.vbankAsset));
@@ -461,8 +483,8 @@ $ inter bid list --from my-acct
     .command('add')
     .description('add collateral to the reserve')
     .requiredOption('--give <number>', 'Collateral to give', Number)
-    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
-    .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
+    .option('--collateral-brand <string>', 'Collateral brand key', 'IbcATOM')
+    .option('--offerId <string>', 'Offer id', String, `addCollateral-${now()}`)
     .action(
       /**
        * @param {{
