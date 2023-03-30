@@ -12,7 +12,9 @@ import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
-const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
+const { agoricNames, readLatestHead } = await makeRpcUtils({
+  fetch,
+});
 
 /**
  *
@@ -41,7 +43,9 @@ export const makeVaultsCommand = async logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const current = await getCurrent(opts.from, fromBoard, { vstorage });
+      const current = await getCurrent(opts.from, {
+        readLatestHead,
+      });
 
       const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
         ([_offerId, pathmap]) => pathmap.vault,
@@ -94,7 +98,7 @@ export const makeVaultsCommand = async logger => {
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
-        getCurrent(opts.from, fromBoard, { vstorage }),
+        getCurrent(opts.from, { readLatestHead }),
       );
 
       const offer = Offers.vaults.AdjustBalances(
@@ -129,7 +133,7 @@ export const makeVaultsCommand = async logger => {
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
-        getCurrent(opts.from, fromBoard, { vstorage }),
+        getCurrent(opts.from, { readLatestHead }),
       );
 
       const offer = Offers.vaults.CloseVault(

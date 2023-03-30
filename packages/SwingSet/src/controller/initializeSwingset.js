@@ -271,7 +271,7 @@ function sortObjectProperties(obj, firsts = []) {
   const sorted = [...firsts, ...Object.keys(obj).sort()];
   const result = {};
   for (const prop of sorted) {
-    if (prop && result[prop] === undefined && obj[prop] !== undefined) {
+    if (prop && !Object.hasOwn(result, prop) && Object.hasOwn(obj, prop)) {
       result[prop] = obj[prop];
     }
   }

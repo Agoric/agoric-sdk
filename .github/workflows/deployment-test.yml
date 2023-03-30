@@ -86,6 +86,7 @@ jobs:
           make install
         working-directory: /usr/src/agoric-sdk
       - run: /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh
+        timeout-minutes: 90
         working-directory: /usr/src/agoric-sdk
         env:
           NETWORK_NAME: chaintest

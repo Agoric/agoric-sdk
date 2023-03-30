@@ -142,10 +142,8 @@ function exerciseSetOperations(t, collectionName, testStore) {
   t.falsy(testStore.has(53));
   t.falsy(testStore.has(somethingMissing));
 
-  t.throws(
-    () => testStore.add(47),
-    m(`key 47 already registered in collection "${collectionName}"`),
-  );
+  t.truthy(testStore.has(47));
+  t.notThrows(() => testStore.add(47));
 
   testStore.delete(47);
   t.falsy(testStore.has(47));

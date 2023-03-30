@@ -24,6 +24,7 @@ export const bootstrapMethods = {
   resetItem: 'resetItem',
   messageVat: 'messageVat',
   messageVatObject: 'messageVatObject',
+  messageVatObjectSendOnly: 'messageVatObjectSendOnly',
   awaitVatObject: 'awaitVatObject',
 };
 
@@ -100,6 +101,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
 
   /**
    * @type {( (presence: unknown) => Record<string, (...args: any) => Promise<any>> ) & {
+   *   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>,
    *   get: (presence: unknown) => Record<string, Promise<any>>,
    *   vat: (name: string) => Record<string, (...args: any) => Promise<any>>,
    *   rawBoot: Record<string, (...args: any) => Promise<any>>,
@@ -126,6 +128,18 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
     get: (_t, methodName, _rx) =>
       harden((...args) => runMethod(methodName, args)),
   });
+  EV.sendOnly = presence =>
+    new Proxy(
+      {},
+      {
+        get:
+          (_t, methodName, _rx) =>
+          (...args) =>
+            runMethod('messageVatObjectSendOnly', [
+              { presence, methodName, args },
+            ]),
+      },
+    );
   EV.get = presence =>
     new Proxy(harden({}), {
       get: (_t, pathElement, _rx) =>
@@ -160,7 +174,7 @@ export const makeWalletFactoryDriver = async (
 
   /**
    * @param {string} walletAddress
-   * @param {unknown} walletPresence
+   * @param {import('@agoric/smart-wallet/src/smartWallet.js').SmartWallet} walletPresence
    */
   const makeWalletDriver = (walletAddress, walletPresence) => ({
     /**
@@ -172,8 +186,26 @@ export const makeWalletFactoryDriver = async (
         method: 'executeOffer',
         offer,
       });
-
       return EV(walletPresence).handleBridgeAction(offerCapData, true);
+    },
+    /**
+     * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+     * @returns {void}
+     */
+    sendOffer(offer) {
+      const offerCapData = marshaller.serialize({
+        method: 'executeOffer',
+        offer,
+      });
+
+      return EV.sendOnly(walletPresence).handleBridgeAction(offerCapData, true);
+    },
+    tryExitOffer(offerId) {
+      const capData = marshaller.serialize({
+        method: 'tryExitOffer',
+        offerId,
+      });
+      return EV(walletPresence).handleBridgeAction(capData, true);
     },
     /**
      * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
@@ -184,15 +216,25 @@ export const makeWalletFactoryDriver = async (
      */
     executeOfferMaker(makeOffer, firstArg, secondArg) {
       const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
-
       return this.executeOffer(offer);
+    },
+    /**
+     * @template {(brands: Record<string, Brand>, ...rest: any) => import('@agoric/smart-wallet/src/offers.js').OfferSpec} M offer maker function
+     * @param {M} makeOffer
+     * @param {Parameters<M>[1]} firstArg
+     * @param {Parameters<M>[2]} [secondArg]
+     * @returns {void}
+     */
+    sendOfferMaker(makeOffer, firstArg, secondArg) {
+      const offer = makeOffer(agoricNamesRemotes.brand, firstArg, secondArg);
+      this.sendOffer(offer);
     },
     /**
      * @returns {import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord}
      */
     getLatestUpdateRecord() {
       const key = `published.wallet.${walletAddress}`;
-      const lastWalletStatus = JSON.parse(storage.data.get(key).at(-1));
+      const lastWalletStatus = JSON.parse(storage.data.get(key)?.at(-1));
       return JSON.parse(lastWalletStatus.body);
     },
   });

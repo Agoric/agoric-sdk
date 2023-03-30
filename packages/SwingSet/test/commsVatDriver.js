@@ -238,7 +238,7 @@ function encodeCapdata(from) {
         } else if (Array.isArray(value)) {
           return value.map(x => encodeValue(x));
         } else {
-          assert.fail('cannot use object values in test script');
+          throw Fail`cannot use object values in test script`;
         }
       case 'string':
         if (value[0] === '@') {
