@@ -1,17 +1,17 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@agoric/store/tools.js';
-import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
 const { ownKeys } = Reflect;
-const { details: X, quote: q } = assert;
+const { defineProperty, getOwnPropertyNames, hasOwn, getPrototypeOf } = Object;
 
 // import { kdebug } from './kdebug.js';
 
@@ -347,7 +347,7 @@ export function makeVirtualObjectManager(
     }
   }
 
-  Object.defineProperty(VirtualObjectAwareWeakMap, Symbol.toStringTag, {
+  defineProperty(VirtualObjectAwareWeakMap, Symbol.toStringTag, {
     value: 'WeakMap',
     writable: false,
     enumerable: false,
@@ -416,7 +416,7 @@ export function makeVirtualObjectManager(
     }
   }
 
-  Object.defineProperty(VirtualObjectAwareWeakSet, Symbol.toStringTag, {
+  defineProperty(VirtualObjectAwareWeakSet, Symbol.toStringTag, {
     value: 'WeakSet',
     writable: false,
     enumerable: false,
@@ -598,20 +598,21 @@ export function makeVirtualObjectManager(
     let contextMapTemplate;
     let prototypeTemplate;
 
+    const statePrototype = {}; // Not frozen yet
+    const stateToInnerSelfMap = new WeakMap(); // from state to innerSelf
+
     harden(stateShape);
     stateShape === undefined ||
       passStyleOf(stateShape) === 'copyRecord' ||
-      assert.fail(X`A stateShape must be a copyRecord: ${q(stateShape)}`);
+      Fail`A stateShape must be a copyRecord: ${q(stateShape)}`;
     assertPattern(stateShape);
 
     const serializeSlot = (slotState, prop) => {
       if (stateShape !== undefined) {
-        hasOwnPropertyOf(stateShape, prop) ||
-          assert.fail(
-            X`State must only have fields described by stateShape: ${q(
-              ownKeys(stateShape),
-            )}`,
-          );
+        hasOwn(stateShape, prop) ||
+          Fail`State must only have fields described by stateShape: ${q(
+            ownKeys(stateShape),
+          )}`;
         mustMatch(slotState, stateShape[prop], prop);
       }
       return serialize(slotState);
@@ -620,16 +621,63 @@ export function makeVirtualObjectManager(
     const unserializeSlot = (slotData, prop) => {
       const slotValue = unserialize(slotData);
       if (stateShape !== undefined) {
-        hasOwnPropertyOf(stateShape, prop) ||
-          assert.fail(
-            X`State only has fields described by stateShape: ${q(
-              ownKeys(stateShape),
-            )}`,
-          );
+        hasOwn(stateShape, prop) ||
+          Fail`State only has fields described by stateShape: ${q(
+            ownKeys(stateShape),
+          )}`;
         mustMatch(slotValue, stateShape[prop]);
       }
       return slotValue;
     };
+
+    const getInnerSelf = state => {
+      stateToInnerSelfMap.has(state) ||
+        Fail`state accessors can only be applied to state`;
+      let innerSelf = stateToInnerSelfMap.get(state);
+      if (innerSelf.rawState) {
+        cache.refresh(innerSelf);
+      } else {
+        innerSelf = cache.lookup(innerSelf.baseRef, true);
+        stateToInnerSelfMap.set(state, innerSelf);
+      }
+      return innerSelf;
+    };
+
+    const makeFieldDescriptor = prop => {
+      return harden({
+        get() {
+          const innerSelf = getInnerSelf(this);
+          return unserializeSlot(innerSelf.rawState[prop], prop);
+        },
+        set(value) {
+          const innerSelf = getInnerSelf(this);
+          const before = innerSelf.rawState[prop];
+          const after = serializeSlot(value, prop);
+          assertAcceptableSyscallCapdataSize([after]);
+          if (isDurable) {
+            after.slots.forEach((vref, index) => {
+              vrm.isDurable(vref) ||
+                Fail`value for ${q(prop)} is not durable at slot ${q(
+                  index,
+                )} of ${after}`;
+            });
+          }
+          vrm.updateReferenceCounts(before.slots, after.slots);
+          innerSelf.rawState[prop] = after;
+          cache.markDirty(innerSelf);
+        },
+        enumerable: true,
+        configurable: false,
+      });
+    };
+
+    if (stateShape !== undefined) {
+      for (const prop of ownKeys(stateShape)) {
+        defineProperty(statePrototype, prop, makeFieldDescriptor(prop));
+      }
+    }
+
+    harden(statePrototype);
 
     const facetiousness = assessFacetiousness(behavior);
     switch (facetiousness) {
@@ -648,7 +696,7 @@ export function makeVirtualObjectManager(
       }
       case 'many': {
         assert(multifaceted);
-        facetNames = Object.getOwnPropertyNames(behavior).sort();
+        facetNames = getOwnPropertyNames(behavior).sort();
         contextMapTemplate = objectMap(behavior, () => new WeakMap());
         prototypeTemplate = defendPrototypeKit(
           tag,
@@ -717,37 +765,20 @@ export function makeVirtualObjectManager(
         }
       }
 
-      const state = {};
+      const state = { __proto__: statePrototype };
       if (!initializing) {
         ensureState();
       }
-      for (const prop of Object.getOwnPropertyNames(innerSelf.rawState)) {
-        Object.defineProperty(state, prop, {
-          get: () => {
-            ensureState();
-            return unserializeSlot(innerSelf.rawState[prop], prop);
-          },
-          set: value => {
-            ensureState();
-            const before = innerSelf.rawState[prop];
-            const after = serializeSlot(value, prop);
-            assertAcceptableSyscallCapdataSize([after]);
-            if (isDurable) {
-              after.slots.forEach((vref, index) => {
-                vrm.isDurable(vref) ||
-                  Fail`value for ${q(prop)} is not durable at slot ${q(
-                    index,
-                  )} of ${after}`;
-              });
-            }
-            vrm.updateReferenceCounts(before.slots, after.slots);
-            innerSelf.rawState[prop] = after;
-            cache.markDirty(innerSelf);
-          },
-          enumerable: true,
-        });
+      for (const prop of ownKeys(innerSelf.rawState)) {
+        if (stateShape === undefined) {
+          defineProperty(state, prop, makeFieldDescriptor(prop));
+        } else {
+          hasOwn(stateShape, prop) ||
+            Fail`State had unexpected property ${q(prop)}`;
+        }
       }
       harden(state);
+      stateToInnerSelfMap.set(state, innerSelf);
 
       if (initializing) {
         cache.remember(innerSelf);
@@ -820,7 +851,7 @@ export function makeVirtualObjectManager(
 
       const initialData = init ? init(...args) : {};
       const rawState = {};
-      for (const prop of Object.getOwnPropertyNames(initialData)) {
+      for (const prop of ownKeys(initialData)) {
         const data = serializeSlot(initialData[prop], prop);
         assertAcceptableSyscallCapdataSize([data]);
         if (isDurable) {
@@ -930,8 +961,8 @@ export function makeVirtualObjectManager(
     raw || Fail`unknown kind ID ${kindID}`;
     const durableKindDescriptor = JSON.parse(raw);
     const kindHandle = Far('kind', {});
-    linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);
-    unweakable.add(Object.getPrototypeOf(kindHandle));
+    linkToCohort.set(getPrototypeOf(kindHandle), kindHandle);
+    unweakable.add(getPrototypeOf(kindHandle));
     kindHandleToID.set(kindHandle, kindID);
     // we load the descriptor (including .nextInstanceID) every time
     // the vat makes a new DurableKindHandle representative (during
@@ -955,8 +986,8 @@ export function makeVirtualObjectManager(
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
     // @ts-ignore cast
     const kindHandle = Far('kind', {});
-    linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);
-    unweakable.add(Object.getPrototypeOf(kindHandle));
+    linkToCohort.set(getPrototypeOf(kindHandle), kindHandle);
+    unweakable.add(getPrototypeOf(kindHandle));
     kindHandleToID.set(kindHandle, kindID);
     kindIDToDescriptor.set(kindID, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
