@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 
@@ -66,10 +66,8 @@ export default function makeDeviceManager(
     // maybe add state utilities
     dispatch = deviceNamespace.buildDevice(tools, endowments);
   } else {
-    assert(
-      typeof deviceNamespace.buildRootDeviceNode === 'function',
-      `device ${deviceName} lacks buildRootDeviceNode`,
-    );
+    typeof deviceNamespace.buildRootDeviceNode === 'function' ||
+      Fail`device ${deviceName} lacks buildRootDeviceNode`;
 
     // Setting up the device runtime gives us back the device's dispatch object
     dispatch = makeDeviceSlots(

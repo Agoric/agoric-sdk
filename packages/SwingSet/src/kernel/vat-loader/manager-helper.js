@@ -141,7 +141,7 @@ function makeManagerKit(
    * @param {(delivery: VatDeliveryObject) => Promise<VatDeliveryResult>} dtw
    */
   function setDeliverToWorker(dtw) {
-    assert(!deliverToWorker, `setDeliverToWorker called twice`);
+    assert(!deliverToWorker, 'setDeliverToWorker called twice');
     deliverToWorker = dtw;
   }
 
@@ -171,7 +171,7 @@ function makeManagerKit(
   }
 
   async function replayOneDelivery(delivery, expectedSyscalls, deliveryNum) {
-    assert(transcriptManager, `delivery replay with no transcript`);
+    assert(transcriptManager, 'delivery replay with no transcript');
     transcriptManager.startReplay();
     transcriptManager.startReplayDelivery(expectedSyscalls);
 

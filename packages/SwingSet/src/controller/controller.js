@@ -269,11 +269,8 @@ export async function makeSwingsetController(
     assert.typeof(endoZipBase64Sha512, 'string');
     const bundleID = `b1-${endoZipBase64Sha512}`;
     if (allegedBundleID !== undefined) {
-      assert.equal(
-        bundleID,
-        allegedBundleID,
-        `alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`,
-      );
+      bundleID === allegedBundleID ||
+        Fail`alleged bundleID ${allegedBundleID} does not match actual ${bundleID}`;
     }
     await kernel.installBundle(bundleID, bundle);
     return bundleID;

@@ -261,7 +261,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
     } else if (type === 'bundle') {
       return bundleStore.exportBundle(name);
     } else {
-      assert.fail(`invalid artifact type ${q(type)}`);
+      throw Fail`invalid artifact type ${q(type)}`;
     }
   }
 

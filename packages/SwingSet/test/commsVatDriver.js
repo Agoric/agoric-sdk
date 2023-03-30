@@ -251,7 +251,7 @@ function encodeCapdata(from) {
       case 'number':
         return value;
       default:
-        assert.fail(`cannot use ${typestr} values in test script`);
+        throw Fail`cannot use ${typestr} values in test script`;
     }
   }
 
@@ -693,7 +693,7 @@ export function commsVatDriver(t, verbose = false) {
         break;
       }
       default: {
-        assert.fail(`illegal op ${op}`);
+        throw Fail`illegal op ${op}`;
       }
     }
   }

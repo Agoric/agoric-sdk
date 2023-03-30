@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import {
   flipRemoteSlot,
   insistRemoteType,
@@ -51,7 +51,7 @@ export function makeInbound(state) {
     const lref = mapFromRemote(rref);
     lref || Fail`${rref} must already be in remote ${rname(remote)}`;
     if (parseRemoteSlot(rref).type === 'object') {
-      assert(isReachable(lref), `remote sending to unreachable ${lref}`);
+      isReachable(lref) || Fail`remote sending to unreachable ${lref}`;
     }
     return lref;
   }
@@ -60,10 +60,8 @@ export function makeInbound(state) {
     // The index must be allocated by them. If we allocated it, it should
     // have been in our table already, and the fact that it isn't means
     // they're reaching for something we haven't given them.
-    assert(
-      !parseRemoteSlot(roid).allocatedByRecipient,
-      `I don't remember giving ${roid} to remote ${rname(remote)}`,
-    );
+    !parseRemoteSlot(roid).allocatedByRecipient ||
+      Fail`I don't remember giving ${roid} to remote ${rname(remote)}`;
 
     // So this must be a new import. Allocate a new vat object for it, which
     // will be the local machine's proxy for use by all other local vats, as
@@ -77,10 +75,8 @@ export function makeInbound(state) {
   }
 
   function addLocalPromiseForRemote(remote, rpid) {
-    assert(
-      !parseRemoteSlot(rpid).allocatedByRecipient,
-      `I don't remember giving ${rpid} to remote ${rname(remote)}`,
-    );
+    !parseRemoteSlot(rpid).allocatedByRecipient ||
+      Fail`I don't remember giving ${rpid} to remote ${rname(remote)}`;
     // allocate a new lpNN, remember them as the decider, add to clist
     const lpid = state.allocatePromise();
     state.changeDeciderToRemote(lpid, remote.remoteID());
@@ -122,7 +118,7 @@ export function makeInbound(state) {
         const isImportFromComms = false;
         remote.setReachable(lref, isImportFromComms);
       }
-      assert(remote.isReachable(lref), `remote using unreachable ${lref}`);
+      remote.isReachable(lref) || Fail`remote using unreachable ${lref}`;
     }
 
     return lref;

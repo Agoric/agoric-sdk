@@ -94,7 +94,9 @@ export function makeVatKeeper(
 
   function getRequired(key) {
     const value = kvStore.get(key);
-    assert(value !== undefined, `missing: ${key}`);
+    if (value === undefined) {
+      throw Fail`missing: ${key}`;
+    }
     return value;
   }
 
@@ -128,16 +130,15 @@ export function makeVatKeeper(
   }
 
   function initializeReapCountdown(count) {
-    assert(count === 'never' || isNat(count), `bad reapCountdown ${count}`);
+    count === 'never' || isNat(count) || Fail`bad reapCountdown ${count}`;
     kvStore.set(`${vatID}.reapInterval`, `${count}`);
     kvStore.set(`${vatID}.reapCountdown`, `${count}`);
   }
 
   function updateReapInterval(reapInterval) {
-    assert(
-      reapInterval === 'never' || isNat(reapInterval),
-      `bad reapInterval ${reapInterval}`,
-    );
+    reapInterval === 'never' ||
+      isNat(reapInterval) ||
+      Fail`bad reapInterval ${reapInterval}`;
     kvStore.set(`${vatID}.reapInterval`, `${reapInterval}`);
     if (reapInterval === 'never') {
       kvStore.set(`${vatID}.reapCountdown`, 'never');
@@ -272,13 +273,13 @@ export function makeVatKeeper(
     } = options;
     assert(
       !(required && requireNew),
-      `'required' and 'requireNew' are mutually exclusive`,
+      "'required' and 'requireNew' are mutually exclusive",
     );
     typeof vatSlot === 'string' || Fail`non-string vatSlot: ${vatSlot}`;
     const { type, allocatedByVat } = parseVatSlot(vatSlot);
     const vatKey = `${vatID}.c.${vatSlot}`;
     if (!kvStore.has(vatKey)) {
-      assert(!required, `vref ${vatSlot} not in clist`);
+      !required || Fail`vref ${vatSlot} not in clist`;
       if (allocatedByVat) {
         let kernelSlot;
         if (type === 'object') {
@@ -351,7 +352,7 @@ export function makeVatKeeper(
     assert.typeof(kernelSlot, 'string', 'non-string kernelSlot');
     const kernelKey = `${vatID}.c.${kernelSlot}`;
     if (!kvStore.has(kernelKey)) {
-      assert(!required, `kref ${kernelSlot} not in clist`);
+      !required || Fail`kref ${kernelSlot} not in clist`;
       const { type } = parseKernelSlot(kernelSlot);
 
       let id;
@@ -588,8 +589,7 @@ export function makeVatKeeper(
       const slot = k.slice(prefix.length);
       if (!slot.startsWith('k')) {
         const vatSlot = slot;
-        const kernelSlot =
-          kvStore.get(k) || assert.fail('getNextKey ensures get');
+        const kernelSlot = kvStore.get(k) || Fail`getNextKey ensures get`;
         /** @type { [string, string, string] } */
         const item = [kernelSlot, vatID, vatSlot];
         res.push(item);

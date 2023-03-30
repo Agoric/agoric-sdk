@@ -1,6 +1,6 @@
 // @ts-check
 
-import { assert } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 /**
  * Iterate over keys with a given prefix, in lexicographic order,
@@ -45,7 +45,7 @@ function* enumerateNumericPrefixedKeys(kvStore, prefix) {
 
 export function* getPrefixedValues(kvStore, prefix) {
   for (const key of enumerateNumericPrefixedKeys(kvStore, prefix)) {
-    yield kvStore.get(key) || assert.fail('enumerate ensures get');
+    yield kvStore.get(key) || Fail`enumerate ensures get`;
   }
 }
 

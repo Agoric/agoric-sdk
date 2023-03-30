@@ -277,7 +277,7 @@ export function makeState(syscall) {
    * @param {string} mode  Reference type
    */
   function incrementRefCount(lref, _tag, mode = 'data') {
-    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
+    referenceModes.includes(mode) || Fail`unknown reference mode ${mode}`;
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       const refCount = parseInt(store.get(`${lref}.refCount`), 10) + 1;
@@ -303,7 +303,7 @@ export function makeState(syscall) {
    * @throws if this tries to decrement a reference count below zero.
    */
   function decrementRefCount(lref, tag, mode = 'data') {
-    assert(referenceModes.includes(mode), `unknown reference mode ${mode}`);
+    referenceModes.includes(mode) || Fail`unknown reference mode ${mode}`;
     const { type } = parseLocalSlot(lref);
     if (type === 'promise') {
       let refCount = parseInt(store.get(`${lref}.refCount`), 10);
@@ -582,29 +582,19 @@ export function makeState(syscall) {
 
   function insistDeciderIsRemote(lpid, remoteID) {
     const decider = store.getRequired(`${lpid}.decider`);
-    assert.equal(
-      decider,
-      remoteID,
-      `${lpid} is decided by ${decider}, not ${remoteID}`,
-    );
+    decider === remoteID ||
+      Fail`${lpid} is decided by ${decider}, not ${remoteID}`;
   }
 
   function insistDeciderIsComms(lpid) {
     const decider = store.getRequired(`${lpid}.decider`);
-    assert.equal(
-      decider,
-      COMMS,
-      `${decider} is the decider for ${lpid}, not me`,
-    );
+    decider === COMMS || Fail`${decider} is the decider for ${lpid}, not me`;
   }
 
   function insistDeciderIsKernel(lpid) {
     const decider = store.getRequired(`${lpid}.decider`);
-    assert.equal(
-      decider,
-      KERNEL,
-      `${decider} is the decider for ${lpid}, not kernel`,
-    );
+    decider === KERNEL ||
+      Fail`${decider} is the decider for ${lpid}, not kernel`;
   }
 
   // Decision authority always transfers through the comms vat, so the only
@@ -711,7 +701,7 @@ export function makeState(syscall) {
   }
 
   function addRemote(name, transmitterID) {
-    assert(/^[-\w.+]+$/.test(name), `not a valid remote name: ${name}`);
+    /^[-\w.+]+$/.test(name) || Fail`not a valid remote name: ${name}`;
     const nameKey = `rname.${name}`;
     !store.get(nameKey) || Fail`remote name ${name} already in use`;
 

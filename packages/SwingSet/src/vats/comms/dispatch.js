@@ -1,4 +1,4 @@
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { insistMessage } from '../../lib/message.js';
 import { makeState } from './state.js';
@@ -120,11 +120,10 @@ export function buildCommsDispatch(syscall, _state, _helpers, _vatPowers) {
     // crank).  The resulting abrupt comms vat termination should serve as a
     // diagnostic signal that we have a bug that must be corrected.
 
-    methargs.slots.forEach(s =>
-      assert(
-        !state.hasMetaObject(s),
-        X`comms meta-object ${s} not allowed in message args`,
-      ),
+    methargs.slots.forEach(
+      s =>
+        !state.hasMetaObject(s) ||
+        Fail`comms meta-object ${s} not allowed in message args`,
     );
     return sendFromKernel(target, methargs, result);
   }

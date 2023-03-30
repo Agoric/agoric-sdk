@@ -1,4 +1,4 @@
-import { assert, details as X, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@agoric/assert';
 import {
   zeroPad,
   makeEncodePassable,
@@ -42,10 +42,8 @@ function matchAny(patt) {
 }
 
 function throwNotDurable(value, slotIndex, serializedValue) {
-  assert.fail(
-    // prettier-ignore
-    X`value is not durable: ${value} at slot ${q(slotIndex)} of ${serializedValue.body}`,
-  );
+  // prettier-ignore
+  Fail`value is not durable: ${value} at slot ${q(slotIndex)} of ${serializedValue.body}`;
 }
 
 export function makeCollectionManager(
@@ -199,7 +197,7 @@ export function makeCollectionManager(
   ) {
     assert.typeof(kindName, 'string');
     const kindInfo = storeKindInfo[kindName];
-    assert(kindInfo, `unknown collection kind ${kindName}`);
+    kindInfo || Fail`unknown collection kind ${kindName}`;
     const { hasWeakKeys, durable } = kindInfo;
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
@@ -646,7 +644,7 @@ export function makeCollectionManager(
   function storeSizeInternal(vobjID) {
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
-    assert(kindName, `unknown kind ID ${id}`);
+    kindName || Fail`unknown kind ID ${id}`;
     const collection = summonCollectionInternal(false, 'test', subid, kindName);
     return collection.sizeInternal();
   }
