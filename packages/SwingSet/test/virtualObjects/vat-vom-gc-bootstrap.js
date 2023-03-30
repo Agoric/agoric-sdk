@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   // eslint thinks 'other' is unused, but eslint is wrong.

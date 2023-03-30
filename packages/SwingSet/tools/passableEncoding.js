@@ -1,5 +1,5 @@
 import { assert } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
+import { E } from '@endo/far';
 import { isObject, makeMarshal } from '@endo/marshal';
 
 const { Fail, quote: q } = assert;
