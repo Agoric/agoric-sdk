@@ -1082,3 +1082,21 @@ test('bid on unregistered collateral', async t => {
     { message: 'No book for brand "[Alleged: Collateral brand]"' },
   );
 });
+
+test('bid zero', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  await driver.setupCollateralAuction(collateral, collateral.make(300n));
+
+  await t.throwsAsync(
+    driver.bidForCollateralSeat(
+      currency.make(0n),
+      collateral.make(200n), // re-use this brand, which isn't collateral
+    ),
+    {
+      message:
+        '"new bid" proposal: give: Currency: value: "[0n]" - Must be >= "[1n]"',
+    },
+  );
+});
