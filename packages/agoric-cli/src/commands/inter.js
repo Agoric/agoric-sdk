@@ -134,12 +134,33 @@ export const makeInterCommand = async (
       await makeRpcUtils({ fetch }, networkConfig).catch(err => {
         throw new CommanderError(1, 'RPC_FAIL', err.message);
       });
+
+    const storedWalletState = async from => {
+      const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+      const history = await vstorage.readFully(`published.wallet.${from}`);
+
+      /** @type {{ Invitation: Brand<'set'> }} */
+      // @ts-expect-error XXX how to narrow AssetKind to set?
+      const { Invitation } = agoricNames.brand;
+      const coalescer = makeWalletStateCoalescer(Invitation);
+      // update with oldest first
+      for (const txt of history.reverse()) {
+        const { body, slots } = JSON.parse(txt);
+        const record = m.unserialize({ body, slots });
+        coalescer.update(record);
+      }
+      const coalesced = coalescer.state;
+      return coalesced;
+    };
+
     return {
       networkConfig,
       agoricNames,
       fromBoard,
       vstorage,
       readLatestHead,
+      storedWalletState,
     };
   };
 
@@ -334,22 +355,8 @@ $ inter bid list --from my-acct
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, vstorage, fromBoard } = await rpcTools();
-      const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-      const history = await vstorage.readFully(`published.wallet.${opts.from}`);
-
-      /** @type {{ Invitation: Brand<'set'> }} */
-      // @ts-expect-error XXX how to narrow AssetKind to set?
-      const { Invitation } = agoricNames.brand;
-      const coalescer = makeWalletStateCoalescer(Invitation);
-      // update with oldest first
-      for (const txt of history.reverse()) {
-        const { body, slots } = JSON.parse(txt);
-        const record = m.unserialize({ body, slots });
-        coalescer.update(record);
-      }
-      const coalesced = coalescer.state;
+      const { agoricNames, storedWalletState } = await rpcTools();
+      const coalesced = await storedWalletState(opts.from);
       const bidInvitationShape = harden({
         source: 'agoricContract',
         instancePath: ['auctioneer'],
