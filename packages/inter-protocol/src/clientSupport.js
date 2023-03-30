@@ -60,9 +60,6 @@ const makeVaultProposal = (brands, opts) => {
 const makeOpenOffer = (brands, opts) => {
   const proposal = makeVaultProposal(brands, opts);
 
-  console.warn('vaults open give', proposal.give);
-  console.warn('vaults open want', proposal.want);
-
   // NB: not really a Proposal because the brands are not remotes
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
   // mustMatch(harden(proposal), ProposalShape);
@@ -114,7 +111,6 @@ const makeAdjustOffer = (brands, opts, previousOffer) => {
  */
 const makeCloseOffer = (brands, opts, previousOffer) => {
   const proposal = makeVaultProposal(brands, opts);
-  console.warn('vaults close give', proposal.give);
 
   return {
     id: opts.offerId,
@@ -191,9 +187,6 @@ const makePsmSwapOffer = (instance, brands, opts) => {
     // @ts-expect-error please update types. Not sure where pair goees.
     opts.pair[1],
   );
-
-  console.warn('psm spend give', proposal.give);
-  console.warn('psm spend want', proposal.want);
 
   // NB: not really a Proposal because the brands are not remotes
   // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
