@@ -17,25 +17,27 @@ import { vstr } from '../util.js';
 test.serial('exercise cache', async t => {
   const config = {
     includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
+    defaultManagerType: 'xs-worker', // for stability against GC
+    defaultReapInterval: 1, // for explicitness (kernel defaults to 1 anyways)
+    // no bootstrap, to remove bootstrap(vats), to remove noise of GC drops
+    // bootstrap: 'bootstrap',
     vats: {
-      bootstrap: {
-        sourceSpec: new URL('vat-representative-bootstrap.js', import.meta.url)
-          .pathname,
+      representatives: {
+        sourceSpec: new URL('vat-representatives.js', import.meta.url).pathname,
       },
     },
   };
 
   const log = [];
 
-  const expectedVatID = 'v1';
+  let vatID; // set after initialization finishes
   const kernelStorage = initSwingStore().kernelStorage;
   const kvStore = kernelStorage.kvStore;
   function vsKey(key) {
     // ignore everything except vatStores on the one vat under test
     // (especially ignore comms, which performs vatstore operations during
     // startup)
-    return key.startsWith(`${expectedVatID}.`) && key.match(/^\w+\.vs\./);
+    return vatID && key.startsWith(`${vatID}.`) && key.match(/^\w+\.vs\./);
   }
   const loggingKVStore = {
     has: key => kvStore.has(key),
@@ -64,15 +66,13 @@ test.serial('exercise cache', async t => {
     ...kernelStorage,
     kvStore: loggingKVStore,
   };
-
-  const bootstrapResult = await initializeSwingset(
-    config,
-    [],
-    loggingKernelStorage,
-  );
+  // TODO: it'd be nice to { addVatAdmin: false } too, but kernel is stubborn
+  const initOpts = { addComms: false, addVattp: false, addTimer: false };
+  await initializeSwingset(config, [], loggingKernelStorage, initOpts);
   const c = await makeSwingsetController(loggingKernelStorage, {});
   t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
+  c.pinVatRoot('representatives');
+  vatID = c.vatNameToID('representatives');
 
   const nextLog = makeNextLog(c);
 
@@ -81,7 +81,7 @@ test.serial('exercise cache', async t => {
     if (what) {
       sendArgs = [kslot(what, 'thing'), ...args];
     }
-    const r = c.queueToVatRoot('bootstrap', method, sendArgs, 'ignore');
+    const r = c.queueToVatRoot('representatives', method, sendArgs, 'ignore');
     await c.run();
     t.is(c.kpStatus(r), 'fulfilled');
     t.deepEqual(nextLog(), []);
@@ -115,13 +115,13 @@ test.serial('exercise cache', async t => {
     await doSimple('holdThing', what);
   }
   function dataKey(num) {
-    return `v1.vs.vom.o+v10/${num}`;
+    return `${vatID}.vs.vom.o+v10/${num}`;
   }
   function esKey(num) {
-    return `v1.vs.vom.es.o+v10/${num}`;
+    return `${vatID}.vs.vom.es.o+v10/${num}`;
   }
   function rcKey(num) {
-    return `v1.vs.vom.rc.o+v10/${num}`;
+    return `${vatID}.vs.vom.rc.o+v10/${num}`;
   }
   function thingVal(name) {
     return JSON.stringify({
@@ -138,158 +138,242 @@ test.serial('exercise cache', async t => {
   }
 
   // expected kernel object ID allocations
-  const T1 = 'ko25';
-  const T2 = 'ko26';
-  const T3 = 'ko27';
-  const T4 = 'ko28';
-  const T5 = 'ko29';
-  const T6 = 'ko30';
-  const T7 = 'ko31';
-  const T8 = 'ko32';
-
-  // these tests are hard-coded to expect our vat-under-test to be 'v1', so
-  // double-check here
-  t.is(c.vatNameToID('bootstrap'), expectedVatID);
+  const T1 = 'ko22';
+  const T2 = 'ko23';
+  const T3 = 'ko24';
+  const T4 = 'ko25';
+  const T5 = 'ko26';
+  const T6 = 'ko27';
+  const T7 = 'ko28';
+  const T8 = 'ko29';
 
   await c.run();
-  t.deepEqual(c.kpResolution(bootstrapResult), kser('bootstrap done'));
   log.length = 0; // assume all the irrelevant setup stuff worked correctly
 
-  // init cache - []
+  // note: defaultReapInterval=1, so every operation is followed by a
+  // BOYD. We aren't asserting the separation between the vatstore
+  // get/sets that happen during the real operation and during the
+  // subsequent BOYD, but we'll annotate them here for clarity. Also
+  // note that this test was more important back when we had a cache
+  // that spanned multiple cranks, whereas the current implementation
+  // is explicitly flushed at the end of every delivery.
 
-  await make('thing1', true, T1); // make t1 - [t1]
+  // thing1 is exported (so rs get/set)
+  await make('thing1', true, T1);
   ck('get', esKey(1), undefined);
   ck('set', esKey(1), 'r');
+  // end-of-crank:
   ck('set', dataKey(1), thingVal('thing1'));
+  // BOYD: the Representative is held in RAM, no extra queries
   done();
 
-  await make('thing2', false, T2); // make t2 - [t2 t1]
+  await make('thing2', false, T2);
   ck('get', esKey(2), undefined);
   ck('set', esKey(2), 'r');
+  // end-of-crank:
   ck('set', dataKey(2), thingVal('thing2'));
-  done();
-
-  await read(T1, 'thing1'); // refresh t1 - [t1 t2]
-  await read(T2, 'thing2'); // refresh t2 - [t2 t1]
-  await readHeld('thing1'); // refresh t1 - [t1 t2]
-
-  await make('thing3', false, T3); // make t3 - [t3 t1 t2]
-  ck('get', esKey(3), undefined);
-  ck('set', esKey(3), 'r');
-  ck('set', dataKey(3), thingVal('thing3'));
-  done();
-
-  await make('thing4', false, T4); // make t4 - [t4 t3 t1 t2]
-  ck('get', esKey(4), undefined);
-  ck('set', esKey(4), 'r');
-  ck('set', dataKey(4), thingVal('thing4'));
-  done();
-
-  await make('thing5', false, T5); // evict t2, make t5 - [t5 t4 t3 t1]
-  ck('get', esKey(5), undefined);
-  ck('set', esKey(5), 'r');
-  ck('set', dataKey(5), thingVal('thing5'));
+  // BOYD: thing2 is not held, so the Representative drops, causing
+  // extra rc/es queries to decide whether to delete or not
   ck('get', rcKey(2), undefined);
   ck('get', esKey(2), 'r');
   done();
 
-  await make('thing6', false, T6); // evict t1, make t6 - [t6 t5 t4 t3]
-  ck('get', esKey(6), undefined);
-  ck('set', esKey(6), 'r');
-  ck('set', dataKey(6), thingVal('thing6'));
+  await read(T1, 'thing1'); // still in RAM
+  // T1 was in RAM, so no new representative was needed, but creating
+  // a Representative wouldn't cause a data read. However invoking a
+  // method *does* require a data read, one per crank
+  ck('get', dataKey(1), thingVal('thing1'));
+  // end-of-crank: (none)
+  // BOYD: (none): thing1 is held, no extra queries
   done();
 
-  await make('thing7', false, T7); // evict t3, make t7 - [t7 t6 t5 t4]
-  ck('get', esKey(7), undefined);
-  ck('set', esKey(7), 'r');
-  ck('set', dataKey(7), thingVal('thing7'));
+  await read(T2, 'thing2'); // reanimated
+  // T2 was not in RAM, so reanimateVO() makes a new Representative,
+  // but that doesn't cause a data read. But invoking a method does.
+  ck('get', dataKey(2), thingVal('thing2'));
+  // end-of-crank: (none)
+  // BOYD: thing2 is dropped, so extra queries
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
+
+  await readHeld('thing1'); // still in RAM
+  // same story: one data read per crank when a method is invoked
+  ck('get', dataKey(1), thingVal('thing1'));
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
+
+  await make('thing3', false, T3);
+  ck('get', esKey(3), undefined);
+  ck('set', esKey(3), 'r');
+  // end-of-crank: write T3 data
+  ck('set', dataKey(3), thingVal('thing3'));
+  // BOYD: T3 Representative dropped
   ck('get', rcKey(3), undefined);
   ck('get', esKey(3), 'r');
   done();
 
-  await make('thing8', false, T8); // evict t4, make t8 - [t8 t7 t6 t5]
-  ck('get', esKey(8), undefined);
-  ck('set', esKey(8), 'r');
-  ck('set', dataKey(8), thingVal('thing8'));
+  await make('thing4', false, T4);
+  ck('get', esKey(4), undefined);
+  ck('set', esKey(4), 'r');
+  // end-of-crank: write T4 data
+  ck('set', dataKey(4), thingVal('thing4'));
+  // BOYD: T4 Representative dropped
   ck('get', rcKey(4), undefined);
   ck('get', esKey(4), 'r');
   done();
 
-  await read(T2, 'thing2'); // reanimate t2, evict t5 - [t2 t8 t7 t6]
-  ck('get', dataKey(2), thingVal('thing2'));
+  await make('thing5', false, T5);
+  ck('get', esKey(5), undefined);
+  ck('set', esKey(5), 'r');
+  // end-of-crank: write T5 data
+  ck('set', dataKey(5), thingVal('thing5'));
+  // BOYD: T5 Representative dropped
   ck('get', rcKey(5), undefined);
   ck('get', esKey(5), 'r');
   done();
 
-  await readHeld('thing1'); // reanimate t1, evict t6 - [t1 t2 t8 t7]
-  ck('get', dataKey(1), thingVal('thing1'));
+  await make('thing6', false, T6);
+  ck('get', esKey(6), undefined);
+  ck('set', esKey(6), 'r');
+  // end-of-crank: write T6 data
+  ck('set', dataKey(6), thingVal('thing6'));
+  // BOYD: T6 Representative dropped
   ck('get', rcKey(6), undefined);
   ck('get', esKey(6), 'r');
   done();
 
-  await write(T2, 'thing2 updated'); // refresh t2 - [t2 t1 t8 t7]
-  ck('set', dataKey(2), thingVal('thing2 updated'));
-
-  await writeHeld('thing1 updated'); // refresh t1 - [t1 t2 t8 t7]
-  ck('set', dataKey(1), thingVal('thing1 updated'));
-
-  await read(T8, 'thing8'); // refresh t8 - [t8 t1 t2 t7]
-  await read(T7, 'thing7'); // refresh t7 - [t7 t8 t1 t2]
-  done();
-
-  await read(T6, 'thing6'); // reanimate t6, evict t2 - [t6 t7 t8 t1]
-  ck('get', dataKey(6), thingVal('thing6'));
-  ck('get', rcKey(2), undefined);
-  ck('get', esKey(2), 'r');
-  done();
-
-  await read(T5, 'thing5'); // reanimate t5, evict t1 - [t5 t6 t7 t8]
-  ck('get', dataKey(5), thingVal('thing5'));
-  done();
-
-  await read(T4, 'thing4'); // reanimate t4, evict t8 - [t4 t5 t6 t7]
-  ck('get', dataKey(4), thingVal('thing4'));
-  ck('get', rcKey(8), undefined);
-  ck('get', esKey(8), 'r');
-  done();
-
-  await read(T3, 'thing3'); // reanimate t3, evict t7 - [t3 t4 t5 t6]
-  ck('get', dataKey(3), thingVal('thing3'));
+  await make('thing7', false, T7);
+  ck('get', esKey(7), undefined);
+  ck('set', esKey(7), 'r');
+  // end-of-crank: write T7 data
+  ck('set', dataKey(7), thingVal('thing7'));
+  // BOYD: T7 Representative dropped
   ck('get', rcKey(7), undefined);
   ck('get', esKey(7), 'r');
   done();
 
-  await read(T2, 'thing2 updated'); // reanimate t2, evict t6 - [t2 t3 t4 t5]
-  ck('get', dataKey(2), thingVal('thing2 updated'));
+  await make('thing8', false, T8);
+  ck('get', esKey(8), undefined);
+  ck('set', esKey(8), 'r');
+  // end-of-crank: write T8 data
+  ck('set', dataKey(8), thingVal('thing8'));
+  // BOYD: T8 Representative dropped
+  ck('get', rcKey(8), undefined);
+  ck('get', esKey(8), 'r');
+  done();
+
+  await read(T2, 'thing2'); // reanimate t2
+  ck('get', dataKey(2), thingVal('thing2'));
+  // end-of-crank: (none)
+  // BOYD: T2 Representative dropped
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
+
+  await readHeld('thing1'); // still in RAM
+  ck('get', dataKey(1), thingVal('thing1'));
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
+
+  await write(T2, 'thing2 updated'); // reanimated
+  ck('get', dataKey(2), thingVal('thing2'));
+  // end-of-crank: flush T2
+  ck('set', dataKey(2), thingVal('thing2 updated'));
+  // BOYD: T2 Representative dropped
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
+
+  await writeHeld('thing1 updated'); // still in RAM
+  ck('get', dataKey(1), thingVal('thing1')); // but data is not
+  // end-of-crank: flush T1
+  ck('set', dataKey(1), thingVal('thing1 updated'));
+  // BOYD: (none)
+  done();
+
+  await read(T8, 'thing8'); // reanimated T8
+  ck('get', dataKey(8), thingVal('thing8'));
+  // end-of-crank: (none)
+  // BOYD: T8 Representative dropped
+  ck('get', rcKey(8), undefined);
+  ck('get', esKey(8), 'r');
+  done();
+
+  await read(T6, 'thing6'); // reanimate t6
+  ck('get', dataKey(6), thingVal('thing6'));
+  // end-of-crank: (none)
+  // BOYD: T6 Representative dropped
   ck('get', rcKey(6), undefined);
   ck('get', esKey(6), 'r');
   done();
 
-  await readHeld('thing1 updated'); // reanimate t1, evict t5 - [t1 t2 t3 t4]
-  ck('get', dataKey(1), thingVal('thing1 updated'));
+  await read(T5, 'thing5'); // reanimate t5
+  ck('get', dataKey(5), thingVal('thing5'));
+  // end-of-crank: (none)
+  // BOYD: T5 Representative dropped
   ck('get', rcKey(5), undefined);
   ck('get', esKey(5), 'r');
   done();
 
-  await forgetHeld(); // cache unchanged - [t1 t2 t3 t4]
-  ck('get', rcKey(1), undefined);
-  ck('get', esKey(1), 'r');
-  done();
-
-  await hold(T8); // cache unchanged - [t1 t2 t3 t4]
-  ck('get', dataKey(8), thingVal('thing8'));
+  await read(T4, 'thing4'); // reanimate t4
+  ck('get', dataKey(4), thingVal('thing4'));
+  // end-of-crank: (none)
+  // BOYD: T4 Representative dropped
   ck('get', rcKey(4), undefined);
   ck('get', esKey(4), 'r');
   done();
 
-  await read(T7, 'thing7'); // reanimate t7, evict t4 - [t7 t1 t2 t3]
-  ck('get', dataKey(7), thingVal('thing7'));
+  await read(T3, 'thing3'); // reanimate t3
+  ck('get', dataKey(3), thingVal('thing3'));
+  // end-of-crank: (none)
+  // BOYD: T3 Representative dropped
   ck('get', rcKey(3), undefined);
   ck('get', esKey(3), 'r');
   done();
 
-  await writeHeld('thing8 updated'); // reanimate t8, evict t3 - [t8 t7 t1 t2]
+  await read(T2, 'thing2 updated'); // reanimate t2
+  ck('get', dataKey(2), thingVal('thing2 updated'));
+  // end-of-crank: (none)
+  // BOYD: T2 Representative dropped
+  ck('get', rcKey(2), undefined);
+  ck('get', esKey(2), 'r');
+  done();
+
+  await readHeld('thing1 updated'); // reanimate t1
+  ck('get', dataKey(1), thingVal('thing1 updated'));
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
+
+  await forgetHeld();
+  // end-of-crank: (none)
+  // BOYD: T1 Representative dropped
+  ck('get', rcKey(1), undefined);
+  ck('get', esKey(1), 'r');
+  done();
+
+  await hold(T8); // reanimate T8, add to RAM
+  // we don't invoke any methods, so we don't need its data
+  // end-of-crank: (none)
+  // BOYD: (none)
+  done();
+
+  await read(T7, 'thing7'); // reanimate t7
+  ck('get', dataKey(7), thingVal('thing7'));
+  // end-of-crank: (none)
+  // BOYD: T7 Representative dropped
+  ck('get', rcKey(7), undefined);
+  ck('get', esKey(7), 'r');
+  done();
+
+  await writeHeld('thing8 updated'); // T8 already in RAM
+  ck('get', dataKey(8), thingVal('thing8'));
+  // end-of-crank: flush T8 data
   ck('set', dataKey(8), thingVal('thing8 updated'));
+  // BOYD: (none, T8 stays in RAM)
   done();
 });
 
