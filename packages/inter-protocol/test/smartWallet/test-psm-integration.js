@@ -496,7 +496,7 @@ test('agoricName invitation source errors', async t => {
       proposal: {},
     }),
     {
-      message: 'target has no method "makeGiveMintedInvitation ", has []',
+      message: /target has no method "makeGiveMintedInvitation ", has \[.*\]/,
     },
   );
   t.is(await E.get(getBalanceFor(anchor.brand)).value, 0n);
