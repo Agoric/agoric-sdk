@@ -2,6 +2,7 @@
 /* global process */
 
 import { iterateReverse } from '@agoric/casting';
+import { AmountMath } from '@agoric/ertp';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { execSwingsetTransaction, pollTx } from './chain.js';
 import { boardSlottingMarshaller } from './rpc.js';
@@ -108,4 +109,19 @@ export const doAction = async (bridgeAction, opts) => {
   }
 
   return pollTx(tx.txhash, opts);
+};
+
+const { entries } = Object;
+/**
+ * @param {AmountKeywordRecord | undefined } give
+ * @param {AmountKeywordRecord | undefined} payouts
+ */
+export const paidOut = (give, payouts) => {
+  if (!payouts || !give) return false;
+  for (const [kw, amt] of entries(give)) {
+    if (!(kw in payouts && AmountMath.isGTE(payouts[kw], amt))) {
+      return false;
+    }
+  }
+  return true;
 };
