@@ -6,7 +6,7 @@ import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { M, matches } from '@agoric/store';
-import { normalizeAddressWithOptions } from '../lib/chain.js';
+import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   asBoardRemote,
   bigintReplacer,
@@ -17,7 +17,7 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import { doAction, outputActionAndHint } from '../lib/wallet.js';
+import { doAction, outputActionAndHint, paidOut } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -63,6 +63,38 @@ const fmtMetrics = (metrics, quote, assets) => {
     fmt.amount,
   );
   return { ...amounts, price };
+};
+
+/**
+ * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
+ * @param {Awaited<ReturnType<import('../lib/rpc').makeAgoricNames>>} agoricNames
+ * @param {typeof console.warn} warn
+ */
+const coerceBid = (offerStatus, agoricNames, warn) => {
+  const { offerArgs } = offerStatus;
+  /** @type {unknown} */
+  const collateralBrand = /** @type {any} */ (offerArgs)?.want?.brand;
+  if (!collateralBrand) {
+    warn('mal-formed bid offerArgs', offerStatus.id, offerArgs);
+    return null;
+  }
+  const bidSpecShape = makeBidSpecShape(
+    // @ts-expect-error XXX AssetKind narrowing?
+    agoricNames.brand.IST,
+    collateralBrand,
+  );
+  if (!matches(offerStatus.offerArgs, bidSpecShape)) {
+    warn('mal-formed bid offerArgs', offerArgs);
+    return null;
+  }
+
+  /**
+   * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+   *        { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+   */
+  // @ts-expect-error dynamic cast
+  const bid = offerStatus;
+  return bid;
 };
 
 /**
@@ -128,6 +160,12 @@ export const makeInterCommand = async (
       env.AGORIC_KEYRING_BACKEND,
     );
 
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const show = (info, indent = false) =>
+    stdout.write(
+      `${JSON.stringify(info, bigintReplacer, indent ? 2 : undefined)}\n`,
+    );
+
   const rpcTools = async () => {
     const networkConfig = await getNetworkConfig(env);
     const { agoricNames, fromBoard, readLatestHead, vstorage } =
@@ -135,10 +173,17 @@ export const makeInterCommand = async (
         throw new CommanderError(1, 'RPC_FAIL', err.message);
       });
 
-    const storedWalletState = async from => {
+    /**
+     * @param {string} from
+     * @param {number} [minHeight]
+     */
+    const storedWalletState = async (from, minHeight = undefined) => {
       const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
-      const history = await vstorage.readFully(`published.wallet.${from}`);
+      const history = await vstorage.readFully(
+        `published.wallet.${from}`,
+        minHeight,
+      );
 
       /** @type {{ Invitation: Brand<'set'> }} */
       // @ts-expect-error XXX how to narrow AssetKind to set?
@@ -151,7 +196,25 @@ export const makeInterCommand = async (
         coalescer.update(record);
       }
       const coalesced = coalescer.state;
+      harden(coalesced);
       return coalesced;
+    };
+
+    /**
+     * @param {string} from
+     * @param {string} id
+     * @param {number} minHeight
+     */
+    const pollOffer = async (from, id, minHeight) => {
+      const lookup = async () => {
+        // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+        const { offerStatuses } = await storedWalletState(from, minHeight);
+        const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
+        if (!offerStatus) {
+          throw Error('retry');
+        }
+      };
+      return pollBlocks({ ...networkConfig, execFileSync, delay })(lookup);
     };
 
     return {
@@ -161,6 +224,7 @@ export const makeInterCommand = async (
       vstorage,
       readLatestHead,
       storedWalletState,
+      pollOffer,
     };
   };
 
@@ -190,8 +254,7 @@ For example:
         readLatestHead(`published.vaultFactory.manager${opts.manager}.quotes`),
       ]);
       const info = fmtMetrics(metrics, quote, values(agoricNames.vbankAsset));
-      stdout.write(JSON.stringify(info, bigintReplacer, 2));
-      stdout.write('\n');
+      show(info, true);
     });
 
   const normalizeAddress = literalOrName =>
@@ -250,8 +313,6 @@ For example:
     return p / 100;
   };
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-
   bidCmd
     .command('by-discount')
     .description(
@@ -307,33 +368,49 @@ For example:
        * }} opts
        */
       async (id, { from, dryRun }) => {
+        const { networkConfig, agoricNames, pollOffer, storedWalletState } =
+          await rpcTools();
+        const io = { ...networkConfig, execFileSync, delay, stdout };
+
         /** @type {TryExitOfferAction} */
-        const action = {
-          method: 'tryExitOffer',
-          offerId: id,
-        };
-        const networkConfig = await getNetworkConfig(env);
+        const action = { method: 'tryExitOffer', offerId: id };
 
         const result = await doAction(action, {
+          from,
           dryRun,
           verbose: false,
-          ...networkConfig,
-          execFileSync,
-          delay,
-          stdout,
-          from,
+          ...io,
         });
-        if (result) {
-          const { timestamp, txhash, height } = result;
-          stdout.write(
-            `${JSON.stringify({
-              timestamp,
-              height,
-              offerId: id,
-              txhash,
-            })}\n`,
-          );
+        if (!result) return;
+
+        const { timestamp, txhash, height } = result;
+        console.error('cancel action is broadcast:');
+        show({ timestamp, height, offerId: id, txhash });
+
+        const findBidAlreadyPaidOut = async () => {
+          const { offerStatuses } = await storedWalletState(from);
+          const preStatus = [...offerStatuses.values()].find(s => s.id === id);
+          harden(preStatus); // XXX why didn't the harden in storedWalletState suffice???
+          if (!preStatus) return null;
+          const bid = coerceBid(preStatus, agoricNames, console.warn);
+          if (!bid || !paidOut(bid.proposal.give, bid.payouts)) {
+            return null;
+          }
+          console.warn('bid already cancelled');
+          return bid;
+        };
+        let bid = await findBidAlreadyPaidOut();
+
+        if (!bid) {
+          // not 1st await
+          // eslint-disable-next-line @jessie.js/no-nested-await
+          const found = await pollOffer(from, id, height);
+          console.error('bid status is updated:');
+          bid = coerceBid(found, agoricNames, console.warn);
         }
+        if (!bid) return;
+        const info = fmtBid(bid, values(agoricNames.vbankAsset));
+        show(info);
       },
     );
 
@@ -363,37 +440,6 @@ $ inter bid list --from my-acct
         callPipe: [['makeBidInvitation', M.any()]],
       });
 
-      /**
-       * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
-       * @param {typeof console.warn} warn
-       */
-      const coerceBid = (offerStatus, warn) => {
-        const { offerArgs } = offerStatus;
-        /** @type {unknown} */
-        const collateralBrand = /** @type {any} */ (offerArgs)?.want?.brand;
-        if (!collateralBrand) {
-          warn('mal-formed bid offerArgs', offerStatus.id, offerArgs);
-          return null;
-        }
-        const bidSpecShape = makeBidSpecShape(
-          // @ts-expect-error XXX AssetKind narrowing?
-          agoricNames.brand.IST,
-          collateralBrand,
-        );
-        if (!matches(offerStatus.offerArgs, bidSpecShape)) {
-          warn('mal-formed bid offerArgs', offerArgs);
-          return null;
-        }
-
-        /**
-         * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
-         *        { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
-         */
-        // @ts-expect-error dynamic cast
-        const bid = offerStatus;
-        return bid;
-      };
-
       for (const offerStatus of coalesced.offerStatuses.values()) {
         harden(offerStatus); // coalesceWalletState should do this
         // console.debug(offerStatus.invitationSpec);
@@ -403,8 +449,7 @@ $ inter bid list --from my-acct
         if (!bid) continue;
 
         const info = fmtBid(bid, values(agoricNames.vbankAsset));
-        stdout.write(JSON.stringify(info));
-        stdout.write('\n');
+        show(info);
       }
     });
 

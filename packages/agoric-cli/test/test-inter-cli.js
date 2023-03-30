@@ -376,3 +376,38 @@ test('formatBid', t => {
     });
   }
 });
+
+test.todo('fmtBid with error does not show result');
+/*
+_not_ like this:
+
+{"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Currency":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
+*/
+
+test.todo('execSwingsetTransaction returns non-0 code');
+
+test.todo('inter bid by-price shows tx, wallet status');
+/*
+$ agops inter bid by-price --price 0.81 --give 0.5 --want 3 --from gov2
+2023-03-30T21:48:14.479332418Z not in block 49618 retrying...
+bid is broadcast:
+{"timestamp":"2023-03-30T21:48:19Z","height":"49619","offerId":"bid-1680212903989","txhash":"472A47AAE24F27E747E3E64F4644860D2A5D3AD7EC5388C4C849805034E20D38"}
+first bid update:
+{"id":"bid-1680212903989","price":"0.81 IST/IbcATOM","give":{"Currency":"0.5IST"},"want":"3IbcATOM","result":"Your bid has been accepted"}
+*/
+
+test.todo('inter bid cancel shows resulting payouts');
+/*
+
+*/
+
+test.todo('already cancelled bid');
+/*
+$ agops inter bid cancel --from gov1 bid-123142131231
+2023-03-30T21:04:52.300932896Z not in block 49141 retrying...
+2023-03-30T21:04:52.300932896Z not in block 49141 retrying...
+cancel action is broadcast:
+{"timestamp":"2023-03-30T21:04:57Z","height":"49142","offerId":"bid-123142131231","txhash":"4BE8D763A9F818CACE3A6EA3DD114D0A5C2F8692DE6C01F70AA54CCD67C58545"}
+bid already cancelled
+{"id":"bid-123142131231","price":"10.000000000000002 IST/IbcATOM","give":{"Currency":"10IST"},"want":"1IbcATOM","payouts":{"Currency":"10IST"}}
+*/
