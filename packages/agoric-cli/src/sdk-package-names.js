@@ -4,6 +4,7 @@
 export default [
   "@agoric/access-token",
   "@agoric/assert",
+  "@agoric/boot",
   "@agoric/cache",
   "@agoric/casting",
   "@agoric/cosmic-proto",

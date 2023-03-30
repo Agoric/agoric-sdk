@@ -1,15 +1,16 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { PowerFlags } from '../../src/walletFlags.js';
+// XXX deep import
+import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 
 import { makeSwingsetTestKit, keyArrayEqual } from './supports.js';
 
 const { keys } = Object;
-/**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
- */
-const test = anyTest;
+const test =
+  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>} */ (
+    anyTest
+  );
 
 const makeDefaultTestContext = async t => {
   const swingsetTestKit = await makeSwingsetTestKit(

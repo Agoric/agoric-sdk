@@ -1,0 +1,47 @@
+{
+  "name": "@agoric/boot",
+  "version": "0.0.1",
+  "description": "Utilities and config to boot an Agoric chain",
+  "type": "module",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "main": "./src/index.js",
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "exit 0",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:eslint": "eslint .",
+    "lint:types": "tsc"
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/assert": "^0.5.1",
+    "@agoric/internal": "^0.2.1"
+  },
+  "devDependencies": {
+    "@agoric/cosmic-swingset": "^0.39.2",
+    "@agoric/inter-protocol": "^0.13.1",
+    "@agoric/swingset-vat": "^0.30.2",
+    "@agoric/vats": "^0.13.0",
+    "@agoric/zoe": "^0.25.3",
+    "@endo/captp": "^2.0.18",
+    "ava": "^5.2.0",
+    "tsd": "^0.25.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "ava": {
+    "files": [
+      "test/**/test-*.js"
+    ],
+    "timeout": "20m"
+  }
+}

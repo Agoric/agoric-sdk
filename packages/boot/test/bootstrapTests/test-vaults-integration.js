@@ -8,13 +8,13 @@ import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
-/**
- * @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>}
- */
-const test = anyTest;
+const test =
+  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeDefaultTestContext>>>} */ (
+    anyTest
+  );
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'IbcATOM';

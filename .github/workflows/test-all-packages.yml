@@ -109,6 +109,8 @@ jobs:
         run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (assert)
         run: cd packages/assert && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (boot)
+        run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet/api)
         run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)

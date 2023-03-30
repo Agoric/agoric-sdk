@@ -153,7 +153,7 @@ export const makeRunUtils = (controller, log = (..._) => {}) => {
  *
  * @param {ReturnType<typeof makeRunUtils>} runUtils
  * @param {import('@agoric/internal/src/storage-test-utils.js').FakeStorageKit} storage
- * @param {import('../../tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNamesRemotes
  */
 export const makeWalletFactoryDriver = async (
   runUtils,

@@ -48,7 +48,6 @@
     "@endo/promise-kit": "^0.2.52"
   },
   "devDependencies": {
-    "@agoric/cosmic-swingset": "^0.39.2",
     "@agoric/deploy-script-support": "^0.9.4",
     "@agoric/smart-wallet": "^0.4.2",
     "@agoric/swing-store": "^0.8.1",

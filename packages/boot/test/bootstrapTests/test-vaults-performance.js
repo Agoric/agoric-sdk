@@ -13,7 +13,7 @@ import { E } from '@endo/captp';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
 /**
