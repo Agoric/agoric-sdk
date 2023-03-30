@@ -109,12 +109,12 @@ test('b0 import', async t => {
   const idA = makeB0ID(b0A);
   const nameA = `bundle.${idA}`;
   const exporter = {
-    getExportData: () => [
-      /** @type {import('../src/swingStore.js').KVPair} */ ([nameA, idA]),
-    ],
-    getArtifact: name => {
+    async *getExportData() {
+      yield /** @type {const} */ ([nameA, idA]);
+    },
+    async *getArtifact(name) {
       t.is(name, nameA);
-      return [Buffer.from(JSON.stringify(b0A))];
+      yield Buffer.from(JSON.stringify(b0A));
     },
     getArtifactNames: () => assert.fail('import should not query all names'),
     close: async () => undefined,
@@ -131,12 +131,12 @@ test('b0 bad import', async t => {
   const idA = makeB0ID(b0A);
   const nameA = `bundle.${idA}`;
   const exporter = {
-    getExportData: () => [
-      /** @type {import('../src/swingStore.js').KVPair} */ ([nameA, idA]),
-    ],
-    getArtifact: name => {
+    async *getExportData() {
+      yield /** @type {const} */ ([nameA, idA]);
+    },
+    async *getArtifact(name) {
       t.is(name, nameA);
-      return [Buffer.from(JSON.stringify(b0Abogus))];
+      yield Buffer.from(JSON.stringify(b0Abogus));
     },
     getArtifactNames: () => assert.fail('import should not query all names'),
     close: async () => undefined,
