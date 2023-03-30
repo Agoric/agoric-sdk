@@ -1,14 +1,14 @@
 // @ts-check
 /* global process */
 import { normalizeBech32 } from '@cosmjs/encoding';
-import { execFileSync } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'child_process';
 
 const agdBinary = 'agd';
 
 export const normalizeAddressWithOptions = (
   literalOrName,
   { keyringBackend = undefined } = {},
-  io = { execFileSync },
+  io = { execFileSync: execFileSyncAmbient },
 ) => {
   try {
     return normalizeBech32(literalOrName);
@@ -30,22 +30,25 @@ export const normalizeAddressWithOptions = (
 harden(normalizeAddressWithOptions);
 
 /**
- * SECURITY: closes over process and child_process
- *
  * @param {ReadonlyArray<string>} swingsetArgs
- * @param {import('./rpc').MinimalNetworkConfig} net
- * @param {string} from
- * @param {boolean} [dryRun]
- * @param {{home: string, backend: string}} [keyring]
+ * @param {import('./rpc').MinimalNetworkConfig & {
+ *   from: string,
+ *   dryRun?: boolean,
+ *   keyring?: {home: string, backend: string}
+ *   stdout?: Pick<import('stream').Writable, 'write'>
+ *   execFileSync?: typeof import('child_process').execFileSync
+ * }} opts
  */
-export const execSwingsetTransaction = (
-  swingsetArgs,
-  net,
-  from,
-  dryRun = false,
-  keyring = undefined,
-) => {
-  const { chainName, rpcAddrs } = net;
+export const execSwingsetTransaction = (swingsetArgs, opts) => {
+  const {
+    from,
+    dryRun = false,
+    keyring = undefined,
+    chainName,
+    rpcAddrs,
+    stdout = process.stdout,
+    execFileSync = execFileSyncAmbient,
+  } = opts;
   const homeOpt = keyring?.home ? [`--home=${keyring.home}`] : [];
   const backendOpt = keyring?.backend
     ? [`--keyring-backend=${keyring.backend}`]
@@ -58,10 +61,10 @@ export const execSwingsetTransaction = (
   );
 
   if (dryRun) {
-    process.stdout.write(`Run this interactive command in shell:\n\n`);
-    process.stdout.write(`${agdBinary} `);
-    process.stdout.write(cmd.join(' '));
-    process.stdout.write('\n');
+    stdout.write(`Run this interactive command in shell:\n\n`);
+    stdout.write(`${agdBinary} `);
+    stdout.write(cmd.join(' '));
+    stdout.write('\n');
   } else {
     const yesCmd = cmd.concat(['--yes']);
     console.log('Executing ', yesCmd);
@@ -72,7 +75,7 @@ harden(execSwingsetTransaction);
 
 // xxx rpc should be able to query this by HTTP without shelling out
 export const fetchSwingsetParams = net => {
-  const { chainName, rpcAddrs } = net;
+  const { chainName, rpcAddrs, execFileSync = execFileSyncAmbient } = net;
   const cmd = [
     `--node=${rpcAddrs[0]}`,
     `--chain-id=${chainName}`,
