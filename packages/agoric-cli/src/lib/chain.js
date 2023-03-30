@@ -34,6 +34,7 @@ harden(normalizeAddressWithOptions);
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
  *   dryRun?: boolean,
+ *   verbose?: boolean,
  *   keyring?: {home: string, backend: string}
  *   stdout?: Pick<import('stream').Writable, 'write'>
  *   execFileSync?: typeof import('child_process').execFileSync
@@ -43,6 +44,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const {
     from,
     dryRun = false,
+    verbose = true,
     keyring = undefined,
     chainName,
     rpcAddrs,
@@ -67,8 +69,8 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     stdout.write('\n');
   } else {
     const yesCmd = cmd.concat(['--yes']);
-    console.log('Executing ', yesCmd);
-    execFileSync(agdBinary, yesCmd);
+    if (verbose) console.log('Executing ', yesCmd);
+    return execFileSync(agdBinary, yesCmd);
   }
 };
 harden(execSwingsetTransaction);

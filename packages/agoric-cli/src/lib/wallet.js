@@ -3,6 +3,7 @@
 
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
+import { execSwingsetTransaction } from './chain.js';
 import { boardSlottingMarshaller } from './rpc.js';
 
 const marshaller = boardSlottingMarshaller();
@@ -74,4 +75,35 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
   }
 
   return coalescer.state;
+};
+
+/**
+ * Sign and broadcast a wallet-action (or do a dry-run).
+ *
+ * @throws { Error & { code: number } } if transaction fails
+ * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
+ * @param {import('./rpc').MinimalNetworkConfig & {
+ *   from: string,
+ *   dryRun?: boolean,
+ *   verbose?: boolean,
+ *   keyring?: {home: string, backend: string}
+ *   stdout: Pick<import('stream').Writable, 'write'>
+ *   execFileSync: typeof import('child_process').execFileSync
+ * }} opts
+ */
+export const doAction = (bridgeAction, opts) => {
+  const offerBody = JSON.stringify(marshaller.serialize(bridgeAction));
+  const spendArg =
+    bridgeAction.method === 'executeOffer' ? ['--allow-spend'] : [];
+  const tx = ['wallet-action', ...spendArg, offerBody];
+  const out = execSwingsetTransaction([...tx, '--output', 'json'], opts);
+  if (!out) return;
+  const data = JSON.parse(out);
+  if (data.code !== 0) {
+    const err = Error(`failed to send action. code: ${data.code}`);
+    // @ts-expect-error XXX how to add properties to an error?
+    err.code = data.code;
+    throw err;
+  }
+  return data;
 };

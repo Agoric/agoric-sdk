@@ -1,23 +1,24 @@
 // @ts-check
 import { CommanderError, InvalidArgumentError } from 'commander';
 // TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
-import { M, matches } from '@agoric/store';
-import { objectMap } from '@agoric/internal';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeBidSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { objectMap } from '@agoric/internal';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import {
-  boardSlottingMarshaller,
-  getNetworkConfig,
-  makeRpcUtils,
-} from '../lib/rpc.js';
-import { outputActionAndHint } from '../lib/wallet.js';
+import { M, matches } from '@agoric/store';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
+import {
+  boardSlottingMarshaller,
+  getNetworkConfig,
+  makeRpcUtils,
+  networkConfig,
+} from '../lib/rpc.js';
+import { doAction, outputActionAndHint } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -172,6 +173,20 @@ For example:
       stdout.write('\n');
     });
 
+  const normalizeAddress = literalOrName =>
+    normalizeAddressWithOptions(literalOrName, interCmd.opts(), {
+      // @ts-expect-error execFileSync is overloaded
+      execFileSync: (file, args) => {
+        try {
+          return execFileSync(file, args);
+        } catch (err) {
+          throw new InvalidArgumentError(
+            `${err.message}: is ${file} in your $PATH?`,
+          );
+        }
+      },
+    });
+
   const bidCmd = interCmd
     .command('bid')
     .description('auction bidding commands');
@@ -252,33 +267,42 @@ For example:
 
   bidCmd
     .command('cancel')
-    .description('Print a request to exit a bid offer')
+    .description('Exit a bid offer')
     .argument('id', 'offer id (as from bid list)')
+    .requiredOption(
+      '--from <address>',
+      'wallet address literal or name',
+      normalizeAddress,
+    )
+    .option('--dryRun', 'show agd commands only')
     .action(
-      /** @param {string} id */
-      async id => {
+      /**
+       * @param {string} id
+       * @param {{
+       *   from: string,
+       *   dryRun: boolean,
+       * }} opts
+       */
+      async (id, { from, dryRun }) => {
         /** @type {TryExitOfferAction} */
         const action = {
           method: 'tryExitOffer',
           offerId: id,
         };
-        outputActionAndHint(action, { stdout, stderr });
-      },
-    );
-
-  const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, interCmd.opts(), {
-      // @ts-expect-error execFileSync is overloaded
-      execFileSync: (file, args) => {
-        try {
-          return execFileSync(file, args);
-        } catch (err) {
-          throw new InvalidArgumentError(
-            `${err.message}: is ${file} in your $PATH?`,
-          );
+        const result = doAction(action, {
+          dryRun,
+          verbose: false,
+          ...networkConfig,
+          execFileSync,
+          stdout,
+          from,
+        });
+        if (result) {
+          const { txhash } = result;
+          stdout.write(`${JSON.stringify({ offerId: id, txhash })}\n`);
         }
       },
-    });
+    );
 
   bidCmd
     .command('list')
@@ -329,7 +353,7 @@ $ inter bid list --from my-acct
         /** @type {unknown} */
         const collateralBrand = /** @type {any} */ (offerArgs)?.want?.brand;
         if (!collateralBrand) {
-          warn('mal-formed bid offerArgs', offerArgs);
+          warn('mal-formed bid offerArgs', offerStatus.id, offerArgs);
           return null;
         }
         const bidSpecShape = makeBidSpecShape(
@@ -371,7 +395,7 @@ $ inter bid list --from my-acct
   reserveCmd
     .command('add')
     .description('add collateral to the reserve')
-    .requiredOption('--give [number]', 'Collateral to give', Number)
+    .requiredOption('--give <number>', 'Collateral to give', Number)
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
