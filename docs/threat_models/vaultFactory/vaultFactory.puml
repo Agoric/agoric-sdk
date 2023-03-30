@@ -18,7 +18,6 @@ node "Vat" {
     node VaultFactory {
         node "publicAPI" {
             circle makeVaultInvitation
-            circle getRunIssuer
         }
         node "creatorFacet" {
             circle makeAddTypeInvitation

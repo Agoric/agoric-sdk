@@ -225,7 +225,6 @@ export const prepareVaultDirector = (
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
         getMetrics: M.call().returns(SubscriberShape),
-        getRunIssuer: M.call().returns(IssuerShape),
         getSubscription: M.call({ collateralBrand: BrandShape }).returns(
           SubscriberShape,
         ),
@@ -457,9 +456,6 @@ export const prepareVaultDirector = (
         /** @deprecated use getPublicTopics */
         getMetrics() {
           return metricsSubscriber;
-        },
-        getRunIssuer() {
-          return debtMint.getIssuerRecord().issuer;
         },
         /**
          * @deprecated get from the CollateralManager directly
