@@ -73,7 +73,7 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
   return M.splitRecord(
     { want: collateralAmountShape },
     {
-      exitAfterBuy: true,
+      exitAfterBuy: M.boolean(),
       // xxx should have exactly one of these properties
       offerPrice: makeBrandedRatioPattern(
         currencyAmountShape,
@@ -269,10 +269,16 @@ export const prepareAuctionBook = (baggage, zcf) => {
          *  @param {ZCFSeat} seat
          *  @param {Ratio} price
          *  @param {Amount<'nat'>} want
-         *  @param {boolean} trySettle
-         *  @param {boolean} [exitAfterBuy]
+         *  @param {object} opts
+         *  @param {boolean} opts.trySettle
+         *  @param {boolean} [opts.exitAfterBuy]
          */
-        acceptPriceOffer(seat, price, want, trySettle, exitAfterBuy = false) {
+        acceptPriceOffer(
+          seat,
+          price,
+          want,
+          { trySettle, exitAfterBuy = false },
+        ) {
           const { priceBook, curAuctionPrice } = this.state;
           const { helper } = this.facets;
           trace('acceptPrice');
@@ -304,15 +310,15 @@ export const prepareAuctionBook = (baggage, zcf) => {
          *  @param {ZCFSeat} seat
          *  @param {Ratio} bidScaling
          *  @param {Amount<'nat'>} want
-         *  @param {boolean} trySettle
-         *  @param {boolean} [exitAfterBuy]
+         *  @param {object} opts
+         *  @param {boolean} opts.trySettle
+         *  @param {boolean} [opts.exitAfterBuy]
          */
         acceptScaledBidOffer(
           seat,
           bidScaling,
           want,
-          trySettle,
-          exitAfterBuy = false,
+          { trySettle, exitAfterBuy = false },
         ) {
           trace('accept scaled bid offer');
           const { curAuctionPrice, lockedPriceForRound, scaledBidBook } =
@@ -495,22 +501,26 @@ export const prepareAuctionBook = (baggage, zcf) => {
           );
 
           const { helper } = this.facets;
-          const exitAfterBuy = bidSpec.exitAfterBuy;
+          const { exitAfterBuy } = bidSpec;
           if ('offerPrice' in bidSpec) {
             return helper.acceptPriceOffer(
               seat,
               bidSpec.offerPrice,
               bidSpec.want,
-              trySettle,
-              exitAfterBuy,
+              {
+                trySettle,
+                exitAfterBuy,
+              },
             );
           } else if ('offerBidScaling' in bidSpec) {
             return helper.acceptScaledBidOffer(
               seat,
               bidSpec.offerBidScaling,
               bidSpec.want,
-              trySettle,
-              exitAfterBuy,
+              {
+                trySettle,
+                exitAfterBuy,
+              },
             );
           } else {
             throw Fail`Offer was neither a price nor a scaled bid`;
