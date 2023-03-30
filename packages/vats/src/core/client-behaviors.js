@@ -1,8 +1,8 @@
 // @ts-check
 import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
-import { deeplyFulfilled } from '@endo/marshal';
 import { observeNotifier } from '@agoric/notifier';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { registerNetworkProtocols } from './chain-behaviors.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 
@@ -80,8 +80,7 @@ async function createLocalBundle(vats, devices, vatAdminSvc, vatPowers) {
     http: httpRegCallback,
     vattp: makeVattpFrom(vats),
   });
-  /** @type { typeof bundleP } */
-  const bundle = deeplyFulfilled(bundleP);
+  const bundle = deeplyFulfilledObject(bundleP);
   return bundle;
 }
 

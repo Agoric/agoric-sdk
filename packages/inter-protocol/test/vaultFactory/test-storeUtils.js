@@ -7,6 +7,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
 import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
+/** @type {Brand<'nat'>} */
 export const mockBrand = Far('brand');
 const keysMatch = test.macro({
   exec(t, [debt, collat, vaultId], [expectedKey, numberOut]) {

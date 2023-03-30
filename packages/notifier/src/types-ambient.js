@@ -252,7 +252,7 @@
 
 // /////////////////////////////////////////////////////////////////////////////
 
-/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/** @template [Slot=unknown] @typedef {import('@endo/marshal').Marshal<Slot>} Marshaller */
 /** @typedef {Pick<Marshaller, 'unserialize'>} Unserializer */
 
 /**
