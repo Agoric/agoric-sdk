@@ -138,7 +138,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
    * @param {Amount<'nat'>} giveCurrency
    * @param {Amount<'nat'>} wantCollateral
    * @param {Ratio} [discount]
-   * @param {ExitRule} [exitRule]
+   * @param {ExitRule | { onBuy: true }} [exitRule]
    */
   const bidForCollateralSeat = async (
     giveCurrency,
@@ -155,7 +155,8 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       // IF we had multiples, the buyer could express an offer-safe want.
       // want: { Collateral: wantCollateral },
     };
-    if (exitRule) {
+
+    if (exitRule && !('onBuy' in exitRule)) {
       rawProposal.exit = exitRule;
     }
     const proposal = harden(rawProposal);
@@ -172,6 +173,10 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
               discount ||
               harden(makeRatioFromAmounts(giveCurrency, wantCollateral)),
           };
+    if (exitRule && 'onBuy' in exitRule) {
+      offerArgs.exitAfterBuy = true;
+    }
+
     return E(zoe).offer(bidInvitation, proposal, payment, harden(offerArgs));
   };
 
@@ -374,6 +379,32 @@ test.serial('discount bid settled', async t => {
 
   // 250 - 200 * (1.1 * 1.05)
   await assertPayouts(t, seat, currency, collateral, 250n - 231n, 200n);
+});
+
+test.serial('discount bid exit onBuy', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  await driver.setupCollateralAuction(collateral, collateral.make(1000n));
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const schedules = await driver.getSchedule();
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
+  await driver.advanceTo(170n);
+
+  const seat = await driver.bidForCollateralSeat(
+    currency.make(2000n),
+    collateral.make(200n),
+    makeRatioFromAmounts(currency.make(120n), currency.make(100n)),
+    { onBuy: true },
+  );
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
+  await driver.advanceTo(180n);
+
+  // 250 - 200 * (1.1 * 1.05)
+  await assertPayouts(t, seat, currency, collateral, 2000n - 231n, 200n);
 });
 
 // serial because dynamicConfig is shared across tests
@@ -627,7 +658,60 @@ test.serial('multiple Depositors, with goal', async t => {
   await E(seat).tryExit();
   t.true(await E(seat).hasExited());
 
-  // 1500 Collateral was put up for auction by two bidders (1000 and 500), so
+  // 1500 Collateral was put up for auction by two depositors (1000 and 500), so
+  // one seller gets 66% of the proceeds, and the other 33%. The price authority
+  // quote was 1.1, and the goods were sold in the first auction round at 105%.
+  // At those rates, 900 pays for 799 collateral. The sellers pro-rate 900 and
+  // the returned collateral. The auctioneer sets the remainder aside.
+  await assertPayouts(t, seat, currency, collateral, 600n, 779n);
+  await assertPayouts(t, liqSeatA, currency, collateral, 600n, 480n);
+  await assertPayouts(t, liqSeatB, currency, collateral, 300n, 239n);
+});
+
+// serial because dynamicConfig is shared across tests
+test.serial('multiple Depositors, exit onBuy', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const liqSeatA = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(1000n),
+  );
+  const liqSeatB = await driver.depositCollateral(
+    collateral.make(500n),
+    collateral,
+    { goal: currency.make(300n) },
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeatA).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const seat = await driver.bidForCollateralSeat(
+    currency.make(1500n),
+    collateral.make(1000n),
+    undefined,
+    { onBuy: true },
+  );
+
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
+  t.false(await E(seat).hasExited());
+
+  await driver.advanceTo(170n);
+  await eventLoopIteration();
+  await driver.advanceTo(175n);
+  await eventLoopIteration();
+  await driver.advanceTo(180n);
+  await eventLoopIteration();
+  await driver.advanceTo(185n);
+  await eventLoopIteration();
+
+  t.true(await E(seat).hasExited());
+
+  // 1500 Collateral was put up for auction by two depositors (1000 and 500), so
   // one seller gets 66% of the proceeds, and the other 33%. The price authority
   // quote was 1.1, and the goods were sold in the first auction round at 105%.
   // At those rates, 900 pays for 799 collateral. The sellers pro-rate 900 and
@@ -996,5 +1080,23 @@ test('bid on unregistered collateral', async t => {
       collateral.make(200n), // re-use this brand, which isn't collateral
     ),
     { message: 'No book for brand "[Alleged: Collateral brand]"' },
+  );
+});
+
+test('bid zero', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  await driver.setupCollateralAuction(collateral, collateral.make(300n));
+
+  await t.throwsAsync(
+    driver.bidForCollateralSeat(
+      currency.make(0n),
+      collateral.make(200n), // re-use this brand, which isn't collateral
+    ),
+    {
+      message:
+        '"new bid" proposal: give: Currency: value: "[0n]" - Must be >= "[1n]"',
+    },
   );
 });

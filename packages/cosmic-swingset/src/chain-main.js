@@ -26,10 +26,11 @@ import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
-} from './bufferedStorage.js';
-import stringify from './json-stable-stringify.js';
+} from './helpers/bufferedStorage.js';
+import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
+import { makeProcessValue } from './helpers/process-value.js';
 
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
@@ -52,7 +53,7 @@ const toNumber = specimen => {
  * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
  * @param {(value: string) => T} fromBridgeStringValue
  * @param {(value: T) => string} toBridgeStringValue
- * @returns {import("./bufferedStorage.js").KVStore<T>}
+ * @returns {import("./helpers/bufferedStorage.js").KVStore<T>}
  */
 const makePrefixedBridgeStorage = (
   call,
@@ -112,68 +113,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   // TODO: use the 'basedir' pattern
 
-  // Try to determine the cosmos chain home.
-  function getFlagValue(flagName, deflt) {
-    let flagValue = deflt;
-    const envValue =
-      env[`AG_CHAIN_COSMOS_${flagName.toUpperCase().replace(/-/g, '_')}`];
-    if (envValue !== undefined) {
-      flagValue = envValue;
-    }
-    const flag = `--${flagName}`;
-    const flagEquals = `--${flagName}=`;
-    for (let i = 0; i < args.length; i += 1) {
-      const arg = args[i];
-      if (arg === flag) {
-        i += 1;
-        flagValue = args[i];
-      } else if (arg.startsWith(flagEquals)) {
-        flagValue = arg.substr(flagEquals.length);
-      }
-    }
-    return flagValue;
-  }
-
-  /**
-   * @param {object} options
-   * @param {string} [options.envName]
-   * @param {string} [options.flagName]
-   * @param {string} options.trueValue
-   * @returns {string | undefined}
-   */
-  function getPathFromEnv({ envName, flagName, trueValue }) {
-    let option;
-    if (envName) {
-      option = env[envName];
-    } else if (flagName) {
-      option = getFlagValue(flagName);
-    } else {
-      return undefined;
-    }
-
-    switch (option) {
-      case '0':
-      case 'false':
-      case false:
-        return undefined;
-      case '1':
-      case 'true':
-      case true:
-        return trueValue;
-      default:
-        if (option) {
-          return pathResolve(option);
-        } else if (envName && flagName) {
-          return getPathFromEnv({ flagName, trueValue });
-        } else {
-          return undefined;
-        }
-    }
-  }
+  const processValue = makeProcessValue({ env, args });
 
   // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos), which
   // is better than scribbling into the current directory.
-  const cosmosHome = getFlagValue('home', `${homedir}/.ag-chain-cosmos`);
+  const cosmosHome = processValue.getFlag(
+    'home',
+    `${homedir}/.ag-chain-cosmos`,
+  );
   const stateDBDir = `${cosmosHome}/data/ag-cosmos-chain-state`;
   fs.mkdirSync(stateDBDir, { recursive: true });
 
@@ -360,7 +307,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const swingStoreTraceFile = getPathFromEnv({
+    const swingStoreTraceFile = processValue.getPath({
       envName: 'SWING_STORE_TRACE',
       flagName: 'trace-store',
       trueValue: pathResolve(stateDBDir, 'store-trace.log'),

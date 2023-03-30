@@ -24,6 +24,7 @@
     "@endo/far": "^0.2.14",
     "@endo/marshal": "^0.8.1",
     "@endo/promise-kit": "^0.2.52",
+    "anylogger": "^0.21.0",
     "jessie.js": "^0.3.2"
   },
   "devDependencies": {

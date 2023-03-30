@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { initEmpty } from '@agoric/store';
 import { defineKindMulti } from '@agoric/vat-data';
 

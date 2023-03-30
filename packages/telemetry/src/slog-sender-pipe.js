@@ -4,7 +4,7 @@ import anylogger from 'anylogger';
 
 import { makeQueue } from '@endo/stream';
 
-import { makeShutdown } from './shutdown.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

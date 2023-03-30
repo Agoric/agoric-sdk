@@ -1,6 +1,5 @@
-import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 function ignore(p) {
   p.then(
