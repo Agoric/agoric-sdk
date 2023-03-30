@@ -93,6 +93,41 @@ export const fetchSwingsetParams = net => {
 harden(fetchSwingsetParams);
 
 /**
+ * @template T
+ * @param {import('./rpc').MinimalNetworkConfig & {
+ *   execFileSync: typeof import('child_process').execFileSync,
+ *   delay: (ms: number) => Promise<void>,
+ *   period?: number,
+ * }} opts
+ * @returns {(l: () => Promise<T>) => Promise<T>}
+ */
+export const pollBlocks = opts => async lookup => {
+  const { execFileSync, delay, rpcAddrs, period = 3 * 1000 } = opts;
+
+  const nodeArgs = [`--node=${rpcAddrs[0]}`];
+
+  await null; // separate sync prologue
+
+  for (;;) {
+    const sTxt = execFileSync(agdBinary, ['status', ...nodeArgs]);
+    const status = JSON.parse(sTxt.toString());
+    try {
+      // see await null above
+      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+      const result = await lookup();
+      return result;
+    } catch (_err) {
+      const {
+        SyncInfo: { latest_block_time: time, latest_block_height: height },
+      } = status;
+      console.error(time, 'not in block', height, 'retrying...');
+      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+      await delay(period);
+    }
+  }
+};
+
+/**
  * @param {string} txhash
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
@@ -101,40 +136,25 @@ harden(fetchSwingsetParams);
  * }} opts
  */
 export const pollTx = async (txhash, opts) => {
-  const { execFileSync, delay, rpcAddrs, chainName, period = 3 * 1000 } = opts;
+  const { execFileSync, rpcAddrs, chainName } = opts;
 
   const nodeArgs = [`--node=${rpcAddrs[0]}`];
   const outJson = ['--output', 'json'];
-  let data;
 
-  await null; // separate sync prologue
-
-  do {
-    const sTxt = execFileSync(agdBinary, ['status', ...nodeArgs]);
-    const status = JSON.parse(sTxt.toString());
-    try {
-      const out = execFileSync(
-        agdBinary,
-        [
-          'query',
-          'tx',
-          txhash,
-          `--chain-id=${chainName}`,
-          ...nodeArgs,
-          ...outJson,
-        ],
-        { stdio: ['ignore', 'pipe', 'ignore'] },
-      );
-      data = JSON.parse(out.toString());
-    } catch (_err) {
-      const {
-        SyncInfo: { latest_block_time: time, latest_block_height: height },
-      } = status;
-      console.error(time, 'tx not in block', height, 'retrying...');
-      // see await null above
-      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
-      await delay(period);
-    }
-  } while (!data);
-  return data;
+  const lookup = async () => {
+    const out = execFileSync(
+      agdBinary,
+      [
+        'query',
+        'tx',
+        txhash,
+        `--chain-id=${chainName}`,
+        ...nodeArgs,
+        ...outJson,
+      ],
+      { stdio: ['ignore', 'pipe', 'ignore'] },
+    );
+    return JSON.parse(out.toString());
+  };
+  return pollBlocks(opts)(lookup);
 };
