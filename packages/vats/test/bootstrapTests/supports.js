@@ -255,7 +255,7 @@ export const makeWalletFactoryDriver = async (
 };
 
 export const getNodeTestVaultsConfig = async (
-  bundleDir,
+  bundleDir = 'bundles',
   specifier = '@agoric/vats/decentral-test-vaults-config.json',
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
@@ -290,7 +290,11 @@ export const getNodeTestVaultsConfig = async (
  * @param {string} bundleDir directory to write bundles and config to
  * @param {string} [specifier] bootstrap config specifier
  */
-export const makeSwingsetTestKit = async (t, bundleDir, specifier) => {
+export const makeSwingsetTestKit = async (
+  t,
+  bundleDir = 'bundles',
+  specifier,
+) => {
   console.time('makeSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
   const { kernelStorage } = initSwingStore();
