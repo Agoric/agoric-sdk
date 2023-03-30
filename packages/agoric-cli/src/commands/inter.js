@@ -16,7 +16,6 @@ import {
   boardSlottingMarshaller,
   getNetworkConfig,
   makeRpcUtils,
-  networkConfig,
 } from '../lib/rpc.js';
 import { doAction, outputActionAndHint } from '../lib/wallet.js';
 
@@ -109,12 +108,13 @@ export const fmtBid = (bid, assets) => {
  *   now: () => number,
  *   createCommand: // Note: includes access to process.stdout, .stderr, .exit
  *     typeof import('commander').createCommand,
- *   execFileSync: typeof import('child_process').execFileSync
+ *   execFileSync: typeof import('child_process').execFileSync,
+ *   setTimeout: typeof setTimeout,
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
  */
 export const makeInterCommand = async (
-  { env, stdout, stderr, now, execFileSync, createCommand },
+  { env, stdout, stderr, now, setTimeout, execFileSync, createCommand },
   { fetch },
 ) => {
   const interCmd = createCommand('inter')
@@ -229,6 +229,8 @@ For example:
     return p / 100;
   };
 
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   bidCmd
     .command('by-discount')
     .description(
@@ -274,7 +276,7 @@ For example:
       'wallet address literal or name',
       normalizeAddress,
     )
-    .option('--dryRun', 'show agd commands only')
+    .option('--dry-run', 'show agd commands only')
     .action(
       /**
        * @param {string} id
@@ -289,17 +291,27 @@ For example:
           method: 'tryExitOffer',
           offerId: id,
         };
-        const result = doAction(action, {
+        const networkConfig = await getNetworkConfig(env);
+
+        const result = await doAction(action, {
           dryRun,
           verbose: false,
           ...networkConfig,
           execFileSync,
+          delay,
           stdout,
           from,
         });
         if (result) {
-          const { txhash } = result;
-          stdout.write(`${JSON.stringify({ offerId: id, txhash })}\n`);
+          const { timestamp, txhash, height } = result;
+          stdout.write(
+            `${JSON.stringify({
+              timestamp,
+              height,
+              offerId: id,
+              txhash,
+            })}\n`,
+          );
         }
       },
     );

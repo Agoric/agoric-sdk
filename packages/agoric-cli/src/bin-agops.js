@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /* eslint-disable @jessie.js/no-nested-await */
-/* global fetch */
+/* global fetch, setTimeout */
 
 import '@agoric/casting/node-fetch-shim.js';
 import '@endo/init';
@@ -42,6 +42,7 @@ program.addCommand(
       createCommand,
       execFileSync,
       now: () => Date.now(),
+      setTimeout,
     },
     { fetch },
   ),
