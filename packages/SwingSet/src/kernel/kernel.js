@@ -19,7 +19,10 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
-import { makeWorkerOptions } from '../lib/workerOptions.js';
+import {
+  makeWorkerOptions,
+  updateWorkerOptions,
+} from '../lib/workerOptions.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
 import { makeKernelSyscallHandler } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
@@ -95,6 +98,7 @@ export default function buildKernel(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
+    bundleHandler,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
   const {
@@ -689,7 +693,11 @@ export default function buildKernel(
       reapInterval = kernelKeeper.getDefaultReapInterval(),
       ...otherOptions
     } = dynamicOptions;
-    const workerOptions = await makeWorkerOptions(kernelKeeper, managerType);
+    const workerOptions = await makeWorkerOptions(
+      kernelKeeper,
+      bundleHandler,
+      managerType,
+    );
     /** @type {import('../types-internal.js').RecordedVatOptions} */
     const vatOptions = harden({ workerOptions, reapInterval, ...otherOptions });
     vatKeeper.setSourceAndOptions(source, vatOptions);
@@ -925,9 +933,15 @@ export default function buildKernel(
     // transcript or snapshot and prime everything for the next incarnation.
 
     await vatWarehouse.resetWorker(vatID);
+    // update source and bundleIDs, store back to vat metadata
     const source = { bundleID };
-    const { options } = vatKeeper.getSourceAndOptions();
-    vatKeeper.setSourceAndOptions(source, options);
+    const origOptions = vatKeeper.getOptions();
+    const workerOptions = await updateWorkerOptions(
+      bundleHandler,
+      origOptions.workerOptions,
+    );
+    const vatOptions = harden({ ...origOptions, workerOptions });
+    vatKeeper.setSourceAndOptions(source, vatOptions);
     const incarnationNumber = vatKeeper.incIncarnationNumber();
     // TODO: decref the bundleID once setSourceAndOptions increfs it
 
@@ -1573,7 +1587,11 @@ export default function buildKernel(
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
-    const workerOptions = await makeWorkerOptions(kernelKeeper, 'local');
+    const workerOptions = await makeWorkerOptions(
+      kernelKeeper,
+      bundleHandler,
+      'local',
+    );
     /** @type {import('../types-internal.js').RecordedVatOptions} */
     const vatOptions = harden({
       name,

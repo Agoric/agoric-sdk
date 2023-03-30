@@ -18,8 +18,10 @@ function makeVatRootObjectSlot() {
 }
 
 export async function initializeKernel(config, kernelStorage, options = {}) {
-  await 0; // no sync prelude
-  const { verbose = false } = options;
+  const {
+    verbose = false,
+    bundleHandler, // required if config has xsnap-based static vats
+  } = options;
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(kernelStorage.kvStore);
 
@@ -91,7 +93,11 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         ...otherOptions
       } = creationOptions;
       // eslint-disable-next-line @jessie.js/no-nested-await,no-await-in-loop
-      const workerOptions = await makeWorkerOptions(kernelKeeper, managerType);
+      const workerOptions = await makeWorkerOptions(
+        kernelKeeper,
+        bundleHandler,
+        managerType,
+      );
       /** @type {import('../types-internal.js').RecordedVatOptions} */
       const vatOptions = harden({
         name,

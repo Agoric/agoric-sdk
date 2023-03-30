@@ -4,13 +4,15 @@ import path from 'path';
 
 import { assert, Fail } from '@agoric/assert';
 import { makeTracer } from '@agoric/internal';
-import { getLockdownBundle } from '@agoric/xsnap-lockdown';
-import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
 import bundleSource from '@endo/bundle-source';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from './bundle-handler.js';
 
 import '../types-ambient.js';
 import { makeNodeBundleCache } from '../../tools/bundleTool.js';
@@ -53,17 +55,12 @@ export async function buildKernelBundle() {
  * xsnap vat worker.
  */
 export async function buildVatAndDeviceBundles() {
-  const lockdownP = getLockdownBundle(); // throws if bundle is not built
-  const supervisorP = getSupervisorBundle(); // ditto
   const bundles = await allValues({
     adminDevice: bundleRelative('../devices/vat-admin/device-vat-admin.js'),
     adminVat: bundleRelative('../vats/vat-admin/vat-vat-admin.js'),
     comms: bundleRelative('../vats/comms/index.js'),
     vattp: bundleRelative('../vats/vattp/vat-vattp.js'),
     timer: bundleRelative('../vats/timer/vat-timer.js'),
-
-    lockdown: lockdownP,
-    supervisor: supervisorP,
   });
 
   return harden(bundles);
@@ -290,7 +287,9 @@ function sortObjectProperties(obj, firsts = []) {
  * @param {unknown} bootstrapArgs
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
- * @param {{ env?: Record<string, string | undefined > }} runtimeOptions
+ * @param {{ env?: Record<string, string | undefined >,
+ *           bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *         }} runtimeOptions
  * @returns {Promise<string | undefined>} KPID of the bootstrap message result promise
  */
 export async function initializeSwingset(
@@ -304,6 +303,12 @@ export async function initializeSwingset(
   insistStorageAPI(kvStore);
   !swingsetIsInitialized(kernelStorage) ||
     Fail`kernel store already initialized`;
+  const {
+    bundleHandler = makeWorkerBundleHandler(
+      kernelStorage.bundleStore,
+      makeXsnapBundleData(),
+    ),
+  } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = JSON.parse(JSON.stringify(config));
@@ -345,11 +350,6 @@ export async function initializeSwingset(
     addVattp = true,
     addTimer = true,
   } = initializationOptions;
-
-  assert.typeof(kernelBundles.lockdown, 'object');
-  assert.typeof(kernelBundles.supervisor, 'object');
-  kvStore.set('lockdownBundle', JSON.stringify(kernelBundles.lockdown));
-  kvStore.set('supervisorBundle', JSON.stringify(kernelBundles.supervisor));
 
   if (config.bootstrap && bootstrapArgs) {
     const bootConfig = config.vats[config.bootstrap];
@@ -575,7 +575,8 @@ export async function initializeSwingset(
     kdebugEnable(true);
   }
 
+  const kopts = { bundleHandler };
   // returns the kpid of the bootstrap() result
-  const bootKpid = await initializeKernel(kconfig, kernelStorage);
+  const bootKpid = await initializeKernel(kconfig, kernelStorage, kopts);
   return bootKpid;
 }

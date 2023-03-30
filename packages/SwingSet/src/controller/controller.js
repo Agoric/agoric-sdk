@@ -23,6 +23,10 @@ import {
   swingsetIsInitialized,
   initializeSwingset,
 } from './initializeSwingset.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from './bundle-handler.js';
 import { makeStartXSnap } from './startXSnap.js';
 
 /** @param {Uint8Array} bytes */
@@ -87,6 +91,8 @@ function unhandledRejectionHandler(e, pr) {
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>,
  *   kernelBundle?: Bundle
+ *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
+ *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
@@ -109,10 +115,26 @@ export async function makeSwingsetController(
     spawn = ambientSpawn,
     warehousePolicy = {},
     overrideVatManagerOptions = {},
+    xsnapBundleData = makeXsnapBundleData(),
   } = runtimeOptions;
+  const {
+    bundleHandler = makeWorkerBundleHandler(
+      kernelStorage.bundleStore,
+      xsnapBundleData,
+    ),
+  } = runtimeOptions;
+
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
   }
+
+  const startXSnap = makeStartXSnap({
+    bundleHandler,
+    snapStore: kernelStorage.snapStore,
+    spawn,
+    debug: !!env.XSNAP_DEBUG,
+    workerTraceRootPath: env.XSNAP_TEST_RECORD,
+  });
 
   function writeSlogObject(obj) {
     if (!slogSender) {
@@ -180,19 +202,6 @@ export async function makeSwingsetController(
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({});
 
-  const bundles = [
-    // @ts-ignore assume lockdownBundle is set
-    JSON.parse(kvStore.get('lockdownBundle')),
-    // @ts-ignore assume supervisorBundle is set
-    JSON.parse(kvStore.get('supervisorBundle')),
-  ];
-  const startXSnap = makeStartXSnap(bundles, {
-    snapStore: kernelStorage.snapStore,
-    spawn,
-    debug: !!env.XSNAP_DEBUG,
-    workerTraceRootPath: env.XSNAP_TEST_RECORD,
-  });
-
   const kernelEndowments = {
     waitUntilQuiescent,
     kernelStorage,
@@ -205,6 +214,7 @@ export async function makeSwingsetController(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize: makeGcAndFinalize(engineGC),
+    bundleHandler,
   };
 
   const kernelRuntimeOptions = {

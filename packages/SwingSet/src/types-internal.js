@@ -6,8 +6,7 @@ export {};
  * "xsnap" flavors.
  *
  * @typedef { { type: 'local' } } LocalWorkerOptions
- * @typedef { { type: 'xsnap' } } XSnapWorkerOptions
- * @typedef { { type: 'xsnap', bundleIDs: BundleID[] } } TODOXSnapWorkerOptions
+ * @typedef { { type: 'xsnap', bundleIDs: BundleID[] } } XSnapWorkerOptions
  *  bundleIDs indicate the SES lockdown and supervisor/liveslots bundles to
  *  evaluate into a new xsnap worker
  * @typedef { LocalWorkerOptions | XSnapWorkerOptions } WorkerOptions

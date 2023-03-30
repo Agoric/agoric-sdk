@@ -7,18 +7,21 @@ import { xsnap, recordXSnap } from '@agoric/xsnap';
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
 /**
- * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
- *   snapStore?: SnapStore,
+ *   bundleHandler: import('./bundle-handler.js').BundleHandler,
+ *   snapStore?: import('@agoric/swing-store').SnapStore,
  *   spawn: typeof import('child_process').spawn
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
+ *   overrideBundles?: import('../types-external.js').Bundle[],
  * }} options
  */
-export function makeStartXSnap(bundles, options) {
+export function makeStartXSnap(options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
+  const { bundleHandler } = options; // required unless bundleIDs is empty
   const { snapStore, spawn, debug = false, workerTraceRootPath } = options;
+  const { overrideBundles } = options;
 
   let doXSnap = xsnap;
 
@@ -53,6 +56,7 @@ export function makeStartXSnap(bundles, options) {
   /**
    * @param {string} vatID
    * @param {string} name
+   * @param {import('../types-external.js').BundleID[]} bundleIDs
    * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
    * @param {boolean} [metered]
    * @param {boolean} [reload]
@@ -60,6 +64,7 @@ export function makeStartXSnap(bundles, options) {
   async function startXSnap(
     vatID,
     name,
+    bundleIDs,
     handleCommand,
     metered,
     reload = false,
@@ -82,10 +87,17 @@ export function makeStartXSnap(bundles, options) {
     // console.log('fresh xsnap', { snapStore: snapStore });
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
+    const bundlePs = bundleIDs.map(id => bundleHandler.getBundle(id));
+    let bundles = await Promise.all(bundlePs);
+    if (overrideBundles) {
+      bundles = overrideBundles; // replace the usual bundles
+    }
+
     for (const bundle of bundles) {
-      bundle.moduleFormat === 'getExport' ||
-        bundle.moduleFormat === 'nestedEvaluate' ||
-        Fail`unexpected: ${bundle.moduleFormat}`;
+      const { moduleFormat } = bundle;
+      if (moduleFormat !== 'getExport' && moduleFormat !== 'nestedEvaluate') {
+        throw Fail`unexpected: ${moduleFormat}`;
+      }
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }

@@ -31,7 +31,10 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (vatID: string, name: string, handleCommand: AsyncHandler, metered?: boolean, reload?: boolean) => Promise<XSnap>,
+ *   startXSnap: (vatID: string, name: string,
+ *                bundleIDs: BundleID[],
+ *                handleCommand: AsyncHandler, metered?: boolean,
+ *                reload?: boolean) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -66,12 +69,16 @@ export function makeXsSubprocessFactory({
       compareSyscalls,
       useTranscript,
       sourcedConsole,
+      workerOptions,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
       'xs-worker: enableSetup not supported at all',
     );
     assert(useTranscript, 'xs-worker: useTranscript=false not supported');
+    assert(workerOptions.type === 'xsnap');
+    const { bundleIDs } = workerOptions;
+    assert(bundleIDs, 'bundleIDs required for xs-worker');
 
     const mk = makeManagerKit(
       vatID,
@@ -135,6 +142,7 @@ export function makeXsSubprocessFactory({
     const worker = await startXSnap(
       vatID,
       argName,
+      bundleIDs,
       handleCommand,
       metered,
       !!snapshotInfo,
