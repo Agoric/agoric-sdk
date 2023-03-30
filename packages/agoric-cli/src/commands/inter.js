@@ -122,7 +122,8 @@ export const fmtBid = (bid, assets) => {
     result,
     error,
   } = bid;
-  const resultProp = result && result !== 'UNPUBLISHED' ? { result } : {};
+  const resultProp =
+    !error && result && result !== 'UNPUBLISHED' ? { result } : {};
   const props = {
     ...(give ? { give: fmt.record(give) } : {}),
     ...(want ? { want: fmt.amount(want) } : {}),
