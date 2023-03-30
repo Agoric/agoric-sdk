@@ -422,7 +422,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         deposits.set(brand, []);
       } else if (depositsForBrand.length > 1) {
         const collProceeds = collateralSeat.getCurrentAllocation().Collateral;
-        const currProceeds = currencySeat.getCurrentAllocation().Currency;
+        const currProceeds =
+          currencySeat.getCurrentAllocation().Currency ||
+          AmountMath.makeEmpty(brands.Currency);
         const transfers = distributeProportionalSharesWithLimits(
           collProceeds,
           currProceeds,
