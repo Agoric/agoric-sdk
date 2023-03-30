@@ -5,7 +5,7 @@ import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@agoric/assert';
 import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
-import { fsStreamReady } from '@agoric/internal/src/fs-stream.js';
+import { fsStreamReady } from '@agoric/internal/src/node/fs-stream.js';
 import { buffer } from './util.js';
 
 /**

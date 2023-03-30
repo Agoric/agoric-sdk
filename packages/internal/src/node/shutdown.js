@@ -1,4 +1,4 @@
-/* global process */
+import process from 'node:process';
 import anylogger from 'anylogger';
 
 const console = anylogger('shutdown');
