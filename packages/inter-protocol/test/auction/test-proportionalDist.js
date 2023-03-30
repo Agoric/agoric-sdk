@@ -6,7 +6,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 
 import { withAmountUtils } from '../supports.js';
-import { distributeProportionalShares } from '../../src/auction/auctioneer.js';
+import { distributeProportionalSharesWithLimits } from '../../src/auction/auctioneer.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -28,6 +28,15 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
+/**
+ * @see {distributeProportionalSharesWithLimits} for logical cases A-E
+ *
+ * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {[collateralReturned: bigint, currencyRaise: bigint]} amountsReturned
+ * @param {Array<{deposit: number, goal?: number}>} rawDeposits
+ * @param {[transfers: Array<[bigint, bigint]>, leftovers: [bigint, bigint]]} rawExpected
+ * @param {string} kwd
+ */
 const checkProportions = (
   t,
   amountsReturned,
@@ -40,7 +49,7 @@ const checkProportions = (
   const rawExp = rawExpected[0];
   t.is(rawDeposits.length, rawExp.length);
 
-  const [collateralReturned, currencyReturned] = amountsReturned;
+  const [collateralReturned, currencyRaise] = amountsReturned;
   const fakeCollateralSeat = harden({});
   const fakeCurrencySeat = harden({});
   const fakeReserveSeat = harden({});
@@ -49,7 +58,12 @@ const checkProportions = (
   const expectedXfer = [];
   for (let i = 0; i < rawDeposits.length; i += 1) {
     const seat = harden({});
-    deposits.push({ seat, amount: collateral.make(rawDeposits[i]) });
+    const { goal } = rawDeposits[i];
+    deposits.push({
+      seat,
+      amount: collateral.make(BigInt(rawDeposits[i].deposit)),
+      goal: goal ? currency.make(BigInt(goal)) : null,
+    });
     const currencyRecord = { Currency: currency.make(rawExp[i][1]) };
     expectedXfer.push([fakeCurrencySeat, seat, currencyRecord]);
     const collateralRecord = { Collateral: collateral.make(rawExp[i][0]) };
@@ -65,9 +79,9 @@ const checkProportions = (
     { [kwd]: collateral.make(expectedLeftovers[0]) },
   ]);
 
-  const transfers = distributeProportionalShares(
+  const transfers = distributeProportionalSharesWithLimits(
     collateral.make(collateralReturned),
-    currency.make(currencyReturned),
+    currency.make(currencyRaise),
     // @ts-expect-error mocks for test
     deposits,
     fakeCollateralSeat,
@@ -83,20 +97,20 @@ const checkProportions = (
 // Received 0 Collateral and 20 Currency from the auction to distribute to one
 // vaultManager. Expect the one to get 0 and 20, and no leftovers
 test(
-  'distributeProportionalShares',
+  'A: distributeProportionalShares',
   checkProportions,
   [0n, 20n],
-  [100n],
+  [{ deposit: 100 }],
   [[[0n, 20n]], [0n, 0n]],
 );
 
 // received 100 Collateral and 2000 Currency from the auction to distribute to
 // two depositors in a ratio of 6:1. expect leftovers
 test(
-  'proportional simple',
+  'A: proportional simple',
   checkProportions,
   [100n, 2000n],
-  [100n, 600n],
+  [{ deposit: 100 }, { deposit: 600 }],
   [
     [
       [14n, 285n],
@@ -109,10 +123,10 @@ test(
 // Received 100 Collateral and 2000 Currency from the auction to distribute to
 // three depositors in a ratio of 1:3:1. expect no leftovers
 test(
-  'proportional three way',
+  'A: proportional three way',
   checkProportions,
   [100n, 2000n],
-  [100n, 300n, 100n],
+  [{ deposit: 100 }, { deposit: 300 }, { deposit: 100 }],
   [
     [
       [20n, 400n],
@@ -127,10 +141,16 @@ test(
 // five depositors in a ratio of 20, 36, 17, 83, 42. expect leftovers
 // sum = 198
 test(
-  'proportional odd ratios, no collateral',
+  'A: proportional odd ratios, no collateral',
   checkProportions,
   [0n, 2001n],
-  [20n, 36n, 17n, 83n, 42n],
+  [
+    { deposit: 20 },
+    { deposit: 36 },
+    { deposit: 17 },
+    { deposit: 83 },
+    { deposit: 42 },
+  ],
   [
     [
       [0n, 202n],
@@ -147,10 +167,16 @@ test(
 // five depositors in a ratio of 20, 36, 17, 83, 42. expect leftovers
 // sum = 198
 test(
-  'proportional, no currency',
+  'A: proportional, no currency',
   checkProportions,
   [20n, 0n],
-  [20n, 36n, 17n, 83n, 42n],
+  [
+    { deposit: 20 },
+    { deposit: 36 },
+    { deposit: 17 },
+    { deposit: 83 },
+    { deposit: 42 },
+  ],
   [
     [
       [2n, 0n],
@@ -160,5 +186,186 @@ test(
       [4n, 0n],
     ],
     [2n, 0n],
+  ],
+);
+
+const transferSharing20 = /** @type {Array<[bigint, bigint]>} */ ([
+  [20n, 4n],
+  [60n, 12n],
+  [20n, 4n],
+]);
+
+// currencyRaise < proceedsGoal so everyone gets prorated amounts of both
+test(
+  'B: proportional of 20 limit',
+  checkProportions,
+  [100n, 20n],
+  [
+    { deposit: 10_000, goal: 10 },
+    { deposit: 30_000, goal: 30 },
+    { deposit: 10_000, goal: 10 },
+  ],
+  [transferSharing20, [0n, 0n]],
+);
+
+// A. goal is not in proportion to deposit. Prevented by addAssets. Fallback
+// to proportional to deposit.
+test(
+  'A; goal not proportional to deposits',
+  checkProportions,
+  [100n, 20n],
+  [
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 2 },
+    { deposit: 10_000, goal: 9 },
+  ],
+  [transferSharing20, [0n, 0n]],
+);
+
+// C if currencyRaise matches proceedsGoal, everyone gets the currency they
+//   asked for, plus enough collateral to reach the same proportional payout.
+test(
+  'C: currencyRaise matches proceedsGoal, negligible collateral',
+  checkProportions,
+  [100n, 45n],
+  [
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 27 },
+    { deposit: 10_000, goal: 9 },
+  ],
+  [
+    [
+      [0n, 9n],
+      [0n, 27n],
+      [0n, 9n],
+    ],
+    [100n, 0n],
+  ],
+);
+
+// C if currencyRaise matches proceedsGoal, everyone gets the currency they
+//   asked for, plus enough collateral to reach the same proportional payout.
+test(
+  'C: currencyRaise matches proceedsGoal more collateral',
+  checkProportions,
+  [100n, 450n],
+  [
+    { deposit: 100, goal: 90 },
+    { deposit: 300, goal: 270 },
+    { deposit: 100, goal: 90 },
+  ],
+  [
+    [
+      [19n, 90n],
+      [59n, 270n],
+      [19n, 90n],
+    ],
+    [3n, 0n],
+  ],
+);
+
+//   If any depositor's goal limit exceeded their share of the total,
+//   we'll fall back to the first approach.
+test(
+  'C: greedy goal',
+  checkProportions,
+  [100n, 20n],
+  [
+    { deposit: 100_000, goal: 9 },
+    { deposit: 300_000, goal: 2000 },
+    { deposit: 100_000, goal: 9 },
+  ],
+  [transferSharing20, [0n, 0n]],
+);
+
+// D if currencyRaise > proceedsGoal && all depositors specified a limit,
+//   all depositors get their goal first, then we distribute the
+//   remainder (collateral and currency) to get the same proportional payout.
+test(
+  'D: currencyRaise > proceedsGoal && all depositors specified a limit a',
+  checkProportions,
+  [100n, 200n],
+  [
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 27 },
+    { deposit: 10_000, goal: 9 },
+  ],
+  // rounding happens because the value of collateral is negligible.
+  [
+    [
+      [20n, 39n],
+      [60n, 119n],
+      [20n, 39n],
+    ],
+    [0n, 3n],
+  ],
+);
+
+// D if currencyRaise > proceedsGoal && all depositors specified a limit,
+//   all depositors get their goal first, then we distribute the
+//   remainder (collateral and currency) to get the same proportional payout.
+test(
+  'D: currencyRaise > proceedsGoal && all depositors specified a limit b',
+  checkProportions,
+  [100n, 200n],
+  [
+    { deposit: 10_000, goal: 900 },
+    { deposit: 30_000, goal: 2700 },
+    { deposit: 10_000, goal: 900 },
+  ],
+  [
+    [
+      [20n, 40n],
+      [60n, 120n],
+      [20n, 40n],
+    ],
+    [0n, 0n],
+  ],
+);
+
+// E currencyRaise > proceedsGoal && some depositors didn't specify a limit
+// if proceedsGoal + value of collateralReturn >= limitedShare then those
+// who specified a limit can get all the excess over their limit in
+// collateral. Others share whatever is left.
+test(
+  'E: currencyRaise > proceedsGoal && some depositors didn`t specify a limit',
+  checkProportions,
+  [100n, 2000n],
+  [
+    { deposit: 10_000, goal: 9 },
+    { deposit: 30_000, goal: 27 },
+    { deposit: 10_000 },
+  ],
+  // rounding happens because the value of collateral is negligible.
+  [
+    [
+      [20n, 399n],
+      [60n, 1199n],
+      [0n, 400n],
+    ],
+    [20n, 2n],
+  ],
+);
+
+// E currencyRaise > proceedsGoal && some depositors didn't specify a limit
+// if proceedsGoal + value of collateralReturn >= limitedShare then those
+// who specified a limit can get all the excess over their limit in
+// collateral. Others share whatever is left.
+test(
+  'E: currencyRaise > proceedsGoal && some depositors had no limit, enuf collateral returned for those who had',
+  checkProportions,
+  [1000n, 4000n],
+  [
+    { deposit: 1000, goal: 900 },
+    { deposit: 3000, goal: 2700 },
+    { deposit: 1000 },
+  ],
+  [
+    [
+      [100n, 900n],
+      [300n, 2700n],
+      [600n, 400n],
+    ],
+    [0n, 0n],
   ],
 );

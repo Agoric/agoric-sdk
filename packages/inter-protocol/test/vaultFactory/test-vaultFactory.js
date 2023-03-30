@@ -68,7 +68,7 @@ const contractRoots = {
 
 /** @typedef {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract} VFC */
 
-const trace = makeTracer('TestVF', true);
+const trace = makeTracer('TestVF', false);
 
 const SECONDS_PER_DAY = SECONDS_PER_YEAR / 365n;
 const SECONDS_PER_WEEK = SECONDS_PER_DAY * 7n;
@@ -1659,7 +1659,7 @@ test('addVaultType: extra, unexpected params', async t => {
   };
 
   await t.throwsAsync(
-    // @ts-expect-error bad args
+    // @ts-expect-error testing unexpected values
     E(vaultFactory).addVaultType(chit.issuer, 'Chit', missingParams),
     {
       message:
