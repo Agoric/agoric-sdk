@@ -114,9 +114,10 @@ export const makeVStorage = (powers, config = networkConfig) => {
      * Read values going back as far as available
      *
      * @param {string} path
+     * @param {number} [minHeight]
      * @returns {Promise<string[]>}
      */
-    async readFully(path) {
+    async readFully(path, minHeight = undefined) {
       const parts = [];
       // undefined the first iteration, to query at the highest
       let blockHeight;
@@ -140,6 +141,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
         parts.push(values);
         // console.debug('PUSHED', values);
         // console.debug('NEW', { blockHeight });
+        if (minHeight && blockHeight <= minHeight) break;
       } while (blockHeight > 0);
       return parts.flat();
     },
