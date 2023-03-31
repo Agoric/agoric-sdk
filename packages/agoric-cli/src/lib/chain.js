@@ -98,11 +98,13 @@ harden(fetchSwingsetParams);
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
+ *   retryMessage?: string,
  * }} opts
- * @returns {(l: () => Promise<T>) => Promise<T>}
+ * @returns {(l: (b: { time: string, height: string }) => Promise<T>) => Promise<T>}
  */
 export const pollBlocks = opts => async lookup => {
   const { execFileSync, delay, rpcAddrs, period = 3 * 1000 } = opts;
+  const { retryMessage } = opts;
 
   const nodeArgs = [`--node=${rpcAddrs[0]}`];
 
@@ -111,16 +113,21 @@ export const pollBlocks = opts => async lookup => {
   for (;;) {
     const sTxt = execFileSync(agdBinary, ['status', ...nodeArgs]);
     const status = JSON.parse(sTxt.toString());
+    const {
+      SyncInfo: { latest_block_time: time, latest_block_height: height },
+    } = status;
     try {
       // see await null above
       // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
-      const result = await lookup();
+      const result = await lookup({ time, height });
       return result;
     } catch (_err) {
-      const {
-        SyncInfo: { latest_block_time: time, latest_block_height: height },
-      } = status;
-      console.error(time, 'not in block', height, 'retrying...');
+      console.error(
+        time,
+        retryMessage || 'not in block',
+        height,
+        'retrying...',
+      );
       // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
       await delay(period);
     }
@@ -156,5 +163,5 @@ export const pollTx = async (txhash, opts) => {
     );
     return JSON.parse(out.toString());
   };
-  return pollBlocks(opts)(lookup);
+  return pollBlocks({ ...opts, retryMessage: 'tx not in block' })(lookup);
 };
