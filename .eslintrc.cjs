@@ -1,7 +1,21 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-env node */
 const process = require('process');
 
 const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
+
+const deprecatedTerminology = [
+  ['currency', 'brand, asset or another descriptor'],
+  ['loan', 'debt'],
+  ['blacklist', 'denylist'],
+  ['whitelist', 'allowlist'],
+  ['RUN', 'IST', '/RUN/'],
+].flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
+  ['Literal', 'TemplateLiteral', 'Identifier'].map(selectorType => ({
+    selector: `${selectorType}[value=${badRgx}]`,
+    message: `Use '${good}' instead of deprecated '${bad}'`,
+  })),
+);
 
 module.exports = {
   root: true,
@@ -30,6 +44,7 @@ module.exports = {
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
+    'no-restricted-syntax': ['warn', ...deprecatedTerminology],
   },
   settings: {
     jsdoc: {
