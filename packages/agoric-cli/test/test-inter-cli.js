@@ -11,11 +11,6 @@ import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
 const { entries } = Object;
 
-const unused = (...args) => {
-  console.error('unused?', ...args);
-  assert.fail('should not be needed');
-};
-
 /** @typedef {import('commander').Command} Command */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
 
@@ -92,9 +87,9 @@ const offerSpec1 = harden({
 
 const publishedNames = {
   agoricNames: {
-    brand: entries(agoricNames.brand),
-    instance: entries(agoricNames.instance),
-    vbankAsset: entries(agoricNames.vbankAsset),
+    brand: { _: entries(agoricNames.brand) },
+    instance: { _: entries(agoricNames.instance) },
+    vbankAsset: { _: entries(agoricNames.vbankAsset) },
   },
 };
 
@@ -122,13 +117,14 @@ const makeNet = published => {
     );
     if (!matched) throw Error(`fetch what?? ${url}`);
     const { path } = matched.groups;
-    let data = published;
+    let node = published;
     for (const key of path.split('.')) {
-      data = data[key];
-      if (!data) throw Error(`query what?? ${path}`);
+      node = node[key];
+      if (!node) throw Error(`query what?? ${path}`);
     }
+    if (!node._) throw Error(`no data at ${path}`);
     return harden({
-      json: async () => fmt(data),
+      json: async () => fmt(node._),
     });
   };
 
@@ -146,13 +142,29 @@ const makeProcess = (t, keyring, out) => {
   const execFileSync = (file, args) => {
     switch (file) {
       case 'agd': {
-        t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
-        const name = args[3];
-        const addr = keyring[name];
-        if (!addr) {
-          throw Error(`no such key in keyring: ${name}`);
+        switch (args[0]) {
+          case 'keys': {
+            ['--node', '--chain'].forEach(opt => {
+              const ix = args.findIndex(a => a.startsWith(opt));
+              if (ix >= 0) {
+                args.splice(ix, 1);
+              }
+            });
+            t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
+            const name = args[3];
+            const addr = keyring[name];
+            if (!addr) {
+              throw Error(`no such key in keyring: ${name}`);
+            }
+            return addr;
+          }
+          case 'tx': {
+            return '{"@@@"}';
+          }
+          default:
+            t.fail(args[0]);
         }
-        return addr;
+        break;
       }
       default:
         throw Error('not impl');
@@ -181,13 +193,52 @@ const makeProcess = (t, keyring, out) => {
   };
 };
 
+/**
+ * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+ */
+const offerStatus2 = harden({
+  id: 'bid-234234',
+  invitationSpec: {
+    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
+    instancePath: ['auctioneer'],
+    source: 'agoricContract',
+  },
+  offerArgs: {
+    offerBidScaling: {
+      denominator: { brand: topBrands.IST, value: 100n },
+      numerator: { brand: topBrands.IST, value: 90n },
+    },
+    want: { brand: topBrands.ATOM, value: 2000000n },
+  },
+  proposal: {
+    give: {
+      Currency: { brand: topBrands.ATOM, value: 20000000n },
+    },
+  },
+  payouts: {
+    Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
+    Currency: { brand: topBrands.IST, value: 37_000_000n },
+  },
+});
+
+const govWallets = {
+  [govKeyring.gov1]: {
+    _: { updated: 'offerStatus', status: offerStatus2 },
+    current: { _: { liveOffers: [[offerStatus2.id, offerStatus2]] } },
+  },
+  [govKeyring.gov2]: { current: {} },
+};
+
 test('inter bid place by-price: output is correct', async t => {
-  const argv = 'node inter bid by-price --give 50 --price 9'.trim().split(' ');
+  const argv = 'node inter bid by-price --give 50 --price 9 --from gov1'
+    .trim()
+    .split(' ');
 
   const out = [];
   const cmd = await makeInterCommand(
-    { ...makeProcess(t, govKeyring, out), execFileSync: unused },
-    makeNet(publishedNames),
+    { ...makeProcess(t, govKeyring, out) },
+    makeNet({ ...publishedNames, wallet: govWallets }),
   );
   cmd.exitOverride(() => t.fail('exited'));
 
@@ -232,52 +283,14 @@ const offerStatus1 = harden({
   },
 });
 
-/**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
- */
-const offerStatus2 = harden({
-  id: 'bid-234234',
-  invitationSpec: {
-    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
-    instancePath: ['auctioneer'],
-    source: 'agoricContract',
-  },
-  offerArgs: {
-    offerBidScaling: {
-      denominator: { brand: topBrands.IST, value: 100n },
-      numerator: { brand: topBrands.IST, value: 90n },
-    },
-    want: { brand: topBrands.ATOM, value: 2000000n },
-  },
-  proposal: {
-    give: {
-      Currency: { brand: topBrands.ATOM, value: 20000000n },
-    },
-  },
-  payouts: {
-    Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
-    Currency: { brand: topBrands.IST, value: 37_000_000n },
-  },
-});
-
 test('inter bid list: finds one bid', async t => {
   const argv = 'node inter bid list --from gov1'.split(' ');
-
-  const wallet = {
-    [govKeyring.gov1]: {
-      current: {
-        liveOffers: [[offerStatus2.id, offerStatus2]],
-      },
-    },
-    [govKeyring.gov2]: { current: {} },
-  };
 
   const out = [];
 
   const cmd = await makeInterCommand(
     makeProcess(t, govKeyring, out),
-    makeNet({ ...publishedNames, wallet }),
+    makeNet({ ...publishedNames, wallet: govWallets }),
   );
   cmd.exitOverride(() => t.fail('exited'));
 
