@@ -21,7 +21,10 @@ const ZoeSeatIKit = harden({
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
     fail: M.call(M.any()).returns(),
-    resolveExitAndResult: M.call(M.promise(), ExitObjectShape).returns(),
+    resolveExitAndResult: M.call({
+      offerResultPromise: M.promise(),
+      exitObj: ExitObjectShape,
+    }).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
     // The return promise is empty, but doExit relies on settlement as a signal
     // that the payouts have settled. The exit publisher is notified after that.
@@ -94,6 +97,15 @@ export const makeZoeSeatAdminFactory = baggage => {
     baggage,
     'ZoeSeatKit',
     ZoeSeatIKit,
+    /**
+     *
+     * @param {Allocation} initialAllocation
+     * @param {ProposalRecord} proposal
+     * @param {InstanceAdminHelper} instanceAdminHelper
+     * @param {WithdrawFacet} withdrawFacet
+     * @param {ERef<ExitObj>} [exitObj]
+     * @param {boolean} [offerResultIsUndefined]
+     */
     (
       initialAllocation,
       proposal,
@@ -110,7 +122,7 @@ export const makeZoeSeatAdminFactory = baggage => {
         proposal,
         exitObj,
         offerResult: undefined,
-        offerResultValid: offerResultIsUndefined,
+        offerResultStored: offerResultIsUndefined,
         instanceAdminHelper,
         withdrawFacet,
         publisher,
@@ -176,7 +188,8 @@ export const makeZoeSeatAdminFactory = baggage => {
           );
         },
         // called only for seats resulting from offers.
-        resolveExitAndResult(offerResultPromise, exitObj) {
+        /** @param {HandleOfferResult} result */
+        resolveExitAndResult({ offerResultPromise, exitObj }) {
           const { state, facets } = this;
 
           if (ephemeralOfferResultStore.has(facets.userSeat)) {
@@ -197,6 +210,9 @@ export const makeZoeSeatAdminFactory = baggage => {
               },
             );
           } else {
+          !state.offerResultStored ||
+            Fail`offerResultStored before offerResultPromise`;
+
             const kit = makePromiseKit();
             kit.resolve(offerResultPromise);
             ephemeralOfferResultStore.set(facets.userSeat, kit);
@@ -242,12 +258,15 @@ export const makeZoeSeatAdminFactory = baggage => {
             () => state.payouts[keyword],
           );
         },
+
         async getOfferResult() {
           const { state, facets } = this;
 
-          if (state.offerResultValid) {
+          if (state.offerResultStored) {
             return state.offerResult;
-          } else if (ephemeralOfferResultStore.has(facets.userSeat)) {
+          }
+
+          if (ephemeralOfferResultStore.has(facets.userSeat)) {
             return ephemeralOfferResultStore.get(facets.userSeat).promise;
           }
 
@@ -265,7 +284,8 @@ export const makeZoeSeatAdminFactory = baggage => {
         },
         async tryExit() {
           const { state } = this;
-          state.exitObj || Fail`exitObj must be initialized before use`;
+          if (!state.exitObj)
+            throw Fail`exitObj must be initialized before use`;
           assertHasNotExited(this, 'Cannot exit; seat has already exited');
 
           return E(state.exitObj).exit();
