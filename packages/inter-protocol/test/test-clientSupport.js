@@ -29,6 +29,7 @@ test('Offers.auction.Bid', async t => {
         give: 4.56,
         collateralBrandKey: 'ATOM',
         discount: cliArg,
+        want: 10_000,
       }),
       {
         id: 'foo1',
@@ -42,6 +43,7 @@ test('Offers.auction.Bid', async t => {
         },
         offerArgs: {
           offerBidScaling,
+          want: { brand: atom.brand, value: 10_000_000_000n },
         },
       },
     );
@@ -55,6 +57,7 @@ test('Offers.auction.Bid', async t => {
       give: 4.56,
       collateralBrandKey: 'ATOM',
       price,
+      want: 10_000,
     }),
     {
       id: 'by-price2',
@@ -64,7 +67,10 @@ test('Offers.auction.Bid', async t => {
         callPipe: [['makeBidInvitation', [atom.brand]]],
       },
       proposal: { give: { Currency: ist.make(4_560_000n) } },
-      offerArgs: { offerPrice },
+      offerArgs: {
+        offerPrice,
+        want: { brand: atom.brand, value: 10_000_000_000n },
+      },
     },
   );
 
@@ -85,7 +91,6 @@ test('Offers.auction.Bid', async t => {
       },
       proposal: {
         give: { Currency: ist.make(4_560_000n) },
-        want: { Collateral: atom.make(1_230_000n) },
       },
       offerArgs: {
         offerPrice,
