@@ -9,8 +9,6 @@ import { inspect } from 'util';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputAction } from '../lib/wallet.js';
 
-const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
-
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
@@ -43,14 +41,20 @@ export const makeOracleCommand = async logger => {
   `,
   );
 
-  const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
-    const name = `${brandIn}-${brandOut} price feed`;
-    const instance = agoricNames.instance[name];
-    if (!instance) {
-      logger.debug('known instances:', agoricNames.instance);
-      throw new Error(`Unknown instance ${name}`);
-    }
-    return instance;
+  const rpcTools = async () => {
+    const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
+
+    const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
+      const name = `${brandIn}-${brandOut} price feed`;
+      const instance = agoricNames.instance[name];
+      if (!instance) {
+        logger.debug('known instances:', agoricNames.instance);
+        throw new Error(`Unknown instance ${name}`);
+      }
+      return instance;
+    };
+
+    return { agoricNames, fromBoard, vstorage, lookupPriceAggregatorInstance };
   };
 
   oracle
@@ -64,6 +68,7 @@ export const makeOracleCommand = async logger => {
     )
     .option('--offerId [number]', 'Offer id', Number, Date.now())
     .action(async function (opts) {
+      const { lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
@@ -160,6 +165,7 @@ export const makeOracleCommand = async logger => {
     )
     .action(async function (opts) {
       const { pair } = opts;
+      const { vstorage, fromBoard } = await rpcTools();
 
       const capDataStr = await vstorage.readLatest(
         `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,
