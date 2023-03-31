@@ -93,14 +93,13 @@ export const fetchSwingsetParams = net => {
 harden(fetchSwingsetParams);
 
 /**
- * @template T
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
  *   retryMessage?: string,
  * }} opts
- * @returns {(l: (b: { time: string, height: string }) => Promise<T>) => Promise<T>}
+ * @returns {<T>(l: (b: { time: string, height: string }) => Promise<T>) => Promise<T>}
  */
 export const pollBlocks = opts => async lookup => {
   const { execFileSync, delay, rpcAddrs, period = 3 * 1000 } = opts;
@@ -161,7 +160,10 @@ export const pollTx = async (txhash, opts) => {
       ],
       { stdio: ['ignore', 'pipe', 'ignore'] },
     );
-    return JSON.parse(out.toString());
+    // XXX this type is defined in a .proto file somewhere
+    /** @type {{ height: string, txhash: string, code: number, timestamp: string }} */
+    const info = JSON.parse(out.toString());
+    return info;
   };
   return pollBlocks({ ...opts, retryMessage: 'tx not in block' })(lookup);
 };
