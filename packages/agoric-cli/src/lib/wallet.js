@@ -109,8 +109,14 @@ export const getLiveOffers = async (address, vstorage, fromBoard) => {
  */
 export const doAction = async (bridgeAction, opts) => {
   const offerBody = JSON.stringify(marshaller.serialize(bridgeAction));
-  const spendArg =
-    bridgeAction.method === 'executeOffer' ? ['--allow-spend'] : [];
+
+  // tryExit should not require --allow-spend
+  // https://github.com/Agoric/agoric-sdk/issues/7291
+  const spendMethods = ['executeOffer', 'tryExitOffer'];
+  const spendArg = spendMethods.includes(bridgeAction.method)
+    ? ['--allow-spend']
+    : [];
+
   const act = ['wallet-action', ...spendArg, offerBody];
   const out = execSwingsetTransaction([...act, '--output', 'json'], opts);
   if (!out) return;
