@@ -31,7 +31,7 @@ const Stake = /** @type {const} */ ({
 });
 const Stable = /** @type {const} */ ({
   name: 'Agoric Stable Local Currency',
-  description: 'The stable local currency used by the Agoric chain',
+  description: 'The stable token used by the Agoric chain',
   denom_units: [
     {
       denom: 'uist',

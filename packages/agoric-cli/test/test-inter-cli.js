@@ -47,7 +47,7 @@ const agoricNames = harden({
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'IST',
-      proposedName: 'Agoric stable local currency',
+      proposedName: 'Agoric stable token',
     },
 
     'ibc/toyatom': {

@@ -21,7 +21,7 @@ export const Stable = harden(
   /** @type {const } */ ({
     symbol: 'IST',
     denom: 'uist',
-    proposedName: 'Agoric stable local currency',
+    proposedName: 'Agoric stable token',
     assetKind: NAT,
     displayInfo: {
       decimalPlaces: 6,
