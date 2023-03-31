@@ -407,11 +407,6 @@ test.todo('inter bid cancel shows resulting payouts');
 
 test.todo('already cancelled bid');
 /*
-$ agops inter bid cancel --from gov1 bid-123142131231
-2023-03-30T21:04:52.300932896Z not in block 49141 retrying...
-2023-03-30T21:04:52.300932896Z not in block 49141 retrying...
-cancel action is broadcast:
-{"timestamp":"2023-03-30T21:04:57Z","height":"49142","offerId":"bid-123142131231","txhash":"4BE8D763A9F818CACE3A6EA3DD114D0A5C2F8692DE6C01F70AA54CCD67C58545"}
-bid already cancelled
-{"id":"bid-123142131231","price":"10.000000000000002 IST/IbcATOM","give":{"Currency":"10IST"},"want":"1IbcATOM","payouts":{"Currency":"10IST"}}
+$ agops inter bid cancel --from gov2 bid-1680211556497
+bid-1680211556497 not in live offer ids: bid-1680211593489,bid-1680212903989,bid-1680213097499,bid-1680220217218,bid-1680220368714,bid-1680220406939
 */

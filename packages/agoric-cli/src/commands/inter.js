@@ -17,12 +17,7 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import {
-  doAction,
-  getLiveOffers,
-  outputActionAndHint,
-  paidOut,
-} from '../lib/wallet.js';
+import { doAction, getLiveOffers, outputActionAndHint } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -220,7 +215,9 @@ export const makeInterCommand = async (
         harden(offerStatus);
         return offerStatus;
       };
-      return pollBlocks({ ...networkConfig, execFileSync, delay })(lookup);
+      const retryMessage = 'offer not in wallet at block';
+      const opts = { ...networkConfig, execFileSync, delay, retryMessage };
+      return pollBlocks(opts)(lookup);
     };
 
     return {
@@ -396,8 +393,16 @@ For example:
        * }} opts
        */
       async (id, { from, dryRun }) => {
-        const { networkConfig, agoricNames, pollOffer, storedWalletState } =
-          await rpcTools();
+        const { networkConfig, vstorage, fromBoard } = await rpcTools();
+
+        const liveOffers = await getLiveOffers(from, vstorage, fromBoard);
+        const liveIds = liveOffers.map(([i, _s]) => i);
+        if (!liveIds.includes(id)) {
+          throw new InvalidArgumentError(
+            `${id} not in live offer ids: ${liveIds}`,
+          );
+        }
+
         const io = { ...networkConfig, execFileSync, delay, stdout };
 
         /** @type {TryExitOfferAction} */
@@ -415,30 +420,20 @@ For example:
         console.error('cancel action is broadcast:');
         show({ timestamp, height, offerId: id, txhash });
 
-        const findBidAlreadyPaidOut = async () => {
-          const { offerStatuses } = await storedWalletState(from);
-          const preStatus = [...offerStatuses.values()].find(s => s.id === id);
-          harden(preStatus); // XXX why didn't the harden in storedWalletState suffice???
-          if (!preStatus) return null;
-          const bid = coerceBid(preStatus, agoricNames, console.warn);
-          if (!bid || !paidOut(bid.proposal.give, bid.payouts)) {
-            return null;
-          }
-          console.warn('bid already cancelled');
-          return bid;
+        const checkDone = async blockInfo => {
+          const liveNow = await getLiveOffers(from, vstorage, fromBoard);
+          const found = liveNow.find(([i, _]) => i === id);
+          if (found) throw Error('retry');
+          return blockInfo;
         };
-        let bid = await findBidAlreadyPaidOut();
-
-        if (!bid) {
-          // not 1st await
-          // eslint-disable-next-line @jessie.js/no-nested-await
-          const found = await pollOffer(from, id, height);
-          console.error('bid status is updated:');
-          bid = coerceBid(found, agoricNames, console.warn);
-        }
-        if (!bid) return;
-        const info = fmtBid(bid, values(agoricNames.vbankAsset));
-        show(info);
+        const blockInfo = await pollBlocks({
+          retryMessage: 'offer still live in block',
+          ...networkConfig,
+          execFileSync,
+          delay,
+        })(checkDone);
+        console.error('bid', id, 'is no longer live');
+        show(blockInfo);
       },
     );
 
