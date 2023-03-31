@@ -561,36 +561,6 @@ $ inter bid list --from my-acct
       },
     );
 
-  const reserveCmd = interCmd
-    .command('reserve')
-    .description('reserve commands');
-  reserveCmd
-    .command('add')
-    .description('add collateral to the reserve')
-    .requiredOption('--give <number>', 'Collateral to give', Number)
-    .option('--collateral-brand <string>', 'Collateral brand key', 'IbcATOM')
-    .option('--offer-id <string>', 'Offer id', String, `addCollateral-${now()}`)
-    .action(
-      /**
-       * @param {{
-       *   give: number,
-       *   collateralBrand: string,
-       *   offerId: string,
-       * }} opts
-       */
-      async ({ collateralBrand, ...opts }) => {
-        const { agoricNames } = await rpcTools();
-        const offer = Offers.reserve.AddCollateral(agoricNames.brand, {
-          collateralBrandKey: collateralBrand,
-          ...opts,
-        });
-        outputActionAndHint(
-          { method: 'executeOffer', offer },
-          { stdout, stderr },
-        );
-      },
-    );
-
   const assetCmd = interCmd
     .command('vbank')
     .description('vbank asset commands');
