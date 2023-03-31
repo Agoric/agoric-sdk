@@ -93,21 +93,20 @@ export const getLiveOffers = async (address, vstorage, fromBoard) => {
 };
 
 /**
- * Sign and broadcast a wallet-action (or do a dry-run).
+ * Sign and broadcast a wallet-action.
  *
  * @throws { Error & { code: number } } if transaction fails
  * @param {import('@agoric/smart-wallet/src/smartWallet').BridgeAction} bridgeAction
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
- *   dryRun?: boolean,
  *   verbose?: boolean,
- *   keyring?: {home: string, backend: string}
- *   stdout: Pick<import('stream').Writable, 'write'>
+ *   keyring?: {home: string, backend: string},
+ *   stdout: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  * }} opts
  */
-export const doAction = async (bridgeAction, opts) => {
+export const sendAction = async (bridgeAction, opts) => {
   const offerBody = JSON.stringify(marshaller.serialize(bridgeAction));
 
   // tryExit should not require --allow-spend
@@ -119,7 +118,7 @@ export const doAction = async (bridgeAction, opts) => {
 
   const act = ['wallet-action', ...spendArg, offerBody];
   const out = execSwingsetTransaction([...act, '--output', 'json'], opts);
-  if (!out) return;
+  assert(out); // not dry run
   const tx = JSON.parse(out);
   if (tx.code !== 0) {
     const err = Error(`failed to send action. code: ${tx.code}`);

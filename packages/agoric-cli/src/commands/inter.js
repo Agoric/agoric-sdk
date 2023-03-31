@@ -1,3 +1,8 @@
+/**
+ * @file Inter Protocol Liquidation Bidding CLI
+ * @see {makeInterCommand} for main function
+ */
+
 // @ts-check
 import { CommanderError, InvalidArgumentError } from 'commander';
 // TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
@@ -17,9 +22,19 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import { doAction, getLiveOffers, outputActionAndHint } from '../lib/wallet.js';
+import {
+  getLiveOffers,
+  outputActionAndHint,
+  sendAction,
+} from '../lib/wallet.js';
 
 const { values } = Object;
+
+const bidInvitationShape = harden({
+  source: 'agoricContract',
+  instancePath: ['auctioneer'],
+  callPipe: [['makeBidInvitation', M.any()]],
+});
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
@@ -47,6 +62,13 @@ const makeFormatters = assets => {
   return { amount, record, price, discount };
 };
 
+/**
+ * Format amounts in vaultManager metrics for JSON output.
+ *
+ * @param {*} metrics manager0.metrics
+ * @param {*} quote manager0.quote
+ * @param {*} assets agoricNames.vbankAssets
+ */
 const fmtMetrics = (metrics, quote, assets) => {
   const fmt = makeFormatters(assets);
   const { liquidatingCollateral, liquidatingDebt } = metrics;
@@ -66,9 +88,12 @@ const fmtMetrics = (metrics, quote, assets) => {
 };
 
 /**
+ * Dynamic check that an OfferStatus is also a BidSpec.
+ *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus} offerStatus
  * @param {Awaited<ReturnType<import('../lib/rpc').makeAgoricNames>>} agoricNames
  * @param {typeof console.warn} warn
+ * returns null if offerStatus is not a BidSpec
  */
 const coerceBid = (offerStatus, agoricNames, warn) => {
   const { offerArgs } = offerStatus;
@@ -98,7 +123,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
 };
 
 /**
- * Format amounts etc. in a bid OfferStatus
+ * Format amounts etc. in a BidSpec OfferStatus
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}} bid
@@ -134,6 +159,8 @@ export const fmtBid = (bid, assets) => {
 };
 
 /**
+ * Make Inter Protocol liquidation bidding commands.
+ *
  * @param {{
  *   env: Partial<Record<string, string>>,
  *   stdout: Pick<import('stream').Writable,'write'>,
@@ -147,12 +174,20 @@ export const fmtBid = (bid, assets) => {
  * @param {{ fetch: typeof window.fetch }} net
  */
 export const makeInterCommand = async (
-  { env, stdout, stderr, now, setTimeout, execFileSync, createCommand },
+  {
+    env,
+    stdout,
+    stderr,
+    now,
+    setTimeout,
+    execFileSync: rawExec,
+    createCommand,
+  },
   { fetch },
 ) => {
   const interCmd = createCommand('inter')
-    .description('Inter Protocol tool')
-    .option('--home [dir]', 'agd CosmosSDK application home directory')
+    .description('Inter Protocol commands for liquidation bidding etc.')
+    .option('--home <dir>', 'agd CosmosSDK application home directory')
     .option(
       '--keyring-backend [os|file|test]',
       `keyring's backend (os|file|test) (default "${
@@ -161,6 +196,19 @@ export const makeInterCommand = async (
       env.AGORIC_KEYRING_BACKEND,
     );
 
+  /** @type {typeof import('child_process').execFileSync} */
+  // @ts-expect-error execFileSync is overloaded
+  const execFileSync = (file, args, ...opts) => {
+    try {
+      return rawExec(file, args, ...opts);
+    } catch (err) {
+      throw new InvalidArgumentError(
+        `${err.message}: is ${file} in your $PATH?`,
+      );
+    }
+  };
+
+  /** @param {number} ms */
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
   const show = (info, indent = false) =>
     stdout.write(
@@ -168,6 +216,7 @@ export const makeInterCommand = async (
     );
 
   const rpcTools = async () => {
+    // XXX pass fetch to getNetworkConfig() explicitly
     const networkConfig = await getNetworkConfig(env);
     const { agoricNames, fromBoard, readLatestHead, vstorage } =
       await makeRpcUtils({ fetch }, networkConfig).catch(err => {
@@ -176,7 +225,7 @@ export const makeInterCommand = async (
 
     /**
      * @param {string} from
-     * @param {number} [minHeight]
+     * @param {number|string} [minHeight]
      */
     const storedWalletState = async (from, minHeight = undefined) => {
       const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
@@ -202,9 +251,11 @@ export const makeInterCommand = async (
     };
 
     /**
+     * Get OfferStatus by id, polling until available.
+     *
      * @param {string} from
-     * @param {string} id
-     * @param {number} minHeight
+     * @param {string|number} id
+     * @param {number|string} minHeight
      */
     const pollOffer = async (from, id, minHeight) => {
       const lookup = async () => {
@@ -248,7 +299,7 @@ For example:
 }
 `,
     )
-    .option('--manager [number]', 'Vault Manager', Number, 0)
+    .option('--manager <number>', 'Vault Manager', Number, 0)
     .action(async opts => {
       const { agoricNames, readLatestHead } = await rpcTools();
 
@@ -260,76 +311,98 @@ For example:
       show(info, true);
     });
 
-  const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, interCmd.opts(), {
-      // @ts-expect-error execFileSync is overloaded
-      execFileSync: (file, args) => {
-        try {
-          return execFileSync(file, args);
-        } catch (err) {
-          throw new InvalidArgumentError(
-            `${err.message}: is ${file} in your $PATH?`,
-          );
-        }
-      },
-    });
-
   const bidCmd = interCmd
     .command('bid')
     .description('auction bidding commands');
 
-  bidCmd
-    .command('by-price')
+  /**
+   * @param {string} from
+   * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
+   * @param {Awaited<ReturnType<rpcTools>>} tools
+   */
+  const placeBid = async (from, offer, tools) => {
+    const { networkConfig, agoricNames, pollOffer } = tools;
+    const io = { ...networkConfig, execFileSync, delay, stdout };
+
+    const { home, keyringBackend: backend } = interCmd.opts();
+    const result = await sendAction(
+      { method: 'executeOffer', offer },
+      { keyring: { home, backend }, from, verbose: false, ...io },
+    );
+    const { timestamp, txhash, height } = result;
+    console.error('bid is broadcast:');
+    show({ timestamp, height, offerId: offer.id, txhash });
+    const found = await pollOffer(from, offer.id, height);
+    // TODO: command to wait 'till bid exits?
+    const bid = coerceBid(found, agoricNames, console.warn);
+    if (!bid) {
+      console.warn('malformed bid', found);
+      return;
+    }
+    const info = fmtBid(bid, values(agoricNames.vbankAsset));
+    show(info);
+  };
+
+  /** @param {string} literalOrName */
+  const normalizeAddress = literalOrName =>
+    normalizeAddressWithOptions(literalOrName, interCmd.opts(), {
+      execFileSync,
+    });
+
+  /**
+   * @typedef {{
+   *   give: number,
+   *   collateralBrand: string,
+   *   want: number,
+   *   offerId: string,
+   *   from: string,
+   *   generateOnly?: boolean,
+   * }} SharedBidOpts
+   */
+
+  /** @param {ReturnType<createCommand>} cmd */
+  const withSharedBidOptions = cmd =>
+    cmd
+      .requiredOption(
+        '--from <address>',
+        'wallet address literal or name',
+        normalizeAddress,
+      )
+      .requiredOption('--give <number>', 'IST to bid', Number)
+      .option('--want <number>', 'max Collateral wanted', Number, 1_000_000)
+      .option('--collateral-brand <string>', 'Collateral brand name', 'IbcATOM')
+      .option('--offer-id <string>', 'Offer id', String, `bid-${now()}`)
+      .option('--generate-only', 'print wallet action only');
+
+  withSharedBidOptions(bidCmd.command('by-price'))
     .description('Place a bid on collateral by price.')
-    .requiredOption(
-      '--from <address>',
-      'wallet address literal or name',
-      normalizeAddress,
-    )
     .requiredOption('--price <number>', 'bid price (IST/Collateral)', Number)
-    .requiredOption('--give <number>', 'IST to bid', Number)
-    .option('--want <number>', 'Collateral required for the bid', Number)
-    .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
-    .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
       /**
-       * @param {{
+       * @param {SharedBidOpts & {
        *   price: number,
-       *   give: number, want?: number,
-       *   collateralBrand: string,
-       *   offerId: string,
-       *   from: string,
        * }} opts
        */
-      async ({ collateralBrand, ...opts }) => {
-        const { agoricNames, networkConfig, pollOffer } = await rpcTools();
-        const io = { ...networkConfig, execFileSync, delay, stdout };
+      async ({ collateralBrand, generateOnly, ...opts }) => {
+        const tools = await rpcTools();
 
-        const offer = Offers.auction.Bid(agoricNames.brand, {
+        const offer = Offers.auction.Bid(tools.agoricNames.brand, {
           collateralBrandKey: collateralBrand,
           ...opts,
         });
 
-        const result = await doAction(
-          { method: 'executeOffer', offer },
-          { from: opts.from, verbose: false, ...io },
-        );
-        if (!result) return;
-        const { timestamp, txhash, height } = result;
-        console.error('bid is broadcast:');
-        show({ timestamp, height, offerId: opts.offerId, txhash });
-        const found = await pollOffer(opts.from, opts.offerId, height);
-        // TODO: command to wait 'till bid exits?
-        const bid = coerceBid(found, agoricNames, console.warn);
-        if (!bid) {
-          console.warn('malformed bid', found);
+        if (generateOnly) {
+          outputActionAndHint(
+            { method: 'executeOffer', offer },
+            { stdout, stderr },
+          );
           return;
         }
-        const info = fmtBid(bid, values(agoricNames.vbankAsset));
-        show(info);
+        await placeBid(opts.from, offer, tools);
       },
     );
 
+  /** @param {string} v */
   const parsePercent = v => {
     const p = Number(v);
     if (!(p >= -100 && p <= 100)) {
@@ -338,39 +411,36 @@ For example:
     return p / 100;
   };
 
-  bidCmd
-    .command('by-discount')
+  withSharedBidOptions(bidCmd.command('by-discount'))
     .description(
-      `Print an offer to bid on collateral based on discount from oracle price.`,
+      `Place a bid on collateral based on discount from oracle price.`,
     )
     .requiredOption(
-      '--discount [percent]',
+      '--discount <percent>',
       'bid discount (0 to 100) or markup (0 to -100) %',
       parsePercent,
     )
-    .requiredOption('--give [number]', 'IST to bid', Number)
-    .option('--want [number]', 'Collateral required for the bid', Number)
-    .option('--collateral-brand [string]', 'Collateral brand key', 'IbcATOM')
-    .option('--offerId [number]', 'Offer id', String, `bid-${now()}`)
     .action(
       /**
-       * @param {{
+       * @param {SharedBidOpts & {
        *   discount: number,
-       *   give: number,  want?: number,
-       *   collateralBrand: string,
-       *   offerId: string,
        * }} opts
        */
-      async ({ collateralBrand, ...opts }) => {
-        const { agoricNames } = await rpcTools();
-        const offer = Offers.auction.Bid(agoricNames.brand, {
+      async ({ collateralBrand, generateOnly, ...opts }) => {
+        const tools = await rpcTools();
+
+        const offer = Offers.auction.Bid(tools.agoricNames.brand, {
           collateralBrandKey: collateralBrand,
           ...opts,
         });
-        outputActionAndHint(
-          { method: 'executeOffer', offer },
-          { stdout, stderr },
-        );
+        if (generateOnly) {
+          outputActionAndHint(
+            { method: 'executeOffer', offer },
+            { stdout, stderr },
+          );
+          return;
+        }
+        await placeBid(opts.from, offer, tools);
       },
     );
 
@@ -383,16 +453,24 @@ For example:
       'wallet address literal or name',
       normalizeAddress,
     )
-    .option('--dry-run', 'show agd commands only')
+    .option('--generate-only', 'print wallet action only')
     .action(
       /**
        * @param {string} id
        * @param {{
        *   from: string,
-       *   dryRun: boolean,
+       *   generateOnly?: boolean,
        * }} opts
        */
-      async (id, { from, dryRun }) => {
+      async (id, { from, generateOnly }) => {
+        /** @type {TryExitOfferAction} */
+        const action = { method: 'tryExitOffer', offerId: id };
+
+        if (generateOnly) {
+          outputActionAndHint(action, { stdout, stderr });
+          return;
+        }
+
         const { networkConfig, vstorage, fromBoard } = await rpcTools();
 
         const liveOffers = await getLiveOffers(from, vstorage, fromBoard);
@@ -405,22 +483,18 @@ For example:
 
         const io = { ...networkConfig, execFileSync, delay, stdout };
 
-        /** @type {TryExitOfferAction} */
-        const action = { method: 'tryExitOffer', offerId: id };
-
-        const result = await doAction(action, {
+        const { home, keyringBackend: backend } = interCmd.opts();
+        const result = await sendAction(action, {
+          keyring: { home, backend },
           from,
-          dryRun,
           verbose: false,
           ...io,
         });
-        if (!result) return;
-
         const { timestamp, txhash, height } = result;
         console.error('cancel action is broadcast:');
         show({ timestamp, height, offerId: id, txhash });
 
-        const checkDone = async blockInfo => {
+        const checkGone = async blockInfo => {
           const liveNow = await getLiveOffers(from, vstorage, fromBoard);
           const found = liveNow.find(([i, _]) => i === id);
           if (found) throw Error('retry');
@@ -431,7 +505,7 @@ For example:
           ...networkConfig,
           execFileSync,
           delay,
-        })(checkDone);
+        })(checkGone);
         console.error('bid', id, 'is no longer live');
         show(blockInfo);
       },
@@ -454,28 +528,38 @@ $ inter bid list --from my-acct
       'wallet address literal or name',
       normalizeAddress,
     )
-    .action(async opts => {
-      const { agoricNames, vstorage, fromBoard } = await rpcTools();
-      const bidInvitationShape = harden({
-        source: 'agoricContract',
-        instancePath: ['auctioneer'],
-        callPipe: [['makeBidInvitation', M.any()]],
-      });
+    .option('--all', 'show exited bids as well')
+    .action(
+      /**
+       * @param {{
+       *   from: string,
+       *   all?: boolean,
+       * }} opts
+       */
+      async opts => {
+        const { agoricNames, vstorage, fromBoard, storedWalletState } =
+          await rpcTools();
 
-      const liveOffers = await getLiveOffers(opts.from, vstorage, fromBoard);
+        const [liveOffers, state] = await Promise.all([
+          getLiveOffers(opts.from, vstorage, fromBoard),
+          storedWalletState(opts.from),
+        ]);
+        const entries = opts.all ? state.offerStatuses.entries() : liveOffers;
+        for (const [id, spec] of entries) {
+          const offerStatus = state.offerStatuses.get(id) || spec;
+          harden(offerStatus); // coalesceWalletState should do this
+          // console.debug(offerStatus.invitationSpec);
+          if (!matches(offerStatus.invitationSpec, bidInvitationShape))
+            continue;
 
-      for (const [_id, offerStatus] of liveOffers) {
-        harden(offerStatus); // coalesceWalletState should do this
-        // console.debug(offerStatus.invitationSpec);
-        if (!matches(offerStatus.invitationSpec, bidInvitationShape)) continue;
+          const bid = coerceBid(offerStatus, agoricNames, console.warn);
+          if (!bid) continue;
 
-        const bid = coerceBid(offerStatus, agoricNames, console.warn);
-        if (!bid) continue;
-
-        const info = fmtBid(bid, values(agoricNames.vbankAsset));
-        show(info);
-      }
-    });
+          const info = fmtBid(bid, values(agoricNames.vbankAsset));
+          show(info);
+        }
+      },
+    );
 
   const reserveCmd = interCmd
     .command('reserve')
@@ -485,7 +569,7 @@ $ inter bid list --from my-acct
     .description('add collateral to the reserve')
     .requiredOption('--give <number>', 'Collateral to give', Number)
     .option('--collateral-brand <string>', 'Collateral brand key', 'IbcATOM')
-    .option('--offerId <string>', 'Offer id', String, `addCollateral-${now()}`)
+    .option('--offer-id <string>', 'Offer id', String, `addCollateral-${now()}`)
     .action(
       /**
        * @param {{

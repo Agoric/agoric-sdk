@@ -204,6 +204,8 @@ test('inter bid place by-price: output is correct', async t => {
   );
 });
 
+test.todo('want as max collateral wanted');
+
 /**
  * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
@@ -324,6 +326,8 @@ test('diagnostic for agd ENOENT', async t => {
   t.deepEqual(out.join('').trim(), '');
 });
 
+test.todo('agd ENOENT clue outside normalizeAddress');
+
 const usageTest = (words, blurb = 'Command usage:') => {
   test(`Usage: ${words}`, async t => {
     const argv = `node agops ${words} --help`.split(' ');
@@ -411,3 +415,5 @@ test.todo('already cancelled bid');
 $ agops inter bid cancel --from gov2 bid-1680211556497
 bid-1680211556497 not in live offer ids: bid-1680211593489,bid-1680212903989,bid-1680213097499,bid-1680220217218,bid-1680220368714,bid-1680220406939
 */
+
+test.todo('--give without number');
