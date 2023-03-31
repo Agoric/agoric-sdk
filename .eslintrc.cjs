@@ -11,8 +11,12 @@ const deprecatedTerminology = [
   ['whitelist', 'allowlist'],
   ['RUN', 'IST', '/RUN/'],
 ].flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
-  ['Literal', 'TemplateLiteral', 'Identifier'].map(selectorType => ({
-    selector: `${selectorType}[value=${badRgx}]`,
+  [
+    ['Literal', 'value'],
+    ['TemplateElement', 'value.raw'],
+    ['Identifier', 'name'],
+  ].map(([selectorType, field]) => ({
+    selector: `${selectorType}[${field}=${badRgx}]`,
     message: `Use '${good}' instead of deprecated '${bad}'`,
   })),
 );
