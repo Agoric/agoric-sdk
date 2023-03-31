@@ -177,12 +177,8 @@ jobs:
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (inter-protocol)
-        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (pegasus)
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (vats)
-        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-runner)
         run: cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (telemetry)
@@ -273,6 +269,64 @@ jobs:
           go-version: 1.18
       - name: yarn test (cosmic-swingset)
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-inter-protocol:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: ['16.x', '18.x', 'xs']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ steps.vars.outputs.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (inter-protocol)
+        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-vats:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: ['16.x', '18.x', 'xs']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ steps.vars.outputs.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (vats)
+        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         with:
