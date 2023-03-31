@@ -337,12 +337,12 @@ export const addBankAssets = async ({
   issuer: { produce: produceIssuer },
   brand: { produce: produceBrand },
 }) => {
-  const runIssuer = await E(zoe).getFeeIssuer();
+  const istIssuer = await E(zoe).getFeeIssuer();
   const [runBrand, payment] = await Promise.all([
-    E(runIssuer).getBrand(),
+    E(istIssuer).getBrand(),
     initialSupply,
   ]);
-  const runKit = { issuer: runIssuer, brand: runBrand, payment };
+  const runKit = { issuer: istIssuer, brand: runBrand, payment };
 
   const { creatorFacet: bldMint, publicFacet: bldIssuer } = E.get(
     E(zoe).startInstance(

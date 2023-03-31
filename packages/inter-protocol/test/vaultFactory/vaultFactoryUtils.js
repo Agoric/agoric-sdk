@@ -122,7 +122,7 @@ export const setupElectorateReserveAndAuction = async (
  * @param {import('ava').ExecutionContext<any>} t
  * @param {bigint} amount
  */
-export const getRunFromFaucet = async (t, amount) => {
+export const getIstFromFaucet = async (t, amount) => {
   const {
     installation: { faucet: installation },
     zoe,
@@ -142,12 +142,12 @@ export const getRunFromFaucet = async (t, amount) => {
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: run.make(amount) },
+      want: { IST: run.make(amount) },
     }),
     harden({}),
   );
 
-  const runPayment = await E(faucetSeat).getPayout('RUN');
+  const runPayment = await E(faucetSeat).getPayout('IST');
   return runPayment;
 };
 

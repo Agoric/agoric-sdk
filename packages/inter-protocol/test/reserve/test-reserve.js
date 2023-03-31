@@ -14,13 +14,13 @@ import { subscriptionKey } from '../supports.js';
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<FeeMintAccess>} feeMintAccessP
  * @param {*} faucetInstallation
- * @param {*} runInitialLiquidity
+ * @param {*} istInitialLiquidity
  */
-const getRunFromFaucet = async (
+const getIstFromFaucet = async (
   zoe,
   feeMintAccessP,
   faucetInstallation,
-  runInitialLiquidity,
+  istInitialLiquidity,
 ) => {
   const feeMintAccess = await feeMintAccessP;
   // On-chain, there will be pre-existing RUN. The faucet replicates that
@@ -34,12 +34,12 @@ const getRunFromFaucet = async (
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: runInitialLiquidity },
+      want: { IST: istInitialLiquidity },
     }),
   );
 
-  const runPayment = await E(faucetSeat).getPayout('RUN');
-  return runPayment;
+  const istPayment = await E(faucetSeat).getPayout('IST');
+  return istPayment;
 };
 
 test.before(async t => {
@@ -92,10 +92,10 @@ test('check allocations', async t => {
     timer,
   );
 
-  const runBrand = await space.brand.consume.IST;
+  const istBrand = await space.brand.consume.IST;
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(istBrand)));
 
   const invitation = await E(
     reserve.reservePublicFacet,
@@ -137,7 +137,7 @@ test('reserve track shortfall', async t => {
     timer,
   );
 
-  const runBrand = await space.brand.consume.IST;
+  const istBrand = await space.brand.consume.IST;
 
   const shortfallReporterSeat = await E(zoe).offer(
     E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
@@ -145,19 +145,19 @@ test('reserve track shortfall', async t => {
   const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
 
   await E(reporterFacet).increaseLiquidationShortfall(
-    AmountMath.make(runBrand, 1000n),
+    AmountMath.make(istBrand, 1000n),
   );
   let runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(istBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
   });
 
   await E(reporterFacet).increaseLiquidationShortfall(
-    AmountMath.make(runBrand, 500n),
+    AmountMath.make(istBrand, 500n),
   );
   runningShortfall += 500n;
 
@@ -166,7 +166,7 @@ test('reserve track shortfall', async t => {
   });
 
   await E(reporterFacet).reduceLiquidationShortfall(
-    AmountMath.make(runBrand, 200n),
+    AmountMath.make(istBrand, 200n),
   );
   runningShortfall -= 200n;
   await m.assertChange({
@@ -174,7 +174,7 @@ test('reserve track shortfall', async t => {
   });
 
   await E(reporterFacet).reduceLiquidationShortfall(
-    AmountMath.make(runBrand, 2000n),
+    AmountMath.make(istBrand, 2000n),
   );
   runningShortfall = 0n;
   await m.assertChange({
@@ -190,55 +190,55 @@ test('reserve burn IST', async t => {
   const { zoe, reserve, space, feeMintAccess, faucetInstallation, governor } =
     await setupReserveServices(t, electorateTerms, timer);
 
-  const runBrand = await space.brand.consume.IST;
+  const istBrand = await space.brand.consume.IST;
 
   const shortfallReporterSeat = await E(zoe).offer(
     E(reserve.reserveCreatorFacet).makeShortfallReportingInvitation(),
   );
   const reporterFacet = await E(shortfallReporterSeat).getOfferResult();
 
-  const oneKRun = AmountMath.make(runBrand, 1000n);
-  await E(reporterFacet).increaseLiquidationShortfall(oneKRun);
+  const oneKIst = AmountMath.make(istBrand, 1000n);
+  await E(reporterFacet).increaseLiquidationShortfall(oneKIst);
   const runningShortfall = 1000n;
 
   const metricsSub = await E(reserve.reserveCreatorFacet).getMetrics();
   const m = await subscriptionTracker(t, metricsSub);
-  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(runBrand)));
+  await m.assertInitial(reserveInitialState(AmountMath.makeEmpty(istBrand)));
   await m.assertChange({
     shortfallBalance: { value: runningShortfall },
   });
 
-  const runPayment = getRunFromFaucet(
+  const istPayment = getIstFromFaucet(
     zoe,
     feeMintAccess,
     faucetInstallation,
-    oneKRun,
+    oneKIst,
   );
 
   const invitation = await E(
     reserve.reservePublicFacet,
   ).makeAddCollateralInvitation();
 
-  const proposal = { give: { Collateral: oneKRun } };
-  const payments = { Collateral: runPayment };
+  const proposal = { give: { Collateral: oneKIst } };
+  const payments = { Collateral: istPayment };
   const collateralSeat = E(zoe).offer(invitation, proposal, payments);
 
   t.is(
     await E(collateralSeat).getOfferResult(),
     'added Collateral to the Reserve',
-    `added RUN to the collateral Reserve`,
+    `added IST to the collateral Reserve`,
   );
   await m.assertChange({
-    allocations: { Fee: AmountMath.make(runBrand, 1000n) },
+    allocations: { Fee: AmountMath.make(istBrand, 1000n) },
   });
 
   t.deepEqual(
     await E(reserve.reserveCreatorFacet).getAllocations(),
-    harden({ Fee: oneKRun }),
+    harden({ Fee: oneKIst }),
     'expecting more',
   );
 
-  const params = harden([oneKRun]);
+  const params = harden([oneKIst]);
   // @ts-expect-error puppet governor
   await E(governor.governorCreatorFacet).invokeAPI(
     'burnFeesToReduceShortfall',

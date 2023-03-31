@@ -79,7 +79,7 @@ async function main(t, argv) {
 
 const expected = [
   'starting runMintTest',
-  '{"RUN":{}}',
+  '{"IST":{}}',
   'first instance started',
   'second instance started',
   'first payment minted',
@@ -88,7 +88,7 @@ const expected = [
   '{"brand":{},"value":10}',
 ];
 
-test.serial('zcfMint for RUN, multiple contracts', async t => {
+test.serial('zcfMint for IST, multiple contracts', async t => {
   const dump = await main(t);
   t.deepEqual(dump.log, expected);
 });

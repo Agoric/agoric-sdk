@@ -82,7 +82,7 @@ export const setupBootstrap = (t, optTimer) => {
   produce.chainStorage.resolve(makeMockChainStorageRoot());
   produce.board.resolve(makeBoard());
 
-  const { zoe, feeMintAccess, run } = t.context;
+  const { zoe, feeMintAccess, ist } = t.context;
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
@@ -91,8 +91,8 @@ export const setupBootstrap = (t, optTimer) => {
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
   const { brand, issuer } = spaces;
-  brand.produce.IST.resolve(run.brand);
-  issuer.produce.IST.resolve(run.issuer);
+  brand.produce.IST.resolve(ist.brand);
+  issuer.produce.IST.resolve(ist.issuer);
 
   return { produce, consume, modules: { utils: { ...utils } }, ...spaces };
 };
@@ -162,7 +162,7 @@ export const makeVoterTool = async (
  * }} powers
  * @returns {Promise<Payment<'nat'>>}
  */
-export const mintRunPayment = async (
+export const mintIstPayment = async (
   value,
   { centralSupply, feeMintAccess: feeMintAccessP, zoe },
 ) => {

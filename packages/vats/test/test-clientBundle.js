@@ -86,7 +86,7 @@ test('connectFaucet produces payments', async t => {
   produce.bldIssuerKit.resolve(bldKit);
   produce.chainStorage.resolve(null);
 
-  const runIssuer = E(zoe).getFeeIssuer();
+  const istIssuer = E(zoe).getFeeIssuer();
   produce.bankManager.resolve(
     Promise.resolve(
       // @ts-expect-error never mind other methods
@@ -97,7 +97,7 @@ test('connectFaucet produces payments', async t => {
             getPurse: brand => ({
               deposit: async (pmt, _x) => {
                 const isBLD = brand === bldKit.brand;
-                const issuer = isBLD ? bldKit.issuer : runIssuer;
+                const issuer = isBLD ? bldKit.issuer : istIssuer;
                 const amt = await E(issuer).getAmountOf(pmt);
                 t.is(showAmount(amt), isBLD ? '5_000 BLD' : '53 IST');
                 return amt;

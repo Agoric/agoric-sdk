@@ -69,7 +69,7 @@ const makeTestContext = async () => {
     await setUpZoeForTest();
 
   const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const istBrand = await E(runIssuer).getBrand();
 
   const install = (src, dest) =>
     bundleCache.load(src, dest).then(b => E(zoe).install(b));
@@ -132,7 +132,7 @@ const makeTestContext = async () => {
     feeMintAccess: await feeMintAccessP,
     vatAdminSvc,
     vatAdminState,
-    run: { issuer: runIssuer, brand: runBrand },
+    run: { issuer: runIssuer, brand: istBrand },
     installation,
   };
 };
@@ -166,11 +166,11 @@ const makeScenario = async (t, { env = process.env } = {}) => {
         consume: { [Stable.symbol]: runIssuer },
       },
       brand: {
-        consume: { [Stable.symbol]: runBrand },
+        consume: { [Stable.symbol]: istBrand },
       },
     } = space;
     return E(E(runIssuer).makeEmptyPurse()).withdraw(
-      AmountMath.make(await runBrand, 0n),
+      AmountMath.make(await istBrand, 0n),
     );
   };
 
@@ -476,7 +476,7 @@ test.skip('assets are in Vaults', async t => {
     instance: { consume: instanceP },
   } = s.space;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
-  const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
+  const istBrand = await E(agoricNames).lookup('brand', Stable.symbol);
 
   /** @type {ERef<import('../src/vaultFactory/vaultFactory').VaultFactoryContract['publicFacet']>} */
   const vaultsAPI = instanceP.VaultFactory.then(i => E(zoe).getPublicFacet(i));
@@ -487,7 +487,7 @@ test.skip('assets are in Vaults', async t => {
   t.deepEqual(params.DebtLimit, {
     type: 'amount',
     // 1000 IST is the default debtLimitValue in add-collateral-core
-    value: { brand: runBrand, value: 1_000n * UNIT },
+    value: { brand: istBrand, value: 1_000n * UNIT },
   });
 });
 
@@ -505,7 +505,7 @@ test.skip('Committee can raise debt limit', async t => {
 
   const { agoricNames } = s.space.consume;
   const brand = await E(agoricNames).lookup('brand', 'IbcATOM');
-  const runBrand = await E(agoricNames).lookup('brand', Stable.symbol);
+  const istBrand = await E(agoricNames).lookup('brand', Stable.symbol);
   const vaultsInstance = await E(agoricNames).lookup(
     'instance',
     'VaultFactory',
@@ -536,7 +536,7 @@ test.skip('Committee can raise debt limit', async t => {
     E(E(zoe).offer(charterInv)).getOfferResult(),
   ).invitationMakers;
 
-  const params = { DebtLimit: AmountMath.make(runBrand, 100n) };
+  const params = { DebtLimit: AmountMath.make(istBrand, 100n) };
 
   // We happen to know how the timer is implemented.
   /** @type { ERef<ManualTimer> } */
@@ -594,7 +594,7 @@ test.skip('Committee can raise debt limit', async t => {
   const count = E(zoe).getPublicFacet(counterInstance);
   const outcome = await E(count).getOutcome();
   t.deepEqual(outcome, {
-    changes: { DebtLimit: { brand: runBrand, value: 100n } },
+    changes: { DebtLimit: { brand: istBrand, value: 100n } },
   });
 });
 

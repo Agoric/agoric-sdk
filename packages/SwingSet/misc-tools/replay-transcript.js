@@ -311,4 +311,5 @@ async function run() {
   await replay(transcriptFile);
 }
 
+// eslint-disable-next-line no-restricted-syntax
 run().catch(err => console.log('RUN ERR', err));

@@ -21,7 +21,7 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 import { ManagerKW as KW } from '../../src/stakeFactory/constants.js';
 import {
   makeVoterTool,
-  mintRunPayment,
+  mintIstPayment,
   makeMockChainStorageRoot,
   setUpZoeForTest,
   subscriptionKey,
@@ -355,9 +355,9 @@ test('stakeFactory API usage', async t => {
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
   const { zoe, stakeFactoryKit } = consume;
-  const runBrand = await space.brand.consume.IST;
+  const istBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
-  const runIssuer = await space.issuer.consume.IST;
+  const istIssuer = await space.issuer.consume.IST;
   const publicFacet = E(zoe).getPublicFacet(
     space.instance.consume.stakeFactory,
   );
@@ -383,18 +383,18 @@ test('stakeFactory API usage', async t => {
   } = stakeFactoryTerms;
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
-  // Bob borrows 200 RUN against the lien.
+  // Bob borrows 200 IST against the lien.
   const proposal = harden({
     give: { [KW.Attestation]: attAmt },
-    want: { [KW.Debt]: AmountMath.make(runBrand, 200n * micro.unit) },
+    want: { [KW.Debt]: AmountMath.make(istBrand, 200n * micro.unit) },
   });
   const seat = E(zoe).offer(
     E(publicFacet).makeLoanInvitation(),
     proposal,
     harden({ [KW.Attestation]: attPmt }),
   );
-  const runPmt = E(seat).getPayout(KW.Debt);
-  const actual = await E(runIssuer).getAmountOf(runPmt);
+  const istPmt = E(seat).getPayout(KW.Debt);
+  const actual = await E(istIssuer).getAmountOf(istPmt);
   t.deepEqual(actual, proposal.want[KW.Debt]);
 });
 
@@ -404,7 +404,7 @@ test('extra offer keywords are rejected', async t => {
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
   const { zoe, stakeFactoryKit } = consume;
-  const runBrand = await space.brand.consume.IST;
+  const istBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const publicFacet = E(zoe).getPublicFacet(
     space.instance.consume.stakeFactory,
@@ -428,12 +428,12 @@ test('extra offer keywords are rejected', async t => {
   } = await E(zoe).getTerms(await space.instance.consume.stakeFactory);
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
-  // Bob borrows 200 RUN against the lien.
+  // Bob borrows 200 IST against the lien.
   const proposal = harden({
     give: { [KW.Attestation]: attAmt },
     want: {
-      [KW.Debt]: AmountMath.make(runBrand, 199n * micro.unit),
-      Pony: AmountMath.make(runBrand, 1n * micro.unit),
+      [KW.Debt]: AmountMath.make(istBrand, 199n * micro.unit),
+      Pony: AmountMath.make(istBrand, 1n * micro.unit),
     },
   });
   const seat = E(zoe).offer(
@@ -463,7 +463,7 @@ test('forged Attestation fails', async t => {
   const { chain, space } = await bootstrapStakeFactory(t, timer);
   const { consume } = space;
   const { zoe } = consume;
-  const runBrand = await space.brand.consume.IST;
+  const istBrand = await space.brand.consume.IST;
   const bldBrand = await space.brand.consume.BLD;
   const publicFacet = E(zoe).getPublicFacet(
     space.instance.consume.stakeFactory,
@@ -486,10 +486,10 @@ test('forged Attestation fails', async t => {
   const attIssuer = E(faker).getIssuer();
   const attAmt = await E(attIssuer).getAmountOf(attPmt);
 
-  // Mallory tries to borrow 200 RUN against the forged lien.
+  // Mallory tries to borrow 200 IST against the forged lien.
   const proposal = harden({
     give: { [KW.Attestation]: attAmt },
-    want: { [KW.Debt]: AmountMath.make(runBrand, 200n * micro.unit) },
+    want: { [KW.Debt]: AmountMath.make(istBrand, 200n * micro.unit) },
   });
   const seat = E(zoe).offer(
     E(publicFacet).makeLoanInvitation(),
@@ -514,8 +514,8 @@ const makeWorld = async t => {
   const { consume } = space;
 
   const { zoe, stakeFactoryKit, lienBridge } = consume;
-  const { IST: runIssuer } = space.issuer.consume;
-  const [bldBrand, runBrand] = await Promise.all([
+  const { IST: istIssuer } = space.issuer.consume;
+  const [bldBrand, istBrand] = await Promise.all([
     space.brand.consume.BLD,
     space.brand.consume.IST,
   ]);
@@ -558,9 +558,9 @@ const makeWorld = async t => {
   const bobWallet = walletMaker(bob.getAddress());
 
   const attPurse = E(attIssuer).makeEmptyPurse();
-  const runPurse = E(runIssuer).makeEmptyPurse();
-  const rewardPurse = E(runIssuer).makeEmptyPurse();
-  const epsilon = AmountMath.make(runBrand, micro.unit / 5n);
+  const istPurse = E(istIssuer).makeEmptyPurse();
+  const rewardPurse = E(istIssuer).makeEmptyPurse();
+  const epsilon = AmountMath.make(istBrand, micro.unit / 5n);
 
   await E(rewardPurse).deposit(
     await mintRunPayment(500n * micro.unit, {
@@ -615,35 +615,35 @@ const makeWorld = async t => {
         AmountMath.make(bldBrand, expected * micro.unit),
       );
     },
-    borrowRUN: async n => {
+    borrowIST: async n => {
       const attAmt = await E(attPurse).getCurrentAmount();
       const attPmt = await E(attPurse).withdraw(attAmt);
       const proposal = harden({
         give: { [KW.Attestation]: attAmt },
-        want: { [KW.Debt]: AmountMath.make(runBrand, n * micro.unit) },
+        want: { [KW.Debt]: AmountMath.make(istBrand, n * micro.unit) },
       });
       const seat = E(zoe).offer(
         E(stakeFactory.publicFacet).makeLoanInvitation(),
         proposal,
         harden({ [KW.Attestation]: attPmt }),
       );
-      const runPmt = await E(seat).getPayout(KW.Debt);
-      await E(runPurse).deposit(runPmt);
+      const istPmt = await E(seat).getPayout(KW.Debt);
+      await E(istPurse).deposit(istPmt);
       offerResult = await E(seat).getOfferResult();
     },
-    earnRUNReward: async n => {
-      const amt = AmountMath.make(runBrand, n * micro.unit);
+    earnISTReward: async n => {
+      const amt = AmountMath.make(istBrand, n * micro.unit);
       const pmt = await E(rewardPurse).withdraw(amt);
-      await E(runPurse).deposit(pmt);
+      await E(istPurse).deposit(pmt);
     },
-    borrowMoreRUN: async n => {
-      assert(offerResult, 'no offerResult; borrowRUN first?');
-      const runAmt = AmountMath.make(runBrand, n * micro.unit);
+    borrowMoreIST: async n => {
+      assert(offerResult, 'no offerResult; borrowIST first?');
+      const istAmt = AmountMath.make(istBrand, n * micro.unit);
       const attAmt = await E(attPurse).getCurrentAmount();
       const attPmt = await E(attPurse).withdraw(attAmt);
       const proposal = harden({
         give: { [KW.Attestation]: attAmt },
-        want: { [KW.Debt]: runAmt },
+        want: { [KW.Debt]: istAmt },
       });
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
@@ -651,11 +651,11 @@ const makeWorld = async t => {
         harden({ [KW.Attestation]: attPmt }),
       );
       await E(seat).getOfferResult(); // check for errors
-      const runPmt = await E(seat).getPayout(KW.Debt);
-      await E(runPurse).deposit(runPmt);
+      const istPmt = await E(seat).getPayout(KW.Debt);
+      await E(istPurse).deposit(istPmt);
     },
     unlienBLD: async n => {
-      assert(offerResult, 'no offerResult; borrowRUN first?');
+      assert(offerResult, 'no offerResult; borrowIST first?');
       const attAmt = AmountMath.make(
         attBrand,
         makeCopyBag([[bob.getAddress(), n * micro.unit]]),
@@ -671,24 +671,24 @@ const makeWorld = async t => {
       const attBack = await E(seat).getPayout(KW.Attestation);
       await returnAttestation(attBack);
     },
-    payDownRUN: async value => {
-      assert(offerResult, 'no offerResult; borrowRUN first?');
-      const runAmt = AmountMath.make(runBrand, value * micro.unit);
-      const runPmt = await E(runPurse).withdraw(runAmt);
+    payDownIST: async value => {
+      assert(offerResult, 'no offerResult; borrowIST first?');
+      const istAmt = AmountMath.make(istBrand, value * micro.unit);
+      const istPmt = await E(istPurse).withdraw(istAmt);
       const proposal = harden({
-        give: { [KW.Debt]: runAmt },
+        give: { [KW.Debt]: istAmt },
       });
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
-        harden({ [KW.Debt]: runPmt }),
+        harden({ [KW.Debt]: istPmt }),
       );
       await E(seat).getOfferResult(); // check for errors
     },
     payToUnlien: async ([pay, unlien]) => {
-      assert(offerResult, 'no offerResult; borrowRUN first?');
+      assert(offerResult, 'no offerResult; borrowIST first?');
       const proposal = harden({
-        give: { [KW.Debt]: AmountMath.make(runBrand, pay * micro.unit) },
+        give: { [KW.Debt]: AmountMath.make(istBrand, pay * micro.unit) },
         want: {
           [KW.Attestation]: AmountMath.make(
             attBrand,
@@ -696,60 +696,60 @@ const makeWorld = async t => {
           ),
         },
       });
-      const runPmt = await E(runPurse).withdraw(proposal.give[KW.Debt]);
+      const istPmt = await E(istPurse).withdraw(proposal.give[KW.Debt]);
       const seat = E(zoe).offer(
         E(offerResult.invitationMakers).AdjustBalances(),
         proposal,
-        harden({ [KW.Debt]: runPmt }),
+        harden({ [KW.Debt]: istPmt }),
       );
       await E(seat).getOfferResult(); // check for errors
       const attBack = await E(seat).getPayout(KW.Attestation);
       await returnAttestation(attBack);
     },
-    payoffRUN: async value => {
-      assert(offerResult, 'no offerResult; borrowRUN first?');
+    payoffIST: async value => {
+      assert(offerResult, 'no offerResult; borrowIST first?');
       const proposal = harden({
-        give: { [KW.Debt]: AmountMath.make(runBrand, value * micro.unit) },
+        give: { [KW.Debt]: AmountMath.make(istBrand, value * micro.unit) },
         want: {
           // TODO: want amount should match amount liened
           [KW.Attestation]: AmountMath.makeEmpty(attBrand, AssetKind.COPY_BAG),
         },
       });
-      const runPayment = await E(runPurse).withdraw(proposal.give[KW.Debt]);
+      const istPayment = await E(istPurse).withdraw(proposal.give[KW.Debt]);
       const seat = await E(zoe).offer(
         E(offerResult.invitationMakers).CloseVault(),
         proposal,
-        harden({ [KW.Debt]: runPayment }),
+        harden({ [KW.Debt]: istPayment }),
       );
-      await E(seat).getOfferResult(); // 'RUN line of credit closed'
+      await E(seat).getOfferResult(); // 'IST line of credit closed'
       const attBack = await E(seat).getPayout(KW.Attestation);
-      const runPmt = await E(seat).getPayout(KW.Debt);
+      const istPmt = await E(seat).getPayout(KW.Debt);
       await returnAttestation(attBack);
-      await E(runPurse).deposit(runPmt);
+      await E(istPurse).deposit(istPmt);
     },
-    checkRUNBalance: async target => {
-      const actual = await E(runPurse).getCurrentAmount();
+    checkISTBalance: async target => {
+      const actual = await E(istPurse).getCurrentAmount();
       approxEqual(
         t,
         actual,
-        AmountMath.make(runBrand, target * micro.unit),
+        AmountMath.make(istBrand, target * micro.unit),
         epsilon,
       );
     },
-    checkRUNDebt: async expected => {
+    checkISTDebt: async expected => {
       const { vault } = offerResult;
       const debt = await E(vault).getCurrentDebt();
       approxEqual(
         t,
         debt,
-        AmountMath.make(runBrand, expected * micro.unit),
+        AmountMath.make(istBrand, expected * micro.unit),
         epsilon,
       );
     },
     setMintingRatio: async newRunToBld => {
       /** @type {(r: Rational, b?: Brand) => Ratio} */
       const pairToRatio = ([n, d], brand2 = undefined) =>
-        makeRatio(n, runBrand, d, brand2);
+        makeRatio(n, istBrand, d, brand2);
       const newValue = pairToRatio(newRunToBld, bldBrand);
 
       // TODO use the puppet governor like vaultFactory driver.js does
@@ -783,7 +783,7 @@ test('borrowing past the debt limit', async t => {
   // XXX assumes debt limit of 1_000_000_000_000n
   const threshold = 1_000_000_000_000n / micro.unit;
 
-  await t.throwsAsync(driver.borrowRUN(threshold), {
+  await t.throwsAsync(driver.borrowIST(threshold), {
     message:
       // XXX brittle string to fail if numeric parameters change
       'Minting {"brand":"[Alleged: IST brand]","value":"[1020000000000n]"} past {"brand":"[Alleged: IST brand]","value":"[0n]"} would hit total debt limit {"brand":"[Alleged: IST brand]","value":"[1000000000000n]"}',
@@ -795,13 +795,13 @@ test('Borrow, pay off', async t => {
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
   await d.lienBLD(8000n);
-  await d.borrowRUN(1000n);
-  await d.checkRUNBalance(1000n);
-  await d.earnRUNReward(25n);
-  await d.payoffRUN(1020n);
-  await d.checkRUNDebt(0n);
+  await d.borrowIST(1000n);
+  await d.checkISTBalance(1000n);
+  await d.earnISTReward(25n);
+  await d.payoffIST(1020n);
+  await d.checkISTDebt(0n);
   await d.checkBLDLiened(0n);
-  await d.checkRUNBalance(5n);
+  await d.checkISTBalance(5n);
 });
 
 test('Starting LoC', async t => {
@@ -809,22 +809,22 @@ test('Starting LoC', async t => {
   await d.buyBLD(9000n);
   await d.stakeBLD(9000n);
   await d.checkBLDLiened(0n);
-  await d.checkRUNBalance(0n);
+  await d.checkISTBalance(0n);
   await d.lienBLD(6000n);
-  await d.borrowRUN(100n);
-  await d.checkRUNDebt(102n);
+  await d.borrowIST(100n);
+  await d.checkISTDebt(102n);
   await d.checkBLDLiened(6000n);
-  await d.checkRUNBalance(100n);
-  await d.borrowMoreRUN(100n);
-  await d.checkRUNBalance(200n);
-  await d.checkRUNDebt(204n);
+  await d.checkISTBalance(100n);
+  await d.borrowMoreIST(100n);
+  await d.checkISTBalance(200n);
+  await d.checkISTDebt(204n);
   await d.checkBLDLiened(6000n);
   await d.stakeBLD(5000n);
   await d.lienBLD(8000n);
   await d.checkBLDLiened(8000n);
-  await d.borrowMoreRUN(1400n);
-  await d.checkRUNDebt(1632n);
-  await d.borrowMoreRUN(0n);
+  await d.borrowMoreIST(1400n);
+  await d.checkISTDebt(1632n);
+  await d.borrowMoreIST(0n);
 });
 
 test('Extending LoC - CR increases (FAIL)', async t => {
@@ -832,14 +832,14 @@ test('Extending LoC - CR increases (FAIL)', async t => {
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
   await d.lienBLD(8000n);
-  await d.borrowRUN(1000n);
+  await d.borrowIST(1000n);
   await d.setMintingRatio([16n, 100n]);
-  await t.throwsAsync(async () => d.borrowMoreRUN(500n));
-  await d.checkRUNBalance(1000n);
+  await t.throwsAsync(async () => d.borrowMoreIST(500n));
+  await d.checkISTBalance(1000n);
   await d.checkBLDLiened(8000n);
-  await d.earnRUNReward(25n);
-  await d.payoffRUN(1021n);
-  await d.checkRUNDebt(0n);
+  await d.earnISTReward(25n);
+  await d.payoffIST(1021n);
+  await d.checkISTDebt(0n);
   await d.checkBLDLiened(0n);
 });
 
@@ -848,7 +848,7 @@ test('test borrow zero', async t => {
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
   await d.lienBLD(8000n);
-  await t.throwsAsync(async () => d.borrowRUN(0n));
+  await t.throwsAsync(async () => d.borrowIST(0n));
 });
 
 test('test zero amounts', async t => {
@@ -856,7 +856,7 @@ test('test zero amounts', async t => {
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
   await d.lienBLD(8000n);
-  await t.throwsAsync(async () => d.borrowRUN(0n));
+  await t.throwsAsync(async () => d.borrowIST(0n));
 });
 
 test('test payoff zero', async t => {
@@ -864,8 +864,8 @@ test('test payoff zero', async t => {
   await d.buyBLD(80000n);
   await d.stakeBLD(80000n);
   await d.lienBLD(8000n);
-  await d.borrowRUN(200n);
-  await t.throwsAsync(async () => d.payoffRUN(200n));
+  await d.borrowIST(200n);
+  await t.throwsAsync(async () => d.payoffIST(200n));
 });
 
 test('test no Lien', async t => {
@@ -886,10 +886,10 @@ test('Partial repayment - CR remains the same', async t => {
   await d.buyBLD(10000n);
   await d.stakeBLD(10000n);
   await d.lienBLD(10000n);
-  await d.borrowRUN(1000n);
-  await d.payDownRUN(50n);
-  await d.checkRUNBalance(950n);
-  await d.checkRUNDebt(970n);
+  await d.borrowIST(1000n);
+  await d.payDownIST(50n);
+  await d.checkISTBalance(950n);
+  await d.checkISTDebt(970n);
 });
 
 test('Partial repayment - CR increases*', async t => {
@@ -897,10 +897,10 @@ test('Partial repayment - CR increases*', async t => {
   await d.buyBLD(10000n);
   await d.stakeBLD(10000n);
   await d.lienBLD(400n);
-  await d.borrowRUN(100n);
+  await d.borrowIST(100n);
   await d.setMintingRatio([16n, 100n]);
-  await d.payDownRUN(5n);
-  await d.checkRUNBalance(95n);
+  await d.payDownIST(5n);
+  await d.checkISTBalance(95n);
   await d.checkBLDLiened(400n);
 });
 
@@ -909,12 +909,12 @@ test('Partial repay - unbonded ok', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(800n);
   await d.lienBLD(800n);
-  await d.borrowRUN(100n);
+  await d.borrowIST(100n);
   await d.slash(700n);
   await d.checkBLDLiened(800n);
-  await d.checkRUNBalance(100n);
-  await d.payDownRUN(50n);
-  await d.checkRUNBalance(50n);
+  await d.checkISTBalance(100n);
+  await d.payDownIST(50n);
+  await d.checkISTBalance(50n);
   await d.checkBLDLiened(800n);
   await d.checkBLDStaked(100n);
 });
@@ -924,9 +924,9 @@ test('Add collateral - more BLD required (FAIL)', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
   await d.lienBLD(800n);
-  await d.borrowRUN(100n);
-  await t.throwsAsync(async () => d.borrowMoreRUN(200n));
-  await d.checkRUNBalance(100n);
+  await d.borrowIST(100n);
+  await t.throwsAsync(async () => d.borrowMoreIST(200n));
+  await d.checkISTBalance(100n);
   await d.checkBLDLiened(800n);
 });
 
@@ -935,9 +935,9 @@ test('Lower collateral', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
   await d.lienBLD(800n);
-  await d.borrowRUN(100n);
+  await d.borrowIST(100n);
   await d.unlienBLD(350n);
-  await d.checkRUNBalance(100n);
+  await d.checkISTBalance(100n);
   await d.checkBLDLiened(450n);
 });
 
@@ -946,7 +946,7 @@ test('Lower collateral - CR increase (FAIL)', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
   await d.lienBLD(800n);
-  await d.borrowRUN(100n);
+  await d.borrowIST(100n);
   await d.setMintingRatio([16n, 100n]);
   await t.throwsAsync(async () => d.unlienBLD(400n));
   await d.checkBLDLiened(800n);
@@ -956,17 +956,17 @@ test('Lower collateral - unbonded ok', async t => {
   const d = await makeWorld(t);
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
-  await d.earnRUNReward(5n);
+  await d.earnISTReward(5n);
   await d.lienBLD(800n);
-  await d.borrowRUN(100n);
+  await d.borrowIST(100n);
   await d.slash(770n);
   await d.checkBLDLiened(800n);
   await d.unlienBLD(375n);
-  await d.checkRUNBalance(105n);
+  await d.checkISTBalance(105n);
   await d.checkBLDLiened(425n);
   await d.setMintingRatio([16n, 100n]);
-  await d.payoffRUN(103n);
-  await d.checkRUNBalance(3n);
+  await d.payoffIST(103n);
+  await d.checkISTBalance(3n);
   await d.checkBLDLiened(0n);
 });
 
@@ -975,7 +975,7 @@ test('Lower collateral by paying off DEBT', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
   await d.lienBLD(800n);
-  await d.borrowRUN(190n);
+  await d.borrowIST(190n);
   await d.payToUnlien([100n, 300n]);
   await d.checkBLDLiened(500n);
 });
@@ -985,10 +985,10 @@ test('Watch interest accrue', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
   await d.lienBLD(800n);
-  await d.borrowRUN(190n);
-  await d.checkRUNDebt(194n);
+  await d.borrowIST(190n);
+  await d.checkISTDebt(194n);
   await d.waitDays(90);
-  await d.checkRUNDebt(195n);
+  await d.checkISTDebt(195n);
 });
 
 test('payoff more than you owe', async t => {
@@ -996,13 +996,13 @@ test('payoff more than you owe', async t => {
   await d.buyBLD(1000n);
   await d.stakeBLD(1000n);
   await d.lienBLD(800n);
-  await d.borrowRUN(190n);
-  await d.checkRUNDebt(194n);
-  await d.earnRUNReward(20n);
-  await d.payoffRUN(200n);
-  await d.checkRUNDebt(0n);
+  await d.borrowIST(190n);
+  await d.checkISTDebt(194n);
+  await d.earnISTReward(20n);
+  await d.payoffIST(200n);
+  await d.checkISTDebt(0n);
   await d.checkBLDLiened(0n);
-  await d.checkRUNBalance(16n);
+  await d.checkISTBalance(16n);
 });
 
 test('storage keys', async t => {

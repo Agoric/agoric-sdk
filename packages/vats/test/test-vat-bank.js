@@ -246,14 +246,14 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   });
 
   // check results: initialSupply
-  const runIssuer = await E(zoeService).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const istIssuer = await E(zoeService).getFeeIssuer();
+  const runBrand = await E(istIssuer).getBrand();
   const pmt = await consume.initialSupply;
-  const amt = await E(runIssuer).getAmountOf(pmt);
+  const amt = await E(istIssuer).getAmountOf(pmt);
   t.deepEqual(
     amt,
     { brand: runBrand, value: 50_000_000n },
-    'initialSupply of 50 RUN',
+    'initialSupply of 50 IST',
   );
 
   const loadCriticalVat = async name => {
@@ -274,7 +274,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     updateState: asset => {
       seen.add(asset.issuerName);
       if (asset.issuerName === 'IST') {
-        t.is(asset.issuer, runIssuer);
+        t.is(asset.issuer, istIssuer);
       }
       if (seen.size === expected.length) {
         done.resolve(seen);

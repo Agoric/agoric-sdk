@@ -89,20 +89,20 @@ const startContract = (t, bootstrapPaymentValue) => {
 test('bootstrap payment', async (/** @type {CentralSupplyTestContext} */ t) => {
   const bootstrapPaymentValue = 20000n * 10n ** 6n;
   const {
-    issuer: { IST: runIssuer },
-    brand: { IST: runBrand },
+    issuer: { IST: istIssuer },
+    brand: { IST: istBrand },
   } = t.context;
 
   const { creatorFacet } = await startContract(t, bootstrapPaymentValue);
 
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
-  const bootstrapAmount = await E(runIssuer).getAmountOf(bootstrapPayment);
+  const bootstrapAmount = await E(istIssuer).getAmountOf(bootstrapPayment);
 
   t.true(
     AmountMath.isEqual(
       bootstrapAmount,
-      AmountMath.make(runBrand, bootstrapPaymentValue),
+      AmountMath.make(istBrand, bootstrapPaymentValue),
     ),
   );
 });
@@ -148,18 +148,18 @@ test('bootstrap payment - only minted once', async (/** @type {CentralSupplyTest
 
 test('bootstrap payment - default value is 0n', async (/** @type {CentralSupplyTestContext} */ t) => {
   const {
-    issuer: { IST: runIssuer },
-    brand: { IST: runBrand },
+    issuer: { IST: istIssuer },
+    brand: { IST: istBrand },
   } = t.context;
   const { creatorFacet } = await startContract(t, 0n);
 
-  const issuers = { IST: runIssuer };
+  const issuers = { IST: istIssuer };
 
   const bootstrapPayment = E(creatorFacet).getBootstrapPayment();
 
   const bootstrapAmount = await E(issuers.IST).getAmountOf(bootstrapPayment);
 
-  t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(runBrand, 0n)));
+  t.true(AmountMath.isEqual(bootstrapAmount, AmountMath.make(istBrand, 0n)));
 });
 
 test('bootstrap payment - contract exits', async (/** @type {CentralSupplyTestContext} */ t) => {

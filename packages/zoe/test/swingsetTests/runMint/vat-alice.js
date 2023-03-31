@@ -14,7 +14,7 @@ const build = async (log, zoe, installations, feeMintAccess) => {
       const { instance } = await E(zoe).startInstance(
         installations.offerArgsUsageContract,
         harden({
-          RUN: E(zoe).getFeeIssuer(),
+          IST: E(zoe).getFeeIssuer(),
         }),
         undefined,
       );
@@ -39,14 +39,14 @@ const build = async (log, zoe, installations, feeMintAccess) => {
       );
       log('second instance started');
 
-      const payment1 = await E(cf1).mintRun();
+      const payment1 = await E(cf1).mintIst();
       log('first payment minted');
-      const payment2 = await E(cf2).mintRun();
+      const payment2 = await E(cf2).mintIst();
       log('second payment minted');
 
-      const runIssuer = E(zoe).getFeeIssuer();
-      const amount1 = await E(runIssuer).getAmountOf(payment1);
-      const amount2 = await E(runIssuer).getAmountOf(payment2);
+      const istIssuer = E(zoe).getFeeIssuer();
+      const amount1 = await E(istIssuer).getAmountOf(payment1);
+      const amount2 = await E(istIssuer).getAmountOf(payment2);
       log(amount1);
       log(amount2);
     },

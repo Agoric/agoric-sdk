@@ -7,16 +7,16 @@ import { AmountMath } from '@agoric/ertp';
  * @param {{feeMintAccess: FeeMintAccess}} privateArgs
  */
 const start = async (zcf, privateArgs) => {
-  const runMint = await zcf.registerFeeMint('RUN', privateArgs.feeMintAccess);
+  const runIst = await zcf.registerFeeMint('IST', privateArgs.feeMintAccess);
 
-  const run10 = AmountMath.make(runMint.getIssuerRecord().brand, 10n);
+  const run10 = AmountMath.make(runIst.getIssuerRecord().brand, 10n);
 
   const creatorFacet = Far('creatorFacet', {
-    mintRun: () => {
+    mintIst: () => {
       const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-      runMint.mintGains(harden({ RUN: run10 }), zcfSeat);
+      runIst.mintGains(harden({ IST: run10 }), zcfSeat);
       zcfSeat.exit();
-      return E(userSeat).getPayout('RUN');
+      return E(userSeat).getPayout('IST');
     },
   });
   return harden({ creatorFacet });

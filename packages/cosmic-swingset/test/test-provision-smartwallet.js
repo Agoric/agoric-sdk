@@ -93,6 +93,7 @@ test.skip('integration test: smart wallet provision', async t => {
   const queryGrace = 6; // time to query state before shutting down
   const [_run, addrQ] = await Promise.all([
     scenario2.runToHalt({
+      // eslint-disable-next-line no-restricted-syntax
       BLOCKS_TO_RUN: enoughBlocksToProvision + queryGrace,
     }),
     provision(),

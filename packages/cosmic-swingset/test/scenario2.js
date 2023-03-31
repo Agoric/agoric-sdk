@@ -50,11 +50,13 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
     runMake,
     setup: () => runMake(['scenario2-setup'], { stdio: noOutput }),
     runToHalt: ({
+      // eslint-disable-next-line no-restricted-syntax
       BLOCKS_TO_RUN = undefined,
       INITIAL_HEIGHT = undefined,
     } = {}) =>
       runMake([
         'scenario2-run-chain-to-halt',
+        // eslint-disable-next-line no-restricted-syntax
         ...bind({ BLOCKS_TO_RUN, INITIAL_HEIGHT }),
       ]),
     export: () =>

@@ -82,8 +82,8 @@ const defaultParamValues = debt =>
  * minInitialDebt: bigint,
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
- * run: IssuerKit & import('../supports.js').AmountUtils,
- * runInitialLiquidity: Amount<'nat'>,
+ * ist: IssuerKit & import('../supports.js').AmountUtils,
+ * istInitialLiquidity: Amount<'nat'>,
  * timer: import('@agoric/time/src/types').TimerService,
  * zoe: ZoeService,
  * }} DriverContext
@@ -94,10 +94,10 @@ const defaultParamValues = debt =>
  */
 export const makeDriverContext = async () => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const istIssuer = await E(zoe).getFeeIssuer();
+  const istBrand = await E(istIssuer).getBrand();
   // @ts-expect-error missing mint
-  const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
+  const run = withAmountUtils({ issuer: istIssuer, brand: istBrand });
   const aeth = withAmountUtils(makeIssuerKit('aEth'));
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
 
@@ -162,7 +162,7 @@ const setupReserveAndElectorate = async t => {
  * @param {import('ava').ExecutionContext<DriverContext>} t
  * @param {Amount<'nat'>} amt
  */
-const getRunFromFaucet = async (t, amt) => {
+const getIstFromFaucet = async (t, amt) => {
   const {
     installation: { faucet: installation },
     zoe,
@@ -170,7 +170,7 @@ const getRunFromFaucet = async (t, amt) => {
   } = t.context;
   /** @type {Promise<Installation<import('./faucet.js').start>>} */
   // @ts-expect-error cast
-  // On-chain, there will be pre-existing RUN. The faucet replicates that
+  // On-chain, there will be pre-existing IST. The faucet replicates that
   const { creatorFacet: faucetCreator } = await E(zoe).startInstance(
     installation,
     {},
@@ -181,11 +181,11 @@ const getRunFromFaucet = async (t, amt) => {
     await E(faucetCreator).makeFaucetInvitation(),
     harden({
       give: {},
-      want: { RUN: amt },
+      want: { IST: amt },
     }),
   );
 
-  const runPayment = await E(faucetSeat).getPayout('RUN');
+  const runPayment = await E(faucetSeat).getPayout('IST');
   return runPayment;
 };
 
@@ -376,7 +376,7 @@ export const makeManagerDriver = async (
               : undefined,
           }),
           harden({
-            Minted: getRunFromFaucet(t, mintedAmount),
+            Minted: getIstFromFaucet(t, mintedAmount),
           }),
         );
         return E(seat).getOfferResult();
@@ -452,11 +452,11 @@ export const makeManagerDriver = async (
       await timer.tickN(ticks, 'test driver');
     },
     makeVaultDriver,
-    checkPayouts: async (expectedRUN, expectedAEth) => {
+    checkPayouts: async (expectedIST, expectedAEth) => {
       const payouts = await E(currentSeat).getPayouts();
       const collProceeds = await aeth.issuer.getAmountOf(payouts.Collateral);
       const runProceeds = await E(run.issuer).getAmountOf(payouts.Minted);
-      t.deepEqual(runProceeds, expectedRUN);
+      t.deepEqual(runProceeds, expectedIST);
       t.deepEqual(collProceeds, expectedAEth);
     },
     checkRewards: async expectedMinted => {
@@ -513,7 +513,7 @@ export const makeManagerDriver = async (
       const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
 
       t.deepEqual(reserveAllocations, {
-        Fee: run.make(stableValue),
+        Fee: ist.make(stableValue),
       });
     },
   };

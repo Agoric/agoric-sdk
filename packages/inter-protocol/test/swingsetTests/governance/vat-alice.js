@@ -30,8 +30,8 @@ const build = async (log, zoe, brands, payments, timer) => {
   const oneLoanWithInterest = async vaultFactory => {
     log(`=> alice.oneLoanWithInterest called`);
 
-    const runIssuer = await E(vaultFactory).getRunIssuer();
-    const runBrand = await E(runIssuer).getBrand();
+    const istIssuer = await E(vaultFactory).getIstIssuer();
+    const istBrand = await E(istIssuer).getBrand();
 
     const collateralManager = E(vaultFactory).getCollateralManager(moolaBrand);
 
@@ -40,7 +40,7 @@ const build = async (log, zoe, brands, payments, timer) => {
       E(collateralManager).makeVaultInvitation(),
       harden({
         give: { Collateral: AmountMath.make(moolaBrand, 100n) },
-        want: { RUN: AmountMath.make(runBrand, 500000n) },
+        want: { IST: AmountMath.make(istBrand, 500000n) },
       }),
       harden({
         Collateral: moolaPayment,

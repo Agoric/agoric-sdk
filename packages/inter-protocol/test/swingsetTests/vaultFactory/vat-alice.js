@@ -19,8 +19,8 @@ const build = async (log, zoe, brands, payments, timer) => {
   const oneLoanWithInterest = async vaultFactory => {
     log(`=> alice.oneLoanWithInterest called`);
 
-    const runIssuer = await E(vaultFactory).getRunIssuer();
-    const runBrand = await E(runIssuer).getBrand();
+    const istIssuer = await E(vaultFactory).getIstIssuer();
+    const runBrand = await E(istIssuer).getBrand();
 
     /** @type {UserSeat<VaultKit>} */
     const loanSeat = await E(zoe).offer(

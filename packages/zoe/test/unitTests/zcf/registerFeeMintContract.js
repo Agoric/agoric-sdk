@@ -12,15 +12,15 @@ const start = async (zcf, privateArgs) => {
   const instance = zcf.getInstance();
   zcf.setTestJig(() => harden({ instance }));
 
-  const RUNZCFMint = await zcf.registerFeeMint(
-    'RUN',
+  const ISTZCFMint = await zcf.registerFeeMint(
+    'IST',
     privateArgs.feeMintAccess,
   );
-  const { brand: RUNBrand } = RUNZCFMint.getIssuerRecord();
+  const { brand: ISTBrand } = ISTZCFMint.getIssuerRecord();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
-  RUNZCFMint.mintGains(
+  ISTZCFMint.mintGains(
     harden({
-      Winnings: AmountMath.make(RUNBrand, 10n),
+      Winnings: AmountMath.make(ISTBrand, 10n),
     }),
     zcfSeat,
   );

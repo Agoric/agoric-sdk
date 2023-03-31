@@ -84,10 +84,10 @@ export const Phase = /** @type {const} */ ({
 
 test.before(async t => {
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
-  const runIssuer = await E(zoe).getFeeIssuer();
-  const runBrand = await E(runIssuer).getBrand();
+  const istIssuer = await E(zoe).getFeeIssuer();
+  const istBrand = await E(istIssuer).getBrand();
   // @ts-expect-error missing mint
-  const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
+  const ist = withAmountUtils({ issuer: istIssuer, brand: istBrand });
   const aeth = withAmountUtils(makeIssuerKit('aEth'));
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
@@ -113,14 +113,14 @@ test.before(async t => {
     },
     minInitialDebt: 50n,
     endorsedUi: undefined,
-    rates: defaultParamValues(run.brand),
+    rates: defaultParamValues(ist.brand),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
   t.context = {
     ...frozenCtx,
     bundleCache,
     aeth,
-    run,
+    ist,
   };
   trace(t, 'CONTEXT');
 });
@@ -133,7 +133,7 @@ test.before(async t => {
  * @param {Amount | undefined} unitAmountIn
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {RelativeTime} quoteInterval
- * @param {bigint} runInitialLiquidity
+ * @param {bigint} istInitialLiquidity
  * @param {bigint} [startFrequency]
  */
 const setupServices = async (
@@ -142,20 +142,20 @@ const setupServices = async (
   unitAmountIn,
   timer = buildManualTimer(t.log, 0n, { eventLoopIteration }),
   quoteInterval = 1n,
-  runInitialLiquidity,
+  istInitialLiquidity,
   startFrequency = undefined,
 ) => {
-  const { zoe, run, aeth, loanTiming, minInitialDebt, endorsedUi, rates } =
+  const { zoe, ist, aeth, loanTiming, minInitialDebt, endorsedUi, rates } =
     t.context;
   t.context.timer = timer;
 
-  const runPayment = await getRunFromFaucet(t, runInitialLiquidity);
-  trace(t, 'faucet', { runInitialLiquidity, runPayment });
+  const runPayment = await getRunFromFaucet(t, istInitialLiquidity);
+  trace(t, 'faucet', { istInitialLiquidity, runPayment });
 
   const { space } = await setupElectorateReserveAndAuction(
     t,
     // @ts-expect-error inconsistent types with withAmountUtils
-    run,
+    ist,
     aeth,
     priceOrList,
     quoteInterval,
