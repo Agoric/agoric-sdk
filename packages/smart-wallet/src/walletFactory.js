@@ -163,7 +163,7 @@ export const prepare = async (zcf, privateArgs, baggage) => {
        * associate it with. (We could have a shared `lastError` node but it would be so noisy as to
        * not provide much info to the end user.)
        *
-       * Once the owner is known, this calls handleBridgeAction which is then ensure that all errors
+       * Once the owner is known, this calls handleBridgeAction which ensures that all errors
        * are published in the owner wallet's vstorage path.
        *
        * @param {import('./types.js').WalletBridgeMsg} obj validated by shape.WalletBridgeMsg

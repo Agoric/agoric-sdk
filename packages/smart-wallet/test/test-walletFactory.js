@@ -130,6 +130,38 @@ test('bridge with offerId string', async t => {
   );
 });
 
+test('missing spend authority', async t => {
+  const owner = 'agoric1missingSpend';
+  // make a wallet and get its update stream, but don't use the wallet object
+  const updates = await E(
+    t.context.simpleProvideWallet(owner),
+  ).getUpdatesSubscriber();
+  const ctx = makeImportContext();
+
+  const validMsg = {
+    type: ActionType.WALLET_ACTION, // not SPEND
+    owner,
+    action: JSON.stringify(
+      ctx.fromBoard.serialize(
+        harden({ method: 'tryExitOffer', offerId: 'irrelevant' }),
+      ),
+    ),
+    blockTime: 0,
+    blockHeight: 0,
+  };
+  assert(t.context.sendToBridge);
+  // sending over the bridge succeeds without rejecting
+  await t.context.sendToBridge(validMsg);
+
+  // the signal of an error is available in chain storage
+  t.deepEqual(await headValue(updates), {
+    updated: 'walletAction',
+    status: {
+      error: 'tryExitOffer requires spend authority',
+    },
+  });
+});
+
 test('bad action value', async t => {
   const owner = 'agoric1badActionValue';
   // make a wallet and get its update stream, but don't use the wallet object
