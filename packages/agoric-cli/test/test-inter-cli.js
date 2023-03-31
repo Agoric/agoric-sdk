@@ -373,6 +373,7 @@ usageTest('inter bid by-discount');
 usageTest('inter bid list');
 usageTest('inter bid cancel');
 usageTest('inter reserve add');
+usageTest('inter vbank list');
 
 test('formatBid', t => {
   const { values } = Object;

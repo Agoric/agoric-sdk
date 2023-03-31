@@ -590,5 +590,25 @@ $ inter bid list --from my-acct
         );
       },
     );
+
+  const assetCmd = interCmd
+    .command('vbank')
+    .description('vbank asset commands');
+  assetCmd
+    .command('list')
+    .description('list registered assets with decimalPlaces, boardId, etc.')
+    .action(async () => {
+      const { agoricNames } = await rpcTools();
+      const assets = Object.values(agoricNames.vbankAsset).map(a => {
+        return {
+          issuerName: a.issuerName,
+          denom: a.denom,
+          brand: { boardId: a.brand.getBoardId() },
+          displayInfo: { decimalPlaces: a.displayInfo.decimalPlaces },
+        };
+      });
+      show(assets, true);
+    });
+
   return interCmd;
 };
