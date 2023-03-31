@@ -5,6 +5,10 @@ inputs:
   node-version:
     description: 'The version of Node.js to use'
     required: true
+  path:
+    description: 'The relative path to the agoric-sdk directory'
+    required: false
+    default: '.'
   xsnap-random-init:
     description: Build xsnap binary with random memory init
     required: false
@@ -21,6 +25,7 @@ runs:
         clean: 'false'
         submodules: 'true'
         persist-credentials: false
+        path: ${{ inputs.path }}
     # Select a branch on Endo to test against by adding text to the body of the
     # pull request. For example: #endo-branch: some-pr-branch
     # The default is '*NONE*' to indicate not to check out Endo, just use
@@ -70,15 +75,10 @@ runs:
     - uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node-version }}
+        cache: 'yarn'
+        cache-dependency-path: ${{ inputs.path }}/yarn.lock
     - uses: kenchan0130/actions-system-info@master
       id: system-info
-    - name: cache node modules
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/yarn
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-yarn-${{ hashFiles('yarn.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-yarn-
     - name: restore built files
       id: built
       uses: actions/cache@v3
@@ -88,6 +88,7 @@ runs:
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
     - name: yarn install
+      working-directory: ${{ inputs.path }}
       run: |-
         set -e
         if test "${{ inputs.xsnap-random-init }}" != 0 && test -d /etc/apt; then
@@ -106,6 +107,7 @@ runs:
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn build
+      working-directory: ${{ inputs.path }}
       run: |-
         set -e
         yarn build
@@ -116,6 +118,7 @@ runs:
       env:
         XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
     - name: git dirty check
+      working-directory: ${{ inputs.path }}
       run: |-
         if [ -n "$(git status --porcelain)" ];
         then
