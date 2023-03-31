@@ -79,6 +79,20 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
 };
 
 /**
+ * @param {string} address
+ * @param {import('./rpc').VStorage} vstorage
+ * @param {ReturnType<import('./rpc').makeFromBoard>} fromBoard
+ */
+export const getLiveOffers = async (address, vstorage, fromBoard) => {
+  const content = await vstorage.readLatest(
+    `published.wallet.${address}.current`,
+  );
+  /** @type {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} */
+  const current = storageHelper.unserializeTxt(content, fromBoard).at(-1);
+  return current.liveOffers;
+};
+
+/**
  * Sign and broadcast a wallet-action (or do a dry-run).
  *
  * @throws { Error & { code: number } } if transaction fails

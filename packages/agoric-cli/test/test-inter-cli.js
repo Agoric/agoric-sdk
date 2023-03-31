@@ -263,8 +263,12 @@ test('inter bid list: finds one bid', async t => {
   const argv = 'node inter bid list --from gov1'.split(' ');
 
   const wallet = {
-    [govKeyring.gov1]: { updated: 'offerStatus', status: offerStatus2 },
-    [govKeyring.gov2]: { updated: 'XXX' },
+    [govKeyring.gov1]: {
+      current: {
+        liveOffers: [[offerStatus2.id, offerStatus2]],
+      },
+    },
+    [govKeyring.gov2]: { current: {} },
   };
 
   const out = [];

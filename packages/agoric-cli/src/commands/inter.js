@@ -17,7 +17,12 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import { doAction, outputActionAndHint, paidOut } from '../lib/wallet.js';
+import {
+  doAction,
+  getLiveOffers,
+  outputActionAndHint,
+  paidOut,
+} from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -455,15 +460,16 @@ $ inter bid list --from my-acct
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, storedWalletState } = await rpcTools();
-      const coalesced = await storedWalletState(opts.from);
+      const { agoricNames, vstorage, fromBoard } = await rpcTools();
       const bidInvitationShape = harden({
         source: 'agoricContract',
         instancePath: ['auctioneer'],
         callPipe: [['makeBidInvitation', M.any()]],
       });
 
-      for (const offerStatus of coalesced.offerStatuses.values()) {
+      const liveOffers = await getLiveOffers(opts.from, vstorage, fromBoard);
+
+      for (const [_id, offerStatus] of liveOffers) {
         harden(offerStatus); // coalesceWalletState should do this
         // console.debug(offerStatus.invitationSpec);
         if (!matches(offerStatus.invitationSpec, bidInvitationShape)) continue;
