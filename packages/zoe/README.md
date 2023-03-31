@@ -63,7 +63,7 @@ The upgrade process is triggered through the "adminFacet" of the instance, and r
 const results = E(instanceAdminFacet).upgradeContract(newBundleID);
 ```
 
-This will replace the behavior of the existing instnace with that defined in the bundle. The new behavior is an additional _incarnation_ of the instance. Most state is discarded, however "durable" collections are retained for use by the replacement version. 
+This will replace the behavior of the existing instance with that defined in the new bundle. The new behavior is an additional _incarnation_ of the instance. Most state from the old incarnation is discarded, however "durable" collections are retained for use by its replacement. 
 
 There are a few requirements for the contract that differ from non-upgradable contracts:
 1. Export
@@ -72,7 +72,7 @@ There are a few requirements for the contract that differ from non-upgradable co
 4. Crank
 
 ### Export
-The new bundle itself must export a `prepare` function in place of `start`. This is called by `startInstance` for the first incarnation and again by `restartContract` or `upgradeContract` for subsequent incarnations.
+The new bundle must export a `prepare` function in place of `start`. This is called by `startInstance` for the first incarnation and again by `restartContract` or `upgradeContract` for subsequent incarnations.
 
 For example, suppose v1 code of a simple single-increment-counter contract anticipated extension of exported functionality and decided to track it by means of "codeVersion" data in baggage. v2 code could add multi-increment behavior like so:
 
@@ -143,10 +143,11 @@ The contract defines the kinds that are held in durable storage. Thus the functi
 
 # Crank
 
-After the first incarnation, `prepare` must return in one crank. Therefore any
-remote calls must only be during the initial incaranation. During subsequent
-upgrades, `prepare` should be using a value that it stashed away in the baggage.
-The `provideAll` function in contract support is designed to help.
+For the first incarnation, `prepare` is allowed to return a promise that takes more than one crank to settle
+(e.g., because it depends upon the results of remote calls).
+But in later incarnations, `prepare` must settle in one crank.
+Therefore such necessary values should be stashed in the baggage by earlier incarnations.
+The `provideAll` function in contract support is designed to support this.
 
 The reason is that all vats must be able to finish their upgrade without
 contacting other vats. There might be messages queued inbound to the vat being
