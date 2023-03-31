@@ -209,7 +209,7 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  *   offerId: string,
  *   collateralBrandKey: string,
  *   give: number,
- *   want?: number,
+ *   want: number,
  * } & ({
  *   price: number,
  * } | {
@@ -225,20 +225,7 @@ const makeBidOffer = (brands, opts) => {
   // @ts-expect-error XXX how to narrow AssetKind?
   const collateralBrand = brands[opts.collateralBrandKey];
 
-  const optWantArg = {};
-  const optWantRecord = {};
-  if ('want' in opts) {
-    const amt = AmountMath.make(collateralBrand, scaleDecimals(opts.want));
-    optWantArg.want = amt;
-    optWantRecord.want = { Collateral: amt };
-  }
-  harden(optWantArg);
-  harden(optWantRecord);
-
-  const proposal = {
-    give,
-    ...optWantRecord,
-  };
+  const wantAmt = AmountMath.make(collateralBrand, scaleDecimals(opts.want));
 
   const bounds = (x, lo, hi) => {
     assert(x >= lo && x <= hi);
@@ -249,11 +236,13 @@ const makeBidOffer = (brands, opts) => {
   const offerArgs =
     'price' in opts
       ? {
-          ...optWantArg,
+          // XXX "targetPurchase" or "max" might be better names
+          // for what this does, but for now, here we are.
+          want: wantAmt,
           offerPrice: parseRatio(opts.price, brands.IST, collateralBrand),
         }
       : {
-          ...optWantArg,
+          want: wantAmt,
           offerBidScaling: parseRatio(
             (1 - bounds(opts.discount, -1, 1)).toFixed(2),
             brands.IST,
@@ -269,7 +258,7 @@ const makeBidOffer = (brands, opts) => {
       instancePath: ['auctioneer'],
       callPipe: [['makeBidInvitation', [collateralBrand]]],
     },
-    proposal,
+    proposal: { give },
     offerArgs,
   };
   return offerSpec;

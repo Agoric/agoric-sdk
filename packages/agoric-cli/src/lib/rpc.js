@@ -226,6 +226,10 @@ export const makeAgoricNames = async (ctx, vstorage) => {
   return { ...Object.fromEntries(entries), reverse };
 };
 
+/**
+ * @param {{ fetch: typeof window.fetch }} io
+ * @param {MinimalNetworkConfig} config
+ */
 export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
   try {
     const vstorage = makeVStorage({ fetch }, config);
