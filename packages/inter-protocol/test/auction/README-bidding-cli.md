@@ -55,7 +55,7 @@ Then try `agd version` to confirm.
 
 ### Locating the `agops inter` command
 
-`agops` follows `npm`/`yarn` conventions, so you can `yarn run agops inter` as log as your current directory is under `agoric-sdk`.
+`agops` follows `npm`/`yarn` conventions, so you can `yarn run agops inter` as long as your current directory is under `agoric-sdk`.
 
 #### Add an alias for `agops inter`
 
@@ -76,7 +76,7 @@ Inter Protocol commands for liquidation bidding etc.
 
 ## Key management with `agd`
 
-If you don't already have an testing address and corresponding private key:
+If you don't already have a testing address and corresponding private key:
 
 ```sh
 agd keys add test-acct --keyring-backend=test
