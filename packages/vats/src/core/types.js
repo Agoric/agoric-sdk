@@ -162,8 +162,11 @@
  *     consume: Record<WellKnownName['issuer'], Promise<Issuer>> & { BLD: Promise<Issuer<'nat'>>, IST: Promise<Issuer<'nat'>> },
  *   },
  *   brand: {
- *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
- *     consume: Record<WellKnownName['issuer'], Promise<Brand>> & { BLD: Promise<Brand<'nat'>>, IST: Promise<Brand<'nat'>> },
+ *     produce: Record<WellKnownName['issuer'], Producer<Brand>> &
+ *              { timer: Producer<import('@agoric/time').TimerBrand> },
+ *     consume: Record<WellKnownName['issuer'], Promise<Brand>> &
+ *              { BLD: Promise<Brand<'nat'>>, IST: Promise<Brand<'nat'>>,
+ *                timer: Producer<import('@agoric/time').TimerBrand> },
  *   },
  *   oracleBrand: {
  *     produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>,
