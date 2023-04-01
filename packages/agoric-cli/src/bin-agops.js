@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /* eslint-disable @jessie.js/no-nested-await */
-/* global fetch */
+/* global fetch, setTimeout */
 
 import '@agoric/casting/node-fetch-shim.js';
 import '@endo/init';
@@ -19,6 +19,7 @@ import { makeReserveCommand } from './commands/reserve.js';
 import { makeVaultsCommand } from './commands/vaults.js';
 import { makePerfCommand } from './commands/perf.js';
 import { makeInterCommand } from './commands/inter.js';
+import { makeAuctionCommand } from './commands/auction.js';
 
 const logger = anylogger('agops');
 const progname = path.basename(process.argv[1]);
@@ -30,22 +31,22 @@ program.addCommand(await makeOracleCommand(logger));
 program.addCommand(await makeEconomicCommiteeCommand(logger));
 program.addCommand(await makePerfCommand(logger));
 program.addCommand(await makePsmCommand(logger));
-program.addCommand(await makeReserveCommand(logger));
 program.addCommand(await makeVaultsCommand(logger));
 
-program.addCommand(
-  await makeInterCommand(
-    {
-      env: { ...process.env },
-      stdout: process.stdout,
-      stderr: process.stderr,
-      createCommand,
-      execFileSync,
-      now: () => Date.now(),
-    },
-    { fetch },
-  ),
-);
+const procIO = {
+  env: { ...process.env },
+  stdout: process.stdout,
+  stderr: process.stderr,
+  createCommand,
+  execFileSync,
+  now: () => Date.now(),
+  clock: () => Promise.resolve(Date.now()),
+  setTimeout,
+};
+
+program.addCommand(await makeReserveCommand(logger, procIO));
+program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
+program.addCommand(await makeInterCommand(procIO, { fetch }));
 
 try {
   await program.parseAsync(process.argv);

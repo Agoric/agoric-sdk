@@ -26,10 +26,10 @@ test('Offers.auction.Bid', async t => {
     t.deepEqual(
       Offers.auction.Bid(brands, {
         offerId: 'foo1',
-        wantCollateral: 1.23,
-        giveCurrency: 4.56,
+        give: 4.56,
         collateralBrandKey: 'ATOM',
         discount: cliArg,
+        want: 10_000,
       }),
       {
         id: 'foo1',
@@ -39,12 +39,11 @@ test('Offers.auction.Bid', async t => {
           callPipe: [['makeBidInvitation', [atom.brand]]],
         },
         proposal: {
-          exit: { onDemand: null },
           give: { Currency: ist.make(4_560_000n) },
         },
         offerArgs: {
           offerBidScaling,
-          want: atom.make(1_230_000n),
+          want: { brand: atom.brand, value: 10_000_000_000n },
         },
       },
     );
@@ -52,12 +51,34 @@ test('Offers.auction.Bid', async t => {
 
   const price = 7;
   const offerPrice = makeRatio(7n, ist.brand, 1n, atom.brand);
-  t.log({ price, offerPrice });
   t.deepEqual(
     Offers.auction.Bid(brands, {
       offerId: 'by-price2',
-      wantCollateral: 1.23,
-      giveCurrency: 4.56,
+      give: 4.56,
+      collateralBrandKey: 'ATOM',
+      price,
+      want: 10_000,
+    }),
+    {
+      id: 'by-price2',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['auctioneer'],
+        callPipe: [['makeBidInvitation', [atom.brand]]],
+      },
+      proposal: { give: { Currency: ist.make(4_560_000n) } },
+      offerArgs: {
+        offerPrice,
+        want: { brand: atom.brand, value: 10_000_000_000n },
+      },
+    },
+  );
+
+  t.deepEqual(
+    Offers.auction.Bid(brands, {
+      offerId: 'by-price2',
+      want: 1.23,
+      give: 4.56,
       collateralBrandKey: 'ATOM',
       price,
     }),
@@ -69,7 +90,6 @@ test('Offers.auction.Bid', async t => {
         callPipe: [['makeBidInvitation', [atom.brand]]],
       },
       proposal: {
-        exit: { onDemand: null },
         give: { Currency: ist.make(4_560_000n) },
       },
       offerArgs: {
@@ -77,5 +97,6 @@ test('Offers.auction.Bid', async t => {
         want: atom.make(1_230_000n),
       },
     },
+    'optional want',
   );
 });

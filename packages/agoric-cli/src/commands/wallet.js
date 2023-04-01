@@ -52,9 +52,10 @@ export const makeWalletCommand = async () => {
       const { home, keyringBackend: backend } = wallet.opts();
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
-        execSwingsetTransaction(tx, networkConfig, account, false, {
-          home,
-          backend,
+        execSwingsetTransaction(tx, {
+          from: account,
+          keyring: { home, backend },
+          ...networkConfig,
         });
       } else {
         const params = fetchSwingsetParams(networkConfig);
@@ -69,9 +70,11 @@ export const makeWalletCommand = async () => {
           .join(' + ');
         process.stdout.write(`Provisioning a wallet costs ${costs}\n`);
         process.stdout.write(`To really provision, rerun with --spend or...\n`);
-        execSwingsetTransaction(tx, networkConfig, account, true, {
-          home,
-          backend,
+        execSwingsetTransaction(tx, {
+          from: account,
+          dryRun: true,
+          keyring: { home, backend },
+          ...networkConfig,
         });
       }
     });
@@ -91,13 +94,12 @@ export const makeWalletCommand = async () => {
       const { home, keyringBackend: backend } = wallet.opts();
 
       const offerBody = fs.readFileSync(offer).toString();
-      execSwingsetTransaction(
-        ['wallet-action', '--allow-spend', offerBody],
-        networkConfig,
+      execSwingsetTransaction(['wallet-action', '--allow-spend', offerBody], {
         from,
         dryRun,
-        { home, backend },
-      );
+        keyring: { home, backend },
+        ...networkConfig,
+      });
     });
 
   wallet
