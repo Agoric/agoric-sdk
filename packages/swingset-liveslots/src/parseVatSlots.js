@@ -79,10 +79,8 @@ import { assert, Fail } from '@agoric/assert';
  * be a virtual object or collection, which can be in memory or on disk or both.
  * Let's call such an entity a "base object".  In most cases this is one and the
  * same with the addressable object that the vref designates, but in the case of
- * a faceted object it is the faceted object as a whole (represented in memory,
- * though not on disk, as the cohort array) rather than any particular
- * individual facet (the faceted object per se is never exposed directly to code
- * running within the vat; only its facets are).
+ * a faceted object it is the cohort record as a whole rather than any particular
+ * individual facet.
  *
  * XXX TODO: The previous comment suggests some renaming is warranted:
  *

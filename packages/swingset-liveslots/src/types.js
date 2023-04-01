@@ -20,7 +20,6 @@
 
 /**
  * @typedef {{
- *   virtualObjectCacheSize?: number, // Maximum number of entries in the virtual object state cache
  *   enableDisavow?: boolean,
  *   relaxDurabilityRules?: boolean,
  * }} LiveSlotsOptions
