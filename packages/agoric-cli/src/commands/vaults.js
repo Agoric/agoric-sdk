@@ -101,7 +101,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, fromBoard, vstorage } = await rpcTools();
+      const { agoricNames, readLatestHead } = await rpcTools();
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
@@ -137,7 +137,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, fromBoard, vstorage } = await rpcTools();
+      const { agoricNames, readLatestHead } = await rpcTools();
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
