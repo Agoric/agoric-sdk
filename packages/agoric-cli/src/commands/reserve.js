@@ -8,12 +8,11 @@ import { makeRpcUtils } from '../lib/rpc.js';
 import { outputActionAndHint } from '../lib/wallet.js';
 
 /**
- *
  * @param {import('anylogger').Logger} _logger
  * @param io
  */
 export const makeReserveCommand = async (_logger, io = {}) => {
-  const { stdout = process.stdout, stderr = process.stderr } = io;
+  const { stdout = process.stdout, stderr = process.stderr, now } = io;
   const reserve = new Command('reserve').description('Asset Reserve commands');
 
   reserve
