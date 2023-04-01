@@ -36,7 +36,6 @@ export function makeVatManagerFactory({
       'metered',
       'enableDisavow',
       'enableSetup',
-      'virtualObjectCacheSize',
       'useTranscript',
       'critical',
       'reapInterval',

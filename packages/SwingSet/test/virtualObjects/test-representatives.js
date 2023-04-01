@@ -22,9 +22,6 @@ test.serial('exercise cache', async t => {
       bootstrap: {
         sourceSpec: new URL('vat-representative-bootstrap.js', import.meta.url)
           .pathname,
-        creationOptions: {
-          virtualObjectCacheSize: 3,
-        },
       },
     },
   };
@@ -342,9 +339,6 @@ test('virtual object gc', async t => {
     vats: {
       bob: {
         sourceSpec: new URL('vat-vom-gc-bob.js', import.meta.url).pathname,
-        creationOptions: {
-          virtualObjectCacheSize: 3,
-        },
       },
       bootstrap: {
         sourceSpec: new URL('vat-vom-gc-bootstrap.js', import.meta.url)

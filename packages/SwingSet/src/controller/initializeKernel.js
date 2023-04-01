@@ -81,7 +81,6 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         'managerType',
         'enableDisavow',
         'enableSetup',
-        'virtualObjectCacheSize',
         'useTranscript',
         'critical',
         'reapInterval',

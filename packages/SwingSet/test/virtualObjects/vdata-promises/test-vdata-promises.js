@@ -23,9 +23,6 @@ const config = {
     bootstrap: { sourceSpec: bfile('bootstrap-vdata-promises.js') },
     target: {
       sourceSpec: bfile('vat-vdata-promises.js'),
-      creationOptions: {
-        virtualObjectCacheSize: 0,
-      },
     },
   },
 };

@@ -26,7 +26,6 @@ export function makeVatLoader(stuff) {
     'enableDisavow',
     'enableSetup',
     'enablePipelining',
-    'virtualObjectCacheSize',
     'useTranscript',
     'critical',
     'reapInterval',
@@ -92,7 +91,6 @@ export function makeVatLoader(stuff) {
       enableSetup = false,
       enableDisavow = false,
       enablePipelining = false,
-      virtualObjectCacheSize,
       useTranscript = true,
       critical = false,
       name,
@@ -128,7 +126,6 @@ export function makeVatLoader(stuff) {
       ...overrideVatManagerOptions,
     };
     const liveSlotsOptions = {
-      virtualObjectCacheSize,
       enableDisavow,
       relaxDurabilityRules: kernelKeeper.getRelaxDurabilityRules(),
     };

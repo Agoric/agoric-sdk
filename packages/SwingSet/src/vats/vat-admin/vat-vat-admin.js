@@ -314,9 +314,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
                 'invalid reapInterval value',
               );
               break;
-            case 'virtualObjectCacheSize':
-              assert(isNat(value), 'invalid virtualObjectCacheSize value');
-              break;
             default:
               assert.fail(`invalid option "${option}"`);
           }
@@ -357,7 +354,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       vatParameters, // stripped out and re-added
       enableSetup,
       enablePipelining,
-      virtualObjectCacheSize,
       useTranscript,
       reapInterval,
       critical, // converted from cap key to boolean
@@ -391,7 +387,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     }
     assertType('enableSetup', enableSetup, 'boolean');
     assertType('enablePipelining', enablePipelining, 'boolean');
-    assertType('virtualObjectCacheSize', virtualObjectCacheSize, 'number');
     assertType('useTranscript', useTranscript, 'boolean');
     assertType('reapInterval', reapInterval, 'number');
 
@@ -423,7 +418,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       vatParameters,
       enableSetup,
       enablePipelining,
-      virtualObjectCacheSize,
       useTranscript,
       reapInterval,
       critical: isCriticalVat,

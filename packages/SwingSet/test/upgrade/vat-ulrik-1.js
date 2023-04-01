@@ -28,7 +28,6 @@ const holderMethods = {
 };
 const makeVir = defineKind('virtual', initHolder, holderMethods);
 const makeDur = defineDurableKind(durandalHandle, initHolder, holderMethods);
-const makeDummy = defineKind('dummy', initHolder, holderMethods);
 
 // TODO: explore 'export modRetains'
 // eslint-disable-next-line no-unused-vars
@@ -114,13 +113,6 @@ const buildExports = (baggage, imp) => {
   baggage.init('dc6', dc6);
   baggage.init('dur37', dur[37]);
   baggage.init('imp38', imp[38]);
-
-  // we set virtualObjectCacheSize=0 to ensure all data writes are
-  // made promptly, But the cache will still retain the last
-  // Representative, which inhibits GC. So the last thing we do here
-  // should be to create/deserialize a throwaway object, to
-  // flush the last dur/vir/vc/dc from the cache.
-  makeDummy();
 
   // we share dur1/vir2 with the test harness so it can glean the
   // baserefs and interpolate the full vrefs for everything else
