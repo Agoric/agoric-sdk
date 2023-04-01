@@ -7,6 +7,7 @@ import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
+import { assessFacetiousness } from './facetiousness.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
@@ -14,59 +15,6 @@ const { ownKeys } = Reflect;
 const { quote: q } = assert;
 
 // import { kdebug } from './kdebug.js';
-
-/**
- * Assess the facetiousness of a value.  If the value is an object containing
- * only named properties and each such property's value is a function, `obj`
- * represents a single facet and 'one' is returned.  If each property's value
- * is instead an object of facetiousness 'one', `obj` represents multiple
- * facets and 'many' is returned.  In all other cases `obj` does not represent
- * any kind of facet abstraction and 'not' is returned.
- *
- * @typedef {'one'|'many'|'not'} Facetiousness
- *
- * @param {*} obj  The (alleged) object to be assessed
- * @param {boolean} [inner]  True if this is being called recursively; no more
- *    than one level of recursion is allowed.
- *
- * @returns {Facetiousness} an assessment of the facetiousness of `obj`
- */
-function assessFacetiousness(obj, inner) {
-  if (typeof obj !== 'object') {
-    return 'not';
-  }
-  let established;
-  for (const prop of Reflect.ownKeys(obj)) {
-    const value = obj[prop];
-    let current;
-    if (typeof value === 'function') {
-      current = 'one';
-    } else if (
-      !inner &&
-      typeof value === 'object' &&
-      assessFacetiousness(value, true) === 'one'
-    ) {
-      if (typeof prop === 'symbol') {
-        // can't have symbol-named facets
-        return 'not';
-      }
-      current = 'many';
-    } else {
-      return 'not';
-    }
-    if (!established) {
-      established = current;
-    } else if (established !== current) {
-      return 'not';
-    }
-  }
-  if (!established) {
-    // empty objects are methodless Far objects
-    return 'one';
-  } else {
-    return /** @type {Facetiousness} */ (established);
-  }
-}
 
 // This file implements the "Virtual Objects" system, currently documented in
 // {@link https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md})
