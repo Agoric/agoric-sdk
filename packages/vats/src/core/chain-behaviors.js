@@ -304,9 +304,13 @@ export const startTimerService = async ({
   vats: { timer: timerVat },
   consume: { client },
   produce: { chainTimerService: produceTimer },
+  brand: {
+    produce: { timer },
+  },
 }) => {
   const chainTimerService = E(timerVat).createTimerService(timerDevice);
   produceTimer.resolve(chainTimerService);
+  timer.resolve(E(chainTimerService).getTimerBrand());
   return E(client).assignBundle([_addr => ({ chainTimerService })]);
 };
 harden(startTimerService);
@@ -572,6 +576,7 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
     produce: {
       chainTimerService: 'timer',
     },
+    brand: { produce: { timer: 'timer' } },
     home: { produce: { chainTimerService: 'timer' } },
   },
   [makeChainStorage.name]: {
