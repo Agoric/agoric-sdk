@@ -72,28 +72,39 @@ export const startEconCharter = async ({
 harden(startEconCharter);
 
 /**
+ * Introduce charter to governed creator facets.
+ *
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  */
 export const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, vaultFactoryKit, econCharterKit },
+  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
   instance: {
-    consume: { reserve, VaultFactory },
+    consume: { reserve, VaultFactory, auctioneer },
   },
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
 
-  // Introduce charter to governed creator facets.
   await Promise.all(
     [
-      { instanceP: reserve, facetP: E.get(reserveKit).governorCreatorFacet },
       {
+        label: 'reserve',
+        instanceP: reserve,
+        facetP: E.get(reserveKit).governorCreatorFacet,
+      },
+      {
+        label: 'VaultFactory',
         instanceP: VaultFactory,
         facetP: E.get(vaultFactoryKit).governorCreatorFacet,
       },
-    ].map(async ({ instanceP, facetP }) => {
+      {
+        label: 'auctioneer',
+        instanceP: auctioneer,
+        facetP: E.get(auctioneerKit).governorCreatorFacet,
+      },
+    ].map(async ({ label, instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
 
-      return E(creatorFacet).addInstance(instance, govFacet);
+      return E(creatorFacet).addInstance(instance, govFacet, label);
     }),
   );
 };
@@ -146,6 +157,7 @@ export const getManifestForInviteCommittee = async (
       },
       [addGovernorsToEconCharter.name]: {
         consume: {
+          auctioneerKit: t,
           reserveGovernorCreatorFacet: t,
           vaultFactoryGovernorCreator: t,
           econCharterKit: t,
@@ -160,7 +172,7 @@ export const getManifestForInviteCommittee = async (
           consume: { binaryVoteCounter: t },
         },
         instance: {
-          consume: { reserve: t, VaultFactory: t },
+          consume: { auctioneer: t, reserve: t, VaultFactory: t },
         },
       },
       [inviteToEconCharter.name]: {
