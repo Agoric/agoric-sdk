@@ -288,3 +288,69 @@ test('exit bid', async t => {
     },
   });
 });
+
+test('propose change to auction governance param', async t => {
+  const { walletFactoryDriver, agoricNamesRemotes, storage } = t.context;
+
+  const gov1 = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
+  const wd = await walletFactoryDriver.provideSmartWallet(gov1);
+
+  t.log('accept charter invitation');
+  {
+    const instance = agoricNamesRemotes.instance.econCommitteeCharter;
+
+    await wd.executeOffer({
+      id: 'accept-charter-invitation',
+      invitationSpec: {
+        source: 'purse',
+        instance,
+        description: 'charter member invitation',
+      },
+      proposal: {},
+    });
+
+    await eventLoopIteration();
+
+    t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+  }
+
+  const instance = agoricNamesRemotes.instance.auctioneer;
+  const timerBrand = agoricNamesRemotes.brand.timer;
+  assert(timerBrand);
+
+  t.log('propose param change');
+  /* XXX @type {Partial<AuctionParams>} */
+  const params = {
+    StartFrequency: { timerBrand, relValue: 5n * 60n },
+  };
+
+  /** @type {import('@agoric/inter-protocol/src/econCommitteeCharter.js').ParamChangesOfferArgs} */
+  const offerArgs = {
+    deadline: 1000n,
+    params,
+    instance,
+    path: { paramPath: { key: 'governedParams' } },
+  };
+
+  await wd.executeOffer({
+    id: 'propose-param-change',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'accept-charter-invitation',
+      invitationMakerName: 'VoteOnParamChange',
+    },
+    offerArgs,
+    proposal: {},
+  });
+
+  await eventLoopIteration();
+
+  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+
+  const key = `published.committees.Economic_Committee.latestQuestion`;
+  const capData = JSON.parse(storage.data.get(key)?.at(-1));
+  const lastQuestion = JSON.parse(capData.body);
+  const changes = lastQuestion?.issue?.spec?.changes;
+  t.log('check Economic_Committee.latestQuestion against proposal');
+  t.like(changes, { StartFrequency: { relValue: { digits: '300' } } });
+});
