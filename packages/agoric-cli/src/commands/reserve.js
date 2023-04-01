@@ -6,8 +6,6 @@ import { Command } from 'commander';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 
-const { agoricNames } = await makeRpcUtils({ fetch });
-
 /**
  *
  * @param {import('anylogger').Logger} _logger
@@ -36,6 +34,8 @@ export const makeReserveCommand = async _logger => {
       1,
     )
     .action(async function (opts) {
+      const { agoricNames } = await makeRpcUtils({ fetch });
+
       const reserveInstance = agoricNames.instance.reserve;
       assert(reserveInstance, 'missing reserve in names');
 

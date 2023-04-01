@@ -6,8 +6,6 @@ import { Command } from 'commander';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 
-const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
-
 /**
  *
  * @param {import('anylogger').Logger} _logger
@@ -24,6 +22,8 @@ export const makeEconomicCommiteeCommand = async _logger => {
       `ecCommittee-${Date.now()}`,
     )
     .action(async function (opts) {
+      const { agoricNames } = await makeRpcUtils({ fetch });
+
       const { economicCommittee } = agoricNames.instance;
       assert(economicCommittee, 'missing economicCommittee');
 
@@ -47,6 +47,8 @@ export const makeEconomicCommiteeCommand = async _logger => {
     .description('prepare an offer to accept the charter invitation')
     .option('--offerId [string]', 'Offer id', String, `ecCharter-${Date.now()}`)
     .action(async function (opts) {
+      const { agoricNames } = await makeRpcUtils({ fetch });
+
       const { econCommitteeCharter } = agoricNames.instance;
       assert(econCommitteeCharter, 'missing econCommitteeCharter');
 
@@ -79,6 +81,8 @@ export const makeEconomicCommiteeCommand = async _logger => {
       Number,
     )
     .action(async function (opts) {
+      const { vstorage, fromBoard } = await makeRpcUtils({ fetch });
+
       const questionHandleCapDataStr = await vstorage.readLatest(
         'published.committees.Economic_Committee.latestQuestion',
       );

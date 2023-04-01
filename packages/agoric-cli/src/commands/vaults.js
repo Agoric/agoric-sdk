@@ -12,10 +12,6 @@ import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
-const { agoricNames, readLatestHead } = await makeRpcUtils({
-  fetch,
-});
-
 /**
  *
  * @param {import('anylogger').Logger} logger
@@ -43,6 +39,8 @@ export const makeVaultsCommand = async logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
+      const { readLatestHead } = await makeRpcUtils({ fetch });
+
       const current = await getCurrent(opts.from, {
         readLatestHead,
       });
@@ -66,6 +64,7 @@ export const makeVaultsCommand = async logger => {
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
+      const { agoricNames } = await makeRpcUtils({ fetch });
 
       const offer = Offers.vaults.OpenVault(agoricNames.brand, {
         giveCollateral: opts.giveCollateral,
@@ -95,6 +94,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
@@ -130,6 +130,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
