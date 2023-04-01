@@ -42,19 +42,19 @@ export const makeOracleCommand = async logger => {
   );
 
   const rpcTools = async () => {
-    const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({ fetch });
+    const utils = await makeRpcUtils({ fetch });
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = `${brandIn}-${brandOut} price feed`;
-      const instance = agoricNames.instance[name];
+      const instance = utils.agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', agoricNames.instance);
+        logger.debug('known instances:', utils.agoricNames.instance);
         throw new Error(`Unknown instance ${name}`);
       }
       return instance;
     };
 
-    return { agoricNames, fromBoard, vstorage, lookupPriceAggregatorInstance };
+    return { ...utils, lookupPriceAggregatorInstance };
   };
 
   oracle
