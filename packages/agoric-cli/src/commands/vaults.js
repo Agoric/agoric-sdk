@@ -28,13 +28,6 @@ export const makeVaultsCommand = async logger => {
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, vaults.opts());
 
-  const rpcTools = async () => {
-    const { vstorage, fromBoard, agoricNames, readLatestHead } =
-      await makeRpcUtils({ fetch });
-
-    return { vstorage, fromBoard, agoricNames, readLatestHead };
-  };
-
   vaults
     .command('list')
     .description(
@@ -46,7 +39,7 @@ export const makeVaultsCommand = async logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { readLatestHead } = await rpcTools();
+      const { readLatestHead } = await makeRpcUtils({ fetch });
 
       const current = await getCurrent(opts.from, {
         readLatestHead,
@@ -71,7 +64,7 @@ export const makeVaultsCommand = async logger => {
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames } = await rpcTools();
+      const { agoricNames } = await makeRpcUtils({ fetch });
 
       const offer = Offers.vaults.OpenVault(agoricNames.brand, {
         giveCollateral: opts.giveCollateral,
@@ -101,7 +94,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await rpcTools();
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
@@ -137,7 +130,7 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await rpcTools();
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
