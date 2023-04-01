@@ -39,7 +39,7 @@ To install `agd` and `agops` as well as prerequisite dev tools (`go`, `node`, `y
 ```sh
 git clone https://github.com/Agoric/agoric-sdk
 cd agoric-sdk
-./bin/agd build
+SKIP_DOWNLOAD=false ./bin/agd build
 ```
 
 
