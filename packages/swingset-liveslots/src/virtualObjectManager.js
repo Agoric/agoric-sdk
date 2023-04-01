@@ -632,6 +632,11 @@ export function makeVirtualObjectManager(
     };
 
     const facetiousness = assessFacetiousness(behavior);
+    const getContextKit = objectMap(
+      behavior,
+      (_v, name) => facet => contextMapTemplate[name].get(facet),
+    );
+
     switch (facetiousness) {
       case 'one': {
         assert(!multifaceted);
@@ -639,7 +644,7 @@ export function makeVirtualObjectManager(
         contextMapTemplate = new WeakMap();
         prototypeTemplate = defendPrototype(
           tag,
-          contextMapTemplate,
+          self => contextMapTemplate.get(self),
           behavior,
           thisfulMethods,
           interfaceGuard,
@@ -652,7 +657,7 @@ export function makeVirtualObjectManager(
         contextMapTemplate = objectMap(behavior, () => new WeakMap());
         prototypeTemplate = defendPrototypeKit(
           tag,
-          contextMapTemplate,
+          getContextKit,
           behavior,
           thisfulMethods,
           interfaceGuard,
