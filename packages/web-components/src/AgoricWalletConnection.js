@@ -22,10 +22,10 @@ const RESET_DELAY_MS = 3000;
 
 // TODO: Use something on agoric.app instead.
 const DEFAULT_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet-bridge.html';
+  'https://wallet.agoric.app/locator/?append=/wallet-bridge.html';
 
 const LOCAL_STORAGE_LOCATOR_URL =
-  'https://local.agoric.com/?append=/wallet/bridge.html';
+  'https://wallet.agoric.app/locator/?append=/wallet/bridge.html';
 
 const delay = (ms, resolution) =>
   new Promise(resolve => setTimeout(resolve, ms, resolution));
