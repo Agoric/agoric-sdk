@@ -1,11 +1,16 @@
 import { Far, E } from '@endo/far';
 
-export function buildRootObject(_vatPowers, vatParameters) {
+export function buildRootObject() {
+  let bob;
   return Far('root', {
     async bootstrap(vats) {
-      const mode = vatParameters.argv[0];
-      const thing = await E(vats.bob).retain(mode);
-      await E(vats.bob).testForRetention(thing);
+      bob = vats.bob;
+    },
+    async run(kind, what, how) {
+      await E(bob).reset();
+      const things = await E(bob).retain(kind, what, how);
+      const compare = await E(bob).compare(things, kind, what, how);
+      return compare;
     },
   });
 }
