@@ -33,6 +33,7 @@ export const agoricNamesReserved = harden({
     Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
     Invitation: 'Zoe invitation',
+    timer: 'timer service',
   },
   vbankAsset: {
     [Stake.denom]: Stake.proposedName,
