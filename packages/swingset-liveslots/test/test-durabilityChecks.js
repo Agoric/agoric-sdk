@@ -6,7 +6,6 @@ import { makeFakeVirtualStuff } from '../tools/fakeVirtualSupport.js';
 
 async function runDurabilityCheckTest(t, relaxDurabilityRules) {
   const { vom, cm } = makeFakeVirtualStuff({
-    cacheSize: 3,
     relaxDurabilityRules,
   });
   const strict = !relaxDurabilityRules;

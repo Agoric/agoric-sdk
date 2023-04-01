@@ -190,7 +190,6 @@ export async function setupTestLiveslots(
     syscall,
     buildRootObject,
     vatName,
-    { virtualObjectCacheSize: 0 },
   );
 
   async function dispatchMessage(message, ...args) {
