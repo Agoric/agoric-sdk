@@ -63,13 +63,13 @@ export const makePsmCommand = async logger => {
   );
 
   const rpcTools = async () => {
-    const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
+    const utils = await makeRpcUtils({ fetch });
 
     const lookupPsmInstance = ([minted, anchor]) => {
       const name = `psm-${minted}-${anchor}`;
-      const instance = agoricNames.instance[name];
+      const instance = utils.agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', agoricNames.instance);
+        logger.debug('known instances:', utils.agoricNames.instance);
         throw new Error(`Unknown instance ${name}`);
       }
       return instance;
@@ -80,25 +80,20 @@ export const makePsmCommand = async logger => {
      * @param {[Minted: string, Anchor: string]} pair
      */
     const getGovernanceState = async ([Minted, Anchor]) => {
-      const govContent = await vstorage.readLatest(
+      const govContent = await utils.vstorage.readLatest(
         `published.psm.${Minted}.${Anchor}.governance`,
       );
       assert(govContent, 'no gov content');
       const { current: governance } = last(
-        storageHelper.unserializeTxt(govContent, fromBoard),
+        storageHelper.unserializeTxt(govContent, utils.fromBoard),
       );
-      const { [`psm.${Minted}.${Anchor}`]: instance } = agoricNames.instance;
+      const { [`psm.${Minted}.${Anchor}`]: instance } =
+        utils.agoricNames.instance;
 
       return { instance, governance };
     };
 
-    return {
-      vstorage,
-      fromBoard,
-      agoricNames,
-      lookupPsmInstance,
-      getGovernanceState,
-    };
+    return { ...utils, lookupPsmInstance, getGovernanceState };
   };
 
   psm
