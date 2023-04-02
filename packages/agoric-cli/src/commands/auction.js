@@ -113,7 +113,7 @@ export const makeAuctionCommand = (
          * @param {bigint} relValue
          * @returns {import('@agoric/time/src/types').RelativeTimeRecord}
          */
-        const toRel = relValue => relValue; // ({ timerBrand, relValue });
+        const toRel = relValue => ({ timerBrand, relValue });
 
         /** @type {Partial<AuctionParams>} */
         const params = {
