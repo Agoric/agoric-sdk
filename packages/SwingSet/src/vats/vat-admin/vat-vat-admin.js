@@ -6,7 +6,6 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeNotifierKit } from '@agoric/notifier';
 import { Far, E, passStyleOf } from '@endo/far';
 import { Nat, isNat } from '@endo/nat';
 import {
@@ -20,6 +19,13 @@ import {
 const { details: X, quote: q, Fail } = assert;
 
 const managerTypes = ['local', 'xs-worker'];
+
+// XXX bogus NotifierKit because it's not really used here and @agoric/swingset-vats shouldn't
+// have a dependency on @agoric/notifier
+const makeNotifierKit = () => ({
+  notifier: { getUpdateSince: () => undefined },
+  updater: { updateState: () => undefined },
+});
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
