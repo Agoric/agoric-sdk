@@ -5,6 +5,11 @@ import { execFileSync as execFileSyncAmbient } from 'child_process';
 
 const agdBinary = 'agd';
 
+/**
+ * @param {string} literalOrName
+ * @param {{ keyringBackend?: string }} opts
+ * @param {{ execFileSync?: typeof execFileSyncAmbient }} io
+ */
 export const normalizeAddressWithOptions = (
   literalOrName,
   { keyringBackend = undefined } = {},
@@ -35,7 +40,7 @@ harden(normalizeAddressWithOptions);
  *   from: string,
  *   dryRun?: boolean,
  *   verbose?: boolean,
- *   keyring?: {home: string, backend: string}
+ *   keyring?: {home?: string, backend: string}
  *   stdout?: Pick<import('stream').Writable, 'write'>
  *   execFileSync?: typeof import('child_process').execFileSync
  * }} opts

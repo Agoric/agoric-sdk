@@ -100,7 +100,7 @@ export const getLiveOffers = async (address, vstorage, fromBoard) => {
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
  *   verbose?: boolean,
- *   keyring?: {home: string, backend: string},
+ *   keyring?: {home?: string, backend: string},
  *   stdout: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
