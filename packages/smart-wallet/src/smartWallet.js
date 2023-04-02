@@ -517,6 +517,7 @@ export const prepareSmartWallet = (baggage, shared) => {
       },
       self: {
         /**
+         * Umarshals the actionCapData and delegates to the appropriate action handler.
          *
          * @param {import('@endo/marshal').CapData<string>} actionCapData of type BridgeAction
          * @param {boolean} [canSpend=false]
@@ -527,38 +528,44 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           const { offers } = this.facets;
 
+          /** @param {Error} err */
+          const recordError = err => {
+            const { address, updatePublishKit } = this.state;
+            console.error('wallet', address, 'handleBridgeAction error:', err);
+            updatePublishKit.publisher.publish({
+              updated: 'walletAction',
+              status: { error: err.message },
+            });
+          };
+
+          // use E.when to retain distributed stack trace
           return E.when(
             E(publicMarshaller).unserialize(actionCapData),
             /** @param {BridgeAction} action */
             action => {
-              switch (action.method) {
-                case 'executeOffer': {
-                  canSpend || Fail`executeOffer requires spend authority`;
-                  return offers.executeOffer(action.offer);
+              try {
+                switch (action.method) {
+                  case 'executeOffer': {
+                    canSpend || Fail`executeOffer requires spend authority`;
+                    return offers.executeOffer(action.offer);
+                  }
+                  case 'tryExitOffer': {
+                    assert(canSpend, 'tryExitOffer requires spend authority');
+                    return offers.tryExitOffer(action.offerId);
+                  }
+                  default: {
+                    throw Fail`invalid handle bridge action ${q(action)}`;
+                  }
                 }
-                case 'tryExitOffer': {
-                  assert(canSpend, 'tryExitOffer requires spend authority');
-                  return offers.tryExitOffer(action.offerId);
-                }
-                default: {
-                  throw Fail`invalid handle bridge action ${q(action)}`;
-                }
+              } catch (err) {
+                // record synchronous error in the action delegator above
+                // but leave async rejections alone because the offer handler recorded them
+                // with greater detail
+                recordError(err);
               }
             },
-            /** @param {Error} err */
-            err => {
-              const { address, updatePublishKit } = this.state;
-              console.error(
-                'wallet',
-                address,
-                'handleBridgeAction error:',
-                err,
-              );
-              updatePublishKit.publisher.publish({
-                updated: 'walletAction',
-                status: { error: err.message },
-              });
-            },
+            // record errors in the unserialize and leave the rejection handled
+            recordError,
           );
         },
         getDepositFacet() {
