@@ -5,7 +5,7 @@ import path from 'path';
 import { makePromiseKit } from '@endo/promise-kit';
 import { parse, stringify } from '@endo/marshal';
 
-import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);

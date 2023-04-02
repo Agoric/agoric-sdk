@@ -202,6 +202,10 @@ async function testTranscriptStore(t, dbDir) {
   t.deepEqual(exportLog.getLog(), [
     [
       [
+        'transcript.empty.current',
+        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1}',
+      ],
+      [
         'transcript.st1.0',
         '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0}',
       ],

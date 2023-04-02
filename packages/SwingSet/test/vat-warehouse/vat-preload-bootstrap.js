@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop */
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   const extras = new Map(); // count -> root

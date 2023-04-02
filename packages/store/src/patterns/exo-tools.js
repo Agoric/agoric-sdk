@@ -107,16 +107,20 @@ const defendMethod = (method, methodGuard, label) => {
 };
 
 /**
+ * @typedef { (representative: any) => any } ContextProvider
+ */
+
+/**
  *
  * @param {string} methodTag
- * @param {WeakMap} contextMap
+ * @param {ContextProvider} contextProvider
  * @param {CallableFunction} behaviorMethod
  * @param {boolean} [thisfulMethods]
  * @param {MethodGuard} [methodGuard]
  */
 const bindMethod = (
   methodTag,
-  contextMap,
+  contextProvider,
   behaviorMethod,
   thisfulMethods = false,
   methodGuard = undefined,
@@ -124,7 +128,7 @@ const bindMethod = (
   assert.typeof(behaviorMethod, 'function');
 
   const getContext = self => {
-    const context = contextMap.get(self);
+    const context = contextProvider(self);
     context ||
       Fail`${q(methodTag)} may only be applied to a valid instance: ${self}`;
     return context;
@@ -173,7 +177,7 @@ const bindMethod = (
 /**
  * @template {Record<string | symbol, CallableFunction>} T
  * @param {string} tag
- * @param {WeakMap} contextMap
+ * @param {ContextProvider} contextProvider
  * @param {T} behaviorMethods
  * @param {boolean} [thisfulMethods]
  * @param {InterfaceGuard} [interfaceGuard]
@@ -181,7 +185,7 @@ const bindMethod = (
  */
 export const defendPrototype = (
   tag,
-  contextMap,
+  contextProvider,
   behaviorMethods,
   thisfulMethods = false,
   interfaceGuard = undefined,
@@ -218,7 +222,7 @@ export const defendPrototype = (
   for (const prop of methodNames) {
     prototype[prop] = bindMethod(
       `In ${q(prop)} method of (${tag})`,
-      contextMap,
+      contextProvider,
       behaviorMethods[prop],
       thisfulMethods,
       // TODO some tool does not yet understand the `?.[` syntax
@@ -232,14 +236,14 @@ harden(defendPrototype);
 
 /**
  * @param {string} tag
- * @param {Record<string, WeakMap>} contextMapKit
+ * @param {Record<string, ContextProvider>} contextProviderKit
  * @param {Record<string, Record<string | symbol, CallableFunction>>} behaviorMethodsKit
  * @param {boolean} [thisfulMethods]
  * @param {Record<string, InterfaceGuard>} [interfaceGuardKit]
  */
 export const defendPrototypeKit = (
   tag,
-  contextMapKit,
+  contextProviderKit,
   behaviorMethodsKit,
   thisfulMethods = false,
   interfaceGuardKit = undefined,
@@ -255,7 +259,7 @@ export const defendPrototypeKit = (
     extraFacetNames.length === 0 ||
       Fail`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`;
   }
-  const contextMapNames = ownKeys(contextMapKit);
+  const contextMapNames = ownKeys(contextProviderKit);
   const extraContextNames = listDifference(facetNames, contextMapNames);
   extraContextNames.length === 0 ||
     Fail`Contexts ${q(extraContextNames)} not implemented by ${q(tag)}`;
@@ -265,7 +269,7 @@ export const defendPrototypeKit = (
   return objectMap(behaviorMethodsKit, (behaviorMethods, facetName) =>
     defendPrototype(
       `${tag} ${facetName}`,
-      contextMapKit[facetName],
+      contextProviderKit[facetName],
       behaviorMethods,
       thisfulMethods,
       interfaceGuardKit && interfaceGuardKit[facetName],

@@ -21,7 +21,10 @@ const ZoeSeatIKit = harden({
     replaceAllocation: M.call(AmountKeywordRecordShape).returns(),
     exit: M.call(M.any()).returns(),
     fail: M.call(M.any()).returns(),
-    resolveExitAndResult: M.call(M.promise(), ExitObjectShape).returns(),
+    resolveExitAndResult: M.call({
+      offerResultPromise: M.promise(),
+      exitObj: ExitObjectShape,
+    }).returns(),
     getExitSubscriber: M.call().returns(SubscriberShape),
     // The return promise is empty, but doExit relies on settlement as a signal
     // that the payouts have settled. The exit publisher is notified after that.
@@ -88,12 +91,24 @@ export const makeZoeSeatAdminFactory = baggage => {
   // the kit here. When resolveExitAndResult() is called, it saves
   // state.offerResult and resolves the promise if it exists, then removes the
   // table entry.
-  const ephemeralOfferResultStore = new Map();
+  /**
+   * @typedef {WeakMap<ZCFSeat, unknown>}
+   */
+  const ephemeralOfferResultStore = new WeakMap();
 
   return prepareExoClassKit(
     baggage,
     'ZoeSeatKit',
     ZoeSeatIKit,
+    /**
+     *
+     * @param {Allocation} initialAllocation
+     * @param {ProposalRecord} proposal
+     * @param {InstanceAdminHelper} instanceAdminHelper
+     * @param {WithdrawFacet} withdrawFacet
+     * @param {ERef<ExitObj>} [exitObj]
+     * @param {boolean} [offerResultIsUndefined]
+     */
     (
       initialAllocation,
       proposal,
@@ -110,7 +125,7 @@ export const makeZoeSeatAdminFactory = baggage => {
         proposal,
         exitObj,
         offerResult: undefined,
-        offerResultValid: offerResultIsUndefined,
+        offerResultStored: offerResultIsUndefined,
         instanceAdminHelper,
         withdrawFacet,
         publisher,
@@ -176,32 +191,58 @@ export const makeZoeSeatAdminFactory = baggage => {
           );
         },
         // called only for seats resulting from offers.
-        resolveExitAndResult(offerResultPromise, exitObj) {
+        /** @param {HandleOfferResult} result */
+        resolveExitAndResult({ offerResultPromise, exitObj }) {
           const { state, facets } = this;
 
-          if (ephemeralOfferResultStore.has(facets.userSeat)) {
-            const pKit = ephemeralOfferResultStore.get(facets.userSeat);
-            E.when(
-              offerResultPromise,
-              offerResult => {
-                pKit.resolve(offerResult);
-                state.offerResult = offerResult;
-                state.offerResultValid = true;
-                ephemeralOfferResultStore.delete(facets.userSeat);
-              },
-              e => {
-                pKit.reject(e);
-                state.offerResult = pKit.promise;
-                state.offerResultValid = true;
-                ephemeralOfferResultStore.delete(facets.userSeat);
-              },
-            );
-          } else {
+          !state.offerResultStored ||
+            Fail`offerResultStored before offerResultPromise`;
+
+          if (!ephemeralOfferResultStore.has(facets.userSeat)) {
+            // this was called before getOfferResult
             const kit = makePromiseKit();
             kit.resolve(offerResultPromise);
             ephemeralOfferResultStore.set(facets.userSeat, kit);
-            state.offerResultValid = false;
           }
+
+          const pKit = ephemeralOfferResultStore.get(facets.userSeat);
+          E.when(
+            offerResultPromise,
+            offerResult => {
+              // Resolve the ephemeral promise for offerResult
+              pKit.resolve(offerResult);
+              // Now we want to store the offerResult in `state` to get it off the heap,
+              // but we need to handle three cases:
+              //   1. already durable. (This includes being a remote presence.)
+              //   2. has promises for durable objects.
+              //   3. not durable even after resolving promises.
+              // For #1 we can assign directly, but we deeply await to also handle #2.
+              void E.when(
+                deeplyFulfilled(offerResult),
+                fulfilledOfferResult => {
+                  try {
+                    // In cases 1-2 this assignment will succeed.
+                    state.offerResult = fulfilledOfferResult;
+                    // If it doesn't, then these lines won't be reached so the
+                    // flag will stay false and the promise will stay in the heap
+                    state.offerResultStored = true;
+                    ephemeralOfferResultStore.delete(facets.userSeat);
+                  } catch (err) {
+                    console.warn(
+                      `non-durable offer result will be lost upon zoe vat termination: ${offerResult}`,
+                    );
+                  }
+                },
+                // no rejection handler because an offer result containing promises that reject
+                // is within spec
+              );
+            },
+            e => {
+              pKit.reject(e);
+              // NB: leave the rejected promise in the ephemeralOfferResultStore
+              // because it can't go in durable state
+            },
+          );
 
           state.exitObj = exitObj;
         },
@@ -242,12 +283,15 @@ export const makeZoeSeatAdminFactory = baggage => {
             () => state.payouts[keyword],
           );
         },
+
         async getOfferResult() {
           const { state, facets } = this;
 
-          if (state.offerResultValid) {
+          if (state.offerResultStored) {
             return state.offerResult;
-          } else if (ephemeralOfferResultStore.has(facets.userSeat)) {
+          }
+
+          if (ephemeralOfferResultStore.has(facets.userSeat)) {
             return ephemeralOfferResultStore.get(facets.userSeat).promise;
           }
 
@@ -265,7 +309,8 @@ export const makeZoeSeatAdminFactory = baggage => {
         },
         async tryExit() {
           const { state } = this;
-          state.exitObj || Fail`exitObj must be initialized before use`;
+          if (!state.exitObj)
+            throw Fail`exitObj must be initialized before use`;
           assertHasNotExited(this, 'Cannot exit; seat has already exited');
 
           return E(state.exitObj).exit();

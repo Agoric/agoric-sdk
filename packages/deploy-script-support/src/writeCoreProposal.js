@@ -2,7 +2,7 @@
 import fs from 'fs';
 import { E } from '@endo/far';
 
-import { createBundles } from '@agoric/internal/src/createBundles.js';
+import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import {
   deeplyFulfilled,
   defangAndTrim,

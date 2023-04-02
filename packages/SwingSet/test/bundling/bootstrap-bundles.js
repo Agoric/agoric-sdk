@@ -1,6 +1,5 @@
 import { assert } from '@agoric/assert';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 
 export function buildRootObject(vatPowers) {

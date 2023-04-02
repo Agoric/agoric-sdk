@@ -1,7 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { E } from '@endo/eventual-send';
-import { Far, passStyleOf } from '@endo/marshal';
+import { Far, E, passStyleOf } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
 import { assert } from '@agoric/assert';
