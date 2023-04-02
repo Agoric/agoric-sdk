@@ -34,7 +34,7 @@ function collectValues(val, memo) {
  *
  * @param {import('anylogger').Logger} logger
  */
-export const makePsmCommand = async logger => {
+export const makePsmCommand = logger => {
   const psm = new Command('psm').description('PSM commands').usage(
     `
   WALLET=my-wallet

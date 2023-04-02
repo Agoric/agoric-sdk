@@ -22,11 +22,7 @@ import {
   getNetworkConfig,
   makeRpcUtils,
 } from '../lib/rpc.js';
-import {
-  getLiveOffers,
-  outputActionAndHint,
-  sendAction,
-} from '../lib/wallet.js';
+import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -173,7 +169,7 @@ export const fmtBid = (bid, assets) => {
  * }} process
  * @param {{ fetch: typeof window.fetch }} net
  */
-export const makeInterCommand = async (
+export const makeInterCommand = (
   {
     env,
     stdout,
@@ -471,10 +467,10 @@ For example:
           return;
         }
 
-        const { networkConfig, vstorage, fromBoard } = await rpcTools();
+        const { networkConfig, readLatestHead } = await rpcTools();
 
-        const liveOffers = await getLiveOffers(from, vstorage, fromBoard);
-        const liveIds = liveOffers.map(([i, _s]) => i);
+        const current = await getCurrent(from, { readLatestHead });
+        const liveIds = current.liveOffers.map(([i, _s]) => i);
         if (!liveIds.includes(id)) {
           throw new InvalidArgumentError(
             `${id} not in live offer ids: ${liveIds}`,
@@ -495,8 +491,8 @@ For example:
         show({ timestamp, height, offerId: id, txhash });
 
         const checkGone = async blockInfo => {
-          const liveNow = await getLiveOffers(from, vstorage, fromBoard);
-          const found = liveNow.find(([i, _]) => i === id);
+          const pollResult = await getCurrent(from, { readLatestHead });
+          const found = pollResult.liveOffers.find(([i, _]) => i === id);
           if (found) throw Error('retry');
           return blockInfo;
         };
@@ -537,14 +533,16 @@ $ inter bid list --from my-acct
        * }} opts
        */
       async opts => {
-        const { agoricNames, vstorage, fromBoard, storedWalletState } =
+        const { agoricNames, readLatestHead, storedWalletState } =
           await rpcTools();
 
-        const [liveOffers, state] = await Promise.all([
-          getLiveOffers(opts.from, vstorage, fromBoard),
+        const [current, state] = await Promise.all([
+          getCurrent(opts.from, { readLatestHead }),
           storedWalletState(opts.from),
         ]);
-        const entries = opts.all ? state.offerStatuses.entries() : liveOffers;
+        const entries = opts.all
+          ? state.offerStatuses.entries()
+          : current.liveOffers;
         for (const [id, spec] of entries) {
           const offerStatus = state.offerStatuses.get(id) || spec;
           harden(offerStatus); // coalesceWalletState should do this

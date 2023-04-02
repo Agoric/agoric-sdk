@@ -26,7 +26,7 @@ const SLEEP_SECONDS = 0.1;
  *
  * @param {import('anylogger').Logger} logger
  */
-export const makePerfCommand = async logger => {
+export const makePerfCommand = logger => {
   const perf = new Command('perf')
     .description('Performance testing commands')
     .option(
@@ -98,7 +98,7 @@ export const makePerfCommand = async logger => {
       if (sharedOpts.home) {
         cmd.push(`--home=${sharedOpts.home}`);
       }
-      execSwingsetTransaction(cmd, networkConfig, opts.from);
+      execSwingsetTransaction(cmd, { from: opts.from, ...networkConfig });
     });
 
   return perf;

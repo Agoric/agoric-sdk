@@ -78,6 +78,7 @@ const offerSpec1 = harden({
         numerator: mk(bslot.IST, 9n),
         denominator: mk(bslot.ATOM, 1n),
       },
+      want: mk(bslot.ATOM, 1_000_000_000_000n),
     },
     proposal: {
       give: { Currency: mk(bslot.IST, 50_000_000n) },
@@ -142,7 +143,10 @@ const makeProcess = (t, keyring, out) => {
   const execFileSync = (file, args) => {
     switch (file) {
       case 'agd': {
-        switch (args[0]) {
+        // first arg that doesn't sart with --
+        const cmd = args.find(a => !a.startsWith('--'));
+        t.truthy(cmd);
+        switch (cmd) {
           case 'keys': {
             ['--node', '--chain'].forEach(opt => {
               const ix = args.findIndex(a => a.startsWith(opt));
@@ -158,11 +162,19 @@ const makeProcess = (t, keyring, out) => {
             }
             return addr;
           }
+          case 'status': {
+            return JSON.stringify({
+              SyncInfo: { latest_block_time: 123, latest_block_height: 456 },
+            });
+          }
+          case 'query': {
+            return JSON.stringify({});
+          }
           case 'tx': {
-            return '{"@@@"}';
+            return JSON.stringify({ code: 0 });
           }
           default:
-            t.fail(args[0]);
+            t.fail(`agd cmd not impl:${args[0]}`);
         }
         break;
       }
@@ -230,10 +242,11 @@ const govWallets = {
   [govKeyring.gov2]: { current: {} },
 };
 
-test('inter bid place by-price: output is correct', async t => {
-  const argv = 'node inter bid by-price --give 50 --price 9 --from gov1'
-    .trim()
-    .split(' ');
+test('inter bid place by-price: printed offer is correct', async t => {
+  const argv =
+    'node inter bid by-price --give 50 --price 9 --from gov1 --generate-only'
+      .trim()
+      .split(' ');
 
   const out = [];
   const cmd = await makeInterCommand(

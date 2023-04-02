@@ -2,10 +2,13 @@
 /* global process */
 
 import { iterateReverse } from '@agoric/casting';
-import { AmountMath } from '@agoric/ertp';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { execSwingsetTransaction, pollTx } from './chain.js';
 import { boardSlottingMarshaller } from './rpc.js';
+
+/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
+/** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
+/** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
 
 const marshaller = boardSlottingMarshaller();
 
@@ -17,6 +20,16 @@ const marshaller = boardSlottingMarshaller();
 export const getCurrent = (addr, { readLatestHead }) => {
   // @ts-expect-error cast
   return readLatestHead(`published.wallet.${addr}.current`);
+};
+
+/**
+ * @param {string} addr
+ * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
+ * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>}
+ */
+export const getLastUpdate = (addr, { readLatestHead }) => {
+  // @ts-expect-error cast
+  return readLatestHead(`published.wallet.${addr}`);
 };
 
 /**
@@ -79,20 +92,6 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
 };
 
 /**
- * @param {string} address
- * @param {import('./rpc').VStorage} vstorage
- * @param {ReturnType<import('./rpc').makeFromBoard>} fromBoard
- */
-export const getLiveOffers = async (address, vstorage, fromBoard) => {
-  const content = await vstorage.readLatest(
-    `published.wallet.${address}.current`,
-  );
-  /** @type {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord} */
-  const current = storageHelper.unserializeTxt(content, fromBoard).at(-1);
-  return current.liveOffers;
-};
-
-/**
  * Sign and broadcast a wallet-action.
  *
  * @throws { Error & { code: number } } if transaction fails
@@ -100,7 +99,7 @@ export const getLiveOffers = async (address, vstorage, fromBoard) => {
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
  *   verbose?: boolean,
- *   keyring?: {home: string, backend: string},
+ *   keyring?: {home?: string, backend: string},
  *   stdout: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
@@ -128,4 +127,35 @@ export const sendAction = async (bridgeAction, opts) => {
   }
 
   return pollTx(tx.txhash, opts);
+};
+
+/**
+ * @param {CurrentWalletRecord} current
+ * @param {AgoricNamesRemotes} agoricNames
+ */
+export const findContinuingIds = (current, agoricNames) => {
+  // XXX should runtime type-check
+  /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
+  const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
+
+  assert(Array.isArray(entries));
+
+  const keyOf = (obj, val) => {
+    const found = Object.entries(obj).find(e => e[1] === val);
+    return found && found[0];
+  };
+
+  const found = [];
+  for (const [offerId, { value }] of entries) {
+    /** @type {{ description: string, instance: unknown }[]} */
+    const [{ description, instance }] = value;
+    if (
+      description === 'charter member invitation' ||
+      /Voter\d+/.test(description)
+    ) {
+      const instanceName = keyOf(agoricNames.instance, instance);
+      found.push({ instance, instanceName, description, offerId });
+    }
+  }
+  return found;
 };

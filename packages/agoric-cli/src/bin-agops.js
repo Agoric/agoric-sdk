@@ -27,11 +27,11 @@ const progname = path.basename(process.argv[1]);
 const program = new Command();
 program.name(progname).version('unversioned');
 
-program.addCommand(await makeOracleCommand(logger));
-program.addCommand(await makeEconomicCommiteeCommand(logger));
-program.addCommand(await makePerfCommand(logger));
-program.addCommand(await makePsmCommand(logger));
-program.addCommand(await makeVaultsCommand(logger));
+program.addCommand(makeOracleCommand(logger));
+program.addCommand(makeEconomicCommiteeCommand(logger));
+program.addCommand(makePerfCommand(logger));
+program.addCommand(makePsmCommand(logger));
+program.addCommand(makeVaultsCommand(logger));
 
 const procIO = {
   env: { ...process.env },
@@ -44,9 +44,9 @@ const procIO = {
   setTimeout,
 };
 
-program.addCommand(await makeReserveCommand(logger, procIO));
+program.addCommand(makeReserveCommand(logger, procIO));
 program.addCommand(makeAuctionCommand(logger, { ...procIO, fetch }));
-program.addCommand(await makeInterCommand(procIO, { fetch }));
+program.addCommand(makeInterCommand(procIO, { fetch }));
 
 try {
   await program.parseAsync(process.argv);
