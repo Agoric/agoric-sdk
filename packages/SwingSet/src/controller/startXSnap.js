@@ -35,7 +35,7 @@ export function makeStartXSnap(options) {
     };
     doXSnap = opts => {
       const workerTraceDir = makeNextTraceDir();
-      console.log('SwingSet xs-worker tracing:', { workerTraceDir });
+      console.log('SwingSet xsnap worker tracing:', { workerTraceDir });
       fs.mkdirSync(workerTraceDir, { recursive: true });
       return recordXSnap(opts, workerTraceDir, {
         writeFileSync: fs.writeFileSync,

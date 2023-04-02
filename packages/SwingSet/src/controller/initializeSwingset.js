@@ -330,7 +330,8 @@ export async function initializeSwingset(
   const defaultManagerType = SWINGSET_WORKER_TYPE || config.defaultManagerType;
   switch (defaultManagerType) {
     case 'local':
-    case 'xs-worker':
+    case 'xsnap': // preferred
+    case 'xs-worker': // alias accepted for now
       config.defaultManagerType = defaultManagerType;
       break;
     case undefined:

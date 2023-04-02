@@ -17,7 +17,7 @@ export {};
  * @typedef { { moduleFormat: 'nestedEvaluate', source: string, sourceMap?: string } } NestedEvaluateBundle
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  *
- * @typedef { 'local' | 'xs-worker' } ManagerType
+ * @typedef { 'local' | 'xsnap' | 'xs-worker' } ManagerType
  */
 
 /**

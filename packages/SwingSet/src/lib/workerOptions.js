@@ -12,7 +12,7 @@ export async function makeWorkerOptions(
   managerType = managerType || kernelKeeper.getDefaultManagerType();
   if (managerType === 'local') {
     return harden({ type: 'local' });
-  } else if (managerType === 'xs-worker') {
+  } else if (managerType === 'xsnap' || managerType === 'xs-worker') {
     // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ type: 'xsnap', bundleIDs });

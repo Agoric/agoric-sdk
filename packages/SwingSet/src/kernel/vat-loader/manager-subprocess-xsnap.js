@@ -73,12 +73,12 @@ export function makeXsSubprocessFactory({
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
-      'xs-worker: enableSetup not supported at all',
+      'xsnap: enableSetup not supported at all',
     );
-    assert(useTranscript, 'xs-worker: useTranscript=false not supported');
+    assert(useTranscript, 'xsnap: useTranscript=false not supported');
     assert(workerOptions.type === 'xsnap');
     const { bundleIDs } = workerOptions;
-    assert(bundleIDs, 'bundleIDs required for xs-worker');
+    assert(bundleIDs, 'bundleIDs required for xsnap');
 
     const mk = makeManagerKit(
       vatID,
