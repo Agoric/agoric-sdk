@@ -27,7 +27,7 @@ export const ENDORSED_UI_KEY = 'EndorsedUI';
 
 /**
  * @param {Amount} electorateInvitationAmount
- * @param {Amount} minInitialDebt
+ * @param {Amount<'nat'>} minInitialDebt
  * @param {Amount} shortfallInvitationAmount
  * @param {string} endorsedUi
  */
@@ -134,7 +134,7 @@ harden(makeVaultDirectorParamManager);
  * @param {{
  *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
  *   electorateInvitationAmount: Amount,
- *   minInitialDebt: Amount,
+ *   minInitialDebt: Amount<'nat'>,
  *   bootstrapPaymentValue: bigint,
  *   priceAuthority: ERef<PriceAuthority>,
  *   timer: ERef<import('@agoric/time/src/types').TimerService>,

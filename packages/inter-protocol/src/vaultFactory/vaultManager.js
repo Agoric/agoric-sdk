@@ -109,6 +109,7 @@ const trace = makeTracer('VM', false);
  *  getLiquidationMargin: () => Ratio,
  *  getLiquidationPenalty: () => Ratio,
  *  getLoanFee: () => Ratio,
+ *  getMinInitialDebt: () => Amount<'nat'>,
  * }} GovernedParamGetters
  */
 

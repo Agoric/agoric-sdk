@@ -1560,7 +1560,8 @@ test('debt too small - MinInitialDebt', async t => {
     }),
   );
   await t.throwsAsync(() => E(aliceVaultSeat).getOfferResult(), {
-    message: /Proposed debt.*exceeds max.*1428n/,
+    message:
+      'Vault creation requires a minInitialDebt of {"brand":"[Alleged: IST brand]","value":"[50000n]"}',
   });
 });
 

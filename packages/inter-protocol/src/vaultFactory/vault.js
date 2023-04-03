@@ -703,13 +703,21 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             want: { Minted: wantMinted },
           } = seat.getProposal();
 
+          const minInitialDebt = state.manager
+            .getGovernedParams()
+            .getMinInitialDebt();
+          AmountMath.isGTE(wantMinted, minInitialDebt) ||
+            Fail`Vault creation requires a minInitialDebt of ${q(
+              minInitialDebt,
+            )}`;
+
           const {
             newDebt: newDebtPre,
             fee,
             toMint,
           } = helper.debtFee(actualDebtPre, helper.emptyDebt(), wantMinted);
           !AmountMath.isEmpty(fee) ||
-            Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
+            Fail`debt requested (${wantMinted}) too small to accrue interest`;
           AmountMath.isEqual(newDebtPre, toMint) ||
             Fail`fee mismatch for vault`;
           trace(
