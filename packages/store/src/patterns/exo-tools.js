@@ -1,11 +1,19 @@
 import { E, Far } from '@endo/far';
 import { listDifference, objectMap } from '@agoric/internal';
 
-import { MinMethodGuard, mustMatch, M } from './patternMatchers.js';
+import { mustMatch, M } from './patternMatchers.js';
 
 const { quote: q, Fail } = assert;
 const { apply, ownKeys } = Reflect;
 const { defineProperties } = Object;
+
+/**
+ * A method guard, for inclusion in an interface guard, that enforces only that
+ * all arguments are passable and that the result is passable. (In far classes,
+ * "any" means any *passable*.) This is the least possible enforcement for a
+ * method guard, and is implied by all other method guards.
+ */
+const MinMethodGuard = M.call().rest(M.any()).returns(M.any());
 
 const defendSyncArgs = (args, methodGuard, label) => {
   const { argGuards, optionalArgGuards, restArgGuard } = methodGuard;
