@@ -14,7 +14,7 @@ const runConfig = {
   },
 };
 
-// #region Quasi-imports
+//#region Quasi-imports
 const trace = (...args) => console.log('GovReplaceCommitee', ...args);
 
 const { values } = Object;
@@ -149,7 +149,7 @@ const sanitizePathSegment = name => {
   return candidate;
 };
 
-// #endregion
+//#endregion
 
 // XXX can't use type imports without EVAL_CLEAN from cosmic Makefile
 const startNewEconomicCommittee = async ({
