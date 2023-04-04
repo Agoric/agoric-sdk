@@ -7,7 +7,7 @@ import { createCommand, CommanderError } from 'commander';
 import { Far } from '@endo/far';
 import { boardSlottingMarshaller } from '../src/lib/rpc.js';
 
-import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
+import { fmtBid, makeInterCommand, KW } from '../src/commands/inter.js';
 
 const { entries } = Object;
 
@@ -43,7 +43,7 @@ const agoricNames = harden({
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'IST',
-      proposedName: 'Agoric stable local currency',
+      proposedName: 'Agoric stable token',
     },
 
     'ibc/toyatom': {
@@ -81,7 +81,7 @@ const offerSpec1 = harden({
       want: mk(bslot.ATOM, 1_000_000_000_000n),
     },
     proposal: {
-      give: { Currency: mk(bslot.IST, 50_000_000n) },
+      give: { [KW.Bid]: mk(bslot.IST, 50_000_000n) },
     },
   },
 });
@@ -225,12 +225,12 @@ const offerStatus2 = harden({
   },
   proposal: {
     give: {
-      Currency: { brand: topBrands.ATOM, value: 20000000n },
+      [KW.Bid]: { brand: topBrands.ATOM, value: 20000000n },
     },
   },
   payouts: {
     Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
-    Currency: { brand: topBrands.IST, value: 37_000_000n },
+    [KW.Bid]: { brand: topBrands.IST, value: 37_000_000n },
   },
 });
 
@@ -291,7 +291,7 @@ const offerStatus1 = harden({
   },
   proposal: {
     give: {
-      Currency: { brand: topBrands.ATOM, value: 20000000n },
+      [KW.Bid]: { brand: topBrands.ATOM, value: 20000000n },
     },
   },
 });
@@ -313,9 +313,9 @@ test('inter bid list: finds one bid', async t => {
     JSON.stringify({
       id: 'bid-234234',
       discount: 10,
-      give: { Currency: '20 ATOM' },
+      give: { [KW.Bid]: '20 ATOM' },
       want: '2 ATOM',
-      payouts: { Collateral: '5 ATOM', Currency: '37 IST' },
+      payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
     }),
   );
 });
@@ -394,7 +394,7 @@ test('formatBid', t => {
     t.deepEqual(actual, {
       id: 1678990150266,
       error: 'Error: "nameKey" not found: (a string)',
-      give: { Currency: '20 ATOM' },
+      give: { [KW.Bid]: '20 ATOM' },
       price: '10 IST/ATOM',
       want: '2 ATOM',
     });
@@ -403,8 +403,8 @@ test('formatBid', t => {
     const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
     t.deepEqual(actual, {
       id: 'bid-234234',
-      give: { Currency: '20 ATOM' },
-      payouts: { Collateral: '5 ATOM', Currency: '37 IST' },
+      give: { [KW.Bid]: '20 ATOM' },
+      payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
       want: '2 ATOM',
       discount: 10,
     });
