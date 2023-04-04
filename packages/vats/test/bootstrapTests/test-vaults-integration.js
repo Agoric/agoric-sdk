@@ -296,25 +296,22 @@ test('propose change to auction governance param', async t => {
   const wd = await walletFactoryDriver.provideSmartWallet(gov1);
 
   t.log('accept charter invitation');
-  {
-    const instance = agoricNamesRemotes.instance.econCommitteeCharter;
+  const charter = agoricNamesRemotes.instance.econCommitteeCharter;
 
-    await wd.executeOffer({
-      id: 'accept-charter-invitation',
-      invitationSpec: {
-        source: 'purse',
-        instance,
-        description: 'charter member invitation',
-      },
-      proposal: {},
-    });
+  await wd.executeOffer({
+    id: 'accept-charter-invitation',
+    invitationSpec: {
+      source: 'purse',
+      instance: charter,
+      description: 'charter member invitation',
+    },
+    proposal: {},
+  });
 
-    await eventLoopIteration();
+  await eventLoopIteration();
+  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
-    t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
-  }
-
-  const instance = agoricNamesRemotes.instance.auctioneer;
+  const auctioneer = agoricNamesRemotes.instance.auctioneer;
   const timerBrand = agoricNamesRemotes.brand.timer;
   assert(timerBrand);
 
@@ -328,7 +325,7 @@ test('propose change to auction governance param', async t => {
   const offerArgs = {
     deadline: 1000n,
     params,
-    instance,
+    instance: auctioneer,
     path: { paramPath: { key: 'governedParams' } },
   };
 
@@ -344,7 +341,6 @@ test('propose change to auction governance param', async t => {
   });
 
   await eventLoopIteration();
-
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
   const key = `published.committees.Economic_Committee.latestQuestion`;
