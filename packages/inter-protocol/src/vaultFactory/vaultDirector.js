@@ -361,7 +361,7 @@ export const prepareVaultDirector = (
             debtMint.burnLosses(harden({ Minted: toBurn }), seat);
           };
 
-          const { loanTimingParams } = zcf.getTerms();
+          const { interestTimingParams } = zcf.getTerms();
 
           const factoryPowers = Far('vault factory powers', {
             getGovernedParams: () =>
@@ -371,13 +371,16 @@ export const prepareVaultDirector = (
                   directorParamManager.readonly().getMinInitialDebt
                 ),
                 ...vaultParamManager.readonly(),
+                // defined explicitly so as to specify the kind of the Amount
                 getDebtLimit: /** @type {() => Amount<'nat'>} */ (
                   vaultParamManager.readonly().getDebtLimit
                 ),
+                // XXX interestTimingParams not actually governed b/c it doesn't
+                // reach the governor facet
                 getChargingPeriod: () =>
-                  loanTimingParams[CHARGING_PERIOD_KEY].value,
+                  interestTimingParams[CHARGING_PERIOD_KEY].value,
                 getRecordingPeriod: () =>
-                  loanTimingParams[RECORDING_PERIOD_KEY].value,
+                  interestTimingParams[RECORDING_PERIOD_KEY].value,
               }),
             mintAndTransfer,
             getShortfallReporter: async () => {

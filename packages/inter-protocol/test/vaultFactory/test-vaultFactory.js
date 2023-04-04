@@ -52,7 +52,7 @@ import {
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
- * loanTiming: LoanTiming,
+ * interestTiming: InterestTiming,
  * zoe: ZoeService,
  * }} Context
  */
@@ -107,7 +107,7 @@ test.before(async t => {
     bundles,
     installation,
     electorateTerms: undefined,
-    loanTiming: {
+    interestTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
@@ -145,7 +145,7 @@ const setupServices = async (
   runInitialLiquidity,
   startFrequency = undefined,
 ) => {
-  const { zoe, run, aeth, loanTiming, minInitialDebt, endorsedUi, rates } =
+  const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
     t.context;
   t.context.timer = timer;
 
@@ -193,7 +193,7 @@ const setupServices = async (
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(
     space,
-    { loanParams: loanTiming, options: { endorsedUi } },
+    { interestTiming, options: { endorsedUi } },
     minInitialDebt,
   );
 
@@ -263,7 +263,7 @@ const setupServices = async (
 
 test('first', async t => {
   const { aeth, run, zoe, rates } = t.context;
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -400,7 +400,7 @@ test('interest on multiple vaults', async t => {
   };
   t.context.rates = rates;
   // charging period is 1 week. Clock ticks by days
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -924,7 +924,7 @@ test('adjust balances after interest charges', async t => {
   const manualTimer = buildManualTimer(trace, 0n, {
     timeStep: SECONDS_PER_DAY,
   });
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -1249,22 +1249,10 @@ test('overdeposit', async t => {
   );
 });
 
-test('bad chargingPeriod', async t => {
-  t.throws(
-    () =>
-      makeParamManagerBuilder(makeStoredPublisherKit())
-        // @ts-expect-error bad value for test
-        .addNat(CHARGING_PERIOD_KEY, 2)
-        .addNat(RECORDING_PERIOD_KEY, 10n)
-        .build(),
-    { message: '2 must be a bigint' },
-  );
-});
-
 test('collect fees from vault', async t => {
   const { zoe, aeth, run, rates } = t.context;
 
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -1724,7 +1712,7 @@ test('manager notifiers', async t => {
     timeStep: SECONDS_PER_WEEK,
     eventLoopIteration,
   });
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_WEEK,
     recordingPeriod: SECONDS_PER_WEEK,
   };
@@ -1980,7 +1968,7 @@ test('manager notifiers', async t => {
 
 test('governance publisher', async t => {
   const { aeth } = t.context;
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -2001,12 +1989,19 @@ test('governance publisher', async t => {
   let {
     value: { current },
   } = await directorGovNotifier.getUpdateSince();
-  // can't deepEqual because of non-literal objects
-  t.is(current.Electorate.type, 'invitation');
-  t.is(current.MinInitialDebt.type, 'amount');
-  t.is(current.ShortfallInvitation.type, 'invitation');
-  t.is(current.EndorsedUI.type, 'string');
-  t.is(current.EndorsedUI.value, 'abracadabra');
+  // can't deepEqual because of non-literal objects so check keys and then partial shapes
+  t.deepEqual(Object.keys(current), [
+    'Electorate',
+    'EndorsedUI',
+    'MinInitialDebt',
+    'ShortfallInvitation',
+  ]);
+  t.like(current, {
+    Electorate: { type: 'invitation' },
+    MinInitialDebt: { type: 'amount' },
+    ShortfallInvitation: { type: 'invitation' },
+    EndorsedUI: { type: 'string', value: 'abracadabra' },
+  });
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(
     E(vfPublic).getSubscription({
@@ -2016,8 +2011,21 @@ test('governance publisher', async t => {
   ({
     value: { current },
   } = await managerGovNotifier.getUpdateSince());
-  // can't deepEqual because of non-literal objects
-  t.is(current.DebtLimit.type, 'amount');
-  t.is(current.InterestRate.type, 'ratio');
-  t.is(current.LoanFee.type, 'ratio');
+  // can't deepEqual because of non-literal objects so check keys and then partial shapes
+  t.deepEqual(Object.keys(current), [
+    'DebtLimit',
+    'InterestRate',
+    'LiquidationMargin',
+    'LiquidationPadding',
+    'LiquidationPenalty',
+    'LoanFee',
+  ]);
+  t.like(current, {
+    DebtLimit: { type: 'amount' },
+    InterestRate: { type: 'ratio' },
+    LiquidationMargin: { type: 'ratio' },
+    LiquidationPadding: { type: 'ratio' },
+    LiquidationPenalty: { type: 'ratio' },
+    LoanFee: { type: 'ratio' },
+  });
 });

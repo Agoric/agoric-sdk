@@ -78,7 +78,7 @@ const defaultParamValues = debt =>
  * electorateTerms: any,
  * feeMintAccess: FeeMintAccess,
  * installation: Record<string, any>,
- * loanTiming: any,
+ * interestTiming: any,
  * minInitialDebt: bigint,
  * reserveCreatorFacet: ERef<AssetReserveCreatorFacet>,
  * rates: any,
@@ -117,7 +117,7 @@ export const makeDriverContext = async () => {
     installation,
     zoe,
     feeMintAccess,
-    loanTiming: {
+    interestTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
@@ -204,7 +204,7 @@ const setupServices = async (
   priceBase,
   timer = buildManualTimer(t.log),
 ) => {
-  const { zoe, run, aeth, loanTiming, minInitialDebt, rates } = t.context;
+  const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 
   const { space } = await setupReserveAndElectorate(t);
@@ -228,7 +228,7 @@ const setupServices = async (
   iProduce.auctioneer.resolve(t.context.installation.auctioneer);
 
   await Promise.all([
-    startVaultFactory(space, { loanParams: loanTiming }, minInitialDebt),
+    startVaultFactory(space, { interestTiming }, minInitialDebt),
     startAuctioneer(space),
   ]);
 

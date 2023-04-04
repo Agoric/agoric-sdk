@@ -186,7 +186,7 @@ export const setupReserve = async ({
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
- * @param {LoanTiming} [config.loanParams]
+ * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
  * @param {string} [config.options.endorsedUi]
  * @param {bigint} minInitialDebt
@@ -220,7 +220,7 @@ export const startVaultFactory = async (
     },
   },
   {
-    loanParams = {
+    interestTiming = {
       chargingPeriod: SECONDS_PER_HOUR,
       recordingPeriod: SECONDS_PER_DAY,
     },
@@ -264,7 +264,7 @@ export const startVaultFactory = async (
       priceAuthority,
       auctioneerPublicFacet,
       reservePublicFacet,
-      loanTiming: loanParams,
+      interestTiming,
       timer: chainTimerService,
       electorateInvitationAmount: poserInvitationAmount,
       minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
