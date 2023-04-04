@@ -19,9 +19,14 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 export function makeStartXSnap(options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
-  const { bundleHandler } = options; // required unless bundleIDs is empty
-  const { snapStore, spawn, debug = false, workerTraceRootPath } = options;
-  const { overrideBundles } = options;
+  const {
+    spawn,
+    bundleHandler, // required unless bundleIDs is empty
+    snapStore,
+    workerTraceRootPath,
+    overrideBundles,
+    debug = false,
+  } = options;
 
   let doXSnap = xsnap;
 
@@ -56,18 +61,16 @@ export function makeStartXSnap(options) {
   /**
    * @param {string} vatID
    * @param {string} name
-   * @param {import('../types-external.js').BundleID[]} bundleIDs
-   * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
-   * @param {boolean} [metered]
-   * @param {boolean} [reload]
+   * @param {object} details
+   * @param {import('../types-external.js').BundleID[]} details.bundleIDs
+   * @param {(request: Uint8Array) => Promise<Uint8Array>} details.handleCommand
+   * @param {boolean} [details.metered]
+   * @param {boolean} [details.reload]
    */
   async function startXSnap(
     vatID,
     name,
-    bundleIDs,
-    handleCommand,
-    metered,
-    reload = false,
+    { bundleIDs, handleCommand, metered, reload = false },
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && reload) {
@@ -96,7 +99,7 @@ export function makeStartXSnap(options) {
     for (const bundle of bundles) {
       const { moduleFormat } = bundle;
       if (moduleFormat !== 'getExport' && moduleFormat !== 'nestedEvaluate') {
-        throw Fail`unexpected: ${moduleFormat}`;
+        throw Fail`unexpected moduleFormat: ${moduleFormat}`;
       }
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
