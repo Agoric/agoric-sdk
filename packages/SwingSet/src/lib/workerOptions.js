@@ -1,15 +1,9 @@
 /**
- * @param {import("../types-external").KernelKeeper} kernelKeeper
+ * @param {string} managerType
  * @param {import("../controller/bundle-handler").BundleHandler} bundleHandler
- * @param {string} [managerType]
  * @returns {Promise<import("../types-internal").WorkerOptions>}
  */
-export async function makeWorkerOptions(
-  kernelKeeper,
-  bundleHandler,
-  managerType,
-) {
-  managerType = managerType || kernelKeeper.getDefaultManagerType();
+export async function makeWorkerOptions(managerType, bundleHandler) {
   if (managerType === 'local') {
     return harden({ type: 'local' });
   } else if (managerType === 'xsnap' || managerType === 'xs-worker') {
@@ -21,11 +15,14 @@ export async function makeWorkerOptions(
 }
 
 /**
- * @param {import("../controller/bundle-handler").BundleHandler} bundleHandler
  * @param {import("../types-internal").WorkerOptions} origWorkerOptions
+ * @param {{bundleHandler: import("../controller/bundle-handler").BundleHandler}} options
  * @returns {Promise<import("../types-internal").WorkerOptions>}
  */
-export async function updateWorkerOptions(bundleHandler, origWorkerOptions) {
+export async function updateWorkerOptions(
+  origWorkerOptions,
+  { bundleHandler },
+) {
   const { type } = origWorkerOptions;
   if (type === 'local') {
     return origWorkerOptions;

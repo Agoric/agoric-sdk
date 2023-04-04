@@ -87,17 +87,13 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
         'reapInterval',
       ]);
       const {
-        managerType,
+        managerType = kernelKeeper.getDefaultManagerType(),
         useTranscript = true,
         reapInterval = kernelKeeper.getDefaultReapInterval(),
         ...otherOptions
       } = creationOptions;
       // eslint-disable-next-line @jessie.js/no-nested-await,no-await-in-loop
-      const workerOptions = await makeWorkerOptions(
-        kernelKeeper,
-        bundleHandler,
-        managerType,
-      );
+      const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
       /** @type {import('../types-internal.js').RecordedVatOptions} */
       const vatOptions = harden({
         name,
