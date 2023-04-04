@@ -489,7 +489,7 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   // This used to be MUCH more extensive, but GC was cut to the bone
   // in commits like 91480dee8e48ae26c39c420febf73b93deba6ea5
   // basically reverting 1cfbeaa3c925d0f8502edfb313ecb12a1cab5eac
-  // (see also #5342 and #6650).
+  // (see also #5342 and #6650, and #7244 for tests to restore).
   // It can be restored once we add back correct sophisticated logic
   // by e.g. having liveslots sweep the database when restoring a vat.
   verifyObjectTracking('after upgrade', {
