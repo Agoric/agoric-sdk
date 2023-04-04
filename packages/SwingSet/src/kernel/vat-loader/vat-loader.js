@@ -136,12 +136,10 @@ export function makeVatLoader(stuff) {
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
 
     const finish = starting && kernelSlog.startup(vatID);
-    const manager = await vatManagerFactory(
-      vatID,
+    const manager = await vatManagerFactory(vatID, vatSyscallHandler, {
       managerOptions,
       liveSlotsOptions,
-      vatSyscallHandler,
-    );
+    });
     starting && finish();
     return manager;
   }
@@ -155,12 +153,11 @@ export function makeVatLoader(stuff) {
       ...overrideVatManagerOptions,
     };
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
-    const manager = await vatManagerFactory(
-      vatID,
+    const liveSlotsOptions = {};
+    const manager = await vatManagerFactory(vatID, vatSyscallHandler, {
       managerOptions,
-      {},
-      vatSyscallHandler,
-    );
+      liveSlotsOptions,
+    });
     return manager;
   }
 

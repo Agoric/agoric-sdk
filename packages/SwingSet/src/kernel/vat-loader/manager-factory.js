@@ -54,19 +54,22 @@ export function makeVatManagerFactory({
   }
 
   /**
-   * returns promise for new vatManager
+   * Asynchronously creates a VatManager around a particular type of
+   * worker, with the specified vatID and options, which will invoke
+   * the given syscall handler function when the worker makes a
+   * syscall.
    *
    * @param {import('../../types-internal.js').VatID} vatID
-   * @param {import('../../types-internal.js').ManagerOptions} managerOptions
-   * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} liveSlotsOptions
    * @param {import('../vat-warehouse.js').VatSyscallHandler} vatSyscallHandler
+   * @param {object} options
+   * @param {import('../../types-internal.js').ManagerOptions} options.managerOptions
+   * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} options.liveSlotsOptions
    * @returns { Promise<import('../../types-internal.js').VatManager> }
    */
   async function vatManagerFactory(
     vatID,
-    managerOptions,
-    liveSlotsOptions,
     vatSyscallHandler,
+    { managerOptions, liveSlotsOptions },
   ) {
     validateManagerOptions(managerOptions);
     const { workerOptions, enableSetup } = managerOptions;
