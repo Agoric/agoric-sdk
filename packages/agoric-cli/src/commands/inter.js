@@ -9,7 +9,6 @@ import { CommanderError, InvalidArgumentError } from 'commander';
 import { makeBidSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { M, matches } from '@agoric/store';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
@@ -17,12 +16,13 @@ import {
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
+import { getNetworkConfig } from '../lib/rpc.js';
 import {
-  boardSlottingMarshaller,
-  getNetworkConfig,
-  makeRpcUtils,
-} from '../lib/rpc.js';
-import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
+  getCurrent,
+  makeWalletUtils,
+  outputActionAndHint,
+  sendAction,
+} from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -220,71 +220,17 @@ export const makeInterCommand = (
       `${JSON.stringify(info, bigintReplacer, indent ? 2 : undefined)}\n`,
     );
 
-  const rpcTools = async () => {
-    // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig(env);
-    const { agoricNames, fromBoard, readLatestHead, vstorage } =
-      await makeRpcUtils({ fetch }, networkConfig).catch(err => {
-        throw new CommanderError(1, 'RPC_FAIL', err.message);
-      });
-
-    /**
-     * @param {string} from
-     * @param {number|string} [minHeight]
-     */
-    const storedWalletState = async (from, minHeight = undefined) => {
-      const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-      const history = await vstorage.readFully(
-        `published.wallet.${from}`,
-        minHeight,
-      );
-
-      /** @type {{ Invitation: Brand<'set'> }} */
-      // @ts-expect-error XXX how to narrow AssetKind to set?
-      const { Invitation } = agoricNames.brand;
-      const coalescer = makeWalletStateCoalescer(Invitation);
-      // update with oldest first
-      for (const txt of history.reverse()) {
-        const { body, slots } = JSON.parse(txt);
-        const record = m.unserialize({ body, slots });
-        coalescer.update(record);
-      }
-      const coalesced = coalescer.state;
-      harden(coalesced);
-      return coalesced;
-    };
-
-    /**
-     * Get OfferStatus by id, polling until available.
-     *
-     * @param {string} from
-     * @param {string|number} id
-     * @param {number|string} minHeight
-     */
-    const pollOffer = async (from, id, minHeight) => {
-      const lookup = async () => {
-        // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
-        const { offerStatuses } = await storedWalletState(from, minHeight);
-        const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
-        if (!offerStatus) throw Error('retry');
-        harden(offerStatus);
-        return offerStatus;
-      };
-      const retryMessage = 'offer not in wallet at block';
-      const opts = { ...networkConfig, execFileSync, delay, retryMessage };
-      return pollBlocks(opts)(lookup);
-    };
-
-    return {
-      networkConfig,
-      agoricNames,
-      fromBoard,
-      vstorage,
-      readLatestHead,
-      storedWalletState,
-      pollOffer,
-    };
+  const tryMakeUtils = async () => {
+    await null;
+    try {
+      // XXX pass fetch to getNetworkConfig() explicitly
+      // await null above makes this await safe
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const networkConfig = await getNetworkConfig(env);
+      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+    } catch (err) {
+      throw new CommanderError(1, 'RPC_FAIL', err.message);
+    }
   };
 
   const liquidationCmd = interCmd
@@ -306,7 +252,7 @@ For example:
     )
     .option('--manager <number>', 'Vault Manager', Number, 0)
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await rpcTools();
+      const { agoricNames, readLatestHead } = await tryMakeUtils();
 
       const [metrics, quote] = await Promise.all([
         readLatestHead(`published.vaultFactory.manager${opts.manager}.metrics`),
@@ -323,7 +269,7 @@ For example:
   /**
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
-   * @param {Awaited<ReturnType<rpcTools>>} tools
+   * @param {Awaited<ReturnType<tryMakeUtils>>} tools
    */
   const placeBid = async (from, offer, tools) => {
     const { networkConfig, agoricNames, pollOffer } = tools;
@@ -389,7 +335,7 @@ For example:
        * }} opts
        */
       async ({ collateralBrand, generateOnly, ...opts }) => {
-        const tools = await rpcTools();
+        const tools = await tryMakeUtils();
 
         const offer = Offers.auction.Bid(tools.agoricNames.brand, {
           collateralBrandKey: collateralBrand,
@@ -432,7 +378,7 @@ For example:
        * }} opts
        */
       async ({ collateralBrand, generateOnly, ...opts }) => {
-        const tools = await rpcTools();
+        const tools = await tryMakeUtils();
 
         const offer = Offers.auction.Bid(tools.agoricNames.brand, {
           collateralBrandKey: collateralBrand,
@@ -476,7 +422,7 @@ For example:
           return;
         }
 
-        const { networkConfig, readLatestHead } = await rpcTools();
+        const { networkConfig, readLatestHead } = await tryMakeUtils();
 
         const current = await getCurrent(from, { readLatestHead });
         const liveIds = current.liveOffers.map(([i, _s]) => i);
@@ -543,7 +489,7 @@ $ inter bid list --from my-acct
        */
       async opts => {
         const { agoricNames, readLatestHead, storedWalletState } =
-          await rpcTools();
+          await tryMakeUtils();
 
         const [current, state] = await Promise.all([
           getCurrent(opts.from, { readLatestHead }),
@@ -575,7 +521,7 @@ $ inter bid list --from my-acct
     .command('list')
     .description('list registered assets with decimalPlaces, boardId, etc.')
     .action(async () => {
-      const { agoricNames } = await rpcTools();
+      const { agoricNames } = await tryMakeUtils();
       const assets = Object.values(agoricNames.vbankAsset).map(a => {
         return {
           issuerName: a.issuerName,
