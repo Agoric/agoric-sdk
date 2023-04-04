@@ -130,6 +130,9 @@ export async function start(zcf, privateArgs, baggage) {
           // XXX re-use
           return LIQUIDATION_MARGIN;
         },
+        getMinInitialDebt() {
+          return AmountMath.makeEmpty(runBrand);
+        },
         getRecordingPeriod() {
           return DAY;
         },

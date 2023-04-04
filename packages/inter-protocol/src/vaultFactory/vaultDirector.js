@@ -366,10 +366,14 @@ export const prepareVaultDirector = (
           const factoryPowers = Far('vault factory powers', {
             getGovernedParams: () =>
               Far('vault manager param manager', {
+                // one param from director scope
+                getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
+                  directorParamManager.readonly().getMinInitialDebt
+                ),
                 ...vaultParamManager.readonly(),
-                /** @type {() => Amount<'nat'>} */
-                // @ts-expect-error cast
-                getDebtLimit: vaultParamManager.readonly().getDebtLimit,
+                getDebtLimit: /** @type {() => Amount<'nat'>} */ (
+                  vaultParamManager.readonly().getDebtLimit
+                ),
                 getChargingPeriod: () =>
                   loanTimingParams[CHARGING_PERIOD_KEY].value,
                 getRecordingPeriod: () =>

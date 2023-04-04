@@ -29,7 +29,6 @@ import { prepareVaultDirector } from './vaultDirector.js';
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
  *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
  *   loanTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
- *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: import('@agoric/time/src/types').TimerService,
