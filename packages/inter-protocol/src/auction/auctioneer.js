@@ -22,6 +22,7 @@ import {
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { pipeTopicToStorage, prepareDurablePublishKit } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeBidSpecShape, prepareAuctionBook } from './auctionBook.js';
@@ -384,9 +385,25 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Brand, Keyword>} */
   const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
 
+  /** @type {MapStore<Brand, Subscriber<import('./auctionBook.js').BookDataNotification>>} */
+  const subscribers = provideDurableMapStore(baggage, 'subscribers');
+
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
+  let bookCounter = 0;
+
   const makeAuctionBook = prepareAuctionBook(baggage, zcf);
+
+  const makeAuctionPublishKit = prepareDurablePublishKit(
+    baggage,
+    'Auction publish kit',
+  );
+  /** @type {PublishKit<import('./scheduler.js').ScheduleNotification>} */
+  const { publisher: schedulePublisher, subscriber: scheduleSubscriber } =
+    makeAuctionPublishKit();
+
+  const scheduleNode = E(privateArgs.storageNode).makeChildNode('schedule');
+  pipeTopicToStorage(scheduleSubscriber, scheduleNode, privateArgs.marshaller);
 
   /**
    * @param {ZCFSeat} seat
@@ -482,6 +499,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     finalize: () => {
       trace('finalize');
+
+      for (const book of books.values()) {
+        book.endAuction();
+      }
       distributeProceeds();
     },
     startRound() {
@@ -499,8 +520,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   });
 
-  // @ts-expect-error types are correct. How to convince TS?
-  const scheduler = await makeScheduler(driver, timer, params, timerBrand);
+  const scheduler = await makeScheduler(
+    driver,
+    timer,
+    // @ts-expect-error types are correct. How to convince TS?
+    params,
+    timerBrand,
+    schedulePublisher,
+  );
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
   /**
@@ -569,6 +596,12 @@ export const start = async (zcf, privateArgs, baggage) => {
       getSchedules() {
         return E(scheduler).getSchedule();
       },
+      getScheduleUpdates() {
+        return scheduleSubscriber;
+      },
+      getBookDataUpdates(brand) {
+        return subscribers.get(brand);
+      },
       getDepositInvitation,
       ...params,
     }),
@@ -586,10 +619,19 @@ export const start = async (zcf, privateArgs, baggage) => {
           Fail`cannot add brand with keyword ${kwd}. it's in use`;
         const { brand } = await zcf.saveIssuer(issuer, kwd);
 
+        const bookId = `book${bookCounter}`;
+        bookCounter += 1;
+        const bNode = E(privateArgs.storageNode).makeChildNode(bookId);
+        const { publisher: bookDataPublisher, subscriber: bookDataSubscriber } =
+          makeAuctionPublishKit();
+        pipeTopicToStorage(bookDataSubscriber, bNode, privateArgs.marshaller);
+        subscribers.init(brand, bookDataSubscriber);
+
         const newBook = await makeAuctionBook(
           brands.Currency,
           brand,
           priceAuthority,
+          bookDataPublisher,
         );
 
         // These three store.init() calls succeed or fail atomically

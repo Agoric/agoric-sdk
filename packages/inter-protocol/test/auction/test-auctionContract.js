@@ -16,6 +16,8 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
+import { subscribeEach } from '@agoric/notifier';
+import { TimeMath } from '@agoric/time';
 
 import { makeAuctioneerParams } from '../../src/auction/params.js';
 import {
@@ -24,6 +26,7 @@ import {
   withAmountUtils,
 } from '../supports.js';
 import { getInvitation, setUpInstallations } from './tools.js';
+import { subscriptionTracker } from '../metrics.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
@@ -122,10 +125,16 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
         issuerKeywordRecord: {
           Currency: currency.issuer,
         },
-        terms: { ...terms, ...customTerms, ...pubsubTerms },
+        terms: { ...terms, ...customTerms },
+        pubsubTerms,
       },
     }),
-    { governed: { initialPoserInvitation: fakeInvitationPayment } },
+    {
+      governed: {
+        initialPoserInvitation: fakeInvitationPayment,
+        ...pubsubTerms,
+      },
+    },
   );
 
   /** @type {Promise<import('../../src/auction/auctioneer.js').AuctioneerPublicFacet>} */
@@ -260,6 +269,16 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     },
     getTimerService() {
       return timerService;
+    },
+    async getScheduleTracker() {
+      return E.when(E(publicFacet).getScheduleUpdates(), subscription =>
+        subscriptionTracker(t, subscribeEach(subscription)),
+      );
+    },
+    getBookDataTracker(t, brand) {
+      return E.when(E(publicFacet).getBookDataUpdates(brand), subscription =>
+        subscriptionTracker(t, subscribeEach(subscription)),
+      );
     },
   };
 };
@@ -813,6 +832,7 @@ test.serial('onDemand exit', async t => {
 test.serial('onDeadline exit', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
+  const timerBrand = await E(driver.getTimerService()).getTimerBrand();
 
   const liqSeat = await driver.setupCollateralAuction(
     collateral,
@@ -822,10 +842,32 @@ test.serial('onDeadline exit', async t => {
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
   );
 
+  const bookTracker = await driver.getBookDataTracker(t, collateral.brand);
+  await bookTracker.assertInitial({
+    collateralAvailable: collateral.make(100n),
+    currentPriceLevel: null,
+    proceedsRaised: undefined,
+    remainingProceedsGoal: null,
+    startCollateral: collateral.make(100n),
+    startPrice: null,
+    startProceedsGoal: null,
+  });
+  const scheduleTracker = await driver.getScheduleTracker(t);
+  await scheduleTracker.assertInitial({
+    activeStartTime: undefined,
+    nextDescendingStepTime: TimeMath.toAbs(170n, timerBrand),
+    nextStartTime: TimeMath.toAbs(170n, timerBrand),
+  });
+
   const result = await E(liqSeat).getOfferResult();
   t.is(result, 'deposited');
 
   await driver.advanceTo(167n);
+  await scheduleTracker.assertChange({
+    activeStartTime: TimeMath.toAbs(170n, timerBrand),
+    nextStartTime: { absValue: 210n },
+  });
+
   const exitingSeat = await driver.bidForCollateralSeat(
     currency.make(250n),
     collateral.make(200n),
@@ -836,20 +878,77 @@ test.serial('onDeadline exit', async t => {
   t.is(await E(exitingSeat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(exitingSeat).hasExited());
 
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 0n },
+  });
+
   await driver.advanceTo(170n, 'wait');
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 175n },
+  });
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 100n },
+    currentPriceLevel: makeRatioFromAmounts(
+      currency.make(11_550_000_000_000n),
+      collateral.make(10_000_000_000_000n),
+    ),
+    startPrice: makeRatioFromAmounts(
+      currency.make(1_100_000_000n),
+      collateral.make(1_000_000_000n),
+    ),
+  });
+
   await driver.advanceTo(175n, 'wait');
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 180n },
+  });
+  await bookTracker.assertChange({
+    currentPriceLevel: { numerator: { value: 9_350_000_000_000n } },
+  });
+
   await driver.advanceTo(180n, 'wait');
+  await bookTracker.assertChange({
+    currentPriceLevel: { numerator: { value: 7_150_000_000_000n } },
+  });
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 185n },
+  });
+
   await driver.advanceTo(185n, 'wait');
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: 210n },
+  });
+  await bookTracker.assertChange({
+    currentPriceLevel: { numerator: { value: 4_950_000_000_000n } },
+  });
 
   t.true(await E(exitingSeat).hasExited());
 
   await assertPayouts(t, exitingSeat, currency, collateral, 134n, 100n);
   await assertPayouts(t, liqSeat, currency, collateral, 116n, 0n);
+
+  await driver.advanceTo(186n, 'wait');
+  scheduleTracker.assertNoUpdate();
+  bookTracker.assertNoUpdate();
+
+  await driver.advanceTo(210n, 'wait');
+  await scheduleTracker.assertChange({
+    activeStartTime: TimeMath.toAbs(210n, timerBrand),
+    nextDescendingStepTime: { absValue: 215n },
+    nextStartTime: { absValue: 250n },
+  });
+  await bookTracker.assertChange({
+    collateralAvailable: null,
+    startCollateral: null,
+    currentPriceLevel: { numerator: { value: 11_550_000_000_000n } },
+  });
 });
 
 test.serial('add assets to open auction', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
+  const timerBrand = await E(driver.getTimerService()).getTimerBrand();
 
   // One seller deposits 1000 collateral
   const liqSeat = await driver.setupCollateralAuction(
@@ -859,6 +958,23 @@ test.serial('add assets to open auction', async t => {
   await driver.updatePriceAuthority(
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
   );
+
+  const bookTracker = await driver.getBookDataTracker(t, collateral.brand);
+  await bookTracker.assertInitial({
+    collateralAvailable: collateral.make(1000n),
+    currentPriceLevel: null,
+    proceedsRaised: undefined,
+    remainingProceedsGoal: null,
+    startCollateral: collateral.make(1000n),
+    startPrice: null,
+    startProceedsGoal: null,
+  });
+  const scheduleTracker = await driver.getScheduleTracker(t);
+  await scheduleTracker.assertInitial({
+    activeStartTime: undefined,
+    nextDescendingStepTime: TimeMath.toAbs(170n, timerBrand),
+    nextStartTime: TimeMath.toAbs(170n, timerBrand),
+  });
 
   const result = await E(liqSeat).getOfferResult();
   t.is(result, 'deposited');
@@ -873,6 +989,14 @@ test.serial('add assets to open auction', async t => {
 
   // price lock period before auction start
   await driver.advanceTo(167n);
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 0n },
+  });
+
+  await scheduleTracker.assertChange({
+    activeStartTime: TimeMath.toAbs(170n, timerBrand),
+    nextStartTime: { absValue: 210n },
+  });
 
   // another seller deposits 2000
   const liqSeat2 = await driver.depositCollateral(
@@ -881,13 +1005,39 @@ test.serial('add assets to open auction', async t => {
   );
   const resultL2 = await E(liqSeat2).getOfferResult();
   t.is(resultL2, 'deposited');
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 2000n },
+    startCollateral: { value: 3000n },
+  });
 
   await driver.advanceTo(180n);
+  await bookTracker.assertChange({
+    collateralAvailable: { value: 1500n },
+    currentPriceLevel: makeRatioFromAmounts(
+      currency.make(11_550_000_000_000n),
+      collateral.make(10_000_000_000_000n),
+    ),
+    startPrice: makeRatioFromAmounts(
+      currency.make(1_100_000_000n),
+      collateral.make(1_000_000_000n),
+    ),
+  });
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 185n },
+  });
 
   // bidder gets collateral
   await assertPayouts(t, bidderSeat1, currency, collateral, 0n, 1500n);
 
   await driver.advanceTo(190n);
+  await bookTracker.assertChange({
+    currentPriceLevel: { numerator: { value: 9_350_000_000_000n } },
+  });
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: 210n },
+  });
+
   // sellers split proceeds and refund 2:1
   await assertPayouts(t, liqSeat, currency, collateral, 1733n / 3n, 500n);
   await assertPayouts(

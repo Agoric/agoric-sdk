@@ -3,6 +3,7 @@ import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { makePublishKit, subscribeEach } from '@agoric/notifier';
 
 import { makeScheduler } from '../../src/auction/scheduler.js';
 import {
@@ -16,6 +17,7 @@ import {
   makePublisherFromFakes,
   setUpInstallations,
 } from './tools.js';
+import { subscriptionTracker } from '../metrics.js';
 
 /** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
 
@@ -28,8 +30,12 @@ test('schedule start to finish', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
+  const scheduleTracker = await subscriptionTracker(
+    t,
+    subscribeEach(publishKit.subscriber),
+  );
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -47,10 +53,11 @@ test('schedule start to finish', async t => {
   /** @type {bigint} */
   let now = await timer.advanceTo(127n);
 
+  const { publisher } = makePublisherFromFakes();
   const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
+    // @ts-expect-error test fakes
+    { publisher, subscriber: null },
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
     params2,
   );
 
@@ -59,6 +66,7 @@ test('schedule start to finish', async t => {
     timer,
     paramManager,
     timer.getTimerBrand(),
+    publishKit.publisher,
   );
   const schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
@@ -82,8 +90,19 @@ test('schedule start to finish', async t => {
   t.is(fakeAuctioneer.getState().step, 0);
   t.false(fakeAuctioneer.getState().final);
 
-  now = await timer.advanceTo(131n);
+  await scheduleTracker.assertInitial({
+    activeStartTime: undefined,
+    nextDescendingStepTime: TimeMath.toAbs(131n, timerBrand),
+    nextStartTime: TimeMath.toAbs(131n, timerBrand),
+  });
+
+  now = await timer.advanceTo(130n);
   await eventLoopIteration();
+  now = await timer.advanceTo(now + 1n);
+  await scheduleTracker.assertChange({
+    activeStartTime: TimeMath.toAbs(131n, timerBrand),
+    nextStartTime: { absValue: 141n },
+  });
 
   const schedule2 = scheduler.getSchedule();
   t.deepEqual(schedule2.liveAuctionSchedule, firstSchedule);
@@ -103,6 +122,10 @@ test('schedule start to finish', async t => {
   // xxx I shouldn't have to tick twice.
   now = await timer.advanceTo(now + 1n);
   now = await timer.advanceTo(now + 1n);
+  await eventLoopIteration();
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 133n },
+  });
 
   t.is(fakeAuctioneer.getState().step, 2);
   t.false(fakeAuctioneer.getState().final);
@@ -110,12 +133,20 @@ test('schedule start to finish', async t => {
   // final step
   now = await timer.advanceTo(now + 1n);
   now = await timer.advanceTo(now + 1n);
+  await eventLoopIteration();
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 135n },
+  });
 
   t.is(fakeAuctioneer.getState().step, 3);
   t.true(fakeAuctioneer.getState().final);
 
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: 141n },
+  });
   now = await timer.advanceTo(now + 1n);
 
   t.is(fakeAuctioneer.getState().step, 3);
@@ -137,6 +168,10 @@ test('schedule start to finish', async t => {
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
 
   now = await timer.advanceTo(140n);
+  await scheduleTracker.assertChange({
+    activeStartTime: TimeMath.toAbs(141n, timerBrand),
+    nextStartTime: { absValue: 151n },
+  });
 
   t.deepEqual(finalSchedule.liveAuctionSchedule, undefined);
   t.deepEqual(finalSchedule.nextAuctionSchedule, secondSchedule);
@@ -156,12 +191,19 @@ test('schedule start to finish', async t => {
     lockTime: TimeMath.toAbs(146n, timerBrand),
   });
 
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 143n },
+  });
+
   t.is(fakeAuctioneer.getState().step, 4);
   t.false(fakeAuctioneer.getState().final);
 
   // xxx I shouldn't have to tick twice.
   now = await timer.advanceTo(now + 1n);
   now = await timer.advanceTo(now + 1n);
+  await scheduleTracker.assertChange({
+    nextDescendingStepTime: { absValue: 145n },
+  });
 
   t.is(fakeAuctioneer.getState().step, 5);
   t.false(fakeAuctioneer.getState().final);
@@ -176,6 +218,11 @@ test('schedule start to finish', async t => {
   // Auction finished, nothing else happens
   now = await timer.advanceTo(now + 1n);
   await timer.advanceTo(now + 1n);
+
+  await scheduleTracker.assertChange({
+    activeStartTime: undefined,
+    nextDescendingStepTime: { absValue: 151n },
+  });
 
   t.is(fakeAuctioneer.getState().step, 6);
   t.true(fakeAuctioneer.getState().final);
@@ -192,7 +239,7 @@ test('lowest >= starting', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publishKit = makePublishKit();
 
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
@@ -209,16 +256,23 @@ test('lowest >= starting', async t => {
 
   await timer.advanceTo(127n);
 
+  const { publisher } = makePublisherFromFakes();
   const paramManager = await makeAuctioneerParamManager(
-    publisherKit,
+    // @ts-expect-error test fakes
+    { publisher, subscriber: null },
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
     params2,
   );
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     { message: /startingRate "\[105n]" must be more than lowest: "\[110n]"/ },
   );
 });
@@ -233,6 +287,7 @@ test('zero time for auction', async t => {
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
+  const publishKit = makePublishKit();
 
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
@@ -260,7 +315,13 @@ test('zero time for auction', async t => {
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     {
       message:
         /clockStep "\[3n]" must be shorter than startFrequency "\[2n]" to allow at least one step down/,
@@ -279,6 +340,7 @@ test('discountStep 0', async t => {
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -302,7 +364,13 @@ test('discountStep 0', async t => {
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     { message: 'Division by zero' },
   );
 });
@@ -318,6 +386,7 @@ test('discountStep larger than starting rate', async t => {
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -342,7 +411,13 @@ test('discountStep larger than starting rate', async t => {
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     { message: /discountStep .* too large for requested rates/ },
   );
 });
@@ -358,6 +433,7 @@ test('start Freq 0', async t => {
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -381,7 +457,13 @@ test('start Freq 0', async t => {
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     { message: /startFrequency must exceed startDelay.*0n.*10n.*/ },
   );
 });
@@ -397,6 +479,7 @@ test('delay > freq', async t => {
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -421,7 +504,13 @@ test('delay > freq', async t => {
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     { message: /startFrequency must exceed startDelay.*\[20n\].*\[40n\].*/ },
   );
 });
@@ -437,6 +526,7 @@ test('lockPeriod > freq', async t => {
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -462,7 +552,13 @@ test('lockPeriod > freq', async t => {
 
   await t.throwsAsync(
     () =>
-      makeScheduler(fakeAuctioneer, timer, paramManager, timer.getTimerBrand()),
+      makeScheduler(
+        fakeAuctioneer,
+        timer,
+        paramManager,
+        timer.getTimerBrand(),
+        publishKit.publisher,
+      ),
     {
       message: /startFrequency must exceed lock period.*\[3600n\].*\[7200n\].*/,
     },
@@ -481,6 +577,7 @@ test('duration = freq', async t => {
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makePublisherFromFakes();
 
+  const publishKit = makePublishKit();
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead cut the auction short.
@@ -515,6 +612,7 @@ test('duration = freq', async t => {
     timer,
     paramManager,
     timer.getTimerBrand(),
+    publishKit.publisher,
   );
   let schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
