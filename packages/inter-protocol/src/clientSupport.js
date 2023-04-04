@@ -203,6 +203,7 @@ const makePsmSwapOffer = (instance, brands, opts) => {
   };
 };
 
+// XXX 1st arg here is not consistent with the other offer makers. awkward
 /**
  * @param {(amt: string) => Amount<'nat'>} parseAmount
  * @param {{
