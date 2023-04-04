@@ -204,13 +204,12 @@ const makePsmSwapOffer = (instance, brands, opts) => {
 };
 
 /**
- * @param {Record<string, Brand>} brands
+ * @param {(amt: string) => Amount<'nat'>} parseAmount
  * @param {{
  *   offerId: string,
- *   collateralBrandKey: string,
- *   give: number,
- *   desiredBuy: number,
- *   wantMinimum?: number,
+ *   give: string,
+ *   desiredBuy: string,
+ *   wantMinimum?: string,
  * } & ({
  *   price: number,
  * } | {
@@ -218,19 +217,15 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  * })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
-const makeBidOffer = (brands, opts) => {
-  /** @type {Brand<'nat'>} */
-  // @ts-expect-error XXX how to narrow AssetKind?
-  const collateralBrand = brands[opts.collateralBrandKey];
-  const makeCollateral = x =>
-    AmountMath.make(collateralBrand, scaleDecimals(x));
-
+const makeBidOffer = (parseAmount, opts) => {
   const proposal = {
-    give: { Currency: AmountMath.make(brands.IST, scaleDecimals(opts.give)) },
+    give: { Currency: parseAmount(opts.give) },
     ...(opts.wantMinimum
-      ? { want: { Collateral: makeCollateral(opts.wantMinimum) } }
+      ? { want: { Collateral: parseAmount(opts.wantMinimum) } }
       : {}),
   };
+  const istBrand = proposal.give.Currency.brand;
+  const desiredBuy = parseAmount(opts.desiredBuy);
 
   const bounds = (x, lo, hi) => {
     assert(x >= lo && x <= hi);
@@ -242,15 +237,15 @@ const makeBidOffer = (brands, opts) => {
     'price' in opts
       ? {
           // TODO: update when contract uses "desiredBuy"
-          want: makeCollateral(opts.desiredBuy),
-          offerPrice: parseRatio(opts.price, brands.IST, collateralBrand),
+          want: parseAmount(opts.desiredBuy),
+          offerPrice: parseRatio(opts.price, istBrand, desiredBuy.brand),
         }
       : {
-          want: makeCollateral(opts.desiredBuy),
+          want: desiredBuy,
           offerBidScaling: parseRatio(
             (1 - bounds(opts.discount, -1, 1)).toFixed(2),
-            brands.IST,
-            brands.IST,
+            istBrand,
+            istBrand,
           ),
         };
 
@@ -260,7 +255,7 @@ const makeBidOffer = (brands, opts) => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['auctioneer'],
-      callPipe: [['makeBidInvitation', [collateralBrand]]],
+      callPipe: [['makeBidInvitation', [desiredBuy.brand]]],
     },
     proposal,
     offerArgs,

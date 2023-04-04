@@ -21,15 +21,22 @@ test('Offers.auction.Bid', async t => {
     { cliArg: -0.1, offerBidScaling: makeRatio(110n, ist.brand, 100n) },
   ];
 
+  const parseAmount = opt => {
+    const m = opt.match(/^(?<value>[\d_.]+)(?<brand>\w+?)$/);
+    assert(m);
+    return {
+      value: BigInt(Number(m.groups.value.replace(/_/g, '')) * 1_000_000),
+      brand: brands[m.groups.brand],
+    };
+  };
   discounts.forEach(({ cliArg, offerBidScaling }) => {
     t.log('discount', cliArg * 100, '%');
     t.deepEqual(
-      Offers.auction.Bid(brands, {
+      Offers.auction.Bid(parseAmount, {
         offerId: 'foo1',
-        give: 4.56,
-        collateralBrandKey: 'ATOM',
+        give: '4.56IST',
         discount: cliArg,
-        desiredBuy: 10_000,
+        desiredBuy: '10_000ATOM',
       }),
       {
         id: 'foo1',
@@ -52,12 +59,11 @@ test('Offers.auction.Bid', async t => {
   const price = 7;
   const offerPrice = makeRatio(7n, ist.brand, 1n, atom.brand);
   t.deepEqual(
-    Offers.auction.Bid(brands, {
+    Offers.auction.Bid(parseAmount, {
       offerId: 'by-price2',
-      give: 4.56,
-      collateralBrandKey: 'ATOM',
+      give: '4.56IST',
       price,
-      desiredBuy: 10_000,
+      desiredBuy: '10_000ATOM',
     }),
     {
       id: 'by-price2',
@@ -75,12 +81,11 @@ test('Offers.auction.Bid', async t => {
   );
 
   t.deepEqual(
-    Offers.auction.Bid(brands, {
+    Offers.auction.Bid(parseAmount, {
       offerId: 'by-price2',
-      desiredBuy: 10_000,
-      wantMinimum: 1.23,
-      give: 4.56,
-      collateralBrandKey: 'ATOM',
+      desiredBuy: '10_000ATOM',
+      wantMinimum: '1.23ATOM',
+      give: '4.56IST',
       price,
     }),
     {
