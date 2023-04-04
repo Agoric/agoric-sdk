@@ -65,6 +65,8 @@ https://github.com/Agoric/agoric-sdk/labels/next%20release
 This avoids accidental contamination from untracked or ignored
 changes in one's usual development repository.
 
+#### Note: If there is an error or problem following the steps below, after debugging, please restart from this step to ensure there's no accidental contamination.
+
 ```sh
 # Fresh checkout under ~/release or any other preferred directory without agoric-sdk
 cd ~/release

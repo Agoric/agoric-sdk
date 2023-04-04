@@ -12,8 +12,6 @@ import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
-const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
-
 /**
  *
  * @param {import('anylogger').Logger} logger
@@ -41,7 +39,11 @@ export const makeVaultsCommand = async logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const current = await getCurrent(opts.from, fromBoard, { vstorage });
+      const { readLatestHead } = await makeRpcUtils({ fetch });
+
+      const current = await getCurrent(opts.from, {
+        readLatestHead,
+      });
 
       const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
         ([_offerId, pathmap]) => pathmap.vault,
@@ -62,6 +64,7 @@ export const makeVaultsCommand = async logger => {
     .option('--collateralBrand [string]', 'Collateral brand key', 'IbcATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
+      const { agoricNames } = await makeRpcUtils({ fetch });
 
       const offer = Offers.vaults.OpenVault(agoricNames.brand, {
         giveCollateral: opts.giveCollateral,
@@ -91,10 +94,11 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
-        getCurrent(opts.from, fromBoard, { vstorage }),
+        getCurrent(opts.from, { readLatestHead }),
       );
 
       const offer = Offers.vaults.AdjustBalances(
@@ -126,10 +130,11 @@ export const makeVaultsCommand = async logger => {
     .requiredOption('--vaultId [string]', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
+      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
-        getCurrent(opts.from, fromBoard, { vstorage }),
+        getCurrent(opts.from, { readLatestHead }),
       );
 
       const offer = Offers.vaults.CloseVault(

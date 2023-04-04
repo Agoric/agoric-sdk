@@ -7,6 +7,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { E } from '@endo/captp';
+import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
 
@@ -33,7 +34,7 @@ const likePayouts = (collateral, minted) => ({
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
-  const swingsetTestKit = await makeSwingsetTestKit(t);
+  const swingsetTestKit = await makeSwingsetTestKit(t, 'bundles/vaults');
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -250,24 +251,102 @@ test('open vault with insufficient funds gives helpful error', async t => {
   });
 });
 
-// STORY: Liquidation Bidder Amara has provided 50 IST to buy ATOM at a price of $9
-test('bid for liquidation', async t => {
+test('exit bid', async t => {
   const { walletFactoryDriver } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
 
-  await wd.executeOfferMaker(Offers.auction.Bid, {
+  // get some IST
+  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
+    offerId: 'bid-open-vault',
+    collateralBrandKey,
+    wantMinted: 5.0,
+    giveCollateral: 9.0,
+  });
+
+  wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
     wantCollateral: 1.23,
-    giveCurrency: 0.0,
+    giveCurrency: 0.1,
     collateralBrandKey: 'IbcATOM',
+    price: 5,
   });
+
+  await wd.tryExitOffer('bid');
+  await eventLoopIteration();
+
   t.like(wd.getLatestUpdateRecord(), {
     updated: 'offerStatus',
     status: {
       id: 'bid',
-      numWantsSatisfied: 1,
-      result: 'Your bid has been accepted',
+      result: 'Your bid has been accepted', // it was accepted before being exited
+      numWantsSatisfied: 1, // trivially 1 because there were no "wants" in the proposal
+      payouts: {
+        // got back the give
+        Currency: { value: { digits: '100000' } },
+      },
     },
   });
+});
+
+test('propose change to auction governance param', async t => {
+  const { walletFactoryDriver, agoricNamesRemotes, storage } = t.context;
+
+  const gov1 = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
+  const wd = await walletFactoryDriver.provideSmartWallet(gov1);
+
+  t.log('accept charter invitation');
+  const charter = agoricNamesRemotes.instance.econCommitteeCharter;
+
+  await wd.executeOffer({
+    id: 'accept-charter-invitation',
+    invitationSpec: {
+      source: 'purse',
+      instance: charter,
+      description: 'charter member invitation',
+    },
+    proposal: {},
+  });
+
+  await eventLoopIteration();
+  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+
+  const auctioneer = agoricNamesRemotes.instance.auctioneer;
+  const timerBrand = agoricNamesRemotes.brand.timer;
+  assert(timerBrand);
+
+  t.log('propose param change');
+  /* XXX @type {Partial<AuctionParams>} */
+  const params = {
+    StartFrequency: { timerBrand, relValue: 5n * 60n },
+  };
+
+  /** @type {import('@agoric/inter-protocol/src/econCommitteeCharter.js').ParamChangesOfferArgs} */
+  const offerArgs = {
+    deadline: 1000n,
+    params,
+    instance: auctioneer,
+    path: { paramPath: { key: 'governedParams' } },
+  };
+
+  await wd.executeOffer({
+    id: 'propose-param-change',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'accept-charter-invitation',
+      invitationMakerName: 'VoteOnParamChange',
+    },
+    offerArgs,
+    proposal: {},
+  });
+
+  await eventLoopIteration();
+  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+
+  const key = `published.committees.Economic_Committee.latestQuestion`;
+  const capData = JSON.parse(storage.data.get(key)?.at(-1));
+  const lastQuestion = JSON.parse(capData.body);
+  const changes = lastQuestion?.issue?.spec?.changes;
+  t.log('check Economic_Committee.latestQuestion against proposal');
+  t.like(changes, { StartFrequency: { relValue: { digits: '300' } } });
 });

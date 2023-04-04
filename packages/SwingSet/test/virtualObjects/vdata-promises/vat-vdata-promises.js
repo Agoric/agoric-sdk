@@ -1,6 +1,5 @@
 /* global VatData */
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 
 // import { makeScalarBigMapStore } from '@agoric/vat-data';

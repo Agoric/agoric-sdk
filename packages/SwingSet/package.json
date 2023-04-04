@@ -45,6 +45,7 @@
     "@endo/check-bundle": "^0.2.14",
     "@endo/compartment-mapper": "^0.8.0",
     "@endo/eventual-send": "^0.16.8",
+    "@endo/far": "^0.2.14",
     "@endo/import-bundle": "^0.3.0",
     "@endo/init": "^0.5.52",
     "@endo/marshal": "^0.8.1",

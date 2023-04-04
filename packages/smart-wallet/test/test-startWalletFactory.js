@@ -18,7 +18,7 @@ const makeTestContext = async () => {
   const { consume } = await makeMockTestSpace(log);
   const { zoe } = consume;
 
-  // #region Installs
+  //#region Installs
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
 
@@ -29,7 +29,7 @@ const makeTestContext = async () => {
   );
   /** @type {Promise<Installation<import('../src/walletFactory.js').prepare>>} */
   const installation = E(zoe).install(bundle);
-  // #endregion
+  //#endregion
 
   // copied from makeClientBanks()
   const storageNode = await makeStorageNodeChild(

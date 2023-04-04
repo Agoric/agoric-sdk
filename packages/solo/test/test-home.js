@@ -12,7 +12,7 @@ import { makeFixture, E } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
 
-// #region setup (ambient authority is confined to this region)
+//#region setup (ambient authority is confined to this region)
 test.before('setup', async t => {
   const loadBundle = async specifier => {
     const contractUrl = await importMetaResolve(specifier, import.meta.url);
@@ -28,7 +28,7 @@ test.before('setup', async t => {
 
   t.truthy('ready');
 });
-// #endregion
+//#endregion
 
 // Now come the tests that use `home`...
 // =========================================

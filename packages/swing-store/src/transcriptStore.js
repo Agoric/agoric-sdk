@@ -1,8 +1,8 @@
 // @ts-check
-import ReadlineTransform from 'readline-transform';
 import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { Fail, q } from '@agoric/assert';
+import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { createSHA256 } from './hasher.js';
 
 /**
@@ -14,14 +14,14 @@ import { createSHA256 } from './hasher.js';
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string },
  *   deleteVatTranscripts: (vatID: string) => void,
  *   addItem: (vatID: string, item: string) => void,
- *   readSpan: (vatID: string, startPos?: number) => Iterable<string>,
+ *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
  * }} TranscriptStore
  *
  * @typedef {{
- *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterable<Uint8Array>
+ *   exportSpan: (name: string, includeHistorical: boolean) => AsyncIterableIterator<Uint8Array>
  *   importSpan: (artifactName: string, exporter: SwingStoreExporter, artifactMetadata: Map) => Promise<void>,
- *   getExportRecords: (includeHistorical: boolean) => Iterable<[key: string, value: string]>,
- *   getArtifactNames: (includeHistorical: boolean) => AsyncIterable<string>,
+ *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
+ *   getArtifactNames: (includeHistorical: boolean) => AsyncIterableIterator<string>,
  * }} TranscriptStoreInternal
  *
  * @typedef {{
@@ -87,7 +87,7 @@ export function makeTranscriptStore(
       startPos INTEGER, -- inclusive
       endPos INTEGER, -- exclusive
       hash TEXT, -- cumulative hash of this item and previous cumulative hash
-      isCurrent INTEGER,
+      isCurrent INTEGER CHECK (isCurrent = 1),
       PRIMARY KEY (vatID, startPos),
       UNIQUE (vatID, isCurrent)
     )
@@ -131,6 +131,23 @@ export function makeTranscriptStore(
     return transcripts;
   }
 
+  function spanArtifactName(rec) {
+    return `transcript.${rec.vatID}.${rec.startPos}.${rec.endPos}`;
+  }
+
+  function spanMetadataKey(rec) {
+    if (rec.isCurrent) {
+      return `transcript.${rec.vatID}.current`;
+    } else {
+      return `transcript.${rec.vatID}.${rec.startPos}`;
+    }
+  }
+
+  function spanRec(vatID, startPos, endPos, hash, isCurrent) {
+    isCurrent = isCurrent ? 1 : 0;
+    return { vatID, startPos, endPos, hash, isCurrent };
+  }
+
   /**
    * Compute a new cumulative hash for a span that includes a new transcript
    * item.  This is computed by hashing together the hash from the previous item
@@ -166,6 +183,8 @@ export function makeTranscriptStore(
   function initTranscript(vatID) {
     ensureTxn();
     sqlWriteSpan.run(vatID, 0, 0, initialHash, 1);
+    const newRec = spanRec(vatID, 0, 0, initialHash, 1);
+    noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
   const sqlGetCurrentSpanBounds = db.prepare(`
@@ -185,23 +204,6 @@ export function makeTranscriptStore(
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
     bounds || Fail`no current transcript for ${q(vatID)}`;
     return bounds;
-  }
-
-  function spanArtifactName(rec) {
-    return `transcript.${rec.vatID}.${rec.startPos}.${rec.endPos}`;
-  }
-
-  function spanMetadataKey(rec) {
-    if (rec.isCurrent) {
-      return `transcript.${rec.vatID}.current`;
-    } else {
-      return `transcript.${rec.vatID}.${rec.startPos}`;
-    }
-  }
-
-  function spanRec(vatID, startPos, endPos, hash, isCurrent) {
-    isCurrent = isCurrent ? 1 : 0;
-    return { vatID, startPos, endPos, hash, isCurrent };
   }
 
   const sqlEndCurrentSpan = db.prepare(`
@@ -302,10 +304,10 @@ export function makeTranscriptStore(
    * replay will never be required or because such replay would be prohibitively
    * expensive regardless of need and therefor other repair strategies employed.
    *
-   * @yields {[key: string, value: string]}
-   * @returns {Iterable<[key: string, value: string]>}  An iterator over pairs of
-   *    [spanMetadataKey, rec], where `rec` is a JSON-encoded metadata record for the
-   *    span named by `spanMetadataKey`.
+   * @yields {readonly [key: string, value: string]}
+   * @returns {IterableIterator<readonly [key: string, value: string]>}
+   *    An iterator over pairs of [spanMetadataKey, rec], where `rec` is a
+   *    JSON-encoded metadata record for the span named by `spanMetadataKey`.
    */
   function* getExportRecords(includeHistorical = true) {
     const sql = includeHistorical
@@ -326,7 +328,7 @@ export function makeTranscriptStore(
    * the current span for each vat.
    *
    * @yields {string}
-   * @returns {AsyncIterable<string>}  An iterator over the names of all the artifacts requested
+   * @returns {AsyncIterableIterator<string>}  An iterator over the names of all the artifacts requested
    */
   async function* getArtifactNames(includeHistorical) {
     const sql = includeHistorical
@@ -358,19 +360,20 @@ export function makeTranscriptStore(
    * @param {number} [startPos] A start position identifying the span to be
    *    read; defaults to the current span, whatever it is
    *
-   * @returns {Iterable<string>}  An iterator over the items in the indicated span
+   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
    */
   function readSpan(vatID, startPos) {
+    /** @type {number | undefined} */
     let endPos;
     if (startPos === undefined) {
       ({ startPos, endPos } = getCurrentSpanBounds(vatID));
     } else {
       insistTranscriptPosition(startPos);
       endPos = sqlGetSpanEndPos.get(vatID, startPos);
-      typeof endPos === 'number' ||
-        Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
+      if (typeof endPos !== 'number') {
+        throw Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
+      }
     }
-    insistTranscriptPosition(startPos);
     startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
 
     function* reader() {
@@ -407,7 +410,7 @@ export function makeTranscriptStore(
    * @param {string} name  The name of the transcript artifact to be read
    * @param {boolean} includeHistorical  If true, allow non-current spans to be fetched
    *
-   * @returns {AsyncIterable<Uint8Array>}
+   * @returns {AsyncIterableIterator<Uint8Array>}
    * @yields {Uint8Array}
    */
   async function* exportSpan(name, includeHistorical) {
@@ -484,11 +487,12 @@ export function makeTranscriptStore(
       Fail`artifact name says endPos ${q(endPos)}, metadata says ${q(info.endPos)}`;
     const artifactChunks = exporter.getArtifact(name);
     const inStream = Readable.from(artifactChunks);
-    const lineTransform = new ReadlineTransform();
-    const lineStream = inStream.pipe(lineTransform);
+    const lineTransform = new BufferLineTransform();
+    const lineStream = inStream.pipe(lineTransform).setEncoding('utf8');
     let hash = initialHash;
     let pos = startPos;
-    for await (const item of lineStream) {
+    for await (const line of lineStream) {
+      const item = line.trimEnd();
       sqlAddItem.run(vatID, item, pos);
       hash = updateSpanHash(hash, item);
       pos += 1;

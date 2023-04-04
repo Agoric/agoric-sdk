@@ -13,21 +13,26 @@ The downside is that we don't have a good way to persist a vat using Liveslots. 
 Most SwingSet vats use liveslots (with the notable exception of the comms vat). The stereotypical vat definition file when using Liveslots is:
 
 ```js
+import { Far } from '@endo/far';
 
-export buildRootObject() {
-  const obj0 = Far('root', {
-    foo(arg1, arg2) {
-      // implement foo
-      return 'value';
+export function buildRootObject(vatPowers) {
+  let counter = 0;
+  return Far('root', {
+    increment() {
+      counter += 1;
     },
+    read() {
+      return counter;
+    }
   });
-  return harden(obj0);
 }
 ```
 
 See `static-vats.md`, `dynamic-vats.md`, and `vat-environment.md` in this directory for details.
 
 This function returns the "root object". A remote reference to it will be made available to the bootstrap vat, which can use it to trigger whatever initialization needs to happen.
+
+The root object *must* be a hardened "ephemeral" object (e.g., created with `Far` or `makeExo()`). It cannot be a virtual or durable object (created with a maker returned by `defineKind` or `defineDurableKind`, or the vat-data convenience wrappers like `prepareSingleton`). This ensures that the root object's identity is stable across upgrade.
 
 ## Returning New Objects
 

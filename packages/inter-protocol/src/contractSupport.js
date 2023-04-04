@@ -122,5 +122,7 @@ harden(makeMetricsPublishKit);
 
 /**
  * @param {Brand} brand must be a 'nat' brand, not checked
+ * @param {NatValue} [min]
  */
-export const makeNatAmountShape = brand => harden({ brand, value: M.nat() });
+export const makeNatAmountShape = (brand, min) =>
+  harden({ brand, value: min ? M.gte(min) : M.nat() });

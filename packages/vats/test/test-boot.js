@@ -20,7 +20,7 @@ import {
   mockSwingsetVats,
 } from '../tools/boot-test-utils.js';
 
-// #region ambient authority limited to test set-up
+//#region ambient authority limited to test set-up
 /** @typedef {import('ava').ExecutionContext<ReturnType<makeTestContext>>} ECtx */
 
 const makeTestContext = () => {
@@ -37,7 +37,7 @@ const makeTestContext = () => {
 test.before(t => {
   t.context = makeTestContext();
 });
-// #endregion
+//#endregion
 
 /**
  * @callback BuildRootObject

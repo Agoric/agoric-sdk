@@ -297,11 +297,14 @@ export function makeCollectionManager(
 
     function get(key) {
       mustMatch(key, keyShape, invalidKeyTypeMsg);
-      const result = syscall.vatstoreGet(keyToDBKey(key));
-      if (result) {
-        return unserializeValue(JSON.parse(result));
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        throw Fail`key ${key} not found in collection ${q(label)}`;
       }
-      throw Fail`key ${key} not found in collection ${q(label)}`;
+      const result = syscall.vatstoreGet(keyToDBKey(key));
+      if (!result) {
+        throw Fail`key ${key} not found in collection ${q(label)}`;
+      }
+      return unserializeValue(JSON.parse(result));
     }
 
     function updateEntryCount(delta) {
@@ -314,9 +317,10 @@ export function makeCollectionManager(
       }
     }
 
-    function init(key, value) {
+    const doInit = (key, value, precheckedHas) => {
       mustMatch(key, keyShape, invalidKeyTypeMsg);
-      !has(key) ||
+      precheckedHas ||
+        !has(key) ||
         Fail`key ${key} already registered in collection ${q(label)}`;
       const serializedValue = serializeValue(value);
       currentGenerationNumber += 1;
@@ -343,7 +347,15 @@ export function makeCollectionManager(
       serializedValue.slots.forEach(vrm.addReachableVref);
       syscall.vatstoreSet(keyToDBKey(key), JSON.stringify(serializedValue));
       updateEntryCount(1);
-    }
+    };
+
+    const init = (key, value) => doInit(key, value, false);
+
+    const addToSet = key => {
+      if (!has(key)) {
+        doInit(key, null, true);
+      }
+    };
 
     function set(key, value) {
       mustMatch(key, keyShape, invalidKeyTypeMsg);
@@ -366,6 +378,9 @@ export function makeCollectionManager(
 
     function deleteInternal(key) {
       mustMatch(key, keyShape, invalidKeyTypeMsg);
+      if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
+        throw Fail`key ${key} not found in collection ${q(label)}`;
+      }
       const dbKey = keyToDBKey(key);
       const rawValue = syscall.vatstoreGet(dbKey);
       rawValue || Fail`key ${key} not found in collection ${q(label)}`;
@@ -559,6 +574,7 @@ export function makeCollectionManager(
       get,
       getSize,
       init,
+      addToSet,
       set,
       delete: del,
       keys,
@@ -590,11 +606,12 @@ export function makeCollectionManager(
       valueShape,
     );
 
-    const { has, get, init, set, delete: del } = raw;
+    const { has, get, init, addToSet, set, delete: del } = raw;
     const weakMethods = {
       has,
       get,
       init,
+      addToSet,
       set,
       delete: del,
     };
@@ -712,7 +729,7 @@ export function makeCollectionManager(
   function collectionToSetStore(collection) {
     const {
       has,
-      init,
+      addToSet,
       delete: del,
       keys,
       getSize,
@@ -726,13 +743,13 @@ export function makeCollectionManager(
     }
     function addAll(elems) {
       for (const elem of elems) {
-        init(elem, null);
+        addToSet(elem, null);
       }
     }
 
     const setStore = {
       has,
-      add: elem => init(elem, null),
+      add: addToSet,
       addAll,
       delete: del,
       keys: patt => keys(patt),
@@ -746,16 +763,16 @@ export function makeCollectionManager(
   }
 
   function collectionToWeakSetStore(collection) {
-    const { has, init, delete: del } = collection;
+    const { has, addToSet, delete: del } = collection;
     function addAll(elems) {
       for (const elem of elems) {
-        init(elem, null);
+        addToSet(elem);
       }
     }
 
     const weakSetStore = {
       has,
-      add: elem => init(elem, null),
+      add: addToSet,
       addAll,
       delete: del,
     };

@@ -107,7 +107,7 @@ func NewKeeper(
 // intermediate transaction state.
 //
 // The actionQueue's format is documented by `makeChainQueue` in
-// `packages/cosmic-swingset/src/make-queue.js`.
+// `packages/cosmic-swingset/src/helpers/make-queue.js`.
 func (k Keeper) PushAction(ctx sdk.Context, action vm.Jsonable) error {
 	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
 	if !txHashOk {

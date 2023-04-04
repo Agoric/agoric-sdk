@@ -133,7 +133,7 @@ let pushPriceCounter = 0;
  * @param {*} wallet
  * @param {string} adminOfferId
  * @param {import('@agoric/inter-protocol/src/price/roundsManager.js').PriceRound} priceRound
- * @returns
+ * @returns {Promise<string>} offer id
  */
 const pushPrice = async (wallet, adminOfferId, priceRound) => {
   /** @type {import('@agoric/smart-wallet/src/invitations.js').ContinuingInvitationSpec} */
@@ -262,6 +262,7 @@ test.serial('admin price', async t => {
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
     roundId: 1n,
     startedAt: 0n,
+    startedBy: 'adminPriceAddress',
   });
 });
 

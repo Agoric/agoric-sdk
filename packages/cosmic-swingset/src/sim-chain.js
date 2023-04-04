@@ -15,12 +15,12 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { Fail } from '@agoric/assert';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
-import stringify from './json-stable-stringify.js';
+import stringify from './helpers/json-stable-stringify.js';
 import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 import { parseQueueSizes } from './params.js';
-import { makeQueue, makeQueueStorageMock } from './make-queue.js';
+import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 
 const console = anylogger('fake-chain');
 

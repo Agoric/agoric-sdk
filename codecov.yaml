@@ -1,9 +1,6 @@
 codecov:
   require_ci_to_pass: true
-comment:
-  behavior: default
-  layout: reach,diff,flags,tree,reach
-  show_carryforward_flags: false
+comment: false
 coverage:
   status:
     patch:
@@ -13,9 +10,9 @@ coverage:
       default:
         informational: true
 github_checks:
-  annotations: true
+  annotations: false
 parsers:
   javascript:
     enable_partials: yes
 ignore:
-  - "coverage/*.json"
+  - '**/*.json'

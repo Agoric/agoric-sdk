@@ -1,7 +1,6 @@
 import { assert } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 import { buildManualTimer } from '../tools/manual-timer.js';
 import { makePassableEncoding } from '../tools/passableEncoding.js';
 

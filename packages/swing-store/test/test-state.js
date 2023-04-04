@@ -5,6 +5,8 @@ import '@endo/init/debug.js';
 import tmp from 'tmp';
 import test from 'ava';
 
+import bundleSource from '@endo/bundle-source';
+
 import {
   initSwingStore,
   openSwingStore,
@@ -25,6 +27,13 @@ const tmpDir = prefix =>
       }
     });
   });
+
+async function embundle(filename) {
+  const bundleFile = new URL(filename, import.meta.url).pathname;
+  const bundle = await bundleSource(bundleFile);
+  const bundleID = `b1-${bundle.endoZipBase64Sha512}`;
+  return [bundleID, bundle];
+}
 
 function* iterate(kvStore, start, end) {
   if (kvStore.has(start)) {
@@ -193,6 +202,10 @@ async function testTranscriptStore(t, dbDir) {
   t.deepEqual(exportLog.getLog(), [
     [
       [
+        'transcript.empty.current',
+        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1}',
+      ],
+      [
         'transcript.st1.0',
         '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0}',
       ],
@@ -239,4 +252,49 @@ test('transcriptStore abort', async t => {
   const { transcriptStore: ss2 } = openSwingStore(dbDir).kernelStorage;
   const reader = ss2.readSpan('st1', 0);
   t.deepEqual(Array.from(reader), ['first']); // and not 'second'
+});
+
+async function testBundleStore(t, dbDir) {
+  const exportLog = makeExportLog();
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
+    exportCallback: exportLog.callback,
+  });
+  const { bundleStore } = kernelStorage;
+  const { commit, close } = hostStorage;
+
+  const [bundleID1, bundle1] = await embundle('./faux-module.js');
+  const [bundleID2, bundle2] = await embundle('./bohr-module.js');
+
+  t.falsy(bundleStore.hasBundle(bundleID1));
+  t.falsy(bundleStore.hasBundle(bundleID2));
+  t.falsy(bundleStore.hasBundle('b1-obviouslyfake'));
+
+  bundleStore.addBundle(bundleID1, bundle1);
+  bundleStore.addBundle(bundleID2, bundle2);
+
+  t.truthy(bundleStore.hasBundle(bundleID1));
+  t.truthy(bundleStore.hasBundle(bundleID2));
+  t.falsy(bundleStore.hasBundle('b1-obviouslyfake'));
+
+  bundleStore.deleteBundle(bundleID1);
+
+  t.falsy(bundleStore.hasBundle(bundleID1));
+  t.truthy(bundleStore.hasBundle(bundleID2));
+  t.falsy(bundleStore.hasBundle('b1-obviouslyfake'));
+
+  const rebundle2 = bundleStore.getBundle(bundleID2);
+  t.deepEqual(bundle2, rebundle2);
+  await commit();
+  await close();
+}
+
+test('in-memory bundleStore read/write', async t => {
+  await testBundleStore(t, null);
+});
+
+test('persistent bundleStore read/write', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  t.is(isSwingStore(dbDir), false);
+  await testBundleStore(t, dbDir);
 });

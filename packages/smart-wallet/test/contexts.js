@@ -15,7 +15,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   const { consume } = await makeSpace(log);
   const { agoricNames, zoe } = consume;
 
-  // #region Installs
+  //#region Installs
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
 
@@ -26,7 +26,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
   );
   /** @type {Promise<Installation<import('../src/walletFactory.js').prepare>>} */
   const installation = E(zoe).install(bundle);
-  // #endregion
+  //#endregion
 
   // copied from makeClientBanks()
   const storageNode = await makeStorageNodeChild(

@@ -1,11 +1,12 @@
-import { makeTracer } from '@agoric/internal';
 import '@agoric/zoe/exported.js';
-import { Far } from '@endo/marshal';
+
+import { makeTracer } from '@agoric/internal';
 import { prepareVaultHolder } from './vaultHolder.js';
 
 const trace = makeTracer('VK', false);
 
 /**
+ * Wrap the VaultHolder duration object in a record suitable for the result of an invitation.
  *
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {ERef<Marshaller>} marshaller
@@ -22,17 +23,16 @@ export const prepareVaultKit = (baggage, marshaller) => {
    */
   const makeVaultKit = (vault, storageNode) => {
     trace('prepareVaultKit makeVaultKit');
-    const { holder, helper } = makeVaultHolder(vault, storageNode);
+    const { holder, helper, invitationMakers } = makeVaultHolder(
+      vault,
+      storageNode,
+    );
     const holderTopics = holder.getPublicTopics();
     const vaultKit = harden({
       publicSubscribers: {
         vault: holderTopics.vault,
       },
-      invitationMakers: Far('invitation makers', {
-        AdjustBalances: () => holder.makeAdjustBalancesInvitation(),
-        CloseVault: () => holder.makeCloseInvitation(),
-        TransferVault: () => holder.makeTransferInvitation(),
-      }),
+      invitationMakers,
       vault: holder,
       vaultUpdater: helper.getUpdater(),
     });

@@ -1,4 +1,4 @@
-import { Far, getInterfaceOf } from '@endo/marshal';
+import { Far, getInterfaceOf } from '@endo/far';
 
 export function buildRootObject() {
   let counter = 0;

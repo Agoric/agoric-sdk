@@ -2,7 +2,7 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 import {
   parse,

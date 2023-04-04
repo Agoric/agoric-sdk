@@ -17,7 +17,7 @@ import { UnguardedHelperI } from '../typeGuards.js';
 import { prepareVaultKit } from './vaultKit.js';
 
 import '@agoric/zoe/exported.js';
-import { calculateLoanCosts } from './math.js';
+import { calculateDebtCosts } from './math.js';
 
 const { quote: q, Fail } = assert;
 
@@ -218,7 +218,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
     },
     {
       helper: {
-        // #region Computed constants
+        //#region Computed constants
         collateralBrand() {
           return this.state.manager.getCollateralBrand();
         },
@@ -255,9 +255,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             },
           };
         },
-        // #endregion
+        //#endregion
 
-        // #region Phase logic
+        //#region Phase logic
         /**
          * @param {VaultPhase} newPhase
          */
@@ -282,7 +282,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             phase === Phase.LIQUIDATED ||
             Fail`to be closed a vault must be active or liquidated, not ${phase}`;
         },
-        // #endregion
+        //#endregion
 
         /**
          * Called whenever the debt is paid or created through a transaction,
@@ -430,7 +430,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             // you must pay off the entire remainder but if you offer too much, we won't
             // take more than you owe
             AmountMath.isGTE(given, debt) ||
-              Fail`Offer ${given} is not sufficient to pay off debt ${debt}`;
+              Fail`Offer ${q(given)} is not sufficient to pay off debt ${q(
+                debt,
+              )}`;
 
             // Return any overpayment
             atomicTransfer(
@@ -485,10 +487,10 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          * @param {Amount<'nat'>} giveAmount
          * @param {Amount<'nat'>} wantAmount
          */
-        loanFee(currentDebt, giveAmount, wantAmount) {
+        debtFee(currentDebt, giveAmount, wantAmount) {
           const { state } = this;
 
-          return calculateLoanCosts(
+          return calculateDebtCosts(
             currentDebt,
             giveAmount,
             wantAmount,
@@ -525,7 +527,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           // Calculate the fee, the amount to mint and the resulting debt. We'll
           // verify that the target debt doesn't violate the collateralization ratio,
           // then mint, reallocate, and burn.
-          const { newDebt, fee, surplus, toMint } = helper.loanFee(
+          const { newDebt, fee, surplus, toMint } = helper.debtFee(
             self.getCurrentDebt(),
             fp.give.Minted,
             fp.want.Minted,
@@ -606,7 +608,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
          *
          * @param {ZCFSeat} clientSeat
          * @param {FullProposal} fp
-         * @param {ReturnType<typeof calculateLoanCosts>} costs
+         * @param {ReturnType<typeof calculateDebtCosts>} costs
          * @param {object} accounting
          * @param {NormalizedDebt} accounting.normalizedDebtPre
          * @param {Amount<'nat'>} accounting.collateralPre
@@ -701,13 +703,21 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             want: { Minted: wantMinted },
           } = seat.getProposal();
 
+          const minInitialDebt = state.manager
+            .getGovernedParams()
+            .getMinInitialDebt();
+          AmountMath.isGTE(wantMinted, minInitialDebt) ||
+            Fail`Vault creation requires a minInitialDebt of ${q(
+              minInitialDebt,
+            )}`;
+
           const {
             newDebt: newDebtPre,
             fee,
             toMint,
-          } = helper.loanFee(actualDebtPre, helper.emptyDebt(), wantMinted);
+          } = helper.debtFee(actualDebtPre, helper.emptyDebt(), wantMinted);
           !AmountMath.isEmpty(fee) ||
-            Fail`loan requested (${wantMinted}) is too small; cannot accrue interest`;
+            Fail`debt requested (${wantMinted}) too small to accrue interest`;
           AmountMath.isEqual(newDebtPre, toMint) ||
             Fail`fee mismatch for vault`;
           trace(

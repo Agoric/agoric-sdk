@@ -22,6 +22,7 @@ function makeGenericRemotable(typeName) {
 
 const something = makeGenericRemotable('something');
 const somethingElse = makeGenericRemotable('something else');
+const somethingMissing = makeGenericRemotable('something missing');
 
 const symbolBozo = Symbol.for('bozo');
 const symbolKrusty = Symbol.for('krusty');
@@ -83,10 +84,17 @@ function exerciseMapOperations(t, collectionName, testStore) {
 
   t.truthy(testStore.has(47));
   t.falsy(testStore.has(53));
+  t.falsy(testStore.has(somethingMissing));
 
   t.throws(
     () => testStore.get(43),
     m(`key 43 not found in collection "${collectionName}"`),
+  );
+  t.throws(
+    () => testStore.get(somethingMissing),
+    m(
+      `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
+    ),
   );
   t.throws(
     () => testStore.set(86, 'not work'),
@@ -95,6 +103,12 @@ function exerciseMapOperations(t, collectionName, testStore) {
   t.throws(
     () => testStore.init(47, 'already there'),
     m(`key 47 already registered in collection "${collectionName}"`),
+  );
+  t.throws(
+    () => testStore.init(something, 'already there'),
+    m(
+      `key "[Alleged: something]" already registered in collection "${collectionName}"`,
+    ),
   );
 
   testStore.set(something, somethingElse);
@@ -112,6 +126,12 @@ function exerciseMapOperations(t, collectionName, testStore) {
     () => testStore.delete(22),
     m(`key 22 not found in collection "${collectionName}"`),
   );
+  t.throws(
+    () => testStore.delete(somethingMissing),
+    m(
+      `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
+    ),
+  );
 }
 
 function exerciseSetOperations(t, collectionName, testStore) {
@@ -120,17 +140,22 @@ function exerciseSetOperations(t, collectionName, testStore) {
     t.truthy(testStore.has(item[0]));
   }
   t.falsy(testStore.has(53));
+  t.falsy(testStore.has(somethingMissing));
 
-  t.throws(
-    () => testStore.add(47),
-    m(`key 47 already registered in collection "${collectionName}"`),
-  );
+  t.truthy(testStore.has(47));
+  t.notThrows(() => testStore.add(47));
 
   testStore.delete(47);
   t.falsy(testStore.has(47));
   t.throws(
     () => testStore.delete(22),
     m(`key 22 not found in collection "${collectionName}"`),
+  );
+  t.throws(
+    () => testStore.delete(somethingMissing),
+    m(
+      `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
+    ),
   );
 }
 

@@ -6,7 +6,7 @@ import sqlite3 from 'better-sqlite3';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 
-import { makeStartXSnap } from '../src/controller/controller.js';
+import { makeStartXSnap } from '../src/controller/startXSnap.js';
 
 // controller.js had a bug (#5040) wherein 'meterOpts' were applied
 // inconsistently to fresh workers vs ones from snapshot, allowing
@@ -18,7 +18,6 @@ function make(snapStore) {
   const pk = makePromiseKit();
   const startXSnap = makeStartXSnap([], {
     snapStore,
-    env: {},
     spawn: (command, args, opts) => {
       pk.resolve(args);
       return spawn(command, args, opts);
