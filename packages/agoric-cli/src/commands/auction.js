@@ -27,12 +27,12 @@ const { Fail } = assert;
  *   fetch: typeof window.fetch,
  *   stdout: Pick<import('stream').Writable, 'write'>,
  *   stderr: Pick<import('stream').Writable, 'write'>,
- *   clock: () => Promise<number>,
+ *   now: () => number,
  * }} io
  */
 export const makeAuctionCommand = (
   _logger,
-  { createCommand, stdout, stderr, fetch, clock },
+  { createCommand, stdout, stderr, fetch, now },
 ) => {
   const auctioneer = createCommand('auctioneer').description(
     'Auctioneer commands',
@@ -132,7 +132,7 @@ export const makeAuctionCommand = (
         const instance = agoricNames.instance.auctioneer;
         instance || Fail`missing auctioneer in names`;
 
-        const t0 = await clock();
+        const t0 = now();
         const deadline = BigInt(Math.round(t0 / 1000) + 60 * opts.deadline);
 
         /** @type {import('@agoric/inter-protocol/src/econCommitteeCharter.js').ParamChangesOfferArgs} */

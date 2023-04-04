@@ -63,7 +63,6 @@ const procIO = {
   createCommand,
   execFileSync,
   now: () => Date.now(),
-  clock: () => Promise.resolve(Date.now()),
   setTimeout,
 };
 
