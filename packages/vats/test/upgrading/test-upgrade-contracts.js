@@ -49,6 +49,7 @@ test('upgrade mintHolder', async t => {
   // console.debug('config', JSON.stringify(config, null, 2));
 
   const c = await buildVatController(config);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 

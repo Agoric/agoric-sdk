@@ -26,9 +26,11 @@ test('zcf-ish upgrade', async t => {
     },
   };
 
-  const kernelStorage = initSwingStore().kernelStorage;
+  const { kernelStorage, hostStorage } = initSwingStore();
+  t.teardown(hostStorage.close);
   await initializeSwingset(config, [], kernelStorage);
   const c = await makeSwingsetController(kernelStorage);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 

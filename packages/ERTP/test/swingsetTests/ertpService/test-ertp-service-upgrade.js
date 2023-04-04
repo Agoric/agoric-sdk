@@ -25,6 +25,7 @@ test('ertp service upgrade', async t => {
   };
 
   const c = await buildVatController(config);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
 
