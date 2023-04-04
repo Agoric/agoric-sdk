@@ -2,6 +2,7 @@
 
 import { Fail } from '@agoric/assert';
 import { AmountMath } from '@agoric/ertp';
+import { assertAllDefined } from '@agoric/internal';
 import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 
 // XXX support other decimal places
@@ -203,14 +204,14 @@ const makePsmSwapOffer = (instance, brands, opts) => {
   };
 };
 
-// XXX 1st arg here is not consistent with the other offer makers. awkward
 /**
- * @param {(amt: string) => Amount<'nat'>} parseAmount
+ * @param {Record<string, Brand>} _brands
  * @param {{
  *   offerId: string,
  *   give: string,
  *   desiredBuy: string,
  *   wantMinimum?: string,
+ *   parseAmount: (x: string) => Amount<'nat'>,
  * } & ({
  *   price: number,
  * } | {
@@ -218,7 +219,14 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  * })} opts
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
-const makeBidOffer = (parseAmount, opts) => {
+const makeBidOffer = (_brands, opts) => {
+  assert.typeof(opts.parseAmount, 'function');
+  assertAllDefined({
+    offerId: opts.offerId,
+    give: opts.give,
+    desiredBuy: opts.desiredBuy,
+  });
+  const { parseAmount } = opts;
   const proposal = {
     give: { Currency: parseAmount(opts.give) },
     ...(opts.wantMinimum
@@ -233,6 +241,10 @@ const makeBidOffer = (parseAmount, opts) => {
     return x;
   };
 
+  assert(
+    'price' in opts || 'discount' in opts,
+    'must specify price or discount',
+  );
   /** @type {import('./auction/auctionBook.js').BidSpec} */
   const offerArgs =
     'price' in opts
