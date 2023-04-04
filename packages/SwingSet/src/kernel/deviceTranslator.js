@@ -4,7 +4,7 @@ import { insistMessage } from '../lib/message.js';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
 import { insistCapData } from '../lib/capdata.js';
-import { kdebug } from '../lib/kdebug.js';
+import { kdebug, debugging } from '../lib/kdebug.js';
 import { assertValidVatstoreKey } from './vatTranslator.js';
 
 /*
@@ -84,8 +84,8 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
     const target = mapDeviceSlotToKernelSlot(targetSlot);
     assert(target, 'unable to find target');
     // const method = JSON.parse(methargs.body)[0];
-    // kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
-    // kdebug(`  ^target is ${target}`);
+    // debugging() && kdebug(`syscall[${deviceName}].send(${targetSlot}/${target}).${method}`);
+    // debugging() && kdebug(`  ^target is ${target}`);
     const msg = harden({
       methargs: {
         ...methargs,
@@ -100,26 +100,27 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
 
   function translateVatstoreGet(key) {
     assertValidVatstoreKey(key);
-    kdebug(`syscall[${deviceID}].vatstoreGet(${key})`);
+    debugging() && kdebug(`syscall[${deviceID}].vatstoreGet(${key})`);
     return harden(['vatstoreGet', deviceID, key]);
   }
 
   function translateVatstoreSet(key, value) {
     assertValidVatstoreKey(key);
     assert.typeof(value, 'string');
-    kdebug(`syscall[${deviceID}].vatstoreSet(${key},${value})`);
+    debugging() && kdebug(`syscall[${deviceID}].vatstoreSet(${key},${value})`);
     return harden(['vatstoreSet', deviceID, key, value]);
   }
 
   function translateVatstoreGetNextKey(priorKey) {
     assertValidVatstoreKey(priorKey);
-    kdebug(`syscall[${deviceID}].vatstoreGetNextKey(${priorKey})`);
+    debugging() &&
+      kdebug(`syscall[${deviceID}].vatstoreGetNextKey(${priorKey})`);
     return harden(['vatstoreGetNextKey', deviceID, priorKey]);
   }
 
   function translateVatstoreDelete(key) {
     assertValidVatstoreKey(key);
-    kdebug(`syscall[${deviceID}].vatstoreDelete(${key})`);
+    debugging() && kdebug(`syscall[${deviceID}].vatstoreDelete(${key})`);
     return harden(['vatstoreDelete', deviceID, key]);
   }
 

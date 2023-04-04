@@ -74,7 +74,6 @@ export function makeDeviceKeeper(kvStore, deviceID, tools) {
    */
   function mapDeviceSlotToKernelSlot(devSlot) {
     typeof devSlot === 'string' || Fail`non-string devSlot: ${devSlot}`;
-    // kdebug(`mapOutbound ${devSlot}`);
     const devKey = `${deviceID}.c.${devSlot}`;
     if (!kvStore.has(devKey)) {
       const { type, allocatedByVat } = parseVatSlot(devSlot);

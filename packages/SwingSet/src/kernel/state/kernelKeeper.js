@@ -19,7 +19,7 @@ import {
   makeVatID,
   makeUpgradeID,
 } from '../../lib/id.js';
-import { kdebug } from '../../lib/kdebug.js';
+import { kdebug, debugging } from '../../lib/kdebug.js';
 import { KERNEL_STATS_METRICS } from '../metrics.js';
 import { makeKernelStats } from './stats.js';
 import {
@@ -573,7 +573,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       id = Nat(BigInt(getRequired('ko.nextID')));
       kvStore.set('ko.nextID', `${id + 1n}`);
     }
-    kdebug(`Adding kernel object ko${id} for ${ownerID}`);
+    debugging() && kdebug(`Adding kernel object ko${id} for ${ownerID}`);
     const s = makeKernelSlot('object', id);
     kvStore.set(`${s}.owner`, ownerID);
     setObjectRefCount(s, { reachable: 0, recognizable: 0 });
@@ -613,7 +613,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   function addKernelDeviceNode(deviceID) {
     insistDeviceID(deviceID);
     const id = Nat(BigInt(getRequired('kd.nextID')));
-    kdebug(`Adding kernel device kd${id} for ${deviceID}`);
+    debugging() && kdebug(`Adding kernel device kd${id} for ${deviceID}`);
     kvStore.set('kd.nextID', `${id + 1n}`);
     const s = makeKernelSlot('device', id);
     kvStore.set(`${s}.owner`, deviceID);
@@ -649,7 +649,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   function addKernelPromiseForVat(deciderVatID) {
     insistVatID(deciderVatID);
     const kpid = addKernelPromise();
-    kdebug(`Adding kernel promise ${kpid} for ${deciderVatID}`);
+    debugging() && kdebug(`Adding kernel promise ${kpid} for ${deciderVatID}`);
     kvStore.set(`${kpid}.decider`, deciderVatID);
     return kpid;
   }
@@ -857,7 +857,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     if (newDynamicVatIDs.length !== oldDynamicVatIDs.length) {
       kvStore.set(DYNAMIC_IDS_KEY, JSON.stringify(newDynamicVatIDs));
     } else {
-      kdebug(`removing static vat ${vatID}`);
+      debugging() && kdebug(`removing static vat ${vatID}`);
       for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
         if (kvStore.get(k) === vatID) {
           kvStore.delete(k);
@@ -1189,7 +1189,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const { type } = parseKernelSlot(kernelSlot);
     if (type === 'promise') {
       const refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`))) + 1n;
-      // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
+      // debugging() && kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
     }
     if (type === 'object' && !isExport) {
@@ -1198,7 +1198,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
         reachable += 1;
       }
       recognizable += 1;
-      // kdebug(`++ ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
+      // debugging() && kdebug(`++ ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
       setObjectRefCount(kernelSlot, { reachable, recognizable });
     }
   }
@@ -1228,7 +1228,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       let refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`)));
       refCount > 0n || Fail`refCount underflow ${kernelSlot} ${tag}`;
       refCount -= 1n;
-      // kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
+      // debugging() && kdebug(`-- ${kernelSlot}  ${tag} ${refCount}`);
       kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
       if (refCount === 0n) {
         maybeFreeKrefs.add(kernelSlot);
@@ -1241,7 +1241,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
         reachable -= 1;
       }
       recognizable -= 1;
-      // kdebug(`-- ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
+      // debugging() && kdebug(`-- ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
       if (!reachable || !recognizable) {
         maybeFreeKrefs.add(kernelSlot);
       }

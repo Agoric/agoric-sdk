@@ -58,7 +58,7 @@ export function makeDeviceSlots(
   }
 
   function convertValToSlot(val) {
-    // lsdebug(`convertValToSlot`, val, Object.isFrozen(val));
+    // enableLSDebug && lsdebug(`convertValToSlot`, val, Object.isFrozen(val));
     // This is either a Presence (in presenceToImportID), a
     // previously-serialized local pass-by-presence object or
     // previously-serialized local Promise (in valToSlot), a new local
@@ -71,7 +71,7 @@ export function makeDeviceSlots(
 
     if (!valToSlot.has(val)) {
       // must be a new export
-      // lsdebug('must be a new export', JSON.stringify(val));
+      // enableLSDebug && lsdebug('must be a new export', JSON.stringify(val));
       assert.equal(passStyleOf(val), 'remotable');
       const slot = exportPassByPresence();
       parseVatSlot(slot); // assertion
@@ -88,9 +88,9 @@ export function makeDeviceSlots(
       !allocatedByVat || Fail`I don't remember allocating ${slot}`;
       if (type === 'object') {
         // this is a new import value
-        // lsdebug(`assigning new import ${slot}`);
+        // enableLSDebug && lsdebug(`assigning new import ${slot}`);
         val = makePresence(slot, iface);
-        // lsdebug(` for presence`, val);
+        // enableLSDebug && lsdebug(` for presence`, val);
       } else if (type === 'device') {
         throw Fail`devices should not be given other devices '${slot}'`;
       } else {
@@ -113,7 +113,7 @@ export function makeDeviceSlots(
   function PresenceHandler(importSlot) {
     return {
       get(_target, prop) {
-        lsdebug(`PreH proxy.get(${String(prop)})`);
+        enableLSDebug && lsdebug(`PreH proxy.get(${String(prop)})`);
         if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }
@@ -195,10 +195,11 @@ export function makeDeviceSlots(
   function invoke(deviceID, method, args) {
     insistVatType('device', deviceID);
     insistCapData(args);
-    lsdebug(
-      `ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`,
-      args.slots,
-    );
+    enableLSDebug &&
+      lsdebug(
+        `ls[${forDeviceName}].dispatch.invoke ${deviceID}.${method}`,
+        args.slots,
+      );
     const t = slotToVal.get(deviceID);
     if (!(method in t)) {
       throw new TypeError(
@@ -220,7 +221,8 @@ export function makeDeviceSlots(
     const vres = m.serialize(res);
     /** @type { DeviceInvocationResultOk } */
     const ires = harden(['ok', vres]);
-    lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
+    enableLSDebug &&
+      lsdebug(` results ${vres.body} ${JSON.stringify(vres.slots)}`);
     return ires;
   }
 

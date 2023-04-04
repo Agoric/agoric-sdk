@@ -11,6 +11,7 @@ import makeKernelKeeper from './state/kernelKeeper.js';
 import {
   kdebug,
   kdebugEnable,
+  debugging,
   legibilizeMessageArgs,
   extractMethod,
 } from '../lib/kdebug.js';
@@ -547,7 +548,8 @@ export default function buildKernel(
     kernelKeeper.incStat('dispatches');
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
-      kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
+      debugging() &&
+        kdebug(`dropping notify of ${kpid} to ${vatID} because vat is dead`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const { meterID } = vatInfo;
@@ -559,14 +561,18 @@ export default function buildKernel(
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
-      kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
-      kdebug(`skipping notify of ${kpid} because it's already been done`);
+      if (debugging()) {
+        kdebug(`vat ${vatID} has no c-list entry for ${kpid}`);
+        kdebug(`skipping notify of ${kpid} because it's already been done`);
+      }
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const targets = getKpidsToRetire(kernelKeeper, kpid, p.data);
     if (targets.length === 0) {
-      kdebug(`no kpids to retire`);
-      kdebug(`skipping notify of ${kpid} because it's already been done`);
+      if (debugging()) {
+        kdebug(`no kpids to retire`);
+        kdebug(`skipping notify of ${kpid} because it's already been done`);
+      }
       return NO_DELIVERY_CRANK_RESULTS;
     }
     for (const toResolve of targets) {
@@ -651,7 +657,8 @@ export default function buildKernel(
     insistCapData(vatParameters);
     const vatInfo = vatWarehouse.lookup(vatID);
     if (!vatInfo) {
-      kdebug(`vat ${vatID} terminated before startVat delivered`);
+      // prettier-ignore
+      debugging() && kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
     const { meterID } = vatInfo;
@@ -1207,9 +1214,9 @@ export default function buildKernel(
   }
 
   async function processDeliveryMessage(message) {
-    kdebug('');
-    kdebug(`processQ ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    debugging() && kdebug('');
+    debugging() && kdebug(`processQ ${JSON.stringify(message)}`);
+    debugging() && kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
       crankType: 'delivery',
@@ -1302,7 +1309,7 @@ export default function buildKernel(
 
     if (crankResults.terminate) {
       const { vatID, reject, info } = crankResults.terminate;
-      kdebug(`vat terminated: ${JSON.stringify(info)}`);
+      debugging() && kdebug(`vat terminated: ${JSON.stringify(info)}`);
       kernelSlog.terminateVat(vatID, reject, info);
       // this deletes state, rejects promises, notifies vat-admin
       // eslint-disable-next-line @jessie.js/no-nested-await
@@ -1360,9 +1367,9 @@ export default function buildKernel(
   }
 
   async function processAcceptanceMessage(message) {
-    kdebug('');
-    kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
-    kdebug(legibilizeMessage(message));
+    debugging() && kdebug('');
+    debugging() && kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
+    debugging() && kdebug(legibilizeMessage(message));
     kernelSlog.write({
       type: 'crank-start',
       crankType: 'routing',
@@ -1465,8 +1472,9 @@ export default function buildKernel(
         // kernel bug, all of which are fatal to the vat.
         ksc = translators.vatSyscallToKernelSyscall(vatSyscallObject);
       } catch (vaterr) {
-        // prettier-ignore
-        kdebug(`vat ${vatID} terminated: error during translation: ${vaterr} ${JSON.stringify(vatSyscallObject)}`);
+        debugging() &&
+          // prettier-ignore
+          kdebug(`vat ${vatID} terminated: error during translation: ${vaterr} ${JSON.stringify(vatSyscallObject)}`);
         console.log(`error during syscall translation:`, vaterr);
         const problem = 'syscall translation error: prepare to die';
         vatFatalSyscall(vatID, problem);
