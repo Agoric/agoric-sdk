@@ -12,8 +12,10 @@ CHAIN_ID="$2"
 WALLET="$3"
 CHAIN_RPC_NODE="$4"
 KEYRING_DIR="$5"
+SDKROOT="$(cd ../.. >/dev/null && pwd)"
+COSMOSBUILD="${SDKROOT}/golang/cosmos/build/"
 
-SOURCE=$(agd --keyring-dir ${KEYRING_DIR} keys show ${WALLET} -a --keyring-backend=test)
+SOURCE="$("${COSMOSBUILD}/agd" --keyring-dir ${KEYRING_DIR} keys show ${WALLET} -a --keyring-backend=test)"
 
 echo "Funding ${DESTINATION} with 10 BLD and 10 IST"
 
@@ -31,10 +33,10 @@ cat > "/tmp/UNSIGNED_${DESTINATION}.json" << EOF
 EOF
 
 # Sign it
-agd --keyring-dir "${KEYRING_DIR}" tx sign "/tmp/UNSIGNED_${DESTINATION}.json" --from ${WALLET} --output-document "/tmp/SIGNED_${DESTINATION}.json" --chain-id="${CHAIN_ID}" --node "${CHAIN_RPC_NODE}" --yes --keyring-backend=test
+"${COSMOSBUILD}/agd" --keyring-dir "${KEYRING_DIR}" tx sign "/tmp/UNSIGNED_${DESTINATION}.json" --from ${WALLET} --output-document "/tmp/SIGNED_${DESTINATION}.json" --chain-id="${CHAIN_ID}" --node "${CHAIN_RPC_NODE}" --yes --keyring-backend=test
 rm "/tmp/UNSIGNED_${DESTINATION}.json"
 
 # Broadcast it
-agd --keyring-dir "${KEYRING_DIR}" tx broadcast "/tmp/SIGNED_${DESTINATION}.json" --from ${WALLET} --chain-id="${CHAIN_ID}" --node "${CHAIN_RPC_NODE}" --yes --keyring-backend=test
+"${COSMOSBUILD}/agd" --keyring-dir "${KEYRING_DIR}" tx broadcast "/tmp/SIGNED_${DESTINATION}.json" --from ${WALLET} --chain-id="${CHAIN_ID}" --node "${CHAIN_RPC_NODE}" --yes --keyring-backend=test
 rm "/tmp/SIGNED_${DESTINATION}.json"
 
