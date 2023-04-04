@@ -1519,7 +1519,7 @@ function build(
    * @returns {Promise<void>}
    */
   async function stopVat(_disconnectObjectCapData) {
-    Fail`stopVat is no longer supported as of #6650`;
+    console.warn('stopVat is a no-op as of #6650');
   }
 
   /**
