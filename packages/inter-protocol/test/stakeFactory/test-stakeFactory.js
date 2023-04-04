@@ -61,7 +61,7 @@ const micro = harden({
  *     stakeFactory: Installation<typeof import('../../src/stakeFactory/stakeFactory.js').start>,
  *     faker: Installation,
  *     committee: Installation,
- *     contractGovernor: Installation,
+ *     contractGovernor: Installation<import('@agoric/governance/src/contractGovernor').start>,
  *     binaryVoteCounter: Installation,
  *     centralSupply: Installation,
  *   },

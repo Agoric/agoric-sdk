@@ -325,4 +325,4 @@ export { start };
 /** @typedef {Awaited<ReturnType<typeof start>>['publicFacet']} AssetReservePublicFacet */
 /** @typedef {Awaited<ReturnType<typeof start>>['creatorFacet']} AssetReserveCreatorFacet the creator facet for the governor */
 /** @typedef {LimitedCreatorFacet<OriginalAssetReserveCreatorFacet>} AssetReserveLimitedCreatorFacet */
-/** @typedef {GovernedContractFacetAccess<AssetReservePublicFacet,AssetReserveLimitedCreatorFacet>} GovernedAssetReserveFacetAccess */
+/** @typedef {GovernedContractFacetAccess<AssetReservePublicFacet, AssetReserveCreatorFacet>} GovernedAssetReserveFacetAccess */

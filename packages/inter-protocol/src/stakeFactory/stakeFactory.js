@@ -42,7 +42,7 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  * @typedef {{
  *   makeLoanInvitation: () => Promise<Invitation>,
  *   makeReturnAttInvitation: () => Promise<Invitation>,
- * }} StakeFactoryPublic
+ * }} StakeFactoryInnerPublic
  *
  * To take out a loan, get an `AttestationMaker` for your address from
  * the creator of this contract, and use
@@ -72,10 +72,10 @@ import { makeStakeFactoryManager } from './stakeFactoryManager.js';
  * @typedef {{
  *   provideAttestationMaker: (addr: string) => AttestationTool,
  *   makeCollectFeesInvitation: () => Promise<Invitation>,
- * }} StakeFactoryCreator
+ * }} StakeFactoryInnerCreator
  *
- * @type {ContractStartFn<StakeFactoryPublic, ERef<GovernedCreatorFacet<StakeFactoryCreator>>,
- *                        StakeFactoryTerms, StakeFactoryPrivateArgs>}
+ * @param {ZCF<StakeFactoryTerms>} zcf
+ * @param {StakeFactoryPrivateArgs} privateArgs
  */
 export const start = async (
   zcf,
@@ -204,7 +204,7 @@ export const start = async (
     }),
   );
 
-  /** @type {ERef<StakeFactoryCreator>} */
+  /** @type {ERef<StakeFactoryInnerCreator>} */
   const creatorFacet = Far('stakeFactory creator', {
     provideAttestationMaker: att.creatorFacet.provideAttestationTool,
     makeCollectFeesInvitation: () => {

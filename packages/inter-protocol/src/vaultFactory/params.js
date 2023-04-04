@@ -26,9 +26,9 @@ export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
 export const ENDORSED_UI_KEY = 'EndorsedUI';
 
 /**
- * @param {Amount} electorateInvitationAmount
- * @param {Amount} minInitialDebt
- * @param {Amount} shortfallInvitationAmount
+ * @param {Amount<'set'>} electorateInvitationAmount
+ * @param {Amount<'nat'>} minInitialDebt
+ * @param {Amount<'set'>} shortfallInvitationAmount
  * @param {string} endorsedUi
  */
 const makeVaultDirectorParams = (
@@ -133,14 +133,14 @@ harden(makeVaultDirectorParamManager);
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
  * @param {{
  *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
- *   electorateInvitationAmount: Amount,
- *   minInitialDebt: Amount,
+ *   electorateInvitationAmount: Amount<'set'>,
+ *   minInitialDebt: Amount<'nat'>,
  *   bootstrapPaymentValue: bigint,
  *   priceAuthority: ERef<PriceAuthority>,
  *   timer: ERef<import('@agoric/time/src/types').TimerService>,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   loanTiming: LoanTiming,
- *   shortfallInvitationAmount: Amount,
+ *   shortfallInvitationAmount: Amount<'set'>,
  *   endorsedUi?: string,
  * }} opts
  */

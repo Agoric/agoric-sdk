@@ -125,7 +125,7 @@ export const installPuppetGovernance = (zoe, produce) => {
  *
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet>} electorateCreator
- * @param {ERef<GovernedContractFacetAccess<{},{}>>} stakeFactoryGovernorCreatorFacet
+ * @param {ERef<GovernedContractFacetAccess>} stakeFactoryGovernorCreatorFacet
  * @param {Installation} counter
  */
 export const makeVoterTool = async (
