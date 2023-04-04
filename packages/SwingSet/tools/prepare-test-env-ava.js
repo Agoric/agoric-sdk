@@ -13,6 +13,8 @@ import '@endo/ses-ava/exported.js';
 import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';
 
+export { simulateIncarnation } from './prepare-test-env.js';
+
 /** @type {typeof rawTest} */
 // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
 // @ts-ignore XXX https://github.com/endojs/endo/issues/1235
