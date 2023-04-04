@@ -19,6 +19,7 @@ import {
 import { getNetworkConfig } from '../lib/rpc.js';
 import {
   getCurrent,
+  makeParseAmount,
   makeWalletUtils,
   outputActionAndHint,
   sendAction,
@@ -43,6 +44,7 @@ export const KW = /** @type {const} */ {
 
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
+/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}  BidSpec */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
@@ -120,7 +122,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
 
   /**
    * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
-   *        { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+   *        { offerArgs: BidSpec}}
    */
   // @ts-expect-error dynamic cast
   const bid = offerStatus;
@@ -131,7 +133,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
  * Format amounts etc. in a BidSpec OfferStatus
  *
  * @param {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}} bid
+ *         { offerArgs: BidSpec}} bid
  * @param {import('agoric/src/lib/format.js').AssetDescriptor[]} assets
  */
 export const fmtBid = (bid, assets) => {
@@ -302,9 +304,9 @@ For example:
 
   /**
    * @typedef {{
-   *   give: number,
-   *   collateralBrand: string,
-   *   want: number,
+   *   give: string,
+   *   desiredBuy: string,
+   *   wantMinimum?: string,
    *   offerId: string,
    *   from: string,
    *   generateOnly?: boolean,
@@ -319,9 +321,17 @@ For example:
         'wallet address literal or name',
         normalizeAddress,
       )
-      .requiredOption('--give <number>', 'IST to bid', Number)
-      .option('--want <number>', 'max Collateral wanted', Number, 1_000_000)
-      .option('--collateral-brand <string>', 'Collateral brand name', 'IbcATOM')
+      .requiredOption('--give <amount>', 'IST to bid')
+      .option(
+        '--desiredBuy <amount>',
+        'max Collateral wanted',
+        String,
+        '1_000_000IbcATOM',
+      )
+      .option(
+        '--wantMinimum <amount>',
+        'only transact a bid that supplies this much collateral',
+      )
       .option('--offer-id <string>', 'Offer id', String, `bid-${now()}`)
       .option('--generate-only', 'print wallet action only');
 
@@ -334,12 +344,16 @@ For example:
        *   price: number,
        * }} opts
        */
-      async ({ collateralBrand, generateOnly, ...opts }) => {
+      async ({ generateOnly, ...opts }) => {
         const tools = await tryMakeUtils();
 
+        const parseAmount = makeParseAmount(
+          tools.agoricNames,
+          msg => new InvalidArgumentError(msg),
+        );
         const offer = Offers.auction.Bid(tools.agoricNames.brand, {
-          collateralBrandKey: collateralBrand,
           ...opts,
+          parseAmount,
         });
 
         if (generateOnly) {
@@ -377,12 +391,16 @@ For example:
        *   discount: number,
        * }} opts
        */
-      async ({ collateralBrand, generateOnly, ...opts }) => {
+      async ({ generateOnly, ...opts }) => {
         const tools = await tryMakeUtils();
 
+        const parseAmount = makeParseAmount(
+          tools.agoricNames,
+          msg => new InvalidArgumentError(msg),
+        );
         const offer = Offers.auction.Bid(tools.agoricNames.brand, {
-          collateralBrandKey: collateralBrand,
           ...opts,
+          parseAmount,
         });
         if (generateOnly) {
           outputActionAndHint(

@@ -8,6 +8,7 @@ import { Far } from '@endo/far';
 import { boardSlottingMarshaller } from '../src/lib/rpc.js';
 
 import { fmtBid, makeInterCommand, KW } from '../src/commands/inter.js';
+import { makeParseAmount } from '../src/lib/wallet.js';
 
 const { entries } = Object;
 
@@ -242,9 +243,35 @@ const govWallets = {
   [govKeyring.gov2]: { current: {} },
 };
 
+test('amount parsing', t => {
+  const parseAmount = makeParseAmount(agoricNames);
+  const b = topBrands;
+
+  t.deepEqual(parseAmount('1ATOM'), { brand: b.ATOM, value: 1_000_000n });
+  t.deepEqual(
+    parseAmount('10_000ATOM'),
+    {
+      brand: b.ATOM,
+      value: 10_000_000_000n,
+    },
+    'handle underscores',
+  );
+  t.deepEqual(
+    parseAmount('1.5ATOM'),
+    { brand: b.ATOM, value: 1_500_000n },
+    'handle decimal',
+  );
+
+  t.throws(() => parseAmount('5'), { message: 'invalid amount: 5' });
+  t.throws(() => parseAmount('50'), { message: 'invalid amount: 50' });
+  t.throws(() => parseAmount('5.5.5ATOM'), {
+    message: 'invalid amount: 5.5.5ATOM',
+  });
+});
+
 test('inter bid place by-price: printed offer is correct', async t => {
   const argv =
-    'node inter bid by-price --give 50 --price 9 --from gov1 --generate-only'
+    'node inter bid by-price --give 50IST --price 9 --from gov1 --generate-only'
       .trim()
       .split(' ');
 
