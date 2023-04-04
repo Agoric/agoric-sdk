@@ -446,6 +446,7 @@ export default function buildKernel(
    * @param {DeliveryStatus} status
    * @param {boolean} decrementReapCount
    * @param {MeterID} [meterID]
+   * @returns {CrankResults}
    */
   function deliveryCrankResults(vatID, status, decrementReapCount, meterID) {
     let meterUnderrun = false;
@@ -802,7 +803,6 @@ export default function buildKernel(
   }
 
   /**
-   *
    * @param {RunQueueEventUpgradeVat} message
    * @returns {Promise<CrankResults>}
    */
@@ -818,6 +818,7 @@ export default function buildKernel(
       return NO_DELIVERY_CRANK_RESULTS; // vat terminated already
     }
     const { meterID } = vatInfo;
+    let computrons;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const disconnectObject = {
       name: 'vatUpgraded',
@@ -825,72 +826,82 @@ export default function buildKernel(
       incarnationNumber: vatKeeper.getIncarnationNumber(),
     };
     const disconnectionCapData = kser(disconnectObject);
-    /** @type { import('../types-external.js').KernelDeliveryStopVat } */
-    const stopVatKD = harden(['stopVat', disconnectionCapData]);
-    const stopVatVD = vatWarehouse.kernelDeliveryToVatDelivery(
-      vatID,
-      stopVatKD,
-    );
-    const stopVatStatus = await deliverAndLogToVat(vatID, stopVatKD, stopVatVD);
-    const stopVatResults = deliveryCrankResults(vatID, stopVatStatus, false);
-
-    // We don't meter stopVat, since no user code is running, but we
-    // still report computrons to the runPolicy
-    let { computrons } = stopVatResults; // BigInt or undefined
-    if (computrons !== undefined) {
-      assert.typeof(computrons, 'bigint');
-    }
 
     /**
-     * Make a method-arguments structure representing failure
-     * for vat-vat-admin.js vatUpgradeCallback().
+     * Terminate the vat and translate internal-delivery results into
+     * abort-without-termination results for the upgrade delivery.
      *
-     * @param {SwingSetCapData} _errorCapData
-     * @returns {RawMethargs}
+     * @param {CrankResults} badDeliveryResults
+     * @param {SwingSetCapData} errorCapData
+     * @returns {Promise<CrankResults>}
      */
-    const makeFailureMethargs = _errorCapData => {
-      insistCapData(_errorCapData); // kser(Error)
-      // const error = kunser(_errorCD)
-      // actually we shouldn't reveal the details, so instead we do:
-      const error = Error('vat-upgrade failure');
-      return ['vatUpgradeCallback', [upgradeID, false, error]];
-    };
-
-    // TODO: if/when we implement vat pause/suspend, and if
-    // deliveryCrankResults changes to not use .terminate to indicate
-    // a problem, this should change to match: where we would normally
-    // pause/suspend a vat for a delivery error, here we want to
-    // unwind the upgrade.
-
-    if (stopVatResults.terminate) {
+    const abortUpgrade = async (badDeliveryResults, errorCapData) => {
       // get rid of the worker, so the next delivery to this vat will
       // re-create one from the previous state
       // eslint-disable-next-line @jessie.js/no-nested-await
       await vatWarehouse.stopWorker(vatID);
 
-      // notify vat-admin of the failed upgrade
-      const vatAdminMethargs = makeFailureMethargs(
-        stopVatResults.terminate.info,
-      );
+      // notify vat-admin of the failed upgrade without revealing error details
+      insistCapData(errorCapData);
+      // const error = kunser(errorCapData);
+      const error = Error('vat-upgrade failure');
+      /** @type {RawMethargs} */
+      const vatAdminMethargs = [
+        'vatUpgradeCallback',
+        [upgradeID, false, error],
+      ];
 
-      // we still report computrons to the runPolicy
       const results = harden({
-        ...stopVatResults,
-        computrons,
+        ...badDeliveryResults,
+        computrons, // still report computrons
         abort: true, // always unwind
         consumeMessage: true, // don't repeat the upgrade
         terminate: undefined, // do *not* terminate the vat
         vatAdminMethargs,
       });
       return results;
-    }
+    };
 
-    // stopVat succeeded, now we finish cleanup on behalf of the worker
+    // cleanup on behalf of the worker
+    // This used to be handled by a stopVat delivery to the vat itself,
+    // but the implementation of that was cut to the bone
+    // in commits like 91480dee8e48ae26c39c420febf73b93deba6ea5
+    // basically reverting 1cfbeaa3c925d0f8502edfb313ecb12a1cab5eac
+    // and then ultimately moved to the kernel in a MUCH diminished form
+    // (see #5342 and #6650, and testUpgrade in
+    // {@link ../../test/upgrade/test-upgrade.js}).
+    // We hope to eventually add back correct sophisticated logic
+    // by e.g. having liveslots sweep the database when restoring a vat.
 
-    // TODO: send BOYD so the terminating vat has one last chance to clean
+    // send BOYD so the terminating vat has one last chance to clean
     // up, drop imports, and delete durable data.
-    // If a vat is so broken it can't do BOYD, we can make that optional.
-    // https://github.com/Agoric/agoric-sdk/issues/7001
+    // If a vat is so broken it can't do BOYD, we can make this optional.
+    /** @type { import('../types-external.js').KernelDeliveryBringOutYourDead } */
+    const boydKD = harden(['bringOutYourDead']);
+    const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
+    const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
+    const boydResults = deliveryCrankResults(vatID, boydStatus, false);
+
+    // we don't meter bringOutYourDead since no user code is running, but we
+    // still report computrons to the runPolicy
+    computrons = addComputrons(computrons, boydResults.computrons);
+
+    // In the unexpected event that there is a problem during this
+    // upgrade-internal BOYD, the appropriate response isn't fully
+    // clear. We currently opt to translate a `terminate` result into a
+    // non-terminating `abort` that unwinds the upgrade delivery, and to
+    // ignore a non-terminate `abort` result. This is expected to change
+    // in the future, especially if we ever need some kind of emergency/
+    // manual upgrade (which might involve something like throwing an
+    // error to prompt a kernel panic if the bad vat is marked critical).
+    // There's a good analysis at
+    // https://github.com/Agoric/agoric-sdk/pull/7244#discussion_r1153633902
+    if (boydResults.terminate) {
+      const { info: errorCapData } = boydResults.terminate;
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const results = await abortUpgrade(boydResults, errorCapData);
+      return results;
+    }
 
     // reject all promises for which the vat was decider
     for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
@@ -942,20 +953,10 @@ export default function buildKernel(
     computrons = addComputrons(computrons, startVatResults.computrons);
 
     if (startVatResults.terminate) {
-      // unwind just like above
+      // abort and unwind just like above
+      const { info: errorCapData } = startVatResults.terminate;
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await vatWarehouse.stopWorker(vatID);
-      const vatAdminMethargs = makeFailureMethargs(
-        startVatResults.terminate.info,
-      );
-      const results = harden({
-        ...startVatResults,
-        computrons,
-        abort: true, // always unwind
-        consumeMessage: true, // don't repeat the upgrade
-        terminate: undefined, // do *not* terminate the vat
-        vatAdminMethargs,
-      });
+      const results = await abortUpgrade(startVatResults, errorCapData);
       return results;
     }
 

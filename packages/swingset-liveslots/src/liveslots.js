@@ -16,7 +16,6 @@ import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
-import { releaseOldState } from './stop-vat.js';
 
 const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
@@ -66,7 +65,7 @@ function build(
   }
 
   let didStartVat = false;
-  let didStopVat = false;
+  const didStopVat = false;
 
   const outstandingProxies = new WeakSet();
 
@@ -1520,42 +1519,11 @@ function build(
   }
 
   /**
-   * @param { import('./types').SwingSetCapData } disconnectObjectCapData
+   * @param { import('./types').SwingSetCapData } _disconnectObjectCapData
    * @returns {Promise<void>}
    */
-  async function stopVat(disconnectObjectCapData) {
-    insistCapData(disconnectObjectCapData);
-    assert(disconnectObjectCapData.slots.length === 0);
-    assert(
-      !relaxDurabilityRules,
-      'stopVat not available when relaxDurabilityRules is true',
-    );
-
-    assert(didStartVat);
-    assert(!didStopVat);
-    didStopVat = true;
-
-    try {
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      await releaseOldState({
-        m,
-        disconnectObjectCapData,
-        syscall,
-        exportedRemotables,
-        addToPossiblyDeadSet,
-        slotToVal,
-        valToSlot,
-        dropExports,
-        retireExports,
-        vrm,
-        collectionManager,
-        bringOutYourDead,
-        vreffedObjectRegistry,
-      });
-    } catch (e) {
-      console.warn(`-- error during stopVat()`, e);
-      throw e;
-    }
+  async function stopVat(_disconnectObjectCapData) {
+    console.warn('stopVat is a no-op as of #6650');
   }
 
   /**
