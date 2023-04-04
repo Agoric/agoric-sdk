@@ -881,16 +881,27 @@ export default function buildKernel(
     const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
     const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
     const boydResults = deliveryCrankResults(vatID, boydStatus, false);
-    (!boydResults.abort && !boydResults.terminate) ||
-      Fail`Unexpected abort/terminate result from upgrade-internal bringOutYourDead: ${boydResults}`;
 
     // we don't meter bringOutYourDead since no user code is running, but we
     // still report computrons to the runPolicy
     computrons = addComputrons(computrons, boydResults.computrons);
 
-    // TODO: if/when we implement vat pause/suspend, and if
-    // deliveryCrankResults changes to not use .terminate to indicate
-    // a problem, we might want to unwind the upgrade here.
+    // In the unexpected event that there is a problem during this
+    // upgrade-internal BOYD, the appropriate response isn't fully
+    // clear. We currently opt to translate a `terminate` result into a
+    // non-terminating `abort` that unwinds the upgrade delivery, and to
+    // ignore a non-terminate `abort` result. This is expected to change
+    // in the future, especially if we ever need some kind of emergency/
+    // manual upgrade (which might involve something like throwing an
+    // error to prompt a kernel panic if the bad vat is marked critical).
+    // There's a good analysis at
+    // https://github.com/Agoric/agoric-sdk/pull/7244#discussion_r1153633902
+    if (boydResults.terminate) {
+      const { info: errorCapData } = boydResults.terminate;
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      const results = await abortUpgrade(boydResults, errorCapData);
+      return results;
+    }
 
     // reject all promises for which the vat was decider
     for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
@@ -942,7 +953,7 @@ export default function buildKernel(
     computrons = addComputrons(computrons, startVatResults.computrons);
 
     if (startVatResults.terminate) {
-      // abort and unwind the upgrade
+      // abort and unwind just like above
       const { info: errorCapData } = startVatResults.terminate;
       // eslint-disable-next-line @jessie.js/no-nested-await
       const results = await abortUpgrade(startVatResults, errorCapData);
