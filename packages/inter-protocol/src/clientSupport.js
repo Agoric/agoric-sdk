@@ -209,7 +209,8 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  *   offerId: string,
  *   collateralBrandKey: string,
  *   give: number,
- *   want: number,
+ *   desiredBuy: number,
+ *   wantMinimum?: number,
  * } & ({
  *   price: number,
  * } | {
@@ -218,14 +219,18 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
  */
 const makeBidOffer = (brands, opts) => {
-  const give = {
-    Currency: AmountMath.make(brands.IST, scaleDecimals(opts.give)),
-  };
   /** @type {Brand<'nat'>} */
   // @ts-expect-error XXX how to narrow AssetKind?
   const collateralBrand = brands[opts.collateralBrandKey];
+  const makeCollateral = x =>
+    AmountMath.make(collateralBrand, scaleDecimals(x));
 
-  const wantAmt = AmountMath.make(collateralBrand, scaleDecimals(opts.want));
+  const proposal = {
+    give: { Currency: AmountMath.make(brands.IST, scaleDecimals(opts.give)) },
+    ...(opts.wantMinimum
+      ? { want: { Collateral: makeCollateral(opts.wantMinimum) } }
+      : {}),
+  };
 
   const bounds = (x, lo, hi) => {
     assert(x >= lo && x <= hi);
@@ -236,13 +241,12 @@ const makeBidOffer = (brands, opts) => {
   const offerArgs =
     'price' in opts
       ? {
-          // XXX "targetPurchase" or "max" might be better names
-          // for what this does, but for now, here we are.
-          want: wantAmt,
+          // TODO: update when contract uses "desiredBuy"
+          want: makeCollateral(opts.desiredBuy),
           offerPrice: parseRatio(opts.price, brands.IST, collateralBrand),
         }
       : {
-          want: wantAmt,
+          want: makeCollateral(opts.desiredBuy),
           offerBidScaling: parseRatio(
             (1 - bounds(opts.discount, -1, 1)).toFixed(2),
             brands.IST,
@@ -258,7 +262,7 @@ const makeBidOffer = (brands, opts) => {
       instancePath: ['auctioneer'],
       callPipe: [['makeBidInvitation', [collateralBrand]]],
     },
-    proposal: { give },
+    proposal,
     offerArgs,
   };
   return offerSpec;

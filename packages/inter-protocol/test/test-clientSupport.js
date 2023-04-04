@@ -29,7 +29,7 @@ test('Offers.auction.Bid', async t => {
         give: 4.56,
         collateralBrandKey: 'ATOM',
         discount: cliArg,
-        want: 10_000,
+        desiredBuy: 10_000,
       }),
       {
         id: 'foo1',
@@ -57,7 +57,7 @@ test('Offers.auction.Bid', async t => {
       give: 4.56,
       collateralBrandKey: 'ATOM',
       price,
-      want: 10_000,
+      desiredBuy: 10_000,
     }),
     {
       id: 'by-price2',
@@ -77,7 +77,8 @@ test('Offers.auction.Bid', async t => {
   t.deepEqual(
     Offers.auction.Bid(brands, {
       offerId: 'by-price2',
-      want: 1.23,
+      desiredBuy: 10_000,
+      wantMinimum: 1.23,
       give: 4.56,
       collateralBrandKey: 'ATOM',
       price,
@@ -91,10 +92,11 @@ test('Offers.auction.Bid', async t => {
       },
       proposal: {
         give: { Currency: ist.make(4_560_000n) },
+        want: { Collateral: atom.make(1_230_000n) },
       },
       offerArgs: {
         offerPrice,
-        want: atom.make(1_230_000n),
+        want: atom.make(10_000_000_000n),
       },
     },
     'optional want',
