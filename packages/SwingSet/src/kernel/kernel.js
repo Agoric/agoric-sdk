@@ -446,6 +446,7 @@ export default function buildKernel(
    * @param {DeliveryStatus} status
    * @param {boolean} decrementReapCount
    * @param {MeterID} [meterID]
+   * @returns {CrankResults}
    */
   function deliveryCrankResults(vatID, status, decrementReapCount, meterID) {
     let meterUnderrun = false;
@@ -817,6 +818,7 @@ export default function buildKernel(
       return NO_DELIVERY_CRANK_RESULTS; // vat terminated already
     }
     const { meterID } = vatInfo;
+    let computrons;
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const disconnectObject = {
       name: 'vatUpgraded',
@@ -826,18 +828,38 @@ export default function buildKernel(
     const disconnectionCapData = kser(disconnectObject);
 
     /**
-     * Make a method-arguments structure representing failure
-     * for vat-vat-admin.js vatUpgradeCallback().
+     * Terminate the vat and translate internal-delivery results into
+     * abort-without-termination results for the upgrade delivery.
      *
-     * @param {SwingSetCapData} _errorCapData
-     * @returns {RawMethargs}
+     * @param {CrankResults} badDeliveryResults
+     * @param {SwingSetCapData} errorCapData
+     * @returns {Promise<CrankResults>}
      */
-    const makeFailureMethargs = _errorCapData => {
-      insistCapData(_errorCapData); // kser(Error)
-      // const error = kunser(_errorCD)
-      // actually we shouldn't reveal the details, so instead we do:
+    const abortUpgrade = async (badDeliveryResults, errorCapData) => {
+      // get rid of the worker, so the next delivery to this vat will
+      // re-create one from the previous state
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await vatWarehouse.stopWorker(vatID);
+
+      // notify vat-admin of the failed upgrade without revealing error details
+      insistCapData(errorCapData);
+      // const error = kunser(errorCapData);
       const error = Error('vat-upgrade failure');
-      return ['vatUpgradeCallback', [upgradeID, false, error]];
+      /** @type {RawMethargs} */
+      const vatAdminMethargs = [
+        'vatUpgradeCallback',
+        [upgradeID, false, error],
+      ];
+
+      const results = harden({
+        ...badDeliveryResults,
+        computrons, // still report computrons
+        abort: true, // always unwind
+        consumeMessage: true, // don't repeat the upgrade
+        terminate: undefined, // do *not* terminate the vat
+        vatAdminMethargs,
+      });
+      return results;
     };
 
     // cleanup on behalf of the worker
@@ -864,8 +886,7 @@ export default function buildKernel(
 
     // we don't meter bringOutYourDead since no user code is running, but we
     // still report computrons to the runPolicy
-    let { computrons } = boydResults;
-    computrons === undefined || assert.typeof(computrons, 'bigint');
+    computrons = addComputrons(computrons, boydResults.computrons);
 
     // TODO: if/when we implement vat pause/suspend, and if
     // deliveryCrankResults changes to not use .terminate to indicate
@@ -921,20 +942,10 @@ export default function buildKernel(
     computrons = addComputrons(computrons, startVatResults.computrons);
 
     if (startVatResults.terminate) {
-      // unwind just like above
+      // abort and unwind the upgrade
+      const { info: errorCapData } = startVatResults.terminate;
       // eslint-disable-next-line @jessie.js/no-nested-await
-      await vatWarehouse.stopWorker(vatID);
-      const vatAdminMethargs = makeFailureMethargs(
-        startVatResults.terminate.info,
-      );
-      const results = harden({
-        ...startVatResults,
-        computrons,
-        abort: true, // always unwind
-        consumeMessage: true, // don't repeat the upgrade
-        terminate: undefined, // do *not* terminate the vat
-        vatAdminMethargs,
-      });
+      const results = await abortUpgrade(startVatResults, errorCapData);
       return results;
     }
 
