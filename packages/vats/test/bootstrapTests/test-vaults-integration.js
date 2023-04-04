@@ -44,11 +44,18 @@ const makeDefaultTestContext = async t => {
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
+  // wait for timerBrand
+  const hub = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const ct = await EV(hub).lookup('timerBrand', 'chain');
+  console.log('@@@@@', ct);
+
   // has to be late enough for agoricNames data to have been published
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
     swingsetTestKit.storage,
   );
   agoricNamesRemotes.brand.IbcATOM || Fail`IbcATOM missing from agoricNames`;
+  agoricNamesRemotes.timerBrand.chain ||
+    Fail`timerBrand missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const walletFactoryDriver = await makeWalletFactoryDriver(
@@ -312,7 +319,7 @@ test('propose change to auction governance param', async t => {
   t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
 
   const auctioneer = agoricNamesRemotes.instance.auctioneer;
-  const timerBrand = agoricNamesRemotes.brand.timer;
+  const timerBrand = agoricNamesRemotes.timerBrand.chain;
   assert(timerBrand);
 
   t.log('propose param change');

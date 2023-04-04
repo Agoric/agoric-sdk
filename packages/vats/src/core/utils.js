@@ -33,7 +33,6 @@ export const agoricNamesReserved = harden({
     Attestation: 'Agoric lien attestation',
     AUSD: 'Agoric bridged USDC',
     Invitation: 'Zoe invitation',
-    timer: 'timer service',
   },
   vbankAsset: {
     [Stake.denom]: Stake.proposedName,
@@ -77,6 +76,9 @@ export const agoricNamesReserved = harden({
   },
   oracleBrand: {
     USD: 'US Dollar',
+  },
+  timerBrand: {
+    chain: 'chain timer brand',
   },
   uiConfig: {
     VaultFactory: 'vault factory',

@@ -151,27 +151,32 @@
  *     'Treasury' | 'reserve' | 'reserveGovernor' | 'Pegasus',
  *   oracleBrand:
  *     'USD',
+ *   timerBrand:
+ *     'chain',
  *   uiConfig: |
  *     'VaultFactory' |
  *     'Treasury' // compat.
  * }} WellKnownName
  *
+ * @typedef {import('@agoric/time/src/types').TimerBrand} TimerBrand
  * @typedef {{
  *   issuer: {
  *     produce: Record<WellKnownName['issuer'], Producer<Issuer>>,
  *     consume: Record<WellKnownName['issuer'], Promise<Issuer>> & { BLD: Promise<Issuer<'nat'>>, IST: Promise<Issuer<'nat'>> },
  *   },
  *   brand: {
- *     produce: Record<WellKnownName['issuer'], Producer<Brand>> &
- *              { timer: Producer<import('@agoric/time').TimerBrand> },
+ *     produce: Record<WellKnownName['issuer'], Producer<Brand>>,
  *     consume: Record<WellKnownName['issuer'], Promise<Brand>> &
- *              { BLD: Promise<Brand<'nat'>>, IST: Promise<Brand<'nat'>>,
- *                timer: Producer<import('@agoric/time').TimerBrand> },
+ *              { BLD: Promise<Brand<'nat'>>, IST: Promise<Brand<'nat'>> },
  *   },
  *   oracleBrand: {
  *     produce: Record<WellKnownName['oracleBrand'], Producer<Brand>>,
  *     consume: Record<WellKnownName['oracleBrand'], Promise<Brand>>,
  *   },
+ *   timerBrand: {
+ *     produce: Record<WellKnownName['timerBrand'], Producer<TimerBrand>>,
+ *     consume: Record<WellKnownName['timerBrand'], Promise<TimerBrand>>,
+ *    },
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {

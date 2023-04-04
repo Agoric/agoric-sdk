@@ -19,6 +19,7 @@
  *   brand: Record<string, Brand>,
  *   instance: Record<string, Instance>,
  *   vbankAsset: Record<string, VBankAssetDetail>,
+ *   timerBrand: Record<string, import('@agoric/time').TimerBrand>,
  *   reverse: Record<string, string>,
  * }} AgoricNamesRemotes
  */
@@ -45,7 +46,7 @@ export const makeAgoricNamesRemotesFromFakeStorage = fakeStorageKit => {
 
   const reverse = {};
   // TODO support vbankAsset which must recur
-  const entries = ['brand', 'instance'].map(kind => {
+  const entries = ['brand', 'instance', 'timerBrand'].map(kind => {
     const key = `published.agoricNames.${kind}`;
 
     const values = data.get(key);
