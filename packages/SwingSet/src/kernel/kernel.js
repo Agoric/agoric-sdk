@@ -19,6 +19,10 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
+import {
+  makeWorkerOptions,
+  updateWorkerOptions,
+} from '../lib/workerOptions.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
 import { makeKernelSyscallHandler } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
@@ -94,11 +98,11 @@ export default function buildKernel(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize,
+    bundleHandler,
   } = kernelEndowments;
   deviceEndowments = { ...deviceEndowments }; // copy so we can modify
   const {
     verbose,
-    defaultManagerType = 'local',
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
@@ -229,7 +233,7 @@ export default function buildKernel(
   // error at the first opportunity
   let kernelPanic = null;
 
-  /** @type {(problem: unknown, err?: Error) => void } */
+  /** @type {import('../types-internal.js').KernelPanic} */
   function panic(problem, err = undefined) {
     console.error(`##### KERNEL PANIC: ${problem} #####`);
     kernelPanic = err || new Error(`kernel panic ${problem}`);
@@ -684,15 +688,16 @@ export default function buildKernel(
     insistCapData(vatParameters);
     kernelKeeper.addDynamicVatID(vatID);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const options = { ...dynamicOptions };
-    if (!dynamicOptions.managerType) {
-      options.managerType = kernelKeeper.getDefaultManagerType();
-    }
-    if (!dynamicOptions.reapInterval) {
-      options.reapInterval = kernelKeeper.getDefaultReapInterval();
-    }
-    vatKeeper.setSourceAndOptions(source, options);
-    vatKeeper.initializeReapCountdown(options.reapInterval);
+    const {
+      managerType = kernelKeeper.getDefaultManagerType(),
+      reapInterval = kernelKeeper.getDefaultReapInterval(),
+      ...otherOptions
+    } = dynamicOptions;
+    const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
+    /** @type {import('../types-internal.js').RecordedVatOptions} */
+    const vatOptions = harden({ workerOptions, reapInterval, ...otherOptions });
+    vatKeeper.setSourceAndOptions(source, vatOptions);
+    vatKeeper.initializeReapCountdown(reapInterval);
 
     // createDynamicVat makes the worker, installs lockdown and
     // supervisor, but does not load the vat bundle yet. It can fail
@@ -924,9 +929,14 @@ export default function buildKernel(
     // transcript or snapshot and prime everything for the next incarnation.
 
     await vatWarehouse.resetWorker(vatID);
+    // update source and bundleIDs, store back to vat metadata
     const source = { bundleID };
-    const { options } = vatKeeper.getSourceAndOptions();
-    vatKeeper.setSourceAndOptions(source, options);
+    const origOptions = vatKeeper.getOptions();
+    const workerOptions = await updateWorkerOptions(origOptions.workerOptions, {
+      bundleHandler,
+    });
+    const vatOptions = harden({ ...origOptions, workerOptions });
+    vatKeeper.setSourceAndOptions(source, vatOptions);
     const incarnationNumber = vatKeeper.incIncarnationNumber();
     // TODO: decref the bundleID once setSourceAndOptions increfs it
 
@@ -1426,7 +1436,6 @@ export default function buildKernel(
     vatEndowments,
     startXSnap,
     gcTools,
-    defaultManagerType,
     kernelSlog,
   });
 
@@ -1519,13 +1528,16 @@ export default function buildKernel(
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
-    panic,
     buildVatSyscallHandler,
-    vatAdminRootKref,
     overrideVatManagerOptions,
   });
 
-  vatWarehouse = makeVatWarehouse(kernelKeeper, vatLoader, warehousePolicy);
+  vatWarehouse = makeVatWarehouse(
+    kernelKeeper,
+    vatLoader,
+    panic,
+    warehousePolicy,
+  );
 
   /**
    * Create a dynamically generated vat for testing purposes.  Such vats are
@@ -1552,34 +1564,38 @@ export default function buildKernel(
     vatParameters = {},
     creationOptions = {},
   ) {
-    const {
-      bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-      ...actualCreationOptions
-    } = creationOptions;
+    !kernelKeeper.hasVatWithName(name) || Fail`vat ${name} already exists`;
     typeof setup === 'function' ||
       Fail`setup is not a function, rather ${setup}`;
-    assertKnownOptions(actualCreationOptions, [
+    assertKnownOptions(creationOptions, [
+      'bundleID',
       'enablePipelining',
       'metered',
       'reapInterval',
-      'managerType',
     ]);
-    !kernelKeeper.hasVatWithName(name) || Fail`vat ${name} already exists`;
+    const {
+      bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+      reapInterval = 'never',
+      ...otherOptions
+    } = creationOptions;
 
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
-    if (!actualCreationOptions.reapInterval) {
-      actualCreationOptions.reapInterval = 'never';
-    }
-    if (!actualCreationOptions.managerType) {
-      actualCreationOptions.managerType = 'local';
-    }
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.setSourceAndOptions({ bundleID }, actualCreationOptions);
-    vatKeeper.initializeReapCountdown(actualCreationOptions.reapInterval);
+    const workerOptions = await makeWorkerOptions('local', bundleHandler);
+    /** @type {import('../types-internal.js').RecordedVatOptions} */
+    const vatOptions = harden({
+      name,
+      workerOptions,
+      reapInterval,
+      ...otherOptions,
+    });
 
-    await vatWarehouse.loadTestVat(vatID, setup, actualCreationOptions);
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    vatKeeper.setSourceAndOptions({ bundleID }, vatOptions);
+    vatKeeper.initializeReapCountdown(reapInterval);
+
+    await vatWarehouse.loadTestVat(vatID, setup, vatOptions);
 
     const vpCapData = kser(vatParameters);
     /** @type { RunQueueEventStartVat } */

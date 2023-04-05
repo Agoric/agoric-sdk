@@ -7,18 +7,26 @@ import { xsnap, recordXSnap } from '@agoric/xsnap';
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 
 /**
- * @param {{ moduleFormat: string, source: string }[]} bundles
  * @param {{
- *   snapStore?: SnapStore,
+ *   bundleHandler: import('./bundle-handler.js').BundleHandler,
+ *   snapStore?: import('@agoric/swing-store').SnapStore,
  *   spawn: typeof import('child_process').spawn
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
+ *   overrideBundles?: import('../types-external.js').Bundle[],
  * }} options
  */
-export function makeStartXSnap(bundles, options) {
+export function makeStartXSnap(options) {
   // our job is to simply curry some authorities and settings into the
   // 'startXSnap' function we return
-  const { snapStore, spawn, debug = false, workerTraceRootPath } = options;
+  const {
+    spawn,
+    bundleHandler, // required unless bundleIDs is empty
+    snapStore,
+    workerTraceRootPath,
+    overrideBundles,
+    debug = false,
+  } = options;
 
   let doXSnap = xsnap;
 
@@ -32,7 +40,7 @@ export function makeStartXSnap(bundles, options) {
     };
     doXSnap = opts => {
       const workerTraceDir = makeNextTraceDir();
-      console.log('SwingSet xs-worker tracing:', { workerTraceDir });
+      console.log('SwingSet xsnap worker tracing:', { workerTraceDir });
       fs.mkdirSync(workerTraceDir, { recursive: true });
       return recordXSnap(opts, workerTraceDir, {
         writeFileSync: fs.writeFileSync,
@@ -53,16 +61,16 @@ export function makeStartXSnap(bundles, options) {
   /**
    * @param {string} vatID
    * @param {string} name
-   * @param {(request: Uint8Array) => Promise<Uint8Array>} handleCommand
-   * @param {boolean} [metered]
-   * @param {boolean} [reload]
+   * @param {object} details
+   * @param {import('../types-external.js').BundleID[]} details.bundleIDs
+   * @param {(request: Uint8Array) => Promise<Uint8Array>} details.handleCommand
+   * @param {boolean} [details.metered]
+   * @param {boolean} [details.reload]
    */
   async function startXSnap(
     vatID,
     name,
-    handleCommand,
-    metered,
-    reload = false,
+    { bundleIDs, handleCommand, metered, reload = false },
   ) {
     const meterOpts = metered ? {} : { meteringLimit: 0 };
     if (snapStore && reload) {
@@ -82,10 +90,17 @@ export function makeStartXSnap(bundles, options) {
     // console.log('fresh xsnap', { snapStore: snapStore });
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
+    const bundlePs = bundleIDs.map(id => bundleHandler.getBundle(id));
+    let bundles = await Promise.all(bundlePs);
+    if (overrideBundles) {
+      bundles = overrideBundles; // replace the usual bundles
+    }
+
     for (const bundle of bundles) {
-      bundle.moduleFormat === 'getExport' ||
-        bundle.moduleFormat === 'nestedEvaluate' ||
-        Fail`unexpected: ${bundle.moduleFormat}`;
+      const { moduleFormat } = bundle;
+      if (moduleFormat !== 'getExport' && moduleFormat !== 'nestedEvaluate') {
+        throw Fail`unexpected moduleFormat: ${moduleFormat}`;
+      }
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await worker.evaluate(`(${bundle.source}\n)()`.trim());
     }

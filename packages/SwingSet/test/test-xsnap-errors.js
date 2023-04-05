@@ -4,22 +4,27 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'child_process';
 import bundleSource from '@endo/bundle-source';
-import { getLockdownBundle } from '@agoric/xsnap-lockdown';
-import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
+import { initSwingStore } from '@agoric/swing-store';
 
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from '../src/controller/bundle-handler.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { kser } from '../src/lib/kmarshal.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
-  const lockdown = await getLockdownBundle();
-  const supervisor = await getSupervisorBundle();
-  const bundles = [lockdown, supervisor];
-
   /** @type { ReturnType<typeof spawn> } */
   let theProc;
+  const { kernelStorage } = initSwingStore();
+  const { bundleStore } = kernelStorage;
+  const bundleData = makeXsnapBundleData();
+  const bundleHandler = makeWorkerBundleHandler(bundleStore, bundleData);
+  const bundleIDs = await bundleHandler.getCurrentBundleIDs();
 
-  const startXSnap = makeStartXSnap(bundles, {
+  const startXSnap = makeStartXSnap({
+    bundleHandler,
     snapstore: undefined, // unused by this test
     // @ts-expect-error we only need one path thru spawn
     spawn: (command, args, opts) => {
@@ -51,9 +56,10 @@ test('child termination distinguished from meter exhaustion', async t => {
   const fn = new URL('vat-xsnap-hang.js', import.meta.url).pathname;
   const bundle = await bundleSource(fn);
 
+  const workerOptions = { type: 'xsnap', bundleIDs };
   /** @type { ManagerOptions } */
   // @ts-expect-error close enough for this test
-  const managerOptions = { useTranscript: true };
+  const managerOptions = { useTranscript: true, workerOptions };
   const schandler = _vso => ['ok', null];
 
   const m = await xsWorkerFactory.createFromBundle(
