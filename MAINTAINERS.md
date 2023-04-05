@@ -191,6 +191,14 @@ packages (to enable `agoric install <TAG>`), use:
 ./scripts/npm-dist-tag.sh lerna add <TAG>
 ```
 
+As a special case, by supplying a version suffix argument, you can do something
+like publish a `community-dev` dist-tag for an existing dev-only Git revision:
+
+```sh
+rev=$(git rev-parse --short=7 community-dev)
+./scripts/npm-dist-tag.sh lerna add community-dev -dev-${rev}.0
+```
+
 - [ ] Push release labels as tags
 
 Perform the following for each `tag` that we will use to label this release.
