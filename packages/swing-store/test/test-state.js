@@ -298,3 +298,21 @@ test('persistent bundleStore read/write', async t => {
   t.is(isSwingStore(dbDir), false);
   await testBundleStore(t, dbDir);
 });
+
+test('close will abort transaction', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const ss1 = initSwingStore(dbDir);
+  ss1.kernelStorage.kvStore.set('key1', 'value');
+  await ss1.hostStorage.commit();
+  ss1.kernelStorage.kvStore.set('key2', 'value');
+  // no commit, so ought to abort the 'key2' addition
+  await ss1.hostStorage.close();
+
+  const ss2 = openSwingStore(dbDir);
+  const { kvStore } = ss2.kernelStorage;
+  t.is(kvStore.get('key1'), 'value');
+  t.truthy(kvStore.has('key1'));
+  t.is(kvStore.get('key2'), undefined);
+  t.falsy(kvStore.has('key2'));
+});
