@@ -137,3 +137,14 @@ test('far function callbacks', async t => {
   t.assert(p2r instanceof Promise);
   t.is(await p2r, '19go');
 });
+
+test('isCallback', async t => {
+  t.true(cb.isCallback(cb.makeFunctionCallback(async () => {})));
+  t.true(cb.isCallback(cb.makeMethodCallback({ m: async () => {} }, 'm')));
+  t.true(cb.isCallback(cb.makeSyncFunctionCallback(() => {})));
+  t.true(cb.isCallback(cb.makeSyncMethodCallback({ m: () => {} }, 'm')));
+  t.false(cb.isCallback(undefined));
+  t.false(cb.isCallback(null));
+  t.false(cb.isCallback('string'));
+  t.false(cb.isCallback({}));
+});

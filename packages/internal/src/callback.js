@@ -120,3 +120,20 @@ export const makeMethodCallback = (target, methodName, ...bound) => {
   return /** @type {Callback<I>} */ (cb);
 };
 harden(makeMethodCallback);
+
+/**
+ * @param {any} callback
+ * @returns {callback is Callback}
+ */
+export const isCallback = callback => {
+  if (!callback || typeof callback !== 'object') {
+    return false;
+  }
+  const { target, methodName, bound } = callback;
+  return (
+    !!target &&
+    (methodName === undefined || typeof methodName === 'string') &&
+    Array.isArray(bound)
+  );
+};
+harden(isCallback);
