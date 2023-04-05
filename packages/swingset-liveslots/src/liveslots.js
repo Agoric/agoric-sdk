@@ -1537,7 +1537,8 @@ function build(
   async function bringOutYourDead() {
     await scanForDeadObjects();
     // now flush all the vatstore changes (deletions) we made
-    vom.flushStateCache();
+    // eslint-disable-next-line no-use-before-define
+    afterDispatchActions();
     // XXX TODO: make this conditional on a config setting
     return getRetentionStats();
   }
