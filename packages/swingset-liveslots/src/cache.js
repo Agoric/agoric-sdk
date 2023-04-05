@@ -64,6 +64,7 @@ export function makeCache(readBacking, writeBacking, deleteBacking) {
   const dirtyKeys = new Set();
   const cache = {
     get: key => {
+      assert.typeof(key, 'string');
       if (stash.has(key)) {
         return stash.get(key);
       } else if (dirtyKeys.has(key)) {
@@ -75,10 +76,12 @@ export function makeCache(readBacking, writeBacking, deleteBacking) {
       return value;
     },
     set: (key, value) => {
+      assert.typeof(key, 'string');
       stash.set(key, value);
       dirtyKeys.add(key);
     },
     delete: key => {
+      assert.typeof(key, 'string');
       stash.delete(key);
       dirtyKeys.add(key);
     },
