@@ -48,7 +48,6 @@ module.exports = {
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
-    'no-restricted-syntax': ['warn', ...deprecatedTerminology],
   },
   settings: {
     jsdoc: {
@@ -83,6 +82,8 @@ module.exports = {
         // are code-reviewed.
         // TODO upgrade this to 'error'
         '@jessie.js/no-nested-await': 'warn',
+        // TODO upgrade this (or a subset) to 'error'
+        'no-restricted-syntax': ['warn', ...deprecatedTerminology],
       },
     },
     {
