@@ -205,15 +205,18 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
   );
 
   // ava t.like does not support array shapes, but object analogs are fine
-  const arrayShape = sparseArr => Object.fromEntries(Object.entries(sparseArr));
+  const arrayShape = (sparseArr, length = sparseArr.length) => ({
+    length,
+    ...Object.fromEntries(Object.entries(sparseArr)),
+  });
   const capDataShape = obj => {
     const capData = kser(obj);
     const { body, ..._slotsEtc } = capData;
     return { body };
   };
   // Kernel deliveries are [type, ...args] arrays.
-  const deliveryShape = (deliveryNum, kdShape) => {
-    return { deliveryNum, kd: arrayShape(kdShape) };
+  const deliveryShape = (deliveryNum, kdShape, kdLength) => {
+    return { deliveryNum, kd: arrayShape(kdShape, kdLength) };
   };
   const messageDeliveryShape = (deliveryNum, method, args, resultKpid) => {
     const methargs = capDataShape([method, args]);
@@ -253,7 +256,7 @@ test('kernel sends bringOutYourDead for vat upgrade', async t => {
   const expectedDeliveries = [
     messageDeliveryShape(1n, 'getVersion', []),
     deliveryShape(2n, ['bringOutYourDead']),
-    deliveryShape(3n, ['startVat']),
+    deliveryShape(3n, ['startVat'], 2),
     messageDeliveryShape(4n, 'getVersion', []),
   ];
   t.like(staticVatDeliveries, arrayShape(expectedDeliveries));
