@@ -824,6 +824,10 @@ export function makeVirtualObjectManager(
       // kdebug(`vo make ${baseRef}`);
 
       const initialData = init ? init(...args) : {};
+      if (typeof initialData !== 'object') {
+        Fail`initial data must be object, not ${initialData}`;
+        // a common mistake is to use `() => {foo:1}`, not `() => ({foo:1})`
+      }
       const rawState = {};
       for (const prop of Object.getOwnPropertyNames(initialData)) {
         const data = serializeSlot(initialData[prop], prop);

@@ -498,20 +498,14 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   });
 };
 
-// run GC-sensitive upgrade tests that use a local worker serially
-// to mitigate any V8 gremlins
-test.serial('vat upgrade - local', async t => {
-  return testUpgrade(t, 'local', { restartVatAdmin: false });
-});
-test.serial('vat upgrade - local with VA restarts', async t => {
-  return testUpgrade(t, 'local', { restartVatAdmin: true });
-});
-test.serial('vat upgrade - local without automatic GC', async t => {
-  return testUpgrade(t, 'local', { suppressGC: true });
-});
+// local workers (under V8 and AVA) are notoriously flaky for GC
+// behavior, even with test.serial, so run these tests only under XS
 
 test('vat upgrade - xsnap', async t => {
-  return testUpgrade(t, 'xs-worker');
+  return testUpgrade(t, 'xs-worker', { restartVatAdmin: false });
+});
+test('vat upgrade - xsnap with VA restarts', async t => {
+  return testUpgrade(t, 'xs-worker', { restartVatAdmin: true });
 });
 test('vat upgrade - xsnap without automatic GC', async t => {
   return testUpgrade(t, 'xs-worker', { suppressGC: true });

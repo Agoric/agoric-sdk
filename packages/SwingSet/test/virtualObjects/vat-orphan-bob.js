@@ -1,132 +1,110 @@
 import { Far } from '@endo/far';
 import { initEmpty } from '@agoric/store';
-import { defineKindMulti } from '@agoric/vat-data';
+import { defineKind, defineKindMulti } from '@agoric/vat-data';
 
 const { getPrototypeOf } = Object;
 
-export function buildRootObject(vatPowers) {
-  const { testLog } = vatPowers;
+function extract({ thing, regularFacet, emptyFacet }, kind, what) {
+  if (kind === 'single') {
+    switch (what) {
+      case 'self':
+        return thing.extractSelf();
+      case 'facet':
+        return thing;
+      case 'method':
+        return thing.statelessMethod;
+      case 'proto':
+        return getPrototypeOf(thing);
+      case 'context':
+        return thing.extractContext();
+      case 'state':
+        return thing.extractState();
+      default:
+        throw Error(`unknown piece in ${what}`);
+    }
+  } else if (kind === 'multi') {
+    switch (what) {
+      case 'cohort':
+        return regularFacet.extractCohort();
+      case 'empty':
+        return emptyFacet;
+      case 'facet':
+        return regularFacet;
+      case 'method':
+        return regularFacet.statelessMethod;
+      case 'proto':
+        return getPrototypeOf(regularFacet);
+      case 'context':
+        return regularFacet.extractContext();
+      case 'state':
+        return regularFacet.extractState();
+      default:
+        throw Error(`unknown piece in ${what}`);
+    }
+  } else {
+    throw Error(`unknown kind in ${what}`);
+  }
+}
 
-  let extracted;
+export function buildRootObject() {
+  const makeThing = defineKind('thing', initEmpty, {
+    statelessMethod: () => 0,
+    extractState: ({ state }) => state,
+    extractSelf: ({ self }) => self,
+    extractContext: context => context,
+  });
 
-  const makeThing = defineKindMulti('thing', initEmpty, {
+  const makeMultiThing = defineKindMulti('multithing', initEmpty, {
     regularFacet: {
       statelessMethod: () => 0,
-      extractState: ({ state }) => {
-        extracted = state;
-      },
-      extractCohort: ({ facets }) => {
-        extracted = facets;
-      },
+      extractState: ({ state }) => state,
+      extractCohort: ({ facets }) => facets,
+      extractContext: context => context,
     },
     emptyFacet: {},
   });
 
   let strongRetainer;
-  const weakRetainer = new WeakSet();
-  let retentionMode;
+  let weakRetainer;
+
+  function reset() {
+    strongRetainer = null;
+    weakRetainer = new WeakSet();
+  }
+
+  reset();
 
   return Far('root', {
-    retain(mode) {
-      retentionMode = mode;
-      const { regularFacet, emptyFacet } = makeThing();
-      const originalFacet = mode.endsWith('empty') ? emptyFacet : regularFacet;
-      switch (mode) {
-        case 'facet':
-        case 'empty':
-          strongRetainer = originalFacet;
+    reset,
+    retain(kind, what, how) {
+      const thing = makeThing();
+      const { regularFacet, emptyFacet } = makeMultiThing();
+      const things = { thing, regularFacet, emptyFacet };
+
+      const hold = extract(things, kind, what);
+      switch (how) {
+        case 'retain':
+          strongRetainer = hold;
           break;
-        case 'wfacet':
-        case 'wempty':
-          weakRetainer.add(originalFacet);
-          break;
-        case 'method':
-          strongRetainer = originalFacet.statelessMethod;
-          break;
-        case 'wmethod':
-          weakRetainer.add(originalFacet.statelessMethod);
-          break;
-        case 'proto':
-          // eslint-disable-next-line no-proto
-          strongRetainer = getPrototypeOf(originalFacet);
-          break;
-        case 'wproto':
-          // eslint-disable-next-line no-proto
-          weakRetainer.add(getPrototypeOf(originalFacet));
-          break;
-        case 'cohort':
-          originalFacet.extractCohort();
-          strongRetainer = extracted;
-          extracted = null;
-          break;
-        case 'wcohort':
-          originalFacet.extractCohort();
-          weakRetainer.add(extracted);
-          extracted = null;
-          break;
-        case 'state':
-          originalFacet.extractState();
-          strongRetainer = extracted;
-          extracted = null;
-          break;
-        case 'wstate':
-          originalFacet.extractState();
-          weakRetainer.add(extracted);
-          extracted = null;
+        case 'weakset':
+          weakRetainer.add(hold);
           break;
         default:
-          console.log(`retain: unknown mode ${mode}`);
-          break;
+          throw Error(`unknown how ${how}`);
       }
-      makeThing(); // push original out of the cache
-      return originalFacet;
+      return things;
     },
-    testForRetention(facet) {
-      let compare;
-      switch (retentionMode) {
-        case 'facet':
-        case 'empty':
-          compare = strongRetainer === facet;
-          break;
-        case 'wfacet':
-        case 'wempty':
-          compare = weakRetainer.has(facet);
-          break;
-        case 'method':
-          compare = strongRetainer === facet.statelessMethod;
-          break;
-        case 'wmethod':
-          compare = weakRetainer.has(facet.statelessMethod);
-          break;
-        case 'proto':
-          // eslint-disable-next-line no-proto
-          compare = strongRetainer === getPrototypeOf(facet);
-          break;
-        case 'wproto':
-          // eslint-disable-next-line no-proto
-          compare = weakRetainer.has(getPrototypeOf(facet));
-          break;
-        case 'cohort':
-          facet.extractCohort();
-          compare = strongRetainer === extracted;
-          break;
-        case 'wcohort':
-          facet.extractCohort();
-          compare = weakRetainer.has(extracted);
-          break;
-        case 'state':
-          facet.extractState();
-          compare = strongRetainer === extracted;
-          break;
-        case 'wstate':
-          facet.extractState();
-          compare = weakRetainer.has(extracted);
-          break;
+
+    compare(things, kind, what, how) {
+      const sample = extract(things, kind, what);
+      switch (how) {
+        case 'retain':
+          return strongRetainer === sample;
+        case 'weakset':
+          return weakRetainer.has(sample);
         default:
-          console.log(`testForRetention: unknown mode ${retentionMode}`);
-          break;
+          throw Error(`unknown how ${how}`);
       }
-      testLog(`compare old === new : ${compare}`);
     },
   });
 }
