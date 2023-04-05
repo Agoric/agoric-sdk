@@ -16,25 +16,17 @@ import '@agoric/zoe/src/contracts/exported.js';
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
 import { assertElectorateMatches } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { assertAllDefined } from '@agoric/internal';
-import {
-  makeVaultDirectorParamManager,
-  MIN_INITIAL_DEBT_KEY,
-  ENDORSED_UI_KEY,
-  CHARGING_PERIOD_KEY,
-  RECORDING_PERIOD_KEY,
-} from './params.js';
+import { makeStoredPublisherKit } from '@agoric/notifier';
+import { makeVaultDirectorParamManager } from './params.js';
 import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
  *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
- *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,
  *   timerService: import('@agoric/time/src/types').TimerService,
- *   shortfallInvitation: 'invitation',
  * }>} VaultFactoryZCF
  */
 
@@ -70,22 +62,13 @@ export const start = async (zcf, privateArgs, baggage) => {
   }));
 
   const { timerService, auctioneerPublicFacet } = zcf.getTerms();
-  const {
-    [MIN_INITIAL_DEBT_KEY]: { value: minInitialDebt },
-    [ENDORSED_UI_KEY]: { value: endorsedUi },
-    [CHARGING_PERIOD_KEY]: { value: chargingPeriod },
-    [RECORDING_PERIOD_KEY]: { value: recordingPeriod },
-  } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
     makeStoredPublisherKit(storageNode, marshaller, 'governance'),
     zcf.getZoeService(),
+    zcf.getTerms().governedParams,
     initialPoserInvitation,
-    minInitialDebt,
     initialShortfallInvitation,
-    chargingPeriod,
-    recordingPeriod,
-    endorsedUi,
   );
 
   assertElectorateMatches(

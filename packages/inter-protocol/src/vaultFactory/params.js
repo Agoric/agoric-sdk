@@ -112,32 +112,39 @@ export const vaultParamPattern = M.splitRecord(
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ERef<ZoeService>} zoe
- * @param {Invitation} electorateInvitation
- * @param {Amount} minInitialDebt
- * @param {Invitation} shortfallInvitation
- * @param chargingPeriod
- * @param recordingPeriod
- * @param {string} [endorsedUi]
+ * @param {GovernanceTerms<import('./params').VaultDirectorParams>['governedParams']} governedParams
+ * @param electorateInvitation
+ * @param shortfallInvitation
  */
 export const makeVaultDirectorParamManager = async (
   publisherKit,
   zoe,
+  governedParams,
   electorateInvitation,
-  minInitialDebt,
   shortfallInvitation,
-  chargingPeriod,
-  recordingPeriod,
-  endorsedUi = 'NO ENDORSEMENT',
 ) => {
   return makeParamManager(
     publisherKit,
     {
+      [MIN_INITIAL_DEBT_KEY]: [
+        governedParams[MIN_INITIAL_DEBT_KEY].type,
+        governedParams[MIN_INITIAL_DEBT_KEY].value,
+      ],
+      [CHARGING_PERIOD_KEY]: [
+        governedParams[CHARGING_PERIOD_KEY].type,
+        governedParams[CHARGING_PERIOD_KEY].value,
+      ],
+      [RECORDING_PERIOD_KEY]: [
+        governedParams[RECORDING_PERIOD_KEY].type,
+        governedParams[RECORDING_PERIOD_KEY].value,
+      ],
+      [ENDORSED_UI_KEY]: [
+        governedParams[ENDORSED_UI_KEY].type,
+        governedParams[ENDORSED_UI_KEY].value,
+      ],
+      // private invitations
       [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
-      [MIN_INITIAL_DEBT_KEY]: [ParamTypes.AMOUNT, minInitialDebt],
       [SHORTFALL_INVITATION_KEY]: [ParamTypes.INVITATION, shortfallInvitation],
-      [CHARGING_PERIOD_KEY]: [ParamTypes.NAT, chargingPeriod],
-      [RECORDING_PERIOD_KEY]: [ParamTypes.NAT, recordingPeriod],
-      [ENDORSED_UI_KEY]: [ParamTypes.STRING, endorsedUi],
     },
     zoe,
   );
