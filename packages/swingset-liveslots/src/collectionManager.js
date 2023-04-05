@@ -645,7 +645,13 @@ export function makeCollectionManager(
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     kindName || Fail`unknown kind ID ${id}`;
-    const collection = summonCollectionInternal(false, 'test', subid, kindName);
+    const collectionID = `${subid}`;
+    const collection = summonCollectionInternal(
+      false,
+      'test',
+      collectionID,
+      kindName,
+    );
     return collection.sizeInternal();
   }
 
@@ -655,7 +661,13 @@ export function makeCollectionManager(
     }
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
-    const collection = summonCollectionInternal(false, 'GC', subid, kindName);
+    const collectionID = `${subid}`;
+    const collection = summonCollectionInternal(
+      false,
+      'GC',
+      collectionID,
+      kindName,
+    );
     allCollectionObjIDs.delete(vobjID);
 
     const doMoreGC = collection.clearInternal(true);
@@ -686,7 +698,7 @@ export function makeCollectionManager(
       assertPattern(valueShape);
       schemata.push(valueShape);
     }
-    const collectionID = allocateCollectionID();
+    const collectionID = `${allocateCollectionID()}`;
     const kindID = obtainStoreKindID(kindName);
     const vobjID = makeBaseRef(kindID, collectionID, isDurable);
 
@@ -908,6 +920,7 @@ export function makeCollectionManager(
 
   function reanimateCollection(vobjID) {
     const { id, subid } = parseVatSlot(vobjID);
+    const collectionID = `${subid}`;
     const kindName = storeKindIDToName.get(`${id}`);
     const rawSchemata = JSON.parse(
       syscall.vatstoreGet(prefixc(subid, '|schemata')),
@@ -917,7 +930,7 @@ export function makeCollectionManager(
     return summonCollection(
       false,
       label,
-      subid,
+      collectionID,
       kindName,
       keyShape,
       valueShape,
