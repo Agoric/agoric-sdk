@@ -175,7 +175,7 @@ export const prepareVaultDirector = (
 
     if (newInvitation === oldInvitation) {
       shortfallReporter ||
-        'updateShortFallReported called with repeat invitation and no prior shortfallReporter';
+        Fail`updateShortFallReported called with repeat invitation and no prior shortfallReporter`;
       return;
     }
 
