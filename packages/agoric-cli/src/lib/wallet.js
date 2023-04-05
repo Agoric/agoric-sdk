@@ -3,11 +3,12 @@
 
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
+import { execSwingsetTransaction, pollTx, pollBlocks } from './chain.js';
 import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
+/** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
 
 const { values } = Object;
 const marshaller = boardSlottingMarshaller();
@@ -265,3 +266,80 @@ export const makeParseAmount =
     const amt = { value, brand: natBrand };
     return amt;
   };
+
+/**
+ * Make an offer from agoricNames, wallet status; sign and broadcast it,
+ * given a sendFrom address; else print it.
+ *
+ * @param {{
+ *   toOffer: (agoricNames: *, current: *) => OfferSpec,
+ *   sendFrom: string,
+ *   board: import('./rpc').BoardClient,
+ *   tui: import('./format').TUI,
+ *   delay: (ms: number) => Promise<void>,
+ *   signer: ReturnType<import('./chain').makeSigner>
+ * }} arg
+ */
+export const processOffer = async ({
+  toOffer,
+  sendFrom,
+  board,
+  tui,
+  delay,
+  signer,
+}) => {
+  let current;
+  const agoricNames = await board.provideAgoricNames();
+
+  if (sendFrom) {
+    // XXX: change getCurrent to take BoardClient
+    // eslint-disable-next-line @jessie.js/no-nested-await
+    current = await getCurrent(sendFrom, board);
+  }
+
+  const offer = toOffer(agoricNames, current);
+  if (!sendFrom) {
+    // XXX prune outputActionAndHint or convert to use board, tui
+    tui.show(board.serialize({ method: 'executeOffer', offer }));
+    tui.warn(sendHint);
+    return;
+  }
+
+  /** @type {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} */
+  const boardAction = { method: 'executeOffer', offer };
+  const actionArg = JSON.stringify(board.serialize(boardAction));
+  const result = await signer.signAndBroadcast(
+    {
+      kind: 'wallet-action',
+      action: actionArg,
+      allowSpend: true,
+      from: sendFrom,
+    },
+    { tui, delay },
+  );
+  {
+    const { timestamp, txhash, height } = result;
+    tui.warn('wallet action is broadcast:');
+    tui.show({ timestamp, height, offerId: offer.id, txhash });
+  }
+
+  const checkInWallet = async ({ time, height }) => {
+    const [state, update] = await Promise.all([
+      getCurrent(sendFrom, board),
+      getLastUpdate(sendFrom, board),
+    ]);
+    if (update.updated === 'offerStatus' && update.status.id === offer.id) {
+      return { time, height };
+    }
+    const info = await findContinuingIds(state, agoricNames);
+    const done = info.filter(it => it.offerId === offer.id);
+    if (!(done.length > 0)) {
+      tui.warn(time, 'offer not yet in block', height);
+      throw Error('retry');
+    }
+    return { time, height };
+  };
+  const blockInfo = await signer.pollBlocks({ lookup: checkInWallet, delay });
+  tui.warn('offer accepted in block');
+  tui.show(blockInfo);
+};

@@ -35,6 +35,20 @@ export const normalizeAddressWithOptions = (
 harden(normalizeAddressWithOptions);
 
 /**
+ * @param {string} literalOrName
+ * @param {{ agd: ReturnType<typeof makeAgd> }} opts
+ */
+export const normalizeAddressWithAgd = (literalOrName, { agd }) => {
+  try {
+    return normalizeBech32(literalOrName);
+  } catch (_) {
+    const addr = agd.nameToAddress(literalOrName);
+    return normalizeBech32(addr);
+  }
+};
+harden(normalizeAddressWithAgd);
+
+/**
  * @param {ReadonlyArray<string>} swingsetArgs
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   from: string,
@@ -75,7 +89,9 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   } else {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', yesCmd);
-    return execFileSync(agdBinary, yesCmd);
+    const out = execFileSync(agdBinary, yesCmd).toString();
+    console.log('@@@exec result:', out);
+    return out;
   }
 };
 harden(execSwingsetTransaction);
@@ -139,6 +155,37 @@ export const pollBlocks = opts => async lookup => {
 };
 
 /**
+ * @template T
+ * @param {{
+ *   agd: ReturnType<typeof makeAgd>,
+ *   delay: (ms: number) => Promise<void>,
+ *   blockPeriod?: number,
+ *   lookup: (b: { time: string, height: string }) => Promise<T>
+ * }} opts
+ * @returns {Promise<T>}
+ */
+export const pollBlocks2 = async ({ agd, lookup, delay, blockPeriod = 6 }) => {
+  await null; // separate sync prologue
+
+  for (;;) {
+    // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+    const status = await agd.status();
+    const {
+      SyncInfo: { latest_block_time: time, latest_block_height: height },
+    } = status;
+    try {
+      // see await null above
+      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+      const result = await lookup({ time, height });
+      return result;
+    } catch (_err) {
+      // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
+      await delay((blockPeriod / 2) * 1000);
+    }
+  }
+};
+
+/**
  * @param {string} txhash
  * @param {import('./rpc').MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
@@ -171,4 +218,171 @@ export const pollTx = async (txhash, opts) => {
     return info;
   };
   return pollBlocks({ ...opts, retryMessage: 'tx not in block' })(lookup);
+};
+
+const { freeze } = Object; // XXX use harden?
+
+export const withAgdOptions = (cmd, { env }) =>
+  cmd
+    .option('--home <dir>', 'agd CosmosSDK application home directory')
+    .option(
+      '--keyring-backend [os|file|test]',
+      `keyring's backend (os|file|test) (default "${
+        env.AGORIC_KEYRING_BACKEND || 'os'
+      }")`,
+      env.AGORIC_KEYRING_BACKEND,
+    );
+
+/** @param {{ execFileSync: typeof import('child_process').execFileSync }} io */
+export const makeAgd = ({ execFileSync }) => {
+  /** @param {{ home?: string, keyringBackend?: string, rpcAddrs?: string[] }} keyringOpts */
+  const make = ({ home, keyringBackend, rpcAddrs } = {}) => {
+    const keyringArgs = [
+      ...(home ? ['--home', home] : []),
+      ...(keyringBackend ? [`--keyring-backend`, keyringBackend] : []),
+    ];
+    const nodeArgs = [...(rpcAddrs ? [`--node`, rpcAddrs[0]] : [])];
+
+    const l = a => {
+      console.log(a);
+      return a;
+    };
+    /**
+     * @param {string[]} args
+     * @param {*} [opts]
+     */
+    const exec = (args, opts) =>
+      execFileSync(agdBinary, l(args), opts).toString();
+
+    const outJson = ['--output', 'json'];
+
+    // TODO: break this into facets?
+    // nameToAddress
+    // query, status
+    // tx
+    return freeze({
+      status: async () => JSON.parse(exec([...nodeArgs, 'status'])),
+      /**
+       * @param {string} name
+       * NOTE: synchronous I/O
+       */
+      nameToAddress: name => {
+        const txt = exec(['keys', 'show', `--address`, name, ...keyringArgs]);
+        return txt.trim();
+      },
+      /**
+       * @param {[kind: 'tx', txhash: string]} qArgs
+       */
+      query: async qArgs => {
+        const out = await exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
+        return JSON.parse(out);
+      },
+      /**
+       * TODO: gas
+       *
+       * @param {string[]} txArgs
+       * @param {{ chainId: string, from: string, yes?: boolean }} opts
+       */
+      tx: async (txArgs, { chainId, from, yes }) => {
+        const yesArg = yes ? ['--yes'] : [];
+        const args = [
+          ...nodeArgs,
+          ...[`--chain-id`, chainId],
+          ...keyringArgs,
+          ...[`--from`, from],
+          'tx',
+          ...txArgs,
+          ...['--broadcast-mode', 'block'],
+          ...yesArg,
+          ...outJson,
+        ];
+        const out = exec(args);
+        return JSON.parse(out);
+      },
+      withOpts: opts => make({ home, keyringBackend, rpcAddrs, ...opts }),
+    });
+  };
+  return make();
+};
+
+/**
+ * TODO: this is more about swingset than signing. rename.
+ *
+ * @param {{ agd: ReturnType<makeAgd>, chainId: string }} input
+ */
+export const makeSigner = ({ agd, chainId }) => {
+  /** @param {Parameters<typeof signAndBroadcast>[0]} tx */
+  const makeTxArgs = tx => {
+    let txArgs;
+    switch (tx.kind) {
+      case 'wallet-action':
+        txArgs = [
+          tx.kind,
+          ...(tx.allowSpend ? ['--allow-spend'] : []),
+          tx.action,
+        ];
+        break;
+      case 'provision-one':
+        txArgs = [tx.kind, tx.nickname, tx.addr];
+        break;
+      default:
+        throw new Error(`unknown tx kind: ${tx}`);
+    }
+
+    return ['swingset', ...txArgs];
+  };
+
+  /**
+   * Sign and broadcast a swingset transaction.
+   *
+   * @param {(
+   *   { kind: 'wallet-action', action: string, allowSpend?: boolean } |
+   *   { kind: 'provision-one', nickname: string, addr: string }) & {
+   *   from: string,
+   * }} txOpts
+   * @param {{
+   *   delay: (ms: number) => Promise<void>,
+   *   tui: import('./format').TUI,
+   * }} io
+   * @throws { Error & { code: number } } if transaction fails
+   */
+  const signAndBroadcast = async (txOpts, { tui, delay }) => {
+    /** @type {{ code: number, txhash: string }} */
+    const tx = await agd.tx(makeTxArgs(txOpts), {
+      chainId,
+      from: txOpts.from,
+      yes: true,
+    });
+    if (tx.code !== 0) {
+      const err = Error(`failed to send action. code: ${tx.code}`);
+      // @ts-expect-error XXX how to add properties to an error?
+      err.code = tx.code;
+      throw err;
+    }
+
+    /** @param {{ time: string, height: string }} blockInfo */
+    const lookup = async ({ time, height }) => {
+      await null; // separate sync prologue
+      try {
+        // XXX this type is defined in a .proto file somewhere
+        /** @type {{ height: string, txhash: string, code: number, timestamp: string }} */
+        // eslint-disable-next-line @jessie.js/no-nested-await
+        const info = await agd.query(['tx', tx.txhash]);
+        return info;
+      } catch (err) {
+        // TODO: suppress expected messages
+        tui.warn(time, 'tx not in block', height);
+        throw Error('retry');
+      }
+    };
+    return pollBlocks2({ agd, delay, lookup });
+  };
+
+  return freeze({
+    makeTxArgs,
+    signAndBroadcast,
+    pollBlocks: ({ delay, lookup }) => pollBlocks2({ agd, delay, lookup }),
+  });
 };

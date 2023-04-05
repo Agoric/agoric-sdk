@@ -191,3 +191,22 @@ export const summarize = (current, coalesced, agoricNames) => {
     offers: offerStatusTuples(coalesced, agoricNames),
   };
 };
+
+/**
+ * @param {{
+ *   stdout: Pick<import('stream').Writable, 'write'>,
+ *   logger: Pick<typeof console, 'warn'>,
+ * }} io
+ */
+export const makeTUI = ({ stdout, logger }) => {
+  const show = (info, indent = false) =>
+    stdout.write(
+      `${JSON.stringify(info, bigintReplacer, indent ? 2 : undefined)}\n`,
+    );
+
+  return Object.freeze({
+    show,
+    warn: (...args) => logger.warn(...args),
+  });
+};
+/** @typedef {ReturnType<makeTUI>} TUI */

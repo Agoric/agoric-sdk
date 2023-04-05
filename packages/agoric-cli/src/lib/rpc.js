@@ -31,13 +31,19 @@ const fromAgoricNet = str => {
   return fetch(networkConfigUrl(netName)).then(res => res.json());
 };
 
+/** @type {MinimalNetworkConfig} */
+const localNetworkConfig = {
+  rpcAddrs: ['http://0.0.0.0:26657'],
+  chainName: 'agoriclocal',
+};
+
 /**
  * @param {typeof process.env} env
  * @returns {Promise<MinimalNetworkConfig>}
  */
 export const getNetworkConfig = async env => {
   if (!('AGORIC_NET' in env) || env.AGORIC_NET === 'local') {
-    return { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
+    return localNetworkConfig;
   }
 
   return fromAgoricNet(NonNullish(env.AGORIC_NET)).catch(err => {
@@ -259,3 +265,81 @@ export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
   }
 };
 /** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */
+
+const { freeze } = Object;
+
+/**
+ * @param {{
+ *   fetch: typeof window.fetch,
+ * }} io
+ */
+export const makeQueryClient = ({ fetch }) => {
+  // XXX prune getConfig above
+
+  /**
+   * @param {string} opt
+   * @returns {Promise<MinimalNetworkConfig>}
+   */
+  const getConfig = async opt => {
+    const [netName, chainName] = opt.split(',');
+    if (chainName) {
+      return { chainName, rpcAddrs: [rpcUrl(netName)] };
+    }
+    return fetch(networkConfigUrl(netName)).then(res => res.json());
+  };
+
+  /** @param {MinimalNetworkConfig} cfg */
+  const make = cfg => {
+    const vstorage = makeVStorage({ fetch }, cfg);
+    return freeze({
+      rpcAddrs: cfg.rpcAddrs,
+      chainName: cfg.chainName,
+      /** @param {string} opt */
+      withConfig: async opt => {
+        if (cfg.chainName !== localNetworkConfig.chainName) {
+          throw TypeError('already configured');
+        }
+        const { chainName, rpcAddrs } = await getConfig(opt);
+        return make({ chainName, rpcAddrs });
+      },
+      /** @param {string} path */
+      readLatest: path => vstorage.readLatest(path),
+      /** @param {string} path */
+      readFully: path => vstorage.readFully(path),
+      // for compant
+      // TODO: makeAgoricNames should take queryClient
+      // perhaps fold makeVStorage into makeQueryClient?
+      vstorage,
+    });
+  };
+  return make(localNetworkConfig);
+};
+/** @typedef {ReturnType<makeQueryClient>} QueryClient */
+
+/** @param {QueryClient} qClient */
+export const makeBoardClient = qClient => {
+  const fromBoard = makeFromBoard();
+  /** @type {Awaited<ReturnType<makeAgoricNames>>} */
+  let agoricNames;
+
+  const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+  const unserializeTxt = txt => {
+    const { capDatas } = storageHelper.parseCapData(txt);
+    return capDatas.map(capData => marshaller.unserialize(capData));
+  };
+
+  /** @type {(txt: string) => unknown} */
+  const unserializeHead = txt => unserializeTxt(txt).at(-1);
+
+  return freeze({
+    serialize: obj => marshaller.serialize(obj),
+    provideAgoricNames: async () => {
+      if (agoricNames) return agoricNames;
+      agoricNames = await makeAgoricNames(fromBoard, qClient.vstorage);
+      return agoricNames;
+    },
+    /** @type {(path: string) => Promise<unknown>} */
+    readLatestHead: path => qClient.readLatest(path).then(unserializeHead),
+  });
+};
+/** @typedef {ReturnType<makeBoardClient>} BoardClient */
