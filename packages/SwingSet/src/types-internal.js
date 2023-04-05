@@ -33,7 +33,6 @@ export {};
  *   critical: boolean,
  *   enableDisavow: boolean,
  *   useTranscript: boolean,
- *   virtualObjectCacheSize: number,
  *   name: string,
  *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,

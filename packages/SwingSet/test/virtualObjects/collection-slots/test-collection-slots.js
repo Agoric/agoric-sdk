@@ -30,9 +30,6 @@ test('collection entry slots trigger doMoreGC', async t => {
       bootstrap: { sourceSpec: bfile('bootstrap-collection-slots.js') },
       target: {
         sourceSpec: bfile('vat-collection-slots.js'),
-        creationOptions: {
-          virtualObjectCacheSize: 0,
-        },
       },
     },
   };

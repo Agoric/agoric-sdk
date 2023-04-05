@@ -285,7 +285,6 @@ export {};
  *            waiting for the promises to be resolved.  If false, such
  *            messages will be queued inside the kernel.  Defaults to
  *            false.
- * @property { number } [virtualObjectCacheSize]
  * @property { boolean } [useTranscript]
  *            If true, saves a transcript of a vat's inbound deliveries and
  *            outbound syscalls so that the vat's internal state can be

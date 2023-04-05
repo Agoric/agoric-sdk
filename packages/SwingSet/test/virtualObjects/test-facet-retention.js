@@ -52,9 +52,14 @@ import { kunser } from '../../src/lib/kmarshal.js';
 // Representative objects). All facets of a given cohort/instance
 // share the same 'context' object.
 
-// Currently, we create the 'context' and 'state' objects via an LRU
-// cache, so their lifetime is somewhat complicated, but still a
-// deterministic function of userspace behavior.
+// In any given crank, a new 'context'/'state' object pair is created
+// the first time a VO method is invoked, and is given to all VO
+// method invocations within that crank. They remain functional
+// forever. The VOM discards the context/state pair at end-of-crank,
+// and will make new ones in subsequent cranks (if they invoke VO
+// methods again). Userspace might retain either one, and use them in
+// a recognizer, but their lifetime is not related to VO GC behavior,
+// so they do not provide a GC sensor, merely a crank sensor.
 
 // The 'facets' cohort is a record, one property per facet. So a
 // defineKindMulti with a pair of `incrementer` and `decrementer`
@@ -150,16 +155,16 @@ test('retention', async t => {
   await go('multi', 'method', 'weakset', true);
   await go('multi', 'proto', 'weakset', true);
 
-  // 'context' currently shares a lifetime with the facet cluster
-  await go('single', 'context', 'retain', true);
-  await go('multi', 'context', 'retain', true);
-  await go('single', 'context', 'weakset', true);
-  await go('multi', 'context', 'weakset', true);
-  // as does 'state'
-  await go('single', 'state', 'retain', true);
-  await go('multi', 'state', 'retain', true);
-  await go('single', 'state', 'weakset', true);
-  await go('multi', 'state', 'weakset', true);
+  // 'context' is remade on each crank
+  await go('single', 'context', 'retain', false);
+  await go('multi', 'context', 'retain', false);
+  await go('single', 'context', 'weakset', false);
+  await go('multi', 'context', 'weakset', false);
+  // as is 'state'
+  await go('single', 'state', 'retain', false);
+  await go('multi', 'state', 'retain', false);
+  await go('single', 'state', 'weakset', false);
+  await go('multi', 'state', 'weakset', false);
 
   if (remaining.size) {
     const missed = [...remaining].join(', ');

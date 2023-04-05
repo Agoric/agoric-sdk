@@ -29,9 +29,6 @@ test('VO property deletion is not short-circuited', async t => {
       bootstrap: { sourceSpec: bfile('bootstrap-delete-stored-vo.js') },
       target: {
         sourceSpec: bfile('vat-delete-stored-vo.js'),
-        creationOptions: {
-          virtualObjectCacheSize: 0,
-        },
       },
     },
   };

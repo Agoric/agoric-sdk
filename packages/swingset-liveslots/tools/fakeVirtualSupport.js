@@ -167,6 +167,12 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     return d && (weak ? d.deref() : d);
   }
 
+  function requiredValForSlot(slot) {
+    const val = getValForSlot(slot);
+    assert(val, `${slot} must have a value`);
+    return val;
+  }
+
   function setValForSlot(slot, val) {
     slotToVal.set(slot, weak ? new WeakRef(val) : val);
   }
@@ -181,13 +187,13 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function convertSlotToVal(slot) {
-    const { type, virtual, durable, facet, baseRef } = parseVatSlot(slot);
+    const { type, id, virtual, durable, facet, baseRef } = parseVatSlot(slot);
     assert.equal(type, 'object');
     let val = getValForSlot(baseRef);
     if (val) {
       if (virtual || durable) {
         if (facet !== undefined) {
-          return val[facet];
+          return vrm.getFacet(id, val, facet);
         }
       }
       return val;
@@ -196,7 +202,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       if (vrm) {
         val = vrm.reanimate(slot);
         if (facet !== undefined) {
-          val = val[facet];
+          return vrm.getFacet(id, val, facet);
         }
       } else {
         assert.fail('fake liveSlots stuff configured without vrm');
@@ -212,9 +218,10 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   function registerEntry(baseRef, val, valIsCohort) {
     setValForSlot(baseRef, val);
     if (valIsCohort) {
-      for (let i = 0; i < val.length; i += 1) {
-        valToSlot.set(val[i], `${baseRef}:${i}`);
-      }
+      const { id } = parseVatSlot(baseRef);
+      vrm.getFacetNames(id).forEach((name, index) => {
+        valToSlot.set(val[name], `${baseRef}:${index}`);
+      });
     } else {
       valToSlot.set(val, baseRef);
     }
@@ -237,6 +244,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     allocateExportID,
     allocateCollectionID,
     getSlotForVal,
+    requiredValForSlot,
     getValForSlot,
     setValForSlot,
     registerEntry,
@@ -296,14 +304,13 @@ export function makeFakeWatchedPromiseManager(
  */
 export function makeFakeVirtualStuff(options = {}) {
   const actualOptions = {
-    cacheSize: 3,
     relaxDurabilityRules: true,
     ...options,
   };
   const { relaxDurabilityRules } = actualOptions;
   const fakeStuff = makeFakeLiveSlotsStuff(actualOptions);
   const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
-  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, actualOptions);
+  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff);
   vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
   const cm = makeFakeCollectionManager(vrm, fakeStuff, actualOptions);
@@ -315,7 +322,7 @@ export function makeStandaloneFakeVirtualObjectManager(options = {}) {
   const fakeStuff = makeFakeLiveSlotsStuff(options);
   const { relaxDurabilityRules = true } = options;
   const vrm = makeFakeVirtualReferenceManager(fakeStuff, relaxDurabilityRules);
-  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff, options);
+  const vom = makeFakeVirtualObjectManager(vrm, fakeStuff);
   vom.initializeKindHandleKind();
   fakeStuff.setVrm(vrm);
   return vom;

@@ -190,7 +190,6 @@ export async function setupTestLiveslots(
     syscall,
     buildRootObject,
     vatName,
-    { virtualObjectCacheSize: 0 },
   );
 
   async function dispatchMessage(message, ...args) {
@@ -218,6 +217,8 @@ export async function setupTestLiveslots(
       // plausible that whatever the issue is it may only impact the mock
       // environment.  Nevertheless there's a chance we may be courting some
       // deeper problem, hence this comment.
+      engineGC();
+      engineGC();
       engineGC();
     }
     await dispatch(makeBringOutYourDead());

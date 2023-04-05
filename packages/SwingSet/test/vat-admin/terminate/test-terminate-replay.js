@@ -19,6 +19,7 @@ test.serial('replay does not resurrect dead vat', async t => {
   const configPath = new URL('swingset-no-zombies.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
 
   const ss1 = initSwingStore();
   {

@@ -8,8 +8,7 @@ import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 test('VOM tracks reachable vrefs', async t => {
-  const vomOptions = { cacheSize: 3 };
-  const { vom, vrm, cm } = makeFakeVirtualStuff(vomOptions);
+  const { vom, vrm, cm } = makeFakeVirtualStuff();
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
   const weakStore = makeScalarBigWeakMapStore('test');

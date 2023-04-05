@@ -667,6 +667,12 @@ test('capdata size limit on syscalls', async t => {
       key: `vom.vkind.${kid}`,
       value: `{"kindID":"${kid}","tag":"test"}`,
     });
+  const expectStore = kid =>
+    t.deepEqual(log.shift(), {
+      type: 'vatstoreSet',
+      key: `vom.o+v${kid}/1`,
+      value: `{"x":{"body":"#0","slots":[]}}`,
+    });
 
   rp = nextRP();
   await send('voInitTooManySlots');
@@ -690,6 +696,7 @@ test('capdata size limit on syscalls', async t => {
   expectFail();
   expectVoidReturn();
   matchIDCounterSet(t, log);
+  expectStore(14);
   t.deepEqual(log, []);
 
   rp = nextRP();
@@ -698,6 +705,7 @@ test('capdata size limit on syscalls', async t => {
   expectFail();
   expectVoidReturn();
   matchIDCounterSet(t, log);
+  expectStore(15);
   t.deepEqual(log, []);
 
   rp = nextRP();

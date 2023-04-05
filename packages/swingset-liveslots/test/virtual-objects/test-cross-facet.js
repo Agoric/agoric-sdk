@@ -34,10 +34,10 @@ test('forbid cross-facet prototype attack', async t => {
   thing2.mutable.set(2);
 
   t.throws(() => attack1(thing1.mutable, thing2.immutable), {
-    message: /may only be applied to a valid instance/,
+    message: /^illegal cross-facet access/,
   });
   t.throws(() => attack2(thing1.mutable, thing2.immutable), {
-    message: /may only be applied to a valid instance/,
+    message: /^illegal cross-facet access/,
   });
   t.is(thing1.immutable.get(), 1);
   t.is(thing2.immutable.get(), 2);

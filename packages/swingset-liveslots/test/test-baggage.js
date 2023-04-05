@@ -29,7 +29,6 @@ test.serial('exercise baggage', async t => {
   const baggageVref = fakestore.get('baggageID');
   const { subid } = parseVatSlot(baggageVref);
   const baggageID = Number(subid);
-  console.log(`baggageID`, baggageID);
   const kindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
   // baggage is the first collection created, a scalarDurableMapStore
   t.is(baggageVref, `o+d${kindIDs.scalarDurableMapStore}/1`);

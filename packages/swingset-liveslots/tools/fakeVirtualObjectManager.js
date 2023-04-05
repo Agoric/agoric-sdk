@@ -11,9 +11,7 @@ import { makeVirtualObjectManager } from '../src/virtualObjectManager.js';
 // it *will* execute virtual object manager operations in the same way that the
 // real one will because underneath it *is* the real one.
 
-export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
-  const { cacheSize = 100 } = options;
-
+export function makeFakeVirtualObjectManager(vrm, fakeStuff) {
   const {
     initializeKindHandleKind,
     defineKind,
@@ -23,17 +21,17 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     makeKindHandle,
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
-    flushCache,
+    flushStateCache,
     canBeDurable,
   } = makeVirtualObjectManager(
     fakeStuff.syscall,
     vrm,
     fakeStuff.allocateExportID,
     fakeStuff.getSlotForVal,
+    fakeStuff.requiredValForSlot,
     fakeStuff.registerEntry,
     fakeStuff.marshal.serialize,
     fakeStuff.marshal.unserialize,
-    cacheSize,
     fakeStuff.assertAcceptableSyscallCapdataSize,
   );
 
@@ -54,7 +52,7 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff, options = {}) {
     setValForSlot: fakeStuff.setValForSlot,
     registerEntry: fakeStuff.registerEntry,
     deleteEntry: fakeStuff.deleteEntry,
-    flushCache,
+    flushStateCache,
     dumpStore: fakeStuff.dumpStore,
   };
 

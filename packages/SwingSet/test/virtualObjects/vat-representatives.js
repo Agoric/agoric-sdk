@@ -18,9 +18,6 @@ export function buildRootObject() {
   let heldThing;
 
   return Far('root', {
-    bootstrap() {
-      return 'bootstrap done';
-    },
     makeThing(name, hold) {
       const thing = makeThing(name);
       if (hold) {

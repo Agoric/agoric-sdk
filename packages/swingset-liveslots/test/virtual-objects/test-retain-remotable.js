@@ -55,7 +55,7 @@ function stashRemotableFour(holderMaker) {
 
 test('remotables retained by virtualized data', async t => {
   const gcAndFinalize = makeGcAndFinalize(engineGC);
-  const vomOptions = { cacheSize: 3, weak: true };
+  const vomOptions = { weak: true };
   const { vom, cm } = makeFakeVirtualStuff(vomOptions);
   const { defineKind } = vom;
   const { makeScalarBigWeakMapStore } = cm;
