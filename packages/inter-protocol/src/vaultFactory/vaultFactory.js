@@ -22,13 +22,14 @@ import {
   makeVaultDirectorParamManager,
   MIN_INITIAL_DEBT_KEY,
   ENDORSED_UI_KEY,
+  CHARGING_PERIOD_KEY,
+  RECORDING_PERIOD_KEY,
 } from './params.js';
 import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
  * @typedef {ZCF<GovernanceTerms<import('./params').VaultDirectorParams> & {
  *   auctioneerPublicFacet: import('../auction/auctioneer.js').AuctioneerPublicFacet,
- *   interestTimingParams: {ChargingPeriod: ParamValueTyped<'nat'>, RecordingPeriod: ParamValueTyped<'nat'>},
  *   minInitialDebt: Amount,
  *   priceAuthority: ERef<PriceAuthority>,
  *   reservePublicFacet: AssetReservePublicFacet,
@@ -72,6 +73,8 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     [MIN_INITIAL_DEBT_KEY]: { value: minInitialDebt },
     [ENDORSED_UI_KEY]: { value: endorsedUi },
+    [CHARGING_PERIOD_KEY]: { value: chargingPeriod },
+    [RECORDING_PERIOD_KEY]: { value: recordingPeriod },
   } = zcf.getTerms().governedParams;
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
@@ -80,6 +83,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     initialPoserInvitation,
     minInitialDebt,
     initialShortfallInvitation,
+    chargingPeriod,
+    recordingPeriod,
     endorsedUi,
   );
 

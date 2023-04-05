@@ -3,12 +3,8 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import { makeParamManagerBuilder } from '@agoric/governance';
 import { allValues, makeTracer, objectMap } from '@agoric/internal';
-import {
-  makeNotifierFromAsyncIterable,
-  makeStoredPublisherKit,
-} from '@agoric/notifier';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { M, matches } from '@agoric/store';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
@@ -26,10 +22,6 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
-import {
-  CHARGING_PERIOD_KEY,
-  RECORDING_PERIOD_KEY,
-} from '../../src/vaultFactory/params.js';
 import '../../src/vaultFactory/types.js';
 import {
   metricsTracker,
@@ -1991,16 +1983,20 @@ test('governance publisher', async t => {
   } = await directorGovNotifier.getUpdateSince();
   // can't deepEqual because of non-literal objects so check keys and then partial shapes
   t.deepEqual(Object.keys(current), [
+    'ChargingPeriod',
     'Electorate',
     'EndorsedUI',
     'MinInitialDebt',
+    'RecordingPeriod',
     'ShortfallInvitation',
   ]);
   t.like(current, {
+    ChargingPeriod: { type: 'nat', value: 2n },
     Electorate: { type: 'invitation' },
-    MinInitialDebt: { type: 'amount' },
-    ShortfallInvitation: { type: 'invitation' },
     EndorsedUI: { type: 'string', value: 'abracadabra' },
+    MinInitialDebt: { type: 'amount' },
+    RecordingPeriod: { type: 'nat', value: 10n },
+    ShortfallInvitation: { type: 'invitation' },
   });
 
   const managerGovNotifier = makeNotifierFromAsyncIterable(

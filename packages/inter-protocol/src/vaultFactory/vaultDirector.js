@@ -33,9 +33,7 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
-  CHARGING_PERIOD_KEY,
   makeVaultParamManager,
-  RECORDING_PERIOD_KEY,
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
@@ -361,26 +359,22 @@ export const prepareVaultDirector = (
             debtMint.burnLosses(harden({ Minted: toBurn }), seat);
           };
 
-          const { interestTimingParams } = zcf.getTerms();
-
           const factoryPowers = Far('vault factory powers', {
+            /**
+             * @returns read-only params for this manager and its director
+             */
             getGovernedParams: () =>
               Far('vault manager param manager', {
-                // one param from director scope
+                // merge direction and manager params
+                ...directorParamManager.readonly(),
+                ...vaultParamManager.readonly(),
+                // redeclare these getters as to specify the kind of the Amount
                 getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
                   directorParamManager.readonly().getMinInitialDebt
                 ),
-                ...vaultParamManager.readonly(),
-                // defined explicitly so as to specify the kind of the Amount
                 getDebtLimit: /** @type {() => Amount<'nat'>} */ (
                   vaultParamManager.readonly().getDebtLimit
                 ),
-                // XXX interestTimingParams not actually governed b/c it doesn't
-                // reach the governor facet
-                getChargingPeriod: () =>
-                  interestTimingParams[CHARGING_PERIOD_KEY].value,
-                getRecordingPeriod: () =>
-                  interestTimingParams[RECORDING_PERIOD_KEY].value,
               }),
             mintAndTransfer,
             getShortfallReporter: async () => {

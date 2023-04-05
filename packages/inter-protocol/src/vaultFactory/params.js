@@ -6,7 +6,6 @@ import {
   makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
-import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -30,12 +29,14 @@ export const ENDORSED_UI_KEY = 'EndorsedUI';
  * @param {Amount<'nat'>} minInitialDebt
  * @param {Amount} shortfallInvitationAmount
  * @param {string} endorsedUi
+ * @param {InterestTiming} interestTiming
  */
 const makeVaultDirectorParams = (
   electorateInvitationAmount,
   minInitialDebt,
   shortfallInvitationAmount,
   endorsedUi,
+  interestTiming,
 ) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
@@ -51,6 +52,14 @@ const makeVaultDirectorParams = (
       value: shortfallInvitationAmount,
     },
     [ENDORSED_UI_KEY]: { type: ParamTypes.STRING, value: endorsedUi },
+    [CHARGING_PERIOD_KEY]: {
+      type: ParamTypes.NAT,
+      value: TimeMath.relValue(interestTiming.chargingPeriod),
+    },
+    [RECORDING_PERIOD_KEY]: {
+      type: ParamTypes.NAT,
+      value: TimeMath.relValue(interestTiming.recordingPeriod),
+    },
   });
 };
 harden(makeVaultDirectorParams);
@@ -106,6 +115,8 @@ export const vaultParamPattern = M.splitRecord(
  * @param {Invitation} electorateInvitation
  * @param {Amount} minInitialDebt
  * @param {Invitation} shortfallInvitation
+ * @param chargingPeriod
+ * @param recordingPeriod
  * @param {string} [endorsedUi]
  */
 export const makeVaultDirectorParamManager = async (
@@ -114,6 +125,8 @@ export const makeVaultDirectorParamManager = async (
   electorateInvitation,
   minInitialDebt,
   shortfallInvitation,
+  chargingPeriod,
+  recordingPeriod,
   endorsedUi = 'NO ENDORSEMENT',
 ) => {
   return makeParamManager(
@@ -122,6 +135,8 @@ export const makeVaultDirectorParamManager = async (
       [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
       [MIN_INITIAL_DEBT_KEY]: [ParamTypes.AMOUNT, minInitialDebt],
       [SHORTFALL_INVITATION_KEY]: [ParamTypes.INVITATION, shortfallInvitation],
+      [CHARGING_PERIOD_KEY]: [ParamTypes.NAT, chargingPeriod],
+      [RECORDING_PERIOD_KEY]: [ParamTypes.NAT, recordingPeriod],
       [ENDORSED_UI_KEY]: [ParamTypes.STRING, endorsedUi],
     },
     zoe,
@@ -130,7 +145,7 @@ export const makeVaultDirectorParamManager = async (
 harden(makeVaultDirectorParamManager);
 
 /**
- * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
+ * @param {{}} _ FIXME remove
  * @param {{
  *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
  *   electorateInvitationAmount: Amount,
@@ -145,7 +160,7 @@ harden(makeVaultDirectorParamManager);
  * }} opts
  */
 export const makeGovernedTerms = (
-  { storageNode, marshaller },
+  _,
   {
     auctioneerPublicFacet,
     bootstrapPaymentValue,
@@ -159,26 +174,9 @@ export const makeGovernedTerms = (
     endorsedUi = 'NO ENDORSEMENT',
   },
 ) => {
-  const interestTimingParams = makeParamManagerSync(
-    // XXX not actually governed
-    // FIXME storage writes not tested
-    makeStoredPublisherKit(storageNode, marshaller, 'timingParams'),
-    {
-      [CHARGING_PERIOD_KEY]: [
-        'nat',
-        TimeMath.relValue(interestTiming.chargingPeriod),
-      ],
-      [RECORDING_PERIOD_KEY]: [
-        'nat',
-        TimeMath.relValue(interestTiming.recordingPeriod),
-      ],
-    },
-  ).getParams();
-
   return harden({
     auctioneerPublicFacet,
     priceAuthority,
-    interestTimingParams,
     reservePublicFacet,
     timerService: timer,
     governedParams: makeVaultDirectorParams(
@@ -186,6 +184,7 @@ export const makeGovernedTerms = (
       minInitialDebt,
       shortfallInvitationAmount,
       endorsedUi,
+      interestTiming,
     ),
     bootstrapPaymentValue,
   });
