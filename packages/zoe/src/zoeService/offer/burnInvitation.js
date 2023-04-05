@@ -1,7 +1,7 @@
 // @ts-check
-import { Fail, assert, details as X } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
-import { getCopyBagEntries } from '@agoric/store';
+import { getInvitationAmountDetails } from '../invitationQueries.js';
 
 /**
  * Burn the invitation, assert that only one invitation was burned,
@@ -24,9 +24,8 @@ export const burnInvitation = (invitationIssuer, invitation) => {
   };
   /** @param {Amount<'copyBag'>} invitationAmount */
   const handleFulfilled = invitationAmount => {
-    const payload = getCopyBagEntries(invitationAmount.value);
-    payload.length === 1 || Fail`Only one invitation can be redeemed at a time`;
-    const [[{ instance: instanceHandle, handle: invitationHandle }]] = payload;
+    const details = getInvitationAmountDetails(invitationAmount);
+    const { instance: instanceHandle, handle: invitationHandle } = details;
     return harden({
       instanceHandle,
       invitationHandle,
