@@ -67,7 +67,7 @@ test('initial vatstore contents', async t => {
   t.is(get(`vc.1.|entryCount`), '0'); // no entries yet
   t.is(get(`vc.1.|nextOrdinal`), '1'); // no ordinals yet
   t.is(get(`vc.1.|entryCount`), '0');
-  const stringSchema = [M.string()];
+  const stringSchema = { keyShape: M.string() };
   t.deepEqual(kunser(JSON.parse(get(`vc.1.|schemata`))), stringSchema);
 
   // then three tables for the promise watcher (one virtual, two durable)
@@ -89,11 +89,13 @@ test('initial vatstore contents', async t => {
   t.is(get(`vom.rc.${watchedPromiseTableVref}`), '1');
 
   // promiseRegistrations and promiseWatcherByKind arbitrary scalars as keys
-  const scalarSchema = [M.scalar()];
+  const scalarSchema = { keyShape: M.scalar() };
   t.deepEqual(kunser(JSON.parse(get(`vc.2.|schemata`))), scalarSchema);
   t.deepEqual(kunser(JSON.parse(get(`vc.3.|schemata`))), scalarSchema);
   // watchedPromises uses vref (string) keys
-  const scalarStringSchema = [M.and(M.scalar(), M.string())];
+  const scalarStringSchema = {
+    keyShape: M.and(M.scalar(), M.string()),
+  };
   t.deepEqual(kunser(JSON.parse(get(`vc.4.|schemata`))), scalarStringSchema);
 });
 

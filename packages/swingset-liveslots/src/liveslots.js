@@ -1536,7 +1536,9 @@ function build(
 
   async function bringOutYourDead() {
     await scanForDeadObjects();
-    // now flush all the vatstore changes (deletions) we made
+    // Now flush all the vatstore changes (deletions and refcounts) we
+    // made. dispatch() calls afterDispatchActions() automatically for
+    // most methods, but not bringOutYourDead().
     // eslint-disable-next-line no-use-before-define
     afterDispatchActions();
     // XXX TODO: make this conditional on a config setting
@@ -1557,6 +1559,7 @@ function build(
    */
   function afterDispatchActions() {
     flushIDCounters();
+    collectionManager.flushSchemaCache();
     vom.flushStateCache();
   }
 

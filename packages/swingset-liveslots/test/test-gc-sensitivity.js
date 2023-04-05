@@ -146,7 +146,7 @@ test('representative reanimation', async t => {
   t.deepEqual(noGCLog, yesGCLog);
 });
 
-test.failing('collection reanimation', async t => {
+test('collection reanimation', async t => {
   const { syscall, log } = buildSyscall();
   const gcTools = makeMockGC();
 
