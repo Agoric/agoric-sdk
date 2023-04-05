@@ -826,7 +826,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    */
   async function close() {
     db || Fail`db not initialized`;
-    commit();
     db.close();
     db = null;
     stopTrace();
