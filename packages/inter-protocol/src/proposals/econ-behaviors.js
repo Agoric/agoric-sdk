@@ -258,21 +258,18 @@ export const startVaultFactory = async (
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const vaultFactoryTerms = makeGovernedVFTerms(
-    { storageNode, marshaller },
-    {
-      priceAuthority,
-      auctioneerPublicFacet,
-      reservePublicFacet,
-      interestTiming,
-      timer: chainTimerService,
-      electorateInvitationAmount: poserInvitationAmount,
-      minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
-      bootstrapPaymentValue: 0n,
-      shortfallInvitationAmount,
-      endorsedUi,
-    },
-  );
+  const vaultFactoryTerms = makeGovernedVFTerms({
+    priceAuthority,
+    auctioneerPublicFacet,
+    reservePublicFacet,
+    interestTiming,
+    timer: chainTimerService,
+    electorateInvitationAmount: poserInvitationAmount,
+    minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
+    bootstrapPaymentValue: 0n,
+    shortfallInvitationAmount,
+    endorsedUi,
+  });
 
   const governorTerms = await deeplyFulfilledObject(
     harden({

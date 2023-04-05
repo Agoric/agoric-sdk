@@ -2,10 +2,10 @@ import './types.js';
 
 import {
   CONTRACT_ELECTORATE,
-  makeParamManager,
   makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
+import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { M } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -111,48 +111,35 @@ export const vaultParamPattern = M.splitRecord(
 
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
- * @param {ERef<ZoeService>} zoe
- * @param {GovernanceTerms<import('./params').VaultDirectorParams>['governedParams']} governedParams
- * @param electorateInvitation
- * @param shortfallInvitation
+ * @param {ZCF<GovernanceTerms<import('./params').VaultDirectorParams>>} zcf
+ * @param {Invitation} electorateInvitation
+ * @param {Invitation} shortfallInvitation
  */
 export const makeVaultDirectorParamManager = async (
   publisherKit,
-  zoe,
-  governedParams,
+  zcf,
   electorateInvitation,
   shortfallInvitation,
 ) => {
-  return makeParamManager(
+  const paramTypesMap = {
+    [MIN_INITIAL_DEBT_KEY]: ParamTypes.AMOUNT,
+    [CHARGING_PERIOD_KEY]: ParamTypes.NAT,
+    [RECORDING_PERIOD_KEY]: ParamTypes.NAT,
+    [ENDORSED_UI_KEY]: ParamTypes.STRING,
+  };
+  return makeParamManagerFromTerms(
     publisherKit,
+    zcf,
     {
-      [MIN_INITIAL_DEBT_KEY]: [
-        governedParams[MIN_INITIAL_DEBT_KEY].type,
-        governedParams[MIN_INITIAL_DEBT_KEY].value,
-      ],
-      [CHARGING_PERIOD_KEY]: [
-        governedParams[CHARGING_PERIOD_KEY].type,
-        governedParams[CHARGING_PERIOD_KEY].value,
-      ],
-      [RECORDING_PERIOD_KEY]: [
-        governedParams[RECORDING_PERIOD_KEY].type,
-        governedParams[RECORDING_PERIOD_KEY].value,
-      ],
-      [ENDORSED_UI_KEY]: [
-        governedParams[ENDORSED_UI_KEY].type,
-        governedParams[ENDORSED_UI_KEY].value,
-      ],
-      // private invitations
-      [CONTRACT_ELECTORATE]: [ParamTypes.INVITATION, electorateInvitation],
-      [SHORTFALL_INVITATION_KEY]: [ParamTypes.INVITATION, shortfallInvitation],
+      [CONTRACT_ELECTORATE]: electorateInvitation,
+      [SHORTFALL_INVITATION_KEY]: shortfallInvitation,
     },
-    zoe,
+    paramTypesMap,
   );
 };
 harden(makeVaultDirectorParamManager);
 
 /**
- * @param {{}} _ FIXME remove
  * @param {{
  *   auctioneerPublicFacet: ERef<AuctioneerPublicFacet>,
  *   electorateInvitationAmount: Amount,
@@ -166,21 +153,18 @@ harden(makeVaultDirectorParamManager);
  *   endorsedUi?: string,
  * }} opts
  */
-export const makeGovernedTerms = (
-  _,
-  {
-    auctioneerPublicFacet,
-    bootstrapPaymentValue,
-    electorateInvitationAmount,
-    interestTiming,
-    minInitialDebt,
-    priceAuthority,
-    reservePublicFacet,
-    timer,
-    shortfallInvitationAmount,
-    endorsedUi = 'NO ENDORSEMENT',
-  },
-) => {
+export const makeGovernedTerms = ({
+  auctioneerPublicFacet,
+  bootstrapPaymentValue,
+  electorateInvitationAmount,
+  interestTiming,
+  minInitialDebt,
+  priceAuthority,
+  reservePublicFacet,
+  timer,
+  shortfallInvitationAmount,
+  endorsedUi = 'NO ENDORSEMENT',
+}) => {
   return harden({
     auctioneerPublicFacet,
     priceAuthority,

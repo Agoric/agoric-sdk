@@ -195,6 +195,9 @@ const buildOwner = async (
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
   ]);
 
+  /** @type {AuctioneerPublicFacet} */
+  // @ts-expect-error cast, never used
+  const auctioneerPublicFacet = null;
   /** @type {AssetReservePublicFacet} */
   // @ts-expect-error cast, never used
   const reservePublicFacet = null;
@@ -202,20 +205,17 @@ const buildOwner = async (
   // @ts-expect-error cast, never used
   const shortfallInvitationAmount = null;
 
-  const terms = makeVaultFactoryTerms(
-    // @ts-expect-error missing storageNode and marshaller
-    {},
-    {
-      priceAuthority: priceAuthorityKit.priceAuthority,
-      interestTiming,
-      timer,
-      electorateInvitationAmount: poserInvitationAmount,
-      minInitialDebt: AmountMath.make(runBrand, 100n),
-      bootstrapPaymentValue: 0n,
-      reservePublicFacet,
-      shortfallInvitationAmount,
-    },
-  );
+  const terms = makeVaultFactoryTerms({
+    auctioneerPublicFacet,
+    priceAuthority: priceAuthorityKit.priceAuthority,
+    interestTiming,
+    timer,
+    electorateInvitationAmount: poserInvitationAmount,
+    minInitialDebt: AmountMath.make(runBrand, 100n),
+    bootstrapPaymentValue: 0n,
+    reservePublicFacet,
+    shortfallInvitationAmount,
+  });
 
   const privateVaultFactoryArgs = { feeMintAccess, initialPoserInvitation };
 

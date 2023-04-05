@@ -65,8 +65,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** a powerful object; can modify the invitation */
   const vaultDirectorParamManager = await makeVaultDirectorParamManager(
     makeStoredPublisherKit(storageNode, marshaller, 'governance'),
-    zcf.getZoeService(),
-    zcf.getTerms().governedParams,
+    zcf,
     initialPoserInvitation,
     initialShortfallInvitation,
   );

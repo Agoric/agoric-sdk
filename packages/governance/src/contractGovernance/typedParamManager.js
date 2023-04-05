@@ -81,7 +81,7 @@ const isAsync = {
  * @param {ERef<ZoeService>} zoe
  * @returns {Promise<TypedParamManager<{[K in keyof T]: T[K][0]}>>}
  */
-const makeParamManager = async (publisherKit, spec, zoe) => {
+export const makeParamManager = async (publisherKit, spec, zoe) => {
   const builder = makeParamManagerBuilder(publisherKit, zoe);
 
   const promises = [];
@@ -98,6 +98,7 @@ const makeParamManager = async (publisherKit, spec, zoe) => {
   // @ts-expect-error cast
   return builder.build();
 };
+harden(makeParamManager);
 
 /**
  * Used only when the contract has multiple param managers.
@@ -109,7 +110,7 @@ const makeParamManager = async (publisherKit, spec, zoe) => {
  * @param {T} spec
  * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
  */
-const makeParamManagerSync = (publisherKit, spec) => {
+export const makeParamManagerSync = (publisherKit, spec) => {
   const builder = makeParamManagerBuilder(publisherKit);
 
   for (const [name, [type, value]] of Object.entries(spec)) {
@@ -121,19 +122,21 @@ const makeParamManagerSync = (publisherKit, spec) => {
   // @ts-expect-error cast
   return builder.build();
 };
+harden(makeParamManagerSync);
 
 /**
+ * @template {Record<string, Invitation> & {Electorate: Invitation}} I Private invitation values
  * @template {ParamTypesMap} M Map of types of custom governed terms
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
- * @param {Invitation} initialPoserInvitation
+ * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
- * @returns {Promise<TypedParamManager<M & {Electorate: 'invitation'}>>}
+ * @returns {Promise<TypedParamManager<M & {[K in keyof I]: 'invitation'}>>}
  */
-const makeParamManagerFromTerms = async (
+export const makeParamManagerFromTerms = async (
   publisherKit,
   zcf,
-  initialPoserInvitation,
+  invitations,
   paramTypesMap,
 ) => {
   const { governedParams } = zcf.getTerms();
@@ -148,19 +151,14 @@ const makeParamManagerFromTerms = async (
     ],
   );
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
-  makerSpecEntries.push([
-    CONTRACT_ELECTORATE,
-    [ParamTypes.INVITATION, initialPoserInvitation],
-  ]);
-  // @ts-expect-error cast
-  return makeParamManager(
-    publisherKit,
-    Object.fromEntries(makerSpecEntries),
-    zcf.getZoeService(),
-  );
-};
+  for (const [name, invitation] of Object.entries(invitations)) {
+    makerSpecEntries.push([name, [ParamTypes.INVITATION, invitation]]);
+  }
+  const makerSpec = Object.fromEntries(makerSpecEntries);
+  makerSpec[CONTRACT_ELECTORATE] ||
+    Fail`missing Electorate invitation param value`;
 
-harden(makeParamManager);
-harden(makeParamManagerSync);
+  // @ts-expect-error cast
+  return makeParamManager(publisherKit, makerSpec, zcf.getZoeService());
+};
 harden(makeParamManagerFromTerms);
-export { makeParamManager, makeParamManagerSync, makeParamManagerFromTerms };
