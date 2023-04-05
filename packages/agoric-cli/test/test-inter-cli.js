@@ -7,15 +7,12 @@ import { createCommand, CommanderError } from 'commander';
 import { Far } from '@endo/far';
 import { boardSlottingMarshaller } from '../src/lib/rpc.js';
 
-import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
+import { fmtBid, makeInterCommand, KW } from '../src/commands/inter.js';
+import { makeParseAmount } from '../src/lib/wallet.js';
 
 const { entries } = Object;
 
-const unused = (...args) => {
-  console.error('unused?', ...args);
-  assert.fail('should not be needed');
-};
-
+/** @typedef {import('commander').Command} Command */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
 
 /**
@@ -47,7 +44,7 @@ const agoricNames = harden({
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
       issuer: /** @type {any} */ ({}),
       issuerName: 'IST',
-      proposedName: 'Agoric stable local currency',
+      proposedName: 'Agoric stable token',
     },
 
     'ibc/toyatom': {
@@ -82,22 +79,19 @@ const offerSpec1 = harden({
         numerator: mk(bslot.IST, 9n),
         denominator: mk(bslot.ATOM, 1n),
       },
-      want: mk(bslot.ATOM, 5000000n),
+      want: mk(bslot.ATOM, 1_000_000_000_000n),
     },
     proposal: {
-      exit: { onDemand: null },
-      give: {
-        Currency: mk(bslot.IST, 50000000n),
-      },
+      give: { [KW.Bid]: mk(bslot.IST, 50_000_000n) },
     },
   },
 });
 
 const publishedNames = {
   agoricNames: {
-    brand: entries(agoricNames.brand),
-    instance: entries(agoricNames.instance),
-    vbankAsset: entries(agoricNames.vbankAsset),
+    brand: { _: entries(agoricNames.brand) },
+    instance: { _: entries(agoricNames.instance) },
+    vbankAsset: { _: entries(agoricNames.vbankAsset) },
   },
 };
 
@@ -125,13 +119,14 @@ const makeNet = published => {
     );
     if (!matched) throw Error(`fetch what?? ${url}`);
     const { path } = matched.groups;
-    let data = published;
+    let node = published;
     for (const key of path.split('.')) {
-      data = data[key];
-      if (!data) throw Error(`query what?? ${path}`);
+      node = node[key];
+      if (!node) throw Error(`query what?? ${path}`);
     }
+    if (!node._) throw Error(`no data at ${path}`);
     return harden({
-      json: async () => fmt(data),
+      json: async () => fmt(node._),
     });
   };
 
@@ -149,13 +144,40 @@ const makeProcess = (t, keyring, out) => {
   const execFileSync = (file, args) => {
     switch (file) {
       case 'agd': {
-        t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
-        const name = args[3];
-        const addr = keyring[name];
-        if (!addr) {
-          throw Error(`no such key in keyring: ${name}`);
+        // first arg that doesn't sart with --
+        const cmd = args.find(a => !a.startsWith('--'));
+        t.truthy(cmd);
+        switch (cmd) {
+          case 'keys': {
+            ['--node', '--chain'].forEach(opt => {
+              const ix = args.findIndex(a => a.startsWith(opt));
+              if (ix >= 0) {
+                args.splice(ix, 1);
+              }
+            });
+            t.deepEqual(args.slice(0, 3), ['keys', 'show', '--address']);
+            const name = args[3];
+            const addr = keyring[name];
+            if (!addr) {
+              throw Error(`no such key in keyring: ${name}`);
+            }
+            return addr;
+          }
+          case 'status': {
+            return JSON.stringify({
+              SyncInfo: { latest_block_time: 123, latest_block_height: 456 },
+            });
+          }
+          case 'query': {
+            return JSON.stringify({});
+          }
+          case 'tx': {
+            return JSON.stringify({ code: 0 });
+          }
+          default:
+            t.fail(`agd cmd not impl:${args[0]}`);
         }
-        return addr;
+        break;
       }
       default:
         throw Error('not impl');
@@ -168,26 +190,95 @@ const makeProcess = (t, keyring, out) => {
       return true;
     },
   });
+
+  /** @type {typeof setTimeout} */
+  // @ts-expect-error mock
+  const setTimeout = (f, _ms) => Promise.resolve().then(_ => f());
+
   return {
     env: {},
     stdout,
     stderr: { write: _s => true },
     now: () => Date.parse('2001-01-01'),
+    setTimeout,
     createCommand,
     execFileSync,
   };
 };
 
-test('inter bid place by-price: output is correct', async t => {
+/**
+ * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
+ *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
+ */
+const offerStatus2 = harden({
+  id: 'bid-234234',
+  invitationSpec: {
+    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
+    instancePath: ['auctioneer'],
+    source: 'agoricContract',
+  },
+  offerArgs: {
+    offerBidScaling: {
+      denominator: { brand: topBrands.IST, value: 100n },
+      numerator: { brand: topBrands.IST, value: 90n },
+    },
+    want: { brand: topBrands.ATOM, value: 2000000n },
+  },
+  proposal: {
+    give: {
+      [KW.Bid]: { brand: topBrands.ATOM, value: 20000000n },
+    },
+  },
+  payouts: {
+    Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
+    [KW.Bid]: { brand: topBrands.IST, value: 37_000_000n },
+  },
+});
+
+const govWallets = {
+  [govKeyring.gov1]: {
+    _: { updated: 'offerStatus', status: offerStatus2 },
+    current: { _: { liveOffers: [[offerStatus2.id, offerStatus2]] } },
+  },
+  [govKeyring.gov2]: { current: {} },
+};
+
+test('amount parsing', t => {
+  const parseAmount = makeParseAmount(agoricNames);
+  const b = topBrands;
+
+  t.deepEqual(parseAmount('1ATOM'), { brand: b.ATOM, value: 1_000_000n });
+  t.deepEqual(
+    parseAmount('10_000ATOM'),
+    {
+      brand: b.ATOM,
+      value: 10_000_000_000n,
+    },
+    'handle underscores',
+  );
+  t.deepEqual(
+    parseAmount('1.5ATOM'),
+    { brand: b.ATOM, value: 1_500_000n },
+    'handle decimal',
+  );
+
+  t.throws(() => parseAmount('5'), { message: 'invalid amount: 5' });
+  t.throws(() => parseAmount('50'), { message: 'invalid amount: 50' });
+  t.throws(() => parseAmount('5.5.5ATOM'), {
+    message: 'invalid amount: 5.5.5ATOM',
+  });
+});
+
+test('inter bid place by-price: printed offer is correct', async t => {
   const argv =
-    'node inter bid by-price --giveCurrency 50 --price 9 --wantCollateral 5'
+    'node inter bid by-price --give 50IST --price 9 --from gov1 --generate-only'
       .trim()
       .split(' ');
 
   const out = [];
   const cmd = await makeInterCommand(
-    { ...makeProcess(t, govKeyring, out), execFileSync: unused },
-    makeNet(publishedNames),
+    { ...makeProcess(t, govKeyring, out) },
+    makeNet({ ...publishedNames, wallet: govWallets }),
   );
   cmd.exitOverride(() => t.fail('exited'));
 
@@ -203,6 +294,8 @@ test('inter bid place by-price: output is correct', async t => {
     [topBrands.ATOM, topBrands.IST].map(b => b.getBoardId()),
   );
 });
+
+test.todo('want as max collateral wanted');
 
 /**
  * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
@@ -225,53 +318,19 @@ const offerStatus1 = harden({
   },
   proposal: {
     give: {
-      Currency: { brand: topBrands.ATOM, value: 20000000n },
+      [KW.Bid]: { brand: topBrands.ATOM, value: 20000000n },
     },
-  },
-});
-
-/**
- * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
- *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}}
- */
-const offerStatus2 = harden({
-  id: 'bid-234234',
-  invitationSpec: {
-    callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
-    instancePath: ['auctioneer'],
-    source: 'agoricContract',
-  },
-  offerArgs: {
-    offerBidScaling: {
-      denominator: { brand: topBrands.IST, value: 100n },
-      numerator: { brand: topBrands.IST, value: 90n },
-    },
-    want: { brand: topBrands.ATOM, value: 2000000n },
-  },
-  proposal: {
-    give: {
-      Currency: { brand: topBrands.ATOM, value: 20000000n },
-    },
-  },
-  payouts: {
-    Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
-    Currency: { brand: topBrands.IST, value: 37_000_000n },
   },
 });
 
 test('inter bid list: finds one bid', async t => {
   const argv = 'node inter bid list --from gov1'.split(' ');
 
-  const wallet = {
-    [govKeyring.gov1]: { updated: 'offerStatus', status: offerStatus2 },
-    [govKeyring.gov2]: { updated: 'XXX' },
-  };
-
   const out = [];
 
   const cmd = await makeInterCommand(
     makeProcess(t, govKeyring, out),
-    makeNet({ ...publishedNames, wallet }),
+    makeNet({ ...publishedNames, wallet: govWallets }),
   );
   cmd.exitOverride(() => t.fail('exited'));
 
@@ -281,14 +340,46 @@ test('inter bid list: finds one bid', async t => {
     JSON.stringify({
       id: 'bid-234234',
       discount: 10,
-      give: { Currency: '20 ATOM' },
+      give: { [KW.Bid]: '20 ATOM' },
       want: '2 ATOM',
-      payouts: { Collateral: '5 ATOM', Currency: '37 IST' },
+      payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
     }),
   );
 });
 
+/** @type {(c: Command) => Command[]} */
 const subCommands = c => [c, ...c.commands.flatMap(subCommands)];
+
+test('diagnostic for agd ENOENT', async t => {
+  const argv = 'node inter bid list --from gov1'.split(' ');
+
+  const out = [];
+  const diag = [];
+  const proc = makeProcess(t, govKeyring, out);
+  const cmd = await makeInterCommand(
+    {
+      ...proc,
+      execFileSync: file => {
+        t.is(file, 'agd');
+        throw Error('ENOENT');
+      },
+    },
+    makeNet({}),
+  );
+  subCommands(cmd).forEach(c => {
+    c.exitOverride();
+    c.configureOutput({ writeErr: s => diag.push(s) });
+  });
+
+  await t.throwsAsync(cmd.parseAsync(argv), { instanceOf: CommanderError });
+  t.deepEqual(
+    diag.join('').trim(),
+    "error: option '--from <address>' argument 'gov1' is invalid. ENOENT: is agd in your $PATH?",
+  );
+  t.deepEqual(out.join('').trim(), '');
+});
+
+test.todo('agd ENOENT clue outside normalizeAddress');
 
 const usageTest = (words, blurb = 'Command usage:') => {
   test(`Usage: ${words}`, async t => {
@@ -320,7 +411,8 @@ usageTest('inter liquidation status');
 usageTest('inter bid by-price');
 usageTest('inter bid by-discount');
 usageTest('inter bid list');
-usageTest('inter reserve add');
+usageTest('inter bid cancel');
+usageTest('inter vbank list');
 
 test('formatBid', t => {
   const { values } = Object;
@@ -329,7 +421,7 @@ test('formatBid', t => {
     t.deepEqual(actual, {
       id: 1678990150266,
       error: 'Error: "nameKey" not found: (a string)',
-      give: { Currency: '20 ATOM' },
+      give: { [KW.Bid]: '20 ATOM' },
       price: '10 IST/ATOM',
       want: '2 ATOM',
     });
@@ -338,10 +430,42 @@ test('formatBid', t => {
     const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
     t.deepEqual(actual, {
       id: 'bid-234234',
-      give: { Currency: '20 ATOM' },
-      payouts: { Collateral: '5 ATOM', Currency: '37 IST' },
+      give: { [KW.Bid]: '20 ATOM' },
+      payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
       want: '2 ATOM',
       discount: 10,
     });
   }
 });
+
+test.todo('fmtBid with error does not show result');
+/*
+_not_ like this:
+
+{"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Currency":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
+*/
+
+test.todo('execSwingsetTransaction returns non-0 code');
+
+test.todo('inter bid by-price shows tx, wallet status');
+/*
+$ agops inter bid by-price --price 0.81 --give 0.5 --want 3 --from gov2
+2023-03-30T21:48:14.479332418Z not in block 49618 retrying...
+bid is broadcast:
+{"timestamp":"2023-03-30T21:48:19Z","height":"49619","offerId":"bid-1680212903989","txhash":"472A47AAE24F27E747E3E64F4644860D2A5D3AD7EC5388C4C849805034E20D38"}
+first bid update:
+{"id":"bid-1680212903989","price":"0.81 IST/IbcATOM","give":{"Currency":"0.5IST"},"want":"3IbcATOM","result":"Your bid has been accepted"}
+*/
+
+test.todo('inter bid cancel shows resulting payouts');
+/*
+
+*/
+
+test.todo('already cancelled bid');
+/*
+$ agops inter bid cancel --from gov2 bid-1680211556497
+bid-1680211556497 not in live offer ids: bid-1680211593489,bid-1680212903989,bid-1680213097499,bid-1680220217218,bid-1680220368714,bid-1680220406939
+*/
+
+test.todo('--give without number');

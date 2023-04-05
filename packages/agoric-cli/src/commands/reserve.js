@@ -1,17 +1,47 @@
 /* eslint-disable @jessie.js/no-nested-await */
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch */
+/* global fetch, process */
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import { makeRpcUtils } from '../lib/rpc.js';
-import { outputExecuteOfferAction } from '../lib/wallet.js';
+import { outputActionAndHint } from '../lib/wallet.js';
 
 /**
- *
  * @param {import('anylogger').Logger} _logger
+ * @param io
  */
-export const makeReserveCommand = async _logger => {
+export const makeReserveCommand = (_logger, io = {}) => {
+  const { stdout = process.stdout, stderr = process.stderr, now } = io;
   const reserve = new Command('reserve').description('Asset Reserve commands');
+
+  reserve
+    .command('add')
+    .description('add collateral to the reserve')
+    .requiredOption('--give <number>', 'Collateral to give', Number)
+    .option('--collateral-brand <string>', 'Collateral brand key', 'IbcATOM')
+    .option('--offer-id <string>', 'Offer id', String, `addCollateral-${now()}`)
+    .action(
+      /**
+       * @param {{
+       *   give: number,
+       *   collateralBrand: string,
+       *   offerId: string,
+       * }} opts
+       */
+      async ({ collateralBrand, ...opts }) => {
+        const { agoricNames } = await makeRpcUtils({ fetch });
+
+        const offer = Offers.reserve.AddCollateral(agoricNames.brand, {
+          collateralBrandKey: collateralBrand,
+          ...opts,
+        });
+        outputActionAndHint(
+          { method: 'executeOffer', offer },
+          { stdout, stderr },
+        );
+      },
+    );
 
   reserve
     .command('proposeBurn')
@@ -58,9 +88,10 @@ export const makeReserveCommand = async _logger => {
         proposal: {},
       };
 
-      outputExecuteOfferAction(offer);
-
-      console.warn('Now execute the prepared offer');
+      outputActionAndHint(
+        { method: 'executeOffer', offer },
+        { stdout, stderr },
+      );
     });
 
   return reserve;

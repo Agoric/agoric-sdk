@@ -17,7 +17,7 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
  *
  * @param {import('anylogger').Logger} logger
  */
-export const makeOracleCommand = async logger => {
+export const makeOracleCommand = logger => {
   const oracle = new Command('oracle').description('Oracle commands').usage(
     `
   WALLET=my-wallet
