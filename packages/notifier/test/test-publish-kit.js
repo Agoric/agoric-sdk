@@ -4,7 +4,7 @@
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
 import { E } from '@endo/far';
-import { makeMethodCallback } from '@agoric/internal/src/callback.js';
+// import { makeMethodCallback } from '@agoric/internal/src/callback.js';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -290,7 +290,8 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     { [spyName]: undefined },
   ]);
   const pub2Options = {
-    onAdvance: makeMethodCallback(directSubscriber, spyName),
+    // onUpdate: makeMethodCallback(directSubscriber, spyName),
+    onUpdate: { target: directSubscriber, methodName: spyName, bound: [] },
   };
   const { publisher: pub2 } = await run('messageVat', [
     {

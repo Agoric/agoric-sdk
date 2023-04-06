@@ -160,7 +160,7 @@
  *
  * @property {DurablePublishKitValueDurability} valueDurability
  *
- * @property {import('@agoric/internal/src/callback.js').Callback<*>} [onAdvance]
+ * @property {import('@agoric/internal/src/callback.js').Callback<*>} [onUpdate]
  *
  * @property {bigint} publishCount
  *

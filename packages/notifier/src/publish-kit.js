@@ -179,19 +179,19 @@ harden(makePublishKit);
 /**
  * @param {object} [options]
  * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
- * @param {import('@agoric/internal/src/callback.js').Callback<*>} [options.onAdvance] A direct callback
+ * @param {import('@agoric/internal/src/callback.js').Callback<*>} [options.onUpdate] A direct callback
  *   to which published values should be sent, useful for receiving validated values
  *   without consuming heap RAM with ephemeral objects
  * @returns {DurablePublishKitState}
  */
 const initDurablePublishKitState = (options = {}) => {
-  const { valueDurability = 'mandatory', onAdvance } = options;
+  const { valueDurability = 'mandatory', onUpdate } = options;
   assert.equal(valueDurability, 'mandatory');
-  !onAdvance || assert(isCallback(onAdvance));
+  !onUpdate || assert(isCallback(onUpdate));
   return {
     // configuration
     valueDurability,
-    onAdvance,
+    onUpdate,
 
     // lifecycle progress
     publishCount: 0n,
@@ -294,7 +294,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
  */
 const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const { state, facets } = context;
-  const { valueDurability, onAdvance, status } = state;
+  const { valueDurability, onUpdate, status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
   }
@@ -306,8 +306,8 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
     provideDurablePublishKitEphemeralData(state, facets);
   const commit = resolution => {
     // Invoke a direct callback, but ignore the result.
-    if (onAdvance) {
-      callE(onAdvance, resolution).then(sink, sink);
+    if (onUpdate) {
+      void callE(onUpdate, resolution).then(sink, sink);
     }
     resolveCurrent(resolution);
   };
