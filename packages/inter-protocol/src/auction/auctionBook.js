@@ -489,7 +489,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
             } else if (startProceedsGoal && proceedsGoal) {
               const curRatio = makeRatioFromAmounts(
                 startProceedsGoal,
-                curCollateral,
+                AmountMath.add(curCollateral, assetAmount),
               );
               const newRatio = makeRatioFromAmounts(proceedsGoal, assetAmount);
               return ratioGTE(newRatio, curRatio) ? newRatio : curRatio;

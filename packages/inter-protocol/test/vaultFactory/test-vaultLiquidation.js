@@ -891,18 +891,18 @@ test('liquidate two loans', async t => {
     totalDebt: { value: totalDebt },
     numLiquidatingVaults: 0,
     numLiquidationsCompleted: 2,
-    totalCollateralSold: { value: 792n },
-    totalProceedsReceived: { value: 5825n },
+    totalCollateralSold: { value: 800n },
+    totalOverageReceived: { value: 55n },
+    totalProceedsReceived: { value: 5880n },
   });
 
-  await E(bidderSeat).tryExit();
   //  Bidder bought 792 Aeth
-  await assertBidderPayout(t, bidderSeat, run, 4175n, aeth, 792n);
+  await assertBidderPayout(t, bidderSeat, run, 4120n, aeth, 800n);
 
   const reserveAllocations = await E(reserveCreatorFacet).getAllocations();
   t.deepEqual(reserveAllocations, {
-    Aeth: aeth.make(8n),
-    Fee: run.makeEmpty(),
+    Aeth: aeth.makeEmpty(),
+    Fee: run.make(55n),
   });
 });
 

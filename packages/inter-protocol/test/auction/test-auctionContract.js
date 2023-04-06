@@ -275,7 +275,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
         subscriptionTracker(t, subscribeEach(subscription)),
       );
     },
-    getBookDataTracker(t, brand) {
+    getBookDataTracker(brand) {
       return E.when(E(publicFacet).getBookDataUpdates(brand), subscription =>
         subscriptionTracker(t, subscribeEach(subscription)),
       );
@@ -842,7 +842,7 @@ test.serial('onDeadline exit', async t => {
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
   );
 
-  const bookTracker = await driver.getBookDataTracker(t, collateral.brand);
+  const bookTracker = await driver.getBookDataTracker(collateral.brand);
   await bookTracker.assertInitial({
     collateralAvailable: collateral.make(100n),
     currentPriceLevel: null,
@@ -852,7 +852,7 @@ test.serial('onDeadline exit', async t => {
     startPrice: null,
     startProceedsGoal: null,
   });
-  const scheduleTracker = await driver.getScheduleTracker(t);
+  const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
     nextDescendingStepTime: TimeMath.toAbs(170n, timerBrand),
@@ -959,7 +959,7 @@ test.serial('add assets to open auction', async t => {
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
   );
 
-  const bookTracker = await driver.getBookDataTracker(t, collateral.brand);
+  const bookTracker = await driver.getBookDataTracker(collateral.brand);
   await bookTracker.assertInitial({
     collateralAvailable: collateral.make(1000n),
     currentPriceLevel: null,
@@ -969,7 +969,7 @@ test.serial('add assets to open auction', async t => {
     startPrice: null,
     startProceedsGoal: null,
   });
-  const scheduleTracker = await driver.getScheduleTracker(t);
+  const scheduleTracker = await driver.getScheduleTracker();
   await scheduleTracker.assertInitial({
     activeStartTime: undefined,
     nextDescendingStepTime: TimeMath.toAbs(170n, timerBrand),
