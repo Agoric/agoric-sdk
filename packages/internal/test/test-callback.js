@@ -39,10 +39,12 @@ test('near function callbacks', t => {
   t.is(cb.callSync(cb1, 10, 'go'), '19go');
   t.is(cb.callSync(cb2, 'go'), '19go');
 
-  // @ts-expect-error deliberate: Promise provides no match for the signature
-  const cbp2 = cb.makeSyncFunctionCallback(Promise.resolve(f), 9, 10);
-  t.like(cbp2, { bound: [9, 10] });
-  t.assert(cbp2.target instanceof Promise);
+  const cbp2 =
+    /** @type {import('../src/callback').SyncCallback<(...args: unknown[]) => any>} */ ({
+      target: Promise.resolve(f),
+      methodName: undefined,
+      bound: [9, 10],
+    });
   t.throws(() => cb.callSync(cbp2, 'go'), { message: /not a function/ });
 });
 
@@ -138,13 +140,74 @@ test('far function callbacks', async t => {
   t.is(await p2r, '19go');
 });
 
-test('isCallback', async t => {
-  t.true(cb.isCallback(cb.makeFunctionCallback(async () => {})));
-  t.true(cb.isCallback(cb.makeMethodCallback({ m: async () => {} }, 'm')));
-  t.true(cb.isCallback(cb.makeSyncFunctionCallback(() => {})));
-  t.true(cb.isCallback(cb.makeSyncMethodCallback({ m: () => {} }, 'm')));
-  t.false(cb.isCallback(undefined));
-  t.false(cb.isCallback(null));
-  t.false(cb.isCallback('string'));
-  t.false(cb.isCallback({}));
+test('bad callbacks', async t => {
+  t.throws(
+    // @ts-expect-error deliberate: number is not assignable to function
+    () => cb.makeFunctionCallback(42),
+    undefined,
+    'number as function presence',
+  );
+  t.throws(
+    () => cb.makeMethodCallback('string', 'slice'),
+    undefined,
+    'string as presence',
+  );
+  t.throws(
+    // @ts-expect-error deliberate: object is not assignable to function
+    () => cb.makeSyncFunctionCallback({}),
+    undefined,
+    'plain object as function',
+  );
+  t.throws(
+    () => cb.makeSyncMethodCallback(false, 'valueOf'),
+    undefined,
+    'boolean as object',
+  );
+});
+
+test('isCallback', t => {
+  t.true(
+    cb.isCallback(cb.makeFunctionCallback(async () => {})),
+    'makeFunctionCallback',
+  );
+  t.true(
+    cb.isCallback(cb.makeMethodCallback({ m: async () => {} }, 'm')),
+    'makeMethodCallback',
+  );
+  t.true(
+    cb.isCallback(cb.makeSyncFunctionCallback(() => {})),
+    'makeSyncFunctionCallback',
+  );
+  t.true(
+    cb.isCallback(cb.makeSyncMethodCallback({ m: () => {} }, 'm')),
+    'makeSyncMethodCallback',
+  );
+  // manually-implemented original-format callback objects must always work
+  t.true(cb.isCallback({ target: () => {}, bound: [] }), 'manual function');
+  t.true(
+    cb.isCallback({ target: {}, methodName: 'foo', bound: [] }),
+    'manual method',
+  );
+
+  t.false(cb.isCallback(undefined), 'undefined');
+  t.false(cb.isCallback(null), 'null');
+  t.false(cb.isCallback('string'), 'string');
+  t.false(cb.isCallback({}), 'empty object');
+  t.false(
+    cb.isCallback({ target: 'non-object', bound: [] }),
+    'non-object target',
+  );
+  t.false(
+    cb.isCallback({ target: {}, methodName: Symbol('foo'), bound: [] }),
+    'unique symbol method name',
+  );
+  t.false(cb.isCallback({ target: {}, bound: {} }), 'non-array bound args');
+  t.false(
+    cb.isCallback({ target: {}, bound: undefined }),
+    'undefined bound args',
+  );
+  t.false(
+    cb.isCallback({ target: {}, methodName: 'foo' }),
+    'missing bound args',
+  );
 });
