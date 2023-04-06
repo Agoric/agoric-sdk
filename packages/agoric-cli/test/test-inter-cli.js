@@ -341,7 +341,7 @@ test('inter bid list: finds one bid', async t => {
       id: 'bid-234234',
       discount: 10,
       give: { [KW.Bid]: '20 ATOM' },
-      want: '2 ATOM',
+      desiredBuy: '2 ATOM',
       payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
     }),
   );
@@ -423,7 +423,7 @@ test('formatBid', t => {
       error: 'Error: "nameKey" not found: (a string)',
       give: { [KW.Bid]: '20 ATOM' },
       price: '10 IST/ATOM',
-      want: '2 ATOM',
+      desiredBuy: '2 ATOM',
     });
   }
   {
@@ -432,7 +432,7 @@ test('formatBid', t => {
       id: 'bid-234234',
       give: { [KW.Bid]: '20 ATOM' },
       payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
-      want: '2 ATOM',
+      desiredBuy: '2 ATOM',
       discount: 10,
     });
   }

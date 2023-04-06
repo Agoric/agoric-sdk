@@ -148,8 +148,8 @@ export const fmtBid = (bid, assets) => {
 
   const {
     id,
-    proposal: { give },
-    offerArgs: { want },
+    proposal: { give, want },
+    offerArgs: { want: desiredBuy },
     payouts,
     result,
     error,
@@ -158,7 +158,8 @@ export const fmtBid = (bid, assets) => {
     !error && result && result !== 'UNPUBLISHED' ? { result } : {};
   const props = {
     ...(give ? { give: fmt.record(give) } : {}),
-    ...(want ? { want: fmt.amount(want) } : {}),
+    ...(want ? { want: fmt.record(want) } : {}),
+    ...(desiredBuy ? { desiredBuy: fmt.amount(desiredBuy) } : {}),
     ...(payouts ? { payouts: fmt.record(payouts) } : resultProp),
     ...(error ? { error } : {}),
   };
