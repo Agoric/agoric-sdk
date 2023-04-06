@@ -170,54 +170,64 @@ export const makeEconomicCommiteeCommand = (logger, io = {}) => {
       'index of one position to vote for (within the question description.positions); ',
       Number,
     )
-    .option(
+    // XXX BREAKING CHANGE. also: should be --from
+    .requiredOption(
       '--send-from <name-or-address>',
       'Send from address',
       accountFactory.normalizeAddress,
     )
-    .action(async function (opts) {
-      const { board, agoricNames, account, current } =
-        await accountFactory.makeAccountKit(opts.sendFrom, env.AGORIC_NET);
+    .action(
+      /**
+       * @param {{
+       *   offerId: string,
+       *   forPosition: number,
+       *   sendFrom: string,
+       * }} opts
+       */
+      async function (opts) {
+        const { board, agoricNames, account, current } =
+          await accountFactory.makeAccountKit(opts.sendFrom, env.AGORIC_NET);
 
-      const info = await board.readLatestHead(
-        'published.committees.Economic_Committee.latestQuestion',
-      );
-      // XXX runtime shape-check
-      const questionDesc = /** @type {any} */ (info);
-
-      // TODO support multiple position arguments
-      const chosenPositions = [questionDesc.positions[opts.forPosition]];
-      assert(chosenPositions, `undefined position index ${opts.forPosition}`);
-
-      const cont = findContinuingIds(current, agoricNames);
-      const votingRight = cont.find(
-        it => it.instance === agoricNames.instance.economicCommittee,
-      );
-      if (!votingRight) {
-        throw new CommanderError(
-          1,
-          'NO_INVITATION',
-          'first, try: agops ec committee ...',
+        const info = await board.readLatestHead(
+          'published.committees.Economic_Committee.latestQuestion',
         );
-      }
-      /** @type {OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: votingRight.offerId,
-          invitationMakerName: 'makeVoteInvitation',
-          // (positionList, questionHandle)
-          invitationArgs: harden([
-            chosenPositions,
-            questionDesc.questionHandle,
-          ]),
-        },
-        proposal: {},
-      };
+        // XXX runtime shape-check
+        const questionDesc = /** @type {any} */ (info);
 
-      await account.processOffer(offer);
-    });
+        // TODO support multiple position arguments
+        const chosenPositions = [questionDesc.positions[opts.forPosition]];
+        assert(chosenPositions, `undefined position index ${opts.forPosition}`);
+
+        const cont = findContinuingIds(current, agoricNames);
+        const votingRight = cont.find(
+          it => it.instance === agoricNames.instance.economicCommittee,
+        );
+        if (!votingRight) {
+          throw new CommanderError(
+            1,
+            'NO_INVITATION',
+            'first, try: agops ec committee ...',
+          );
+        }
+        /** @type {OfferSpec} */
+        const offer = {
+          id: opts.offerId,
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: votingRight.offerId,
+            invitationMakerName: 'makeVoteInvitation',
+            // (positionList, questionHandle)
+            invitationArgs: harden([
+              chosenPositions,
+              questionDesc.questionHandle,
+            ]),
+          },
+          proposal: {},
+        };
+
+        await account.processOffer(offer);
+      },
+    );
 
   return ec;
 };
