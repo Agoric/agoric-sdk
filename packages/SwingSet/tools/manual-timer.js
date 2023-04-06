@@ -1,6 +1,7 @@
 import { Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
+import { TimeMath } from '@agoric/time';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 
 /**
@@ -58,28 +59,35 @@ const setup = () => {
  * kernel. You can make time pass by calling `advanceTo(when)`.
  *
  * @param {{ startTime?: Timestamp }} [options]
- * @returns {TimerService & { advanceTo: (when: Timestamp) => bigint; }}
+ * @returns {TimerService & { advanceTo: (when: import('@agoric/time').TimestampValue) => import('@agoric/time/src/types').TimestampRecord; }}
  */
 export const buildManualTimer = (options = {}) => {
   const { startTime = 0n, ...other } = options;
+  assert.typeof(startTime, 'bigint');
   const unrec = Object.getOwnPropertyNames(other).join(',');
   assert.equal(unrec, '', `buildManualTimer unknown options ${unrec}`);
   const { timerService, state } = setup();
-  assert.typeof(startTime, 'bigint');
   state.now = startTime;
+
+  const timerBrand = timerService.getTimerBrand();
 
   const wake = () => {
     if (state.currentHandler) {
-      state.currentHandler.wake(state.now);
+      state.currentHandler.wake(TimeMath.toAbs(state.now, timerBrand));
     }
   };
 
+  /**
+   *
+   * @param {import('@agoric/time').TimestampValue} when
+   * @returns {import('@agoric/time/src/types').TimestampRecord}
+   */
   const advanceTo = when => {
     assert.typeof(when, 'bigint');
     assert(when > state.now, `advanceTo(${when}) < current ${state.now}`);
     state.now = when;
     wake();
-    return when;
+    return TimeMath.toAbs(when, timerBrand);
   };
 
   return Far('ManualTimer', { ...bindAllMethods(timerService), advanceTo });
