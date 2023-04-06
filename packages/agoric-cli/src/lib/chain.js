@@ -90,7 +90,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', yesCmd);
     const out = execFileSync(agdBinary, yesCmd).toString();
-    console.log('@@@exec result:', out);
+    // console.debug('exec result:', out);
     return out;
   }
 };
@@ -247,16 +247,11 @@ export const makeAgd = ({ execFileSync }) => {
     ];
     const nodeArgs = [...(rpcAddrs ? [`--node`, rpcAddrs[0]] : [])];
 
-    const l = a => {
-      console.log(a);
-      return a;
-    };
     /**
      * @param {string[]} args
      * @param {*} [opts]
      */
-    const exec = (args, opts) =>
-      execFileSync(agdBinary, l(args), opts).toString();
+    const exec = (args, opts) => execFileSync(agdBinary, args, opts).toString();
 
     const outJson = ['--output', 'json'];
 
