@@ -1,0 +1,25 @@
+diff --git a/node_modules/@endo/marshal/index.d.ts b/node_modules/@endo/marshal/index.d.ts
+index 08dd176..9472882 100644
+--- a/node_modules/@endo/marshal/index.d.ts
++++ b/node_modules/@endo/marshal/index.d.ts
+@@ -8,7 +8,7 @@ export * from "./src/types.js";
+ export { mapIterable, filterIterable } from "./src/helpers/iter-helpers.js";
+ export { PASS_STYLE, isObject, assertChecker, getTag, hasOwnPropertyOf } from "./src/helpers/passStyle-helpers.js";
+ export { getErrorConstructor, toPassableError } from "./src/helpers/error.js";
+-export { nameForPassableSymbol, passableSymbolForName } from "./src/helpers/symbol.js";
++export { isPassableSymbol, nameForPassableSymbol, passableSymbolForName } from "./src/helpers/symbol.js";
+ export { passStyleOf, assertPassable } from "./src/passStyleOf.js";
+ export { Remotable, Far, ToFarFunction } from "./src/make-far.js";
+ export { stringify, parse } from "./src/marshal-stringify.js";
+diff --git a/node_modules/@endo/marshal/index.js b/node_modules/@endo/marshal/index.js
+index 66feb4e..5b054de 100644
+--- a/node_modules/@endo/marshal/index.js
++++ b/node_modules/@endo/marshal/index.js
+@@ -11,6 +11,7 @@ export { getErrorConstructor, toPassableError } from './src/helpers/error.js';
+ export { getInterfaceOf } from './src/helpers/remotable.js';
+ 
+ export {
++  isPassableSymbol,
+   nameForPassableSymbol,
+   passableSymbolForName,
+ } from './src/helpers/symbol.js';

@@ -49,6 +49,7 @@ test('near function callbacks', t => {
 });
 
 test('near method callbacks', t => {
+  const m2 = Symbol.for('m2');
   const o = {
     /**
      * @param {number} a
@@ -57,6 +58,16 @@ test('near method callbacks', t => {
      * @returns {string}
      */
     m1(a, b, c) {
+      return `${a + b}${c}`;
+    },
+
+    /**
+     * @param {number} a
+     * @param {number} b
+     * @param {string} c
+     * @returns {string}
+     */
+    [m2](a, b, c) {
       return `${a + b}${c}`;
     },
   };
@@ -77,6 +88,10 @@ test('near method callbacks', t => {
   const cb3 = cb.makeSyncMethodCallback(o, 'm1', 9, 10, true);
   t.deepEqual(cb3, { target: o, methodName: 'm1', bound: [9, 10, true] });
 
+  /** @type {import('../src/callback').SyncCallback<(c: string) => string>} */
+  const cb4 = cb.makeSyncMethodCallback(o, m2, 9, 10);
+  t.deepEqual(cb4, { target: o, methodName: m2, bound: [9, 10] });
+
   // @ts-expect-error deliberate: Expected 4 arguments but got 5
   t.is(cb.callSync(cb0, 2, 3, 'go', 'bad'), '5go');
 
@@ -85,6 +100,7 @@ test('near method callbacks', t => {
 
   t.is(cb.callSync(cb1, 10, 'go'), '19go');
   t.is(cb.callSync(cb2, 'go'), '19go');
+  t.is(cb.callSync(cb4, 'go'), '19go');
 
   // @ts-expect-error deliberate: Promise provides no match for the signature
   const cbp2 = cb.makeSyncMethodCallback(Promise.resolve(o), 'm1', 9, 10);
@@ -94,6 +110,7 @@ test('near method callbacks', t => {
 });
 
 test('far method callbacks', async t => {
+  const m2 = Symbol.for('m2');
   const o = Far('MyObject', {
     /**
      *
@@ -105,18 +122,38 @@ test('far method callbacks', async t => {
     async m1(a, b, c) {
       return `${a + b}${c}`;
     },
+
+    /**
+     *
+     * @param {number} a
+     * @param {number} b
+     * @param {string} c
+     * @returns {Promise<string>}
+     */
+    [m2]: async (a, b, c) => {
+      return `${a + b}${c}`;
+    },
   });
 
   /** @type {import('../src/callback').Callback<(c: string) => Promise<string>>} */
   const cbp2 = cb.makeMethodCallback(Promise.resolve(o), 'm1', 9, 10);
   t.like(cbp2, { methodName: 'm1', bound: [9, 10] });
   t.assert(cbp2.target instanceof Promise);
-  // @ts-expect-error deliberate: is not assignable to SyncCallback
-  const thunk = () => cb.callSync(cbp2, 'go');
-  t.throws(thunk, { message: /not a function/ });
   const p2r = cb.callE(cbp2, 'go');
   t.assert(p2r instanceof Promise);
   t.is(await p2r, '19go');
+
+  /** @type {import('../src/callback').Callback<(c: string) => Promise<string>>} */
+  const cbp3 = cb.makeMethodCallback(Promise.resolve(o), m2, 9, 10);
+  t.like(cbp3, { methodName: m2, bound: [9, 10] });
+  t.assert(cbp3.target instanceof Promise);
+  const p3r = cb.callE(cbp3, 'go');
+  t.assert(p3r instanceof Promise);
+  t.is(await p3r, '19go');
+
+  // @ts-expect-error deliberate: is not assignable to SyncCallback
+  const thunk = () => cb.callSync(cbp2, 'go');
+  t.throws(thunk, { message: /not a function/ });
 });
 
 test('far function callbacks', async t => {
@@ -170,8 +207,9 @@ test('isCallback', t => {
     cb.isCallback(cb.makeFunctionCallback(async () => {})),
     'makeFunctionCallback',
   );
+  const sym = Symbol.asyncIterator;
   t.true(
-    cb.isCallback(cb.makeMethodCallback({ m: async () => {} }, 'm')),
+    cb.isCallback(cb.makeMethodCallback({ [sym]: async () => {} }, sym)),
     'makeMethodCallback',
   );
   t.true(
@@ -187,6 +225,10 @@ test('isCallback', t => {
   t.true(
     cb.isCallback({ target: {}, methodName: 'foo', bound: [] }),
     'manual method',
+  );
+  t.true(
+    cb.isCallback({ target: {}, methodName: Symbol.for('foo'), bound: [] }),
+    'manual symbol-keyed method',
   );
 
   t.false(cb.isCallback(undefined), 'undefined');
