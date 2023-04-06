@@ -1,5 +1,8 @@
 // @ts-check
 import { E } from '@endo/far';
+import { isObject, isPassableSymbol } from '@endo/marshal';
+
+const { Fail } = assert;
 
 /**
  * @template {(...args: unknown[]) => any} I
@@ -54,6 +57,8 @@ export const callE = (callback, ...args) => {
  * @returns {SyncCallback<I>}
  */
 export const makeSyncFunctionCallback = (target, ...bound) => {
+  typeof target === 'function' ||
+    Fail`sync function callback target must be a function: ${target}`;
   /** @type {unknown} */
   const cb = harden({ target, bound });
   return /** @type {SyncCallback<I>} */ (cb);
@@ -73,6 +78,8 @@ harden(makeSyncFunctionCallback);
  * @returns {Callback<I>}
  */
 export const makeFunctionCallback = (target, ...bound) => {
+  isObject(target) ||
+    Fail`function callback target must be a function presence: ${target}`;
   /** @type {unknown} */
   const cb = harden({ target, bound });
   return /** @type {Callback<I>} */ (cb);
@@ -94,6 +101,11 @@ harden(makeFunctionCallback);
  * @returns {SyncCallback<I>}
  */
 export const makeSyncMethodCallback = (target, methodName, ...bound) => {
+  isObject(target) ||
+    Fail`sync method callback target must be an object: ${target}`;
+  typeof methodName === 'string' ||
+    isPassableSymbol(methodName) ||
+    Fail`method name must be a string or passable symbol: ${methodName}`;
   /** @type {unknown} */
   const cb = harden({ target, methodName, bound });
   return /** @type {SyncCallback<I>} */ (cb);
@@ -115,8 +127,31 @@ harden(makeSyncMethodCallback);
  * @returns {Callback<I>}
  */
 export const makeMethodCallback = (target, methodName, ...bound) => {
+  isObject(target) || Fail`method callback target must be an object: ${target}`;
+  typeof methodName === 'string' ||
+    isPassableSymbol(methodName) ||
+    Fail`method name must be a string or passable symbol: ${methodName}`;
   /** @type {unknown} */
   const cb = harden({ target, methodName, bound });
   return /** @type {Callback<I>} */ (cb);
 };
 harden(makeMethodCallback);
+
+/**
+ * @param {any} callback
+ * @returns {callback is Callback}
+ */
+export const isCallback = callback => {
+  if (!isObject(callback)) {
+    return false;
+  }
+  const { target, methodName, bound } = callback;
+  return (
+    isObject(target) &&
+    (methodName === undefined ||
+      typeof methodName === 'string' ||
+      isPassableSymbol(methodName)) &&
+    Array.isArray(bound)
+  );
+};
+harden(isCallback);

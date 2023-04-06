@@ -2,6 +2,7 @@
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { E, Far } from '@endo/far';
+import { callE, isCallback } from '@agoric/internal/src/callback.js';
 import { M } from '@agoric/store';
 import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
@@ -178,14 +179,19 @@ harden(makePublishKit);
 /**
  * @param {object} [options]
  * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
+ * @param {PublishKitOnUpdate} [options.onUpdate] A direct callback
+ *   to which published values should be sent, useful for receiving validated values
+ *   without consuming heap RAM with ephemeral objects
  * @returns {DurablePublishKitState}
  */
 const initDurablePublishKitState = (options = {}) => {
-  const { valueDurability = 'mandatory' } = options;
+  const { valueDurability = 'mandatory', onUpdate } = options;
   assert.equal(valueDurability, 'mandatory');
+  !onUpdate || assert(isCallback(onUpdate));
   return {
     // configuration
     valueDurability,
+    onUpdate,
 
     // lifecycle progress
     publishCount: 0n,
@@ -288,7 +294,7 @@ const provideDurablePublishKitEphemeralData = (state, facets) => {
  */
 const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const { state, facets } = context;
-  const { valueDurability, status } = state;
+  const { valueDurability, onUpdate, status } = state;
   if (status !== 'live') {
     throw new Error('Cannot update state after termination.');
   }
@@ -298,6 +304,16 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   }
   const { tailP: currentP, tailR: resolveCurrent } =
     provideDurablePublishKitEphemeralData(state, facets);
+  const commit = resolution => {
+    // Invoke a direct callback, but ignore the result.
+    if (onUpdate) {
+      // We use Promise.resolve to ensure that onUpdate always receives
+      // a promise while preserving the identity of any rejection.
+      // `resolution` is a safe value created in this module.
+      void callE(onUpdate, Promise.resolve(resolution));
+    }
+    resolveCurrent(resolution);
+  };
 
   const publishCount = state.publishCount + 1n;
   state.publishCount = publishCount;
@@ -321,7 +337,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
     state.hasValue = true;
     state.value = value;
     const rejection = makeQuietRejection(value);
-    resolveCurrent(rejection);
+    commit(rejection);
   } else {
     // Persist a terminal value, or a non-terminal value
     // if configured as 'mandatory' or 'opportunistic'.
@@ -333,7 +349,7 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
       state.value = undefined;
     }
 
-    resolveCurrent(
+    commit(
       harden({
         head: { value, done },
         publishCount,
