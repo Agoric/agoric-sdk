@@ -222,6 +222,10 @@ export const pollTx = async (txhash, opts) => {
 
 const { freeze } = Object; // XXX use harden?
 
+/**
+ * @param {import('commander').Command} cmd
+ * @param {{ env: Record<string, string|undefined> }} opts
+ */
 export const withAgdOptions = (cmd, { env }) =>
   cmd
     .option('--home <dir>', 'agd CosmosSDK application home directory')
