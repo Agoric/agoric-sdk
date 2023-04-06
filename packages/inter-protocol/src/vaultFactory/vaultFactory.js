@@ -15,10 +15,15 @@ import '@agoric/zoe/src/contracts/exported.js';
 // to satisfy contractGovernor. It needs to return a creatorFacet with
 // { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
-import { assertElectorateMatches } from '@agoric/governance';
+import {
+  assertElectorateMatches,
+  CONTRACT_ELECTORATE,
+} from '@agoric/governance';
+import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { assertAllDefined } from '@agoric/internal';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { makeVaultDirectorParamManager } from './params.js';
+import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
+import { E } from '@endo/eventual-send';
+import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { prepareVaultDirector } from './vaultDirector.js';
 
 /**
@@ -62,12 +67,27 @@ export const start = async (zcf, privateArgs, baggage) => {
   }));
 
   const { timerService, auctioneerPublicFacet } = zcf.getTerms();
+
+  // XXX non-durable
+  const governanceSubscriptionKit = makeSubscriptionKit();
+  const governanceNode = E(storageNode).makeChildNode('governance');
+  const governanceSubscriber = makeStoredSubscription(
+    governanceSubscriptionKit.subscription,
+    governanceNode,
+    marshaller,
+  );
   /** a powerful object; can modify the invitation */
-  const vaultDirectorParamManager = await makeVaultDirectorParamManager(
-    makeStoredPublisherKit(storageNode, marshaller, 'governance'),
+  const vaultDirectorParamManager = await makeParamManagerFromTerms(
+    {
+      publisher: governanceSubscriptionKit.publication,
+      subscriber: governanceSubscriber,
+    },
     zcf,
-    initialPoserInvitation,
-    initialShortfallInvitation,
+    {
+      [CONTRACT_ELECTORATE]: initialPoserInvitation,
+      [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
+    },
+    vaultDirectorParamTypes,
   );
 
   assertElectorateMatches(

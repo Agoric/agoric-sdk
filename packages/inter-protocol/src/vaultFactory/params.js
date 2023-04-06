@@ -5,7 +5,6 @@ import {
   makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
-import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { M } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -23,6 +22,14 @@ export const LOAN_FEE_KEY = 'LoanFee';
 export const MIN_INITIAL_DEBT_KEY = 'MinInitialDebt';
 export const SHORTFALL_INVITATION_KEY = 'ShortfallInvitation';
 export const ENDORSED_UI_KEY = 'EndorsedUI';
+
+export const vaultDirectorParamTypes = {
+  [MIN_INITIAL_DEBT_KEY]: ParamTypes.AMOUNT,
+  [CHARGING_PERIOD_KEY]: ParamTypes.NAT,
+  [RECORDING_PERIOD_KEY]: ParamTypes.NAT,
+  [ENDORSED_UI_KEY]: ParamTypes.STRING,
+};
+harden(vaultDirectorParamTypes);
 
 /**
  * @param {Amount} electorateInvitationAmount
@@ -108,36 +115,6 @@ export const vaultParamPattern = M.splitRecord(
     liquidationPadding: ratioPattern,
   },
 );
-
-/**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
- * @param {ZCF<GovernanceTerms<import('./params').VaultDirectorParams>>} zcf
- * @param {Invitation} electorateInvitation
- * @param {Invitation} shortfallInvitation
- */
-export const makeVaultDirectorParamManager = async (
-  publisherKit,
-  zcf,
-  electorateInvitation,
-  shortfallInvitation,
-) => {
-  const paramTypesMap = {
-    [MIN_INITIAL_DEBT_KEY]: ParamTypes.AMOUNT,
-    [CHARGING_PERIOD_KEY]: ParamTypes.NAT,
-    [RECORDING_PERIOD_KEY]: ParamTypes.NAT,
-    [ENDORSED_UI_KEY]: ParamTypes.STRING,
-  };
-  return makeParamManagerFromTerms(
-    publisherKit,
-    zcf,
-    {
-      [CONTRACT_ELECTORATE]: electorateInvitation,
-      [SHORTFALL_INVITATION_KEY]: shortfallInvitation,
-    },
-    paramTypesMap,
-  );
-};
-harden(makeVaultDirectorParamManager);
 
 /**
  * @param {{
