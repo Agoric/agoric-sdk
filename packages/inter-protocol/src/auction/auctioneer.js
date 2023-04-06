@@ -22,7 +22,11 @@ import {
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { pipeTopicToStorage, prepareDurablePublishKit } from '@agoric/notifier';
+import {
+  pipeTopicToStorage,
+  prepareDurablePublishKit,
+  makePublicTopic,
+} from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeBidSpecShape, prepareAuctionBook } from './auctionBook.js';
@@ -403,6 +407,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeAuctionPublishKit();
 
   const scheduleNode = E(privateArgs.storageNode).makeChildNode('schedule');
+  // TODO(7300) pipeTopicToStorage is being removed
   pipeTopicToStorage(scheduleSubscriber, scheduleNode, privateArgs.marshaller);
 
   /**
@@ -601,6 +606,16 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       getBookDataUpdates(brand) {
         return subscribers.get(brand);
+      },
+      getPublicTopics() {
+        return {
+          schedule: makePublicTopic(
+            'Auction schedule',
+            scheduleSubscriber,
+            scheduleNode,
+          ),
+          // TODO(cth) how to represent topics for every node in subscribers?
+        };
       },
       getDepositInvitation,
       ...params,

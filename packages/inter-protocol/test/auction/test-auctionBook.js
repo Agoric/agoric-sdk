@@ -94,12 +94,12 @@ test('simple addOffer', async t => {
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
 
-  const publishKit = makePublishKit();
+  const { publisher } = makePublishKit();
   const book = await makeAuctionBook(
     moolaKit.brand,
     simoleanKit.brand,
     pa,
-    publishKit.publisher,
+    publisher,
   );
   pa.setPrice(makeRatioFromAmounts(moola(11n), simoleans(10n)));
   await eventLoopIteration();

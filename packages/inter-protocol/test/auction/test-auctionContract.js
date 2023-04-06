@@ -270,7 +270,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
     getTimerService() {
       return timerService;
     },
-    async getScheduleTracker() {
+    getScheduleTracker() {
       return E.when(E(publicFacet).getScheduleUpdates(), subscription =>
         subscriptionTracker(t, subscribeEach(subscription)),
       );

@@ -122,9 +122,9 @@ export const computeRoundTiming = (params, baseTime) => {
  *
  * @property {Timestamp | undefined} activeStartTime start time of current
  *    auction if auction is active
- * @property {Timestamp | undefined} nextStartTime start time of next auction
- * @property {Timestamp | undefined} nextDescendingStepTime if auction is
- *    active we're not on the last step, when the next descending step will be
+ * @property {Timestamp} nextStartTime start time of next auction
+ * @property {Timestamp} nextDescendingStepTime when the next descending step
+ *    will take place
  */
 
 /**
@@ -147,18 +147,33 @@ export const makeScheduler = async (
    * @type {Schedule | undefined}
    */
   let liveSchedule;
-  /**
-   * Next should always be defined after initialization unless it's paused
-   *
-   * @type {Schedule | undefined}
-   */
-  let nextSchedule;
+
+  /** @returns {Promise<{now:Timestamp, nextSchedule: Schedule}>} */
+  const initializeNextSchedule = async () => {
+    return E.when(
+      // XXX manualTimer returns a bigint, not a timeRecord.
+      E(timer).getCurrentTimestamp(),
+      now => {
+        const nextSchedule = computeRoundTiming(
+          params,
+          TimeMath.toAbs(now, timerBrand),
+        );
+        return { now, nextSchedule };
+      },
+    );
+  };
+  let { now, nextSchedule } = await initializeNextSchedule();
+  const setTimeMonotonically = time => {
+    TimeMath.compareAbs(time, now) >= 0 || Fail`Time only moves forward`;
+    now = time;
+  };
+
   const stepCancelToken = makeCancelToken();
 
   /** @type {typeof AuctionState[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
 
-  const publishSchedule = now => {
+  const publishSchedule = () => {
     const calcNextStep = () => {
       if (!liveSchedule) {
         if (!nextSchedule) {
@@ -194,12 +209,11 @@ export const makeScheduler = async (
   };
 
   /**
-   * @param {import("@agoric/time/src/types").Timestamp} time
    * @param {Schedule | undefined} schedule
    */
-  const clockTick = (time, schedule) => {
-    trace('clockTick', schedule?.startTime, time);
-    if (schedule && TimeMath.compareAbs(time, schedule.startTime) >= 0) {
+  const clockTick = schedule => {
+    trace('clockTick', schedule?.startTime, now);
+    if (schedule && TimeMath.compareAbs(now, schedule.startTime) >= 0) {
       if (auctionState !== AuctionState.ACTIVE) {
         auctionState = AuctionState.ACTIVE;
         auctionDriver.startRound();
@@ -208,7 +222,7 @@ export const makeScheduler = async (
       }
     }
 
-    if (schedule && TimeMath.compareAbs(time, schedule.endTime) >= 0) {
+    if (schedule && TimeMath.compareAbs(now, schedule.endTime) >= 0) {
       auctionState = AuctionState.WAITING;
 
       auctionDriver.finalize();
@@ -218,9 +232,9 @@ export const makeScheduler = async (
       // only recalculate the next schedule at this point if the lock time has
       // not been reached.
       const nextLock = nextSchedule.lockTime;
-      if (nextLock && TimeMath.compareAbs(time, nextLock) < 0) {
+      if (nextLock && TimeMath.compareAbs(now, nextLock) < 0) {
         const afterNow = TimeMath.addAbsRel(
-          time,
+          now,
           TimeMath.toRel(1n, timerBrand),
         );
         nextSchedule = computeRoundTiming(params, afterNow);
@@ -231,12 +245,12 @@ export const makeScheduler = async (
     }
 
     if (schedule) {
-      publishSchedule(time);
+      publishSchedule();
     }
   };
 
   // schedule the wakeups for the steps of this round
-  const scheduleSteps = now => {
+  const scheduleSteps = () => {
     if (!liveSchedule) throw Fail`liveSchedule not defined`;
 
     const { startTime } = liveSchedule;
@@ -253,9 +267,10 @@ export const makeScheduler = async (
       delayFromNow,
       liveSchedule.clockStep,
       Far('SchedulerWaker', {
-        wake(t) {
-          trace('wake step', t);
-          clockTick(t, liveSchedule);
+        wake(time) {
+          setTimeMonotonically(time);
+          trace('wake step', now);
+          clockTick(liveSchedule);
         },
       }),
       stepCancelToken,
@@ -269,15 +284,16 @@ export const makeScheduler = async (
       start,
       Far('SchedulerWaker', {
         wake(time) {
+          setTimeMonotonically(time);
           // eslint-disable-next-line no-use-before-define
-          void startAuction(time);
-          publishSchedule(time);
+          void startAuction();
+          publishSchedule();
         },
       }),
     );
   };
 
-  const startAuction = async now => {
+  const startAuction = async () => {
     !liveSchedule || Fail`can't start an auction round while one is active`;
 
     assert(nextSchedule);
@@ -289,24 +305,18 @@ export const makeScheduler = async (
     );
     nextSchedule = computeRoundTiming(params, after);
 
-    scheduleSteps(now);
+    scheduleSteps();
     scheduleNextRound(
       TimeMath.subtractAbsRel(nextSchedule.startTime, nextSchedule.startDelay),
     );
   };
 
-  // XXX manualTimer returns a bigint, not a timeRecord.
-  const baseNow = await E(timer).getCurrentTimestamp();
-  nextSchedule = computeRoundTiming(
-    params,
-    TimeMath.toAbs(baseNow, timerBrand),
-  );
   const firstStart = TimeMath.subtractAbsRel(
     nextSchedule.startTime,
     nextSchedule.startDelay,
   );
   scheduleNextRound(firstStart);
-  publishSchedule(firstStart);
+  publishSchedule();
 
   return Far('scheduler', {
     getSchedule: () =>
