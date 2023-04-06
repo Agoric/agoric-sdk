@@ -5,24 +5,26 @@ import { assert } from '@agoric/assert';
 import {
   floorDivideBy,
   makeRatio,
+  multiplyBy,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { Far } from '@endo/marshal';
-
-import { makePublishKit } from '@agoric/notifier';
+import { makePublishKit, observeNotifier } from '@agoric/notifier';
 import {
   makeFakeMarshaller,
   makeFakeStorage,
 } from '@agoric/notifier/tools/testSupports.js';
 import {
   atomicRearrange,
-  getAmountOut,
+  unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
+
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 import { prepareVault } from '../../src/vaultFactory/vault.js';
+import { priceFrom } from '../../src/auction/util';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -72,13 +74,27 @@ export async function start(zcf, privateArgs, baggage) {
     quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
   };
   const priceAuthority = await makeFakePriceAuthority(options);
-  const maxDebtFor = async collateralAmount => {
-    const quoteAmount = await E(priceAuthority).quoteGiven(
-      collateralAmount,
-      runBrand,
-    );
+  const collateralUnit = await unitAmount(collateralBrand);
+  const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+    collateralUnit,
+    runBrand,
+  );
+  let storedCollateralQuote;
+  observeNotifier(quoteNotifier, {
+    updateState(value) {
+      storedCollateralQuote = value;
+    },
+    fail(reason) {
+      console.error('quoteNotifier failed to iterate', reason);
+    },
+  });
+
+  const maxDebtFor = collateralAmount => {
     // floorDivide because we want the debt ceiling lower
-    return floorDivideBy(getAmountOut(quoteAmount), LIQUIDATION_MARGIN);
+    return floorDivideBy(
+      multiplyBy(collateralAmount, priceFrom(storedCollateralQuote)),
+      LIQUIDATION_MARGIN,
+    );
   };
 
   /** @type {MintAndTransfer} */

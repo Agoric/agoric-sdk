@@ -511,6 +511,7 @@ test('price falls precipitously', async t => {
 
   // @ts-expect-error it's a mock
   priceAuthority.setPrice(makeRatio(130n, run.brand, 1n, aeth.brand));
+  await eventLoopIteration();
 
   const { startTime, time } = await startAuctionClock(
     auctioneerKit,
@@ -1072,6 +1073,7 @@ test('sell goods at auction', async t => {
   // price falls
   // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(70n, run.brand, 10n, aeth.brand));
+  await eventLoopIteration();
 
   // Bob's loan is now 777 Minted (including interest) on 100 Aeth, with the price
   // at 7. 100 * 7 > 1.05 * 777. When interest is charged again, Bob should get
@@ -1620,6 +1622,7 @@ test('liquidation Margin matters', async t => {
   // price falls to 10.00. notice that no liquidation takes place.
   // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(1000n, run.brand, 100n, aeth.brand));
+  await eventLoopIteration();
 
   let { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
 
@@ -1631,6 +1634,7 @@ test('liquidation Margin matters', async t => {
   // price falls to 9.99. Now it liquidates.
   // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(999n, run.brand, 100n, aeth.brand));
+  await eventLoopIteration();
 
   ({ startTime } = await startAuctionClock(auctioneerKit, manualTimer));
 
@@ -1791,6 +1795,7 @@ test('reinstate vault', async t => {
   // price falls
   // @ts-expect-error setupServices() should return the right type
   await priceAuthority.setPrice(makeRatio(400n, run.brand, 100n, aeth.brand));
+  await eventLoopIteration();
 
   const { startTime } = await startAuctionClock(auctioneerKit, manualTimer);
 
