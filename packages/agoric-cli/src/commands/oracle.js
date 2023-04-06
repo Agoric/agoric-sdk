@@ -7,14 +7,9 @@ import { Nat } from '@endo/nat';
 import { Command, InvalidArgumentError } from 'commander';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { inspect } from 'util';
-import {
-  makeAgd,
-  makeSigner,
-  normalizeAddressWithAgd,
-  withAgdOptions,
-} from '../lib/chain.js';
+import { makeAgd, withAgdOptions } from '../lib/chain.js';
 import { makeBoardClient, makeQueryClient } from '../lib/rpc.js';
-import { processOffer } from '../lib/wallet.js';
+import { makeAccountFactory } from '../lib/wallet.js';
 import { makeTUI } from '../lib/format.js';
 
 // XXX support other decimal places
@@ -49,7 +44,6 @@ export const makeOracleCommand = (logger, io = {}) => {
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
   } = io;
 
-  const tui = makeTUI({ stdout, logger });
   const oracle = withAgdOptions(
     new Command('oracle').description('Oracle commands').usage(
       `
@@ -76,23 +70,13 @@ export const makeOracleCommand = (logger, io = {}) => {
     { env },
   );
 
-  const agdDefault = makeAgd({ execFileSync });
-  const agdLocal = agdDefault.withOpts(oracle.opts());
-  const normalizeAddress = arg =>
-    normalizeAddressWithAgd(arg, { agd: agdLocal });
-
-  const ioTools = async () => {
-    const qLocal = makeQueryClient({ fetch });
-    const qClient = await ('AGORIC_NET' in env
-      ? qLocal.withConfig(env.AGORIC_NET)
-      : qLocal);
-    const board = makeBoardClient(qClient);
-    const agoricNames = await board.provideAgoricNames();
-    const agd = agdLocal.withOpts({ rpcAddrs: qClient.rpcAddrs });
-    const signer = makeSigner({ agd, chainId: qClient.chainName });
-
-    return { board, agoricNames, signer };
-  };
+  const tui = makeTUI({ stdout, logger });
+  const accountFactory = makeAccountFactory({
+    tui,
+    delay,
+    agdLocal: makeAgd({ execFileSync }).withOpts(oracle.opts()),
+    qLocal: makeQueryClient({ fetch }),
+  });
 
   oracle
     .command('accept')
@@ -107,10 +91,13 @@ export const makeOracleCommand = (logger, io = {}) => {
     .option(
       '--send-from <address>',
       'wallet address literal or name',
-      normalizeAddress,
+      accountFactory.normalizeAddress,
     )
     .action(async function (opts) {
-      const { board, agoricNames, signer } = await ioTools();
+      const { agoricNames, account } = await accountFactory.makeAccountKit(
+        opts.sendFrom,
+        env.AGORIC_NET,
+      );
       const instance = lookupPriceAggregatorInstance(opts.pair, {
         agoricNames,
         logger,
@@ -127,14 +114,7 @@ export const makeOracleCommand = (logger, io = {}) => {
         proposal: {},
       };
 
-      await processOffer({
-        toOffer: (_a, _c) => offer,
-        sendFrom: opts.sendFrom,
-        board,
-        tui,
-        delay,
-        signer,
-      });
+      await account.processOffer(offer);
     });
 
   oracle
@@ -148,7 +128,10 @@ export const makeOracleCommand = (logger, io = {}) => {
     )
     .requiredOption('--price [number]', 'price (format TODO)', String)
     .action(async function (opts) {
-      const { board, signer } = await ioTools();
+      const { account } = await accountFactory.makeAccountKit(
+        opts.sendFrom,
+        env.AGORIC_NET,
+      );
 
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
@@ -162,14 +145,7 @@ export const makeOracleCommand = (logger, io = {}) => {
         proposal: {},
       };
 
-      await processOffer({
-        toOffer: (_a, _c) => offer,
-        sendFrom: opts.sendFrom,
-        board,
-        tui,
-        delay,
-        signer,
-      });
+      await account.processOffer(offer);
     });
 
   oracle
@@ -184,7 +160,11 @@ export const makeOracleCommand = (logger, io = {}) => {
     .requiredOption('--price [number]', 'price', Number)
     .option('--roundId [number]', 'round', Number)
     .action(async function (opts) {
-      const { board, signer } = await ioTools();
+      const { account } = await accountFactory.makeAccountKit(
+        opts.sendFrom,
+        env.AGORIC_NET,
+      );
+
       const unitPrice = scaleDecimals(opts.price);
       const roundId = 'roundId' in opts ? Nat(opts.roundId) : undefined;
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
@@ -199,15 +179,9 @@ export const makeOracleCommand = (logger, io = {}) => {
         proposal: {},
       };
 
-      await processOffer({
-        toOffer: (_a, _c) => offer,
-        sendFrom: opts.sendFrom,
-        board,
-        tui,
-        delay,
-        signer,
-      });
+      await account.processOffer(offer);
     });
+
   oracle
     .command('query')
     .description('return current aggregated (median) price')
@@ -219,7 +193,7 @@ export const makeOracleCommand = (logger, io = {}) => {
     )
     .action(async function (opts) {
       const { pair } = opts;
-      const { board } = await ioTools();
+      const board = await accountFactory.makeBoard(env.AGORIC_NET);
 
       const feed = await board.readLatestHead(
         `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,

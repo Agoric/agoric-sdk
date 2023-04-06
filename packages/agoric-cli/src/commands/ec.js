@@ -4,21 +4,28 @@
 /* global globalThis, process, setTimeout */
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
-import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
-import {
-  getCurrent,
-  getLastUpdate,
-  outputActionAndHint,
-  sendAction,
-  findContinuingIds,
-} from '../lib/wallet.js';
+import { makeAgd, withAgdOptions } from '../lib/chain.js';
+import { makeTUI } from '../lib/format.js';
+import { makeQueryClient } from '../lib/rpc.js';
+import { findContinuingIds, makeAccountFactory } from '../lib/wallet.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/offers.js').OfferSpec} OfferSpec */
 
 /**
+ * @param {string} instanceName
+ * @param {ReturnType<typeof findContinuingIds>} found
+ */
+const abortIfSeen = (instanceName, found) => {
+  const done = found.filter(it => it.instanceName === instanceName);
+  if (done.length > 0) {
+    console.warn(`invitation to ${instanceName} already accepted`, done);
+    throw new CommanderError(1, 'EALREADY', `already accepted`);
+  }
+};
+
+/**
  *
- * @param {import('anylogger').Logger} _logger
+ * @param {import('anylogger').Logger} logger
  * @param {{
  *   env?: Record<string, string|undefined>,
  *   fetch?: typeof window.fetch,
@@ -28,35 +35,29 @@ import {
  *   delay?: (ms: number) => Promise<void>,
  * }} [io]
  */
-export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
+export const makeEconomicCommiteeCommand = (logger, io = {}) => {
   const {
     // Allow caller to provide access explicitly, but
     // default to conventional ambient IO facilities.
     env = process.env,
     stdout = process.stdout,
-    stderr = process.stderr,
     fetch = globalThis.fetch,
     execFileSync = execFileSyncAmbient,
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
   } = io;
+  const tui = makeTUI({ stdout, logger });
 
-  const ec = new Command('ec').description('Economic Committee commands');
+  const ec = withAgdOptions(
+    new Command('ec').description('Economic Committee commands'),
+    { env },
+  );
 
-  /** @param {string} literalOrName */
-  const normalizeAddress = literalOrName =>
-    normalizeAddressWithOptions(literalOrName, { keyringBackend: 'test' });
-
-  /** @type {(info: unknown, indent?: unknown) => boolean } */
-  const show = (info, indent) =>
-    stdout.write(`${JSON.stringify(info, null, indent ? 2 : undefined)}\n`);
-
-  const abortIfSeen = (instanceName, found) => {
-    const done = found.filter(it => it.instanceName === instanceName);
-    if (done.length > 0) {
-      console.warn(`invitation to ${instanceName} already accepted`, done);
-      throw new CommanderError(1, 'EALREADY', `already accepted`);
-    }
-  };
+  const accountFactory = makeAccountFactory({
+    tui,
+    delay,
+    agdLocal: makeAgd({ execFileSync }).withOpts(ec.opts()),
+    qLocal: makeQueryClient({ fetch }),
+  });
 
   ec.command('committee')
     .description('accept invitation to join the economic committee')
@@ -67,21 +68,31 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       String,
       `ecCommittee-${Date.now()}`,
     )
-    .option(
-      '--send-from <name-or-address>',
+    .requiredOption(
+      '--from <name-or-address>',
       'Send from address',
-      normalizeAddress,
+      accountFactory.normalizeAddress,
     )
-    .action(async function (opts) {
-      /** @type {(a: *, c: *) => OfferSpec} */
-      const toOffer = (agoricNames, current) => {
+    .action(
+      /**
+       * @param {{
+       *   voter: number,
+       *   offerId: string,
+       *   from: string,
+       * }} opts
+       */
+      async function (opts) {
+        const { agoricNames, account, current } =
+          await accountFactory.makeAccountKit(opts.from, env.AGORIC_NET);
+
         const instance = agoricNames.instance.economicCommittee;
         assert(instance, `missing economicCommittee`);
 
         const found = findContinuingIds(current, agoricNames);
         abortIfSeen('economicCommittee', found);
 
-        return {
+        /** @type { OfferSpec } */
+        const offer = {
           id: opts.offerId,
           invitationSpec: {
             source: 'purse',
@@ -90,14 +101,10 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
           },
           proposal: {},
         };
-      };
 
-      await processOffer({
-        toOffer,
-        instanceName: 'economicCommittee',
-        ...opts,
-      });
-    });
+        await account.processOffer(offer);
+      },
+    );
 
   ec.command('charter')
     .description('accept the charter invitation')
@@ -105,33 +112,30 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
     .option(
       '--send-from <name-or-address>',
       'Send from address',
-      normalizeAddress,
+      accountFactory.normalizeAddress,
     )
     .action(async function (opts) {
-      /** @type {(a: *, c: *) => OfferSpec} */
-      const toOffer = (agoricNames, current) => {
-        const instance = agoricNames.instance.econCommitteeCharter;
-        assert(instance, `missing econCommitteeCharter`);
+      const { agoricNames, account, current } =
+        await accountFactory.makeAccountKit(opts.sendFrom, env.AGORIC_NET);
 
-        const found = findContinuingIds(current, agoricNames);
-        abortIfSeen('econCommitteeCharter', found);
+      const instance = agoricNames.instance.econCommitteeCharter;
+      assert(instance, `missing econCommitteeCharter`);
 
-        return {
-          id: opts.offerId,
-          invitationSpec: {
-            source: 'purse',
-            instance,
-            description: 'charter member invitation',
-          },
-          proposal: {},
-        };
+      const found = findContinuingIds(current, agoricNames);
+      abortIfSeen('econCommitteeCharter', found);
+
+      /** @type {OfferSpec} */
+      const offer = {
+        id: opts.offerId,
+        invitationSpec: {
+          source: 'purse',
+          instance,
+          description: 'charter member invitation',
+        },
+        proposal: {},
       };
 
-      await processOffer({
-        toOffer,
-        instanceName: 'econCommitteeCharter',
-        ...opts,
-      });
+      await account.processOffer(offer);
     });
 
   ec.command('find-continuing-ids')
@@ -139,15 +143,24 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
     .requiredOption(
       '--from <name-or-address>',
       'from address',
-      normalizeAddress,
+      accountFactory.normalizeAddress,
     )
-    .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
-      const current = await getCurrent(opts.from, { readLatestHead });
+    .action(
+      /**
+       * @param {{
+       *   from: string,
+       * }} opts
+       */
+      async opts => {
+        const { agoricNames, current } = await accountFactory.makeAccountKit(
+          opts.from,
+          env.AGORIC_NET,
+        );
 
-      const found = findContinuingIds(current, agoricNames);
-      found.forEach(it => show({ ...it, address: opts.from }));
-    });
+        const found = findContinuingIds(current, agoricNames);
+        found.forEach(it => tui.show({ ...it, address: opts.from }));
+      },
+    );
 
   ec.command('vote')
     .description('vote on a question (hard-coded for now))')
@@ -160,13 +173,13 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
     .option(
       '--send-from <name-or-address>',
       'Send from address',
-      normalizeAddress,
+      accountFactory.normalizeAddress,
     )
     .action(async function (opts) {
-      const utils = await makeRpcUtils({ fetch });
-      const { readLatestHead } = utils;
+      const { board, agoricNames, account, current } =
+        await accountFactory.makeAccountKit(opts.sendFrom, env.AGORIC_NET);
 
-      const info = await readLatestHead(
+      const info = await board.readLatestHead(
         'published.committees.Economic_Committee.latestQuestion',
       );
       // XXX runtime shape-check
@@ -176,36 +189,34 @@ export const makeEconomicCommiteeCommand = (_logger, io = {}) => {
       const chosenPositions = [questionDesc.positions[opts.forPosition]];
       assert(chosenPositions, `undefined position index ${opts.forPosition}`);
 
-      /** @type {(a: *, c: *) => OfferSpec} */
-      const toOffer = (agoricNames, current) => {
-        const cont = findContinuingIds(current, agoricNames);
-        const votingRight = cont.find(
-          it => it.instance === agoricNames.instance.economicCommittee,
+      const cont = findContinuingIds(current, agoricNames);
+      const votingRight = cont.find(
+        it => it.instance === agoricNames.instance.economicCommittee,
+      );
+      if (!votingRight) {
+        throw new CommanderError(
+          1,
+          'NO_INVITATION',
+          'first, try: agops ec committee ...',
         );
-        if (!votingRight) {
-          throw new CommanderError(
-            1,
-            'NO_INVITATION',
-            'first, try: agops ec committee ...',
-          );
-        }
-        return {
-          id: opts.offerId,
-          invitationSpec: {
-            source: 'continuing',
-            previousOffer: votingRight.offerId,
-            invitationMakerName: 'makeVoteInvitation',
-            // (positionList, questionHandle)
-            invitationArgs: harden([
-              chosenPositions,
-              questionDesc.questionHandle,
-            ]),
-          },
-          proposal: {},
-        };
+      }
+      /** @type {OfferSpec} */
+      const offer = {
+        id: opts.offerId,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: votingRight.offerId,
+          invitationMakerName: 'makeVoteInvitation',
+          // (positionList, questionHandle)
+          invitationArgs: harden([
+            chosenPositions,
+            questionDesc.questionHandle,
+          ]),
+        },
+        proposal: {},
       };
 
-      await processOffer({ toOffer, sendFrom: opts.sendFrom }, utils);
+      await account.processOffer(offer);
     });
 
   return ec;
