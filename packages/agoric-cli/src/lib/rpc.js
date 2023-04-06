@@ -285,6 +285,7 @@ export const makeQueryClient = ({ fetch }) => {
     if (chainName) {
       return { chainName, rpcAddrs: [rpcUrl(netName)] };
     }
+    // XXX ambient fetch
     return fetch(networkConfigUrl(netName)).then(res => res.json());
   };
 
@@ -332,6 +333,7 @@ export const makeBoardClient = qClient => {
   const unserializeHead = txt => unserializeTxt(txt).at(-1);
 
   return freeze({
+    qClient,
     serialize: obj => marshaller.serialize(obj),
     provideAgoricNames: async () => {
       if (agoricNames) return agoricNames;

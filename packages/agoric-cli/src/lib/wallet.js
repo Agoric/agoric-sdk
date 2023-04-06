@@ -3,8 +3,18 @@
 
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { execSwingsetTransaction, pollTx, pollBlocks } from './chain.js';
-import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
+import {
+  execSwingsetTransaction,
+  pollTx,
+  pollBlocks,
+  normalizeAddressWithAgd,
+  makeSigner,
+} from './chain.js';
+import {
+  boardSlottingMarshaller,
+  makeBoardClient,
+  makeRpcUtils,
+} from './rpc.js';
 
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
 /** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
@@ -280,7 +290,7 @@ export const makeParseAmount =
  *   signer: ReturnType<import('./chain').makeSigner>
  * }} arg
  */
-export const processOffer = async ({
+const processOffer = async ({
   toOffer,
   sendFrom,
   board,
@@ -342,4 +352,72 @@ export const processOffer = async ({
   const blockInfo = await signer.pollBlocks({ lookup: checkInWallet, delay });
   tui.warn('offer accepted in block');
   tui.show(blockInfo);
+};
+
+const { freeze } = Object;
+
+/**
+ * @param {{
+ *   agdLocal: ReturnType<typeof import('./chain').makeAgd>,
+ *   qLocal: ReturnType<typeof import('./rpc').makeQueryClient>,
+ *   tui: import('./format').TUI,
+ *   delay: (ms: number) => Promise<void>,
+ * }} powers
+ */
+export const makeAccountFactory = ({ agdLocal, qLocal, tui, delay }) => {
+  /** @param {string} [AGORIC_NET] */
+  const configureClient = async AGORIC_NET =>
+    AGORIC_NET && AGORIC_NET !== 'local'
+      ? qLocal.withConfig(AGORIC_NET)
+      : qLocal;
+
+  /**
+   * @param {string} sendFrom
+   * @param {import('./rpc.js').BoardClient} board
+   */
+  const makeAccount = (sendFrom, board) => {
+    const { qClient } = board;
+    const agd = agdLocal.withOpts({ rpcAddrs: qClient.rpcAddrs });
+    const signer = makeSigner({ agd, chainId: qClient.chainName });
+    return freeze({
+      getCurrent: () => getCurrent(sendFrom, board),
+      processOffer: offer =>
+        // XXX skip toOffer; separate --generate-only case
+        processOffer({
+          toOffer: () => offer,
+          sendFrom,
+          board,
+          tui,
+          delay,
+          signer,
+        }),
+    });
+  };
+
+  /** @param {string} [AGORIC_NET] */
+  const makeBoardKit = async AGORIC_NET => {
+    const qClient = await configureClient(AGORIC_NET);
+    const board = makeBoardClient(qClient);
+    const agoricNames = await board.provideAgoricNames();
+    return { qClient, board, agoricNames };
+  };
+
+  return freeze({
+    normalizeAddress: from => normalizeAddressWithAgd(from, { agd: agdLocal }),
+    configureClient,
+    makeBoard: AGORIC_NET =>
+      configureClient(AGORIC_NET).then(q => makeBoardClient(q)),
+    makeBoardKit,
+    makeAccount,
+    /**
+     * @param {string} sendFrom
+     * @param {string} [AGORIC_NET]
+     */
+    makeAccountKit: async (sendFrom, AGORIC_NET) => {
+      const { board, agoricNames } = await makeBoardKit(AGORIC_NET);
+      const account = makeAccount(sendFrom, board);
+      const current = await account.getCurrent();
+      return { board, agoricNames, account, current };
+    },
+  });
 };
