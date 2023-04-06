@@ -73,6 +73,8 @@ export const ORIG_BLOCK_CADENCE_S = 5;
 export const ORIG_SIGNED_BLOCKS_WINDOW = 100;
 export const SIGNED_BLOCKS_WINDOW_BASE_MULTIPLIER = 100;
 
+export const DEFAULT_CHAIN_ID = 'agoriclocal';
+export const DEFAULT_ROSETTA_PORT = 8080;
 export const DEFAULT_GRPC_PORT = 9090;
 export const DEFAULT_RPC_PORT = 26657;
 export const DEFAULT_PROM_PORT = 26660;
@@ -84,6 +86,9 @@ export function finishCosmosApp({
   enableCors,
   exportMetrics,
   portNum = `${DEFAULT_RPC_PORT}`,
+  chainId = DEFAULT_CHAIN_ID,
+  enableRosetta = true,
+  rosettaPort = `${DEFAULT_ROSETTA_PORT}`,
 }) {
   const rpcPort = Number(portNum);
   const app = TOML.parse(appToml);
@@ -115,6 +120,18 @@ export function finishCosmosApp({
     app.api.enable = true;
     app.telemetry.enabled = true;
     app.telemetry['prometheus-retention-time'] = 60;
+  }
+
+  // Optionally enable the rosetta service
+  if (enableRosetta) {
+    app.rosetta.enable = enableRosetta;
+    app.rosetta.network = chainId;
+    app.rosetta.retries = 30;
+  }
+
+  if (rosettaPort !== `${DEFAULT_ROSETTA_PORT}`) {
+    // Rosetta doesn't want a scheme
+    app.rosetta.address = `0.0.0.0:${rosettaPort}`;
   }
 
   return TOML.stringify(app);

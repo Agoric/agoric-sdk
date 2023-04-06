@@ -14,7 +14,7 @@ request_funds(1){
     address = {{account_identifier.address}};
     idk = http_request({
       "method": "POST",
-      "url": "http:\/\/faucet:8000",
+      "url": "http:\/\/127.0.0.1:7000",
       "timeout": 10,
       "body":  {{random_account.account_identifier.address}}
     });
