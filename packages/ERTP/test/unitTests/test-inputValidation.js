@@ -18,8 +18,7 @@ test('makeIssuerKit bad allegedName', async t => {
 test('makeIssuerKit bad assetKind', async t => {
   // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message:
-      'The assetKind "somethingWrong" must be one of ["copyBag","copySet","nat","set"]',
+    message: 'The assetKind "somethingWrong" must be one of ["copyBag","nat"]',
   });
 });
 
@@ -87,7 +86,7 @@ test('makeIssuerKit bad displayInfo.assetKind', async t => {
       ),
     {
       message:
-        'displayInfo: assetKind?: "something" - Must match one of ["nat","set","copySet","copyBag"]',
+        'displayInfo: assetKind?: "something" - Must match one of ["nat","copyBag"]',
     },
   );
 });

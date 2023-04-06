@@ -3,17 +3,18 @@ import { Far } from '@endo/marshal';
 import { Fail, assert } from '@agoric/assert';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
+import { getCopyBagEntries, makeCopyBagFromElements } from '@agoric/store';
 
 /** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
 
 /**
  *
- * @param {Brand<'set'>} quoteBrand
+ * @param {Brand<'copyBag'>} quoteBrand
  * @param {Amount<'nat'>} amountIn
  * @param {Amount<'nat'>} amountOut
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {import('@agoric/time').Timestamp} timestamp
- * @param {ERef<Mint<'set'>>} quoteMint
+ * @param {ERef<Mint<'copyBag'>>} quoteMint
  * @returns {Promise<PriceQuote>}
  */
 export const mintQuote = async (
@@ -26,18 +27,18 @@ export const mintQuote = async (
 ) => {
   const quoteAmount = {
     brand: quoteBrand,
-    value: [{ amountIn, amountOut, timer, timestamp }],
+    value: makeCopyBagFromElements([{ amountIn, amountOut, timer, timestamp }]),
   };
   const quotePayment = await E(quoteMint).mintPayment({
     brand: quoteBrand,
-    value: [quoteAmount],
+    value: makeCopyBagFromElements([quoteAmount]),
   });
   return harden({ quoteAmount, quotePayment });
 };
 
 /**
  * @param {object} opts
- * @param {ERef<Mint<'set'>>} [opts.quoteMint]
+ * @param {ERef<Mint<'copyBag'>>} [opts.quoteMint]
  * @param {ERef<PriceAuthority>} opts.sourcePriceAuthority
  * @param {Brand<'nat'>} opts.sourceBrandIn
  * @param {Brand<'nat'>} opts.sourceBrandOut
@@ -49,7 +50,7 @@ export const mintQuote = async (
  * @param {(sourceAmountOut: Amount<'nat'>) => Amount<'nat'>} [opts.transformSourceAmountOut]
  */
 export const makePriceAuthorityTransform = async ({
-  quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
+  quoteMint = makeIssuerKit('quote', AssetKind.COPY_BAG).mint,
   sourcePriceAuthority,
   sourceBrandIn,
   sourceBrandOut,
@@ -92,15 +93,16 @@ export const makePriceAuthorityTransform = async ({
       sourceQuotePayment,
     );
 
-    sourceQuoteValue.length === 1 ||
-      Fail`sourceQuoteValue.length ${sourceQuoteValue.length} is not 1`;
+    const sourceQuoteEntries = getCopyBagEntries(sourceQuoteValue);
+    sourceQuoteEntries.length === 1 ||
+      Fail`sourceQuoteValue.length ${sourceQuoteEntries.length} is not 1`;
 
     const {
       amountIn: sourceAmountIn,
       amountOut: sourceAmountOut,
       timer,
       timestamp,
-    } = sourceQuoteValue[0];
+    } = sourceQuoteEntries[0][0];
     const amountIn = transformSourceAmountIn(sourceAmountIn);
     const amountOut = transformSourceAmountOut(sourceAmountOut);
 

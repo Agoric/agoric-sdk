@@ -15,7 +15,7 @@ export function makeScriptedPriceAuthority(options) {
     timer,
     unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
-    quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit = makeIssuerKit('quote', AssetKind.COPY_BAG),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
   let currentPrice = priceList[0];

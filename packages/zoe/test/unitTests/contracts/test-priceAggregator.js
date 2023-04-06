@@ -48,7 +48,7 @@ import {
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
+ * quoteMint?: ERef<Mint<'copyBag'>>,
  * storageNode: StorageNode,
  * }} privateArgs
  */
@@ -193,7 +193,7 @@ test('median aggregator', async t => {
     issuers: { Quote: rawQuoteIssuer },
     unitAmountIn,
   } = await E(zoe).getTerms(aggregator.instance);
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'copyBag'>} */
   const quoteIssuer = rawQuoteIssuer;
 
   const price1000 = await makeFakePriceOracle(1000n);
@@ -348,7 +348,7 @@ test('median aggregator - push only', async t => {
     issuers: { Quote: rawQuoteIssuer },
     unitAmountIn,
   } = await E(zoe).getTerms(aggregator.instance);
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'copyBag'>} */
   const quoteIssuer = rawQuoteIssuer;
 
   const pricePush = await makeFakePriceOracle();
@@ -584,7 +584,7 @@ test('quoteAtTime', async t => {
     brandOut: usdBrand,
     issuers: { Quote: rawQuoteIssuer },
   } = await E(zoe).getTerms(aggregator.instance);
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'copyBag'>} */
   const quoteIssuer = rawQuoteIssuer;
 
   const price1000 = await makeFakePriceOracle(1000n);
@@ -708,7 +708,7 @@ test('quoteWhen', async t => {
     brandIn,
     brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'copyBag'>} */
   const quoteIssuer = rawQuoteIssuer;
 
   const price1000 = await makeFakePriceOracle(1000n);
@@ -829,7 +829,7 @@ test('mutableQuoteWhen no replacement', async t => {
     brandIn,
     brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'copyBag'>} */
   const quoteIssuer = rawQuoteIssuer;
 
   const price1000 = await makeFakePriceOracle(1000n);
@@ -959,7 +959,7 @@ test('mutableQuoteWhen with update', async t => {
     brandIn,
     brandOut,
   } = await E(zoe).getTerms(aggregator.instance);
-  /** @type {Issuer<'set'>} */
+  /** @type {Issuer<'copyBag'>} */
   const quoteIssuer = rawQuoteIssuer;
 
   const price1200 = await makeFakePriceOracle(1200n);

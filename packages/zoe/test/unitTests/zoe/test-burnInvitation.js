@@ -9,7 +9,7 @@ import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation.js';
 
 test('burnInvitation', async t => {
-  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
+  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.COPY_BAG);
 
   const instanceHandle = Far('handle', {});
   const invitationHandle = Far('handle', {});
@@ -28,7 +28,7 @@ test('burnInvitation', async t => {
 });
 
 test('burnInvitation - not an invitation', async t => {
-  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
+  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.COPY_BAG);
 
   await t.throwsAsync(
     // @ts-expect-error invalid payment for the purposes of testing
@@ -38,7 +38,7 @@ test('burnInvitation - not an invitation', async t => {
 });
 
 test('burnInvitation - invitation already used', async t => {
-  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
+  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.COPY_BAG);
 
   const instanceHandle = Far('handle', {});
   const invitationHandle = Far('handle', {});
@@ -65,7 +65,7 @@ test('burnInvitation - invitation already used', async t => {
 });
 
 test('burnInvitation - multiple invitations', async t => {
-  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.SET);
+  const mockInvitationKit = makeIssuerKit('mockInvitation', AssetKind.COPY_BAG);
 
   const instanceHandle = Far('handle', {});
   const invitationHandle1 = Far('handle', {});

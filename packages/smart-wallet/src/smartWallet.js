@@ -113,7 +113,7 @@ const { StorageNodeShape } = makeTypeGuards(M);
  *   address: string,
  *   bank: ERef<import('@agoric/vats/src/vat-bank').Bank>,
  *   currentStorageNode: StorageNode,
- *   invitationPurse: Purse<'set'>,
+ *   invitationPurse: Purse<'copyBag'>,
  *   walletStorageNode: StorageNode,
  * }} UniqueParams
  *
@@ -121,8 +121,8 @@ const { StorageNodeShape } = makeTypeGuards(M);
  * @typedef {{
  *   agoricNames: ERef<import('@agoric/vats').NameHub>,
  *   registry: BrandDescriptorRegistry,
- *   invitationIssuer: Issuer<'set'>,
- *   invitationBrand: Brand<'set'>,
+ *   invitationIssuer: Issuer<'copyBag'>,
+ *   invitationBrand: Brand<'copyBag'>,
  *   invitationDisplayInfo: DisplayInfo,
  *   publicMarshaller: Marshaller,
  *   zoe: ERef<ZoeService>,
@@ -479,7 +479,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               }
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
+            /** @type {(offerId: string, invitationAmount: Amount<'copyBag'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,

@@ -177,7 +177,7 @@ test.serial('invitations', async t => {
    * @returns {Promise<[{description: string, instance: Instance}]>}
    */
   const getInvitationFor = async (desc, len, balances) => {
-    /** @type {Amount<'set'>} */
+    /** @type {Amount<'copyBag'>} */
     const invitationsAmount = NonNullish(
       balances.get(t.context.invitationBrand),
     );

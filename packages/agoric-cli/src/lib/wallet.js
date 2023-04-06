@@ -73,7 +73,7 @@ export const outputExecuteOfferAction = (offer, stdout = process.stdout) => {
 /**
  * @deprecated use `.current` node for current state
  * @param {import('@agoric/casting').Follower<import('@agoric/casting').ValueFollowerElement<import('@agoric/smart-wallet/src/smartWallet').UpdateRecord>>} follower
- * @param {Brand<'set'>} [invitationBrand]
+ * @param {Brand<'copyBag'>} [invitationBrand]
  */
 export const coalesceWalletState = async (follower, invitationBrand) => {
   // values with oldest last

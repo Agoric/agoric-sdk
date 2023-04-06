@@ -3,7 +3,7 @@ import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 const setupMixed = () => {
-  const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
+  const ccBundle = makeIssuerKit('CryptoCats', AssetKind.COPY_BAG);
   const moolaBundle = makeIssuerKit('moola');
   const allBundles = { cc: ccBundle, moola: moolaBundle };
   const mints = new Map();

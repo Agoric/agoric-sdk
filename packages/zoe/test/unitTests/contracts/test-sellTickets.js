@@ -5,7 +5,7 @@ import path from 'path';
 
 import { assert } from '@agoric/assert';
 import bundleSource from '@endo/bundle-source';
-import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E } from '@endo/eventual-send';
 

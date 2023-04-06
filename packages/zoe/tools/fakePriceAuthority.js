@@ -27,7 +27,7 @@ const timestampLTE = (a, b) => TimeMath.compareAbs(a, b) <= 0;
  * @property {Array<[number, number]>} [tradeList]
  * @property {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @property {import('@agoric/time/src/types').RelativeTime} [quoteInterval]
- * @property {ERef<Mint<'set'>>} [quoteMint]
+ * @property {ERef<Mint<'copyBag'>>} [quoteMint]
  * @property {Amount<'nat'>} [unitAmountIn]
  */
 
@@ -47,7 +47,7 @@ export async function makeFakePriceAuthority(options) {
     timer,
     unitAmountIn = AmountMath.make(actualBrandIn, 1n),
     quoteInterval = 1n,
-    quoteMint = makeIssuerKit('quote', AssetKind.SET).mint,
+    quoteMint = makeIssuerKit('quote', AssetKind.COPY_BAG).mint,
   } = options;
 
   tradeList ||

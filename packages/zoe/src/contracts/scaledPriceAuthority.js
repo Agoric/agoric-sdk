@@ -24,11 +24,11 @@ import { makeInitialTransform } from '../contractSupport/priceAuthorityInitial.j
  *
  * @param {ZCF<ScaledPriceAuthorityOpts>} zcf
  * @param {object} [root0]
- * @param {ERef<Mint<'set'>>} [root0.quoteMint]
+ * @param {ERef<Mint<'copyBag'>>} [root0.quoteMint]
  */
 export const start = async (
   zcf,
-  { quoteMint = makeIssuerKit('quote', AssetKind.SET).mint } = {},
+  { quoteMint = makeIssuerKit('quote', AssetKind.COPY_BAG).mint } = {},
 ) => {
   const { sourcePriceAuthority, scaleIn, scaleOut, initialPrice } =
     zcf.getTerms();

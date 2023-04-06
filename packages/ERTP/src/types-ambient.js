@@ -74,8 +74,7 @@
  *   require fungible digital assets to be represented in integers, in
  *   the smallest unit (i.e. USD might be represented in mill, a
  *   thousandth of a dollar. In that case, `decimalPlaces` would be
- *   3.) This property is optional, and for non-fungible digital
- *   assets, should not be specified. The decimalPlaces property
+ *   3.) This property is optional. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
  * @property {K} assetKind - the kind of asset, either
@@ -269,8 +268,7 @@
  *   require fungible digital assets to be represented in integers, in
  *   the smallest unit (i.e. USD might be represented in mill, a
  *   thousandth of a dollar. In that case, `decimalPlaces` would be
- *   3.) This property is optional, and for non-fungible digital
- *   assets, should not be specified. The decimalPlaces property
+ *   3.) This property is optional. The decimalPlaces property
  *   should be used for *display purposes only*. Any other use is an
  *   anti-pattern.
  * @property {AssetKind} [assetKind]

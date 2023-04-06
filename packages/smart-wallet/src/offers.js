@@ -31,13 +31,13 @@ export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
  * @param {object} opts
  * @param {ERef<ZoeService>} opts.zoe
  * @param {{ receive: (payment: *) => Promise<Amount> }} opts.depositFacet
- * @param {ERef<Issuer<'set'>>} opts.invitationIssuer
+ * @param {ERef<Issuer<'copyBag'>>} opts.invitationIssuer
  * @param {object} opts.powers
  * @param {Pick<Console, 'info'| 'error'>} opts.powers.logger
  * @param {(spec: import('./invitations').InvitationSpec) => ERef<Invitation>} opts.powers.invitationFromSpec
  * @param {(brand: Brand) => Promise<import('./types').RemotePurse>} opts.powers.purseForBrand
  * @param {(status: OfferStatus) => void} opts.onStatusChange
- * @param {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
+ * @param {(offerId: string, invitationAmount: Amount<'copyBag'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord ) => Promise<void>} opts.onNewContinuingOffer
  */
 export const makeOfferExecutor = ({
   zoe,

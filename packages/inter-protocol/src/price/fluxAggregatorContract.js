@@ -26,7 +26,7 @@ const trace = makeTracer('FluxAgg', false);
  * initialPoserInvitation: Invitation,
  * marshaller: Marshaller,
  * namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>,
- * quoteMint?: ERef<Mint<'set'>>,
+ * quoteMint?: ERef<Mint<'copyBag'>>,
  * storageNode: ERef<StorageNode>,
  * }} privateArgs
  * @param {Baggage} baggage
@@ -36,7 +36,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { timer: timerP } = zcf.getTerms();
 
   const quoteMintP =
-    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
+    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.COPY_BAG).mint;
   const [quoteMint, quoteIssuerRecord] = await Promise.all([
     quoteMintP,
     zcf.saveIssuer(E(quoteMintP).getIssuer(), 'Quote'),

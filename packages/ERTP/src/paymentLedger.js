@@ -31,22 +31,6 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
         Fail`Fungible assets cannot have an elementShape: ${q(elementShape)}`;
       break;
     }
-    case 'set': {
-      if (elementShape === undefined) {
-        valueShape = M.arrayOf(M.key());
-      } else {
-        valueShape = M.arrayOf(M.and(M.key(), elementShape));
-      }
-      break;
-    }
-    case 'copySet': {
-      if (elementShape === undefined) {
-        valueShape = M.set();
-      } else {
-        valueShape = M.setOf(elementShape);
-      }
-      break;
-    }
     case 'copyBag': {
       if (elementShape === undefined) {
         valueShape = M.bag();

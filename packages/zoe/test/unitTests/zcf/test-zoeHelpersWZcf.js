@@ -122,7 +122,7 @@ test(`zcf assertNatAssetKind`, async t => {
 
 test(`zcf assertNatAssetKind - not natMath`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const { brand } = zcfMint.getIssuerRecord();
   t.throws(() => assertNatAssetKind(zcf, brand), {
     message: 'brand must be AssetKind.NAT',
@@ -131,7 +131,7 @@ test(`zcf assertNatAssetKind - not natMath`, async t => {
 
 test.failing(`zcf assertNatAssetKind - not brand`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const { issuer } = zcfMint.getIssuerRecord();
   // TODO: distinguish non-brands from brands
   // https://github.com/Agoric/agoric-sdk/issues/1800
@@ -168,7 +168,7 @@ test(`zcf saveAllIssuers - multiple`, async t => {
   const { issuer: dIssuer, brand: dBrand } = makeIssuerKit('doubloons');
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
-    AssetKind.SET,
+    AssetKind.COPY_BAG,
   );
 
   await saveAllIssuers(zcf, { G: gIssuer, D: dIssuer, P: pIssuer });
@@ -200,7 +200,7 @@ test(`zcf saveAllIssuers - duplicate keyword`, async t => {
 
   const { issuer: pIssuer, brand: pBrand } = makeIssuerKit(
     'pieces of eight',
-    AssetKind.SET,
+    AssetKind.COPY_BAG,
   );
 
   await t.notThrowsAsync(

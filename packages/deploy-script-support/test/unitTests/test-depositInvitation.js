@@ -8,7 +8,10 @@ import '../../exported.js';
 import { makeDepositInvitation } from '../../src/depositInvitation.js';
 
 test('depositInvitation', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('invitations', AssetKind.SET);
+  const { mint, issuer, brand } = makeIssuerKit(
+    'invitations',
+    AssetKind.COPY_BAG,
+  );
   const purse = issuer.makeEmptyPurse();
   const paymentAmount = AmountMath.make(brand, harden([{ instance: {} }]));
   const payment = mint.mintPayment(paymentAmount);

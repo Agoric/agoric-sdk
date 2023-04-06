@@ -71,7 +71,7 @@ export async function start(zcf, privateArgs, baggage) {
     priceList: [80],
     tradeList: undefined,
     timer,
-    quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
+    quoteMint: makeIssuerKit('quote', AssetKind.COPY_BAG).mint,
   };
   const priceAuthority = await makeFakePriceAuthority(options);
   const collateralUnit = await unitAmount(collateralBrand);

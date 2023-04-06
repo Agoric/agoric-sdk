@@ -24,7 +24,7 @@ export const parseAsValue = (
   if (assetKind === AssetKind.NAT) {
     return parseAsNat(str, decimalPlaces);
   }
-  if (assetKind === AssetKind.SET) {
+  if (assetKind === AssetKind.COPY_BAG) {
     return parseAsSet(str);
   }
   if (assetKind === AssetKind.COPY_BAG) {
@@ -68,7 +68,7 @@ export const stringifyValue = (
     // @ts-expect-error AmountValue is a Nat
     return stringifyNat(value, decimalPlaces, placesToShow);
   }
-  if (assetKind === AssetKind.SET) {
+  if (assetKind === AssetKind.COPY_BAG) {
     return stringifySet(value);
   }
   if (assetKind === AssetKind.COPY_BAG) {

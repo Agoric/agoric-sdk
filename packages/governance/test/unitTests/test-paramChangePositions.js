@@ -19,7 +19,7 @@ const makeOneParamChangeDesc = (name, value) => {
 };
 
 test('positions amount', t => {
-  const { brand } = makeIssuerKit('roses', AssetKind.SET);
+  const { brand } = makeIssuerKit('roses', AssetKind.COPY_BAG);
   const amount = AmountMath.makeEmpty(brand);
 
   const desc = makeOneParamChangeDesc('Amount', amount);
@@ -33,8 +33,8 @@ test('positions amount', t => {
 });
 
 test('positions brand', t => {
-  const { brand: roseBrand } = makeIssuerKit('roses', AssetKind.SET);
-  const { brand: thornBrand } = makeIssuerKit('thorns', AssetKind.SET);
+  const { brand: roseBrand } = makeIssuerKit('roses', AssetKind.COPY_BAG);
+  const { brand: thornBrand } = makeIssuerKit('thorns', AssetKind.COPY_BAG);
 
   const paramName = 'Brand';
   const desc = makeOneParamChangeDesc(paramName, roseBrand);

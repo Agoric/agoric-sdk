@@ -1,5 +1,6 @@
 // @ts-check
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
+import { getInvitationAmountDetails } from '@agoric/zoe';
 // eslint-disable-next-line no-unused-vars -- typeof below
 import { makeAgoricNames } from './rpc.js';
 
@@ -87,7 +88,7 @@ export const asBoardRemote = x => {
 
 /**
  * Summarize the balances array as user-facing informative tuples
- 
+
  * @param {import('@agoric/smart-wallet/src/smartWallet').CurrentWalletRecord['purses']} purses
  * @param {AssetDescriptor[]} assets
  */
@@ -182,11 +183,15 @@ export const summarize = (current, coalesced, agoricNames) => {
       Object.values(agoricNames.vbankAsset),
     ),
     usedInvitations: current.offerToUsedInvitation.map(
-      ([offerId, invitationAmt]) => [
-        agoricNames.reverse[invitationAmt.value[0].instance.boardId],
-        invitationAmt.value[0].description,
-        Number(offerId),
-      ],
+      ([offerId, invitationAmt]) => {
+        const details = getInvitationAmountDetails(invitationAmt);
+        return [
+          // @ts-expect-error Instance normally has no boardId
+          agoricNames.reverse[details.instance.boardId],
+          details.description,
+          Number(offerId),
+        ];
+      },
     ),
     offers: offerStatusTuples(coalesced, agoricNames),
   };

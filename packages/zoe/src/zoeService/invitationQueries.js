@@ -9,6 +9,7 @@ import { AmountMath } from '@agoric/ertp';
  * If `invitationBrand` is provided, use it for further validation. Otherwise
  * proceed assuming that `invitationAmount.brand` is the correct
  * `invitationBrand`.
+ * @returns {InvitationDetails}
  */
 export const getInvitationAmountDetails = (
   invitationAmount,

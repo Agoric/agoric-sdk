@@ -37,7 +37,7 @@ const isGT = (amount, amountLimit) => !AmountMath.isGTE(amountLimit, amount);
 
 /**
  * @param {object} opts
- * @param {Issuer<'set'>} opts.quoteIssuer
+ * @param {Issuer<'copyBag'>} opts.quoteIssuer
  * @param {ERef<Notifier<unknown>>} opts.notifier
  * @param {ERef<import('@agoric/time/src/types').TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote

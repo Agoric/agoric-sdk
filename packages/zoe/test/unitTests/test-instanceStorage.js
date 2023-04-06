@@ -25,7 +25,7 @@ const setupIssuersForTest = () => {
     harden({ decimalPlaces: 18 }),
   );
 
-  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.COPY_BAG);
 
   return { currencyKit, ticketKit };
 };

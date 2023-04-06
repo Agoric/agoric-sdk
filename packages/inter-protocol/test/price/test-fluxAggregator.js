@@ -45,7 +45,7 @@ const makeContext = async () => {
     const manualTimer = buildManualTimer(() => {});
 
     const baggage = makeScalarBigMapStore('test baggage');
-    const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
+    const quoteIssuerKit = makeIssuerKit('quote', AssetKind.COPY_BAG);
 
     const aggregator = provideFluxAggregator(
       baggage,
