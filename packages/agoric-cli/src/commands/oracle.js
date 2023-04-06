@@ -8,7 +8,7 @@ import { Command, InvalidArgumentError } from 'commander';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { inspect } from 'util';
 import { makeAgd, withAgdOptions } from '../lib/chain.js';
-import { makeBoardClient, makeQueryClient } from '../lib/rpc.js';
+import { makeQueryClient } from '../lib/rpc.js';
 import { makeAccountFactory } from '../lib/wallet.js';
 import { makeTUI } from '../lib/format.js';
 
@@ -126,13 +126,27 @@ export const makeOracleCommand = (logger, io = {}) => {
       'offer that had continuing invitation result',
       Number,
     )
-    .requiredOption('--price [number]', 'price (format TODO)', String)
-    .action(async function (opts) {
+    .requiredOption('--price <number>', 'price (format TODO)', String)
+    .requiredOption(
+      '--from <name-or-addr>',
+      'XXX@@@',
+      accountFactory.normalizeAddress,
+    )
+    .action(async function (
+      /**
+       * @type {{
+       *   offerId: number,
+       *   oracleAdminAcceptOfferId: number,
+       *   price: string,
+       *   from: string,
+       * }}
+       */
+      opts,
+    ) {
       const { account } = await accountFactory.makeAccountKit(
-        opts.sendFrom,
+        opts.from,
         env.AGORIC_NET,
       );
-
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
       const offer = {
         id: Number(opts.offerId),
@@ -159,9 +173,25 @@ export const makeOracleCommand = (logger, io = {}) => {
     )
     .requiredOption('--price [number]', 'price', Number)
     .option('--roundId [number]', 'round', Number)
-    .action(async function (opts) {
+    .requiredOption(
+      '--from <name-or-addr>',
+      'XXX@@@',
+      accountFactory.normalizeAddress,
+    )
+    .action(async function (
+      /**
+       * @type {{
+       *   offerId: number,
+       *   oracleAdminAcceptOfferId: number,
+       *   price: number,
+       *   roundId?: number,
+       *   from: string,
+       * }}
+       */
+      opts,
+    ) {
       const { account } = await accountFactory.makeAccountKit(
-        opts.sendFrom,
+        opts.from,
         env.AGORIC_NET,
       );
 
@@ -191,7 +221,14 @@ export const makeOracleCommand = (logger, io = {}) => {
       s => s.split('.'),
       ['ATOM', 'USD'],
     )
-    .action(async function (opts) {
+    .action(async function (
+      /**
+       * @type {{
+       *  pair: [string, string]
+       * }}
+       */
+      opts,
+    ) {
       const { pair } = opts;
       const board = await accountFactory.makeBoard(env.AGORIC_NET);
 
