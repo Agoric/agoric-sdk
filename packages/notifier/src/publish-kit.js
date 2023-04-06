@@ -179,7 +179,7 @@ harden(makePublishKit);
 /**
  * @param {object} [options]
  * @param {DurablePublishKitValueDurability & 'mandatory'} [options.valueDurability='mandatory']
- * @param {import('@agoric/internal/src/callback.js').Callback<*>} [options.onUpdate] A direct callback
+ * @param {PublishKitOnUpdate} [options.onUpdate] A direct callback
  *   to which published values should be sent, useful for receiving validated values
  *   without consuming heap RAM with ephemeral objects
  * @returns {DurablePublishKitState}
@@ -307,7 +307,10 @@ const advanceDurablePublishKit = (context, value, targetStatus = 'live') => {
   const commit = resolution => {
     // Invoke a direct callback, but ignore the result.
     if (onUpdate) {
-      void callE(onUpdate, resolution).then(sink, sink);
+      // We use Promise.resolve to ensure that onUpdate always receives
+      // a promise while preserving the identity of any rejection.
+      // `resolution` is a safe value created in this module.
+      void callE(onUpdate, Promise.resolve(resolution));
     }
     resolveCurrent(resolution);
   };

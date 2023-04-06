@@ -333,7 +333,10 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     const lastEntry = log
       .filter(([methodName, _publicationRecord]) => methodName === spyName)
       .at(-1);
-    const lastPublication = lastEntry[1];
+    const lastPublicationP = lastEntry[1];
+    const lastPublication = await run('awaitVatObject', [
+      { presence: lastPublicationP },
+    ]);
     return { logTail, lastPublication };
   };
   const { logTail: v1Pub2FirstLog, lastPublication: v1Pub2FirstPublication } =
