@@ -1,4 +1,4 @@
-export {}; 
+export {};
 /**
  * @template T
  * @typedef {import('@endo/far').ERef<T>} ERef
