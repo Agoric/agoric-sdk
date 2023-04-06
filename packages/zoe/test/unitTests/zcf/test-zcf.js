@@ -416,19 +416,19 @@ test(`zcf.makeZCFMint - NAT`, async t => {
 
 test(`zcf.makeZCFMint - SET`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const issuerRecord = zcfMint.getIssuerRecord();
   const expected = {
     issuers: { A: issuerRecord.issuer },
     brands: { A: issuerRecord.brand },
   };
   await testTerms(t, zcf, expected);
-  t.is(issuerRecord.assetKind, AssetKind.SET);
+  t.is(issuerRecord.assetKind, AssetKind.COPY_BAG);
 });
 
 test(`zcf.makeZCFMint - mintGains - no args`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.mintGains(), {
     message:
@@ -451,7 +451,7 @@ test(`zcf.makeZCFMint - mintGains - no seat`, async t => {
 
 test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // TODO: create seat if one is not provided
   // https://github.com/Agoric/agoric-sdk/issues/1696
@@ -464,7 +464,7 @@ test(`zcf.makeZCFMint - mintGains - no gains`, async t => {
 
 test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(), {
     message:
@@ -474,7 +474,7 @@ test(`zcf.makeZCFMint - burnLosses - no args`, async t => {
 
 test(`zcf.makeZCFMint - burnLosses - no losses`, async t => {
   const { zcf } = await setupZCFTest();
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   // @ts-expect-error deliberate invalid arguments for testing
   t.throws(() => zcfMint.burnLosses(undefined, zcfSeat), {
@@ -487,7 +487,7 @@ test(`zcf.makeZCFMint - mintGains - wrong brand`, async t => {
   const { moola, moolaIssuer } = setup();
   const { zcf } = await setupZCFTest({ Moola: moolaIssuer });
 
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.mintGains(harden({ Moola: moola(3n) }), zcfSeat), {
     message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,
@@ -498,7 +498,7 @@ test(`zcf.makeZCFMint - burnLosses - wrong brand`, async t => {
   const { moola, moolaIssuer } = setup();
   const { zcf } = await setupZCFTest({ Moola: moolaIssuer });
 
-  const zcfMint = await zcf.makeZCFMint('A', AssetKind.SET);
+  const zcfMint = await zcf.makeZCFMint('A', AssetKind.COPY_BAG);
   const { zcfSeat } = zcf.makeEmptySeatKit();
   t.throws(() => zcfMint.burnLosses(harden({ Moola: moola(3n) }), zcfSeat), {
     message: `amount's brand "[Alleged: moola brand]" did not match expected brand "[Alleged: A brand]"`,

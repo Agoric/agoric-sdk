@@ -81,7 +81,7 @@ export const setupElectorateReserveAndAuction = async (
 
   await startEconomicCommittee(space, electorateTerms);
   await setupReserve(space);
-  const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
+  const quoteIssuerKit = makeIssuerKit('quote', AssetKind.COPY_BAG);
 
   // Cheesy hack for easy use of manual price authority
   const pa = Array.isArray(priceOrList)

@@ -216,7 +216,7 @@ const setupServices = async (
     actualBrandOut: run.brand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
     timer,
-    quoteIssuerKit: makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit: makeIssuerKit('quote', AssetKind.COPY_BAG),
   });
   produce.priceAuthority.resolve(priceAuthority);
 

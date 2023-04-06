@@ -8,7 +8,10 @@ import '../../exported.js';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('findInvitationAmount', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('invitations', AssetKind.SET);
+  const { mint, issuer, brand } = makeIssuerKit(
+    'invitations',
+    AssetKind.COPY_BAG,
+  );
   const zoeInvitationPurse = issuer.makeEmptyPurse();
 
   const walletAdmin = {};
@@ -30,7 +33,7 @@ test('findInvitationAmount', async t => {
   const notFoundResult = await findInvitationAmount({
     description: 'not found',
   });
-  t.deepEqual(notFoundResult, AmountMath.makeEmpty(brand, AssetKind.SET));
+  t.deepEqual(notFoundResult, AmountMath.makeEmpty(brand, AssetKind.COPY_BAG));
 
   const foundResult = await findInvitationAmount({ description: 'found' });
   t.deepEqual(foundResult, paymentAmount);

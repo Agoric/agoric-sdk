@@ -15,7 +15,7 @@ import {
  * @param {Brand<'nat'>} options.actualBrandOut
  * @param {Ratio} options.initialPrice
  * @param {import('@agoric/time/src/types').TimerService} options.timer
- * @param {IssuerKit<'set'>} [options.quoteIssuerKit]
+ * @param {IssuerKit<'copyBag'>} [options.quoteIssuerKit]
  * @returns {PriceAuthority & { setPrice: (Ratio) => void }}
  */
 export function makeManualPriceAuthority(options) {
@@ -24,7 +24,7 @@ export function makeManualPriceAuthority(options) {
     actualBrandOut,
     initialPrice, // brandOut / brandIn
     timer,
-    quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit = makeIssuerKit('quote', AssetKind.COPY_BAG),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
 

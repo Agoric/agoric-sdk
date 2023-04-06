@@ -1,9 +1,10 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { assert, details as X } from '@agoric/assert';
-import { keyEQ } from '@agoric/store';
-import { AmountMath, isSetValue } from '@agoric/ertp';
+import { keyEQ, makeCopyBagFromElements } from '@agoric/store';
+import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { assertCopyBag } from '@agoric/store/src/keys/checkKey.js';
 
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 
@@ -494,14 +495,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const availableTickets = await E(publicFacet).getAvailableItems();
       log('availableTickets: ', availableTickets);
       // find the value corresponding to ticket #1
-      assert(isSetValue(availableTickets.value));
+      assertCopyBag(availableTickets.value);
       const ticket1Value = availableTickets.value.find(
         ticket => ticket.number === 1,
       );
       // make the corresponding amount
       const ticket1Amount = AmountMath.make(
         ticketBrand,
-        harden([ticket1Value]),
+        makeCopyBagFromElements([ticket1Value]),
       );
       const proposal = harden({
         give: { Money: terms.pricePerItem },

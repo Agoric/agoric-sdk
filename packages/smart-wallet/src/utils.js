@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 
 export const NO_SMART_WALLET_ERROR = 'no smart wallet';
 
-/** @param {Brand<'set'>} [invitationBrand] */
+/** @param {Brand<'copyBag'>} [invitationBrand] */
 export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
   /** @type {Map<import('./offers').OfferId, import('./offers').OfferStatus>} */
   const offerStatuses = new Map();
@@ -84,7 +84,7 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
  * utility to reset state from RPC.
  *
  * @param {ERef<Subscriber<import('./smartWallet').UpdateRecord>>} updates
- * @param {Brand<'set'>} [invitationBrand]
+ * @param {Brand<'copyBag'>} [invitationBrand]
  */
 export const coalesceUpdates = (updates, invitationBrand) => {
   const coalescer = makeWalletStateCoalescer(invitationBrand);

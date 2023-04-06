@@ -74,7 +74,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * unitAmountIn?: Amount<'nat'>,
  * }>} zcf
  * @param {TimerService} timerPresence
- * @param {IssuerRecord<'set'> & { mint: Mint<'set'> }} quoteKit
+ * @param {IssuerRecord<'copyBag'> & { mint: Mint<'copyBag'> }} quoteKit
  * @param {StorageNode} storageNode
  * @param {Marshaller} marshaller
  */

@@ -22,7 +22,7 @@ test('provideEscrowStorage', async t => {
     harden({ decimalPlaces: 18 }),
   );
 
-  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.COPY_BAG);
 
   await createPurse(currencyKit.issuer, currencyKit.brand);
 
@@ -120,11 +120,11 @@ const setupPurses = async createPurse => {
     brand: currencyKit.brand,
   };
 
-  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.COPY_BAG);
 
   const ticketIssuerRecord = {
     issuer: ticketKit.issuer,
-    assetKind: AssetKind.SET,
+    assetKind: AssetKind.COPY_BAG,
     brand: ticketKit.brand,
   };
   await createPurse(currencyIssuerRecord.issuer, currencyIssuerRecord.brand);

@@ -14,6 +14,7 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
 import { assertAmountsEqual } from '../../zoeTestHelpers.js';
+import { getInvitationAmountDetails } from '../../../src/zoeService/invitationQueries.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -455,7 +456,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     optionP,
   );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
-  const optionDesc = optionAmount.value[0];
+  const optionDesc = getInvitationAmountDetails(optionAmount);
   const { customDetails } = optionDesc;
   assert(typeof customDetails === 'object');
 
@@ -598,7 +599,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   t.deepEqual(
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
-    AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
+    AmountMath.makeEmpty(invitationBrand, AssetKind.COPY_BAG),
   );
   t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 
@@ -790,27 +791,19 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   t.is(daveCustomDetails.expirationDate, 100n);
   t.deepEqual(daveCustomDetails.timeAuthority, timer);
 
+  const underlyingAmount = daveCustomDetails.underlyingAssets.UnderlyingAsset;
+  const underlyingDetails = getInvitationAmountDetails(underlyingAmount);
+  const underlyingCustomDetails = underlyingDetails.customDetails;
+  assert(underlyingCustomDetails !== undefined);
   // What about the underlying asset (the other option)?
-  t.is(
-    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].description,
-    'exerciseOption',
-  );
-  t.is(
-    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
-      .expirationDate,
-    100n,
-  );
+  t.is(underlyingDetails.description, 'exerciseOption');
+  t.is(underlyingCustomDetails.expirationDate, 100n);
   assertAmountsEqual(
     t,
-    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
-      .strikePrice.StrikePrice,
+    underlyingCustomDetails.strikePrice.StrikePrice,
     simoleans(7n),
   );
-  t.deepEqual(
-    daveCustomDetails.underlyingAssets.UnderlyingAsset.value[0].customDetails
-      .timeAuthority,
-    timer,
-  );
+  t.deepEqual(underlyingCustomDetails.timeAuthority, timer);
 
   // Dave's planned proposal
   const daveProposalCoveredCall = harden({
@@ -892,7 +885,7 @@ test('zoe - coveredCall with coveredCall for invitation', async t => {
   const invitationBrand = await E(invitationIssuer).getBrand();
   t.deepEqual(
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
-    AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
+    AmountMath.makeEmpty(invitationBrand, AssetKind.COPY_BAG),
   );
   t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 

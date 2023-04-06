@@ -19,7 +19,7 @@ const setupIssuersForTest = () => {
     harden({ decimalPlaces: 18 }),
   );
 
-  const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
+  const ticketKit = makeIssuerKit('tickets', AssetKind.COPY_BAG);
 
   return { currencyKit, ticketKit };
 };
@@ -42,13 +42,13 @@ test('storeIssuer, getAssetKindByBrand', async t => {
   const ticketIssuerRecord = await storeIssuer(ticketKit.issuer);
   t.is(ticketIssuerRecord.issuer, ticketKit.issuer);
   t.is(ticketIssuerRecord.brand, ticketKit.brand);
-  t.is(ticketIssuerRecord.assetKind, AssetKind.SET);
+  t.is(ticketIssuerRecord.assetKind, AssetKind.COPY_BAG);
   t.deepEqual(ticketIssuerRecord.displayInfo, {
-    assetKind: AssetKind.SET,
+    assetKind: AssetKind.COPY_BAG,
   });
 
   t.is(getAssetKindByBrand(currencyKit.brand), AssetKind.NAT);
-  t.is(getAssetKindByBrand(ticketKit.brand), AssetKind.SET);
+  t.is(getAssetKindByBrand(ticketKit.brand), AssetKind.COPY_BAG);
 });
 
 test('storeIssuer, same issuer twice', async t => {

@@ -1,10 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { initEmpty, M } from '@agoric/store';
+import { initEmpty, M, makeCopyBagFromElements } from '@agoric/store';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { assert } from '@agoric/assert';
 
 import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
+import { getCopyBagEntries } from '@agoric/store/src/keys/checkKey.js';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
 import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
@@ -25,28 +25,37 @@ test('mint.mintPayment default nat AssetKind', async t => {
   t.assert(AmountMath.isEqual(paymentBalance2, fungible1000));
 });
 
-test('mint.mintPayment set w strings AssetKind', async t => {
+test('mint.mintPayment copyBag w strings AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit(
     'items',
-    AssetKind.SET,
+    AssetKind.COPY_BAG,
     undefined,
     undefined,
     { elementShape: M.string() },
   );
-  const items1and2and4 = AmountMath.make(brand, harden(['1', '2', '4']));
+  const items1and2and4 = AmountMath.make(
+    brand,
+    makeCopyBagFromElements(['1', '2', '4']),
+  );
   const payment1 = mint.mintPayment(items1and2and4);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
   t.assert(AmountMath.isEqual(paymentBalance1, items1and2and4));
 
-  const items5and6 = AmountMath.make(brand, harden(['5', '6']));
+  const items5and6 = AmountMath.make(
+    brand,
+    makeCopyBagFromElements(['5', '6']),
+  );
   const payment2 = mint.mintPayment(items5and6);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
   t.assert(AmountMath.isEqual(paymentBalance2, items5and6));
 
-  const badAmount = AmountMath.make(brand, harden([['badElement']]));
+  const badAmount = AmountMath.make(
+    brand,
+    makeCopyBagFromElements([['badElement']]),
+  );
   t.throws(() => mint.mintPayment(badAmount), {
     message:
-      'In "mintPayment" method of (items mint): arg 0: value: [0]: copyArray ["badElement"] - Must be a string',
+      'In "mintPayment" method of (items mint): arg 0: value: bag keys[0]: copyArray ["badElement"] - Must be a string',
   });
 });
 
@@ -56,17 +65,20 @@ const makeDurableHandle = name => {
   return maker();
 };
 
-test('mint.mintPayment set AssetKind', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
+test('mint.mintPayment copyBag AssetKind', async t => {
+  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.COPY_BAG);
   const item1handle = makeDurableHandle('iface');
   const item2handle = makeDurableHandle('iface');
   const item3handle = makeDurableHandle('iface');
-  const items1and2 = AmountMath.make(brand, harden([item1handle, item2handle]));
+  const items1and2 = AmountMath.make(
+    brand,
+    makeCopyBagFromElements([item1handle, item2handle]),
+  );
   const payment1 = mint.mintPayment(items1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
   t.assert(AmountMath.isEqual(paymentBalance1, items1and2));
 
-  const item3 = AmountMath.make(brand, harden([item3handle]));
+  const item3 = AmountMath.make(brand, makeCopyBagFromElements([item3handle]));
   const payment2 = mint.mintPayment(item3);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
   t.assert(AmountMath.isEqual(paymentBalance2, item3));
@@ -78,8 +90,8 @@ test('mint.mintPayment set AssetKind', async t => {
   t.assert(AmountMath.isEqual(paymentBalance3, item3));
 });
 
-test('mint.mintPayment set AssetKind with invites', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.SET);
+test('mint.mintPayment copyBag AssetKind with invites', async t => {
+  const { mint, issuer, brand } = makeIssuerKit('items', AssetKind.COPY_BAG);
   const instanceHandle1 = makeDurableHandle('iface');
   const invite1Value = {
     handle: makeDurableHandle('iface'),
@@ -95,13 +107,16 @@ test('mint.mintPayment set AssetKind with invites', async t => {
   };
   const invites1and2 = AmountMath.make(
     brand,
-    harden([invite1Value, invite2Value]),
+    makeCopyBagFromElements([invite1Value, invite2Value]),
   );
   const payment1 = mint.mintPayment(invites1and2);
   const paymentBalance1 = await issuer.getAmountOf(payment1);
   t.assert(AmountMath.isEqual(paymentBalance1, invites1and2));
 
-  const invite3 = AmountMath.make(brand, harden([invite3Value]));
+  const invite3 = AmountMath.make(
+    brand,
+    makeCopyBagFromElements([invite3Value]),
+  );
   const payment2 = mint.mintPayment(invite3);
   const paymentBalance2 = await issuer.getAmountOf(payment2);
   t.assert(AmountMath.isEqual(paymentBalance2, invite3));
@@ -110,12 +125,12 @@ test('mint.mintPayment set AssetKind with invites', async t => {
 // Tests related to non-fungible tokens
 // This test models ballet tickets
 test('non-fungible tokens example', async t => {
-  t.plan(11);
+  t.plan(14);
   const {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,
     brand,
-  } = makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET);
+  } = makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.COPY_BAG);
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 
@@ -132,7 +147,7 @@ test('non-fungible tokens example', async t => {
   const balletTicketPayments = ticketDescriptionObjects.map(
     ticketDescription => {
       return balletTicketMint.mintPayment(
-        AmountMath.make(brand, harden([ticketDescription])),
+        AmountMath.make(brand, makeCopyBagFromElements([ticketDescription])),
       );
     },
   );
@@ -158,11 +173,12 @@ test('non-fungible tokens example', async t => {
   const paymentAmountAlice = await balletTicketIssuer.getAmountOf(
     myTicketPaymentAlice,
   );
-  assert(Array.isArray(paymentAmountAlice.value));
-  t.is(paymentAmountAlice.value.length, 1);
-  t.is(paymentAmountAlice.value[0].seat, 1);
-  t.is(paymentAmountAlice.value[0].show, 'The Sofa');
-  t.is(paymentAmountAlice.value[0].start, startDateString);
+  const aliceEntries = getCopyBagEntries(paymentAmountAlice.value);
+  t.is(aliceEntries.length, 1);
+  t.is(aliceEntries[0][1], 1n);
+  t.is(aliceEntries[0][0].seat, 1);
+  t.is(aliceEntries[0][0].show, 'The Sofa');
+  t.is(aliceEntries[0][0].start, startDateString);
 
   // BOB SIDE
   // Bob bought ticket 3 and 4 and has access to the balletTicketIssuer, because
@@ -174,12 +190,14 @@ test('non-fungible tokens example', async t => {
   const paymentAmountBob = await balletTicketIssuer.getAmountOf(
     bobTicketPayment,
   );
-  assert(Array.isArray(paymentAmountBob.value));
-  t.is(paymentAmountBob.value.length, 2);
-  t.is(paymentAmountBob.value[0].seat, 4);
-  t.is(paymentAmountBob.value[1].seat, 3);
-  t.is(paymentAmountBob.value[0].show, 'The Sofa');
-  t.is(paymentAmountBob.value[1].show, 'The Sofa');
-  t.is(paymentAmountBob.value[0].start, startDateString);
-  t.is(paymentAmountBob.value[1].start, startDateString);
+  const bobEntries = getCopyBagEntries(paymentAmountBob.value);
+  t.is(bobEntries.length, 2);
+  t.is(bobEntries[0][1], 1n);
+  t.is(bobEntries[1][1], 1n);
+  t.is(bobEntries[0][0].seat, 4);
+  t.is(bobEntries[1][0].seat, 3);
+  t.is(bobEntries[0][0].show, 'The Sofa');
+  t.is(bobEntries[1][0].show, 'The Sofa');
+  t.is(bobEntries[0][0].start, startDateString);
+  t.is(bobEntries[1][0].start, startDateString);
 });

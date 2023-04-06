@@ -1,6 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { Nat } from '@endo/nat';
 import { E } from '@endo/eventual-send';
+import { getCopyBagEntries } from '@agoric/store';
 
 const { Fail } = assert;
 
@@ -14,9 +15,10 @@ const { Fail } = assert;
  * @returns {PriceDescription}
  */
 export const getPriceDescription = quote => {
-  quote.quoteAmount.value.length === 1 ||
+  const entries = getCopyBagEntries(quote.quoteAmount.value);
+  (entries.length === 1 && entries[0][1] === 1n) ||
     Fail`quoteAmount set must have one member`;
-  return quote.quoteAmount.value[0];
+  return entries[0][0];
 };
 
 /** @param {PriceQuote} quote */

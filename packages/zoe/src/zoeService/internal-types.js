@@ -123,7 +123,7 @@
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
  * @property {DepositPayments} depositPayments
- * @property {Issuer<'set'>} invitationIssuer
+ * @property {Issuer<'copyBag'>} invitationIssuer
  * @property {InstallBundle} installBundle
  * @property {InstallBundleID} installBundleID
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation

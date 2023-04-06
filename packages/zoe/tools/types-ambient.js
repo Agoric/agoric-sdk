@@ -1,13 +1,13 @@
 /**
  * @typedef {object} PriceQuote
- * @property {Amount<'set'>} quoteAmount
+ * @property {Amount<'copyBag'>} quoteAmount
  * Amount whose value is a PriceQuoteValue
- * @property {ERef<Payment<'set'>>} quotePayment
+ * @property {ERef<Payment<'copyBag'>>} quotePayment
  * The `quoteAmount` wrapped as a payment
  */
 
 /**
- * @typedef {[PriceDescription]} PriceQuoteValue
+ * @typedef {CopyBag<PriceDescription>} PriceQuoteValue
  * A single-valued set of PriceDescriptions.  This is the `value` in
  * PriceQuote.quoteAmount (`{ brand, value: PriceQuoteValue }`).
  */
@@ -61,7 +61,7 @@
  * An object that mints PriceQuotes and handles
  * triggers and notifiers for changes in the price
  *
- * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'set'>>} getQuoteIssuer
+ * @property {(brandIn: Brand, brandOut: Brand) => ERef<Issuer<'copyBag'>>} getQuoteIssuer
  * Get the ERTP issuer of PriceQuotes for a given brandIn/brandOut pair
  *
  * @property {(brandIn: Brand,

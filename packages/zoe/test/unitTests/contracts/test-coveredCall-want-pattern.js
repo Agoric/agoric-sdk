@@ -11,6 +11,7 @@ import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';
+import { getInvitationAmountDetails } from '../../../src/zoeService/invitationQueries.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -120,7 +121,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
     optionP,
   );
   const optionAmount = await E(invitationIssuer).getAmountOf(bobExclOption);
-  const optionDesc = optionAmount.value[0];
+  const optionDesc = getInvitationAmountDetails(optionAmount);
   const { customDetails } = optionDesc;
   assert(typeof customDetails === 'object');
 
@@ -192,7 +193,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   const optionAmountPattern1 = harden({
     brand: M.any(),
-    value: [
+    value: M.bagOf(
       M.splitRecord({
         handle: M.any(),
         instance: M.any(),
@@ -205,14 +206,15 @@ test('zoe - coveredCall with swap for invitation', async t => {
           expirationDate: M.and(M.gte(50n), M.lte(300n)),
         },
       }),
-    ],
+      1n,
+    ),
   });
 
   mustMatch(optionAmount, optionAmountPattern1);
 
   const optionAmountPattern2 = harden({
     brand: BrandShape,
-    value: [
+    value: M.bagOf(
       M.splitRecord({
         installation: coveredCallInstallation,
         description: 'exerciseOption',
@@ -223,7 +225,8 @@ test('zoe - coveredCall with swap for invitation', async t => {
           expirationDate: M.and(M.gte(50n), M.lte(300n)),
         },
       }),
-    ],
+      1n,
+    ),
   });
 
   mustMatch(optionAmount, optionAmountPattern2);
@@ -301,7 +304,7 @@ test('zoe - coveredCall with swap for invitation', async t => {
 
   t.deepEqual(
     await E(invitationIssuer).getAmountOf(bobInvitationPayout),
-    AmountMath.makeEmpty(invitationBrand, AssetKind.SET),
+    AmountMath.makeEmpty(invitationBrand, AssetKind.COPY_BAG),
   );
   t.deepEqual(await bucksKit.issuer.getAmountOf(bobBucksPayout), bucks(1n));
 

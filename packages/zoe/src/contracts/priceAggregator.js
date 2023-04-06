@@ -8,7 +8,7 @@ import {
   makeStoredPublishKit,
   observeNotifier,
 } from '@agoric/notifier';
-import { makeLegacyMap } from '@agoric/store';
+import { makeCopyBagFromElements, makeLegacyMap } from '@agoric/store';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -58,7 +58,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * }>} zcf
  * @param {{
  * marshaller: Marshaller,
- * quoteMint?: ERef<Mint<'set'>>,
+ * quoteMint?: ERef<Mint<'copyBag'>>,
  * storageNode: ERef<StorageNode>,
  * }} privateArgs
  */
@@ -75,8 +75,8 @@ const start = async (zcf, privateArgs) => {
   assertAllDefined({ marshaller, storageNode });
 
   const quoteMint =
-    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.SET).mint;
-  /** @type {IssuerRecord<'set'>} */
+    privateArgs.quoteMint || makeIssuerKit('quote', AssetKind.COPY_BAG).mint;
+  /** @type {IssuerRecord<'copyBag'>} */
   // xxx saveIssuer not generic
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
@@ -92,12 +92,15 @@ const start = async (zcf, privateArgs) => {
 
   /**
    *
-   * @param {PriceQuoteValue} quote
+   * @param {PriceDescription[]} quoteElements
    */
-  const authenticateQuote = async quote => {
-    /** @type {Amount<'set'>} */
+  const authenticateQuoteElements = async quoteElements => {
+    /** @type {Amount<'copyBag'>} */
     // xxx type should be inferred from brand and value
-    const quoteAmount = AmountMath.make(quoteKit.brand, harden(quote));
+    const quoteAmount = AmountMath.make(
+      quoteKit.brand,
+      makeCopyBagFromElements(quoteElements),
+    );
     const quotePayment = await E(quoteKit.mint).mintPayment(quoteAmount);
     return harden({ quoteAmount, quotePayment });
   };
@@ -204,14 +207,16 @@ const start = async (zcf, privateArgs) => {
       AmountMath.coerce(brandIn, amountIn);
       AmountMath.coerce(brandOut, amountOut);
       if (theirTimestamp !== undefined) {
-        return authenticateQuote([
+        return authenticateQuoteElements([
           { amountIn, amountOut, timer, timestamp: theirTimestamp },
         ]);
       }
       return E(timer)
         .getCurrentTimestamp()
         .then(now =>
-          authenticateQuote([{ amountIn, amountOut, timer, timestamp: now }]),
+          authenticateQuoteElements([
+            { amountIn, amountOut, timer, timestamp: now },
+          ]),
         );
     };
 
@@ -283,7 +288,7 @@ const start = async (zcf, privateArgs) => {
     };
 
     // Authenticate the quote by minting it with our quote issuer, then publish.
-    const authenticatedQuote = await authenticateQuote([quote]);
+    const authenticatedQuote = await authenticateQuoteElements([quote]);
     roundCompleteUpdater.updateState({ submitted, authenticatedQuote });
 
     // Fire any triggers now; we don't care if the timestamp is fully ordered,

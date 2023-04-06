@@ -62,7 +62,7 @@ async function setupTest(
 
   const moolaBundle = makeIssuerKit('moola');
   const simoleanBundle = makeIssuerKit('simolean');
-  const rpgBundle = makeIssuerKit('rpg', AssetKind.SET);
+  const rpgBundle = makeIssuerKit('rpg', AssetKind.COPY_BAG);
   const board = makeBoard();
 
   const automaticRefundP = (automaticRefund &&

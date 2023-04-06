@@ -52,7 +52,7 @@ const isAsync = {
  */
 
 /**
- * @typedef {{ type: 'invitation', value: Amount<'set'> }} InvitationParam
+ * @typedef {{ type: 'invitation', value: Amount<'copyBag'> }} InvitationParam
  */
 
 // XXX better to use the manifest constant ParamTypes

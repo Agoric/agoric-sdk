@@ -3,6 +3,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import { assert } from '@agoric/assert';
+import { makeCopyBagFromElements } from '@agoric/store';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract
@@ -29,7 +30,7 @@ import { assert } from '@agoric/assert';
 const start = zcf => {
   const { tokenName = 'token' } = zcf.getTerms();
   // Create the internal token mint
-  const { issuer, mint, brand } = makeIssuerKit(tokenName, AssetKind.SET);
+  const { issuer, mint, brand } = makeIssuerKit(tokenName, AssetKind.COPY_BAG);
 
   const zoeService = zcf.getZoeService();
 
@@ -50,7 +51,7 @@ const start = zcf => {
   }) => {
     const tokenAmount = AmountMath.make(
       brand,
-      harden(
+      makeCopyBagFromElements(
         Array(count)
           .fill(undefined)
           .map((_, i) => {

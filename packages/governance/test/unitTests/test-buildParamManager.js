@@ -55,7 +55,7 @@ test('getParams', t => {
 
 test('params duplicate entry', async t => {
   const stuffKey = 'Stuff';
-  const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.SET);
+  const { brand: stiltonBrand } = makeIssuerKit('stilton', AssetKind.COPY_BAG);
   t.throws(
     () =>
       makeParamManagerBuilder(makeStoredPublisherKit())

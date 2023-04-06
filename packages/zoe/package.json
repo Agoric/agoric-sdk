@@ -3,7 +3,7 @@
   "version": "0.25.3",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "type": "module",
-  "main": "./src/zoeService/zoe.js",
+  "main": "./index.js",
   "engines": {
     "node": ">=14.15.0"
   },

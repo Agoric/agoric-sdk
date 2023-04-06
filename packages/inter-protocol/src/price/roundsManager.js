@@ -71,7 +71,7 @@ const validRoundId = roundId => {
  */
 
 /**
- * @typedef {IssuerRecord<'set'> & { mint: Mint<'set'> }} QuoteKit
+ * @typedef {IssuerRecord<'copyBag'> & { mint: Mint<'copyBag'> }} QuoteKit
  */
 
 /**
