@@ -98,7 +98,7 @@
  */
 
 /**
- * @typedef {object} LoanTiming
+ * @typedef {object} InterestTiming
  * @property {RelativeTime} chargingPeriod in seconds
  * @property {RelativeTime} recordingPeriod in seconds
  */

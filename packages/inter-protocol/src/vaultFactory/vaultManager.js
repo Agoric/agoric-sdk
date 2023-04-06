@@ -335,11 +335,11 @@ export const prepareVaultManagerKit = (
         },
         /** @deprecated use getPublicTopics */
         getSubscriber() {
-          return assetSubscriber;
+          return topics.asset.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getMetrics() {
-          return metricsSubscriber;
+          return topics.metrics.subscriber;
         },
         getQuotes() {
           return storedQuotesNotifier;

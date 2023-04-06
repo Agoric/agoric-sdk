@@ -38,7 +38,7 @@ import {
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * bundleCache: Awaited<ReturnType<typeof unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
- * loanTiming: LoanTiming,
+ * interestTiming: InterestTiming,
  * zoe: ZoeService,
  * }} Context
  */
@@ -95,7 +95,7 @@ test.before(async t => {
     bundles,
     installation,
     electorateTerms: undefined,
-    loanTiming: {
+    interestTiming: {
       chargingPeriod: 2n,
       recordingPeriod: 6n,
     },
@@ -133,7 +133,7 @@ const setupServices = async (
   runInitialLiquidity,
   startFrequency = undefined,
 ) => {
-  const { zoe, run, aeth, loanTiming, minInitialDebt, endorsedUi, rates } =
+  const { zoe, run, aeth, interestTiming, minInitialDebt, endorsedUi, rates } =
     t.context;
   t.context.timer = timer;
 
@@ -157,7 +157,7 @@ const setupServices = async (
   iProduce.liquidate.resolve(t.context.installation.liquidate);
   await startVaultFactory(
     space,
-    { loanParams: loanTiming, options: { endorsedUi } },
+    { interestTiming, options: { endorsedUi } },
     minInitialDebt,
   );
 
@@ -289,7 +289,7 @@ test('price drop', async t => {
   // The price starts at 5 RUN per Aeth. The loan will start with 400 Aeth
   // collateral and a loan of 1600, which is a CR of 1.25. After the price falls
   // to 4, the loan will get liquidated.
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -437,7 +437,7 @@ test('price drop', async t => {
 
 test('price falls precipitously', async t => {
   const { zoe, aeth, run, rates } = t.context;
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -597,7 +597,7 @@ test('liquidate two loans', async t => {
 
   // Interest is charged daily, and auctions are every week, so we'll charge
   // interest a few times before the second auction.
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -916,7 +916,7 @@ test('sell goods at auction', async t => {
 
   // Interest is charged daily, and auctions are every week, so we'll charge
   // interest a few times before the second auction.
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };
@@ -1099,7 +1099,7 @@ test('collect fees from loan', async t => {
   const { zoe, aeth, run, rates } = t.context;
   const manualTimer = buildManualTimer();
 
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: 2n,
     recordingPeriod: 10n,
   };
@@ -1341,7 +1341,7 @@ test('Auction sells all collateral w/shortfall', async t => {
   t.context.rates = rates;
 
   // Interest is charged daily, and auctions are every week
-  t.context.loanTiming = {
+  t.context.interestTiming = {
     chargingPeriod: SECONDS_PER_DAY,
     recordingPeriod: SECONDS_PER_DAY,
   };

@@ -33,9 +33,7 @@ import { Far } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
-  CHARGING_PERIOD_KEY,
   makeVaultParamManager,
-  RECORDING_PERIOD_KEY,
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
@@ -177,7 +175,7 @@ export const prepareVaultDirector = (
 
     if (newInvitation === oldInvitation) {
       shortfallReporter ||
-        'updateShortFallReported called with repeat invitation and no prior shortfallReporter';
+        Fail`updateShortFallReported called with repeat invitation and no prior shortfallReporter`;
       return;
     }
 
@@ -361,23 +359,22 @@ export const prepareVaultDirector = (
             debtMint.burnLosses(harden({ Minted: toBurn }), seat);
           };
 
-          const { loanTimingParams } = zcf.getTerms();
-
           const factoryPowers = Far('vault factory powers', {
+            /**
+             * @returns read-only params for this manager and its director
+             */
             getGovernedParams: () =>
               Far('vault manager param manager', {
-                // one param from director scope
+                // merge direction and manager params
+                ...directorParamManager.readonly(),
+                ...vaultParamManager.readonly(),
+                // redeclare these getters as to specify the kind of the Amount
                 getMinInitialDebt: /** @type {() => Amount<'nat'>} */ (
                   directorParamManager.readonly().getMinInitialDebt
                 ),
-                ...vaultParamManager.readonly(),
                 getDebtLimit: /** @type {() => Amount<'nat'>} */ (
                   vaultParamManager.readonly().getDebtLimit
                 ),
-                getChargingPeriod: () =>
-                  loanTimingParams[CHARGING_PERIOD_KEY].value,
-                getRecordingPeriod: () =>
-                  loanTimingParams[RECORDING_PERIOD_KEY].value,
               }),
             mintAndTransfer,
             getShortfallReporter: async () => {

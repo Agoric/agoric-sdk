@@ -186,7 +186,7 @@ export const setupReserve = async ({
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
- * @param {LoanTiming} [config.loanParams]
+ * @param {InterestTiming} [config.interestTiming]
  * @param {object} [config.options]
  * @param {string} [config.options.endorsedUi]
  * @param {bigint} minInitialDebt
@@ -220,7 +220,7 @@ export const startVaultFactory = async (
     },
   },
   {
-    loanParams = {
+    interestTiming = {
       chargingPeriod: SECONDS_PER_HOUR,
       recordingPeriod: SECONDS_PER_DAY,
     },
@@ -258,21 +258,18 @@ export const startVaultFactory = async (
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  const vaultFactoryTerms = makeGovernedVFTerms(
-    { storageNode, marshaller },
-    {
-      priceAuthority,
-      auctioneerPublicFacet,
-      reservePublicFacet,
-      loanTiming: loanParams,
-      timer: chainTimerService,
-      electorateInvitationAmount: poserInvitationAmount,
-      minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
-      bootstrapPaymentValue: 0n,
-      shortfallInvitationAmount,
-      endorsedUi,
-    },
-  );
+  const vaultFactoryTerms = makeGovernedVFTerms({
+    priceAuthority,
+    auctioneerPublicFacet,
+    reservePublicFacet,
+    interestTiming,
+    timer: chainTimerService,
+    electorateInvitationAmount: poserInvitationAmount,
+    minInitialDebt: AmountMath.make(centralBrand, minInitialDebt),
+    bootstrapPaymentValue: 0n,
+    shortfallInvitationAmount,
+    endorsedUi,
+  });
 
   const governorTerms = await deeplyFulfilledObject(
     harden({
