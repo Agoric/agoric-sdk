@@ -2,10 +2,12 @@ import '@agoric/zoe/exported.js';
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeTracer } from '@agoric/internal';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
-import '../../src/vaultFactory/types.js';
 import { assertTopicPathData, subscriptionKey } from '../supports.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
+
+import '../../src/vaultFactory/types.js';
 
 /**
  * @typedef {import('./driver.js').DriverContext & {
@@ -154,4 +156,32 @@ test('quotes storage', async t => {
   );
   // @ts-expect-error thinks the left argument is Number
   t.is(quoteValue.amountOut.value / quoteValue.amountIn.value, highPrice);
+});
+
+test('governance params', async t => {
+  const md = await makeManagerDriver(t);
+  const vdp = md.getVaultDirectorPublic();
+  // TODO make governance work with publicTopics / assertTopicPathData
+  const governanceSubscription = E(vdp).getElectorateSubscription();
+  t.is(
+    await subscriptionKey(governanceSubscription),
+    'mockChainStorageRoot.vaultFactory.governance',
+  );
+
+  const notifier = makeNotifierFromAsyncIterable(governanceSubscription);
+
+  const before = await notifier.getUpdateSince();
+  t.like(before.value.current, {
+    ChargingPeriod: { type: 'nat', value: 2n },
+    Electorate: { type: 'invitation' },
+    EndorsedUI: { type: 'string', value: 'NO ENDORSEMENT' },
+    MinInitialDebt: { type: 'amount' },
+    RecordingPeriod: { type: 'nat', value: 6n },
+    ShortfallInvitation: { type: 'invitation' },
+  });
+
+  await md.setGovernedParam('ChargingPeriod', 99n);
+
+  const after = await notifier.getUpdateSince(before.updateCount);
+  t.like(after.value.current, { ChargingPeriod: { value: 99n } });
 });
