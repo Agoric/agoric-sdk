@@ -210,12 +210,18 @@ export type TimeMathType = {
    * Coerces to a Timestamp if possible. If a brand is provided, ensure it
    * matches and return a Timestamp labeled with that brand.
    */
-  toAbs: (abs: Timestamp | number, brand?: TimerBrand) => Timestamp;
+  toAbs(abs: TimestampValue | number): TimestampValue;
+  toAbs(abs: TimestampValue | number, brand: TimerBrand): TimestampRecord;
+  toAbs(abs: TimestampRecord): TimestampRecord;
+
   /**
    * Coerces to a RelativeTime if possible. If a brand is provided, ensure it
    * matches and return a RelativeTime labeled with that brand.
    */
-  toRel: (rel: RelativeTime | number, brand?: TimerBrand) => RelativeTime;
+  toRel(rel: RelativeTimeValue | number): RelativeTimeValue;
+  toRel(rel: RelativeTimeValue | number, brand: TimerBrand): RelativeTimeRecord;
+  toRel(rel: RelativeTimeRecord): RelativeTimeRecord;
+
   /**
    * An absolute time + a relative time gives a new absolute time.
    *
