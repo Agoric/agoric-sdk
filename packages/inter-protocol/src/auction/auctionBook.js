@@ -108,17 +108,6 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
  * @property {Amount<'nat'> | undefined} collateralAvailable The amount of collateral remaining
  */
 
-/*
- * If stateVariable is unset, set it to amount, otherwise add amount
- */
-const addAmountToState = (state, varName, amount) => {
-  if (!state[varName]) {
-    state[varName] = amount;
-  } else {
-    state[varName] = AmountMath.add(state[varName], amount);
-  }
-};
-
 /**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
@@ -187,37 +176,44 @@ export const prepareAuctionBook = (baggage, zcf) => {
 
         priceBook,
         scaledBidBook,
+        /**
+         * Set to empty at the end of an auction. It increases when
+         * `addAssets()` is called
+         */
+        startCollateral: AmountMath.makeEmpty(collateralBrand),
 
         /**
-         * null between auctions
-         *
-         * @type {Ratio | null}
-         */
-        curAuctionPrice: null,
-        /**
-         * null between auctions
-         *
-         * @type {Ratio | null}
-         */
-        lockedPriceForRound: null,
-        /**
-         * null between auctions
-         *
-         * @type {Amount<'nat'> | null}
-         */
-        startCollateral: null,
-        /**
-         * null indicates no limit; empty indicates limit exhausted
-         *
-         * @type {Amount<'nat'> | null}
-         */
-        remainingProceedsGoal: null,
-        /**
-         * null indicates no limit; empty indicates limit exhausted
+         * Null indicates no limit; empty indicates limit exhausted. It is reset
+         * at the end of each auction. It increases when `addAssets()` is called
+         * with a goal.
          *
          * @type {Amount<'nat'> | null}
          */
         startProceedsGoal: null,
+
+        /**
+         * Assigned a value to lock the price and reset to null at the end of
+         * each auction.
+         *
+         * @type {Ratio | null}
+         */
+        lockedPriceForRound: null,
+
+        /**
+         * non-null during auctions. It is assigned a value at the beginning of
+         * each descending step, and reset at the end of the auction.
+         *
+         * @type {Ratio | null}
+         */
+        curAuctionPrice: null,
+
+        /**
+         * null outside of auctions. during an auction null indicates no limit;
+         * empty indicates limit exhausted
+         *
+         * @type {Amount<'nat'> | null}
+         */
+        remainingProceedsGoal: null,
       };
     },
     {
@@ -513,13 +509,17 @@ export const prepareAuctionBook = (baggage, zcf) => {
                 ? AmountMath.subtract(nextProceedsGoal, state.startProceedsGoal)
                 : nextProceedsGoal;
 
-              addAmountToState(state, 'remainingProceedsGoal', incrementToGoal);
+              state.remainingProceedsGoal = state.remainingProceedsGoal
+                ? AmountMath.add(state.remainingProceedsGoal, incrementToGoal)
+                : incrementToGoal;
             }
 
             state.startProceedsGoal = nextProceedsGoal;
           }
 
-          addAmountToState(state, 'startCollateral', assetAmount);
+          state.startCollateral = state.startCollateral
+            ? AmountMath.add(state.startCollateral, assetAmount)
+            : assetAmount;
           facets.helper.publishBookData();
 
           atomicRearrange(
@@ -676,10 +676,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
         endAuction() {
           const { state } = this;
 
-          state.startCollateral = null;
+          state.startCollateral = AmountMath.makeEmpty(state.collateralBrand);
+
           state.lockedPriceForRound = null;
           state.curAuctionPrice = null;
           state.remainingProceedsGoal = null;
+          state.startProceedsGoal = null;
         },
         getDataUpdates() {
           return this.state.bookDataSubscriber;

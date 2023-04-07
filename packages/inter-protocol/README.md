@@ -53,6 +53,7 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
         - `governance`
         - `books`
           - `book0`
+            - `data`
     - `priceFeed`
       - '<inputBrand>_<outputBrand>_price_feed'
     - `psm`
