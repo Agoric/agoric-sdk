@@ -19,17 +19,18 @@ export const initEmpty = () => emptyRecord;
 
 /**
  * @typedef {import('./exo-tools.js').FacetName} FacetName
+ * @typedef {import('./exo-tools.js').Methods} Methods
  */
 
 /**
  * @template [S = any]
- * @template [T = any]
+ * @template {Methods} [M = any]
  * @typedef {import('./exo-tools.js').ClassContext} ClassContext
  */
 
 /**
  * @template [S = any]
- * @template {Record<FacetName, any>} [F = any]
+ * @template {Record<FacetName, Methods>} [F = any]
  * @typedef {import('./exo-tools.js').KitContext} KitContext
  */
 
@@ -48,7 +49,7 @@ export const initEmpty = () => emptyRecord;
 
 /**
  * @template {(...args: any[]) => any} I init function
- * @template {Record<string | symbol, CallableFunction>} M methods
+ * @template {Methods} M methods
  * @param {string} tag
  * @param {any} interfaceGuard
  * @param {I} init
@@ -97,7 +98,7 @@ harden(defineExoClass);
 
 /**
  * @template {(...args: any[]) => any} I init function
- * @template {Record<FacetName, Record<string | symbol, CallableFunction>>} F facet methods
+ * @template {Record<FacetName, Methods>} F facet methods
  * @param {string} tag
  * @param {any} interfaceGuardKit
  * @param {I} init
@@ -153,7 +154,7 @@ export const defineExoClassKit = (
 harden(defineExoClassKit);
 
 /**
- * @template {Record<string | symbol, CallableFunction>} T
+ * @template {Methods} T
  * @param {string} tag
  * @param {InterfaceGuard | undefined} interfaceGuard CAVEAT: static typing does not yet support `callWhen` transformation
  * @param {T} methods

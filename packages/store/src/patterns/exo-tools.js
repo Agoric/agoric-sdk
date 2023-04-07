@@ -119,15 +119,19 @@ const defendMethod = (method, methodGuard, label) => {
  */
 
 /**
- * @template [S = any]
- * @template [T = any]
- * @typedef {{ self: S, state: T }} ClassContext
+ * @typedef {Record<string | symbol, CallableFunction>} Methods
  */
 
 /**
  * @template [S = any]
- * @template {Record<FacetName, any>} [F = any]
- * @typedef {{ self: S, facets: F }} KitContext
+ * @template {Methods} [M = any]
+ * @typedef {{ state: S, self: M }} ClassContext
+ */
+
+/**
+ * @template [S = any]
+ * @template {Record<FacetName, Methods>} [F = any]
+ * @typedef {{ state: S, facets: F }} KitContext
  */
 
 /**
