@@ -356,6 +356,9 @@ export async function makeHTTPListener(
       try {
         obj = JSON.parse(message);
         const res = await inboundCommand(obj, meta, id);
+        if (typeof res === 'boolean') {
+          return;
+        }
 
         // eslint-disable-next-line no-use-before-define
         sendJSON({ ...res, meta });
@@ -371,9 +374,7 @@ export async function makeHTTPListener(
   wss.on('connection', newChannel);
 
   function sendJSON(rawObj) {
-    const { meta: { channelID } = {} } = rawObj;
-    const obj = { ...rawObj };
-    delete obj.meta;
+    const { meta: { channelID } = {}, ...obj } = rawObj;
 
     // Point-to-point.
     const c = channels.get(channelID);
