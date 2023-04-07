@@ -36,6 +36,7 @@ test.before(async t => {
 test('replay after upgrade', async t => {
   const config = {
     bootstrap: 'bootstrap',
+    defaultManagerType: 'xsnap',
     vats: {
       bootstrap: { sourceSpec: bfile('bootstrap-upgrade-replay.js') },
     },
