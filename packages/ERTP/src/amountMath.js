@@ -2,8 +2,6 @@ import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
-import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
-import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 const { quote: q, Fail } = assert;
@@ -11,12 +9,10 @@ const { quote: q, Fail } = assert;
 /**
  * Constants for the kinds of assets we support.
  *
- * @type {{ NAT: 'nat', SET: 'set', COPY_SET: 'copySet', COPY_BAG: 'copyBag' }}
+ * @type {{ NAT: 'nat', COPY_BAG: 'copyBag' }}
  */
 const AssetKind = harden({
   NAT: 'nat',
-  SET: 'set',
-  COPY_SET: 'copySet',
   COPY_BAG: 'copyBag',
 });
 const assetKindNames = harden(Object.values(AssetKind).sort());
@@ -72,8 +68,6 @@ harden(assertAssetKind);
 
 const helpers = {
   nat: natMathHelpers,
-  set: setMathHelpers,
-  copySet: copySetMathHelpers,
   copyBag: copyBagMathHelpers,
 };
 
@@ -87,14 +81,6 @@ const assertValueGetAssetKind = value => {
     // @ts-expect-error cast
     return 'nat';
   }
-  if (passStyle === 'copyArray') {
-    // @ts-expect-error cast
-    return 'set';
-  }
-  if (matches(value, M.set())) {
-    // @ts-expect-error cast
-    return 'copySet';
-  }
   if (matches(value, M.bag())) {
     // @ts-expect-error cast
     return 'copyBag';
@@ -104,9 +90,7 @@ const assertValueGetAssetKind = value => {
   // object it is.
   // Also, this kind of manual listing is a maintenance hazard we
   // (TODO) will encounter when we extend the math helpers further.
-  throw Fail`value ${value} must be a bigint, copySet, copyBag, or an array, not ${q(
-    passStyle,
-  )}`;
+  throw Fail`value ${value} must be a bigint or copyBag, not ${q(passStyle)}`;
 };
 
 /**

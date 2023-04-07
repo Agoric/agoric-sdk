@@ -17,21 +17,12 @@
  */
 
 /**
- * @typedef {NatValue | SetValue | CopySetValue | CopyBagValue} AmountValue
+ * @typedef {NatValue | CopyBagValue} AmountValue
  * An `AmountValue` describes a set or quantity of assets that can be owned or
  * shared.
  *
  * A fungible `AmountValue` uses a non-negative bigint to represent a quantity
  * of that many assets.
- *
- * A non-fungible `AmountValue` uses an array or CopySet of `Key`s to represent
- * a set of whatever asset each key represents. A `Key` is a passable value
- * that can be used as an element in a set (SetStore or CopySet) or as the
- * key in a map (MapStore or CopyMap).
- *
- * `SetValue` is for the deprecated set representation, using an array directly
- * to represent the array of its elements. `CopySetValue` is the proper
- * representation using a CopySet.
  *
  * A semi-fungible `CopyBagValue` is represented as a
  * `CopyBag` of `Key` objects. "Bag" is synonymous with MultiSet, where an
@@ -41,7 +32,7 @@
  */
 
 /**
- * @typedef {'nat' | 'set' | 'copySet' | 'copyBag' } AssetKind
+ * @typedef {'nat' | 'copyBag' } AssetKind
  *
  * See doc-comment for `AmountValue`.
  */
@@ -49,8 +40,6 @@
 /**
  * @template {AssetKind} K
  * @typedef {K extends 'nat' ? NatValue :
- * K extends 'set' ? SetValue :
- * K extends 'copySet' ? CopySetValue:
  * K extends 'copyBag' ? CopyBagValue :
  * never
  * } AssetValueForKind
@@ -59,8 +48,6 @@
 /**
  * @template {AmountValue} V
  * @typedef {V extends NatValue ? 'nat' :
- *  V extends SetValue ? 'set' :
- *  V extends CopySetValue ? 'copySet' :
  *  V extends CopyBagValue ? 'copyBag' :
  *  never} AssetKindForValue
  */
@@ -80,7 +67,7 @@
  *   anti-pattern.
  * @property {K} assetKind - the kind of asset, either
  *   AssetKind.NAT (fungible) or
- *   AssetKind.SET or AssetKind.COPY_SET (non-fungible)
+ *   AssetKind.COPY_BAG (non-fungible)
  */
 
 /**
@@ -435,22 +422,6 @@
 
 /**
  * @typedef {MathHelpers<NatValue>} NatMathHelpers
- */
-
-/**
- * @typedef {Array<Key>} SetValue
- */
-
-/**
- * @typedef {MathHelpers<SetValue>} SetMathHelpers
- */
-
-/**
- * @typedef {CopySet<Key>} CopySetValue
- */
-
-/**
- * @typedef {MathHelpers<CopySetValue>} CopySetMathHelpers
  */
 
 /**
