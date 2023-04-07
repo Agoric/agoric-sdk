@@ -115,11 +115,27 @@ const defendMethod = (method, methodGuard, label) => {
 };
 
 /**
- * @typedef { (representative: any) => any } ContextProvider
+ * @typedef {string} FacetName
  */
 
 /**
- *
+ * @template [S = any]
+ * @template [T = any]
+ * @typedef {{ self: S, state: T }} ClassContext
+ */
+
+/**
+ * @template [S = any]
+ * @template {Record<FacetName, any>} [F = any]
+ * @typedef {{ self: S, facets: F }} KitContext
+ */
+
+/**
+ * @typedef {(facet: any) => KitContext} KitContextProvider
+ * @typedef {((representative: any) => ClassContext) | KitContextProvider} ContextProvider
+ */
+
+/**
  * @param {string} methodTag
  * @param {ContextProvider} contextProvider
  * @param {CallableFunction} behaviorMethod
@@ -244,8 +260,8 @@ harden(defendPrototype);
 
 /**
  * @param {string} tag
- * @param {Record<string, ContextProvider>} contextProviderKit
- * @param {Record<string, Record<string | symbol, CallableFunction>>} behaviorMethodsKit
+ * @param {Record<FacetName, KitContextProvider>} contextProviderKit
+ * @param {Record<FacetName, Record<string | symbol, CallableFunction>>} behaviorMethodsKit
  * @param {boolean} [thisfulMethods]
  * @param {Record<string, InterfaceGuard>} [interfaceGuardKit]
  */
