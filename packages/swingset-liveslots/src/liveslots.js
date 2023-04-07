@@ -257,17 +257,36 @@ function build(
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await gcTools.gcAndFinalize();
 
-      // `deadSet` is the subset of those vrefs which lack an in-memory
-      // manifestation *right now* (i.e. the non-resurrected ones), for which
-      // we must check the remaining pillars.
+      // possiblyDeadSet contains a baseref for everything (Presences,
+      // Remotables, Representatives) that might have lost a
+      // pillar. The object might still be supported by other pillars,
+      // and the lost pillar might have been reinstantiated by the
+      // time we get here. The first step is to filter this down to a
+      // list of definitely dead baserefs.
+
       const deadSet = new Set();
+
       for (const baseRef of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
-        if (!slotToVal.has(baseRef)) {
-          deadSet.add(baseRef);
+        if (slotToVal.has(baseRef)) {
+          continue; // RAM pillar remains
         }
+        const { virtual, durable, type } = parseVatSlot(baseRef);
+        assert(type === 'object', `unprepared to track ${type}`);
+        if (virtual || durable) {
+          // eslint-disable-next-line no-use-before-define
+          if (vrm.isVirtualObjectReachable(baseRef)) {
+            continue; // vdata or export pillar remains
+          }
+        }
+        deadSet.add(baseRef);
       }
       possiblyDeadSet.clear();
+
+      // deadSet now contains objects which are certainly dead
+
+      // possiblyRetiredSet holds (a subset of??) baserefs which have
+      // lost a recognizer recently. TODO recheck this
 
       for (const vref of possiblyRetiredSet) {
         // eslint-disable-next-line no-use-before-define
@@ -291,7 +310,7 @@ function build(
         if (virtual || durable) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
-          const [gcAgain, retirees] = vrm.possibleVirtualObjectDeath(baseRef);
+          const [gcAgain, retirees] = vrm.deleteVirtualObject(baseRef);
           if (retirees) {
             retirees.map(retiree => exportsToRetire.add(retiree));
           }

@@ -69,13 +69,14 @@ test.serial('verify store weak key GC', async t => {
 
   // the full sequence is:
   // * finalizer(held) pushes vref onto possiblyDeadSet
-  // * BOYD calls vrm.possibleVirtualObjectDeath
+  // * BOYD calls vrm.isVirtualObjectReachable
   // * that checks vdata refcount and export status (vstore reads)
   // * concludes no pillars are remaining, initiates deletion
-  // * pVOD uses deleteStoredRepresentation() to delete vobj data
-  //   * 'held' is empty, so has no vobj data to delete
-  // * vom.(rc.es).${baseRef} keys deleted (refcount/export-status trackers)
-  // * ceaseRecognition() is called, then pVOD returns
+  // * BOYD calls vrm.deleteVirtualObject
+  //   * dVO uses deleteStoredRepresentation() to delete vobj data
+  //     * 'held' is empty, so has no vobj data to delete
+  //   * vom.(rc.es).${baseRef} keys deleted (refcount/export-status trackers)
+  //   * ceaseRecognition() is called, then dVO returns
   // * cR removes from all voAwareWeakMap/Sets (none)
   // * cR walks vom.ir.${vref}|XX to find weak-store recognizers
   //   * this finds both our WeakSet and our WeakMap
