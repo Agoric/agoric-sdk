@@ -32,7 +32,7 @@ func TestAddStorageBeanCost(t *testing.T) {
 			want: []beans{defaultStorageCost},
 		},
 		{
-			name: "alread_only_same",
+			name: "already_only_same",
 			in:   []beans{defaultStorageCost},
 			want: []beans{defaultStorageCost},
 		},
