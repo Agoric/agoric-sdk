@@ -297,7 +297,7 @@ export const makeSwingsetTestKit = async (
 ) => {
   console.time('makeSwingsetTestKit');
   const configPath = await getNodeTestVaultsConfig(bundleDir, specifier);
-  const { kernelStorage } = initSwingStore();
+  const { kernelStorage, hostStorage } = initSwingStore();
 
   const storage = makeFakeStorageKit('bootstrapTests');
 
@@ -368,5 +368,8 @@ export const makeSwingsetTestKit = async (
 
   console.timeEnd('makeSwingsetTestKit');
 
-  return { controller, runUtils, storage };
+  const shutdown = async () =>
+    Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
+
+  return { controller, runUtils, storage, shutdown };
 };

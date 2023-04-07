@@ -95,8 +95,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
 test.after(async t => {
-  // not strictly necessary but conveys that we keep the controller around for the whole test file
-  await E(t.context.controller).shutdown();
+  await E(t.context).shutdown();
 });
 
 const rows = [];

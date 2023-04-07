@@ -167,6 +167,18 @@ test('publish bundle with fake HTTP server ok', async t => {
       t.fail(error);
     });
   });
+  t.teardown(
+    () =>
+      new Promise((resolve, reject) =>
+        server.close(err => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        }),
+      ),
+  );
 
   await new Promise(resolve => {
     server.listen(0, () => resolve(undefined));
