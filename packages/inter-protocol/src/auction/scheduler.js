@@ -1,13 +1,12 @@
 import { E } from '@endo/eventual-send';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
-import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeTracer } from '@agoric/internal';
 
 import { AuctionState } from './util.js';
+import { nextDescendingStepTime, computeRoundTiming } from './scheduleMath.js';
 
 const { Fail } = assert;
-const { subtract, multiply, floorDivide } = natSafeMath;
 
 const trace = makeTracer('SCHED', false);
 
@@ -32,82 +31,6 @@ const trace = makeTracer('SCHED', false);
 const makeCancelToken = () => {
   let tokenCount = 1;
   return Far(`cancelToken${(tokenCount += 1)}`, {});
-};
-
-// exported for testability.
-export const computeRoundTiming = (params, baseTime) => {
-  // currently a TimeValue; hopefully a TimeRecord soon
-  /** @type {RelativeTime} */
-  const freq = params.getStartFrequency();
-  /** @type {RelativeTime} */
-  const clockStep = params.getClockStep();
-  /** @type {NatValue} */
-  const startingRate = params.getStartingRate();
-  /** @type {NatValue} */
-  const discountStep = params.getDiscountStep();
-  /** @type {RelativeTime} */
-  const lockPeriod = params.getPriceLockPeriod();
-  /** @type {NatValue} */
-  const lowestRate = params.getLowestRate();
-
-  /** @type {RelativeTime} */
-  const startDelay = params.getAuctionStartDelay();
-  TimeMath.compareRel(freq, startDelay) > 0 ||
-    Fail`startFrequency must exceed startDelay, ${freq}, ${startDelay}`;
-  TimeMath.compareRel(freq, lockPeriod) > 0 ||
-    Fail`startFrequency must exceed lock period, ${freq}, ${lockPeriod}`;
-
-  startingRate > lowestRate ||
-    Fail`startingRate ${startingRate} must be more than lowest: ${lowestRate}`;
-  const rateChange = subtract(startingRate, lowestRate);
-  const requestedSteps = floorDivide(rateChange, discountStep);
-  requestedSteps > 0n ||
-    Fail`discountStep ${discountStep} too large for requested rates`;
-  TimeMath.compareRel(freq, clockStep) >= 0 ||
-    Fail`clockStep ${TimeMath.relValue(
-      clockStep,
-    )} must be shorter than startFrequency ${TimeMath.relValue(
-      freq,
-    )} to allow at least one step down`;
-
-  const requestedDuration = TimeMath.multiplyRelNat(clockStep, requestedSteps);
-  const targetDuration =
-    TimeMath.compareRel(requestedDuration, freq) < 0
-      ? requestedDuration
-      : TimeMath.subtractRelRel(freq, TimeMath.toRel(1n));
-  const steps = TimeMath.divideRelRel(targetDuration, clockStep);
-  const duration = TimeMath.multiplyRelNat(clockStep, steps);
-
-  steps > 0n ||
-    Fail`clockStep ${clockStep} too long for auction duration ${duration}`;
-  const endRate = subtract(startingRate, multiply(steps, discountStep));
-
-  const actualDuration = TimeMath.multiplyRelNat(clockStep, steps);
-  // computed start is baseTime + freq - (now mod freq). if there are hourly
-  // starts, we add an hour to the current time, and subtract now mod freq.
-  // Then we add the delay
-  /** @type {import('@agoric/time/src/types').TimestampRecord} */
-  const startTime = TimeMath.addAbsRel(
-    TimeMath.addAbsRel(
-      baseTime,
-      TimeMath.subtractRelRel(freq, TimeMath.modAbsRel(baseTime, freq)),
-    ),
-    startDelay,
-  );
-  const endTime = TimeMath.addAbsRel(startTime, actualDuration);
-  const lockTime = TimeMath.subtractAbsRel(startTime, lockPeriod);
-
-  /** @type {Schedule} */
-  const next = {
-    startTime,
-    endTime,
-    steps,
-    endRate,
-    startDelay,
-    clockStep,
-    lockTime,
-  };
-  return harden(next);
 };
 
 /**
@@ -148,7 +71,7 @@ export const makeScheduler = async (
    */
   let liveSchedule;
 
-  /** @returns {Promise<{now:Timestamp, nextSchedule: Schedule}>} */
+  /** @returns {Promise<{ now: Timestamp, nextSchedule: Schedule }>} */
   const initializeNextSchedule = async () => {
     return E.when(
       // XXX manualTimer returns a bigint, not a timeRecord.
@@ -173,37 +96,19 @@ export const makeScheduler = async (
   /** @type {typeof AuctionState[keyof typeof AuctionState]} */
   let auctionState = AuctionState.WAITING;
 
+  /**
+   * Publish the schedule. To be called after clockTick() (which processes a
+   * descending step) or when the next round is scheduled.
+   */
   const publishSchedule = () => {
-    const calcNextStep = () => {
-      if (!liveSchedule) {
-        if (!nextSchedule) {
-          return undefined;
-        }
-        return nextSchedule.startTime;
-      }
-
-      const { startTime, endTime, clockStep } = liveSchedule;
-      trace('calc', startTime, now);
-      if (TimeMath.compareAbs(startTime, now) > 0) {
-        return startTime;
-      }
-
-      const elapsed = TimeMath.subtractAbsAbs(now, startTime);
-      const sinceLastStep = TimeMath.modRelRel(elapsed, clockStep);
-      const lastStepStart = TimeMath.subtractAbsRel(now, sinceLastStep);
-      const expectedNext = TimeMath.addAbsRel(lastStepStart, clockStep);
-
-      if (TimeMath.compareAbs(expectedNext, endTime) > 0) {
-        return undefined;
-      }
-
-      return expectedNext;
-    };
-
     const sched = harden({
       activeStartTime: liveSchedule?.startTime,
       nextStartTime: nextSchedule?.startTime,
-      nextDescendingStepTime: calcNextStep(),
+      nextDescendingStepTime: nextDescendingStepTime(
+        liveSchedule,
+        nextSchedule,
+        now,
+      ),
     });
     schedulePublisher.publish(sched);
   };
@@ -213,7 +118,11 @@ export const makeScheduler = async (
    */
   const clockTick = schedule => {
     trace('clockTick', schedule?.startTime, now);
-    if (schedule && TimeMath.compareAbs(now, schedule.startTime) >= 0) {
+    if (!schedule) {
+      return;
+    }
+
+    if (TimeMath.compareAbs(now, schedule.startTime) >= 0) {
       if (auctionState !== AuctionState.ACTIVE) {
         auctionState = AuctionState.ACTIVE;
         auctionDriver.startRound();
@@ -222,7 +131,7 @@ export const makeScheduler = async (
       }
     }
 
-    if (schedule && TimeMath.compareAbs(now, schedule.endTime) >= 0) {
+    if (TimeMath.compareAbs(now, schedule.endTime) >= 0) {
       auctionState = AuctionState.WAITING;
 
       auctionDriver.finalize();
@@ -244,9 +153,7 @@ export const makeScheduler = async (
       void E(timer).cancel(stepCancelToken);
     }
 
-    if (schedule) {
-      publishSchedule();
-    }
+    publishSchedule();
   };
 
   // schedule the wakeups for the steps of this round
@@ -287,10 +194,10 @@ export const makeScheduler = async (
           setTimeMonotonically(time);
           // eslint-disable-next-line no-use-before-define
           void startAuction();
-          publishSchedule();
         },
       }),
     );
+    publishSchedule();
   };
 
   const startAuction = async () => {
@@ -316,7 +223,6 @@ export const makeScheduler = async (
     nextSchedule.startDelay,
   );
   scheduleNextRound(firstStart);
-  publishSchedule();
 
   return Far('scheduler', {
     getSchedule: () =>

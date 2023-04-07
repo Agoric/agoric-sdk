@@ -90,25 +90,17 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
- * @typedef {object} PriceLevel
- * A description of a single quote
- *
- * @property {Amount<'nat'>} amountIn
- * The amount supplied to a trade
- * @property {Amount<'nat'>} amountOut
- * The quoted result of trading `amountIn`
- */
-
-/**
  * @typedef {object} BookDataNotification
  *
- * @property {PriceQuote | null} startPrice identifies the priceAuthority and price
- * @property {PriceLevel | null} currentPriceLevel the price at the current auction tier
- * @property {Amount<'nat'> | null} startProceedsGoal The proceeds the sellers were targeting to raise
- * @property {Amount<'nat'> | null} remainingProceedsGoal The remainder of the proceeds the sellers were targeting to raise
+ * @property {PriceQuote    | null}      startPrice identifies the priceAuthority and price
+ * @property {PriceLevel    | null}      currentPriceLevel the price at the current auction tier
+ * @property {Amount<'nat'> | null}      startProceedsGoal The proceeds the sellers were targeting to raise
+ * @property {Amount<'nat'> | null}      remainingProceedsGoal The remainder of
+ *     the proceeds the sellers were targeting to raise
  * @property {Amount<'nat'> | undefined} proceedsRaised The proceeds raised so far in the auction
- * @property {Amount<'nat'>} startCollateral How much collateral was available
- *    for sale at the start. (If more is deposited later, it'll be added in.)
+ * @property {Amount<'nat'>}             startCollateral How much collateral was
+ *    available for sale at the start. (If more is deposited later, it'll be
+ *    added in.)
  * @property {Amount<'nat'> | undefined} collateralAvailable The amount of collateral remaining
  */
 
