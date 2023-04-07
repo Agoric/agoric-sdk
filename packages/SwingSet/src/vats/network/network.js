@@ -43,7 +43,7 @@ export const makeConnection = (
 ) => {
   let closed;
   /**
-   * @type {Set<PromiseRecord<Bytes>>}
+   * @type {Set<import('@agoric/notifier/src/types.js').PromiseRecord<Bytes>>}
    */
   const pendingAcks = new Set();
   /**
