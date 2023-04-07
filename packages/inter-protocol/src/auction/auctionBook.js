@@ -126,7 +126,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
      * @param {PriceAuthority} pAuthority
      * @param {PublishKit<BookDataNotification>} pubKit
      * @param {Marshaller} marshaller
-     * @param {Promise<StorageNode>} node
+     * @param {StorageNode} node
      */
     (currencyBrand, collateralBrand, pAuthority, pubKit, marshaller, node) => {
       assertAllDefined({ currencyBrand, collateralBrand, pAuthority });

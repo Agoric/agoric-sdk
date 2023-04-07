@@ -636,7 +636,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
-        const bNode = E(privateArgs.storageNode).makeChildNode(bookId);
+        const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
         const pubKit = makeAuctionPublishKit();
 
         const newBook = await makeAuctionBook(
