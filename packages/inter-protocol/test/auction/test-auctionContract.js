@@ -939,8 +939,8 @@ test.serial('onDeadline exit', async t => {
     nextStartTime: { absValue: 250n },
   });
   await bookTracker.assertChange({
-    collateralAvailable: null,
-    startCollateral: null,
+    collateralAvailable: { value: 0n },
+    startCollateral: { value: 0n },
     currentPriceLevel: { numerator: { value: 11_550_000_000_000n } },
   });
 });
