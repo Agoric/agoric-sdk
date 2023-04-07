@@ -389,9 +389,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Brand, Keyword>} */
   const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
 
-  /** @type {MapStore<Brand, Subscriber<import('./auctionBook.js').BookDataNotification>>} */
-  const subscribers = provideDurableMapStore(baggage, 'subscribers');
-
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
   let bookCounter = 0;
@@ -605,16 +602,19 @@ export const start = async (zcf, privateArgs, baggage) => {
         return scheduleSubscriber;
       },
       getBookDataUpdates(brand) {
-        return subscribers.get(brand);
+        return books.get(brand).getDataUpdates();
       },
-      getPublicTopics() {
+      getPublicTopics(brand) {
+        if (brand) {
+          return books.get(brand).getPublicTopics();
+        }
+
         return {
           schedule: makePublicTopic(
             'Auction schedule',
             scheduleSubscriber,
             scheduleNode,
           ),
-          // TODO(cth) how to represent topics for every node in subscribers?
         };
       },
       getDepositInvitation,
@@ -637,16 +637,15 @@ export const start = async (zcf, privateArgs, baggage) => {
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
         const bNode = E(privateArgs.storageNode).makeChildNode(bookId);
-        const { publisher: bookDataPublisher, subscriber: bookDataSubscriber } =
-          makeAuctionPublishKit();
-        pipeTopicToStorage(bookDataSubscriber, bNode, privateArgs.marshaller);
-        subscribers.init(brand, bookDataSubscriber);
+        const pubKit = makeAuctionPublishKit();
 
         const newBook = await makeAuctionBook(
           brands.Currency,
           brand,
           priceAuthority,
-          bookDataPublisher,
+          pubKit,
+          privateArgs.marshaller,
+          bNode,
         );
 
         // These three store.init() calls succeed or fail atomically

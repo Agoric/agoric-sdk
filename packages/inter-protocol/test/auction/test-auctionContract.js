@@ -111,7 +111,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
   const mockChainStorage = makeMockChainStorageRoot();
 
   const pubsubTerms = harden({
-    storageNode: mockChainStorage.makeChildNode('thisPsm'),
+    storageNode: mockChainStorage.makeChildNode('thisAuction'),
     marshaller: makeBoard().getReadonlyMarshaller(),
   });
 
