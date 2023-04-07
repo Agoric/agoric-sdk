@@ -651,7 +651,19 @@ export function makeVirtualReferenceManager(
   const testHooks = {
     getReachableRefCount,
     countCollectionsForWeakKey,
+
+    remotableRefCounts,
+    vrefRecognizers,
+    kindInfoTable,
   };
+
+  function getRetentionStats() {
+    return {
+      remotableRefCounts: remotableRefCounts.size,
+      vrefRecognizers: vrefRecognizers.size,
+      kindInfoTable: kindInfoTable.size,
+    };
+  }
 
   return harden({
     droppedCollectionRegistry,
@@ -676,6 +688,7 @@ export function makeVirtualReferenceManager(
     possibleVirtualObjectDeath,
     ceaseRecognition,
     setDeleteCollectionEntry,
+    getRetentionStats,
     testHooks,
   });
 }

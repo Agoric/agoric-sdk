@@ -46,7 +46,7 @@
  *          } VatDeliveryObject
  *
  * @typedef { { compute: number } } MeterConsumption
- * @typedef { [tag: 'ok', message: null, usage: MeterConsumption | null] |
+ * @typedef { [tag: 'ok', results: any, usage: MeterConsumption | null] |
  *            [tag: 'error', message: string, usage: MeterConsumption | null] } VatDeliveryResult
  *
  *

@@ -940,7 +940,11 @@ export function makeCollectionManager(
     return collectionToWeakSetStore(reanimateCollection(vobjID));
   }
 
-  const testHooks = { obtainStoreKindID, storeSizeInternal, makeCollection };
+  const testHooks = {
+    obtainStoreKindID,
+    storeSizeInternal,
+    makeCollection,
+  };
 
   /**
    * @param {Pattern} baseKeyShape
@@ -1008,6 +1012,10 @@ export function makeCollectionManager(
   const makeScalarBigWeakSetStore = (label = 'weakSet', options = {}) =>
     makeBigWeakSetStore(label, narrowKeyShapeOption(M.scalar(), options));
 
+  function getRetentionStats() {
+    return {};
+  }
+
   return harden({
     initializeStoreKindInfo,
     deleteAllVirtualCollections,
@@ -1016,6 +1024,7 @@ export function makeCollectionManager(
     makeScalarBigSetStore,
     makeScalarBigWeakSetStore,
     provideBaggage,
+    getRetentionStats,
     testHooks,
   });
 }

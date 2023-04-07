@@ -93,7 +93,6 @@ export function insistVatDeliveryResult(vdr) {
   const [type, problem, _usage] = vdr;
   switch (type) {
     case 'ok': {
-      assert.equal(problem, null);
       break;
     }
     case 'error': {
