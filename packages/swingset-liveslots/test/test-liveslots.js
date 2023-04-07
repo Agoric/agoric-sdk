@@ -711,15 +711,11 @@ test('capdata size limit on syscalls', async t => {
   t.deepEqual(log, []);
 
   const gotSchema = () => {
+    const label = 'test';
     t.deepEqual(log.shift(), {
       type: 'vatstoreGet',
       key: 'vc.5.|schemata',
-      result: JSON.stringify(kser({ keyShape: M.scalar() })),
-    });
-    t.deepEqual(log.shift(), {
-      type: 'vatstoreGet',
-      key: 'vc.5.|label',
-      result: 'test',
+      result: JSON.stringify(kser({ label, keyShape: M.scalar() })),
     });
   };
 

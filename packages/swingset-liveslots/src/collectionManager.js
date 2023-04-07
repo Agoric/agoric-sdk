@@ -75,26 +75,20 @@ function makeSchemaCache(syscall, unserialize) {
     const schemataKey = prefixc(collectionID, '|schemata');
     const schemataValue = syscall.vatstoreGet(schemataKey);
     const schemataCapData = JSON.parse(schemataValue);
-    const { keyShape, valueShape } = unserialize(schemataCapData);
-    const labelKey = prefixc(collectionID, '|label');
-    const label = syscall.vatstoreGet(labelKey);
+    const { label, keyShape, valueShape } = unserialize(schemataCapData);
     return harden({ keyShape, valueShape, label, schemataCapData });
   };
   /** @type {(collectionID: string, value: SchemaCacheValue) => void } */
   const writeBacking = (collectionID, value) => {
-    const { label, schemataCapData } = value;
+    const { schemataCapData } = value;
     const schemataKey = prefixc(collectionID, '|schemata');
     const schemataValue = JSON.stringify(schemataCapData);
     syscall.vatstoreSet(schemataKey, schemataValue);
-    const labelKey = prefixc(collectionID, '|label');
-    syscall.vatstoreSet(labelKey, label);
   };
   /** @type {(collectionID: string) => void} */
   const deleteBacking = collectionID => {
     const schemataKey = prefixc(collectionID, '|schemata');
-    const labelKey = prefixc(collectionID, '|label');
     syscall.vatstoreDelete(schemataKey);
-    syscall.vatstoreDelete(labelKey);
   };
   return makeCache(readBacking, writeBacking, deleteBacking);
 }
@@ -696,9 +690,9 @@ export function makeCollectionManager(
       syscall,
       prefixc(collectionID, '|'),
     )) {
-      // these two keys are owned by schemaCache, and will be deleted
-      // when schemaCache is flushed
-      if (dbKey.endsWith('|schemata') || dbKey.endsWith('|label')) {
+      // this key is owned by schemaCache, and will be deleted when
+      // schemaCache is flushed
+      if (dbKey.endsWith('|schemata')) {
         continue;
       }
       // but we must still delete the other keys (|nextOrdinal and
@@ -726,7 +720,7 @@ export function makeCollectionManager(
       syscall.vatstoreSet(prefixc(collectionID, '|entryCount'), '0');
     }
 
-    const schemata = {}; // don't populate 'undefined', keep it small
+    const schemata = { label }; // don't populate 'undefined', keep it small
     if (keyShape !== undefined) {
       schemata.keyShape = keyShape;
     }

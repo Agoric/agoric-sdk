@@ -448,7 +448,6 @@ const doublefreetest = test.macro(async (t, mode) => {
       // all collection metadata should be gone
       const collectionID = String(parseVatSlot(vref).subid);
       t.is(fakestore.get(`vc.${collectionID}.|schemata`), undefined);
-      t.is(fakestore.get(`vc.${collectionID}.|label`), undefined);
       t.is(fakestore.get(`vc.${collectionID}.|nextOrdinal`), undefined);
       t.is(fakestore.get(`vc.${collectionID}.|entryCount`), undefined);
     }
