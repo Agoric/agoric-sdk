@@ -143,7 +143,7 @@ harden(assertKey);
 // Moved to here so they can check that the copySet contains only keys
 // without creating an import cycle.
 
-/** @type WeakSet<CopySet<Key>> */
+/** @type WeakSet<CopySet> */
 const copySetMemo = new WeakSet();
 
 /**
@@ -170,7 +170,7 @@ harden(checkCopySet);
 /**
  * @callback IsCopySet
  * @param {Passable} s
- * @returns {s is CopySet<Key>}
+ * @returns {s is CopySet}
  */
 
 /** @type {IsCopySet} */
@@ -180,7 +180,7 @@ harden(isCopySet);
 /**
  * @callback AssertCopySet
  * @param {Passable} s
- * @returns {asserts s is CopySet<Key>}
+ * @returns {asserts s is CopySet}
  */
 
 /** @type {AssertCopySet} */
@@ -227,7 +227,7 @@ harden(makeCopySet);
 // Moved to here so they can check that the copyBag contains only keys
 // without creating an import cycle.
 
-/** @type WeakSet<CopyBag<Key>> */
+/** @type WeakSet<CopyBag> */
 const copyBagMemo = new WeakSet();
 
 /**
@@ -254,7 +254,7 @@ harden(checkCopyBag);
 /**
  * @callback IsCopyBag
  * @param {Passable} b
- * @returns {b is CopyBag<Key>}
+ * @returns {b is CopyBag}
  */
 
 /** @type {IsCopyBag} */
@@ -264,7 +264,7 @@ harden(isCopyBag);
 /**
  * @callback AssertCopyBag
  * @param {Passable} b
- * @returns {asserts b is CopyBag<Key>}
+ * @returns {asserts b is CopyBag}
  */
 
 /** @type {AssertCopyBag} */
