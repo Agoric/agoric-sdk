@@ -13,7 +13,9 @@ export { boardSlottingMarshaller };
 export const networkConfigUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.agoric.net/network-config`;
 export const rpcUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
+  ':' in agoricNetSubdomain
+    ? agoricNetSubdomain
+    : `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
 
 /**
  * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
