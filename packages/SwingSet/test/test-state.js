@@ -559,7 +559,7 @@ test('vatKeeper.getOptions', async t => {
   vk.setSourceAndOptions(
     { bundleID },
     {
-      managerType: 'local',
+      workerOptions: { type: 'local' },
       name: 'fred',
     },
   );

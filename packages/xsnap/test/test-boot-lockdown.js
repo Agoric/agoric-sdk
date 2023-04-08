@@ -50,12 +50,14 @@ async function bootWorker(name, script, savePrinted = false) {
 }
 
 /**
- * @param {string} name
+ * @param {*} t
  * @param {boolean} [savePrinted]
  */
-async function bootSESWorker(name, savePrinted = false) {
+async function bootSESWorker(t, savePrinted = false) {
   const bootScript = await getBootScript();
-  return bootWorker(name, bootScript, savePrinted);
+  const ret = await bootWorker(t.title, bootScript, savePrinted);
+  t.teardown(ret.worker.close);
+  return ret;
 }
 
 test('bootstrap to SES lockdown', async t => {
@@ -78,11 +80,10 @@ test('bootstrap to SES lockdown', async t => {
 });
 
 test('child compartment cannot access start powers', async t => {
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
 
   const script = await ld.asset('escapeCompartment.js');
   await vat.evaluate(script);
-  await vat.close();
 
   // Temporarily tolerate Endo behavior before and after
   // https://github.com/endojs/endo/pull/822
@@ -98,7 +99,7 @@ test('child compartment cannot access start powers', async t => {
 });
 
 test('SES deep stacks work on xsnap', async t => {
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
   await vat.evaluate(`
     const encoder = new TextEncoder();
     const send = msg => issueCommand(encoder.encode(JSON.stringify(msg)).buffer);
@@ -115,7 +116,7 @@ test('SES deep stacks work on xsnap', async t => {
 });
 
 test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
   await vat.evaluate(`
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
@@ -135,7 +136,7 @@ test('TextDecoder under xsnap handles TypedArray and subarrays', async t => {
 
 test('console - symbols', async t => {
   // our console-shim.js handles Symbol specially
-  const { worker: vat, opts } = await bootSESWorker(t.title);
+  const { worker: vat, opts } = await bootSESWorker(t);
   t.deepEqual([], opts.messages);
   await vat.evaluate(`
     const encoder = new TextEncoder();
@@ -145,7 +146,6 @@ test('console - symbols', async t => {
     console.log('console:', Symbol.for('registered'));
     send('ok');
   `);
-  await vat.close();
   t.deepEqual(['"ok"'], opts.messages);
 });
 
@@ -187,7 +187,7 @@ test('console - objects should include detail', async t => {
   }
 
   // start a worker with the SES shim plus a global that captures args to print()
-  const { worker, opts } = await bootSESWorker(t.title, true);
+  const { worker, opts } = await bootSESWorker(t, true);
 
   await worker.evaluate(`(${runInWorker})()`);
 

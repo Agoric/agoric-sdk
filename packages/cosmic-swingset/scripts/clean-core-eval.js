@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
-import { isEntrypoint } from '../src/is-entrypoint.js';
+import { isEntrypoint } from '../src/helpers/is-entrypoint.js';
 
 export const compartmentEvaluate = code => {
   // const permit = true;

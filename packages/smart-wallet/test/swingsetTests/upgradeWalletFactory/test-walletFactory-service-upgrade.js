@@ -45,6 +45,7 @@ test('walletFactory service upgrade', async t => {
 
   t.log('buildVatController');
   const c = await buildVatController(config);
+  t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   t.log('run controller');
   await c.run();

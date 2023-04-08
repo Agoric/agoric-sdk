@@ -45,7 +45,17 @@ test('local vat manager', async t => {
   t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
 });
 
-test('xs vat manager', async t => {
+test('xsnap vat manager', async t => {
+  const c = await makeController('xsnap');
+  t.teardown(c.shutdown);
+
+  await c.run();
+  t.is(c.kpStatus(c.bootstrapResult), 'fulfilled');
+  t.deepEqual(c.dump().log, ['testLog works']);
+  t.deepEqual(kunser(c.kpResolution(c.bootstrapResult)), expected);
+});
+
+test('xs vat manager alias', async t => {
   const c = await makeController('xs-worker');
   t.teardown(c.shutdown);
 

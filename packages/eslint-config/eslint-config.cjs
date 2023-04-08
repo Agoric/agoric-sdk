@@ -36,6 +36,17 @@ module.exports = {
     'consistent-return': 'off', // unaware of throws. TS detects more reliably.
     'no-fallthrough': 'warn', // unaware of throws.
 
+    'spaced-comment': [
+      'error',
+      'always',
+      {
+        line: {
+          // 'region' for code folding and '/' for TS '///' directive
+          markers: ['#region', '#endregion', 'region', 'endregion', '/'],
+        },
+      },
+    ],
+
     // Work around https://github.com/import-js/eslint-plugin-import/issues/1810
     'import/no-unresolved': ['error', { ignore: ['ava'] }],
     'import/prefer-default-export': 'off',

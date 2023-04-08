@@ -42,3 +42,21 @@ test.serial('make and exec', async t => {
   t.log('export');
   t.is(await scenario2.export(), 0, 'export exits successfully');
 });
+
+test.serial('integration test: rosetta CI', async t => {
+  // Resume the chain... and concurrently, start a faucet AND run the rosetta-cli tests
+  const { pspawnAgd, scenario2 } = t.context;
+
+  t.log('exec agd');
+  t.is(await pspawnAgd([]).exit, 0, 'exec agd exits successfully');
+
+  const enoughBlocksToProvision = 15;
+
+  const queryGrace = 6; // time to query state before shutting down
+  const [_run] = await Promise.all([
+    scenario2.runToHalt({
+      BLOCKS_TO_RUN: enoughBlocksToProvision + queryGrace,
+    }),
+    scenario2.runRosettaCI({}),
+  ]);
+});

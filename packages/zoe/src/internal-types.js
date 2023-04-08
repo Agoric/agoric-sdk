@@ -55,9 +55,8 @@
  * @property {(allocation: Allocation) => void} replaceAllocation
  * @property {ZoeSeatAdminExit} exit
  * @property {ShutdownWithFailure} fail called with the reason
- * @property {() => Promise<Notifier<Allocation>> } getNotifier
  * for calling fail on this seat, where reason is normally an instanceof Error.
- * @property {() => Subscriber<unknown>} getExitSubscriber
+ * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
 
 /**
@@ -66,8 +65,8 @@
 
 /**
  * @typedef {object} HandleOfferResult
- * @property {Promise<any>} offerResultPromise
- * @property {object} exitObj
+ * @property {Promise<unknown>} offerResultPromise
+ * @property {ExitObj} exitObj
  */
 
 /**
@@ -135,7 +134,7 @@
  * @property {() => void} stopAcceptingOffers
  * @property {(strings: Array<string>) => void} setOfferFilter
  * @property {() => Array<string>} getOfferFilter
- * @property {(seatHandle: SeatHandle) => Subscriber<any>} getExitSubscriber
+ * @property {(seatHandle: SeatHandle) => Subscriber<AmountKeywordRecord>} getExitSubscriber
  */
 
 /**

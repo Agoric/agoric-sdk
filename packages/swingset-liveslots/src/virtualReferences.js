@@ -133,18 +133,8 @@ export function makeVirtualReferenceManager(
     }
   }
 
-  function getFacetCount(baseRef) {
-    // Note that this only works if the VDO is in memory
-    const val = requiredValForSlot(baseRef);
-    if (Array.isArray(val)) {
-      return val.length;
-    } else {
-      return 1;
-    }
-  }
-
   function setExportStatus(vref, exportStatus) {
-    const { baseRef, facet } = parseVatSlot(vref);
+    const { baseRef, id, facet } = parseVatSlot(vref);
     const key = `vom.es.${baseRef}`;
     const esRaw = syscall.vatstoreGet(key);
     // If `esRaw` is undefined, it means there's no export status information
@@ -155,7 +145,7 @@ export function makeVirtualReferenceManager(
     // the other hand, if `esRaw` does have a value, the value will be a string
     // whose length is the facet count.  Either way, we will know how many
     // facets there are.
-    const es = Array.from(esRaw || 'n'.repeat(getFacetCount(baseRef)));
+    const es = Array.from(esRaw || 'n'.repeat(getFacetCount(id)));
     const facetIdx = facet === undefined ? 0 : facet;
     // The export status of each facet is encoded as:
     // 's' -> 'recognizable' ('s' for "see"), 'r' -> 'reachable', 'n' -> 'none'
@@ -234,6 +224,24 @@ export function makeVirtualReferenceManager(
     assert(kindInfo, `no kind info for ${kindID}`);
     assert(kindInfo.facetNames === undefined);
     kindInfo.facetNames = facetNames;
+  }
+
+  function getFacetNames(kindID) {
+    return kindInfoTable.get(`${kindID}`).facetNames;
+  }
+
+  function getFacetCount(kindID) {
+    const facetNames = getFacetNames(kindID);
+    return facetNames ? facetNames.length : 1;
+  }
+
+  function getFacet(kindID, facets, facetIndex) {
+    const facetName = getFacetNames(kindID)[facetIndex];
+    facetName !== undefined || // allow empty-string -named facets
+      Fail`getFacet missing, ${kindID} [${facetIndex}]`;
+    const facet = facets[facetName];
+    facet || Fail`getFacet missing, ${kindID} [${facetIndex}] ${facetName}`;
+    return facet;
   }
 
   /**
@@ -654,6 +662,8 @@ export function makeVirtualReferenceManager(
     isDurableKind,
     registerKind,
     rememberFacetNames,
+    getFacet,
+    getFacetNames,
     reanimate,
     addReachableVref,
     removeReachableVref,

@@ -202,6 +202,10 @@ async function testTranscriptStore(t, dbDir) {
   t.deepEqual(exportLog.getLog(), [
     [
       [
+        'transcript.empty.current',
+        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1}',
+      ],
+      [
         'transcript.st1.0',
         '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0}',
       ],
@@ -293,4 +297,22 @@ test('persistent bundleStore read/write', async t => {
   t.teardown(cleanup);
   t.is(isSwingStore(dbDir), false);
   await testBundleStore(t, dbDir);
+});
+
+test('close will abort transaction', async t => {
+  const [dbDir, cleanup] = await tmpDir('testdb');
+  t.teardown(cleanup);
+  const ss1 = initSwingStore(dbDir);
+  ss1.kernelStorage.kvStore.set('key1', 'value');
+  await ss1.hostStorage.commit();
+  ss1.kernelStorage.kvStore.set('key2', 'value');
+  // no commit, so ought to abort the 'key2' addition
+  await ss1.hostStorage.close();
+
+  const ss2 = openSwingStore(dbDir);
+  const { kvStore } = ss2.kernelStorage;
+  t.is(kvStore.get('key1'), 'value');
+  t.truthy(kvStore.has('key1'));
+  t.is(kvStore.get('key2'), undefined);
+  t.falsy(kvStore.has('key2'));
 });

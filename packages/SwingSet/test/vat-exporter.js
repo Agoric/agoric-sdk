@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { M, defineExoClass } from '@agoric/store';
 import {
   defineVirtualExoClass,
@@ -7,7 +7,7 @@ import {
 } from '@agoric/vat-data';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
-  const { version } = vatParameters;
+  const { version } = vatParameters || {};
 
   // Define a family of analogous simple ephemeral/virtual/durable classes.
   const CounterI = M.interface('Counter', {

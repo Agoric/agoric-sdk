@@ -1,6 +1,5 @@
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
@@ -44,7 +43,7 @@ export const makeConnection = (
 ) => {
   let closed;
   /**
-   * @type {Set<PromiseRecord<Bytes>>}
+   * @type {Set<import('@agoric/notifier/src/types.js').PromiseRecord<Bytes>>}
    */
   const pendingAcks = new Set();
   /**

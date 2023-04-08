@@ -1,7 +1,25 @@
+/* eslint-disable no-restricted-syntax */
 /* eslint-env node */
 const process = require('process');
 
 const lintTypes = !!process.env.AGORIC_ESLINT_TYPES;
+
+const deprecatedTerminology = [
+  ['currency', 'brand, asset or another descriptor'],
+  ['loan', 'debt'],
+  ['blacklist', 'denylist'],
+  ['whitelist', 'allowlist'],
+  ['RUN', 'IST', '/RUN/'],
+].flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
+  [
+    ['Literal', 'value'],
+    ['TemplateElement', 'value.raw'],
+    ['Identifier', 'name'],
+  ].map(([selectorType, field]) => ({
+    selector: `${selectorType}[${field}=${badRgx}]`,
+    message: `Use '${good}' instead of deprecated '${bad}'`,
+  })),
+);
 
 module.exports = {
   root: true,
@@ -64,6 +82,8 @@ module.exports = {
         // are code-reviewed.
         // TODO upgrade this to 'error'
         '@jessie.js/no-nested-await': 'warn',
+        // TODO upgrade this (or a subset) to 'error'
+        'no-restricted-syntax': ['warn', ...deprecatedTerminology],
       },
     },
     {

@@ -1,4 +1,5 @@
-import { Far, makeMarshal, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 import { assert } from '@agoric/assert';
 
 // Simple wrapper for serializing and unserializing marshalled values inside the

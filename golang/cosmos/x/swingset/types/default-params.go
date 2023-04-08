@@ -17,6 +17,7 @@ const (
 	BeansPerMessage           = "message"
 	BeansPerMessageByte       = "messageByte"
 	BeansPerMinFeeDebit       = "minFeeDebit"
+	BeansPerStorageByte       = "storageByte"
 	BeansPerVatCreation       = "vatCreation"
 	BeansPerXsnapComputron    = "xsnapComputron"
 
@@ -45,8 +46,9 @@ var (
 	DefaultBeansPerFeeUnit     = sdk.NewUint(1_000_000_000_000)                  // $1
 	DefaultBeansPerInboundTx   = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(100))    // $0.01
 	DefaultBeansPerMessage     = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(1_000))  // $0.001
-	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.0002
+	DefaultBeansPerMessageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(50_000)) // $0.00002
 	DefaultBeansPerMinFeeDebit = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(5))      // $0.2
+	DefaultBeansPerStorageByte = DefaultBeansPerFeeUnit.Quo(sdk.NewUint(500))    // $0.002
 
 	DefaultBootstrapVatConfig = "@agoric/vats/decentral-core-config.json"
 
@@ -70,6 +72,7 @@ func DefaultBeansPerUnit() []StringBeans {
 		NewStringBeans(BeansPerMessage, DefaultBeansPerMessage),
 		NewStringBeans(BeansPerMessageByte, DefaultBeansPerMessageByte),
 		NewStringBeans(BeansPerMinFeeDebit, DefaultBeansPerMinFeeDebit),
+		NewStringBeans(BeansPerStorageByte, DefaultBeansPerStorageByte),
 		NewStringBeans(BeansPerVatCreation, DefaultBeansPerVatCreation),
 		NewStringBeans(BeansPerXsnapComputron, DefaultBeansPerXsnapComputron),
 	}

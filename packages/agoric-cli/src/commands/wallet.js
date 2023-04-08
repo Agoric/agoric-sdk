@@ -13,11 +13,7 @@ import fs from 'fs';
 import util from 'util';
 import { execFileSync } from 'child_process';
 import { fmtRecordOfLines, summarize } from '../lib/format.js';
-import {
-  boardSlottingMarshaller,
-  makeRpcUtils,
-  networkConfig,
-} from '../lib/rpc.js';
+import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
@@ -56,9 +52,10 @@ export const makeWalletCommand = async () => {
       const { home, keyringBackend: backend } = wallet.opts();
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
-        execSwingsetTransaction(tx, networkConfig, account, false, {
-          home,
-          backend,
+        execSwingsetTransaction(tx, {
+          from: account,
+          keyring: { home, backend },
+          ...networkConfig,
         });
       } else {
         const params = fetchSwingsetParams(networkConfig);
@@ -73,9 +70,11 @@ export const makeWalletCommand = async () => {
           .join(' + ');
         process.stdout.write(`Provisioning a wallet costs ${costs}\n`);
         process.stdout.write(`To really provision, rerun with --spend or...\n`);
-        execSwingsetTransaction(tx, networkConfig, account, true, {
-          home,
-          backend,
+        execSwingsetTransaction(tx, {
+          from: account,
+          dryRun: true,
+          keyring: { home, backend },
+          ...networkConfig,
         });
       }
     });
@@ -95,13 +94,12 @@ export const makeWalletCommand = async () => {
       const { home, keyringBackend: backend } = wallet.opts();
 
       const offerBody = fs.readFileSync(offer).toString();
-      execSwingsetTransaction(
-        ['wallet-action', '--allow-spend', offerBody],
-        networkConfig,
+      execSwingsetTransaction(['wallet-action', '--allow-spend', offerBody], {
         from,
         dryRun,
-        { home, backend },
-      );
+        keyring: { home, backend },
+        ...networkConfig,
+      });
     });
 
   wallet
@@ -122,11 +120,9 @@ export const makeWalletCommand = async () => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { agoricNames, fromBoard, vstorage } = await makeRpcUtils({
+      const { agoricNames, unserializer, readLatestHead } = await makeRpcUtils({
         fetch,
       });
-
-      const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(
@@ -140,9 +136,7 @@ export const makeWalletCommand = async () => {
 
       const coalesced = await coalesceWalletState(follower);
 
-      const current = await getCurrent(opts.from, fromBoard, {
-        vstorage,
-      });
+      const current = await getCurrent(opts.from, { readLatestHead });
 
       console.warn(
         'got coalesced',

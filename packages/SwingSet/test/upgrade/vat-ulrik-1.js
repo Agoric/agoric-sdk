@@ -1,5 +1,4 @@
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { initEmpty } from '@agoric/store';
 import {
@@ -10,45 +9,49 @@ import {
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
-import { NUM_SENSORS } from './num-sensors.js';
 
+// we set up a lot of ephemeral, merely-virtual, and durable objects
+// holding references to imported objects
+// to test what gets deleted vs retained (see object-graph.pdf for the test plan)
+const makeEph = (name, held) => {
+  return Far(name, { get: () => held });
+};
 const durandalHandle = makeKindHandle('durandal');
-const initialize = (name, imp, value) => {
+const initHolder = (name, imp, value) => {
   return harden({ name, imp, value });
 };
-
-const behavior = {
+const holderMethods = {
   get: ({ state }) => state.value,
   set: ({ state }, value) => {
     state.value = value;
   },
 };
-
-const makeDurandal = defineDurableKind(durandalHandle, initialize, behavior);
-const makeVir = defineKind('virtual', initialize, behavior);
-const makeDummy = defineKind('dummy', initialize, behavior);
+const makeVir = defineKind('virtual', initHolder, holderMethods);
+const makeDur = defineDurableKind(durandalHandle, initHolder, holderMethods);
 
 // TODO: explore 'export modRetains'
 // eslint-disable-next-line no-unused-vars
 let modRetains;
 
-// we set up a lot of virtual and durable objects to test what gets
-// deleted vs retained (see object-graph.pdf for the test plan)
-
-const makeRemotable = (name, held) => {
-  return Far(name, { get: () => held });
-};
-
+/**
+ * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {[unknown, ...object]} imp
+ * Objects to import, preceded by a dummy element.
+ * The `imp` name itself is three characters long for visual similarity
+ * with `vir` and `dur` analogs.
+ * @returns {Record<string, object>}
+ */
 const buildExports = (baggage, imp) => {
-  // each virtual/durable object has a unique import, some of which
-  // should be dropped during upgrade
-
-  // start these at '1' to match the vrefs (o+10/1 .. /5) for debugging
+  // for debugging, these arrays start with a dummy element so
+  // the vref of each contained object (o+X/NN where NN starts at 1)
+  // is aligned with its index
+  /** @type {[string, ...object]} */
   const vir = ['skip0'];
+  /** @type {[string, ...object]} */
   const dur = ['skip0'];
-  for (let i = 1; i < NUM_SENSORS + 1; i += 1) {
+  for (let i = 1; i < imp.length; i += 1) {
     vir.push(makeVir(`v${i}`, imp[i], { name: `v${i}` }));
-    dur.push(makeDurandal(`d${i}`, imp[i], { name: `d${i}` }));
+    dur.push(makeDur(`d${i}`, imp[i], { name: `d${i}` }));
   }
 
   // note: to test #5725, dur[0] must be the first new Durandal
@@ -58,7 +61,6 @@ const buildExports = (baggage, imp) => {
   // cycle-collection means we don't GC it during the lifetime of the
   // vat, however they'll be deleted during upgrade because stopVat()
   // deletes all virtual data independent of refcounts
-
   const vc1 = makeScalarBigMapStore('vc1');
   const vc2 = makeScalarBigMapStore('vc2');
   const vc3 = makeScalarBigMapStore('vc3');
@@ -68,7 +70,6 @@ const buildExports = (baggage, imp) => {
   // cycle-collecting virtual/durable-object GC. dc3 is dropped (only
   // held by an abandoned Remotable), dc4 is retained by an export,
   // dc5+dc6 are retained by baggage
-
   const dc1 = makeScalarBigMapStore('dc1', { durable: true });
   const dc2 = makeScalarBigMapStore('dc2', { durable: true });
   const dc3 = makeScalarBigMapStore('dc3', { durable: true });
@@ -78,9 +79,9 @@ const buildExports = (baggage, imp) => {
 
   // these Remotables are both exported and held by module-level pins,
   // but will still be abandoned
-  const rem1 = makeRemotable('rem1', [imp[4], vir[5], vir[7], vc1, vc3]);
-  const rem2 = makeRemotable('rem2', [dur[21], dc3]);
-  const rem3 = makeRemotable('rem3', [dur[29], imp[30], vir[31]]);
+  const rem1 = makeEph('rem1', [imp[4], vir[5], vir[7], vc1, vc3]);
+  const rem2 = makeEph('rem2', [dur[21], dc3]);
+  const rem3 = makeEph('rem3', [dur[29], imp[30], vir[31]]);
   modRetains = { rem1, rem2, rem3 };
 
   // now wire them up according to the diagram
@@ -105,7 +106,7 @@ const buildExports = (baggage, imp) => {
   dc3.init(imp[25], dur[25]);
   dc4.init(dur[26], dur[27]);
   dc4.init(imp[28], dur[28]);
-  dc5.init(imp[32], dur[33]); // imp[32] exported+held by bootstrap
+  dc5.init(imp[32], dur[33]); // imp[32] is recognizable but not reachable
   dc6.init(dur[34], dur[35]);
   dc6.init(imp[36], dur[36]);
   baggage.init('dc5', dc5);
@@ -113,18 +114,9 @@ const buildExports = (baggage, imp) => {
   baggage.init('dur37', dur[37]);
   baggage.init('imp38', imp[38]);
 
-  // We set virtualObjectCacheSize=0 to ensure all data writes are
-  // made promptly, But the cache will still retain the last
-  // Representative, which inhibits GC. So the last thing we do here
-  // should be to create/deserialize a throwaway object, to make sure
-  // all the ones we're measuring are collected as we expect.
-
-  makeDummy(); // knock the last dur/vir/vc/dc out of the cache
-
   // we share dur1/vir2 with the test harness so it can glean the
   // baserefs and interpolate the full vrefs for everything else
   // without holding a GC pin on them
-
   return {
     dur1: dur[1],
     vir2: vir[2],
@@ -161,18 +153,18 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     },
     getPresence: () => baggage.get('presence'),
     getData: () => baggage.get('data'),
-    getDurandal: arg => makeDurandal('durandal', 0, arg),
-    getExports: imp => buildExports(baggage, imp),
+    getDurandal: arg => makeDur('durandal', 0, arg),
+    getExports: imports => buildExports(baggage, imports),
 
     acceptPromise: p => {
-      // stopVat will reject the promises that we decide, but should
+      // upgrade will reject the promises that we decide, but should
       // not touch the ones we don't decide, so we hold onto this
-      // until upgrade, to probe for bugs in that loop
+      // until upgrade, to probe for bugs in that process
       heldPromise = p;
       heldPromise.catch(() => 'hush');
     },
-    getEternalPromise: () => ({ p1 }),
-    returnEternalPromise: () => p2,
+    getEternalPromiseInArray: () => [p1],
+    getEternalPromise: () => p2,
 
     makeLostKind: () => {
       makeKindHandle('unhandled');

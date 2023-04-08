@@ -1,7 +1,6 @@
 import { assert } from '@agoric/assert';
 import { objectMap } from '@agoric/internal';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 import { buildManualTimer } from '../tools/manual-timer.js';
 import { makePassableEncoding } from '../tools/passableEncoding.js';
 
@@ -36,10 +35,10 @@ export const buildRootObject = () => {
 
     getTimer: async () => encodePassable(timer),
 
-    getVatRoot: async ({ name }) => {
+    getVatRoot: async ({ name, rawOutput = false }) => {
       const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
       const { root } = vat;
-      return encodePassable(root);
+      return rawOutput ? root : encodePassable(root);
     },
 
     createVat: async ({ name, bundleCapName, vatParameters = {} }) => {

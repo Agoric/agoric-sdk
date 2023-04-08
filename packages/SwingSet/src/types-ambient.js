@@ -15,10 +15,7 @@
  * @typedef { import('./types-external.js').NestedEvaluateBundle } NestedEvaluateBundle
  * @typedef { import('./types-external.js').Bundle } Bundle
  *
- * @typedef { import('./types-external.js').HasBundle } HasBundle
- * @typedef { import('./types-external.js').HasSetup } HasSetup
  * @typedef { import('./types-external.js').ManagerType } ManagerType
- * @typedef { import('./types-external.js').ManagerOptions } ManagerOptions
  * @typedef { import('./types-external.js').KernelOptions } KernelOptions
  */
 
@@ -82,8 +79,6 @@
  * @typedef { import('./types-external.js').KernelSlog } KernelSlog
  * @typedef { import('./types-external.js').VatSlog } VatSlog
  *
- * @typedef { import('./types-external.js').VatManagerFactory } VatManagerFactory
- * @typedef { import('./types-external.js').VatManager } VatManager
  * @typedef { import('./types-external.js').SnapStore } SnapStore
  * @typedef { import('./types-external.js').SnapshotResult } SnapshotResult
  * @typedef { import('./types-external.js').WaitUntilQuiescent } WaitUntilQuiescent

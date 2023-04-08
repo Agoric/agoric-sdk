@@ -214,7 +214,7 @@
  * @property {() => Promise<Allocation>} getFinalAllocation
  * return a promise for the final allocation. The promise will resolve after the
  * seat has exited.
- * @property {() => Subscriber<any>} getExitSubscriber returns a subscriber that
+ * @property {() => Subscriber<AmountKeywordRecord>} getExitSubscriber returns a subscriber that
  * will be notified when the seat has exited or failed.
  */
 

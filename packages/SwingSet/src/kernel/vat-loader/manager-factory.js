@@ -9,7 +9,6 @@ export function makeVatManagerFactory({
   vatEndowments,
   startXSnap,
   gcTools,
-  defaultManagerType,
   kernelSlog,
 }) {
   const localFactory = makeLocalVatManagerFactory({
@@ -31,13 +30,12 @@ export function makeVatManagerFactory({
   function validateManagerOptions(managerOptions) {
     assertKnownOptions(managerOptions, [
       'enablePipelining',
-      'managerType',
+      'workerOptions',
       'setup',
       'bundle',
       'metered',
       'enableDisavow',
       'enableSetup',
-      'virtualObjectCacheSize',
       'useTranscript',
       'critical',
       'reapInterval',
@@ -54,66 +52,70 @@ export function makeVatManagerFactory({
     !setup || enableSetup || Fail`setup() provided, but not enabled`;
   }
 
-  // returns promise for new vatManager
-  function vatManagerFactory(
+  /**
+   * Asynchronously creates a VatManager around a particular type of
+   * worker, with the specified vatID and options, which will invoke
+   * the given syscall handler function when the worker makes a
+   * syscall.
+   *
+   * @param {import('../../types-internal.js').VatID} vatID
+   * @param {import('../vat-warehouse.js').VatSyscallHandler} vatSyscallHandler
+   * @param {object} options
+   * @param {import('../../types-internal.js').ManagerOptions} options.managerOptions
+   * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} options.liveSlotsOptions
+   * @returns { Promise<import('../../types-internal.js').VatManager> }
+   */
+  async function vatManagerFactory(
     vatID,
-    managerOptions,
-    liveSlotsOptions,
     vatSyscallHandler,
+    { managerOptions, liveSlotsOptions },
   ) {
     validateManagerOptions(managerOptions);
-    const {
-      managerType = defaultManagerType,
-      setup,
-      bundle,
-      metered,
-      enableSetup,
-    } = managerOptions;
+    const { workerOptions, enableSetup } = managerOptions;
+    const { type } = workerOptions;
 
-    if (metered && managerType !== 'local' && managerType !== 'xs-worker') {
-      console.warn(`TODO: support metered with ${managerType}`);
-    }
-    if (setup && managerType !== 'local') {
-      console.warn(`TODO: stop using setup() with ${managerType}`);
+    if (type !== 'local' && 'setup' in managerOptions) {
+      console.warn(`TODO: stop using setup() with ${type}`);
     }
     if (enableSetup) {
-      if (setup) {
+      if (managerOptions.setup) {
         return localFactory.createFromSetup(
           vatID,
-          setup,
+          managerOptions.setup,
           managerOptions,
           vatSyscallHandler,
         );
       } else {
         return localFactory.createFromBundle(
           vatID,
-          bundle,
+          managerOptions.bundle,
           managerOptions,
           liveSlotsOptions,
           vatSyscallHandler,
         );
       }
-    } else if (managerType === 'local') {
+    } else if (type === 'local') {
       return localFactory.createFromBundle(
         vatID,
-        bundle,
+        managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
         vatSyscallHandler,
       );
     }
 
-    if (managerType === 'xs-worker') {
+    if (type === 'xsnap') {
+      assert(managerOptions.bundle, 'xsnap requires Bundle');
       return xsWorkerFactory.createFromBundle(
         vatID,
-        bundle,
+        managerOptions.bundle,
         managerOptions,
         liveSlotsOptions,
         vatSyscallHandler,
       );
     }
 
-    throw Error(`unknown type ${managerType}, not 'local' or 'xs-worker'`);
+    throw Error(`unknown type ${type}, not 'local' or 'xsnap'`);
   }
 
   return harden(vatManagerFactory);

@@ -8,6 +8,7 @@ import { makeTranscriptManager } from './transcript.js';
  * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
+ * @typedef {import('../../types-internal.js').VatManager} VatManager
  */
 
 // We use vat-centric terminology here, so "inbound" means "into a vat",

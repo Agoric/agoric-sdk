@@ -52,6 +52,11 @@ export const prepareVaultHolder = (baggage, marshaller) => {
     {
       helper: UnguardedHelperI,
       holder: HolderI,
+      invitationMakers: M.interface('invitationMakers', {
+        AdjustBalances: M.call().returns(M.promise()),
+        CloseVault: M.call().returns(M.promise()),
+        TransferVault: M.call().returns(M.promise()),
+      }),
     },
     /**
      *
@@ -81,6 +86,17 @@ export const prepareVaultHolder = (baggage, marshaller) => {
         },
         getUpdater() {
           return this.state.publisher;
+        },
+      },
+      invitationMakers: {
+        AdjustBalances() {
+          return this.facets.holder.makeAdjustBalancesInvitation();
+        },
+        CloseVault() {
+          return this.facets.holder.makeCloseInvitation();
+        },
+        TransferVault() {
+          return this.facets.holder.makeTransferInvitation();
         },
       },
       holder: {

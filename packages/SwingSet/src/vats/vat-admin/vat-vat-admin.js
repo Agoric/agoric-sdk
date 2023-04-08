@@ -6,9 +6,8 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeNotifierKit } from '@agoric/notifier';
-import { Far, passStyleOf } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+// import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
+import { Far, E, passStyleOf } from '@endo/far';
 import { Nat, isNat } from '@endo/nat';
 import {
   provide,
@@ -20,7 +19,7 @@ import {
 
 const { details: X, quote: q, Fail } = assert;
 
-const managerTypes = ['local', 'xs-worker'];
+const managerTypes = ['local', 'xsnap', 'xs-worker']; // xs-worker is alias
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();
@@ -55,20 +54,13 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   // XXX The plan is for meters to hold their notifiers, but notifiers are not
   // yet durable, which blocks making meters themselves durable unless the
-  // (currently) ephemeral notifiers are put someplace else.  So we're putting
-  // them in a WeakMap keyed by the meter itself.  The following has bits of
-  // code commented with either XXX TEMP or XXX RESTORE.  The former flags
-  // temporary code that should be removed once notifiers are durable.  The
-  // latter flags (commented out) code that should be made active once notifiers
-  // are durable.
-  //
-  // Note that this means that holders of notifiers (the ones obtained by
-  // calling `getNotifier` on the meter) will be left holding broken references
-  // after an upgrade.  The practical consequences of this are not yet clear to
-  // me, but hopefully this concern will soon be mooted by making notifiers
-  // actually durable.
-
-  const meterNotifiersTemp = new WeakMap(); // meter -> { notifier, updater } // XXX TEMP
+  // (currently) ephemeral notifiers are put someplace else.  So we're disabling
+  // them for now.
+  // The following has bits of code commented with either `XXX TEMP` or
+  // `XXX RESTORE`.  The former flags temporary code that should be removed once
+  // notifiers are durable.  The latter flags (commented out) code that should
+  // be made active once notifiers are durable.
+  // The same comments are also used in test files.
 
   const makeMeter = prepareKind(
     baggage,
@@ -90,7 +82,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       },
       get: ({ state }) => D(vatAdminDev).getMeter(state.meterID), // returns BigInts
       // getNotifier: ({ state }) => state.notifier, // XXX RESTORE
-      getNotifier: ({ self }) => meterNotifiersTemp.get(self).notifier, // XXX TEMP
+      getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
     },
     // eslint-disable-next-line no-use-before-define
     { finish: finishMeter },
@@ -110,7 +102,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       setThreshold(_context, _newThreshold) {},
       get: () => harden({ remaining: 'unlimited', threshold: 0 }),
       // getNotifier: ({ state }) => state.notifier, // will never fire // XXX RESTORE
-      getNotifier: ({ self }) => meterNotifiersTemp.get(self).notifier, // XXX TEMP
+      getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
     },
     // eslint-disable-next-line no-use-before-define
     { finish: finishMeter },
@@ -125,7 +117,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     );
     // eslint-disable-next-line no-use-before-define
     meterIDByMeter.set(self, state.meterID);
-    meterNotifiersTemp.set(self, makeNotifierKit()); // XXX TEMP
   }
 
   // meterID -> { meter, updater }
@@ -136,7 +127,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const meterIDByMeter = new WeakMap(); // meter -> meterID
   for (const [meterID, meterEntry] of meterByID.entries()) {
     meterIDByMeter.set(meterEntry.meter, meterID);
-    meterNotifiersTemp.set(meterEntry.meter, makeNotifierKit()); // XXX TEMP
   }
 
   if (baggage.has('vatAdminDev')) {
@@ -315,9 +305,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
                 'invalid reapInterval value',
               );
               break;
-            case 'virtualObjectCacheSize':
-              assert(isNat(value), 'invalid virtualObjectCacheSize value');
-              break;
             default:
               assert.fail(`invalid option "${option}"`);
           }
@@ -358,7 +345,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       vatParameters, // stripped out and re-added
       enableSetup,
       enablePipelining,
-      virtualObjectCacheSize,
       useTranscript,
       reapInterval,
       critical, // converted from cap key to boolean
@@ -392,7 +378,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     }
     assertType('enableSetup', enableSetup, 'boolean');
     assertType('enablePipelining', enablePipelining, 'boolean');
-    assertType('virtualObjectCacheSize', virtualObjectCacheSize, 'number');
     assertType('useTranscript', useTranscript, 'boolean');
     assertType('reapInterval', reapInterval, 'number');
 
@@ -424,7 +409,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       vatParameters,
       enableSetup,
       enablePipelining,
-      virtualObjectCacheSize,
       useTranscript,
       reapInterval,
       critical: isCriticalVat,
@@ -569,10 +553,11 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     // pendingUpgrades by vatID.
   }
 
+  // XXX TEMP
+  // eslint-disable-next-line no-unused-vars
   function meterCrossedThreshold(meterID, remaining) {
     // const { updater } = meterByID.get(meterID); // XXX RESTORE
-    const { updater } = meterNotifiersTemp.get(meterByID.get(meterID).meter); // XXX TEMP
-    updater.updateState(remaining);
+    // updater.updateState(remaining); // XXX RESTORE
   }
 
   // the kernel sends this when the vat halts

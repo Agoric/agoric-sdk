@@ -1,4 +1,4 @@
-import { Far } from '@endo/marshal';
+import { Far } from '@endo/far';
 
 export function buildRootDeviceNode({ testLog, endowments }) {
   return Far('root', {

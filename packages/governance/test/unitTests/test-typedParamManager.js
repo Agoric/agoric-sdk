@@ -52,7 +52,7 @@ test('makeParamManagerFromTerms', async t => {
     makeStoredPublisherKit(),
     // @ts-expect-error missing governance terms
     zcf,
-    zcf.makeInvitation(() => null, 'mock poser invitation'),
+    { Electorate: zcf.makeInvitation(() => null, 'mock poser invitation') },
     {
       Mmr: 'ratio',
     },

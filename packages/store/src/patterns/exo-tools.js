@@ -1,11 +1,19 @@
 import { E, Far } from '@endo/far';
 import { listDifference, objectMap } from '@agoric/internal';
 
-import { MinMethodGuard, mustMatch, M } from './patternMatchers.js';
+import { mustMatch, M } from './patternMatchers.js';
 
 const { quote: q, Fail } = assert;
 const { apply, ownKeys } = Reflect;
 const { defineProperties } = Object;
+
+/**
+ * A method guard, for inclusion in an interface guard, that enforces only that
+ * all arguments are passable and that the result is passable. (In far classes,
+ * "any" means any *passable*.) This is the least possible enforcement for a
+ * method guard, and is implied by all other method guards.
+ */
+const MinMethodGuard = M.call().rest(M.any()).returns(M.any());
 
 const defendSyncArgs = (args, methodGuard, label) => {
   const { argGuards, optionalArgGuards, restArgGuard } = methodGuard;
@@ -107,16 +115,40 @@ const defendMethod = (method, methodGuard, label) => {
 };
 
 /**
- *
+ * @typedef {string} FacetName
+ */
+
+/**
+ * @typedef {Record<string | symbol, CallableFunction>} Methods
+ */
+
+/**
+ * @template [S = any]
+ * @template {Methods} [M = any]
+ * @typedef {{ state: S, self: M }} ClassContext
+ */
+
+/**
+ * @template [S = any]
+ * @template {Record<FacetName, Methods>} [F = any]
+ * @typedef {{ state: S, facets: F }} KitContext
+ */
+
+/**
+ * @typedef {(facet: any) => KitContext} KitContextProvider
+ * @typedef {((representative: any) => ClassContext) | KitContextProvider} ContextProvider
+ */
+
+/**
  * @param {string} methodTag
- * @param {WeakMap} contextMap
+ * @param {ContextProvider} contextProvider
  * @param {CallableFunction} behaviorMethod
  * @param {boolean} [thisfulMethods]
  * @param {MethodGuard} [methodGuard]
  */
 const bindMethod = (
   methodTag,
-  contextMap,
+  contextProvider,
   behaviorMethod,
   thisfulMethods = false,
   methodGuard = undefined,
@@ -124,7 +156,7 @@ const bindMethod = (
   assert.typeof(behaviorMethod, 'function');
 
   const getContext = self => {
-    const context = contextMap.get(self);
+    const context = contextProvider(self);
     context ||
       Fail`${q(methodTag)} may only be applied to a valid instance: ${self}`;
     return context;
@@ -173,7 +205,7 @@ const bindMethod = (
 /**
  * @template {Record<string | symbol, CallableFunction>} T
  * @param {string} tag
- * @param {WeakMap} contextMap
+ * @param {ContextProvider} contextProvider
  * @param {T} behaviorMethods
  * @param {boolean} [thisfulMethods]
  * @param {InterfaceGuard} [interfaceGuard]
@@ -181,7 +213,7 @@ const bindMethod = (
  */
 export const defendPrototype = (
   tag,
-  contextMap,
+  contextProvider,
   behaviorMethods,
   thisfulMethods = false,
   interfaceGuard = undefined,
@@ -218,7 +250,7 @@ export const defendPrototype = (
   for (const prop of methodNames) {
     prototype[prop] = bindMethod(
       `In ${q(prop)} method of (${tag})`,
-      contextMap,
+      contextProvider,
       behaviorMethods[prop],
       thisfulMethods,
       // TODO some tool does not yet understand the `?.[` syntax
@@ -232,14 +264,14 @@ harden(defendPrototype);
 
 /**
  * @param {string} tag
- * @param {Record<string, WeakMap>} contextMapKit
- * @param {Record<string, Record<string | symbol, CallableFunction>>} behaviorMethodsKit
+ * @param {Record<FacetName, KitContextProvider>} contextProviderKit
+ * @param {Record<FacetName, Record<string | symbol, CallableFunction>>} behaviorMethodsKit
  * @param {boolean} [thisfulMethods]
  * @param {Record<string, InterfaceGuard>} [interfaceGuardKit]
  */
 export const defendPrototypeKit = (
   tag,
-  contextMapKit,
+  contextProviderKit,
   behaviorMethodsKit,
   thisfulMethods = false,
   interfaceGuardKit = undefined,
@@ -255,7 +287,7 @@ export const defendPrototypeKit = (
     extraFacetNames.length === 0 ||
       Fail`Facets ${q(extraFacetNames)} of ${q(tag)} not guarded by interfaces`;
   }
-  const contextMapNames = ownKeys(contextMapKit);
+  const contextMapNames = ownKeys(contextProviderKit);
   const extraContextNames = listDifference(facetNames, contextMapNames);
   extraContextNames.length === 0 ||
     Fail`Contexts ${q(extraContextNames)} not implemented by ${q(tag)}`;
@@ -265,7 +297,7 @@ export const defendPrototypeKit = (
   return objectMap(behaviorMethodsKit, (behaviorMethods, facetName) =>
     defendPrototype(
       `${tag} ${facetName}`,
-      contextMapKit[facetName],
+      contextProviderKit[facetName],
       behaviorMethods,
       thisfulMethods,
       interfaceGuardKit && interfaceGuardKit[facetName],

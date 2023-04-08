@@ -8,7 +8,7 @@ import { spawn as ambientSpawn } from 'child_process';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail, q } from '@agoric/assert';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
@@ -23,6 +23,10 @@ import {
   swingsetIsInitialized,
   initializeSwingset,
 } from './initializeSwingset.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from './bundle-handler.js';
 import { makeStartXSnap } from './startXSnap.js';
 
 /** @param {Uint8Array} bytes */
@@ -87,6 +91,8 @@ function unhandledRejectionHandler(e, pr) {
  *   spawn?: typeof import('child_process').spawn,
  *   env?: Record<string, string | undefined>,
  *   kernelBundle?: Bundle
+ *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
+ *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
  * }} runtimeOptions
  */
 export async function makeSwingsetController(
@@ -109,10 +115,26 @@ export async function makeSwingsetController(
     spawn = ambientSpawn,
     warehousePolicy = {},
     overrideVatManagerOptions = {},
+    xsnapBundleData = makeXsnapBundleData(),
   } = runtimeOptions;
+  const {
+    bundleHandler = makeWorkerBundleHandler(
+      kernelStorage.bundleStore,
+      xsnapBundleData,
+    ),
+  } = runtimeOptions;
+
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
   }
+
+  const startXSnap = makeStartXSnap({
+    bundleHandler,
+    snapStore: kernelStorage.snapStore,
+    spawn,
+    debug: !!env.XSNAP_DEBUG,
+    workerTraceRootPath: env.XSNAP_TEST_RECORD,
+  });
 
   function writeSlogObject(obj) {
     if (!slogSender) {
@@ -180,19 +202,6 @@ export async function makeSwingsetController(
   // all vats get these in their global scope, plus a vat-specific 'console'
   const vatEndowments = harden({});
 
-  const bundles = [
-    // @ts-ignore assume lockdownBundle is set
-    JSON.parse(kvStore.get('lockdownBundle')),
-    // @ts-ignore assume supervisorBundle is set
-    JSON.parse(kvStore.get('supervisorBundle')),
-  ];
-  const startXSnap = makeStartXSnap(bundles, {
-    snapStore: kernelStorage.snapStore,
-    spawn,
-    debug: !!env.XSNAP_DEBUG,
-    workerTraceRootPath: env.XSNAP_TEST_RECORD,
-  });
-
   const kernelEndowments = {
     waitUntilQuiescent,
     kernelStorage,
@@ -205,6 +214,7 @@ export async function makeSwingsetController(
     WeakRef,
     FinalizationRegistry,
     gcAndFinalize: makeGcAndFinalize(engineGC),
+    bundleHandler,
   };
 
   const kernelRuntimeOptions = {
@@ -243,16 +253,17 @@ export async function makeSwingsetController(
     // TODO The following assertion may be removed when checkBundle subsumes
     // the responsibility to verify the permanence of a bundle's properties.
     // https://github.com/endojs/endo/issues/1106
-    assert(
-      Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
-        descriptor =>
-          descriptor.get === undefined &&
-          descriptor.writable === false &&
-          descriptor.configurable === false &&
-          typeof descriptor.value === 'string',
-      ),
-      `Bundle with alleged ID ${allegedBundleID} must be a frozen object with only string value properties, no accessors`,
-    );
+
+    Object.values(Object.getOwnPropertyDescriptors(bundle)).every(
+      ({ value, get, writable, configurable }) =>
+        typeof value === 'string' &&
+        get === undefined &&
+        // @ts-ignore `isFake` purposely omitted from type
+        (harden.isFake || (writable === false && configurable === false)),
+    ) ||
+      Fail`Bundle with alleged ID ${q(
+        allegedBundleID,
+      )} must be a frozen object with only string value properties, no accessors`;
     await checkBundle(bundle, computeSha512, allegedBundleID);
     const { endoZipBase64Sha512 } = bundle;
     assert.typeof(endoZipBase64Sha512, 'string');
@@ -435,7 +446,6 @@ export async function buildVatController(
   deviceEndowments = {},
 ) {
   const {
-    kernelStorage = initSwingStore().kernelStorage,
     env,
     verbose,
     kernelBundles: kernelAndOtherBundles = {},
@@ -444,6 +454,11 @@ export async function buildVatController(
     warehousePolicy,
     slogSender,
   } = runtimeOptions;
+  let { kernelStorage } = runtimeOptions;
+  let hostStorage;
+  if (!kernelStorage) {
+    ({ kernelStorage, hostStorage } = initSwingStore());
+  }
   const { kernel: kernelBundle, ...otherBundles } = kernelAndOtherBundles;
   const kernelBundles = runtimeOptions.kernelBundles ? otherBundles : undefined;
 
@@ -473,5 +488,10 @@ export async function buildVatController(
     deviceEndowments,
     actualRuntimeOptions,
   );
-  return harden({ bootstrapResult, ...controller });
+  const shutdown = async () =>
+    Promise.all([
+      controller.shutdown(),
+      hostStorage && hostStorage.close(),
+    ]).then(() => {});
+  return harden({ bootstrapResult, ...controller, shutdown });
 }

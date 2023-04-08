@@ -5,7 +5,6 @@ import {
   makeMarshal,
 } from '@endo/marshal';
 import { assert, details as X, Fail } from '@agoric/assert';
-import { isNat } from '@endo/nat';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -16,9 +15,6 @@ import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
 import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
-import { releaseOldState } from './stop-vat.js';
-
-const DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE = 3; // XXX ridiculously small value to force churn for testing
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
@@ -52,11 +48,8 @@ function build(
   console,
   buildVatNamespace,
 ) {
-  const {
-    virtualObjectCacheSize = DEFAULT_VIRTUAL_OBJECT_CACHE_SIZE,
-    enableDisavow = false,
-    relaxDurabilityRules = false,
-  } = liveSlotsOptions;
+  const { enableDisavow = false, relaxDurabilityRules = false } =
+    liveSlotsOptions;
   const { WeakRef, FinalizationRegistry, meterControl } = gcTools;
   const enableLSDebug = false;
   function lsdebug(...args) {
@@ -66,7 +59,7 @@ function build(
   }
 
   let didStartVat = false;
-  let didStopVat = false;
+  const didStopVat = false;
 
   const outstandingProxies = new WeakSet();
 
@@ -646,11 +639,11 @@ function build(
     vrm,
     allocateExportID,
     getSlotForVal,
+    requiredValForSlot,
     // eslint-disable-next-line no-use-before-define
     registerValue,
     m.serialize,
     unmeteredUnserialize,
-    virtualObjectCacheSize,
     assertAcceptableSyscallCapdataSize,
   );
 
@@ -736,16 +729,16 @@ function build(
   }
 
   function registerValue(baseRef, val, valIsCohort) {
-    const { type, facet } = parseVatSlot(baseRef);
+    const { type, id, facet } = parseVatSlot(baseRef);
     assert(
       !facet,
       `registerValue(${baseRef} should not receive individual facets`,
     );
     slotToVal.set(baseRef, new WeakRef(val));
     if (valIsCohort) {
-      for (let i = 0; i < val.length; i += 1) {
-        valToSlot.set(val[i], `${baseRef}:${i}`);
-      }
+      vrm.getFacetNames(id).forEach((name, index) => {
+        valToSlot.set(val[name], `${baseRef}:${index}`);
+      });
     } else {
       valToSlot.set(val, baseRef);
     }
@@ -763,13 +756,13 @@ function build(
   // m.unserialize) must be wrapped by unmetered().
   function convertSlotToVal(slot, iface = undefined) {
     meterControl.assertNotMetered();
-    const { type, allocatedByVat, virtual, durable, facet, baseRef } =
+    const { type, allocatedByVat, id, virtual, durable, facet, baseRef } =
       parseVatSlot(slot);
     let val = getValForSlot(baseRef);
     if (val) {
       if (virtual || durable) {
         if (facet !== undefined) {
-          return val[facet];
+          return vrm.getFacet(id, val, facet);
         }
       }
       return val;
@@ -779,7 +772,7 @@ function build(
       assert.equal(type, 'object');
       val = vrm.reanimate(baseRef);
       if (facet !== undefined) {
-        result = val[facet];
+        result = vrm.getFacet(id, val, facet);
       }
     } else {
       !allocatedByVat || Fail`I don't remember allocating ${slot}`;
@@ -1357,16 +1350,11 @@ function build(
     vatGlobals,
   });
 
-  function setVatOption(option, value) {
+  function setVatOption(option, _value) {
+    // note: we removed the only settable option in #7138, but we'll
+    // retain dispatch.changeVatOptions to make it easier to add a new
+    // one in the future
     switch (option) {
-      case 'virtualObjectCacheSize': {
-        if (isNat(value)) {
-          vom.setCacheSize(value);
-        } else {
-          console.warn(`WARNING: invalid virtualObjectCacheSize value`, value);
-        }
-        break;
-      }
       default:
         console.warn(`WARNING setVatOption unknown option ${option}`);
     }
@@ -1509,53 +1497,17 @@ function build(
   const unmeteredDispatch = meterControl.unmetered(dispatchToUserspace);
 
   async function bringOutYourDead() {
-    vom.flushCache();
-    await gcTools.gcAndFinalize();
-    const doMore = await scanForDeadObjects();
-    // @ts-expect-error FIXME doMore is void
-    if (doMore) {
-      return bringOutYourDead();
-    }
-    return undefined;
+    await scanForDeadObjects();
+    // now flush all the vatstore changes (deletions) we made
+    vom.flushStateCache();
   }
 
   /**
-   * @param { import('./types').SwingSetCapData } disconnectObjectCapData
+   * @param { import('./types').SwingSetCapData } _disconnectObjectCapData
    * @returns {Promise<void>}
    */
-  async function stopVat(disconnectObjectCapData) {
-    insistCapData(disconnectObjectCapData);
-    assert(disconnectObjectCapData.slots.length === 0);
-    assert(
-      !relaxDurabilityRules,
-      'stopVat not available when relaxDurabilityRules is true',
-    );
-
-    assert(didStartVat);
-    assert(!didStopVat);
-    didStopVat = true;
-
-    try {
-      // eslint-disable-next-line @jessie.js/no-nested-await
-      await releaseOldState({
-        m,
-        disconnectObjectCapData,
-        syscall,
-        exportedRemotables,
-        addToPossiblyDeadSet,
-        slotToVal,
-        valToSlot,
-        dropExports,
-        retireExports,
-        vrm,
-        collectionManager,
-        bringOutYourDead,
-        vreffedObjectRegistry,
-      });
-    } catch (e) {
-      console.warn(`-- error during stopVat()`, e);
-      throw e;
-    }
+  async function stopVat(_disconnectObjectCapData) {
+    console.warn('stopVat is a no-op as of #6650');
   }
 
   /**
@@ -1564,6 +1516,7 @@ function build(
    */
   function afterDispatchActions() {
     flushIDCounters();
+    vom.flushStateCache();
   }
 
   /**

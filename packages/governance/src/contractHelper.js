@@ -237,7 +237,7 @@ const handleParamGovernance = async (
   const paramManager = await makeParamManagerFromTerms(
     publisherKit,
     zcf,
-    initialPoserInvitation,
+    { Electorate: initialPoserInvitation },
     paramTypesMap,
   );
 

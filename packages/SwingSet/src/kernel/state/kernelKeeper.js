@@ -40,7 +40,6 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
- * @typedef { import('../../types-external.js').VatManager } VatManager
  */
 
 // Kernel state lives in a key-value store supporting key retrieval by
@@ -171,7 +170,7 @@ const FIRST_METER_ID = 1n;
  * @param {KernelSlog|null} kernelSlog
  */
 export default function makeKernelKeeper(kernelStorage, kernelSlog) {
-  const { kvStore, transcriptStore, snapStore } = kernelStorage;
+  const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
 
@@ -337,7 +336,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
 
   function insistManagerType(mt) {
-    assert(['local', 'xs-worker'].includes(mt));
+    assert(['local', 'xsnap', 'xs-worker'].includes(mt));
   }
 
   function getDefaultManagerType() {
@@ -413,17 +412,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   * @param {BundleID} bundleID
-   * @returns {string}
-   */
-  function bundleIDToKey(bundleID) {
-    // bundleID is b1-HASH
-    assert.typeof(bundleID, 'string');
-    assert(bundleIDRE.test(bundleID), `${bundleID} is not a bundleID`);
-    return `bundle.${bundleID}`;
-  }
-
-  /**
    * Store a bundle (by ID) in the kernel DB.
    *
    * @param {BundleID} bundleID The claimed bundleID: the caller
@@ -432,14 +420,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    *        be 'endoZipBase64'.
    */
   function addBundle(bundleID, bundle) {
-    const key = bundleIDToKey(bundleID);
-    assert(!kvStore.has(key), 'bundleID already installed');
-    // we repack the object to ensure the DB only holds the known fields
-    const { moduleFormat, endoZipBase64 } = bundle;
-    assert.equal(moduleFormat, 'endoZipBase64');
-    assert.typeof(endoZipBase64, 'string');
-    const value = JSON.stringify({ moduleFormat, endoZipBase64 });
-    kvStore.set(key, value);
+    assert(!bundleStore.hasBundle(bundleID), 'bundleID already installed');
+    bundleStore.addBundle(bundleID, bundle);
   }
 
   /**
@@ -447,7 +429,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    * @returns {boolean}
    */
   function hasBundle(bundleID) {
-    return kvStore.has(bundleIDToKey(bundleID));
+    return bundleStore.hasBundle(bundleID);
   }
 
   /**
@@ -455,11 +437,15 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    * @returns {EndoZipBase64Bundle | undefined}
    */
   function getBundle(bundleID) {
-    const value = kvStore.get(bundleIDToKey(bundleID));
-    if (value) {
-      return JSON.parse(value);
+    if (bundleStore.hasBundle(bundleID)) {
+      const bundle = bundleStore.getBundle(bundleID);
+      if (bundle.moduleFormat !== 'endoZipBase64') {
+        throw Fail`unsupported module format ${bundle.moduleFormat}`;
+      }
+      return bundle;
+    } else {
+      return undefined;
     }
-    return undefined;
   }
 
   function getGCActions() {
@@ -1483,6 +1469,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     }
 
     function compareStrings(a, b) {
+      // natural-sort strings having a shared prefix followed by digits
+      // (e.g., 'ko42' and 'ko100')
+      const [_a, aPrefix, aDigits] = /^(\D+)(\d+)$/.exec(a) || [];
+      if (aPrefix) {
+        const [_b, bPrefix, bDigits] = /^(\D+)(\d+)$/.exec(b) || [];
+        if (bPrefix === aPrefix) {
+          return compareNumbers(aDigits, bDigits);
+        }
+      }
+
+      // otherwise use the default string ordering
       if (a > b) {
         return 1;
       }

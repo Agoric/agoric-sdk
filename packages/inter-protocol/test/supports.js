@@ -16,7 +16,11 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeLoopback } from '@endo/captp';
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
-import { observeIteration, subscribeEach } from '@agoric/notifier';
+import {
+  makeNotifierFromAsyncIterable,
+  observeIteration,
+  subscribeEach,
+} from '@agoric/notifier';
 
 export { makeMockChainStorageRoot };
 
@@ -246,6 +250,19 @@ export const headValue = async subscriber => {
 };
 
 /**
+ * CAVEAT: the head may lag and you need to explicitly getUpdateSince(lastUpdateCount)
+ * 
+  @type {<T>(subscription: ERef<Subscription<T>>) => Promise<T>}
+ */
+export const headValueLegacy = async subscription => {
+  await eventLoopIteration();
+  const notifier = makeNotifierFromAsyncIterable(subscription);
+  const record = await notifier.getUpdateSince();
+  // @ts-expect-error bad types for legacy utils
+  return record.value.current;
+};
+
+/**
  * @param {import('ava').ExecutionContext} t
  * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
  * @param {string} topicName
@@ -262,7 +279,7 @@ export const assertTopicPathData = async (
   const topic = await E(hasTopics)
     .getPublicTopics()
     .then(topics => topics[topicName]);
-  t.is(await topic.storagePath, path, 'topic storagePath must match');
+  t.is(await topic?.storagePath, path, 'topic storagePath must match');
   const latest = /** @type {Record<string, unknown>} */ (
     await headValue(topic.subscriber)
   );

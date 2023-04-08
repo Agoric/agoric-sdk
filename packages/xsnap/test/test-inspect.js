@@ -85,11 +85,15 @@ async function makeWorker() {
       const { reply } = await vat.issueStringCommand(src);
       return JSON.parse(reply);
     },
+    async close() {
+      return vat.close();
+    },
   };
 }
 
 test('xsnap inspect', async t => {
   const w = await makeWorker();
+  t.teardown(w.close);
 
   const isLockdownWarning = args => args[0].startsWith('Removing intrinsics.');
   const x = await w.run(`2+3`);

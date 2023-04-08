@@ -19,6 +19,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     getVersion: () => version,
     getParameters: () => vatParameters,
     getSubscriber: () => subscriber,
+    makeDurablePublishKit: (...args) => makeDurablePublishKit(...args),
     publish: value => publisher.publish(value),
     finish: finalValue => publisher.finish(finalValue),
     fail: reason => publisher.fail(reason),

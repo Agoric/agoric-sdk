@@ -64,19 +64,11 @@ async function testChangeParameters(t) {
   t.is(c1Status, 'fulfilled');
   t.is(c1Result, 'invalid option "foo"');
 
-  const [c2Status, c2Result] = await run('change', [
-    { virtualObjectCacheSize: -1 },
-  ]);
-  t.is(c2Status, 'fulfilled');
-  t.is(c2Result, 'invalid virtualObjectCacheSize value');
-
   const [c3Status, c3Result] = await run('change', [{ reapInterval: 'maybe' }]);
   t.is(c3Status, 'fulfilled');
   t.is(c3Result, 'invalid reapInterval value');
 
-  const [c4Status, c4Result] = await run('change', [
-    { virtualObjectCacheSize: 100, reapInterval: 20 },
-  ]);
+  const [c4Status, c4Result] = await run('change', [{ reapInterval: 20 }]);
   t.is(c4Status, 'fulfilled');
   t.is(c4Result, 'ok');
   t.is(kvStore.get('v6.reapInterval'), '20');

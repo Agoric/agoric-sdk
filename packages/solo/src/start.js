@@ -31,7 +31,7 @@ import {
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
-import { makeShutdown } from '@agoric/telemetry/src/shutdown.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import {
   makeDefaultMeterProvider,
   getTelemetryProviders,

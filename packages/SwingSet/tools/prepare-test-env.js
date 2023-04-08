@@ -11,7 +11,7 @@ import '@endo/init/pre-bundle-source.js';
 import './install-ses-debug.js';
 import { makeFakeVirtualStuff } from '@agoric/swingset-liveslots/tools/fakeVirtualSupport.js';
 
-const { vom, cm, wpm } = makeFakeVirtualStuff({ cacheSize: 3 });
+const { vom, cm, wpm } = makeFakeVirtualStuff();
 
 const {
   defineKind,

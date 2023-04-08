@@ -1,5 +1,6 @@
 import { assert, Fail } from '@agoric/assert';
-import { makeMarshal, Far } from '@endo/marshal';
+import { makeMarshal } from '@endo/marshal';
+import { Far } from '@endo/far';
 import { parseVatSlot } from '../../lib/parseVatSlots.js';
 
 // raw devices can use this to build a set of convenience tools for

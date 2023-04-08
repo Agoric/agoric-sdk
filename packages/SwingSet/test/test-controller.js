@@ -207,8 +207,8 @@ test('XS bootstrap', async t => {
   const vatID = c.vatNameToID('bootstrap');
   const options = JSON.parse(kernelStorage.kvStore.get(`${vatID}.options`));
   t.is(
-    options.managerType,
-    'xs-worker',
+    options.workerOptions.type,
+    'xsnap',
     'managerType gets recorded for the bootstrap vat',
   );
 });

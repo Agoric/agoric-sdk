@@ -1,5 +1,4 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   let vatAdmin;
@@ -15,9 +14,7 @@ export function buildRootObject() {
     async build() {
       // build the target vat
       const bcap = await E(vatAdmin).getNamedBundleCap('dri');
-      const options = {};
-      options.virtualObjectCacheSize = 0;
-      const res = await E(vatAdmin).createVat(bcap, options);
+      const res = await E(vatAdmin).createVat(bcap);
       root = res.root;
       await E(root).buildVir(sensor0, sensor1);
       await E(root).ping();

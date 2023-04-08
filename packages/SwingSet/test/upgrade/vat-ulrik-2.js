@@ -1,5 +1,4 @@
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+import { Far, E } from '@endo/far';
 import { assert } from '@agoric/assert';
 import { initEmpty } from '@agoric/store';
 import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';

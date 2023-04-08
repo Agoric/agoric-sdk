@@ -41,6 +41,7 @@ async function doTerminateNonCritical(
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
   const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], {
     ...t.context.data,
@@ -104,6 +105,7 @@ async function doTerminateCritical(
   const configPath = new URL('swingset-terminate.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
   const kernelStorage = initSwingStore().kernelStorage;
   const controller = await buildVatController(config, [], {
     ...t.context.data,
@@ -374,6 +376,7 @@ test.serial('exit with presence', async t => {
   const configPath = new URL('swingset-die-with-presence.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
   const controller = await buildVatController(config, [], t.context.data);
   t.teardown(controller.shutdown);
   await controller.run();
@@ -389,6 +392,7 @@ test.serial('dispatches to the dead do not harm kernel', async t => {
   const configPath = new URL('swingset-speak-to-dead.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
 
   const ss1 = initSwingStore();
   {
@@ -432,6 +436,7 @@ test.serial('invalid criticalVatKey causes vat creation to fail', async t => {
   const configPath = new URL('swingset-bad-vat-key.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
   const controller = await buildVatController(config, [], t.context.data);
   t.teardown(controller.shutdown);
   await t.throwsAsync(() => controller.run(), {
@@ -443,6 +448,7 @@ test.serial('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
   const { kernelStorage, debug } = initSwingStore();
 
   const controller = await buildVatController(config, [], {
@@ -480,6 +486,7 @@ test.serial('terminate with presence', async t => {
     import.meta.url,
   ).pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
   const controller = await buildVatController(config, [], t.context.data);
   t.teardown(controller.shutdown);
   await controller.run();

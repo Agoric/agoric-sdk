@@ -4,7 +4,9 @@ import { Readable } from 'stream';
 import { Buffer } from 'buffer';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
+import { Nat } from '@endo/nat';
 import { Fail, q } from '@agoric/assert';
+import { createSHA256 } from './hasher.js';
 import { buffer } from './util.js';
 
 /**
@@ -24,10 +26,10 @@ import { buffer } from './util.js';
  * }} BundleStore
  *
  * @typedef {{
- *   exportBundle: (name: string) => AsyncIterable<Uint8Array>,
+ *   exportBundle: (name: string) => AsyncIterableIterator<Uint8Array>,
  *   importBundle: (artifactName: string, exporter: SwingStoreExporter, bundleID: string) => void,
- *   getExportRecords: () => Iterable<[key: string, value: string]>,
- *   getArtifactNames: () => AsyncIterable<string>,
+ *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
+ *   getArtifactNames: () => AsyncIterableIterator<string>,
  * }} BundleStoreInternal
  *
  * @typedef {{
@@ -55,8 +57,8 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     return `bundle.${bundleID}`;
   }
 
-  function bundleIdFromHash(hash) {
-    return `b1-${hash}`;
+  function bundleIdFromHash(version, hash) {
+    return `b${Nat(version)}-${hash}`;
   }
 
   const sqlAddBundle = db.prepare(`
@@ -72,14 +74,30 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @param {Bundle} bundle
    */
   function addBundle(bundleID, bundle) {
-    const { moduleFormat } = bundle;
-    if (moduleFormat !== 'endoZipBase64')
-      throw Fail`unsupported module format ${q(moduleFormat)}`;
-    const { endoZipBase64, endoZipBase64Sha512 } = bundle;
-    bundleID === bundleIdFromHash(endoZipBase64Sha512) ||
-      Fail`bundleID ${q(bundleID)} does not match bundle`;
     ensureTxn();
-    sqlAddBundle.run(bundleID, decodeBase64(endoZipBase64));
+    const { moduleFormat } = bundle;
+    let serialized;
+    if (bundleID.startsWith('b0-')) {
+      if (moduleFormat !== 'nestedEvaluate') {
+        throw Fail`unsupported b0- module format ${q(moduleFormat)}`;
+      }
+      serialized = JSON.stringify(bundle);
+      if (bundleID !== bundleIdFromHash(0, createSHA256(serialized).finish())) {
+        throw Fail`bundleID ${q(bundleID)} does not match bundle`;
+      }
+    } else if (bundleID.startsWith('b1-')) {
+      if (moduleFormat !== 'endoZipBase64') {
+        throw Fail`unsupported b1- module format ${q(moduleFormat)}`;
+      }
+      const { endoZipBase64, endoZipBase64Sha512 } = bundle;
+      if (bundleID !== bundleIdFromHash(1, endoZipBase64Sha512)) {
+        throw Fail`bundleID ${q(bundleID)} does not match bundle`;
+      }
+      serialized = decodeBase64(endoZipBase64);
+    } else {
+      throw Fail`unsupported BundleID ${bundleID}`;
+    }
+    sqlAddBundle.run(bundleID, serialized);
     noteExport(bundleArtifactName(bundleID), bundleID);
   }
 
@@ -104,17 +122,21 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
 
   /**
    * @param {string} bundleID
-   * @returns {EndoZipBase64Bundle}
+   * @returns {Bundle}
    */
   function getBundle(bundleID) {
-    bundleID.startsWith('b1-') || Fail`invalid bundleID ${q(bundleID)}`;
     const rawBundle = sqlGetBundle.get(bundleID);
     rawBundle || Fail`bundle ${q(bundleID)} not found`;
-    return harden({
-      moduleFormat: 'endoZipBase64',
-      endoZipBase64Sha512: bundleID.substring(3),
-      endoZipBase64: encodeBase64(rawBundle),
-    });
+    if (bundleID.startsWith('b0-')) {
+      return harden(JSON.parse(rawBundle));
+    } else if (bundleID.startsWith('b1-')) {
+      return harden({
+        moduleFormat: 'endoZipBase64',
+        endoZipBase64Sha512: bundleID.substring(3),
+        endoZipBase64: encodeBase64(rawBundle),
+      });
+    }
+    throw Fail`somehow found unsupported BundleID ${q(bundleID)}`;
   }
 
   const sqlDeleteBundle = db.prepare(`
@@ -140,7 +162,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @param {string} name
    *
    * @yields {Uint8Array}
-   * @returns {AsyncIterable<Uint8Array>}
+   * @returns {AsyncIterableIterator<Uint8Array>}
    */
   async function* exportBundle(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
@@ -149,9 +171,9 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     // prettier-ignore
     (parts.length === 2 && type === 'bundle') ||
       Fail`expected artifact name of the form 'bundle.{bundleID}', saw ${q(name)}`;
-    const bundle = getBundle(bundleID);
-    bundle || Fail`bundle ${q(name)} not available`;
-    yield* Readable.from(Buffer.from(decodeBase64(bundle.endoZipBase64)));
+    const rawBundle = sqlGetBundle.get(bundleID);
+    rawBundle || Fail`bundle ${q(name)} not available`;
+    yield* Readable.from(Buffer.from(rawBundle));
   }
 
   const sqlGetBundleIDs = db.prepare(`
@@ -165,7 +187,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * Obtain artifact metadata records for bundles contained in this store.
    *
    * @yields {[key: string, value: string]}
-   * @returns {Iterable<[key: string, value: string]>}
+   * @returns {IterableIterator<readonly [key: string, value: string]>}
    */
   function* getExportRecords() {
     for (const bundleID of sqlGetBundleIDs.iterate()) {
@@ -192,6 +214,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
    * @returns {Promise<void>}
    */
   async function importBundle(name, exporter, bundleID) {
+    await 0; // no synchronous prefix
     const parts = name.split('.');
     const [type, bundleIDkey] = parts;
     // prettier-ignore
@@ -199,19 +222,32 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
       Fail`expected artifact name of the form 'bundle.{bundleID}', saw '${q(name)}'`;
     bundleIDkey === bundleID ||
       Fail`bundle artifact name ${name} doesn't match bundleID ${bundleID}`;
-    bundleID.startsWith('b1-') || Fail`invalid bundleID ${q(bundleID)}`;
     const artifactChunks = exporter.getArtifact(name);
     const inStream = Readable.from(artifactChunks);
-    const rawBundle = await buffer(inStream);
-    /** @type {EndoZipBase64Bundle} */
-    const bundle = harden({
-      moduleFormat: 'endoZipBase64',
-      endoZipBase64Sha512: bundleID.substring(3),
-      endoZipBase64: encodeBase64(rawBundle),
-    });
-    // Assert that the bundle contents match the ID and hash
-    await checkBundle(bundle, computeSha512, bundleID);
-    addBundle(bundleID, bundle);
+    const data = await buffer(inStream);
+    if (bundleID.startsWith('b0-')) {
+      // we dissect and reassemble the bundle, to exclude unexpected properties
+      const { moduleFormat, source, sourceMap } = JSON.parse(data.toString());
+      /** @type {NestedEvaluateBundle} */
+      const bundle = harden({ moduleFormat, source, sourceMap });
+      const serialized = JSON.stringify(bundle);
+      bundleID === bundleIdFromHash(0, createSHA256(serialized).finish()) ||
+        Fail`bundleID ${q(bundleID)} does not match bundle artifact`;
+      addBundle(bundleID, bundle);
+    } else if (bundleID.startsWith('b1-')) {
+      /** @type {EndoZipBase64Bundle} */
+      const bundle = harden({
+        moduleFormat: 'endoZipBase64',
+        endoZipBase64Sha512: bundleID.substring(3),
+        endoZipBase64: encodeBase64(data),
+      });
+      // Assert that the bundle contents match the ID and hash
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      await checkBundle(bundle, computeSha512, bundleID);
+      addBundle(bundleID, bundle);
+    } else {
+      Fail`unsupported BundleID ${q(bundleID)}`;
+    }
   }
 
   const sqlDumpBundles = db.prepare(`

@@ -19,6 +19,7 @@ test.serial('replay does not resurrect dead vat', async t => {
   const configPath = new URL('swingset-no-zombies.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
+  config.defaultReapInterval = 'never';
 
   const ss1 = initSwingStore();
   {
@@ -30,6 +31,7 @@ test.serial('replay does not resurrect dead vat', async t => {
     t.deepEqual(c1.kpResolution(c1.bootstrapResult), kser('bootstrap done'));
     // this comes from the dynamic vat...
     t.deepEqual(c1.dump().log, [`w: I ate'nt dead`]);
+    await c1.shutdown();
   }
 
   const serialized = ss1.debug.serialize();
@@ -42,5 +44,6 @@ test.serial('replay does not resurrect dead vat', async t => {
     await c2.run();
     // ...which shouldn't run the second time through
     t.deepEqual(c2.dump().log, []);
+    await c2.shutdown();
   }
 });

@@ -1,7 +1,6 @@
 /* eslint-disable no-use-before-define */
 
-import { E } from '@endo/eventual-send';
-import { Far, passStyleOf } from '@endo/marshal';
+import { Far, E, passStyleOf } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
 import { assert } from '@agoric/assert';
@@ -881,7 +880,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
    * @param {RelativeTime} delay
    * @param {RelativeTime} interval
    * @param {CancelToken} cancelToken
-   * @returns { BaseNotifier<Timestamp> }
+   * @returns { import('@agoric/notifier/src/types.js').BaseNotifier<Timestamp> }
    */
   const makeNotifier = (delay, interval, cancelToken) =>
     createNotifier(delay, interval, cancelToken).notifier;

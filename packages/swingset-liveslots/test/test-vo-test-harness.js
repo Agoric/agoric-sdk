@@ -37,6 +37,17 @@ async function voTestTest(t, mode) {
   await runVOTest(t, prepare, makeTestThing, testTestThing);
 }
 
+// Note: these first two are not marked "test.failing" because
+// something is wrong and we need to fix it. Rather, they are
+// confirming that the voTestTest harness would catch problems during
+// downstream tests that use the harness, if those problems arose in
+// the "before" or "after" phases, and reported by the downstream test
+// calling t.fail. We test this here in case the harness e.g. just
+// forgets to call testTestThing one or both times, so the downstream
+// test code never got a chance to run. It is essential that this test
+// fails, otherwise the harness is not doing its job, and is hiding
+// real test failures in some downstream client package.
+
 test.failing('fail during "before" phase', async t => {
   await voTestTest(t, 'before');
 });
@@ -44,6 +55,10 @@ test.failing('fail during "before" phase', async t => {
 test.failing('fail during "after" phase', async t => {
   await voTestTest(t, 'after');
 });
+
+// Similarly, this test makes sure that our harness can detect when
+// the downstream test misbehaves and holds on to the object they were
+// supposed to drop.
 
 test.failing('fail due to held object', async t => {
   await voTestTest(t, 'hold');

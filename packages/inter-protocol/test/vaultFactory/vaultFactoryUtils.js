@@ -27,7 +27,7 @@ export const BASIS_POINTS = 10000n;
  * run: IssuerKit & import('../supports.js').AmountUtils,
  * bundleCache: Awaited<ReturnType<typeof import('@agoric/swingset-vat/tools/bundleTool.js').unsafeMakeBundleCache>>,
  * rates: VaultManagerParamValues,
- * loanTiming: LoanTiming,
+ * interestTiming: InterestTiming,
  * zoe: ZoeService,
  * }} Context
  */

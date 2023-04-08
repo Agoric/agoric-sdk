@@ -67,8 +67,7 @@ test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
 test.after(async t => {
-  // not strictly necessary but conveys that we keep the controller around for the whole test file
-  await E(t.context.controller).shutdown();
+  await E(t.context).shutdown();
 });
 
 test('metrics path', async t => {
@@ -252,7 +251,7 @@ test('open vault with insufficient funds gives helpful error', async t => {
 });
 
 test('exit bid', async t => {
-  const { walletFactoryDriver } = t.context;
+  const { walletFactoryDriver, agoricNamesRemotes } = t.context;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1bid');
 
@@ -264,12 +263,23 @@ test('exit bid', async t => {
     giveCollateral: 9.0,
   });
 
+  const parseAmount = opt => {
+    const m = opt.match(/^(?<value>[\d_.]+)(?<brand>\w+?)$/);
+    assert(m);
+    return {
+      value: BigInt(Number(m.groups.value.replace(/_/g, '')) * 1_000_000),
+      /** @type {Brand<'nat'>} */
+      // @ts-expect-error mock
+      brand: agoricNamesRemotes.brand[m.groups.brand],
+    };
+  };
+
   wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
-    wantCollateral: 1.23,
-    giveCurrency: 0.1,
-    collateralBrandKey: 'IbcATOM',
+    desiredBuy: '1.23IbcATOM',
+    give: '0.1IST',
     price: 5,
+    parseAmount,
   });
 
   await wd.tryExitOffer('bid');
@@ -287,4 +297,66 @@ test('exit bid', async t => {
       },
     },
   });
+});
+
+test('propose change to auction governance param', async t => {
+  const { walletFactoryDriver, agoricNamesRemotes, storage } = t.context;
+
+  const gov1 = 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce';
+  const wd = await walletFactoryDriver.provideSmartWallet(gov1);
+
+  t.log('accept charter invitation');
+  const charter = agoricNamesRemotes.instance.econCommitteeCharter;
+
+  await wd.executeOffer({
+    id: 'accept-charter-invitation',
+    invitationSpec: {
+      source: 'purse',
+      instance: charter,
+      description: 'charter member invitation',
+    },
+    proposal: {},
+  });
+
+  await eventLoopIteration();
+  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+
+  const auctioneer = agoricNamesRemotes.instance.auctioneer;
+  const timerBrand = agoricNamesRemotes.brand.timer;
+  assert(timerBrand);
+
+  t.log('propose param change');
+  /* XXX @type {Partial<AuctionParams>} */
+  const params = {
+    StartFrequency: { timerBrand, relValue: 5n * 60n },
+  };
+
+  /** @type {import('@agoric/inter-protocol/src/econCommitteeCharter.js').ParamChangesOfferArgs} */
+  const offerArgs = {
+    deadline: 1000n,
+    params,
+    instance: auctioneer,
+    path: { paramPath: { key: 'governedParams' } },
+  };
+
+  await wd.executeOffer({
+    id: 'propose-param-change',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'accept-charter-invitation',
+      invitationMakerName: 'VoteOnParamChange',
+    },
+    offerArgs,
+    proposal: {},
+  });
+
+  await eventLoopIteration();
+  t.like(wd.getLatestUpdateRecord(), { status: { numWantsSatisfied: 1 } });
+
+  const key = `published.committees.Economic_Committee.latestQuestion`;
+  const capData = JSON.parse(storage.data.get(key)?.at(-1));
+  const lastQuestion = JSON.parse(capData.body);
+  const changes = lastQuestion?.issue?.spec?.changes;
+  t.log('check Economic_Committee.latestQuestion against proposal');
+  t.like(changes, { StartFrequency: { relValue: { digits: '300' } } });
 });

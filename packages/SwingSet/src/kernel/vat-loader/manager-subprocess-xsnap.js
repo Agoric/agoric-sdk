@@ -15,6 +15,7 @@ import './types.js';
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
  * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
  * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
+ * @typedef {import('../../types-internal.js').VatManagerFactory} VatManagerFactory
  */
 
 // eslint-disable-next-line no-unused-vars
@@ -30,7 +31,12 @@ const decoder = new TextDecoder();
  *   allVatPowers: VatPowers,
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: (vatID: string, name: string, handleCommand: AsyncHandler, metered?: boolean, reload?: boolean) => Promise<XSnap>,
+ *   startXSnap: (vatID: string, name: string,
+ *                details: {
+ *                 bundleIDs: BundleID[],
+ *                 handleCommand: AsyncHandler,
+ *                 metered?: boolean,
+ *                 reload?: boolean } ) => Promise<XSnap>,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -47,7 +53,7 @@ export function makeXsSubprocessFactory({
   /**
    * @param {string} vatID
    * @param {unknown} bundle
-   * @param {ManagerOptions} managerOptions
+   * @param {import('../../types-internal.js').ManagerOptions} managerOptions
    * @param {LiveSlotsOptions} liveSlotsOptions
    * @param {(vso: VatSyscallObject) => VatSyscallResult} vatSyscallHandler
    */
@@ -65,12 +71,16 @@ export function makeXsSubprocessFactory({
       compareSyscalls,
       useTranscript,
       sourcedConsole,
+      workerOptions,
     } = managerOptions;
     assert(
       !managerOptions.enableSetup,
-      'xs-worker: enableSetup not supported at all',
+      'xsnap: enableSetup not supported at all',
     );
-    assert(useTranscript, 'xs-worker: useTranscript=false not supported');
+    assert(useTranscript, 'xsnap: useTranscript=false not supported');
+    assert(workerOptions.type === 'xsnap');
+    const { bundleIDs } = workerOptions;
+    assert(bundleIDs, 'bundleIDs required for xsnap');
 
     const mk = makeManagerKit(
       vatID,
@@ -131,13 +141,12 @@ export function makeXsSubprocessFactory({
     const argName = `${vatID}:${vatName !== undefined ? vatName : ''}`;
 
     // start the worker and establish a connection
-    const worker = await startXSnap(
-      vatID,
-      argName,
+    const worker = await startXSnap(vatID, argName, {
+      bundleIDs,
       handleCommand,
       metered,
-      !!snapshotInfo,
-    );
+      reload: !!snapshotInfo,
+    });
 
     /** @type { (item: Tagged) => Promise<WorkerResults> } */
     async function issueTagged(item) {

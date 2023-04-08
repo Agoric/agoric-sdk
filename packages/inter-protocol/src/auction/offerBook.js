@@ -29,7 +29,7 @@ const nextSequenceNumber = () => {
  * wanted: Amount<'nat'>,
  * seqNum: NatValue,
  * received: Amount<'nat'>,
- * } & ({ bidScaling: Pattern, price: undefined } | { bidScaling: undefined, price: Ratio})
+ * } &  {exitAfterBuy: boolean} & ({ bidScaling: Pattern, price: undefined } | { bidScaling: undefined, price: Ratio})
  * } BidderRecord
  */
 
@@ -60,8 +60,9 @@ export const prepareScaledBidBook = baggage =>
        * @param {ZCFSeat} seat
        * @param {Ratio} bidScaling
        * @param {Amount<'nat'>} wanted
+       * @param {boolean} exitAfterBuy
        */
-      add(seat, bidScaling, wanted) {
+      add(seat, bidScaling, wanted, exitAfterBuy) {
         const { bidScalingPattern, collateralBrand, records } = this.state;
         mustMatch(bidScaling, bidScalingPattern);
 
@@ -76,6 +77,7 @@ export const prepareScaledBidBook = baggage =>
           seat,
           seqNum,
           wanted,
+          exitAfterBuy,
         };
         records.init(key, harden(bidderRecord));
         return key;
@@ -139,7 +141,13 @@ export const preparePriceBook = baggage =>
       records: makeScalarBigMapStore('scaledBidRecords', { durable: true }),
     }),
     {
-      add(seat, price, wanted) {
+      /**
+       * @param {ZCFSeat} seat
+       * @param {Ratio} price
+       * @param {Amount<'nat'>} wanted
+       * @param {boolean} exitAfterBuy
+       */
+      add(seat, price, wanted, exitAfterBuy) {
         const { priceRatioPattern, collateralBrand, records } = this.state;
         mustMatch(price, priceRatioPattern);
 
@@ -154,6 +162,7 @@ export const preparePriceBook = baggage =>
           seat,
           seqNum,
           wanted,
+          exitAfterBuy,
         };
         records.init(key, harden(bidderRecord));
         return key;

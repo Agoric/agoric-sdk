@@ -7,8 +7,7 @@ import {
   provideDurableSetStore,
   provideKindHandle,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { Far, E } from '@endo/far';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.

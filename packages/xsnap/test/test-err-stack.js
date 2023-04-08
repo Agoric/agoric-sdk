@@ -47,11 +47,15 @@ async function makeWorker() {
       const { reply } = await vat.issueStringCommand(src);
       return JSON.parse(reply);
     },
+    async close() {
+      return vat.close();
+    },
   };
 }
 
 test('XS stack traces include file, line numbers', async t => {
   const w = await makeWorker();
+  t.teardown(w.close);
 
   const x = await w.run('1+1');
   t.is(x, 2);

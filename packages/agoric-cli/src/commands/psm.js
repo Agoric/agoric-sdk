@@ -30,30 +30,11 @@ function collectValues(val, memo) {
   return memo;
 }
 
-const { vstorage, fromBoard, agoricNames } = await makeRpcUtils({ fetch });
-
-/**
- *
- * @param {[Minted: string, Anchor: string]} pair
- */
-const getGovernanceState = async ([Minted, Anchor]) => {
-  const govContent = await vstorage.readLatest(
-    `published.psm.${Minted}.${Anchor}.governance`,
-  );
-  assert(govContent, 'no gov content');
-  const { current: governance } = last(
-    storageHelper.unserializeTxt(govContent, fromBoard),
-  );
-  const { [`psm.${Minted}.${Anchor}`]: instance } = agoricNames.instance;
-
-  return { instance, governance };
-};
-
 /**
  *
  * @param {import('anylogger').Logger} logger
  */
-export const makePsmCommand = async logger => {
+export const makePsmCommand = logger => {
   const psm = new Command('psm').description('PSM commands').usage(
     `
   WALLET=my-wallet
@@ -81,20 +62,45 @@ export const makePsmCommand = async logger => {
   `,
   );
 
-  const lookupPsmInstance = ([minted, anchor]) => {
-    const name = `psm-${minted}-${anchor}`;
-    const instance = agoricNames.instance[name];
-    if (!instance) {
-      logger.debug('known instances:', agoricNames.instance);
-      throw new Error(`Unknown instance ${name}`);
-    }
-    return instance;
+  const rpcTools = async () => {
+    const utils = await makeRpcUtils({ fetch });
+
+    const lookupPsmInstance = ([minted, anchor]) => {
+      const name = `psm-${minted}-${anchor}`;
+      const instance = utils.agoricNames.instance[name];
+      if (!instance) {
+        logger.debug('known instances:', utils.agoricNames.instance);
+        throw new Error(`Unknown instance ${name}`);
+      }
+      return instance;
+    };
+
+    /**
+     *
+     * @param {[Minted: string, Anchor: string]} pair
+     */
+    const getGovernanceState = async ([Minted, Anchor]) => {
+      const govContent = await utils.vstorage.readLatest(
+        `published.psm.${Minted}.${Anchor}.governance`,
+      );
+      assert(govContent, 'no gov content');
+      const { current: governance } = last(
+        storageHelper.unserializeTxt(govContent, utils.fromBoard),
+      );
+      const { [`psm.${Minted}.${Anchor}`]: instance } =
+        utils.agoricNames.instance;
+
+      return { instance, governance };
+    };
+
+    return { ...utils, lookupPsmInstance, getGovernanceState };
   };
 
   psm
     .command('list')
     .description('list all PSMs in network')
     .action(async function () {
+      const { vstorage } = await rpcTools();
       const mints = await vstorage.keys('published.psm');
       for (const minted of mints) {
         const anchors = await vstorage.keys(`published.psm.${minted}`);
@@ -116,6 +122,7 @@ export const makePsmCommand = async logger => {
     )
     .action(async function (opts) {
       const { pair } = opts;
+      const { getGovernanceState } = await rpcTools();
       const { governance } = await getGovernanceState(pair);
       console.log('psm governance params', Object.keys(governance));
       console.log('MintLimit', governance.MintLimit.value);
@@ -149,6 +156,7 @@ export const makePsmCommand = async logger => {
     .option('--offerId [string]', 'Offer id', String, `swap-${Date.now()}`)
     .action(async function (opts) {
       console.warn('running with options', opts);
+      const { agoricNames, lookupPsmInstance } = await rpcTools();
       const instance = await lookupPsmInstance(opts.pair);
       const offer = Offers.psm.swap(instance, agoricNames.brand, {
         offerId: opts.offerId,
@@ -191,6 +199,7 @@ export const makePsmCommand = async logger => {
       1,
     )
     .action(async function (opts) {
+      const { lookupPsmInstance } = await rpcTools();
       const psmInstance = lookupPsmInstance(opts.pair);
 
       /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
@@ -242,6 +251,7 @@ export const makePsmCommand = async logger => {
       1,
     )
     .action(async function (opts) {
+      const { agoricNames, lookupPsmInstance } = await rpcTools();
       const psmInstance = lookupPsmInstance(opts.pair);
 
       const istBrand = agoricNames.brand.IST;

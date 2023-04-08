@@ -1,5 +1,4 @@
-import { Far } from '@endo/marshal';
-import { E } from '@endo/eventual-send';
+import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 
 // this takes about 5.7M computrons

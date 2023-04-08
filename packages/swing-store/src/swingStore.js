@@ -130,11 +130,15 @@ function getKeyType(key) {
  * @template T
  *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
  */
+/**
+ * @template T
+ *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ */
 
 /**
- * @typedef {[
+ * @typedef {readonly [
  *   key: string,
- *   value: string|undefined,
+ *   value?: string | null | undefined,
  * ]} KVPair
  *
  * @typedef {object} SwingStoreExporter
@@ -146,7 +150,7 @@ function getKeyType(key) {
  * the concurrent activity of other swingStore instances, the data representing
  * the commit point will stay consistent and available.
  *
- * @property {() => AnyIterable<KVPair>} getExportData
+ * @property {() => AnyIterableIterator<KVPair>} getExportData
  *
  * Get a full copy of the first-stage export data (key-value pairs) from the
  * swingStore. This represents both the contents of the KVStore (excluding host
@@ -161,7 +165,7 @@ function getKeyType(key) {
  * - transcript.${vatID}.${startPos} = ${{ vatID, startPos, endPos, hash }}
  * - transcript.${vatID}.current = ${{ vatID, startPos, endPos, hash }}
  *
- * @property {() => AnyIterable<string>} getArtifactNames
+ * @property {() => AnyIterableIterator<string>} getArtifactNames
  *
  * Get a list of name of artifacts available from the swingStore.  A name returned
  * by this method guarantees that a call to `getArtifact` on the same exporter
@@ -172,7 +176,7 @@ function getKeyType(key) {
  * - transcript.${vatID}.${startPos}.${endPos}
  * - snapshot.${vatID}.${endPos}
  *
- * @property {(name: string) => AnyIterable<Uint8Array>} getArtifact
+ * @property {(name: string) => AnyIterableIterator<Uint8Array>} getArtifact
  *
  * Retrieve an artifact by name.  May throw if the artifact is not available,
  * which can occur if the artifact is historical and wasn't been preserved.
@@ -217,7 +221,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   `);
 
   /**
-   * @returns {AsyncIterable<KVPair>}
+   * @returns {AsyncIterableIterator<KVPair>}
    * @yields {KVPair}
    */
   async function* getExportData() {
@@ -233,7 +237,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
   }
 
   /**
-   * @returns {AsyncIterable<string>}
+   * @returns {AsyncIterableIterator<string>}
    * @yields {string}
    */
   async function* getArtifactNames() {
@@ -244,7 +248,7 @@ export function makeSwingStoreExporter(dirPath, exportMode = 'current') {
 
   /**
    * @param {string} name
-   * @returns {AsyncIterable<Uint8Array>}
+   * @returns {AsyncIterableIterator<Uint8Array>}
    */
   function getArtifact(name) {
     typeof name === 'string' || Fail`artifact name must be a string`;
@@ -822,7 +826,6 @@ function makeSwingStore(dirPath, forceReset, options = {}) {
    */
   async function close() {
     db || Fail`db not initialized`;
-    commit();
     db.close();
     db = null;
     stopTrace();
