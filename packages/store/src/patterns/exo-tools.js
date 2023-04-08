@@ -208,7 +208,7 @@ const bindMethod = (
  * @param {ContextProvider} contextProvider
  * @param {T} behaviorMethods
  * @param {boolean} [thisfulMethods]
- * @param {InterfaceGuard} [interfaceGuard]
+ * @param {InterfaceGuard<{ [M in keyof T]: MethodGuard }>} [interfaceGuard]
  * @returns {T & import('@endo/eventual-send').RemotableBrand<{}, T>}
  */
 export const defendPrototype = (

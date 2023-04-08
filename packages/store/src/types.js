@@ -722,11 +722,19 @@
  */
 
 /**
- * @typedef {object} GuardMakers
- * @property {<M extends Record<any, any>>(interfaceName: string,
+ * @typedef {{
+ * <M extends Record<any, MethodGuard>>(interfaceName: string,
  *             methodGuards: M,
- *             options?: {sloppy?: boolean}
- * ) => InterfaceGuard} interface Guard an interface to a far object or facet
+ *             options?: {sloppy?: false}): InterfaceGuard<M>;
+ * (interfaceName: string,
+ *             methodGuards: any,
+ *             options?: {sloppy?: true}): InterfaceGuard<any>;
+ * }} MakeInterfaceGuard
+ */
+
+/**
+ * @typedef {object} GuardMakers
+ * @property {MakeInterfaceGuard} interface Guard an interface to a far object or facet
  *
  * @property {(...argGuards: ArgGuard[]) => MethodGuardMaker} call Guard a synchronous call
  *
@@ -741,12 +749,12 @@
 
 /** @typedef {(...args: any[]) => any} Method */
 
-// TODO parameterize this to match the behavior object it guards
 /**
+ * @template {Record<any, MethodGuard>} [M=Record<any, MethodGuard>]
  * @typedef {{
  * klass: 'Interface',
  * interfaceName: string,
- * methodGuards: Record<string | symbol, MethodGuard>
+ * methodGuards: M
  * sloppy?: boolean
  * }} InterfaceGuard
  */

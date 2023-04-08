@@ -8,7 +8,7 @@ import { prepareExoClass } from '@agoric/vat-data';
  * @param {Baggage} issuerBaggage
  * @param {string} name
  * @param {Brand<K>} brand
- * @param {InterfaceGuard} PaymentI
+ * @param {InterfaceGuard<{ getAllegedBrand: MethodGuard }>} PaymentI
  * @returns {() => Payment<K>}
  */
 export const preparePaymentKind = (issuerBaggage, name, brand, PaymentI) => {
