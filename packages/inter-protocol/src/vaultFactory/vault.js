@@ -23,7 +23,7 @@ const { quote: q, Fail } = assert;
 
 const { StorageNodeShape } = makeTypeGuards(M);
 
-const trace = makeTracer('IV', false);
+const trace = makeTracer('Vault', false);
 
 /** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
 
@@ -86,7 +86,7 @@ const validTransitions = {
 /**
  * @typedef {object} VaultManager
  * @property {() => Subscriber<import('./vaultManager').AssetState>} getAssetSubscriber
- * @property {(collateralAmount: Amount) => ERef<Amount<'nat'>>} maxDebtFor
+ * @property {(collateralAmount: Amount) => Amount<'nat'>} maxDebtFor
  * @property {() => Brand} getCollateralBrand
  * @property {(base: string) => string} scopeDescription
  * @property {() => Brand<'nat'>} getDebtBrand
@@ -558,7 +558,7 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             fp.want.Collateral,
           );
           // max debt supported by the vault Collateral implied by the proposal
-          const maxDebtPre = await state.manager.maxDebtFor(newCollateralPre);
+          const maxDebtPre = state.manager.maxDebtFor(newCollateralPre);
           updaterPre === state.outerUpdater ||
             Fail`Transfer during vault adjustment`;
           helper.assertActive();

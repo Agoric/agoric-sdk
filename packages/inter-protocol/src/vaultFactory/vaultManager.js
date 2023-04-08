@@ -45,6 +45,7 @@ import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfe
 import {
   atomicRearrange,
   ceilMultiplyBy,
+  floorDivideBy,
   floorMultiplyBy,
   getAmountIn,
   getAmountOut,
@@ -54,15 +55,16 @@ import {
   offerTo,
   provideEmptySeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { AuctionPFShape } from '../auction/auctioneer.js';
 import { checkDebtLimit, makeNatAmountShape } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
-import { maxDebtForVault } from './math.js';
+import { calculateMinimumCollateralization } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
+import { priceFrom } from '../auction/util.js';
 
 const { details: X, Fail } = assert;
 
@@ -199,11 +201,24 @@ export const prepareVaultManagerKit = (
     makeVaultManagerPublishKit();
   pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
 
+  const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+    collateralUnit,
+    debtBrand,
+  );
   const storedQuotesNotifier = makeStoredNotifier(
-    E(priceAuthority).makeQuoteNotifier(collateralUnit, debtBrand),
+    quoteNotifier,
     E(storageNode).makeChildNode('quotes'),
     marshaller,
   );
+  let storedCollateralQuote;
+  observeNotifier(quoteNotifier, {
+    updateState(value) {
+      storedCollateralQuote = value;
+    },
+    fail(reason) {
+      console.error('quoteNotifier failed to iterate', reason);
+    },
+  });
 
   const prioritizedVaults = makePrioritizedVaults(unsettledVaults);
 
@@ -284,7 +299,7 @@ export const prepareVaultManagerKit = (
       ),
       manager: M.interface('manager', {
         getGovernedParams: M.call().returns(M.remotable('governedParams')),
-        maxDebtFor: M.call(AmountShape).returns(M.promise()),
+        maxDebtFor: M.call(AmountShape).returns(AmountShape),
         mintAndTransfer: M.call(
           SeatShape,
           AmountShape,
@@ -308,9 +323,9 @@ export const prepareVaultManagerKit = (
       self: M.interface('self', {
         getGovernedParams: M.call().returns(M.remotable('governedParams')),
         makeVaultKit: M.call(SeatShape).returns(M.promise()),
-        getCollateralQuote: M.call().returns(M.promise()),
+        getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
-        lockOraclePrices: M.call().returns(M.promise()),
+        lockOraclePrices: M.call().returns(PriceQuoteShape),
         liquidateVaults: M.call(AuctionPFShape).returns(M.promise()),
       }),
     },
@@ -821,22 +836,21 @@ export const prepareVaultManagerKit = (
         },
 
         /**
-         * Consults a price authority to determine the max debt this manager
-         * config will allow for the collateral.
+         * Look up the most recent price authority price to determine the max
+         * debt this manager config will allow for the collateral.
          *
          * @param {Amount<'nat'>} collateralAmount
          */
-        async maxDebtFor(collateralAmount) {
-          assert(factoryPowers && priceAuthority);
-          const quote = await E(priceAuthority).quoteGiven(
-            collateralAmount,
-            debtBrand,
-          );
-          return maxDebtForVault(
-            quote,
+        maxDebtFor(collateralAmount) {
+          assert(factoryPowers);
+          const collateralPrice = priceFrom(storedCollateralQuote);
+          const collatlVal = ceilMultiplyBy(collateralAmount, collateralPrice);
+          const minimumCollateralization = calculateMinimumCollateralization(
             factoryPowers.getGovernedParams().getLiquidationMargin(),
             factoryPowers.getGovernedParams().getLiquidationPadding(),
           );
+          // floorDivide because we want the debt ceiling lower
+          return floorDivideBy(collatlVal, minimumCollateralization);
         },
         /** @type {MintAndTransfer} */
         mintAndTransfer(mintReceiver, toMint, fee, transfers) {
@@ -1033,9 +1047,8 @@ export const prepareVaultManagerKit = (
           }
         },
 
-        async getCollateralQuote() {
-          // get a quote for one unit of the collateral
-          return E(priceAuthority).quoteGiven(collateralUnit, debtBrand);
+        getCollateralQuote() {
+          return storedCollateralQuote;
         },
 
         getPublicFacet() {
@@ -1043,17 +1056,15 @@ export const prepareVaultManagerKit = (
         },
 
         lockOraclePrices() {
-          const { state, facets } = this;
-          const { self } = facets;
+          const { state } = this;
+          trace(
+            `lockPrice`,
+            getAmountIn(storedCollateralQuote),
+            getAmountOut(storedCollateralQuote),
+          );
 
-          // XXX: 'twould be better if collateralQuote were updated lazily when it
-          // changes by more than X%, and we use a cached value.  see #6946
-          return E.when(self.getCollateralQuote(), quote => {
-            trace(`lockPrice`, getAmountIn(quote), getAmountOut(quote));
-            // @ts-expect-error declared PriceQuote | undefined. TS thinks undefined.
-            state.lockedQuote = quote;
-            return quote;
-          });
+          state.lockedQuote = storedCollateralQuote;
+          return storedCollateralQuote;
         },
         /**
          * @param {AuctioneerPublicFacet} auctionPF
@@ -1062,7 +1073,7 @@ export const prepareVaultManagerKit = (
           const { state, facets } = this;
           const { self, helper } = facets;
           const { lockedQuote, compoundedInterest } = state;
-          const oraclePriceAtStartP = facets.self.getCollateralQuote();
+          trace('considering liquidation');
 
           assert(factoryPowers && prioritizedVaults && zcf);
           lockedQuote ||
@@ -1113,17 +1124,13 @@ export const prepareVaultManagerKit = (
           // This is expected to wait for the duration of the auction, which
           // is controlled by the auction parameters startFrequency, clockStep,
           // and the difference between startingRate and lowestRate.
-          const [proceeds, oraclePrice] = await Promise.all([
-            deposited,
-            oraclePriceAtStartP,
-            userSeatPromise,
-          ]);
+          const [proceeds] = await Promise.all([deposited, userSeatPromise]);
 
           trace(`LiqV after long wait`, proceeds);
           helper.distributeProceeds(
             proceeds,
             totalDebt,
-            oraclePrice,
+            storedCollateralQuote,
             liqSeat,
             vaultData,
             totalCollateral,

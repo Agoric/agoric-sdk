@@ -21,6 +21,7 @@ const makeDefaultTestContext = async t => {
 };
 
 test.before(async t => (t.context = await makeDefaultTestContext(t)));
+test.after(async t => t.context.shutdown());
 
 // Goal: test that prod config does not expose mailbox access.
 // But on the JS side, aside from vattp, prod config exposes mailbox access

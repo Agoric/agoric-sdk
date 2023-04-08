@@ -25,13 +25,17 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
 )
 
-// Charge an account address for the beans associated with given messages.
-func chargeAdmission(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress, msgs []string) error {
+// Charge an account address for the beans associated with given messages and storage.
+// See list of bean charges in default-params.go
+func chargeAdmission(ctx sdk.Context, keeper SwingSetKeeper, addr sdk.AccAddress, msgs []string, storage []string) error {
 	beansPerUnit := keeper.GetBeansPerUnit(ctx)
 	beans := beansPerUnit[BeansPerInboundTx]
 	beans = beans.Add(beansPerUnit[BeansPerMessage].Mul(sdk.NewUint(uint64(len(msgs)))))
 	for _, msg := range msgs {
 		beans = beans.Add(beansPerUnit[BeansPerMessageByte].Mul(sdk.NewUint(uint64(len(msg)))))
+	}
+	for _, store := range storage {
+		beans = beans.Add(beansPerUnit[BeansPerStorageByte].Mul(sdk.NewUint(uint64(len(store)))))
 	}
 
 	return keeper.ChargeBeans(ctx, addr, beans)
@@ -60,7 +64,7 @@ func (msg MsgDeliverInbound) CheckAdmissibility(ctx sdk.Context, data interface{
 		}
 	*/
 
-	return chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages)
+	return chargeAdmission(ctx, keeper, msg.Submitter, msg.Messages, nil)
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -121,7 +125,7 @@ func (msg MsgWalletAction) CheckAdmissibility(ctx sdk.Context, data interface{})
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action})
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.Action}, nil)
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -183,7 +187,7 @@ func (msg MsgWalletSpendAction) CheckAdmissibility(ctx sdk.Context, data interfa
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction})
+	return chargeAdmission(ctx, keeper, msg.Owner, []string{msg.SpendAction}, nil)
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.
@@ -276,7 +280,7 @@ func (msg MsgInstallBundle) CheckAdmissibility(ctx sdk.Context, data interface{}
 		return sdkerrors.Wrapf(sdkerrors.ErrInvalidRequest, "data must be a SwingSetKeeper, not a %T", data)
 	}
 
-	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle})
+	return chargeAdmission(ctx, keeper, msg.Submitter, []string{msg.Bundle}, []string{msg.Bundle})
 }
 
 // GetInboundMsgCount implements InboundMsgCarrier.

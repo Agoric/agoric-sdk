@@ -446,7 +446,6 @@ export async function buildVatController(
   deviceEndowments = {},
 ) {
   const {
-    kernelStorage = initSwingStore().kernelStorage,
     env,
     verbose,
     kernelBundles: kernelAndOtherBundles = {},
@@ -455,6 +454,11 @@ export async function buildVatController(
     warehousePolicy,
     slogSender,
   } = runtimeOptions;
+  let { kernelStorage } = runtimeOptions;
+  let hostStorage;
+  if (!kernelStorage) {
+    ({ kernelStorage, hostStorage } = initSwingStore());
+  }
   const { kernel: kernelBundle, ...otherBundles } = kernelAndOtherBundles;
   const kernelBundles = runtimeOptions.kernelBundles ? otherBundles : undefined;
 
@@ -484,5 +488,10 @@ export async function buildVatController(
     deviceEndowments,
     actualRuntimeOptions,
   );
-  return harden({ bootstrapResult, ...controller });
+  const shutdown = async () =>
+    Promise.all([
+      controller.shutdown(),
+      hostStorage && hostStorage.close(),
+    ]).then(() => {});
+  return harden({ bootstrapResult, ...controller, shutdown });
 }
