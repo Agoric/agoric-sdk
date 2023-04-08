@@ -64,6 +64,9 @@ export const makeWalletStateCoalescer = (invitationBrand = undefined) => {
         }
         break;
       }
+      case 'walletAction':
+        console.warn('@@@', updateRecord);
+        break;
       default:
         throw new Error(`unknown record updated ${updated}`);
     }
