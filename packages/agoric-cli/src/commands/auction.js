@@ -113,7 +113,7 @@ export const makeAuctionCommand = (
          * @returns {import('@agoric/time/src/types').RelativeTimeRecord}
          */
         const toRel = relValue => ({ timerBrand, relValue });
-
+        // missing: PriceLockPeriod
         /** @type {Partial<AuctionParams>} */
         const params = {
           ...(opts.startFrequency && {
