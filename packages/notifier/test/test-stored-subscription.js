@@ -141,8 +141,11 @@ test('stored subscriber', async t => {
 
 test('stored subscriber with setValue failure', async t => {
   const initialValue = 'first value';
-  // no publication param, will fail setValue
-  const storage = makeFakeStorage('publish.foo.bar');
+
+  const storage = makeFakeStorage('publish.foo.bar', {
+    // @ts-expect-error faulty publication param to fail setValue
+    updateState: null,
+  });
 
   const { publisher, subscriber } = makePublishKit();
 
