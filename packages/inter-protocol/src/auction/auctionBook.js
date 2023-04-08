@@ -357,7 +357,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
          *    they request inconsistent limits.
          */
         addAssets(assetAmount, sourceSeat, proceedsGoal) {
-          trace('add assets');
+          trace('add assets', { assetAmount, proceedsGoal });
           const { collateralBrand, collateralSeat, totalProceedsGoal } =
             this.state;
 

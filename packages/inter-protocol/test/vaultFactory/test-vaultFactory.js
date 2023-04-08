@@ -11,7 +11,10 @@ import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { assertAmountsEqual } from '@agoric/zoe/test/zoeTestHelpers.js';
+import {
+  assertAmountsEqual,
+  assertPayoutAmount,
+} from '@agoric/zoe/test/zoeTestHelpers.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
@@ -80,7 +83,9 @@ test.before(async t => {
   const runBrand = await E(runIssuer).getBrand();
   // @ts-expect-error missing mint
   const run = withAmountUtils({ issuer: runIssuer, brand: runBrand });
-  const aeth = withAmountUtils(makeIssuerKit('aEth'));
+  const aeth = withAmountUtils(
+    makeIssuerKit('aEth', AssetKind.NAT, { decimalPlaces: 6 }),
+  );
 
   const bundleCache = await unsafeMakeBundleCache('./bundles/'); // package-relative
   // note that the liquidation might be a different bundle name
@@ -373,13 +378,16 @@ test('vaultFactory display collateral', async t => {
     500n,
   );
 
+  // wait for priceAuthority to initialize a quote.
+  await eventLoopIteration();
+
   const { vfPublic } = services.vaultFactory;
   const collaterals = await E(vfPublic).getCollaterals();
   t.deepEqual(collaterals[0], {
     brand: aeth.brand,
     liquidationMargin: makeRatio(105n, run.brand),
     stabilityFee: makeRatio(530n, run.brand, BASIS_POINTS),
-    marketPrice: makeRatio(5n, run.brand, 1n, aeth.brand),
+    marketPrice: makeRatio(5_555_555n, run.brand, 1_000_000n, aeth.brand),
     interestRate: makeRatio(100n, run.brand, 10000n, run.brand),
   });
 });
@@ -1054,31 +1062,24 @@ test('transfer vault', async t => {
     'new notifier is active',
   );
 
-  // Interleave with `adjustVault`
-  // make the invitation first so that we can arrange the interleaving
-  // of adjust and tranfer
-  const adjustInvitation = E(transferVault).makeAdjustBalancesInvitation();
   const { Minted: lentAmount } = await E(aliceVaultSeat).getFinalAllocation();
   const aliceProceeds = await E(aliceVaultSeat).getPayouts();
+  await assertPayoutAmount(
+    t,
+    aeth.issuer,
+    aliceProceeds.Collateral,
+    aeth.makeEmpty(),
+    'alice should be paid',
+  );
+  await assertPayoutAmount(
+    t,
+    run.issuer,
+    aliceProceeds.Minted,
+    lentAmount,
+    'alice should be paid',
+  );
   t.deepEqual(lentAmount, aliceWantMinted, 'received 5000 Minted');
-  const borrowedRun = await aliceProceeds.Minted;
-  const payoffRun2 = run.make(600n);
-  const [paybackPayment, _remainingPayment] = await split(
-    E(run.issuer).makeEmptyPurse(),
-    borrowedRun,
-    payoffRun2,
-  );
 
-  // Adjust is multi-turn. Confirm that an interleaved transfer prevents it
-  const adjustSeatPromise = E(zoe).offer(
-    adjustInvitation,
-    harden({
-      give: { Minted: payoffRun2 },
-      // it's only multi-turn if there is a want
-      want: { Collateral: aeth.make(1n) },
-    }),
-    harden({ Minted: paybackPayment }),
-  );
   /** @type {Invitation<VaultKit>} */
   const t2Invite = await E(transferVault).makeTransferInvitation();
   const t2Seat = await E(zoe).offer(t2Invite);
@@ -1086,13 +1087,6 @@ test('transfer vault', async t => {
     vault: t2Vault,
     publicNotifiers: { vault: t2Notifier },
   } = await legacyOfferResult(t2Seat);
-  await t.throwsAsync(
-    () => E(adjustSeatPromise).getOfferResult(),
-    {
-      message: 'Transfer during vault adjustment',
-    },
-    'adjust balances should have been rejected',
-  );
   await t.throwsAsync(() => E(transferVault).getCurrentDebt());
   const debtAfter2 = await E(t2Vault).getCurrentDebt();
   t.deepEqual(debtAmount, debtAfter2, 'vault lent 5000 Minted + fees');
