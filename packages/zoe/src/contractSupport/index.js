@@ -6,17 +6,9 @@ export {
   calcSecondaryRequired,
 } from './bondingCurves.js';
 
-export * from './durability.js';
-
-export * from './priceAuthority.js';
-
-export * from './priceQuote.js';
-
 export { natSafeMath } from './safeMath.js';
 
 export { makeStateMachine } from './stateMachine.js';
-
-export * from './statistics.js';
 
 export {
   atomicRearrange,
@@ -58,3 +50,9 @@ export {
   subtractRatios,
   ratioToNumber,
 } from './ratio.js';
+
+export * from './durability.js';
+export * from './priceAuthority.js';
+export * from './priceQuote.js';
+export * from './statistics.js';
+export * from './recorder.js';
