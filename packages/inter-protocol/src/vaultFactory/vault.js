@@ -113,7 +113,7 @@ const validTransitions = {
  *   interestSnapshot: Ratio,
  *   phase: VaultPhase,
  *   debtSnapshot: Amount<'nat'>,
- *   outerUpdater: Publisher<VaultNotification> | null,
+ *   outerUpdater: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<VaultNotification> | null,
  * }} MutableState
  */
 
@@ -176,11 +176,11 @@ export const VaultI = M.interface('Vault', {
 
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {ZCF} zcf
  */
-export const prepareVault = (baggage, marshaller, zcf) => {
-  const makeVaultKit = prepareVaultKit(baggage, marshaller);
+export const prepareVault = (baggage, makeRecorderKit, zcf) => {
+  const makeVaultKit = prepareVaultKit(baggage, makeRecorderKit);
 
   const maker = prepareExoClassKit(
     baggage,
@@ -394,10 +394,10 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             case Phase.ACTIVE:
             case Phase.LIQUIDATING:
             case Phase.LIQUIDATED:
-              outerUpdater.publish(uiState);
+              void outerUpdater.write(uiState);
               break;
             case Phase.CLOSED:
-              outerUpdater.finish(uiState);
+              void outerUpdater.writeFinal(uiState);
               state.outerUpdater = null;
               break;
             default:
@@ -677,9 +677,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
 
         /**
          * @param {ZCFSeat} seat
-         * @param {ERef<StorageNode>} storageNodeP
+         * @param {StorageNode} storageNode
          */
-        async initVaultKit(seat, storageNodeP) {
+        async initVaultKit(seat, storageNode) {
           const { state, facets } = this;
 
           const { self, helper } = facets;
@@ -746,7 +746,6 @@ export const prepareVault = (baggage, marshaller, zcf) => {
           trace('initVault updateDebtAccounting fired');
 
           // So that makeVaultKit can be synchronous
-          const storageNode = await storageNodeP;
           const vaultKit = makeVaultKit(self, storageNode);
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
@@ -873,7 +872,9 @@ export const prepareVault = (baggage, marshaller, zcf) => {
             phase,
           } = state;
           if (outerUpdater) {
-            outerUpdater.finish(helper.getStateSnapshot(Phase.TRANSFER));
+            void outerUpdater.writeFinal(
+              helper.getStateSnapshot(Phase.TRANSFER),
+            );
             state.outerUpdater = null;
           }
           const transferState = {

@@ -26,20 +26,17 @@ import {
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import {
-  makePublicTopic,
   makeStoredNotifier,
   observeNotifier,
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
 import {
   M,
+  makeScalarMapStore,
   prepareExoClassKit,
   provideDurableMapStore,
   provideDurableSetStore,
-  makeScalarMapStore,
 } from '@agoric/vat-data';
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
@@ -51,6 +48,7 @@ import {
   getAmountOut,
   makeRatio,
   makeRatioFromAmounts,
+  makeRecorderTopic,
   multiplyRatios,
   offerTo,
   provideEmptySeat,
@@ -143,6 +141,8 @@ const quoteAsRatio = quoteAmount =>
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {ERef<Marshaller>} marshaller
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  * @param {Readonly<{
  *   debtMint: ZCFMint<'nat'>,
  *   collateralBrand: Brand<'nat'>,
@@ -150,13 +150,15 @@ const quoteAsRatio = quoteAmount =>
  *   factoryPowers: import('./vaultDirector.js').FactoryPowersFacet,
  *   descriptionScope: string,
  *   startTimeStamp: Timestamp,
- *   storageNode: ERef<StorageNode>,
+ *   storageNode: StorageNode,
  * }>} unique per singleton
  */
 export const prepareVaultManagerKit = (
   baggage,
   zcf,
   marshaller,
+  makeRecorderKit,
+  makeERecorderKit,
   {
     debtMint,
     collateralBrand,
@@ -174,20 +176,19 @@ export const prepareVaultManagerKit = (
 
   const { priceAuthority, timerService, reservePublicFacet } = zcf.getTerms();
 
-  const makeVault = prepareVault(baggage, marshaller, zcf);
-  const makeVaultManagerPublishKit = prepareDurablePublishKit(
-    baggage,
-    'Vault Manager publish kit',
-  );
+  const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
+
   const periodNotifier = E(timerService).makeNotifier(
     0n,
     factoryPowers.getGovernedParams().getChargingPeriod(),
   );
 
-  /** @type {PublishKit<AssetState>} */
-  const { publisher: assetPublisher, subscriber: assetSubscriber } =
-    makeVaultManagerPublishKit();
-  pipeTopicToStorage(assetSubscriber, storageNode, marshaller);
+  const assetKit = makeRecorderKit(
+    storageNode,
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<AssetState>} */ (
+      M.any()
+    ),
+  );
 
   /** @type {MapStore<string, Vault>} */
   const unsettledVaults = provideDurableMapStore(baggage, 'orderedVaultStore');
@@ -196,10 +197,12 @@ export const prepareVaultManagerKit = (
   const zeroCollateral = AmountMath.makeEmpty(collateralBrand, 'nat');
   const zeroDebt = AmountMath.makeEmpty(debtBrand, 'nat');
 
-  const metricsNode = E(storageNode).makeChildNode('metrics');
-  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
-    makeVaultManagerPublishKit();
-  pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
+  const metricsTopicKit = makeERecorderKit(
+    E(storageNode).makeChildNode('metrics'),
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+      M.any()
+    ),
+  );
 
   const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
     collateralUnit,
@@ -211,7 +214,7 @@ export const prepareVaultManagerKit = (
     marshaller,
   );
   let storedCollateralQuote;
-  observeNotifier(quoteNotifier, {
+  void observeNotifier(quoteNotifier, {
     updateState(value) {
       storedCollateralQuote = value;
     },
@@ -243,16 +246,8 @@ export const prepareVaultManagerKit = (
   );
 
   const topics = harden({
-    asset: makePublicTopic(
-      'State of the assets managed',
-      assetSubscriber,
-      storageNode,
-    ),
-    metrics: makePublicTopic(
-      'Vault Factory metrics',
-      metricsSubscriber,
-      metricsNode,
-    ),
+    asset: makeRecorderTopic('State of the assets managed', assetKit),
+    metrics: makeRecorderTopic('Vault Factory metrics', metricsTopicKit),
   });
 
   /**
@@ -412,7 +407,7 @@ export const prepareVaultManagerKit = (
           state.latestInterestUpdate = changes.latestInterestUpdate;
           state.totalDebt = changes.totalDebt;
 
-          facets.helper.assetNotify();
+          return facets.helper.assetNotify();
         },
 
         assetNotify() {
@@ -432,7 +427,7 @@ export const prepareVaultManagerKit = (
             // that doesn't seem to be cost-effective.
             liquidatorInstance: state.liquidatorInstance,
           });
-          assetPublisher.publish(payload);
+          return assetKit.recorder.write(payload);
         },
         burnToCoverDebt(debt, proceeds, seat) {
           const { state } = this;
@@ -564,7 +559,7 @@ export const prepareVaultManagerKit = (
             totalShortfallReceived: state.totalShortfallReceived,
           });
 
-          metricsPublisher.publish(payload);
+          return E(metricsTopicKit.recorderP).write(payload);
         },
 
         distributeProceeds(
@@ -826,7 +821,7 @@ export const prepareVaultManagerKit = (
             facets.helper.sendToReserve(collatRemaining, liqSeat);
           }
           facets.helper.recordShortfallAndProceeds(accounting);
-          facets.helper.updateMetrics();
+          return facets.helper.updateMetrics();
         },
       },
 
@@ -880,7 +875,7 @@ export const prepareVaultManagerKit = (
           state.totalDebt = AmountMath.subtract(state.totalDebt, toBurn);
         },
         getAssetSubscriber() {
-          return assetSubscriber;
+          return assetKit.subscriber;
         },
         getCollateralBrand() {
           return collateralBrand;
@@ -1012,6 +1007,10 @@ export const prepareVaultManagerKit = (
 
             return vaultKit;
           } catch (err) {
+            console.error(
+              'attempting recovery after initVaultKit failure',
+              err,
+            );
             // ??? do we still need this cleanup? it won't get into the store unless it has collateral,
             // which should qualify it to be in the store. If we drop this catch then the nested await
             // for `vault.initVaultKit()` goes away.
@@ -1141,7 +1140,7 @@ export const prepareVaultManagerKit = (
 
     {
       finish: ({ state, facets: { helper } }) => {
-        assetPublisher.publish(
+        void assetKit.recorder.write(
           harden({
             compoundedInterest: state.compoundedInterest,
             interestRate: factoryPowers.getGovernedParams().getInterestRate(),
