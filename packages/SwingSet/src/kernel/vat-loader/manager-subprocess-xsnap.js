@@ -224,11 +224,11 @@ export function makeXsSubprocessFactory({
       insistVatDeliveryResult(deliverResult);
       return deliverResult;
     }
-    mk.setDeliverToWorker(deliverToWorker);
 
     function shutdown() {
       return worker.close().then(_ => undefined);
     }
+
     /**
      * @param {number} endPos
      * @param {SnapStore} snapStore
@@ -238,7 +238,7 @@ export function makeXsSubprocessFactory({
       return snapStore.saveSnapshot(vatID, endPos, fn => worker.snapshot(fn));
     }
 
-    return mk.getManager(shutdown, makeSnapshot);
+    return mk.finishManager({ deliverToWorker, shutdown, makeSnapshot });
   }
 
   return harden({ createFromBundle });

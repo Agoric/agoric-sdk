@@ -808,15 +808,15 @@ function build(
     return result;
   }
 
-  function revivePromise(slot) {
+  function revivePromise(vpid) {
     meterControl.assertNotMetered();
-    const { type } = parseVatSlot(slot);
-    type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
-    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
-    const pRec = makePipelinablePromise(slot);
-    importedVPIDs.set(slot, pRec);
+    const { type } = parseVatSlot(vpid);
+    type === 'promise' || Fail`revivePromise called on non-promise ${vpid}`;
+    !getValForSlot(vpid) || Fail`revivePromise called on pre-existing ${vpid}`;
+    const pRec = makePipelinablePromise(vpid);
+    importedVPIDs.set(vpid, pRec);
     const p = pRec.promise;
-    registerValue(slot, p);
+    registerValue(vpid, p);
     return p;
   }
   const unmeteredRevivePromise = meterControl.unmetered(revivePromise);
@@ -1235,11 +1235,17 @@ function build(
     }
   }
 
-  function dropExports(vrefs) {
+  function assertObjectVrefs(vrefs, { allocatedByVat }) {
     assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(parseVatSlot(vref).allocatedByVat));
-    // console.log(`-- liveslots acting upon dropExports ${vrefs.join(',')}`);
+    for (const vref of vrefs) {
+      insistVatType('object', vref);
+      assert.equal(parseVatSlot(vref).allocatedByVat, allocatedByVat);
+    }
+  }
+
+  function dropExports(vrefs) {
+    // Fully validate the input before making changes.
+    assertObjectVrefs(vrefs, { allocatedByVat: true });
     meterControl.assertNotMetered();
     for (const vref of vrefs) {
       const o = getValForSlot(vref);
@@ -1253,29 +1259,23 @@ function build(
     }
   }
 
-  function retireOneExport(vref) {
-    insistVatType('object', vref);
-    const { virtual, durable, allocatedByVat, type } = parseVatSlot(vref);
-    assert(allocatedByVat);
-    assert.equal(type, 'object');
-    // console.log(`-- liveslots acting on retireExports ${vref}`);
-    if (virtual || durable) {
-      vrm.setExportStatus(vref, 'none');
-    } else {
-      // Remotable
-      kernelRecognizableRemotables.delete(vref);
+  function retireExports(vrefs) {
+    // Fully validate the input before making changes.
+    assertObjectVrefs(vrefs, { allocatedByVat: true });
+    for (const vref of vrefs) {
+      const { virtual, durable, type } = parseVatSlot(vref);
+      assert.equal(type, 'object');
+      if (virtual || durable) {
+        vrm.setExportStatus(vref, 'none');
+      } else {
+        // Remotable
+        kernelRecognizableRemotables.delete(vref);
+      }
     }
   }
 
-  function retireExports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.forEach(retireOneExport);
-  }
-
   function retireImports(vrefs) {
-    assert(Array.isArray(vrefs));
-    vrefs.map(vref => insistVatType('object', vref));
-    vrefs.map(vref => assert(!parseVatSlot(vref).allocatedByVat));
+    assertObjectVrefs(vrefs, { allocatedByVat: false });
     vrefs.forEach(vrm.ceaseRecognition);
   }
 
