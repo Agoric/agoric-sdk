@@ -257,6 +257,18 @@ function makeFacets(facetNames, proto, linkToCohort, unweakable) {
   return harden(facets);
 }
 
+function insistDurableCapdata(vrm, what, capdata, valueFor) {
+  capdata.slots.forEach((vref, idx) => {
+    if (!vrm.isDurable(vref)) {
+      if (valueFor) {
+        Fail`value for ${what} is not durable: slot ${q(idx)} of ${capdata}`;
+      } else {
+        Fail`${what} is not durable: slot ${q(idx)} of ${capdata}`;
+      }
+    }
+  });
+}
+
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
  *
@@ -740,17 +752,12 @@ export function makeVirtualObjectManager(
             checkStatePropertyValue(value, prop);
             const capdata = serialize(value);
             assertAcceptableSyscallCapdataSize([capdata]);
-            const newSlots = capdata.slots;
             if (isDurable) {
-              newSlots.forEach((vref, index) => {
-                vrm.isDurable(vref) ||
-                  Fail`value for ${q(prop)} is not durable at slot ${q(
-                    index,
-                  )} of ${capdata}`;
-              });
+              insistDurableCapdata(vrm, prop, capdata, true);
             }
             const record = dataCache.get(baseRef); // mutable
             const oldSlots = record.capdatas[prop].slots;
+            const newSlots = capdata.slots;
             vrm.updateReferenceCounts(oldSlots, newSlots);
             record.capdatas[prop] = capdata; // modify in place ..
             record.valueMap.set(prop, value);
@@ -874,9 +881,7 @@ export function makeVirtualObjectManager(
         // list of capdatas, plus its likely JSON overhead.
         assertAcceptableSyscallCapdataSize([valueCD]);
         if (isDurable) {
-          valueCD.slots.forEach(vref => {
-            vrm.isDurable(vref) || Fail`value for ${q(prop)} is not durable`;
-          });
+          insistDurableCapdata(vrm, prop, valueCD, true);
         }
         valueCD.slots.forEach(vrm.addReachableVref);
         capdatas[prop] = valueCD;
