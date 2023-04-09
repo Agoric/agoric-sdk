@@ -146,15 +146,10 @@ const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   return harden(contextProviderKit);
 };
 
-function checkAndUpdateFacetiousness(
-  tag,
-  desc,
-  facetNames,
-  saveDurableKindDescriptor,
-) {
+function checkAndUpdateFacetiousness(tag, desc, facetNames) {
   // The first time a durable kind gets a definition, the saved descriptor
-  // will have neither ".unfaceted" nor ".facets", and we must record the
-  // initial details in the descriptor.
+  // will have neither ".unfaceted" nor ".facets", and we must update the
+  // details in the descriptor.
 
   if (!desc.unfaceted && !desc.facets) {
     if (facetNames) {
@@ -162,8 +157,7 @@ function checkAndUpdateFacetiousness(
     } else {
       desc.unfaceted = true;
     }
-    saveDurableKindDescriptor(desc);
-    return;
+    return; // caller will saveDurableKindDescriptor()
   }
 
   // When a later incarnation redefines the behavior, it must match.
@@ -283,8 +277,8 @@ function insistDurableCapdata(vrm, what, capdata, valueFor) {
  * @param {(slot: string) => object} requiredValForSlot
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {import('@endo/marshal').Serialize<unknown>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').Unserialize<unknown>} unserialize  Unserializer for this vat
+ * @param {import('@endo/marshal').Serialize<string>} serialize  Serializer for this vat
+ * @param {import('@endo/marshal').Unserialize<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
  *
@@ -533,6 +527,7 @@ export function makeVirtualObjectManager(
    *  tag: string,
    *  unfaceted?: boolean,
    *  facets?: string[],
+   *  stateShapeCapData?: import('./types.js').SwingSetCapData
    * }} DurableKindDescriptor
    */
 
@@ -680,20 +675,54 @@ export function makeVirtualObjectManager(
     }
     // beyond this point, we use 'multifaceted' to switch modes
 
-    if (isDurable) {
-      checkAndUpdateFacetiousness(
-        tag,
-        durableKindDescriptor,
-        facetNames,
-        saveDurableKindDescriptor,
-      );
-    }
+    // The 'stateShape' pattern constrains the `state` of each
+    // instance: which properties it may have, and what their values
+    // are allowed to be. For durable Kinds, the stateShape is
+    // serialized and recorded in the durableKindDescriptor, so future
+    // incarnations (which redefine the kind when they call
+    // defineDurableKind again) can both check for compatibility, and
+    // to decrement refcounts on any slots referenced by the old
+    // shape.
 
     harden(stateShape);
     stateShape === undefined ||
       passStyleOf(stateShape) === 'copyRecord' ||
       Fail`A stateShape must be a copyRecord: ${q(stateShape)}`;
     assertPattern(stateShape);
+
+    if (isDurable) {
+      // durableKindDescriptor is created by makeKindHandle, with just
+      // { kindID, tag, nextInstanceID }, then the first
+      // defineDurableKind (maybe us!) will populate
+      // .facets/.unfaceted and a .stateShape . We'll only see those
+      // properties if we're in a non-initial incarnation.
+
+      assert(durableKindDescriptor);
+
+      // initial creation will update the descriptor with .facets or
+      // .unfaceted, subsequent re-definitions will just assert
+      // compatibility
+      checkAndUpdateFacetiousness(tag, durableKindDescriptor, facetNames);
+
+      const stateShapeCapData = serialize(stateShape);
+
+      // Durable kinds can only hold durable objects in their state,
+      // so if the stateShape were to require a non-durable object,
+      // nothing could ever match. So we require the shape have only
+      // durable objects
+      insistDurableCapdata(vrm, 'stateShape', stateShapeCapData, false);
+
+      // compare against slots of previous definition, incref/decref
+      let oldStateShapeSlots = [];
+      if (durableKindDescriptor.stateShapeCapData) {
+        oldStateShapeSlots = durableKindDescriptor.stateShapeCapData.slots;
+      }
+      const newStateShapeSlots = stateShapeCapData.slots;
+      vrm.updateReferenceCounts(oldStateShapeSlots, newStateShapeSlots);
+      durableKindDescriptor.stateShapeCapData = stateShapeCapData; // replace
+
+      saveDurableKindDescriptor(durableKindDescriptor);
+    }
 
     let checkStateProperty = _prop => undefined;
     /** @type {(value: any, prop: string) => void} */
