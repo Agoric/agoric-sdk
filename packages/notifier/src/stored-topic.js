@@ -31,6 +31,8 @@ export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
  * }} TopicsRecord
  */
 /**
+ * @deprecated uses forEachPublicationRecord which is [not sufficiently virtual](https://github.com/Agoric/agoric-sdk/issues/7302)
+ *
  * NB: caller must ensure that `publisher.finish()` or `publisher.fail()` is
  * called when the publisher stores its final value.
  * Otherwise this watch is retained and can't be GCed.
