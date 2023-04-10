@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { parseVatSlot, insistVatType } from '../../lib/parseVatSlots.js';
 import { parseLocalSlot } from './parseLocalSlots.js';
 import { cdebug } from './cdebug.js';
@@ -108,10 +108,8 @@ export function makeKernel(state, syscall) {
   }
 
   function addLocalObjectForKernel(kfoid) {
-    assert(
-      !state.mapFromKernel(kfoid),
-      `I don't remember giving ${kfoid} to the kernel`,
-    );
+    !state.mapFromKernel(kfoid) ||
+      Fail`I don't remember giving ${kfoid} to the kernel`;
 
     const loid = state.allocateObject('kernel');
     state.addKernelMapping(kfoid, loid);
@@ -119,10 +117,8 @@ export function makeKernel(state, syscall) {
   }
 
   function addLocalPromiseForKernel(kfpid) {
-    assert(
-      !state.mapFromKernel(kfpid),
-      `I don't remember giving ${kfpid} to the kernel`,
-    );
+    !state.mapFromKernel(kfpid) ||
+      Fail`I don't remember giving ${kfpid} to the kernel`;
     const lpid = state.allocatePromise();
     state.changeDeciderToKernel(lpid);
     state.addKernelMapping(kfpid, lpid);
@@ -163,7 +159,7 @@ export function makeKernel(state, syscall) {
         const isImportFromComms = false;
         setReachable(lref, isImportFromComms);
       }
-      assert(isReachable(lref), `kernel using unreachable ${lref}`);
+      isReachable(lref) || Fail`kernel using unreachable ${lref}`;
     }
 
     return lref;

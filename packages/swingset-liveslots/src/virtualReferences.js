@@ -121,10 +121,7 @@ export function makeVirtualReferenceManager(
 
   function setRefCount(baseRef, refCount) {
     const { facet } = parseVatSlot(baseRef);
-    assert(
-      !facet,
-      `setRefCount ${baseRef} should not receive individual facets`,
-    );
+    !facet || Fail`setRefCount ${baseRef} should not receive individual facets`;
     if (refCount === 0) {
       syscall.vatstoreDelete(`vom.rc.${baseRef}`);
       addToPossiblyDeadSet(baseRef);
@@ -178,7 +175,7 @@ export function makeVirtualReferenceManager(
         }
         break;
       default:
-        assert.fail(`invalid set export status ${exportStatus}`);
+        Fail`invalid set export status ${exportStatus}`;
     }
   }
 
@@ -189,7 +186,7 @@ export function makeVirtualReferenceManager(
 
   function decRefCount(baseRef) {
     const oldRefCount = getRefCount(baseRef);
-    assert(oldRefCount > 0, `attempt to decref ${baseRef} below 0`);
+    oldRefCount > 0 || Fail`attempt to decref ${baseRef} below 0`;
     setRefCount(baseRef, oldRefCount - 1);
   }
 
@@ -221,7 +218,7 @@ export function makeVirtualReferenceManager(
    */
   function rememberFacetNames(kindID, facetNames) {
     const kindInfo = kindInfoTable.get(`${kindID}`);
-    assert(kindInfo, `no kind info for ${kindID}`);
+    kindInfo || Fail`no kind info for ${kindID}`;
     assert(kindInfo.facetNames === undefined);
     kindInfo.facetNames = facetNames;
   }
@@ -299,7 +296,7 @@ export function makeVirtualReferenceManager(
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
-    assert(kindInfo, `no kind info for ${kindID}, call defineDurableKind`);
+    kindInfo || Fail`no kind info for ${kindID}, call defineDurableKind`;
     const { reanimator } = kindInfo;
     if (reanimator) {
       return reanimator(baseRef);
@@ -381,7 +378,7 @@ export function makeVirtualReferenceManager(
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
           const oldRefCount = remotableRefCounts.get(remotable) || 0;
-          assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+          oldRefCount > 0 || Fail`attempt to decref ${vref} below 0`;
           if (oldRefCount === 1) {
             remotableRefCounts.delete(remotable);
             droppedMemoryReference = true;
@@ -395,7 +392,7 @@ export function makeVirtualReferenceManager(
     } else if (type === 'promise') {
       const p = requiredValForSlot(vref);
       const oldRefCount = remotableRefCounts.get(p) || 0;
-      assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+      oldRefCount > 0 || Fail`attempt to decref ${vref} below 0`;
       if (oldRefCount === 1) {
         remotableRefCounts.delete(p);
         droppedMemoryReference = true; // true for promises too
@@ -602,7 +599,7 @@ export function makeVirtualReferenceManager(
         } else if (recognizer instanceof Set) {
           recognizer.delete(vref);
         } else {
-          assert.fail(`unknown recognizer type ${typeof recognizer}`);
+          Fail`unknown recognizer type ${typeof recognizer}`;
         }
       }
     }

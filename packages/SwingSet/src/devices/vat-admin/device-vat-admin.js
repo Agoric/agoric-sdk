@@ -158,8 +158,8 @@ export function buildDevice(tools, endowments) {
         if (method === 'createMeter') {
           const args = unserialize(argsCapdata);
           const [remaining, threshold] = args;
-          assert.typeof(remaining, 'bigint', `createMeter() remaining`);
-          assert.typeof(threshold, 'bigint', `createMeter() threshold`);
+          assert.typeof(remaining, 'bigint', 'createMeter() remaining');
+          assert.typeof(threshold, 'bigint', 'createMeter() threshold');
           const meterID = meterCreate(Nat(remaining), Nat(threshold));
           return returnFromInvoke(meterID);
         }
@@ -174,8 +174,8 @@ export function buildDevice(tools, endowments) {
         if (method === 'addMeterRemaining') {
           const args = unserialize(argsCapdata);
           const [meterID, delta] = args;
-          assert.typeof(meterID, 'string', `addMeterRemaining() meterID`);
-          assert.typeof(delta, 'bigint', `addMeterRemaining() delta`);
+          assert.typeof(meterID, 'string', 'addMeterRemaining() meterID');
+          assert.typeof(delta, 'bigint', 'addMeterRemaining() delta');
           meterAddRemaining(meterID, Nat(delta));
           return returnFromInvoke(undefined);
         }
@@ -184,8 +184,8 @@ export function buildDevice(tools, endowments) {
         if (method === 'setMeterThreshold') {
           const args = unserialize(argsCapdata);
           const [meterID, threshold] = args;
-          assert.typeof(meterID, 'string', `setMeterThreshold() meterID`);
-          assert.typeof(threshold, 'bigint', `setMeterThreshold() threshold`);
+          assert.typeof(meterID, 'string', 'setMeterThreshold() meterID');
+          assert.typeof(threshold, 'bigint', 'setMeterThreshold() threshold');
           meterSetThreshold(meterID, Nat(threshold));
           return returnFromInvoke(undefined);
         }
@@ -194,7 +194,7 @@ export function buildDevice(tools, endowments) {
         if (method === 'getMeter') {
           const args = unserialize(argsCapdata);
           const [meterID] = args;
-          assert.typeof(meterID, 'string', `getMeter() meterID`);
+          assert.typeof(meterID, 'string', 'getMeter() meterID');
           return returnFromInvoke(meterGet(meterID));
         }
 
@@ -204,7 +204,7 @@ export function buildDevice(tools, endowments) {
         if (method === 'createByBundle') {
           const res = syscall.callKernelHook('createByBundle', argsCapdata);
           const vatID = kunser(res);
-          assert.typeof(vatID, 'string', `createByBundle gave non-VatID`);
+          assert.typeof(vatID, 'string', 'createByBundle gave non-VatID');
           return returnFromInvoke(vatID);
         }
 
@@ -212,7 +212,7 @@ export function buildDevice(tools, endowments) {
         if (method === 'createByBundleID') {
           const res = syscall.callKernelHook('createByID', argsCapdata);
           const vatID = kunser(res);
-          assert.typeof(vatID, 'string', `createByID gave non-VatID`);
+          assert.typeof(vatID, 'string', 'createByID gave non-VatID');
           return returnFromInvoke(vatID);
         }
 
@@ -220,10 +220,10 @@ export function buildDevice(tools, endowments) {
         if (method === 'upgradeVat') {
           const args = kunser(argsCapdata);
           assert(Array.isArray(args), 'upgradeVat() args array');
-          assert.equal(args.length, 4, `upgradeVat() args length`);
+          assert.equal(args.length, 4, 'upgradeVat() args length');
           const [vatID, bundleID, _vatParameters, upgradeMessage] = args;
           insistVatID(vatID);
-          assert.typeof(bundleID, 'string', `upgradeVat() bundleID`);
+          assert.typeof(bundleID, 'string', 'upgradeVat() bundleID');
           assert.typeof(
             upgradeMessage,
             'string',
@@ -240,9 +240,9 @@ export function buildDevice(tools, endowments) {
         if (method === 'terminateWithFailure') {
           const args = kunser(argsCapdata);
           assert(Array.isArray(args), 'terminateWithFailure() args array');
-          assert.equal(args.length, 2, `terminateWithFailure() args length`);
+          assert.equal(args.length, 2, 'terminateWithFailure() args length');
           const [vatID, _reason] = args;
-          assert.typeof(vatID, 'string', `terminateWithFailure() vatID`);
+          assert.typeof(vatID, 'string', 'terminateWithFailure() vatID');
 
           syscall.callKernelHook('terminate', argsCapdata);
           return returnFromInvoke(undefined);
@@ -252,9 +252,9 @@ export function buildDevice(tools, endowments) {
         if (method === 'changeOptions') {
           const args = kunser(argsCapdata);
           assert(Array.isArray(args), 'changeOptions() args array');
-          assert.equal(args.length, 2, `changeOptions() args length`);
+          assert.equal(args.length, 2, 'changeOptions() args length');
           const [vatID, _reason] = args;
-          assert.typeof(vatID, 'string', `changeOptions() vatID`);
+          assert.typeof(vatID, 'string', 'changeOptions() vatID');
 
           syscall.callKernelHook('changeOptions', argsCapdata);
           return returnFromInvoke(undefined);
@@ -266,7 +266,7 @@ export function buildDevice(tools, endowments) {
         if (method === 'getBundleCap') {
           const args = unserialize(argsCapdata);
           const [bundleID] = args;
-          assert.typeof(bundleID, 'string', `getBundleCap() bundleID`);
+          assert.typeof(bundleID, 'string', 'getBundleCap() bundleID');
           assert(bundleIDRE.test(bundleID), 'getBundleCap() not a bundleID');
           return returnCapForBundleID(bundleID);
         }
@@ -274,7 +274,7 @@ export function buildDevice(tools, endowments) {
         if (method === 'getNamedBundleCap') {
           const args = unserialize(argsCapdata);
           const [name] = args;
-          assert.typeof(name, 'string', `getNamedBundleCap() name`);
+          assert.typeof(name, 'string', 'getNamedBundleCap() name');
           let bundleID;
           try {
             // this throws on a bad name, so make a better error
@@ -288,7 +288,7 @@ export function buildDevice(tools, endowments) {
         if (method === 'getBundleIDByName') {
           const args = unserialize(argsCapdata);
           const [name] = args;
-          assert.typeof(name, 'string', `getBundleIDByName() name`);
+          assert.typeof(name, 'string', 'getBundleIDByName() name');
           let bundleID;
           try {
             // this throws on a bad name, so make a better error

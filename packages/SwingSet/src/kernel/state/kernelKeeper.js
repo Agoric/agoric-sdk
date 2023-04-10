@@ -399,7 +399,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
   function addNamedBundleID(name, bundleID) {
     assert.typeof(bundleID, 'string');
-    assert(bundleIDRE.test(bundleID), `${bundleID} is not a bundleID`);
+    bundleIDRE.test(bundleID) || Fail`${bundleID} is not a bundleID`;
     kvStore.set(`namedBundleID.${name}`, bundleID);
   }
 
@@ -464,10 +464,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       assert.typeof(action, 'string', 'addGCActions given bad action');
       const [vatID, type, koid] = action.split(' ');
       insistVatID(vatID);
-      assert(
-        ['dropExport', 'retireExport', 'retireImport'].includes(type),
-        `bad GCAction ${action} (type='${type}')`,
-      );
+      ['dropExport', 'retireExport', 'retireImport'].includes(type) ||
+        Fail`bad GCAction ${action} (type='${type}')`;
       insistKernelType('object', koid);
       actions.add(action);
     }
@@ -504,26 +502,20 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getObjectRefCount(kernelSlot) {
     const data = kvStore.get(`${kernelSlot}.refCount`);
-    assert(data, `getObjectRefCount(${kernelSlot}) was missing`);
+    data || Fail`getObjectRefCount(${kernelSlot}) was missing`;
     const [reachable, recognizable] = commaSplit(data).map(Number);
-    assert(
-      reachable <= recognizable,
-      `refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`,
-    );
+    reachable <= recognizable ||
+      Fail`refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`;
     return { reachable, recognizable };
   }
 
   function setObjectRefCount(kernelSlot, { reachable, recognizable }) {
     assert.typeof(reachable, 'number');
     assert.typeof(recognizable, 'number');
-    assert(
-      reachable >= 0 && recognizable >= 0,
-      `${kernelSlot} underflow ${reachable},${recognizable}`,
-    );
-    assert(
-      reachable <= recognizable,
-      `refmismatch(set) ${kernelSlot} ${reachable},${recognizable}`,
-    );
+    (reachable >= 0 && recognizable >= 0) ||
+      Fail`${kernelSlot} underflow ${reachable},${recognizable}`;
+    reachable <= recognizable ||
+      Fail`refmismatch(set) ${kernelSlot} ${reachable},${recognizable}`;
     kvStore.set(`${kernelSlot}.refCount`, `${reachable},${recognizable}`);
   }
 
@@ -596,7 +588,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   function orphanKernelObject(kref, oldVat) {
     const ownerKey = `${kref}.owner`;
     const ownerVat = kvStore.get(ownerKey);
-    assert.equal(ownerVat, oldVat, `export ${kref} not owned by old vat`);
+    ownerVat === oldVat || Fail`export ${kref} not owned by old vat`;
     kvStore.delete(ownerKey);
     // note that we do not delete the object here: it will be
     // collected if/when all other references are dropped
@@ -831,7 +823,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     for (const k of enumeratePrefixedKeys(kvStore, importPrefix)) {
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
-      const kref = kvStore.get(k) || assert.fail('getNextKey ensures get');
+      const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
       const vref = k.slice(`${vatID}.c.`.length);
       vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
@@ -1078,7 +1070,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     assert.typeof(name, 'string');
     const k = `vat.name.${name}`;
     kvStore.has(k) || Fail`vat name ${name} must exist, but doesn't`;
-    return kvStore.get(k) || assert.fail('.has() ensures .get()');
+    return kvStore.get(k) || Fail`.has() ensures .get()`;
   }
 
   function allocateUnusedVatID() {
@@ -1097,7 +1089,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       names.push(name);
       kvStore.set('vat.names', JSON.stringify(names));
     }
-    return kvStore.get(k) || assert.fail('.has() ensures .get()');
+    return kvStore.get(k) || Fail`.has() ensures .get()`;
   }
 
   function addDynamicVatID(vatID) {
@@ -1112,7 +1104,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const result = [];
     for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
       const name = k.slice(9);
-      const vatID = kvStore.get(k) || assert.fail('getNextKey ensures get');
+      const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
       result.push([name, vatID]);
     }
     return result;
@@ -1122,7 +1114,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     const result = [];
     for (const k of enumeratePrefixedKeys(kvStore, 'device.name.')) {
       const name = k.slice(12);
-      const deviceID = kvStore.get(k) || assert.fail('getNextKey ensures get');
+      const deviceID = kvStore.get(k) || Fail`getNextKey ensures get`;
       result.push([name, deviceID]);
     }
     return result;
@@ -1173,10 +1165,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
   function incrementRefCount(kernelSlot, tag, options = {}) {
     const { isExport = false, onlyRecognizable = false } = options;
-    assert(
-      kernelSlot,
-      `incrementRefCount called with empty kernelSlot, tag=${tag}`,
-    );
+    kernelSlot ||
+      Fail`incrementRefCount called with empty kernelSlot, tag=${tag}`;
     const { type } = parseKernelSlot(kernelSlot);
     if (type === 'promise') {
       const refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`))) + 1n;
@@ -1210,10 +1200,8 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
   function decrementRefCount(kernelSlot, tag, options = {}) {
     const { isExport = false, onlyRecognizable = false } = options;
-    assert(
-      kernelSlot,
-      `decrementRefCount called with empty kernelSlot, tag=${tag}`,
-    );
+    kernelSlot ||
+      Fail`decrementRefCount called with empty kernelSlot, tag=${tag}`;
     const { type } = parseKernelSlot(kernelSlot);
     if (type === 'promise') {
       let refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`)));

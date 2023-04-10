@@ -4,7 +4,7 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -287,7 +287,7 @@ function build(
       for (const baseRef of deadBaseRefs) {
         const { virtual, durable, allocatedByVat, type } =
           parseVatSlot(baseRef);
-        assert(type === 'object', `unprepared to track ${type}`);
+        type === 'object' || Fail`unprepared to track ${type}`;
         if (virtual || durable) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
@@ -512,7 +512,7 @@ function build(
       initializeIDCounters();
     }
     const result = idCounters[name];
-    assert(result !== undefined, `unknown idCounters[${name}]`);
+    result !== undefined || Fail`unknown idCounters[${name}]`;
     idCounters[name] += 1;
     idCountersAreDirty = true;
     return result;
@@ -730,10 +730,8 @@ function build(
 
   function registerValue(baseRef, val, valIsCohort) {
     const { type, id, facet } = parseVatSlot(baseRef);
-    assert(
-      !facet,
-      `registerValue(${baseRef} should not receive individual facets`,
-    );
+    !facet ||
+      Fail`registerValue(${baseRef} should not receive individual facets`;
     slotToVal.set(baseRef, new WeakRef(val));
     if (valIsCohort) {
       vrm.getFacetNames(id).forEach((name, index) => {
@@ -1309,10 +1307,10 @@ function build(
     }
     const slot = valToSlot.get(presence);
     const { type, allocatedByVat } = parseVatSlot(slot);
-    assert.equal(type, 'object', X`attempt to disavow non-object ${presence}`);
+    type === 'object' || Fail`attempt to disavow non-object ${presence}`;
     // disavow() is only for imports: we'll use a different API to revoke
     // exports, one which accepts an Error object
-    assert.equal(allocatedByVat, false, X`attempt to disavow an export`);
+    !allocatedByVat || Fail`attempt to disavow an export`;
     valToSlot.delete(presence);
     slotToVal.delete(slot);
     disavowedPresences.add(presence);
@@ -1410,19 +1408,13 @@ function build(
       inescapableGlobalProperties,
     );
     const buildRootObject = vatNS.buildRootObject;
-    assert.typeof(
-      buildRootObject,
-      'function',
-      X`vat source bundle lacks buildRootObject() function`,
-    );
+    typeof buildRootObject === 'function' ||
+      Fail`vat source bundle lacks buildRootObject() function`;
 
     // here we finally invoke the vat code, and get back the root object
     const rootObject = await buildRootObject(vpow, vatParameters, baggage);
-    assert.equal(
-      passStyleOf(rootObject),
-      'remotable',
-      X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
-    );
+    passStyleOf(rootObject) === 'remotable' ||
+      Fail`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`;
     getInterfaceOf(rootObject) !== undefined ||
       Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
     if (valToSlot.has(rootObject)) {

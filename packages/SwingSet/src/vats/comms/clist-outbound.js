@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import {
   flipRemoteSlot,
@@ -18,17 +18,14 @@ export function makeOutbound(state) {
     const rref = mapToRemote(lref);
     rref || Fail`${lref} must already be in remote ${rname(remote)}`;
     if (parseRemoteSlot(rref).type === 'object') {
-      assert(isReachable(lref), `sending unreachable ${lref} to remote`);
+      isReachable(lref) || Fail`sending unreachable ${lref} to remote`;
     }
     return rref;
   }
 
   function addRemoteObjectForLocal(remote, loid) {
     const owner = state.getObject(loid);
-    assert(
-      owner !== remote,
-      `${loid} already came from remote ${rname(remote)}`,
-    );
+    owner !== remote || Fail`${loid} already came from remote ${rname(remote)}`;
 
     // The recipient will receive ro-NN
     const roid = remote.allocateRemoteObject();
@@ -96,7 +93,7 @@ export function makeOutbound(state) {
         const seqNum = remote.nextSendSeqNum();
         remote.setLastSent(lref, seqNum);
       }
-      assert(remote.isReachable(lref), `sending unreachable rref ${lref}`);
+      remote.isReachable(lref) || Fail`sending unreachable rref ${lref}`;
     }
 
     return rref;

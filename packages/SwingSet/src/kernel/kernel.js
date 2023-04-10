@@ -812,7 +812,7 @@ export default function buildKernel(
    * @returns {Promise<CrankResults>}
    */
   async function processUpgradeVat(message) {
-    assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
+    assert(vatAdminRootKref, 'initializeKernel did not set vatAdminRootKref');
     const { vatID, upgradeID, bundleID, vatParameters, upgradeMessage } =
       message;
     insistCapData(vatParameters);
@@ -1090,7 +1090,7 @@ export default function buildKernel(
         }
       }
       default:
-        assert.fail(`unknown promise resolution '${kp.state}'`);
+        throw Fail`unknown promise resolution '${kp.state}'`;
     }
   }
 
@@ -1745,7 +1745,7 @@ export default function buildKernel(
             break;
           }
           default:
-            assert.fail(`this can't happen (kernel option ${option})`);
+            Fail`this can't happen (kernel option ${option})`;
         }
       }
     } finally {
@@ -1827,7 +1827,7 @@ export default function buildKernel(
             policyOutput = policy.emptyCrank();
             break;
           default:
-            assert.fail(`unknown policyInput type in ${policyInput}`);
+            Fail`unknown policyInput type in ${policyInput}`;
         }
         if (!policyOutput) {
           // console.log(`ending c.run() by policy, count=${count}`);
@@ -1921,10 +1921,14 @@ export default function buildKernel(
 
   function addDeviceHook(deviceName, hookName, hook) {
     const deviceID = kernelKeeper.getDeviceIDForName(deviceName);
-    assert(deviceID, `no such device ${deviceName}`);
-    assert(deviceHooks.has(deviceID), `no such device ${deviceID}`);
+    if (!deviceID) {
+      throw Fail`no such device ${deviceName}`;
+    }
+    deviceHooks.has(deviceID) || Fail`no such device ${deviceID}`;
     const hooks = deviceHooks.get(deviceID);
-    assert(hooks, `no hooks for ${deviceName}`);
+    if (!hooks) {
+      throw Fail`no hooks for ${deviceName}`;
+    }
     hooks[hookName] = hook;
   }
 

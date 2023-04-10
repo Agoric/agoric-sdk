@@ -1,4 +1,4 @@
-import { assert, details as X } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { insistCapData } from './capdata.js';
 
 /**
@@ -25,11 +25,8 @@ import { insistCapData } from './capdata.js';
 export function insistMessage(message) {
   insistCapData(message.methargs);
   if (message.result) {
-    assert.typeof(
-      message.result,
-      'string',
-      X`message has non-string non-null .result ${message.result}`,
-    );
+    typeof message.result === 'string' ||
+      Fail`message has non-string non-null .result ${message.result}`;
   }
 }
 
@@ -89,7 +86,7 @@ export function insistVatDeliveryObject(vdo) {
       break;
     }
     default:
-      assert.fail(`unknown delivery type ${type}`);
+      Fail`unknown delivery type ${type}`;
   }
 }
 
@@ -111,7 +108,7 @@ export function insistVatDeliveryResult(vdr) {
       break;
     }
     default:
-      assert.fail(`unknown delivery result type ${type}`);
+      Fail`unknown delivery result type ${type}`;
   }
 }
 
@@ -192,7 +189,7 @@ export function insistVatSyscallObject(vso) {
       break;
     }
     default:
-      assert.fail(`unknown syscall type ${type}`);
+      Fail`unknown syscall type ${type}`;
   }
 }
 
@@ -214,6 +211,6 @@ export function insistVatSyscallResult(vsr) {
       break;
     }
     default:
-      assert.fail(`unknown syscall result type ${type}`);
+      Fail`unknown syscall result type ${type}`;
   }
 }

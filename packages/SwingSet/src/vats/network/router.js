@@ -1,6 +1,6 @@
 import { Far, E as defaultE } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
-import { assert, details as X } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { makeNetworkProtocol, ENDPOINT_SEPARATOR } from './network.js';
 
 import '@agoric/store/exported.js';
@@ -53,11 +53,8 @@ export default function makeRouter() {
       prefixToRoute.init(prefix, route);
     },
     unregister(prefix, route) {
-      assert(
-        prefixToRoute.get(prefix) === route,
-        X`Router is not registered at prefix ${prefix}`,
-        TypeError,
-      );
+      prefixToRoute.get(prefix) === route ||
+        Fail`Router is not registered at prefix ${prefix}`;
       prefixToRoute.delete(prefix);
     },
   });
@@ -96,11 +93,8 @@ export function makeRouterProtocol(E = defaultE) {
   // Needs to account for multiple paths.
   function unregisterProtocolHandler(prefix, protocolHandler) {
     const ph = protocolHandlers.get(prefix);
-    assert(
-      ph === protocolHandler,
-      X`Protocol handler is not registered at prefix ${prefix}`,
-      TypeError,
-    );
+    ph === protocolHandler ||
+      Fail`Protocol handler is not registered at prefix ${prefix}`;
     router.unregister(prefix, ph);
     protocols.delete(prefix);
     protocolHandlers.delete(prefix);
@@ -109,11 +103,7 @@ export function makeRouterProtocol(E = defaultE) {
   /** @type {Protocol['bind']} */
   async function bind(localAddr) {
     const [route] = router.getRoutes(localAddr);
-    assert(
-      route !== undefined,
-      X`No registered router for ${localAddr}`,
-      TypeError,
-    );
+    route !== undefined || Fail`No registered router for ${localAddr}`;
     return E(route[1]).bind(localAddr);
   }
 

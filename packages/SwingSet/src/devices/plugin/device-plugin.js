@@ -1,6 +1,6 @@
 import { makeCapTP } from '@endo/captp';
 import { Far } from '@endo/far';
-import { assert, details as X, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 
 export function buildRootDeviceNode(tools) {
   const { SO, getDeviceState, setDeviceState, endowments } = tools;
@@ -115,7 +115,7 @@ export function buildRootDeviceNode(tools) {
   function send(index, obj) {
     const mod = connectedMods[index];
     // console.info('send', index, obj, mod);
-    assert(mod, X`No module associated with ${index}`, TypeError);
+    mod || Fail`No module associated with ${index}`;
     if (!senderPs[index]) {
       // Lazily create a fresh sender.
       connect(mod, index);
