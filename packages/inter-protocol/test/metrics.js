@@ -38,7 +38,17 @@ export const subscriptionTracker = async (t, subscription) => {
     notif = await metrics.getUpdateSince(notif.updateCount);
     t.deepEqual(notif.value, expectedState, 'Unexpected state');
   };
-  return { assertChange, assertInitial, assertState, getLastNotif };
+  const assertNoUpdate = async () => {
+    const sameUpdate = await metrics.getUpdateSince();
+    t.is(sameUpdate.updateCount, notif.updateCount);
+  };
+  return {
+    assertChange,
+    assertInitial,
+    assertState,
+    getLastNotif,
+    assertNoUpdate,
+  };
 };
 
 /**
