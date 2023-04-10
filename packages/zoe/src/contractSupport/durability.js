@@ -1,12 +1,9 @@
 import { allValues, objectMap } from '@agoric/internal';
-import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import {
   makeScalarBigMapStore,
   provide,
-  provideDurableMapStore,
   provideDurableSetStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
@@ -38,23 +35,6 @@ export const makeEphemeraProvider = init => {
   };
 };
 harden(makeEphemeraProvider);
-
-/**
- * @deprecated use Recorder getStoragePath() which memoizes
- *
- * @param {import('@agoric/vat-data').Baggage} baggage
- */
-export const makeStorageNodePathProvider = baggage => {
-  /** @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<StorageNode, string>} */
-  const nodePaths = makeAtomicProvider(
-    provideDurableMapStore(baggage, 'storage node paths'),
-  );
-  /** @param {ERef<StorageNode>} nodeP */
-  return async nodeP => {
-    const node = await nodeP;
-    return nodePaths.provideAsync(node, n => E(n).getPath());
-  };
-};
 
 /**
  * Provide an empty ZCF seat.
