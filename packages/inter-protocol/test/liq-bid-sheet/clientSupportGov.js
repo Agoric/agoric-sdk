@@ -44,13 +44,20 @@ const testFGR = async () => {
   console.log(actual)
 }
 
-const encodeGovParamEntry = brand => ([name, type, value]) => {
+const encodeGovParamEntry = agoricNames => ([name, type, value]) => {
   switch (type) {
     case 'percent': {
+      const brand = agoricNames.brand;
       // round to basis point
       const numerator = { brand: brand.IST, value: BigInt(Math.round(value * 100 * 100)) };
       const denominator = { brand: brand.IST, value: BigInt(100) * BigInt(100) };
       return [name, { numerator, denominator}];
+    }
+    case 'sec': {
+      // RelativeTime
+      const timerBrand = agoricNames.brand.timer;
+      if (!timerBrand) throw Error('no timer brand???')
+      return [name, { relValue: BigInt(value), timerBrand }]
     }
     default:
       throw Error(`not impl: ${type}`);
@@ -58,7 +65,7 @@ const encodeGovParamEntry = brand => ([name, type, value]) => {
 }
 const makeParamChangeAction = (rows, opts, agoricNames) => {
   console.log({ rows, opts });
-  const params = Object.fromEntries(rows.map(encodeGovParamEntry(agoricNames.brand)));
+  const params = Object.fromEntries(rows.map(encodeGovParamEntry(agoricNames)));
   const instance = agoricNames.instance[opts.instanceName];
   const key = opts.collateralBrandKey
     ? ({ collateralBrand: agoricNames.brand[opts.collateralBrandKey] })
@@ -99,8 +106,8 @@ const ParamChangeAction = async (paramRows, optRows) => {
 const testPCO = async () => {
   console.warn('AMBIENT: SpreadsheetApp')
   const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const params = doc.getRangeByName('Gov: Propose!B9:D9').getValues();
-  const opts = doc.getRange('Gov: Propose!A2:B7').getValues();
+  const params = doc.getRangeByName('Gov: Propose!B3:D3').getValues();
+  const opts = doc.getRange('Gov: Propose!A18:B22').getValues();
 /*
   const params = [['LiquidationPadding', 'percent', 0.2]];
   const opts = Object.entries({
