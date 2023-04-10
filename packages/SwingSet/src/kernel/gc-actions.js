@@ -2,24 +2,33 @@ import { Fail } from '@agoric/assert';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
-const { ownKeys } = Reflect;
+/**
+ * @typedef {'dropExport'  | 'retireExport'  | 'retireImport'}  GCActionType
+ * @typedef {'dropExports' | 'retireExports' | 'retireImports'} GCQueueEventType
+ */
 
 /**
- * A descending-priority mapping of GC action type to queue event type.
+ * The list of GC action types by descending priority.
  *
- * @enum {string}
+ * @type {GCActionType[]}
  */
-const typePriority = {
-  dropExport: 'dropExports',
-  retireExport: 'retireExports',
-  retireImport: 'retireImports',
-};
-Object.setPrototypeOf(typePriority, null);
+const actionTypePriorities = ['dropExport', 'retireExport', 'retireImport'];
+
+/**
+ * A mapping of GC action type to queue event type.
+ *
+ * @type {Map<GCActionType, GCQueueEventType>}
+ */
+const queueTypeFromActionType = new Map([
+  ['dropExport', 'dropExports'],
+  ['retireExport', 'retireExports'],
+  ['retireImport', 'retireImports'],
+]);
 
 function parseAction(s) {
   const [vatID, type, kref] = s.split(' ');
   insistVatID(vatID);
-  type in typePriority || Fail`unknown type ${type}`;
+  queueTypeFromActionType.has(type) || Fail`unknown type ${type}`;
   insistKernelType('object', kref);
   return { vatID, type, kref };
 }
@@ -130,7 +139,7 @@ export function processGCActionSet(kernelKeeper) {
   for (const vatID of vatIDs) {
     const forVat = grouped.get(vatID);
     // find the highest-priority type of work to do within this vat
-    for (const type of ownKeys(typePriority)) {
+    for (const type of actionTypePriorities) {
       if (forVat.has(type)) {
         const actions = forVat.get(type);
         const krefs = filterActions(vatID, actions);
@@ -139,7 +148,10 @@ export function processGCActionSet(kernelKeeper) {
           krefs.sort();
           // remove the work we're about to do from the durable set
           kernelKeeper.setGCActions(allActionsSet);
-          return harden({ type: typePriority[type], vatID, krefs });
+          const queueType = /** @type {GCQueueEventType} */ (
+            queueTypeFromActionType.get(type)
+          );
+          return harden({ type: queueType, vatID, krefs });
         }
       }
     }
