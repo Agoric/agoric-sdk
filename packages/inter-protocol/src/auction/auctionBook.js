@@ -308,6 +308,11 @@ export const prepareAuctionBook = (baggage, zcf) => {
             remainingProceedsGoal,
           });
 
+          const { Collateral } = seat.getProposal().want;
+          if (Collateral && AmountMath.isGTE(Collateral, collateralTarget)) {
+            seat.exit('unable to satisfy want');
+          }
+
           atomicRearrange(
             zcf,
             harden([
