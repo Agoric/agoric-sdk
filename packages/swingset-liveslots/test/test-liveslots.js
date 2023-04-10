@@ -428,6 +428,7 @@ test('liveslots vs symbols', async t => {
     });
   }
   const { dispatch } = await makeDispatch(syscall, build);
+
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const target = 'o-1';

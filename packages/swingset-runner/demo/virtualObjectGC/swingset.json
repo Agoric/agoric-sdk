@@ -5,10 +5,7 @@
       "sourceSpec": "bootstrap.js"
     },
     "bob": {
-      "sourceSpec": "vat-bob.js",
-      "creationOptions": {
-        "virtualObjectCacheSize": 0
-      }
+      "sourceSpec": "vat-bob.js"
     }
   }
 }

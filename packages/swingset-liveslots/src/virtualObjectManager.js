@@ -1078,6 +1078,9 @@ export function makeVirtualObjectManager(
 
   const testHooks = {
     countWeakKeysForCollection,
+
+    definedDurableKinds,
+    nextInstanceIDs,
   };
 
   const flushStateCache = () => {
@@ -1085,6 +1088,13 @@ export function makeVirtualObjectManager(
       cache.flush();
     }
   };
+
+  function getRetentionStats() {
+    return {
+      definedDurableKinds: definedDurableKinds.size,
+      nextInstanceIDs: nextInstanceIDs.size,
+    };
+  }
 
   return harden({
     initializeKindHandleKind,
@@ -1097,6 +1107,7 @@ export function makeVirtualObjectManager(
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushStateCache,
+    getRetentionStats,
     testHooks,
     canBeDurable,
   });

@@ -5,7 +5,12 @@ import { Far } from '@endo/marshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { kslot, kser } from './kmarshal.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeMessage, makeStartVat, makeBringOutYourDead } from './util.js';
+import {
+  makeMessage,
+  makeStartVat,
+  makeBringOutYourDead,
+  makeResolve,
+} from './util.js';
 import { makeMockGC } from './mock-gc.js';
 
 test('dropImports', async t => {
@@ -31,7 +36,8 @@ test('dropImports', async t => {
   const ls = makeLiveSlots(syscall, 'vatA', {}, {}, gcTools, undefined, () => ({
     buildRootObject: build,
   }));
-  const { dispatch, possiblyDeadSet } = ls;
+  const { dispatch, testHooks } = ls;
+  const { possiblyDeadSet } = testHooks;
   await dispatch(makeStartVat(kser()));
   const allFRs = gcTools.getAllFRs();
   t.is(allFRs.length, 2);
@@ -45,6 +51,7 @@ test('dropImports', async t => {
   // "COLLECTED" state
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
+
   FR.runOneCallback(); // moves to FINALIZED
   t.deepEqual(possiblyDeadSet, new Set(['o-1']));
   possiblyDeadSet.delete('o-1'); // pretend liveslots did syscall.dropImport
@@ -54,6 +61,7 @@ test('dropImports', async t => {
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
   await dispatch(makeMessage(rootA, 'free', []));
+
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 1);
   FR.runOneCallback(); // moves to FINALIZED
@@ -146,4 +154,66 @@ test('dropImports', async t => {
   // back to REACHABLE, removed from possiblyDeadSet
   t.deepEqual(possiblyDeadSet, new Set());
   t.is(FR.countCallbacks(), 0);
+});
+
+test('retention counters', async t => {
+  const { syscall } = buildSyscall();
+  let held;
+  const gcTools = makeMockGC();
+
+  function buildRootObject(_vatPowers) {
+    const root = Far('root', {
+      hold(imp) {
+        held = imp;
+      },
+      exportRemotable() {
+        return Far('exported', {});
+      },
+    });
+    return root;
+  }
+
+  const makeNS = () => ({ buildRootObject });
+  const ls = makeLiveSlots(syscall, 'vatA', {}, {}, gcTools, undefined, makeNS);
+  const { dispatch, testHooks } = ls;
+  const { getRetentionStats } = testHooks;
+
+  const rootA = 'o+0';
+  const presenceVref = 'o-1';
+  const promiseVref = 'p-1';
+  const resultVref = 'p-2';
+
+  await dispatch(makeStartVat(kser()));
+  const count1 = await dispatch(makeBringOutYourDead());
+  t.deepEqual(count1, getRetentionStats());
+  t.is(count1.importedVPIDs, 0);
+  t.is(count1.exportedRemotables, 1);
+  t.is(count1.kernelRecognizableRemotables, 1);
+
+  await dispatch(makeMessage(rootA, 'hold', [kslot(presenceVref)]));
+  t.truthy(held);
+
+  const count2 = await dispatch(makeBringOutYourDead());
+  t.is(count2.slotToVal, count1.slotToVal + 1);
+
+  gcTools.kill(held);
+  gcTools.flushAllFRs();
+  const count3 = await dispatch(makeBringOutYourDead());
+  t.is(count3.slotToVal, count2.slotToVal - 1);
+
+  await dispatch(makeMessage(rootA, 'hold', [kslot(promiseVref)]));
+  const count4 = await dispatch(makeBringOutYourDead());
+  t.is(count4.slotToVal, count3.slotToVal + 1);
+  t.is(count4.importedVPIDs, 1);
+
+  await dispatch(makeResolve(promiseVref, kser(undefined)));
+  const count5 = await dispatch(makeBringOutYourDead());
+  t.is(count5.slotToVal, count4.slotToVal - 1);
+  t.is(count5.importedVPIDs, 0);
+
+  await dispatch(makeMessage(rootA, 'exportRemotable', [], resultVref));
+  const count6 = await dispatch(makeBringOutYourDead());
+  t.is(count6.exportedRemotables, 2);
+  t.is(count6.kernelRecognizableRemotables, 2);
+  t.is(count6.slotToVal, count5.slotToVal + 1);
 });

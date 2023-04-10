@@ -1340,12 +1340,39 @@ function build(
     WeakSet: vom.VirtualObjectAwareWeakSet,
   });
 
+  function getRetentionStats() {
+    return {
+      ...collectionManager.getRetentionStats(),
+      ...vrm.getRetentionStats(),
+      ...vom.getRetentionStats(),
+      exportedRemotables: exportedRemotables.size,
+      importedDevices: importedDevices.size,
+      kernelRecognizableRemotables: kernelRecognizableRemotables.size,
+      exportedVPIDs: exportedVPIDs.size,
+      importedVPIDs: importedVPIDs.size,
+      possiblyDeadSet: possiblyDeadSet.size,
+      possiblyRetiredSet: possiblyRetiredSet.size,
+      slotToVal: slotToVal.size,
+    };
+  }
+
   const testHooks = harden({
     ...vom.testHooks,
     ...vrm.testHooks,
     ...collectionManager.testHooks,
     setSyscallCapdataLimits,
     vatGlobals,
+
+    getRetentionStats,
+    exportedRemotables,
+    importedDevices,
+    kernelRecognizableRemotables,
+    exportedVPIDs,
+    importedVPIDs,
+    possiblyDeadSet,
+    possiblyRetiredSet,
+    slotToVal,
+    valToSlot,
   });
 
   function setVatOption(option, _value) {
@@ -1492,6 +1519,8 @@ function build(
     await scanForDeadObjects();
     // now flush all the vatstore changes (deletions) we made
     vom.flushStateCache();
+    // XXX TODO: make this conditional on a config setting
+    return getRetentionStats();
   }
 
   /**
@@ -1586,7 +1615,6 @@ function build(
   return harden({
     dispatch,
     m,
-    possiblyDeadSet,
     testHooks,
   });
 }
