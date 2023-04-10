@@ -7,7 +7,7 @@
 
 /**
  * @callback BuildRootObjectForTestVat
- * @param {VatPowers & {testLog: (msg: any)=> void}} vatPowers
+ * @param {VatPowers & {testLog: (...args: unknown[]) => void}} vatPowers
  * @param {Record<string, unknown> & {argv: string[]}} vatParameters
  * @returns {unknown}
  */

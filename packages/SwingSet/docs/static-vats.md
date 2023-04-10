@@ -8,11 +8,13 @@ This document describes how you define and configure the static vats.
 
 ## Creating a Static Vat
 
+**TODO: Should this move into the SwingSet README and be replaced with a link to there?**
+
 The source code for all static vats must be available at the time the host application starts up. This source code, and its dependencies, must not change for the lifetime of the SwingSet machine (which, through persistence and the kernel state database, extends beyond a single process). Applications are encouraged to copy the static vat sources into a working directory during some sort of "init" step, where they'll remain untouched by normal development work on the original files. But note that this won't protect against changes in dependencies.
 
-Static vats are defined by a JS module file which exports a function named `buildRootObject`. The file may export other names; these are currently ignored. The module can import other modules, as long as they are pure JS (no native modules or binary libraries), and they are compatible with SES. See `vat-environment.md` for details of the kind of JS you can use. The static vat file will be scanned for its imports, and the entire dependency graph will be merged into a single "source bundle" object when the kernel first launches.
+Static vats are defined by a JS module file which exports a function named `buildRootObject` to be called by "liveslots", a layer which provides vats with an object-capability environment. The file may export other names; these are currently ignored. The module can import other modules, as long as they are pure JS (no native modules or binary libraries) and are compatible with SES. See [vat-environment.md](./vat-environment.md) for details of the kind of JS you can use. The static vat file will be scanned for its imports, and the entire dependency graph will be merged into a single "source bundle" object when the kernel first launches.
 
-The `buildRootObject` function will be called with one object, named `vatPowers`. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports, and vat-specific authorities that are not easy to express through syscalls. See below for the current property list.
+Liveslots will call the `buildRootObject` function with one argument: a `vatPowers` object. The contents of `vatPowers` are subject to change, but in general it provides pure functions which are inconvenient to access as imports, and vat-specific authorities that are not easy to express through syscalls. See [below](#vatpowers) for the current property list.
 
 `buildRootObject` must return a hardened "ephemeral" object, as documented in [swingset-liveslots](https://github.com/Agoric/agoric-sdk/blob/master/packages/swingset-liveslots/docs/liveslots.md#buildrootobject). A common way to do this is with the `Far` function:
 
@@ -44,22 +46,46 @@ The *bootstrap function* is the method named `bootstrap` on a special *bootstrap
 
 ### Legacy setup() Function
 
-More generally, vats are defined in terms of a `syscall` object (for the vat to send instructions into the kernel), and a `dispatch` object (for the kernel to send messages into the vat). Vats can provide a `setup()` function which is given a `syscall`, among other things, and are expected to return a `dispatch`. Vats defined this way are not obligated to provide object-capability security within the vat. For example, `syscall.send()` can be used to send a message to any remote object that has ever been granted to anything within the vat. If everything within the vat can reach `syscall`, then every object within the vat is as powerful as any other, and there is no partitioning of authority within the vat.
+More generally, vats are defined in terms of a `syscall` object (for the vat to send instructions into the kernel), and a `dispatch` object (for the kernel to send messages into the vat). As a legacy low-level alternative to exporting a `buildRootObject` function for liveslots, vats can `export default` a `setup` function which is given a `syscall` object and the `vatPowers` object and must return a `dispatch` object. Vats defined this way are not obligated to provide object-capability security within the vat. For example, code within the vat that has access to `syscall` can use it to send a message to a remote object that is known only to _other_ code within the vat.
 
-Most vats use "liveslots", a layer which provides an object-capability environment within a vat. Liveslots is a library which provides a `makeLiveslots()` function. Vats which use liveslots will export a `setup()` function which calls `makeLiveslots()` internally. These vats tend to have boilerplate like this:
+Such vats can still use liveslots with a bit of boilerplate:
 
 ```js
-export default function setup(syscall, state, helpers, vatPowers0) {
-  return helpers.makeLiveSlots(syscall, state,
-                               (E, D, vatPowers) => buildRootObject(vatPowers),
-                               helpers.vatID,
-                               vatPowers0);
+import { makeSimpleMeterControl } from '@agoric/swingset-vat';
+import { makeLiveSlots } from '@agoric/swingset-liveslots';
+
+function buildRootObject(vatPowers, vatParameters, baggage) {
+  // ...
+}
+
+export default function setup(syscall, state, helpers, vatPowers) {
+  const vatID = 'unknown';
+  const options = {};
+  const gcTools = harden({
+    WeakRef,
+    FinalizationRegistry,
+    waitUntilQuiescent: () =>
+      new Promise(resolve => setImmediate(() => resolve())),
+    gcAndFinalize: () => {},
+    meterControl: makeSimpleMeterControl(),
+  });
+  const buildVatNamespace = () => ({ buildRootObject });
+
+  return makeLiveSlots(
+    syscall,
+    vatID,
+    vatPowers,
+    options,
+    gcTools,
+    console,
+    buildVatNamespace,
+  );
 }
 ```
 
-These vats are still supported, for now. Any vat source file which exports `buildRootObject()` will automatically use liveslots. If the file does *not* export `buildRootObject()`, it is expected to export a `default` function that behaves like the `setup()` described above.
+These vats are still supported, for now. Any vat source file which exports `buildRootObject` will automatically use liveslots. If the file does *not* export `buildRootObject`, it is expected to `export default` a function that behaves like the `setup` described above.
 
-A few vats do not use liveslots. The main one is the "comms vat", which performs low-level mapping of kernel-sourced messages into strings that are sent off-machine to other swingsets. This mapping would be rather inefficient if it went through the serialization/deserialization layers that liveslots provides to normal vats. The comms vat will eventually be loaded with some special configuration flag to mark it as non-liveslots, rather than retaining the `default`/`setup()` fallback.
+A few vats do not use liveslots. The main one is the "comms vat", which performs low-level mapping of kernel-sourced messages into strings that are sent off-machine to other swingsets. This mapping would be rather inefficient if it went through the serialization/deserialization layers that liveslots provides to normal vats. The comms vat will eventually be loaded with some special configuration flag to mark it as non-liveslots, at which point we can drop the `export default` fallback.
 
 ## VatPowers
 

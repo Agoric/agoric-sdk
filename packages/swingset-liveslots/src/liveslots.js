@@ -19,25 +19,46 @@ import { makeWatchedPromiseManager } from './watchedPromises.js';
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
 
-// 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
+// 'makeLiveSlots' returns a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
 // beyond the runtime of the javascript environment, so this mechanism is not
 // going to work for our in-chain hosts.
+
+/**
+ * @typedef {string} Vref
+ *
+ * @typedef {{WeakMap: typeof WeakMap, WeakSet: typeof WeakSet}} WeakConstructors
+ *
+ * @callback BuildRootObject
+ * @param {*} [vatPowers]
+ * @param {*} [vatParameters]
+ * @param {import('@agoric/vat-data').Baggage} [baggage]
+ * @returns {object | Promise<object>}
+ *
+ * @callback BuildVatNamespace
+ * @param {{VatData: import('@agoric/vat-data').VatData}} [vatGlobals]
+ * @param {WeakConstructors} [inescapableGlobalProperties]
+ * @returns {{buildRootObject: BuildRootObject}}
+ */
 
 /**
  * Instantiate the liveslots layer for a new vat and then populate the vat with
  * a new root object and its initial associated object graph, if any.
  *
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
- * @param {*} forVatID  Vat ID label, for use in debug diagnostics
+ * @param {string} forVatID  Vat ID label, for use in debug diagnostics
  * @param {*} vatPowers
  * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
- *                      meterControl }
+ * @param {import('./types').GcTools} gcTools
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} console
- * @param {*} buildVatNamespace
+ * @param {BuildVatNamespace} buildVatNamespace
  *
- * @returns {*} { dispatch }
+ * @returns {{
+ *   dispatch: import('./types').VatDeliveryProcessor,
+ *   m: ReturnType<typeof import('@endo/marshal').makeMarshal>,
+ *   possiblyDeadSet: Set<Vref>,
+ *   testHooks: object,
+ * }}
  */
 function build(
   syscall,
@@ -806,15 +827,15 @@ function build(
     return result;
   }
 
-  function revivePromise(slot) {
+  function revivePromise(vpid) {
     meterControl.assertNotMetered();
-    const { type } = parseVatSlot(slot);
-    type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
-    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
-    const pRec = makePipelinablePromise(slot);
-    importedVPIDs.set(slot, pRec);
+    const { type } = parseVatSlot(vpid);
+    type === 'promise' || Fail`revivePromise called on non-promise ${vpid}`;
+    !getValForSlot(vpid) || Fail`revivePromise called on pre-existing ${vpid}`;
+    const pRec = makePipelinablePromise(vpid);
+    importedVPIDs.set(vpid, pRec);
     const p = pRec.promise;
-    registerValue(slot, p);
+    registerValue(vpid, p);
     return p;
   }
   const unmeteredRevivePromise = meterControl.unmetered(revivePromise);
@@ -1572,11 +1593,11 @@ function build(
       // only after userspace is idle).
       return gcTools.waitUntilQuiescent().then(() => {
         afterDispatchActions();
-        // eslint-disable-next-line prefer-promise-reject-errors
-        return complete ? p : Promise.reject('buildRootObject unresolved');
         // the only delivery that pays attention to a user-provided
         // Promise is startVat, so the error message is specialized to
         // the only user problem that could cause complete===false
+        // eslint-disable-next-line prefer-promise-reject-errors
+        return complete ? p : Promise.reject('buildRootObject unresolved');
       });
     }
   }
@@ -1599,17 +1620,24 @@ function build(
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
  * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
- * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
+ * @param {import('./types').GcTools} gcTools
  * @param {Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>} [liveSlotsConsole]
- * @param {*} [buildVatNamespace]
+ * @param {*} [buildVatNamespace] TODO: make required and move before console
  *
- * @returns {*} { dispatch }
+ * @returns {{
+ *   dispatch: import('./types').VatDeliveryProcessor,
+ *   possiblyDeadSet: Set<Vref>,
+ *   testHooks: object,
+ * }}
  *
- * setBuildRootObject should be called, once, with a function that will
- * create a root object for the new vat The caller provided buildRootObject
- * function produces and returns the new vat's root object:
- *
- * buildRootObject(vatPowers, vatParameters)
+ * When the returned `dispatch` function receives a 'startVat' delivery (which
+ * must only happen once and must precede any 'message' or 'notify' delivery),
+ * it will invoke the provided `buildVatNamespace` function to get an object
+ * from which it can extract a `buildRootObject` function and use that to
+ * create a root object for the new vat with an invocation like
+ * ```js
+ * const rootObject = await buildRootObject(vatPowers, vatParameters, baggage);
+ * ```
  *
  * Within the vat, `import { E } from '@endo/eventual-send'` will
  * provide the E wrapper. For any object x, E(x) returns a proxy object
@@ -1643,7 +1671,7 @@ export function makeLiveSlots(
     liveSlotsOptions,
     gcTools,
     liveSlotsConsole,
-    buildVatNamespace,
+    /** @type {BuildVatNamespace} */ (buildVatNamespace),
   );
   const { dispatch, possiblyDeadSet, testHooks } = r; // omit 'm'
   return harden({
@@ -1655,7 +1683,17 @@ export function makeLiveSlots(
 
 // for tests
 export function makeMarshaller(syscall, gcTools, vatID = 'forVatID') {
-  // @ts-expect-error missing buildVatNamespace param
-  const { m } = build(syscall, vatID, {}, {}, gcTools, console);
+  const vatPowers = {};
+  const options = {};
+  const buildRootObject = () => Fail`Unexpected attempt to build vat`;
+  const { m } = build(
+    syscall,
+    vatID,
+    vatPowers,
+    options,
+    gcTools,
+    console,
+    () => ({ buildRootObject }),
+  );
   return { m };
 }
