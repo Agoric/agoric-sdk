@@ -10,15 +10,13 @@ import {
 import { makeTypeGuards } from '@agoric/internal';
 import {
   observeNotifier,
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
 import { M, mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
-import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
+import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
@@ -140,8 +138,8 @@ const { StorageNodeShape } = makeTypeGuards(M);
  *   offerToPublicSubscriberPaths: MapStore<string, Record<string, string>>,
  *   offerToUsedInvitation: MapStore<string, Amount>,
  *   purseBalances: MapStore<RemotePurse, Amount>,
- *   updatePublishKit: PublishKit<UpdateRecord>,
- *   currentPublishKit: PublishKit<CurrentWalletRecord>,
+ *   updateRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>,
+ *   currentRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>,
  *   liveOffers: MapStore<import('./offers.js').OfferId, import('./offers.js').OfferStatus>,
  *   liveOfferSeats: WeakMapStore<import('./offers.js').OfferId, UserSeat<unknown>>,
  * }>} ImmutableState
@@ -169,12 +167,7 @@ export const prepareSmartWallet = (baggage, shared) => {
     }),
   );
 
-  const makeWalletPublishKit = prepareDurablePublishKit(
-    baggage,
-    'Smart Wallet publish kit',
-  );
-
-  const memoizedPath = makeStorageNodePathProvider(baggage);
+  const makeRecorderKit = prepareRecorderKit(baggage, shared.publicMarshaller);
 
   /**
    *
@@ -223,36 +216,19 @@ export const prepareSmartWallet = (baggage, shared) => {
       ),
     };
 
-    /** @type {PublishKit<UpdateRecord>} */
-    const updatePublishKit = makeWalletPublishKit();
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<UpdateRecord>} */
+    const updateRecorderKit = makeRecorderKit(unique.walletStorageNode);
     // NB: state size must not grow monotonically
     // This is the node that UIs subscribe to for everything they need.
     // e.g. agoric follow :published.wallet.agoric1nqxg4pye30n3trct0hf7dclcwfxz8au84hr3ht
-    /** @type {PublishKit<CurrentWalletRecord>} */
-    const currentPublishKit = makeWalletPublishKit();
-
-    const { currentStorageNode, walletStorageNode } = unique;
-
-    // Start the publishing loops
-    pipeTopicToStorage(
-      updatePublishKit.subscriber,
-      walletStorageNode,
-      shared.publicMarshaller,
-    );
-    pipeTopicToStorage(
-      currentPublishKit.subscriber,
-      currentStorageNode,
-      shared.publicMarshaller,
-    );
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<CurrentWalletRecord>} */
+    const currentRecorderKit = makeRecorderKit(unique.currentStorageNode);
 
     const nonpreciousState = {
       // What purses have reported on construction and by getCurrentAmountNotifier updates.
       purseBalances: makeScalarBigMapStore('purse balances', { durable: true }),
-      /** @type {PublishKit<UpdateRecord>} */
-      updatePublishKit,
-      /** @type {PublishKit<CurrentWalletRecord>} */
-      currentPublishKit,
-      walletStorageNode,
+      updateRecorderKit,
+      currentRecorderKit,
       liveOffers: makeScalarBigMapStore('live offers', { durable: true }),
       // Keep seats separate from the offers because we don't want to publish these.
       liveOfferSeats: makeScalarBigMapStore('live offer seats', {
@@ -309,13 +285,13 @@ export const prepareSmartWallet = (baggage, shared) => {
          * @param {Amount<any>} balance
          */
         updateBalance(purse, balance) {
-          const { purseBalances, updatePublishKit } = this.state;
+          const { purseBalances, updateRecorderKit } = this.state;
           if (purseBalances.has(purse)) {
             purseBalances.set(purse, balance);
           } else {
             purseBalances.init(purse, balance);
           }
-          updatePublishKit.publisher.publish({
+          updateRecorderKit.recorder.write({
             updated: 'balance',
             currentAmount: balance,
           });
@@ -325,13 +301,13 @@ export const prepareSmartWallet = (baggage, shared) => {
 
         publishCurrentState() {
           const {
-            currentPublishKit,
+            currentRecorderKit,
             offerToUsedInvitation,
             offerToPublicSubscriberPaths,
             purseBalances,
             liveOffers,
           } = this.state;
-          currentPublishKit.publisher.publish({
+          currentRecorderKit.recorder.write({
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
               balance: a,
@@ -422,7 +398,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             offerToInvitationMakers,
             offerToUsedInvitation,
             offerToPublicSubscriberPaths,
-            updatePublishKit,
+            updateRecorderKit,
           } = this.state;
           const { invitationBrand, zoe, invitationIssuer, registry } = shared;
 
@@ -462,7 +438,7 @@ export const prepareSmartWallet = (baggage, shared) => {
             onStatusChange: offerStatus => {
               logger.info('offerStatus', offerStatus);
 
-              updatePublishKit.publisher.publish({
+              updateRecorderKit.recorder.write({
                 updated: 'offerStatus',
                 status: offerStatus,
               });
@@ -530,9 +506,9 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           /** @param {Error} err */
           const recordError = err => {
-            const { address, updatePublishKit } = this.state;
+            const { address, updateRecorderKit } = this.state;
             console.error('wallet', address, 'handleBridgeAction error:', err);
-            updatePublishKit.publisher.publish({
+            updateRecorderKit.recorder.write({
               updated: 'walletAction',
               status: { error: err.message },
             });
@@ -576,29 +552,24 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
         /** @deprecated use getPublicTopics */
         getCurrentSubscriber() {
-          return this.state.currentPublishKit.subscriber;
+          return this.state.currentRecorderKit.subscriber;
         },
         /** @deprecated use getPublicTopics */
         getUpdatesSubscriber() {
-          return this.state.updatePublishKit.subscriber;
+          return this.state.updateRecorderKit.subscriber;
         },
         getPublicTopics() {
-          const {
-            currentPublishKit,
-            currentStorageNode,
-            updatePublishKit,
-            walletStorageNode,
-          } = this.state;
+          const { currentRecorderKit, updateRecorderKit } = this.state;
           return harden({
             current: {
               description: 'Current state of wallet',
-              subscriber: currentPublishKit.subscriber,
-              storagePath: memoizedPath(currentStorageNode),
+              subscriber: currentRecorderKit.subscriber,
+              storagePath: currentRecorderKit.recorder.getStoragePath(),
             },
             updates: {
               description: 'Changes to wallet',
-              subscriber: updatePublishKit.subscriber,
-              storagePath: memoizedPath(walletStorageNode),
+              subscriber: updateRecorderKit.subscriber,
+              storagePath: updateRecorderKit.recorder.getStoragePath(),
             },
           });
         },
