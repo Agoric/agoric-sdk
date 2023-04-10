@@ -22,6 +22,11 @@ import {
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import {
+  pipeTopicToStorage,
+  prepareDurablePublishKit,
+  makePublicTopic,
+} from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeBidSpecShape, prepareAuctionBook } from './auctionBook.js';
@@ -386,7 +391,21 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
 
+  let bookCounter = 0;
+
   const makeAuctionBook = prepareAuctionBook(baggage, zcf);
+
+  const makeAuctionPublishKit = prepareDurablePublishKit(
+    baggage,
+    'Auction publish kit',
+  );
+  /** @type {PublishKit<import('./scheduler.js').ScheduleNotification>} */
+  const { publisher: schedulePublisher, subscriber: scheduleSubscriber } =
+    makeAuctionPublishKit();
+
+  const scheduleNode = E(privateArgs.storageNode).makeChildNode('schedule');
+  // TODO(7300) pipeTopicToStorage is being removed
+  pipeTopicToStorage(scheduleSubscriber, scheduleNode, privateArgs.marshaller);
 
   /**
    * @param {ZCFSeat} seat
@@ -482,6 +501,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
     finalize: () => {
       trace('finalize');
+
+      for (const book of books.values()) {
+        book.endAuction();
+      }
       distributeProceeds();
     },
     startRound() {
@@ -499,8 +522,14 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   });
 
-  // @ts-expect-error types are correct. How to convince TS?
-  const scheduler = await makeScheduler(driver, timer, params, timerBrand);
+  const scheduler = await makeScheduler(
+    driver,
+    timer,
+    // @ts-expect-error types are correct. How to convince TS?
+    params,
+    timerBrand,
+    schedulePublisher,
+  );
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
   /**
@@ -569,6 +598,25 @@ export const start = async (zcf, privateArgs, baggage) => {
       getSchedules() {
         return E(scheduler).getSchedule();
       },
+      getScheduleUpdates() {
+        return scheduleSubscriber;
+      },
+      getBookDataUpdates(brand) {
+        return books.get(brand).getDataUpdates();
+      },
+      getPublicTopics(brand) {
+        if (brand) {
+          return books.get(brand).getPublicTopics();
+        }
+
+        return {
+          schedule: makePublicTopic(
+            'Auction schedule',
+            scheduleSubscriber,
+            scheduleNode,
+          ),
+        };
+      },
       getDepositInvitation,
       ...params,
     }),
@@ -586,10 +634,18 @@ export const start = async (zcf, privateArgs, baggage) => {
           Fail`cannot add brand with keyword ${kwd}. it's in use`;
         const { brand } = await zcf.saveIssuer(issuer, kwd);
 
+        const bookId = `book${bookCounter}`;
+        bookCounter += 1;
+        const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
+        const pubKit = makeAuctionPublishKit();
+
         const newBook = await makeAuctionBook(
           brands.Currency,
           brand,
           priceAuthority,
+          pubKit,
+          privateArgs.marshaller,
+          bNode,
         );
 
         // These three store.init() calls succeed or fail atomically

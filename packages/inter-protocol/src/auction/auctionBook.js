@@ -16,8 +16,12 @@ import {
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/captp';
+import {
+  observeNotifier,
+  pipeTopicToStorage,
+  makePublicTopic,
+} from '@agoric/notifier';
 
-import { observeNotifier } from '@agoric/notifier';
 import { makeNatAmountShape } from '../contractSupport.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
 import {
@@ -53,7 +57,7 @@ const trace = makeTracer('AucBook', false);
 
 /**
  * @typedef {{
- * want: Amount<'nat'>
+ *   want: Amount<'nat'>
  * } & {
  *   exitAfterBuy?: boolean,
  * } & ({
@@ -90,6 +94,21 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 /** @typedef {import('@agoric/vat-data').Baggage} Baggage */
 
 /**
+ * @typedef {object} BookDataNotification
+ *
+ * @property {PriceQuote    | null}      startPrice identifies the priceAuthority and price
+ * @property {PriceLevel    | null}      currentPriceLevel the price at the current auction tier
+ * @property {Amount<'nat'> | null}      startProceedsGoal The proceeds the sellers were targeting to raise
+ * @property {Amount<'nat'> | null}      remainingProceedsGoal The remainder of
+ *     the proceeds the sellers were targeting to raise
+ * @property {Amount<'nat'> | undefined} proceedsRaised The proceeds raised so far in the auction
+ * @property {Amount<'nat'>}             startCollateral How much collateral was
+ *    available for sale at the start. (If more is deposited later, it'll be
+ *    added in.)
+ * @property {Amount<'nat'> | undefined} collateralAvailable The amount of collateral remaining
+ */
+
+/**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
  */
@@ -102,13 +121,15 @@ export const prepareAuctionBook = (baggage, zcf) => {
     'AuctionBook',
     undefined,
     /**
-     *
      * @param {Brand<'nat'>} currencyBrand
      * @param {Brand<'nat'>} collateralBrand
-     * @param {PriceAuthority} priceAuthority
+     * @param {PriceAuthority} pAuthority
+     * @param {PublishKit<BookDataNotification>} pubKit
+     * @param {Marshaller} marshaller
+     * @param {StorageNode} node
      */
-    (currencyBrand, collateralBrand, priceAuthority) => {
-      assertAllDefined({ currencyBrand, collateralBrand, priceAuthority });
+    (currencyBrand, collateralBrand, pAuthority, pubKit, marshaller, node) => {
+      assertAllDefined({ currencyBrand, collateralBrand, pAuthority });
       const zeroCurrency = makeEmpty(currencyBrand);
       const zeroRatio = makeRatioFromAmounts(
         zeroCurrency,
@@ -134,27 +155,65 @@ export const prepareAuctionBook = (baggage, zcf) => {
         collateralBrand,
       );
 
-      return {
-        currencyBrand,
-        collateralBrand,
-        priceAuthority,
+      const { publisher: bookDataPublisher, subscriber: bookDataSubscriber } =
+        pubKit;
+      pipeTopicToStorage(bookDataSubscriber, node, marshaller);
 
+      return {
+        collateralBrand,
+        collateralSeat,
         collateralAmountShape,
+        currencyBrand,
+        currencySeat,
         currencyAmountShape,
+
+        priceAuthority: pAuthority,
+        updatingOracleQuote: zeroRatio,
+
+        bookDataPublisher,
+        bookDataSubscriber,
+        node,
+
         priceBook,
         scaledBidBook,
-
-        collateralSeat,
-        curAuctionPrice: zeroRatio,
-        currencySeat,
-        lockedPriceForRound: zeroRatio,
-        updatingOracleQuote: zeroRatio,
         /**
-         * null indicates no limit; empty indicates limit exhausted
+         * Set to empty at the end of an auction. It increases when
+         * `addAssets()` is called
+         */
+        startCollateral: AmountMath.makeEmpty(collateralBrand),
+
+        /**
+         * Null indicates no limit; empty indicates limit exhausted. It is reset
+         * at the end of each auction. It increases when `addAssets()` is called
+         * with a goal.
          *
          * @type {Amount<'nat'> | null}
          */
-        totalProceedsGoal: null,
+        startProceedsGoal: null,
+
+        /**
+         * Assigned a value to lock the price and reset to null at the end of
+         * each auction.
+         *
+         * @type {Ratio | null}
+         */
+        lockedPriceForRound: null,
+
+        /**
+         * non-null during auctions. It is assigned a value at the beginning of
+         * each descending step, and reset at the end of the auction.
+         *
+         * @type {Ratio | null}
+         */
+        curAuctionPrice: null,
+
+        /**
+         * null outside of auctions. during an auction null indicates no limit;
+         * empty indicates limit exhausted
+         *
+         * @type {Amount<'nat'> | null}
+         */
+        remainingProceedsGoal: null,
       };
     },
     {
@@ -213,8 +272,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
             collateralAvailable,
           );
 
-          const { curAuctionPrice, currencySeat, totalProceedsGoal } =
+          const { curAuctionPrice, currencySeat, remainingProceedsGoal } =
             this.state;
+          curAuctionPrice !== null ||
+            Fail`auctionPrice must be set before each round`;
+          assert(curAuctionPrice);
+
           const currencyNeeded = ceilMultiplyBy(
             initialCollateralTarget,
             curAuctionPrice,
@@ -228,11 +291,11 @@ export const prepareAuctionBook = (baggage, zcf) => {
             currencyNeeded,
             currencyAlloc,
           );
-          const currencyLimit = totalProceedsGoal
-            ? AmountMath.min(totalProceedsGoal, initialCurrencyTarget)
+          const currencyLimit = remainingProceedsGoal
+            ? AmountMath.min(remainingProceedsGoal, initialCurrencyTarget)
             : initialCurrencyTarget;
           const isRaiseLimited =
-            totalProceedsGoal ||
+            remainingProceedsGoal ||
             !AmountMath.isGTE(currencyLimit, currencyNeeded);
 
           const [currencyTarget, collateralTarget] = isRaiseLimited
@@ -242,7 +305,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
           trace('settle', {
             collateral: collateralTarget,
             currency: currencyTarget,
-            totalProceedsGoal,
+            remainingProceedsGoal,
           });
 
           atomicRearrange(
@@ -253,9 +316,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
             ]),
           );
 
-          if (totalProceedsGoal) {
-            this.state.totalProceedsGoal = AmountMath.subtract(
-              totalProceedsGoal,
+          if (remainingProceedsGoal) {
+            this.state.remainingProceedsGoal = AmountMath.subtract(
+              remainingProceedsGoal,
               currencyTarget,
             );
           }
@@ -282,12 +345,17 @@ export const prepareAuctionBook = (baggage, zcf) => {
           const { priceBook, curAuctionPrice } = this.state;
           const { helper } = this.facets;
           trace('acceptPrice');
-          // Offer has ZcfSeat, offerArgs (w/price) and timeStamp
 
-          const collateralSold =
-            trySettle && ratioGTE(price, curAuctionPrice)
-              ? helper.settle(seat, want)
-              : AmountMath.makeEmptyFromAmount(want);
+          const settleIfPriceExists = () => {
+            if (curAuctionPrice !== null) {
+              return trySettle && ratioGTE(price, curAuctionPrice)
+                ? helper.settle(seat, want)
+                : AmountMath.makeEmptyFromAmount(want);
+            } else {
+              return AmountMath.makeEmptyFromAmount(want);
+            }
+          };
+          const collateralSold = settleIfPriceExists();
 
           const stillWant = AmountMath.subtract(want, collateralSold);
           if (
@@ -300,6 +368,8 @@ export const prepareAuctionBook = (baggage, zcf) => {
             trace('added Offer ', price, stillWant.value);
             priceBook.add(seat, price, stillWant, exitAfterBuy);
           }
+
+          helper.publishBookData();
         },
 
         /**
@@ -324,15 +394,23 @@ export const prepareAuctionBook = (baggage, zcf) => {
           const { curAuctionPrice, lockedPriceForRound, scaledBidBook } =
             this.state;
           const { helper } = this.facets;
-          const collateralSold =
-            trySettle &&
-            isScaledBidPriceHigher(
-              bidScaling,
-              curAuctionPrice,
-              lockedPriceForRound,
-            )
-              ? helper.settle(seat, want)
-              : AmountMath.makeEmptyFromAmount(want);
+
+          const settleIfPricesDefined = () => {
+            if (
+              curAuctionPrice &&
+              lockedPriceForRound &&
+              trySettle &&
+              isScaledBidPriceHigher(
+                bidScaling,
+                curAuctionPrice,
+                lockedPriceForRound,
+              )
+            ) {
+              return helper.settle(seat, want);
+            }
+            return AmountMath.makeEmptyFromAmount(want);
+          };
+          const collateralSold = settleIfPricesDefined();
 
           const stillWant = AmountMath.subtract(want, collateralSold);
           if (
@@ -344,6 +422,33 @@ export const prepareAuctionBook = (baggage, zcf) => {
           } else {
             scaledBidBook.add(seat, bidScaling, stillWant, exitAfterBuy);
           }
+
+          helper.publishBookData();
+        },
+        publishBookData() {
+          const { state } = this;
+
+          const allocation = state.collateralSeat.getCurrentAllocation();
+          const curCollateral =
+            'Collateral' in allocation
+              ? allocation.Collateral
+              : makeEmpty(state.collateralBrand);
+
+          const collateralAvailable = state.startCollateral
+            ? AmountMath.subtract(state.startCollateral, curCollateral)
+            : null;
+
+          const bookData = harden({
+            startPrice: state.lockedPriceForRound,
+            startProceedsGoal: state.startProceedsGoal,
+            remainingProceedsGoal: state.remainingProceedsGoal,
+            proceedsRaised: allocation.Currency,
+            startCollateral: state.startCollateral,
+            collateralAvailable,
+            currentPriceLevel: state.curAuctionPrice,
+          });
+          // @ts-expect-error All the nulls have been handled
+          state.bookDataPublisher.publish(bookData);
         },
       },
       self: {
@@ -357,14 +462,14 @@ export const prepareAuctionBook = (baggage, zcf) => {
          *    they request inconsistent limits.
          */
         addAssets(assetAmount, sourceSeat, proceedsGoal) {
+          const { state, facets } = this;
           trace('add assets', { assetAmount, proceedsGoal });
-          const { collateralBrand, collateralSeat, totalProceedsGoal } =
-            this.state;
+          const { collateralBrand, collateralSeat, startProceedsGoal } = state;
 
           // When adding assets, the new ratio of totalCollectionGoal to collateral
           // allocation will be the larger of the existing ratio and the ratio
           // implied by the new deposit. Add the new collateral and raise
-          // totalProceedsGoal so it's proportional to the new ratio. This can
+          // startProceedsGoal so it's proportional to the new ratio. This can
           // result in raising more currency than one depositor wanted, but
           // that's better than not selling as much as the other desired.
 
@@ -374,31 +479,48 @@ export const prepareAuctionBook = (baggage, zcf) => {
               ? allocation.Collateral
               : makeEmpty(collateralBrand);
 
-          // when neither proceedsGoal nor totalProceedsGoal is defined, we don't need an
+          // when neither proceedsGoal nor startProceedsGoal is defined, we don't need an
           // update and the call immediately below won't invoke this function.
           const calcTargetRatio = () => {
-            if (totalProceedsGoal && !proceedsGoal) {
-              return makeRatioFromAmounts(totalProceedsGoal, curCollateral);
-            } else if (!totalProceedsGoal && proceedsGoal) {
+            if (startProceedsGoal && !proceedsGoal) {
+              return makeRatioFromAmounts(startProceedsGoal, curCollateral);
+            } else if (!startProceedsGoal && proceedsGoal) {
               return makeRatioFromAmounts(proceedsGoal, assetAmount);
-            } else if (totalProceedsGoal && proceedsGoal) {
+            } else if (startProceedsGoal && proceedsGoal) {
               const curRatio = makeRatioFromAmounts(
-                totalProceedsGoal,
-                curCollateral,
+                startProceedsGoal,
+                AmountMath.add(curCollateral, assetAmount),
               );
               const newRatio = makeRatioFromAmounts(proceedsGoal, assetAmount);
               return ratioGTE(newRatio, curRatio) ? newRatio : curRatio;
             }
 
-            throw Fail`calcTargetRatio called with !totalProceedsGoal && !proceedsGoal`;
+            throw Fail`calcTargetRatio called with !remainingProceedsGoal && !proceedsGoal`;
           };
 
-          if (proceedsGoal || totalProceedsGoal) {
-            this.state.totalProceedsGoal = ceilMultiplyBy(
+          if (proceedsGoal || startProceedsGoal) {
+            const nextProceedsGoal = ceilMultiplyBy(
               AmountMath.add(curCollateral, assetAmount),
               calcTargetRatio(),
             );
+
+            if (state.remainingProceedsGoal !== null) {
+              const incrementToGoal = state.startProceedsGoal
+                ? AmountMath.subtract(nextProceedsGoal, state.startProceedsGoal)
+                : nextProceedsGoal;
+
+              state.remainingProceedsGoal = state.remainingProceedsGoal
+                ? AmountMath.add(state.remainingProceedsGoal, incrementToGoal)
+                : incrementToGoal;
+            }
+
+            state.startProceedsGoal = nextProceedsGoal;
           }
+
+          state.startCollateral = state.startCollateral
+            ? AmountMath.add(state.startCollateral, assetAmount)
+            : assetAmount;
+          facets.helper.publishBookData();
 
           atomicRearrange(
             zcf,
@@ -407,14 +529,20 @@ export const prepareAuctionBook = (baggage, zcf) => {
         },
         /** @type {(reduction: Ratio) => void} */
         settleAtNewRate(reduction) {
+          const { state, facets } = this;
+
           trace('settleAtNewRate', reduction);
-          const { lockedPriceForRound, priceBook, scaledBidBook } = this.state;
-          this.state.curAuctionPrice = multiplyRatios(
+          const { lockedPriceForRound, priceBook, scaledBidBook } = state;
+          lockedPriceForRound !== null ||
+            Fail`price must be locked before auction starts`;
+          assert(lockedPriceForRound);
+
+          state.curAuctionPrice = multiplyRatios(
             reduction,
             lockedPriceForRound,
           );
           // extract after it's set in state
-          const { curAuctionPrice } = this.state;
+          const { curAuctionPrice } = state;
 
           const pricedOffers = priceBook.offersAbove(curAuctionPrice);
           const scaledBidOffers = scaledBidBook.offersAbove(reduction);
@@ -435,11 +563,14 @@ export const prepareAuctionBook = (baggage, zcf) => {
             (a, b) => compareValues(a[1].seqNum, b[1].seqNum),
           );
 
-          const { totalProceedsGoal } = this.state;
-          const { helper } = this.facets;
+          const { remainingProceedsGoal } = state;
+          const { helper } = facets;
           for (const [key, seatRecord] of prioritizedOffers) {
             const { seat, price: p, wanted, exitAfterBuy } = seatRecord;
-            if (totalProceedsGoal && AmountMath.isEmpty(totalProceedsGoal)) {
+            if (
+              remainingProceedsGoal &&
+              AmountMath.isEmpty(remainingProceedsGoal)
+            ) {
               break;
             } else if (seat.hasExited()) {
               helper.removeFromItsBook(key, p);
@@ -460,6 +591,8 @@ export const prepareAuctionBook = (baggage, zcf) => {
               }
             }
           }
+
+          facets.helper.publishBookData();
         },
         getCurrentPrice() {
           return this.state.curAuctionPrice;
@@ -476,7 +609,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
 
         setStartingRate(rate) {
           const { lockedPriceForRound } = this.state;
+          lockedPriceForRound !== null ||
+            Fail`lockedPriceForRound must be set before each round`;
+          assert(lockedPriceForRound);
+
           trace('set startPrice', lockedPriceForRound);
+          this.state.remainingProceedsGoal = this.state.startProceedsGoal;
           this.state.curAuctionPrice = multiplyRatios(
             lockedPriceForRound,
             rate,
@@ -528,13 +666,34 @@ export const prepareAuctionBook = (baggage, zcf) => {
         },
         getSeats() {
           const { collateralSeat, currencySeat } = this.state;
-          this.state.totalProceedsGoal = null;
           return { collateralSeat, currencySeat };
         },
         exitAllSeats() {
           const { priceBook, scaledBidBook } = this.state;
           priceBook.exitAllSeats();
           scaledBidBook.exitAllSeats();
+        },
+        endAuction() {
+          const { state } = this;
+
+          state.startCollateral = AmountMath.makeEmpty(state.collateralBrand);
+
+          state.lockedPriceForRound = null;
+          state.curAuctionPrice = null;
+          state.remainingProceedsGoal = null;
+          state.startProceedsGoal = null;
+        },
+        getDataUpdates() {
+          return this.state.bookDataSubscriber;
+        },
+        getPublicTopics() {
+          return {
+            bookData: makePublicTopic(
+              'Auction schedule',
+              this.state.bookDataSubscriber,
+              this.state.node,
+            ),
+          };
         },
       },
     },
@@ -576,7 +735,8 @@ export const prepareAuctionBook = (baggage, zcf) => {
     },
   );
 
-  return (cur, col, pa) => makeAuctionBookKit(cur, col, pa).self;
+  return (cur, col, priceAuthority, pubKit, marshaller, node) =>
+    makeAuctionBookKit(cur, col, priceAuthority, pubKit, marshaller, node).self;
 };
 harden(prepareAuctionBook);
 

@@ -146,3 +146,13 @@
  * @param {PriceCalculator} calcAmountOut
  * @returns {{ amountIn: Amount<'nat'>, amountOut: Amount<'nat'>, timestamp?: import('@agoric/time/src/types').Timestamp } | undefined}
  */
+
+/**
+ * @typedef {object} PriceLevel
+ * A description of a single quote
+ *
+ * @property {Amount<'nat'>} amountIn
+ * The amount supplied to a trade
+ * @property {Amount<'nat'>} amountOut
+ * The quoted result of trading `amountIn`
+ */

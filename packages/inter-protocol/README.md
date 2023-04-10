@@ -48,12 +48,12 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
             - `governance`
             - `vaults`
               - `vault0`
-    - `amm`
-        - `metrics`
+    - `auction`
+        - `schedule`
         - `governance`
-        - `pool0`
-            - `init`
-            - `metrics`
+        - `books`
+          - `book0`
+            - `data`
     - `priceFeed`
       - '<inputBrand>_<outputBrand>_price_feed'
     - `psm`

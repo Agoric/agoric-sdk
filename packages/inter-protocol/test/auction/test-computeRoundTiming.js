@@ -2,7 +2,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { TimeMath } from '@agoric/time';
 import '@agoric/zoe/exported.js';
-import { computeRoundTiming } from '../../src/auction/scheduler.js';
+
+import {
+  computeRoundTiming,
+  nextDescendingStepTime,
+} from '../../src/auction/scheduleMath.js';
 
 const makeDefaultParams = ({
   freq = 3600,
@@ -205,4 +209,75 @@ test(
     clockStep: 600,
     lockTime: 3000,
   },
+);
+
+const TWO_PM = 1680876000n;
+const FIVE_MINUTES = 5n * 60n;
+const FIFTEEN_MINUTES = 15n * 60n;
+const defaults = makeDefaultParams();
+const TWO_PM_SCHED = computeRoundTiming(defaults, TWO_PM - 1n);
+const THREE_PM_SCHED = computeRoundTiming(defaults, TWO_PM);
+
+const checkDescendingStep = (t, liveSchedule, nextSchedule, now, expected) => {
+  const brand = nextSchedule.startTime.timerBrand;
+
+  const nowTime = TimeMath.toAbs(now, brand);
+  t.deepEqual(
+    nextDescendingStepTime(liveSchedule, nextSchedule, nowTime),
+    TimeMath.toAbs(expected, brand),
+  );
+};
+
+test(
+  'descendingSteps at start time',
+  checkDescendingStep,
+  TWO_PM_SCHED,
+  THREE_PM_SCHED,
+  TWO_PM,
+  TWO_PM + FIVE_MINUTES,
+);
+
+test(
+  'descendingSteps before start time',
+  checkDescendingStep,
+  TWO_PM_SCHED,
+  THREE_PM_SCHED,
+  TWO_PM - 1n,
+  TWO_PM + FIVE_MINUTES,
+);
+
+test(
+  'descendingSteps at first step',
+  checkDescendingStep,
+  TWO_PM_SCHED,
+  THREE_PM_SCHED,
+  TWO_PM + FIVE_MINUTES,
+  TWO_PM + FIFTEEN_MINUTES,
+);
+
+test(
+  'descendingSteps after first step start',
+  checkDescendingStep,
+  TWO_PM_SCHED,
+  THREE_PM_SCHED,
+  TWO_PM + FIVE_MINUTES + 1n,
+  TWO_PM + FIFTEEN_MINUTES,
+);
+
+test(
+  'descendingSteps at last step',
+  checkDescendingStep,
+  TWO_PM_SCHED,
+  THREE_PM_SCHED,
+  TWO_PM + 45n * 60n,
+  TWO_PM + 60n * 60n + FIVE_MINUTES,
+);
+
+test(
+  'descendingSteps between auctions',
+  checkDescendingStep,
+  undefined,
+  THREE_PM_SCHED,
+  TWO_PM + 45n * 60n + 1n,
+  TWO_PM + 60n * 60n + FIVE_MINUTES,
 );
