@@ -8,13 +8,14 @@ import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
   makeNotifierFromSubscriber,
   observeNotifier,
-  pipeTopicToStorage,
   prepareDurablePublishKit,
 } from '@agoric/notifier';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { M, makeScalarBigMapStore } from '@agoric/vat-data';
 import {
+  defineERecorderKit,
+  defineRecorderKit,
   makeOnewayPriceAuthorityKit,
-  makeStorageNodePathProvider,
+  prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -118,20 +119,32 @@ export const provideFluxAggregator = (
     baggage,
     'Price Aggregator publish kit',
   );
+  const makeRecorder = prepareRecorder(baggage, marshaller);
+  const makeRecorderKit = defineRecorderKit({
+    makeDurablePublishKit,
+    makeRecorder,
+  });
+  const makeERecorderKit = defineERecorderKit({
+    makeDurablePublishKit,
+    makeRecorder,
+  });
 
   // For publishing priceAuthority values to off-chain storage
-  /** @type {PublishKit<PriceDescription>} */
-  const { publisher: pricePublisher, subscriber: quoteSubscriber } =
-    makeDurablePublishKit();
-  pipeTopicToStorage(quoteSubscriber, storageNode, marshaller);
+  const { recorder: priceRecorder, subscriber: quoteSubscriber } =
+    makeRecorderKit(
+      storageNode,
+      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
+        M.any()
+      ),
+    );
 
-  /** @type {PublishKit<import('./roundsManager.js').LatestRound>} */
-  const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
-    makeDurablePublishKit();
-  const latestRoundStorageNode = E(storageNode).makeChildNode('latestRound');
-  pipeTopicToStorage(latestRoundSubscriber, latestRoundStorageNode, marshaller);
-
-  const memoizedPath = makeStorageNodePathProvider(baggage);
+  const { recorderP: latestRoundPublisher, subscriber: latestRoundSubscriber } =
+    makeERecorderKit(
+      E(storageNode).makeChildNode('latestRound'),
+      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./roundsManager.js').LatestRound>} */ (
+        M.any()
+      ),
+    );
 
   /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
   const oracles = makeScalarBigMapStore('oracles', {
@@ -180,7 +193,7 @@ export const provideFluxAggregator = (
     priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
     {
       updateState: quote =>
-        pricePublisher.publish(priceDescriptionFromQuote(quote)),
+        priceRecorder.write(priceDescriptionFromQuote(quote)),
       fail: reason => {
         throw Error(`priceAuthority observer failed: ${reason}`);
       },
@@ -322,12 +335,12 @@ export const provideFluxAggregator = (
         quotes: {
           description: 'Quotes from this price aggregator',
           subscriber: quoteSubscriber,
-          storagePath: memoizedPath(storageNode),
+          storagePath: E(priceRecorder).getStoragePath(),
         },
         latestRound: {
           description: 'Notification of each round',
           subscriber: latestRoundSubscriber,
-          storagePath: memoizedPath(latestRoundStorageNode),
+          storagePath: E(latestRoundPublisher).getStoragePath(),
         },
       };
     },
