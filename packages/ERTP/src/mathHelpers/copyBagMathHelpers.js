@@ -10,11 +10,11 @@ import {
 } from '@agoric/store';
 import '../types-ambient.js';
 
-/** @type {CopyBagValue} */
+/** @type {CopyBag} */
 const empty = makeCopyBag([]);
 
 /**
- * @type {MathHelpers<CopyBagValue>}
+ * @type {MathHelpers<CopyBag>}
  */
 export const copyBagMathHelpers = harden({
   doCoerce: bag => {

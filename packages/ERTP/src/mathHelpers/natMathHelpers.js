@@ -12,7 +12,7 @@ const empty = 0n;
  *
  * Natural numbers are used for fungible erights such as money because
  * rounding issues make floats problematic. All operations should be
- * done with the smallest whole unit such that the NatMathHelpers never
+ * done with the smallest whole unit such that the `natMathHelpers` never
  * deals with fractional parts.
  *
  * @type {MathHelpers<NatValue>}

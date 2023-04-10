@@ -80,7 +80,7 @@ test('copySet with strings getValue', t => {
   );
   t.deepEqual(
     getCopySetKeys(
-      /** @type {CopySet<Key>} */ (
+      /** @type {CopySet} */ (
         m.getValue(
           mockBrand,
           harden({ brand: mockBrand, value: makeCopySet(['1']) }),

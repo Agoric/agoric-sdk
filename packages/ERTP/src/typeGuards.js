@@ -98,7 +98,7 @@ harden(isNatValue);
  * Returns true if value is a CopySet
  *
  * @param {AmountValue} value
- * @returns {value is CopySetValue}
+ * @returns {value is CopySet}
  */
 export const isCopySetValue = value => matches(value, CopySetValueShape);
 harden(isCopySetValue);
@@ -119,7 +119,7 @@ harden(isSetValue);
  * Returns true if value is a CopyBag
  *
  * @param {AmountValue} value
- * @returns {value is CopyBagValue}
+ * @returns {value is CopyBag}
  */
 export const isCopyBagValue = value => matches(value, CopyBagValueShape);
 harden(isCopyBagValue);

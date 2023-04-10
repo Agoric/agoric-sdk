@@ -16,7 +16,7 @@ const empty = harden([]);
 
 /**
  * @deprecated Replace array-based SetMath with CopySet-based CopySetMath
- * @type {SetMathHelpers}
+ * @type {MathHelpers<SetValue>}
  */
 export const setMathHelpers = harden({
   doCoerce: list => {
