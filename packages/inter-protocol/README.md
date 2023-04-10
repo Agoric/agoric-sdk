@@ -48,12 +48,10 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
             - `governance`
             - `vaults`
               - `vault0`
-    - `auction`
+    - `auction` - [snapshot of details](./test/auction/snapshots/test-auctionContract.js.md)
         - `schedule`
         - `governance`
-        - `books`
-          - `book0`
-            - `data`
+        - `book0`
     - `priceFeed`
       - '<inputBrand>_<outputBrand>_price_feed'
     - `psm`

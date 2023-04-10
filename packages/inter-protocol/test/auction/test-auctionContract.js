@@ -3,6 +3,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import '@agoric/zoe/exported.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
@@ -110,9 +111,10 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
+  const board = makeBoard();
   const pubsubTerms = harden({
     storageNode: mockChainStorage.makeChildNode('thisAuction'),
-    marshaller: makeBoard().getReadonlyMarshaller(),
+    marshaller: board.getReadonlyMarshaller(),
   });
 
   const { creatorFacet: GCF } = await E(zoe).startInstance(
@@ -237,6 +239,7 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
 
   return {
     mockChainStorage,
+    board,
     publicFacet,
     creatorFacet,
 
@@ -869,7 +872,7 @@ test.serial('onDemand exit', async t => {
 });
 
 // serial because dynamicConfig is shared across tests
-test.serial('onDeadline exit', async t => {
+test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
   const timerBrand = await E(driver.getTimerService()).getTimerBrand();
@@ -945,6 +948,14 @@ test.serial('onDeadline exit', async t => {
   await bookTracker.assertChange({
     currentPriceLevel: { numerator: { value: 9_350_000_000_000n } },
   });
+
+  const doc = {
+    node: 'auction',
+    owner: 'the auctioneer contract',
+    pattern: 'mockChainStorageRoot.thisAuction',
+    replacement: 'published.auction',
+  };
+  await documentStorageSchema(t, driver.mockChainStorage, doc);
 
   await driver.advanceTo(180n, 'wait');
   await bookTracker.assertChange({
