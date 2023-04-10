@@ -5,16 +5,11 @@
  */
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { makeNotifierFromSubscriber, observeNotifier } from '@agoric/notifier';
+import { M, makeScalarBigMapStore } from '@agoric/vat-data';
 import {
-  makeNotifierFromSubscriber,
-  observeNotifier,
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
-} from '@agoric/notifier';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import {
+  defineRecorderKit,
   makeOnewayPriceAuthorityKit,
-  makeStorageNodePathProvider,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
@@ -66,7 +61,6 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * the *Node Operator Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
- * @param {Baggage} baggage
  * @param {ZCF<ChainlinkConfig & {
  * timer: TimerService,
  * brandIn: Brand<'nat'>,
@@ -76,15 +70,16 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * @param {TimerService} timerPresence
  * @param {IssuerRecord<'set'> & { mint: Mint<'set'> }} quoteKit
  * @param {StorageNode} storageNode
- * @param {Marshaller} marshaller
+ * @param {*} makeDurablePublishKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
  */
-export const provideFluxAggregator = (
-  baggage,
+export const makeFluxAggregator = async (
   zcf,
   timerPresence,
   quoteKit,
   storageNode,
-  marshaller,
+  makeDurablePublishKit,
+  makeRecorder,
 ) => {
   // brands come from named terms instead of `brands` key because the latter is
   // a StandardTerm that Zoe creates from the `issuerKeywordRecord` argument and
@@ -114,24 +109,27 @@ export const provideFluxAggregator = (
     unitAmountIn,
   });
 
-  const makeDurablePublishKit = prepareDurablePublishKit(
-    baggage,
-    'Price Aggregator publish kit',
-  );
+  const makeRecorderKit = defineRecorderKit({
+    makeDurablePublishKit,
+    makeRecorder,
+  });
 
   // For publishing priceAuthority values to off-chain storage
-  /** @type {PublishKit<PriceDescription>} */
-  const { publisher: pricePublisher, subscriber: quoteSubscriber } =
-    makeDurablePublishKit();
-  pipeTopicToStorage(quoteSubscriber, storageNode, marshaller);
+  const { recorder: priceRecorder, subscriber: quoteSubscriber } =
+    makeRecorderKit(
+      storageNode,
+      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
+        M.any()
+      ),
+    );
 
-  /** @type {PublishKit<import('./roundsManager.js').LatestRound>} */
-  const { publisher: latestRoundPublisher, subscriber: latestRoundSubscriber } =
-    makeDurablePublishKit();
-  const latestRoundStorageNode = E(storageNode).makeChildNode('latestRound');
-  pipeTopicToStorage(latestRoundSubscriber, latestRoundStorageNode, marshaller);
-
-  const memoizedPath = makeStorageNodePathProvider(baggage);
+  const { recorder: latestRoundPublisher, subscriber: latestRoundSubscriber } =
+    makeRecorderKit(
+      await E(storageNode).makeChildNode('latestRound'),
+      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./roundsManager.js').LatestRound>} */ (
+        M.any()
+      ),
+    );
 
   /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
   const oracles = makeScalarBigMapStore('oracles', {
@@ -180,7 +178,7 @@ export const provideFluxAggregator = (
     priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
     {
       updateState: quote =>
-        pricePublisher.publish(priceDescriptionFromQuote(quote)),
+        priceRecorder.write(priceDescriptionFromQuote(quote)),
       fail: reason => {
         throw Error(`priceAuthority observer failed: ${reason}`);
       },
@@ -322,12 +320,12 @@ export const provideFluxAggregator = (
         quotes: {
           description: 'Quotes from this price aggregator',
           subscriber: quoteSubscriber,
-          storagePath: memoizedPath(storageNode),
+          storagePath: E(priceRecorder).getStoragePath(),
         },
         latestRound: {
           description: 'Notification of each round',
           subscriber: latestRoundSubscriber,
-          storagePath: memoizedPath(latestRoundStorageNode),
+          storagePath: E(latestRoundPublisher).getStoragePath(),
         },
       };
     },
@@ -335,5 +333,5 @@ export const provideFluxAggregator = (
 
   return harden({ creatorFacet, publicFacet });
 };
-harden(provideFluxAggregator);
-/** @typedef {ReturnType<typeof provideFluxAggregator>} FluxAggregator */
+harden(makeFluxAggregator);
+/** @typedef {ReturnType<typeof makeFluxAggregator>} FluxAggregator */

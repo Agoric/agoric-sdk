@@ -1,9 +1,11 @@
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { prepareDurablePublishKit } from '@agoric/notifier';
+import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
-import { provideFluxAggregator } from './fluxAggregator.js';
+import { makeFluxAggregator } from './fluxAggregator.js';
 
 const trace = makeTracer('FluxAgg', false);
 /**
@@ -59,13 +61,19 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   trace('awaited args');
 
-  const fa = provideFluxAggregator(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
+    'Price Aggregator publish kit',
+  );
+  const makeRecorder = prepareRecorder(baggage, marshaller);
+
+  const fa = await makeFluxAggregator(
     zcf,
     timer,
     quoteKit,
     storageNode,
-    marshaller,
+    makeDurablePublishKit,
+    makeRecorder,
   );
   trace('got fa', fa);
 

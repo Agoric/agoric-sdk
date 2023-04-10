@@ -14,7 +14,8 @@ import {
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { provideFluxAggregator } from '../../src/price/fluxAggregator.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { makeFluxAggregator } from '../../src/price/fluxAggregator.js';
 import { topicPath } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */
@@ -47,13 +48,18 @@ const makeContext = async () => {
     const baggage = makeScalarBigMapStore('test baggage');
     const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
 
-    const aggregator = provideFluxAggregator(
+    const { makeDurablePublishKit, makeRecorder } = prepareRecorderKitMakers(
       baggage,
+      marshaller,
+    );
+
+    const aggregator = await makeFluxAggregator(
       zcfTestKit.zcf,
       manualTimer,
       { ...quoteIssuerKit, assetKind: 'set', displayInfo: undefined },
       await E(storageNode).makeChildNode('LINK-USD_price_feed'),
-      marshaller,
+      makeDurablePublishKit,
+      makeRecorder,
     );
 
     return { ...aggregator, manualTimer, mockStorageRoot };
