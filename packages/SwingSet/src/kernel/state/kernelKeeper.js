@@ -958,10 +958,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     enqueue('runQueue', msg);
   }
 
-  function isRunQueueEmpty() {
-    return queueLength('runQueue') <= 0;
-  }
-
   function getRunQueueLength() {
     return queueLength('runQueue');
   }
@@ -972,10 +968,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function addToAcceptanceQueue(msg) {
     enqueue('acceptanceQueue', msg);
-  }
-
-  function isAcceptanceQueueEmpty() {
-    return queueLength('acceptanceQueue') <= 0;
   }
 
   function getAcceptanceQueueLength() {
@@ -1605,12 +1597,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     enumerateNonDurableObjectExports,
 
     addToRunQueue,
-    isRunQueueEmpty,
     getRunQueueLength,
     getNextRunQueueMsg,
 
     addToAcceptanceQueue,
-    isAcceptanceQueueEmpty,
     getAcceptanceQueueLength,
     getNextAcceptanceQueueMsg,
 
