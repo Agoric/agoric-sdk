@@ -52,6 +52,9 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
         - `schedule`
         - `governance`
         - `book0`
+    - `reserve` - [snapshot of details](./test/reserve/snapshots/test-reserve.js.md)
+      - `governance`
+      - `metrics`
     - `priceFeed`
       - '<inputBrand>_<outputBrand>_price_feed'
     - `psm`
