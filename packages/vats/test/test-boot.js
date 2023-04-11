@@ -134,7 +134,13 @@ test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t
 });
 
 test('bootstrap provides a way to pass items to CORE_EVAL', async t => {
-  const root = buildRootObject({ D: mockDProxy, logger: t.log }, {});
+  const root = buildRootObject(
+    /** @type {VatPowers} */ /** @type {any} */ ({
+      D: mockDProxy,
+      logger: t.log,
+    }),
+    {},
+  );
 
   await E(root).produceItem('swissArmyKnife', [1, 2, 3]);
   t.deepEqual(await E(root).consumeItem('swissArmyKnife'), [1, 2, 3]);
