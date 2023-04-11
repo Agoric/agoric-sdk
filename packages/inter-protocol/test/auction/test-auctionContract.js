@@ -2,13 +2,14 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import '@agoric/zoe/exported.js';
 
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
+import { subscribeEach } from '@agoric/notifier';
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { TimeMath } from '@agoric/time';
 import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import {
   makeRatio,
   makeRatioFromAmounts,
@@ -17,20 +18,32 @@ import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makePriceAuthorityRegistry } from '@agoric/zoe/tools/priceAuthorityRegistry.js';
 import { E } from '@endo/eventual-send';
-import { subscribeEach } from '@agoric/notifier';
-import { TimeMath } from '@agoric/time';
 
-import { makeAuctioneerParams } from '../../src/auction/params.js';
 import {
-  makeMockChainStorageRoot,
+  setupReserve,
+  startAuctioneer,
+} from '../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
+import { subscriptionTracker } from '../metrics.js';
+import {
+  installPuppetGovernance,
+  produceInstallations,
+  setupBootstrap,
   setUpZoeForTest,
   withAmountUtils,
 } from '../supports.js';
-import { getInvitation, setUpInstallations } from './tools.js';
-import { subscriptionTracker } from '../metrics.js';
+import { setUpInstallations } from './tools.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
+
+/**
+ * @typedef {Record<string, any> & {
+ * currency: IssuerKit & import('../supports.js').AmountUtils,
+ * collateral: IssuerKit & import('../supports.js').AmountUtils,
+ * zoe: ZoeService,
+ * }} Context
+ */
 
 const trace = makeTracer('Test AuctContract', false);
 
@@ -45,18 +58,21 @@ const defaultParams = {
 };
 
 const makeTestContext = async () => {
-  const { zoe } = await setUpZoeForTest();
+  const { zoe, feeMintAccessP } = await setUpZoeForTest();
 
   const currency = withAmountUtils(makeIssuerKit('Currency'));
   const collateral = withAmountUtils(makeIssuerKit('Collateral'));
 
   const installs = await deeplyFulfilledObject(setUpInstallations(zoe));
+  const feeMintAccess = await feeMintAccessP;
 
   trace('makeContext');
   return {
     zoe: await zoe,
     installs,
+    run: currency,
     currency,
+    feeMintAccess,
     collateral,
   };
 };
@@ -65,32 +81,38 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
-const dynamicConfig = async (t, params) => {
-  const { zoe, installs } = t.context;
-
-  const { fakeInvitationAmount, fakeInvitationPayment } = await getInvitation(
+/**
+ * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
+ * @param {*} params
+ */
+export const setupServices = async (t, params = defaultParams) => {
+  const {
     zoe,
-    installs,
-  );
-  const manualTimer = buildManualTimer();
-  await manualTimer.advanceTo(140n);
-  const timerBrand = await manualTimer.getTimerBrand();
+    electorateTerms = { committeeName: 'The Cabal', committeeSize: 1 },
+    collateral,
+  } = t.context;
+
+  const timer = buildManualTimer();
+  await timer.advanceTo(140n);
+
+  const space = setupBootstrap(t, timer);
+  installPuppetGovernance(zoe, space.installation.produce);
+
+  // @ts-expect-error not all installs are needed for auctioneer.
+  produceInstallations(space, t.context.installs);
+
+  await startEconomicCommittee(space, electorateTerms);
+
+  await setupReserve(space);
+  const { creatorFacet: reserveCF } = await space.consume.reserveKit;
+
+  void E(reserveCF).addIssuer(collateral.issuer, 'Collateral');
 
   const { priceAuthority, adminFacet: registry } = makePriceAuthorityRegistry();
+  space.produce.priceAuthority.resolve(priceAuthority);
 
-  const governedParams = makeAuctioneerParams({
-    ElectorateInvitationAmount: fakeInvitationAmount,
-    ...params,
-    TimerBrand: timerBrand,
-  });
-
-  const terms = {
-    timerService: manualTimer,
-    governedParams,
-    priceAuthority,
-  };
-
-  return { terms, governedParams, fakeInvitationPayment, registry };
+  await startAuctioneer(space, { auctionParams: params });
+  return { space, timer, registry };
 };
 
 /**
@@ -98,50 +120,20 @@ const dynamicConfig = async (t, params) => {
  * @param {any} [params]
  */
 const makeAuctionDriver = async (t, params = defaultParams) => {
-  const { zoe, installs, currency } = t.context;
-  const { terms, fakeInvitationPayment, registry } = await dynamicConfig(
-    t,
-    params,
-  );
-  const { timerService } = terms;
+  const { zoe, run: currency } = t.context;
   /** @type {MapStore<Brand, { setPrice: (r: Ratio) => void }>} */
   const priceAuthorities = makeScalarMapStore();
 
-  // Each driver needs its own to avoid state pollution between tests
-  const mockChainStorage = makeMockChainStorageRoot();
+  const { space, timer, registry } = await setupServices(t, params);
+  // Each driver needs its own mockChainStorage to avoid state pollution between tests
+  const mockChainStorage =
+    /** @type {import('@agoric/internal/src/storage-test-utils.js').MockChainStorageRoot} */ (
+      await space.consume.chainStorage
+    );
+  const { auctioneerKit: auctioneerKitP, reserveKit } = space.consume;
+  const auctioneerKit = await auctioneerKitP;
 
-  const pubsubTerms = harden({
-    storageNode: mockChainStorage.makeChildNode('thisAuction'),
-    marshaller: makeBoard().getReadonlyMarshaller(),
-  });
-
-  const { creatorFacet: GCF } = await E(zoe).startInstance(
-    installs.governor,
-    harden({}),
-    harden({
-      timer: timerService,
-      governedContractInstallation: installs.auctioneer,
-      governed: {
-        issuerKeywordRecord: {
-          Currency: currency.issuer,
-        },
-        terms: { ...terms, ...customTerms },
-        pubsubTerms,
-      },
-    }),
-    {
-      governed: {
-        initialPoserInvitation: fakeInvitationPayment,
-        ...pubsubTerms,
-      },
-    },
-  );
-
-  /** @type {Promise<import('../../src/auction/auctioneer.js').AuctioneerPublicFacet>} */
-  // @ts-expect-error xxx cast
-  const publicFacet = E(GCF).getPublicFacet();
-  /** @type {import('../../src/auction/auctioneer.js').AuctioneerLimitedCreatorFacet} */
-  const creatorFacet = E(GCF).getCreatorFacet();
+  const { publicFacet, creatorFacet } = auctioneerKit;
 
   /**
    * @param {Amount<'nat'>} giveCurrency
@@ -222,7 +214,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     const pa = makeManualPriceAuthority({
       actualBrandIn: collateralBrand,
       actualBrandOut: currency.brand,
-      timer: timerService,
+      timer,
       initialPrice: makeRatio(100n, currency.brand, 100n, collateralBrand),
     });
     priceAuthorities.init(collateralBrand, pa);
@@ -262,7 +254,7 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     },
     setupCollateralAuction,
     async advanceTo(time, wait) {
-      await timerService.advanceTo(time);
+      await timer.advanceTo(time);
       if (wait) {
         await eventLoopIteration();
       }
@@ -272,14 +264,11 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
       await eventLoopIteration();
     },
     depositCollateral,
-    getLockPeriod() {
-      return E(publicFacet).getPriceLockPeriod();
-    },
     getSchedule() {
-      return E(creatorFacet).getSchedule();
+      return E(publicFacet).getSchedules();
     },
     getTimerService() {
-      return timerService;
+      return timer;
     },
     getScheduleTracker() {
       return E.when(E(publicFacet).getScheduleUpdates(), subscription =>
@@ -290,6 +279,10 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
       return E.when(E(publicFacet).getBookDataUpdates(brand), subscription =>
         subscriptionTracker(t, subscribeEach(subscription)),
       );
+    },
+    getReserveBalance(keyword) {
+      const reserveCF = E.get(reserveKit).creatorFacet;
+      return E.get(E(reserveCF).getAllocations())[keyword];
     },
   };
 };
@@ -677,6 +670,9 @@ test.serial('multiple Depositors, not all assets are sold', async t => {
   await assertPayouts(t, seat, currency, collateral, 45n, 1000n);
   await assertPayouts(t, liqSeatA, currency, collateral, 770n, 333n);
   await assertPayouts(t, liqSeatB, currency, collateral, 385n, 166n);
+
+  const balance = await driver.getReserveBalance('Collateral');
+  t.deepEqual(balance, collateral.make(1n));
 });
 
 // serial because dynamicConfig is shared across tests
@@ -725,6 +721,9 @@ test.serial('multiple Depositors, with goal', async t => {
   await assertPayouts(t, seat, currency, collateral, 600n, 779n);
   await assertPayouts(t, liqSeatA, currency, collateral, 600n, 480n);
   await assertPayouts(t, liqSeatB, currency, collateral, 300n, 239n);
+
+  const balance = await driver.getReserveBalance('Collateral');
+  t.deepEqual(balance, collateral.make(2n));
 });
 
 // serial because dynamicConfig is shared across tests
@@ -778,6 +777,9 @@ test.serial('multiple Depositors, exit onBuy', async t => {
   await assertPayouts(t, seat, currency, collateral, 600n, 779n);
   await assertPayouts(t, liqSeatA, currency, collateral, 600n, 480n);
   await assertPayouts(t, liqSeatB, currency, collateral, 300n, 239n);
+
+  const balance = await driver.getReserveBalance('Collateral');
+  t.deepEqual(balance, collateral.make(2n));
 });
 
 // serial because dynamicConfig is shared across tests
@@ -949,7 +951,7 @@ test.serial('onDeadline exit, with chainStorage RPC snapshot', async t => {
   const doc = {
     node: 'auction',
     owner: 'the auctioneer contract',
-    pattern: 'mockChainStorageRoot.thisAuction',
+    pattern: 'mockChainStorageRoot.auction',
     replacement: 'published.auction',
   };
   await documentStorageSchema(t, driver.mockChainStorage, doc);

@@ -18,6 +18,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
  * autoRefund: Installation<import('@agoric/zoe/src/contracts/automaticRefund').start>,
  * auctioneer: Installation<import('../../src/auction/auctioneer').start>,
  * governor: Installation<import('@agoric/governance/src/contractGovernor').start>,
+ * reserve: Installation<import('../../src/reserve/assetReserve.js').start>,
  * }} AuctionTestInstallations
  */
 
@@ -34,6 +35,7 @@ export const setUpInstallations = async zoe => {
     // could be called fakeCommittee. It's used as a source of invitations only
     autoRefund: bundleCache.load(autoRefundPath, 'autoRefund'),
     auctioneer: bundleCache.load('./src/auction/auctioneer.js', 'auctioneer'),
+    reserve: bundleCache.load('./src/reserve/assetReserve.js', 'reserve'),
     governor: contractGovernorBundle,
   });
   /** @type {AuctionTestInstallations} */

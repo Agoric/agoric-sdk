@@ -72,12 +72,14 @@ const checkProportions = (
   const expectedLeftovers = rawExpected[1];
   const leftoverCurrency = { Currency: currency.make(expectedLeftovers[1]) };
   expectedXfer.push([fakeCurrencySeat, fakeReserveSeat, leftoverCurrency]);
-  expectedXfer.push([
-    fakeCollateralSeat,
-    fakeReserveSeat,
-    { Collateral: collateral.make(expectedLeftovers[0]) },
-    { [kwd]: collateral.make(expectedLeftovers[0]) },
-  ]);
+  if (expectedLeftovers[0] > 0n) {
+    expectedXfer.push([
+      fakeCollateralSeat,
+      fakeReserveSeat,
+      { Collateral: collateral.make(expectedLeftovers[0]) },
+      { [kwd]: collateral.make(expectedLeftovers[0]) },
+    ]);
+  }
 
   const transfers = distributeProportionalSharesWithLimits(
     collateral.make(collateralReturned),

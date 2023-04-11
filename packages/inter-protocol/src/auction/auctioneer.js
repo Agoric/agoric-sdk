@@ -23,6 +23,7 @@ import {
   natSafeMath,
   prepareRecorder,
   provideEmptySeat,
+  offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
@@ -64,7 +65,8 @@ const makeBPRatio = (rate, currencyBrand, collateralBrand = currencyBrand) =>
  * @param {{seat: ZCFSeat, amount: Amount<'nat'>, goal: Amount<'nat'>}[]} deposits
  * @param {ZCFSeat} collateralSeat
  * @param {ZCFSeat} currencySeat
- * @param {string} collateralKeyword
+ * @param {string} collateralKeyword The Reserve will hold multiple collaterals,
+ *      so they need distinct keywords
  * @param {ZCFSeat} reserveSeat
  * @param {Brand} brand
  */
@@ -101,16 +103,17 @@ const distributeProportionalShares = (
     transfers.push([collateralSeat, seat, { Collateral: collPortion }]);
   }
 
-  // TODO(#7117) The leftovers should go to the reserve, and should be visible.
   transfers.push([currencySeat, reserveSeat, { Currency: currencyLeft }]);
 
-  // There will be multiple collaterals, so they can't all use the same keyword
-  transfers.push([
-    collateralSeat,
-    reserveSeat,
-    { Collateral: collateralLeft },
-    { [collateralKeyword]: collateralLeft },
-  ]);
+  if (!AmountMath.isEmpty(collateralLeft)) {
+    transfers.push([
+      collateralSeat,
+      reserveSeat,
+      { Collateral: collateralLeft },
+      { [collateralKeyword]: collateralLeft },
+    ]);
+  }
+
   return transfers;
 };
 
@@ -147,7 +150,8 @@ const distributeProportionalShares = (
  * @param {{seat: ZCFSeat, amount: Amount<'nat'>, goal: Amount<'nat'>}[]} deposits
  * @param {ZCFSeat} collateralSeat
  * @param {ZCFSeat} currencySeat
- * @param {string} collateralKeyword
+ * @param {string} collateralKeyword The Reserve will hold multiple collaterals,
+ *      so they need distinct keywords
  * @param {ZCFSeat} reserveSeat
  * @param {Brand} brand
  */
@@ -324,8 +328,7 @@ export const distributeProportionalSharesWithLimits = (
         );
         collateralLeft = AmountMath.subtract(collateralLeft, collateralShare);
         addRemainderInCurrency(collateralShare);
-        const collateralShareRecord = { Collateral: collateralShare };
-        transfers.push([collateralSeat, seat, collateralShareRecord]);
+        transfers.push([collateralSeat, seat, { Collateral: collateralShare }]);
       } else if (limitedGetMaxCollateral) {
         currencyLeft = AmountMath.subtract(currencyLeft, goal);
         transfers.push([currencySeat, seat, { Currency: goal }]);
@@ -344,28 +347,28 @@ export const distributeProportionalSharesWithLimits = (
         );
         collateralLeft = AmountMath.subtract(collateralLeft, collateralShare);
         addRemainderInCurrency(collateralShare);
-        const collateralShareRecord = { Collateral: collateralShare };
-        transfers.push([collateralSeat, seat, collateralShareRecord]);
+        transfers.push([collateralSeat, seat, { Collateral: collateralShare }]);
       }
     }
   }
 
-  // TODO(#7117) The leftovers should go to the reserve, and should be visible.
   transfers.push([currencySeat, reserveSeat, { Currency: currencyLeft }]);
 
-  // There will be multiple collaterals, so they can't all use the same keyword
-  transfers.push([
-    collateralSeat,
-    reserveSeat,
-    { Collateral: collateralLeft },
-    { [collateralKeyword]: collateralLeft },
-  ]);
+  if (!AmountMath.isEmpty(collateralLeft)) {
+    transfers.push([
+      collateralSeat,
+      reserveSeat,
+      { Collateral: collateralLeft },
+      { [collateralKeyword]: collateralLeft },
+    ]);
+  }
   return transfers;
 };
 
 /**
  * @param {ZCF<GovernanceTerms<typeof auctioneerParamTypes> & {
  *   timerService: import('@agoric/time/src/types').TimerService,
+ *   reservePublicFacet: AssetReservePublicFacet,
  *   priceAuthority: PriceAuthority
  * }>} zcf
  * @param {{
@@ -389,7 +392,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Brand, Keyword>} */
   const brandToKeyword = provideDurableMapStore(baggage, 'brandToKeyword');
 
-  const reserveFunds = provideEmptySeat(zcf, baggage, 'collateral');
+  const reserveSeat = provideEmptySeat(zcf, baggage, 'collateral');
 
   let bookCounter = 0;
 
@@ -424,6 +427,28 @@ export const start = async (zcf, privateArgs, baggage) => {
    */
   const addDeposit = (seat, amount, goal = null) => {
     appendToStoredArray(deposits, amount.brand, harden({ seat, amount, goal }));
+  };
+
+  const sendToReserve = keyword => {
+    const { reservePublicFacet } = zcf.getTerms();
+
+    const amount = reserveSeat.getCurrentAllocation()[keyword];
+    if (!amount || AmountMath.isEmpty(amount)) {
+      return;
+    }
+
+    const invitation = E(reservePublicFacet).makeAddCollateralInvitation();
+    // don't wait for a response
+    void E.when(invitation, invite => {
+      const proposal = { give: { Collateral: amount } };
+      void offerTo(
+        zcf,
+        invite,
+        { [keyword]: 'Collateral' },
+        proposal,
+        reserveSeat,
+      );
+    });
   };
 
   // Called "discount" rate even though it can be above or below 100%.
@@ -461,7 +486,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           collateralSeat,
           currencySeat,
           brandToKeyword.get(brand),
-          reserveFunds,
+          reserveSeat,
           brand,
         );
         atomicRearrange(zcf, harden(transfers));
@@ -469,6 +494,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         for (const { seat } of depositsForBrand) {
           seat.exit();
         }
+
+        sendToReserve(brandToKeyword.get(brand));
         deposits.set(brand, []);
       }
     }

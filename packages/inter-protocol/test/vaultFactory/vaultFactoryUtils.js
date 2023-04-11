@@ -104,13 +104,13 @@ export const setupElectorateReserveAndAuction = async (
   space.produce.priceAuthority.resolve(pa);
 
   const auctionParams = {
-    startFreq: startFrequency || 7n * 24n * 3600n,
-    clockStep: 2n,
-    startingRate: 10500n,
-    lowestRate: 5500n,
-    discountStep: 2000n,
-    auctionStartDelay: 10n,
-    priceLockPeriod: 3n,
+    StartFreq: startFrequency || 7n * 24n * 3600n,
+    ClockStep: 2n,
+    StartingRate: 10500n,
+    LowestRate: 5500n,
+    DiscountStep: 2000n,
+    AuctionStartDelay: 10n,
+    PriceLockPeriod: 3n,
   };
 
   await startAuctioneer(space, { auctionParams });
