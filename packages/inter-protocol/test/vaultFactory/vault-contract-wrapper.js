@@ -2,6 +2,16 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
+import { makePublishKit, observeNotifier } from '@agoric/notifier';
+import {
+  makeFakeMarshaller,
+  makeFakeStorage,
+} from '@agoric/notifier/tools/testSupports.js';
+import {
+  atomicRearrange,
+  prepareRecorderKit,
+  unitAmount,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import {
   floorDivideBy,
   makeRatio,
@@ -10,21 +20,12 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
-import { Far } from '@endo/marshal';
-import { makePublishKit, observeNotifier } from '@agoric/notifier';
-import {
-  makeFakeMarshaller,
-  makeFakeStorage,
-} from '@agoric/notifier/tools/testSupports.js';
-import {
-  atomicRearrange,
-  unitAmount,
-} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
+import { priceFrom } from '../../src/auction/util.js';
 import { paymentFromZCFMint } from '../../src/vaultFactory/burn.js';
 import { prepareVault } from '../../src/vaultFactory/vault.js';
-import { priceFrom } from '../../src/auction/util';
 
 const BASIS_POINTS = 10000n;
 const SECONDS_PER_HOUR = 60n * 60n;
@@ -176,7 +177,9 @@ export async function start(zcf, privateArgs, baggage) {
     },
   });
 
-  const makeVault = prepareVault(baggage, marshaller, zcf);
+  const makeRecorderKit = prepareRecorderKit(baggage, marshaller);
+
+  const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
   const { self: vault } = await makeVault(
     managerMock,

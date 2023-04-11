@@ -23,6 +23,7 @@ import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovern
 import { assertAllDefined } from '@agoric/internal';
 import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { prepareVaultDirector } from './vaultDirector.js';
 
@@ -68,6 +69,11 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { timerService, auctioneerPublicFacet } = zcf.getTerms();
 
+  const { makeRecorderKit, makeERecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    marshaller,
+  );
+
   // XXX non-durable
   const governanceSubscriptionKit = makeSubscriptionKit();
   const governanceNode = E(storageNode).makeChildNode('governance');
@@ -103,7 +109,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     timerService,
     auctioneerPublicFacet,
     storageNode,
+    // XXX remove Recorder makers; remove once we excise deprecated kits for governance
     marshaller,
+    makeRecorderKit,
+    makeERecorderKit,
   );
 
   const factory = makeVaultDirector();
