@@ -11,18 +11,17 @@ import { initSwingStore } from '@agoric/swing-store';
 import {
   initializeSwingset,
   makeSwingsetController,
-  buildVatController,
   buildKernelBundles,
 } from '../src/index.js';
 import { bundleOpts } from './util.js';
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { buildPatterns } from './message-patterns.js';
 
-// This exercises all the patterns in 'message-patterns.js' twice (once with
-// vatA/vatB connected directly through the kernel, and a second time with
-// comms vats in the path). To enable/disable specific tests, run with e.g.
-// 'yarn test test/test-message-patterns.js -m "test pattern a72 local"'
-// or '-m "*a72 local"'
+// This exercises all the patterns in 'message-patterns.js' twice with
+// comms vats in the path (a different file runs them all with a
+// direct connection). To enable/disable specific tests, run with e.g.
+// 'yarn test test/test-message-patterns.js -m "test pattern a72
+// comms"' or '-m "*a72 comms"'
 
 // See message-patterns.js for details.
 
@@ -56,19 +55,6 @@ test.before(async t => {
   const bundleB = await bundleSource(path.resolve(bdir, 'vat-b.js'));
   const bundleC = await bundleSource(path.resolve(bdir, 'vat-c.js'));
 
-  const bootstrapLocal = path.resolve(bdir, 'bootstrap-local.js');
-  const bundleLocal = await bundleSource(bootstrapLocal);
-  const localConfig = {
-    bootstrap: 'bootstrap',
-    defaultReapInterval: 'never',
-    vats: {
-      bootstrap: { bundle: bundleLocal },
-      a: { bundle: bundleA },
-      b: { bundle: bundleB },
-      c: { bundle: bundleC },
-    },
-  };
-
   const bootstrapComms = path.resolve(bdir, 'bootstrap-comms.js');
   const bundleComms = await bundleSource(bootstrapComms);
   const moreComms = {
@@ -98,29 +84,10 @@ test.before(async t => {
     },
   };
 
-  t.context.data = { localConfig, commsConfig, kernelBundles };
+  t.context.data = { commsConfig, kernelBundles };
 });
 
-export async function runVatsLocally(t, name) {
-  const { localConfig: config, kernelBundles } = t.context.data;
-  const c = await buildVatController(config, [name], {
-    kernelBundles,
-  });
-  t.teardown(c.shutdown);
-  // await runWithTrace(c);
-  await c.run();
-  return c.dump().log;
-}
-
 const bp = buildPatterns();
-async function testLocalPattern(t, name) {
-  const logs = await runVatsLocally(t, name);
-  t.deepEqual(logs, bp.expected[name]);
-}
-testLocalPattern.title = (_, name) => `test pattern ${name} local`;
-for (const name of Array.from(bp.patterns.keys()).sort()) {
-  test.serial('local patterns', testLocalPattern, name);
-}
 
 export async function runVatsInComms(t, name) {
   const { commsConfig } = t.context.data;
