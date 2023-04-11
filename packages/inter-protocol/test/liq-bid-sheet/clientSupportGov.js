@@ -65,7 +65,10 @@ const encodeGovParamEntry = agoricNames => ([name, type, value]) => {
 }
 const makeParamChangeAction = (rows, opts, agoricNames) => {
   console.log({ rows, opts });
-  const params = Object.fromEntries(rows.map(encodeGovParamEntry(agoricNames)));
+  const params = Object.fromEntries(
+    rows.filter(([name]) => name > '')
+    .map(encodeGovParamEntry(agoricNames))
+    );
   const instance = agoricNames.instance[opts.instanceName];
   const key = opts.collateralBrandKey
     ? ({ collateralBrand: agoricNames.brand[opts.collateralBrandKey] })
@@ -106,8 +109,8 @@ const ParamChangeAction = async (paramRows, optRows) => {
 const testPCO = async () => {
   console.warn('AMBIENT: SpreadsheetApp')
   const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const params = doc.getRangeByName('Gov: Propose!B3:D3').getValues();
-  const opts = doc.getRange('Gov: Propose!A18:B22').getValues();
+  const params = doc.getRangeByName('Gov: Propose!B3:D4').getValues();
+  const opts = doc.getRange('Gov: Propose!A21:B25').getValues();
 /*
   const params = [['LiquidationPadding', 'percent', 0.2]];
   const opts = Object.entries({

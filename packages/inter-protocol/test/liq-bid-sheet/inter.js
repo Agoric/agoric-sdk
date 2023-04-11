@@ -132,6 +132,9 @@ const fmtDetails = (metrics, agoricNames) => {
     } else if (name === 'debtSnapshot') {
         return [[name, 'debt', ...fmtAmt(value.debt)],
                 [name, ...priceEntry('interest', value.interest)]];
+    // Auction - absTime
+    } else if (isObject && 'absValue' in value && 'timerBrand' in value) {
+      return [[name, 'absTime', new Date(Number(value.absValue) * 1000)]]
     // Governance
     } else if (name === 'closingRule') {
       return [[name, 'deadline', new Date(Number(value.deadline) * 1000)]]
