@@ -182,7 +182,6 @@ export function assertCollectionDeleted(v, baseref) {
   const { subid: cID } = parseVatSlot(baseref);
   const { t, fakestore } = v;
   t.is(fakestore.get(`vom.rc.${baseref}`), undefined);
-  t.is(fakestore.get(`vc.${cID}.|label`), undefined);
   t.is(fakestore.get(`vc.${cID}.|schemata`), undefined);
   t.is(fakestore.get(`vc.${cID}.|nextOrdinal`), undefined);
   // there should be no ordinal mappings: vc.${cid}.|${vref}

@@ -56,6 +56,7 @@ test('initial vatstore contents', async t => {
   });
   const { fakestore } = v;
   const get = key => fakestore.get(key);
+  const getLabel = key => kunser(JSON.parse(get(key))).label;
 
   // an empty buildRootObject should create 4 collections, and some metadata
   const kindIDs = JSON.parse(get('storeKindIDTable'));
@@ -63,20 +64,19 @@ test('initial vatstore contents', async t => {
   // the first collection is baggage: a durable mapstore
   const baggageVref = `${dmsBase}/1`;
   t.is(get('baggageID'), baggageVref);
-  t.is(get(`vc.1.|label`), 'baggage');
   t.is(get(`vc.1.|entryCount`), '0'); // no entries yet
   t.is(get(`vc.1.|nextOrdinal`), '1'); // no ordinals yet
   t.is(get(`vc.1.|entryCount`), '0');
-  const stringSchema = [M.string()];
+  const stringSchema = { label: 'baggage', keyShape: M.string() };
   t.deepEqual(kunser(JSON.parse(get(`vc.1.|schemata`))), stringSchema);
 
   // then three tables for the promise watcher (one virtual, two durable)
-  t.is(get(`vc.3.|label`), `promiseWatcherByKind`); // durable
-  t.is(get(`vc.4.|label`), `watchedPromises`); // durable
+  t.is(getLabel(`vc.3.|schemata`), 'promiseWatcherByKind'); // durable
+  t.is(getLabel(`vc.4.|schemata`), 'watchedPromises'); // durable
   // the promiseRegistrations table is not durable, and only gets vc.2
   // on the first incarnation: it will get a new ID on subsequent
   // incarnations
-  t.is(get(`vc.2.|label`), `promiseRegistrations`); // virtual
+  t.is(getLabel(`vc.2.|schemata`), `promiseRegistrations`); // virtual
 
   const watcherTableVref = get('watcherTableID');
   const watchedPromiseTableVref = get('watchedPromiseTableID');
@@ -89,11 +89,15 @@ test('initial vatstore contents', async t => {
   t.is(get(`vom.rc.${watchedPromiseTableVref}`), '1');
 
   // promiseRegistrations and promiseWatcherByKind arbitrary scalars as keys
-  const scalarSchema = [M.scalar()];
-  t.deepEqual(kunser(JSON.parse(get(`vc.2.|schemata`))), scalarSchema);
-  t.deepEqual(kunser(JSON.parse(get(`vc.3.|schemata`))), scalarSchema);
+  const scalarSchema2 = { label: 'promiseRegistrations', keyShape: M.scalar() };
+  const scalarSchema3 = { label: 'promiseWatcherByKind', keyShape: M.scalar() };
+  t.deepEqual(kunser(JSON.parse(get(`vc.2.|schemata`))), scalarSchema2);
+  t.deepEqual(kunser(JSON.parse(get(`vc.3.|schemata`))), scalarSchema3);
   // watchedPromises uses vref (string) keys
-  const scalarStringSchema = [M.and(M.scalar(), M.string())];
+  const scalarStringSchema = {
+    label: 'watchedPromises',
+    keyShape: M.and(M.scalar(), M.string()),
+  };
   t.deepEqual(kunser(JSON.parse(get(`vc.4.|schemata`))), scalarStringSchema);
 });
 
@@ -106,6 +110,9 @@ test('vrefs', async t => {
   );
   // const { fakestore, dumpFakestore } = v;
   const { fakestore } = v;
+  const get = key => fakestore.get(key);
+  const getLabel = key => kunser(JSON.parse(get(key))).label;
+
   const kindIDID = JSON.parse(fakestore.get('kindIDID'));
   const initialKindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
   const initialCounters = JSON.parse(fakestore.get(`idCounters`));
@@ -137,7 +144,7 @@ test('vrefs', async t => {
 
   // the liveslots-created collections consume vc.1 through vc.4,
   // leaving vc.5 for the first user-created collection
-  t.is(fakestore.get('vc.5.|label'), 'store1');
+  t.is(getLabel('vc.5.|schemata'), 'store1');
   const expectedStore1Vref = `o+v${initialKindIDs.scalarMapStore}/5`;
   const store1Vref = (await run('getStore1')).slots[0];
   t.is(store1Vref, expectedStore1Vref);

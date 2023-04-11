@@ -138,21 +138,18 @@ const kvStoreDataV1 = Object.entries({
   'vc.1.sthe_DurablePromiseIgnorer':
     '{"body":"#\\"$0.Alleged: DurablePromiseIgnorer\\"","slots":["o+d10/1"]}',
   'vc.1.|entryCount': '2',
-  'vc.1.|label': 'baggage',
   'vc.1.|nextOrdinal': '1',
   'vc.1.|schemata':
-    '{"body":"#[{\\"#tag\\":\\"match:string\\",\\"payload\\":[]}]","slots":[]}',
+    '{"label":"baggage","body":"#{\\"keyShape\\":{\\"#tag\\":\\"match:string\\",\\"payload\\":[]}}","slots":[]}',
   // non-durable
   // 'vc.2.sp+6': '{"body":"#\\"&0\\"","slots":["p+6"]}',
   // 'vc.2.|entryCount': '1',
-  // 'vc.2.|label': 'promiseRegistrations',
   // 'vc.2.|nextOrdinal': '1',
-  // 'vc.2.|schemata': '{"body":"#[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}]","slots":[]}',
+  // 'vc.2.|schemata': '{"label":"promiseRegistrations","body":"#{\\"keyShape\\":{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}}","slots":[]}',
   'vc.3.|entryCount': '0',
-  'vc.3.|label': 'promiseWatcherByKind',
   'vc.3.|nextOrdinal': '1',
   'vc.3.|schemata':
-    '{"body":"#[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}]","slots":[]}',
+    '{"label":"promiseWatcherByKind","body":"#{\\"keyShape\\":{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}}","slots":[]}',
   'vc.4.sp+6':
     '{"body":"#[[\\"$0.Alleged: DurablePromiseIgnorer\\",\\"orphaned\\"]]","slots":["o+d10/1"]}',
   'vc.4.sp-8':
@@ -160,10 +157,9 @@ const kvStoreDataV1 = Object.entries({
   'vc.4.sp-9':
     '{"body":"#[[\\"$0.Alleged: DurablePromiseIgnorer\\",\\"late-rejected\\"]]","slots":["o+d10/1"]}',
   'vc.4.|entryCount': '3',
-  'vc.4.|label': 'watchedPromises',
   'vc.4.|nextOrdinal': '1',
   'vc.4.|schemata':
-    '{"body":"#[{\\"#tag\\":\\"match:and\\",\\"payload\\":[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"},{\\"#tag\\":\\"match:string\\",\\"payload\\":[]}]}]","slots":[]}',
+    '{"label":"watchedPromises","body":"#{\\"keyShape\\":{\\"#tag\\":\\"match:and\\",\\"payload\\":[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"},{\\"#tag\\":\\"match:string\\",\\"payload\\":[]}]}}","slots":[]}',
   'vom.dkind.10':
     '{"kindID":"10","tag":"DurablePromiseIgnorer","nextInstanceID":2,"unfaceted":true}',
   'vom.o+d10/1': '{}',

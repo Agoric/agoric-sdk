@@ -21,6 +21,7 @@ import {
   enumerateKeysStartEnd,
   enumerateKeysWithPrefix,
 } from './vatstore-iterators.js';
+import { makeCache } from './cache.js';
 
 // XXX TODO: The following key length limit was put in place due to limitations
 // in LMDB.  With the move away from LMDB, it is no longer relevant, but I'm
@@ -46,6 +47,52 @@ function throwNotDurable(value, slotIndex, serializedValue) {
   Fail`value is not durable: ${value} at slot ${q(slotIndex)} of ${serializedValue.body}`;
 }
 
+function prefixc(collectionID, dbEntryKey) {
+  return `vc.${collectionID}.${dbEntryKey}`;
+}
+
+/**
+ * @typedef {object} SchemaCacheValue
+ * @property {Pattern} keyShape
+ * @property {Pattern} valueShape
+ * @property {string} label
+ * @property {object} schemataCapData
+ */
+
+/*
+ * Build a cache that holds the schema for each collection.
+ *
+ * The cache maps collectionID to { keyShape, valueShape, label,
+ * schemataCapData }. These are initialized when the collection is
+ * first constructed, and never modified afterwards. The values live
+ * in the vatstore, inside two keys, one for the [keyShape,
+ * valueShape] schemata, another for the label.
+ */
+function makeSchemaCache(syscall, unserialize) {
+  /** @type {(collectionID: string) => SchemaCacheValue} */
+  const readBacking = collectionID => {
+    // this is only called once per crank
+    const schemataKey = prefixc(collectionID, '|schemata');
+    const schemataValue = syscall.vatstoreGet(schemataKey);
+    const schemataCapData = JSON.parse(schemataValue);
+    const { label, keyShape, valueShape } = unserialize(schemataCapData);
+    return harden({ keyShape, valueShape, label, schemataCapData });
+  };
+  /** @type {(collectionID: string, value: SchemaCacheValue) => void } */
+  const writeBacking = (collectionID, value) => {
+    const { schemataCapData } = value;
+    const schemataKey = prefixc(collectionID, '|schemata');
+    const schemataValue = JSON.stringify(schemataCapData);
+    syscall.vatstoreSet(schemataKey, schemataValue);
+  };
+  /** @type {(collectionID: string) => void} */
+  const deleteBacking = collectionID => {
+    const schemataKey = prefixc(collectionID, '|schemata');
+    syscall.vatstoreDelete(schemataKey);
+  };
+  return makeCache(readBacking, writeBacking, deleteBacking);
+}
+
 export function makeCollectionManager(
   syscall,
   vrm,
@@ -58,13 +105,10 @@ export function makeCollectionManager(
   unserialize,
   assertAcceptableSyscallCapdataSize,
 ) {
-  // TODO(#5058): we hold a list of all collections (both virtual and
-  // durable) in RAM, so we can delete the virtual ones during
-  // stopVat(), and tolerate subsequent GC-triggered duplication
-  // deletion without crashing. This needs to move to the DB to avoid
-  // the RAM consumption of a large number of collections.
-  const allCollectionObjIDs = new Set();
   const storeKindIDToName = new Map();
+
+  /** @type { import('./cache.js').Cache<SchemaCacheValue>} */
+  const schemaCache = makeSchemaCache(syscall, unserialize);
 
   const storeKindInfo = {
     scalarMapStore: {
@@ -125,10 +169,6 @@ export function makeCollectionManager(
     },
   };
 
-  function prefixc(collectionID, dbEntryKey) {
-    return `vc.${collectionID}.${dbEntryKey}`;
-  }
-
   function initializeStoreKindInfo() {
     let storeKindIDs = {};
     const rawTable = syscall.vatstoreGet('storeKindIDTable');
@@ -187,35 +227,33 @@ export function makeCollectionManager(
   }
   vrm.setDeleteCollectionEntry(deleteCollectionEntry);
 
-  function summonCollectionInternal(
-    _initial,
-    label,
-    collectionID,
-    kindName,
-    keyShape = M.any(),
-    valueShape,
-  ) {
+  function summonCollectionInternal(_initial, collectionID, kindName) {
     assert.typeof(kindName, 'string');
     const kindInfo = storeKindInfo[kindName];
     kindInfo || Fail`unknown collection kind ${kindName}`;
     const { hasWeakKeys, durable } = kindInfo;
+    const getSchema = () => schemaCache.get(collectionID);
     const dbKeyPrefix = `vc.${collectionID}.`;
     let currentGenerationNumber = 0;
 
-    const invalidKeyTypeMsg = `invalid key type for collection ${q(label)}`;
-    const invalidValueTypeMsg = `invalid value type for collection ${q(label)}`;
+    const makeInvalidKeyTypeMsg = label =>
+      `invalid key type for collection ${q(label)}`;
+    const makeInvalidValueTypeMsg = label =>
+      `invalid value type for collection ${q(label)}`;
 
     const serializeValue = value => {
+      const { valueShape, label } = getSchema();
       if (valueShape !== undefined) {
-        mustMatch(value, valueShape, invalidValueTypeMsg);
+        mustMatch(value, valueShape, makeInvalidValueTypeMsg(label));
       }
       return serialize(value);
     };
 
     const unserializeValue = data => {
+      const { valueShape, label } = getSchema();
       const value = unserialize(data);
       if (valueShape !== undefined) {
-        mustMatch(value, valueShape, invalidValueTypeMsg);
+        mustMatch(value, valueShape, makeInvalidValueTypeMsg(label));
       }
       return value;
     };
@@ -283,6 +321,7 @@ export function makeCollectionManager(
     }
 
     function has(key) {
+      const { keyShape } = getSchema();
       if (!matches(key, keyShape)) {
         return false;
       }
@@ -294,7 +333,8 @@ export function makeCollectionManager(
     }
 
     function get(key) {
-      mustMatch(key, keyShape, invalidKeyTypeMsg);
+      const { keyShape, label } = getSchema();
+      mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
       if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
         throw Fail`key ${key} not found in collection ${q(label)}`;
       }
@@ -316,7 +356,8 @@ export function makeCollectionManager(
     }
 
     const doInit = (key, value, precheckedHas) => {
-      mustMatch(key, keyShape, invalidKeyTypeMsg);
+      const { keyShape, label } = getSchema();
+      mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
       precheckedHas ||
         !has(key) ||
         Fail`key ${key} already registered in collection ${q(label)}`;
@@ -356,7 +397,8 @@ export function makeCollectionManager(
     };
 
     function set(key, value) {
-      mustMatch(key, keyShape, invalidKeyTypeMsg);
+      const { keyShape, label } = getSchema();
+      mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
       const after = serializeValue(harden(value));
       assertAcceptableSyscallCapdataSize([after]);
       if (durable) {
@@ -375,7 +417,8 @@ export function makeCollectionManager(
     }
 
     function deleteInternal(key) {
-      mustMatch(key, keyShape, invalidKeyTypeMsg);
+      const { keyShape, label } = getSchema();
+      mustMatch(key, keyShape, makeInvalidKeyTypeMsg(label));
       if (passStyleOf(key) === 'remotable' && getOrdinal(key) === undefined) {
         throw Fail`key ${key} not found in collection ${q(label)}`;
       }
@@ -586,23 +629,9 @@ export function makeCollectionManager(
     };
   }
 
-  function summonCollection(
-    initial,
-    label,
-    collectionID,
-    kindName,
-    keyShape,
-    valueShape,
-  ) {
+  function summonCollection(initial, collectionID, kindName) {
     const hasWeakKeys = storeKindInfo[kindName].hasWeakKeys;
-    const raw = summonCollectionInternal(
-      initial,
-      label,
-      collectionID,
-      kindName,
-      keyShape,
-      valueShape,
-    );
+    const raw = summonCollectionInternal(initial, collectionID, kindName);
 
     const { has, get, init, addToSet, set, delete: del } = raw;
     const weakMethods = {
@@ -645,48 +674,43 @@ export function makeCollectionManager(
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
     kindName || Fail`unknown kind ID ${id}`;
-    const collection = summonCollectionInternal(false, 'test', subid, kindName);
+    const collectionID = `${subid}`;
+    const collection = summonCollectionInternal(false, collectionID, kindName);
     return collection.sizeInternal();
   }
 
   function deleteCollection(vobjID) {
-    if (!allCollectionObjIDs.has(vobjID)) {
-      return false; // already deleted
-    }
     const { id, subid } = parseVatSlot(vobjID);
     const kindName = storeKindIDToName.get(`${id}`);
-    const collection = summonCollectionInternal(false, 'GC', subid, kindName);
-    allCollectionObjIDs.delete(vobjID);
+    const collectionID = `${subid}`;
+    const collection = summonCollectionInternal(false, collectionID, kindName);
 
     const doMoreGC = collection.clearInternal(true);
-    for (const dbKey of enumerateKeysWithPrefix(syscall, prefixc(subid, '|'))) {
+    for (const dbKey of enumerateKeysWithPrefix(
+      syscall,
+      prefixc(collectionID, '|'),
+    )) {
+      // this key is owned by schemaCache, and will be deleted when
+      // schemaCache is flushed
+      if (dbKey.endsWith('|schemata')) {
+        continue;
+      }
+      // but we must still delete the other keys (|nextOrdinal and
+      // |entryCount)
       syscall.vatstoreDelete(dbKey);
     }
+    schemaCache.delete(collectionID);
     return doMoreGC;
-  }
-
-  function deleteAllVirtualCollections() {
-    const vobjIDs = Array.from(allCollectionObjIDs).sort();
-    for (const vobjID of vobjIDs) {
-      const { id } = parseVatSlot(vobjID);
-      const kindName = storeKindIDToName.get(`${id}`);
-      const { durable } = storeKindInfo[kindName];
-      if (!durable) {
-        deleteCollection(vobjID);
-      }
-    }
   }
 
   function makeCollection(label, kindName, isDurable, keyShape, valueShape) {
     assert.typeof(label, 'string');
     assert(storeKindInfo[kindName]);
     assertPattern(keyShape);
-    const schemata = [keyShape];
     if (valueShape) {
       assertPattern(valueShape);
-      schemata.push(valueShape);
     }
-    const collectionID = allocateCollectionID();
+    const collectionID = `${allocateCollectionID()}`;
     const kindID = obtainStoreKindID(kindName);
     const vobjID = makeBaseRef(kindID, collectionID, isDurable);
 
@@ -695,24 +719,21 @@ export function makeCollectionManager(
     if (!hasWeakKeys) {
       syscall.vatstoreSet(prefixc(collectionID, '|entryCount'), '0');
     }
-    syscall.vatstoreSet(
-      prefixc(collectionID, '|schemata'),
-      JSON.stringify(serialize(harden(schemata))),
-    );
-    syscall.vatstoreSet(prefixc(collectionID, '|label'), label);
-    allCollectionObjIDs.add(vobjID);
 
-    return [
-      vobjID,
-      summonCollection(
-        true,
-        label,
-        collectionID,
-        kindName,
-        keyShape,
-        valueShape,
-      ),
-    ];
+    const schemata = { label }; // don't populate 'undefined', keep it small
+    if (keyShape !== undefined) {
+      schemata.keyShape = keyShape;
+    }
+    if (valueShape !== undefined) {
+      schemata.valueShape = valueShape;
+    }
+    const schemataCapData = serialize(harden(schemata));
+    schemaCache.set(
+      collectionID,
+      harden({ keyShape, valueShape, label, schemataCapData }),
+    );
+
+    return [vobjID, summonCollection(true, collectionID, kindName)];
   }
 
   function collectionToMapStore(collection) {
@@ -908,20 +929,9 @@ export function makeCollectionManager(
 
   function reanimateCollection(vobjID) {
     const { id, subid } = parseVatSlot(vobjID);
+    const collectionID = `${subid}`;
     const kindName = storeKindIDToName.get(`${id}`);
-    const rawSchemata = JSON.parse(
-      syscall.vatstoreGet(prefixc(subid, '|schemata')),
-    );
-    const [keyShape, valueShape] = unserialize(rawSchemata);
-    const label = syscall.vatstoreGet(prefixc(subid, '|label'));
-    return summonCollection(
-      false,
-      label,
-      subid,
-      kindName,
-      keyShape,
-      valueShape,
-    );
+    return summonCollection(false, collectionID, kindName);
   }
 
   function reanimateMapStore(vobjID) {
@@ -1012,18 +1022,20 @@ export function makeCollectionManager(
   const makeScalarBigWeakSetStore = (label = 'weakSet', options = {}) =>
     makeBigWeakSetStore(label, narrowKeyShapeOption(M.scalar(), options));
 
+  const flushSchemaCache = () => schemaCache.flush();
+
   function getRetentionStats() {
     return {};
   }
 
   return harden({
     initializeStoreKindInfo,
-    deleteAllVirtualCollections,
     makeScalarBigMapStore,
     makeScalarBigWeakMapStore,
     makeScalarBigSetStore,
     makeScalarBigWeakSetStore,
     provideBaggage,
+    flushSchemaCache,
     getRetentionStats,
     testHooks,
   });
