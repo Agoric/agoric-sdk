@@ -57,7 +57,7 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
       - `metrics`
     - `priceFeed`
       - '<inputBrand>_<outputBrand>_price_feed'
-    - `psm`
+    - `psm` - [snapshot of details](./test/psm/snapshots/test-psm.js.md)
       - `<minted>`
         - `<anchor>`
           - `governance`

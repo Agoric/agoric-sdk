@@ -21,6 +21,7 @@ import { NonNullish } from '@agoric/assert';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeTracer } from '@agoric/internal';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import {
   makeMockChainStorageRoot,
   mintRunPayment,
@@ -182,7 +183,10 @@ async function makePsmDriver(t, customTerms) {
     harden({
       feeMintAccess,
       initialPoserInvitation,
-      storageNode: mockChainStorage.makeChildNode('thisPsm'),
+      storageNode: mockChainStorage
+        .makeChildNode('psm')
+        .makeChildNode('IST')
+        .makeChildNode('AUSD'),
       marshaller: makeBoard().getReadonlyMarshaller(),
     }),
   );
@@ -235,7 +239,7 @@ async function makePsmDriver(t, customTerms) {
     /** @type {(subpath: string) => object} */
     getStorageChildBody(subpath) {
       return mockChainStorage.getBody(
-        `mockChainStorageRoot.thisPsm.${subpath}`,
+        `mockChainStorageRoot.psm.IST.AUSD.${subpath}`,
       );
     },
 
@@ -510,7 +514,7 @@ test('governance', async t => {
   const driver = await makePsmDriver(t);
   t.is(
     await subscriptionKey(E(driver.publicFacet).getSubscription()),
-    'mockChainStorageRoot.thisPsm.governance',
+    'mockChainStorageRoot.psm.IST.AUSD.governance',
   );
 
   t.like(driver.getStorageChildBody('governance'), {
@@ -523,11 +527,11 @@ test('governance', async t => {
   });
 });
 
-test('metrics', async t => {
+test('metrics, with snapshot', async t => {
   const driver = await makePsmDriver(t);
   t.is(
     await subscriptionKey(E(driver.publicFacet).getMetrics()),
-    'mockChainStorageRoot.thisPsm.metrics',
+    'mockChainStorageRoot.psm.IST.AUSD.metrics',
   );
 
   const { anchor, minted } = t.context;
@@ -620,6 +624,12 @@ test('metrics', async t => {
       value: giveAnchor.value,
     },
   });
+
+  const doc = {
+    node: 'psm',
+    owner: 'a tree of PSM contract instances',
+  };
+  await documentStorageSchema(t, driver.mockChainStorage, doc);
 });
 
 test('wrong give giveMintedInvitation', async t => {
