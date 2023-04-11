@@ -1,3 +1,5 @@
+import { Fail } from '@agoric/assert';
+
 /** @typedef {'counter' | 'gauge'} KernelStatsMetricType */
 /**
  * @template {KernelStatsMetricType} [T=KernelStatsMetricType]
@@ -58,7 +60,7 @@ export const makeKernelStats = kernelStatsMetrics => {
         break;
       }
       default:
-        assert.fail(`Unknown stat type ${metricType}`);
+        Fail`Unknown stat type ${metricType}`;
     }
     allStatsKeys[key] = metricType;
   }
@@ -74,9 +76,9 @@ export const makeKernelStats = kernelStatsMetrics => {
     );
     const metricType = allStatsKeys[stat];
     if (gauge) {
-      assert(metricType === 'gauge', `Invalid kernel gauge stat ${stat}`);
+      metricType === 'gauge' || Fail`Invalid kernel gauge stat ${stat}`;
     } else {
-      assert(!!metricType, `Invalid kernel stat ${stat}`);
+      !!metricType || Fail`Invalid kernel stat ${stat}`;
     }
     return stat in kernelConsensusStats
       ? kernelConsensusStats

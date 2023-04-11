@@ -308,41 +308,37 @@ test('kernelKeeper runQueue', async t => {
   const k = makeKernelKeeper(store, null);
   k.createStartingKernelState({ defaultManagerType: 'local' });
 
-  t.truthy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 0);
+  t.is(k.getNextRunQueueMsg(), undefined);
 
   k.addToRunQueue({ type: 'send', stuff: 'awesome' });
-  t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 1);
 
   k.addToRunQueue({ type: 'notify', stuff: 'notifawesome' });
-  t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 2);
 
   k.emitCrankHashes();
   const k2 = duplicateKeeper(store.serialize);
 
   t.deepEqual(k.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
-  t.falsy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 1);
 
   t.deepEqual(k.getNextRunQueueMsg(), {
     type: 'notify',
     stuff: 'notifawesome',
   });
-  t.truthy(k.isRunQueueEmpty());
   t.is(k.getRunQueueLength(), 0);
+  t.is(k.getNextRunQueueMsg(), undefined);
 
   t.deepEqual(k2.getNextRunQueueMsg(), { type: 'send', stuff: 'awesome' });
-  t.falsy(k2.isRunQueueEmpty());
   t.is(k2.getRunQueueLength(), 1);
 
   t.deepEqual(k2.getNextRunQueueMsg(), {
     type: 'notify',
     stuff: 'notifawesome',
   });
-  t.truthy(k2.isRunQueueEmpty());
   t.is(k2.getRunQueueLength(), 0);
+  t.is(k2.getNextRunQueueMsg(), undefined);
 });
 
 test('kernelKeeper promises', async t => {

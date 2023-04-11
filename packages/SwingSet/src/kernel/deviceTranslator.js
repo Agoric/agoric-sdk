@@ -124,7 +124,7 @@ export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
   }
 
   function translateCallKernelHook(name, dargs) {
-    assert.typeof(name, 'string', `callKernelHook requires string hook name`);
+    assert.typeof(name, 'string', 'callKernelHook requires string hook name');
     insistCapData(dargs); // dref slots
     const kargs = harden({
       ...dargs,

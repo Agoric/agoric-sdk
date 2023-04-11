@@ -180,11 +180,10 @@ c1.init('key4', foo2);
 Each collection stores a number of metadata keys in the vatstore, all with a prefix of `vc.${collectionID}.|` (note that the collection *type* is not a part of the key, only the collection *index*). The currently defined metadata keys (copied from the record for the "mylabel" Kind stored in `c1`) are:
 
 * `v6.vs.vc.2.|entryCount`: `4` (the size of the collection as a numeric string, incremented with each call to `c1.init` and decremented with each call to `c1.delete`)
-* `v6.vs.vc.2.|label`: `mylabel` (a debugging label provided in the `make*Store` call that creates the collection)
 * `v6.vs.vc.2.|nextOrdinal`: `1` (a numeric string counter used to allocate index values for Objects used as keys, see `generateOrdinal` in [collectionManager.js](./collectionManager.js))
-* `v6.vs.vc.2.|schemata`: `{"body":"#[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}]","slots":[]}`
+* `v6.vs.vc.2.|schemata`: `{"label":"mylabel","body":"#[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"}]","slots":[]}`
 
-The `schemata` is a capdata serialization of the Matcher constraints recorded for the collection. These constraints can limit keys to be just strings, or numbers, etc. (see [Patterns](https://github.com/endojs/endo/tree/master/packages/patterns)). The schemata consists of an array in which the first element is a schema for the keys and the second is a separate schema for the values.
+The `schemata` is a capdata serialization of the debugging label provided in the `make*Store` call that created the collection, plus the Matcher constraints recorded for the collection. These constraints can limit keys to be just strings, or numbers, etc. (see [Patterns](https://github.com/endojs/endo/tree/master/packages/patterns)). The schemata consists of an array in which the first element is a schema for the keys and the second is a separate schema for the values.
 
 Each entry in the collection gets put into a single vatstore entry with a capdata-serialized value:
 

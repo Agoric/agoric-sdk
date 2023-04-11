@@ -502,10 +502,8 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
     const { type } = parseKernelSlot(dev);
     type === 'device' || Fail`doCallNow must target a device, not ${dev}`;
     for (const slot of args.slots) {
-      assert(
-        parseVatSlot(slot).type !== 'promise',
-        `syscall.callNow() args cannot include promises like ${slot}`,
-      );
+      parseVatSlot(slot).type !== 'promise' ||
+        Fail`syscall.callNow() args cannot include promises like ${slot}`;
     }
     const kernelSlots = args.slots.map(slot => mapVatSlotToKernelSlot(slot));
     const kernelData = harden({ ...args, slots: kernelSlots });

@@ -1,7 +1,7 @@
 import { makeScalarMapStore, makeLegacyMap } from '@agoric/store';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { assert, details as X, Fail } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { whileTrue } from '@agoric/internal';
 import { toBytes } from './bytes.js';
 
@@ -277,7 +277,7 @@ export function makeNetworkProtocol(protocolHandler) {
       },
       async addListener(listenHandler) {
         !revoked || Fail`Port ${localAddr} is revoked`;
-        assert(listenHandler, X`listenHandler is not defined`, TypeError);
+        listenHandler || Fail`listenHandler is not defined`;
         if (listening.has(localAddr)) {
           // Last one wins.
           const [lport, lhandler] = listening.get(localAddr);

@@ -1,12 +1,12 @@
 // this file is imported by some test vats, so don't import any non-pure
 // modules
 
-import { assert } from '@agoric/assert';
+import { Fail } from '@agoric/assert';
 import { kser, kunser } from './kmarshal.js';
 
 export function extractMessage(vatDeliverObject) {
   const [type, ...vdoargs] = vatDeliverObject;
-  assert.equal(type, 'message', `util.js .extractMessage got type ${type}`);
+  type === 'message' || Fail`util.js .extractMessage got type ${type}`;
   const [facetID, msg] = vdoargs;
   const { methargs, result } = msg;
   const [method, argsdata] = kunser(methargs);

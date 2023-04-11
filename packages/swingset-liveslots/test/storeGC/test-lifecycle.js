@@ -6,7 +6,7 @@ import {
   findSyscallsByType,
 } from '../liveslots-helpers.js';
 import { buildRootObject, mainHeldIdx, mapRef } from '../gc-helpers.js';
-import { kslot } from '../kmarshal.js';
+import { kslot, kunser } from '../kmarshal.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
 
 // These tests follow the model described in
@@ -33,12 +33,13 @@ function assertState(v, vref, reachable, erv) {
   }
   const vdata = erv[2] === 'V';
   const { t, fakestore } = v;
+  const get = key => fakestore.get(key);
+  const getLabel = key => kunser(JSON.parse(get(key))).label;
   const { subid: cID } = parseVatSlot(vref);
   if (reachable) {
-    t.is(fakestore.get(`vc.${cID}.|label`), 'store #6');
+    t.is(getLabel(`vc.${cID}.|schemata`), 'store #6');
     t.truthy(fakestore.get(`vc.${cID}.|entryCount`)); // exists even if 0
     t.truthy(fakestore.get(`vc.${cID}.|nextOrdinal`));
-    t.truthy(fakestore.get(`vc.${cID}.|schemata`));
     if (vdata) {
       t.is(fakestore.get(`vom.rc.${vref}`), `1`);
     } else {
@@ -52,10 +53,9 @@ function assertState(v, vref, reachable, erv) {
       t.is(fakestore.get(`vom.es.${vref}`), undefined);
     }
   } else {
-    t.is(fakestore.get(`vc.${cID}.|label`), undefined);
+    t.is(fakestore.get(`vc.${cID}.|schemata`), undefined);
     t.is(fakestore.get(`vc.${cID}.|entryCount`), undefined);
     t.is(fakestore.get(`vc.${cID}.|nextOrdinal`), undefined);
-    t.is(fakestore.get(`vc.${cID}.|schemata`), undefined);
     t.is(fakestore.get(`vom.rc.${vref}`), undefined);
     t.is(fakestore.get(`vom.es.${vref}`), undefined);
   }

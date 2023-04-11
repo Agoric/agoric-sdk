@@ -218,7 +218,7 @@ export function makeXsSubprocessFactory({
       // @ts-ignore I don't know how to appease tsc
       const deliverResult = harden([
         result.reply[0], // 'ok' or 'error'
-        result.reply[1] || null, // problem or null
+        result.reply[1] || null, // results or problem or null
         result.meterUsage || null, // meter usage statistics or null
       ]);
       insistVatDeliveryResult(deliverResult);

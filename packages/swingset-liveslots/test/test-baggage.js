@@ -4,6 +4,7 @@ import '@endo/init/debug.js';
 import { Far } from '@endo/marshal';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { vstr } from './util.js';
+import { kunser } from './kmarshal.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 
 function buildRootObject(vatPowers, vatParameters, baggage) {
@@ -25,6 +26,8 @@ test.serial('exercise baggage', async t => {
     { forceGC: true },
   );
   const { fakestore } = v;
+  const get = key => fakestore.get(key);
+  const getLabel = key => kunser(JSON.parse(get(key))).label;
 
   const baggageVref = fakestore.get('baggageID');
   const { subid } = parseVatSlot(baggageVref);
@@ -32,7 +35,7 @@ test.serial('exercise baggage', async t => {
   const kindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
   // baggage is the first collection created, a scalarDurableMapStore
   t.is(baggageVref, `o+d${kindIDs.scalarDurableMapStore}/1`);
-  t.is(fakestore.get(`vc.${baggageID}.|label`), 'baggage');
+  t.is(getLabel(`vc.${baggageID}.|schemata`), 'baggage');
   const outsideVal = fakestore.get(`vc.${baggageID}.soutside`);
   t.is(outsideVal, vstr('outer val'));
   t.is(fakestore.get(`vc.${baggageID}.|entryCount`), '1');

@@ -984,7 +984,7 @@ export function makeVirtualObjectManager(
    * @returns {import('@agoric/vat-data').DurableKindHandle}
    */
   const makeKindHandle = tag => {
-    assert(kindIDID, `initializeKindHandleKind not called yet`);
+    assert(kindIDID, 'initializeKindHandleKind not called yet');
     const kindID = `${allocateExportID()}`;
     const kindIDvref = makeBaseRef(kindIDID, kindID, true);
     const durableKindDescriptor = { kindID, tag, nextInstanceID: 1 };
@@ -1002,15 +1002,13 @@ export function makeVirtualObjectManager(
   };
 
   function defineDurableKind(kindHandle, init, behavior, options) {
-    assert(kindHandleToID.has(kindHandle), `unknown handle ${kindHandle}`);
+    kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
     const durableKindDescriptor = kindIDToDescriptor.get(kindID);
     assert(durableKindDescriptor);
     const { tag, nextInstanceID } = durableKindDescriptor;
-    assert(
-      !definedDurableKinds.has(kindID),
-      `redefinition of durable kind "${tag}"`,
-    );
+    !definedDurableKinds.has(kindID) ||
+      Fail`redefinition of durable kind ${tag}`;
     nextInstanceIDs.set(kindID, nextInstanceID);
     const maker = defineKindInternal(
       kindID,
@@ -1027,15 +1025,13 @@ export function makeVirtualObjectManager(
   }
 
   function defineDurableKindMulti(kindHandle, init, behavior, options) {
-    assert(kindHandleToID.has(kindHandle), `unknown handle ${kindHandle}`);
+    kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
     const durableKindDescriptor = kindIDToDescriptor.get(kindID);
     assert(durableKindDescriptor);
     const { tag, nextInstanceID } = durableKindDescriptor;
-    assert(
-      !definedDurableKinds.has(kindID),
-      `redefinition of durable kind "${tag}"`,
-    );
+    !definedDurableKinds.has(kindID) ||
+      Fail`redefinition of durable kind "${tag}"`;
     nextInstanceIDs.set(kindID, nextInstanceID);
     const maker = defineKindInternal(
       kindID,
@@ -1082,6 +1078,9 @@ export function makeVirtualObjectManager(
 
   const testHooks = {
     countWeakKeysForCollection,
+
+    definedDurableKinds,
+    nextInstanceIDs,
   };
 
   const flushStateCache = () => {
@@ -1089,6 +1088,13 @@ export function makeVirtualObjectManager(
       cache.flush();
     }
   };
+
+  function getRetentionStats() {
+    return {
+      definedDurableKinds: definedDurableKinds.size,
+      nextInstanceIDs: nextInstanceIDs.size,
+    };
+  }
 
   return harden({
     initializeKindHandleKind,
@@ -1101,6 +1107,7 @@ export function makeVirtualObjectManager(
     VirtualObjectAwareWeakMap,
     VirtualObjectAwareWeakSet,
     flushStateCache,
+    getRetentionStats,
     testHooks,
     canBeDurable,
   });

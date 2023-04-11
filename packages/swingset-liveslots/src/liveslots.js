@@ -4,7 +4,7 @@ import {
   getInterfaceOf,
   makeMarshal,
 } from '@endo/marshal';
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, Fail } from '@agoric/assert';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -257,17 +257,36 @@ function build(
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
       await gcTools.gcAndFinalize();
 
-      // `deadSet` is the subset of those vrefs which lack an in-memory
-      // manifestation *right now* (i.e. the non-resurrected ones), for which
-      // we must check the remaining pillars.
+      // possiblyDeadSet contains a baseref for everything (Presences,
+      // Remotables, Representatives) that might have lost a
+      // pillar. The object might still be supported by other pillars,
+      // and the lost pillar might have been reinstantiated by the
+      // time we get here. The first step is to filter this down to a
+      // list of definitely dead baserefs.
+
       const deadSet = new Set();
+
       for (const baseRef of possiblyDeadSet) {
         // eslint-disable-next-line no-use-before-define
-        if (!slotToVal.has(baseRef)) {
-          deadSet.add(baseRef);
+        if (slotToVal.has(baseRef)) {
+          continue; // RAM pillar remains
         }
+        const { virtual, durable, type } = parseVatSlot(baseRef);
+        assert(type === 'object', `unprepared to track ${type}`);
+        if (virtual || durable) {
+          // eslint-disable-next-line no-use-before-define
+          if (vrm.isVirtualObjectReachable(baseRef)) {
+            continue; // vdata or export pillar remains
+          }
+        }
+        deadSet.add(baseRef);
       }
       possiblyDeadSet.clear();
+
+      // deadSet now contains objects which are certainly dead
+
+      // possiblyRetiredSet holds (a subset of??) baserefs which have
+      // lost a recognizer recently. TODO recheck this
 
       for (const vref of possiblyRetiredSet) {
         // eslint-disable-next-line no-use-before-define
@@ -287,11 +306,11 @@ function build(
       for (const baseRef of deadBaseRefs) {
         const { virtual, durable, allocatedByVat, type } =
           parseVatSlot(baseRef);
-        assert(type === 'object', `unprepared to track ${type}`);
+        type === 'object' || Fail`unprepared to track ${type}`;
         if (virtual || durable) {
           // Representative: send nothing, but perform refcount checking
           // eslint-disable-next-line no-use-before-define
-          const [gcAgain, retirees] = vrm.possibleVirtualObjectDeath(baseRef);
+          const [gcAgain, retirees] = vrm.deleteVirtualObject(baseRef);
           if (retirees) {
             retirees.map(retiree => exportsToRetire.add(retiree));
           }
@@ -512,7 +531,7 @@ function build(
       initializeIDCounters();
     }
     const result = idCounters[name];
-    assert(result !== undefined, `unknown idCounters[${name}]`);
+    result !== undefined || Fail`unknown idCounters[${name}]`;
     idCounters[name] += 1;
     idCountersAreDirty = true;
     return result;
@@ -730,10 +749,8 @@ function build(
 
   function registerValue(baseRef, val, valIsCohort) {
     const { type, id, facet } = parseVatSlot(baseRef);
-    assert(
-      !facet,
-      `registerValue(${baseRef} should not receive individual facets`,
-    );
+    !facet ||
+      Fail`registerValue(${baseRef} should not receive individual facets`;
     slotToVal.set(baseRef, new WeakRef(val));
     if (valIsCohort) {
       vrm.getFacetNames(id).forEach((name, index) => {
@@ -1309,10 +1326,10 @@ function build(
     }
     const slot = valToSlot.get(presence);
     const { type, allocatedByVat } = parseVatSlot(slot);
-    assert.equal(type, 'object', X`attempt to disavow non-object ${presence}`);
+    type === 'object' || Fail`attempt to disavow non-object ${presence}`;
     // disavow() is only for imports: we'll use a different API to revoke
     // exports, one which accepts an Error object
-    assert.equal(allocatedByVat, false, X`attempt to disavow an export`);
+    !allocatedByVat || Fail`attempt to disavow an export`;
     valToSlot.delete(presence);
     slotToVal.delete(slot);
     disavowedPresences.add(presence);
@@ -1342,12 +1359,39 @@ function build(
     WeakSet: vom.VirtualObjectAwareWeakSet,
   });
 
+  function getRetentionStats() {
+    return {
+      ...collectionManager.getRetentionStats(),
+      ...vrm.getRetentionStats(),
+      ...vom.getRetentionStats(),
+      exportedRemotables: exportedRemotables.size,
+      importedDevices: importedDevices.size,
+      kernelRecognizableRemotables: kernelRecognizableRemotables.size,
+      exportedVPIDs: exportedVPIDs.size,
+      importedVPIDs: importedVPIDs.size,
+      possiblyDeadSet: possiblyDeadSet.size,
+      possiblyRetiredSet: possiblyRetiredSet.size,
+      slotToVal: slotToVal.size,
+    };
+  }
+
   const testHooks = harden({
     ...vom.testHooks,
     ...vrm.testHooks,
     ...collectionManager.testHooks,
     setSyscallCapdataLimits,
     vatGlobals,
+
+    getRetentionStats,
+    exportedRemotables,
+    importedDevices,
+    kernelRecognizableRemotables,
+    exportedVPIDs,
+    importedVPIDs,
+    possiblyDeadSet,
+    possiblyRetiredSet,
+    slotToVal,
+    valToSlot,
   });
 
   function setVatOption(option, _value) {
@@ -1410,19 +1454,13 @@ function build(
       inescapableGlobalProperties,
     );
     const buildRootObject = vatNS.buildRootObject;
-    assert.typeof(
-      buildRootObject,
-      'function',
-      X`vat source bundle lacks buildRootObject() function`,
-    );
+    typeof buildRootObject === 'function' ||
+      Fail`vat source bundle lacks buildRootObject() function`;
 
     // here we finally invoke the vat code, and get back the root object
     const rootObject = await buildRootObject(vpow, vatParameters, baggage);
-    assert.equal(
-      passStyleOf(rootObject),
-      'remotable',
-      X`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`,
-    );
+    passStyleOf(rootObject) === 'remotable' ||
+      Fail`buildRootObject() for vat ${forVatID} returned ${rootObject}, which is not Far`;
     getInterfaceOf(rootObject) !== undefined ||
       Fail`buildRootObject() for vat ${forVatID} returned ${rootObject} with no interface`;
     if (valToSlot.has(rootObject)) {
@@ -1498,8 +1536,13 @@ function build(
 
   async function bringOutYourDead() {
     await scanForDeadObjects();
-    // now flush all the vatstore changes (deletions) we made
-    vom.flushStateCache();
+    // Now flush all the vatstore changes (deletions and refcounts) we
+    // made. dispatch() calls afterDispatchActions() automatically for
+    // most methods, but not bringOutYourDead().
+    // eslint-disable-next-line no-use-before-define
+    afterDispatchActions();
+    // XXX TODO: make this conditional on a config setting
+    return getRetentionStats();
   }
 
   /**
@@ -1516,6 +1559,7 @@ function build(
    */
   function afterDispatchActions() {
     flushIDCounters();
+    collectionManager.flushSchemaCache();
     vom.flushStateCache();
   }
 
@@ -1594,7 +1638,6 @@ function build(
   return harden({
     dispatch,
     m,
-    possiblyDeadSet,
     testHooks,
   });
 }

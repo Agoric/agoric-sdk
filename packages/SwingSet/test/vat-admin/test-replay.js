@@ -28,6 +28,7 @@ test.serial('replay dynamic vat', async t => {
       },
     },
     bootstrap: 'bootstrap',
+    defaultReapInterval: 'never',
   };
 
   const ss1 = initSwingStore();
