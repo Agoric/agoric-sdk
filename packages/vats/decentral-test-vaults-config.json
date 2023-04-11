@@ -156,15 +156,6 @@
     }
   },
   "bundles": {
-    "centralSupply": {
-      "sourceSpec": "@agoric/vats/src/centralSupply.js"
-    },
-    "mintHolder": {
-      "sourceSpec": "@agoric/vats/src/mintHolder.js"
-    },
-    "zcf": {
-      "sourceSpec": "@agoric/zoe/contractFacet.js"
-    },
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
@@ -174,8 +165,14 @@
     "bridge": {
       "sourceSpec": "@agoric/vats/src/vat-bridge.js"
     },
+    "centralSupply": {
+      "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
     "ibc": {
       "sourceSpec": "@agoric/vats/src/vat-ibc.js"
+    },
+    "mintHolder": {
+      "sourceSpec": "@agoric/vats/src/mintHolder.js"
     },
     "network": {
       "sourceSpec": "@agoric/vats/src/vat-network.js"
@@ -191,6 +188,9 @@
     },
     "walletFactory": {
       "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+    },
+    "zcf": {
+      "sourceSpec": "@agoric/zoe/contractFacet.js"
     },
     "zoe": {
       "sourceSpec": "@agoric/vats/src/vat-zoe.js"
