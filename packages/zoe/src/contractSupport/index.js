@@ -56,3 +56,4 @@ export * from './priceAuthority.js';
 export * from './priceQuote.js';
 export * from './statistics.js';
 export * from './recorder.js';
+export * from './topics.js';

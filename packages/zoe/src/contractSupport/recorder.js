@@ -243,19 +243,3 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
  * @template {TypedMatcher<any>} TM
  * @typedef {TM extends TypedMatcher<infer T> ? T : never} MatchedType
  */
-
-/**
- * @template T
- * @param {string} description
- * @param {RecorderKit<T> | EventualRecorderKit<T>} recorderKit
- * @returns {import('@agoric/notifier').PublicTopic<T>}
- */
-export const makePublicTopic = (description, recorderKit) => {
-  const recP =
-    'recorder' in recorderKit ? recorderKit.recorder : recorderKit.recorderP;
-  return {
-    description,
-    subscriber: recorderKit.subscriber,
-    storagePath: E(recP).getStoragePath(),
-  };
-};

@@ -11,7 +11,10 @@ import {
   prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
+  makeStoredPublisherKit,
+  SubscriberShape,
 } from '@agoric/notifier';
+import { makeTracer, makeTracer } from '@agoric/internal';
 import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   defineDurableExoClassKit,
@@ -24,13 +27,14 @@ import {
   getAmountIn,
   getAmountOut,
   makeRatioFromAmounts,
+  makeRecorderTopic,
   provideChildBaggage,
   provideEmptySeat,
+  TopicsRecordShape,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import {
   makeVaultParamManager,

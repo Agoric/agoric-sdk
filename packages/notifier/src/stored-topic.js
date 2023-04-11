@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 import { SubscriberShape } from './publish-kit.js';
 import { forEachPublicationRecord } from './storesub.js';
 
+// XXX PublicTopic is a higher level concern
 export const PublicTopicShape = M.splitRecord(
   {
     subscriber: SubscriberShape,
@@ -54,6 +55,9 @@ export const pipeTopicToStorage = (topic, storageNode, marshaller) => {
 harden(pipeTopicToStorage);
 
 /**
+ * If the subscriber and storageNode are coming from a Recorder kit,
+ * use a makePublicTopic that takes that object directly.
+ *
  * @template T
  * @param {string} description
  * @param {Subscriber<T>} subscriber
