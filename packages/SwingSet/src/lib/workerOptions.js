@@ -10,6 +10,8 @@ export async function makeWorkerOptions(managerType, bundleHandler) {
     // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ type: 'xsnap', bundleIDs });
+  } else if (managerType === 'node-subprocess') {
+    return harden({ type: 'node-subprocess' });
   }
   throw Error(`unknown managerType '${managerType}'`);
 }
@@ -25,6 +27,8 @@ export async function updateWorkerOptions(
 ) {
   const { type } = origWorkerOptions;
   if (type === 'local') {
+    return origWorkerOptions;
+  } else if (type === 'node-subprocess') {
     return origWorkerOptions;
   } else if (type === 'xsnap') {
     // eslint-disable-next-line @jessie.js/no-nested-await, no-await-in-loop

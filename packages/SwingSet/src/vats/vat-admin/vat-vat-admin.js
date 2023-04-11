@@ -19,7 +19,7 @@ import {
 
 const { quote: q, Fail } = assert;
 
-const managerTypes = ['local', 'xsnap', 'xs-worker']; // xs-worker is alias
+const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
 
 function producePRR() {
   const { promise, resolve, reject } = makePromiseKit();

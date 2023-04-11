@@ -7,9 +7,10 @@ export {};
  *
  * @typedef { { type: 'local' } } LocalWorkerOptions
  * @typedef { { type: 'xsnap', bundleIDs: BundleID[] } } XSnapWorkerOptions
+ * @typedef { { type: 'node-subprocess' } } NodeSubprocessWorkerOptions
  *  bundleIDs indicate the SES lockdown and supervisor/liveslots bundles to
  *  evaluate into a new xsnap worker
- * @typedef { LocalWorkerOptions | XSnapWorkerOptions } WorkerOptions
+ * @typedef { LocalWorkerOptions | XSnapWorkerOptions | NodeSubprocessWorkerOptions } WorkerOptions
  *
  * @typedef { string } VatID
  * @typedef { string } MeterID
