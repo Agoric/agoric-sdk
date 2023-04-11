@@ -213,14 +213,16 @@ const fmtMetrics = (metrics, quote, assets) => {
   return { ...amounts, price };
 };
 
-const netAccess = async ({ fetch, env: { AGORIC_NET } }) => {
+const netAccess = async ({ fetch, env: { AGORIC_NET }, store }) => {
   const qLocal = makeQueryClient({ fetch });
   const qClient = await (
     AGORIC_NET && AGORIC_NET !== 'local'
       ? qLocal.withConfig(AGORIC_NET)
       : qLocal);
-  const board = makeBoardClient(qClient);
-  return { qClient, board };
+  const keys = ['brand', 'instance', 'vbankAsset'].map(child => `published.agoricNames.${child}`);
+  const qCache = withCache(qClient, keys, store);
+  const board = makeBoardClient(qCache);
+  return { qClient: qCache, board };
 }
 
 const makeInterClient = ({ board, tui }) => {
