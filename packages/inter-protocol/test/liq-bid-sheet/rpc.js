@@ -33,7 +33,7 @@ const makeVStorage = (powers, config) => {
   /** @param {string} path */
   const getJSON = path => {
     const url = config.rpcAddrs[0] + path;
-    console.warn('@@fetching', url);
+    // console.debug('fetching', url);
     return powers.fetch(url, { keepalive: true }).then(res => res.json());
   };
   // height=0 is the same as omitting height and implies the highest block
