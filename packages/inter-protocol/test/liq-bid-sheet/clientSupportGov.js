@@ -59,6 +59,13 @@ const encodeGovParamEntry = agoricNames => ([name, type, value]) => {
       if (!timerBrand) throw Error('no timer brand???')
       return [name, { relValue: BigInt(value), timerBrand }]
     }
+    case 'IST': {
+      const assetInfo = agoricNames.vbankAsset.uist;
+      const { decimalPlaces } = assetInfo.displayInfo;
+      const scale = 10 ** decimalPlaces;
+      const amount = { brand: agoricNames.brand.IST, value: BigInt(Math.round(value * scale)) }
+      return [name, amount];
+    }
     default:
       throw Error(`not impl: ${type}`);
   }
