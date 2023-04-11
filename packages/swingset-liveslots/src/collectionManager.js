@@ -685,7 +685,11 @@ export function makeCollectionManager(
     const collectionID = `${subid}`;
     const collection = summonCollectionInternal(false, collectionID, kindName);
 
-    const doMoreGC = collection.clearInternal(true);
+    let doMoreGC = collection.clearInternal(true);
+    const { schemataCapData } = schemaCache.get(collectionID);
+    doMoreGC =
+      schemataCapData.slots.map(vrm.removeReachableVref).some(b => b) ||
+      doMoreGC;
     for (const dbKey of enumerateKeysWithPrefix(
       syscall,
       prefixc(collectionID, '|'),
@@ -728,6 +732,15 @@ export function makeCollectionManager(
       schemata.valueShape = valueShape;
     }
     const schemataCapData = serialize(harden(schemata));
+    if (isDurable) {
+      schemataCapData.slots.forEach((vref, slotIndex) => {
+        if (!vrm.isDurable(vref)) {
+          throwNotDurable(vref, slotIndex, schemataCapData);
+        }
+      });
+    }
+    schemataCapData.slots.forEach(vrm.addReachableVref);
+
     schemaCache.set(
       collectionID,
       harden({ keyShape, valueShape, label, schemataCapData }),
