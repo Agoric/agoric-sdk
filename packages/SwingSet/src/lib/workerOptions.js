@@ -10,6 +10,8 @@ export async function makeWorkerOptions(managerType, bundleHandler) {
   } else if (managerType === 'xsnap' || managerType === 'xs-worker') {
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();
     return harden({ type: 'xsnap', bundleIDs });
+  } else if (managerType === 'node-subprocess') {
+    return harden({ type: 'node-subprocess' });
   }
   throw Error(`unknown managerType '${managerType}'`);
 }
@@ -26,6 +28,8 @@ export async function updateWorkerOptions(
   const { type } = origWorkerOptions;
   await null;
   if (type === 'local') {
+    return origWorkerOptions;
+  } else if (type === 'node-subprocess') {
     return origWorkerOptions;
   } else if (type === 'xsnap') {
     const bundleIDs = await bundleHandler.getCurrentBundleIDs();

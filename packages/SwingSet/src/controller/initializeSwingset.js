@@ -327,6 +327,7 @@ export async function initializeSwingset(
   // Use ambient process.env only if caller did not specify.
   const { env: { SWINGSET_WORKER_TYPE } = process.env } = runtimeOptions;
 
+  //NEW CODE STARTS HERE
   // The worker/manager type used by each vat is controlled by a
   // hierarchy of settings.
   //
@@ -348,6 +349,25 @@ export async function initializeSwingset(
       SWINGSET_WORKER_TYPE || 'local'
     );
   }
+  /* OLD CODE STARTS HERE
+  // Override the worker type if specified by the caller, to avoid having to
+  // edit the config just to run everything under a different manager.
+  const defaultManagerType = SWINGSET_WORKER_TYPE || config.defaultManagerType;
+  switch (defaultManagerType) {
+    case 'local':
+    case 'xsnap': // preferred
+    case 'xs-worker': // alias accepted for now
+    case 'node-subprocess':
+      config.defaultManagerType = defaultManagerType;
+      break;
+    case undefined:
+      config.defaultManagerType = 'local';
+      break;
+    default:
+      Fail`unknown manager type ${defaultManagerType}`;
+  }
+  //END OF HISTORIC BLOCK
+  */
   if (config.defaultManagerType === 'xs-worker') {
     // 'xs-worker' is an alias accepted for now
     config.defaultManagerType = 'xsnap'; // but 'xsnap' is preferred
