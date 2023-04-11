@@ -40,7 +40,7 @@ VaultFactory publishes data using StoredPublishKit which tees writes to off-chai
 
 The canonical keys (under `published`) are as follows. Non-terminal nodes could have data but don't yet. A `0` indicates the index of that child in added order. To get the actual key look it up in parent. High cardinality types get a parent key for enumeration (e.g. `vaults`.)
 - `published`
-    - `vaultFactory`
+    - `vaultFactory` - [snapshot of details](./test/vaultFactory/snapshots/test-vaultFactory.js.md)
         - `governance`
         - `metrics`
         - `manager0`
