@@ -108,19 +108,33 @@ const fmtDetails = (metrics, agoricNames) => {
   const priceEntry = (name, ratio) => fmt1([ name, { type: 'ratio', value: ratio } ])
   const grokEntry = ([name, value]) => {
     const isObject = typeof value === 'object' && value !== null;
+
+    // Oracle support
     if (name === 'quoteAmount') {
         const { value: [{ amountIn, amountOut }] } = value;
         return [priceEntry(name, { numerator: amountOut, denominator: amountIn })];
     } else if (name === 'quotePayment') {
         return [[name, '...']];
+    } else if (name === 'startedAt') {
+      return [[name, new Date(Number(value) * 1000)]]
+    // wallet support
+    } else if (name === 'purses') {
+        return [[name, '...']];
+    } else if (name === 'offerToUsedInvitation') {
+        return value.map(([id, amt]) => [name, ...fmt1([id, { type: 'invitation', value: amt }])]);
+    } else if (name === 'offerToPublicSubscriberPaths') {
+      return value.map(([id, sp]) => [name, id, ...entries(sp).flat()]);
+    } else if (name === 'invitationSpec') {
+      return entries(value).map(e => [name, ...e]);
+    } else if (name === 'proposal') {
+      return ['give', 'want'].filter(p => p in value).flatMap(p => entries(value[p]).map(([kw, amt]) => [name, p, ...fmtAmt(amt)]));
+    // Vaults
     } else if (name === 'debtSnapshot') {
         return [[name, 'debt', ...fmtAmt(value.debt)],
                 [name, ...priceEntry('interest', value.interest)]];
-    // TODO: InterWallet function?
+    // Governance
     } else if (name === 'closingRule') {
       return [[name, 'deadline', new Date(Number(value.deadline) * 1000)]]
-    } else if (name === 'startedAt') {
-      return [[name, new Date(Number(value) * 1000)]]
     } else if (name === 'positions') {
       return [...fmtDetails(value[0].changes, agoricNames).map(r => [name, 'changes', ...r]),
               [name, 'noChange', [value[1].noChange].join(',')]]
@@ -131,36 +145,28 @@ const fmtDetails = (metrics, agoricNames) => {
       return rows;
     } else if (name === 'result') {
         return [[name, value]];
-    } else if (name === 'purses') {
-        return [[name, '...']];
-    } else if (name === 'offerToUsedInvitation') {
-        return value.map(([id, amt]) => [name, ...fmt1([id, { type: 'invitation', value: amt }])]);
-    } else if (name === 'offerToPublicSubscriberPaths') {
-      return value.map(([id, sp]) => [name, id, ...entries(sp).flat()]);
-    } else if (name === 'invitationSpec') {
-      return entries(value).map(e => [name, ...e]);      
-    } else if (name === 'proposal') {
-      return ['give', 'want'].filter(p => p in value).flatMap(p => entries(value[p]).map(([kw, amt]) => [name, p, ...fmtAmt(amt)]));
+    // ERTP
     } else if (isObject && 'brand' in value && 'value' in value && typeof value.value === 'bigint') {
-      // amount
       return [fmt1([name, { type: 'amount', value }])];
-    } else if (typeof value === 'number' || typeof value === 'string') {
-      // number - e.g. numVaults
-      return [[name, value]];
-    } else if (Array.isArray(value) && value.length > 0 && assetName(value[0])) {
-      // Array<brand> - e.g. collaterals
-      return [[name, value.map(assetName).join(',')]];
     } else if (isObject && 'numerator' in value && 'denominator' in value) {
       // ratio - e.g. interest
       return [priceEntry(name, value)];
+    } else if (Array.isArray(value) && value.length > 0 && assetName(value[0])) {
+      // Array<brand> - e.g. collaterals
+      return [[name, value.map(assetName).join(',')]];
     } else if (isObject && values(value).length > 0 && assetName(values(value)[0].brand)) {
       // Record<string, Amount> - e.g. rewardPoolAllocation
       return entries(value).map(([kw, amt]) => [name, kw, ...fmtAmt(amt).reverse()]);
     } else if (isObject && values(value).length === 0) {
       // empty Record<string, Amount> - e.g. rewardPoolAllocation
       return [[name]];
+    // generic remotables
     } else if (isObject && 'getBoardId' in value) {
       return [[name, 'boardId', value.getBoardId()]];
+    // primitives
+    } else if (typeof value === 'number' || typeof value === 'string') {
+    // number - e.g. numVaults
+      return [[name, value]];
     } else {
       return [[name, '???', JSON.stringify(value, bigintReplacer, 2)]]
     }
@@ -271,10 +277,11 @@ const testLiquidationStatus = async () => {
 
 const rpcBoardKit_ = async () => {
   const fetch = makeFetch();
-  console.warn('AMBIENT: SpreadsheetApp')
+  console.warn('AMBIENT: SpreadsheetApp');
   const doc = SpreadsheetApp.getActiveSpreadsheet();
   const rpc = doc.getRangeByName('RPC').getValue();
-  return netAccess({ fetch, env: { AGORIC_NET: `${rpc},agoriclocal` } });
+  const store = PropertiesService.getDocumentProperties();
+  return netAccess({ fetch, env: { AGORIC_NET: `${rpc},agoriclocal` }, store });
 }
 
 const GovParams = async (vPath) => {
@@ -338,6 +345,9 @@ const testInterDetails = async () => {
 const BlockInfo = async () => {
   const { qClient } = await rpcBoardKit_();
   const status = await qClient.getStatus();
-  const { result: { sync_info: { latest_block_height: height, latest_block_time: time } } } = status; 
-  return [[height, new Date(Date.parse(time))]];
+  const { result: {
+            node_info: { network },
+            sync_info: { latest_block_height: height, latest_block_time: time }
+          } } = status; 
+  return [[height, new Date(Date.parse(time)), network]];
 }
