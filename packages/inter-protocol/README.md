@@ -30,6 +30,8 @@ To maintain that the keys of vaults to liquidate are stable requires that its ke
 
 VaultFactory publishes data using StoredPublishKit which tees writes to off-chain storage. These can then be followed off-chain like so,
 ```js
+import { makeFollower } from '@agoric/casting';
+
   const key = `published.vaultFactory.metrics`; // or whatever the stream of interest is
   const leader = makeDefaultLeader();
   const follower = makeFollower(storeKey, leader);
