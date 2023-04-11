@@ -15,6 +15,7 @@ import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeFluxAggregator } from '../../src/price/fluxAggregator.js';
 import { topicPath } from '../supports.js';
 
@@ -72,7 +73,7 @@ test.before('setup aggregator and oracles', async t => {
   t.context = await makeContext();
 });
 
-test('basic', async t => {
+test('basic, with snapshot', async t => {
   const aggregator = await t.context.makeChainlinkAggregator(defaultConfig);
   const oracleTimer = aggregator.manualTimer;
 
@@ -128,6 +129,12 @@ test('basic', async t => {
   t.is(round1Attempt3.answer, 200n);
   const round3Attempt1 = await E(aggregator.creatorFacet).getRoundData(3);
   t.is(round3Attempt1.answer, 5000n);
+
+  const doc = {
+    node: 'priceAggregator',
+    owner: 'a tree of price aggregator contract instances',
+  };
+  await documentStorageSchema(t, aggregator.mockStorageRoot, doc);
 });
 
 test('timeout', async t => {

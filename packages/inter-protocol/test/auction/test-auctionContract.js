@@ -111,10 +111,9 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
   // Each driver needs its own to avoid state pollution between tests
   const mockChainStorage = makeMockChainStorageRoot();
 
-  const board = makeBoard();
   const pubsubTerms = harden({
     storageNode: mockChainStorage.makeChildNode('thisAuction'),
-    marshaller: board.getReadonlyMarshaller(),
+    marshaller: makeBoard().getReadonlyMarshaller(),
   });
 
   const { creatorFacet: GCF } = await E(zoe).startInstance(
@@ -239,7 +238,6 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
 
   return {
     mockChainStorage,
-    board,
     publicFacet,
     creatorFacet,
 

@@ -55,8 +55,9 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
     - `reserve` - [snapshot of details](./test/reserve/snapshots/test-reserve.js.md)
       - `governance`
       - `metrics`
-    - `priceFeed`
-      - '<inputBrand>_<outputBrand>_price_feed'
+    - `priceFeed` - [snapshot of details](./test/price/snapshots/test-fluxAggregator.js.md)
+      - `${inputBrand}-${outputBrand}_price_feed`
+      - `${inputBrand}-${outputBrand}_price_feed.latestRound`
     - `psm` - [snapshot of details](./test/psm/snapshots/test-psm.js.md)
       - `<minted>`
         - `<anchor>`
