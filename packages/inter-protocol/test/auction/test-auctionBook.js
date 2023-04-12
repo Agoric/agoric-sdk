@@ -1,19 +1,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
+import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
+import { makeBoard } from '@agoric/vats/src/lib-board.js';
 import {
   makeRatio,
   makeRatioFromAmounts,
+  prepareRecorderKitMakers,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeOffer } from '@agoric/zoe/test/unitTests/makeOffer.js';
-import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
-import { makePublishKit } from '@agoric/notifier';
-import { makeBoard } from '@agoric/vats/src/lib-board.js';
+import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeMockChainStorageRoot } from '../supports.js';
 
 import { prepareAuctionBook } from '../../src/auction/auctionBook.js';
@@ -33,23 +33,46 @@ const setupBasics = async () => {
   await zcf.saveIssuer(moolaKit.issuer, 'Moola');
   await zcf.saveIssuer(simoleanKit.issuer, 'Sim');
   const baggage = makeScalarBigMapStore('zcfBaggage', { durable: true });
-  return { moolaKit, moola, simoleanKit, simoleans, zoe, zcf, baggage };
+
+  const marshaller = makeBoard().getReadonlyMarshaller();
+
+  const { makeERecorderKit, makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    marshaller,
+  );
+  return {
+    moolaKit,
+    moola,
+    simoleanKit,
+    simoleans,
+    zoe,
+    zcf,
+    baggage,
+    makeERecorderKit,
+    makeRecorderKit,
+  };
 };
 
 const assembleAuctionBook = async basics => {
-  const { moolaKit, moola, simoleanKit, simoleans, zcf, baggage } = basics;
+  const {
+    moolaKit,
+    moola,
+    simoleanKit,
+    simoleans,
+    zcf,
+    baggage,
+    makeRecorderKit,
+  } = basics;
 
   const initialPrice = makeRatioFromAmounts(moola(20n), simoleans(100n));
   const pa = buildManualPriceAuthority(initialPrice);
-  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf, makeRecorderKit);
   const mockChainStorage = makeMockChainStorageRoot();
 
   const book = await makeAuctionBook(
     moolaKit.brand,
     simoleanKit.brand,
     pa,
-    makePublishKit(),
-    makeBoard().getReadonlyMarshaller(),
     mockChainStorage.makeChildNode('thisBook'),
   );
   return { pa, book };

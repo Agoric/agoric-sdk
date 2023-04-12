@@ -12,15 +12,12 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   makeRatioFromAmounts,
+  makeRecorderTopic,
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/captp';
-import {
-  observeNotifier,
-  pipeTopicToStorage,
-  makePublicTopic,
-} from '@agoric/notifier';
+import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
@@ -111,8 +108,9 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 /**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
-export const prepareAuctionBook = (baggage, zcf) => {
+export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
 
@@ -124,11 +122,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
      * @param {Brand<'nat'>} currencyBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {PublishKit<BookDataNotification>} pubKit
-     * @param {Marshaller} marshaller
      * @param {StorageNode} node
      */
-    (currencyBrand, collateralBrand, pAuthority, pubKit, marshaller, node) => {
+    (currencyBrand, collateralBrand, pAuthority, node) => {
       assertAllDefined({ currencyBrand, collateralBrand, pAuthority });
       const zeroCurrency = makeEmpty(currencyBrand);
       const zeroRatio = makeRatioFromAmounts(
@@ -155,9 +151,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
         collateralBrand,
       );
 
-      const { publisher: bookDataPublisher, subscriber: bookDataSubscriber } =
-        pubKit;
-      pipeTopicToStorage(bookDataSubscriber, node, marshaller);
+      const bookDataKit = makeRecorderKit(
+        node,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
+          M.any()
+        ),
+      );
 
       return {
         collateralBrand,
@@ -170,9 +169,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
         priceAuthority: pAuthority,
         updatingOracleQuote: zeroRatio,
 
-        bookDataPublisher,
-        bookDataSubscriber,
-        node,
+        bookDataKit,
 
         priceBook,
         scaledBidBook,
@@ -447,7 +444,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
-          state.bookDataPublisher.publish(bookData);
+          state.bookDataKit.recorder.write(bookData);
         },
       },
       self: {
@@ -683,14 +680,13 @@ export const prepareAuctionBook = (baggage, zcf) => {
           state.startProceedsGoal = null;
         },
         getDataUpdates() {
-          return this.state.bookDataSubscriber;
+          return this.state.bookDataKit.subscriber;
         },
         getPublicTopics() {
           return {
-            bookData: makePublicTopic(
+            bookData: makeRecorderTopic(
               'Auction schedule',
-              this.state.bookDataSubscriber,
-              this.state.node,
+              this.state.bookDataKit,
             ),
           };
         },
@@ -734,8 +730,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
     },
   );
 
-  return (cur, col, priceAuthority, pubKit, marshaller, node) =>
-    makeAuctionBookKit(cur, col, priceAuthority, pubKit, marshaller, node).self;
+  /** @type {(...args: Parameters<typeof makeAuctionBookKit>) => ReturnType<typeof makeAuctionBookKit>['self']} */
+  const makeAuctionBook = (...args) => makeAuctionBookKit(...args).self;
+  return makeAuctionBook;
 };
 harden(prepareAuctionBook);
 

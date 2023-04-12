@@ -5,28 +5,28 @@ import '@agoric/zoe/src/contracts/exported.js';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { BASIS_POINTS, makeTracer } from '@agoric/internal';
+import { prepareDurablePublishKit } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { M, provideDurableMapStore } from '@agoric/vat-data';
 import {
   atomicRearrange,
-  floorMultiplyBy,
+  ceilDivideBy,
+  ceilMultiplyBy,
+  defineERecorderKit,
+  defineRecorderKit,
   floorDivideBy,
+  floorMultiplyBy,
   makeRatio,
   makeRatioFromAmounts,
+  makeRecorderTopic,
   natSafeMath,
+  prepareRecorder,
   provideEmptySeat,
-  ceilMultiplyBy,
-  ceilDivideBy,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import {
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
-  makePublicTopic,
-} from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeBidSpecShape, prepareAuctionBook } from './auctionBook.js';
@@ -393,19 +393,29 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   let bookCounter = 0;
 
-  const makeAuctionBook = prepareAuctionBook(baggage, zcf);
-
-  const makeAuctionPublishKit = prepareDurablePublishKit(
+  const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'Auction publish kit',
   );
-  /** @type {PublishKit<import('./scheduler.js').ScheduleNotification>} */
-  const { publisher: schedulePublisher, subscriber: scheduleSubscriber } =
-    makeAuctionPublishKit();
+  const makeRecorder = prepareRecorder(baggage, privateArgs.marshaller);
 
-  const scheduleNode = E(privateArgs.storageNode).makeChildNode('schedule');
-  // TODO(7300) pipeTopicToStorage is being removed
-  pipeTopicToStorage(scheduleSubscriber, scheduleNode, privateArgs.marshaller);
+  const makeRecorderKit = defineRecorderKit({
+    makeRecorder,
+    makeDurablePublishKit,
+  });
+
+  const makeAuctionBook = prepareAuctionBook(baggage, zcf, makeRecorderKit);
+
+  const makeERecorderKit = defineERecorderKit({
+    makeRecorder,
+    makeDurablePublishKit,
+  });
+  const scheduleKit = makeERecorderKit(
+    E(privateArgs.storageNode).makeChildNode('schedule'),
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<import('./scheduler.js').ScheduleNotification>} */ (
+      M.any()
+    ),
+  );
 
   /**
    * @param {ZCFSeat} seat
@@ -522,13 +532,15 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   });
 
-  const scheduler = await makeScheduler(
-    driver,
-    timer,
-    // @ts-expect-error types are correct. How to convince TS?
-    params,
-    timerBrand,
-    schedulePublisher,
+  const scheduler = await E.when(scheduleKit.recorderP, scheduleRecorder =>
+    makeScheduler(
+      driver,
+      timer,
+      // @ts-expect-error types are correct. How to convince TS?
+      params,
+      timerBrand,
+      scheduleRecorder,
+    ),
   );
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
@@ -599,7 +611,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         return E(scheduler).getSchedule();
       },
       getScheduleUpdates() {
-        return scheduleSubscriber;
+        return scheduleKit.subscriber;
       },
       getBookDataUpdates(brand) {
         return books.get(brand).getDataUpdates();
@@ -610,11 +622,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         }
 
         return {
-          schedule: makePublicTopic(
-            'Auction schedule',
-            scheduleSubscriber,
-            scheduleNode,
-          ),
+          schedule: makeRecorderTopic('Auction schedule', scheduleKit),
         };
       },
       getDepositInvitation,
@@ -637,14 +645,11 @@ export const start = async (zcf, privateArgs, baggage) => {
         const bookId = `book${bookCounter}`;
         bookCounter += 1;
         const bNode = await E(privateArgs.storageNode).makeChildNode(bookId);
-        const pubKit = makeAuctionPublishKit();
 
         const newBook = await makeAuctionBook(
           brands.Currency,
           brand,
           priceAuthority,
-          pubKit,
-          privateArgs.marshaller,
           bNode,
         );
 
