@@ -36,7 +36,7 @@ const { Fail, quote: q } = assert;
 const setDiff = (a, b) => a.filter(x => !b.includes(x));
 
 /**
- * @param {{
+ * @param {VatPowers & {
  *   D: DProxy,
  *   logger: (msg) => void,
  * }} vatPowers
@@ -133,14 +133,22 @@ export const makeBootstrap = (
   const { encodePassable, decodePassable } = makePassableEncoding();
 
   return Far('bootstrap', {
+    /**
+     * Bootstrap vats and devices.
+     *
+     * @param {SwingsetVats} vats
+     * @param {SoloDevices | ChainDevices} devices
+     */
     bootstrap: (vats, devices) => {
       for (const [name, root] of Object.entries(vats)) {
         if (name !== 'vatAdmin') {
           vatData.set(name, { root });
         }
       }
-      rawBootstrap(vats, devices).catch(e => {
-        console.error('BOOTSTRAP FAILED:', e);
+      void rawBootstrap(vats, devices).catch(e => {
+        // Terminate because the vat is in an irrecoverable state.
+        vatPowers.exitVatWithFailure(e);
+        // Throw the error to reject this promise but it will be unhandled because rawBoostrap() isn't returned.
         throw e;
       });
     },
