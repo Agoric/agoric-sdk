@@ -96,8 +96,8 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 /**
  * @typedef {object} BookDataNotification
  *
- * @property {PriceQuote    | null}      startPrice identifies the priceAuthority and price
- * @property {PriceLevel    | null}      currentPriceLevel the price at the current auction tier
+ * @property {Ratio         | null}      startPrice identifies the priceAuthority and price
+ * @property {Ratio         | null}      currentPriceLevel the price at the current auction tier
  * @property {Amount<'nat'> | null}      startProceedsGoal The proceeds the sellers were targeting to raise
  * @property {Amount<'nat'> | null}      remainingProceedsGoal The remainder of
  *     the proceeds the sellers were targeting to raise
@@ -105,7 +105,7 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
  * @property {Amount<'nat'>}             startCollateral How much collateral was
  *    available for sale at the start. (If more is deposited later, it'll be
  *    added in.)
- * @property {Amount<'nat'> | undefined} collateralAvailable The amount of collateral remaining
+ * @property {Amount<'nat'> | null}      collateralAvailable The amount of collateral remaining
  */
 
 /**
@@ -452,7 +452,6 @@ export const prepareAuctionBook = (baggage, zcf) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
-          // @ts-expect-error All the nulls have been handled
           state.bookDataPublisher.publish(bookData);
         },
       },
