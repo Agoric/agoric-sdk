@@ -21,6 +21,49 @@ runs:
         clean: 'false'
         submodules: 'true'
         persist-credentials: false
+    # Select a branch on Endo to test against by adding text to the body of the
+    # pull request. For example: #endo-branch: some-pr-branch
+    # The default is '*NONE*' to indicate not to check out Endo, just use
+    # the published NPM packages.
+    - name: Get the appropriate Endo branch
+      id: endo-branch
+      uses: actions/github-script@v6
+      with:
+        result-encoding: string
+        script: |-
+          let branch = 'NOPE';
+          if (context.payload.pull_request) {
+            const { body } = context.payload.pull_request;
+            const regex = /.*\#endo-branch:\s+(\S+)/;
+            const result = regex.exec(body);
+            if (result) {
+              branch = result[1];
+            }
+          }
+          console.log(branch);
+          return branch;
+    - name: check out Endo if necessary
+      id: endo-checkout
+      uses: actions/checkout@v3
+      with:
+        repository: agoric/endo
+        path: ./replacement-endo
+        ref: ${{ steps.endo-branch.outputs.result }}
+        clean: 'false'
+        submodules: 'true'
+        persist-credentials: false
+      if: steps.endo-branch.outputs.result != 'NOPE'
+    - name: Move Endo checkout outside the working directory
+      id: endo-sha
+      run: |-
+        set -e
+        if test -e ./replacement-endo; then
+          mv ./replacement-endo ~/endo
+          echo "sha=$(cd ~/endo && git rev-parse HEAD)" >> $GITHUB_OUTPUT
+        else
+          echo "sha=NOPE" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
     - name: Reconfigure git to use HTTP authentication
       run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
       shell: bash
@@ -40,8 +83,8 @@ runs:
       id: built
       uses: actions/cache@v3
       with:
-        path: .
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}
+        path: ${{ inputs.path }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
     - name: yarn install
@@ -53,12 +96,18 @@ runs:
           sudo apt-get install libbsd-dev
         fi
         yarn install
+        # Replace the Endo packages with the ones built from the checked-out branch.
+        if test -e ~/endo; then
+          scripts/replace-packages.sh ~/endo
+          rm -rf ~/endo
+        fi
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-installed
       shell: bash
       if: steps.built.outputs.cache-hit != 'true'
     - name: yarn build
       run: |-
+        set -e
         yarn build
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-built
