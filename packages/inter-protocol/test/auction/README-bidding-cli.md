@@ -4,7 +4,7 @@ The `agops` command (from the `agoric` package in `packages/agoric-cli`)
 supports the role of liquidation bidder using a unix command-line interface (CLI).
 
 ```
-$ inter bid by-price --give 85 --price 8.55 --from test-acct | jq
+$ inter bid by-price --give 85IST --price 8.55 --from test-acct | jq
 bid is broadcast:
 {
   "timestamp": "2023-03-31T05:46:27Z",
@@ -115,7 +115,7 @@ agd keys add test-acct
 If you see something like this when you try sign and send a transaction with a brand new key...
 
 ```
-$ inter bid by-price --from test-acct --give 100 --price 3
+$ inter bid by-price --from test-acct --give 10IST --price 3
 Error: key with address 3C8659F... not found: key not found
 Usage: ...
 ...
@@ -213,7 +213,7 @@ $ inter vbank list
 Let's place a 5 IST bid at a price of 9.50:
 
 ```
-$ inter bid by-price --give 5 --price 9.50 --from test-acct
+$ inter bid by-price --give 5IST --price 9.50 --from test-acct
 2023-03-31T07:07:33.319399551Z tx not in block 55762 retrying...
 2023-03-31T07:07:33.319399551Z tx not in block 55762 retrying...
 bid is broadcast:
