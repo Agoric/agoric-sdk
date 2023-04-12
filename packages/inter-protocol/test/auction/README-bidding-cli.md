@@ -34,7 +34,10 @@ See also [test-inter-cli.js.md](https://github.com/Agoric/agoric-sdk/blob/master
 
 ## Installation
 
-To install `agd` and `agops` as well as prerequisite dev tools (`go`, `node`, `yarn`):
+You will need to install several components before you’ll be in a position to participate in liquidations bidding. These include:
+-The AgoricSDK and prerequisite dev tools 'node', 'go', 'yarn', 'agd' (CLI tool) and 'agops'.
+
+Conveniently you can install all these using:
 
 ```sh
 git clone https://github.com/Agoric/agoric-sdk
@@ -109,8 +112,15 @@ Using the `test` keyring is lower friction, but feel free to use the os keyring:
 agd keys add test-acct
 ```
 
+## Provisioning your account for use with Zoe smart contracts
 
-## Adding some tokens to your account
+Mainnet
+You’ll need to provision an Agoric Smart Wallet account (offer handler) in order to interact with Zoe contracts. You’ll need acquire 10BLD in order to do this. See[ ‘How to Provisions a Smart Wallet instructions’](https://docs.inter.trade/user-how-to/wallet-usage/create-your-agoric-account-and-smart-wallet.). Once provisioned, you’ll need to hold an IST balance in order to be able to place a bid.
+
+Testnet
+You’ll need to use the relevant faucet to be able to provision your smart wallet (and fund with IST and other tokens such as toy ATOM). You’ll need to grab your Agoric account address from Keplr then head to https://ollinet.agoric.net/, https://devnet.agoric.net/ etc., click ‘Faucet’, paste your address and select ‘send IST and provision…’. After success, toggle ‘Send tokens’ to fund your wallet with some test tokens.
+
+## Troubleshooting - 'Error: key with address XXXXX...not found: key not found...'
 
 If you see something like this when you try sign and send a transaction with a brand new key...
 
@@ -123,7 +133,7 @@ Usage: ...
 
 It's because the blockchain has no record of your account until some tokens are sent to it.
 
-Use https://devnet.faucet.agoric.net/ to get some BLD and toy IBC asset tokens.
+Use https://devnet.faucet.agoric.net/ or similar to get some BLD and toy IBC asset tokens.
 
 Confirm by querying your balances:
 
@@ -137,15 +147,6 @@ balances:
 ```
 
 **Note:** The URLs of the faucet, RPC node, explorer, etc. are available at https://devnet.agoric.net/ .
-
-## Provisioning your account for use with Zoe smart contracts
-
-Introducing your account to Zoe involves provisioning an offer handler.
-
-Again, use https://devnet.agoric.net/ but this time, choose "send IST and provision ...".
-
-_TODO: cite inter.trade docs on provisioning a smart wallet?_
-
 
 ## Liquidation Status
 
@@ -170,12 +171,12 @@ $ inter liquidation status
 Error#1: cannot read data of published.agoricNames.brand: request to http://0.0.0.0:26657/abci_query?path=%22/custom/vstorage/data/published.agoricNames.brand%22&height=0 failed, reason: connect ECONNREFUSED 0.0.0.0:26657
 ```
 
-https://devnet.agoric.net/network-config has details such as `chainName`, `rpcAddrs`. To tell `agops` to use it:
+You’ll need to tell agops to use specific network details (https://devnet.agoric.net/network-config) such as chainName and rpcAddrs. To tell agops to use it set it as follows: 
 
 ```sh
 export AGORIC_NET=devnet
 ```
-
+i.e. AGORIC_NET=mainnet, AGORIC_NET=ollinet etc.
 
 ## Smart Contract Token Metadata: `inter vbank list`
 
