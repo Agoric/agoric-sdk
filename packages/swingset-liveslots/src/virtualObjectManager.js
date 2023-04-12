@@ -264,6 +264,9 @@ function insistDurableCapdata(vrm, what, capdata, valueFor) {
 }
 
 function insistSameCapData(oldCD, newCD) {
+  // NOTE: this assumes both were marshalled with the same format
+  // (e.g. smallcaps vs pre-smallcaps). To somewhat tolerate new
+  // formats, we'd need to `serialize(unserialize(oldCD))`.
   if (oldCD.body !== newCD.body) {
     Fail`durable Kind stateShape mismatch (body)`;
   }
