@@ -435,6 +435,8 @@ test.serial('Excessive want in proposal', async t => {
     message: 'seat has been exited',
   });
 
+  const update = await E(E(seat).getExitSubscriber()).getUpdateSince();
+  t.is(update.value, 'unable to satisfy want');
   await assertPayouts(t, seat, currency, collateral, 250n, 0n);
 });
 
