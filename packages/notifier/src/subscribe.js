@@ -1,8 +1,47 @@
 import { E, Far } from '@endo/far';
+import { isObject } from '@endo/marshal';
+import { isNat } from '@endo/nat';
 
 import './types-ambient.js';
 
 const sink = () => {};
+
+/**
+ * Check the promise returned by a function for rejection by vat upgrade,
+ * and refetch upon encountering that condition.
+ *
+ * @template T
+ * @param {() => ERef<T>} thunk
+ * @returns {Promise<T>}
+ */
+const reconnectAsNeeded = async thunk => {
+  let lastVersion;
+  // End synchronous prelude.
+  await null;
+  for (;;) {
+    try {
+      // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
+      const result = await thunk();
+      return result;
+    } catch (err) {
+      /** @see processUpgrade in {@link ../../SwingSet/src/kernel/kernel.js} */
+      if (isObject(err) && err.name === 'vatUpgraded') {
+        const { incarnationNumber: version } = err;
+        if (
+          isNat(version) &&
+          (lastVersion === undefined || version > lastVersion)
+        ) {
+          // We don't expect another upgrade in between receiving
+          // a disconnection and re-requesting an update, but must
+          // nevertheless be prepared for that.
+          lastVersion = version;
+          continue;
+        }
+      }
+      throw err;
+    }
+  }
+};
 
 /**
  * Create a near iterable that corresponds to a potentially far one.
@@ -53,7 +92,10 @@ const makeEachIterator = pubList => {
  * provides "prefix lossy" iterations of the underlying PublicationList.
  * By "prefix lossy", we mean that you may miss everything published before
  * you ask the returned iterable for an iterator. But the returned iterator
- * will enumerate each thing published from that iterator's starting point.
+ * will enumerate each thing published from that iterator's starting point
+ * up to a disconnection result indicating upgrade of the producer
+ * (which breaks the gap-free guarantee and therefore terminates any active
+ * iterator while still supporting creation of new iterators).
  *
  * If the underlying PublicationList is terminated, that terminal value will be
  * reported losslessly.
@@ -64,7 +106,7 @@ const makeEachIterator = pubList => {
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
     [Symbol.asyncIterator]: () => {
-      const pubList = E(topic).subscribeAfter();
+      const pubList = reconnectAsNeeded(() => E(topic).subscribeAfter());
       return makeEachIterator(pubList);
     },
   });
@@ -95,9 +137,10 @@ const cloneLatestIterator = (topic, localUpdateCount, terminalResult) => {
       return terminalResult;
     }
 
-    // Send the next request now, skipping past intermediate updates.
-    const { value, updateCount } = await E(topic).getUpdateSince(
-      localUpdateCount,
+    // Send the next request now, skipping past intermediate updates
+    // and upgrade disconnections.
+    const { value, updateCount } = await reconnectAsNeeded(() =>
+      E(topic).getUpdateSince(localUpdateCount),
     );
     // Make sure the next request is for a fresher value.
     localUpdateCount = updateCount;
@@ -161,8 +204,9 @@ const makeLatestIterator = topic => cloneLatestIterator(topic);
  * By "lossy", we mean that you may miss any published state if a more
  * recent published state can be reported instead.
  *
- * If the underlying PublicationList is terminated, that terminal value will be
- * reported losslessly.
+ * If the underlying PublicationList is terminated by upgrade of the producer,
+ * it will be re-requested. All other terminal values will be losslessly
+ * propagated.
  *
  * @template T
  * @param {ERef<LatestTopic<T>>} topic
