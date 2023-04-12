@@ -1092,8 +1092,6 @@ export function makeVirtualObjectManager(
     // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620
     // @ts-ignore cast
     const kindHandle = Far('kind', {});
-    linkToCohort.set(Object.getPrototypeOf(kindHandle), kindHandle);
-    unweakable.add(Object.getPrototypeOf(kindHandle));
     kindHandleToID.set(kindHandle, kindID);
     kindIDToDescriptor.set(kindID, durableKindDescriptor);
     registerValue(kindIDvref, kindHandle, false);
