@@ -30,9 +30,7 @@ const mapSize = Object.getOwnPropertyDescriptor(Map.prototype, 'size').get;
 const mapForEach = Map.prototype.forEach;
 const setSize = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get;
 const setForEach = Set.prototype.forEach;
-const weakMapHas = WeakMap.prototype.has;
-const weakSetHas = WeakSet.prototype.has;
-const weakRefDeref = globalThis.WeakRef && globalThis.WeakRef.prototype.deref;
+const weakRefExists = !!globalThis.WeakRef;
 const booleanValueOf = Boolean.prototype.valueOf;
 const objectToString = Object.prototype.toString;
 const functionToString = Function.prototype.toString;
@@ -327,78 +325,38 @@ function indexOf(xs, x) {
 }
 
 function isMap(x) {
-  if (!mapSize || !x || typeof x !== 'object') {
+  if (!x || typeof x !== 'object') {
     return false;
   }
-  try {
-    mapSize.call(x);
-    try {
-      setSize.call(x);
-    } catch (s) {
-      return true;
-    }
-    return x instanceof Map; // core-js workaround, pre-v2.5.0
-  } catch (e) {}
-  return false;
+  return x instanceof Map;
 }
 
 function isWeakMap(x) {
-  if (!weakMapHas || !x || typeof x !== 'object') {
+  if (!x || typeof x !== 'object') {
     return false;
   }
-  try {
-    weakMapHas.call(x, weakMapHas);
-    try {
-      weakSetHas.call(x, weakSetHas);
-    } catch (s) {
-      return true;
-    }
-    return x instanceof WeakMap; // core-js workaround, pre-v2.5.0
-  } catch (e) {}
-  return false;
+  return x instanceof WeakMap;
 }
 
 function isWeakRef(x) {
-  if (!weakRefDeref || !x || typeof x !== 'object') {
+  if (!weakRefExists || !x || typeof x !== 'object') {
     return false;
   }
-  try {
-    weakRefDeref.call(x);
-    return true;
-  } catch (e) {}
-  return false;
+  return x instanceof globalThis.WeakRef;
 }
 
 function isSet(x) {
-  if (!setSize || !x || typeof x !== 'object') {
+  if (!x || typeof x !== 'object') {
     return false;
   }
-  try {
-    setSize.call(x);
-    try {
-      mapSize.call(x);
-    } catch (m) {
-      return true;
-    }
-    return x instanceof Set; // core-js workaround, pre-v2.5.0
-  } catch (e) {}
-  return false;
+  return x instanceof Set;
 }
 
 function isWeakSet(x) {
-  if (!weakSetHas || !x || typeof x !== 'object') {
+  if (!x || typeof x !== 'object') {
     return false;
   }
-  try {
-    weakSetHas.call(x, weakSetHas);
-    try {
-      weakMapHas.call(x, weakMapHas);
-    } catch (s) {
-      return true;
-    }
-    return x instanceof WeakSet; // core-js workaround, pre-v2.5.0
-  } catch (e) {}
-  return false;
+  return x instanceof WeakSet;
 }
 
 function inspectString(str, opts) {
