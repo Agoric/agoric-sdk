@@ -17,9 +17,11 @@ import {
 import { Fail } from '@agoric/assert';
 import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
-import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
+import {
+  makeChainStorageRoot,
+  makeSerializeToStorage,
+} from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
-import { makePublishKit, pipeTopicToStorage } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -279,8 +281,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         { sequence: true },
       );
       const marshaller = makeMarshal();
-      const { publisher, subscriber } = makePublishKit();
-      pipeTopicToStorage(subscriber, installationStorageNode, marshaller);
+      const publish = makeSerializeToStorage(
+        installationStorageNode,
+        marshaller,
+      );
+      const publisher = harden({ publish });
       return publisher;
     };
 

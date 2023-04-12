@@ -261,7 +261,7 @@ export async function launch({
     },
   );
 
-  /** @type {PublishKit<unknown>['publisher'] | undefined} */
+  /** @type {{publish: (value: unknown) => Promise<void>} | undefined} */
   let installationPublisher;
 
   // Artificially create load if set.
@@ -349,15 +349,17 @@ export async function launch({
 
     const { endoZipBase64Sha512 } = bundle;
 
-    if (installationPublisher !== undefined) {
-      installationPublisher.publish(
-        harden({
-          endoZipBase64Sha512,
-          installed: error === null,
-          error,
-        }),
-      );
+    if (installationPublisher === undefined) {
+      return;
     }
+
+    await installationPublisher.publish(
+      harden({
+        endoZipBase64Sha512,
+        installed: error === null,
+        error,
+      }),
+    );
   }
 
   function provideInstallationPublisher() {
