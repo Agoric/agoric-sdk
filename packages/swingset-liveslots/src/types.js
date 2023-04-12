@@ -22,6 +22,7 @@
  * @typedef {{
  *   enableDisavow?: boolean,
  *   relaxDurabilityRules?: boolean,
+ *   allowStateShapeChanges?: boolean,
  * }} LiveSlotsOptions
  *
  * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData

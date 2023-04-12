@@ -263,6 +263,20 @@ function insistDurableCapdata(vrm, what, capdata, valueFor) {
   });
 }
 
+function insistSameCapData(oldCD, newCD) {
+  if (oldCD.body !== newCD.body) {
+    Fail`durable Kind stateShape mismatch (body)`;
+  }
+  if (oldCD.slots.length !== newCD.slots.length) {
+    Fail`durable Kind stateShape mismatch (slots.length)`;
+  }
+  oldCD.slots.forEach((oldVref, idx) => {
+    if (newCD.slots[idx] !== oldVref) {
+      Fail`durable Kind stateShape mismatch (slot[${idx}])`;
+    }
+  });
+}
+
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
  *
@@ -281,6 +295,7 @@ function insistDurableCapdata(vrm, what, capdata, valueFor) {
  * @param {import('@endo/marshal').Unserialize<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
+ * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
  *
  * @returns {object} a new virtual object manager.
  *
@@ -321,7 +336,10 @@ export function makeVirtualObjectManager(
   serialize,
   unserialize,
   assertAcceptableSyscallCapdataSize,
+  liveSlotsOptions = {},
 ) {
+  const { allowStateShapeChanges = false } = liveSlotsOptions;
+
   // array of Caches that need to be flushed at end-of-crank, two per Kind
   // (dataCache, contextCache)
   const allCaches = [];
@@ -704,22 +722,24 @@ export function makeVirtualObjectManager(
       // compatibility
       checkAndUpdateFacetiousness(tag, durableKindDescriptor, facetNames);
 
-      const stateShapeCapData = serialize(stateShape);
+      const newShapeCD = serialize(stateShape);
 
       // Durable kinds can only hold durable objects in their state,
       // so if the stateShape were to require a non-durable object,
       // nothing could ever match. So we require the shape have only
       // durable objects
-      insistDurableCapdata(vrm, 'stateShape', stateShapeCapData, false);
+      insistDurableCapdata(vrm, 'stateShape', newShapeCD, false);
 
       // compare against slots of previous definition, incref/decref
-      let oldStateShapeSlots = [];
-      if (durableKindDescriptor.stateShapeCapData) {
-        oldStateShapeSlots = durableKindDescriptor.stateShapeCapData.slots;
+      const oldShapeCD = durableKindDescriptor.stateShapeCapData;
+
+      const oldStateShapeSlots = oldShapeCD ? oldShapeCD.slots : [];
+      if (oldShapeCD && !allowStateShapeChanges) {
+        insistSameCapData(oldShapeCD, newShapeCD);
       }
-      const newStateShapeSlots = stateShapeCapData.slots;
+      const newStateShapeSlots = newShapeCD.slots;
       vrm.updateReferenceCounts(oldStateShapeSlots, newStateShapeSlots);
-      durableKindDescriptor.stateShapeCapData = stateShapeCapData; // replace
+      durableKindDescriptor.stateShapeCapData = newShapeCD; // replace
 
       saveDurableKindDescriptor(durableKindDescriptor);
     }
