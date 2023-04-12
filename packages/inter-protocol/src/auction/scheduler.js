@@ -6,7 +6,7 @@ import { makeTracer } from '@agoric/internal';
 import { AuctionState } from './util.js';
 import { nextDescendingStepTime, computeRoundTiming } from './scheduleMath.js';
 
-const { Fail } = assert;
+const { Fail, quote: q } = assert;
 
 const trace = makeTracer('SCHED', false);
 
@@ -122,7 +122,10 @@ export const makeScheduler = async (
       return;
     }
 
-    if (TimeMath.compareAbs(now, schedule.startTime) >= 0) {
+    if (
+      TimeMath.compareAbs(now, schedule.startTime) >= 0 &&
+      TimeMath.compareAbs(now, schedule.endTime) <= 0
+    ) {
       if (auctionState !== AuctionState.ACTIVE) {
         auctionState = AuctionState.ACTIVE;
         auctionDriver.startRound();
@@ -204,6 +207,14 @@ export const makeScheduler = async (
     !liveSchedule || Fail`can't start an auction round while one is active`;
 
     assert(nextSchedule);
+    if (TimeMath.compareAbs(now, nextSchedule.startTime) > 0) {
+      console.warn(
+        `TIME skipped ahead. expected before ${q(
+          nextSchedule.startTime,
+        )}, but it is already ${now}`,
+      );
+      nextSchedule = computeRoundTiming(params, now);
+    }
     liveSchedule = nextSchedule;
 
     const after = TimeMath.addAbsRel(

@@ -575,7 +575,7 @@ test('lockPeriod > freq', async t => {
   );
 });
 
-// if duration = frequency, we'll start every other freq.
+// if duration = frequency, we'll cut the duration short to fit.
 test('duration = freq', async t => {
   const { zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
@@ -591,7 +591,7 @@ test('duration = freq', async t => {
   const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
-  // 1 hour. Instead cut the auction short.
+  // 1 hour. Instead, cut the auction short.
   defaultParams = {
     ...defaultParams,
     priceLockPeriod: 20n,
@@ -638,10 +638,11 @@ test('duration = freq', async t => {
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
-  await timer.advanceTo(725n);
+  await timer.advanceTo(345n);
+  await timer.advanceTo(365n);
+  await timer.advanceTo(665n);
   schedule = scheduler.getSchedule();
 
-  // start the second auction on time
   const secondSchedule = {
     startTime: TimeMath.toAbs(725n, timerBrand),
     endTime: TimeMath.toAbs(1025n, timerBrand),

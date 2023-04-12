@@ -1069,6 +1069,7 @@ test.serial('add assets to open auction', async t => {
   // bidder gets collateral
   await assertPayouts(t, bidderSeat1, currency, collateral, 0n, 1500n);
 
+  await driver.advanceTo(185n);
   await driver.advanceTo(190n);
   await bookTracker.assertChange({
     currentPriceLevel: { numerator: { value: 9_350_000_000_000n } },
@@ -1289,4 +1290,45 @@ test('bid zero', async t => {
         '"new bid" proposal: give: Currency: value: "[0n]" - Must be >= "[1n]"',
     },
   );
+});
+
+test('time jumps forward', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  const liqSeat = await driver.setupCollateralAuction(
+    collateral,
+    collateral.make(1000n),
+  );
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const result = await E(liqSeat).getOfferResult();
+  t.is(result, 'deposited');
+
+  await driver.advanceTo(167n);
+  const seat = await driver.bidForCollateralSeat(
+    currency.make(200n),
+    collateral.make(200n),
+  );
+  t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
+  t.false(await E(seat).hasExited());
+
+  await driver.advanceTo(170n, 'wait');
+
+  // jump past end of auction
+  await driver.advanceTo(1500n, 'wait');
+
+  t.false(await E(seat).hasExited());
+  await E(seat).tryExit();
+  t.true(await E(seat).hasExited());
+
+  await assertPayouts(t, seat, currency, collateral, 200n, 0n);
+  await assertPayouts(t, liqSeat, currency, collateral, 0n, 1000n);
+
+  const schedules = await driver.getSchedule();
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 1570n);
+  t.is(schedules.liveAuctionSchedule?.startTime.absValue, 1530n);
+  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1550n);
 });
