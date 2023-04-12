@@ -17,12 +17,15 @@ import {
 import { Fail } from '@agoric/assert';
 import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
-import { makeChainStorageRoot } from '@agoric/internal/src/lib-chainStorage.js';
+import {
+  makeChainStorageRoot,
+  makeSerializeToStorage,
+} from '@agoric/internal/src/lib-chainStorage.js';
 import { makeMarshal } from '@endo/marshal';
-import { makePublishKit, pipeTopicToStorage } from '@agoric/notifier';
+import { forEachPublicationRecord, makePublishKit } from '@agoric/notifier';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { assertAllDefined, BridgeId as BRIDGE_ID } from '@agoric/internal';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -45,6 +48,32 @@ const toNumber = specimen => {
     Fail`Could not parse ${JSON.stringify(specimen)} as a number`;
   return number;
 };
+
+/**
+ * @deprecated uses forEachPublicationRecord which is [not sufficiently virtual](https://github.com/Agoric/agoric-sdk/issues/7302)
+ *
+ * NB: caller must ensure that `publisher.finish()` or `publisher.fail()` is
+ * called when the publisher stores its final value.
+ * Otherwise this watch is retained and can't be GCed.
+ *
+ * @param {Subscriber<any>} topic
+ * @param {ERef<StorageNode>} storageNode
+ * @param {ERef<ReturnType<import('@endo/marshal').makeMarshal>>} marshaller
+ * @returns {void}
+ */
+const pipeTopicToStorage = (topic, storageNode, marshaller) => {
+  assertAllDefined({ topic, storageNode, marshaller });
+
+  const marshallToStorage = makeSerializeToStorage(storageNode, marshaller);
+
+  // Start publishing the source.
+  forEachPublicationRecord(topic, marshallToStorage).catch(err => {
+    // TODO: How should we handle and/or surface this failure?
+    // https://github.com/Agoric/agoric-sdk/pull/5766#discussion_r922498088
+    console.error('followAndStoreTopic failed to iterate', err);
+  });
+};
+harden(pipeTopicToStorage);
 
 /**
  * @template {unknown} [T=unknown]
@@ -279,6 +308,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         { sequence: true },
       );
       const marshaller = makeMarshal();
+
       const { publisher, subscriber } = makePublishKit();
       pipeTopicToStorage(subscriber, installationStorageNode, marshaller);
       return publisher;
