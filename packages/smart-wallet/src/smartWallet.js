@@ -8,15 +8,15 @@ import {
   PurseShape,
 } from '@agoric/ertp';
 import { makeTypeGuards } from '@agoric/internal';
-import {
-  observeNotifier,
-  SubscriberShape,
-  TopicsRecordShape,
-} from '@agoric/notifier';
+import { observeNotifier } from '@agoric/notifier';
 import { M, mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
-import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
+import {
+  prepareRecorderKit,
+  SubscriberShape,
+  TopicsRecordShape,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeInvitationsHelper } from './invitations.js';
 import { makeOfferExecutor } from './offers.js';
@@ -455,7 +455,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 }
               }
             },
-            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/notifier').TopicsRecord) => Promise<void>} */
+            /** @type {(offerId: string, invitationAmount: Amount<'set'>, invitationMakers: import('./types').RemoteInvitationMakers, publicSubscribers?: import('./types').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord) => Promise<void>} */
             onNewContinuingOffer: async (
               offerId,
               invitationAmount,
