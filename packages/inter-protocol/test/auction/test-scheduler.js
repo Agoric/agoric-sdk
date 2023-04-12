@@ -1,23 +1,24 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { subscribeEach } from '@agoric/notifier';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
+import { prepareMockRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
-import { makePublishKit, subscribeEach } from '@agoric/notifier';
-
-import { makeScheduler } from '../../src/auction/scheduler.js';
 import {
   makeAuctioneerParamManager,
   makeAuctioneerParams,
 } from '../../src/auction/params.js';
+import { makeScheduler } from '../../src/auction/scheduler.js';
+import { subscriptionTracker } from '../metrics.js';
 import {
   getInvitation,
   makeDefaultParams,
   makeFakeAuctioneer,
-  makePublisherFromFakes,
+  makeGovernancePublisherFromFakes,
   setUpInstallations,
 } from './tools.js';
-import { subscriptionTracker } from '../metrics.js';
 
 /** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
 
@@ -31,10 +32,12 @@ test('schedule start to finish', async t => {
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
+
   const scheduleTracker = await subscriptionTracker(
     t,
-    subscribeEach(publishKit.subscriber),
+    subscribeEach(recorderKit.subscriber),
   );
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
@@ -53,7 +56,7 @@ test('schedule start to finish', async t => {
   /** @type {bigint} */
   let now = await timer.advanceTo(127n);
 
-  const { publisher } = makePublisherFromFakes();
+  const { publisher } = makeGovernancePublisherFromFakes();
   const paramManager = await makeAuctioneerParamManager(
     // @ts-expect-error test fakes
     { publisher, subscriber: null },
@@ -66,7 +69,7 @@ test('schedule start to finish', async t => {
     timer,
     paramManager,
     timer.getTimerBrand(),
-    publishKit.publisher,
+    recorderKit.recorder,
   );
   const schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);
@@ -239,7 +242,8 @@ test('lowest >= starting', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
 
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
@@ -256,7 +260,7 @@ test('lowest >= starting', async t => {
 
   await timer.advanceTo(127n);
 
-  const { publisher } = makePublisherFromFakes();
+  const { publisher } = makeGovernancePublisherFromFakes();
   const paramManager = await makeAuctioneerParamManager(
     // @ts-expect-error test fakes
     { publisher, subscriber: null },
@@ -271,7 +275,7 @@ test('lowest >= starting', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     { message: /startingRate "\[105n]" must be more than lowest: "\[110n]"/ },
   );
@@ -286,8 +290,9 @@ test('zero time for auction', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
-  const publishKit = makePublishKit();
+  const publisherKit = makeGovernancePublisherFromFakes();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
 
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
@@ -320,7 +325,7 @@ test('zero time for auction', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     {
       message:
@@ -338,9 +343,10 @@ test('discountStep 0', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publisherKit = makeGovernancePublisherFromFakes();
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -369,7 +375,7 @@ test('discountStep 0', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     { message: 'Division by zero' },
   );
@@ -384,9 +390,10 @@ test('discountStep larger than starting rate', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publisherKit = makeGovernancePublisherFromFakes();
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -416,7 +423,7 @@ test('discountStep larger than starting rate', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     { message: /discountStep .* too large for requested rates/ },
   );
@@ -431,9 +438,10 @@ test('start Freq 0', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publisherKit = makeGovernancePublisherFromFakes();
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -462,7 +470,7 @@ test('start Freq 0', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     { message: /startFrequency must exceed startDelay.*0n.*10n.*/ },
   );
@@ -477,9 +485,10 @@ test('delay > freq', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publisherKit = makeGovernancePublisherFromFakes();
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -509,7 +518,7 @@ test('delay > freq', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     { message: /startFrequency must exceed startDelay.*\[20n\].*\[40n\].*/ },
   );
@@ -524,9 +533,10 @@ test('lockPeriod > freq', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publisherKit = makeGovernancePublisherFromFakes();
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
@@ -557,7 +567,7 @@ test('lockPeriod > freq', async t => {
         timer,
         paramManager,
         timer.getTimerBrand(),
-        publishKit.publisher,
+        recorderKit.recorder,
       ),
     {
       message: /startFrequency must exceed lock period.*\[3600n\].*\[7200n\].*/,
@@ -575,9 +585,10 @@ test('duration = freq', async t => {
 
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
-  const publisherKit = makePublisherFromFakes();
+  const publisherKit = makeGovernancePublisherFromFakes();
 
-  const publishKit = makePublishKit();
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead cut the auction short.
@@ -612,7 +623,7 @@ test('duration = freq', async t => {
     timer,
     paramManager,
     timer.getTimerBrand(),
-    publishKit.publisher,
+    recorderKit.recorder,
   );
   let schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, undefined);

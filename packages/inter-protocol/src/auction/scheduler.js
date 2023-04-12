@@ -55,14 +55,14 @@ const makeCancelToken = () => {
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {Awaited<import('./params.js').AuctionParamManaager>} params
  * @param {import('@agoric/time/src/types').TimerBrand} timerBrand
- * @param {Publisher<ScheduleNotification>} schedulePublisher
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<ScheduleNotification>} scheduleRecorder
  */
 export const makeScheduler = async (
   auctionDriver,
   timer,
   params,
   timerBrand,
-  schedulePublisher,
+  scheduleRecorder,
 ) => {
   /**
    * live version is defined when an auction is active.
@@ -110,7 +110,7 @@ export const makeScheduler = async (
         now,
       ),
     });
-    schedulePublisher.publish(sched);
+    scheduleRecorder.write(sched);
   };
 
   /**

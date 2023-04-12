@@ -105,7 +105,7 @@ export const getInvitation = async (zoe, installations) => {
 };
 
 /** @returns {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
-export const makePublisherFromFakes = () => {
+export const makeGovernancePublisherFromFakes = () => {
   const storageRoot = makeMockChainStorageRoot();
 
   return makeStoredPublisherKit(
