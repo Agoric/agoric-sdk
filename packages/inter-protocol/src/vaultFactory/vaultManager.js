@@ -94,7 +94,6 @@ const trace = makeTracer('VM', false);
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: Timestamp,
- *  liquidatorInstance?: Instance,
  * }} AssetState
  *
  * @typedef {{
@@ -114,7 +113,6 @@ const trace = makeTracer('VM', false);
  * @typedef {{
  *   compoundedInterest: Ratio,
  *   latestInterestUpdate: Timestamp,
- *   liquidator?: Liquidator
  *   numLiquidationsCompleted: number,
  *   numLiquidationsAborted: number,
  *   totalCollateral: Amount<'nat'>,
@@ -419,13 +417,6 @@ export const prepareVaultManagerKit = (
             compoundedInterest: state.compoundedInterest,
             interestRate,
             latestInterestUpdate: state.latestInterestUpdate,
-            // NB: the liquidator is determined by governance but the resulting
-            // instance is a concern of the manager. The param manager knows only
-            // about the installation and terms of the liqudation contract. We could
-            // have another notifier for state downstream of governance changes, but
-            // that doesn't seem to be cost-effective.
-            // @ts-expect-error FIXME never defined
-            liquidatorInstance: state.liquidatorInstance,
           });
           return assetKit.recorder.write(payload);
         },
