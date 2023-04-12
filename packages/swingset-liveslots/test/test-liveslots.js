@@ -5,6 +5,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@agoric/assert';
+import { M } from '@agoric/store';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { kslot, kser, kunser } from './kmarshal.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
@@ -428,6 +429,7 @@ test('liveslots vs symbols', async t => {
     });
   }
   const { dispatch } = await makeDispatch(syscall, build);
+
   log.length = 0; // assume pre-build vatstore operations are correct
   const rootA = 'o+0';
   const target = 'o-1';
@@ -708,8 +710,18 @@ test('capdata size limit on syscalls', async t => {
   expectStore(15);
   t.deepEqual(log, []);
 
+  const gotSchema = () => {
+    const label = 'test';
+    t.deepEqual(log.shift(), {
+      type: 'vatstoreGet',
+      key: 'vc.5.|schemata',
+      result: JSON.stringify(kser({ label, keyShape: M.scalar() })),
+    });
+  };
+
   rp = nextRP();
   await send('storeInitTooManySlots');
+  gotSchema();
   t.deepEqual(log.shift(), {
     type: 'vatstoreGet',
     key: 'vc.5.skey',
@@ -721,6 +733,7 @@ test('capdata size limit on syscalls', async t => {
 
   rp = nextRP();
   await send('storeInitBodyTooBig');
+  gotSchema();
   t.deepEqual(log.shift(), {
     type: 'vatstoreGet',
     key: 'vc.5.skey',
@@ -732,12 +745,14 @@ test('capdata size limit on syscalls', async t => {
 
   rp = nextRP();
   await send('storeSetTooManySlots');
+  gotSchema();
   expectFail();
   expectVoidReturn();
   t.deepEqual(log, []);
 
   rp = nextRP();
   await send('storeSetBodyTooBig');
+  gotSchema();
   expectFail();
   expectVoidReturn();
   t.deepEqual(log, []);

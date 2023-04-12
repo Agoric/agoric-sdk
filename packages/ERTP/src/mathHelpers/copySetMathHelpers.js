@@ -10,11 +10,11 @@ import {
 } from '@agoric/store';
 import '../types-ambient.js';
 
-/** @type {CopySetValue} */
+/** @type {CopySet} */
 const empty = makeCopySet([]);
 
 /**
- * @type {CopySetMathHelpers}
+ * @type {MathHelpers<CopySet>}
  */
 export const copySetMathHelpers = harden({
   doCoerce: set => {

@@ -456,9 +456,11 @@ export async function initializeSwingset(
         format: config.bundleFormat,
       });
     } else if ('bundleName' in desc) {
-      assert(nameToBundle, `cannot use .bundleName in config.bundles`);
+      if (!nameToBundle) {
+        throw Fail`cannot use .bundleName in config.bundles`;
+      }
       const bundle = nameToBundle[desc.bundleName];
-      assert(bundle, `unknown bundleName ${desc.bundleName}`);
+      bundle || Fail`unknown bundleName ${desc.bundleName}`;
       return bundle;
     }
     throw Error(`unknown mode in desc`, desc);
@@ -498,10 +500,8 @@ export async function initializeSwingset(
       'bundleName',
     ]);
     const modes = allModes.filter(mode => mode in desc);
-    assert(
-      modes.length === 1,
-      `need =1 of bundle/bundleSpec/sourceSpec/bundleName, got ${modes}`,
-    );
+    modes.length === 1 ||
+      Fail`need =1 of bundle/bundleSpec/sourceSpec/bundleName, got ${modes}`;
     const mode = modes[0];
     return getBundle(desc, nameToBundle)
       .then(addBundleID)

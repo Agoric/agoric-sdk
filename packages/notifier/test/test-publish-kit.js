@@ -4,7 +4,6 @@
 import '@agoric/swingset-vat/tools/prepare-test-env.js';
 import test from 'ava';
 import { E } from '@endo/far';
-// import { makeMethodCallback } from '@agoric/internal/src/callback.js';
 import {
   buildKernelBundles,
   initializeSwingset,
@@ -38,12 +37,6 @@ const makers = {
     'DurablePublishKit',
   ),
 };
-
-// ava t.like does not support array shapes, but object analogs are fine
-const arrayShape = sparseArr => ({
-  length: sparseArr.length,
-  ...Object.fromEntries(Object.entries(sparseArr)),
-});
 
 const assertTransmission = async (t, publishKit, value, method = 'publish') => {
   const { publisher, subscriber } = publishKit;
@@ -284,25 +277,9 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const sub1 = await run('messageVat', [
     { name: 'pubsub', methodName: 'getSubscriber' },
   ]);
-  const spyName = 'receivePublicationRecord';
-  const directSubscriber = await run('makeRemotable', [
-    'directSubscriber',
-    { [spyName]: undefined },
-  ]);
-  const pub2Options = {
-    // onUpdate: makeMethodCallback(directSubscriber, spyName),
-    onUpdate: { target: directSubscriber, methodName: spyName, bound: [] },
-  };
-  const { publisher: pub2 } = await run('messageVat', [
-    {
-      name: 'pubsub',
-      methodName: 'makeDurablePublishKit',
-      args: [pub2Options],
-    },
-  ]);
 
   /**
-   * Advances all publishers.
+   * Advances the publisher.
    *
    * @param {unknown} value
    * @returns {Promise<void>}
@@ -310,9 +287,6 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   const publish = async value => {
     await run('messageVat', [
       { name: 'pubsub', methodName: 'publish', args: [value] },
-    ]);
-    await run('messageVatObject', [
-      { presence: pub2, methodName: 'publish', args: [value] },
     ]);
   };
 
@@ -324,33 +298,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   ]);
   assertCells(t, 'v1 first', [v1FirstCell], 1n, { value: value1, done: false });
 
-  // Verify receipt of published value via direct callback.
-  let pub2LogConsumedCount = 0;
-  const shiftPub2Log = async () => {
-    const log = await run('getLogForRemotable', [directSubscriber]);
-    const logTail = log.slice(pub2LogConsumedCount);
-    pub2LogConsumedCount = log.length;
-    const lastEntry = log
-      .filter(([methodName, _publicationRecord]) => methodName === spyName)
-      .at(-1);
-    const lastPublicationP = lastEntry[1];
-    const lastPublication = await run('awaitVatObject', [
-      { presence: lastPublicationP },
-    ]);
-    return { logTail, lastPublication };
-  };
-  const { logTail: v1Pub2FirstLog, lastPublication: v1Pub2FirstPublication } =
-    await shiftPub2Log();
-  // eslint-disable-next-line no-sparse-arrays
-  const v1Pub2ExpectedFirstLog = [arrayShape([spyName, ,])];
-  t.like(v1Pub2FirstLog, arrayShape(v1Pub2ExpectedFirstLog));
-  assertCells(t, 'v1 first callback', [v1Pub2FirstPublication], 1n, {
-    value: value1,
-    done: false,
-  });
-
-  // Verify receipt of a second published value via tail and subscribeAfter,
-  // and independently via direct callback.
+  // Verify receipt of a second published value via tail and subscribeAfter.
   const value2 = Symbol.for('value2');
   await publish(value2);
   await run('messageVatObject', [
@@ -373,15 +321,6 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     { value: value2, done: false },
     { strict: false },
   );
-  const { logTail: v1Pub2SecondLog, lastPublication: v1Pub2SecondPublication } =
-    await shiftPub2Log();
-  // eslint-disable-next-line no-sparse-arrays
-  const v1Pub2ExpectedSecondLog = [arrayShape([spyName, ,])];
-  t.like(v1Pub2SecondLog, arrayShape(v1Pub2ExpectedSecondLog));
-  assertCells(t, 'v1 second callback', [v1Pub2SecondPublication], 2n, {
-    value: value2,
-    done: false,
-  });
 
   // Upgrade the vat, breaking promises from v1.
   await run('upgradeVat', [
@@ -415,7 +354,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   ]);
   assertCells(t, 'v2 first', [v2FirstCell], 2n, { value: value2, done: false });
 
-  // Verify receipt of published values from v2.
+  // Verify receipt of a published value from v2.
   const value3 = Symbol.for('value3');
   await publish(value3);
   const v2SecondCells = [
@@ -435,15 +374,6 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     { value: value3, done: false },
     { strict: false },
   );
-  const { logTail: v2Pub2FirstLog, lastPublication: v2Pub2FirstPublication } =
-    await shiftPub2Log();
-  // eslint-disable-next-line no-sparse-arrays
-  const v2Pub2ExpectedFirstLog = [arrayShape([spyName, ,])];
-  t.like(v2Pub2FirstLog, arrayShape(v2Pub2ExpectedFirstLog));
-  assertCells(t, 'v2 first callback', [v2Pub2FirstPublication], 3n, {
-    value: value3,
-    done: false,
-  });
 });
 
 // TODO: Find a way to test virtual object rehydration

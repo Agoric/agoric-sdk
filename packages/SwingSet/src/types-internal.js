@@ -55,3 +55,28 @@ export {};
  *
  * @typedef {(problem: unknown, err?: Error) => void } KernelPanic
  */
+
+/**
+ * @typedef { { type: 'notify', vatID: VatID, kpid: string } } RunQueueEventNotify
+ * @typedef { { type: 'send', target: string, msg: Message }} RunQueueEventSend
+ * @typedef { { type: 'create-vat', vatID: VatID,
+ *              source: { bundle: Bundle } | { bundleID: BundleID },
+ *              vatParameters: SwingSetCapData,
+ *              dynamicOptions: InternalDynamicVatOptions }
+ *          } RunQueueEventCreateVat
+ * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
+ *              bundleID: BundleID, vatParameters: SwingSetCapData,
+ *              upgradeMessage: string } } RunQueueEventUpgradeVat
+ * @typedef { { type: 'changeVatOptions', vatID: VatID, options: Record<string, unknown> } } RunQueueEventChangeVatOptions
+ * @typedef { { type: 'startVat', vatID: VatID, vatParameters: SwingSetCapData } } RunQueueEventStartVat
+ * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
+ * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
+ * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
+ * @typedef { { type: 'negated-gc-action', vatID?: VatID } } RunQueueEventNegatedGCAction
+ * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
+ * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
+ *            RunQueueEventUpgradeVat | RunQueueEventChangeVatOptions | RunQueueEventStartVat |
+ *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
+ *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead
+ *          } RunQueueEvent
+ */

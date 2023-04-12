@@ -927,10 +927,7 @@ test('failed upgrade - unknown options', async t => {
 
   await t.throwsAsync(run('doUpgradeWithBadOption', []), {
     instanceOf: Error,
-    // TODO Since we should be running with `errorTaming: unsafe`, the
-    // following should have worked.
-    // message: /upgrade\(\) received unknown options: bad/,
-    message: /upgrade\(\) received unknown options: \(a string\)/,
+    message: /upgrade\(\) received unknown options: "bad"/,
   });
 });
 

@@ -212,9 +212,6 @@ export function makeVatSlot(type, allocatedByVat, id) {
  * @returns {void}
  */
 export function insistVatType(type, vatSlot) {
-  assert.equal(
-    type,
-    parseVatSlot(vatSlot).type,
-    `vatSlot ${vatSlot} is not of type ${type}`,
-  );
+  type === parseVatSlot(vatSlot).type ||
+    Fail`vatSlot ${vatSlot} is not of type ${type}`;
 }

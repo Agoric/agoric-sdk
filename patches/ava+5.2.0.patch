@@ -22,7 +22,7 @@ index afe5528..f748fec 100644
  		extensions: globs.extensions,
  		projectDir,
 diff --git a/node_modules/ava/lib/fork.js b/node_modules/ava/lib/fork.js
-index 7630baa..15647a1 100644
+index 7630baa..a88bda5 100644
 --- a/node_modules/ava/lib/fork.js
 +++ b/node_modules/ava/lib/fork.js
 @@ -7,6 +7,7 @@ import Emittery from 'emittery';
@@ -51,7 +51,7 @@ index 7630baa..15647a1 100644
  
 +				case 'exiting': {
 +					exitCode = message.ava.code;
-+					setCappedTimeout(() => finished || exit(), 10_000).unref();
++					setCappedTimeout(() => finished || exit(), 30_000).unref();
 +					break;
 +				}
 +

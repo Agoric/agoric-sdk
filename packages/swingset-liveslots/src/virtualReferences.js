@@ -38,8 +38,7 @@ export function makeVirtualReferenceManager(
   );
 
   /**
-   * Check if a virtual object is truly dead - i.e., unreachable - and truly
-   * delete it if so.
+   * Check if a virtual object is unreachable via virtual-data references.
    *
    * A virtual object is kept alive if it or any of its facets are reachable by
    * any of three legs:
@@ -48,9 +47,28 @@ export function makeVirtualReferenceManager(
    *  - virtual references (if so, it will have a refcount > 0)
    *  - being exported (if so, its export flag will be set)
    *
-   * This function is called after a leg has been reported missing, and only
-   * if the memory (Representative) leg is currently missing, to see if the
-   * other two legs are now gone also.
+   * This function is called after a leg has been reported missing,
+   * and reports back on whether the virtual-reference and
+   * export-status legs remain. The caller (liveslots
+   * scanForDeadObjects) will combine this with information about the
+   * RAM leg to decide whether the object is completely unreachable,
+   * and thus should be deleted.
+   *
+   * @param {string} baseRef  The virtual object cohort might be dead
+   *
+   * @returns {boolean} True if the object remains referenced, false if unreachable
+   */
+  function isVirtualObjectReachable(baseRef) {
+    const refCount = getRefCount(baseRef);
+    const [reachable, _retirees] = getExportStatus(baseRef);
+    return !!(reachable || refCount);
+  }
+
+  /**
+   * Delete a virtual object
+   *
+   * Once the caller determines that all three legs are gone, they
+   * call us to delete the object.
    *
    * Deletion consists of removing the vatstore entries that describe its state
    * and track its refcount status.  In addition, when a virtual object is
@@ -58,23 +76,22 @@ export function makeVirtualReferenceManager(
    * it had been exported, we also inform the kernel that the vref has been
    * retired, so other vats can delete their weak collection entries too.
    *
-   * @param {string} baseRef  The virtual object cohort that's plausibly dead
+   * @param {string} baseRef  The virtual object cohort that's certainly dead
    *
    * @returns {[boolean, string[]]} A pair of a flag that's true if this
    *    possibly created a new GC opportunity and an array of vrefs that should
    *    now be regarded as unrecognizable
    */
-  function possibleVirtualObjectDeath(baseRef) {
+  function deleteVirtualObject(baseRef) {
     const refCount = getRefCount(baseRef);
     const [reachable, retirees] = getExportStatus(baseRef);
-    if (!reachable && refCount === 0) {
-      let doMoreGC = deleteStoredRepresentation(baseRef);
-      syscall.vatstoreDelete(`vom.rc.${baseRef}`);
-      syscall.vatstoreDelete(`vom.es.${baseRef}`);
-      doMoreGC = ceaseRecognition(baseRef) || doMoreGC;
-      return [doMoreGC, retirees];
-    }
-    return [false, []];
+    assert(!reachable);
+    assert(!refCount);
+    let doMoreGC = deleteStoredRepresentation(baseRef);
+    syscall.vatstoreDelete(`vom.rc.${baseRef}`);
+    syscall.vatstoreDelete(`vom.es.${baseRef}`);
+    doMoreGC = ceaseRecognition(baseRef) || doMoreGC;
+    return [doMoreGC, retirees];
   }
 
   /**
@@ -121,10 +138,7 @@ export function makeVirtualReferenceManager(
 
   function setRefCount(baseRef, refCount) {
     const { facet } = parseVatSlot(baseRef);
-    assert(
-      !facet,
-      `setRefCount ${baseRef} should not receive individual facets`,
-    );
+    !facet || Fail`setRefCount ${baseRef} should not receive individual facets`;
     if (refCount === 0) {
       syscall.vatstoreDelete(`vom.rc.${baseRef}`);
       addToPossiblyDeadSet(baseRef);
@@ -178,7 +192,7 @@ export function makeVirtualReferenceManager(
         }
         break;
       default:
-        assert.fail(`invalid set export status ${exportStatus}`);
+        Fail`invalid set export status ${exportStatus}`;
     }
   }
 
@@ -189,7 +203,7 @@ export function makeVirtualReferenceManager(
 
   function decRefCount(baseRef) {
     const oldRefCount = getRefCount(baseRef);
-    assert(oldRefCount > 0, `attempt to decref ${baseRef} below 0`);
+    oldRefCount > 0 || Fail`attempt to decref ${baseRef} below 0`;
     setRefCount(baseRef, oldRefCount - 1);
   }
 
@@ -221,7 +235,7 @@ export function makeVirtualReferenceManager(
    */
   function rememberFacetNames(kindID, facetNames) {
     const kindInfo = kindInfoTable.get(`${kindID}`);
-    assert(kindInfo, `no kind info for ${kindID}`);
+    kindInfo || Fail`no kind info for ${kindID}`;
     assert(kindInfo.facetNames === undefined);
     kindInfo.facetNames = facetNames;
   }
@@ -299,7 +313,7 @@ export function makeVirtualReferenceManager(
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
-    assert(kindInfo, `no kind info for ${kindID}, call defineDurableKind`);
+    kindInfo || Fail`no kind info for ${kindID}, call defineDurableKind`;
     const { reanimator } = kindInfo;
     if (reanimator) {
       return reanimator(baseRef);
@@ -381,7 +395,7 @@ export function makeVirtualReferenceManager(
           // exported non-virtual object: Remotable
           const remotable = requiredValForSlot(vref);
           const oldRefCount = remotableRefCounts.get(remotable) || 0;
-          assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+          oldRefCount > 0 || Fail`attempt to decref ${vref} below 0`;
           if (oldRefCount === 1) {
             remotableRefCounts.delete(remotable);
             droppedMemoryReference = true;
@@ -395,7 +409,7 @@ export function makeVirtualReferenceManager(
     } else if (type === 'promise') {
       const p = requiredValForSlot(vref);
       const oldRefCount = remotableRefCounts.get(p) || 0;
-      assert(oldRefCount > 0, `attempt to decref ${vref} below 0`);
+      oldRefCount > 0 || Fail`attempt to decref ${vref} below 0`;
       if (oldRefCount === 1) {
         remotableRefCounts.delete(p);
         droppedMemoryReference = true; // true for promises too
@@ -577,7 +591,7 @@ export function makeVirtualReferenceManager(
       // themselves.
       const kindInfo = kindInfoTable.get(`${p.id}`);
       // This function can be called either from `dispatch.retireImports` or
-      // from `possibleVirtualObjectDeath`.  In the latter case the vref is
+      // from `deleteVirtualObject`.  In the latter case the vref is
       // actually a baseRef and so needs to be expanded to cease recognition of
       // all the facets.
       if (kindInfo) {
@@ -602,7 +616,7 @@ export function makeVirtualReferenceManager(
         } else if (recognizer instanceof Set) {
           recognizer.delete(vref);
         } else {
-          assert.fail(`unknown recognizer type ${typeof recognizer}`);
+          Fail`unknown recognizer type ${typeof recognizer}`;
         }
       }
     }
@@ -654,7 +668,19 @@ export function makeVirtualReferenceManager(
   const testHooks = {
     getReachableRefCount,
     countCollectionsForWeakKey,
+
+    remotableRefCounts,
+    vrefRecognizers,
+    kindInfoTable,
   };
+
+  function getRetentionStats() {
+    return {
+      remotableRefCounts: remotableRefCounts.size,
+      vrefRecognizers: vrefRecognizers.size,
+      kindInfoTable: kindInfoTable.size,
+    };
+  }
 
   return harden({
     droppedCollectionRegistry,
@@ -676,9 +702,11 @@ export function makeVirtualReferenceManager(
     isPresenceReachable,
     isVrefRecognizable,
     setExportStatus,
-    possibleVirtualObjectDeath,
+    isVirtualObjectReachable,
+    deleteVirtualObject,
     ceaseRecognition,
     setDeleteCollectionEntry,
+    getRetentionStats,
     testHooks,
   });
 }

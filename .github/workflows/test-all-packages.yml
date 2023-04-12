@@ -105,12 +105,8 @@ jobs:
       #  run: yarn ${{ steps.vars.outputs.test }}
       - name: yarn test (access-token)
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (agoric-cli)
-        run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (assert)
         run: cd packages/assert && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (wallet/api)
-        run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (ERTP)
@@ -125,8 +121,6 @@ jobs:
         run: cd packages/same-structure && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sharing-service)
         run: cd packages/sharing-service && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (smart-wallet)
-        run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (sparse-ints)
         run: cd packages/sparse-ints && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (spawner)
@@ -169,6 +163,8 @@ jobs:
         with:
           node-version: ${{ steps.vars.outputs.node-version }}
       # END-TEST-BOILERPLATE
+      - name: yarn test (agoric-cli)
+        run: cd packages/agoric-cli && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmos)
         run: cd golang/cosmos && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cache)
@@ -177,12 +173,10 @@ jobs:
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (inter-protocol)
-        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (pegasus)
         run: cd packages/pegasus && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (vats)
-        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (smart-wallet)
+        run: cd packages/smart-wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (swingset-runner)
         run: cd packages/swingset-runner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (telemetry)
@@ -193,6 +187,8 @@ jobs:
         run: cd packages/ui-components && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (wallet)
         run: cd packages/wallet && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (wallet/api)
+        run: cd packages/wallet/api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (eslint-config)
         run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vat-data)
@@ -225,7 +221,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        # test:xs is noop in solo/package.json
+        engine: ['16.x', '18.x']
     steps:
       - name: set vars
         id: vars
@@ -254,6 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # test:xs is noop in cosmic-swingset/package.json
         engine: ['16.x', '18.x', 'xs']
     steps:
       - name: set vars
@@ -273,6 +271,65 @@ jobs:
           go-version: 1.18
       - name: yarn test (cosmic-swingset)
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-inter-protocol:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # test:xs is noop in inter-protocol/package.json
+        engine: ['16.x', '18.x']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ steps.vars.outputs.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (inter-protocol)
+        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-vats:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 30
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        engine: ['16.x', '18.x', 'xs']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "node-version=${{ matrix.engine == 'xs' && '18.x' || matrix.engine }}" >> $GITHUB_OUTPUT
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ steps.vars.outputs.node-version }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (vats)
+        run: cd packages/vats && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         with:

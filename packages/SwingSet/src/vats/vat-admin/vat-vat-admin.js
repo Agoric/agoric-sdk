@@ -17,7 +17,7 @@ import {
   prepareSingleton,
 } from '@agoric/vat-data';
 
-const { details: X, quote: q, Fail } = assert;
+const { quote: q, Fail } = assert;
 
 const managerTypes = ['local', 'xsnap', 'xs-worker']; // xs-worker is alias
 
@@ -208,12 +208,12 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   }
 
   async function upgradeVat(vatID, bundleID, options = {}) {
-    assert(vatAdminDev, `vatAdmin device not configured`);
+    assert(vatAdminDev, 'vatAdmin device not configured');
     const { vatParameters, upgradeMessage = 'vat upgraded', ...rest } = options;
     const leftovers = Object.keys(rest);
     if (leftovers.length) {
       const bad = leftovers.join(',');
-      Fail`upgrade() received unknown options: ${bad}`;
+      Fail`upgrade() received unknown options: ${q(bad)}`;
     }
     assert.typeof(upgradeMessage, 'string', 'upgradeMessage not a string');
     const upgradeID = D(vatAdminDev).upgradeVat(
@@ -251,11 +251,9 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   }
 
   function assertRunningVat(vatID, operation, exitingOK) {
-    assert(
-      runningVats.has(vatID) && (exitingOK || !exitingVats.has(vatID)),
-      // prettier-ignore
-      X`vatAdminService rejecting attempt to perform ${q(operation)}() on non-running vat ${q(vatID)}`,
-    );
+    // prettier-ignore
+    runningVats.has(vatID) && (exitingOK || !exitingVats.has(vatID)) ||
+      Fail`vatAdminService rejecting attempt to perform ${q(operation)}() on non-running vat ${q(vatID)}`;
   }
 
   const makeAdminNode = prepareKind(
@@ -306,7 +304,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
               );
               break;
             default:
-              assert.fail(`invalid option "${option}"`);
+              Fail`invalid option ${q(option)}`;
           }
         }
         D(vatAdminDev).changeOptions(state.vatID, options);
@@ -333,7 +331,8 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
 
   function assertType(name, obj, type) {
     if (obj) {
-      assert.typeof(obj, type, `CreateVatOptions(${name})`);
+      const actualType = typeof obj;
+      actualType === type || Fail`CreateVatOptions(${name})`;
     }
   }
 
@@ -359,22 +358,16 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       // the length to something reasonable. The actual argv length
       // will be in bytes, not JS chars, so any OS limits will depend
       // upon encoding, but this ought to avoid any problems.
-      assert(
-        name.length < 200,
-        `CreateVatOptions: oversized vat name '${name}'`,
-      );
+      name.length < 200 ||
+        Fail`CreateVatOptions: oversized vat name ${q(name)}`;
       // more limits to help the 'ps' output be readable
-      assert(
-        /^[A-Za-z0-9._-]+$/.test(name),
-        `CreateVatOptions: bad vat name '${name}'`,
-      );
+      /^[A-Za-z0-9._-]+$/.test(name) ||
+        Fail`CreateVatOptions: bad vat name ${q(name)}`;
     }
     assertType('managerType', managerType, 'string');
     if (managerType) {
-      assert(
-        managerTypes.includes(managerType),
-        `CreateVatOptions: bad managerType ${managerType}`,
-      );
+      managerTypes.includes(managerType) ||
+        Fail`CreateVatOptions: bad managerType ${managerType}`;
     }
     assertType('enableSetup', enableSetup, 'boolean');
     assertType('enablePipelining', enablePipelining, 'boolean');
@@ -384,7 +377,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     // reject unknown options
     const unknown = Object.keys(rest).join(',');
     if (unknown) {
-      assert.fail(`CreateVatOptions: unknown options ${unknown}`);
+      Fail`CreateVatOptions: unknown options ${q(unknown)}`;
     }
 
     // convert meter to meterID
@@ -460,7 +453,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
           // 'bundlecap' probably wasn't a bundlecap
           throw Error('Vat Creation Error: createVat() requires a bundlecap');
         }
-        assert.typeof(bundleID, 'string', `createVat() no bundleID`);
+        typeof bundleID === 'string' || Fail`createVat() no bundleID`;
         vatID = D(vatAdminDev).createByBundleID(bundleID, co);
       } else {
         // eventually this option will go away: userspace will be obligated
@@ -482,11 +475,8 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       // bundlecaps to any vat which wants to make a vat from them (e.g.
       // zoe with ZCF). That requires chain-side changes that I want to
       // coordinate separately, so I'll leave this in place until later.
-      assert.typeof(
-        bundleName,
-        'string',
-        `createVatByName() requires bundleName to be a string`,
-      );
+      typeof bundleName === 'string' ||
+        Fail`createVatByName() requires bundleName to be a string`;
       const co = convertOptions(options);
       const bundlecap = D(vatAdminDev).getNamedBundleCap(bundleName);
       const bundleID = D(bundlecap).getBundleID();

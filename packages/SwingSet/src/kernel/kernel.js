@@ -812,7 +812,7 @@ export default function buildKernel(
    * @returns {Promise<CrankResults>}
    */
   async function processUpgradeVat(message) {
-    assert(vatAdminRootKref, `initializeKernel did not set vatAdminRootKref`);
+    assert(vatAdminRootKref, 'initializeKernel did not set vatAdminRootKref');
     const { vatID, upgradeID, bundleID, vatParameters, upgradeMessage } =
       message;
     insistCapData(vatParameters);
@@ -1090,7 +1090,7 @@ export default function buildKernel(
         }
       }
       default:
-        assert.fail(`unknown promise resolution '${kp.state}'`);
+        throw Fail`unknown promise resolution '${kp.state}'`;
     }
   }
 
@@ -1116,28 +1116,18 @@ export default function buildKernel(
    * @typedef { import('../types-internal.js').VatID } VatID
    * @typedef { import('../types-internal.js').InternalDynamicVatOptions } InternalDynamicVatOptions
    *
-   * @typedef { { type: 'notify', vatID: VatID, kpid: string } } RunQueueEventNotify
-   * @typedef { { type: 'send', target: string, msg: Message }} RunQueueEventSend
-   * @typedef { { type: 'create-vat', vatID: VatID,
-   *              source: { bundle: Bundle } | { bundleID: BundleID },
-   *              vatParameters: SwingSetCapData,
-   *              dynamicOptions: InternalDynamicVatOptions }
-   *          } RunQueueEventCreateVat
-   * @typedef { { type: 'upgrade-vat', vatID: VatID, upgradeID: string,
-   *              bundleID: BundleID, vatParameters: SwingSetCapData,
-   *              upgradeMessage: string } } RunQueueEventUpgradeVat
-   * @typedef { { type: 'changeVatOptions', vatID: VatID, options: Record<string, unknown> } } RunQueueEventChangeVatOptions
-   * @typedef { { type: 'startVat', vatID: VatID, vatParameters: SwingSetCapData } } RunQueueEventStartVat
-   * @typedef { { type: 'dropExports', vatID: VatID, krefs: string[] } } RunQueueEventDropExports
-   * @typedef { { type: 'retireExports', vatID: VatID, krefs: string[] } } RunQueueEventRetireExports
-   * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
-   * @typedef { { type: 'negated-gc-action', vatID: VatID } } RunQueueEventNegatedGCAction
-   * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
-   * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
-   *            RunQueueEventUpgradeVat | RunQueueEventChangeVatOptions | RunQueueEventStartVat |
-   *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |
-   *            RunQueueEventNegatedGCAction | RunQueueEventBringOutYourDead
-   *          } RunQueueEvent
+   * @typedef { import('../types-internal.js').RunQueueEventNotify } RunQueueEventNotify
+   * @typedef { import('../types-internal.js').RunQueueEventSend } RunQueueEventSend
+   * @typedef { import('../types-internal.js').RunQueueEventCreateVat } RunQueueEventCreateVat
+   * @typedef { import('../types-internal.js').RunQueueEventUpgradeVat } RunQueueEventUpgradeVat
+   * @typedef { import('../types-internal.js').RunQueueEventChangeVatOptions } RunQueueEventChangeVatOptions
+   * @typedef { import('../types-internal.js').RunQueueEventStartVat } RunQueueEventStartVat
+   * @typedef { import('../types-internal.js').RunQueueEventDropExports } RunQueueEventDropExports
+   * @typedef { import('../types-internal.js').RunQueueEventRetireExports } RunQueueEventRetireExports
+   * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
+   * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
+   * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
+   * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
    */
 
   /**
@@ -1216,6 +1206,10 @@ export default function buildKernel(
     return results;
   }
 
+  /**
+   * @param {RunQueueEvent} message
+   * @returns {Promise<PolicyInput>}
+   */
   async function processDeliveryMessage(message) {
     kdebug('');
     kdebug(`processQ ${JSON.stringify(message)}`);
@@ -1369,6 +1363,10 @@ export default function buildKernel(
     }
   }
 
+  /**
+   * @param {RunQueueEvent} message
+   * @returns {Promise<PolicyInput>}
+   */
   async function processAcceptanceMessage(message) {
     kdebug('');
     kdebug(`processAcceptanceQ ${JSON.stringify(message)}`);
@@ -1707,39 +1705,28 @@ export default function buildKernel(
     }
   }
 
-  function getNextDeliveryMessage() {
-    const gcMessage = processGCActionSet(kernelKeeper);
-    if (gcMessage) {
-      return gcMessage;
-    }
-    const reapMessage = kernelKeeper.nextReapAction();
-    if (reapMessage) {
-      return reapMessage;
-    }
-
-    if (!kernelKeeper.isRunQueueEmpty()) {
-      return kernelKeeper.getNextRunQueueMsg();
-    }
-    return undefined;
-  }
-
-  function getNextAcceptanceMessage() {
-    if (!kernelKeeper.isAcceptanceQueueEmpty()) {
-      return kernelKeeper.getNextAcceptanceQueueMsg();
-    }
-    return undefined;
-  }
-
+  /**
+   * Pulls the next message from the highest-priority queue and returns it
+   * along with a corresponding processor.
+   *
+   * @returns {{
+   *   message: RunQueueEvent | undefined,
+   *   processor: (message: RunQueueEvent) => Promise<PolicyInput>,
+   * }}
+   */
   function getNextMessageAndProcessor() {
-    let message = getNextAcceptanceMessage();
-    /** @type {(message:any) => Promise<PolicyInput>} */
-    let processor = processAcceptanceMessage;
-    if (!message) {
-      message = getNextDeliveryMessage();
-      processor = processDeliveryMessage;
+    const acceptanceMessage = kernelKeeper.getNextAcceptanceQueueMsg();
+    if (acceptanceMessage) {
+      return {
+        message: acceptanceMessage,
+        processor: processAcceptanceMessage,
+      };
     }
-
-    return { message, processor };
+    const message =
+      processGCActionSet(kernelKeeper) ||
+      kernelKeeper.nextReapAction() ||
+      kernelKeeper.getNextRunQueueMsg();
+    return { message, processor: processDeliveryMessage };
   }
 
   function changeKernelOptions(options) {
@@ -1758,7 +1745,7 @@ export default function buildKernel(
             break;
           }
           default:
-            assert.fail(`this can't happen (kernel option ${option})`);
+            Fail`this can't happen (kernel option ${option})`;
         }
       }
     } finally {
@@ -1840,7 +1827,7 @@ export default function buildKernel(
             policyOutput = policy.emptyCrank();
             break;
           default:
-            assert.fail(`unknown policyInput type in ${policyInput}`);
+            Fail`unknown policyInput type in ${policyInput}`;
         }
         if (!policyOutput) {
           // console.log(`ending c.run() by policy, count=${count}`);
@@ -1934,10 +1921,14 @@ export default function buildKernel(
 
   function addDeviceHook(deviceName, hookName, hook) {
     const deviceID = kernelKeeper.getDeviceIDForName(deviceName);
-    assert(deviceID, `no such device ${deviceName}`);
-    assert(deviceHooks.has(deviceID), `no such device ${deviceID}`);
+    if (!deviceID) {
+      throw Fail`no such device ${deviceName}`;
+    }
+    deviceHooks.has(deviceID) || Fail`no such device ${deviceID}`;
     const hooks = deviceHooks.get(deviceID);
-    assert(hooks, `no hooks for ${deviceName}`);
+    if (!hooks) {
+      throw Fail`no hooks for ${deviceName}`;
+    }
     hooks[hookName] = hook;
   }
 

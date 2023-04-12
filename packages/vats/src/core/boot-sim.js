@@ -26,7 +26,7 @@ const modules = harden({ behaviors: { ...behaviors }, utils: { ...utils } });
 /**
  * Build root object of the bootstrap vat for the simulated chain.
  *
- * @param {{
+ * @param {VatPowers & {
  *   D: DProxy,
  *   logger: (msg) => void,
  * }} vatPowers

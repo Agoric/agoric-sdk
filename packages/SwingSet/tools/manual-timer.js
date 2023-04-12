@@ -1,4 +1,5 @@
 import { Far } from '@endo/far';
+import { Fail } from '@agoric/assert';
 import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
@@ -23,10 +24,8 @@ const setup = () => {
       assert.equal(state.currentWakeup, undefined, 'one at a time');
       assert.equal(state.currentHandler, undefined, 'one at a time');
       if (state.currentWakeup !== undefined) {
-        assert(
-          state.currentWakeup > state.now,
-          `too late: ${state.currentWakeup} <= ${state.now}`,
-        );
+        state.currentWakeup > state.now ||
+          Fail`too late: ${state.currentWakeup} <= ${state.now}`;
       }
       state.currentWakeup = when;
       state.currentHandler = handler;
@@ -63,7 +62,7 @@ const setup = () => {
 export const buildManualTimer = (options = {}) => {
   const { startTime = 0n, ...other } = options;
   const unrec = Object.getOwnPropertyNames(other).join(',');
-  assert.equal(unrec, '', `buildManualTimer unknown options ${unrec}`);
+  unrec === '' || Fail`buildManualTimer unknown options ${unrec}`;
   const { timerService, state } = setup();
   assert.typeof(startTime, 'bigint');
   state.now = startTime;
@@ -76,7 +75,7 @@ export const buildManualTimer = (options = {}) => {
 
   const advanceTo = when => {
     assert.typeof(when, 'bigint');
-    assert(when > state.now, `advanceTo(${when}) < current ${state.now}`);
+    when > state.now || Fail`advanceTo(${when}) < current ${state.now}`;
     state.now = when;
     wake();
     return when;

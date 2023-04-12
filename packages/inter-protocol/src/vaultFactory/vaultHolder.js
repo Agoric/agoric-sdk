@@ -2,23 +2,15 @@
  * @file Use-object for the owner of a vault
  */
 import { AmountShape } from '@agoric/ertp';
-import {
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
-  SubscriberShape,
-  TopicsRecordShape,
-} from '@agoric/notifier';
+import { SubscriberShape, TopicsRecordShape } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-import { makeStorageNodePathProvider } from '@agoric/zoe/src/contractSupport/durability.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;
 
 /**
  * @typedef {{
- * publisher: PublishKit<VaultNotification>['publisher'],
- * subscriber: PublishKit<VaultNotification>['subscriber'],
- * storageNode: StorageNode,
+ * topicKit: import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<VaultNotification>,
  * vault: Vault | null,
  * }} State
  */
@@ -33,19 +25,18 @@ const HolderI = M.interface('holder', {
   makeCloseInvitation: M.call().returns(M.promise()),
   makeTransferInvitation: M.call().returns(M.promise()),
 });
+
+/** @type {{ [name: string]: [ description: string, valueShape: Pattern ] }} */
+const PUBLIC_TOPICS = {
+  vault: ['Vault holder status', M.any()],
+};
+
 /**
  *
  * @param {import('@agoric/ertp').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
-export const prepareVaultHolder = (baggage, marshaller) => {
-  const memoizedPath = makeStorageNodePathProvider(baggage);
-
-  const makeVaultHolderPublishKit = prepareDurablePublishKit(
-    baggage,
-    'Vault Holder publish kit',
-  );
-
+export const prepareVaultHolder = (baggage, makeRecorderKit) => {
   const makeVaultHolderKit = prepareExoClassKit(
     baggage,
     'Vault Holder',
@@ -65,12 +56,10 @@ export const prepareVaultHolder = (baggage, marshaller) => {
      * @returns {State}
      */
     (vault, storageNode) => {
-      /** @type {PublishKit<VaultNotification>} */
-      const { subscriber, publisher } = makeVaultHolderPublishKit();
+      // must be the fully synchronous maker because the kit is held in durable state
+      const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.vault[1]);
 
-      pipeTopicToStorage(subscriber, storageNode, marshaller);
-
-      return { publisher, storageNode, subscriber, vault };
+      return { topicKit, vault };
     },
     {
       helper: {
@@ -85,7 +74,7 @@ export const prepareVaultHolder = (baggage, marshaller) => {
           return vault;
         },
         getUpdater() {
-          return this.state.publisher;
+          return this.state.topicKit.recorder;
         },
       },
       invitationMakers: {
@@ -102,15 +91,15 @@ export const prepareVaultHolder = (baggage, marshaller) => {
       holder: {
         /** @deprecated use getPublicTopics */
         getSubscriber() {
-          return this.state.subscriber;
+          return this.state.topicKit.subscriber;
         },
         getPublicTopics() {
-          const { subscriber, storageNode } = this.state;
+          const { topicKit } = this.state;
           return harden({
             vault: {
-              description: 'Vault holder status',
-              subscriber,
-              storagePath: memoizedPath(storageNode),
+              description: PUBLIC_TOPICS.vault[0],
+              subscriber: topicKit.subscriber,
+              storagePath: topicKit.recorder.getStoragePath(),
             },
           });
         },

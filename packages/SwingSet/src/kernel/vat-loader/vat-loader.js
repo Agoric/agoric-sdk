@@ -73,16 +73,16 @@ export function makeVatLoader(stuff) {
       sourceDesc = 'from source bundle';
     } else if ('bundleName' in source) {
       vatSourceBundle = kernelKeeper.getNamedBundle(source.bundleName);
-      assert(vatSourceBundle, `unknown bundle name ${source.bundleName}`);
+      vatSourceBundle || Fail`unknown bundle name ${source.bundleName}`;
       sourceDesc = `from bundleName: ${source.bundleName}`;
     } else if ('bundleID' in source) {
       vatSourceBundle = kernelKeeper.getBundle(source.bundleID);
-      assert(vatSourceBundle, `unknown bundleID ${source.bundleID}`);
+      vatSourceBundle || Fail`unknown bundleID ${source.bundleID}`;
       sourceDesc = `from bundleID: ${source.bundleID}`;
     } else {
       Fail`unknown vat source descriptor ${source}`;
     }
-    assert.typeof(vatSourceBundle, 'object', `vat creation requires bundle`);
+    assert.typeof(vatSourceBundle, 'object', 'vat creation requires bundle');
 
     assertKnownOptions(options, allowedOptions);
     const {

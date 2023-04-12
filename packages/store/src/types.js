@@ -83,7 +83,7 @@
 // TODO parameterize CopyTagged to support these refinements
 
 /**
- * @template {Key} K
+ * @template {Key} [K=Key]
  * @typedef {CopyTagged & {
  *   [Symbol.toStringTag]: 'copySet',
  *   payload: Array<K>,
@@ -94,7 +94,7 @@
  */
 
 /**
- * @template {Key} K
+ * @template {Key} [K=Key]
  * @typedef {CopyTagged & {
  *   [Symbol.toStringTag]: 'copyBag',
  *   payload: Array<[K, bigint]>,
@@ -106,8 +106,8 @@
  */
 
 /**
- * @template {Key} K
- * @template {Passable} V
+ * @template {Key} [K=Key]
+ * @template {Passable} [V=Passable]
  * @typedef {CopyTagged & {
  *   [Symbol.toStringTag]: 'copyMap',
  *   payload: { keys: Array<K>, values: Array<V> },
@@ -168,7 +168,7 @@
  */
 
 /**
- * @template {Key & object} K
+ * @template {Key & object} [K=Key]
  * @typedef {object} WeakSetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -184,7 +184,7 @@
  */
 
 /**
- * @template {Key} K
+ * @template {Key} [K=Key]
  * @typedef {object} SetStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -205,8 +205,8 @@
  */
 
 /**
- * @template {Key & object} K
- * @template {Passable} V
+ * @template {Key & object} [K=Key]
+ * @template {Passable} [V=Passable]
  * @typedef {object} WeakMapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the
@@ -225,8 +225,8 @@
  */
 
 /**
- * @template {Key} K
- * @template {Passable} V
+ * @template {Key} [K=Key]
+ * @template {Passable} [V=Passable]
  * @typedef {object} MapStore
  * @property {(key: K) => boolean} has
  * Check if a key exists. The key can be any JavaScript value, though the

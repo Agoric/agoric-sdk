@@ -220,7 +220,7 @@ test('error creating vat with oversized name', async t => {
   t.is(c.kpStatus(kpid), 'rejected');
   t.deepEqual(
     kunser(c.kpResolution(kpid)),
-    Error(`CreateVatOptions: oversized vat name '${'n'.repeat(200)}'`),
+    Error(`CreateVatOptions: oversized vat name "${'n'.repeat(200)}"`),
   );
 });
 
@@ -232,7 +232,7 @@ test('error creating vat with bad characters in name', async t => {
   t.is(c.kpStatus(kpid), 'rejected');
   t.deepEqual(
     kunser(c.kpResolution(kpid)),
-    Error(`CreateVatOptions: bad vat name 'no spaces'`),
+    Error(`CreateVatOptions: bad vat name "no spaces"`),
   );
 });
 
@@ -243,7 +243,7 @@ test('error creating vat with unknown options', async t => {
   t.is(c.kpStatus(kpid), 'rejected');
   t.deepEqual(
     kunser(c.kpResolution(kpid)),
-    Error('CreateVatOptions: unknown options bogus'),
+    Error('CreateVatOptions: unknown options "bogus"'),
   );
 });
 

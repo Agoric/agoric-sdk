@@ -17,7 +17,7 @@
  */
 
 /**
- * @typedef {NatValue | SetValue | CopySetValue | CopyBagValue} AmountValue
+ * @typedef {NatValue | SetValue | CopySet | CopyBag} AmountValue
  * An `AmountValue` describes a set or quantity of assets that can be owned or
  * shared.
  *
@@ -30,10 +30,10 @@
  * key in a map (MapStore or CopyMap).
  *
  * `SetValue` is for the deprecated set representation, using an array directly
- * to represent the array of its elements. `CopySetValue` is the proper
+ * to represent the array of its elements. `CopySet` is the proper
  * representation using a CopySet.
  *
- * A semi-fungible `CopyBagValue` is represented as a
+ * A semi-fungible `CopyBag` is represented as a
  * `CopyBag` of `Key` objects. "Bag" is synonymous with MultiSet, where an
  * element of a bag can be present once or more times, i.e., some positive
  * bigint number of times, representing that quantity of the asset represented
@@ -50,8 +50,8 @@
  * @template {AssetKind} K
  * @typedef {K extends 'nat' ? NatValue :
  * K extends 'set' ? SetValue :
- * K extends 'copySet' ? CopySetValue:
- * K extends 'copyBag' ? CopyBagValue :
+ * K extends 'copySet' ? CopySet:
+ * K extends 'copyBag' ? CopyBag :
  * never
  * } AssetValueForKind
  */
@@ -60,8 +60,8 @@
  * @template {AmountValue} V
  * @typedef {V extends NatValue ? 'nat' :
  *  V extends SetValue ? 'set' :
- *  V extends CopySetValue ? 'copySet' :
- *  V extends CopyBagValue ? 'copyBag' :
+ *  V extends CopySet ? 'copySet' :
+ *  V extends CopyBag ? 'copyBag' :
  *  never} AssetKindForValue
  */
 
@@ -434,29 +434,5 @@
  */
 
 /**
- * @typedef {MathHelpers<NatValue>} NatMathHelpers
- */
-
-/**
  * @typedef {Array<Key>} SetValue
- */
-
-/**
- * @typedef {MathHelpers<SetValue>} SetMathHelpers
- */
-
-/**
- * @typedef {CopySet<Key>} CopySetValue
- */
-
-/**
- * @typedef {MathHelpers<CopySetValue>} CopySetMathHelpers
- */
-
-/**
- * @typedef {CopyBag<Key>} CopyBagValue
- */
-
-/**
- * @typedef {MathHelpers<CopyBagValue>} CopyBagMathHelpers
  */

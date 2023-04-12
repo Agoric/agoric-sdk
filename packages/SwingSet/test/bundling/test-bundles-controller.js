@@ -54,7 +54,7 @@ test('install invalid bundle fails', async t => {
     () => controller.validateAndInstallBundle(bundle, wrong),
     {
       message:
-        /alleged bundleID b1-[0-9a-f]{128} does not match actual b1-[0-9a-f]{128}/,
+        /alleged bundleID "b1-[0-9a-f]{128}" does not match actual "b1-[0-9a-f]{128}"/,
     },
   );
 });

@@ -40,6 +40,7 @@ export const makeEphemeraProvider = init => {
 harden(makeEphemeraProvider);
 
 /**
+ * @deprecated use Recorder getStoragePath() which memoizes
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  */

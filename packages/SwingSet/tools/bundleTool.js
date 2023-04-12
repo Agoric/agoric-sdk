@@ -4,7 +4,7 @@ import { makeReadPowers } from '@endo/compartment-mapper/node-powers.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import styles from 'ansi-styles'; // less authority than 'chalk'
 
-const { details: X, quote: q, Fail } = assert;
+const { quote: q, Fail } = assert;
 
 /**
  * @typedef {object} BundleMeta
@@ -133,11 +133,8 @@ export const makeBundleCache = (wr, bundleOptions, cwd, readPowers) => {
     } = meta;
     assert.equal(bundleFileName, toBundleName(targetName));
     if (rootOpt) {
-      assert.equal(
-        moduleSource,
-        cwd.neighbor(rootOpt).absolute(),
-        X`bundle ${targetName} was for ${moduleSource}, not ${rootOpt}`,
-      );
+      moduleSource === cwd.neighbor(rootOpt).absolute() ||
+        Fail`bundle ${targetName} was for ${moduleSource}, not ${rootOpt}`;
     }
     const { mtime: actualBundleTime } = await wr
       .readOnly()

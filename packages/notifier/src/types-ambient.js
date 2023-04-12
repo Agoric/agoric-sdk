@@ -156,15 +156,9 @@
  */
 
 /**
- * @typedef {import('@agoric/internal/src/callback.js').Callback<(publicationRecordP: Promise<PublicationRecord<*>>) => void>} PublishKitOnUpdate
- */
-
-/**
  * @typedef {object} DurablePublishKitState
  *
  * @property {DurablePublishKitValueDurability} valueDurability
- *
- * @property {PublishKitOnUpdate} [onUpdate]
  *
  * @property {bigint} publishCount
  *

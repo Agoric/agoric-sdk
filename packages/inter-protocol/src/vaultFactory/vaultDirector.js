@@ -4,11 +4,9 @@ import '@agoric/zoe/src/contracts/exported.js';
 import '@agoric/governance/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import {
-  makePublicTopic,
   makeStoredPublisherKit,
-  pipeTopicToStorage,
-  prepareDurablePublishKit,
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/notifier';
@@ -23,6 +21,7 @@ import {
   atomicRearrange,
   getAmountIn,
   getAmountOut,
+  makeRecorderTopic,
   makeRatioFromAmounts,
   provideChildBaggage,
   provideEmptySeat,
@@ -30,15 +29,14 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeTracer } from '@agoric/internal';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
+import { scheduleLiquidationWakeups } from './liquidation.js';
 import {
   makeVaultParamManager,
   SHORTFALL_INVITATION_KEY,
   vaultParamPattern,
 } from './params.js';
 import { prepareVaultManagerKit } from './vaultManager.js';
-import { scheduleLiquidationWakeups } from './liquidation.js';
 
 const { Fail, quote: q } = assert;
 
@@ -85,6 +83,8 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<import('../auction/auctioneer.js').AuctioneerPublicFacet>} auctioneer
  * @param {ERef<StorageNode>} storageNode
  * @param {ERef<Marshaller>} marshaller
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
  */
 export const prepareVaultDirector = (
   baggage,
@@ -95,11 +95,9 @@ export const prepareVaultDirector = (
   auctioneer,
   storageNode,
   marshaller,
+  makeRecorderKit,
+  makeERecorderKit,
 ) => {
-  const makeVaultDirectorPublishKit = prepareDurablePublishKit(
-    baggage,
-    'Vault Director publish kit',
-  );
   /** For holding newly minted tokens until transferred */
   const { zcfSeat: mintSeat } = zcf.makeEmptySeatKit();
 
@@ -115,18 +113,18 @@ export const prepareVaultDirector = (
    */
   const vaultParamManagers = makeScalarMapStore('vaultParamManagers');
 
-  /** @type {PublishKit<MetricsNotification>} */
-  const { publisher: metricsPublisher, subscriber: metricsSubscriber } =
-    makeVaultDirectorPublishKit();
-
   const metricsNode = E(storageNode).makeChildNode('metrics');
-  pipeTopicToStorage(metricsSubscriber, metricsNode, marshaller);
-  const topics = harden({
-    metrics: makePublicTopic(
-      'Vault Factory metrics',
-      metricsSubscriber,
-      metricsNode,
+
+  const metricsKit = makeERecorderKit(
+    metricsNode,
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+      M.any()
     ),
+  );
+
+  // TODO helper to make all the topics at once
+  const topics = harden({
+    metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
   });
 
   const allManagersDo = fn => {
@@ -214,7 +212,7 @@ export const prepareVaultDirector = (
         ),
         makeCollectFeesInvitation: M.call().returns(M.promise()),
         getContractGovernor: M.call().returns(M.remotable()),
-        updateMetrics: M.call().returns(),
+        updateMetrics: M.call().returns(M.promise()),
         getRewardAllocation: M.call().returns({ Minted: AmountShape }),
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
@@ -302,8 +300,9 @@ export const prepareVaultDirector = (
 
           // counter to be incremented at end of addVaultType
           const managerId = `manager${state.managerCounter}`;
-          const managerStorageNode =
-            storageNode && E(storageNode).makeChildNode(managerId);
+          const managerStorageNode = await E(storageNode).makeChildNode(
+            managerId,
+          );
 
           /** a powerful object; can modify parameters */
           const vaultParamManager = makeVaultParamManager(
@@ -348,7 +347,7 @@ export const prepareVaultDirector = (
               debtMint.burnLosses(harden({ Minted: toMint }), mintSeat);
               throw e;
             }
-            facets.machine.updateMetrics();
+            void facets.machine.updateMetrics();
           };
 
           /**
@@ -393,6 +392,8 @@ export const prepareVaultDirector = (
             prepareVaultManagerKit,
             zcf,
             marshaller,
+            makeRecorderKit,
+            makeERecorderKit,
             {
               debtMint,
               collateralBrand,
@@ -406,7 +407,7 @@ export const prepareVaultDirector = (
 
           const { self: vm } = makeVaultManager();
           collateralTypes.init(collateralBrand, vm);
-          facets.machine.updateMetrics();
+          void facets.machine.updateMetrics();
           state.managerCounter += 1;
           return vm;
         },
@@ -422,7 +423,7 @@ export const prepareVaultDirector = (
           return zcf.getTerms().electionManager;
         },
         updateMetrics() {
-          return metricsPublisher.publish(sampleMetrics());
+          return E(metricsKit.recorderP).write(sampleMetrics());
         },
         // XXX accessors for tests
         getRewardAllocation() {
@@ -483,7 +484,7 @@ export const prepareVaultDirector = (
         },
         /** @deprecated use getPublicTopics */
         getMetrics() {
-          return metricsSubscriber;
+          return metricsKit.subscriber;
         },
         getRunIssuer() {
           return debtMint.getIssuerRecord().issuer;

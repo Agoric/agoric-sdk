@@ -36,7 +36,7 @@ function makeSupervisorDispatch(dispatch) {
     return Promise.resolve(delivery)
       .then(dispatch)
       .then(
-        () => harden(['ok', null, null]),
+        res => harden(['ok', res, null]),
         err => {
           // TODO react more thoughtfully, maybe terminate the vat
           console.warn(`error during vat dispatch() of ${delivery}`, err);

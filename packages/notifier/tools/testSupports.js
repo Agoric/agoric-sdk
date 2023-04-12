@@ -28,10 +28,9 @@ export const makeFakeStorage = (path, publication) => {
     setValue: async value => {
       setValueCalls += 1;
       assert.typeof(value, 'string');
-      if (!publication) {
-        throw Error('publication undefined');
+      if (publication) {
+        publication.updateState(value);
       }
-      publication.updateState(value);
     },
     makeChildNode: () => storage,
     countSetValueCalls: () => setValueCalls,

@@ -42,7 +42,7 @@ export function makeKernelSyscallHandler(tools) {
 
   function descopeVatstoreKey(vatID, dbKey) {
     const prefix = `${vatID}.vs.`;
-    assert(dbKey.startsWith(prefix), `${dbKey} must start with ${prefix}`);
+    dbKey.startsWith(prefix) || Fail`${dbKey} must start with ${prefix}`;
     return dbKey.slice(prefix.length);
   }
 
@@ -208,7 +208,7 @@ export function makeKernelSyscallHandler(tools) {
   function callKernelHook(deviceID, hookName, args) {
     const hooks = deviceHooks.get(deviceID);
     const hook = hooks[hookName];
-    assert(hook, `device ${deviceID} has no hook named ${hookName}`);
+    hook || Fail`device ${deviceID} has no hook named ${hookName}`;
     insistCapData(args);
     /** @type { SwingSetCapData } */
     const hres = hook(args);

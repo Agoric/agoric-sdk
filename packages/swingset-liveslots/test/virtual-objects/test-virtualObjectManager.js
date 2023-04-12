@@ -562,7 +562,7 @@ test('durable kind IDs can be reanimated', t => {
     log,
   });
   const { makeKindHandle, defineDurableKind, flushStateCache } = vom;
-  const { possibleVirtualObjectDeath } = vrm;
+  const { isVirtualObjectReachable } = vrm;
   const { makeScalarBigMapStore } = cm;
   const { deleteEntry } = fakeStuff;
 
@@ -591,10 +591,11 @@ test('durable kind IDs can be reanimated', t => {
   t.is(log.shift(), 'set vc.1.|entryCount 1');
   t.deepEqual(log, []);
 
-  // Forget its existence
+  // Forget its Representative
   kindHandle = null;
   deleteEntry(khid);
-  possibleVirtualObjectDeath(khid);
+  t.deepEqual(log, []);
+  t.truthy(isVirtualObjectReachable(khid));
   t.is(log.shift(), `get vom.rc.${khid} => 1`);
   t.is(log.shift(), `get vom.es.${khid} => undefined`);
   t.deepEqual(log, []);
@@ -631,7 +632,8 @@ test('virtual object gc', t => {
   const log = [];
   const { vom, vrm, fakeStuff } = makeFakeVirtualStuff({ log });
   const { defineKind, flushStateCache } = vom;
-  const { setExportStatus, possibleVirtualObjectDeath } = vrm;
+  const { setExportStatus, deleteVirtualObject, isVirtualObjectReachable } =
+    vrm;
   const { deleteEntry, dumpStore } = fakeStuff;
 
   const makeThing = defineKind('thing', initThing, thingBehavior);
@@ -689,9 +691,12 @@ test('virtual object gc', t => {
   ]);
 
   // This is what the finalizer would do if the local reference was dropped and GC'd
-  function pretendGC(vref) {
+  function pretendGC(vref, shouldDelete) {
     deleteEntry(vref);
-    possibleVirtualObjectDeath(vref);
+    t.is(!!isVirtualObjectReachable(vref), !shouldDelete);
+    if (shouldDelete) {
+      deleteVirtualObject(vref);
+    }
   }
 
   // case 1: export, drop local ref, drop export
@@ -701,7 +706,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.es.${tbase}/1 r`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because exported
-  pretendGC(`${tbase}/1`);
+  pretendGC(`${tbase}/1`, false);
   t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
   t.is(log.shift(), `get vom.es.${tbase}/1 => r`);
   t.deepEqual(log, []);
@@ -728,7 +733,9 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.es.${tbase}/1 s`);
   t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
   t.deepEqual(log, []);
-  pretendGC(`${tbase}/1`);
+  pretendGC(`${tbase}/1`, true);
+  t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/1 => s`);
   t.is(log.shift(), `get vom.rc.${tbase}/1 => undefined`);
   t.is(log.shift(), `get vom.es.${tbase}/1 => s`);
   t.is(log.shift(), `get vom.${tbase}/1 => ${thingVal(0, 'thing #1', 0)}`);
@@ -788,7 +795,9 @@ test('virtual object gc', t => {
   ]);
 
   // drop local ref -- should delete
-  pretendGC(`${tbase}/2`);
+  pretendGC(`${tbase}/2`, true);
+  t.is(log.shift(), `get vom.rc.${tbase}/2 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/2 => s`);
   t.is(log.shift(), `get vom.rc.${tbase}/2 => undefined`);
   t.is(log.shift(), `get vom.es.${tbase}/2 => s`);
   t.is(log.shift(), `get vom.${tbase}/2 => ${thingVal(0, 'thing #2', 0)}`);
@@ -816,7 +825,9 @@ test('virtual object gc', t => {
 
   // case 3: drop local ref with no prior export
   // drop local ref -- should delete
-  pretendGC(`${tbase}/3`);
+  pretendGC(`${tbase}/3`, true);
+  t.is(log.shift(), `get vom.rc.${tbase}/3 => undefined`);
+  t.is(log.shift(), `get vom.es.${tbase}/3 => undefined`);
   t.is(log.shift(), `get vom.rc.${tbase}/3 => undefined`);
   t.is(log.shift(), `get vom.es.${tbase}/3 => undefined`);
   t.is(log.shift(), `get vom.${tbase}/3 => ${thingVal(0, 'thing #3', 0)}`);
@@ -867,7 +878,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.es.${tbase}/4 r`);
   t.deepEqual(log, []);
   // drop local ref -- should not delete because ref'd virtually AND exported
-  pretendGC(`${tbase}/4`);
+  pretendGC(`${tbase}/4`, false);
   t.is(log.shift(), `get vom.rc.${tbase}/4 => 1`);
   t.is(log.shift(), `get vom.es.${tbase}/4 => r`);
   t.deepEqual(log, []);
@@ -907,7 +918,7 @@ test('virtual object gc', t => {
     ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
   ]);
   // drop local ref -- should not delete because ref'd virtually AND exported
-  pretendGC(`${tbase}/5`);
+  pretendGC(`${tbase}/5`, false);
   t.is(log.shift(), `get vom.rc.${tbase}/5 => 1`);
   t.is(log.shift(), `get vom.es.${tbase}/5 => r`);
   t.deepEqual(log, []);
@@ -943,7 +954,7 @@ test('virtual object gc', t => {
     ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
   ]);
   // drop local ref -- should not delete because ref'd virtually
-  pretendGC(`${tbase}/6`);
+  pretendGC(`${tbase}/6`, false);
   t.is(log.shift(), `get vom.rc.${tbase}/6 => 1`);
   t.is(log.shift(), `get vom.es.${tbase}/6 => undefined`);
   t.deepEqual(log, []);
