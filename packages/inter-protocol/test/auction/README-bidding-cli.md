@@ -115,9 +115,11 @@ agd keys add test-acct
 ## Provisioning your account for use with Zoe smart contracts
 
 Mainnet
+
 You’ll need to provision an Agoric Smart Wallet account (offer handler) in order to interact with Zoe contracts. You’ll need acquire 10BLD in order to do this. See[ ‘How to Provisions a Smart Wallet instructions’](https://docs.inter.trade/user-how-to/wallet-usage/create-your-agoric-account-and-smart-wallet.). Once provisioned, you’ll need to hold an IST balance in order to be able to place a bid.
 
 Testnet
+
 You’ll need to use the relevant faucet to be able to provision your smart wallet (and fund with IST and other tokens such as toy ATOM). You’ll need to grab your Agoric account address from Keplr then head to https://ollinet.agoric.net/, https://devnet.agoric.net/ etc., click ‘Faucet’, paste your address and select ‘send IST and provision…’. After success, toggle ‘Send tokens’ to fund your wallet with some test tokens.
 
 ## Troubleshooting - 'Error: key with address XXXXX...not found: key not found...'
