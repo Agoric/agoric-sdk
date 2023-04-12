@@ -1,8 +1,12 @@
 import { Fail } from '@agoric/assert';
 import { makeTypeGuards } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
+import {
+  makeFakeMarshaller,
+  makeFakeStorage,
+} from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
-import { M, prepareExoClass } from '@agoric/vat-data';
+import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/7090
@@ -130,6 +134,10 @@ harden(prepareRecorder);
 /** @typedef {ReturnType<typeof prepareRecorder>} MakeRecorder */
 
 /**
+ * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
+ *
+ * @see {defineERecorderKit}
+ *
  * @param {{makeRecorder: MakeRecorder, makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>}} makers
  */
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
@@ -149,6 +157,10 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
 /** @typedef {ReturnType<typeof defineRecorderKit>} MakeRecorderKit */
 
 /**
+ * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
+ *
+ * @see {defineRecorderKit}
+ *
  * @param {{makeRecorder: MakeRecorder, makeDurablePublishKit: ReturnType<typeof prepareDurablePublishKit>}} makers
  */
 export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
@@ -189,7 +201,9 @@ export const prepareRecorderKit = (baggage, marshaller) => {
 };
 
 /**
- * To be called at most once per baggage.
+ * Convenience wrapper for DurablePublishKit and Recorder kinds.
+ *
+ * NB: this defines two durable kinds. Must be called at most once per baggage.
  *
  * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
  * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
@@ -203,32 +217,34 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
     'Durable Publish Kit',
   );
   const makeRecorder = prepareRecorder(baggage, marshaller);
-  /**
-   * @template T
-   * @param {StorageNode} storageNode
-   * @param {TypedMatcher<T>} [valueShape]
-   * @returns {RecorderKit<T>}
-   */
-  const makeRecorderKit = (storageNode, valueShape) => {
-    const { subscriber, publisher } = makeDurablePublishKit();
-    const recorder = makeRecorder(publisher, storageNode, valueShape);
-    return harden({ subscriber, recorder });
-  };
-  /**
-   * @template T
-   * @param {ERef<StorageNode>} storageNodeP
-   * @param {TypedMatcher<T>} [valueShape]
-   * @returns {EventualRecorderKit<T>}
-   */
-  const makeERecorderKit = (storageNodeP, valueShape) => {
-    const { publisher, subscriber } = makeDurablePublishKit();
-    const recorderP = E.when(storageNodeP, storageNode =>
-      makeRecorder(publisher, storageNode, valueShape),
-    );
-    return { subscriber, recorderP };
-  };
 
-  return { makeRecorderKit, makeERecorderKit };
+  const makeRecorderKit = defineRecorderKit({
+    makeRecorder,
+    makeDurablePublishKit,
+  });
+  const makeERecorderKit = defineERecorderKit({
+    makeRecorder,
+    makeDurablePublishKit,
+  });
+
+  return {
+    makeDurablePublishKit,
+    makeRecorder,
+    makeRecorderKit,
+    makeERecorderKit,
+  };
+};
+
+/**
+ * For use in tests
+ */
+export const prepareMockRecorderKitMakers = () => {
+  const baggage = makeScalarBigMapStore('mock recorder baggage');
+  const marshaller = makeFakeMarshaller();
+  return {
+    ...prepareRecorderKitMakers(baggage, marshaller),
+    storageNode: makeFakeStorage('mock recorder storage'),
+  };
 };
 
 /**
