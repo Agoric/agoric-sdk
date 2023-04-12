@@ -221,7 +221,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        # test:xs is noop in solo/package.json
+        engine: ['16.x', '18.x']
     steps:
       - name: set vars
         id: vars
@@ -250,6 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # test:xs is noop in cosmic-swingset/package.json
         engine: ['16.x', '18.x', 'xs']
     steps:
       - name: set vars
@@ -282,7 +284,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['16.x', '18.x', 'xs']
+        # test:xs is noop in inter-protocol/package.json
+        engine: ['16.x', '18.x']
     steps:
       - name: set vars
         id: vars
