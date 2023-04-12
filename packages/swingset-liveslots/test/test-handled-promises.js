@@ -160,8 +160,9 @@ const kvStoreDataV1 = Object.entries({
   'vc.4.|nextOrdinal': '1',
   'vc.4.|schemata':
     '{"label":"watchedPromises","body":"#{\\"keyShape\\":{\\"#tag\\":\\"match:and\\",\\"payload\\":[{\\"#tag\\":\\"match:scalar\\",\\"payload\\":\\"#undefined\\"},{\\"#tag\\":\\"match:string\\",\\"payload\\":[]}]}}","slots":[]}',
-  'vom.dkind.10':
-    '{"kindID":"10","tag":"DurablePromiseIgnorer","nextInstanceID":2,"unfaceted":true}',
+  'vom.dkind.10.descriptor':
+    '{"kindID":"10","tag":"DurablePromiseIgnorer","unfaceted":true}',
+  'vom.dkind.10.nextID': '2',
   'vom.o+d10/1': '{}',
   'vom.rc.o+d1/10': '1',
   'vom.rc.o+d10/1': '3',

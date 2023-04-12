@@ -972,7 +972,7 @@ async function voRefcountManagementTest1(t, isf) {
 
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   await dispatchMessageSuccessfully('prepareStore3');
   // create three VOs (tag "holder") which hold our vref in their vdata
@@ -1013,7 +1013,7 @@ async function voRefcountManagementTest2(t, isf) {
 
   // holder Kind is the next-to-last created kind
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   await dispatchMessageSuccessfully('prepareStore3');
   // create three VOs (tag "holder") which hold our vref in their vdata
@@ -1054,7 +1054,7 @@ async function voRefcountManagementTest3(t, isf) {
 
   // holder Kind is the next-to-last created kind
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   // make a linked list with virtual "holder" objects
   await dispatchMessageSuccessfully('prepareStoreLinked');
@@ -1104,7 +1104,7 @@ test.serial('presence refcount management 1', async t => {
 
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   // create three VOs (tag "holder") which hold our vref in their vdata
   await dispatchMessageSuccessfully('prepareStore3');
@@ -1143,7 +1143,7 @@ test.serial('presence refcount management 2', async t => {
 
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   await dispatchMessageSuccessfully('prepareStore3');
 
@@ -1175,7 +1175,7 @@ test.serial('remotable refcount management 1', async t => {
 
   // holder Kind is the next-to-last created kind, which gets idCounters.exportID-2
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   await dispatchMessageSuccessfully('makeAndHoldRemotable');
   // the Remotable is currently held by RAM, and doesn't get a vref
@@ -1217,7 +1217,7 @@ test.serial('remotable refcount management 2', async t => {
   const { fakestore } = v;
 
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
 
   await dispatchMessageSuccessfully('makeAndHoldRemotable');
   await dispatchMessageSuccessfully('prepareStore3');
@@ -1323,7 +1323,7 @@ test.serial('VO holding non-VO', async t => {
   await dispatchMessageSuccessfully('makeAndHoldRemotable');
   // still held in RAM, no vref allocated yet
   const holderKindID = JSON.parse(fakestore.get(`idCounters`)).exportID - 2;
-  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}`)).tag, 'holder');
+  t.is(JSON.parse(fakestore.get(`vom.vkind.${holderKindID}.descriptor`)).tag, 'holder');
   // holder is first instance created of that kind
   const holderVref = `o+v${holderKindID}/1`;
 

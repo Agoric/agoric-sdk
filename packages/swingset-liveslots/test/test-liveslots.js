@@ -666,7 +666,7 @@ test('capdata size limit on syscalls', async t => {
   const expectKindDef = kid =>
     t.deepEqual(log.shift(), {
       type: 'vatstoreSet',
-      key: `vom.vkind.${kid}`,
+      key: `vom.vkind.${kid}.descriptor`,
       value: `{"kindID":"${kid}","tag":"test"}`,
     });
   const expectStore = kid =>

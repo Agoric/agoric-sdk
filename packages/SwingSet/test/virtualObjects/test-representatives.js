@@ -471,7 +471,7 @@ test('virtual object gc', async t => {
     [`${v}.vs.vom.rc.o+d6/1`]: '1',
     [`${v}.vs.vom.rc.o+d6/3`]: '1',
     [`${v}.vs.vom.rc.o+d6/4`]: '1',
-    [`${v}.vs.vom.vkind.10`]: '{"kindID":"10","tag":"thing"}',
+    [`${v}.vs.vom.vkind.10.descriptor`]: '{"kindID":"10","tag":"thing"}',
     [`${v}.vs.watchedPromiseTableID`]: 'o+d6/4',
     [`${v}.vs.watcherTableID`]: 'o+d6/3',
   });
