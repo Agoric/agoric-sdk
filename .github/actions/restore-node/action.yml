@@ -39,7 +39,7 @@ runs:
           let branch = 'NOPE';
           if (context.payload.pull_request) {
             const { body } = context.payload.pull_request;
-            const regex = /.*\#endo-branch:\s+(\S+)/;
+            const regex = /^\#endo-branch:\s+(\S+)/m;
             const result = regex.exec(body);
             if (result) {
               branch = result[1];
