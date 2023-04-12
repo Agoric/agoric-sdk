@@ -30,7 +30,7 @@ const modules = harden({
 /**
  * Build root object of the bootstrap vat.
  *
- * @param {{
+ * @param {VatPowers & {
  *   D: DProxy,
  *   logger: (msg) => void,
  * }} vatPowers
