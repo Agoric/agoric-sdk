@@ -48,7 +48,7 @@ jobs:
       # The default is 'main'
       - name: Get the appropriate loadgen branch
         id: get-loadgen-branch
-        uses: actions/github-script@0.9.0
+        uses: actions/github-script@v6
         with:
           result-encoding: string
           script: |
