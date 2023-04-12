@@ -5,11 +5,7 @@ import '@agoric/governance/exported.js';
 
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import {
-  makeStoredPublisherKit,
-  SubscriberShape,
-  TopicsRecordShape,
-} from '@agoric/notifier';
+import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
   defineDurableExoClassKit,
@@ -26,6 +22,8 @@ import {
   provideChildBaggage,
   provideEmptySeat,
   unitAmount,
+  SubscriberShape,
+  TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';

@@ -190,7 +190,7 @@ export const mintCentralPayment = async (
 
 /**
  *
- * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {

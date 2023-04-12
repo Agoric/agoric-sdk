@@ -116,7 +116,7 @@ export const assertHasData = async follower => {
  *
  * Handles the case of falsy argument so the caller can consistently await.
  *
- * @param {import('./types.js').PublicSubscribers | import('@agoric/notifier').TopicsRecord} [subscribers]
+ * @param {import('./types.js').PublicSubscribers | import('@agoric/zoe/src/contractSupport').TopicsRecord} [subscribers]
  * @returns {ERef<Record<string, string>> | null}
  */
 export const objectMapStoragePath = subscribers => {

@@ -25,12 +25,7 @@ import {
   RatioShape,
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import {
-  makeStoredNotifier,
-  observeNotifier,
-  SubscriberShape,
-  TopicsRecordShape,
-} from '@agoric/notifier';
+import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
 import {
   M,
   makeScalarMapStore,
@@ -52,17 +47,19 @@ import {
   multiplyRatios,
   offerTo,
   provideEmptySeat,
+  SubscriberShape,
+  TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { AuctionPFShape } from '../auction/auctioneer.js';
+import { priceFrom } from '../auction/util.js';
 import { checkDebtLimit, makeNatAmountShape } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
 import { calculateMinimumCollateralization } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
-import { priceFrom } from '../auction/util.js';
 
 const { details: X, Fail } = assert;
 
