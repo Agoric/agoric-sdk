@@ -1,12 +1,13 @@
 import { Far } from '@endo/marshal';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { getMethodNames, objectMap } from '@agoric/internal';
-import { ignoreContext } from '@agoric/vat-data';
+import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
+import { InvitationShape } from './typeGuards.js';
 
 const { Fail, quote: q } = assert;
 
@@ -40,9 +41,9 @@ const facetHelpers = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const { governedParams } = terms;
   keyEQ(governedParams, paramManager.getParams()) ||
-    Fail`Terms must include ${q(paramManager.getParams())}, but were ${q(
-      governedParams,
-    )}`;
+    Fail`The 'governedParams' term must be an object like ${q(
+      paramManager.getParams(),
+    )}, but was ${q(governedParams)}`;
   assertElectorateMatches(paramManager, governedParams);
 
   const typedAccessors = {
@@ -156,7 +157,9 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
-   * Add required methods to a creatorFacet for a virtual/durable contract.
+   * Add required methods to a creatorFacet for a durable contract.
+   *
+   * @see {makeDurableGovernorFacet}
    *
    * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
    */
@@ -184,6 +187,53 @@ const facetHelpers = (zcf, paramManager) => {
     return { governorFacet, limitedCreatorFacet };
   };
 
+  /**
+   * Add required methods to a creatorFacet for a durable contract.
+   *
+   * @see {makeVirtualGovernorFacet}
+   *
+   * @param {import('@agoric/vat-data').Baggage} baggage
+   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   * @param {Record<string, (...any) => unknown>} [governedApis]
+   */
+  const makeDurableGovernorFacet = (
+    baggage,
+    originalCreatorFacet,
+    governedApis = {},
+  ) => {
+    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
+
+    const governorFacet = prepareExo(
+      baggage,
+      'governorFacet',
+      M.interface('governorFacet', {
+        getParamMgrRetriever: M.call().returns(M.remotable('paramRetriever')),
+        getInvitation: M.call().returns(InvitationShape),
+        getLimitedCreatorFacet: M.call().returns(M.remotable()),
+        getGovernedApis: M.call().returns(M.remotable()),
+        getGovernedApiNames: M.call().returns(M.arrayOf(M.string())),
+        setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
+      }),
+      {
+        getParamMgrRetriever: () =>
+          Far('paramRetriever', { get: () => paramManager }),
+        getInvitation: name => paramManager.getInternalParamValue(name),
+        getLimitedCreatorFacet: () => limitedCreatorFacet,
+        // The contract provides a facet with the APIs that can be invoked by
+        // governance
+        /** @type {() => GovernedApis} */
+        getGovernedApis: () => Far('governedAPIs', governedApis),
+        // The facet returned by getGovernedApis is Far, so we can't see what
+        // methods it has. There's no clean way to have contracts specify the APIs
+        // without also separately providing their names.
+        getGovernedApiNames: () => Object.keys(governedApis || {}),
+        setOfferFilter: strings => zcf.setOfferFilter(strings),
+      },
+    );
+
+    return { governorFacet, limitedCreatorFacet };
+  };
+
   return harden({
     publicMixin: {
       ...commonPublicMethods,
@@ -195,8 +245,11 @@ const facetHelpers = (zcf, paramManager) => {
     augmentPublicFacet,
     augmentVirtualPublicFacet,
     makeGovernorFacet,
-    makeVirtualGovernorFacet,
+
     makeFarGovernorFacet,
+    makeVirtualGovernorFacet,
+    makeDurableGovernorFacet,
+
     params: paramManager.readonly(),
   });
 };

@@ -2,8 +2,7 @@
  * @file fixture for an upgrade of the primary walletFactory contract,
  * packages/smart-wallet/src/walletFactory.js
  *
- * This variant has minor changes to the returned strings that make it
- * identifiable, to demonstrate that upgrade has occurred.
+ * This variant adds a sayHelloUpgrade method to check that upgrade has occurred.
  */
 
 import { M, makeExo, mustMatch } from '@agoric/store';
@@ -71,10 +70,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     invitationDisplayInfo,
     publicMarshaller,
   } = await provideAll(baggage, {
-    invitationIssuer: invitationIssuerP,
-    invitationBrand: E(invitationIssuerP).getBrand(),
-    invitationDisplayInfo: E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
-    publicMarshaller: E(board).getReadonlyMarshaller(),
+    invitationIssuer: () => invitationIssuerP,
+    invitationBrand: () => E(invitationIssuerP).getBrand(),
+    invitationDisplayInfo: () =>
+      E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
+    publicMarshaller: () => E(board).getReadonlyMarshaller(),
   });
 
   const registry = makeAssetRegistry(assetPublisher);

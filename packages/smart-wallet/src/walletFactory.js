@@ -198,10 +198,11 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     invitationDisplayInfo,
     publicMarshaller,
   } = await provideAll(baggage, {
-    invitationIssuer: invitationIssuerP,
-    invitationBrand: E(invitationIssuerP).getBrand(),
-    invitationDisplayInfo: E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
-    publicMarshaller: E(board).getReadonlyMarshaller(),
+    invitationIssuer: () => invitationIssuerP,
+    invitationBrand: () => E(invitationIssuerP).getBrand(),
+    invitationDisplayInfo: () =>
+      E(E(invitationIssuerP).getBrand()).getDisplayInfo(),
+    publicMarshaller: () => E(board).getReadonlyMarshaller(),
   });
 
   const registry = makeAssetRegistry(assetPublisher);

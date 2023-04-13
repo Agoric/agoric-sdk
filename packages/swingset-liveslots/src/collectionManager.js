@@ -93,6 +93,18 @@ function makeSchemaCache(syscall, unserialize) {
   return makeCache(readBacking, writeBacking, deleteBacking);
 }
 
+/**
+ * @param {*} syscall
+ * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm
+ * @param {() => number} allocateExportID
+ * @param {() => number} allocateCollectionID
+ * @param {(val: any) => string | undefined} convertValToSlot
+ * @param {*} convertSlotToVal
+ * @param {*} registerValue
+ * @param {import('@endo/marshal').Serialize<string>} serialize
+ * @param {import('@endo/marshal').Unserialize<string>} unserialize
+ * @param {(capDatas: any) => void} assertAcceptableSyscallCapdataSize
+ */
 export function makeCollectionManager(
   syscall,
   vrm,
@@ -372,6 +384,8 @@ export function makeCollectionManager(
         });
       }
       if (passStyleOf(key) === 'remotable') {
+        /** @type {string} */
+        // @ts-expect-error not undefined b/c of has() check
         const vref = convertValToSlot(key);
         if (durable) {
           vrm.isDurable(vref) || Fail`key (${key}) is not durable in ${value}`;

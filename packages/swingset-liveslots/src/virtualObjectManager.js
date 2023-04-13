@@ -284,11 +284,11 @@ function insistSameCapData(oldCD, newCD) {
  * Create a new virtual object manager.  There is one of these for each vat.
  *
  * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param {*} vrm  Virtual reference manager, to handle reference counting and GC
+ * @param {import('./virtualReferences.js').VirtualReferenceManager} vrm  Virtual reference manager, to handle reference counting and GC
  *   of virtual references.
  * @param {() => number} allocateExportID  Function to allocate the next object
  *   export ID for the enclosing vat.
- * @param {(val: object) => string} getSlotForVal  A function that returns the
+ * @param {(val: object) => string | undefined} getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
  * @param {(slot: string) => object} requiredValForSlot
@@ -904,6 +904,7 @@ export function makeVirtualObjectManager(
 
     // Tell the VRM about this Kind.
     vrm.registerKind(kindID, reanimateVO, deleteStoredVO, isDurable);
+    // @ts-expect-error FIXME param expects 'null' for unfaceted but in this function it's undefined
     vrm.rememberFacetNames(kindID, facetNames);
 
     function makeNewInstance(...args) {
@@ -983,7 +984,7 @@ export function makeVirtualObjectManager(
       kindIDID = `${allocateExportID()}`;
       syscall.vatstoreSet('kindIDID', kindIDID);
     }
-    vrm.registerKind(kindIDID, reanimateDurableKindID, () => null, true);
+    vrm.registerKind(kindIDID, reanimateDurableKindID, () => false, true);
   }
 
   function getNextInstanceID(kindID, isDurable) {

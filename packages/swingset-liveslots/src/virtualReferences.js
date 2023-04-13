@@ -10,7 +10,7 @@ import {
 
 /**
  * @param {*} syscall  Vat's syscall object, used to access the vatstore operations.
- * @param {(val: object) => string} getSlotForVal  A function that returns the
+ * @param {(val: object) => string | undefined} getSlotForVal  A function that returns the
  *   object ID (vref) for a given object, if any.  their corresponding export
  *   IDs
  * @param {(slot: string) => object} requiredValForSlot  A function that
@@ -218,9 +218,9 @@ export function makeVirtualReferenceManager(
    * Register information describing a persistent object kind.
    *
    * @param {string} kindID  The kind of persistent object being handle
-   * @param {(string, boolean) => object} reanimator  Reanimator function for the given kind.
-   * @param {(string) => boolean} deleter  Deleter function for the given kind.
-   * @param {boolean} durable  Flag indicating if instances survive vat termination
+   * @param {(string, boolean) => object} [reanimator]  Reanimator function for the given kind.
+   * @param {(string) => boolean} [deleter]  Deleter function for the given kind.
+   * @param {boolean} [durable]  Flag indicating if instances survive vat termination
    */
   function registerKind(kindID, reanimator, deleter, durable) {
     kindInfoTable.set(`${kindID}`, { reanimator, deleter, durable });
@@ -313,7 +313,8 @@ export function makeVirtualReferenceManager(
     const { id } = parseVatSlot(baseRef);
     const kindID = `${id}`;
     const kindInfo = kindInfoTable.get(kindID);
-    kindInfo || Fail`no kind info for ${kindID}, call defineDurableKind`;
+    kindInfo ||
+      Fail`no kind info for ${kindID} (${baseRef}); check deserialize preceeding kind definitions`;
     const { reanimator } = kindInfo;
     if (reanimator) {
       return reanimator(baseRef);
@@ -710,3 +711,4 @@ export function makeVirtualReferenceManager(
     testHooks,
   });
 }
+/** @typedef {ReturnType<typeof makeVirtualReferenceManager>} VirtualReferenceManager */
