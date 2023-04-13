@@ -1,3 +1,4 @@
+/* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, Fail } from '@agoric/assert';
@@ -11,10 +12,20 @@ import { assessFacetiousness } from './facetiousness.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
+const { defineProperty } = Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
 
 // import { kdebug } from './kdebug.js';
+
+// TODO Use environment-options.js currently in ses/src after factoring it out
+// to a new package.
+const env = (globalThis.process || {}).env || {};
+
+// Turn on to give each exo instance its own toStringTag value.
+const LABEL_INSTANCES = (env.DEBUG || '')
+  .split(':')
+  .includes('label-instances');
 
 // This file implements the "Virtual Objects" system, currently documented in
 // {@link https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md})
@@ -237,6 +248,16 @@ function checkAndUpdateFacetiousness(tag, desc, facetNames) {
 
 function makeRepresentative(proto) {
   const self = { __proto__: proto };
+  if (LABEL_INSTANCES) {
+    defineProperty(self, Symbol.toStringTag, {
+      // TODO got innerSelf.baseRef from #6218
+      // What replaces it in the modern system?
+      value: `${proto[Symbol.toStringTag]}#$-{innerSelf.baseRef}`,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    });
+  }
   return harden(self);
 }
 
@@ -244,6 +265,16 @@ function makeFacets(facetNames, proto, linkToCohort, unweakable) {
   const facets = {}; // aka context.facets
   for (const name of facetNames) {
     const facet = { __proto__: proto[name] };
+    if (LABEL_INSTANCES) {
+      defineProperty(facet, Symbol.toStringTag, {
+        // TODO got innerSelf.baseRef from #6218
+        // What replaces it in the modern system?
+        value: `${proto[Symbol.toStringTag]}#$-{innerSelf.baseRef}`,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
+    }
     facets[name] = facet;
     linkToCohort.set(facet, facets);
   }
