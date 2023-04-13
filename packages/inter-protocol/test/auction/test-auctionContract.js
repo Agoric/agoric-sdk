@@ -1296,9 +1296,11 @@ test('time jumps forward', async t => {
   const { collateral, currency } = t.context;
   const driver = await makeAuctionDriver(t);
 
+  const depositCollateral = 1000n;
+  const bidOffered = 200n;
   const liqSeat = await driver.setupCollateralAuction(
     collateral,
-    collateral.make(1000n),
+    collateral.make(depositCollateral),
   );
   await driver.updatePriceAuthority(
     makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
@@ -1309,8 +1311,8 @@ test('time jumps forward', async t => {
 
   await driver.advanceTo(167n);
   const seat = await driver.bidForCollateralSeat(
-    currency.make(200n),
-    collateral.make(200n),
+    currency.make(bidOffered),
+    collateral.make(300n),
   );
   t.is(await E(seat).getOfferResult(), 'Your bid has been accepted');
   t.false(await E(seat).hasExited());
@@ -1324,8 +1326,8 @@ test('time jumps forward', async t => {
   await E(seat).tryExit();
   t.true(await E(seat).hasExited());
 
-  await assertPayouts(t, seat, currency, collateral, 200n, 0n);
-  await assertPayouts(t, liqSeat, currency, collateral, 0n, 1000n);
+  await assertPayouts(t, seat, currency, collateral, bidOffered, 0n);
+  await assertPayouts(t, liqSeat, currency, collateral, 0n, depositCollateral);
 
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 1570n);

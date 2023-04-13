@@ -207,11 +207,15 @@ export const makeScheduler = async (
     !liveSchedule || Fail`can't start an auction round while one is active`;
 
     assert(nextSchedule);
+    // The clock tick may have arrived too late to trigger the next scheduled
+    // round, for example because of a chain halt.  When this happens the oracle
+    // quote may out of date and so must be ignored. Recover by returning
+    // deposits and scheduling the next round.
     if (TimeMath.compareAbs(now, nextSchedule.startTime) > 0) {
       console.warn(
-        `TIME skipped ahead. expected before ${q(
+        `Auction time jumped to ${q(now)} before next scheduled start ${q(
           nextSchedule.startTime,
-        )}, but it is already ${now}`,
+        )}. Skipping that round.`,
       );
       nextSchedule = computeRoundTiming(params, now);
     }
