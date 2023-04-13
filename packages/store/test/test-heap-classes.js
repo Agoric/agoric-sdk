@@ -1,10 +1,11 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test } from './prepare-test-env-ava.js';
+
+import { M } from '../src/patterns/patternMatchers.js';
 import {
   defineExoClass,
   defineExoClassKit,
   makeExo,
 } from '../src/patterns/exo-makers.js';
-import { M } from '../src/patterns/patternMatchers.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()
