@@ -232,3 +232,19 @@ export const makeSerializeToStorage = (storageNode, marshaller) => {
     return E(storageNode).setValue(serialized);
   };
 };
+
+/**
+ * @param {import('@endo/far').ERef<StorageNode>} storageNode
+ * @param {string} subPath
+ * @param {unknown} value
+ * @param {import('@endo/far').ERef<Marshaller>} marshaller
+ */
+export const writeChild = (storageNode, subPath, value, marshaller) => {
+    const childNode = E(storageNode).makeChildNode(subPath, {
+      sequence: false,
+    });
+    const marshalled = await E(marshaller).serialize(value);
+    const serialized = JSON.stringify(marshalled);
+    return E(childNode).setValue(serialized);
+  };
+};

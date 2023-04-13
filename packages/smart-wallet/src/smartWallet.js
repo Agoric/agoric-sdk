@@ -8,6 +8,7 @@ import {
   PurseShape,
 } from '@agoric/ertp';
 import { makeTypeGuards } from '@agoric/internal';
+import { writeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   observeNotifier,
   pipeTopicToStorage,
@@ -73,11 +74,11 @@ const { StorageNodeShape } = makeTypeGuards(M);
  *
  * @typedef {{
  *   purses: Array<{brand: Brand, balance: Amount}>,
- *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
- *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
  *   liveOffers: Array<[import('./offers.js').OfferId, import('./offers.js').OfferStatus]>,
  * }} CurrentWalletRecord
  */
+// *   offerToUsedInvitation: Array<[ offerId: string, usedInvitation: Amount ]>,
+// *   offerToPublicSubscriberPaths: Array<[ offerId: string, publicTopics: { [subscriberName: string]: string } ]>,
 
 /**
  * @typedef {{ updated: 'offerStatus', status: import('./offers.js').OfferStatus }
@@ -324,24 +325,36 @@ export const prepareSmartWallet = (baggage, shared) => {
         },
 
         publishCurrentState() {
-          const {
-            currentPublishKit,
-            offerToUsedInvitation,
-            offerToPublicSubscriberPaths,
-            purseBalances,
-            liveOffers,
-          } = this.state;
+          const { currentPublishKit, purseBalances, liveOffers } = this.state;
           currentPublishKit.publisher.publish({
             purses: [...purseBalances.values()].map(a => ({
               brand: a.brand,
               balance: a,
             })),
-            offerToUsedInvitation: [...offerToUsedInvitation.entries()],
-            offerToPublicSubscriberPaths: [
-              ...offerToPublicSubscriberPaths.entries(),
-            ],
             liveOffers: [...liveOffers.entries()],
           });
+        },
+
+        /**
+         *
+         * @param {string} offerId
+         */
+        async writeOfferNode(offerId) {
+          const { currentStorageNode, offerToPublicSubscriberPaths } =
+            this.state;
+          const { publicMarshaller } = shared;
+
+          const value = {
+            // TODO omit empty keys
+            publicPath: offerToPublicSubscriberPaths.get(offerId),
+          };
+
+          return writeChild(
+            currentStorageNode,
+            offerId,
+            value,
+            publicMarshaller,
+          );
         },
 
         /** @type {(purse: ERef<RemotePurse>) => Promise<void>} */
@@ -494,6 +507,7 @@ export const prepareSmartWallet = (baggage, shared) => {
                 offerToPublicSubscriberPaths.init(offerId, pathMap);
               }
               facets.helper.publishCurrentState();
+              facets.helper.writeOfferNode(offerId);
             },
           });
 
