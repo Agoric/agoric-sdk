@@ -146,15 +146,10 @@ const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   return harden(contextProviderKit);
 };
 
-function checkAndUpdateFacetiousness(
-  tag,
-  desc,
-  facetNames,
-  saveDurableKindDescriptor,
-) {
+function checkAndUpdateFacetiousness(tag, desc, facetNames) {
   // The first time a durable kind gets a definition, the saved descriptor
-  // will have neither ".unfaceted" nor ".facets", and we must record the
-  // initial details in the descriptor.
+  // will have neither ".unfaceted" nor ".facets", and we must update the
+  // details in the descriptor.
 
   if (!desc.unfaceted && !desc.facets) {
     if (facetNames) {
@@ -162,8 +157,7 @@ function checkAndUpdateFacetiousness(
     } else {
       desc.unfaceted = true;
     }
-    saveDurableKindDescriptor(desc);
-    return;
+    return; // caller will saveDurableKindDescriptor()
   }
 
   // When a later incarnation redefines the behavior, it must match.
@@ -257,6 +251,35 @@ function makeFacets(facetNames, proto, linkToCohort, unweakable) {
   return harden(facets);
 }
 
+function insistDurableCapdata(vrm, what, capdata, valueFor) {
+  capdata.slots.forEach((vref, idx) => {
+    if (!vrm.isDurable(vref)) {
+      if (valueFor) {
+        Fail`value for ${what} is not durable: slot ${q(idx)} of ${capdata}`;
+      } else {
+        Fail`${what} is not durable: slot ${q(idx)} of ${capdata}`;
+      }
+    }
+  });
+}
+
+function insistSameCapData(oldCD, newCD) {
+  // NOTE: this assumes both were marshalled with the same format
+  // (e.g. smallcaps vs pre-smallcaps). To somewhat tolerate new
+  // formats, we'd need to `serialize(unserialize(oldCD))`.
+  if (oldCD.body !== newCD.body) {
+    Fail`durable Kind stateShape mismatch (body)`;
+  }
+  if (oldCD.slots.length !== newCD.slots.length) {
+    Fail`durable Kind stateShape mismatch (slots.length)`;
+  }
+  oldCD.slots.forEach((oldVref, idx) => {
+    if (newCD.slots[idx] !== oldVref) {
+      Fail`durable Kind stateShape mismatch (slot[${idx}])`;
+    }
+  });
+}
+
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
  *
@@ -271,10 +294,11 @@ function makeFacets(facetNames, proto, linkToCohort, unweakable) {
  * @param {(slot: string) => object} requiredValForSlot
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {import('@endo/marshal').Serialize<unknown>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').Unserialize<unknown>} unserialize  Unserializer for this vat
+ * @param {import('@endo/marshal').Serialize<string>} serialize  Serializer for this vat
+ * @param {import('@endo/marshal').Unserialize<string>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
+ * @param {import('./types').LiveSlotsOptions} liveSlotsOptions
  *
  * @returns {object} a new virtual object manager.
  *
@@ -315,7 +339,10 @@ export function makeVirtualObjectManager(
   serialize,
   unserialize,
   assertAcceptableSyscallCapdataSize,
+  liveSlotsOptions = {},
 ) {
+  const { allowStateShapeChanges = false } = liveSlotsOptions;
+
   // array of Caches that need to be flushed at end-of-crank, two per Kind
   // (dataCache, contextCache)
   const allCaches = [];
@@ -521,6 +548,7 @@ export function makeVirtualObjectManager(
    *  tag: string,
    *  unfaceted?: boolean,
    *  facets?: string[],
+   *  stateShapeCapData?: import('./types.js').SwingSetCapData
    * }} DurableKindDescriptor
    */
 
@@ -668,20 +696,56 @@ export function makeVirtualObjectManager(
     }
     // beyond this point, we use 'multifaceted' to switch modes
 
-    if (isDurable) {
-      checkAndUpdateFacetiousness(
-        tag,
-        durableKindDescriptor,
-        facetNames,
-        saveDurableKindDescriptor,
-      );
-    }
+    // The 'stateShape' pattern constrains the `state` of each
+    // instance: which properties it may have, and what their values
+    // are allowed to be. For durable Kinds, the stateShape is
+    // serialized and recorded in the durableKindDescriptor, so future
+    // incarnations (which redefine the kind when they call
+    // defineDurableKind again) can both check for compatibility, and
+    // to decrement refcounts on any slots referenced by the old
+    // shape.
 
     harden(stateShape);
     stateShape === undefined ||
       passStyleOf(stateShape) === 'copyRecord' ||
       Fail`A stateShape must be a copyRecord: ${q(stateShape)}`;
     assertPattern(stateShape);
+
+    if (isDurable) {
+      // durableKindDescriptor is created by makeKindHandle, with just
+      // { kindID, tag, nextInstanceID }, then the first
+      // defineDurableKind (maybe us!) will populate
+      // .facets/.unfaceted and a .stateShape . We'll only see those
+      // properties if we're in a non-initial incarnation.
+
+      assert(durableKindDescriptor);
+
+      // initial creation will update the descriptor with .facets or
+      // .unfaceted, subsequent re-definitions will just assert
+      // compatibility
+      checkAndUpdateFacetiousness(tag, durableKindDescriptor, facetNames);
+
+      const newShapeCD = serialize(stateShape);
+
+      // Durable kinds can only hold durable objects in their state,
+      // so if the stateShape were to require a non-durable object,
+      // nothing could ever match. So we require the shape have only
+      // durable objects
+      insistDurableCapdata(vrm, 'stateShape', newShapeCD, false);
+
+      // compare against slots of previous definition, incref/decref
+      const oldShapeCD = durableKindDescriptor.stateShapeCapData;
+
+      const oldStateShapeSlots = oldShapeCD ? oldShapeCD.slots : [];
+      if (oldShapeCD && !allowStateShapeChanges) {
+        insistSameCapData(oldShapeCD, newShapeCD);
+      }
+      const newStateShapeSlots = newShapeCD.slots;
+      vrm.updateReferenceCounts(oldStateShapeSlots, newStateShapeSlots);
+      durableKindDescriptor.stateShapeCapData = newShapeCD; // replace
+
+      saveDurableKindDescriptor(durableKindDescriptor);
+    }
 
     let checkStateProperty = _prop => undefined;
     /** @type {(value: any, prop: string) => void} */
@@ -740,17 +804,12 @@ export function makeVirtualObjectManager(
             checkStatePropertyValue(value, prop);
             const capdata = serialize(value);
             assertAcceptableSyscallCapdataSize([capdata]);
-            const newSlots = capdata.slots;
             if (isDurable) {
-              newSlots.forEach((vref, index) => {
-                vrm.isDurable(vref) ||
-                  Fail`value for ${q(prop)} is not durable at slot ${q(
-                    index,
-                  )} of ${capdata}`;
-              });
+              insistDurableCapdata(vrm, prop, capdata, true);
             }
             const record = dataCache.get(baseRef); // mutable
             const oldSlots = record.capdatas[prop].slots;
+            const newSlots = capdata.slots;
             vrm.updateReferenceCounts(oldSlots, newSlots);
             record.capdatas[prop] = capdata; // modify in place ..
             record.valueMap.set(prop, value);
@@ -874,9 +933,7 @@ export function makeVirtualObjectManager(
         // list of capdatas, plus its likely JSON overhead.
         assertAcceptableSyscallCapdataSize([valueCD]);
         if (isDurable) {
-          valueCD.slots.forEach(vref => {
-            vrm.isDurable(vref) || Fail`value for ${q(prop)} is not durable`;
-          });
+          insistDurableCapdata(vrm, prop, valueCD, true);
         }
         valueCD.slots.forEach(vrm.addReachableVref);
         capdatas[prop] = valueCD;
