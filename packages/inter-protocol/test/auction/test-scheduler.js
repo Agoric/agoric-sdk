@@ -654,3 +654,101 @@ test('duration = freq', async t => {
   };
   t.deepEqual(schedule.nextAuctionSchedule, secondSchedule);
 });
+
+test('change Schedule', async t => {
+  const { zoe } = await setupZCFTest();
+  const installations = await setUpInstallations(zoe);
+  /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
+  const timer = buildManualTimer();
+  const timerBrand = await timer.getTimerBrand();
+
+  const fakeAuctioneer = makeFakeAuctioneer();
+  const { fakeInvitationPayment } = await getInvitation(zoe, installations);
+  const publisherKit = makeGovernancePublisherFromFakes();
+
+  const { makeRecorderKit, storageNode } = prepareMockRecorderKitMakers();
+  const recorderKit = makeRecorderKit(storageNode);
+  let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
+  // start hourly, request 6 steps down every 10 minutes, so duration would be
+  // 1 hour. Instead, cut the auction short.
+  defaultParams = {
+    ...defaultParams,
+    priceLockPeriod: 20n,
+    startFreq: 360n,
+    auctionStartDelay: 5n,
+    clockStep: 60n,
+    startingRate: 100n,
+    lowestRate: 40n,
+    discountStep: 10n,
+  };
+  const params = makeAuctioneerParams(defaultParams);
+  const params2 = {};
+  for (const key of Object.keys(params)) {
+    const { value } = params[key];
+    params2[key] = value;
+  }
+
+  await timer.advanceTo(127n);
+
+  const paramManager = await makeAuctioneerParamManager(
+    publisherKit,
+    zoe,
+    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
+    params2,
+  );
+
+  const scheduler = await makeScheduler(
+    fakeAuctioneer,
+    timer,
+    paramManager,
+    timer.getTimerBrand(),
+    recorderKit.recorder,
+  );
+  let schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  const firstSchedule = {
+    startTime: TimeMath.toAbs(365n, timerBrand),
+    endTime: TimeMath.toAbs(665n, timerBrand),
+    steps: 5n,
+    endRate: 50n,
+    startDelay: TimeMath.toRel(5n, timerBrand),
+    clockStep: TimeMath.toRel(60n, timerBrand),
+    lockTime: TimeMath.toAbs(345n, timerBrand),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
+
+  await timer.advanceTo(345n);
+  await timer.advanceTo(365n);
+  await timer.advanceTo(665n);
+  schedule = scheduler.getSchedule();
+
+  const expected2ndSchedule = {
+    startTime: TimeMath.toAbs(725n, timerBrand),
+    endTime: TimeMath.toAbs(1025n, timerBrand),
+    steps: 5n,
+    endRate: 50n,
+    startDelay: TimeMath.toRel(5n, timerBrand),
+    clockStep: TimeMath.toRel(60n, timerBrand),
+    lockTime: TimeMath.toAbs(705n, timerBrand),
+  };
+  t.deepEqual(schedule.nextAuctionSchedule, expected2ndSchedule);
+
+  paramManager.updateParams({
+    StartFrequency: TimeMath.toRel(100n, timerBrand),
+    ClockStep: TimeMath.toRel(40n, timerBrand),
+  });
+
+  await timer.advanceTo(705n);
+  await timer.advanceTo(725n);
+  schedule = scheduler.getSchedule();
+  t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
+  t.deepEqual(schedule.nextAuctionSchedule, {
+    startTime: TimeMath.toAbs(1105n, timerBrand),
+    endTime: TimeMath.toAbs(1185n, timerBrand),
+    steps: 2n,
+    endRate: 80n,
+    startDelay: TimeMath.toRel(5n, timerBrand),
+    clockStep: TimeMath.toRel(40n, timerBrand),
+    lockTime: TimeMath.toAbs(1085n, timerBrand),
+  });
+});

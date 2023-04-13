@@ -222,7 +222,7 @@ export const makeScheduler = async (
     liveSchedule = nextSchedule;
 
     const after = TimeMath.addAbsRel(
-      liveSchedule.startTime,
+      liveSchedule.endTime,
       TimeMath.toRel(1n, timerBrand),
     );
     nextSchedule = computeRoundTiming(params, after);
