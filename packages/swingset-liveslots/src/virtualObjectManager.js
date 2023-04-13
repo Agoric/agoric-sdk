@@ -246,41 +246,35 @@ function checkAndUpdateFacetiousness(tag, desc, facetNames) {
 // We only need to do this for multi-facet Kinds; single-facet kinds don't
 // have any extra objects for userspace to work with.
 
-function makeRepresentative(proto) {
+const makeRepresentative = (proto, baseRef) => {
   const self = { __proto__: proto };
   if (LABEL_INSTANCES) {
     defineProperty(self, Symbol.toStringTag, {
-      // TODO got innerSelf.baseRef from #6218
-      // What replaces it in the modern system?
-      value: `${proto[Symbol.toStringTag]}#$-{innerSelf.baseRef}`,
+      value: `${proto[Symbol.toStringTag]}#${baseRef}`,
       writable: false,
       enumerable: false,
       configurable: false,
     });
   }
   return harden(self);
-}
+};
 
-function makeFacets(facetNames, proto, linkToCohort, unweakable) {
+const makeFacets = (
+  facetNames,
+  protoKit,
+  linkToCohort,
+  unweakable,
+  baseRef,
+) => {
   const facets = {}; // aka context.facets
   for (const name of facetNames) {
-    const facet = { __proto__: proto[name] };
-    if (LABEL_INSTANCES) {
-      defineProperty(facet, Symbol.toStringTag, {
-        // TODO got innerSelf.baseRef from #6218
-        // What replaces it in the modern system?
-        value: `${proto[Symbol.toStringTag]}#$-{innerSelf.baseRef}`,
-        writable: false,
-        enumerable: false,
-        configurable: false,
-      });
-    }
+    const facet = makeRepresentative(protoKit[name], baseRef);
     facets[name] = facet;
     linkToCohort.set(facet, facets);
   }
   unweakable.add(facets);
   return harden(facets);
-}
+};
 
 function insistDurableCapdata(vrm, what, capdata, valueFor) {
   capdata.slots.forEach((vref, idx) => {
@@ -913,11 +907,11 @@ export function makeVirtualObjectManager(
     // this builds new Representatives, both when creating a new instance and
     // for reanimating an existing one when the old rep gets GCed
 
-    function reanimateVO(_baseRef) {
+    function reanimateVO(baseRef) {
       if (multifaceted) {
-        return makeFacets(facetNames, proto, linkToCohort, unweakable);
+        return makeFacets(facetNames, proto, linkToCohort, unweakable, baseRef);
       } else {
-        return makeRepresentative(proto);
+        return makeRepresentative(proto, baseRef);
       }
     }
 
@@ -977,9 +971,9 @@ export function makeVirtualObjectManager(
       // make the initial representative or cohort
       let val;
       if (multifaceted) {
-        val = makeFacets(facetNames, proto, linkToCohort, unweakable);
+        val = makeFacets(facetNames, proto, linkToCohort, unweakable, baseRef);
       } else {
-        val = makeRepresentative(proto);
+        val = makeRepresentative(proto, baseRef);
       }
       registerValue(baseRef, val, multifaceted);
       finish?.(contextCache.get(baseRef));
