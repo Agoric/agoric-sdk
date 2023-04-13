@@ -12,6 +12,7 @@ import {
   prepareExoClass,
 } from '@agoric/vat-data';
 
+import { objectMap } from '@agoric/internal';
 import { cleanProposal } from '../cleanProposal.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeMakeExiter } from './exit.js';
@@ -228,7 +229,7 @@ export const makeZCFZygote = async (
   if (start === undefined && prepare === undefined) {
     buildRootObject === undefined ||
       Fail`Did you provide a vat bundle instead of a contract bundle?`;
-    Fail`unrecognized contract exports`;
+    Fail`contract exports missing start/prepare`;
   }
   !start ||
     !prepare ||
@@ -379,12 +380,17 @@ export const makeZCFZygote = async (
           publicFacet = undefined,
           creatorInvitation = undefined,
         }) => {
-          const allDurable = [
-            creatorFacet,
-            publicFacet,
-            creatorInvitation,
-          ].every(canBeDurable);
-          if (prepare || allDurable) {
+          const areDurable = objectMap(
+            { creatorFacet, publicFacet, creatorInvitation },
+            canBeDurable,
+          );
+          const allDurable = Object.values(areDurable).every(Boolean);
+          if (prepare) {
+            allDurable ||
+              Fail`values from prepare() must be durable ${areDurable}`;
+          }
+
+          if (allDurable) {
             zcfBaggage.init('creatorFacet', creatorFacet);
             zcfBaggage.init('publicFacet', publicFacet);
             zcfBaggage.init('creatorInvitation', creatorInvitation);

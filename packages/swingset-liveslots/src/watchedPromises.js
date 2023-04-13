@@ -9,7 +9,7 @@ import { parseVatSlot } from './parseVatSlots.js';
 /**
  * @param {object} options
  * @param {*} options.syscall
- * @param {*} options.vrm
+ * @param {import('./virtualReferences.js').VirtualReferenceManager} options.vrm
  * @param {import('./virtualObjectManager.js').VirtualObjectManager} options.vom
  * @param {*} options.collectionManager
  * @param {import('@endo/marshal').ConvertValToSlot<any>} options.convertValToSlot
