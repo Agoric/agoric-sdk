@@ -30,8 +30,8 @@ const Stake = /** @type {const} */ ({
   symbol: 'BLD',
 });
 const Stable = /** @type {const} */ ({
-  name: 'Agoric Stable Local Currency',
-  description: 'The stable local currency used by the Agoric chain',
+  name: 'Agoric stable token',
+  description: 'The stable token used by the Agoric chain',
   denom_units: [
     {
       denom: 'uist',

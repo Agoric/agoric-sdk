@@ -192,7 +192,7 @@ an alternative function that returns synchronously:
 ```javascript
   const paramManager = await makeParamManagerSync(
     {
-      'Currency': ['brand', drachmaBrand],
+      'Collateral': ['brand', drachmaBrand],
     },
   );
 ```
