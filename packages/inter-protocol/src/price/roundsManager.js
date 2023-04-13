@@ -80,7 +80,7 @@ const validRoundId = roundId => {
  * answerPublisher: Publisher<void>,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
- * latestRoundPublisher: Publisher<LatestRound>,
+ * latestRoundPublisher: import('@agoric/zoe/src/contractSupport/recorder.js').Recorder<LatestRound>,
  * timerPresence: TimerService,
  * }>} HeldParams
  *
@@ -251,7 +251,9 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
           answeredInRound: 0n,
         });
         rounds.init(roundId, round);
-        latestRoundPublisher.publish({
+        // assume it succeeds. if not, expect the next to.
+        // if it fails continuously it'll be apparent in the unhandled rejection logging.
+        void E(latestRoundPublisher).write({
           roundId,
           startedAt: round.startedAt,
           startedBy: oracleId,

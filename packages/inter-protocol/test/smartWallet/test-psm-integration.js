@@ -94,8 +94,9 @@ test('null swap', async t => {
   t.is(await E.get(getBalanceFor(mintedBrand)).value, 0n);
 
   t.deepEqual(currents[0].liveOffers, []);
-  t.deepEqual(currents[1].liveOffers, [['nullSwap', offer]]);
-  t.deepEqual(currents[2].liveOffers, []);
+  t.deepEqual(currents[1].liveOffers, []);
+  t.deepEqual(currents[2].liveOffers, [['nullSwap', offer]]);
+  t.deepEqual(currents[3].liveOffers, []);
 });
 
 // we test this direction of swap because wanting anchor would require the PSM to have anchor in it first

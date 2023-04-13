@@ -177,6 +177,7 @@ test.serial('invitations', async t => {
    * @returns {Promise<[{description: string, instance: Instance}]>}
    */
   const getInvitationFor = async (desc, len, balances) => {
+    await eventLoopIteration();
     /** @type {Amount<'set'>} */
     const invitationsAmount = NonNullish(
       balances.get(t.context.invitationBrand),

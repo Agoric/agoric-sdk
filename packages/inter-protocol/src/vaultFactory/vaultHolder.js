@@ -2,8 +2,11 @@
  * @file Use-object for the owner of a vault
  */
 import { AmountShape } from '@agoric/ertp';
-import { SubscriberShape, TopicsRecordShape } from '@agoric/notifier';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
+import {
+  SubscriberShape,
+  TopicsRecordShape,
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { UnguardedHelperI } from '../typeGuards.js';
 
 const { Fail } = assert;

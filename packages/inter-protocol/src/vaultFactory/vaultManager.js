@@ -25,12 +25,7 @@ import {
   RatioShape,
 } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import {
-  makeStoredNotifier,
-  observeNotifier,
-  SubscriberShape,
-  TopicsRecordShape,
-} from '@agoric/notifier';
+import { makeStoredNotifier, observeNotifier } from '@agoric/notifier';
 import {
   M,
   makeScalarMapStore,
@@ -52,17 +47,19 @@ import {
   multiplyRatios,
   offerTo,
   provideEmptySeat,
+  SubscriberShape,
+  TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { AuctionPFShape } from '../auction/auctioneer.js';
+import { priceFrom } from '../auction/util.js';
 import { checkDebtLimit, makeNatAmountShape } from '../contractSupport.js';
 import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults, liquidationResults } from './liquidation.js';
 import { calculateMinimumCollateralization } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
-import { priceFrom } from '../auction/util.js';
 
 const { details: X, Fail } = assert;
 
@@ -97,7 +94,6 @@ const trace = makeTracer('VM', false);
  *  compoundedInterest: Ratio,
  *  interestRate: Ratio,
  *  latestInterestUpdate: Timestamp,
- *  liquidatorInstance?: Instance,
  * }} AssetState
  *
  * @typedef {{
@@ -117,9 +113,8 @@ const trace = makeTracer('VM', false);
  * @typedef {{
  *   compoundedInterest: Ratio,
  *   latestInterestUpdate: Timestamp,
- *   liquidator?: Liquidator
  *   numLiquidationsCompleted: number,
- *   numLiquidationsReconstituted: number,
+ *   numLiquidationsAborted: number,
  *   totalCollateral: Amount<'nat'>,
  *   totalCollateralSold: Amount<'nat'>,
  *   totalDebt: Amount<'nat'>,
@@ -129,7 +124,7 @@ const trace = makeTracer('VM', false);
  *   totalProceedsReceived: Amount<'nat'>,
  *   totalShortfallReceived: Amount<'nat'>,
  *   vaultCounter: number,
- *   lockedQuote: PriceDescription | undefined,
+ *   lockedQuote: PriceQuote | undefined,
  * }} MutableState
  */
 
@@ -213,7 +208,8 @@ export const prepareVaultManagerKit = (
     E(storageNode).makeChildNode('quotes'),
     marshaller,
   );
-  let storedCollateralQuote;
+  /** @type {PriceQuote?} */
+  let storedCollateralQuote = null;
   void observeNotifier(quoteNotifier, {
     updateState(value) {
       storedCollateralQuote = value;
@@ -252,9 +248,10 @@ export const prepareVaultManagerKit = (
 
   /**
    * This class is a singleton kind so initState will be called only once per prepare.
+   *
+   * @returns {MutableState}
    */
   const initState = () => {
-    /** @type {MutableState} */
     return {
       compoundedInterest: makeRatio(100n, debtBrand), // starts at 1.0, no interest
       latestInterestUpdate: startTimeStamp,
@@ -420,12 +417,6 @@ export const prepareVaultManagerKit = (
             compoundedInterest: state.compoundedInterest,
             interestRate,
             latestInterestUpdate: state.latestInterestUpdate,
-            // NB: the liquidator is determined by governance but the resulting
-            // instance is a concern of the manager. The param manager knows only
-            // about the installation and terms of the liqudation contract. We could
-            // have another notifier for state downstream of governance changes, but
-            // that doesn't seem to be cost-effective.
-            liquidatorInstance: state.liquidatorInstance,
           });
           return assetKit.recorder.write(payload);
         },
@@ -837,7 +828,8 @@ export const prepareVaultManagerKit = (
          * @param {Amount<'nat'>} collateralAmount
          */
         maxDebtFor(collateralAmount) {
-          assert(factoryPowers);
+          if (!storedCollateralQuote)
+            throw Fail`maxDebtFor called before a collateral quote was available`;
           const collateralPrice = priceFrom(storedCollateralQuote);
           const collatlVal = ceilMultiplyBy(collateralAmount, collateralPrice);
           const minimumCollateralization = calculateMinimumCollateralization(
@@ -1047,6 +1039,8 @@ export const prepareVaultManagerKit = (
         },
 
         getCollateralQuote() {
+          if (!storedCollateralQuote)
+            throw Fail`getCollateralQuote called before a collateral quote was available`;
           return storedCollateralQuote;
         },
 
@@ -1055,6 +1049,8 @@ export const prepareVaultManagerKit = (
         },
 
         lockOraclePrices() {
+          if (!storedCollateralQuote)
+            throw Fail`lockOraclePrices called before a collateral quote was available`;
           const { state } = this;
           trace(
             `lockPrice`,

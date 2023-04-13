@@ -232,7 +232,7 @@ export const subscriptionKey = subscription => {
 
 /**
  *
- * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
  * @param {string} subscriberName
  */
 export const topicPath = (hasTopics, subscriberName) => {
@@ -264,7 +264,7 @@ export const headValueLegacy = async subscription => {
 
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {ERef<{getPublicTopics: () => import('@agoric/notifier').TopicsRecord}>} hasTopics
+ * @param {ERef<{getPublicTopics: () => import('@agoric/zoe/src/contractSupport').TopicsRecord}>} hasTopics
  * @param {string} topicName
  * @param {string} path
  * @param {string[]} [dataKeys]

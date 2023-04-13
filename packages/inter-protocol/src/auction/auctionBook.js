@@ -12,15 +12,12 @@ import {
   ceilMultiplyBy,
   floorDivideBy,
   makeRatioFromAmounts,
+  makeRecorderTopic,
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/captp';
-import {
-  observeNotifier,
-  pipeTopicToStorage,
-  makePublicTopic,
-} from '@agoric/notifier';
+import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
@@ -96,8 +93,8 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
 /**
  * @typedef {object} BookDataNotification
  *
- * @property {PriceQuote    | null}      startPrice identifies the priceAuthority and price
- * @property {PriceLevel    | null}      currentPriceLevel the price at the current auction tier
+ * @property {Ratio         | null}      startPrice identifies the priceAuthority and price
+ * @property {Ratio         | null}      currentPriceLevel the price at the current auction tier
  * @property {Amount<'nat'> | null}      startProceedsGoal The proceeds the sellers were targeting to raise
  * @property {Amount<'nat'> | null}      remainingProceedsGoal The remainder of
  *     the proceeds the sellers were targeting to raise
@@ -105,14 +102,15 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
  * @property {Amount<'nat'>}             startCollateral How much collateral was
  *    available for sale at the start. (If more is deposited later, it'll be
  *    added in.)
- * @property {Amount<'nat'> | undefined} collateralAvailable The amount of collateral remaining
+ * @property {Amount<'nat'> | null}      collateralAvailable The amount of collateral remaining
  */
 
 /**
  * @param {Baggage} baggage
  * @param {ZCF} zcf
+ * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  */
-export const prepareAuctionBook = (baggage, zcf) => {
+export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
 
@@ -124,11 +122,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
      * @param {Brand<'nat'>} currencyBrand
      * @param {Brand<'nat'>} collateralBrand
      * @param {PriceAuthority} pAuthority
-     * @param {PublishKit<BookDataNotification>} pubKit
-     * @param {Marshaller} marshaller
      * @param {StorageNode} node
      */
-    (currencyBrand, collateralBrand, pAuthority, pubKit, marshaller, node) => {
+    (currencyBrand, collateralBrand, pAuthority, node) => {
       assertAllDefined({ currencyBrand, collateralBrand, pAuthority });
       const zeroCurrency = makeEmpty(currencyBrand);
       const zeroRatio = makeRatioFromAmounts(
@@ -155,9 +151,12 @@ export const prepareAuctionBook = (baggage, zcf) => {
         collateralBrand,
       );
 
-      const { publisher: bookDataPublisher, subscriber: bookDataSubscriber } =
-        pubKit;
-      pipeTopicToStorage(bookDataSubscriber, node, marshaller);
+      const bookDataKit = makeRecorderKit(
+        node,
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
+          M.any()
+        ),
+      );
 
       return {
         collateralBrand,
@@ -170,9 +169,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
         priceAuthority: pAuthority,
         updatingOracleQuote: zeroRatio,
 
-        bookDataPublisher,
-        bookDataSubscriber,
-        node,
+        bookDataKit,
 
         priceBook,
         scaledBidBook,
@@ -452,8 +449,7 @@ export const prepareAuctionBook = (baggage, zcf) => {
             collateralAvailable,
             currentPriceLevel: state.curAuctionPrice,
           });
-          // @ts-expect-error All the nulls have been handled
-          state.bookDataPublisher.publish(bookData);
+          state.bookDataKit.recorder.write(bookData);
         },
       },
       self: {
@@ -689,14 +685,13 @@ export const prepareAuctionBook = (baggage, zcf) => {
           state.startProceedsGoal = null;
         },
         getDataUpdates() {
-          return this.state.bookDataSubscriber;
+          return this.state.bookDataKit.subscriber;
         },
         getPublicTopics() {
           return {
-            bookData: makePublicTopic(
+            bookData: makeRecorderTopic(
               'Auction schedule',
-              this.state.bookDataSubscriber,
-              this.state.node,
+              this.state.bookDataKit,
             ),
           };
         },
@@ -740,8 +735,9 @@ export const prepareAuctionBook = (baggage, zcf) => {
     },
   );
 
-  return (cur, col, priceAuthority, pubKit, marshaller, node) =>
-    makeAuctionBookKit(cur, col, priceAuthority, pubKit, marshaller, node).self;
+  /** @type {(...args: Parameters<typeof makeAuctionBookKit>) => ReturnType<typeof makeAuctionBookKit>['self']} */
+  const makeAuctionBook = (...args) => makeAuctionBookKit(...args).self;
+  return makeAuctionBook;
 };
 harden(prepareAuctionBook);
 
