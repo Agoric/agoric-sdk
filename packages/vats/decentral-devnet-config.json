@@ -1,25 +1,42 @@
 {
-  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. It does not include vaults in coreProposals; vaults are expected to be added by devnet governance.",
+  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) includes non-production facilities such as a faucet. Pending #5819, it includes vaults in coreProposals; once #5819 is done, vaults are expected to be added by devnet governance.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
-  "snapshotInterval": 1000,
   "coreProposals": [
     "@agoric/vats/scripts/init-core.js",
     {
       "module": "@agoric/inter-protocol/scripts/init-core.js",
-      "entrypoint": "committeeProposalBuilder",
+      "entrypoint": "defaultProposalBuilder",
       "args": [
         {
           "econCommitteeOptions": {
             "committeeSize": 3
-          }
+          },
+          "endorsedUi": "bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e",
+          "minInitialPoolLiquidity": "0"
         }
       ]
-    },  
+    },
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
       "entrypoint": "psmGovernanceBuilder",
       "args": []
+    },
+    {
+      "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "interchainAssetOptions": {
+            "denom": "ibc/toyatom",
+            "decimalPlaces": 6,
+            "initialPrice": 12.34,
+            "keyword": "IbcATOM",
+            "oracleBrand": "ATOM",
+            "proposedName": "ATOM"
+          }
+        }
+      ]
     },
     {
       "module": "@agoric/inter-protocol/scripts/add-collateral-core.js",
@@ -92,6 +109,34 @@
       ]
     },
     {
+      "module": "@agoric/inter-protocol/scripts/price-feed-core.js",
+      "entrypoint": "defaultProposalBuilder",
+      "args": [
+        {
+          "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+          "oracleAddresses": [
+            "agoric10vjkvkmpp9e356xeh6qqlhrny2htyzp8hf88fk",
+            "agoric1chxpyq88g9vhv7lkje3ap8yexajmwkq66fyfhq",
+            "agoric1lw4e4aas9q84tq0q92j85rwjjjapf8dmnllnft",
+            "agoric1ra0g6crtsy6r3qnpu7ruvm7qd4wjnznyzg5nu4",
+            "agoric1zj6vrrrjq4gsyr9lw7dplv4vyejg3p8j2urm82"
+          ],
+          "IN_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "ATOM"
+          ],
+          "IN_BRAND_DECIMALS": 6,
+          "OUT_BRAND_LOOKUP": [
+            "agoricNames",
+            "oracleBrand",
+            "USD"
+          ],
+          "OUT_BRAND_DECIMALS": 4
+        }
+      ]
+    },
+    {
       "module": "@agoric/inter-protocol/scripts/invite-committee-core.js",
       "entrypoint": "defaultProposalBuilder",
       "args": [
@@ -104,7 +149,7 @@
         }
       ]
     }
-  ],  
+  ],
   "vats": {
     "bootstrap": {
       "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
@@ -117,8 +162,17 @@
     "bank": {
       "sourceSpec": "@agoric/vats/src/vat-bank.js"
     },
+    "board": {
+      "sourceSpec": "@agoric/vats/src/vat-board.js"
+    },
+    "bridge": {
+      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    },
     "centralSupply": {
       "sourceSpec": "@agoric/vats/src/centralSupply.js"
+    },
+    "ibc": {
+      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
     },
     "mintHolder": {
       "sourceSpec": "@agoric/vats/src/mintHolder.js"
@@ -126,23 +180,20 @@
     "mints": {
       "sourceSpec": "@agoric/vats/src/vat-mints.js"
     },
-    "board": {
-      "sourceSpec": "@agoric/vats/src/vat-board.js"
-    },
-    "ibc": {
-      "sourceSpec": "@agoric/vats/src/vat-ibc.js"
-    },
     "network": {
       "sourceSpec": "@agoric/vats/src/vat-network.js"
     },
     "priceAuthority": {
       "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
     },
+    "provisionPool": {
+      "sourceSpec": "@agoric/vats/src/provisionPool.js"
+    },
     "provisioning": {
       "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
     },
-    "bridge": {
-      "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+    "walletFactory": {
+      "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
     },
     "zcf": {
       "sourceSpec": "@agoric/zoe/contractFacet.js"
