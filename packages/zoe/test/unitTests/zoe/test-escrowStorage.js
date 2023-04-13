@@ -16,15 +16,15 @@ test('provideEscrowStorage', async t => {
       makeScalarBigMapStore('zoe baggage', { durable: true }),
     );
 
-  const currencyKit = makeIssuerKit(
-    'currency',
+  const stableKit = makeIssuerKit(
+    'stable',
     AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
   const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
 
-  await createPurse(currencyKit.issuer, currencyKit.brand);
+  await createPurse(stableKit.issuer, stableKit.brand);
 
   // Normally only used for ZCFMint issuers
   provideLocalPurse(ticketKit.issuer, ticketKit.brand);
@@ -34,7 +34,7 @@ test('provideEscrowStorage', async t => {
     harden([{ show: 'superbowl' }]),
   );
 
-  const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
+  const stableAmount = AmountMath.make(stableKit.brand, 5n * 10n ** 18n);
 
   const wantedConcertTicketAmount = AmountMath.make(
     ticketKit.brand,
@@ -43,7 +43,7 @@ test('provideEscrowStorage', async t => {
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),
-    Money: E(currencyKit.mint).mintPayment(currencyAmount),
+    Money: E(stableKit.mint).mintPayment(stableAmount),
   });
 
   const proposal = harden({
@@ -52,7 +52,7 @@ test('provideEscrowStorage', async t => {
     },
     give: {
       GameTicket: gameTicketAmount,
-      Money: currencyAmount,
+      Money: stableAmount,
     },
     exit: {
       onDemand: null,
@@ -71,7 +71,7 @@ test('provideEscrowStorage', async t => {
   t.deepEqual(initialAllocation, {
     ConcertTicket: emptyConcertTicket,
     GameTicket: gameTicketAmount,
-    Money: currencyAmount,
+    Money: stableAmount,
   });
 
   const payout = withdrawPayments(initialAllocation);
@@ -90,7 +90,7 @@ test('provideEscrowStorage', async t => {
     gameTicketAmount,
   );
 
-  await assertPayoutAmount(t, currencyKit.issuer, payout.Money, currencyAmount);
+  await assertPayoutAmount(t, stableKit.issuer, payout.Money, stableAmount);
 
   const initialAllocation2 = await depositPayments(proposal, {
     GameTicket: payout.GameTicket,
@@ -107,17 +107,17 @@ test('provideEscrowStorage', async t => {
 });
 
 const setupPurses = async createPurse => {
-  const currencyKit = makeIssuerKit(
-    'currency',
+  const stableKit = makeIssuerKit(
+    'stable',
     AssetKind.NAT,
     harden({ decimalPlaces: 18 }),
   );
 
   /** @type {IssuerRecord} */
-  const currencyIssuerRecord = {
-    issuer: currencyKit.issuer,
+  const stableIssuerRecord = {
+    issuer: stableKit.issuer,
     assetKind: AssetKind.NAT,
-    brand: currencyKit.brand,
+    brand: stableKit.brand,
   };
 
   const ticketKit = makeIssuerKit('tickets', AssetKind.SET);
@@ -127,9 +127,9 @@ const setupPurses = async createPurse => {
     assetKind: AssetKind.SET,
     brand: ticketKit.brand,
   };
-  await createPurse(currencyIssuerRecord.issuer, currencyIssuerRecord.brand);
+  await createPurse(stableIssuerRecord.issuer, stableIssuerRecord.brand);
   await createPurse(ticketIssuerRecord.issuer, ticketIssuerRecord.brand);
-  return harden({ ticketKit, currencyKit });
+  return harden({ ticketKit, stableKit });
 };
 
 test('payments without matching give keywords', async t => {
@@ -137,26 +137,26 @@ test('payments without matching give keywords', async t => {
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
-  const { ticketKit, currencyKit } = await setupPurses(createPurse);
+  const { ticketKit, stableKit } = await setupPurses(createPurse);
 
   const gameTicketAmount = AmountMath.make(
     ticketKit.brand,
     harden([{ show: 'superbowl' }]),
   );
 
-  const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
+  const stableAmount = AmountMath.make(stableKit.brand, 5n * 10n ** 18n);
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),
-    Money: E(currencyKit.mint).mintPayment(currencyAmount),
-    Moola: E(currencyKit.mint).mintPayment(currencyAmount),
+    Money: E(stableKit.mint).mintPayment(stableAmount),
+    Moola: E(stableKit.mint).mintPayment(stableAmount),
   });
 
   const proposal = harden({
     want: {},
     give: {
       GameTicket: gameTicketAmount,
-      Money: currencyAmount,
+      Money: stableAmount,
     },
     exit: {
       onDemand: null,
@@ -174,14 +174,14 @@ test(`give keywords without matching payments`, async t => {
     makeScalarBigMapStore('zoe baggage', { durable: true }),
   );
 
-  const { ticketKit, currencyKit } = await setupPurses(createPurse);
+  const { ticketKit, stableKit } = await setupPurses(createPurse);
 
   const gameTicketAmount = AmountMath.make(
     ticketKit.brand,
     harden([{ show: 'superbowl' }]),
   );
 
-  const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
+  const stableAmount = AmountMath.make(stableKit.brand, 5n * 10n ** 18n);
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),
@@ -191,7 +191,7 @@ test(`give keywords without matching payments`, async t => {
     want: {},
     give: {
       GameTicket: gameTicketAmount,
-      Money: currencyAmount,
+      Money: stableAmount,
     },
     exit: {
       onDemand: null,
