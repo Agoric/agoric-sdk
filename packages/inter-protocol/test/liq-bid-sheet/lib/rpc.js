@@ -1,5 +1,8 @@
 'use strict';
 
+import { withCache } from '../app/rpcSheetCache.js';
+import { boardSlottingMarshaller, makeBoardRemote } from './board-utils.js';
+
 /** @type {MinimalNetworkConfig} */
 const localNetworkConfig = {
   rpcAddrs: ['http://0.0.0.0:26657'],
@@ -279,3 +282,16 @@ const makeBoardClient = qClient => {
   });
 };
 /** @typedef {ReturnType<makeBoardClient>} BoardClient */
+
+export const netAccess = async ({ fetch, env: { AGORIC_NET }, store }) => {
+  const qLocal = makeQueryClient({ fetch });
+  const qClient = await (AGORIC_NET && AGORIC_NET !== 'local'
+    ? qLocal.withConfig(AGORIC_NET)
+    : qLocal);
+  const keys = ['brand', 'instance', 'vbankAsset'].map(
+    child => `published.agoricNames.${child}`,
+  );
+  const qCache = withCache(qClient, keys, store);
+  const board = makeBoardClient(qCache);
+  return { qClient: qCache, board };
+};

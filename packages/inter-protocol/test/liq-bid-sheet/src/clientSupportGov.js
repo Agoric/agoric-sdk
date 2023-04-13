@@ -2,7 +2,7 @@
  * @param {CurrentWalletRecord} current
  * @param {AgoricNamesRemotes} agoricNames
  */
-const findContinuingIds = (current, agoricNames) => {
+export const findContinuingIds = (current, agoricNames) => {
   // XXX should runtime type-check
   /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
   const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
@@ -26,27 +26,7 @@ const findContinuingIds = (current, agoricNames) => {
   return found;
 };
 
-const FindGovRight = async (address, instanceName, voter = 0) => {
-  const { board } = await rpcBoardKit_();
-  const agoricNames = await board.provideAgoricNames();
-  const current = await board.readLatestHead(
-    `published.wallet.${address}.current`,
-  );
-  const rights = findContinuingIds(current, agoricNames);
-  return rights.find(r => r.instanceName === instanceName).offerId;
-};
-
-const testFGR = async () => {
-  console.warn('AMBIENT: SpreadsheetApp');
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const address = doc.getRangeByName('ProposerAddress').getValue();
-  const oracleId = await FindGovRight(address, 'ATOM-USD price feed');
-  console.log(oracleId);
-  const actual = await FindGovRight(address, 'econCommitteeCharter');
-  console.log(actual);
-};
-
-const encodeGovParamEntry =
+export const encodeGovParamEntry =
   agoricNames =>
   ([name, type, value]) => {
     switch (type) {
@@ -83,7 +63,8 @@ const encodeGovParamEntry =
         throw Error(`not impl: ${type}`);
     }
   };
-const makeParamChangeAction = (rows, opts, agoricNames) => {
+
+export const makeParamChangeAction = (rows, opts, agoricNames) => {
   console.log({ rows, opts });
   const params = Object.fromEntries(
     rows.filter(([name]) => name > '').map(encodeGovParamEntry(agoricNames)),
@@ -109,45 +90,4 @@ const makeParamChangeAction = (rows, opts, agoricNames) => {
     },
   };
   return { method: 'executeOffer', offer };
-};
-
-const ParamChangeAction = async (paramRows, optRows) => {
-  const opts = Object.fromEntries(optRows);
-  const { board } = await rpcBoardKit_();
-  const agoricNames = await board.provideAgoricNames();
-
-  const current = await board.readLatestHead(
-    `published.wallet.${opts.ProposerAddress}.current`,
-  );
-  const rights = findContinuingIds(current, agoricNames);
-  const previousOfferId = rights.find(
-    r => r.instanceName === 'econCommitteeCharter',
-  ).offerId;
-
-  const action = makeParamChangeAction(
-    paramRows,
-    { ...opts, previousOfferId },
-    agoricNames,
-  );
-  const capData = board.serialize(action);
-  return JSON.stringify(capData);
-};
-
-const testPCO = async () => {
-  console.warn('AMBIENT: SpreadsheetApp');
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const params = doc.getRangeByName('Gov: Propose!B3:D4').getValues();
-  const opts = doc.getRange('Gov: Propose!A21:B25').getValues();
-  /*
-  const params = [['LiquidationPadding', 'percent', 0.2]];
-  const opts = Object.entries({
-    offerId: 123,
-    previousOfferId: 'ecCharter-1680754535937',
-    instanceName: 'VaultFactory',
-    collateralBrandKey: 'IbcATOM',
-    deadline: new Date(Date.now() + 1 * 60 * 1000),
-  });
- */
-  const actual = await ParamChangeAction(params, opts);
-  console.log(actual);
 };

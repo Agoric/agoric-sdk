@@ -2,17 +2,20 @@
  * @param {Amount} x
  * @returns {Amount & { brand: BoardRemote }}
  */
-const asBoardRemote = x => {
+export const asBoardRemote = x => {
   assert('getBoardId' in x.brand);
   // @ts-expect-error dynamic check
   return x;
 };
 
+export const bigintReplacer = (_n, v) =>
+  typeof v === 'bigint' ? Number(v) : v;
+
 /**
  * @param {AssetDescriptor[]} assets
  * @returns {(a: Amount & { brand: BoardRemote }) => [string, number | any[]]}
  */
-const makeAmountFormatter = assets => amt => {
+export const makeAmountFormatter = assets => amt => {
   const { brand, value } = amt;
   const asset = assets.find(a => a.brand === brand);
   if (!asset) return [brand.getBoardId(), Number(value)]; // don't crash
@@ -40,7 +43,7 @@ const makeAmountFormatter = assets => amt => {
  *   logger: Pick<typeof console, 'warn'>,
  * }} io
  */
-const makeTUI = ({ stdout, logger }) => {
+export const makeTUI = ({ stdout, logger }) => {
   const show = (info, indent = false) =>
     stdout.write(
       `${JSON.stringify(info, bigintReplacer, indent ? 2 : undefined)}\n`,

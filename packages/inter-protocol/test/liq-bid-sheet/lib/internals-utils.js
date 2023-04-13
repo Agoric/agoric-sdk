@@ -37,7 +37,7 @@
  * @param {(value: O[keyof O], key: keyof O) => R} mapFn
  * @returns {{ [P in keyof O]: R}}
  */
-const objectMap = (original, mapFn) => {
+export const objectMap = (original, mapFn) => {
   const { entries, fromEntries } = Object;
   const ents = entries(original);
   const mapEnts = ents.map(([k, v]) => [k, mapFn(v, k)]);

@@ -1,10 +1,10 @@
-'use strict';
+import { Far } from './marshal.js';
 
 /**
  * @param {*} slotInfo
  * @returns {BoardRemote}
  */
-const makeBoardRemote = ({ boardId, iface }) => {
+export const makeBoardRemote = ({ boardId, iface }) => {
   const nonalleged =
     iface && iface.length ? iface.slice('Alleged: '.length) : '';
   return Far(`BoardRemote${nonalleged}`, { getBoardId: () => boardId });
@@ -18,7 +18,7 @@ const makeBoardRemote = ({ boardId, iface }) => {
  * @param {(slot: string, iface: string) => any} slotToVal
  * @returns {import('@endo/marshal').Marshal<string>}
  */
-const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
+export const boardSlottingMarshaller = (slotToVal = (s, _i) => s) => ({
   /** @param {{body: string, slots: string[]}} capData */
   unserialize: ({ body, slots }) => {
     const reviver = (_key, obj) => {

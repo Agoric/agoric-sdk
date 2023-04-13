@@ -1,5 +1,12 @@
 'use strict';
 
+import {
+  asBoardRemote,
+  bigintReplacer,
+  makeAmountFormatter,
+} from './format.js';
+import { objectMap } from './internals-utils.js';
+
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
  *
@@ -29,13 +36,13 @@ const makeFormatters = assets => {
   value: 
    { brand: { getBoardId: [Function: getBoardId] },
      value: [ [Object] ] } }
-3:15:41 PM	Info	{ name: 'EndorsedUI',
+3:15:41 PM	Info	{ name: 'EndorsedUI',
   type: 'string',
   value: 'bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e' }
-3:15:41 PM	Info	{ name: 'MinInitialDebt',
+3:15:41 PM	Info	{ name: 'MinInitialDebt',
   type: 'amount',
   value: { brand: { getBoardId: [Function: getBoardId] }, value: {} } }
-3:15:41 PM	Info	{ name: 'ShortfallInvitation',
+3:15:41 PM	Info	{ name: 'ShortfallInvitation',
   type: 'invitation',
   value: 
    { brand: { getBoardId: [Function: getBoardId] },
@@ -91,10 +98,9 @@ const fmtEntry =
  * Format governance parameters
  *
  * @param {*} params
- * @param {*} assets values of agoricNames.vbankAsset
  * @param agoricNames
  */
-const fmtGovParams = (params, agoricNames) => {
+export const fmtGovParams = (params, agoricNames) => {
   const { entries, values } = Object;
   const { vbankAsset, instance } = agoricNames;
   const fmt1 = fmtEntry(makeAmountFormatter(values(vbankAsset)), instance);
@@ -102,9 +108,7 @@ const fmtGovParams = (params, agoricNames) => {
   return entries(params).map(fmt1);
 };
 
-const bigintReplacer = (_n, v) => (typeof v === 'bigint' ? Number(v) : v);
-
-const fmtDetails = (metrics, agoricNames) => {
+export const fmtDetails = (metrics, agoricNames) => {
   const { entries, values } = Object;
   const { vbankAsset, instance } = agoricNames;
   const fmtAmt = makeAmountFormatter(values(vbankAsset));
@@ -231,28 +235,13 @@ const fmtDetails = (metrics, agoricNames) => {
   return entries(metrics).flatMap(grokEntry);
 };
 
-const fmtPriceFeed = (name, detail) => {
+export const fmtPriceFeed = (name, detail) => {
   const d = detail;
   const price = Number(d.amountOut.value) / Number(d.amountIn.value);
   return [
     [name, 'price', price],
     [name, 'timestamp', new Date(Number(d.timestamp) * 1000)],
   ];
-};
-
-const PriceFeed = async (base, quote) => {
-  const { board } = await rpcBoardKit_();
-
-  const detail = await board.readLatestHead(
-    `published.priceFeed.${base}-${quote}_price_feed`,
-  );
-  const rows = fmtPriceFeed(`${base}-${quote}`, detail);
-  return rows;
-};
-
-const testPriceFeed = async () => {
-  const actual = await PriceFeed('ATOM', 'USD');
-  console.log(actual);
 };
 
 /**
@@ -280,20 +269,7 @@ const fmtMetrics = (metrics, quote, assets) => {
   return { ...amounts, price };
 };
 
-const netAccess = async ({ fetch, env: { AGORIC_NET }, store }) => {
-  const qLocal = makeQueryClient({ fetch });
-  const qClient = await (AGORIC_NET && AGORIC_NET !== 'local'
-    ? qLocal.withConfig(AGORIC_NET)
-    : qLocal);
-  const keys = ['brand', 'instance', 'vbankAsset'].map(
-    child => `published.agoricNames.${child}`,
-  );
-  const qCache = withCache(qClient, keys, store);
-  const board = makeBoardClient(qCache);
-  return { qClient: qCache, board };
-};
-
-const makeInterClient = ({ board, tui }) => {
+export const makeInterClient = ({ board, tui }) => {
   const { freeze, values } = Object;
 
   const getContractParams = vPath => {
@@ -315,113 +291,4 @@ const makeInterClient = ({ board, tui }) => {
     tui.show(info, true);
   };
   return freeze({ liquidationStatus, getContractParams });
-};
-
-const testNamedRanges = () => {
-  console.warn('AMBIENT: SpreadsheetApp');
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const rpc = doc.getRangeByName('RPC').getValue();
-  console.log({ rpc });
-};
-
-const testLiquidationStatus = async () => {
-  const fetch = makeFetch();
-  console.warn('AMBIENT: SpreadsheetApp');
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-
-  const rpc = doc.getRangeByName('RPC').getValue();
-  const { board } = await netAccess({
-    fetch,
-    env: { AGORIC_NET: `${rpc},agoriclocal` },
-  });
-
-  const tui = {
-    show: (x, indent = false) =>
-      console.log(JSON.stringify(x, null, indent ? 2 : undefined)),
-  };
-
-  const inter = makeInterClient({ board, tui });
-  const status = await inter.liquidationStatus({ manager: 0 });
-  console.log(status);
-};
-
-const rpcBoardKit_ = async () => {
-  const fetch = makeFetch();
-  console.warn('AMBIENT: SpreadsheetApp');
-  const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const rpc = doc.getRangeByName('RPC').getValue();
-  const store = PropertiesService.getDocumentProperties();
-  return netAccess({ fetch, env: { AGORIC_NET: `${rpc},agoriclocal` }, store });
-};
-
-const GovParams = async vPath => {
-  const { board } = await rpcBoardKit_();
-  const agoricNames = await board.provideAgoricNames();
-
-  const inter = makeInterClient({ board });
-  const params = await inter.getContractParams(vPath);
-  const rows = fmtGovParams(params, agoricNames);
-  return rows;
-};
-
-const InterMetrics = async vPath => {
-  const { board } = await rpcBoardKit_();
-  const agoricNames = await board.provideAgoricNames();
-
-  const metrics = await board.readLatestHead(`published.${vPath}.metrics`);
-
-  const rows = fmtDetails(metrics, agoricNames);
-  return rows;
-};
-
-const InterDetails = async vPath => {
-  const { board } = await rpcBoardKit_();
-  const agoricNames = await board.provideAgoricNames();
-
-  const details = await board.readLatestHead(
-    `published.${vPath.replace(/^published./, '')}`,
-  );
-  if (details?.updated === 'offerStatus') {
-    return fmtDetails(details.status, agoricNames);
-  }
-  const rows = fmtDetails(details, agoricNames);
-  return rows;
-};
-
-const testGovParams = async () => {
-  const rows = await GovParams('auction');
-  console.log(rows);
-};
-
-const testInterMetrics = async () => {
-  const rows = await InterMetrics('vaultFactory');
-  console.log(rows);
-};
-
-const testInterDetails = async () => {
-  const paths = [
-    // 'published.priceFeed.ATOM-USD_price_feed.latestRound',
-    // 'published.committees.Economic_Committee.latestQuestion',
-    // 'published.vaultFactory.manager0.vaults.vault0',
-    'wallet.agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
-    'wallet.agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce.current',
-    'vaultFactory.manager0.quotes',
-  ];
-  for (const vPath of paths) {
-    console.log('details for', vPath);
-    const rows = await InterDetails(vPath);
-    console.log(rows);
-  }
-};
-
-const BlockInfo = async () => {
-  const { qClient } = await rpcBoardKit_();
-  const status = await qClient.getStatus();
-  const {
-    result: {
-      node_info: { network },
-      sync_info: { latest_block_height: height, latest_block_time: time },
-    },
-  } = status;
-  return [[height, new Date(Date.parse(time)), network]];
 };
