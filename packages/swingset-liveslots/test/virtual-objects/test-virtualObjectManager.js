@@ -613,7 +613,7 @@ test('durable kind IDs can be reanimated', t => {
   const makeThing = defineDurableKind(fetchedKindID, initThing, thingBehavior);
   t.is(
     log.shift(),
-    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1,"unfaceted":true}',
+    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1,"unfaceted":true,"stateShapeCapData":{"body":"#\\"#undefined\\"","slots":[]}}',
   );
   t.deepEqual(log, []);
 
@@ -622,7 +622,7 @@ test('durable kind IDs can be reanimated', t => {
   flushStateCache();
   t.is(
     log.shift(),
-    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2,"unfaceted":true}',
+    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2,"unfaceted":true,"stateShapeCapData":{"body":"#\\"#undefined\\"","slots":[]}}',
   );
   t.is(log.shift(), `set vom.o+d10/1 ${thingVal(0, 'laterThing', 0)}`);
   t.deepEqual(log, []);

@@ -43,7 +43,7 @@ function build(
   syscall,
   forVatID,
   vatPowers,
-  liveSlotsOptions,
+  liveSlotsOptions = {},
   gcTools,
   console,
   buildVatNamespace,
@@ -664,6 +664,7 @@ function build(
     m.serialize,
     unmeteredUnserialize,
     assertAcceptableSyscallCapdataSize,
+    liveSlotsOptions,
   );
 
   const collectionManager = makeCollectionManager(
