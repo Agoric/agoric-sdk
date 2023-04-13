@@ -1,0 +1,16 @@
+{
+  "scripts": {},
+  "type": "module",
+  "main": "./app/CustomFunctions.js",
+  "eslintConfig": {
+    "globals": {
+      "Buffer": "readonly",
+      "fetch": "readonly",
+      "globalThis": "writable"
+    }
+  },
+  "devDependencies": {
+    "@types/google-apps-script": "^1.0.59",
+    "eslint": "^8.38.0"
+  }
+}
