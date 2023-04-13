@@ -1516,13 +1516,14 @@ export default function buildKernel(
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
-    buildVatSyscallHandler,
     overrideVatManagerOptions,
   });
 
   vatWarehouse = makeVatWarehouse({
+    kernelSlog,
     kernelKeeper,
     vatLoader,
+    buildVatSyscallHandler,
     panic,
     warehousePolicy,
   });

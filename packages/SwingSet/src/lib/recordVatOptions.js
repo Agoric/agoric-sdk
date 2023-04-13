@@ -18,7 +18,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
     } = options;
     const unused = Object.keys(leftover);
     if (unused.length) {
-      Fail`warning: ${vatID} unused options ${unused.join(',')}`;
+      Fail`OptionRecorder: ${vatID} unused options ${unused.join(',')}`;
     }
     const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
     /** @type { import('../types-internal.js').RecordedVatOptions } */
