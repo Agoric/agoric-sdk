@@ -148,12 +148,14 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
    * @param {Amount<'nat'>} wantCollateral
    * @param {Ratio} [discount]
    * @param {ExitRule | { onBuy: true }} [exitRule]
+   * @param {Amount<'nat'>} [proposalWant]
    */
   const bidForCollateralSeat = async (
     giveCurrency,
     wantCollateral,
     discount = undefined,
     exitRule = undefined,
+    proposalWant = undefined,
   ) => {
     // await so any rejection is in this async function instead of Zoe's offer() wrapper
     const bidInvitation = await E(publicFacet).makeBidInvitation(
@@ -164,6 +166,9 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       // IF we had multiples, the buyer could express an offer-safe want.
       // want: { Collateral: wantCollateral },
     };
+    if (proposalWant) {
+      rawProposal.want = { Collateral: proposalWant };
+    }
 
     if (exitRule && !('onBuy' in exitRule)) {
       rawProposal.exit = exitRule;
@@ -246,8 +251,14 @@ const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
       const seat = bidForCollateralSeat(giveCurrency, wantCollateral, discount);
       return E(seat).getPayouts();
     },
-    bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit) {
-      return bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit);
+    bidForCollateralSeat(giveCurrency, wantCollateral, discount, exit, pWant) {
+      return bidForCollateralSeat(
+        giveCurrency,
+        wantCollateral,
+        discount,
+        exit,
+        pWant,
+      );
     },
     setupCollateralAuction,
     async advanceTo(time, wait) {
@@ -398,6 +409,35 @@ test.serial('discount bid settled', async t => {
 
   // 250 - 200 * (1.1 * 1.05)
   await assertPayouts(t, seat, currency, collateral, 250n - 231n, 200n);
+});
+
+test.serial('Excessive want in proposal', async t => {
+  const { collateral, currency } = t.context;
+  const driver = await makeAuctionDriver(t);
+
+  await driver.setupCollateralAuction(collateral, collateral.make(1000n));
+  await driver.updatePriceAuthority(
+    makeRatioFromAmounts(currency.make(11n), collateral.make(10n)),
+  );
+
+  const schedules = await driver.getSchedule();
+  t.is(schedules.nextAuctionSchedule?.startTime.absValue, 170n);
+  await driver.advanceTo(170n);
+
+  const seat = await driver.bidForCollateralSeat(
+    currency.make(250n),
+    collateral.make(5000n),
+    makeRatioFromAmounts(currency.make(120n), currency.make(100n)),
+    undefined,
+    collateral.make(5000n),
+  );
+  await t.throwsAsync(() => E(seat).getOfferResult(), {
+    message: 'seat has been exited',
+  });
+
+  const update = await E(E(seat).getExitSubscriber()).getUpdateSince();
+  t.is(update.value, 'unable to satisfy want');
+  await assertPayouts(t, seat, currency, collateral, 250n, 0n);
 });
 
 test.serial('discount bid exit onBuy', async t => {
