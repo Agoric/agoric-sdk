@@ -1,4 +1,3 @@
-
 /**
  * By analogy with how `Array.prototype.map` will map the elements of
  * an array to transformed elements of an array of the same shape,

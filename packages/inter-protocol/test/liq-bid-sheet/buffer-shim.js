@@ -4,7 +4,7 @@ const Buffer = {
     if (kind !== 'base64') throw Error('not impl');
     const bytes = Utilities.base64DecodeWebSafe(value);
     return {
-      toString: () => Utilities.newBlob(bytes).getDataAsString()
-    }
-  }
-}
+      toString: () => Utilities.newBlob(bytes).getDataAsString(),
+    };
+  },
+};

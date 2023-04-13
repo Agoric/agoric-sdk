@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /** @type {MinimalNetworkConfig} */
 const localNetworkConfig = {
@@ -42,7 +42,7 @@ const makeVStorage = (powers, config) => {
 
   const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
     getJSON(url(path, { kind, height })).catch(err => {
-      console.error(err)
+      console.error(err);
       throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
     });
 
@@ -151,7 +151,7 @@ const makeQueryClient = ({ fetch }) => {
       rpcAddrs: cfg.rpcAddrs,
       chainName: cfg.chainName,
       getStatus: vstorage.getStatus,
-      
+
       /** @param {string} opt */
       withConfig: async opt => {
         if (cfg.chainName !== localNetworkConfig.chainName) {
@@ -279,4 +279,3 @@ const makeBoardClient = qClient => {
   });
 };
 /** @typedef {ReturnType<makeBoardClient>} BoardClient */
-

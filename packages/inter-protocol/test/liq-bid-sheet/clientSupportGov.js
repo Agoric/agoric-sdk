@@ -29,57 +29,69 @@ const findContinuingIds = (current, agoricNames) => {
 const FindGovRight = async (address, instanceName, voter = 0) => {
   const { board } = await rpcBoardKit_();
   const agoricNames = await board.provideAgoricNames();
-  const current = await board.readLatestHead(`published.wallet.${address}.current`);
+  const current = await board.readLatestHead(
+    `published.wallet.${address}.current`,
+  );
   const rights = findContinuingIds(current, agoricNames);
   return rights.find(r => r.instanceName === instanceName).offerId;
-}
+};
 
 const testFGR = async () => {
-  console.warn('AMBIENT: SpreadsheetApp')
+  console.warn('AMBIENT: SpreadsheetApp');
   const doc = SpreadsheetApp.getActiveSpreadsheet();
   const address = doc.getRangeByName('ProposerAddress').getValue();
   const oracleId = await FindGovRight(address, 'ATOM-USD price feed');
-  console.log(oracleId)
+  console.log(oracleId);
   const actual = await FindGovRight(address, 'econCommitteeCharter');
-  console.log(actual)
-}
+  console.log(actual);
+};
 
-const encodeGovParamEntry = agoricNames => ([name, type, value]) => {
-  switch (type) {
-    case 'percent': {
-      const brand = agoricNames.brand;
-      // round to basis point
-      const numerator = { brand: brand.IST, value: BigInt(Math.round(value * 100 * 100)) };
-      const denominator = { brand: brand.IST, value: BigInt(100) * BigInt(100) };
-      return [name, { numerator, denominator}];
+const encodeGovParamEntry =
+  agoricNames =>
+  ([name, type, value]) => {
+    switch (type) {
+      case 'percent': {
+        const brand = agoricNames.brand;
+        // round to basis point
+        const numerator = {
+          brand: brand.IST,
+          value: BigInt(Math.round(value * 100 * 100)),
+        };
+        const denominator = {
+          brand: brand.IST,
+          value: BigInt(100) * BigInt(100),
+        };
+        return [name, { numerator, denominator }];
+      }
+      case 'sec': {
+        // RelativeTime
+        const timerBrand = agoricNames.brand.timer;
+        if (!timerBrand) throw Error('no timer brand???');
+        return [name, { relValue: BigInt(value), timerBrand }];
+      }
+      case 'IST': {
+        const assetInfo = agoricNames.vbankAsset.uist;
+        const { decimalPlaces } = assetInfo.displayInfo;
+        const scale = 10 ** decimalPlaces;
+        const amount = {
+          brand: agoricNames.brand.IST,
+          value: BigInt(Math.round(value * scale)),
+        };
+        return [name, amount];
+      }
+      default:
+        throw Error(`not impl: ${type}`);
     }
-    case 'sec': {
-      // RelativeTime
-      const timerBrand = agoricNames.brand.timer;
-      if (!timerBrand) throw Error('no timer brand???')
-      return [name, { relValue: BigInt(value), timerBrand }]
-    }
-    case 'IST': {
-      const assetInfo = agoricNames.vbankAsset.uist;
-      const { decimalPlaces } = assetInfo.displayInfo;
-      const scale = 10 ** decimalPlaces;
-      const amount = { brand: agoricNames.brand.IST, value: BigInt(Math.round(value * scale)) }
-      return [name, amount];
-    }
-    default:
-      throw Error(`not impl: ${type}`);
-  }
-}
+  };
 const makeParamChangeAction = (rows, opts, agoricNames) => {
   console.log({ rows, opts });
   const params = Object.fromEntries(
-    rows.filter(([name]) => name > '')
-    .map(encodeGovParamEntry(agoricNames))
-    );
+    rows.filter(([name]) => name > '').map(encodeGovParamEntry(agoricNames)),
+  );
   const instance = agoricNames.instance[opts.instanceName];
   const key = opts.collateralBrandKey
-    ? ({ collateralBrand: agoricNames.brand[opts.collateralBrandKey] })
-    : 'governedParams'
+    ? { collateralBrand: agoricNames.brand[opts.collateralBrandKey] }
+    : 'governedParams';
   /** @type {import('@agoric/smart-wallet/src/offers.js').OfferSpec} */
   const offer = {
     id: opts.offerId,
@@ -97,28 +109,36 @@ const makeParamChangeAction = (rows, opts, agoricNames) => {
     },
   };
   return { method: 'executeOffer', offer };
-}
+};
 
 const ParamChangeAction = async (paramRows, optRows) => {
   const opts = Object.fromEntries(optRows);
   const { board } = await rpcBoardKit_();
   const agoricNames = await board.provideAgoricNames();
 
-  const current = await board.readLatestHead(`published.wallet.${opts.ProposerAddress}.current`);
+  const current = await board.readLatestHead(
+    `published.wallet.${opts.ProposerAddress}.current`,
+  );
   const rights = findContinuingIds(current, agoricNames);
-  const previousOfferId = rights.find(r => r.instanceName === 'econCommitteeCharter').offerId;
+  const previousOfferId = rights.find(
+    r => r.instanceName === 'econCommitteeCharter',
+  ).offerId;
 
-  const action = makeParamChangeAction(paramRows, { ...opts, previousOfferId }, agoricNames);
+  const action = makeParamChangeAction(
+    paramRows,
+    { ...opts, previousOfferId },
+    agoricNames,
+  );
   const capData = board.serialize(action);
   return JSON.stringify(capData);
-}
+};
 
 const testPCO = async () => {
-  console.warn('AMBIENT: SpreadsheetApp')
+  console.warn('AMBIENT: SpreadsheetApp');
   const doc = SpreadsheetApp.getActiveSpreadsheet();
   const params = doc.getRangeByName('Gov: Propose!B3:D4').getValues();
   const opts = doc.getRange('Gov: Propose!A21:B25').getValues();
-/*
+  /*
   const params = [['LiquidationPadding', 'percent', 0.2]];
   const opts = Object.entries({
     offerId: 123,
@@ -129,5 +149,5 @@ const testPCO = async () => {
   });
  */
   const actual = await ParamChangeAction(params, opts);
-  console.log(actual)
-}
+  console.log(actual);
+};

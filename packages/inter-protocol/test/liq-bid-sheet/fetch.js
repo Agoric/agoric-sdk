@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 function makeFetch() {
   const { freeze } = Object;
@@ -7,9 +7,9 @@ function makeFetch() {
   const app = UrlFetchApp;
 
   const fetch = async url => {
-    const content = app.fetch(url)
+    const content = app.fetch(url);
     return freeze({
-      json: async () => JSON.parse(content)
+      json: async () => JSON.parse(content),
     });
   };
   return fetch;

@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
@@ -43,159 +43,217 @@ const makeFormatters = assets => {
  */
 
 const getInvitationDetails = amt => {
-  assert(amt.value.length === 1)
+  assert(amt.value.length === 1);
   return amt.value[0];
-}
+};
 
-const fmtEntry = (fmtAmount, instance) => ([name, { type, value }]) => {
-  const { entries } = Object;
-  const fmt = fmtAmount;
-  switch(type) {
-    case 'invitation': {
-      const amt = value;
-      const d = getInvitationDetails(amt);
-      const contractEntry = entries(instance).find(([n, v]) => v === d.instance);
-      return [name, contractEntry ? contractEntry[0] : null, d.description]
-    }
-    case 'nat':
-      return [name, Number(value) / 100 / 100, 'BP?'];  // XXX assume no overflow
-    case 'string':
-      return [name, value];
-    case 'amount': {
-      const [b, qty] = fmt(value)
-      return [name, qty, b];
-    }
-    case 'ratio': {
-      const { numerator, denominator } = value;
-      const [bn, qn] = fmt(numerator);
-      const [bd, qd] = fmt(denominator);
-      if (numerator.brand === denominator.brand) {
-        return [name, qn / qd];
-      } else {
-        return [name, qn / qd, `${bn}/${bd}`]
+const fmtEntry =
+  (fmtAmount, instance) =>
+  ([name, { type, value }]) => {
+    const { entries } = Object;
+    const fmt = fmtAmount;
+    switch (type) {
+      case 'invitation': {
+        const amt = value;
+        const d = getInvitationDetails(amt);
+        const contractEntry = entries(instance).find(
+          ([n, v]) => v === d.instance,
+        );
+        return [name, contractEntry ? contractEntry[0] : null, d.description];
       }
+      case 'nat':
+        return [name, Number(value) / 100 / 100, 'BP?']; // XXX assume no overflow
+      case 'string':
+        return [name, value];
+      case 'amount': {
+        const [b, qty] = fmt(value);
+        return [name, qty, b];
+      }
+      case 'ratio': {
+        const { numerator, denominator } = value;
+        const [bn, qn] = fmt(numerator);
+        const [bd, qd] = fmt(denominator);
+        if (numerator.brand === denominator.brand) {
+          return [name, qn / qd];
+        } else {
+          return [name, qn / qd, `${bn}/${bd}`];
+        }
+      }
+      case 'relativeTime': {
+        return [name, Number(value.relValue), 'sec'];
+      }
+      default:
+        throw Error(`not impl: ${type}`);
     }
-    case 'relativeTime': {
-      return [name, Number(value.relValue), 'sec'];
-    }
-    default:
-      throw Error(`not impl: ${type}`)
-  }
-}
+  };
 
 /**
  * Format governance parameters
  *
  * @param {*} params
  * @param {*} assets values of agoricNames.vbankAsset
+ * @param agoricNames
  */
 const fmtGovParams = (params, agoricNames) => {
   const { entries, values } = Object;
   const { vbankAsset, instance } = agoricNames;
   const fmt1 = fmtEntry(makeAmountFormatter(values(vbankAsset)), instance);
 
-  return entries(params).map(fmt1)
+  return entries(params).map(fmt1);
 };
 
-const bigintReplacer = (_n, v) => typeof v === 'bigint' ? Number(v) : v;
+const bigintReplacer = (_n, v) => (typeof v === 'bigint' ? Number(v) : v);
 
 const fmtDetails = (metrics, agoricNames) => {
   const { entries, values } = Object;
   const { vbankAsset, instance } = agoricNames;
   const fmtAmt = makeAmountFormatter(values(vbankAsset));
   const fmt1 = fmtEntry(fmtAmt, instance);
-  const assetName = brand => values(agoricNames.vbankAsset).find(d => d.brand === brand)?.issuerName;
-  const priceEntry = (name, ratio) => fmt1([ name, { type: 'ratio', value: ratio } ])
+  const assetName = brand =>
+    values(agoricNames.vbankAsset).find(d => d.brand === brand)?.issuerName;
+  const priceEntry = (name, ratio) =>
+    fmt1([name, { type: 'ratio', value: ratio }]);
   const grokEntry = ([name, value]) => {
     const isObject = typeof value === 'object' && value !== null;
 
     // Oracle support
     if (name === 'quoteAmount') {
-        const { value: [{ amountIn, amountOut }] } = value;
-        return [priceEntry(name, { numerator: amountOut, denominator: amountIn })];
+      const {
+        value: [{ amountIn, amountOut }],
+      } = value;
+      return [
+        priceEntry(name, { numerator: amountOut, denominator: amountIn }),
+      ];
     } else if (name === 'quotePayment') {
-        return [[name, '...']];
+      return [[name, '...']];
     } else if (name === 'startedAt') {
-      return [[name, new Date(Number(value) * 1000)]]
-    // wallet support
+      return [[name, new Date(Number(value) * 1000)]];
+      // wallet support
     } else if (name === 'purses') {
-        return [[name, '...']];
+      return [[name, '...']];
     } else if (name === 'offerToUsedInvitation') {
-        return value.map(([id, amt]) => [name, ...fmt1([id, { type: 'invitation', value: amt }])]);
+      return value.map(([id, amt]) => [
+        name,
+        ...fmt1([id, { type: 'invitation', value: amt }]),
+      ]);
     } else if (name === 'offerToPublicSubscriberPaths') {
       return value.map(([id, sp]) => [name, id, ...entries(sp).flat()]);
     } else if (name === 'invitationSpec') {
       return entries(value).map(e => [name, ...e]);
     } else if (name === 'proposal') {
-      return ['give', 'want'].filter(p => p in value).flatMap(p => entries(value[p]).map(([kw, amt]) => [name, p, ...fmtAmt(amt)]));
-    // Vaults
+      return ['give', 'want']
+        .filter(p => p in value)
+        .flatMap(p =>
+          entries(value[p]).map(([kw, amt]) => [name, p, ...fmtAmt(amt)]),
+        );
+      // Vaults
     } else if (name === 'debtSnapshot') {
-        return [[name, 'debt', ...fmtAmt(value.debt)],
-                [name, ...priceEntry('interest', value.interest)]];
-    // Auction - absTime
+      return [
+        [name, 'debt', ...fmtAmt(value.debt)],
+        [name, ...priceEntry('interest', value.interest)],
+      ];
+      // Auction - absTime
     } else if (isObject && 'absValue' in value && 'timerBrand' in value) {
-      return [[name, 'absTime', new Date(Number(value.absValue) * 1000)]]
-    // Governance
+      return [[name, 'absTime', new Date(Number(value.absValue) * 1000)]];
+      // Governance
     } else if (name === 'closingRule') {
-      return [[name, 'deadline', new Date(Number(value.deadline) * 1000)]]
+      return [[name, 'deadline', new Date(Number(value.deadline) * 1000)]];
     } else if (name === 'positions') {
-      return [...fmtDetails(value[0].changes, agoricNames).map(r => [name, 'changes', ...r]),
-              [name, 'noChange', [value[1].noChange].join(',')]]
+      return [
+        ...fmtDetails(value[0].changes, agoricNames).map(r => [
+          name,
+          'changes',
+          ...r,
+        ]),
+        [name, 'noChange', [value[1].noChange].join(',')],
+      ];
     } else if (name === 'issue') {
-      const rows = [[name, 'contract', value.contract.getBoardId()], // TODO: instanceName
-              ...fmtDetails(value.spec.changes, agoricNames).map(r => [name, 'spec.changes', ...r]),
-              [name, 'paramPath.key', 'collateralBrand', assetName(value.spec.paramPath.key.collateralBrand)]];
+      const rows = [
+        [name, 'contract', value.contract.getBoardId()], // TODO: instanceName
+        ...fmtDetails(value.spec.changes, agoricNames).map(r => [
+          name,
+          'spec.changes',
+          ...r,
+        ]),
+        [
+          name,
+          'paramPath.key',
+          'collateralBrand',
+          assetName(value.spec.paramPath.key.collateralBrand),
+        ],
+      ];
       return rows;
     } else if (name === 'result') {
-        return [[name, value]];
-    // ERTP
-    } else if (isObject && 'brand' in value && 'value' in value && typeof value.value === 'bigint') {
+      return [[name, value]];
+      // ERTP
+    } else if (
+      isObject &&
+      'brand' in value &&
+      'value' in value &&
+      typeof value.value === 'bigint'
+    ) {
       return [fmt1([name, { type: 'amount', value }])];
     } else if (isObject && 'numerator' in value && 'denominator' in value) {
       // ratio - e.g. interest
       return [priceEntry(name, value)];
-    } else if (Array.isArray(value) && value.length > 0 && assetName(value[0])) {
+    } else if (
+      Array.isArray(value) &&
+      value.length > 0 &&
+      assetName(value[0])
+    ) {
       // Array<brand> - e.g. collaterals
       return [[name, value.map(assetName).join(',')]];
-    } else if (isObject && values(value).length > 0 && assetName(values(value)[0].brand)) {
+    } else if (
+      isObject &&
+      values(value).length > 0 &&
+      assetName(values(value)[0].brand)
+    ) {
       // Record<string, Amount> - e.g. rewardPoolAllocation
-      return entries(value).map(([kw, amt]) => [name, kw, ...fmtAmt(amt).reverse()]);
+      return entries(value).map(([kw, amt]) => [
+        name,
+        kw,
+        ...fmtAmt(amt).reverse(),
+      ]);
     } else if (isObject && values(value).length === 0) {
       // empty Record<string, Amount> - e.g. rewardPoolAllocation
       return [[name]];
-    // generic remotables
+      // generic remotables
     } else if (isObject && 'getBoardId' in value) {
       return [[name, 'boardId', value.getBoardId()]];
-    // primitives
+      // primitives
     } else if (typeof value === 'number' || typeof value === 'string') {
-    // number - e.g. numVaults
+      // number - e.g. numVaults
       return [[name, value]];
     } else {
-      return [[name, '???', JSON.stringify(value, bigintReplacer, 2)]]
+      return [[name, '???', JSON.stringify(value, bigintReplacer, 2)]];
     }
-  }
+  };
   return entries(metrics).flatMap(grokEntry);
 };
 
 const fmtPriceFeed = (name, detail) => {
   const d = detail;
   const price = Number(d.amountOut.value) / Number(d.amountIn.value);
-  return [[name, 'price', price],
-          [name, 'timestamp', new Date(Number(d.timestamp) * 1000)]]
-}
+  return [
+    [name, 'price', price],
+    [name, 'timestamp', new Date(Number(d.timestamp) * 1000)],
+  ];
+};
 
 const PriceFeed = async (base, quote) => {
   const { board } = await rpcBoardKit_();
 
-  const detail = await board.readLatestHead(`published.priceFeed.${base}-${quote}_price_feed`);
+  const detail = await board.readLatestHead(
+    `published.priceFeed.${base}-${quote}_price_feed`,
+  );
   const rows = fmtPriceFeed(`${base}-${quote}`, detail);
   return rows;
-}
+};
 
 const testPriceFeed = async () => {
-  const actual = await PriceFeed("ATOM", "USD");
+  const actual = await PriceFeed('ATOM', 'USD');
   console.log(actual);
-}
+};
 
 /**
  * Format amounts in vaultManager metrics for JSON output.
@@ -224,23 +282,26 @@ const fmtMetrics = (metrics, quote, assets) => {
 
 const netAccess = async ({ fetch, env: { AGORIC_NET }, store }) => {
   const qLocal = makeQueryClient({ fetch });
-  const qClient = await (
-    AGORIC_NET && AGORIC_NET !== 'local'
-      ? qLocal.withConfig(AGORIC_NET)
-      : qLocal);
-  const keys = ['brand', 'instance', 'vbankAsset'].map(child => `published.agoricNames.${child}`);
+  const qClient = await (AGORIC_NET && AGORIC_NET !== 'local'
+    ? qLocal.withConfig(AGORIC_NET)
+    : qLocal);
+  const keys = ['brand', 'instance', 'vbankAsset'].map(
+    child => `published.agoricNames.${child}`,
+  );
   const qCache = withCache(qClient, keys, store);
   const board = makeBoardClient(qCache);
   return { qClient: qCache, board };
-}
+};
 
 const makeInterClient = ({ board, tui }) => {
   const { freeze, values } = Object;
 
-  const getContractParams = (vPath) => {
+  const getContractParams = vPath => {
     const { readLatestHead } = board;
-    return readLatestHead(`published.${vPath}.governance`).then(({ current }) => current)
-  }
+    return readLatestHead(`published.${vPath}.governance`).then(
+      ({ current }) => current,
+    );
+  };
 
   const liquidationStatus = async opts => {
     const agoricNames = await board.provideAgoricNames();
@@ -252,31 +313,37 @@ const makeInterClient = ({ board, tui }) => {
     ]);
     const info = fmtMetrics(metrics, quote, values(agoricNames.vbankAsset));
     tui.show(info, true);
-  }
-  return freeze({ liquidationStatus, getContractParams })
-}
+  };
+  return freeze({ liquidationStatus, getContractParams });
+};
 
 const testNamedRanges = () => {
-  console.warn('AMBIENT: SpreadsheetApp')
+  console.warn('AMBIENT: SpreadsheetApp');
   const doc = SpreadsheetApp.getActiveSpreadsheet();
   const rpc = doc.getRangeByName('RPC').getValue();
-  console.log({ rpc })
-}
+  console.log({ rpc });
+};
 
 const testLiquidationStatus = async () => {
   const fetch = makeFetch();
-  console.warn('AMBIENT: SpreadsheetApp')
+  console.warn('AMBIENT: SpreadsheetApp');
   const doc = SpreadsheetApp.getActiveSpreadsheet();
 
   const rpc = doc.getRangeByName('RPC').getValue();
-  const { board } = await netAccess({ fetch, env: { AGORIC_NET: `${rpc},agoriclocal` } });
+  const { board } = await netAccess({
+    fetch,
+    env: { AGORIC_NET: `${rpc},agoriclocal` },
+  });
 
-  const tui = { show: (x, indent = false) => console.log(JSON.stringify(x, null, indent ? 2 : undefined))}
+  const tui = {
+    show: (x, indent = false) =>
+      console.log(JSON.stringify(x, null, indent ? 2 : undefined)),
+  };
 
   const inter = makeInterClient({ board, tui });
   const status = await inter.liquidationStatus({ manager: 0 });
-  console.log(status)
-}
+  console.log(status);
+};
 
 const rpcBoardKit_ = async () => {
   const fetch = makeFetch();
@@ -285,9 +352,9 @@ const rpcBoardKit_ = async () => {
   const rpc = doc.getRangeByName('RPC').getValue();
   const store = PropertiesService.getDocumentProperties();
   return netAccess({ fetch, env: { AGORIC_NET: `${rpc},agoriclocal` }, store });
-}
+};
 
-const GovParams = async (vPath) => {
+const GovParams = async vPath => {
   const { board } = await rpcBoardKit_();
   const agoricNames = await board.provideAgoricNames();
 
@@ -295,45 +362,47 @@ const GovParams = async (vPath) => {
   const params = await inter.getContractParams(vPath);
   const rows = fmtGovParams(params, agoricNames);
   return rows;
-}
+};
 
-const InterMetrics = async (vPath) => {
+const InterMetrics = async vPath => {
   const { board } = await rpcBoardKit_();
   const agoricNames = await board.provideAgoricNames();
 
-  const metrics = await board.readLatestHead(`published.${vPath}.metrics`)
+  const metrics = await board.readLatestHead(`published.${vPath}.metrics`);
 
   const rows = fmtDetails(metrics, agoricNames);
   return rows;
-}
+};
 
-const InterDetails = async (vPath) => {
+const InterDetails = async vPath => {
   const { board } = await rpcBoardKit_();
   const agoricNames = await board.provideAgoricNames();
 
-  const details = await board.readLatestHead(`published.${vPath.replace(/^published./, '')}`);
+  const details = await board.readLatestHead(
+    `published.${vPath.replace(/^published./, '')}`,
+  );
   if (details?.updated === 'offerStatus') {
     return fmtDetails(details.status, agoricNames);
   }
   const rows = fmtDetails(details, agoricNames);
   return rows;
-}
+};
 
 const testGovParams = async () => {
   const rows = await GovParams('auction');
-  console.log(rows)
-}
+  console.log(rows);
+};
 
 const testInterMetrics = async () => {
   const rows = await InterMetrics('vaultFactory');
-  console.log(rows)
-}
+  console.log(rows);
+};
 
 const testInterDetails = async () => {
   const paths = [
-    //'published.priceFeed.ATOM-USD_price_feed.latestRound',
-    //'published.committees.Economic_Committee.latestQuestion',
-    //'published.vaultFactory.manager0.vaults.vault0',
+    // 'published.priceFeed.ATOM-USD_price_feed.latestRound',
+    // 'published.committees.Economic_Committee.latestQuestion',
+    // 'published.vaultFactory.manager0.vaults.vault0',
     'wallet.agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
     'wallet.agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce.current',
     'vaultFactory.manager0.quotes',
@@ -341,16 +410,18 @@ const testInterDetails = async () => {
   for (const vPath of paths) {
     console.log('details for', vPath);
     const rows = await InterDetails(vPath);
-    console.log(rows)
+    console.log(rows);
   }
-}
+};
 
 const BlockInfo = async () => {
   const { qClient } = await rpcBoardKit_();
   const status = await qClient.getStatus();
-  const { result: {
-            node_info: { network },
-            sync_info: { latest_block_height: height, latest_block_time: time }
-          } } = status; 
+  const {
+    result: {
+      node_info: { network },
+      sync_info: { latest_block_height: height, latest_block_time: time },
+    },
+  } = status;
   return [[height, new Date(Date.parse(time)), network]];
-}
+};
