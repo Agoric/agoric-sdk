@@ -18,6 +18,7 @@ import {
   QuorumRule,
   coerceQuestionSpec,
 } from '../../src/index.js';
+import { documentStorageSchema } from '../../tools/storageDoc.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -134,27 +135,6 @@ test('committee-open question:one', async t => {
   );
 });
 
-const snapshotStorage = async (t, storage) => {
-  // chainStorage publication is unsynchronized
-  await eventLoopIteration();
-
-  const live = [...storage.keys()].map(key => [
-    key.replace(
-      'mockChainStorageRoot.thisElectorate.',
-      'published.committees.Economic_Committee.',
-    ),
-    storage.getBody(key),
-  ]);
-
-  const note = `Under "published", the "committees.Economic_Committee" node is delegated to
-a committee contract, which publishes data as follows.
-
-See also board marshalling conventions (_to appear_).
-`;
-
-  t.snapshot(live, note);
-};
-
 test('committee-open question:mixed, with snapshot', async t => {
   const {
     electorateStartResult: { creatorFacet, publicFacet },
@@ -246,5 +226,11 @@ test('committee-open question:mixed, with snapshot', async t => {
   const questions = await publicFacet.getOpenQuestions();
   t.deepEqual(questions.length, 2);
 
-  await snapshotStorage(t, mockChainStorageRoot);
+  const doc = {
+    node: 'committees.Economic_Committee',
+    owner: 'a committee contract',
+    pattern: 'mockChainStorageRoot.thisElectorate.',
+    replacement: 'published.committees.Economic_Committee.',
+  };
+  await documentStorageSchema(t, mockChainStorageRoot, doc);
 });
