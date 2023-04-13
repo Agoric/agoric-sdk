@@ -1,6 +1,5 @@
 import { E, Far } from '@endo/far';
-import { isObject } from '@endo/marshal';
-import { isNat } from '@endo/nat';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import './types-ambient.js';
 
@@ -15,7 +14,7 @@ const sink = () => {};
  * @returns {Promise<T>}
  */
 const reconnectAsNeeded = async thunk => {
-  let lastVersion;
+  let lastVersion = -Infinity;
   // End synchronous prelude.
   await null;
   for (;;) {
@@ -24,13 +23,9 @@ const reconnectAsNeeded = async thunk => {
       const result = await thunk();
       return result;
     } catch (err) {
-      /** @see processUpgrade in {@link ../../SwingSet/src/kernel/kernel.js} */
-      if (isObject(err) && err.name === 'vatUpgraded') {
+      if (isUpgradeDisconnection(err)) {
         const { incarnationNumber: version } = err;
-        if (
-          isNat(version) &&
-          (lastVersion === undefined || version > lastVersion)
-        ) {
+        if (version > lastVersion) {
           // We don't expect another upgrade in between receiving
           // a disconnection and re-requesting an update, but must
           // nevertheless be prepared for that.
