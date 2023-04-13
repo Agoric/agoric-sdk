@@ -6,7 +6,7 @@
 // @ts-check
 import { CommanderError, InvalidArgumentError } from 'commander';
 // TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
-import { makeBidSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
+import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@agoric/store';
@@ -33,18 +33,9 @@ const bidInvitationShape = harden({
   callPipe: [['makeBidInvitation', M.any()]],
 });
 
-/**
- * Contract keywords.
- * "Currency" is scheduled to be renamed to something like Bid. (#7284)
- */
-export const KW = /** @type {const} */ {
-  Bid: 'Currency',
-  Collateral: 'Collateral',
-};
-
 /** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
 /** @typedef {import('@agoric/smart-wallet/src/smartWallet').TryExitOfferAction } TryExitOfferAction */
-/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').BidSpec}  BidSpec */
+/** @typedef {import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}  BidSpec */
 
 /**
  * Format amounts, prices etc. based on brand board Ids, displayInfo
@@ -110,7 +101,7 @@ const coerceBid = (offerStatus, agoricNames, warn) => {
     warn('mal-formed bid offerArgs', offerStatus.id, offerArgs);
     return null;
   }
-  const bidSpecShape = makeBidSpecShape(
+  const bidSpecShape = makeOfferSpecShape(
     // @ts-expect-error XXX AssetKind narrowing?
     agoricNames.brand.IST,
     collateralBrand,
@@ -488,8 +479,8 @@ For example:
 For example:
 
 $ inter bid list --from my-acct
-{"id":"bid-1679677228803","price":"9 IST/IbcATOM","give":{"${KW.Bid}":"50IST"},"want":"5IbcATOM"}
-{"id":"bid-1679677312341","discount":10,"give":{"${KW.Bid}":"200IST"},"want":"1IbcATOM"}
+{"id":"bid-1679677228803","price":"9 IST/IbcATOM","give":{"Bid":"50IST"},"want":"5IbcATOM"}
+{"id":"bid-1679677312341","discount":10,"give":{"Bid":"200IST"},"want":"1IbcATOM"}
 `,
     )
     .requiredOption(
