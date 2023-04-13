@@ -3,6 +3,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import './types-ambient.js';
 
+const { details: X } = assert;
 const sink = () => {};
 
 /**
@@ -14,6 +15,7 @@ const sink = () => {};
  * @returns {Promise<T>}
  */
 const reconnectAsNeeded = async thunk => {
+  let initialDisconnection;
   let lastVersion = -Infinity;
   // End synchronous prelude.
   await null;
@@ -24,6 +26,9 @@ const reconnectAsNeeded = async thunk => {
       return result;
     } catch (err) {
       if (isUpgradeDisconnection(err)) {
+        if (!initialDisconnection) {
+          initialDisconnection = err;
+        }
         const { incarnationNumber: version } = err;
         if (version > lastVersion) {
           // We don't expect another upgrade in between receiving
@@ -32,6 +37,12 @@ const reconnectAsNeeded = async thunk => {
           lastVersion = version;
           continue;
         }
+      }
+      if (initialDisconnection && initialDisconnection !== err) {
+        assert.note(
+          err,
+          X`Attempting to recover from disconnection: ${initialDisconnection}`,
+        );
       }
       throw err;
     }
