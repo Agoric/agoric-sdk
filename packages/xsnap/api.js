@@ -1,6 +1,8 @@
 /* eslint-disable max-classes-per-file */
 
-/** The version identifier for our meter type.
+/**
+ * The version identifier for our meter type.
+ *
  * TODO Bump this whenever there's a change to metering semantics.
  * Also, update golden master test/test-xs-perf.js to reflect new meter
  * version.
