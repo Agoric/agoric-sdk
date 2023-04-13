@@ -66,7 +66,7 @@ const makeDefaultTestContext = async t => {
 test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
-test.after(async t => {
+test.after.always(async t => {
   await E(t.context).shutdown();
 });
 
