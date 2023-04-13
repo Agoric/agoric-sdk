@@ -1,4 +1,5 @@
 import { E, Far } from '@endo/far';
+import { isObject } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import './types-ambient.js';
@@ -15,7 +16,7 @@ const sink = () => {};
  * @returns {Promise<T>}
  */
 const reconnectAsNeeded = async thunk => {
-  let initialDisconnection;
+  let disconnection;
   let lastVersion = -Infinity;
   // End synchronous prelude.
   await null;
@@ -26,8 +27,8 @@ const reconnectAsNeeded = async thunk => {
       return result;
     } catch (err) {
       if (isUpgradeDisconnection(err)) {
-        if (!initialDisconnection) {
-          initialDisconnection = err;
+        if (!disconnection) {
+          disconnection = err;
         }
         const { incarnationNumber: version } = err;
         if (version > lastVersion) {
@@ -38,11 +39,18 @@ const reconnectAsNeeded = async thunk => {
           continue;
         }
       }
-      if (initialDisconnection && initialDisconnection !== err) {
-        assert.note(
-          err,
-          X`Attempting to recover from disconnection: ${initialDisconnection}`,
-        );
+      // if `err` is an (Error) object, we can try to associate it with
+      // information about the disconnection that prompted the request
+      // for which it is a result.
+      if (isObject(err) && disconnection && disconnection !== err) {
+        try {
+          assert.note(
+            err,
+            X`Attempting to recover from disconnection: ${disconnection}`,
+          );
+        } catch (_err) {
+          // eslint-disable-next-line no-empty
+        }
       }
       throw err;
     }
