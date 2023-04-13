@@ -286,6 +286,12 @@ export const getNodeTestVaultsConfig = async (
  * For example, test accounts balances using separate wallets or test vault
  * factory metrics using separate collateral managers. (Or use test.serial)
  *
+ * The shutdown() function *must* be called after the test is
+ * complete, or else V8 will see the xsnap workers still running, and
+ * will never exit (leading to a timeout error). Use
+ * t.after.always(shutdown), because the normal t.after() hooks are
+ * not run if a test fails.
+ *
  * @param {import('ava').ExecutionContext} t
  * @param {string} bundleDir directory to write bundles and config to
  * @param {string} [specifier] bootstrap config specifier

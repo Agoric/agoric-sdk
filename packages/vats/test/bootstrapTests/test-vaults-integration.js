@@ -6,7 +6,6 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@agoric/assert';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { E } from '@endo/captp';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '../../tools/board-utils.js';
 import { makeSwingsetTestKit, makeWalletFactoryDriver } from './supports.js';
@@ -66,9 +65,7 @@ const makeDefaultTestContext = async t => {
 test.before(async t => {
   t.context = await makeDefaultTestContext(t);
 });
-test.after(async t => {
-  await E(t.context).shutdown();
-});
+test.after.always(t => t.context.shutdown());
 
 test('metrics path', async t => {
   const { EV } = t.context.runUtils;
