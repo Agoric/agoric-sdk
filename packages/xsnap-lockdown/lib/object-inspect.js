@@ -30,7 +30,8 @@ const mapSize = Object.getOwnPropertyDescriptor(Map.prototype, 'size').get;
 const mapForEach = Map.prototype.forEach;
 const setSize = Object.getOwnPropertyDescriptor(Set.prototype, 'size').get;
 const setForEach = Set.prototype.forEach;
-const weakRefExists = !!globalThis.WeakRef;
+const WeakRefPrototype =
+  typeof globalThis.WeakRef === 'function' ? globalThis.WeakRef.prototype : {};
 const booleanValueOf = Boolean.prototype.valueOf;
 const objectToString = Object.prototype.toString;
 const functionToString = Function.prototype.toString;
@@ -145,6 +146,11 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
     }
     return symToString.call(obj);
   }
+  if (typeof obj !== 'object') {
+    // Some new unknown type
+    return typeof obj;
+  }
+
   if (isArray(obj)) {
     if (obj.length === 0) {
       return '[]';
@@ -165,60 +171,72 @@ function inspect0(obj, opts = {}, depth = 0, circular = new Set()) {
     }
     return `{ [${String(obj)}] ${$join.call(parts, ', ')} }`;
   }
-  if (isMap(obj)) {
-    const mapParts = [];
-    mapForEach.call(obj, (value, key) => {
-      mapParts.push(`${inspect(key, obj, true)} => ${inspect(value, obj)}`);
-    });
-    return collectionOf('Map', mapSize.call(obj), mapParts, indent);
+
+  const objProto = gPO(obj);
+  switch (objProto) {
+    case Map.prototype: {
+      const mapParts = [];
+      mapForEach.call(obj, (value, key) => {
+        mapParts.push(`${inspect(key, obj, true)} => ${inspect(value, obj)}`);
+      });
+      return collectionOf('Map', mapSize.call(obj), mapParts, indent);
+    }
+    case Set.prototype: {
+      const setParts = [];
+      setForEach.call(obj, value => {
+        setParts.push(inspect(value, obj));
+      });
+      return collectionOf('Set', setSize.call(obj), setParts, indent);
+    }
+    case WeakMap.prototype: {
+      return weakContainerOf('WeakMap');
+    }
+    case WeakSet.prototype: {
+      return weakContainerOf('WeakSet');
+    }
+    case WeakRefPrototype: {
+      return weakContainerOf('WeakRef');
+    }
+    case BigInt.prototype: {
+      return markBoxed(inspect(bigIntValueOf.call(obj)));
+    }
+    default:
+    // Fall-through
   }
-  if (isSet(obj)) {
-    const setParts = [];
-    setForEach.call(obj, value => {
-      setParts.push(inspect(value, obj));
-    });
-    return collectionOf('Set', setSize.call(obj), setParts, indent);
-  }
-  if (isWeakMap(obj)) {
-    return weakContainerOf('WeakMap');
-  }
-  if (isWeakSet(obj)) {
-    return weakContainerOf('WeakSet');
-  }
-  if (isWeakRef(obj)) {
-    return weakContainerOf('WeakRef');
-  }
-  if (isNumber(obj)) {
-    return markBoxed(inspect(Number(obj)));
-  }
-  if (isBigInt(obj)) {
-    return markBoxed(inspect(bigIntValueOf.call(obj)));
-  }
-  if (isBoolean(obj)) {
-    return markBoxed(booleanValueOf.call(obj));
-  }
-  if (isString(obj)) {
-    return markBoxed(inspect(String(obj)));
-  }
-  if (isDate(obj)) {
-    return dateToISOString.call(obj);
-  }
-  if (isRegExp(obj)) {
-    return String(obj);
+
+  if (!(toStringTag in obj)) {
+    switch (objProto) {
+      case Number.prototype: {
+        return markBoxed(inspect(Number(obj)));
+      }
+      case Boolean.prototype: {
+        return markBoxed(booleanValueOf.call(obj));
+      }
+      case String.prototype: {
+        return markBoxed(inspect(String(obj)));
+      }
+      case Date.prototype: {
+        return dateToISOString.call(obj);
+      }
+      case RegExp.prototype: {
+        return String(obj);
+      }
+      default:
+      // Fall-through
+    }
   }
 
   const elems = arrObjKeys(obj, inspect);
-  const isPlainObject = gPO
-    ? gPO(obj) === Object.prototype
-    : obj instanceof Object || obj.constructor === Object;
-  const protoTag = obj instanceof Object ? '' : 'null prototype';
+  const isPlainObject = objProto === Object.prototype;
+  const protoTag =
+    isPlainObject || obj instanceof Object ? '' : 'null prototype';
   const stringTag =
     !isPlainObject && toStringTag && Object(obj) === obj && toStringTag in obj
       ? $slice.call(toStr(obj), 8, -1)
       : protoTag
       ? 'Object'
       : '';
-  const protoConstructor = gPO(obj)?.constructor;
+  const protoConstructor = objProto.constructor;
   const constructorTag =
     isPlainObject || typeof protoConstructor !== 'function'
       ? ''
@@ -253,44 +271,15 @@ function isArray(obj) {
     (!toStringTag || !(typeof obj === 'object' && toStringTag in obj))
   );
 }
-function isDate(obj) {
-  return (
-    obj instanceof Date && !(typeof obj === 'object' && toStringTag in obj)
-  );
-}
-function isRegExp(obj) {
-  return (
-    obj instanceof RegExp && !(typeof obj === 'object' && toStringTag in obj)
-  );
-}
 function isError(obj) {
   return (
     obj instanceof Error && !(typeof obj === 'object' && toStringTag in obj)
-  );
-}
-function isString(obj) {
-  return (
-    String(obj) === obj && !(typeof obj === 'object' && toStringTag in obj)
-  );
-}
-function isNumber(obj) {
-  return (
-    Number(obj) === obj && !(typeof obj === 'object' && toStringTag in obj)
-  );
-}
-function isBoolean(obj) {
-  return (
-    Boolean(obj) === obj && !(typeof obj === 'object' && toStringTag in obj)
   );
 }
 
 // Symbol and BigInt do have Symbol.toStringTag by spec, so that can't be used to eliminate false positives
 function isSymbol(obj) {
   return typeof obj === 'symbol';
-}
-
-function isBigInt(obj) {
-  return typeof obj === 'bigint';
 }
 
 function has(obj, key) {
@@ -322,41 +311,6 @@ function indexOf(xs, x) {
     }
   }
   return -1;
-}
-
-function isMap(x) {
-  if (!x || typeof x !== 'object') {
-    return false;
-  }
-  return x instanceof Map;
-}
-
-function isWeakMap(x) {
-  if (!x || typeof x !== 'object') {
-    return false;
-  }
-  return x instanceof WeakMap;
-}
-
-function isWeakRef(x) {
-  if (!weakRefExists || !x || typeof x !== 'object') {
-    return false;
-  }
-  return x instanceof globalThis.WeakRef;
-}
-
-function isSet(x) {
-  if (!x || typeof x !== 'object') {
-    return false;
-  }
-  return x instanceof Set;
-}
-
-function isWeakSet(x) {
-  if (!x || typeof x !== 'object') {
-    return false;
-  }
-  return x instanceof WeakSet;
 }
 
 function inspectString(str, opts) {
