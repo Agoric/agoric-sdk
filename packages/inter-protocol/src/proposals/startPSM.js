@@ -133,6 +133,7 @@ export const startPSM = async (
 
   const marshaller = await E(board).getPublishingMarshaller();
 
+  const instanceKey = `psm-${Stable.symbol}-${keyword}`;
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
@@ -140,6 +141,7 @@ export const startPSM = async (
       governed: {
         terms,
         issuerKeywordRecord: { [keyword]: anchorIssuer },
+        label: instanceKey,
       },
     }),
   );
@@ -156,6 +158,7 @@ export const startPSM = async (
         storageNode,
       },
     }),
+    `${instanceKey}.governor`,
   );
 
   const [psm, psmCreatorFacet, psmAdminFacet] = await Promise.all([
@@ -181,7 +184,6 @@ export const startPSM = async (
   const psmKitMap = await psmKit;
 
   psmKitMap.init(anchorBrand, newpsmKit);
-  const instanceKey = `psm-${Stable.symbol}-${keyword}`;
   const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
 
   await Promise.all([
@@ -252,7 +254,7 @@ export const makeAnchorAsset = async (
   /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
   // @ts-expect-error cast
   const { creatorFacet: mint, publicFacet: issuerP } = E.get(
-    E(zoe).startInstance(mintHolder, {}, terms),
+    E(zoe).startInstance(mintHolder, {}, terms, undefined, keyword),
   );
   const issuer = await issuerP; // identity of issuers is important
 
@@ -305,7 +307,7 @@ export const installGovAndPSMContracts = async ({
       econCommitteeCharter,
     }).map(async ([name, producer]) => {
       const bundleID = await E(vatAdminSvc).getBundleIDByName(name);
-      const installation = await E(zoe).installBundleID(bundleID);
+      const installation = await E(zoe).installBundleID(bundleID, name);
 
       producer.resolve(installation);
     }),

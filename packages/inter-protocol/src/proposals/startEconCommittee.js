@@ -67,6 +67,7 @@ export const startEconomicCommittee = async (
       storageNode,
       marshaller,
     },
+    'economicCommittee',
   );
   const { creatorFacet, instance } = startResult;
 

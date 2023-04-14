@@ -65,7 +65,13 @@ export const startEconCharter = async ({
   );
 
   /** @type {Promise<import('./econ-behaviors').EconCharterStartResult>} */
-  const startResult = E(zoe).startInstance(charterInstall, undefined, terms);
+  const startResult = E(zoe).startInstance(
+    charterInstall,
+    undefined,
+    terms,
+    undefined,
+    'econCommitteeCharter',
+  );
   instanceP.resolve(E.get(startResult).instance);
   econCharterKit.resolve(startResult);
 };

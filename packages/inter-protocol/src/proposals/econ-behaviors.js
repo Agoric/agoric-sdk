@@ -145,6 +145,7 @@ export const setupReserve = async ({
       governed: {
         terms: reserveTerms,
         issuerKeywordRecord: { Central: centralIssuer },
+        label: 'reserve',
       },
     }),
   );
@@ -162,6 +163,7 @@ export const setupReserve = async ({
         storageNode,
       },
     },
+    'reserve.governor',
   );
 
   const [creatorFacet, publicFacet, instance] = await Promise.all([
@@ -280,6 +282,7 @@ export const startVaultFactory = async (
       governed: {
         terms: vaultFactoryTerms,
         issuerKeywordRecord: {},
+        label: 'vaultFactory',
       },
     }),
   );
@@ -302,6 +305,7 @@ export const startVaultFactory = async (
         storageNode,
       },
     }),
+    'vaultFactory.governor',
   );
 
   const [vaultFactoryInstance, vaultFactoryCreator, publicFacet] =
@@ -417,6 +421,8 @@ export const startRewardDistributor = async ({
     feeDistributor,
     { Fee: centralIssuer },
     feeDistributorTerms,
+    undefined,
+    'feeDistributor',
   );
   await E(instanceKit.creatorFacet).setDestinations({
     RewardDistributor:
@@ -569,6 +575,7 @@ export const startAuctioneer = async (
         issuerKeywordRecord: { Currency: runIssuer },
         storageNode,
         marshaller,
+        label: 'auctioneer',
       },
     }),
   );
@@ -586,6 +593,7 @@ export const startAuctioneer = async (
         marshaller,
       },
     }),
+    'auctioneer.governor',
   );
 
   const [governedInstance, governedCreatorFacet, governedPublicFacet] =
@@ -710,6 +718,7 @@ export const startStakeFactory = async (
       governed: {
         terms: stakeFactoryTerms,
         issuerKeywordRecord: { Stake: bldIssuer },
+        label: 'stakeFactory',
       },
     }),
   );
@@ -728,6 +737,7 @@ export const startStakeFactory = async (
         marshaller,
       },
     },
+    'stakeFactory.governor',
   );
 
   const [governedInstance, governedCreatorFacet, governedPublicFacet] =
