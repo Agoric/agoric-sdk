@@ -1,9 +1,9 @@
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { assert, details as X, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, isSetValue } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import { Far } from '@endo/marshal';
 
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
@@ -18,7 +18,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
   let secondPriceAuctionSeatP;
 
-  return Far('bobstuff', {
+  return Far('build', {
     doAutomaticRefund: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
@@ -39,8 +39,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // 1. Bob escrows his offer
       const bobProposal = harden({
-        want: { Contribution1: moola(15) },
-        give: { Contribution2: simoleans(17) },
+        want: { Contribution1: moola(15n) },
+        give: { Contribution2: simoleans(17n) },
         exit: { onDemand: null },
       });
 
@@ -76,8 +76,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const issuerKeywordRecord = await E(zoe).getIssuers(instance);
 
       const bobIntendedProposal = harden({
-        want: { UnderlyingAsset: moola(3) },
-        give: { StrikePrice: simoleans(7) },
+        want: { UnderlyingAsset: moola(3n) },
+        give: { StrikePrice: simoleans(7n) },
       });
 
       // Bob checks that the invitation is for the right covered call
@@ -91,11 +91,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       assert(
         AmountMath.isEqual(
           customDetails.underlyingAssets.UnderlyingAsset,
-          moola(3),
+          moola(3n),
         ),
       );
       assert(
-        AmountMath.isEqual(customDetails.strikePrice.StrikePrice, simoleans(7)),
+        AmountMath.isEqual(
+          customDetails.strikePrice.StrikePrice,
+          simoleans(7n),
+        ),
       );
       customDetails.expirationDate === 1n || Fail`wrong expirationDate`;
       assert(customDetails.timeAuthority === timer, 'wrong timer');
@@ -150,10 +153,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       optionValue[0].description === 'exerciseOption' || Fail`wrong invitation`;
       AmountMath.isEqual(
         customDetails.underlyingAssets.UnderlyingAsset,
-        moola(3),
+        moola(3n),
       ) || Fail`wrong underlying asset`;
-      AmountMath.isEqual(customDetails.strikePrice.StrikePrice, simoleans(7)) ||
-        Fail`wrong strike price`;
+      AmountMath.isEqual(
+        customDetails.strikePrice.StrikePrice,
+        simoleans(7n),
+      ) || Fail`wrong strike price`;
       customDetails.expirationDate === 100n || Fail`wrong expiration date`;
       customDetails.timeAuthority === timer || Fail`wrong timer`;
       UnderlyingAsset === moolaIssuer ||
@@ -218,14 +223,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
         issuerKeywordRecord,
       ) || Fail`issuerKeywordRecord was not as expected`;
-      assert(keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3)));
       assert(
-        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1)),
+        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
+      );
+      assert(
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
       );
 
       const proposal = harden({
-        want: { Asset: moola(1) },
-        give: { Bid: simoleans(11) },
+        want: { Asset: moola(1n) },
+        give: { Bid: simoleans(11n) },
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
 
@@ -265,14 +272,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         ),
         X`issuers were not as expected`,
       );
-      keyEQ(invitationValue[0].customDetails?.asset, moola(3)) ||
+      keyEQ(invitationValue[0].customDetails?.asset, moola(3n)) ||
         Fail`Alice made a different offer than expected`;
-      keyEQ(invitationValue[0].customDetails?.price, simoleans(7)) ||
+      keyEQ(invitationValue[0].customDetails?.price, simoleans(7n)) ||
         Fail`Alice made a different offer than expected`;
 
       const proposal = harden({
-        want: { Asset: moola(3) },
-        give: { Price: simoleans(7) },
+        want: { Asset: moola(3n) },
+        give: { Price: simoleans(7n) },
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
 
@@ -309,8 +316,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         Fail`The second issuer should be the simolean issuer`;
 
       const bobBuyOrderProposal = harden({
-        want: { Asset: moola(3) },
-        give: { Price: simoleans(7) },
+        want: { Asset: moola(3n) },
+        give: { Price: simoleans(7n) },
         exit: { onDemand: null },
       });
       const paymentKeywordRecord = { Price: simoleanPayment };
@@ -350,7 +357,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         give: { Price: simoleans(s) },
         exit: { onDemand: null },
       });
-      if (m === 3 && s === 7) {
+      if (m === 3n && s === 7n) {
         await E(simoleanPurseP).deposit(simoleanPayment);
       }
       const simoleanPayment2 = await E(simoleanPurseP).withdraw(simoleans(s));
@@ -398,14 +405,14 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // bob checks how many simoleans he can get for 3 moola
       const simoleanAmounts = await E(publicFacet).getInputPrice(
-        moola(3),
-        simoleans(0).brand,
+        moola(3n),
+        simoleans(0n).brand,
       );
       log(`simoleanAmounts `, simoleanAmounts);
 
       const moolaForSimProposal = harden({
-        give: { In: moola(3) },
-        want: { Out: simoleans(1) },
+        give: { In: moola(3n) },
+        want: { Out: simoleans(1n) },
       });
 
       const moolaForSimPayments = harden({ In: moolaPayment });
@@ -425,24 +432,24 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Bob looks up how much moola he can get for 3 simoleans. It's 5
       const moolaProceeds = await E(publicFacet).getInputPrice(
-        simoleans(3),
+        simoleans(3n),
         moola(0n).brand,
       );
       log(`moola proceeds `, moolaProceeds);
 
       // Bob makes another offer and swaps
-      const bobSimsForMoolaProposa2 = harden({
-        want: { Out: moola(5) },
-        give: { In: simoleans(3) },
+      const bobSimsForMoolaProposal2 = harden({
+        want: { Out: moola(5n) },
+        give: { In: simoleans(3n) },
       });
       await E(simoleanPurseP).deposit(simoleanPayment);
-      const bobSimPayment2 = await E(simoleanPurseP).withdraw(simoleans(3));
+      const bobSimPayment2 = await E(simoleanPurseP).withdraw(simoleans(3n));
       const simsForMoolaPayments2 = harden({ In: bobSimPayment2 });
       const invitation2 = E(publicFacet).makeSwapInInvitation();
 
       const swapSeat2 = await E(zoe).offer(
         invitation2,
-        bobSimsForMoolaProposa2,
+        bobSimsForMoolaProposal2,
         simsForMoolaPayments2,
       );
 
@@ -459,8 +466,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Bob looks up how much simoleans he'd have to pay for 3 moola. It's 6
       const simRequired = await E(publicFacet).getOutputPrice(
-        moola(3),
-        simoleans(0).brand,
+        moola(3n),
+        simoleans(0n).brand,
       );
       log(`simoleans required `, simRequired);
     },
@@ -468,17 +475,21 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
     doBuyTickets: async (instance, invitation) => {
       const publicFacet = await E(zoe).getPublicFacet(instance);
       const terms = await E(zoe).getTerms(instance);
-      const ticketIssuer = E(publicFacet).getItemsIssuer();
+      const ticketIssuer = await E(publicFacet).getItemsIssuer();
       const ticketBrand = await E(ticketIssuer).getBrand();
 
       const availableTickets = await E(publicFacet).getAvailableItems();
       log('availableTickets: ', availableTickets);
       // find the value corresponding to ticket #1
+      assert(isSetValue(availableTickets.value));
       const ticket1Value = availableTickets.value.find(
         ticket => ticket.number === 1,
       );
       // make the corresponding amount
-      const ticket1Amount = AmountMath.make(ticketBrand, [ticket1Value]);
+      const ticket1Amount = AmountMath.make(
+        ticketBrand,
+        harden([ticket1Value]),
+      );
       const proposal = harden({
         give: { Money: terms.pricePerItem },
         want: { Items: ticket1Amount },
@@ -507,12 +518,12 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
       // Bob can use whatever keywords he wants
       const proposal = harden({
-        give: { Whatever1: simoleans(4) },
-        want: { Whatever2: moola(3) },
+        give: { Whatever1: simoleans(4n) },
+        want: { Whatever2: moola(3n) },
         exit: { onDemand: null },
       });
       await E(simoleanPurseP).deposit(simoleanPayment);
-      const simoleanPayment1 = await E(simoleanPurseP).withdraw(simoleans(4));
+      const simoleanPayment1 = await E(simoleanPurseP).withdraw(simoleans(4n));
 
       const seat = await E(zoe).offer(invitation, proposal, {
         Whatever1: simoleanPayment1,

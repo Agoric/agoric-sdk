@@ -10,7 +10,7 @@ const CONTRACT_FILES = [
   'autoswap',
   'coveredCall',
   {
-    contractPath: 'auction/secondPriceAuction',
+    contractPath: 'auction/index',
     bundleName: 'secondPriceAuction',
   },
   'atomicSwap',
@@ -31,7 +31,7 @@ const generateBundlesP = Promise.all(
       ({ bundleName, contractPath } = settings);
     }
     const sourceUrl = await importMetaResolve(
-      `@agoric/zoe/src/contracts/${contractPath}`,
+      `@agoric/zoe/src/contracts/${contractPath}.js`,
       import.meta.url,
     );
     const sourcePath = new URL(sourceUrl).pathname;
