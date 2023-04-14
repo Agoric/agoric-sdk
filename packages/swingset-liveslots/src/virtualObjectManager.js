@@ -1,3 +1,4 @@
+/* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
 import { assert, Fail } from '@agoric/assert';
@@ -11,10 +12,26 @@ import { assessFacetiousness } from './facetiousness.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
+const { defineProperty } = Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
 
 // import { kdebug } from './kdebug.js';
+
+// TODO Use environment-options.js currently in ses/src after factoring it out
+// to a new package.
+const env = (globalThis.process || {}).env || {};
+
+// Turn on to give each exo instance its own toStringTag value which exposes
+// the SwingSet vref.
+//
+// CONFIDENTIALITY HAZARD NOTE: exposing vrefs to userspace reveals
+// confidential object-creation activity, so this must not be something
+// that unprivileged vat code (including unprivileged contracts) can do
+// for themselves.
+const LABEL_INSTANCES = (env.DEBUG || '')
+  .split(':')
+  .includes('label-instances');
 
 // This file implements the "Virtual Objects" system, currently documented in
 // {@link https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/virtual-objects.md})
@@ -235,21 +252,46 @@ function checkAndUpdateFacetiousness(tag, desc, facetNames) {
 // We only need to do this for multi-facet Kinds; single-facet kinds don't
 // have any extra objects for userspace to work with.
 
-function makeRepresentative(proto) {
+const makeRepresentative = (proto, baseRef) => {
   const self = { __proto__: proto };
+  if (LABEL_INSTANCES) {
+    // This exposes the vref to userspace, which is a confidentiality hazard
+    // as noted in the CONFIDENTIALITY HAZARD NOTE above.
+    //
+    // Aside from that hazard, the frozen string-valued data property is
+    // safe to expose to userspace without enabling a GC sensor.
+    // Strings lack identity and cannot be used as keys in WeakMaps.
+    // If the property were a accessor property, we'd need to
+    // ```js
+    //   linkToCohort.set(self, getterFunc);
+    //    unweakable.add(getterFunc);
+    // ```
+    defineProperty(self, Symbol.toStringTag, {
+      value: `${proto[Symbol.toStringTag]}#${baseRef}`,
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    });
+  }
   return harden(self);
-}
+};
 
-function makeFacets(facetNames, proto, linkToCohort, unweakable) {
+const makeFacets = (
+  facetNames,
+  protoKit,
+  linkToCohort,
+  unweakable,
+  baseRef,
+) => {
   const facets = {}; // aka context.facets
   for (const name of facetNames) {
-    const facet = { __proto__: proto[name] };
+    const facet = makeRepresentative(protoKit[name], baseRef);
     facets[name] = facet;
     linkToCohort.set(facet, facets);
   }
   unweakable.add(facets);
   return harden(facets);
-}
+};
 
 function insistDurableCapdata(vrm, what, capdata, valueFor) {
   capdata.slots.forEach((vref, idx) => {
@@ -882,11 +924,11 @@ export function makeVirtualObjectManager(
     // this builds new Representatives, both when creating a new instance and
     // for reanimating an existing one when the old rep gets GCed
 
-    function reanimateVO(_baseRef) {
+    function reanimateVO(baseRef) {
       if (multifaceted) {
-        return makeFacets(facetNames, proto, linkToCohort, unweakable);
+        return makeFacets(facetNames, proto, linkToCohort, unweakable, baseRef);
       } else {
-        return makeRepresentative(proto);
+        return makeRepresentative(proto, baseRef);
       }
     }
 
@@ -946,9 +988,9 @@ export function makeVirtualObjectManager(
       // make the initial representative or cohort
       let val;
       if (multifaceted) {
-        val = makeFacets(facetNames, proto, linkToCohort, unweakable);
+        val = makeFacets(facetNames, proto, linkToCohort, unweakable, baseRef);
       } else {
-        val = makeRepresentative(proto);
+        val = makeRepresentative(proto, baseRef);
       }
       registerValue(baseRef, val, multifaceted);
       finish?.(contextCache.get(baseRef));
