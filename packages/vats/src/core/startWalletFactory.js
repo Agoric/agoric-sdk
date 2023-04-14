@@ -31,6 +31,7 @@ const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
  *   issuerKeywordRecord?: IssuerKeywordRecord,
  *   terms: Record<string, unknown>,
  *   privateArgs: any, // TODO: connect with Installation type
+ *   label: string,
  * }} zoeArgs
  * @param {{
  *   governedParams: Record<string, unknown>,
@@ -46,6 +47,7 @@ const startGovernedInstance = async (
     issuerKeywordRecord,
     terms,
     privateArgs,
+    label,
   },
   { governedParams, timer, contractGovernor, economicCommitteeCreatorFacet },
 ) => {
@@ -74,6 +76,7 @@ const startGovernedInstance = async (
           },
         },
         issuerKeywordRecord,
+        label,
       },
     }),
   );
@@ -88,6 +91,7 @@ const startGovernedInstance = async (
         initialPoserInvitation,
       },
     }),
+    `${label}-governor`,
   );
   const [instance, creatorFacet, adminFacet] = await Promise.all([
     E(governorFacets.creatorFacet).getInstance(),
@@ -206,6 +210,7 @@ export const startWalletFactory = async (
       storageNode: walletStorageNode,
       walletBridgeManager,
     },
+    'walletFactory',
   );
   walletFactoryStartResult.resolve(wfFacets);
   instanceProduce.walletFactory.resolve(wfFacets.instance);
@@ -220,6 +225,7 @@ export const startWalletFactory = async (
         storageNode: poolStorageNode,
         marshaller: E(board).getPublishingMarshaller(),
       }),
+      label: 'provisionPool',
     },
     {
       governedParams: {

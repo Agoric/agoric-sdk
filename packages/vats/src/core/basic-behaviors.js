@@ -271,7 +271,7 @@ export const installBootContracts = async ({
   })) {
     const idP = E(vatAdminSvc).getBundleIDByName(name);
     const installationP = idP.then(bundleID =>
-      E(zoe).installBundleID(bundleID),
+      E(zoe).installBundleID(bundleID, name),
     );
     producer.resolve(installationP);
   }
@@ -308,6 +308,7 @@ export const mintInitialSupply = async ({
     {},
     { bootstrapPaymentValue },
     { feeMintAccess },
+    'centralSupply',
   );
   const payment = E(creatorFacet).getBootstrapPayment();
   // TODO: shut down the centralSupply contract, now that we have the payment?
@@ -353,6 +354,8 @@ export const addBankAssets = async ({
         assetKind: Stake.assetKind,
         displayInfo: Stake.displayInfo,
       }),
+      undefined,
+      Stake.symbol,
     ),
   );
   const bldBrand = await E(bldIssuer).getBrand();
