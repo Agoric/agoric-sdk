@@ -95,10 +95,9 @@ const dynamicConfig = async (t, params) => {
 
 /**
  * @param {import('ava').ExecutionContext<Awaited<ReturnType<makeTestContext>>>} t
- * @param {{}} [customTerms]
  * @param {any} [params]
  */
-const makeAuctionDriver = async (t, customTerms, params = defaultParams) => {
+const makeAuctionDriver = async (t, params = defaultParams) => {
   const { zoe, installs, currency } = t.context;
   const { terms, fakeInvitationPayment, registry } = await dynamicConfig(
     t,
@@ -1111,7 +1110,7 @@ test.serial('multiple collaterals', async t => {
   const params = defaultParams;
   params.LowestRate = 2500n;
 
-  const driver = await makeAuctionDriver(t, {}, params);
+  const driver = await makeAuctionDriver(t, params);
   const asset = withAmountUtils(makeIssuerKit('Asset'));
 
   const collatLiqSeat = await driver.setupCollateralAuction(
