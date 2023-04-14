@@ -172,6 +172,19 @@ test(`E(zoe).startInstance - bad issuer, makeEmptyPurse throws`, async t => {
   );
 });
 
+test(`E(zoe).startInstance - unexpected properties`, async t => {
+  const { zoe } = setup();
+
+  const contractPath = `${dirname}/unexpectedPropertiesContract.js`;
+  const bundle = await bundleSource(contractPath);
+  const installation = await E(zoe).install(bundle);
+
+  await t.throwsAsync(() => E(zoe).startInstance(installation), {
+    message:
+      'contract "start" returned unrecognized properties ["unexpectedProperty"]',
+  });
+});
+
 test(`E(zoe).offer`, async t => {
   const { zoe, zcf } = await setupZCFTest();
   const invitation = zcf.makeInvitation(() => 'result', 'invitation');

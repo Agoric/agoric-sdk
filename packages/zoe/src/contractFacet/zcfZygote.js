@@ -379,7 +379,14 @@ export const makeZCFZygote = async (
           creatorFacet = undefined,
           publicFacet = undefined,
           creatorInvitation = undefined,
+          ...unexpected
         }) => {
+          const unexpectedKeys = Object.keys(unexpected);
+          unexpectedKeys.length === 0 ||
+            Fail`contract ${
+              prepare ? 'prepare' : 'start'
+            } returned unrecognized properties ${unexpectedKeys}`;
+
           const areDurable = objectMap(
             { creatorFacet, publicFacet, creatorInvitation },
             canBeDurable,
