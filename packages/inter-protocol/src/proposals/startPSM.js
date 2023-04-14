@@ -248,6 +248,7 @@ export const makeAnchorAsset = async (
       },
     }),
   );
+  // TODO: save adminFacet of this contract, like all others.
   /** @type {{ creatorFacet: ERef<Mint<'nat'>>, publicFacet: ERef<Issuer<'nat'>> }} */
   // @ts-expect-error cast
   const { creatorFacet: mint, publicFacet: issuerP } = E.get(

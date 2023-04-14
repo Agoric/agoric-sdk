@@ -52,6 +52,7 @@ const BASIS_POINTS = 10_000n;
  * @typedef { WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace
  * } EconomyBootstrapPowers
  * @typedef {PromiseSpaceOf<{
+ *   economicCommitteeKit: CommitteeStartResult,
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet,
  *   feeDistributorKit: {
  *     creatorFacet: import('../feeDistributor.js').FeeDistributorCreatorFacet,
@@ -86,6 +87,7 @@ const BASIS_POINTS = 10_000n;
  */
 
 /** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('../econCommitteeCharter').start>} EconCharterStartResult */
+/** @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<import('@agoric/governance/src/committee').start>} CommitteeStartResult */
 
 /**
  * @file A collection of productions, each of which declares inputs and outputs.
