@@ -67,52 +67,56 @@ export const auctioneerParamTypes = harden({
 });
 
 /**
- * @param {object} initial
- * @param {Amount<'set'>} initial.electorateInvitationAmount
- * @param {RelativeTime} initial.startFreq
- * @param {RelativeTime} initial.clockStep
- * @param {bigint} initial.startingRate
- * @param {bigint} initial.lowestRate
- * @param {bigint} initial.discountStep
- * @param {RelativeTime} initial.auctionStartDelay
- * @param {RelativeTime} initial.priceLockPeriod
- * @param {import('@agoric/time/src/types').TimerBrand} initial.timerBrand
+ * @typedef {object} AuctionParams
+ * @property {Amount<'set'>} ElectorateInvitationAmount
+ * @property {RelativeTime} StartFreq
+ * @property {RelativeTime} ClockStep
+ * @property {bigint} StartingRate
+ * @property {bigint} LowestRate
+ * @property {bigint} DiscountStep
+ * @property {RelativeTime} AuctionStartDelay
+ * @property {RelativeTime} PriceLockPeriod
+ * @property {import('@agoric/time/src/types').TimerBrand} TimerBrand
+ */
+
+/**
+ * @param {AuctionParams} initial
  */
 export const makeAuctioneerParams = ({
-  electorateInvitationAmount,
-  startFreq,
-  clockStep,
-  lowestRate,
-  startingRate,
-  discountStep,
-  auctionStartDelay,
-  priceLockPeriod,
-  timerBrand,
+  ElectorateInvitationAmount,
+  StartFreq,
+  ClockStep,
+  LowestRate,
+  StartingRate,
+  DiscountStep,
+  AuctionStartDelay,
+  PriceLockPeriod,
+  TimerBrand,
 }) => {
   return harden({
     [CONTRACT_ELECTORATE]: {
       type: ParamTypes.INVITATION,
-      value: electorateInvitationAmount,
+      value: ElectorateInvitationAmount,
     },
     [START_FREQUENCY]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(startFreq, timerBrand),
+      value: TimeMath.toRel(StartFreq, TimerBrand),
     },
     [CLOCK_STEP]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(clockStep, timerBrand),
+      value: TimeMath.toRel(ClockStep, TimerBrand),
     },
     [AUCTION_START_DELAY]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(auctionStartDelay, timerBrand),
+      value: TimeMath.toRel(AuctionStartDelay, TimerBrand),
     },
     [PRICE_LOCK_PERIOD]: {
       type: ParamTypes.RELATIVE_TIME,
-      value: TimeMath.toRel(priceLockPeriod, timerBrand),
+      value: TimeMath.toRel(PriceLockPeriod, TimerBrand),
     },
-    [STARTING_RATE_BP]: { type: ParamTypes.NAT, value: startingRate },
-    [LOWEST_RATE_BP]: { type: ParamTypes.NAT, value: lowestRate },
-    [DISCOUNT_STEP_BP]: { type: ParamTypes.NAT, value: discountStep },
+    [STARTING_RATE_BP]: { type: ParamTypes.NAT, value: StartingRate },
+    [LOWEST_RATE_BP]: { type: ParamTypes.NAT, value: LowestRate },
+    [DISCOUNT_STEP_BP]: { type: ParamTypes.NAT, value: DiscountStep },
   });
 };
 harden(makeAuctioneerParams);
@@ -120,16 +124,7 @@ harden(makeAuctioneerParams);
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZoeService} zoe
- * @param {object} initial
- * @param {Amount} initial.electorateInvitationAmount
- * @param {RelativeTime} initial.startFreq
- * @param {RelativeTime} initial.clockStep
- * @param {bigint} initial.startingRate
- * @param {bigint} initial.lowestRate
- * @param {bigint} initial.discountStep
- * @param {RelativeTime} initial.auctionStartDelay
- * @param {RelativeTime} initial.priceLockPeriod
- * @param {import('@agoric/time/src/types').TimerBrand} initial.timerBrand
+ * @param {AuctionParams} initial
  */
 export const makeAuctioneerParamManager = (publisherKit, zoe, initial) => {
   return makeParamManager(
@@ -160,51 +155,21 @@ harden(makeAuctioneerParamManager);
 
 /**
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
- * @param {{
- *   electorateInvitationAmount: Amount<'set'>,
- *   priceAuthority: ERef<PriceAuthority>,
- *   timer: ERef<import('@agoric/time/src/types').TimerService>,
- *   startFreq: RelativeTime,
- *   clockStep: RelativeTime,
- *   discountStep: bigint,
- *   startingRate: bigint,
- *   lowestRate: bigint,
- *   auctionStartDelay: RelativeTime,
- *   priceLockPeriod: RelativeTime,
- *   timerBrand: import('@agoric/time/src/types').TimerBrand,
- * }} opts
+ * @param {ERef<Timer>} timer
+ * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {AuctionParams} params
  */
 export const makeGovernedTerms = (
   { storageNode: _storageNode, marshaller: _marshaller },
-  {
-    electorateInvitationAmount,
-    priceAuthority,
-    timer,
-    startFreq,
-    clockStep,
-    lowestRate,
-    startingRate,
-    discountStep,
-    auctionStartDelay,
-    priceLockPeriod,
-    timerBrand,
-  },
+  timer,
+  priceAuthority,
+  params,
 ) => {
   // XXX  use storageNode and Marshaller
   return harden({
     priceAuthority,
     timerService: timer,
-    governedParams: makeAuctioneerParams({
-      electorateInvitationAmount,
-      startFreq,
-      clockStep,
-      startingRate,
-      lowestRate,
-      discountStep,
-      auctionStartDelay,
-      priceLockPeriod,
-      timerBrand,
-    }),
+    governedParams: makeAuctioneerParams(params),
   });
 };
 harden(makeGovernedTerms);

@@ -6,6 +6,8 @@ import { TimeMath } from '@agoric/time';
 import { prepareMockRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
+import { objectMap } from '@agoric/internal';
+
 import {
   makeAuctioneerParamManager,
   makeAuctioneerParams,
@@ -42,16 +44,16 @@ test('schedule start to finish', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    auctionStartDelay: 1n,
-    startFreq: 10n,
-    priceLockPeriod: 5n,
+    AuctionStartDelay: 1n,
+    StartFreq: 10n,
+    PriceLockPeriod: 5n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   /** @type {bigint} */
   let now = await timer.advanceTo(127n);
@@ -61,7 +63,7 @@ test('schedule start to finish', async t => {
     // @ts-expect-error test fakes
     { publisher, subscriber: null },
     zoe,
-    params2,
+    paramValues,
   );
 
   const scheduler = await makeScheduler(
@@ -248,15 +250,15 @@ test('lowest >= starting', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    lowestRate: 110n,
-    startingRate: 105n,
+    LowestRate: 110n,
+    StartingRate: 105n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
@@ -265,7 +267,7 @@ test('lowest >= starting', async t => {
     // @ts-expect-error test fakes
     { publisher, subscriber: null },
     zoe,
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -297,25 +299,24 @@ test('zero time for auction', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    startFreq: 2n,
-    clockStep: 3n,
-    auctionStartDelay: 1n,
-    priceLockPeriod: 1n,
+    StartFreq: 2n,
+    ClockStep: 3n,
+    AuctionStartDelay: 1n,
+    PriceLockPeriod: 1n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -350,22 +351,21 @@ test('discountStep 0', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    discountStep: 0n,
+    DiscountStep: 0n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -397,23 +397,22 @@ test('discountStep larger than starting rate', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    startingRate: 10100n,
-    discountStep: 10500n,
+    StartingRate: 10100n,
+    DiscountStep: 10500n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -445,22 +444,21 @@ test('start Freq 0', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    startFreq: 0n,
+    StartFreq: 0n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -492,23 +490,22 @@ test('delay > freq', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    auctionStartDelay: 40n,
-    startFreq: 20n,
+    AuctionStartDelay: 40n,
+    StartFreq: 20n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -540,24 +537,23 @@ test('lockPeriod > freq', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   defaultParams = {
     ...defaultParams,
-    priceLockPeriod: 7200n,
-    startFreq: 3600n,
-    auctionStartDelay: 500n,
+    PriceLockPeriod: 7200n,
+    StartFreq: 3600n,
+    AuctionStartDelay: 500n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   await t.throwsAsync(
@@ -594,28 +590,27 @@ test('duration = freq', async t => {
   // 1 hour. Instead, cut the auction short.
   defaultParams = {
     ...defaultParams,
-    priceLockPeriod: 20n,
-    startFreq: 360n,
-    auctionStartDelay: 5n,
-    clockStep: 60n,
-    startingRate: 100n,
-    lowestRate: 40n,
-    discountStep: 10n,
+    PriceLockPeriod: 20n,
+    StartFreq: 360n,
+    AuctionStartDelay: 5n,
+    ClockStep: 60n,
+    StartingRate: 100n,
+    LowestRate: 40n,
+    DiscountStep: 10n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
 
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   const scheduler = await makeScheduler(
@@ -662,6 +657,11 @@ test('change Schedule', async t => {
   const timer = buildManualTimer();
   const timerBrand = await timer.getTimerBrand();
 
+  const startFreq = 360n;
+  const lockPeriod = 20n;
+  const startDelay = 5n;
+  const clockStep = 60n;
+
   const fakeAuctioneer = makeFakeAuctioneer();
   const { fakeInvitationPayment } = await getInvitation(zoe, installations);
   const publisherKit = makeGovernancePublisherFromFakes();
@@ -671,30 +671,31 @@ test('change Schedule', async t => {
   let defaultParams = makeDefaultParams(fakeInvitationPayment, timerBrand);
   // start hourly, request 6 steps down every 10 minutes, so duration would be
   // 1 hour. Instead, cut the auction short.
+
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
   defaultParams = {
     ...defaultParams,
-    priceLockPeriod: 20n,
-    startFreq: 360n,
-    auctionStartDelay: 5n,
-    clockStep: 60n,
-    startingRate: 100n,
-    lowestRate: 40n,
-    discountStep: 10n,
+    PriceLockPeriod: lockPeriod,
+    StartFreq: startFreq,
+    AuctionStartDelay: startDelay,
+    ClockStep: clockStep,
+    StartingRate: 100n,
+    LowestRate: 40n,
+    DiscountStep: 10n,
   };
-  const params = makeAuctioneerParams(defaultParams);
-  const params2 = {};
-  for (const key of Object.keys(params)) {
-    const { value } = params[key];
-    params2[key] = value;
-  }
 
+  /** @type {import('../../src/auction/params.js').AuctionParams} */
+  // @ts-expect-error ignore missing values for test
+  const paramValues = objectMap(
+    makeAuctioneerParams(defaultParams),
+    r => r.value,
+  );
   await timer.advanceTo(127n);
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
     zoe,
-    // @ts-expect-error 3rd parameter of makeAuctioneerParamManager
-    params2,
+    paramValues,
   );
 
   const scheduler = await makeScheduler(
@@ -705,50 +706,62 @@ test('change Schedule', async t => {
     recorderKit.recorder,
   );
   let schedule = scheduler.getSchedule();
-  t.deepEqual(schedule.liveAuctionSchedule, undefined);
+  t.is(schedule.liveAuctionSchedule, undefined);
+
+  const lockTime = 345n;
+  const startTime = 365n;
+  const endTime = 665n;
+
   const firstSchedule = {
-    startTime: TimeMath.toAbs(365n, timerBrand),
-    endTime: TimeMath.toAbs(665n, timerBrand),
+    startTime: TimeMath.toAbs(startTime, timerBrand),
+    endTime: TimeMath.toAbs(endTime, timerBrand),
     steps: 5n,
     endRate: 50n,
     startDelay: TimeMath.toRel(5n, timerBrand),
     clockStep: TimeMath.toRel(60n, timerBrand),
-    lockTime: TimeMath.toAbs(345n, timerBrand),
+    lockTime: TimeMath.toAbs(lockTime, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, firstSchedule);
 
-  await timer.advanceTo(345n);
-  await timer.advanceTo(365n);
-  await timer.advanceTo(665n);
+  await timer.advanceTo(lockTime);
+  await timer.advanceTo(startTime);
+  await timer.advanceTo(endTime);
   schedule = scheduler.getSchedule();
 
+  const secondStart = startTime + startFreq;
+  const secondEnd = endTime + startFreq;
   const expected2ndSchedule = {
-    startTime: TimeMath.toAbs(725n, timerBrand),
-    endTime: TimeMath.toAbs(1025n, timerBrand),
+    startTime: TimeMath.toAbs(secondStart, timerBrand),
+    endTime: TimeMath.toAbs(secondEnd, timerBrand),
     steps: 5n,
     endRate: 50n,
     startDelay: TimeMath.toRel(5n, timerBrand),
     clockStep: TimeMath.toRel(60n, timerBrand),
-    lockTime: TimeMath.toAbs(705n, timerBrand),
+    lockTime: TimeMath.toAbs(secondStart - lockPeriod, timerBrand),
   };
   t.deepEqual(schedule.nextAuctionSchedule, expected2ndSchedule);
 
+  const newFreq = 100n;
+  const newStep = 40n;
   paramManager.updateParams({
-    StartFrequency: TimeMath.toRel(100n, timerBrand),
-    ClockStep: TimeMath.toRel(40n, timerBrand),
+    StartFrequency: TimeMath.toRel(newFreq, timerBrand),
+    ClockStep: TimeMath.toRel(newStep, timerBrand),
   });
 
   await timer.advanceTo(705n);
-  await timer.advanceTo(725n);
+  await timer.advanceTo(secondStart);
+
+  const remainder = (secondEnd + newFreq) % newFreq;
+  const thirdStart = secondEnd + newFreq - remainder + startDelay;
   schedule = scheduler.getSchedule();
   t.deepEqual(schedule.liveAuctionSchedule, expected2ndSchedule);
   t.deepEqual(schedule.nextAuctionSchedule, {
-    startTime: TimeMath.toAbs(1105n, timerBrand),
-    endTime: TimeMath.toAbs(1185n, timerBrand),
+    startTime: TimeMath.toAbs(thirdStart, timerBrand),
+    endTime: TimeMath.toAbs(thirdStart + 2n * newStep, timerBrand),
     steps: 2n,
     endRate: 80n,
     startDelay: TimeMath.toRel(5n, timerBrand),
-    clockStep: TimeMath.toRel(40n, timerBrand),
-    lockTime: TimeMath.toAbs(1085n, timerBrand),
+    clockStep: TimeMath.toRel(newStep, timerBrand),
+    lockTime: TimeMath.toAbs(thirdStart - lockPeriod, timerBrand),
   });
 });

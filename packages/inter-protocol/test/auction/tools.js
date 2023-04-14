@@ -44,15 +44,15 @@ export const setUpInstallations = async zoe => {
 
 export const makeDefaultParams = (invitation, timerBrand) =>
   harden({
-    electorateInvitationAmount: invitation,
-    startFreq: 60n,
-    clockStep: 2n,
-    startingRate: 10500n,
-    lowestRate: 5500n,
-    discountStep: 2000n,
-    auctionStartDelay: 10n,
-    priceLockPeriod: 3n,
-    timerBrand,
+    ElectorateInvitationAmount: invitation,
+    StartFreq: 60n,
+    ClockStep: 2n,
+    StartingRate: 10500n,
+    LowestRate: 5500n,
+    DiscountStep: 2000n,
+    AuctionStartDelay: 10n,
+    PriceLockPeriod: 3n,
+    TimerBrand: timerBrand,
   });
 
 export const makeFakeAuctioneer = () => {
