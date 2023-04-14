@@ -18,7 +18,7 @@
     "lint:types": "tsc -p jsconfig.json"
   },
   "devDependencies": {
-    "@endo/init": "^0.5.52",
+    "@endo/init": "^0.5.55",
     "ava": "^5.2.0"
   },
   "repository": {
