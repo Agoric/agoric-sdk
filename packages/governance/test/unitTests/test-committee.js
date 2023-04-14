@@ -18,6 +18,7 @@ import {
   QuorumRule,
   coerceQuestionSpec,
 } from '../../src/index.js';
+import { documentStorageSchema } from '../../tools/storageDoc.js';
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
@@ -134,7 +135,7 @@ test('committee-open question:one', async t => {
   );
 });
 
-test('committee-open question:mixed', async t => {
+test('committee-open question:mixed, with snapshot', async t => {
   const {
     electorateStartResult: { creatorFacet, publicFacet },
     counterInstallation,
@@ -224,4 +225,12 @@ test('committee-open question:mixed', async t => {
 
   const questions = await publicFacet.getOpenQuestions();
   t.deepEqual(questions.length, 2);
+
+  const doc = {
+    node: 'committees.Economic_Committee',
+    owner: 'a committee contract',
+    pattern: 'mockChainStorageRoot.thisElectorate.',
+    replacement: 'published.committees.Economic_Committee.',
+  };
+  await documentStorageSchema(t, mockChainStorageRoot, doc);
 });

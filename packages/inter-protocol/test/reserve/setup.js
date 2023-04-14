@@ -139,6 +139,7 @@ export const setupReserveServices = async (
     invitationAmount: poserInvitationAmount,
     space: spaces,
     faucetInstallation,
+    mockChainStorage: spaces.mockChainStorage,
   };
 };
 harden(setupReserveServices);
