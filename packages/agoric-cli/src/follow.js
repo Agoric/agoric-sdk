@@ -1,7 +1,6 @@
 // @ts-check
 import process from 'process';
-import { Far, getInterfaceOf } from '@endo/marshal';
-import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
+import { Far, getInterfaceOf, decodeToJustin } from '@endo/marshal';
 
 import {
   iterateLatest,

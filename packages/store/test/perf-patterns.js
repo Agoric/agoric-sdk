@@ -5,8 +5,13 @@ import { Far, makeTagged } from '@endo/marshal';
 import engineGC from '@agoric/swingset-vat/src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '@agoric/swingset-vat/src/lib-nodejs/gc-and-finalize.js';
 
-import { makeCopyBag, makeCopyMap, makeCopySet } from '../src/keys/checkKey.js';
-import { matches, M } from '../src/patterns/patternMatchers.js';
+import {
+  makeCopyBag,
+  makeCopyMap,
+  makeCopySet,
+  matches,
+  M,
+} from '@endo/patterns';
 import {
   AmountShape,
   BrandShape,

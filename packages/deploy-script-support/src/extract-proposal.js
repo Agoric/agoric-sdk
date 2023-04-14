@@ -1,9 +1,10 @@
 // @ts-check
+import { deeplyFulfilled } from '@endo/marshal';
 import fs from 'fs';
 import { createRequire } from 'module';
 import path from 'path';
 
-import { deeplyFulfilled, defangAndTrim, stringify } from './code-gen.js';
+import { defangAndTrim, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,
   makeEnactCoreProposalsFromBundleRef,

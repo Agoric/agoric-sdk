@@ -10,7 +10,8 @@ import { make100Percent, make0Percent } from './percent.js';
  * allocated to the long side of a call spread contract. price gives the value
  * of the underlying asset at closing that determines the payouts to the parties
  *
- * @type {CalculateShares} */
+ * @type {CalculateShares}
+ */
 function calculateShares(collateralBrand, price, strikePrice1, strikePrice2) {
   if (AmountMath.isGTE(strikePrice1, price)) {
     return {

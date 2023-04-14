@@ -3,14 +3,15 @@ import {
   assertPassable,
   filterIterable,
   mapIterable,
-} from '@endo/marshal';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
-import { assertScalarKey, makeCopyMap } from '../keys/checkKey.js';
+} from '@endo/pass-style';
+import { compareRank } from '@endo/marshal';
 import {
+  assertScalarKey,
+  makeCopyMap,
   matches,
   mustMatch,
   assertPattern,
-} from '../patterns/patternMatchers.js';
+} from '@endo/patterns';
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 

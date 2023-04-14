@@ -1,8 +1,5 @@
 // @ts-check
-import { makeMarshal } from '@endo/marshal';
-import { decodeToJustin } from '@endo/marshal/src/marshal-justin.js';
-
-export { deeplyFulfilled } from '@endo/marshal';
+import { makeMarshal, decodeToJustin } from '@endo/marshal';
 
 const { keys, values, fromEntries } = Object;
 

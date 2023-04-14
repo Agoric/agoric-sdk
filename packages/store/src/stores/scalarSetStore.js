@@ -1,11 +1,12 @@
-import { Far, filterIterable } from '@endo/marshal';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
-import { assertScalarKey, makeCopySet } from '../keys/checkKey.js';
+import { Far, filterIterable } from '@endo/pass-style';
+import { compareRank } from '@endo/marshal';
 import {
+  assertScalarKey,
+  makeCopySet,
   matches,
   mustMatch,
   assertPattern,
-} from '../patterns/patternMatchers.js';
+} from '@endo/patterns';
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 

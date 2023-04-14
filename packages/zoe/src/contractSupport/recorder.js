@@ -252,7 +252,7 @@ export const prepareMockRecorderKitMakers = () => {
  * explictly specify the type that the Pattern will verify through a match.
  *
  * @template T
- * @typedef {Matcher & {validatedType?: T}} TypedMatcher
+ * @typedef {Pattern & {validatedType?: T}} TypedMatcher
  */
 
 /**
