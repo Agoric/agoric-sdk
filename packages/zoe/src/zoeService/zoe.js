@@ -102,12 +102,19 @@ const makeZoeKit = (
   // This method contains the power to create a new ZCF Vat, and must
   // be closely held. vatAdminSvc is even more powerful - any vat can
   // be created. We severely restrict access to vatAdminSvc for this reason.
-  const createZCFVat = contractBundleCap => {
+  const createZCFVat = (contractBundleCap, contractLabel) => {
     zcfBundleCap || Fail`createZCFVat did not get bundleCap`;
+    const name =
+      contractLabel &&
+      typeof contractLabel === 'string' &&
+      contractLabel.length > 0
+        ? `zcf-${contractLabel}`
+        : 'zcf';
+
     return E(getActualVatAdminSvcP()).createVat(
       zcfBundleCap,
       harden({
-        name: 'zcf',
+        name,
         vatParameters: {
           contractBundleCap,
           // eslint-disable-next-line no-use-before-define
@@ -160,11 +167,11 @@ const makeZoeKit = (
 
   /** @type {ZoeService} */
   const zoeService = prepareExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
-    install(bundleId) {
-      return dataAccess.installBundle(bundleId);
+    install(bundleId, bundleLabel) {
+      return dataAccess.installBundle(bundleId, bundleLabel);
     },
-    installBundleID(bundleId) {
-      return dataAccess.installBundleID(bundleId);
+    installBundleID(bundleId, bundleLabel) {
+      return dataAccess.installBundleID(bundleId, bundleLabel);
     },
     startInstance,
     offer,
