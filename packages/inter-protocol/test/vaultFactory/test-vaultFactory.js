@@ -18,6 +18,7 @@ import {
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { E } from '@endo/eventual-send';
@@ -255,6 +256,7 @@ const setupServices = async (
     runKit: { issuer: run.issuer, brand: run.brand },
     priceAuthority,
     reserveKit,
+    space,
   };
 };
 
@@ -1685,7 +1687,7 @@ test('director notifiers', async t => {
   // We could refactor the tests of those allocations to use the data now exposed by a notifier.
 });
 
-test('manager notifiers', async t => {
+test('manager notifiers, with snapshot', async t => {
   const OPEN1 = 450n;
   const DEBT1 = 473n; // with penalty
   const OPEN2 = 50n;
@@ -1950,6 +1952,15 @@ test('manager notifiers', async t => {
     totalCollateral: { value: totalCollateral },
     totalDebt: { value: totalDebt },
   });
+
+  /** @type {ReturnType<import('@agoric/internal/src/storage-test-utils.js').makeMockChainStorageRoot>} */
+  // @ts-expect-error mock
+  const storage = await services.space.consume.chainStorage;
+  const doc = {
+    node: 'vaultFactory',
+    owner: 'the vault factory contract',
+  };
+  await documentStorageSchema(t, storage, doc);
 });
 
 test('governance publisher', async t => {

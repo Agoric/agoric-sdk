@@ -1,9 +1,8 @@
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { assert, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
-import { Far } from '@endo/marshal';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
@@ -17,7 +16,7 @@ const build = async (log, zoe, issuers, payments, installations) => {
 
   let secondPriceAuctionSeatP;
 
-  return Far('carolstuff', {
+  return Far('build', {
     doSecondPriceAuctionBid: async invitationP => {
       const invitation = await claim(
         E(invitationIssuer).makeEmptyPurse(),
@@ -35,14 +34,16 @@ const build = async (log, zoe, issuers, payments, installations) => {
         harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
         issuerKeywordRecord,
       ) || Fail`issuerKeywordRecord were not as expected`;
-      assert(keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3)));
       assert(
-        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1)),
+        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
+      );
+      assert(
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
       );
 
       const proposal = harden({
-        want: { Asset: moola(1) },
-        give: { Bid: simoleans(7) },
+        want: { Asset: moola(1n) },
+        give: { Bid: simoleans(7n) },
         exit: { onDemand: null },
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };

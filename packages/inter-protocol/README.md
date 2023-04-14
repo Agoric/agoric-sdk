@@ -30,6 +30,8 @@ To maintain that the keys of vaults to liquidate are stable requires that its ke
 
 VaultFactory publishes data using StoredPublishKit which tees writes to off-chain storage. These can then be followed off-chain like so,
 ```js
+import { makeFollower } from '@agoric/casting';
+
   const key = `published.vaultFactory.metrics`; // or whatever the stream of interest is
   const leader = makeDefaultLeader();
   const follower = makeFollower(storeKey, leader);
@@ -40,7 +42,7 @@ VaultFactory publishes data using StoredPublishKit which tees writes to off-chai
 
 The canonical keys (under `published`) are as follows. Non-terminal nodes could have data but don't yet. A `0` indicates the index of that child in added order. To get the actual key look it up in parent. High cardinality types get a parent key for enumeration (e.g. `vaults`.)
 - `published`
-    - `vaultFactory`
+    - `vaultFactory` - [snapshot of details](./test/vaultFactory/snapshots/test-vaultFactory.js.md)
         - `governance`
         - `metrics`
         - `manager0`
@@ -48,24 +50,27 @@ The canonical keys (under `published`) are as follows. Non-terminal nodes could 
             - `governance`
             - `vaults`
               - `vault0`
-    - `auction`
+    - `auction` - [snapshot of details](./test/auction/snapshots/test-auctionContract.js.md)
         - `schedule`
         - `governance`
-        - `books`
-          - `book0`
-            - `data`
-    - `priceFeed`
-      - '<inputBrand>_<outputBrand>_price_feed'
-    - `psm`
+        - `book0`
+    - `reserve` - [snapshot of details](./test/reserve/snapshots/test-reserve.js.md)
+      - `governance`
+      - `metrics`
+    - `priceFeed` - [snapshot of details](./test/price/snapshots/test-fluxAggregator.js.md)
+      - `${inputBrand}-${outputBrand}_price_feed`
+      - `${inputBrand}-${outputBrand}_price_feed.latestRound`
+    - `psm` - [snapshot of details](./test/psm/snapshots/test-psm.js.md)
       - `<minted>`
         - `<anchor>`
           - `governance`
           - `metrics`
     - `stakeFactory`
         - `governance`
-    - `committees`
+    - `committees` - [snapshot of details](../governance/test/unitTests/snapshots/test-committee.js.md)
         - `Economic_Committee`
           - `latestQuestion`
+          - `latestOutcome`
 
 ### Demo
 

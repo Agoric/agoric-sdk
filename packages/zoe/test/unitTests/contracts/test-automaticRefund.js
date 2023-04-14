@@ -315,7 +315,7 @@ test('multiple instances of automaticRefund for the same Zoe', async t => {
 });
 
 test('zoe - alice tries to complete after completion has already occurred', async t => {
-  t.plan(5);
+  t.plan(6);
   // Setup zoe and mints
   const { moolaKit, simoleanKit, moola, simoleans, zoe, vatAdminState } =
     setup();
@@ -350,10 +350,10 @@ test('zoe - alice tries to complete after completion has already occurred', asyn
     alicePayments,
   );
 
-  await E(aliceSeat).getOfferResult();
+  t.is(await E(aliceSeat).getOfferResult(), 'The offer was accepted');
 
   await t.throwsAsync(() => E(aliceSeat).tryExit(), {
-    message: /seat has already exited/,
+    message: /seat has (already|been) exited/,
   });
 
   const moolaPayout = await aliceSeat.getPayout('ContributionA');

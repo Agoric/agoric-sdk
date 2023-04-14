@@ -101,6 +101,7 @@ export const makeMockChainStorageRoot = () => {
       const datum = JSON.parse(dataStr);
       return marshaller.unserialize(datum);
     },
+    keys: () => [...data.keys()],
   });
 };
 /** @typedef {ReturnType<typeof makeMockChainStorageRoot>} MockChainStorageRoot */

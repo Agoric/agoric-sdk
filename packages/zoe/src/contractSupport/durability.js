@@ -87,9 +87,13 @@ harden(provideChildBaggage);
  * so whatever values an instance needs from other vats must be saved in the first
  * incarnation and read from baggage in each subsequent.
  *
- * This abstracts that condition so that the contract can convert a dictionary of promises
- * into a dictionary of values during its first prepare (start) and each additional
- * automatically reads from the baggage.
+ * This abstracts that condition so that the contract can convert a dictionary
+ * of thunks into a dictionary of values during its first `prepare` (start).
+ * Each subsequent `prepare` call will automatically read from the baggage and
+ * eschew remote calls.
+ *
+ * The values are thunks instead of promises so that they don't start executing
+ * unnecessarily or induce failures.
  *
  * For example,
  *
@@ -98,27 +102,29 @@ harden(provideChildBaggage);
  *       invitationIssuer,
  *       invitationBrand,
  *     } = await provideAll(baggage, {
- *       invitationIssuer: invitationIssuerP,
- *       invitationBrand: E(invitationIssuerP).getBrand(),
+ *       invitationIssuer: () => invitationIssuerP,
+ *       invitationBrand: () => E(invitationIssuerP).getBrand(),
  *     });
  *
- * @template {Record<string, Promise>} T dict of promises
+ * @template {Record<string, () => ERef<any>>} T dict of thunks (promise makers)
  * @param {MapStore<string, any>} baggage
- * @param {T} keyedPromises
- * @returns {Promise<{ [K in keyof T]: Awaited<T[K]> }>}
+ * @param {T} thunks
+ * @returns {Promise<{ [K in keyof T]: Awaited<ReturnType<T[K]>> }>}
  */
-export const provideAll = (baggage, keyedPromises) => {
-  const keys = Object.keys(keyedPromises);
+export const provideAll = (baggage, thunks) => {
+  const keys = Object.keys(thunks);
   // assume if any keys are defined they all are
   const inBaggage = baggage.has(keys[0]);
   if (inBaggage) {
     const obj = objectMap(
-      keyedPromises,
+      thunks,
       /** @type {(value: any, key: string) => any} */
       (_, k) => baggage.get(k),
     );
     return Promise.resolve(harden(obj));
   }
+
+  const keyedPromises = objectMap(thunks, fn => fn());
 
   return allValues(keyedPromises).then(keyedVals => {
     for (const [k, v] of Object.entries(keyedVals)) {

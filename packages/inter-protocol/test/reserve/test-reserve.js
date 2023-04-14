@@ -6,6 +6,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { setupReserveServices } from './setup.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
 import { subscriptionKey } from '../supports.js';
@@ -182,13 +183,20 @@ test('reserve track shortfall', async t => {
   });
 });
 
-test('reserve burn IST', async t => {
+test('reserve burn IST, with snapshot', async t => {
   /** @param {NatValue} value */
   const electorateTerms = { committeeName: 'EnBancPanel', committeeSize: 1 };
   const timer = buildManualTimer(t.log);
 
-  const { zoe, reserve, space, feeMintAccess, faucetInstallation, governor } =
-    await setupReserveServices(t, electorateTerms, timer);
+  const {
+    zoe,
+    reserve,
+    space,
+    feeMintAccess,
+    faucetInstallation,
+    governor,
+    mockChainStorage,
+  } = await setupReserveServices(t, electorateTerms, timer);
 
   const runBrand = await space.brand.consume.IST;
 
@@ -249,6 +257,12 @@ test('reserve burn IST', async t => {
     allocations: { Fee: { value: 0n } },
     totalFeeBurned: { value: 1000n },
   });
+
+  const doc = {
+    node: 'reserve',
+    owner: 'the reserve contract',
+  };
+  await documentStorageSchema(t, mockChainStorage, doc);
 });
 
 test('storage keys', async t => {

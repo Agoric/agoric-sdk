@@ -4,10 +4,6 @@ import { NonNullish } from '@agoric/assert';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { buildRootObject } from '@agoric/vats/src/core/boot-psm.js';
 import '@agoric/vats/src/core/types.js';
-import {
-  mockDProxy,
-  mockPsmBootstrapArgs,
-} from '@agoric/vats/tools/boot-test-utils.js';
 import { eventLoopIteration } from '@agoric/zoe/tools/eventLoopIteration.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/far';
@@ -18,6 +14,7 @@ import { ensureOracleBrands } from '../../src/proposals/price-feed-proposal.js';
 import { headValue } from '../supports.js';
 import {
   currentPurseBalance,
+  importBootTestUtils,
   makeDefaultTestContext,
   voteForOpenQuestion,
 } from './contexts.js';
@@ -31,7 +28,12 @@ const test = anyTest;
 
 const committeeAddress = 'econCommitteeMemberA';
 
-const makeTestSpace = async log => {
+const makeTestSpace = async (log, bundleCache) => {
+  const { mockDProxy, mockPsmBootstrapArgs } = await importBootTestUtils(
+    log,
+    bundleCache,
+  );
+
   const psmParams = {
     anchorAssets: [{ denom: 'ibc/toyusdc', keyword: 'AUSD' }],
     economicCommitteeAddresses: {

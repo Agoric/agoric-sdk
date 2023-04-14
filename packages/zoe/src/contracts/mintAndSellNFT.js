@@ -84,7 +84,6 @@ const start = zcf => {
     const sellItemsTerms = harden({
       pricePerItem,
     });
-    // FIXME EProxy types, startInstance is any
     const instanceRecordP = E(zoeService).startInstance(
       sellItemsInstallation,
       issuerKeywordRecord,

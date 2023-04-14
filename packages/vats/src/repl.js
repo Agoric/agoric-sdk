@@ -66,8 +66,7 @@ function dump0(value, spaces, inProgress, depth) {
 
     const singleSep = spaces ? ' ' : '';
 
-    const proto = Object.getPrototypeOf(value);
-    const stringTag = proto ? proto[Symbol.toStringTag] : undefined;
+    const stringTag = value[Symbol.toStringTag];
     if (stringTag !== undefined) {
       // Use stringification to get the string tag out.
       ret += `[Object ${stringTag}]${singleSep}`;

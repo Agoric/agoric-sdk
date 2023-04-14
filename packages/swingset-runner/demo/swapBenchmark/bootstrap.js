@@ -74,8 +74,8 @@ export function buildRootObject(_vatPowers, vatParameters) {
       };
 
       const startingValues = [
-        [3, 0], // Alice: 3 moola, no simoleans
-        [0, 3], // Bob:   no moola, 3 simoleans
+        [3n, 0n], // Alice: 3 moola, no simoleans
+        [0n, 3n], // Bob:   no moola, 3 simoleans
       ];
 
       ({ alice, bob } = makeVats(vats, zoe, installations, startingValues));

@@ -119,6 +119,7 @@
  * registering it with Zoe. Returns an installation.
  *
  * @param {Bundle | SourceBundle} bundle
+ * @param {string} [bundleLabel]
  * @returns {Promise<Installation>}
  */
 
@@ -130,6 +131,7 @@
  * Create an installation from a Bundle ID. Returns an installation.
  *
  * @param {BundleID} bundleID
+ * @param {string} [bundleLabel]
  * @returns {Promise<Installation>}
  */
 
