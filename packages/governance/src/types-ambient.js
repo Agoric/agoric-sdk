@@ -74,7 +74,7 @@
 
 /**
  * @typedef { SimpleIssue | ParamChangeIssue<unknown> | ApiInvocationIssue |
- *   OfferFilterIssue } Issue
+ *   OfferFilterIssue | ContractUpgradeIssue } Issue
  */
 
 /**
@@ -93,7 +93,7 @@
 
 /**
  * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
- *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
+ *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition | UpgradeContractPosition | DontUpgradeContractPosition} Position
  */
 
 /**
@@ -392,6 +392,11 @@
  */
 
 /**
+ * @typedef {object} ContractUpgradeIssue
+ * @property {string} bundleId
+ */
+
+/**
  * @typedef {object} ParamChangePositions
  * @property {ChangeParamsPosition} positive
  * @property {NoChangeParamsPosition} negative
@@ -502,6 +507,17 @@
 /**
  * @typedef {object} DontInvokeApiPosition
  * @property {string} dontInvoke
+ */
+
+/**
+ * @typedef {object} UpgradeContractPosition
+ * @property {string} bundleId
+ * @property {unknown} [privateArgs]
+ */
+
+/**
+ * @typedef {object} DontUpgradeContractPosition
+ * @property {string} dontUpgrade
  */
 
 /**

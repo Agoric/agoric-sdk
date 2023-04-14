@@ -10,6 +10,7 @@ import {
 import { setupApiGovernance } from './contractGovernance/governApi.js';
 import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 import { ParamChangesQuestionDetailsShape } from './typeGuards.js';
+import { setupUpgradeGovernance } from './contractGovernance/governUpgrade.js';
 
 const { Fail } = assert;
 
@@ -225,6 +226,9 @@ const start = async (zcf, privateArgs) => {
   const { voteOnFilter, createdQuestion: createdFilterQuestion } =
     setupFilterGovernance(timer, getUpdatedPoserFacet, governedCF);
 
+  const { voteOnUpgrade, createdQuestion: createdUpgradeQuestion } =
+    setupUpgradeGovernance(timer, getUpdatedPoserFacet, adminFacet);
+
   /**
    * @param {Invitation} poserInvitation
    * @returns {Promise<void>}
@@ -274,9 +278,9 @@ const start = async (zcf, privateArgs) => {
     const createdParamQ = await E(createdParamQuestion)(voteCounter);
     const createdApiQ = await E(createdApiQuestion)(voteCounter);
     const createdFilterQ = await E(createdFilterQuestion)(voteCounter);
-
+    const createdContractUpgrade = await E(createdUpgradeQuestion)(voteCounter);
     assert(
-      createdParamQ || createdApiQ || createdFilterQ,
+      createdParamQ || createdApiQ || createdFilterQ || createdContractUpgrade,
       'VoteCounter was not created by this contractGovernor',
     );
     return true;
@@ -303,6 +307,7 @@ const start = async (zcf, privateArgs) => {
     replaceElectorate,
     voteOnParamChanges,
     voteOnApiInvocation,
+    voteOnUpgrade,
     voteOnOfferFilter: voteOnFilter,
     getCreatorFacet: () => limitedCreatorFacet,
     getAdminFacet: () => adminFacet,
