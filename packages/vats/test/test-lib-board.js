@@ -133,3 +133,12 @@ test('serialize and stringify to save a round trip', async t => {
   const s = await E(marshaller).serializeAndStringify(obj2);
   t.is(s, '{"body":"#\\"$0.Alleged: obj2\\"","slots":["board0371"]}');
 });
+
+test('parse and decode', async t => {
+  const board = makeBoard();
+  const marshaller = board.getPublishingMarshaller();
+  const obj2 = Far('obj2', {});
+  const s = await E(marshaller).serializeAndStringify(obj2);
+  const actual = await E(marshaller).parseAndDecode(s);
+  t.is(actual, obj2);
+});
