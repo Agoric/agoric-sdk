@@ -435,7 +435,7 @@ export async function launch({
     return p;
   }
 
-  async function runKernel(runPolicy, blockHeight) {
+  async function runKernel(runPolicy, blockHeight, blockTime) {
     let runNum = 0;
     async function runSwingset() {
       const initialBeans = runPolicy.remainingBeans();
@@ -465,12 +465,27 @@ export async function launch({
       return runPolicy.shouldRun();
     }
 
-    let keepGoing = await runSwingset();
+    async function doRunKernel() {
+      // First, complete leftover work, if any
+      let keepGoing = await runSwingset();
+      if (!keepGoing) return;
 
-    // Then process as much as we can from the actionQueue, which contains
-    // first the old actions followed by the newActions, running the
-    // kernel to completion after each.
-    if (keepGoing) {
+      // Then, update the timer device with the new external time, which might
+      // push work onto the kernel run-queue (if any timers were ready to wake).
+      const addedToQueue = timer.poll(blockTime);
+      console.debug(
+        `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
+        addedToQueue,
+      );
+      // We must run the kernel even if nothing was added since the kernel
+      // only notes state exports and updates consistency hashes when attempting
+      // to perform a crank.
+      keepGoing = await runSwingset();
+      if (!keepGoing) return;
+
+      // Finally, process as much as we can from the actionQueue, which contains
+      // first the old actions followed by the newActions, running the
+      // kernel to completion after each.
       for (const { action, context } of actionQueue.consumeAll()) {
         const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
         inboundQueueMetrics.decStat();
@@ -481,10 +496,12 @@ export async function launch({
         if (!keepGoing) {
           // any leftover actions will remain on the actionQueue for possible
           // processing in the next block
-          break;
+          return;
         }
       }
     }
+
+    await doRunKernel();
 
     if (setActivityhash) {
       setActivityhash(controller.getActivityhash());
@@ -500,22 +517,10 @@ export async function launch({
     // added up for delivery to swingset) into our inboundQueue metrics
     inboundQueueMetrics.updateLength(actionQueue.size());
 
-    // We update the timer device at the start of each block, which might push
-    // work onto the end of the kernel run-queue (if any timers were ready to
-    // wake), where it will be followed by actions triggered by the block's
-    // swingset transactions.
-    // If the queue was empty, the timer work gets the first "cycle", and might
-    // run to completion before the block actions get their own cycles.
-    const addedToQueue = timer.poll(blockTime);
-    console.debug(
-      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
-      addedToQueue,
-    );
-
     // make a runPolicy that will be shared across all cycles
     const runPolicy = computronCounter(params.beansPerUnit);
 
-    await runKernel(runPolicy, blockHeight);
+    await runKernel(runPolicy, blockHeight, blockTime);
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
