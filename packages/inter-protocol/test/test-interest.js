@@ -22,6 +22,9 @@ const BASIS_POINTS = 10000n;
 const HUNDRED_THOUSAND = 100000n;
 const TEN_MILLION = 10000000n;
 
+/** @type {Brand<'nat'>} */
+const mockBrand = Far('brand');
+
 test('too soon', async t => {
   const { brand } = makeIssuerKit('ducats');
   const calculator = makeInterestCalculator(
@@ -420,9 +423,12 @@ test('basic charge reasonable numbers monthly', async t => {
 });
 
 test('calculateCompoundedInterest on zero debt', t => {
-  const brand = Far('brand');
   t.throws(() =>
-    calculateCompoundedInterest(makeRatio(0n, brand, 1n, brand), 0n, 100n),
+    calculateCompoundedInterest(
+      makeRatio(0n, mockBrand, 1n, mockBrand),
+      0n,
+      100n,
+    ),
   );
 });
 
@@ -430,7 +436,6 @@ test('calculateCompoundedInterest on zero debt', t => {
 const M = 1_000_000n;
 
 test('calculateCompoundedInterest', t => {
-  const brand = Far('brand');
   /** @type {Array<[bigint, bigint, bigint, number, bigint, number]>} */
   const cases = [
     [250n, BASIS_POINTS, M, 1, 1025000n, 10], // 2.5% APR over 1 year yields 2.5%
@@ -447,16 +452,16 @@ test('calculateCompoundedInterest', t => {
     expected,
     floatMatch,
   ] of cases) {
-    const apr = makeRatio(rateNum, brand, rateDen, brand);
+    const apr = makeRatio(rateNum, mockBrand, rateDen, mockBrand);
     const aprf = Number(rateNum) / Number(rateDen);
 
-    let compoundedInterest = makeRatio(1n, brand, 1n, brand);
+    let compoundedInterest = makeRatio(1n, mockBrand, 1n, mockBrand);
     let compoundedFloat = 1.0;
     let totalDebt = startingDebt;
 
     for (let i = 0; i < charges; i += 1) {
       compoundedFloat *= 1 + aprf;
-      const delta = ceilMultiplyBy(AmountMath.make(brand, totalDebt), apr);
+      const delta = ceilMultiplyBy(AmountMath.make(mockBrand, totalDebt), apr);
       compoundedInterest = calculateCompoundedInterest(
         compoundedInterest,
         totalDebt,

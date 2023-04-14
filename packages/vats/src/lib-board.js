@@ -19,7 +19,9 @@ export const DEFAULT_PREFIX = 'board0';
 // TODO import from Endo
 const CapDataShape = { body: M.string(), slots: M.array() };
 const MarshalI = M.interface('Marshaller', {
+  toCapData: M.call(M.any()).returns(CapDataShape),
   serialize: M.call(M.any()).returns(CapDataShape),
+  fromCapData: M.call(CapDataShape).returns(M.any()),
   unserialize: M.call(CapDataShape).returns(M.any()),
 });
 
@@ -323,29 +325,36 @@ export const prepareBoardKit = baggage => {
           return this.facets.readonlyMarshaller;
         },
       },
-      /**
-       * @param {string} id
-       * @throws if id is not in the mapping
-       * @returns {Marshaller}
-       */
       readonlyMarshaller: {
-        serialize(val) {
+        toCapData(val) {
           const readonly = makeReadonlyMarshaller(this.state);
-          return readonly.serialize(val);
+          return readonly.toCapData(val);
+        },
+        fromCapData(data) {
+          const readonly = makeReadonlyMarshaller(this.state);
+          return readonly.fromCapData(data);
+        },
+        serialize(data) {
+          return this.facets.readonlyMarshaller.toCapData(data);
         },
         unserialize(data) {
-          const readonly = makeReadonlyMarshaller(this.state);
-          return readonly.unserialize(data);
+          return this.facets.readonlyMarshaller.fromCapData(data);
         },
       },
       publishingMarshaller: {
-        serialize(val) {
+        toCapData(val) {
           const publishing = makePublishingMarshaller(this.state);
-          return publishing.serialize(val);
+          return publishing.toCapData(val);
+        },
+        fromCapData(data) {
+          const publishing = makePublishingMarshaller(this.state);
+          return publishing.fromCapData(data);
+        },
+        serialize(data) {
+          return this.facets.publishingMarshaller.toCapData(data);
         },
         unserialize(data) {
-          const publishing = makePublishingMarshaller(this.state);
-          return publishing.unserialize(data);
+          return this.facets.publishingMarshaller.fromCapData(data);
         },
       },
     },
