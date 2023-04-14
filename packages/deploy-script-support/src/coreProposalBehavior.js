@@ -75,7 +75,8 @@ export const makeCoreProposalBehavior = ({
         ? E(vatAdminSvc).getBundleIDByName(ref.bundleName)
         : ref.bundleID;
       const bundleID = await p;
-      return E(zoe).installBundleID(bundleID);
+      const label = bundleID.slice(0, 8);
+      return E(zoe).installBundleID(bundleID, label);
     };
     const restoreRef = overrideRestoreRef || defaultRestoreRef;
 
