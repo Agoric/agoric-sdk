@@ -214,6 +214,8 @@ harden(startPSM);
  * Make anchor issuer out of a Cosmos asset; presumably
  * USDC over IBC. Add it to BankManager.
  *
+ * TODO: address redundancy with publishInterchainAssetFromBank
+ *
  * @param {EconomyBootstrapPowers & WellKnownSpaces} powers
  * @param {{options?: { anchorOptions?: AnchorOptions } }} [config]
  */
