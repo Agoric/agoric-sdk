@@ -101,6 +101,7 @@ export type StartInstance = <SF>(
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
   privateArgs?: StartParams<SF>['privateArgs'],
+  label?: string,
 ) => Promise<StartedInstanceKit<SF>>;
 
 export type GetPublicFacet = <SF>(
