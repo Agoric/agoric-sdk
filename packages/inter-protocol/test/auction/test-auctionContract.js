@@ -1341,5 +1341,5 @@ test('time jumps forward', async t => {
   const schedules = await driver.getSchedule();
   t.is(schedules.nextAuctionSchedule?.startTime.absValue, 1570n);
   t.is(schedules.liveAuctionSchedule?.startTime.absValue, 1530n);
-  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1545n);
+  t.is(schedules.liveAuctionSchedule?.endTime.absValue, 1550n);
 });
