@@ -26,16 +26,12 @@ const makeOfferFilterPositions = strings => {
 /**
  * Setup to allow governance to block some invitations.
  *
- * @param {ERef<ZoeService>} zoe
- * @param {Instance} governedInstance
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @param {GovernorFacet<{}>} governorFacet
  * @returns {Promise<FilterGovernor>}
  */
 const setupFilterGovernance = async (
-  zoe,
-  governedInstance,
   timer,
   getUpdatedPoserFacet,
   governorFacet,

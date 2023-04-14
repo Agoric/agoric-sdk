@@ -212,7 +212,6 @@ const start = async (zcf, privateArgs) => {
   // All governed contracts have at least a governed electorate
   const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
     await setupParamGovernance(
-      zoe,
       E(governedCF).getParamMgrRetriever(),
       governedInstance,
       timer,
@@ -221,8 +220,6 @@ const start = async (zcf, privateArgs) => {
 
   trace('awaiting setupFilterGovernance');
   const { voteOnFilter, createdFilterQuestion } = await setupFilterGovernance(
-    zoe,
-    governedInstance,
     timer,
     getUpdatedPoserFacet,
     governedCF,
@@ -255,8 +252,6 @@ const start = async (zcf, privateArgs) => {
     ]);
     if (governedNames.length) {
       return setupApiGovernance(
-        zoe,
-        governedInstance,
         governedApis,
         governedNames,
         timer,
