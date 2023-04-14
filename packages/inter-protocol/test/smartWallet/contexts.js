@@ -1,6 +1,5 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-// eslint-disable-next-line no-unused-vars -- used by TS
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/far';
@@ -8,21 +7,41 @@ import path from 'path';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
 
+// referenced by TS
+coalesceUpdates;
+
+const bundlesToCache = harden({
+  psm: './src/psm/psm.js',
+  econCommitteeCharter: './src/econCommitteeCharter.js',
+});
+
+export const importBootTestUtils = async (log, bundleCache) => {
+  // Preload the cache entries needed by boot-test-utils.js.
+  await Promise.all(
+    Object.entries(bundlesToCache).map(async ([name, entrypoint]) =>
+      bundleCache.validateOrAdd(entrypoint, name),
+    ),
+  );
+  return import('@agoric/vats/tools/boot-test-utils.js');
+};
+
 /**
  * @param {import('ava').ExecutionContext} t
- * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
+ * @param {(logger, cache) => Promise<ChainBootstrapSpace>} makeSpace
  */
 export const makeDefaultTestContext = async (t, makeSpace) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
-  const { consume, produce } = await makeSpace(log);
+
+  const bundleCache = await unsafeMakeBundleCache('bundles/');
+
+  const { consume, produce } = await makeSpace(log, bundleCache);
   const { agoricNames, zoe } = consume;
 
   //#region Installs
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
 
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
   const bundle = await bundleCache.load(
     `${dirname}/../../../smart-wallet/src/walletFactory.js`,
     'walletFactory',
