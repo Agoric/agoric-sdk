@@ -40,13 +40,19 @@ const startCounter = async (
     quorumThreshold,
   };
 
+  const { deadline } = questionSpec.closingRule;
   // facets of the voteCounter. creatorInvitation and adminFacet not used
   /** @type {{ creatorFacet: VoteCounterCreatorFacet, publicFacet: VoteCounterPublicFacet, instance: Instance }} */
   const { creatorFacet, publicFacet, instance } = await E(
     zcf.getZoeService(),
-  ).startInstance(voteCounter, {}, voteCounterTerms, { outcomePublisher });
+  ).startInstance(
+    voteCounter,
+    {},
+    voteCounterTerms,
+    { outcomePublisher },
+    `voteCounter.${deadline}`,
+  );
   const details = await E(publicFacet).getDetails();
-  const { deadline } = questionSpec.closingRule;
   questionsPublisher.publish(details);
   const questionHandle = details.questionHandle;
 
