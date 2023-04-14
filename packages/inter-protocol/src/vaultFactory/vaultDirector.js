@@ -265,7 +265,7 @@ export const prepareVaultDirector = (
           return harden({});
         },
         getGovernedApiNames() {
-          return harden({});
+          return harden([]);
         },
         setOfferFilter: strings => zcf.setOfferFilter(strings),
       },
