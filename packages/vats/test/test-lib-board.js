@@ -125,3 +125,11 @@ test(`getReadonlyMarshaller doesn't leak unpublished objects`, async t => {
   const marshaller = board.getReadonlyMarshaller();
   await testBoardMarshaller(t, board, marshaller, false);
 });
+
+test('serialize and stringify to save a round trip', async t => {
+  const board = makeBoard();
+  const marshaller = board.getPublishingMarshaller();
+  const obj2 = Far('obj2', {});
+  const s = await E(marshaller).serializeAndStringify(obj2);
+  t.is(s, '{"body":"#\\"$0.Alleged: obj2\\"","slots":["board0371"]}');
+});

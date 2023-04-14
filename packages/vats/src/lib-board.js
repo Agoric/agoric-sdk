@@ -16,12 +16,12 @@ export const DEFAULT_CRC_DIGITS = 2;
 export const DEFAULT_PREFIX = 'board0';
 
 //#region Interface Guards
-// TODO import from Endo
 const CapDataShape = { body: M.string(), slots: M.array() };
 const MarshalI = M.interface('Marshaller', {
   toCapData: M.call(M.any()).returns(CapDataShape),
   serialize: M.call(M.any()).returns(CapDataShape),
   fromCapData: M.call(CapDataShape).returns(M.any()),
+  serializeAndStringify: M.callWhen(M.any()).returns(M.string()),
   unserialize: M.call(CapDataShape).returns(M.any()),
 });
 
@@ -344,6 +344,10 @@ export const prepareBoardKit = baggage => {
         unserialize(data) {
           return this.facets.readonlyMarshaller.fromCapData(data);
         },
+        serializeAndStringify(val) {
+          const readonly = makeReadonlyMarshaller(this.state);
+          return JSON.stringify(readonly.serialize(val));
+        },
       },
       publishingMarshaller: {
         toCapData(val) {
@@ -359,6 +363,10 @@ export const prepareBoardKit = baggage => {
         },
         unserialize(data) {
           return this.facets.publishingMarshaller.fromCapData(data);
+        },
+        serializeAndStringify(val) {
+          const publishing = makePublishingMarshaller(this.state);
+          return JSON.stringify(publishing.serialize(val));
         },
       },
     },
