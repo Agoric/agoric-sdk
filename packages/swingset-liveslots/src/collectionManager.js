@@ -101,8 +101,8 @@ function makeSchemaCache(syscall, unserialize) {
  * @param {(val: any) => string | undefined} convertValToSlot
  * @param {*} convertSlotToVal
  * @param {*} registerValue
- * @param {import('@endo/marshal').Serialize<string>} serialize
- * @param {import('@endo/marshal').Unserialize<string>} unserialize
+ * @param {import('@endo/marshal').ToCapData<string>} serialize
+ * @param {import('@endo/marshal').FromCapData<string>} unserialize
  * @param {(capDatas: any) => void} assertAcceptableSyscallCapdataSize
  */
 export function makeCollectionManager(

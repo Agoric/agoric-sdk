@@ -26,10 +26,10 @@
   "devDependencies": {
     "@agoric/assert": "^0.5.1",
     "@agoric/swingset-liveslots": "^0.9.0",
-    "@endo/bundle-source": "^2.4.2",
-    "@endo/import-bundle": "^0.3.0",
-    "@endo/init": "^0.5.52",
-    "@endo/marshal": "^0.8.1",
+    "@endo/bundle-source": "^2.5.0",
+    "@endo/import-bundle": "^0.3.3",
+    "@endo/init": "^0.5.55",
+    "@endo/marshal": "^0.8.4",
     "ava": "^5.2.0",
     "c8": "^7.13.0"
   },

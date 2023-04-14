@@ -39,7 +39,6 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
       const pretty = !output.endsWith('lines');
       formatOutput = ({ body, slots }) => {
         const encoded = JSON.parse(body);
-        // @ts-expect-error Expected 1-2 arguments, but got 3.
         return decodeToJustin(encoded, pretty, slots);
       };
       break;

@@ -1804,8 +1804,10 @@ export function makeWalletRoot({
 
   /** @type {ReturnType<typeof makeMarshal>} */
   const marshaller = harden({
-    unserialize: context.unserialize,
-    serialize: context.serialize,
+    fromCapData: context.fromCapData,
+    toCapData: context.toCapData,
+    unserialize: context.fromCapData,
+    serialize: context.toCapData,
   });
 
   const handleAcceptOfferAction = async offer => {
