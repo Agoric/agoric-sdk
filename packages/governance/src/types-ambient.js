@@ -655,28 +655,8 @@
  */
 
 /**
- * @typedef {object} ParamGovernor
- * @property {VoteOnParamChanges} voteOnParamChanges
- * @property {CreatedQuestion} createdQuestion
- */
-
-/**
- * @typedef {object} ApiGovernor
- * @property {VoteOnApiInvocation} voteOnApiInvocation
- * @property {CreatedQuestion} createdQuestion
- */
-
-/**
- * @typedef {object} FilterGovernor
- * @property {VoteOnOfferFilter} voteOnFilter
- * @property {CreatedQuestion} createdFilterQuestion
- */
-
-/**
- * @callback CreatedQuestion
- *   Was this question created by this ContractGovernor?
- * @param {Instance} questionInstance
- * @returns {boolean}
+ * @typedef QuestionProvenance
+ * @property {(questionInstance: Instance) => boolean} createdQuestion Was this question created by this ContractGovernor?
  */
 
 /**

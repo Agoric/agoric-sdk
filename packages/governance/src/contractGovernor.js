@@ -222,11 +222,8 @@ const start = async (zcf, privateArgs) => {
       getUpdatedPoserFacet,
     );
 
-  const { voteOnFilter, createdFilterQuestion } = setupFilterGovernance(
-    timer,
-    getUpdatedPoserFacet,
-    governedCF,
-  );
+  const { voteOnFilter, createdQuestion: createdFilterQuestion } =
+    setupFilterGovernance(timer, getUpdatedPoserFacet, governedCF);
 
   /**
    * @param {Invitation} poserInvitation
@@ -247,7 +244,6 @@ const start = async (zcf, privateArgs) => {
   };
 
   // this conditional was extracted so both sides are equally asynchronous
-  /** @type {() => Promise<ApiGovernor>} */
   const initApiGovernance = async () => {
     const [governedApis, governedNames] = await Promise.all([
       E(governedCF).getGovernedApis(),

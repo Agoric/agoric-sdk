@@ -56,7 +56,7 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
  * @param {Instance} contractInstance
  * @param {import('@agoric/time/src/types').TimerService} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @returns {ParamGovernor}
+ * @returns {QuestionProvenance & { voteOnParamChanges: VoteOnParamChanges }}
  */
 const setupParamGovernance = (
   paramManagerRetriever,

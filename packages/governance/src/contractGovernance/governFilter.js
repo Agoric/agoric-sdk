@@ -29,7 +29,7 @@ const makeOfferFilterPositions = strings => {
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @param {GovernorFacet<{}>} governorFacet
- * @returns {FilterGovernor}
+ * @returns {QuestionProvenance & { voteOnFilter: VoteOnOfferFilter }}
  */
 const setupFilterGovernance = (timer, getUpdatedPoserFacet, governorFacet) => {
   /** @type {WeakSet<Instance>} */
@@ -96,7 +96,7 @@ const setupFilterGovernance = (timer, getUpdatedPoserFacet, governorFacet) => {
 
   return Far('filterGovernor', {
     voteOnFilter,
-    createdFilterQuestion: b => voteCounters.has(b),
+    createdQuestion: b => voteCounters.has(b),
   });
 };
 
