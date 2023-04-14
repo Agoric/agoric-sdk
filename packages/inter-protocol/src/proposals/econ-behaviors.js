@@ -757,7 +757,6 @@ export const startStakeFactory = async (
   return Promise.all([
     E(client).assignBundle([
       address => ({
-        // @ts-expect-error ??? creatorFacet is a StakeFactoryCreator; it has the method
         attMaker: E(governedCreatorFacet).provideAttestationMaker(address),
       }),
     ]),

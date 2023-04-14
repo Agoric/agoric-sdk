@@ -244,6 +244,7 @@ async function makePsmDriver(t, customTerms) {
     },
 
     async getFeePayout() {
+      // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
       const limitedCreatorFacet = E(creatorFacet).getLimitedCreatorFacet();
       const collectFeesSeat = await E(zoe).offer(
         E(limitedCreatorFacet).makeCollectFeesInvitation(),

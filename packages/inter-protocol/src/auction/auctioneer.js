@@ -672,7 +672,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 /** @typedef {ContractOf<typeof start>} AuctioneerContract */
 /** @typedef {AuctioneerContract['publicFacet']} AuctioneerPublicFacet */
 /** @typedef {AuctioneerContract['creatorFacet']} AuctioneerCreatorFacet */
-// xxx the governance types should handle this automatically
-/** @typedef {ReturnType<AuctioneerContract['creatorFacet']['getLimitedCreatorFacet']>} AuctioneerLimitedCreatorFacet */
 
 export const AuctionPFShape = M.remotable('Auction Public Facet');
