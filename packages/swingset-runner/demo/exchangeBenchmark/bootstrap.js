@@ -27,11 +27,14 @@ export function buildRootObject(_vatPowers, vatParameters) {
       );
       const zoe = await E(vats.zoe).buildZoe(vatAdminSvc);
 
-      const exchange = await E(zoe).install(exchangeBundle.bundle);
+      const exchange = await E(zoe).install(
+        exchangeBundle.bundle,
+        'exchangeTestContract',
+      );
 
       const grubStake = [
-        [3, 0], // Alice: 3 moola, no simoleans
-        [0, 3], // Bob:   no moola, 3 simoleans
+        [3n, 0n], // Alice: 3 moola, no simoleans
+        [0n, 3n], // Bob:   no moola, 3 simoleans
       ];
 
       const all = [makeIssuerKit('moola'), makeIssuerKit('simoleans')];
@@ -55,6 +58,9 @@ export function buildRootObject(_vatPowers, vatParameters) {
       const { publicFacet } = await E(zoe).startInstance(
         exchange,
         issuerKeywordRecord,
+        undefined,
+        undefined,
+        'contractInstance',
       );
 
       alice = E(vats.alice).build(zoe, issuers, alicePayments, publicFacet);

@@ -1,10 +1,9 @@
 import { E } from '@endo/eventual-send';
-import { assert, Fail } from '@agoric/assert';
+import { Far } from '@endo/marshal';
+import { assert, details as X, Fail } from '@agoric/assert';
 import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import { Far } from '@endo/marshal';
-
 import { showPurseBalance, setupIssuers } from './helpers.js';
 
 import { makePrintLog } from './printLog.js';
@@ -18,7 +17,7 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
 
   let secondPriceAuctionSeatP;
 
-  return Far('davestuff', {
+  return Far('build', {
     doSecondPriceAuctionBid: async invitation => {
       const instance = await E(zoe).getInstance(invitation);
       const installation = await E(zoe).getInstallation(invitation);
@@ -36,14 +35,16 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
         harden({ Asset: moolaIssuer, Ask: simoleanIssuer }),
         issuerKeywordRecord,
       ) || Fail`issuerKeywordRecord were not as expected`;
-      assert(keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3)));
       assert(
-        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1)),
+        keyEQ(invitationValue[0].customDetails?.minimumBid, simoleans(3n)),
+      );
+      assert(
+        keyEQ(invitationValue[0].customDetails?.auctionedAssets, moola(1n)),
       );
 
       const proposal = harden({
-        want: { Asset: moola(1) },
-        give: { Bid: simoleans(5) },
+        want: { Asset: moola(1n) },
+        give: { Bid: simoleans(5n) },
         exit: { onDemand: null },
       });
       const paymentKeywordRecord = { Bid: simoleanPayment };
@@ -79,19 +80,21 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       const { value: invitationValue } = await E(invitationIssuer).getAmountOf(
         exclInvitation,
       );
-      const { source } = await E(installation).getBundle();
-      // pick some arbitrary code points as a signature.
-      source.includes('asset: give.Asset,') ||
-        Fail`source bundle didn't match at "asset: give.Asset,"`;
-      source.includes('swap(zcf, firstSeat, matchingSeat)') ||
-        Fail`source bundle didn't match at "swap(zcf, firstSeat, matchingSeat)"`;
-      source.includes('makeMatchingInvitation') ||
-        Fail`source bundle didn't match at "makeMatchingInvitation"`;
-      installation === installations.atomicSwap || Fail`wrong installation`;
-      keyEQ(
-        harden({ Asset: invitationIssuer, Price: bucksIssuer }),
-        issuerKeywordRecord,
-      ) || Fail`issuerKeywordRecord were not as expected`;
+
+      // TODO Check the integrity of the installation by its hash.
+      // https://github.com/Agoric/agoric-sdk/issues/3859
+      // const installation = await E(zoe).getInstallation(invitation);
+      // const hash = await E(installation).getHash();
+      // assert.is(hash, 'XXX');
+
+      assert(installation === installations.atomicSwap, X`wrong installation`);
+      assert(
+        keyEQ(
+          harden({ Asset: invitationIssuer, Price: bucksIssuer }),
+          issuerKeywordRecord,
+        ),
+        X`issuerKeywordRecord were not as expected`,
+      );
 
       const { customDetails: invitationCustomDetails } = invitationValue[0];
       assert(typeof invitationCustomDetails === 'object');
@@ -139,8 +142,8 @@ const build = async (log, zoe, issuers, payments, installations, timer) => {
       // call. First, he escrows with Zoe.
 
       const daveCoveredCallProposal = harden({
-        want: { UnderlyingAsset: moola(3) },
-        give: { StrikePrice: simoleans(7) },
+        want: { UnderlyingAsset: moola(3n) },
+        give: { StrikePrice: simoleans(7n) },
       });
       const daveCoveredCallPayments = harden({ StrikePrice: simoleanPayment });
       const optionSeatP = await E(zoe).offer(

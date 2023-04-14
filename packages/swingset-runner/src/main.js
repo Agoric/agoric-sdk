@@ -597,14 +597,13 @@ export async function main() {
   async function runBenchmark(rounds) {
     const cranksPre = getCrankNumber();
     const rawStatsPre = controller.getStats();
-    const args = { body: '[]', slots: [] };
     let totalSteps = 0;
     let totalDeltaT = 0n;
     for (let i = 0; i < rounds; i += 1) {
       const roundResult = controller.queueToVatRoot(
         launchIndirectly ? 'launcher' : 'bootstrap',
         'runBenchmarkRound',
-        args,
+        [],
         'ignore',
       );
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
