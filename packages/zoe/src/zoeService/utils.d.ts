@@ -25,6 +25,7 @@ export type AdminFacet = {
 declare const StartFunction: unique symbol;
 export type Installation<SF> = {
   getBundle: () => SourceBundle;
+  getBundleLabel: () => string;
   // because TS is structural, without this the generic is ignored
   [StartFunction]: SF;
 };

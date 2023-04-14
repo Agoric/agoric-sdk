@@ -351,6 +351,7 @@ export const makeZoeStorageManager = (
     uncleanIssuerKeywordRecord,
     instance,
     contractBundleCap,
+    instanceLabel,
   ) => {
     // Clean the issuerKeywordRecord we receive in `startInstance`
     // from the user, and save the issuers in Zoe if they are not
@@ -385,7 +386,15 @@ export const makeZoeStorageManager = (
       }),
     );
 
-    const { root, adminNode } = await createZCFVat(contractBundleCap);
+    const bundleLabel = installation.getBundleLabel() || 'unlabeledBundle';
+    const contractLabel = instanceLabel
+      ? `${bundleLabel}-${instanceLabel}`
+      : bundleLabel;
+
+    const { root, adminNode } = await createZCFVat(
+      contractBundleCap,
+      contractLabel,
+    );
     return makeInstanceStorageManager(instanceRecord, adminNode, root)
       .instanceStorageManager;
   };
@@ -430,11 +439,11 @@ export const makeZoeStorageManager = (
           return state.instanceAdmins.getInstallation(instance);
         },
         getProposalShapeForInvitation,
-        installBundle: allegedBundle => {
-          return installationStorage.installBundle(allegedBundle);
+        installBundle: (allegedBundle, bundleLabel) => {
+          return installationStorage.installBundle(allegedBundle, bundleLabel);
         },
-        installBundleID(bundleID) {
-          return installationStorage.installBundleID(bundleID);
+        installBundleID(bundleID, bundleLabel) {
+          return installationStorage.installBundleID(bundleID, bundleLabel);
         },
       },
       makeOfferAccess: {

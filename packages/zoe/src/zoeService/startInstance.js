@@ -210,6 +210,7 @@ export const makeStartInstance = (
     uncleanIssuerKeywordRecord = harden({}),
     customTerms = harden({}),
     privateArgs = undefined,
+    instanceLabel = '',
   ) => {
     const { installation, bundle, bundleCap } = await E(
       startInstanceAccess,
@@ -242,6 +243,7 @@ export const makeStartInstance = (
       uncleanIssuerKeywordRecord,
       instanceHandle,
       contractBundleCap,
+      instanceLabel,
     );
     // AWAIT ///
 

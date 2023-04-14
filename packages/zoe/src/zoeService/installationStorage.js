@@ -1,5 +1,4 @@
 import { assert } from '@agoric/assert';
-import { initEmpty } from '@agoric/store';
 import {
   M,
   makeScalarBigMapStore,
@@ -41,15 +40,21 @@ export const makeInstallationStorage = (
   const makeBundleIDInstallation = prepareKind(
     zoeBaggage,
     'BundleIDInstallation',
-    initEmpty,
-    { getBundle: _context => Fail`bundleID-based Installation` },
+    bundleLabel => ({ bundleLabel }),
+    {
+      getBundle: _context => Fail`bundleID-based Installation`,
+      getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
+    },
   );
 
   const makeBundleInstallation = prepareKind(
     zoeBaggage,
     'BundleInstallation',
-    bundle => ({ bundle }),
-    { getBundle: ({ state: { bundle } }) => bundle },
+    (bundle, bundleLabel) => ({ bundle, bundleLabel }),
+    {
+      getBundle: ({ state: { bundle } }) => bundle,
+      getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
+    },
   );
 
   /**
@@ -63,13 +68,13 @@ export const makeInstallationStorage = (
    */
 
   /** @type {InstallBundle} */
-  const installSourceBundle = async bundle => {
+  const installSourceBundle = async (bundle, bundleLabel) => {
     typeof bundle === 'object' || Fail`a bundle must be provided`;
     /** @type {Installation} */
     bundle || Fail`a bundle must be provided`;
     /** @type {Installation} */
     // @ts-expect-error cast
-    const installation = makeBundleInstallation(bundle);
+    const installation = makeBundleInstallation(bundle, bundleLabel);
     installationsBundle.init(installation, bundle);
     return installation;
   };
@@ -95,7 +100,7 @@ export const makeInstallationStorage = (
     'InstallationStorage',
     InstallationStorageI,
     {
-      async installBundle(allegedBundle) {
+      async installBundle(allegedBundle, bundleLabel) {
         // @ts-expect-error TS doesn't understand context
         const { self } = this;
         // Bundle is a very open-ended type and we must decide here whether to
@@ -110,11 +115,11 @@ export const makeInstallationStorage = (
             Fail`bundle endoZipBase64Sha512 must be a string, got ${q(
               endoZipBase64Sha512,
             )}`;
-          return self.installBundleID(`b1-${endoZipBase64Sha512}`);
+          return self.installBundleID(`b1-${endoZipBase64Sha512}`, bundleLabel);
         }
-        return installSourceBundle(allegedBundle);
+        return installSourceBundle(allegedBundle, bundleLabel);
       },
-      async installBundleID(bundleID) {
+      async installBundleID(bundleID, bundleLabel) {
         typeof bundleID === 'string' || Fail`a bundle ID must be provided`;
         // this waits until someone tells the host application to store the
         // bundle into the kernel, with controller.validateAndInstallBundle()
@@ -123,7 +128,7 @@ export const makeInstallationStorage = (
 
         /** @type {Installation} */
         // @ts-expect-error cast
-        const installation = makeBundleIDInstallation();
+        const installation = makeBundleIDInstallation(bundleLabel);
         installationsBundleCap.init(
           installation,
           harden({ bundleCap, bundleID }),

@@ -103,6 +103,7 @@
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord
  * @param {Instance} instance
  * @param {BundleCap} contractBundleCap
+ * @param {string} instanceLabel
  * @returns {Promise<ZoeInstanceStorageManager>}
  */
 
@@ -145,6 +146,7 @@
  *
  * @callback CreateZCFVat
  * @param {BundleCap} contractBundleCap
+ * @param {string} contractLabel
  * @returns {Promise<import('@agoric/swingset-vat').CreateVatResults>}
  */
 
