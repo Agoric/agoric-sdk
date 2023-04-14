@@ -217,12 +217,14 @@ export async function replayXSnap(
       const seq = parseInt(digits, 10);
       console.log(folder, seq, kind);
       if (running && !['command', 'reply'].includes(kind)) {
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await running;
         running = undefined;
       }
       const file = rd.file(step);
       switch (kind) {
         case 'isReady':
+          // eslint-disable-next-line @jessie.js/no-nested-await
           await it.isReady();
           break;
         case 'evaluate':
@@ -243,6 +245,7 @@ export async function replayXSnap(
             return;
           } else {
             try {
+              // eslint-disable-next-line @jessie.js/no-nested-await
               await it.snapshot(file.getText());
             } catch (err) {
               console.warn(err, 'while taking snapshot:', err);

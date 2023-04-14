@@ -205,7 +205,9 @@ export function xsnap(options) {
           )}`,
         );
       } else if (message[0] === QUERY) {
+        // eslint-disable-next-line @jessie.js/no-nested-await
         const commandResult = await handleCommand(message.subarray(1));
+        // eslint-disable-next-line @jessie.js/no-nested-await
         await messagesToXsnap.next([QUERY_RESPONSE_BUF, commandResult]);
       } else {
         // unrecognized responses also kill the process
