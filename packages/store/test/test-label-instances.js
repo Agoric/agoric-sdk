@@ -20,8 +20,7 @@ const DownCounterI = M.interface('DownCounter', {
   decr: M.call().returns(M.number()),
 });
 
-// TODO unskip after reconciling with endo
-test.skip('test defineExoClass', t => {
+test('test defineExoClass', t => {
   const makeUpCounter = defineExoClass(
     'UpCounter',
     UpCounterI,
@@ -46,8 +45,7 @@ test.skip('test defineExoClass', t => {
   t.is(`${q(up2)}`, '"[Alleged: UpCounter#2]"');
 });
 
-// TODO unskip after reconciling with endo
-test.skip('test defineExoClassKit', t => {
+test('test defineExoClassKit', t => {
   const makeCounterKit = defineExoClassKit(
     'Counter',
     { up: UpCounterI, down: DownCounterI },
@@ -90,8 +88,7 @@ test.skip('test defineExoClassKit', t => {
   t.is(`${q(down2)}`, '"[Alleged: Counter down#2]"');
 });
 
-// TODO unskip after reconciling with endo
-test.skip('test makeExo', t => {
+test('test makeExo', t => {
   let x = 3;
   const up1 = makeExo('upCounterA', UpCounterI, {
     incr() {
