@@ -190,10 +190,13 @@ const start = async (zcf, privateArgs) => {
   // CRUCIAL: only contractGovernor should get the ability to update params
   const limitedCreatorFacet = E(governedCF).getLimitedCreatorFacet();
 
+  /** @type {Invitation | undefined} */
   let currentInvitation;
+  /** @type {ERef<PoserFacet> | undefined} */
   let poserFacet;
   /** @type {() => Promise<PoserFacet>} */
   const getUpdatedPoserFacet = async () => {
+    /** @type {Invitation<PoserFacet>} */
     const newInvitation = await E(
       E(E(governedCF).getParamMgrRetriever()).get({ key: 'governedParams' }),
     ).getInternalParamValue(CONTRACT_ELECTORATE);
@@ -202,24 +205,24 @@ const start = async (zcf, privateArgs) => {
       poserFacet = E(E(zoe).offer(newInvitation)).getOfferResult();
       currentInvitation = newInvitation;
     }
+    if (!poserFacet) {
+      throw Fail`poserFacet failed to resolve`;
+    }
     return poserFacet;
   };
   trace('awaiting getUpdatedPoserFacet');
   await getUpdatedPoserFacet();
-  assert(poserFacet, 'question poser facet must be initialized');
 
-  trace('awaiting setupParamGovernance');
   // All governed contracts have at least a governed electorate
   const { voteOnParamChanges, createdQuestion: createdParamQuestion } =
-    await setupParamGovernance(
+    setupParamGovernance(
       E(governedCF).getParamMgrRetriever(),
       governedInstance,
       timer,
       getUpdatedPoserFacet,
     );
 
-  trace('awaiting setupFilterGovernance');
-  const { voteOnFilter, createdFilterQuestion } = await setupFilterGovernance(
+  const { voteOnFilter, createdFilterQuestion } = setupFilterGovernance(
     timer,
     getUpdatedPoserFacet,
     governedCF,

@@ -29,13 +29,9 @@ const makeOfferFilterPositions = strings => {
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @param {GovernorFacet<{}>} governorFacet
- * @returns {Promise<FilterGovernor>}
+ * @returns {FilterGovernor}
  */
-const setupFilterGovernance = async (
-  timer,
-  getUpdatedPoserFacet,
-  governorFacet,
-) => {
+const setupFilterGovernance = (timer, getUpdatedPoserFacet, governorFacet) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
