@@ -27,11 +27,11 @@ const makeOfferFilterPositions = strings => {
  * Setup to allow governance to block some invitations.
  *
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @param {GovernorFacet<{}>} governorFacet
+ * @param {() => Promise<PoserFacet>} getPoser
+ * @param {GovernorFacet<{}>} governedCF
  * @returns {QuestionProvenance & { voteOnFilter: VoteOnOfferFilter }}
  */
-const setupFilterGovernance = (timer, getUpdatedPoserFacet, governorFacet) => {
+const setupFilterGovernance = (timer, getPoser, governedCF) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
@@ -55,7 +55,7 @@ const setupFilterGovernance = (timer, getUpdatedPoserFacet, governorFacet) => {
     });
 
     const { publicFacet: counterPublicFacet, instance: voteCounter } = await E(
-      getUpdatedPoserFacet(),
+      getPoser(),
     ).addQuestion(voteCounterInstallation, questionSpec);
 
     voteCounters.add(voteCounter);
@@ -74,7 +74,7 @@ const setupFilterGovernance = (timer, getUpdatedPoserFacet, governorFacet) => {
         /** @type {(outcome: Position) => ERef<Position>} */
         outcome => {
           if (keyEQ(outcome, positive)) {
-            return E(governorFacet)
+            return E(governedCF)
               .setOfferFilter(strings)
               .then(() => {
                 return positive;

@@ -55,14 +55,14 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
  * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
  * @param {Instance} contractInstance
  * @param {import('@agoric/time/src/types').TimerService} timer
- * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
+ * @param {() => Promise<PoserFacet>} getPoser
  * @returns {QuestionProvenance & { voteOnParamChanges: VoteOnParamChanges }}
  */
 const setupParamGovernance = (
   paramManagerRetriever,
   contractInstance,
   timer,
-  getUpdatedPoserFacet,
+  getPoser,
 ) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
@@ -108,7 +108,7 @@ const setupParamGovernance = (
     });
 
     const { publicFacet: counterPublicFacet, instance: voteCounter } = await E(
-      getUpdatedPoserFacet(),
+      getPoser(),
     ).addQuestion(voteCounterInstallation, questionSpec);
 
     voteCounters.add(voteCounter);
