@@ -116,17 +116,9 @@ const ParamChangeAction = async (paramRows, optRows) => {
   const { board } = await rpcBoardKit_();
   const agoricNames = await board.provideAgoricNames();
 
-  const current = await board.readLatestHead(
-    `published.wallet.${opts.ProposerAddress}.current`,
-  );
-  const rights = findContinuingIds(current, agoricNames);
-  const previousOfferId = rights.find(
-    r => r.instanceName === 'econCommitteeCharter',
-  ).offerId;
-
   const action = makeParamChangeAction(
     paramRows,
-    { ...opts, previousOfferId },
+    opts,
     agoricNames,
   );
   const capData = board.serialize(action);
@@ -136,8 +128,8 @@ const ParamChangeAction = async (paramRows, optRows) => {
 const testPCO = async () => {
   console.warn('AMBIENT: SpreadsheetApp');
   const doc = SpreadsheetApp.getActiveSpreadsheet();
-  const params = doc.getRangeByName('Gov: Propose!B3:D4').getValues();
-  const opts = doc.getRange('Gov: Propose!A21:B25').getValues();
+  const params = doc.getRangeByName('Gov: Auction!B3:D9').getValues();
+  const opts = doc.getRange('Gov: Auction!A25:B29').getValues();
   /*
   const params = [['LiquidationPadding', 'percent', 0.2]];
   const opts = Object.entries({
