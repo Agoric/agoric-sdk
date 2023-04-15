@@ -63,11 +63,33 @@ const encodeGovParamEntry =
         };
         return [name, { numerator, denominator }];
       }
+      case 'BP': {
+        const brand = agoricNames.brand;
+        // round to basis point
+        const numerator = {
+          brand: brand.IST,
+          value: BigInt(Math.round(value * 100 * 100)),
+        };
+        const denominator = {
+          brand: brand.IST,
+          value: BigInt(100 * 100),
+        };
+        return [name, { numerator, denominator }];
+      }
       case 'sec': {
         // RelativeTime
         const timerBrand = agoricNames.brand.timer;
         if (!timerBrand) throw Error('no timer brand???');
         return [name, { relValue: BigInt(value), timerBrand }];
+      }
+      case 'relTime': {
+        const timerBrand = agoricNames.brand.timer;
+        if (!timerBrand) throw Error('no timer brand???');
+        const t0 = new Date('1899-12-30');
+        const t0s = t0.toISOString();
+        const delta = Math.round((value.getTime() - t0.getTime())/1000);
+        const relValue = BigInt(delta);
+        return [name, { relValue, timerBrand }];
       }
       case 'IST': {
         const assetInfo = agoricNames.vbankAsset.uist;
