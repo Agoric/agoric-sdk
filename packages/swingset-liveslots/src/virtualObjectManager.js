@@ -3,7 +3,7 @@
 
 import { assert, Fail } from '@agoric/assert';
 import { assertPattern, mustMatch } from '@agoric/store';
-import { defendPrototype, defendPrototypeKit } from '@agoric/store/tools.js';
+import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
@@ -129,7 +129,7 @@ function makeContextCache(makeState, makeContext) {
 }
 
 /**
- * @typedef {import('@agoric/store/src/patterns/exo-tools.js').ContextProvider } ContextProvider
+ * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
  */
 
 /**

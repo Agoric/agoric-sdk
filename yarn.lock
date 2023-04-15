@@ -1392,6 +1392,14 @@
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-0.17.1.tgz#e844b80509b703181364e42f09f78aaa482665f0"
   integrity sha512-u4U5dNWlT7uUdLSFyt1xYyqxfE8xXkjEZyko7krN4bHWl0JaXMdNt/Pd3HLctbyoKRL8x9ccRjPk7QzR7WIuwg==
 
+"@endo/exo@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@endo/exo/-/exo-0.2.1.tgz#54e1b71c16364c3512742e7d172b5e0da2a0fe8e"
+  integrity sha512-EMtEZhSwwfGmttbPprnikqWVrFyWBflVgABJYxq3Aa9xYg0/lYoA1tGUaYD5Z6OdgLmz4muxffo48r6oHnpbrg==
+  dependencies:
+    "@endo/far" "^0.2.17"
+    "@endo/patterns" "^0.2.1"
+
 "@endo/far@^0.2.17", "@endo/far@^0.2.3":
   version "0.2.17"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-0.2.17.tgz#32c1c703b7bcacc31e4f83f7cd5400be5ce75884"
@@ -1456,6 +1464,15 @@
   dependencies:
     "@endo/promise-kit" "^0.2.55"
     "@fast-check/ava" "^1.1.3"
+
+"@endo/patterns@^0.2.1":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@endo/patterns/-/patterns-0.2.1.tgz#8c0bc50b87d94202f4f0c68b6ad04b655575b5c7"
+  integrity sha512-8JKebSncYlCBjtzeXhKrejS5q1rArs5+bOqa6r0mOLfevTpa8+cIJXB+3i48ww+ntMyW7DXB4w/rTd4/bBChug==
+  dependencies:
+    "@endo/eventual-send" "^0.17.1"
+    "@endo/marshal" "^0.8.4"
+    "@endo/promise-kit" "^0.2.55"
 
 "@endo/promise-kit@^0.2.55":
   version "0.2.55"

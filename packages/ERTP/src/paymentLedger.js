@@ -20,7 +20,7 @@ const { details: X, quote: q, Fail } = assert;
 /**
  * @param {Brand} brand
  * @param {AssetKind} assetKind
- * @param {Matcher} elementShape
+ * @param {Pattern} elementShape
  */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;

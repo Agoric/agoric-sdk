@@ -1,4 +1,4 @@
-import { M } from '../src/patterns/patternMatchers.js';
+import { M } from '@endo/patterns';
 
 // The purpose of this module is to provide snapshotted (and possibly stale)
 // copies of various patterns and guards from packages that this package

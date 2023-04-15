@@ -1,21 +1,21 @@
 import { assert, q, Fail } from '@agoric/assert';
+import { Far, passStyleOf } from '@endo/far';
 import {
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
   isEncodedRemotable,
-} from '@endo/marshal/src/encodePassable.js';
-import { compareRank } from '@endo/marshal/src/rankOrder.js';
+  compareRank,
+} from '@endo/marshal';
 import {
-  getRankCover,
   assertPattern,
   matches,
   mustMatch,
   M,
   makeCopySet,
   makeCopyMap,
-} from '@agoric/store';
-import { Far, passStyleOf } from '@endo/marshal';
+  getRankCover,
+} from '@endo/patterns';
 import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,

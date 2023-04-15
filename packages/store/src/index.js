@@ -9,18 +9,14 @@ export {
   getCopyBagEntries,
   makeCopyMap,
   getCopyMapEntries,
-} from './keys/checkKey.js';
-export { coerceToElements } from './keys/copySet.js';
-export { coerceToBagEntries } from './keys/copyBag.js';
-export {
+  coerceToElements,
+  coerceToBagEntries,
   compareKeys,
   keyLT,
   keyLTE,
   keyEQ,
   keyGTE,
   keyGT,
-} from './keys/compareKeys.js';
-export {
   elementsIsSuperset,
   elementsIsDisjoint,
   elementsCompare,
@@ -35,31 +31,25 @@ export {
   setDisjointUnion,
   setIntersection,
   setDisjointSubtract,
-} from './keys/merge-set-operators.js';
-
-export {
   bagIsSuperbag,
   bagCompare,
   bagUnion,
   bagIntersection,
   bagDisjointSubtract,
-} from './keys/merge-bag-operators.js';
-
-export {
   M,
   getRankCover,
   isPattern,
   assertPattern,
   matches,
   mustMatch,
-} from './patterns/patternMatchers.js';
+} from '@endo/patterns';
 
 export {
   initEmpty,
   defineExoClass,
   defineExoClassKit,
   makeExo,
-} from './patterns/exo-makers.js';
+} from '@endo/exo';
 
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';

@@ -1,5 +1,7 @@
 import { q, Fail } from '@agoric/assert';
 
+import '../types.js';
+
 /**
  * This module and its fraternal sibling legacyWeakMap exist only to
  * ease a transition to the modern `store` system, are deprecated,
