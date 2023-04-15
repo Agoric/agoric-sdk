@@ -56,7 +56,7 @@ export const computeRoundTiming = (params, baseTime) => {
 
   const actualDuration = TimeMath.multiplyRelNat(clockStep, steps);
   // computed start is baseTime + freq - (now mod freq). if there are hourly
-  // starts, we add an hour to the current time, and subtract now mod freq.
+  // starts, we add an hour to the time, and subtract now mod freq.
   // Then we add the delay
   /** @type {import('@agoric/time/src/types').TimestampRecord} */
   const startTime = TimeMath.addAbsRel(

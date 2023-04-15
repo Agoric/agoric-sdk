@@ -35,13 +35,13 @@ const test = anyTest;
 const trace = makeTracer('Test AuctContract', false);
 
 const defaultParams = {
-  startFreq: 40n,
-  clockStep: 5n,
-  startingRate: 10500n,
-  lowestRate: 4500n,
-  discountStep: 2000n,
-  auctionStartDelay: 10n,
-  priceLockPeriod: 3n,
+  StartFreq: 40n,
+  ClockStep: 5n,
+  StartingRate: 10500n,
+  LowestRate: 4500n,
+  DiscountStep: 2000n,
+  AuctionStartDelay: 10n,
+  PriceLockPeriod: 3n,
 };
 
 const makeTestContext = async () => {
@@ -79,9 +79,9 @@ const dynamicConfig = async (t, params) => {
   const { priceAuthority, adminFacet: registry } = makePriceAuthorityRegistry();
 
   const governedParams = makeAuctioneerParams({
-    electorateInvitationAmount: fakeInvitationAmount,
+    ElectorateInvitationAmount: fakeInvitationAmount,
     ...params,
-    timerBrand,
+    TimerBrand: timerBrand,
   });
 
   const terms = {
@@ -1109,7 +1109,7 @@ test.serial('multiple collaterals', async t => {
   const { collateral, currency } = t.context;
 
   const params = defaultParams;
-  params.lowestRate = 2500n;
+  params.LowestRate = 2500n;
 
   const driver = await makeAuctionDriver(t, {}, params);
   const asset = withAmountUtils(makeIssuerKit('Asset'));

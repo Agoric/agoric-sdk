@@ -545,18 +545,18 @@ export const startAuctioneer = async (
 
   const auctionTerms = makeGovernedATerms(
     { storageNode, marshaller },
+    chainTimerService,
+    priceAuthority,
     {
-      priceAuthority,
-      timer: chainTimerService,
-      startFreq: auctionParams.startFreq,
-      clockStep: auctionParams.clockStep,
-      lowestRate: auctionParams.lowestRate,
-      startingRate: auctionParams.startingRate,
-      discountStep: auctionParams.discountStep,
-      auctionStartDelay: auctionParams.auctionStartDelay,
-      priceLockPeriod: auctionParams.priceLockPeriod,
-      electorateInvitationAmount,
-      timerBrand,
+      StartFreq: auctionParams.startFreq,
+      ClockStep: auctionParams.clockStep,
+      LowestRate: auctionParams.lowestRate,
+      StartingRate: auctionParams.startingRate,
+      DiscountStep: auctionParams.discountStep,
+      AuctionStartDelay: auctionParams.auctionStartDelay,
+      PriceLockPeriod: auctionParams.priceLockPeriod,
+      ElectorateInvitationAmount: electorateInvitationAmount,
+      TimerBrand: timerBrand,
     },
   );
 

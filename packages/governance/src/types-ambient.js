@@ -48,8 +48,8 @@
  * T extends 'nat' ? bigint :
  * T extends 'ratio' ? Ratio :
  * T extends 'string' ? string :
- * T extends 'timestamp' ? import('@agoric/time/src/types').TimestampRecord :
- * T extends 'relativeTime' ? import('@agoric/time/src/types').RelativeTimeRecord :
+ * T extends 'timestamp' ? import('@agoric/time').Timestamp :
+ * T extends 'relativeTime' ? import('@agoric/time').RelativeTime :
  * T extends 'unknown' ? unknown :
  * never
  * } ParamValueForType
