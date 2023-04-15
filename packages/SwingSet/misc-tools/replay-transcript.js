@@ -19,11 +19,10 @@ import { file as tmpFile, tmpName } from 'tmp';
 import sqlite3 from 'better-sqlite3';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargsParser from 'yargs-parser';
-import bundleSource from '@endo/bundle-source';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '@agoric/swing-store';
-import { entryPaths as lockdownEntryPaths } from '@agoric/xsnap-lockdown/src/paths.js';
-import { entryPaths as supervisorEntryPaths } from '@agoric/swingset-xsnap-supervisor/src/paths.js';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
+import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
@@ -38,10 +37,9 @@ const pipe = promisify(pipeline);
 // TODO: switch to full yargs for documenting output
 const argv = yargsParser(process.argv.slice(2), {
   boolean: [
-    // Rebuild the bundles when starting the replay.
-    // Disable if bundles were previously extracted form a Kernel DB, or to
-    // save a few seconds and rely upon previously built versions instead.
-    'rebuildBundles',
+    // Use built bundles from the current SDK
+    // Disable if bundles were previously extracted form a Kernel DB.
+    'useSdkBundles',
 
     // Enable to continue if snapshot hash doesn't match hash in transcript's
     // 'save', or when the hash of the concurrent workers snapshots don't all
@@ -115,7 +113,7 @@ const argv = yargsParser(process.argv.slice(2), {
     },
   ],
   default: {
-    rebuildBundles: false,
+    useSdkBundles: false,
     ignoreSnapshotHashDifference: true,
     ignoreConcurrentWorkerDivergences: true,
     forcedSnapshotInitial: 2,
@@ -164,19 +162,6 @@ function makeSnapStoreIO() {
     tmpName,
     unlink: fs.promises.unlink,
   };
-}
-
-async function makeBundles() {
-  // we explicitly re-bundle these entry points, rather than using
-  // getLockdownBundle(), because if you're calling this, you're
-  // probably editing the sources anyways
-  const lockdownPath = lockdownEntryPaths.lockdown;
-  const lockdown = await bundleSource(lockdownPath, 'nestedEvaluate');
-  const supervisorPath = supervisorEntryPaths.supervisor;
-  const supervisor = await bundleSource(supervisorPath, 'nestedEvaluate');
-  fs.writeFileSync('lockdown-bundle', JSON.stringify(lockdown));
-  fs.writeFileSync('supervisor-bundle', JSON.stringify(supervisor));
-  console.log(`xs bundles written`);
 }
 
 // relative timings:
@@ -280,16 +265,16 @@ async function replay(transcriptFile) {
   const workers = [];
 
   if (worker === 'xs-worker') {
-    // eslint-disable-next-line no-constant-condition
-    if (argv.rebuildBundles) {
-      console.log(`creating xsnap helper bundles`);
-      await makeBundles();
-      console.log(`xsnap helper bundles created`);
-    }
-    const bundles = [
-      JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
-      JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
-    ];
+    /** @type {import('../src/types-external.js').Bundle[]} */
+    const bundles = await (argv.useSdkBundles
+      ? Promise.all([
+          /** @type {Promise<*>} */ (getLockdownBundle()),
+          /** @type {Promise<*>} */ (getSupervisorBundle()),
+        ])
+      : [
+          JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
+          JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
+        ]);
 
     const capturePIDSpawn = /** @type {typeof spawn} */ (
       /** @param  {Parameters<typeof spawn>} args */
