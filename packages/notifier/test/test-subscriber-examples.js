@@ -115,17 +115,15 @@ test('subscription observeIteration on generic representative', async t => {
 test('subscribe to subscriptionIterator success example', async t => {
   const { publication, subscription } = makeSubscriptionKit();
   paula(publication);
-  const log = await carol(subscription);
+  const [log1, log2] = await carol(subscription);
 
-  t.deepEqual(log, [
-    [
-      ['non-final', 'a'],
-      ['non-final', 'b'],
-      ['finished', 'done'],
-    ],
-    [
-      ['non-final', 'b'],
-      ['finished', 'done'],
-    ],
+  t.deepEqual(log1, [
+    ['non-final', 'a'],
+    ['non-final', 'b'],
+    ['finished', 'done'],
+  ]);
+  t.deepEqual(log2, [
+    ['non-final', 'b'],
+    ['finished', 'done'],
   ]);
 });
