@@ -72,7 +72,7 @@ export {};
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
- * @typedef { import('@agoric/swingset-liveslots').VatSyscaller } VatSyscaller
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallHandler } VatSyscallHandler
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
  * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
