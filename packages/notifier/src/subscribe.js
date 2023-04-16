@@ -82,11 +82,11 @@ export const subscribe = itP =>
  *
  * @template T
  * @param {ERef<EachTopic<T>>} topic
- * @param {ERef<PublicationRecord<T>>} pubList
+ * @param {ERef<PublicationRecord<T>>} nextCellP
  *   PublicationRecord corresponding with the first iteration result
  * @returns {ForkableAsyncIterator<T, T>}
  */
-const makeEachIterator = (topic, pubList) => {
+const makeEachIterator = (topic, nextCellP) => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return Far('EachIterator', {
@@ -95,7 +95,7 @@ const makeEachIterator = (topic, pubList) => {
         head: resultP,
         publishCount: publishCountP,
         tail: tailP,
-      } = E.get(pubList);
+      } = E.get(nextCellP);
 
       // If tailP is broken by upgrade, we will need to re-request it
       // directly from `topic`.
@@ -110,19 +110,19 @@ const makeEachIterator = (topic, pubList) => {
         return successor;
       };
 
-      // Replace pubList on every call to next() so things work even
+      // Replace nextCellP on every call to next() so things work even
       // with an eager consumer that doesn't wait for results to settle.
-      pubList = reconnectAsNeeded(getSuccessor, [tailP]);
+      nextCellP = reconnectAsNeeded(getSuccessor, [tailP]);
 
       // We expect the tail to be the "cannot read past end" error at the end
       // of the happy path.
       // Since we are wrapping that error with eventual send, we sink the
       // rejection here too so it doesn't become an invalid unhandled rejection
       // later.
-      void E.when(pubList, sink, sink);
+      void E.when(nextCellP, sink, sink);
       return resultP;
     },
-    fork: () => makeEachIterator(topic, pubList),
+    fork: () => makeEachIterator(topic, nextCellP),
   });
 };
 
@@ -145,8 +145,8 @@ const makeEachIterator = (topic, pubList) => {
 export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
     [Symbol.asyncIterator]: () => {
-      const pubList = reconnectAsNeeded(() => E(topic).subscribeAfter());
-      return makeEachIterator(topic, pubList);
+      const firstCellP = reconnectAsNeeded(() => E(topic).subscribeAfter());
+      return makeEachIterator(topic, firstCellP);
     },
   });
   return iterable;
