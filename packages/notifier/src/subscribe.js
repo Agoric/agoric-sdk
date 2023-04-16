@@ -117,8 +117,8 @@ const makeEachIterator = (topic, nextCellP) => {
       // We expect the tail to be the "cannot read past end" error at the end
       // of the happy path.
       // Since we are wrapping that error with eventual send, we sink the
-      // rejection here too so it doesn't become an invalid unhandled rejection
-      // later.
+      // rejections here too to avoid invalid unhandled rejection issues later.
+      void E.when(publishCountP, sink, sink);
       void E.when(nextCellP, sink, sink);
       return resultP;
     },
