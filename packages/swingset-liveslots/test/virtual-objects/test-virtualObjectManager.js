@@ -129,7 +129,7 @@ test('multifaceted virtual objects', t => {
   t.deepEqual(log.splice(0), [
     `get kindIDID => undefined`,
     `set kindIDID 1`,
-    `set vom.vkind.2 {"kindID":"2","tag":"multithing"}`,
+    `set vom.vkind.2.descriptor {"kindID":"2","tag":"multithing"}`,
     `set vom.${kid}/1 ${multiThingVal('foo', 1)}`,
     `set vom.${kid}/2 ${multiThingVal('other', 0)}`,
   ]);
@@ -186,8 +186,8 @@ test('virtual object operations', t => {
   // phase 0: start
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
-    ['vom.vkind.2', '{"kindID":"2","tag":"thing"}'],
-    ['vom.vkind.3', '{"kindID":"3","tag":"zot"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"thing"}'],
+    ['vom.vkind.3.descriptor', '{"kindID":"3","tag":"zot"}'],
   ]);
 
   // note: the "[t1-0].." comments show the expected cache contents,
@@ -204,8 +204,8 @@ test('virtual object operations', t => {
   // t4-0: 'thing-4' 300 0
   t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `set kindIDID 1`);
-  t.is(log.shift(), `set vom.vkind.2 {"kindID":"2","tag":"thing"}`);
-  t.is(log.shift(), `set vom.vkind.3 {"kindID":"3","tag":"zot"}`);
+  t.is(log.shift(), `set vom.vkind.2.descriptor {"kindID":"2","tag":"thing"}`);
+  t.is(log.shift(), `set vom.vkind.3.descriptor {"kindID":"3","tag":"zot"}`);
   t.deepEqual(log, []);
   flushStateCache();
   t.is(log.shift(), `set vom.${tid}/1 ${thingVal(0, 'thing-1', 0)}`);
@@ -246,8 +246,8 @@ test('virtual object operations', t => {
     [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 0)], // =z2-0
     [`vom.${zid}/3`, zotVal(47, 'Carol', 'as if...', 0)], // =z3-0
     [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 0)], // =z4-0
-    ['vom.vkind.2', '{"kindID":"2","tag":"thing"}'],
-    ['vom.vkind.3', '{"kindID":"3","tag":"zot"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"thing"}'],
+    ['vom.vkind.3.descriptor', '{"kindID":"3","tag":"zot"}'],
   ]);
 
   // phase 2: first batch-o-stuff
@@ -315,8 +315,8 @@ test('virtual object operations', t => {
     [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 1)], // =z2-1
     [`vom.${zid}/3`, zotVal(47, 'Carol', 'as if...', 1)], // =z3-1
     [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 1)], // =z4-1
-    ['vom.vkind.2', '{"kindID":"2","tag":"thing"}'],
-    ['vom.vkind.3', '{"kindID":"3","tag":"zot"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"thing"}'],
+    ['vom.vkind.3.descriptor', '{"kindID":"3","tag":"zot"}'],
   ]);
 
   // phase 3: second batch-o-stuff
@@ -404,8 +404,8 @@ test('virtual object operations', t => {
     [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
     [`vom.${zid}/3`, zotVal(47, 'Chester', 'as if...', 3)], // =z3-3
     [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 2)], // =z4-2
-    ['vom.vkind.2', '{"kindID":"2","tag":"thing"}'],
-    ['vom.vkind.3', '{"kindID":"3","tag":"zot"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"thing"}'],
+    ['vom.vkind.3.descriptor', '{"kindID":"3","tag":"zot"}'],
   ]);
 
   // phase 4
@@ -428,8 +428,8 @@ test('virtual object operations', t => {
     [`vom.${zid}/2`, zotVal(29, 'Bob', 'what are you saying?', 2)], // =z2-2
     [`vom.${zid}/3`, zotVal(47, 'Chester', 'as if...', 3)], // =z3-3
     [`vom.${zid}/4`, zotVal(66, 'Dave', 'you and what army?', 2)], // =z4-2
-    ['vom.vkind.2', '{"kindID":"2","tag":"thing"}'],
-    ['vom.vkind.3', '{"kindID":"3","tag":"zot"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"thing"}'],
+    ['vom.vkind.3.descriptor', '{"kindID":"3","tag":"zot"}'],
   ]);
 });
 
@@ -458,7 +458,7 @@ test('symbol named methods', t => {
   // phase 0: start
   t.deepEqual(dumpStore(), [
     ['kindIDID', '1'],
-    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"symthing"}'],
   ]);
 
   // phase 1: object creations
@@ -468,7 +468,10 @@ test('symbol named methods', t => {
   // t2-0: 'thing-2' 100 0
   t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `set kindIDID 1`);
-  t.is(log.shift(), `set vom.vkind.2 {"kindID":"2","tag":"symthing"}`);
+  t.is(
+    log.shift(),
+    `set vom.vkind.2.descriptor {"kindID":"2","tag":"symthing"}`,
+  );
   t.deepEqual(log, []);
   flushStateCache();
   t.is(log.shift(), `set vom.${tid}/1 ${thingVal(0, 'thing-1', 0)}`); // write t1-0
@@ -478,7 +481,7 @@ test('symbol named methods', t => {
     ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(0, 'thing-1', 0)], // =t1-0
     [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
-    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"symthing"}'],
   ]);
 
   // phase 2: call symbol-named method on thing1
@@ -492,7 +495,7 @@ test('symbol named methods', t => {
     ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(1, 'thing-1', 0)], // =t1-1
     [`vom.${tid}/2`, thingVal(100, 'thing-2', 0)], // =t2-0
-    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"symthing"}'],
   ]);
 
   // phase 3: call symbol-named method on thing2
@@ -506,7 +509,7 @@ test('symbol named methods', t => {
     ['kindIDID', '1'],
     [`vom.${tid}/1`, thingVal(1, 'thing-1', 0)], // =t1-1
     [`vom.${tid}/2`, thingVal(101, 'thing-2', 0)], // =t2-1
-    ['vom.vkind.2', '{"kindID":"2","tag":"symthing"}'],
+    ['vom.vkind.2.descriptor', '{"kindID":"2","tag":"symthing"}'],
   ]);
 });
 
@@ -575,8 +578,9 @@ test('durable kind IDs can be reanimated', t => {
   let kindHandle = makeKindHandle('testkind');
   t.is(
     log.shift(),
-    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1}',
+    'set vom.dkind.10.descriptor {"kindID":"10","tag":"testkind"}',
   );
+  t.is(log.shift(), 'set vom.dkind.10.nextID 1');
   t.deepEqual(log, []);
   const khid = `o+d1/10`;
   const kind = kslot(khid, 'kind');
@@ -605,25 +609,23 @@ test('durable kind IDs can be reanimated', t => {
   t.is(log.shift(), `get vc.1.ssavedKindID => ${vstr(kind)}`);
   t.is(
     log.shift(),
-    'get vom.dkind.10 => {"kindID":"10","tag":"testkind","nextInstanceID":1}',
+    'get vom.dkind.10.descriptor => {"kindID":"10","tag":"testkind"}',
   );
+  t.is(log.shift(), 'get vom.dkind.10.nextID => 1');
   t.deepEqual(log, []);
 
   // Use it now, to define a durable kind
   const makeThing = defineDurableKind(fetchedKindID, initThing, thingBehavior);
   t.is(
     log.shift(),
-    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":1,"unfaceted":true,"stateShapeCapData":{"body":"#\\"#undefined\\"","slots":[]}}',
+    'set vom.dkind.10.descriptor {"kindID":"10","tag":"testkind","unfaceted":true,"stateShapeCapData":{"body":"#\\"#undefined\\"","slots":[]}}',
   );
   t.deepEqual(log, []);
 
   // Make an instance of the new kind, just to be sure it's there
   makeThing('laterThing');
   flushStateCache();
-  t.is(
-    log.shift(),
-    'set vom.dkind.10 {"kindID":"10","tag":"testkind","nextInstanceID":2,"unfaceted":true,"stateShapeCapData":{"body":"#\\"#undefined\\"","slots":[]}}',
-  );
+  t.is(log.shift(), 'set vom.dkind.10.nextID 2');
   t.is(log.shift(), `set vom.o+d10/1 ${thingVal(0, 'laterThing', 0)}`);
   t.deepEqual(log, []);
 });
@@ -652,8 +654,11 @@ test('virtual object gc', t => {
   ];
   t.is(log.shift(), `get storeKindIDTable => undefined`);
   t.is(log.shift(), `set ${skit[0]} ${skit[1]}`);
-  t.is(log.shift(), `set vom.vkind.10 {"kindID":"10","tag":"thing"}`);
-  t.is(log.shift(), `set vom.vkind.11 {"kindID":"11","tag":"ref"}`);
+  t.is(
+    log.shift(),
+    `set vom.vkind.10.descriptor {"kindID":"10","tag":"thing"}`,
+  );
+  t.is(log.shift(), `set vom.vkind.11.descriptor {"kindID":"11","tag":"ref"}`);
   t.deepEqual(log, []);
 
   // make a bunch of things which we'll use
@@ -686,8 +691,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 
   // This is what the finalizer would do if the local reference was dropped and GC'd
@@ -723,8 +728,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 
   // drop export -- should delete
@@ -762,8 +767,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 
   // case 2: export, drop export, drop local ref
@@ -790,8 +795,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 
   // drop local ref -- should delete
@@ -819,8 +824,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 
   // case 3: drop local ref with no prior export
@@ -848,8 +853,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/7`, minThing('thing #7')],
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 
   // case 4: ref virtually, export, drop local ref, drop export
@@ -869,8 +874,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/8`, minThing('thing #8')],
     [`vom.${tbase}/9`, minThing('thing #9')],
     [`vom.rc.${tbase}/4`, '1'],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
   // export
   setExportStatus(`${tbase}/4`, 'reachable');
@@ -914,8 +919,8 @@ test('virtual object gc', t => {
     [`vom.${tbase}/9`, minThing('thing #9')],
     [`vom.rc.${tbase}/4`, '1'],
     [`vom.rc.${tbase}/5`, '1'],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
   // drop local ref -- should not delete because ref'd virtually AND exported
   pretendGC(`${tbase}/5`, false);
@@ -950,8 +955,8 @@ test('virtual object gc', t => {
     [`vom.rc.${tbase}/4`, '1'],
     [`vom.rc.${tbase}/5`, '1'],
     [`vom.rc.${tbase}/6`, '1'],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
   // drop local ref -- should not delete because ref'd virtually
   pretendGC(`${tbase}/6`, false);
@@ -972,8 +977,8 @@ test('virtual object gc', t => {
     [`vom.rc.${tbase}/4`, '1'],
     [`vom.rc.${tbase}/5`, '1'],
     [`vom.rc.${tbase}/6`, '1'],
-    ['vom.vkind.10', '{"kindID":"10","tag":"thing"}'],
-    ['vom.vkind.11', '{"kindID":"11","tag":"ref"}'],
+    ['vom.vkind.10.descriptor', '{"kindID":"10","tag":"thing"}'],
+    ['vom.vkind.11.descriptor', '{"kindID":"11","tag":"ref"}'],
   ]);
 });
 
