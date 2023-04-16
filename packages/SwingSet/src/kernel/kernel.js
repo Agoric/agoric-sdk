@@ -1520,12 +1520,12 @@ export default function buildKernel(
     overrideVatManagerOptions,
   });
 
-  vatWarehouse = makeVatWarehouse(
+  vatWarehouse = makeVatWarehouse({
     kernelKeeper,
     vatLoader,
     panic,
     warehousePolicy,
-  );
+  });
 
   /**
    * Create a dynamically generated vat for testing purposes.  Such vats are

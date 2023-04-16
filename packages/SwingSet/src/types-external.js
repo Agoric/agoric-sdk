@@ -234,6 +234,9 @@ export {};
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
  *             } } RunPolicy
+ *
+ * @typedef {object} VatWarehousePolicy
+ * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
  */
 
 /**

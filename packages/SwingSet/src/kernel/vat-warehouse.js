@@ -57,19 +57,19 @@ export const makeLRU = max => {
  */
 
 /**
- * @param {KernelKeeper} kernelKeeper
- * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} vatLoader
- * @param { import('../types-internal.js').KernelPanic } panic
- * @param {object} policyOptions
- * @param {number} [policyOptions.maxVatsOnline] Limit the number of simultaneous workers
+ * @param {object} details
+ * @param {KernelKeeper} details.kernelKeeper
+ * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} details.vatLoader
+ * @param { import('../types-internal.js').KernelPanic } details.panic
+ * @param { import('../types-external.js').VatWarehousePolicy } details.warehousePolicy
  */
-export function makeVatWarehouse(
+export function makeVatWarehouse({
   kernelKeeper,
   vatLoader,
   panic,
-  policyOptions,
-) {
-  const { maxVatsOnline = 50 } = policyOptions || {};
+  warehousePolicy,
+}) {
+  const { maxVatsOnline = 50 } = warehousePolicy || {};
   // Often a large contract evaluation is among the first few deliveries,
   // so let's do a snapshot after just a few deliveries.
   const snapshotInitial = kernelKeeper.getSnapshotInitial();
@@ -77,7 +77,7 @@ export function makeVatWarehouse(
   // Note: some measurements show 10 deliveries per sec on XS as of this writing.
   let snapshotInterval = kernelKeeper.getSnapshotInterval();
   // Idea: snapshot based on delivery size: after deliveries >10Kb.
-  // console.debug('makeVatWarehouse', { policyOptions });
+  // console.debug('makeVatWarehouse', { warehousePolicy });
 
   /**
    * @typedef {{
