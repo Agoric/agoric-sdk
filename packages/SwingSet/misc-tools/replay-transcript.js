@@ -151,11 +151,13 @@ async function fileHash(filename) {
   return hash.digest('hex');
 }
 
+const measureSeconds = makeMeasureSeconds(performance.now.bind(performance));
+
 function makeSnapStoreIO() {
   return {
     createReadStream: fs.createReadStream,
     createWriteStream: fs.createWriteStream,
-    measureSeconds: makeMeasureSeconds(performance.now),
+    measureSeconds,
     open: fs.promises.open,
     stat: fs.promises.stat,
     tmpFile,
@@ -202,8 +204,7 @@ async function replay(transcriptFile) {
         /** @type {import('../src/types-external.js').VatKeeper} */ (
           /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
             addToTranscript: () => {},
-            getLastSnapshot: () =>
-              loadSnapshotID && { snapshotID: loadSnapshotID },
+            getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
           })
         ),
       getRelaxDurabilityRules: () => false,
@@ -224,14 +225,16 @@ async function replay(transcriptFile) {
           const snapFile = `${vatID}-${endPos}-${
             saveSnapshotID || 'unknown'
           }.xss`;
-          await saveRaw(snapFile);
+          const { duration: rawSaveSeconds } = await measureSeconds(() =>
+            saveRaw(snapFile),
+          );
           const hash = await fileHash(snapFile);
-          const filePath = `${vatID}-${endPos}-${hash}.xss`;
+          const filePath = `${vatID}-${hash}.xss`;
           await fs.promises.rename(snapFile, filePath);
-          return { hash };
+          return { hash, rawSaveSeconds };
         },
-        async loadSnapshot(hash, loadRaw) {
-          const snapFile = `${hash}.xss`;
+        async loadSnapshot(_vatID, loadRaw) {
+          const snapFile = `${vatID}-${loadSnapshotID}.xss`;
           return loadRaw(snapFile);
         },
       })
