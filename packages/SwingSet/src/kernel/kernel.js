@@ -19,10 +19,8 @@ import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
-import {
-  makeWorkerOptions,
-  updateWorkerOptions,
-} from '../lib/workerOptions.js';
+import { updateWorkerOptions } from '../lib/workerOptions.js';
+import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
 import { makeKernelSyscallHandler } from './kernelSyscall.js';
 import { makeSlogger, makeDummySlogger } from './slogger.js';
@@ -143,6 +141,8 @@ export default function buildKernel(
    * @type HooksForAllDevices
    */
   const deviceHooks = new Map();
+
+  const optionRecorder = makeVatOptionRecorder(kernelKeeper, bundleHandler);
 
   // This is a low-level output-only string logger used by old unit tests to
   // see whether vats made progress or not. The array it appends to is
@@ -687,17 +687,7 @@ export default function buildKernel(
     const { vatID, source, vatParameters, dynamicOptions } = message;
     insistCapData(vatParameters);
     kernelKeeper.addDynamicVatID(vatID);
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    const {
-      managerType = kernelKeeper.getDefaultManagerType(),
-      reapInterval = kernelKeeper.getDefaultReapInterval(),
-      ...otherOptions
-    } = dynamicOptions;
-    const workerOptions = await makeWorkerOptions(managerType, bundleHandler);
-    /** @type {import('../types-internal.js').RecordedVatOptions} */
-    const vatOptions = harden({ workerOptions, reapInterval, ...otherOptions });
-    vatKeeper.setSourceAndOptions(source, vatOptions);
-    vatKeeper.initializeReapCountdown(reapInterval);
+    await optionRecorder.recordDynamic(vatID, source, dynamicOptions);
 
     // createDynamicVat makes the worker, installs lockdown and
     // supervisor, but does not load the vat bundle yet. It can fail
@@ -1568,32 +1558,28 @@ export default function buildKernel(
     assertKnownOptions(creationOptions, [
       'bundleID',
       'enablePipelining',
-      'metered',
       'reapInterval',
     ]);
     const {
       bundleID = 'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
       reapInterval = 'never',
-      ...otherOptions
+      enablePipelining,
     } = creationOptions;
-
     const vatID = kernelKeeper.allocateVatIDForNameIfNeeded(name);
     logStartup(`assigned VatID ${vatID} for test vat ${name}`);
 
-    const workerOptions = await makeWorkerOptions('local', bundleHandler);
-    /** @type {import('../types-internal.js').RecordedVatOptions} */
-    const vatOptions = harden({
+    const source = { bundleID };
+    /** @type {import('../types-external.js').ManagerType} */
+    const managerType = 'local';
+    const options = {
       name,
-      workerOptions,
       reapInterval,
-      ...otherOptions,
-    });
+      enablePipelining,
+      managerType,
+    };
+    await optionRecorder.recordStatic(vatID, source, options);
 
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.setSourceAndOptions({ bundleID }, vatOptions);
-    vatKeeper.initializeReapCountdown(reapInterval);
-
-    await vatWarehouse.loadTestVat(vatID, setup, vatOptions);
+    await vatWarehouse.loadTestVat(vatID, setup);
 
     const vpCapData = kser(vatParameters);
     /** @type { RunQueueEventStartVat } */

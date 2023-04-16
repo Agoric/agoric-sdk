@@ -354,25 +354,23 @@ export function makeVatWarehouse(
   /**
    * @param {string} vatID
    * @param {unknown} setup
-   * @param {import('../types-internal.js').RecordedVatOptions} vatOptions
    */
-  async function loadTestVat(vatID, setup, vatOptions) {
+  async function loadTestVat(vatID, setup) {
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    const options = vatKeeper.getOptions();
+    const { enablePipelining } = options;
     const translators = provideTranslators(vatID);
-
     const manager = await vatLoader.loadTestVat(
       vatID,
       setup,
       translators,
-      vatOptions,
+      options,
     );
-
-    const { enablePipelining = false } = vatOptions;
 
     const result = {
       manager,
-      translators,
       enablePipelining,
-      options: {},
+      options,
     };
     ephemeral.vats.set(vatID, result);
   }

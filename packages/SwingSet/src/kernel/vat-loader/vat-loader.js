@@ -141,12 +141,17 @@ export function makeVatLoader(stuff) {
     return manager;
   }
 
-  async function loadTestVat(vatID, setup, translators, creationOptions) {
+  async function loadTestVat(vatID, setup, translators, options) {
+    const { name, workerOptions, enablePipelining, critical } = options;
     const managerOptions = {
-      ...creationOptions,
+      workerOptions,
       setup,
+      metered: false,
       enableSetup: true,
+      enablePipelining,
       useTranscript: true,
+      critical,
+      name,
       ...overrideVatManagerOptions,
     };
     const vatSyscallHandler = buildVatSyscallHandler(vatID, translators);
