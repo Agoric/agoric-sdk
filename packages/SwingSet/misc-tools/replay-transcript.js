@@ -14,7 +14,7 @@ import { createHash } from 'crypto';
 import { pipeline } from 'stream';
 import { performance } from 'perf_hooks';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { file as tmpFile, tmpName } from 'tmp';
+import { file as tmpFile, tmpName, dirSync as tmpDirSync } from 'tmp';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import sqlite3 from 'better-sqlite3';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -204,34 +204,53 @@ async function replay(transcriptFile) {
       })
     );
 
-  const snapStore = argv.useCustomSnapStore
-    ? /** @type {SnapStore} */ ({
-        async saveSnapshot(_vatID, endPos, saveRaw) {
-          const snapFile = `${vatID}-${endPos}-${
-            saveSnapshotID || 'unknown'
-          }.xss`;
-          const { duration: rawSaveSeconds } = await measureSeconds(() =>
-            saveRaw(snapFile),
-          );
-          const hash = await fileHash(snapFile);
-          const filePath = `${vatID}-${hash}.xss`;
-          await fs.promises.rename(snapFile, filePath);
-          return { hash, rawSaveSeconds };
-        },
-        async loadSnapshot(_vatID, loadRaw) {
-          const snapFile = `${vatID}-${loadSnapshotID}.xss`;
-          return loadRaw(snapFile);
-        },
-      })
-    : makeSnapStore(
-        sqlite3(':memory:'),
-        () => {},
-        makeSnapStoreIO(),
-        undefined,
-        {
-          keepSnapshots: true,
-        },
-      );
+  if (argv.ignoreSnapshotHashDifference && !argv.useCustomSnapStore) {
+    console.warn(
+      'Ignore snapshot difference implies usage of custom snapStore',
+    );
+    argv.useCustomSnapStore = true;
+  }
+
+  /** @type {SnapStore} */
+  let snapStore;
+  /** @type {(() => void) | undefined} */
+  let cleanupSnapStore;
+
+  if (argv.useCustomSnapStore) {
+    snapStore = /** @type {SnapStore} */ ({
+      async saveSnapshot(_vatID, endPos, saveRaw) {
+        const snapFile = `${vatID}-${endPos}-${
+          saveSnapshotID || 'unknown'
+        }.xss`;
+        const { duration: rawSaveSeconds } = await measureSeconds(() =>
+          saveRaw(snapFile),
+        );
+        const hash = await fileHash(snapFile);
+        const filePath = `${vatID}-${hash}.xss`;
+        await fs.promises.rename(snapFile, filePath);
+        return { hash, rawSaveSeconds };
+      },
+      async loadSnapshot(_vatID, loadRaw) {
+        const snapFile = `${vatID}-${loadSnapshotID}.xss`;
+        return loadRaw(snapFile);
+      },
+    });
+  } else {
+    const tmpDb = tmpDirSync({
+      prefix: `ag-replay-${transcriptFile}`,
+      unsafeCleanup: true,
+    });
+    cleanupSnapStore = tmpDb.removeCallback;
+    snapStore = makeSnapStore(
+      sqlite3(`${tmpDb.name}/snapstore.sqlite`),
+      () => {},
+      makeSnapStoreIO(),
+      undefined,
+      {
+        keepSnapshots: true,
+      },
+    );
+  }
   const testLog = () => {};
   const meterControl = makeDummyMeterControl();
   const gcTools = harden({
@@ -980,6 +999,7 @@ async function replay(transcriptFile) {
   } finally {
     lines.close();
     fs.closeSync(snapshotActivityFd);
+    cleanupSnapStore?.();
     await Promise.all(
       workers.map(
         async ({
@@ -989,7 +1009,7 @@ async function replay(transcriptFile) {
           deliveryTimeTotal,
           firstTranscriptNum,
         }) => {
-          await manager.shutdown();
+          await manager?.shutdown();
           console.log(
             `Shutdown worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Delivery time since last snapshot ${
               Math.round(deliveryTimeSinceLastSnapshot) / 1000
