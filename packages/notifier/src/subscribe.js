@@ -4,7 +4,7 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 import './types-ambient.js';
 
-const { details: X } = assert;
+const { details: X, Fail } = assert;
 const sink = () => {};
 
 /**
@@ -12,18 +12,20 @@ const sink = () => {};
  * and refetch upon encountering that condition.
  *
  * @template T
- * @param {() => ERef<T>} thunk
+ * @param {() => ERef<T>} getter
+ * @param {ERef<T>[]} [seed]
  * @returns {Promise<T>}
  */
-const reconnectAsNeeded = async thunk => {
+const reconnectAsNeeded = async (getter, seed = []) => {
   let disconnection;
   let lastVersion = -Infinity;
   // End synchronous prelude.
   await null;
-  for (;;) {
+  for (let i = 0; ; i += 1) {
     try {
+      const resultP = i < seed.length ? seed[i] : getter();
       // eslint-disable-next-line no-await-in-loop, @jessie.js/no-nested-await
-      const result = await thunk();
+      const result = await resultP;
       return result;
     } catch (err) {
       if (isUpgradeDisconnection(err)) {
@@ -79,16 +81,39 @@ export const subscribe = itP =>
  * longer needed so they can be garbage collected.
  *
  * @template T
+ * @param {ERef<EachTopic<T>>} topic
  * @param {ERef<PublicationRecord<T>>} pubList
+ *   PublicationRecord corresponding with the first iteration result
  * @returns {ForkableAsyncIterator<T, T>}
  */
-const makeEachIterator = pubList => {
+const makeEachIterator = (topic, pubList) => {
   // To understand the implementation, start with
   // https://web.archive.org/web/20160404122250/http://wiki.ecmascript.org/doku.php?id=strawman:concurrency#infinite_queue
   return Far('EachIterator', {
     next: () => {
-      const resultP = E.get(pubList).head;
-      pubList = E.get(pubList).tail;
+      const {
+        head: resultP,
+        publishCount: publishCountP,
+        tail: tailP,
+      } = E.get(pubList);
+
+      // If tailP is broken by upgrade, we will need to re-request it
+      // directly from `topic`.
+      const getSuccessor = async () => {
+        const publishCount = await publishCountP;
+        assert.typeof(publishCount, 'bigint');
+        const successor = await E(topic).subscribeAfter(publishCount);
+        const newPublishCount = successor.publishCount;
+        if (newPublishCount !== publishCount + 1n) {
+          Fail`eachIterator broken by gap from publishCount ${publishCount} to ${newPublishCount}`;
+        }
+        return successor;
+      };
+
+      // Replace pubList on every call to next() so things work even
+      // with an eager consumer that doesn't wait for results to settle.
+      pubList = reconnectAsNeeded(getSuccessor, [tailP]);
+
       // We expect the tail to be the "cannot read past end" error at the end
       // of the happy path.
       // Since we are wrapping that error with eventual send, we sink the
@@ -97,7 +122,7 @@ const makeEachIterator = pubList => {
       void E.when(pubList, sink, sink);
       return resultP;
     },
-    fork: () => makeEachIterator(pubList),
+    fork: () => makeEachIterator(topic, pubList),
   });
 };
 
@@ -121,7 +146,7 @@ export const subscribeEach = topic => {
   const iterable = Far('EachIterable', {
     [Symbol.asyncIterator]: () => {
       const pubList = reconnectAsNeeded(() => E(topic).subscribeAfter());
-      return makeEachIterator(pubList);
+      return makeEachIterator(topic, pubList);
     },
   });
   return iterable;

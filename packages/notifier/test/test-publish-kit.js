@@ -60,10 +60,6 @@ const assertCells = (t, label, cells, publishCount, expected, options = {}) => {
   );
   t.deepEqual(firstCell.head, expected, `${label} cell result`);
   t.is(firstCell.head.value, expected.value, `${label} cell value`);
-  // `publishCount` values *should* be considered opaque,
-  // but de facto they are a gap-free sequence of bigints
-  // that starts at 1.
-  // t.truthy(firstCell.publishCount, `${label} cell publishCount`);
   t.is(firstCell.publishCount, publishCount, `${label} cell publishCount`);
 
   if (strict) {
@@ -90,16 +86,19 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
   const { publisher, subscriber } = publishKit;
 
+  /** @type {Map<PublicationRecord<*>['publishCount'], PublicationRecord<*>>} */
   const cells = new Map();
   const getLatestPromises = () => {
-    const promises = [subscriber.subscribeAfter()];
-    promises.push(subscriber.subscribeAfter(undefined));
-    const publishCounts = [...cells.keys()];
-    for (const publishCount of publishCounts) {
+    const promises = [
+      subscriber.subscribeAfter(),
+      subscriber.subscribeAfter(undefined),
+    ];
+    for (const publishCount of cells.keys()) {
       promises.push(subscriber.subscribeAfter(publishCount));
     }
-    if (publishCounts.length) {
-      promises.push(cells.get(publishCounts.pop()).tail);
+    const lastCell = [...cells.values()].pop();
+    if (lastCell) {
+      promises.push(lastCell.tail);
     }
     return promises;
   };
@@ -138,9 +137,7 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   t.throws(
     // @ts-ignore deliberate testing of invalid invocation
     () => subscriber.subscribeAfter(Number(secondPublishCount)),
-    {
-      message: /bigint/,
-    },
+    { message: /bigint/ },
   );
 
   const fourthVal = { position: 'fourth', deepPayload: [Symbol.match] };
@@ -404,10 +401,6 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     run('awaitVatObject', [{ presence: v1SecondCells[0].tail }]),
     'tail promise of old vat',
   );
-  await assertDisconnection(
-    run('messageVatObject', [{ presence: eachIterator1, methodName: 'next' }]),
-    'eachIterator following old vat subscriber',
-  );
 
   // Verify receipt of the last published value from v1.
   const v2FirstCell = await run('messageVatObject', [
@@ -436,7 +429,10 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     ]),
   ];
   const v2SecondIterationResults = {
-    eachIterator: await run('messageVatObject', [
+    eachIterator1: await run('messageVatObject', [
+      { presence: eachIterator1, methodName: 'next' },
+    ]),
+    eachIterator2: await run('messageVatObject', [
       { presence: eachIterator2, methodName: 'next' },
     ]),
     latestIterator: await run('messageVatObject', [
