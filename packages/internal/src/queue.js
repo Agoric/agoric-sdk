@@ -27,7 +27,16 @@ export const makeWithQueue = () => {
       });
   };
 
+  /**
+   * @template {any[]} T
+   * @template R
+   * @param {(...args: T) => Promise<R>} inner
+   */
   return function withQueue(inner) {
+    /**
+     * @param {T} args
+     * @returns {Promise<R>}
+     */
     return function queueCall(...args) {
       // Curry the arguments into the inner function, and
       // resolve/reject with whatever the inner function does.
