@@ -20,6 +20,7 @@ import sqlite3 from 'better-sqlite3';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import yargsParser from 'yargs-parser';
 import { makeMeasureSeconds } from '@agoric/internal';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
@@ -661,13 +662,12 @@ async function replay(transcriptFile) {
     return workerData;
   };
 
-  let loadLock = Promise.resolve();
-  const loadSnapshot = async (data, keep = false) => {
+  const withWorkerQueue = makeWithQueue();
+
+  const loadSnapshot = withWorkerQueue(async (data, keep = false) => {
     if (worker !== 'xs-worker') {
       return;
     }
-    await loadLock;
-
     await Promise.all(
       workers
         .filter(
@@ -714,12 +714,6 @@ async function replay(transcriptFile) {
 
     loadSnapshotID = data.snapshotID;
     /** @type {() => void} */
-    let releaseLock;
-    loadLock = new Promise(resolve => {
-      releaseLock = resolve;
-    });
-    // @ts-expect-error
-    assert(releaseLock);
     try {
       if (snapshotOverrideMap.has(loadSnapshotID)) {
         loadSnapshotID = snapshotOverrideMap.get(loadSnapshotID);
@@ -754,9 +748,52 @@ async function replay(transcriptFile) {
       );
     } finally {
       loadSnapshotID = null;
-      releaseLock();
     }
-  };
+  });
+
+  const snapshotWorker = withWorkerQueue(
+    /** @param {WorkerData} workerData */
+    async workerData => {
+      const { manager, xsnapPID, firstTranscriptNum } = workerData;
+      if (!manager.makeSnapshot) return null;
+      const { hash, rawSaveSeconds } = await manager.makeSnapshot(
+        lastTranscriptNum,
+        snapStore,
+      );
+      fs.writeSync(
+        snapshotActivityFd,
+        `${JSON.stringify({
+          transcriptFile,
+          type: 'save',
+          xsnapPID,
+          vatID,
+          transcriptNum: lastTranscriptNum,
+          snapshotID: hash,
+          saveSnapshotID,
+        })}\n`,
+      );
+      if (saveSnapshotID && hash !== saveSnapshotID) {
+        const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
+        if (argv.ignoreSnapshotHashDifference) {
+          console.warn(errorMessage);
+        } else {
+          throw new Error(errorMessage);
+        }
+      } else {
+        console.log(
+          `made snapshot ${hash} after delivery ${lastTranscriptNum} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
+            Math.round(rawSaveSeconds * 1000) / 1000
+          }s. Delivery time since last snapshot ${
+            Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
+          }s. Up ${
+            lastTranscriptNum - (workerData.firstTranscriptNum ?? NaN)
+          } deliveries.`,
+        );
+      }
+      workerData.deliveryTimeSinceLastSnapshot = 0;
+      return hash;
+    },
+  );
 
   /** @type {import('stream').Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
@@ -804,56 +841,7 @@ async function replay(transcriptFile) {
       } else if (data.type === 'heap-snapshot-save') {
         saveSnapshotID = data.snapshotID;
 
-        /** @param {WorkerData} workerData */
-        const doWorkerSnapshot = async workerData => {
-          const { manager, xsnapPID, firstTranscriptNum } = workerData;
-          if (!manager.makeSnapshot) return null;
-          const { hash, rawSaveSeconds } = await manager.makeSnapshot(
-            lastTranscriptNum,
-            snapStore,
-          );
-          fs.writeSync(
-            snapshotActivityFd,
-            `${JSON.stringify({
-              transcriptFile,
-              type: 'save',
-              xsnapPID,
-              vatID,
-              transcriptNum: lastTranscriptNum,
-              snapshotID: hash,
-              saveSnapshotID,
-            })}\n`,
-          );
-          if (hash !== saveSnapshotID) {
-            const errorMessage = `Snapshot hash does not match. ${hash} !== ${saveSnapshotID} for worker PID ${xsnapPID} (start delivery ${firstTranscriptNum})`;
-            if (argv.ignoreSnapshotHashDifference) {
-              console.warn(errorMessage);
-            } else {
-              throw new Error(errorMessage);
-            }
-          } else {
-            console.log(
-              `made snapshot ${hash} of worker PID ${xsnapPID} (start delivery ${firstTranscriptNum}).\n    Save time = ${
-                Math.round(rawSaveSeconds * 1000) / 1000
-              }s. Delivery time since last snapshot ${
-                Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
-              }s. Up ${
-                lastTranscriptNum - (workerData.firstTranscriptNum ?? NaN)
-              } deliveries.`,
-            );
-          }
-          workerData.deliveryTimeSinceLastSnapshot = 0;
-          return hash;
-        };
-        const savedSnapshots = await (argv.useCustomSnapStore
-          ? workers.reduce(
-              async (hashes, workerData) => [
-                ...(await hashes),
-                await doWorkerSnapshot(workerData),
-              ],
-              Promise.resolve(/** @type {(string| null)[]} */ ([])),
-            )
-          : Promise.all(workers.map(doWorkerSnapshot)));
+        const savedSnapshots = await Promise.all(workers.map(snapshotWorker));
         saveSnapshotID = null;
 
         const uniqueSnapshotIDs = new Set(savedSnapshots);
@@ -905,9 +893,12 @@ async function replay(transcriptFile) {
         // }
         const snapshotIDs = await Promise.all(
           workers.map(async workerData => {
-            const { manager, xsnapPID } = workerData;
             workerData.timeOfLastCommand = performance.now();
-            await manager.replayOneDelivery(delivery, syscalls, transcriptNum);
+            await workerData.manager.replayOneDelivery(
+              delivery,
+              syscalls,
+              transcriptNum,
+            );
             updateDeliveryTime(workerData);
             workerData.firstTranscriptNum ??= transcriptNum - 1;
             completeWorkerStep(workerData);
@@ -915,37 +906,7 @@ async function replay(transcriptFile) {
 
             // console.log(`dr`, dr);
 
-            // enable this to write periodic snapshots, for #5975 leak
-            if (makeSnapshot && manager.makeSnapshot) {
-              const { hash: snapshotID, rawSaveSeconds } =
-                await manager.makeSnapshot(transcriptNum, snapStore);
-              fs.writeSync(
-                snapshotActivityFd,
-                `${JSON.stringify({
-                  transcriptFile,
-                  type: 'save',
-                  xsnapPID,
-                  vatID,
-                  transcriptNum,
-                  snapshotID,
-                })}\n`,
-              );
-              console.log(
-                `made snapshot ${snapshotID} after delivery ${transcriptNum} to worker PID ${xsnapPID} (start delivery ${
-                  workerData.firstTranscriptNum
-                }).\n    Save time = ${
-                  Math.round(rawSaveSeconds * 1000) / 1000
-                }s. Delivery time since last snapshot ${
-                  Math.round(workerData.deliveryTimeSinceLastSnapshot) / 1000
-                }s. Up ${
-                  transcriptNum - workerData.firstTranscriptNum
-                } deliveries.`,
-              );
-              workerData.deliveryTimeSinceLastSnapshot = 0;
-              return snapshotID;
-            } else {
-              return null;
-            }
+            return makeSnapshot ? snapshotWorker(workerData) : null;
           }),
         );
         const uniqueSnapshotIDs = [...new Set(snapshotIDs)].filter(
