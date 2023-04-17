@@ -518,7 +518,7 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
         .wake(now)
         .then(
           _res => self.wakerDone(), // reschedule unless cancelled
-          _err => self.wakerFailed(), // do not reschedule
+          err => self.wakerFailed(err), // do not reschedule
         )
         .catch(err => console.log(`timer repeater error`, err));
     },
@@ -533,7 +533,11 @@ export const buildRootObject = (vatPowers, _vatParameters, baggage) => {
       }
     },
 
-    wakerFailed({ self, state }) {
+    wakerFailed({ self, state }, err) {
+      console.log(
+        `WARNING: timer repeater descheduled (handler failed), handler=${state.handler}, interval=${state.interval}: `,
+        err,
+      );
       if (state.cancelToken) {
         removeCancel(cancels, state.cancelToken, self); // stop tracking
       }
