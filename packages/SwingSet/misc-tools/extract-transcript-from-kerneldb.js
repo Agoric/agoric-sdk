@@ -22,7 +22,7 @@ if (!isSwingStore(dirPath)) {
 }
 
 const {
-  kernelStorage: { kvStore, bundleStore },
+  kernelStorage: { kvStore },
   internal: { transcriptStore },
 } = openSwingStore(dirPath);
 function get(key) {
@@ -65,9 +65,9 @@ if (!vatName) {
   const dynamic = allDynamicVatIDs.includes(vatID);
   const source = JSON.parse(get(`${vatID}.source`));
   let vatSourceBundle;
-  if (source.bundleID) {
-    console.log(`source bundleID: ${source.bundleID}`);
-    vatSourceBundle = bundleStore.getBundle(source.bundleID);
+  const vatSourceBundleID = source.bundleID;
+  if (vatSourceBundleID) {
+    console.log(`source bundleID: ${vatSourceBundleID}`);
   } else {
     // this doesn't actually happen, now that Zoe launches ZCF by bundlecap
     vatSourceBundle = JSON.parse(source.bundle);
@@ -86,8 +86,11 @@ if (!vatName) {
     type: 'create-vat',
     transcriptNum: 0,
     vatID,
+    vatName: options.name || vatName,
     dynamic,
     vatParameters,
+    bundleIDs: options.workerOptions.bundleIDs,
+    vatSourceBundleID,
     vatSourceBundle,
   };
 
