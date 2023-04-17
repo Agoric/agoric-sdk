@@ -641,6 +641,10 @@ async function replay(transcriptFile) {
           vatParameters,
           compareSyscalls: makeCompareSyscalls(workerData),
           useTranscript: true,
+          workerOptions: {
+            type: worker === 'xs-worker' ? 'xsnap' : worker,
+            bundleIDs: [],
+          },
         })
       );
     workerData.manager = await factory.createFromBundle(
