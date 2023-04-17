@@ -153,7 +153,7 @@ She can replace her call to `consume(subscription)` with:
 import { makeSubscription } from '@agoric/notifier';
 
 const localSubscription =
-  makeSubscription(E(subscription).getSharableSubsciptionInternals());
+  makeSubscription(E(subscription).getSharableSubscriptionInternals());
 consume(localSubscription);
 ```
 
