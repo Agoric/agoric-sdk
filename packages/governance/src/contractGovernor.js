@@ -137,6 +137,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  *   governed: {
  *     issuerKeywordRecord: IssuerKeywordRecord,
  *     terms: {governedParams: {[CONTRACT_ELECTORATE]: import('./contractGovernance/typedParamManager.js').InvitationParam}},
+ *     label?: string,
  *   }
  * }>} zcf
  * @param {{
@@ -153,6 +154,7 @@ const start = async (zcf, privateArgs) => {
     governed: {
       issuerKeywordRecord: governedIssuerKeywordRecord,
       terms: contractTerms,
+      label: governedContractLabel,
     },
   } = zcf.getTerms();
   trace('contractTerms', contractTerms);
@@ -177,6 +179,7 @@ const start = async (zcf, privateArgs) => {
     // @ts-ignore XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     augmentedTerms,
     privateArgs.governed,
+    governedContractLabel,
   );
 
   /** @type {() => Promise<Instance>} */

@@ -169,12 +169,14 @@ export const createPriceFeed = async (
   });
   trace('got terms');
 
+  const label = sanitizePathSegment(AGORIC_INSTANCE_NAME);
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
       governedContractInstallation: priceAggregator,
       governed: {
         terms,
+        label,
       },
     }),
   );
@@ -196,11 +198,10 @@ export const createPriceFeed = async (
         initialPoserInvitation,
         marshaller,
         namesByAddressAdmin,
-        storageNode: E(storageNode).makeChildNode(
-          sanitizePathSegment(AGORIC_INSTANCE_NAME),
-        ),
+        storageNode: E(storageNode).makeChildNode(label),
       },
     },
+    label,
   );
   const faCreatorFacet = await E(
     aggregatorGovernor.creatorFacet,

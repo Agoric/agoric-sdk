@@ -386,7 +386,7 @@ export const makeZoeStorageManager = (
       }),
     );
 
-    const bundleLabel = installation.getBundleLabel() || 'unlabeledBundle';
+    const bundleLabel = installation.getBundleLabel();
     const contractLabel = instanceLabel
       ? `${bundleLabel}-${instanceLabel}`
       : bundleLabel;

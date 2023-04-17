@@ -79,7 +79,7 @@ export const publishInterchainAssetFromBank = async (
     },
   };
   const { creatorFacet: mintP, publicFacet: issuerP } = E.get(
-    E(zoe).startInstance(mintHolder, {}, terms),
+    E(zoe).startInstance(mintHolder, {}, terms, undefined, keyword),
   );
 
   const [issuer, brand] = await Promise.all([issuerP, E(issuerP).getBrand()]);
@@ -183,7 +183,13 @@ export const registerScaledPriceAuthority = async (
     }),
   );
   const { publicFacet } = E.get(
-    E(zoe).startInstance(scaledPriceAuthority, undefined, terms),
+    E(zoe).startInstance(
+      scaledPriceAuthority,
+      undefined,
+      terms,
+      undefined,
+      `scaledPriceAuthority-${keyword}`,
+    ),
   );
   await E(priceAuthorityAdmin).registerPriceAuthority(
     E(publicFacet).getPriceAuthority(),
