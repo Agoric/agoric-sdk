@@ -41,7 +41,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Brand) => ParamManagerBuilder} addBrand
  * @property {(name: string, value: Installation) => ParamManagerBuilder} addInstallation
  * @property {(name: string, value: Instance) => ParamManagerBuilder} addInstance
- * @property {(name: string, value: Invitation) => Promise<ParamManagerBuilder>} addInvitation
+ * @property {(name: string, value: Invitation) => ParamManagerBuilder} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
  * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
@@ -64,6 +64,14 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
 
   const getters = {};
   const setters = {};
+  const unfinishedParams = [];
+
+  // XXX let params be finished async. A concession to upgradability
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  const finishBuilding = async () => {
+    await Promise.all(unfinishedParams);
+    unfinishedParams.length = 0;
+  };
 
   const publish = () => {
     /** @type {ParamStateRecord} */
@@ -228,7 +236,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
    * @param {string} name
    * @param {Invitation} invitation
    */
-  const buildInvitationParam = async (name, invitation) => {
+  const buildInvitationParam = (name, invitation) => {
     if (!zoe) {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
@@ -264,8 +272,6 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
       currentInvitation = newInvitation;
       return harden({ [name]: currentAmount });
     };
-    const inviteAndAmount = await prepareToSetInvitation(invitation);
-    setInvitation(inviteAndAmount);
 
     const makeDescription = () => {
       return { type: ParamTypes.INVITATION, value: currentAmount };
@@ -291,18 +297,28 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     // carefully to ensure that they end up in appropriate hands.
     setters[`prepareToUpdate${name}`] = prepareToSetInvitation;
     setters[`update${name}`] = setInvitation;
-    namesToParams.init(name, publicMethods);
+
+    // XXX let the value be set async. A concession to upgradability
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+    const finishInvitationParam = E.when(
+      prepareToSetInvitation(invitation),
+      invitationAndAmount => {
+        setInvitation(invitationAndAmount);
+        // delay until currentAmount is defined because readers expect a valid value
+        namesToParams.init(name, publicMethods);
+      },
+    );
+    unfinishedParams.push(finishInvitationParam);
+
     return name;
   };
 
-  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => Promise<ParamManagerBuilder>} */
-  const addInvitation = async (name, value, builder) => {
+  /** @type {(name: string, value: Invitation, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  const addInvitation = (name, value, builder) => {
     assertKeywordName(name);
     value !== null || Fail`param ${q(name)} must be defined`;
-    await Promise.all([
-      assertInvitation(value),
-      buildInvitationParam(name, value),
-    ]);
+
+    buildInvitationParam(name, value);
 
     return builder;
   };
@@ -321,11 +337,14 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   };
 
   // should be exposed within contracts, and not externally, for invitations
-  const getInternalParamValue = name => {
+  /** @type {(name: string) => Promise<Invitation>} */
+  const getInternalParamValue = async name => {
+    await finishBuilding();
     return namesToParams.get(name).getInternalValue();
   };
 
-  const getParams = () => {
+  const getParams = async () => {
+    await finishBuilding();
     /** @type {ParamStateRecord} */
     const descriptions = {};
     for (const [name, param] of namesToParams.entries()) {
@@ -336,6 +355,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
 
   /** @type {UpdateParams} */
   const updateParams = async paramChanges => {
+    await finishBuilding();
     const paramNames = Object.keys(paramChanges);
 
     // promises to prepare every update
@@ -355,7 +375,9 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
 
   // Called after all params have been added with their initial values
   const build = () => {
-    publish();
+    // XXX let params be finished async. A concession to upgradability
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+    E.when(finishBuilding(), () => publish());
 
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by

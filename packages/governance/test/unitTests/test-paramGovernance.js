@@ -237,7 +237,10 @@ test('change multiple params', async t => {
   const notifier = makeNotifierFromAsyncIterable(
     await E(publicFacet).getSubscription(),
   );
+  await eventLoopIteration();
   const update1 = await notifier.getUpdateSince();
+  // This value isn't available synchronously
+  // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
   // constructing the fixture to deepEqual would complicate this with insufficient benefit
   t.is(
     // @ts-expect-error reaching into {} values

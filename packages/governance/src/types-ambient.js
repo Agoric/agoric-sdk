@@ -421,7 +421,7 @@
 
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
- * @property {() => ParamStateRecord} getParams
+ * @property {() => ERef<ParamStateRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -579,7 +579,7 @@
  * @typedef GovernedPublicFacetMethods
  * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  * @property {() => Instance} getContractGovernor
- * @property {() => ParamStateRecord} getGovernedParams - get descriptions of
+ * @property {() => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand

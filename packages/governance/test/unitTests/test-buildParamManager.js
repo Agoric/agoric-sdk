@@ -9,6 +9,7 @@ import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { makeParamManagerBuilder, ParamTypes } from '../../src/index.js';
 
 test('two parameters', t => {
@@ -28,7 +29,7 @@ test('two parameters', t => {
   );
 });
 
-test('getParams', t => {
+test('getParams', async t => {
   const drachmaKit = makeIssuerKit('drachma');
 
   const drachmaBrand = drachmaKit.brand;
@@ -39,7 +40,7 @@ test('getParams', t => {
     .build();
 
   t.deepEqual(
-    paramManager.getParams(),
+    await paramManager.getParams(),
     harden({
       Currency: {
         type: ParamTypes.BRAND,
@@ -142,7 +143,7 @@ test('params one installation', async t => {
   });
 
   t.deepEqual(
-    paramManager.getParams(),
+    await paramManager.getParams(),
     harden({
       PName: {
         type: ParamTypes.INSTALLATION,
@@ -175,7 +176,7 @@ test('params one instance', async t => {
   t.deepEqual(paramManager.getInstance('PName'), handle2);
 
   t.deepEqual(
-    paramManager.getParams(),
+    await paramManager.getParams(),
     harden({
       PName: {
         type: ParamTypes.INSTANCE,
@@ -217,6 +218,8 @@ test('Invitation', async t => {
 
   t.is(paramManager.getBrand('Currency'), drachmaBrand);
   t.is(paramManager.getAmount('Amt'), drachmaAmount);
+  // XXX UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  await eventLoopIteration();
   const invitationActualAmount =
     paramManager.getInvitationAmount('Invite').value;
   t.deepEqual(invitationActualAmount, invitationAmount.value);
@@ -226,7 +229,7 @@ test('Invitation', async t => {
   t.is(await paramManager.getInternalParamValue('Invite'), invitation);
 
   t.deepEqual(
-    paramManager.getParams(),
+    await paramManager.getParams(),
     harden({
       Amt: {
         type: ParamTypes.AMOUNT,

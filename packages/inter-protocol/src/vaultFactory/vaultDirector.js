@@ -166,7 +166,7 @@ export const prepareVaultDirector = (
     const oldInvitation = baggage.has(shortfallInvitationKey)
       ? baggage.get(shortfallInvitationKey)
       : undefined;
-    const newInvitation = directorParamManager.getInternalParamValue(
+    const newInvitation = await directorParamManager.getInternalParamValue(
       SHORTFALL_INVITATION_KEY,
     );
 
