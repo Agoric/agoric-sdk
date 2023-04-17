@@ -196,6 +196,19 @@ async function replay(transcriptFile) {
       getRelaxDurabilityRules: () => false,
     });
 
+  let bundleIDs;
+  /** @type {import('../src/controller/bundle-handler.js').BundleHandler} */
+  const bundleHandler = harden({
+    getCurrentBundleIDs: async () => {
+      return bundleIDs || ['lockdown-bundle', 'supervisor-bundle'];
+    },
+    getBundle: async id => {
+      const rawBundle = await fs.promises.readFile(id, { encoding: 'utf-8' });
+      const bundle = harden(JSON.parse(rawBundle));
+      return bundle;
+    },
+  });
+
   const kernelSlog =
     /** @type {import('../src/types-external.js').KernelSlog} */ (
       /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
@@ -285,16 +298,14 @@ async function replay(transcriptFile) {
   const workers = [];
 
   if (worker === 'xs-worker') {
-    /** @type {import('../src/types-external.js').Bundle[]} */
-    const bundles = await (argv.useSdkBundles
-      ? Promise.all([
-          /** @type {Promise<*>} */ (getLockdownBundle()),
-          /** @type {Promise<*>} */ (getSupervisorBundle()),
-        ])
-      : [
-          JSON.parse(fs.readFileSync('lockdown-bundle', 'utf-8')),
-          JSON.parse(fs.readFileSync('supervisor-bundle', 'utf-8')),
-        ]);
+    /** @type {import('../src/types-external.js').Bundle[] | undefined} */
+    let overrideBundles;
+    if (argv.useSdkBundles) {
+      overrideBundles = await Promise.all([
+        /** @type {Promise<*>} */ (getLockdownBundle()),
+        /** @type {Promise<*>} */ (getSupervisorBundle()),
+      ]);
+    }
 
     const capturePIDSpawn = /** @type {typeof spawn} */ (
       /** @param  {Parameters<typeof spawn>} args */
@@ -309,8 +320,8 @@ async function replay(transcriptFile) {
       spawn: capturePIDSpawn,
       debug: argv.useXsnapDebug,
       workerTraceRootPath: argv.recordXsnapTrace ? process.cwd() : undefined,
-      overrideBundles: bundles,
-      bundleHandler: /** @type {*} */ (undefined),
+      overrideBundles,
+      bundleHandler,
     });
     factory = makeXsSubprocessFactory({
       allVatPowers,
@@ -617,6 +628,7 @@ async function replay(transcriptFile) {
   };
 
   let vatParameters;
+  let vatSourceBundleID;
   let vatSourceBundle;
 
   /** @param {boolean} keep */
@@ -648,10 +660,13 @@ async function replay(transcriptFile) {
           useTranscript: true,
           workerOptions: {
             type: worker === 'xs-worker' ? 'xsnap' : worker,
-            bundleIDs: [],
+            bundleIDs: await bundleHandler.getCurrentBundleIDs(),
           },
         })
       );
+    if (!vatSourceBundle && !loadSnapshotID) {
+      vatSourceBundle = await bundleHandler.getBundle(vatSourceBundleID);
+    }
     workerData.manager = await factory.createFromBundle(
       vatID,
       vatSourceBundle,
@@ -823,8 +838,13 @@ async function replay(transcriptFile) {
             `first line of transcript was not a create-vat or heap-snapshot-load`,
           );
         }
-        ({ vatParameters, vatSourceBundle } = data);
-        vatID = data.vatID;
+        ({
+          vatParameters,
+          vatSourceBundle,
+          vatSourceBundleID,
+          bundleIDs,
+          vatID,
+        } = data);
         const { xsnapPID } = await createManager(argv.keepWorkerExplicitLoad);
         console.log(
           `manager created from bundle source, worker PID: ${xsnapPID}`,
