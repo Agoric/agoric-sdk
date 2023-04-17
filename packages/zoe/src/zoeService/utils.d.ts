@@ -1,4 +1,5 @@
 import type { Callable } from '@agoric/internal/src/utils.js';
+import { Baggage } from '@agoric/vat-data';
 
 import type { IssuerKeywordRecord, Payment } from './types.js';
 
@@ -38,18 +39,18 @@ export type InstallationStart<I> = I extends Installation<infer SF>
   ? SF
   : never;
 
-type StartParams<SF> = SF extends (
-  zcf: { getTerms: () => {} },
-  privateArgs: {},
-  baggage?: unknown,
-) => unknown
+type ContractStartFunction = (
+  zcf?: ZCF,
+  privateArgs?: {},
+  baggage?: Baggage,
+) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
+
+type StartParams<SF> = SF extends ContractStartFunction
   ? {
       terms: ReturnType<Parameters<SF>[0]['getTerms']>;
       privateArgs: Parameters<SF>[1];
     }
-  : SF extends (zcf: { getTerms: () => {} }) => unknown
-  ? { terms: any }
-  : {};
+  : never;
 
 type StartResult<S> = S extends (...args: any) => Promise<infer U>
   ? U
@@ -77,7 +78,14 @@ type StartContractInstance<C> = (
 export type StartedInstanceKit<SF> = {
   instance: Instance<SF>;
   adminFacet: AdminFacet;
-} & Awaited<ReturnType<SF>>;
+  // theses are empty by default. the return type will override
+  creatorFacet: {};
+  publicFacet: {};
+} & (SF extends ContractStartFunction
+  ? // override if the start function specfies the types
+    Awaited<ReturnType<SF>>
+  : // if it doesn't, allow any
+    { creatorFacet: any; publicFacet: any });
 
 /**
  * Zoe is long-lived. We can use Zoe to create smart contract
@@ -100,7 +108,7 @@ export type StartInstance = <SF>(
   issuerKeywordRecord?: IssuerKeywordRecord,
   // 'brands' and 'issuers' need not be passed in; Zoe provides them as StandardTerms
   terms?: Omit<StartParams<SF>['terms'], 'brands' | 'issuers'>,
-  privateArgs?: StartParams<SF>['privateArgs'],
+  privateArgs?: Parameters<SF>[1],
   label?: string,
 ) => Promise<StartedInstanceKit<SF>>;
 
