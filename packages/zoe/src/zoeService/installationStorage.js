@@ -119,8 +119,11 @@ export const makeInstallationStorage = (
         }
         return installSourceBundle(allegedBundle, bundleLabel);
       },
-      async installBundleID(bundleID, bundleLabel) {
+      async installBundleID(bundleID, bundleLabel = bundleID.slice(0, 9)) {
         typeof bundleID === 'string' || Fail`a bundle ID must be provided`;
+        typeof bundleLabel === 'string' ||
+          Fail`a bundle label must be a string`;
+
         // this waits until someone tells the host application to store the
         // bundle into the kernel, with controller.validateAndInstallBundle()
         const bundleCap = await getBundleCapForID(bundleID);
