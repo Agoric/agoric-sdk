@@ -503,6 +503,7 @@ export const startAuctioneer = async (
     produce: { auctioneerKit },
     instance: {
       produce: { auctioneer: auctionInstance },
+      consume: { reserve: reserveInstance },
     },
     installation: {
       consume: {
@@ -516,13 +517,13 @@ export const startAuctioneer = async (
   },
   {
     auctionParams = {
-      startFreq: 3600n,
-      clockStep: 3n * 60n,
-      startingRate: 10500n,
-      lowestRate: 4500n,
-      discountStep: 500n,
-      auctionStartDelay: 2n,
-      priceLockPeriod: 3n,
+      StartFreq: 3600n,
+      ClockStep: 3n * 60n,
+      StartingRate: 10500n,
+      LowestRate: 4500n,
+      DiscountStep: 500n,
+      AuctionStartDelay: 2n,
+      PriceLockPeriod: 3n,
     },
   } = {},
 ) => {
@@ -543,18 +544,15 @@ export const startAuctioneer = async (
   const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
   const marshaller = await E(board).getReadonlyMarshaller();
 
+  const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
+
   const auctionTerms = makeGovernedATerms(
     { storageNode, marshaller },
     chainTimerService,
     priceAuthority,
+    reservePublicFacet,
     {
-      StartFreq: auctionParams.startFreq,
-      ClockStep: auctionParams.clockStep,
-      LowestRate: auctionParams.lowestRate,
-      StartingRate: auctionParams.startingRate,
-      DiscountStep: auctionParams.discountStep,
-      AuctionStartDelay: auctionParams.auctionStartDelay,
-      PriceLockPeriod: auctionParams.priceLockPeriod,
+      ...auctionParams,
       ElectorateInvitationAmount: electorateInvitationAmount,
       TimerBrand: timerBrand,
     },
@@ -757,7 +755,6 @@ export const startStakeFactory = async (
   return Promise.all([
     E(client).assignBundle([
       address => ({
-        // @ts-expect-error ??? creatorFacet is a StakeFactoryCreator; it has the method
         attMaker: E(governedCreatorFacet).provideAttestationMaker(address),
       }),
     ]),

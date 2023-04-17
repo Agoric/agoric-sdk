@@ -608,7 +608,7 @@
 
 /**
  * @template {{}} CF creator facet
- * @typedef GovernedCreatorFacet
+ * @typedef {CF} GovernedCreatorFacet
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor

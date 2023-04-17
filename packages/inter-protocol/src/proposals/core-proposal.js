@@ -87,6 +87,7 @@ const SHARED_MAIN_MANIFEST = harden({
     produce: { auctioneerKit: 'auction' },
     instance: {
       produce: { auctioneer: 'auction' },
+      consume: { reserve: 'auction' },
     },
     installation: {
       consume: { contractGovernor: 'zoe', auctioneer: 'zoe' },

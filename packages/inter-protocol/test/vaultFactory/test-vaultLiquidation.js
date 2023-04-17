@@ -216,7 +216,6 @@ const setupServices = async (
     },
   };
 
-  // @ts-expect-error auctioneerKit.creatorFacet looks right.
   await E(auctioneerKit.creatorFacet).addBrand(aeth.issuer, 'Aeth');
 
   return {

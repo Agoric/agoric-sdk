@@ -220,6 +220,7 @@ test('provisionPool trades provided assets for IST', async t => {
 
   t.log('introduce PSM instance to provisionPool');
   const psm = await startPSM('IST-AUSD');
+  // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
   await E(E(facets.creatorFacet).getLimitedCreatorFacet()).initPSM(
     anchor.brand,
     psm.instance,

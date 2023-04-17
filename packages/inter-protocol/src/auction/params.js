@@ -157,17 +157,20 @@ harden(makeAuctioneerParamManager);
  * @param {{storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} caps
  * @param {ERef<Timer>} timer
  * @param {ERef<PriceAuthority>} priceAuthority
+ * @param {ERef<AssetReservePublicFacet>} reservePublicFacet
  * @param {AuctionParams} params
  */
 export const makeGovernedTerms = (
   { storageNode: _storageNode, marshaller: _marshaller },
   timer,
   priceAuthority,
+  reservePublicFacet,
   params,
 ) => {
   // XXX  use storageNode and Marshaller
   return harden({
     priceAuthority,
+    reservePublicFacet,
     timerService: timer,
     governedParams: makeAuctioneerParams(params),
   });

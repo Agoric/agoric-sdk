@@ -142,6 +142,7 @@ const facetHelpers = (zcf, paramManager) => {
     });
 
     // exclusively for contractGovernor, which only reveals limitedCreatorFacet
+    // @ts-expect-error xxx governance types https://github.com/Agoric/agoric-sdk/issues/7178
     return governorFacet;
   };
 
@@ -170,7 +171,7 @@ const facetHelpers = (zcf, paramManager) => {
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
-      getInvitation: (_context, name) =>
+      getInvitation: (_context, /** @type {string} */ name) =>
         paramManager.getInternalParamValue(name),
       getLimitedCreatorFacet: ({ facets }) => facets.limitedCreatorFacet,
       // The contract provides a facet with the APIs that can be invoked by
