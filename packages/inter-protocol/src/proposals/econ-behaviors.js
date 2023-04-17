@@ -156,8 +156,6 @@ export const setupReserve = async ({
     {},
     reserveGovernorTerms,
     {
-      // @ts-expect-error FIXME superfluous
-      electorateCreatorFacet: committeeCreator,
       governed: {
         feeMintAccess,
         initialPoserInvitation: poserInvitation,
