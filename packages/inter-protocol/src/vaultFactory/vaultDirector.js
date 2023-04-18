@@ -205,7 +205,6 @@ export const prepareVaultDirector = (
           M.promise(),
         ),
         makeCollectFeesInvitation: M.call().returns(M.promise()),
-        getContractGovernor: M.call().returns(M.remotable()),
         updateMetrics: M.call().returns(M.promise()),
         getRewardAllocation: M.call().returns({ Minted: AmountShape }),
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
@@ -414,9 +413,6 @@ export const prepareVaultDirector = (
             debtMint.getIssuerRecord().brand,
             'Minted',
           ).makeCollectFeesInvitation();
-        },
-        getContractGovernor() {
-          return zcf.getTerms().electionManager;
         },
         updateMetrics() {
           return E(metricsKit.recorderP).write(sampleMetrics());

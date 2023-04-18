@@ -98,18 +98,6 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
-   * @template {{}} CF creator facet
-   * @param {CF} originalCreatorFacet
-   * @returns {LimitedCreatorFacet<CF>}
-   */
-  const makeLimitedCreatorFacet = originalCreatorFacet => {
-    return Far('governedContract creator facet', {
-      ...originalCreatorFacet,
-      getContractGovernor: () => electionManager,
-    });
-  };
-
-  /**
    * Add required methods to a creatorFacet
    *
    * @template {{}} CF creator facet
@@ -153,8 +141,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @returns {GovernorFacet<CF>}
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-    return makeFarGovernorFacet(limitedCreatorFacet, governedApis);
+    return makeFarGovernorFacet(originalCreatorFacet, governedApis);
   };
 
   /**
@@ -162,12 +149,10 @@ const facetHelpers = (zcf, paramManager) => {
    *
    * @see {makeDurableGovernorFacet}
    *
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
    */
-  const makeVirtualGovernorFacet = originalCreatorFacet => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-
-    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<originalCreatorFacet>>} */
+  const makeVirtualGovernorFacet = limitedCreatorFacet => {
+    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
@@ -193,17 +178,16 @@ const facetHelpers = (zcf, paramManager) => {
    *
    * @see {makeVirtualGovernorFacet}
    *
+   * @template CF
    * @param {import('@agoric/vat-data').Baggage} baggage
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   * @param {CF} limitedCreatorFacet
    * @param {Record<string, (...any) => unknown>} [governedApis]
    */
   const makeDurableGovernorFacet = (
     baggage,
-    originalCreatorFacet,
+    limitedCreatorFacet,
     governedApis = {},
   ) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-
     const governorFacet = prepareExo(
       baggage,
       'governorFacet',
@@ -232,9 +216,6 @@ const facetHelpers = (zcf, paramManager) => {
     publicMixin: {
       ...commonPublicMethods,
       ...typedAccessors,
-    },
-    creatorMixin: {
-      getContractGovernor: () => electionManager,
     },
     augmentPublicFacet,
     augmentVirtualPublicFacet,

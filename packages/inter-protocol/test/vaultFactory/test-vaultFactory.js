@@ -198,7 +198,7 @@ const setupServices = async (
   const governorCreatorFacet = E.get(
     consume.vaultFactoryKit,
   ).governorCreatorFacet;
-  /** @type {Promise<VaultFactoryCreatorFacet & LimitedCreatorFacet<VaultFactoryCreatorFacet>>} */
+  /** @type {Promise<VaultFactoryCreatorFacet>} */
   const vaultFactoryCreatorFacetP = E.get(consume.vaultFactoryKit).creatorFacet;
   const reserveCreatorFacet = E.get(consume.reserveKit).creatorFacet;
   const reserveKit = { reserveCreatorFacet };

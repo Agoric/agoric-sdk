@@ -99,7 +99,7 @@ export const start = async (zcf, privateArgs) => {
   const { poolBank } = privateArgs;
 
   // Governance
-  const { publicMixin, creatorMixin, makeFarGovernorFacet, params } =
+  const { publicMixin, makeFarGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -250,7 +250,6 @@ export const start = async (zcf, privateArgs) => {
       mustMatch(instance, M.remotable('instance'));
       brandToPSM.init(brand, instance);
     },
-    ...creatorMixin,
   });
 
   return harden({
