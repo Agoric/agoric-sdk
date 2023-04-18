@@ -114,6 +114,25 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
 
+  const AuctionBookStateShape = harden({
+    collateralBrand: M.any(),
+    collateralSeat: M.any(),
+    collateralAmountShape: M.any(),
+    currencyBrand: M.any(),
+    currencySeat: M.any(),
+    currencyAmountShape: M.any(),
+    priceAuthority: M.any(),
+    updatingOracleQuote: M.any(),
+    bookDataKit: M.any(),
+    priceBook: M.any(),
+    scaledBidBook: M.any(),
+    startCollateral: M.any(),
+    startProceedsGoal: M.any(),
+    lockedPriceForRound: M.any(),
+    curAuctionPrice: M.any(),
+    remainingProceedsGoal: M.any(),
+  });
+
   const makeAuctionBookKit = prepareExoClassKit(
     baggage,
     'AuctionBook',
@@ -732,6 +751,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           },
         );
       },
+      stateShape: AuctionBookStateShape,
     },
   );
 

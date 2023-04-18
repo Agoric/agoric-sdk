@@ -33,6 +33,12 @@ const nextSequenceNumber = () => {
  * } BidderRecord
  */
 
+const ScaledBidBookStateShape = harden({
+  bidScalingPattern: M.any(),
+  collateralBrand: M.any(),
+  records: M.any(),
+});
+
 /**
  * Prices in this book are expressed as percentage of the full oracle price
  * snapshot taken when the auction started. .4 is 60% off. 1.1 is 10% above par.
@@ -116,7 +122,16 @@ export const prepareScaledBidBook = baggage =>
         }
       },
     },
+    {
+      stateShape: ScaledBidBookStateShape,
+    },
   );
+
+const PriceBookStateShape = harden({
+  priceRatioPattern: M.any(),
+  collateralBrand: M.any(),
+  records: M.any(),
+});
 
 /**
  * Prices in this book are actual prices expressed in terms of currency amount
@@ -199,5 +214,8 @@ export const preparePriceBook = baggage =>
           }
         }
       },
+    },
+    {
+      stateShape: PriceBookStateShape,
     },
   );

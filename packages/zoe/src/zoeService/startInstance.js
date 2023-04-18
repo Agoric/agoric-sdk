@@ -43,6 +43,13 @@ export const makeStartInstance = (
     seatHandleToZoeSeatAdmin,
   );
 
+  const InstanceAdminStateShape = harden({
+    instanceStorage: M.any(),
+    instanceAdmin: M.any(),
+    seatHandleToSeatAdmin: M.any(),
+    adminNode: M.any(),
+  });
+
   const makeZoeInstanceAdmin = prepareExoClass(
     zoeBaggage,
     'zoeInstanceAdmin',
@@ -146,6 +153,9 @@ export const makeStartInstance = (
         const { state } = this;
         return state.instanceAdmin.isBlocked(string);
       },
+    },
+    {
+      stateShape: InstanceAdminStateShape,
     },
   );
 
