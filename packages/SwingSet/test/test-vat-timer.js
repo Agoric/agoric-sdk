@@ -510,7 +510,7 @@ test('makeRepeater', async t => {
   // if the handler rejects, the repeater is cancelled
   const brokenHandler = Far('broken', {
     wake(_time) {
-      throw Error('expected error');
+      throw Error('deliberate handler error');
     },
   });
   r1.schedule(brokenHandler);

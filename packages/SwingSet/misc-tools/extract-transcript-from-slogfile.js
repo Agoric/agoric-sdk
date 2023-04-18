@@ -37,16 +37,16 @@ async function run() {
         throw Error(`unable to reconstruct transcript`);
       }
       case 'create-vat': {
-        const { type, dynamic, vatParameters, vatSourceBundle } = e;
+        const { type, name, dynamic, vatParameters, vatSourceBundle } = e;
         const t = {
-          transcriptNum,
           type,
+          transcriptNum,
           vatID,
+          vatName: name,
           dynamic,
           vatParameters,
           vatSourceBundle,
         };
-        transcriptNum += 1;
         // first line of transcript is the source bundle
         fs.writeSync(fd, JSON.stringify(t));
         fs.writeSync(fd, '\n');
@@ -71,8 +71,8 @@ async function run() {
       }
       case 'deliver-result': {
         console.log(` -- deliver-result`);
-        const entry = { transcriptNum, d: delivery, syscalls };
         transcriptNum += 1;
+        const entry = { transcriptNum, d: delivery, syscalls };
         fs.writeSync(fd, JSON.stringify(entry));
         fs.writeSync(fd, '\n');
         break;
@@ -81,7 +81,6 @@ async function run() {
         console.log(' -- heap-snapshot-save');
         const { type, snapshotID } = e;
         const t = { transcriptNum, type, vatID, snapshotID };
-        transcriptNum += 1;
         fs.writeSync(fd, JSON.stringify(t));
         fs.writeSync(fd, '\n');
         break;

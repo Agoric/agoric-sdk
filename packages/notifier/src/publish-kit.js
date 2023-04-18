@@ -173,6 +173,14 @@ export const makePublishKit = () => {
 };
 harden(makePublishKit);
 
+const DurablePublishKitStateShape = harden({
+  valueDurability: M.any(),
+  publishCount: M.any(),
+  status: M.any(),
+  hasValue: M.any(),
+  value: M.any(),
+});
+
 // TODO: Move durable publish kit to a new file?
 
 /**
@@ -415,6 +423,9 @@ export const prepareDurablePublishKit = (baggage, kindName) => {
           );
         },
       },
+    },
+    {
+      stateShape: DurablePublishKitStateShape,
     },
   );
 };

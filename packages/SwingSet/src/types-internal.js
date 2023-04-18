@@ -20,6 +20,7 @@ export {};
  * @typedef { import('./types-external.js').OptEnableDisavow } OptEnableDisavow
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
  *
  * // used by vatKeeper.setSourceAndOptions(source, RecordedVatOptions)
  *
@@ -34,7 +35,7 @@ export {};
  *   enableDisavow: boolean,
  *   useTranscript: boolean,
  *   name: string,
- *   compareSyscalls?: (originalSyscall: {}, newSyscall: {}) => Error | undefined,
+ *   compareSyscalls?: import('./kernel/vat-loader/transcript.js').CompareSyscalls,
  *   sourcedConsole: Pick<Console, 'debug' | 'log' | 'info' | 'warn' | 'error'>,
  *   enableSetup: boolean,
  *   setup?: unknown,
@@ -42,8 +43,9 @@ export {};
  * }} ManagerOptions
  *
  * @typedef { { deliver: (delivery: VatDeliveryObject) => Promise<VatDeliveryResult>,
+ *              replayOneDelivery: (delivery: VatDeliveryObject, expectedSyscalls: VatSyscallObject[], deliveryNum: number) => Promise<VatDeliveryResult>,
  *              replayTranscript: (startPos: number | undefined) => Promise<number?>,
- *              makeSnapshot?: (endPos: number, ss: SnapStore) => Promise<SnapshotResult>,
+ *              makeSnapshot?: undefined | ((endPos: number, ss: SnapStore) => Promise<SnapshotResult>),
  *              shutdown: () => Promise<void>,
  *            } } VatManager
  * @typedef { { createFromBundle: (vatID: string,

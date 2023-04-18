@@ -30,6 +30,7 @@ import { buffer } from './util.js';
  *   importBundle: (artifactName: string, exporter: SwingStoreExporter, bundleID: string) => void,
  *   getExportRecords: () => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: () => AsyncIterableIterator<string>,
+ *   getBundleIDs: () => IterableIterator<string>,
  * }} BundleStoreInternal
  *
  * @typedef {{
@@ -269,6 +270,17 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     return dump;
   }
 
+  const sqlListBundleIDs = db.prepare(`
+  SELECT bundleID
+  FROM bundles
+  ORDER BY bundleID
+`);
+  sqlListBundleIDs.pluck(true);
+
+  function* getBundleIDs() {
+    yield* sqlListBundleIDs.iterate();
+  }
+
   return harden({
     addBundle,
     hasBundle,
@@ -278,6 +290,7 @@ export function makeBundleStore(db, ensureTxn, noteExport = () => {}) {
     getArtifactNames,
     exportBundle,
     importBundle,
+    getBundleIDs,
 
     dumpBundles,
   });

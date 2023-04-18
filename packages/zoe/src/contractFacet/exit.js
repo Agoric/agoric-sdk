@@ -36,6 +36,11 @@ export const makeMakeExiter = baggage => {
         state.zcfSeat.exit();
       },
     },
+    {
+      stateShape: harden({
+        zcfSeat: M.any(),
+      }),
+    },
   );
   const makeWaived = prepareExoClass(
     baggage,
