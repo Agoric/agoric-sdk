@@ -396,7 +396,7 @@ export const startRewardDistributor = async ({
       timerService,
       collectionInterval: 60n * 60n, // 1 hour
       keywordShares: {
-        RewardDistributor: 1n,
+        RewardDistributor: 0n,
         Reserve: 1n,
       },
     }),
