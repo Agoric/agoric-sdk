@@ -37,11 +37,12 @@ async function run() {
         throw Error(`unable to reconstruct transcript`);
       }
       case 'create-vat': {
-        const { type, dynamic, vatParameters, vatSourceBundle } = e;
+        const { type, name, dynamic, vatParameters, vatSourceBundle } = e;
         const t = {
-          transcriptNum,
           type,
+          transcriptNum,
           vatID,
+          vatName: name,
           dynamic,
           vatParameters,
           vatSourceBundle,
