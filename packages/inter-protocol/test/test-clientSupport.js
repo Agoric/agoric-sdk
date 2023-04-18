@@ -67,7 +67,7 @@ test('Offers.auction.Bid', async t => {
         },
         offerArgs: {
           offerBidScaling,
-          want: { brand: atom.brand, value: 10_000_000_000n },
+          maxBuy: { brand: atom.brand, value: 10_000_000_000n },
         },
       },
     );
@@ -93,7 +93,7 @@ test('Offers.auction.Bid', async t => {
       proposal: { give: { Currency: ist.make(4_560_000n) } },
       offerArgs: {
         offerPrice,
-        want: { brand: atom.brand, value: 10_000_000_000n },
+        maxBuy: { brand: atom.brand, value: 10_000_000_000n },
       },
     },
   );
@@ -120,7 +120,7 @@ test('Offers.auction.Bid', async t => {
       },
       offerArgs: {
         offerPrice,
-        want: atom.make(10_000_000_000n),
+        maxBuy: atom.make(10_000_000_000n),
       },
     },
     'optional want',
