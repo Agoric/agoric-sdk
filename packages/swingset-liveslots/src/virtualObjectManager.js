@@ -4,7 +4,7 @@
 import { assert, Fail } from '@agoric/assert';
 import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
-import { Far, hasOwnPropertyOf, passStyleOf } from '@endo/marshal';
+import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@endo/nat';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
@@ -13,7 +13,7 @@ import { assessFacetiousness } from './facetiousness.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
-const { defineProperty } = Object;
+const { hasOwn, defineProperty, getOwnPropertyNames } = Object;
 const { ownKeys } = Reflect;
 const { quote: q } = assert;
 
@@ -98,7 +98,7 @@ const LABEL_INSTANCES = (env.DEBUG || '')
  * are exposed to userspace.
  */
 
-function makeDataCache(syscall) {
+const makeDataCache = syscall => {
   /** @type {(baseRef: string) => { capdatas: any, valueMap: Map<string, any> }} */
   const readBacking = baseRef => {
     const rawState = syscall.vatstoreGet(`vom.${baseRef}`);
@@ -115,9 +115,9 @@ function makeDataCache(syscall) {
   /** @type {(collectionID: string) => void} */
   const deleteBacking = baseRef => syscall.vatstoreDelete(`vom.${baseRef}`);
   return makeCache(readBacking, writeBacking, deleteBacking);
-}
+};
 
-function makeContextCache(makeState, makeContext) {
+const makeContextCache = (makeState, makeContext) => {
   // non-writeback cache for "context" objects, { state, self/facets }
   const readBacking = baseRef => {
     const state = makeState(baseRef);
@@ -127,7 +127,7 @@ function makeContextCache(makeState, makeContext) {
   const writeBacking = _baseRef => Fail`never called`;
   const deleteBacking = _baseRef => Fail`never called`;
   return makeCache(readBacking, writeBacking, deleteBacking);
-}
+};
 
 /**
  * @typedef {import('@endo/exo/src/exo-tools.js').ContextProvider } ContextProvider
@@ -164,7 +164,7 @@ const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
   return harden(contextProviderKit);
 };
 
-function checkAndUpdateFacetiousness(tag, desc, facetNames) {
+const checkAndUpdateFacetiousness = (tag, desc, facetNames) => {
   // The first time a durable kind gets a definition, the saved descriptor
   // will have neither ".unfaceted" nor ".facets", and we must update the
   // details in the descriptor.
@@ -199,7 +199,7 @@ function checkAndUpdateFacetiousness(tag, desc, facetNames) {
       Fail`durable kind "${tag}" facets (${newer}) don't match original definition (${orig})`;
     }
   }
-}
+};
 
 // The management of single Representatives (i.e. defineKind) is very similar
 // to that of a cohort of facets (i.e. defineKindMulti). In this description,
@@ -294,7 +294,7 @@ const makeFacets = (
   return harden(facets);
 };
 
-function insistDurableCapdata(vrm, what, capdata, valueFor) {
+const insistDurableCapdata = (vrm, what, capdata, valueFor) => {
   capdata.slots.forEach((vref, idx) => {
     if (!vrm.isDurable(vref)) {
       if (valueFor) {
@@ -304,9 +304,9 @@ function insistDurableCapdata(vrm, what, capdata, valueFor) {
       }
     }
   });
-}
+};
 
-function insistSameCapData(oldCD, newCD) {
+const insistSameCapData = (oldCD, newCD) => {
   // NOTE: this assumes both were marshalled with the same format
   // (e.g. smallcaps vs pre-smallcaps). To somewhat tolerate new
   // formats, we'd need to `serialize(unserialize(oldCD))`.
@@ -321,7 +321,7 @@ function insistSameCapData(oldCD, newCD) {
       Fail`durable Kind stateShape mismatch (slot[${idx}])`;
     }
   });
-}
+};
 
 /**
  * Create a new virtual object manager.  There is one of these for each vat.
@@ -372,7 +372,7 @@ function insistSameCapData(oldCD, newCD) {
  * `VatData` global (along with various other storage functions defined
  * elsewhere).
  */
-export function makeVirtualObjectManager(
+export const makeVirtualObjectManager = (
   syscall,
   vrm,
   allocateExportID,
@@ -383,7 +383,7 @@ export function makeVirtualObjectManager(
   unserialize,
   assertAcceptableSyscallCapdataSize,
   liveSlotsOptions = {},
-) {
+) => {
   const { allowStateShapeChanges = false } = liveSlotsOptions;
 
   // array of Caches that need to be flushed at end-of-crank, two per Kind
@@ -416,7 +416,7 @@ export function makeVirtualObjectManager(
   // weakly.
   const unweakableKeySets = new WeakMap();
 
-  function preserveUnweakableKey(collection, key) {
+  const preserveUnweakableKey = (collection, key) => {
     if (unweakable.has(key)) {
       let uwkeys = unweakableKeySets.get(collection);
       if (!uwkeys) {
@@ -425,27 +425,27 @@ export function makeVirtualObjectManager(
       }
       uwkeys.add(key);
     }
-  }
+  };
 
-  function releaseUnweakableKey(collection, key) {
+  const releaseUnweakableKey = (collection, key) => {
     if (unweakable.has(key)) {
       const uwkeys = unweakableKeySets.get(collection);
       if (uwkeys) {
         uwkeys.delete(key);
       }
     }
-  }
+  };
 
   /* eslint max-classes-per-file: ["error", 2] */
 
   const actualWeakMaps = new WeakMap();
   const virtualObjectMaps = new WeakMap();
 
-  function voAwareWeakMapDeleter(descriptor) {
+  const voAwareWeakMapDeleter = descriptor => {
     for (const vref of descriptor.vmap.keys()) {
       vrm.removeRecognizableVref(vref, descriptor.vmap);
     }
-  }
+  };
 
   class VirtualObjectAwareWeakMap {
     constructor() {
@@ -508,7 +508,7 @@ export function makeVirtualObjectManager(
     }
   }
 
-  Object.defineProperty(VirtualObjectAwareWeakMap, Symbol.toStringTag, {
+  defineProperty(VirtualObjectAwareWeakMap, Symbol.toStringTag, {
     value: 'WeakMap',
     writable: false,
     enumerable: false,
@@ -518,11 +518,11 @@ export function makeVirtualObjectManager(
   const actualWeakSets = new WeakMap();
   const virtualObjectSets = new WeakMap();
 
-  function voAwareWeakSetDeleter(descriptor) {
+  const voAwareWeakSetDeleter = descriptor => {
     for (const vref of descriptor.vset.values()) {
       vrm.removeRecognizableVref(vref, descriptor.vset);
     }
-  }
+  };
 
   class VirtualObjectAwareWeakSet {
     constructor() {
@@ -577,7 +577,7 @@ export function makeVirtualObjectManager(
     }
   }
 
-  Object.defineProperty(VirtualObjectAwareWeakSet, Symbol.toStringTag, {
+  defineProperty(VirtualObjectAwareWeakSet, Symbol.toStringTag, {
     value: 'WeakSet',
     writable: false,
     enumerable: false,
@@ -597,40 +597,40 @@ export function makeVirtualObjectManager(
   /**
    * @param {DurableKindDescriptor} durableKindDescriptor
    */
-  function saveDurableKindDescriptor(durableKindDescriptor) {
+  const saveDurableKindDescriptor = durableKindDescriptor => {
     const { kindID } = durableKindDescriptor;
     const key = `vom.dkind.${kindID}.descriptor`;
     syscall.vatstoreSet(key, JSON.stringify(durableKindDescriptor));
-  }
+  };
 
   /**
    * @param {string} kindID
    * @returns {DurableKindDescriptor} durableKindDescriptor
    */
-  function loadDurableKindDescriptor(kindID) {
+  const loadDurableKindDescriptor = kindID => {
     const key = `vom.dkind.${kindID}.descriptor`;
     const raw = syscall.vatstoreGet(key);
     raw || Fail`unknown kind ID ${kindID}`;
     return JSON.parse(raw);
-  }
+  };
 
-  function saveNextInstanceID(kindID) {
+  const saveNextInstanceID = kindID => {
     const key = `vom.dkind.${kindID}.nextID`;
     syscall.vatstoreSet(key, `${nextInstanceIDs.get(kindID)}`);
-  }
+  };
 
-  function loadNextInstanceID(kindID) {
+  const loadNextInstanceID = kindID => {
     const key = `vom.dkind.${kindID}.nextID`;
     return Nat(Number(syscall.vatstoreGet(key)));
-  }
+  };
 
-  function saveVirtualKindDescriptor(kindID, descriptor) {
+  const saveVirtualKindDescriptor = (kindID, descriptor) => {
     // we never read these back: they're stored in the DB for the sake
     // of diagnostics, debugging, and potential external DB
     // cleanup/upgrade tools
     const key = `vom.vkind.${kindID}.descriptor`;
     syscall.vatstoreSet(key, JSON.stringify(descriptor));
-  }
+  };
 
   /**
    * Define a new kind of virtual object.
@@ -724,7 +724,7 @@ export function makeVirtualObjectManager(
    * reference to the state is nulled out and the object holding the state
    * becomes garbage collectable.
    */
-  function defineKindInternal(
+  const defineKindInternal = (
     kindID,
     tag,
     init,
@@ -733,7 +733,7 @@ export function makeVirtualObjectManager(
     options = {},
     isDurable,
     durableKindDescriptor = undefined, // only for durables
-  ) {
+  ) => {
     const {
       finish,
       stateShape = undefined,
@@ -754,7 +754,7 @@ export function makeVirtualObjectManager(
       }
       case 'many': {
         assert(multifaceted);
-        facetNames = Object.getOwnPropertyNames(behavior).sort();
+        facetNames = ownKeys(behavior).sort();
         break;
       }
       case 'not': {
@@ -817,15 +817,17 @@ export function makeVirtualObjectManager(
       saveDurableKindDescriptor(durableKindDescriptor);
     }
 
+    /** @type {(prop: string) => void} */
     let checkStateProperty = _prop => undefined;
     /** @type {(value: any, prop: string) => void} */
     let checkStatePropertyValue = (_value, _prop) => undefined;
     if (stateShape) {
-      checkStateProperty = prop =>
-        hasOwnPropertyOf(stateShape, prop) ||
-        Fail`State must only have fields described by stateShape: ${q(
-          ownKeys(stateShape),
-        )}`;
+      checkStateProperty = prop => {
+        hasOwn(stateShape, prop) ||
+          Fail`State must only have fields described by stateShape: ${q(
+            ownKeys(stateShape),
+          )}`;
+      };
       checkStatePropertyValue = (value, prop) => {
         checkStateProperty(prop);
         mustMatch(value, stateShape[prop]);
@@ -854,13 +856,11 @@ export function makeVirtualObjectManager(
     // * when state.prop is written, invoking the setter
     // This will cause a syscall.vatstoreGet only once per crank.
 
-    function makeState(baseRef) {
+    const makeState = baseRef => {
       const state = {};
-      for (const prop of Object.getOwnPropertyNames(
-        dataCache.get(baseRef).capdatas,
-      )) {
+      for (const prop of getOwnPropertyNames(dataCache.get(baseRef).capdatas)) {
         checkStateProperty(prop);
-        Object.defineProperty(state, prop, {
+        defineProperty(state, prop, {
           get: () => {
             const { valueMap, capdatas } = dataCache.get(baseRef);
             if (!valueMap.has(prop)) {
@@ -889,7 +889,7 @@ export function makeVirtualObjectManager(
         });
       }
       return harden(state);
-    }
+    };
 
     // More specifically, behavior functions receive a "context"
     // object as their first argument, with { state, self } or {
@@ -899,7 +899,7 @@ export function makeVirtualObjectManager(
     // will sample dataCache.get, then call both "makeState()" and
     // "makeContext". The DB might be read by that dataCache.get.
 
-    function makeContext(baseRef, state) {
+    const makeContext = (baseRef, state) => {
       // baseRef came from valToSlot, so must be in slotToVal
       const val = requiredValForSlot(baseRef);
       // val is either 'self' or the facet record
@@ -908,7 +908,7 @@ export function makeVirtualObjectManager(
       } else {
         return harden({ state, self: val });
       }
-    }
+    };
 
     // The contextCache holds the {state,self} or {state,facets} "context"
     // object, needed by behavior functions. We keep this in a (per-crank)
@@ -952,15 +952,15 @@ export function makeVirtualObjectManager(
     // this builds new Representatives, both when creating a new instance and
     // for reanimating an existing one when the old rep gets GCed
 
-    function reanimateVO(baseRef) {
+    const reanimateVO = baseRef => {
       if (multifaceted) {
         return makeFacets(facetNames, proto, linkToCohort, unweakable, baseRef);
       } else {
         return makeRepresentative(proto, baseRef);
       }
-    }
+    };
 
-    function deleteStoredVO(baseRef) {
+    const deleteStoredVO = baseRef => {
       let doMoreGC = false;
       const record = dataCache.get(baseRef);
       for (const valueCD of Object.values(record.capdatas)) {
@@ -970,14 +970,14 @@ export function makeVirtualObjectManager(
       }
       dataCache.delete(baseRef);
       return doMoreGC;
-    }
+    };
 
     // Tell the VRM about this Kind.
     vrm.registerKind(kindID, reanimateVO, deleteStoredVO, isDurable);
     // @ts-expect-error FIXME param expects 'null' for unfaceted but in this function it's undefined
     vrm.rememberFacetNames(kindID, facetNames);
 
-    function makeNewInstance(...args) {
+    const makeNewInstance = (...args) => {
       const id = getNextInstanceID(kindID, isDurable);
       const baseRef = makeBaseRef(kindID, id, isDurable);
       // kdebug(`vo make ${baseRef}`);
@@ -994,7 +994,7 @@ export function makeVirtualObjectManager(
       // save (i.e. populate the cache) with the initial serialized record
       const capdatas = {};
       const valueMap = new Map();
-      for (const prop of Object.getOwnPropertyNames(initialData)) {
+      for (const prop of getOwnPropertyNames(initialData)) {
         const value = initialData[prop];
         checkStatePropertyValue(value, prop);
         const valueCD = serialize(value);
@@ -1023,10 +1023,10 @@ export function makeVirtualObjectManager(
       registerValue(baseRef, val, multifaceted);
       finish?.(contextCache.get(baseRef));
       return val;
-    }
+    };
 
     return makeNewInstance;
-  }
+  };
 
   let kindIDID;
   /** @type Map<string, DurableKindDescriptor> */
@@ -1035,7 +1035,7 @@ export function makeVirtualObjectManager(
   const definedDurableKinds = new Set(); // kindID
   const nextInstanceIDs = new Map(); // kindID -> nextInstanceID
 
-  function reanimateDurableKindID(vobjID) {
+  const reanimateDurableKindID = vobjID => {
     const kindID = `${parseVatSlot(vobjID).subid}`;
     const durableKindDescriptor = loadDurableKindDescriptor(kindID);
     const nextInstanceID = loadNextInstanceID(kindID);
@@ -1046,18 +1046,18 @@ export function makeVirtualObjectManager(
     // KindHandles are held strongly for the remainder of the incarnation, so
     // their components do not provide GC sensors
     return kindHandle;
-  }
+  };
 
-  function initializeKindHandleKind() {
+  const initializeKindHandleKind = () => {
     kindIDID = syscall.vatstoreGet('kindIDID');
     if (!kindIDID) {
       kindIDID = `${allocateExportID()}`;
       syscall.vatstoreSet('kindIDID', kindIDID);
     }
     vrm.registerKind(kindIDID, reanimateDurableKindID, () => false, true);
-  }
+  };
 
-  function getNextInstanceID(kindID, isDurable) {
+  const getNextInstanceID = (kindID, isDurable) => {
     assert.typeof(kindID, 'string');
     // nextInstanceID is initialized to 1 for brand new kinds, loaded
     // from DB when redefining existing kinds, held in RAM, and
@@ -1071,9 +1071,9 @@ export function makeVirtualObjectManager(
       saveNextInstanceID(kindID);
     }
     return id;
-  }
+  };
 
-  function defineKind(tag, init, behavior, options) {
+  const defineKind = (tag, init, behavior, options) => {
     const kindID = `${allocateExportID()}`;
     saveVirtualKindDescriptor(kindID, { kindID, tag });
     nextInstanceIDs.set(kindID, 1n);
@@ -1086,9 +1086,9 @@ export function makeVirtualObjectManager(
       options,
       false,
     );
-  }
+  };
 
-  function defineKindMulti(tag, init, behavior, options) {
+  const defineKindMulti = (tag, init, behavior, options) => {
     const kindID = `${allocateExportID()}`;
     saveVirtualKindDescriptor(kindID, { kindID, tag });
     nextInstanceIDs.set(kindID, 1n);
@@ -1101,7 +1101,7 @@ export function makeVirtualObjectManager(
       options,
       false,
     );
-  }
+  };
 
   /**
    *
@@ -1127,7 +1127,7 @@ export function makeVirtualObjectManager(
     return kindHandle;
   };
 
-  function defineDurableKind(kindHandle, init, behavior, options) {
+  const defineDurableKind = (kindHandle, init, behavior, options) => {
     kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
     const durableKindDescriptor = kindIDToDescriptor.get(kindID);
@@ -1147,9 +1147,9 @@ export function makeVirtualObjectManager(
     );
     definedDurableKinds.add(kindID);
     return maker;
-  }
+  };
 
-  function defineDurableKindMulti(kindHandle, init, behavior, options) {
+  const defineDurableKindMulti = (kindHandle, init, behavior, options) => {
     kindHandleToID.has(kindHandle) || Fail`unknown handle ${kindHandle}`;
     const kindID = kindHandleToID.get(kindHandle);
     const durableKindDescriptor = kindIDToDescriptor.get(kindID);
@@ -1169,9 +1169,9 @@ export function makeVirtualObjectManager(
     );
     definedDurableKinds.add(kindID);
     return maker;
-  }
+  };
 
-  function insistAllDurableKindsReconnected() {
+  const insistAllDurableKindsReconnected = () => {
     // identify all user-defined durable kinds by iterating `vom.dkind.*`
     const missing = [];
     const prefix = 'vom.dkind.';
@@ -1188,9 +1188,9 @@ export function makeVirtualObjectManager(
       const tags = missing.join(',');
       throw Error(`defineDurableKind not called for tags: [${tags}]`);
     }
-  }
+  };
 
-  function countWeakKeysForCollection(collection) {
+  const countWeakKeysForCollection = collection => {
     const virtualObjectMap = virtualObjectMaps.get(collection);
     if (virtualObjectMap) {
       return virtualObjectMap.size;
@@ -1200,7 +1200,7 @@ export function makeVirtualObjectManager(
       return virtualObjectSet.size;
     }
     return 0;
-  }
+  };
 
   const testHooks = {
     countWeakKeysForCollection,
@@ -1215,12 +1215,12 @@ export function makeVirtualObjectManager(
     }
   };
 
-  function getRetentionStats() {
+  const getRetentionStats = () => {
     return {
       definedDurableKinds: definedDurableKinds.size,
       nextInstanceIDs: nextInstanceIDs.size,
     };
-  }
+  };
 
   return harden({
     initializeKindHandleKind,
@@ -1237,7 +1237,7 @@ export function makeVirtualObjectManager(
     testHooks,
     canBeDurable,
   });
-}
+};
 /**
  * @typedef { ReturnType<typeof makeVirtualObjectManager> } VirtualObjectManager
  */
