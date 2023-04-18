@@ -742,6 +742,7 @@ export const makeVirtualObjectManager = (
     } = options;
 
     let facetNames; // undefined or a list of strings
+    const statePrototype = {}; // Not frozen yet
 
     // 'multifaceted' tells us which API was used: define[Durable]Kind
     // vs define[Durable]KindMulti. This function checks whether
@@ -818,9 +819,9 @@ export const makeVirtualObjectManager = (
     }
 
     /** @type {(prop: string) => void} */
-    let checkStateProperty = _prop => undefined;
+    let checkStateProperty = _prop => {};
     /** @type {(value: any, prop: string) => void} */
-    let checkStatePropertyValue = (_value, _prop) => undefined;
+    let checkStatePropertyValue = (_value, _prop) => {};
     if (stateShape) {
       checkStateProperty = prop => {
         hasOwn(stateShape, prop) ||
@@ -856,37 +857,48 @@ export const makeVirtualObjectManager = (
     // * when state.prop is written, invoking the setter
     // This will cause a syscall.vatstoreGet only once per crank.
 
+    const makeFieldDescriptor = (prop, getBaseRef) => {
+      return harden({
+        get() {
+          const baseRef = getBaseRef(this);
+          const { valueMap, capdatas } = dataCache.get(baseRef);
+          if (!valueMap.has(prop)) {
+            const value = harden(unserialize(capdatas[prop]));
+            checkStatePropertyValue(value, prop);
+            valueMap.set(prop, value);
+          }
+          return valueMap.get(prop);
+        },
+        set(value) {
+          const baseRef = getBaseRef(this);
+          checkStatePropertyValue(value, prop);
+          const capdata = serialize(value);
+          assertAcceptableSyscallCapdataSize([capdata]);
+          if (isDurable) {
+            insistDurableCapdata(vrm, prop, capdata, true);
+          }
+          const record = dataCache.get(baseRef); // mutable
+          const oldSlots = record.capdatas[prop].slots;
+          const newSlots = capdata.slots;
+          vrm.updateReferenceCounts(oldSlots, newSlots);
+          record.capdatas[prop] = capdata; // modify in place ..
+          record.valueMap.set(prop, value);
+          dataCache.set(baseRef, record); // .. but mark as dirty
+        },
+        enumerable: true,
+        configurable: false,
+      });
+    };
+
     const makeState = baseRef => {
-      const state = {};
+      const state = { __proto__: statePrototype };
       for (const prop of getOwnPropertyNames(dataCache.get(baseRef).capdatas)) {
         checkStateProperty(prop);
-        defineProperty(state, prop, {
-          get: () => {
-            const { valueMap, capdatas } = dataCache.get(baseRef);
-            if (!valueMap.has(prop)) {
-              const value = harden(unserialize(capdatas[prop]));
-              checkStatePropertyValue(value, prop);
-              valueMap.set(prop, value);
-            }
-            return valueMap.get(prop);
-          },
-          set: value => {
-            checkStatePropertyValue(value, prop);
-            const capdata = serialize(value);
-            assertAcceptableSyscallCapdataSize([capdata]);
-            if (isDurable) {
-              insistDurableCapdata(vrm, prop, capdata, true);
-            }
-            const record = dataCache.get(baseRef); // mutable
-            const oldSlots = record.capdatas[prop].slots;
-            const newSlots = capdata.slots;
-            vrm.updateReferenceCounts(oldSlots, newSlots);
-            record.capdatas[prop] = capdata; // modify in place ..
-            record.valueMap.set(prop, value);
-            dataCache.set(baseRef, record); // .. but mark as dirty
-          },
-          enumerable: true,
-        });
+        defineProperty(
+          state,
+          prop,
+          makeFieldDescriptor(prop, () => baseRef),
+        );
       }
       return harden(state);
     };
