@@ -90,10 +90,13 @@ export function makeStartXSnap(options) {
     // console.log('fresh xsnap', { snapStore: snapStore });
     const worker = doXSnap({ handleCommand, name, ...meterOpts, ...xsnapOpts });
 
-    const bundlePs = bundleIDs.map(id => bundleHandler.getBundle(id));
-    let bundles = await Promise.all(bundlePs);
+    let bundles;
     if (overrideBundles) {
-      bundles = overrideBundles; // replace the usual bundles
+      bundles = overrideBundles; // ignore the usual bundles
+    } else {
+      const bundlePs = bundleIDs.map(id => bundleHandler.getBundle(id));
+      // eslint-disable-next-line @jessie.js/no-nested-await
+      bundles = await Promise.all(bundlePs);
     }
 
     for (const bundle of bundles) {
