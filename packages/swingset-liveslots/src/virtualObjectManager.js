@@ -743,6 +743,14 @@ export const makeVirtualObjectManager = (
 
     let facetNames; // undefined or a list of strings
     const statePrototype = {}; // Not frozen yet
+    const stateToBaseRefMap = new WeakMap();
+
+    const getBaseRef = state => {
+      const baseRef = stateToBaseRefMap.get(state);
+      baseRef !== undefined ||
+        Fail`state accessors can only be applied to state`;
+      return baseRef;
+    };
 
     // 'multifaceted' tells us which API was used: define[Durable]Kind
     // vs define[Durable]KindMulti. This function checks whether
@@ -857,7 +865,7 @@ export const makeVirtualObjectManager = (
     // * when state.prop is written, invoking the setter
     // This will cause a syscall.vatstoreGet only once per crank.
 
-    const makeFieldDescriptor = (prop, getBaseRef) => {
+    const makeFieldDescriptor = prop => {
       return harden({
         get() {
           const baseRef = getBaseRef(this);
@@ -890,17 +898,26 @@ export const makeVirtualObjectManager = (
       });
     };
 
+    if (stateShape !== undefined) {
+      for (const prop of ownKeys(stateShape)) {
+        defineProperty(statePrototype, prop, makeFieldDescriptor(prop));
+      }
+    }
+
+    harden(statePrototype);
+
     const makeState = baseRef => {
       const state = { __proto__: statePrototype };
-      for (const prop of getOwnPropertyNames(dataCache.get(baseRef).capdatas)) {
-        checkStateProperty(prop);
-        defineProperty(
-          state,
-          prop,
-          makeFieldDescriptor(prop, () => baseRef),
-        );
+      if (stateShape === undefined) {
+        for (const prop of ownKeys(dataCache.get(baseRef).capdatas)) {
+          assert(typeof prop === 'string');
+          checkStateProperty(prop);
+          defineProperty(state, prop, makeFieldDescriptor(prop));
+        }
       }
-      return harden(state);
+      harden(state);
+      stateToBaseRefMap.set(state, baseRef);
+      return state;
     };
 
     // More specifically, behavior functions receive a "context"
