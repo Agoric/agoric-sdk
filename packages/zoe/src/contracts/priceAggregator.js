@@ -227,7 +227,9 @@ const start = async (zcf, privateArgs) => {
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
   observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => publisher.publish(priceDescriptionFromQuote(quote)),
+    updateState: quote => {
+      publisher.publish(priceDescriptionFromQuote(quote));
+    },
     fail: reason => {
       throw Error(`priceAuthority observer failed: ${reason}`);
     },

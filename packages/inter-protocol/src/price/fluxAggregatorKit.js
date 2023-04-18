@@ -190,7 +190,7 @@ export const prepareFluxAggregatorKit = async (
     priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut),
     {
       updateState: quote => {
-        priceKit.recorder.write(priceDescriptionFromQuote(quote));
+        void priceKit.recorder.write(priceDescriptionFromQuote(quote));
       },
       fail: reason => {
         throw Error(`priceAuthority observer failed: ${reason}`);
