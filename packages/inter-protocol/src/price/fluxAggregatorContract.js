@@ -5,7 +5,7 @@ import { prepareDurablePublishKit } from '@agoric/notifier';
 import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
-import { makeFluxAggregator } from './fluxAggregator.js';
+import { makeFluxAggregator } from './fluxAggregatorKit.js';
 
 const trace = makeTracer('FluxAgg', false);
 /**
@@ -18,7 +18,7 @@ const trace = makeTracer('FluxAgg', false);
  * the *Node Operator Aggregation* logic of [Chainlink price
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
- * @param {ZCF<import('./fluxAggregator.js').ChainlinkConfig & {
+ * @param {ZCF<import('./fluxAggregatorKit.js').ChainlinkConfig & {
  * timer: TimerService,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,

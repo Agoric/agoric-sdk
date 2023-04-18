@@ -16,7 +16,7 @@ import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { makeFluxAggregator } from '../../src/price/fluxAggregator.js';
+import { makeFluxAggregator } from '../../src/price/fluxAggregatorKit.js';
 import { topicPath } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeContext>>>} */

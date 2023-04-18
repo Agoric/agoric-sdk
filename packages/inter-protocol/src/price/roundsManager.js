@@ -75,7 +75,7 @@ const validRoundId = roundId => {
  */
 
 /**
- * @typedef {Readonly<import('./fluxAggregator.js').ChainlinkConfig & {
+ * @typedef {Readonly<import('./fluxAggregatorKit.js').ChainlinkConfig & {
  * quoteKit: QuoteKit,
  * answerPublisher: Publisher<void>,
  * brandIn: Brand<'nat'>,

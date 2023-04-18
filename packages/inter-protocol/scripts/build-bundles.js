@@ -31,7 +31,7 @@ await createBundles(
     ],
     [
       '../src/price/fluxAggregatorContract.js',
-      '../bundles/bundle-fluxAggregator.js',
+      '../bundles/bundle-fluxAggregatorKit.js',
     ],
   ],
   dirname,
