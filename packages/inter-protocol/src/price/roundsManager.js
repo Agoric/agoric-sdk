@@ -197,10 +197,8 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
        */
       deleteRoundDetails(roundId) {
         const { details } = this.state;
-        if (
-          details.get(roundId).submissions.length <
-          details.get(roundId).maxSubmissions
-        )
+        const roundDetails = details.get(roundId);
+        if (roundDetails.submissions.length < roundDetails.maxSubmissions)
           return;
         details.delete(roundId);
       },
@@ -363,10 +361,8 @@ export const makeRoundsManagerKit = defineDurableExoClassKit(
        */
       updateRoundAnswer(roundId, blockTimestamp) {
         const { answerPublisher, details, rounds } = this.state;
-        if (
-          details.get(roundId).submissions.length <
-          details.get(roundId).minSubmissions
-        ) {
+        const roundDetails = details.get(roundId);
+        if (roundDetails.submissions.length < roundDetails.minSubmissions) {
           return [false, 0];
         }
 
