@@ -602,7 +602,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
     },
     {
-      want: M.or({ Collateral: AmountShape }, {}),
+      maxBuy: M.or({ Collateral: AmountShape }, {}),
       exit: FullProposalShape.exit,
     },
   );

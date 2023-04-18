@@ -248,7 +248,7 @@ const bid = async (t, zoe, auctioneerKit, aeth, bidAmount, desired) => {
     E(auctioneerKit.publicFacet).makeBidInvitation(aeth.brand),
     harden({ give: { Currency: bidAmount } }),
     harden({ Currency: getRunFromFaucet(t, bidAmount.value) }),
-    { want: desired, offerPrice: makeRatioFromAmounts(bidAmount, desired) },
+    { maxBuy: desired, offerPrice: makeRatioFromAmounts(bidAmount, desired) },
   );
   return bidderSeat;
 };

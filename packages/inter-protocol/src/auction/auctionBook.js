@@ -54,7 +54,7 @@ const trace = makeTracer('AucBook', false);
 
 /**
  * @typedef {{
- *   want: Amount<'nat'>
+ *   maxBuy: Amount<'nat'>
  * } & {
  *   exitAfterBuy?: boolean,
  * } & ({
@@ -72,7 +72,7 @@ export const makeBidSpecShape = (currencyBrand, collateralBrand) => {
   const currencyAmountShape = makeNatAmountShape(currencyBrand);
   const collateralAmountShape = makeNatAmountShape(collateralBrand);
   return M.splitRecord(
-    { want: collateralAmountShape },
+    { maxBuy: collateralAmountShape },
     {
       exitAfterBuy: M.boolean(),
       // xxx should have exactly one of these properties
@@ -333,7 +333,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          *
          *  @param {ZCFSeat} seat
          *  @param {Ratio} price
-         *  @param {Amount<'nat'>} want
+         *  @param {Amount<'nat'>} maxBuy
          *  @param {object} opts
          *  @param {boolean} opts.trySettle
          *  @param {boolean} [opts.exitAfterBuy]
@@ -341,7 +341,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         acceptPriceOffer(
           seat,
           price,
-          want,
+          maxBuy,
           { trySettle, exitAfterBuy = false },
         ) {
           const { priceBook, curAuctionPrice } = this.state;
@@ -351,15 +351,15 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const settleIfPriceExists = () => {
             if (curAuctionPrice !== null) {
               return trySettle && ratioGTE(price, curAuctionPrice)
-                ? helper.settle(seat, want)
-                : AmountMath.makeEmptyFromAmount(want);
+                ? helper.settle(seat, maxBuy)
+                : AmountMath.makeEmptyFromAmount(maxBuy);
             } else {
-              return AmountMath.makeEmptyFromAmount(want);
+              return AmountMath.makeEmptyFromAmount(maxBuy);
             }
           };
           const collateralSold = settleIfPriceExists();
 
-          const stillWant = AmountMath.subtract(want, collateralSold);
+          const stillWant = AmountMath.subtract(maxBuy, collateralSold);
           if (
             (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
             AmountMath.isEmpty(stillWant) ||
@@ -381,7 +381,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          *
          *  @param {ZCFSeat} seat
          *  @param {Ratio} bidScaling
-         *  @param {Amount<'nat'>} want
+         *  @param {Amount<'nat'>} maxBuy
          *  @param {object} opts
          *  @param {boolean} opts.trySettle
          *  @param {boolean} [opts.exitAfterBuy]
@@ -389,7 +389,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         acceptScaledBidOffer(
           seat,
           bidScaling,
-          want,
+          maxBuy,
           { trySettle, exitAfterBuy = false },
         ) {
           trace('accept scaled bid offer');
@@ -408,13 +408,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                 lockedPriceForRound,
               )
             ) {
-              return helper.settle(seat, want);
+              return helper.settle(seat, maxBuy);
             }
-            return AmountMath.makeEmptyFromAmount(want);
+            return AmountMath.makeEmptyFromAmount(maxBuy);
           };
           const collateralSold = settleIfPricesDefined();
 
-          const stillWant = AmountMath.subtract(want, collateralSold);
+          const stillWant = AmountMath.subtract(maxBuy, collateralSold);
           if (
             (exitAfterBuy && !AmountMath.isEmpty(collateralSold)) ||
             AmountMath.isEmpty(stillWant) ||
@@ -645,7 +645,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             return helper.acceptPriceOffer(
               seat,
               bidSpec.offerPrice,
-              bidSpec.want,
+              bidSpec.maxBuy,
               {
                 trySettle,
                 exitAfterBuy,
@@ -655,7 +655,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             return helper.acceptScaledBidOffer(
               seat,
               bidSpec.offerBidScaling,
-              bidSpec.want,
+              bidSpec.maxBuy,
               {
                 trySettle,
                 exitAfterBuy,

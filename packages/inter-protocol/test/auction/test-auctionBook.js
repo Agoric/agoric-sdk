@@ -135,7 +135,7 @@ test('simple addOffer', async t => {
   book.addOffer(
     harden({
       offerPrice: makeRatioFromAmounts(moola(10n), simoleans(100n)),
-      want: simoleans(50n),
+      maxBuy: simoleans(50n),
     }),
     zcfSeat,
     true,
@@ -177,7 +177,7 @@ test('getOffers to a price limit', async t => {
   book.addOffer(
     harden({
       offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
-      want: simoleans(50n),
+      maxBuy: simoleans(50n),
     }),
     zcfSeat,
     true,
@@ -222,7 +222,7 @@ test('Bad keyword', async t => {
       book.addOffer(
         harden({
           offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
-          want: simoleans(50n),
+          maxBuy: simoleans(50n),
         }),
         zcfSeat,
         true,
@@ -262,7 +262,7 @@ test('getOffers w/discount', async t => {
   book.addOffer(
     harden({
       offerBidScaling: makeRatioFromAmounts(moola(10n), moola(100n)),
-      want: simoleans(50n),
+      maxBuy: simoleans(50n),
     }),
     zcfSeat,
     true,

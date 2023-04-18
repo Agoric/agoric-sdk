@@ -209,7 +209,7 @@ const makePsmSwapOffer = (instance, brands, opts) => {
  * @param {{
  *   offerId: string,
  *   give: string,
- *   desiredBuy: string,
+ *   maxBuy: string,
  *   wantMinimum?: string,
  *   parseAmount: (x: string) => Amount<'nat'>,
  * } & ({
@@ -224,7 +224,7 @@ const makeBidOffer = (_brands, opts) => {
   assertAllDefined({
     offerId: opts.offerId,
     give: opts.give,
-    desiredBuy: opts.desiredBuy,
+    maxBuy: opts.maxBuy,
   });
   const { parseAmount } = opts;
   const proposal = {
@@ -234,7 +234,7 @@ const makeBidOffer = (_brands, opts) => {
       : {}),
   };
   const istBrand = proposal.give.Currency.brand;
-  const desiredBuy = parseAmount(opts.desiredBuy);
+  const maxBuy = parseAmount(opts.maxBuy);
 
   const bounds = (x, lo, hi) => {
     assert(x >= lo && x <= hi);
@@ -249,12 +249,11 @@ const makeBidOffer = (_brands, opts) => {
   const offerArgs =
     'price' in opts
       ? {
-          // TODO: update when contract uses "desiredBuy"
-          want: parseAmount(opts.desiredBuy),
-          offerPrice: parseRatio(opts.price, istBrand, desiredBuy.brand),
+          maxBuy: parseAmount(opts.maxBuy),
+          offerPrice: parseRatio(opts.price, istBrand, maxBuy.brand),
         }
       : {
-          want: desiredBuy,
+          maxBuy,
           offerBidScaling: parseRatio(
             (1 - bounds(opts.discount, -1, 1)).toFixed(2),
             istBrand,
@@ -268,7 +267,7 @@ const makeBidOffer = (_brands, opts) => {
     invitationSpec: {
       source: 'agoricContract',
       instancePath: ['auctioneer'],
-      callPipe: [['makeBidInvitation', [desiredBuy.brand]]],
+      callPipe: [['makeBidInvitation', [maxBuy.brand]]],
     },
     proposal,
     offerArgs,
