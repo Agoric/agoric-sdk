@@ -174,6 +174,17 @@ export const VaultI = M.interface('Vault', {
   abortLiquidation: M.call().returns(M.string()),
 });
 
+const VaultStateShape = harden({
+  idInManager: M.any(),
+  manager: M.any(),
+  outerUpdater: M.any(),
+  phase: M.any(),
+  storageNode: M.any(),
+  vaultSeat: M.any(),
+  interestSnapshot: M.any(),
+  debtSnapshot: M.any(),
+});
+
 /**
  * @param {import('@agoric/ertp').Baggage} baggage
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
@@ -943,6 +954,9 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           return reverseInterest(state.debtSnapshot, state.interestSnapshot);
         },
       },
+    },
+    {
+      stateShape: VaultStateShape,
     },
   );
   return maker;
