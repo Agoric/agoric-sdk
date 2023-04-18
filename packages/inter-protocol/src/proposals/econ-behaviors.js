@@ -417,6 +417,12 @@ export const startRewardDistributor = async ({
       return undefined;
     });
 
+  /**
+   * @type {Awaited<
+   *   ReturnType<typeof import('../feeDistributor.js').makeFeeDistributor>>
+   *   & { adminFacet: AdminFacet, instance: Instance }
+   * }
+   */
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
@@ -424,13 +430,15 @@ export const startRewardDistributor = async ({
     undefined,
     'feeDistributor',
   );
+  /** @type {ERef<import('../feeDistributor.js').FeeDestination>} */
   await E(instanceKit.creatorFacet).setDestinations({
-    RewardDistributor:
-      rewardDistributorDepositFacet &&
-      E(instanceKit.creatorFacet).makeDepositFacetDestination(
-        rewardDistributorDepositFacet,
-      ),
+    ...(rewardDistributorDepositFacet && {
+      RewardDistributor: E(
+        instanceKit.creatorFacet,
+      ).makeDepositFacetDestination(rewardDistributorDepositFacet),
+    }),
     Reserve: E(instanceKit.creatorFacet).makeOfferDestination(
+      zoe,
       'Collateral',
       E.get(reserveKit).publicFacet,
       'makeAddCollateralInvitation',

@@ -316,7 +316,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
     },
 
     /**
-     * @param {Record<Keyword, FeeDestination>} newDestinations
+     * @param {Record<Keyword, ERef<FeeDestination>>} newDestinations
      */
     setDestinations: async newDestinations => {
       destinations = newDestinations;
