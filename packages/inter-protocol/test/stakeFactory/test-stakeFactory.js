@@ -499,12 +499,35 @@ test('forged Attestation fails', async t => {
   await t.throwsAsync(E(seat).getOfferResult());
 });
 
-const approxEqual = (t, actual, expected, epsilon) => {
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {Amount<'nat'>} actual
+ * @param {Amount<'nat'>} target
+ * @param {Amount<'nat'>} epsilon
+ * @param {bigint} [scale]
+ * @returns {void}
+ */
+const assertSimilarAmount = (t, actual, target, epsilon, scale) => {
   const { min, max, subtract, isGTE } = AmountMath;
-  if (isGTE(epsilon, subtract(max(actual, expected), min(actual, expected)))) {
-    t.pass();
+  // kludgy but good-enough decimal division by `scale`
+  const unscale = amount => {
+    const { value } = amount;
+    if (!scale) {
+      return value;
+    }
+    const logScale = `${scale - 1n}`.length;
+    const digits = `${(BigInt(value) * 10n ** BigInt(logScale)) / scale}`;
+    const padded = digits.padStart(logScale + 1, '0');
+    const decimal = `${padded.slice(0, -logScale)}.${padded.slice(-logScale)}`;
+    return decimal.replace(/\.?0+$/, '');
+  };
+  // prettier-ignore
+  const description = `${unscale(actual)} must be in ${unscale(target)} ± ${unscale(epsilon)}`;
+
+  if (isGTE(epsilon, subtract(max(actual, target), min(actual, target)))) {
+    t.pass(description);
   } else {
-    t.deepEqual(actual, expected);
+    t.deepEqual(actual, target, description);
   }
 };
 
@@ -727,23 +750,25 @@ const makeWorld = async t => {
       await returnAttestation(attBack);
       await E(runPurse).deposit(runPmt);
     },
-    checkRUNBalance: async target => {
+    checkRUNBalance: async unscaledTargetValue => {
       const actual = await E(runPurse).getCurrentAmount();
-      approxEqual(
+      assertSimilarAmount(
         t,
         actual,
-        AmountMath.make(runBrand, target * micro.unit),
+        AmountMath.make(runBrand, unscaledTargetValue * micro.unit),
         epsilon,
+        micro.unit,
       );
     },
-    checkRUNDebt: async expected => {
+    checkRUNDebt: async unscaledTargetValue => {
       const { vault } = offerResult;
-      const debt = await E(vault).getCurrentDebt();
-      approxEqual(
+      const actual = await E(vault).getCurrentDebt();
+      assertSimilarAmount(
         t,
-        debt,
-        AmountMath.make(runBrand, expected * micro.unit),
+        actual,
+        AmountMath.make(runBrand, unscaledTargetValue * micro.unit),
         epsilon,
+        micro.unit,
       );
     },
     setMintingRatio: async newRunToBld => {
