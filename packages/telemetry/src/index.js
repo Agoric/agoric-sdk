@@ -10,6 +10,7 @@ export * from './make-slog-sender.js';
  * @typedef {((obj: {}, jsonObj?: string | undefined) => void) & {
  *  usesJsonObject?: boolean;
  *  forceFlush?: () => Promise<void>;
+ *  shutdown?: () => Promise<void>;
  * }} SlogSender
  */
 /**

@@ -166,6 +166,10 @@ export const makeSlogSender = async (opts = {}) => {
           ...senders.map(sender => sender.forceFlush?.()),
           ...sendErrors.splice(0).map(err => Promise.reject(err)),
         ]).then(() => {}),
+      shutdown: async () =>
+        PromiseAllOrErrors(senders.map(sender => sender.shutdown?.())).then(
+          () => {},
+        ),
       usesJsonObject: hasSenderUsingJsonObj,
     });
   }
