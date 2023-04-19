@@ -144,8 +144,6 @@ Introducing your account to Zoe involves provisioning an offer handler.
 
 Again, use https://devnet.agoric.net/ but this time, choose "send IST and provision ...".
 
-_TODO: cite inter.trade docs on provisioning a smart wallet?_
-
 
 ## Liquidation Auction Status
 
@@ -240,10 +238,6 @@ This command does several things:
   3. waits for the transaction to be included in a block
   4. waits for the offer to be placed with the auctioneer contract via Zoe
 
-TODO: `inter bid by-discount`.
-
-TODO: fix `want` handling.
-
 
 ## Listing your open bids: `inter bid list`
 
@@ -259,7 +253,7 @@ If you win an auction, the winning bid will no longer be open; so use `--all`:
 ```
 $ inter bid list --from test-acct --all
 {"id":"bid-123142131231","price":"10 IST/ATOM","give":{"Currency":"10 IST"},"payouts":{"Currency":"10IST"}}
-{"id":"bid-1680232100993","price":"5 IST/ATOM","give":{"Currency":"0.7 IST"},"want":"2 ATOM","result":"Your bid has been accepted"}
+{"id":"bid-1680232100993","price":"5 IST/ATOM","give":{"Currency":"0.7 IST"},"result":"Your bid has been accepted"}
 ```
 
 
