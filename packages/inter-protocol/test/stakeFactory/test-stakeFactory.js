@@ -560,7 +560,7 @@ const makeWorld = async t => {
   const attPurse = E(attIssuer).makeEmptyPurse();
   const runPurse = E(runIssuer).makeEmptyPurse();
   const rewardPurse = E(runIssuer).makeEmptyPurse();
-  const epsilon = AmountMath.make(runBrand, micro.unit / 5n);
+  const epsilon = AmountMath.make(runBrand, micro.unit / 4n);
 
   await E(rewardPurse).deposit(
     await mintRunPayment(500n * micro.unit, {
