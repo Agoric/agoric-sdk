@@ -172,9 +172,9 @@ const makeAuctionDriver = async (t, params = defaultParams) => {
     });
     const offerArgs =
       discount && discount.numerator.brand === discount.denominator.brand
-        ? { want: wantCollateral, offerBidScaling: discount }
+        ? { maxBuy: wantCollateral, offerBidScaling: discount }
         : {
-            want: wantCollateral,
+            maxBuy: wantCollateral,
             offerPrice:
               discount ||
               harden(makeRatioFromAmounts(giveCurrency, wantCollateral)),

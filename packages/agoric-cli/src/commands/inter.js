@@ -105,7 +105,7 @@ const fmtMetrics = (metrics, quote, assets) => {
 const coerceBid = (offerStatus, agoricNames, warn) => {
   const { offerArgs } = offerStatus;
   /** @type {unknown} */
-  const collateralBrand = /** @type {any} */ (offerArgs)?.want?.brand;
+  const collateralBrand = /** @type {any} */ (offerArgs)?.maxBuy?.brand;
   if (!collateralBrand) {
     warn('mal-formed bid offerArgs', offerStatus.id, offerArgs);
     return null;
@@ -149,7 +149,7 @@ export const fmtBid = (bid, assets) => {
   const {
     id,
     proposal: { give },
-    offerArgs: { want },
+    offerArgs: { maxBuy },
     payouts,
     result,
     error,
@@ -158,7 +158,7 @@ export const fmtBid = (bid, assets) => {
     !error && result && result !== 'UNPUBLISHED' ? { result } : {};
   const props = {
     ...(give ? { give: fmt.record(give) } : {}),
-    ...(want ? { want: fmt.amount(want) } : {}),
+    ...(maxBuy ? { maxBuy: fmt.amount(maxBuy) } : {}),
     ...(payouts ? { payouts: fmt.record(payouts) } : resultProp),
     ...(error ? { error } : {}),
   };
@@ -305,7 +305,7 @@ For example:
   /**
    * @typedef {{
    *   give: string,
-   *   desiredBuy: string,
+   *   maxBuy: string,
    *   wantMinimum?: string,
    *   offerId: string,
    *   from: string,
@@ -323,7 +323,7 @@ For example:
       )
       .requiredOption('--give <amount>', 'IST to bid')
       .option(
-        '--desiredBuy <amount>',
+        '--maxBuy <amount>',
         'max Collateral wanted',
         String,
         '1_000_000IbcATOM',

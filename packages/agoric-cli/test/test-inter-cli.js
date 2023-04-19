@@ -79,7 +79,7 @@ const offerSpec1 = harden({
         numerator: mk(bslot.IST, 9n),
         denominator: mk(bslot.ATOM, 1n),
       },
-      want: mk(bslot.ATOM, 1_000_000_000_000n),
+      maxBuy: mk(bslot.ATOM, 1_000_000_000_000n),
     },
     proposal: {
       give: { [KW.Bid]: mk(bslot.IST, 50_000_000n) },
@@ -222,11 +222,11 @@ const offerStatus2 = harden({
       denominator: { brand: topBrands.IST, value: 100n },
       numerator: { brand: topBrands.IST, value: 90n },
     },
-    want: { brand: topBrands.ATOM, value: 2000000n },
+    maxBuy: { brand: topBrands.ATOM, value: 2000000n },
   },
   proposal: {
     give: {
-      [KW.Bid]: { brand: topBrands.ATOM, value: 20000000n },
+      [KW.Bid]: { brand: topBrands.IST, value: 20000000n },
     },
   },
   payouts: {
@@ -314,11 +314,11 @@ const offerStatus1 = harden({
       denominator: { brand: topBrands.ATOM, value: 2000000n },
       numerator: { brand: topBrands.IST, value: 20000000n },
     },
-    want: { brand: topBrands.ATOM, value: 2000000n },
+    maxBuy: { brand: topBrands.ATOM, value: 2000000n },
   },
   proposal: {
     give: {
-      [KW.Bid]: { brand: topBrands.ATOM, value: 20000000n },
+      [KW.Bid]: { brand: topBrands.IST, value: 20000000n },
     },
   },
 });
@@ -340,8 +340,8 @@ test('inter bid list: finds one bid', async t => {
     JSON.stringify({
       id: 'bid-234234',
       discount: 10,
-      give: { [KW.Bid]: '20 ATOM' },
-      want: '2 ATOM',
+      give: { [KW.Bid]: '20 IST' },
+      maxBuy: '2 ATOM',
       payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
     }),
   );
@@ -421,18 +421,18 @@ test('formatBid', t => {
     t.deepEqual(actual, {
       id: 1678990150266,
       error: 'Error: "nameKey" not found: (a string)',
-      give: { [KW.Bid]: '20 ATOM' },
+      give: { [KW.Bid]: '20 IST' },
       price: '10 IST/ATOM',
-      want: '2 ATOM',
+      maxBuy: '2 ATOM',
     });
   }
   {
     const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
     t.deepEqual(actual, {
       id: 'bid-234234',
-      give: { [KW.Bid]: '20 ATOM' },
+      give: { [KW.Bid]: '20 IST' },
       payouts: { Collateral: '5 ATOM', [KW.Bid]: '37 IST' },
-      want: '2 ATOM',
+      maxBuy: '2 ATOM',
       discount: 10,
     });
   }
@@ -449,7 +449,7 @@ test.todo('execSwingsetTransaction returns non-0 code');
 
 test.todo('inter bid by-price shows tx, wallet status');
 /*
-$ agops inter bid by-price --price 0.81 --give 0.5 --want 3 --from gov2
+$ agops inter bid by-price --price 0.81 --give 0.5 --maxBuy 3 --from gov2
 2023-03-30T21:48:14.479332418Z not in block 49618 retrying...
 bid is broadcast:
 {"timestamp":"2023-03-30T21:48:19Z","height":"49619","offerId":"bid-1680212903989","txhash":"472A47AAE24F27E747E3E64F4644860D2A5D3AD7EC5388C4C849805034E20D38"}

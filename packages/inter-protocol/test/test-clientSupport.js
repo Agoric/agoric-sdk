@@ -52,7 +52,7 @@ test('Offers.auction.Bid', async t => {
         offerId: 'foo1',
         give: '4.56IST',
         discount: cliArg,
-        desiredBuy: '10_000ATOM',
+        maxBuy: '10_000ATOM',
         parseAmount,
       }),
       {
@@ -67,7 +67,7 @@ test('Offers.auction.Bid', async t => {
         },
         offerArgs: {
           offerBidScaling,
-          want: { brand: atom.brand, value: 10_000_000_000n },
+          maxBuy: { brand: atom.brand, value: 10_000_000_000n },
         },
       },
     );
@@ -80,7 +80,7 @@ test('Offers.auction.Bid', async t => {
       offerId: 'by-price2',
       give: '4.56IST',
       price,
-      desiredBuy: '10_000ATOM',
+      maxBuy: '10_000ATOM',
       parseAmount,
     }),
     {
@@ -93,7 +93,7 @@ test('Offers.auction.Bid', async t => {
       proposal: { give: { Currency: ist.make(4_560_000n) } },
       offerArgs: {
         offerPrice,
-        want: { brand: atom.brand, value: 10_000_000_000n },
+        maxBuy: { brand: atom.brand, value: 10_000_000_000n },
       },
     },
   );
@@ -101,7 +101,7 @@ test('Offers.auction.Bid', async t => {
   t.deepEqual(
     Offers.auction.Bid(brands, {
       offerId: 'by-price2',
-      desiredBuy: '10_000ATOM',
+      maxBuy: '10_000ATOM',
       wantMinimum: '1.23ATOM',
       give: '4.56IST',
       price,
@@ -120,7 +120,7 @@ test('Offers.auction.Bid', async t => {
       },
       offerArgs: {
         offerPrice,
-        want: atom.make(10_000_000_000n),
+        maxBuy: atom.make(10_000_000_000n),
       },
     },
     'optional want',
@@ -136,6 +136,6 @@ test('Offers.auction.Bid', async t => {
         price,
         parseAmount,
       }),
-    { message: 'missing ["desiredBuy"]' },
+    { message: 'missing ["maxBuy"]' },
   );
 });

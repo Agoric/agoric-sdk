@@ -273,7 +273,7 @@ test('exit bid', async t => {
 
   wd.sendOfferMaker(Offers.auction.Bid, {
     offerId: 'bid',
-    desiredBuy: '1.23IbcATOM',
+    maxBuy: '1.23IbcATOM',
     give: '0.1IST',
     price: 5,
     parseAmount,
