@@ -31,24 +31,33 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     throw Error(vatParameters.explode);
   }
 
-  if (baggage.has('mkh')) {
-    const mkh = baggage.get('mkh');
-    if (vatParameters.mode === 'm2sFacetiousnessMismatch') {
-      defineDurableKind(mkh, initEmpty, {
-        fooMethod: () => 2,
-      });
-    } else {
-      defineDurableKindMulti(mkh, initEmpty, {
-        bar: {
-          barMethod: () => 2,
-        },
-        foo: {
-          fooMethod: () => 2,
-        },
-        baz: {
-          bazMethod: () => 2,
-        },
-      });
+  if (baggage.has('kh')) {
+    const kh = baggage.get('kh');
+    const { v2mode } = vatParameters;
+    switch (v2mode) {
+      case 'single':
+        defineDurableKind(kh, initEmpty, {});
+        break;
+      case 'multi-foo':
+        defineDurableKindMulti(kh, initEmpty, { foo: {} });
+        break;
+      case 'multi-foo-bar':
+        defineDurableKindMulti(kh, initEmpty, { foo: {}, bar: {} });
+        break;
+      case 'multi-bar-foo':
+        defineDurableKindMulti(kh, initEmpty, { bar: {}, foo: {} });
+        break;
+      case 'multi-foo-bar-arf': // new facet sorts earlier than others
+        defineDurableKindMulti(kh, initEmpty, { foo: {}, bar: {}, arf: {} });
+        break;
+      case 'multi-arf-foo-bar': // new facet sorts earlier than others
+        defineDurableKindMulti(kh, initEmpty, { foo: {}, bar: {}, arf: {} });
+        break;
+      case 'multi-foo-bar-baz': // new facet sorts later than others
+        defineDurableKindMulti(kh, initEmpty, { foo: {}, bar: {}, baz: {} });
+        break;
+      default:
+        throw Error(`unknown case ${v2mode}`);
     }
   }
 

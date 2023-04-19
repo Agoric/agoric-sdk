@@ -9,7 +9,10 @@ import { Nat } from '@endo/nat';
 import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
 import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
-import { assessFacetiousness } from './facetiousness.js';
+import {
+  assessFacetiousness,
+  checkAndUpdateFacetiousness,
+} from './facetiousness.js';
 
 /** @template T @typedef {import('@agoric/vat-data').DefineKindOptions<T>} DefineKindOptions */
 
@@ -162,43 +165,6 @@ const makeContextProviderKit = (contextCache, getSlotForVal, facetNames) => {
     };
   }
   return harden(contextProviderKit);
-};
-
-const checkAndUpdateFacetiousness = (tag, desc, facetNames) => {
-  // The first time a durable kind gets a definition, the saved descriptor
-  // will have neither ".unfaceted" nor ".facets", and we must update the
-  // details in the descriptor.
-
-  if (!desc.unfaceted && !desc.facets) {
-    if (facetNames) {
-      desc.facets = facetNames;
-    } else {
-      desc.unfaceted = true;
-    }
-    return; // caller will saveDurableKindDescriptor()
-  }
-
-  // When a later incarnation redefines the behavior, it must match.
-
-  if (facetNames && desc.unfaceted) {
-    Fail`defineDurableKindMulti called for unfaceted KindHandle ${tag}`;
-  }
-  if (!facetNames && desc.facets) {
-    Fail`defineDurableKind called for faceted KindHandle ${tag}`;
-  }
-  if (facetNames) {
-    let ok = true;
-    for (const [idx, facet] of facetNames.entries()) {
-      if (facet !== desc.facets[idx]) {
-        ok = false;
-      }
-    }
-    if (!ok) {
-      const orig = desc.facets.join(',');
-      const newer = facetNames.join(',');
-      Fail`durable kind "${tag}" facets (${newer}) don't match original definition (${orig})`;
-    }
-  }
 };
 
 // The management of single Representatives (i.e. defineKind) is very similar
@@ -741,7 +707,6 @@ export const makeVirtualObjectManager = (
       interfaceGuard = undefined,
     } = options;
 
-    let facetNames; // undefined or a list of strings
     const statePrototype = {}; // Not frozen yet
     const stateToBaseRefMap = new WeakMap();
 
@@ -752,18 +717,20 @@ export const makeVirtualObjectManager = (
       return baseRef;
     };
 
+    let proposedFacetNames; // undefined or a list of strings
+
     // 'multifaceted' tells us which API was used: define[Durable]Kind
     // vs define[Durable]KindMulti. This function checks whether
     // 'behavior' has one facet, or many, and must match.
     switch (assessFacetiousness(behavior)) {
       case 'one': {
         assert(!multifaceted);
-        facetNames = undefined;
+        proposedFacetNames = undefined;
         break;
       }
       case 'many': {
         assert(multifaceted);
-        facetNames = ownKeys(behavior).sort();
+        proposedFacetNames = ownKeys(behavior).sort();
         break;
       }
       case 'not': {
@@ -790,6 +757,8 @@ export const makeVirtualObjectManager = (
       Fail`A stateShape must be a copyRecord: ${q(stateShape)}`;
     assertPattern(stateShape);
 
+    let facetNames;
+
     if (isDurable) {
       // durableKindDescriptor is created by makeKindHandle, with just
       // { kindID, tag, nextInstanceID }, then the first
@@ -800,9 +769,13 @@ export const makeVirtualObjectManager = (
       assert(durableKindDescriptor);
 
       // initial creation will update the descriptor with .facets or
-      // .unfaceted, subsequent re-definitions will just assert
-      // compatibility
-      checkAndUpdateFacetiousness(tag, durableKindDescriptor, facetNames);
+      // .unfaceted, subsequent re-definitions will assert
+      // compatibility, and reassign facet name->index
+      facetNames = checkAndUpdateFacetiousness(
+        tag,
+        durableKindDescriptor,
+        proposedFacetNames,
+      );
 
       const newShapeCD = serialize(stateShape);
 
@@ -824,6 +797,8 @@ export const makeVirtualObjectManager = (
       durableKindDescriptor.stateShapeCapData = newShapeCD; // replace
 
       saveDurableKindDescriptor(durableKindDescriptor);
+    } else {
+      facetNames = proposedFacetNames;
     }
 
     /** @type {(prop: string) => void} */
@@ -1003,7 +978,6 @@ export const makeVirtualObjectManager = (
 
     // Tell the VRM about this Kind.
     vrm.registerKind(kindID, reanimateVO, deleteStoredVO, isDurable);
-    // @ts-expect-error FIXME param expects 'null' for unfaceted but in this function it's undefined
     vrm.rememberFacetNames(kindID, facetNames);
 
     const makeNewInstance = (...args) => {

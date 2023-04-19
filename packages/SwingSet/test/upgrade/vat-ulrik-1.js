@@ -170,75 +170,19 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
       makeKindHandle('unhandled');
     },
 
-    makeMultiKind: mode => {
-      const mkh = makeKindHandle('multi');
-      baggage.init('mkh', mkh);
-      switch (mode) {
-        case 's2mFacetiousnessMismatch': {
-          // upgrade should fail
-          defineDurableKind(mkh, initEmpty, {
-            fooMethod: () => 1,
-          });
-          break;
-        }
-        case 'facetCountMismatch': {
-          // upgrade should fail
-          defineDurableKindMulti(mkh, initEmpty, {
-            foo: {
-              fooMethod: () => 1,
-            },
-            bar: {
-              barMethod: () => 1,
-            },
-          });
-          break;
-        }
-        case 'facetNameMismatch': {
-          // upgrade should fail
-          defineDurableKindMulti(mkh, initEmpty, {
-            foo: {
-              fooMethod: () => 1,
-            },
-            bar: {
-              barMethod: () => 1,
-            },
-            belch: {
-              belchMethod: () => 1,
-            },
-          });
-          break;
-        }
-        case 'facetOrderMismatch': {
-          // upgrade should succeed since facet names get sorted
-          defineDurableKindMulti(mkh, initEmpty, {
-            baz: {
-              bazMethod: () => 1,
-            },
-            foo: {
-              fooMethod: () => 1,
-            },
-            bar: {
-              barMethod: () => 1,
-            },
-          });
-          break;
-        }
-        default: {
-          // upgrade should succeed
-          defineDurableKindMulti(mkh, initEmpty, {
-            foo: {
-              fooMethod: () => 1,
-            },
-            bar: {
-              barMethod: () => 1,
-            },
-            baz: {
-              bazMethod: () => 1,
-            },
-          });
-          break;
-        }
-      }
+    makeSingleKind: () => {
+      const kh = makeKindHandle('kind');
+      baggage.init('kh', kh);
+      defineDurableKind(kh, initEmpty, {});
+    },
+
+    makeMultiKind: () => {
+      const kh = makeKindHandle('kind');
+      baggage.init('kh', kh);
+      defineDurableKindMulti(kh, initEmpty, {
+        foo: {},
+        bar: {},
+      });
     },
     pingback: handler => {
       counter += 1;
