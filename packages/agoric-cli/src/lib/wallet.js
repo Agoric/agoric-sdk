@@ -135,7 +135,7 @@ export const sendAction = async (bridgeAction, opts) => {
  */
 export const findContinuingIds = (current, agoricNames) => {
   // XXX should runtime type-check
-  /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
+  /** @type {{ offerToUsedInvitation: [string, Amount<'copyBag'>][]}} */
   const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
 
   assert(Array.isArray(entries));
@@ -178,7 +178,7 @@ export const makeWalletUtils = async (
       minHeight,
     );
 
-    /** @type {{ Invitation: Brand<'set'> }} */
+    /** @type {{ Invitation: Brand<'copyBag'> }} */
     // @ts-expect-error XXX how to narrow AssetKind to set?
     const { Invitation } = agoricNames.brand;
     const coalescer = makeWalletStateCoalescer(Invitation);
