@@ -31,6 +31,10 @@ export const preparePurseKind = (
   //   that created depositFacet as needed. But this approach ensures a constant
   //   identity for the facet and exercises the multi-faceted object style.
   const { depositInternal, withdrawInternal } = purseMethods;
+
+  /**
+   * @type {() => { purse: Purse, depositFacet: any}}
+   */
   const makePurseKit = prepareExoClassKit(
     issuerBaggage,
     `${name} Purse`,
@@ -107,6 +111,7 @@ export const preparePurseKind = (
       },
       depositFacet: {
         receive(...args) {
+          // @ts-expect-error TS unreasonable requirement for spread args
           return this.facets.purse.deposit(...args);
         },
       },

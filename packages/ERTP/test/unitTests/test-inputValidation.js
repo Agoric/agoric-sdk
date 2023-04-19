@@ -18,7 +18,8 @@ test('makeIssuerKit bad allegedName', async t => {
 test('makeIssuerKit bad assetKind', async t => {
   // @ts-expect-error Intentional wrong type for testing
   t.throws(() => makeIssuerKit('myTokens', 'somethingWrong'), {
-    message: 'The assetKind "somethingWrong" must be must be one of ["copyBag","copySet","nat","set"]',
+    message:
+      'The assetKind "somethingWrong" must be one of ["copyBag","copySet","nat","set"]',
   });
 });
 

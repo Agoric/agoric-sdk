@@ -271,8 +271,8 @@ function makeFacets(facetNames, proto, linkToCohort, unweakable) {
  * @param {(slot: string) => object} requiredValForSlot
  * @param {*} registerValue  Function to register a new slot+value in liveSlot's
  *   various tables
- * @param {import('@endo/marshal').Serialize<unknown>} serialize  Serializer for this vat
- * @param {import('@endo/marshal').Unserialize<unknown>} unserialize  Unserializer for this vat
+ * @param {import('@endo/marshal').ToCapData<unknown>} serialize  Serializer for this vat
+ * @param {import('@endo/marshal').FromCapData<unknown>} unserialize  Unserializer for this vat
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
  *

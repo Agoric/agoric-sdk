@@ -380,19 +380,18 @@ export const preparePaymentLedger = (
    * caller of `makeIssuerKit` drops it on the floor, it can still be
    * recovered in an emergency upgrade.
    *
-   * @type {Purse<K>}
+   * @type {Purse}
    */
   const mintRecoveryPurse = provide(issuerBaggage, 'mintRecoveryPurse', () =>
     makeEmptyPurse(),
   );
 
-  /** @type {Mint<K>} */
+  /** @type {Mint} */
   const mint = prepareExo(issuerBaggage, `${name} mint`, MintI, {
     getIssuer() {
       return issuer;
     },
     mintPayment(newAmount) {
-      // @ts-expect-error checked cast
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and
@@ -410,6 +409,7 @@ export const preparePaymentLedger = (
   });
 
   const issuerKit = harden({ issuer, mint, brand, mintRecoveryPurse });
+  // @ts-expect-error Disagreement about K perhaps?
   return issuerKit;
 };
 harden(preparePaymentLedger);
