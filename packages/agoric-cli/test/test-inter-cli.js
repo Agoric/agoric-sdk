@@ -5,7 +5,7 @@ import test from 'ava';
 import { createCommand, CommanderError } from 'commander';
 
 import { Far } from '@endo/far';
-import { boardSlottingMarshaller } from '../src/lib/rpc.js';
+import { boardSlottingMarshaller, makeFromBoard } from '../src/lib/rpc.js';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 import { makeParseAmount } from '../src/lib/wallet.js';
@@ -25,8 +25,9 @@ const makeBoardRemote = ({ boardId, iface }) =>
 /** @type {Record<string, (Brand<'nat'> & BoardRemote)>} */
 // @ts-expect-error mock
 const topBrands = harden({
-  ATOM: makeBoardRemote({ boardId: 'board00848', iface: 'Brand' }),
+  ATOM: makeBoardRemote({ boardId: 'board03446', iface: 'Brand' }),
   IST: makeBoardRemote({ boardId: 'board0566', iface: 'Brand' }),
+  BLD: makeBoardRemote({ boardId: 'board0223', iface: 'Brand' }),
 });
 
 const agoricNames = harden({
@@ -38,6 +39,14 @@ const agoricNames = harden({
 
   /** @type {Record<string,import('agoric/src/lib/format.js').AssetDescriptor>} */
   vbankAsset: {
+    ubld: {
+      denom: 'ubld',
+      brand: topBrands.BLD,
+      displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
+      issuer: /** @type {any} */ ({}),
+      issuerName: 'BLD',
+      proposedName: 'Agoric staking token',
+    },
     uist: {
       denom: 'uist',
       brand: topBrands.IST,
@@ -46,7 +55,6 @@ const agoricNames = harden({
       issuerName: 'IST',
       proposedName: 'Agoric stable token',
     },
-
     'ibc/toyatom': {
       denom: 'ibc/toyatom',
       brand: topBrands.ATOM,
@@ -54,35 +62,6 @@ const agoricNames = harden({
       issuer: /** @type {any} */ ({}),
       issuerName: 'ATOM',
       proposedName: 'ATOM',
-    },
-  },
-});
-
-const bslot = {
-  ATOM: { '@qclass': 'slot', index: 0 },
-  IST: { '@qclass': 'slot', index: 1 },
-};
-const qi = i => ({ '@qclass': 'bigint', digits: `${i}` });
-const mk = (brand, v) => ({ brand, value: qi(v) });
-
-const offerSpec1 = harden({
-  method: 'executeOffer',
-  offer: {
-    id: 'bid-978307200000',
-    invitationSpec: {
-      callPipe: [['makeBidInvitation', [bslot.ATOM]]],
-      instancePath: ['auctioneer'],
-      source: 'agoricContract',
-    },
-    offerArgs: {
-      offerPrice: {
-        numerator: mk(bslot.IST, 9n),
-        denominator: mk(bslot.ATOM, 1n),
-      },
-      maxBuy: mk(bslot.ATOM, 1_000_000_000_000n),
-    },
-    proposal: {
-      give: { Bid: mk(bslot.IST, 50_000_000n) },
     },
   },
 });
@@ -100,7 +79,8 @@ const makeNet = published => {
     const value = Buffer.from(txt).toString('base64');
     return { result: { response: { code: 0, value } } };
   };
-  const m = boardSlottingMarshaller();
+  const ctx = makeFromBoard();
+  const m = boardSlottingMarshaller(ctx.convertSlotToVal);
   const fmt = obj => {
     const capData = m.serialize(obj);
     const values = [JSON.stringify(capData)];
@@ -130,12 +110,13 @@ const makeNet = published => {
     });
   };
 
-  return { fetch };
+  return { fetch, marshaller: m };
 };
 
-const govKeyring = {
+const testKeyring = {
   gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
   gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+  'test-acct': 'agoric18jr9nlvp300feu726y3v4n07ykfjwup3twnlyn',
 };
 
 const makeProcess = (t, keyring, out) => {
@@ -199,7 +180,7 @@ const makeProcess = (t, keyring, out) => {
     env: {},
     stdout,
     stderr: { write: _s => true },
-    now: () => Date.parse('2001-01-01'),
+    now: () => 1680241587424,
     setTimeout,
     createCommand,
     execFileSync,
@@ -211,7 +192,7 @@ const makeProcess = (t, keyring, out) => {
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
  */
 const offerStatus2 = harden({
-  id: 'bid-234234',
+  id: 'bid-1680241587424',
   invitationSpec: {
     callPipe: [['makeBidInvitation', [topBrands.ATOM]]],
     instancePath: ['auctioneer'],
@@ -230,17 +211,17 @@ const offerStatus2 = harden({
     },
   },
   payouts: {
-    Collateral: { brand: topBrands.ATOM, value: 5_000_000n },
+    Collateral: { brand: topBrands.ATOM, value: 3_105_000n },
     Bid: { brand: topBrands.IST, value: 37_000_000n },
   },
 });
 
 const govWallets = {
-  [govKeyring.gov1]: {
+  [testKeyring.gov1]: {
     _: { updated: 'offerStatus', status: offerStatus2 },
     current: { _: { liveOffers: [[offerStatus2.id, offerStatus2]] } },
   },
-  [govKeyring.gov2]: { current: {} },
+  [testKeyring.gov2]: { current: {} },
 };
 
 test('amount parsing', t => {
@@ -267,32 +248,6 @@ test('amount parsing', t => {
   t.throws(() => parseAmount('5.5.5ATOM'), {
     message: 'invalid amount: 5.5.5ATOM',
   });
-});
-
-test('inter bid place by-price: printed offer is correct', async t => {
-  const argv =
-    'node inter bid by-price --give 50IST --price 9 --from gov1 --generate-only'
-      .trim()
-      .split(' ');
-
-  const out = [];
-  const cmd = await makeInterCommand(
-    { ...makeProcess(t, govKeyring, out) },
-    makeNet({ ...publishedNames, wallet: govWallets }),
-  );
-  cmd.exitOverride(() => t.fail('exited'));
-
-  await cmd.parseAsync(argv);
-
-  const x = out.join('').trim();
-  const { body, slots } = JSON.parse(x);
-  const o = JSON.parse(body);
-
-  t.deepEqual(o, offerSpec1);
-  t.deepEqual(
-    slots,
-    [topBrands.ATOM, topBrands.IST].map(b => b.getBoardId()),
-  );
 });
 
 test.todo('want as max collateral wanted');
@@ -323,39 +278,61 @@ const offerStatus1 = harden({
   },
 });
 
-test('inter bid list: finds one bid', async t => {
+test('README ex: inter bid list: finds one bid', async t => {
   const argv = 'node inter bid list --from gov1'.split(' ');
+  const expected = {
+    id: 'bid-1680241587424',
+    payouts: { Collateral: '3.105 ATOM', Bid: '37 IST' },
+  };
 
   const out = [];
 
-  const cmd = await makeInterCommand(
-    makeProcess(t, govKeyring, out),
-    makeNet({ ...publishedNames, wallet: govWallets }),
-  );
+  const net = makeNet({ ...publishedNames, wallet: govWallets });
+  const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
   cmd.exitOverride(() => t.fail('exited'));
 
   await cmd.parseAsync(argv);
-  t.deepEqual(
-    out.join('').trim(),
-    JSON.stringify({
-      id: 'bid-234234',
-      discount: 10,
-      give: { Bid: '20 IST' },
-      maxBuy: '2 ATOM',
-      payouts: { Collateral: '5 ATOM', Bid: '37 IST' },
-    }),
-  );
+  const txt = out.join('').trim();
+  t.deepEqual(JSON.parse(txt), {
+    ...expected,
+    // boring details not shown in README
+    discount: 10,
+    give: { Bid: '20 IST' },
+    maxBuy: '2 ATOM',
+  });
 });
 
 /** @type {(c: Command) => Command[]} */
 const subCommands = c => [c, ...c.commands.flatMap(subCommands)];
+
+test('README: inter usage', async t => {
+  const argv = 'node inter'.split(' ');
+  // README shows agops inter.
+  const usage = `Usage: inter [options] [command]`;
+  const description = `Inter Protocol commands for liquidation bidding etc.`;
+
+  const out = [];
+  const diag = [];
+
+  const net = makeNet({ ...publishedNames, wallet: govWallets });
+  const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
+  subCommands(cmd).forEach(c => {
+    c.exitOverride();
+    c.configureOutput({ writeErr: s => diag.push(s) });
+  });
+
+  await t.throwsAsync(cmd.parseAsync(argv));
+  const txt = diag.join('').trim();
+  t.true(txt.startsWith(usage));
+  t.true(txt.includes(description));
+});
 
 test('diagnostic for agd ENOENT', async t => {
   const argv = 'node inter bid list --from gov1'.split(' ');
 
   const out = [];
   const diag = [];
-  const proc = makeProcess(t, govKeyring, out);
+  const proc = makeProcess(t, testKeyring, out);
   const cmd = await makeInterCommand(
     {
       ...proc,
@@ -389,8 +366,7 @@ const usageTest = (words, blurb = 'Command usage:') => {
     const program = createCommand('agops');
     const cmd = await makeInterCommand(makeProcess(t, {}, out), makeNet({}));
     program.addCommand(cmd);
-    const cs = subCommands(program);
-    cs.forEach(c =>
+    subCommands(program).forEach(c =>
       c.exitOverride(() => {
         throw new CommanderError(1, 'usage', '');
       }),
@@ -429,9 +405,9 @@ test('formatBid', t => {
   {
     const actual = fmtBid(offerStatus2, values(agoricNames.vbankAsset));
     t.deepEqual(actual, {
-      id: 'bid-234234',
+      id: 'bid-1680241587424',
       give: { Bid: '20 IST' },
-      payouts: { Collateral: '5 ATOM', Bid: '37 IST' },
+      payouts: { Collateral: '3.105 ATOM', Bid: '37 IST' },
       maxBuy: '2 ATOM',
       discount: 10,
     });
@@ -445,7 +421,114 @@ _not_ like this:
 {"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Bid":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
 */
 
-test.todo('execSwingsetTransaction returns non-0 code');
+test('README: inter liquidation status', async t => {
+  const argv = 'node inter liquidation status'.split(' ');
+  const expected = {
+    liquidatingCollateral: '116 ATOM',
+    liquidatingDebt: '577.8142 IST',
+    price: '12 IST/ATOM',
+  };
+
+  const make = (b, v) => ({
+    brand: b,
+    value: BigInt(Math.round(v * 1_000_000)),
+  });
+  const tok = {
+    IST: { make: qty => make(topBrands.IST, qty) },
+    ATOM: { make: qty => make(topBrands.ATOM, qty) },
+  };
+  const out = [];
+
+  const metrics = {
+    liquidatingCollateral: tok.ATOM.make(116),
+    liquidatingDebt: tok.IST.make(577.8142),
+  };
+  const quoteAmount = {
+    value: [{ amountIn: tok.ATOM.make(1), amountOut: tok.IST.make(12) }],
+  };
+
+  const net = makeNet({
+    ...publishedNames,
+    vaultFactory: {
+      manager0: {
+        quotes: {
+          _: { quoteAmount },
+        },
+        metrics: {
+          _: metrics,
+        },
+      },
+    },
+  });
+  const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
+  await cmd.parseAsync(argv);
+  t.deepEqual(JSON.parse(out.join('')), expected);
+});
+
+test('README: inter vbank list', async t => {
+  const argv = 'node inter vbank list'.split(' ');
+  const expected = [
+    {
+      issuerName: 'BLD',
+      denom: 'ubld',
+      brand: { boardId: 'board0223' },
+      displayInfo: { decimalPlaces: 6 },
+    },
+    {
+      issuerName: 'IST',
+      denom: 'uist',
+      brand: { boardId: 'board0566' },
+      displayInfo: { decimalPlaces: 6 },
+    },
+    {
+      issuerName: 'ATOM',
+      denom: 'ibc/toyatom',
+      brand: { boardId: 'board03446' },
+      displayInfo: { decimalPlaces: 6 },
+    },
+  ];
+
+  const out = [];
+  const net = makeNet(publishedNames);
+  const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
+  await cmd.parseAsync(argv);
+  t.deepEqual(JSON.parse(out.join('')), expected);
+});
+
+test('README ex1: inter bid place by-price: printed offer is correct', async t => {
+  // The README example shows "bid is broadcast" but we test only bid format.
+  const noNet = '--generate-only';
+  const argv =
+    `node inter bid by-price --give 85IST --price 8.55 --from test-acct ${noNet}`
+      .trim()
+      .split(' ');
+  // TODO: txhash, height stuff
+  const expected = {
+    id: 'bid-1680241587424',
+    maxBuy: '1000000 ATOM',
+    price: '8.55 IST/ATOM',
+    give: { Currency: '85 IST' },
+    result: 'Your bid has been accepted',
+  };
+
+  const out = [];
+  const net = makeNet({ ...publishedNames, wallet: govWallets });
+  const cmd = await makeInterCommand(
+    { ...makeProcess(t, testKeyring, out) },
+    net,
+  );
+  cmd.exitOverride(() => t.fail('exited'));
+
+  await cmd.parseAsync(argv);
+
+  const txt = out.join('').trim();
+  const obj = net.marshaller.unserialize(JSON.parse(txt));
+  obj.offer.result = 'Your bid has been accepted'; // pretend we processed it
+
+  const assets = Object.values(agoricNames.vbankAsset);
+  const bidInfo = fmtBid(obj.offer, assets);
+  t.deepEqual(bidInfo, expected);
+});
 
 test.todo('inter bid by-price shows tx, wallet status');
 /*
@@ -457,10 +540,7 @@ first bid update:
 {"id":"bid-1680212903989","price":"0.81 IST/IbcATOM","give":{"Bid":"0.5IST"},"want":"3IbcATOM","result":"Your bid has been accepted"}
 */
 
-test.todo('inter bid cancel shows resulting payouts');
-/*
-
-*/
+test.todo('execSwingsetTransaction returns non-0 code');
 
 test.todo('already cancelled bid');
 /*
