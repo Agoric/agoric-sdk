@@ -272,4 +272,5 @@ $ inter bid list --all --from test-acct | grep bid-1680246460034
 
 ## Bid History and Pruning
 
-Bid history is subject to pruning. To be sure you have the full history of your bids available, run a follower node. _TODO: pointer to details._
+Bid history is subject to the [pruning policy](https://github.com/cosmos/cosmos-sdk/blob/58f3a4a2375f0b617ee0ac3399085c1f996195ba/tools/confix/data/v0.45-app.toml#L13-L22)
+ of the node that you are conneting to. To be sure you have the full history of your bids available, [run your own node](https://github.com/Agoric/agoric-sdk/wiki/Validator-Guide).
