@@ -1833,3 +1833,71 @@ test('reinstate vault', async t => {
     Fee: run.makeEmpty(),
   });
 });
+
+test('auction locks low price', async t => {
+  const { zoe, aeth, run } = t.context;
+  // vary just the want/numerator
+  const baseCollateral = 4n;
+
+  t.context.interestTiming = {
+    chargingPeriod: 2n,
+    recordingPeriod: 10n,
+  };
+
+  const manualTimer = buildManualTimer();
+  const services = await setupServices(
+    t,
+    makeRatio(600n, run.brand, baseCollateral, aeth.brand),
+    aeth.make(900n),
+    manualTimer,
+    undefined,
+    500n,
+  );
+  // we start with time=0, price=2200
+
+  const { aethCollateralManager } = services.vaultFactory;
+
+  const {
+    reserveKit: { reserveCreatorFacet },
+    auctioneerKit,
+    priceAuthority,
+  } = services;
+  await E(reserveCreatorFacet).addIssuer(aeth.issuer, 'Aeth');
+  trace('addIssuer awaited');
+
+  const wanted = 500n;
+
+  // Lock in a low price (zero)
+  // @ts-expect-error it's a mock
+  priceAuthority.setPrice(makeRatio(0n, run.brand, baseCollateral, aeth.brand));
+  await eventLoopIteration();
+  await startAuctionClock(auctioneerKit, manualTimer);
+  trace('auction started, binding lockedQuote in the vault manager state');
+
+  // Bump back up to a high price
+  // @ts-expect-error it's a mock
+  priceAuthority.setPrice(
+    makeRatio(100n * wanted, run.brand, baseCollateral, aeth.brand),
+  );
+
+  // make vault MCR uses the locked price
+  await t.throwsAsync(
+    // promise for the offer's result
+    E(
+      E(zoe).offer(
+        E(aethCollateralManager).makeVaultInvitation(),
+        harden({
+          give: { Collateral: aeth.make(baseCollateral) },
+          want: { Minted: run.make(wanted) },
+        }),
+        harden({
+          Collateral: aeth.mint.mintPayment(aeth.make(baseCollateral)),
+        }),
+      ),
+    ).getOfferResult(),
+    {
+      message:
+        'Proposed debt {"brand":"[Alleged: IST brand]","value":"[525n]"} exceeds max {"brand":"[Alleged: IST brand]","value":"[0n]"} for {"brand":"[Alleged: aEth brand]","value":"[4n]"} collateral',
+    },
+  );
+});
