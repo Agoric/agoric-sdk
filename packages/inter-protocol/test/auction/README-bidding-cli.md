@@ -147,16 +147,28 @@ Again, use https://devnet.agoric.net/ but this time, choose "send IST and provis
 _TODO: cite inter.trade docs on provisioning a smart wallet?_
 
 
-## Liquidation Status
+## Liquidation Auction Status
 
 To see what's available:
 
 ```
-$ inter liquidation status
+$ inter auction status
 {
-  "liquidatingCollateral": "116 ATOM",
-  "liquidatingDebt": "577.8142 IST",
-  "price": "12 IST/ATOM"
+  book0: {
+    collateralAvailable: '0 ATOM',
+    currentPriceLevel: '4.4955 IST/ATOM',
+    startCollateral: '0 ATOM',
+    startPrice: '9.99 IST/ATOM',
+  },
+  params: {
+    ClockStep: '00:00:10',
+    DiscountStep: '5.00%',
+    LowestRate: '45.00%',
+  },
+  schedule: {
+    nextDescendingStepTime: '2023-04-19T03:35:02.000Z',
+    nextStartTime: '2023-04-19T03:35:02.000Z',
+  },
 }
 ```
 

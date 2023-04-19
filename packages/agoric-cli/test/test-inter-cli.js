@@ -421,12 +421,24 @@ _not_ like this:
 {"id":"bid-1680211654832","price":"0.7999999999999999 IST/IbcATOM","give":{"Bid":"10IST"},"want":"3IbcATOM","result":[{"reason":{"@qclass":"error","errorId":"error:anon-marshal#10001","message":"cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]","name":"Error"},"status":"rejected"}],"error":"Error: cannot grab 10000000uist coins: 4890000uist is smaller than 10000000uist: insufficient funds [agoric-labs/cosmos-sdk@v0.45.11-alpha.agoric.1.0.20230320225042-2109765fd835/x/bank/keeper/send.go:186]"}
 */
 
-test('README: inter liquidation status', async t => {
-  const argv = 'node inter liquidation status'.split(' ');
+test('README: inter auction status', async t => {
+  const argv = 'node inter auction status'.split(' ');
   const expected = {
-    liquidatingCollateral: '116 ATOM',
-    liquidatingDebt: '577.8142 IST',
-    price: '12 IST/ATOM',
+    book0: {
+      collateralAvailable: '0 ATOM',
+      currentPriceLevel: '4.4955 IST/ATOM',
+      startCollateral: '0 ATOM',
+      startPrice: '9.99 IST/ATOM',
+    },
+    params: {
+      ClockStep: '00:00:10',
+      DiscountStep: '5.00%',
+      LowestRate: '45.00%',
+    },
+    schedule: {
+      nextDescendingStepTime: '2023-04-19T03:35:02.000Z',
+      nextStartTime: '2023-04-19T03:35:02.000Z',
+    },
   };
 
   const make = (b, v) => ({
@@ -439,27 +451,83 @@ test('README: inter liquidation status', async t => {
   };
   const out = [];
 
-  const metrics = {
-    liquidatingCollateral: tok.ATOM.make(116),
-    liquidatingDebt: tok.IST.make(577.8142),
-  };
-  const quoteAmount = {
-    value: [{ amountIn: tok.ATOM.make(1), amountOut: tok.IST.make(12) }],
-  };
-
+  const { brand } = agoricNames;
+  const timerBrand = brand.timer;
   const net = makeNet({
     ...publishedNames,
-    vaultFactory: {
-      manager0: {
-        quotes: {
-          _: { quoteAmount },
+    auction: {
+      schedule: {
+        _: {
+          activeStartTime: undefined,
+          nextDescendingStepTime: { absValue: 1681875302n, timerBrand },
+          nextStartTime: { absValue: 1681875302n, timerBrand },
         },
-        metrics: {
-          _: metrics,
+      },
+      book0: {
+        _: {
+          collateralAvailable: { brand: brand.IbcATOM, value: 0n },
+          currentPriceLevel: {
+            denominator: { brand: brand.IbcATOM, value: 10000000000n },
+            numerator: { brand: brand.IST, value: 44955000000n },
+          },
+          proceedsRaised: undefined,
+          remainingProceedsGoal: null,
+          startCollateral: { brand: brand.IbcATOM, value: 0n },
+          startPrice: {
+            denominator: { brand: brand.IbcATOM, value: 1000000n },
+            numerator: { brand: brand.IST, value: 9990000n },
+          },
+          startProceedsGoal: null,
+        },
+      },
+      governance: {
+        _: {
+          current: {
+            AuctionStartDelay: {
+              type: 'relativeTime',
+              value: { relValue: 2n, timerBrand },
+            },
+            ClockStep: {
+              type: 'relativeTime',
+              value: { relValue: 10n, timerBrand },
+            },
+            DiscountStep: { type: 'nat', value: 500n },
+            Electorate: {
+              type: 'invitation',
+              value: {
+                brand: brand.Invitation,
+                value: [
+                  {
+                    description: 'questionPoser',
+                    handle: {},
+                    installation: {},
+                    instance: {},
+                  },
+                ],
+              },
+            },
+            LowestRate: {
+              type: 'nat',
+              value: 4500n,
+            },
+            PriceLockPeriod: {
+              type: 'relativeTime',
+              value: { relValue: 60n, timerBrand },
+            },
+            StartFrequency: {
+              type: 'relativeTime',
+              value: { relValue: 300n, timerBrand },
+            },
+            StartingRate: {
+              type: 'nat',
+              value: 10500n,
+            },
+          },
         },
       },
     },
   });
+
   const cmd = await makeInterCommand(makeProcess(t, testKeyring, out), net);
   await cmd.parseAsync(argv);
   t.deepEqual(JSON.parse(out.join('')), expected);
