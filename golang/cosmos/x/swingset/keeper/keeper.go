@@ -25,13 +25,13 @@ import (
 // Top-level paths for chain storage should remain synchronized with
 // packages/internal/src/chain-storage-paths.js
 const (
-	StoragePathActionQueue  = "actionQueue"
-	StoragePathActivityhash = "activityhash"
-	StoragePathBeansOwing   = "beansOwing"
-	StoragePathEgress       = "egress"
-	StoragePathMailbox      = "mailbox"
-	StoragePathCustom       = "published"
-	StoragePathBundles      = "bundles"
+	StoragePathActionQueue = "actionQueue"
+	StoragePathBeansOwing  = "beansOwing"
+	StoragePathEgress      = "egress"
+	StoragePathMailbox     = "mailbox"
+	StoragePathCustom      = "published"
+	StoragePathBundles     = "bundles"
+	StoragePathSwingStore  = "swingStore"
 )
 
 // 2 ** 256 - 1
@@ -441,6 +441,10 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, vstoragetypes.NewStorageEntry(path, mailbox))
+}
+
+func (k Keeper) ExportSwingStore(ctx sdk.Context) []*vstoragetypes.DataEntry {
+	return k.vstorageKeeper.ExportStorageFromPrefix(ctx, StoragePathSwingStore)
 }
 
 func (k Keeper) PathToEncodedKey(path string) []byte {

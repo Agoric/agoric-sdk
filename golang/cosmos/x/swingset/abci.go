@@ -1,8 +1,8 @@
 package swingset
 
 import (
-	// "fmt"
 	// "os"
+	"fmt"
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/telemetry"
@@ -98,6 +98,24 @@ func CommitBlock(keeper Keeper) error {
 		// NOTE: A failed COMMIT_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
 		panic(err)
+	}
+	return err
+}
+
+func AfterCommitBlock(keeper Keeper) error {
+	// defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), "commit_blocker")
+
+	action := &commitBlockAction{
+		Type:        "AFTER_COMMIT_BLOCK",
+		BlockHeight: endBlockHeight,
+		BlockTime:   endBlockTime,
+	}
+	_, err := keeper.BlockingSend(sdk.Context{}, action)
+
+	// fmt.Fprintf(os.Stderr, "AFTER_COMMIT_BLOCK Returned from SwingSet: %s, %v\n", out, err)
+	if err != nil {
+		// Panic here, in the hopes that a replay from scratch will fix the problem.
+		panic(fmt.Errorf("AFTER_COMMIT_BLOCK failed: %w. Swingset is in an irrecoverable inconsistent state", err))
 	}
 	return err
 }

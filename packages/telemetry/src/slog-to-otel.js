@@ -983,6 +983,20 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.pop(`swingset-run`);
         break;
       }
+      case 'cosmic-swingset-snapshot-start': {
+        // TODO: start a span on the root block span
+        spans
+          .top()
+          ?.addEvent('state-sync-snapshot-start', cleanAttrs(slogAttrs), now);
+        break;
+      }
+      case 'cosmic-swingset-snapshot-finish': {
+        // TODO: end the span started on the root block span
+        spans
+          .top()
+          ?.addEvent('state-sync-snapshot-finish', cleanAttrs(slogAttrs), now);
+        break;
+      }
       case 'heap-snapshot-save': {
         // Add an event to whatever the top span is for now (likely crank)
         spans.top()?.addEvent('snapshot-save', cleanAttrs(slogAttrs), now);

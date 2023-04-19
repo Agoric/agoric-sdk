@@ -80,7 +80,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   function replayChainSends() {
     Fail`Replay not implemented`;
   }
-  function clearChainSends() {
+  async function clearChainSends() {
     return [];
   }
 
@@ -113,10 +113,9 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     slogSender,
   });
 
-  const { blockingSend, savedHeight, savedBlockTime } = s;
+  const { blockingSend, savedHeight } = s;
 
   let blockHeight = savedHeight;
-  let blockTime = savedBlockTime || scaleBlockTime(Date.now());
   const intoChain = [];
   let nextBlockTimeout = 0;
 
@@ -125,7 +124,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const withBlockQueue = makeWithQueue();
   const unhandledSimulateBlock = withBlockQueue(
     async function unqueuedSimulateBlock() {
-      blockTime = scaleBlockTime(Date.now());
+      const blockTime = scaleBlockTime(Date.now());
       blockHeight += 1;
 
       const params = DEFAULT_SIM_SWINGSET_PARAMS;
@@ -203,7 +202,10 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // The before-first-block is special... do it now.
     // This emulates what x/swingset does to run a BOOTSTRAP_BLOCK
     // before continuing with the real initialHeight.
-    await blockingSend({ type: 'BOOTSTRAP_BLOCK', blockTime });
+    await blockingSend({
+      type: 'BOOTSTRAP_BLOCK',
+      blockTime: scaleBlockTime(Date.now()),
+    });
     blockHeight = initialHeight;
   };
 

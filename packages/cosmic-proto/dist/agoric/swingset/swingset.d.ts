@@ -111,6 +111,11 @@ export interface Egress {
   /** TODO: Remove these power flags as they are deprecated and have no effect. */
   powerFlags: string[];
 }
+/** The payload messages used by swingset state-sync */
+export interface ExtensionSnapshotterArtifactPayload {
+  name: string;
+  data: Uint8Array;
+}
 export declare const CoreEvalProposal: {
   encode(message: CoreEvalProposal, writer?: _m0.Writer): _m0.Writer;
   decode(input: _m0.Reader | Uint8Array, length?: number): CoreEvalProposal;
@@ -508,6 +513,31 @@ export declare const Egress: {
   >(
     object: I,
   ): Egress;
+};
+export declare const ExtensionSnapshotterArtifactPayload: {
+  encode(
+    message: ExtensionSnapshotterArtifactPayload,
+    writer?: _m0.Writer,
+  ): _m0.Writer;
+  decode(
+    input: _m0.Reader | Uint8Array,
+    length?: number,
+  ): ExtensionSnapshotterArtifactPayload;
+  fromJSON(object: any): ExtensionSnapshotterArtifactPayload;
+  toJSON(message: ExtensionSnapshotterArtifactPayload): unknown;
+  fromPartial<
+    I extends {
+      name?: string | undefined;
+      data?: Uint8Array | undefined;
+    } & {
+      name?: string | undefined;
+      data?: Uint8Array | undefined;
+    } & {
+      [K in Exclude<keyof I, keyof ExtensionSnapshotterArtifactPayload>]: never;
+    },
+  >(
+    object: I,
+  ): ExtensionSnapshotterArtifactPayload;
 };
 declare type Builtin =
   | Date

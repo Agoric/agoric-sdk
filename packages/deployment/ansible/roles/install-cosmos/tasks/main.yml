@@ -93,3 +93,31 @@
     section: api
     option: swagger
     value: 'true'
+
+- name: Set custom pruning
+  ini_file:
+    path: '/home/{{ service }}/.{{ service }}/config/app.toml'
+    section:
+    option: '{{ item.option }}'
+    value: '{{ item.value }}'
+  with_items:
+    - { option: 'pruning', value: '"custom"' }
+    - { option: 'pruning-interval', value: '10' }
+    - { option: 'pruning-keep-recent', value: '10' }
+    - {
+        option: 'pruning-keep-every',
+        value: "{{lookup('env', 'AG_SETUP_COSMOS_STATE_SYNC_INTERVAL') or 500}}",
+      }
+
+- name: Set state-sync
+  ini_file:
+    path: '/home/{{ service }}/.{{ service }}/config/app.toml'
+    section: state-sync
+    option: '{{ item.option }}'
+    value: '{{ item.value }}'
+  with_items:
+    - { option: 'snapshot-keep-recent', value: '2' }
+    - {
+        option: 'snapshot-interval',
+        value: "{{lookup('env', 'AG_SETUP_COSMOS_STATE_SYNC_INTERVAL') or 500}}",
+      }

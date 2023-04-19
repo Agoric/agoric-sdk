@@ -15,9 +15,11 @@ import {
   loadBasedir,
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
+import { waitUntilQuiescent } from '@agoric/swingset-vat/src/lib-nodejs/waitUntilQuiescent.js';
 import { assert, Fail } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
@@ -214,7 +216,6 @@ export async function launch({
   mailboxStorage,
   clearChainSends,
   replayChainSends,
-  setActivityhash,
   bridgeOutbound,
   makeInstallationPublisher,
   vatconfig,
@@ -225,13 +226,28 @@ export async function launch({
   metricsProvider = makeDefaultMeterProvider(),
   slogSender,
   swingStoreTraceFile,
+  swingStoreExportCallback,
   keepSnapshots,
   afterCommitCallback = async () => ({}),
 }) {
   console.info('Launching SwingSet kernel');
 
+  // The swingStore's exportCallback is synchronous, however we allow the
+  // callback provided to launch-chain to be asynchronous. The callbacks are
+  // invoked sequentially like if they were awaited, and the block manager
+  // synchronizes before finishing END_BLOCK
+  let pendingSwingStoreExport = Promise.resolve();
+  const swingStoreExportCallbackWithQueue =
+    swingStoreExportCallback && makeWithQueue()(swingStoreExportCallback);
+  const swingStoreExportSyncCallback =
+    swingStoreExportCallback &&
+    (updates => {
+      pendingSwingStoreExport = swingStoreExportCallbackWithQueue(updates);
+    });
+
   const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
     traceFile: swingStoreTraceFile,
+    exportCallback: swingStoreExportSyncCallback,
     keepSnapshots,
   });
   const { kvStore, commit } = hostStorage;
@@ -286,9 +302,6 @@ export async function launch({
     // entire bootstrap before opening for business.
     const policy = neverStop();
     await crankScheduler(policy);
-    if (setActivityhash) {
-      setActivityhash(controller.getActivityhash());
-    }
   }
 
   async function saveChainState() {
@@ -296,10 +309,9 @@ export async function launch({
     await mailboxStorage.commit();
   }
 
-  async function saveOutsideState(blockHeight, blockTime) {
-    const chainSends = clearChainSends();
+  async function saveOutsideState(blockHeight) {
+    const chainSends = await clearChainSends();
     kvStore.set(getHostKey('height'), `${blockHeight}`);
-    kvStore.set(getHostKey('blockTime'), `${blockTime}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
 
     await commit();
@@ -372,9 +384,10 @@ export async function launch({
   }
 
   let savedHeight = Number(kvStore.get(getHostKey('height')) || 0);
-  let savedBlockTime = Number(kvStore.get(getHostKey('blockTime')) || 0);
   let runTime = 0;
   let chainTime;
+  let saveTime = 0;
+  let endBlockFinish = 0;
   let blockParams;
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
@@ -465,46 +478,38 @@ export async function launch({
       return runPolicy.shouldRun();
     }
 
-    async function doRunKernel() {
-      // First, complete leftover work, if any
-      let keepGoing = await runSwingset();
-      if (!keepGoing) return;
+    // First, complete leftover work, if any
+    let keepGoing = await runSwingset();
+    if (!keepGoing) return;
 
-      // Then, update the timer device with the new external time, which might
-      // push work onto the kernel run-queue (if any timers were ready to wake).
-      const addedToQueue = timer.poll(blockTime);
-      console.debug(
-        `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
-        addedToQueue,
-      );
-      // We must run the kernel even if nothing was added since the kernel
-      // only notes state exports and updates consistency hashes when attempting
-      // to perform a crank.
+    // Then, update the timer device with the new external time, which might
+    // push work onto the kernel run-queue (if any timers were ready to wake).
+    const addedToQueue = timer.poll(blockTime);
+    console.debug(
+      `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
+      addedToQueue,
+    );
+    // We must run the kernel even if nothing was added since the kernel
+    // only notes state exports and updates consistency hashes when attempting
+    // to perform a crank.
+    keepGoing = await runSwingset();
+    if (!keepGoing) return;
+
+    // Finally, process as much as we can from the actionQueue, which contains
+    // first the old actions followed by the newActions, running the
+    // kernel to completion after each.
+    for (const { action, context } of actionQueue.consumeAll()) {
+      const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
+      inboundQueueMetrics.decStat();
+      // eslint-disable-next-line no-await-in-loop
+      await performAction(action, inboundNum);
+      // eslint-disable-next-line no-await-in-loop
       keepGoing = await runSwingset();
-      if (!keepGoing) return;
-
-      // Finally, process as much as we can from the actionQueue, which contains
-      // first the old actions followed by the newActions, running the
-      // kernel to completion after each.
-      for (const { action, context } of actionQueue.consumeAll()) {
-        const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-        inboundQueueMetrics.decStat();
-        // eslint-disable-next-line no-await-in-loop
-        await performAction(action, inboundNum);
-        // eslint-disable-next-line no-await-in-loop
-        keepGoing = await runSwingset();
-        if (!keepGoing) {
-          // any leftover actions will remain on the actionQueue for possible
-          // processing in the next block
-          return;
-        }
+      if (!keepGoing) {
+        // any leftover actions will remain on the actionQueue for possible
+        // processing in the next block
+        return;
       }
-    }
-
-    await doRunKernel();
-
-    if (setActivityhash) {
-      setActivityhash(controller.getActivityhash());
     }
   }
 
@@ -594,7 +599,7 @@ export async function launch({
   }
 
   async function afterCommit(blockHeight, blockTime) {
-    await Promise.resolve()
+    await waitUntilQuiescent()
       .then(afterCommitCallback)
       .then((afterCommitStats = {}) => {
         controller.writeSlogObject({
@@ -606,6 +611,9 @@ export async function launch({
       });
   }
 
+  // Handle block related actions
+  // Some actions that are integration specific may be handled by the caller
+  // For example COSMOS_SNAPSHOT and AG_COSMOS_INIT are handled in chain-main.js
   async function blockingSend(action) {
     if (decohered) {
       throw decohered;
@@ -646,6 +654,7 @@ export async function launch({
           blockHeight,
           runNum,
         });
+        await pendingSwingStoreExport;
         controller.writeSlogObject({
           type: 'cosmic-swingset-bootstrap-block-finish',
           blockTime,
@@ -671,19 +680,31 @@ export async function launch({
 
         // Save the kernel's computed state just before the chain commits.
         const start2 = Date.now();
-        await saveOutsideState(savedHeight, blockTime);
-        const saveTime = Date.now() - start2;
-        controller.writeSlogObject({
-          type: 'cosmic-swingset-commit-block-finish',
-          blockHeight,
-          blockTime,
-        });
+        await saveOutsideState(savedHeight);
+        saveTime = Date.now() - start2;
 
         blockParams = undefined;
 
         blockManagerConsole.debug(
           `wrote SwingSet checkpoint [run=${runTime}ms, chainSave=${chainTime}ms, kernelSave=${saveTime}ms]`,
         );
+
+        return undefined;
+      }
+
+      case ActionType.AFTER_COMMIT_BLOCK: {
+        const { blockHeight, blockTime } = action;
+
+        const fullSaveTime = Date.now() - endBlockFinish;
+
+        controller.writeSlogObject({
+          type: 'cosmic-swingset-commit-block-finish',
+          blockHeight,
+          blockTime,
+          saveTime: saveTime / 1000,
+          chainTime: chainTime / 1000,
+          fullSaveTime: fullSaveTime / 1000,
+        });
 
         afterCommitWorkDone = afterCommit(blockHeight, blockTime);
 
@@ -745,12 +766,11 @@ export async function launch({
 
           // We write out our on-chain state as a number of chainSends.
           const start = Date.now();
-          await saveChainState();
+          await Promise.all([saveChainState(), pendingSwingStoreExport]);
           chainTime = Date.now() - start;
 
           // Advance our saved state variables.
           savedHeight = blockHeight;
-          savedBlockTime = blockTime;
         }
         controller.writeSlogObject({
           type: 'cosmic-swingset-end-block-finish',
@@ -758,6 +778,8 @@ export async function launch({
           blockTime,
           actionQueueStats: inboundQueueMetrics.getStats(),
         });
+
+        endBlockFinish = Date.now();
 
         return undefined;
       }
@@ -768,15 +790,19 @@ export async function launch({
     }
   }
 
-  function shutdown() {
+  async function shutdown() {
     return controller.shutdown();
+  }
+
+  function writeSlogObject(obj) {
+    controller.writeSlogObject(obj);
   }
 
   return {
     blockingSend,
     shutdown,
+    writeSlogObject,
     savedHeight,
-    savedBlockTime,
     savedChainSends: JSON.parse(kvStore.get(getHostKey('chainSends')) || '[]'),
   };
 }
