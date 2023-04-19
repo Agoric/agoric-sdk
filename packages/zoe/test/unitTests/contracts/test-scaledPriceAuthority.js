@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import path from 'path';
 
@@ -17,13 +17,6 @@ import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js
 import '../../../src/contracts/exported.js';
 
 /**
- * @callback MakeFakePriceOracle
- * @param {ExecutionContext} t
- * @param {bigint} [valueOut]
- * @returns {Promise<OracleKit & { instance: Instance }>}
- */
-
-/**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
  * @property {Installation<typeof import('../../../src/contracts/scaledPriceAuthority.js').start>} scaledPriceInstallation
@@ -31,57 +24,54 @@ import '../../../src/contracts/exported.js';
  * @property {Brand<'nat'>} usdBrand
  * @property {IssuerKit<'nat'>} ibcAtom
  * @property {IssuerKit<'nat'>} run
- *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
  */
+
+const test = /** @type {import('ava').TestFn<TestContext>} */ (unknownTest);
 
 const filename = new URL(import.meta.url).pathname;
 const dirname = path.dirname(filename);
 
 const scaledPricePath = `${dirname}/../../../src/contracts/scaledPriceAuthority.js`;
 
-test.before(
-  'setup scaled price authority',
-  /** @param {ExecutionContext} ot */ async ot => {
-    // Outside of tests, we should use the long-lived Zoe on the
-    // testnet. In this test, we must create a new Zoe.
-    const { admin, vatAdminState } = makeFakeVatAdmin();
-    const { zoeService: zoe } = makeZoeKit(admin);
+test.before('setup scaled price authority', async ot => {
+  // Outside of tests, we should use the long-lived Zoe on the
+  // testnet. In this test, we must create a new Zoe.
+  const { admin, vatAdminState } = makeFakeVatAdmin();
+  const { zoeService: zoe } = makeZoeKit(admin);
 
-    // Pack the contracts.
-    const scaledPriceBundle = await bundleSource(scaledPricePath);
+  // Pack the contracts.
+  const scaledPriceBundle = await bundleSource(scaledPricePath);
 
-    // Install the contract on Zoe, getting an installation. We can
-    // use this installation to look up the code we installed. Outside
-    // of tests, we can also send the installation to someone
-    // else, and they can use it to create a new contract instance
-    // using the same code.
-    vatAdminState.installBundle('b1-scaled-price-authority', scaledPriceBundle);
-    const scaledPriceInstallation = await E(zoe).installBundleID(
-      'b1-scaled-price-authority',
-    );
+  // Install the contract on Zoe, getting an installation. We can
+  // use this installation to look up the code we installed. Outside
+  // of tests, we can also send the installation to someone
+  // else, and they can use it to create a new contract instance
+  // using the same code.
+  vatAdminState.installBundle('b1-scaled-price-authority', scaledPriceBundle);
+  const scaledPriceInstallation = await E(zoe).installBundleID(
+    'b1-scaled-price-authority',
+  );
 
-    // Pick some weird decimal places.
-    const dp = decimalPlaces => harden({ decimalPlaces });
-    const { brand: atomBrand } = makeIssuerKit('$ATOM', 'nat', dp(5));
-    const { brand: usdBrand } = makeIssuerKit('$USD', 'nat', dp(4));
+  // Pick some weird decimal places.
+  const dp = decimalPlaces => harden({ decimalPlaces });
+  const { brand: atomBrand } = makeIssuerKit('$ATOM', 'nat', dp(5));
+  const { brand: usdBrand } = makeIssuerKit('$USD', 'nat', dp(4));
 
-    const ibcAtom = makeIssuerKit('IBC-ATOM', 'nat', dp(6));
-    const run = makeIssuerKit('RUN', 'nat', dp(6));
+  const ibcAtom = makeIssuerKit('IBC-ATOM', 'nat', dp(6));
+  const run = makeIssuerKit('RUN', 'nat', dp(6));
 
-    ot.context.zoe = zoe;
-    ot.context.scaledPriceInstallation = /** @type {any} */ (
-      scaledPriceInstallation
-    );
-    ot.context.atomBrand = atomBrand;
-    ot.context.usdBrand = usdBrand;
-    ot.context.ibcAtom = ibcAtom;
-    ot.context.run = run;
-  },
-);
+  ot.context.zoe = zoe;
+  ot.context.scaledPriceInstallation = /** @type {any} */ (
+    scaledPriceInstallation
+  );
+  ot.context.atomBrand = atomBrand;
+  ot.context.usdBrand = usdBrand;
+  ot.context.ibcAtom = ibcAtom;
+  ot.context.run = run;
+});
 
 /**
- * @param {ExecutionContext} t
+ * @param {import('ava').ExecutionContext<TestContext>} t
  * @param {bigint} [initialPriceInCents]
  */
 const makeScenario = async (t, initialPriceInCents) => {
@@ -128,7 +118,7 @@ const makeScenario = async (t, initialPriceInCents) => {
   return { timer, sourcePriceAuthority, makeSourcePrice, pa };
 };
 
-test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
+test('scaled price authority', async t => {
   const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
     await makeScenario(t);
 
@@ -194,7 +184,7 @@ test('scaled price authority', /** @param {ExecutionContext} t */ async t => {
   ]);
 });
 
-test('mutableQuoteWhenLT: brands in/out match', /** @param {ExecutionContext} t */ async t => {
+test('mutableQuoteWhenLT: brands in/out match', async t => {
   const { timer, sourcePriceAuthority, makeSourcePrice, pa } =
     await makeScenario(t);
 
@@ -254,7 +244,7 @@ const unitAmount = async brand => {
   return AmountMath.make(brand, 10n ** BigInt(decimalPlaces));
 };
 
-test('initialPrice', /** @param {ExecutionContext} t */ async t => {
+test('initialPrice', async t => {
   const { make } = AmountMath;
   const { ibcAtom: collateral, run: debt } = t.context;
   const { timer, pa } = await makeScenario(t, 12_34n);

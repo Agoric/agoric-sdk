@@ -173,7 +173,15 @@
  *   installation:{
  *     produce: Record<WellKnownName['installation'], Producer<Installation>>,
  *     consume: Record<WellKnownName['installation'], Promise<Installation<unknown>>> & {
+ *       centralSupply: Promise<Installation<import('@agoric/vats/src/centralSupply.js').start>>,
+ *       committee: Promise<Installation<import('@agoric/governance/src/committee.js').start>>,
+ *       contractGovernor: Promise<Installation<import('@agoric/governance/src/contractGovernor.js').start>>,
+ *       econCommitteeCharter: Promise<Installation<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>,
+ *       feeDistributor: Promise<Installation<import('@agoric/inter-protocol/src/feeDistributor.js').start>>,
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
+ *       psm: Promise<Installation<import('@agoric/inter-protocol/src/psm/psm.js').start>>,
+ *       reserve: Promise<Installation<import('@agoric/inter-protocol/src/reserve/assetReserve.js').start>>,
+ *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start>>,
  *       walletFactory: Promise<Installation<import('@agoric/smart-wallet/src/walletFactory.js').prepare>>,
  *     },
  *   },

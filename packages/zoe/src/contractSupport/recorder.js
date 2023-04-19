@@ -251,8 +251,11 @@ export const prepareMockRecorderKitMakers = () => {
  * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
  * explictly specify the type that the Pattern will verify through a match.
  *
+ * This is a Pattern but since that's `any`, including in the typedef turns the
+ * whole thing to `any`.
+ *
  * @template T
- * @typedef {Pattern & {validatedType?: T}} TypedMatcher
+ * @typedef {{ validatedType?: T }} TypedMatcher
  */
 
 /**

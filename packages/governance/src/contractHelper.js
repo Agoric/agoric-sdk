@@ -7,7 +7,7 @@ import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
-import { InvitationShape } from './typeGuards.js';
+import { GovernorFacetShape } from './typeGuards.js';
 
 const { Fail, quote: q } = assert;
 
@@ -207,14 +207,7 @@ const facetHelpers = (zcf, paramManager) => {
     const governorFacet = prepareExo(
       baggage,
       'governorFacet',
-      M.interface('governorFacet', {
-        getParamMgrRetriever: M.call().returns(M.remotable('paramRetriever')),
-        getInvitation: M.call().returns(InvitationShape),
-        getLimitedCreatorFacet: M.call().returns(M.remotable()),
-        getGovernedApis: M.call().returns(M.remotable()),
-        getGovernedApiNames: M.call().returns(M.arrayOf(M.string())),
-        setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
-      }),
+      M.interface('governorFacet', GovernorFacetShape),
       {
         getParamMgrRetriever: () =>
           Far('paramRetriever', { get: () => paramManager }),

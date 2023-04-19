@@ -150,12 +150,12 @@ export const setupReserve = async ({
     }),
   );
   /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
+  // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
     reserveGovernorTerms,
     {
-      electorateCreatorFacet: committeeCreator,
       governed: {
         feeMintAccess,
         initialPoserInvitation: poserInvitation,
@@ -294,6 +294,7 @@ export const startVaultFactory = async (
   } = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
+    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     governorTerms,
     harden({
       electorateCreatorFacet,
@@ -316,6 +317,7 @@ export const startVaultFactory = async (
     ]);
 
   vaultFactoryKit.resolve(
+    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     harden({
       creatorFacet: vaultFactoryCreator,
       governorCreatorFacet,
@@ -589,9 +591,11 @@ export const startAuctioneer = async (
   );
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<AuctioneerPublicFacet,AuctioneerCreatorFacet>, adminFacet: AdminFacet}} */
+  // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
+    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     governorTerms,
     harden({
       electorateCreatorFacet,
@@ -732,9 +736,11 @@ export const startStakeFactory = async (
   );
 
   /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>, adminFacet: AdminFacet}} */
+  // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},
+    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     stakeTerms,
     {
       governed: {

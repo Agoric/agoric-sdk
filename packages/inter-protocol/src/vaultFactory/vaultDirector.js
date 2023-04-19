@@ -27,6 +27,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
 import { makeMakeCollectFeesInvitation } from '../collectFees.js';
 import { scheduleLiquidationWakeups } from './liquidation.js';
 import {
@@ -197,12 +198,7 @@ export const prepareVaultDirector = (
     makeKindHandle('VaultDirector'),
     {
       creator: M.interface('creator', {
-        getParamMgrRetriever: M.call().returns(M.remotable()),
-        getInvitation: M.call(M.string()).returns(M.promise()),
-        getLimitedCreatorFacet: M.call().returns(M.remotable()),
-        getGovernedApis: M.call().returns(M.record()),
-        getGovernedApiNames: M.call().returns(M.record()),
-        setOfferFilter: M.call(M.arrayOf(M.string())).returns(M.promise()),
+        ...GovernorFacetShape,
       }),
       machine: M.interface('machine', {
         addVaultType: M.call(IssuerShape, M.string(), M.record()).returns(
@@ -242,7 +238,9 @@ export const prepareVaultDirector = (
         getParamMgrRetriever: () =>
           Far('paramManagerRetriever', {
             /** @param {VaultFactoryParamPath} paramPath */
-            get: paramPath => {
+            get: (
+              paramPath = { key: /** @type {const} */ 'governedParams' },
+            ) => {
               if (paramPath.key === 'governedParams') {
                 return directorParamManager;
               } else if (paramPath.key.collateralBrand) {
@@ -262,10 +260,10 @@ export const prepareVaultDirector = (
           return this.facets.machine;
         },
         getGovernedApis() {
-          return harden({});
+          return Far('governedAPIs', {});
         },
         getGovernedApiNames() {
-          return harden({});
+          return harden([]);
         },
         setOfferFilter: strings => zcf.setOfferFilter(strings),
       },
