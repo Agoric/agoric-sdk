@@ -58,7 +58,7 @@ export const defaultProposalBuilder = async (
         priceAggregatorRef: publishRef(
           install(
             '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-            '../bundles/bundle-fluxAggregator.js',
+            '../bundles/bundle-fluxAggregatorKit.js',
           ),
         ),
       },

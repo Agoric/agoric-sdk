@@ -5,6 +5,7 @@ import { ignoreContext, prepareExo } from '@agoric/vat-data';
 import { keyEQ, M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
+import { E } from '@endo/eventual-send';
 import { assertElectorateMatches } from './contractGovernance/paramManager.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';
@@ -16,7 +17,7 @@ export const GOVERNANCE_STORAGE_KEY = 'governance';
 const publicMixinAPI = harden({
   getSubscription: M.call().returns(M.remotable('StoredSubscription')),
   getContractGovernor: M.call().returns(M.remotable('Instance')),
-  getGovernedParams: M.call().returns(M.record()),
+  getGovernedParams: M.call().returns(M.or(M.record(), M.promise())),
   getAmount: M.call().returns(AmountShape),
   getBrand: M.call().returns(BrandShape),
   getInstance: M.call().returns(M.remotable('Instance')),
@@ -40,11 +41,20 @@ const publicMixinAPI = harden({
 const facetHelpers = (zcf, paramManager) => {
   const terms = zcf.getTerms();
   const { governedParams } = terms;
-  keyEQ(governedParams, paramManager.getParams()) ||
-    Fail`The 'governedParams' term must be an object like ${q(
-      paramManager.getParams(),
-    )}, but was ${q(governedParams)}`;
-  assertElectorateMatches(paramManager, governedParams);
+
+  // validate async to wait for params to be finished
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  void E.when(paramManager.getParams(), finishedParams => {
+    try {
+      keyEQ(governedParams, finishedParams) ||
+        Fail`The 'governedParams' term must be an object like ${q(
+          finishedParams,
+        )}, but was ${q(governedParams)}`;
+      assertElectorateMatches(paramManager, governedParams);
+    } catch (err) {
+      zcf.shutdownWithFailure(err);
+    }
+  });
 
   const typedAccessors = {
     getAmount: paramManager.getAmount,
@@ -98,18 +108,6 @@ const facetHelpers = (zcf, paramManager) => {
   };
 
   /**
-   * @template {{}} CF creator facet
-   * @param {CF} originalCreatorFacet
-   * @returns {LimitedCreatorFacet<CF>}
-   */
-  const makeLimitedCreatorFacet = originalCreatorFacet => {
-    return Far('governedContract creator facet', {
-      ...originalCreatorFacet,
-      getContractGovernor: () => electionManager,
-    });
-  };
-
-  /**
    * Add required methods to a creatorFacet
    *
    * @template {{}} CF creator facet
@@ -153,8 +151,7 @@ const facetHelpers = (zcf, paramManager) => {
    * @returns {GovernorFacet<CF>}
    */
   const makeGovernorFacet = (originalCreatorFacet, governedApis = {}) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-    return makeFarGovernorFacet(limitedCreatorFacet, governedApis);
+    return makeFarGovernorFacet(originalCreatorFacet, governedApis);
   };
 
   /**
@@ -162,12 +159,10 @@ const facetHelpers = (zcf, paramManager) => {
    *
    * @see {makeDurableGovernorFacet}
    *
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} limitedCreatorFacet
    */
-  const makeVirtualGovernorFacet = originalCreatorFacet => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-
-    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<originalCreatorFacet>>} */
+  const makeVirtualGovernorFacet = limitedCreatorFacet => {
+    /** @type {import('@agoric/vat-data/src/types.js').FunctionsPlusContext<unknown, GovernorFacet<limitedCreatorFacet>>} */
     const governorFacet = harden({
       getParamMgrRetriever: () =>
         Far('paramRetriever', { get: () => paramManager }),
@@ -193,17 +188,16 @@ const facetHelpers = (zcf, paramManager) => {
    *
    * @see {makeVirtualGovernorFacet}
    *
+   * @template CF
    * @param {import('@agoric/vat-data').Baggage} baggage
-   * @param {{ [methodName: string]: (context?: unknown, ...rest: unknown[]) => unknown}} originalCreatorFacet
+   * @param {CF} limitedCreatorFacet
    * @param {Record<string, (...any) => unknown>} [governedApis]
    */
   const makeDurableGovernorFacet = (
     baggage,
-    originalCreatorFacet,
+    limitedCreatorFacet,
     governedApis = {},
   ) => {
-    const limitedCreatorFacet = makeLimitedCreatorFacet(originalCreatorFacet);
-
     const governorFacet = prepareExo(
       baggage,
       'governorFacet',
@@ -232,9 +226,6 @@ const facetHelpers = (zcf, paramManager) => {
     publicMixin: {
       ...commonPublicMethods,
       ...typedAccessors,
-    },
-    creatorMixin: {
-      getContractGovernor: () => electionManager,
     },
     augmentPublicFacet,
     augmentVirtualPublicFacet,
@@ -268,7 +259,7 @@ const facetHelpers = (zcf, paramManager) => {
  * @param {ERef<StorageNode>} [storageNode]
  * @param {ERef<Marshaller>} [marshaller]
  */
-const handleParamGovernance = async (
+const handleParamGovernance = (
   zcf,
   initialPoserInvitation,
   paramTypesMap,
@@ -281,7 +272,7 @@ const handleParamGovernance = async (
     marshaller,
     GOVERNANCE_STORAGE_KEY,
   );
-  const paramManager = await makeParamManagerFromTerms(
+  const paramManager = makeParamManagerFromTerms(
     publisherKit,
     zcf,
     { Electorate: initialPoserInvitation },

@@ -735,7 +735,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                     priceFrom(quote).denominator.value
                   }`,
                 );
-                return (state.updatingOracleQuote = priceFrom(quote));
+                state.updatingOracleQuote = priceFrom(quote);
               },
               fail: reason => {
                 throw Error(

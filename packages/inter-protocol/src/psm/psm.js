@@ -82,7 +82,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const emptyStable = AmountMath.makeEmpty(stableBrand);
   const emptyAnchor = AmountMath.makeEmpty(anchorBrand);
 
-  const { publicMixin, creatorMixin, makeFarGovernorFacet, params } =
+  const { publicMixin, makeFarGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -300,7 +300,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     makeCollectFeesInvitation() {
       return makeCollectFeesInvitation();
     },
-    ...creatorMixin,
   });
 
   const governorFacet = makeFarGovernorFacet(limitedCreatorFacet);

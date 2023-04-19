@@ -501,7 +501,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     }
   };
 
-  const { augmentPublicFacet, creatorMixin, makeFarGovernorFacet, params } =
+  const { augmentPublicFacet, makeFarGovernorFacet, params } =
     await handleParamGovernance(
       zcf,
       privateArgs.initialPoserInvitation,
@@ -689,7 +689,6 @@ export const start = async (zcf, privateArgs, baggage) => {
       getSchedule() {
         return E(scheduler).getSchedule();
       },
-      ...creatorMixin,
     }),
   );
 

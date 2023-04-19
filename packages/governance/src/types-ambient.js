@@ -421,7 +421,7 @@
 
 /**
  * @typedef {object} ParamManagerBase The base paramManager with typed getters
- * @property {() => ParamStateRecord} getParams
+ * @property {() => ERef<ParamStateRecord>} getParams
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
  * @property {(name: string) => Instance} getInstance
@@ -559,22 +559,13 @@
  */
 
 /**
- * @template {{}} CF
- * @typedef {CF} LimitedCreatorFacet
- *
- * The creatorFacet for the governed contract that will be passed to the
- * responsible party. It does not have access to the paramManager.
- * @property {() => Instance} getContractGovernor
- */
-
-/**
  * @template {{}} PF Public facet of governed contract
  * @template {{}} CF Creator facet of governed contract
  * @typedef {object} GovernedContractFacetAccess
  * @property {VoteOnParamChanges} voteOnParamChanges
  * @property {VoteOnApiInvocation} voteOnApiInvocation
  * @property {VoteOnOfferFilter} voteOnOfferFilter
- * @property {() => ERef<LimitedCreatorFacet<CF>>} getCreatorFacet - creator
+ * @property {() => ERef<CF>} getCreatorFacet - creator
  *   facet of the governed contract, without the tightly held ability to change
  *   param values.
  * @property {(poserInvitation: Invitation) => Promise<void>} replaceElectorate
@@ -588,7 +579,7 @@
  * @typedef GovernedPublicFacetMethods
  * @property {() => StoredSubscription<GovernanceSubscriptionState>} getSubscription
  * @property {() => Instance} getContractGovernor
- * @property {() => ParamStateRecord} getGovernedParams - get descriptions of
+ * @property {() => ERef<ParamStateRecord>} getGovernedParams - get descriptions of
  *   all the governed parameters
  * @property {(name: string) => Amount} getAmount
  * @property {(name: string) => Brand} getBrand
@@ -612,7 +603,7 @@
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => LimitedCreatorFacet<CF>} getLimitedCreatorFacet - the creator
+ * @property {() => CF} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation

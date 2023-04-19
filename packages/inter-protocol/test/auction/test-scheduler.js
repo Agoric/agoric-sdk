@@ -25,7 +25,7 @@ import {
 /** @typedef {import('@agoric/time/src/types').TimerService} TimerService */
 
 test('schedule start to finish', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => bigint; }} */
   const timer = buildManualTimer();
@@ -62,7 +62,7 @@ test('schedule start to finish', async t => {
   const paramManager = await makeAuctioneerParamManager(
     // @ts-expect-error test fakes
     { publisher, subscriber: null },
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -236,7 +236,7 @@ test('schedule start to finish', async t => {
 });
 
 test('lowest >= starting', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -266,7 +266,7 @@ test('lowest >= starting', async t => {
   const paramManager = await makeAuctioneerParamManager(
     // @ts-expect-error test fakes
     { publisher, subscriber: null },
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -284,7 +284,7 @@ test('lowest >= starting', async t => {
 });
 
 test('zero time for auction', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -315,7 +315,7 @@ test('zero time for auction', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -336,7 +336,7 @@ test('zero time for auction', async t => {
 });
 
 test('discountStep 0', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -364,7 +364,7 @@ test('discountStep 0', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -382,7 +382,7 @@ test('discountStep 0', async t => {
 });
 
 test('discountStep larger than starting rate', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -411,7 +411,7 @@ test('discountStep larger than starting rate', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -429,7 +429,7 @@ test('discountStep larger than starting rate', async t => {
 });
 
 test('start Freq 0', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -457,7 +457,7 @@ test('start Freq 0', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -475,7 +475,7 @@ test('start Freq 0', async t => {
 });
 
 test('delay > freq', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -504,7 +504,7 @@ test('delay > freq', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -522,7 +522,7 @@ test('delay > freq', async t => {
 });
 
 test('lockPeriod > freq', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -552,7 +552,7 @@ test('lockPeriod > freq', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -573,7 +573,7 @@ test('lockPeriod > freq', async t => {
 
 // if duration = frequency, we'll cut the duration short to fit.
 test('duration = freq', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -609,7 +609,7 @@ test('duration = freq', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
 
@@ -651,7 +651,7 @@ test('duration = freq', async t => {
 });
 
 test('change Schedule', async t => {
-  const { zoe } = await setupZCFTest();
+  const { zcf, zoe } = await setupZCFTest();
   const installations = await setUpInstallations(zoe);
   /** @type {TimerService & { advanceTo: (when: Timestamp) => void; }} */
   const timer = buildManualTimer();
@@ -694,9 +694,12 @@ test('change Schedule', async t => {
 
   const paramManager = await makeAuctioneerParamManager(
     publisherKit,
-    zoe,
+    zcf,
     paramValues,
   );
+  // XXX let the value be set async. A concession to upgradability
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  await paramManager.getParams();
 
   const scheduler = await makeScheduler(
     fakeAuctioneer,
@@ -747,6 +750,9 @@ test('change Schedule', async t => {
     StartFrequency: TimeMath.toRel(newFreq, timerBrand),
     ClockStep: TimeMath.toRel(newStep, timerBrand),
   });
+  // XXX let the value be set async. A concession to upgradability
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  await paramManager.getParams();
 
   await timer.advanceTo(705n);
   await timer.advanceTo(secondStart);

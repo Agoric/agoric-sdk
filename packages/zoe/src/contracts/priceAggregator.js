@@ -47,7 +47,7 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  *
  * This contract aggregates price values from a set of oracles and provides a
  * PriceAuthority for their median. This naive method is game-able and so this module
- * is a stub until we complete what is now in `fluxAggregator.js`.
+ * is a stub until we complete what is now in `fluxAggregatorKit.js`.
  *
  * @param {ZCF<{
  * timer: import('@agoric/time/src/types').TimerService,
@@ -227,7 +227,9 @@ const start = async (zcf, privateArgs) => {
 
   // for each new quote from the priceAuthority, publish it to off-chain storage
   observeNotifier(priceAuthority.makeQuoteNotifier(unitAmountIn, brandOut), {
-    updateState: quote => publisher.publish(priceDescriptionFromQuote(quote)),
+    updateState: quote => {
+      publisher.publish(priceDescriptionFromQuote(quote));
+    },
     fail: reason => {
       throw Error(`priceAuthority observer failed: ${reason}`);
     },

@@ -1,5 +1,5 @@
 /** @file DEPRECATED use the vault test driver instead */
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 
 import { assert } from '@agoric/assert';
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
@@ -72,7 +72,6 @@ export async function start(zcf, privateArgs, baggage) {
     priceList: [80],
     tradeList: undefined,
     timer,
-    quoteMint: makeIssuerKit('quote', AssetKind.SET).mint,
   };
   const priceAuthority = await makeFakePriceAuthority(options);
   const collateralUnit = await unitAmount(collateralBrand);

@@ -1,3 +1,4 @@
+import { E } from '@endo/eventual-send';
 import { ParamTypes } from '../constants.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
@@ -78,11 +79,11 @@ const isAsync = {
  * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
- * @param {ERef<ZoeService>} zoe
- * @returns {Promise<TypedParamManager<{[K in keyof T]: T[K][0]}>>}
+ * @param {ZCF} zcf
+ * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
  */
-export const makeParamManager = async (publisherKit, spec, zoe) => {
-  const builder = makeParamManagerBuilder(publisherKit, zoe);
+export const makeParamManager = (publisherKit, spec, zcf) => {
+  const builder = makeParamManagerBuilder(publisherKit, zcf.getZoeService());
 
   const promises = [];
   for (const [name, [type, value]] of Object.entries(spec)) {
@@ -93,7 +94,12 @@ export const makeParamManager = async (publisherKit, spec, zoe) => {
       add(name, value);
     }
   }
-  await Promise.all(promises);
+  // XXX kick off promises but don't block. This is a concession to contract reincarnation
+  // which cannot block on a remote call.
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
+  void E.when(Promise.all(promises), undefined, reason =>
+    zcf.shutdownWithFailure(reason),
+  );
 
   // @ts-expect-error cast
   return builder.build();
@@ -131,9 +137,9 @@ harden(makeParamManagerSync);
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
- * @returns {Promise<TypedParamManager<M & {[K in keyof I]: 'invitation'}>>}
+ * @returns {TypedParamManager<M & {[K in keyof I]: 'invitation'}>}
  */
-export const makeParamManagerFromTerms = async (
+export const makeParamManagerFromTerms = (
   publisherKit,
   zcf,
   invitations,
@@ -159,6 +165,6 @@ export const makeParamManagerFromTerms = async (
     Fail`missing Electorate invitation param value`;
 
   // @ts-expect-error cast
-  return makeParamManager(publisherKit, makerSpec, zcf.getZoeService());
+  return makeParamManager(publisherKit, makerSpec, zcf);
 };
 harden(makeParamManagerFromTerms);

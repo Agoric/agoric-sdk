@@ -123,10 +123,10 @@ harden(makeAuctioneerParams);
 
 /**
  * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
- * @param {ZoeService} zoe
+ * @param {ZCF} zcf
  * @param {AuctionParams} initial
  */
-export const makeAuctioneerParamManager = (publisherKit, zoe, initial) => {
+export const makeAuctioneerParamManager = (publisherKit, zcf, initial) => {
   return makeParamManager(
     publisherKit,
     {
@@ -148,7 +148,7 @@ export const makeAuctioneerParamManager = (publisherKit, zoe, initial) => {
         initial[PRICE_LOCK_PERIOD],
       ],
     },
-    zoe,
+    zcf,
   );
 };
 harden(makeAuctioneerParamManager);

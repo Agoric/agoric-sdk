@@ -119,7 +119,7 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
       '../inter-protocol/src/price/fluxAggregatorContract.js',
       'priceAggregator',
     );
-    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start>>} */
+    /** @type {Promise<Installation<import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').prepare>>} */
     const paInstallation = E(zoe).install(paBundle);
     await E(installAdmin).update('priceAggregator', paInstallation);
 

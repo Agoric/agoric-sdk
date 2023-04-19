@@ -14,7 +14,6 @@ package "GovernedContract Vat" <<Rectangle>>  {
         --
         +terms: { electionManager, governedParams }
         +getState()
-        +getContractGovernor()
         -getParamMgrRetriever()
     }
     note  left : calls buildParamManager(paramDesc);\nmakes paramMgr state public\nreturns paramMgr in creatorFacet
