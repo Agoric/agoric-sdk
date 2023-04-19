@@ -7,7 +7,11 @@ import bundleSource from '@endo/bundle-source';
 
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import {
+  makeIssuerKit,
+  AmountMath,
+  getTheSemifungibleElement,
+} from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeNotifierKit, subscribeEach } from '@agoric/notifier';
@@ -216,7 +220,8 @@ test('median aggregator', async t => {
 
     const q = await E(quoteIssuer).getAmountOf(lastRec.value.quotePayment);
     t.deepEqual(q, lastRec.value.quoteAmount);
-    const [{ timestamp, timer, amountIn, amountOut }] = q.value;
+    const { timestamp, timer, amountIn, amountOut } =
+      getTheSemifungibleElement(q);
     t.is(timer, oracleTimer);
     const valueOut = AmountMath.getValue(brandOut, amountOut);
 
@@ -228,14 +233,12 @@ test('median aggregator', async t => {
       brandOut,
     );
     const recentGQ = await E(quoteIssuer).getAmountOf(recentG);
-    const [
-      {
-        timestamp: rgTimestamp,
-        timer: rgTimer,
-        amountIn: rgIn,
-        amountOut: rgOut,
-      },
-    ] = recentGQ.value;
+    const {
+      timestamp: rgTimestamp,
+      timer: rgTimer,
+      amountIn: rgIn,
+      amountOut: rgOut,
+    } = getTheSemifungibleElement(recentGQ);
     t.is(rgTimer, oracleTimer);
     t.is(rgTimestamp, timestamp);
     t.deepEqual(rgIn, amountIn);
@@ -243,14 +246,12 @@ test('median aggregator', async t => {
 
     const { quotePayment: recentW } = await E(pa).quoteWanted(brandIn, rgOut);
     const recentWQ = await E(quoteIssuer).getAmountOf(recentW);
-    const [
-      {
-        timestamp: rwTimestamp,
-        timer: rwTimer,
-        amountIn: rwIn,
-        amountOut: rwOut,
-      },
-    ] = recentWQ.value;
+    const {
+      timestamp: rwTimestamp,
+      timer: rwTimer,
+      amountIn: rwIn,
+      amountOut: rwOut,
+    } = getTheSemifungibleElement(recentWQ);
     t.is(rwTimer, oracleTimer);
     t.is(rwTimestamp, timestamp);
     t.deepEqual(rwIn, amountIn);
@@ -364,7 +365,8 @@ test('median aggregator - push only', async t => {
 
     const q = await E(quoteIssuer).getAmountOf(lastRec.value.quotePayment);
     t.deepEqual(q, lastRec.value.quoteAmount);
-    const [{ timestamp, timer, amountIn, amountOut }] = q.value;
+    const { timestamp, timer, amountIn, amountOut } =
+      getTheSemifungibleElement(q);
     t.is(timer, oracleTimer);
     const valueOut = AmountMath.getValue(brandOut, amountOut);
 
@@ -376,14 +378,12 @@ test('median aggregator - push only', async t => {
       brandOut,
     );
     const recentGQ = await E(quoteIssuer).getAmountOf(recentG);
-    const [
-      {
-        timestamp: rgTimestamp,
-        timer: rgTimer,
-        amountIn: rgIn,
-        amountOut: rgOut,
-      },
-    ] = recentGQ.value;
+    const {
+      timestamp: rgTimestamp,
+      timer: rgTimer,
+      amountIn: rgIn,
+      amountOut: rgOut,
+    } = getTheSemifungibleElement(recentGQ);
     t.is(rgTimer, oracleTimer);
     t.is(rgTimestamp, timestamp);
     t.deepEqual(rgIn, amountIn);
@@ -391,14 +391,12 @@ test('median aggregator - push only', async t => {
 
     const { quotePayment: recentW } = await E(pa).quoteWanted(brandIn, rgOut);
     const recentWQ = await E(quoteIssuer).getAmountOf(recentW);
-    const [
-      {
-        timestamp: rwTimestamp,
-        timer: rwTimer,
-        amountIn: rwIn,
-        amountOut: rwOut,
-      },
-    ] = recentWQ.value;
+    const {
+      timestamp: rwTimestamp,
+      timer: rwTimer,
+      amountIn: rwIn,
+      amountOut: rwOut,
+    } = getTheSemifungibleElement(recentWQ);
     t.is(rwTimer, oracleTimer);
     t.is(rwTimestamp, timestamp);
     t.deepEqual(rwIn, amountIn);
@@ -665,14 +663,12 @@ test('quoteAtTime', async t => {
   const userQuote = await E(quoteIssuer).getAmountOf(
     userPriceQuote.quotePayment,
   );
-  const [
-    {
-      amountIn: userIn,
-      amountOut: userOut,
-      timer: uTimer,
-      timestamp: uTimestamp,
-    },
-  ] = userQuote.value;
+  const {
+    amountIn: userIn,
+    amountOut: userOut,
+    timer: uTimer,
+    timestamp: uTimestamp,
+  } = getTheSemifungibleElement(userQuote);
   t.is(uTimer, oracleTimer);
   t.is(uTimestamp, 5n);
   t.is(userIn.value, 23n);
@@ -690,7 +686,8 @@ test('quoteAtTime', async t => {
 
   const quote = await E(quoteIssuer).getAmountOf(priceQuote.quotePayment);
   t.deepEqual(quote, priceQuote.quoteAmount);
-  const [{ amountIn, amountOut, timer, timestamp }] = quote.value;
+  const { amountIn, amountOut, timer, timestamp } =
+    getTheSemifungibleElement(quote);
   t.is(timer, oracleTimer);
   t.is(timestamp, 7n);
   t.is(amountIn.value, 41n);
@@ -772,14 +769,12 @@ test('quoteWhen', async t => {
     abovePriceQuote.quotePayment,
   );
   t.deepEqual(aboveQuote, abovePriceQuote.quoteAmount);
-  const [
-    {
-      amountIn: aboveIn,
-      amountOut: aboveOut,
-      timer: aboveTimer,
-      timestamp: aboveTimestamp,
-    },
-  ] = aboveQuote.value;
+  const {
+    amountIn: aboveIn,
+    amountOut: aboveOut,
+    timer: aboveTimer,
+    timestamp: aboveTimestamp,
+  } = getTheSemifungibleElement(aboveQuote);
   t.is(aboveTimer, oracleTimer);
   t.is(aboveTimestamp, 4n);
   t.is(aboveIn.value, 37n);
@@ -804,14 +799,12 @@ test('quoteWhen', async t => {
     belowPriceQuote.quotePayment,
   );
   t.deepEqual(belowQuote, belowPriceQuote.quoteAmount);
-  const [
-    {
-      amountIn: belowIn,
-      amountOut: belowOut,
-      timer: belowTimer,
-      timestamp: belowTimestamp,
-    },
-  ] = belowQuote.value;
+  const {
+    amountIn: belowIn,
+    amountOut: belowOut,
+    timer: belowTimer,
+    timestamp: belowTimestamp,
+  } = getTheSemifungibleElement(belowQuote);
   t.is(belowTimer, oracleTimer);
   t.is(belowTimestamp, 6n);
   t.is(belowIn.value, 29n);
@@ -899,14 +892,12 @@ test('mutableQuoteWhen no replacement', async t => {
     abovePriceQuote.quotePayment,
   );
   t.deepEqual(aboveQuote, abovePriceQuote.quoteAmount);
-  const [
-    {
-      amountIn: aboveIn,
-      amountOut: aboveOut,
-      timer: aboveTimer,
-      timestamp: aboveTimestamp,
-    },
-  ] = aboveQuote.value;
+  const {
+    amountIn: aboveIn,
+    amountOut: aboveOut,
+    timer: aboveTimer,
+    timestamp: aboveTimestamp,
+  } = getTheSemifungibleElement(aboveQuote);
   t.is(aboveTimer, oracleTimer);
   t.is(aboveTimestamp, 4n);
   t.is(aboveIn.value, 37n);
@@ -934,14 +925,12 @@ test('mutableQuoteWhen no replacement', async t => {
     belowPriceQuote.quotePayment,
   );
   t.deepEqual(belowQuote, belowPriceQuote.quoteAmount);
-  const [
-    {
-      amountIn: belowIn,
-      amountOut: belowOut,
-      timer: belowTimer,
-      timestamp: belowTimestamp,
-    },
-  ] = belowQuote.value;
+  const {
+    amountIn: belowIn,
+    amountOut: belowOut,
+    timer: belowTimer,
+    timestamp: belowTimestamp,
+  } = getTheSemifungibleElement(belowQuote);
   t.is(belowTimer, oracleTimer);
   t.is(belowTimestamp, 6n);
   t.is(belowIn.value, 29n);
@@ -1008,14 +997,12 @@ test('mutableQuoteWhen with update', async t => {
     abovePriceQuote.quotePayment,
   );
   t.deepEqual(aboveQuote, abovePriceQuote.quoteAmount);
-  const [
-    {
-      amountIn: aboveIn,
-      amountOut: aboveOut,
-      timer: aboveTimer,
-      timestamp: aboveTimestamp,
-    },
-  ] = aboveQuote.value;
+  const {
+    amountIn: aboveIn,
+    amountOut: aboveOut,
+    timer: aboveTimer,
+    timestamp: aboveTimestamp,
+  } = getTheSemifungibleElement(aboveQuote);
   t.is(aboveTimer, oracleTimer);
   t.is(aboveTimestamp, 4n);
   t.is(aboveIn.value, 25n);

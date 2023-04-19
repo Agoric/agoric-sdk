@@ -439,8 +439,8 @@ test('simpleExchange with non-fungible assets', async t => {
   // Bob has an empty CryptoCat purse, and the Spell of Binding he wanted.
   // @ts-expect-error get may fail
   const noCats = AmountMath.makeEmpty(brands.get('cc'), AssetKind.COPY_BAG);
-  // @ts-expect-error get may fail
   const noRpgItems = AmountMath.makeEmpty(
+    // @ts-expect-error get may fail
     brands.get('rpg'),
     AssetKind.COPY_BAG,
   );

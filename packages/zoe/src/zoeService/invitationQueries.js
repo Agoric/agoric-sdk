@@ -1,10 +1,12 @@
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, details as X } from '@agoric/assert';
 import { E } from '@endo/eventual-send';
-import { getCopyBagEntries } from '@agoric/store';
-import { AmountMath } from '@agoric/ertp';
+import {
+  getTheSemifungibleElement,
+  makeSemifungibleAmount,
+} from '@agoric/ertp';
 
 /**
- * @param {Amount} invitationAmount
+ * @param {Amount<'copyBag'>} invitationAmount
  * @param {Brand} [invitationBrand]
  * If `invitationBrand` is provided, use it for further validation. Otherwise
  * proceed assuming that `invitationAmount.brand` is the correct
@@ -14,20 +16,14 @@ import { AmountMath } from '@agoric/ertp';
 export const getInvitationAmountDetails = (
   invitationAmount,
   invitationBrand = invitationAmount.brand,
-) => {
-  const value = AmountMath.getValue(invitationBrand, invitationAmount);
-
-  // We rely on `getCopyBagEntries` to validate that `value` is a
-  // well formed CopyBag, so we don't need to check the type first.
-  // @ts-expect-error
-  const entries = getCopyBagEntries(value);
-  entries.length === 1 ||
-    Fail`Expected description of only one invitation: ${invitationAmount}`;
-  entries[0][1] === 1n ||
-    Fail`Expected invitation to be non-fungile: ${invitationAmount}`;
-  return entries[0][0];
-};
+) => getTheSemifungibleElement(invitationAmount, invitationBrand);
 harden(getInvitationAmountDetails);
+
+/**
+ * @type {(brand: Brand, ...elements: InvitationDetails[]) => Amount}
+ */
+export const makeInvitationAmount = (invitationBrand, ...details) =>
+  makeSemifungibleAmount(invitationBrand, ...details);
 
 /** @param {Issuer<'copyBag'>} invitationIssuer */
 export const makeInvitationQueryFns = invitationIssuer => {

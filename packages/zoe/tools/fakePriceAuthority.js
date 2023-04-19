@@ -1,4 +1,9 @@
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import {
+  makeIssuerKit,
+  AssetKind,
+  AmountMath,
+  makeSemifungibleAmount,
+} from '@agoric/ertp';
 import { makePromiseKit } from '@endo/promise-kit';
 import {
   makeNotifierKit,
@@ -114,17 +119,12 @@ export async function makeFakePriceAuthority(options) {
       natSafeMath.multiply(amountIn.value, tradeValueOut),
       tradeValueIn,
     );
-    const quoteAmount = AmountMath.make(
-      quoteBrand,
-      harden([
-        {
-          amountIn,
-          amountOut: AmountMath.make(actualBrandOut, valueOut),
-          timer,
-          timestamp: quoteTime,
-        },
-      ]),
-    );
+    const quoteAmount = makeSemifungibleAmount(quoteBrand, {
+      amountIn,
+      amountOut: AmountMath.make(actualBrandOut, valueOut),
+      timer,
+      timestamp: quoteTime,
+    });
     const quote = harden({
       quotePayment: E(quoteMint).mintPayment(quoteAmount),
       quoteAmount,

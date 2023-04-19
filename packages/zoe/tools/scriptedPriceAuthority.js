@@ -1,6 +1,7 @@
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeCopyBagFromElements } from '@agoric/store';
 import { observeNotifier } from '@agoric/notifier';
 import {
   natSafeMath,
@@ -59,7 +60,11 @@ export function makeScriptedPriceAuthority(options) {
     return E(timer)
       .getCurrentTimestamp()
       .then(now =>
-        authenticateQuote([{ amountIn, amountOut, timer, timestamp: now }]),
+        authenticateQuote(
+          makeCopyBagFromElements([
+            { amountIn, amountOut, timer, timestamp: now },
+          ]),
+        ),
       );
   }
 

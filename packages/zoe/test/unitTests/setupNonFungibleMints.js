@@ -3,8 +3,8 @@ import { makeZoeKit } from '../../src/zoeService/zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
 const setupNonFungible = () => {
-  const ccBundle = makeIssuerKit('CryptoCats', AssetKind.COPY_BAG);
-  const rpgBundle = makeIssuerKit('MMORPG Items', AssetKind.COPY_BAG);
+  const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
+  const rpgBundle = makeIssuerKit('MMORPG Items', AssetKind.SET);
   const allBundles = { cc: ccBundle, rpg: rpgBundle };
   /** @type {Map<string, Mint>} */
   const mints = new Map();

@@ -1,6 +1,11 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import {
+  AmountMath,
+  makeIssuerKit,
+  AssetKind,
+  makeSemifungibleAmount,
+} from '@agoric/ertp';
 
 import { E } from '@endo/eventual-send';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -29,17 +34,15 @@ test('provideEscrowStorage', async t => {
   // Normally only used for ZCFMint issuers
   provideLocalPurse(ticketKit.issuer, ticketKit.brand);
 
-  const gameTicketAmount = AmountMath.make(
-    ticketKit.brand,
-    harden([{ show: 'superbowl' }]),
-  );
+  const gameTicketAmount = makeSemifungibleAmount(ticketKit.brand, {
+    show: 'superbowl',
+  });
 
   const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
-  const wantedConcertTicketAmount = AmountMath.make(
-    ticketKit.brand,
-    harden([{ show: 'my show' }]),
-  );
+  const wantedConcertTicketAmount = makeSemifungibleAmount(ticketKit.brand, {
+    show: 'my show',
+  });
 
   const paymentPKeywordRecord = harden({
     GameTicket: E(ticketKit.mint).mintPayment(gameTicketAmount),
@@ -139,10 +142,9 @@ test('payments without matching give keywords', async t => {
 
   const { ticketKit, currencyKit } = await setupPurses(createPurse);
 
-  const gameTicketAmount = AmountMath.make(
-    ticketKit.brand,
-    harden([{ show: 'superbowl' }]),
-  );
+  const gameTicketAmount = makeSemifungibleAmount(ticketKit.brand, {
+    show: 'superbowl',
+  });
 
   const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 
@@ -176,10 +178,9 @@ test(`give keywords without matching payments`, async t => {
 
   const { ticketKit, currencyKit } = await setupPurses(createPurse);
 
-  const gameTicketAmount = AmountMath.make(
-    ticketKit.brand,
-    harden([{ show: 'superbowl' }]),
-  );
+  const gameTicketAmount = makeSemifungibleAmount(ticketKit.brand, {
+    show: 'superbowl',
+  });
 
   const currencyAmount = AmountMath.make(currencyKit.brand, 5n * 10n ** 18n);
 

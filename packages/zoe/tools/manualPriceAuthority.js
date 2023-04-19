@@ -1,6 +1,7 @@
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeCopyBagFromElements } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';
 import {
   makeOnewayPriceAuthorityKit,
@@ -59,7 +60,11 @@ export function makeManualPriceAuthority(options) {
     return E(timer)
       .getCurrentTimestamp()
       .then(now =>
-        authenticateQuote([{ amountIn, amountOut, timer, timestamp: now }]),
+        authenticateQuote(
+          makeCopyBagFromElements([
+            { amountIn, amountOut, timer, timestamp: now },
+          ]),
+        ),
       );
   }
 
