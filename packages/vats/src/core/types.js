@@ -184,7 +184,7 @@
  *       econCommitteeCharter: Promise<Installation<import('@agoric/inter-protocol/src/econCommitteeCharter.js').start>>,
  *       feeDistributor: Promise<Installation<import('@agoric/inter-protocol/src/feeDistributor.js').start>>,
  *       mintHolder: Promise<Installation<import('@agoric/vats/src/mintHolder.js').prepare>>,
- *       psm: Promise<Installation<import('@agoric/inter-protocol/src/psm/psm.js').start>>,
+ *       psm: Promise<Installation<import('@agoric/inter-protocol/src/psm/psm.js')['prepare']>>,
  *       reserve: Promise<Installation<import('@agoric/inter-protocol/src/reserve/assetReserve.js').start>>,
  *       stakeFactory: Promise<Installation<import('@agoric/inter-protocol/src/stakeFactory/stakeFactory.js').start>>,
  *       VaultFactory: Promise<Installation<import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start>>,
