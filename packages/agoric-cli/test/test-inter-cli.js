@@ -441,14 +441,6 @@ test('README: inter auction status', async t => {
     },
   };
 
-  const make = (b, v) => ({
-    brand: b,
-    value: BigInt(Math.round(v * 1_000_000)),
-  });
-  const tok = {
-    IST: { make: qty => make(topBrands.IST, qty) },
-    ATOM: { make: qty => make(topBrands.ATOM, qty) },
-  };
   const out = [];
 
   const { brand } = agoricNames;
