@@ -257,7 +257,9 @@ export const prepareVaultDirector = (
         getLimitedCreatorFacet() {
           return this.facets.machine;
         },
+        /** @returns {ERef<GovernedApis>} */
         getGovernedApis() {
+          // @ts-expect-error cast
           return Far('governedAPIs', {});
         },
         getGovernedApiNames() {

@@ -51,7 +51,7 @@
  * @typedef  {object} VaultFactoryCreatorFacet
  * @property {AddVaultType} addVaultType
  * @property {() => Allocation} getRewardAllocation
- * @property {() => Promise<Invitation>} makeCollectFeesInvitation
+ * @property {() => Promise<Invitation<string, never>>} makeCollectFeesInvitation
  * @property {() => void} updateMetrics
  * @property {() => import('@agoric/time/src/types').TimerWaker} makeLiquidationWaker
  * @property {() => import('@agoric/time/src/types').TimerWaker} makePriceLockWaker

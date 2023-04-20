@@ -112,7 +112,7 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * template {ContractPowerfulCreatorFacet} CF Creator facet of governed
  * type {ContractStartFn<
  * GovernorPublic,
- * GovernedContractFacetAccess<PF,CF>,
+ * GovernorCreatorFacet<PF,CF>,
  * {
  *   timer: import('@agoric/time/src/types').TimerService,
  *   governedContractInstallation: Installation<CF>,
@@ -139,6 +139,10 @@ const validateQuestionFromCounter = async (zoe, electorate, voteCounter) => {
  * @param {{
  *   governed: Record<string, unknown>
  * }} privateArgs
+ * @returns {Promise<{
+ *   creatorFacet: GovernorCreatorFacet<SF>,
+ *   publicFacet: GovernorPublic,
+ * }>}
  */
 const start = async (zcf, privateArgs) => {
   trace('start');
@@ -304,6 +308,8 @@ const start = async (zcf, privateArgs) => {
     });
   };
 
+  /** @type {GovernorCreatorFacet<SF>} */
+  // @ts-expect-error cast
   const creatorFacet = Far('governor creatorFacet', {
     replaceElectorate,
     voteOnParamChanges,

@@ -590,7 +590,7 @@
  * @property {() => ParamManagerRetriever} getParamMgrRetriever - allows accessing
  *   and updating governed parameters. Should only be directly accessible to the
  *   contractGovernor
- * @property {() => CF} getLimitedCreatorFacet - the creator
+ * @property {() => ERef<CF>} getLimitedCreatorFacet - the creator
  *   facet of the governed contract. Doesn't provide access to any governance
  *   functionality
  * @property {(name: string) => Promise<Invitation>} getInvitation
@@ -704,6 +704,18 @@
  */
 
 /**
- * @typedef {(zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<any>, publicFacet: GovernedPublicFacet<any>}>} GovernableStartFn
+ * @typedef {import('@agoric/zoe/src/zoeService/utils.js').ContractStartFunction
+ * & ((zcf?: any, pa?: any, baggage?: any) => ERef<{creatorFacet: GovernedCreatorFacet<{}>, publicFacet: GovernedPublicFacet<{}>}>)} GovernableStartFn
+ */
  */
 
+/**
+ * @see {StartedInstanceKit}
+ * @template {GovernableStartFn} SF
+ * @typedef GovernanceFacetKit
+ * Akin to StartedInstanceKit but designed for the results of starting governed contracts. Used in bootstrap space.
+ * @property {AdminFacet} adminFacet of the governing contract
+ * @property {LimitedCF<SF>} creatorFacet creator-like facet within the governed contract (without the powers the governor needs)
+ * @property {GovernorCreatorFacet<SF>} governorCreatorFacet of the governing contract
+ * @property {Awaited<ReturnType<SF>>['publicFacet']} publicFacet
+ */

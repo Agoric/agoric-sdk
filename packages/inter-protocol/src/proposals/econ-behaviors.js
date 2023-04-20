@@ -36,16 +36,12 @@ const BASIS_POINTS = 10_000n;
  * @property {Instance} psm
  * @property {Instance} psmGovernor
  * @property {Awaited<ReturnType<import('../psm/psm.js').start>>['creatorFacet']} psmCreatorFacet
- * @property {GovernedContractFacetAccess<import('../../src/psm/psm.js').PsmPublicFacet,{}>} psmGovernorCreatorFacet
+ * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['start']>} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
 
 /**
- * @typedef {object} AuctioneerKit
- * @property {Awaited<ReturnType<import('../auction/auctioneer.js').start>>['creatorFacet']} creatorFacet
- * @property {Awaited<ReturnType<import('../auction/auctioneer.js').start>>['publicFacet']} publicFacet
- * @property {GovernedContractFacetAccess<{},{}>} governorCreatorFacet
- * @property {AdminFacet} adminFacet
+ * @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit
  */
 
 /**
@@ -63,24 +59,9 @@ const BASIS_POINTS = 10_000n;
  *   bankMints: Mint[],
  *   psmKit: MapStore<Brand, PSMKit>,
  *   econCharterKit: EconCharterStartResult,
- *   reserveKit: {
- *     publicFacet: import('../reserve/assetReserve.js').AssetReservePublicFacet,
- *     creatorFacet: import('../reserve/assetReserve.js').AssetReserveLimitedCreatorFacet,
- *     governorCreatorFacet: GovernedAssetReserveFacetAccess,
- *     adminFacet: AdminFacet,
- *   },
- *   stakeFactoryKit: {
- *     creatorFacet: StakeFactoryCreator,
- *     governorCreatorFacet: GovernedContractFacetAccess<{}, {}>,
- *     adminFacet: AdminFacet,
- *     publicFacet: StakeFactoryPublic,
- *   },
- *   vaultFactoryKit: {
- *     publicFacet: VaultFactoryPublicFacet,
- *     creatorFacet: VaultFactoryCreatorFacet,
- *     governorCreatorFacet: GovernedContractFacetAccess<VaultFactoryPublicFacet, VaultFactoryCreatorFacet>,
- *     adminFacet: AdminFacet,
- *   },
+ *   reserveKit: GovernanceFacetKit<import('../reserve/assetReserve.js')['start']>,
+ *   stakeFactoryKit: GovernanceFacetKit<import('../stakeFactory/stakeFactory.js')['start']>,
+ *   vaultFactoryKit: GovernanceFacetKit<import('../vaultFactory/vaultFactory.js')['start']>,
  *   auctioneerKit: AuctioneerKit,
  *   minInitialDebt: NatValue,
  * }>} EconomyBootstrapSpace
@@ -150,7 +131,6 @@ export const setupReserve = async ({
     }),
   );
   /** @type {{ creatorFacet: GovernedAssetReserveFacetAccess, publicFacet: GovernorPublic, instance: Instance, adminFacet: AdminFacet }} */
-  // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
   const g = await E(zoe).startInstance(
     governorInstallation,
     {},
@@ -317,7 +297,6 @@ export const startVaultFactory = async (
     ]);
 
   vaultFactoryKit.resolve(
-    // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
     harden({
       creatorFacet: vaultFactoryCreator,
       governorCreatorFacet,
@@ -590,8 +569,7 @@ export const startAuctioneer = async (
     }),
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<AuctioneerPublicFacet,AuctioneerCreatorFacet>, adminFacet: AdminFacet}} */
-  // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernorCreatorFacet<import('../auction/auctioneer.js')['start']>, adminFacet: AdminFacet}} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
@@ -735,8 +713,7 @@ export const startStakeFactory = async (
     }),
   );
 
-  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernedContractFacetAccess<StakeFactoryPublic,StakeFactoryCreator>, adminFacet: AdminFacet}} */
-  // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
+  /** @type {{ publicFacet: GovernorPublic, creatorFacet: GovernorCreatorFacet<import('../stakeFactory/stakeFactory.js')['start']>, adminFacet: AdminFacet}} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     {},
