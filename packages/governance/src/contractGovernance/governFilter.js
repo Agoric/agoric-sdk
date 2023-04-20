@@ -26,20 +26,12 @@ const makeOfferFilterPositions = strings => {
 /**
  * Setup to allow governance to block some invitations.
  *
- * @param {ERef<ZoeService>} zoe
- * @param {Instance} governedInstance
  * @param {ERef<import('@agoric/time/src/types').TimerService>} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
- * @param {GovernedCreatorFacet<{}>} governorFacet
- * @returns {Promise<FilterGovernor>}
+ * @param {GovernedCreatorFacet<{}>} governedCF
+ * @returns {FilterGovernor}
  */
-const setupFilterGovernance = async (
-  zoe,
-  governedInstance,
-  timer,
-  getUpdatedPoserFacet,
-  governorFacet,
-) => {
+const setupFilterGovernance = (timer, getUpdatedPoserFacet, governedCF) => {
   /** @type {WeakSet<Instance>} */
   const voteCounters = new WeakSet();
 
@@ -82,7 +74,7 @@ const setupFilterGovernance = async (
         /** @type {(outcome: Position) => ERef<Position>} */
         outcome => {
           if (keyEQ(outcome, positive)) {
-            return E(governorFacet)
+            return E(governedCF)
               .setOfferFilter(strings)
               .then(() => {
                 return positive;
